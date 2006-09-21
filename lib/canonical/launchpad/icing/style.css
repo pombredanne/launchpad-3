@@ -191,10 +191,13 @@ hr, #globalheader label {
 #content_center .content {
   width: 380px;
 }
-  #content_center ul {margin:0;
-  padding:0;}
-  #content_center ul li {list-style-type: none;
-  background:  url(bullet_arrow.gif) transparent;
+#content_center ul {
+  margin:0;
+  padding:0;
+}
+#content_center ul li {
+  list-style-type: none;
+  background: url(bullet_arrow.gif) transparent;
   background-repeat:no-repeat;
   margin:0;
   padding-left:16px;
@@ -216,7 +219,7 @@ hr, #globalheader label {
   color: #000000;
   text-decoration: none;
 } 
-  #globalfooter a:hover {
+#globalfooter a:hover {
   color: #000000;
   text-decoration: underline;
 }
@@ -337,7 +340,7 @@ hr, #globalheader label {
 #logincontrol a {
   color: #000000;
 }
-#applicationchooser {
+ul#applicationchooser {
   float: right;
   width: 510px;
   height: 32px;
@@ -350,10 +353,10 @@ hr, #globalheader label {
   background-repeat: no-repeat;
   background-position: top right;
 }
-#applicationchooser span {
+ul#applicationchooser span {
   display: inline;
 }
-#applicationchooser span a {
+ul#applicationchooser span a {
   float: left;
   display: block;
   width: 82px;
@@ -368,87 +371,87 @@ hr, #globalheader label {
   padding: 9px 0px 0px 0px !important;
   padding: 8px 0px 0px 0px;
 }
-#applicationchooser span a:hover {
+ul#applicationchooser li a:hover {
   background-position: 0px 0px;
   text-decoration: none;
 }
-#applicationchooser span a#applicationchooser_selected {
+ul#applicationchooser li a#applicationchooser_selected {
   background-position: -200px 0px;
 }
-div#left_nav {
-  float: left;
-  width: 200px;
-  overflow: hidden;
-  margin: 0px 16px 0px 16px;
-  padding: 0;
-  list-style: none;
-  font-size: 11px;
+ul#left_nav {
+	float: left;
+	width: 200px;
+	overflow: hidden;
+	margin: 0px 16px 0px 16px;
+	padding: 0;
+	list-style: none;
+	font-size: 11px;
 }
-div#left_nav div.portlet {
-  clear: both;
-  float: left;
+ul#left_nav li {
+	clear: both;
+	float: left;
 }
-div#left_nav div.portlet a {
-  float: left;
-  display: block;
-  width: 180px;
-  height: 16px !important;
-  height: 17px;
-  background-color: #8F8F8F;
-  background-image: url(leftnav_bg.gif);
-  background-repeat: no-repeat;
-  background-position: left top;
-  overflow: hidden;
-  padding: 4px 10px 0px 10px !important;
-  padding: 3px 10px 0px 10px;
-  margin: 0px 0px 1px 0px;
-  color: #FFFFFF;
-  font-weight: bold;
+ul#left_nav li a {
+	float: left;
+	display: block;
+	width: 180px;
+	height: 16px !important;
+	height: 17px;
+	background-color: #8F8F8F;
+	background-image: url(../images/leftnav_bg.gif);
+	background-repeat: no-repeat;
+ 	background-position: left top;
+	overflow: hidden;
+	padding: 4px 10px 0px 10px !important;
+	padding: 3px 10px 0px 10px;
+	margin: 0px 0px 1px 0px;
+	color: #FFFFFF;
+	font-weight: bold;
 }
-div#left_nav div.portlet a:hover {
-  background-color: #A3A3A3;
-  text-decoration: none;
+ul#left_nav li a:hover {
+	background-color: #A3A3A3;
+	text-decoration: none;
 }
-div#left_nav div.portlet ul {
-  clear: both;
-  float: left;
-  width: 192px;
-  overflow: hidden;
-  margin: 0px 0px 4px 0px;
-  padding: 4px;
-  list-style: none;
-  background-color: #EBEBEB;
+ul#left_nav li ul {
+	clear: both;
+	float: left;
+	width: 192px;
+	overflow: hidden;
+	margin: 0px 0px 4px 0px;
+	padding: 4px;
+	list-style: none;
+	background-color: #EBEBEB;
 }
-div#left_nav div.portlet ul li {
-  clear: both;
-  float: left;
+ul#left_nav li ul li {
+	clear: both;
+	float: left;
 }
-div#left_nav div.portlet ul li a {
-  float: left;
-  width: 180px;
-  height: auto !important;
-  display: block;
-  background-color: #EBEBEB;
-  background-image: url(nul);
-  padding: 3px 6px 3px 6px !important;
-  color: #717171;
-  border-bottom: 1px solid #D2D2D2;
+ul#left_nav li ul li a {
+	float: left;
+	width: 180px;
+	height: auto !important;
+	display: block;
+	background-color: #EBEBEB;
+	background-image: url(nul);
+	padding: 3px 6px 3px 6px !important;
+	color: #717171;
+	border-bottom: 1px solid #D2D2D2;
 }
-div#left_nav div.portlet ul li a:hover {
-  background-color: #EBEBEB;
-  text-decoration: underline;
-  color: #414141;
+ul#left_nav li ul li a:hover {
+	background-color: #EBEBEB;
+	text-decoration: underline;
+	color: #414141;
 }
-div#left_nav div.portlet.active a {
-  background-color: #9BC11B;
+ul#left_nav li.active a {
+	background-color: #9BC11B;
 }
-  div#left_nav div.portlet.active a:hover {
-  background-color: #AFDB1F;
+ul#left_nav li.active a:hover {
+	background-color: #AFDB1F;
 }
-div#left_nav div.portlet.active ul,
-div#left_nav div.portlet.active ul li a,
-div#left_nav div.portlet.active ul li a:hover {
-  background-color: #EBF6C7;
+ul#left_nav li.active ul,
+ul#left_nav li.active ul li a,
+ul#left_nav li.active ul li a:hover {
+	background-color: #EBF6C7;
 }
 #globalsearch {
   width: 220px;
@@ -757,17 +760,17 @@ a.closed {
 }
 /* tab-bugs */
 #mainarea.tab-bugs div.x {
-  background-image: url(mainarea_tab-bugs_top.gif);
+  background-image: url(mainarea_tab3_top.gif);
 }
 #mainarea.tab-bugs div.y {
-  background-image: url(mainarea_tab-bugs_topleft.gif);
+  background-image: url(mainarea_tab3_topleft.gif);
 }
 #mainarea.tab-bugs div.z,
 #mainarea.tab-bugs ul#applicationchooser {
-  background-image: url(mainarea_tab-bugs_topright.gif);
+  background-image: url(mainarea_tab3_topright.gif);
 }
 #mainarea.tab-bugs ul#applicationchooser li a {
-  background-image: url(appchoose_tab-bugs_a.gif);
+  background-image: url(appchoose_tab3_a.gif);
 }
 #mainarea.tab-bugs ul#applicationchooser li.tab-bugs a {
   background-position: -200px 0px !important;

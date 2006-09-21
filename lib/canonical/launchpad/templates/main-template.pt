@@ -146,7 +146,7 @@
                       </tal:notifications>
                       <metal:block define-slot="main" />
                     </div>
-                    <div id="left_nav">
+                    <ul id="left_nav">
                       <tal:notlogin condition="python: '+login' not in request.getURL()">
                         <h2>Actions</h2>
                         <tal:menu
@@ -157,7 +157,7 @@
                       <metal:portlets define-slot="portlets" />
                       <metal:portlets define-slot="portlets_two" />
                       <div metal:define-slot="portlets_one" />
-                    </div>
+                    </ul>
                   </div>
 	              </div>
 	            </div>
