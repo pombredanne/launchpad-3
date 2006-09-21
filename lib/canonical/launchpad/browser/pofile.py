@@ -401,7 +401,11 @@ This only needs to be done once per language. Thanks for helping Rosetta.
                       ]
         if len(dispatch_to) != 1:
             for key in self.form.keys():
-                if key.startswith('msgset_') and key.endswith('_copy'):
+                # The copy button is using an image, and it produces a
+                # submission of $name.x and $name.y with the coordinates where
+                # the user clicked, we only need to check for $name.x to know
+                # if the user clicked over that button.
+                if key.startswith('msgset_') and key.endswith('_copy.x'):
                     # We got a copy request, ignore it here.
                     return
             raise UnexpectedFormData(

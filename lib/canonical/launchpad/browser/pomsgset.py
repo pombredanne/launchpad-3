@@ -555,32 +555,29 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             return
 
         for key in self.form.keys():
-
             if (key == 'submit_translations'):
                 self._submit_translations()
                 return
             if (key == 'select_alternate_language'):
                 self._select_alternate_language()
                 return
-            if (key == 'msgset_%d_singular_copy' % self.potmsgset.id or
-                key == 'msgset_%d_plural_copy' % self.potmsgset.id):
+            if (key.startswith('msgset_%d_singular_copy' % self.potmsgset.id) or
+                key.startswith('msgset_%d_plural_copy' % self.potmsgset.id)):
                 self._copy_translation(key)
                 return
 
             for plural in range(self.pofile.language.pluralforms):
-                if key == 'msgset_%d_%s_translation_%d_copy' % (
-                    self.potmsgset.id, self.pofile.language.code, plural):
+                if key.startswith('msgset_%d_%s_translation_%d_copy' % (
+                    self.potmsgset.id, self.pofile.language.code, plural)):
                     self._copy_translation(key)
                     return
 
-                suggestion_copy = 'msgset_%d_%s_suggestion_(\d+)_%d_copy' % (
+                suggestion_copy = 'msgset_%d_%s_suggestion_(\d+)_%d_copy\.(x|y)' % (
                     self.potmsgset.id, self.pofile.language.code, plural)
                 match = re.match(suggestion_copy, key)
                 if match is not None:
                     self._copy_translation(key)
                     return
-
-        raise UnexpectedFormData("There should be one command in the form")
 
     def _extract_form_posted_translations(self):
         """Parse the form submitted to the translation widget looking for
@@ -722,7 +719,7 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         # Now, do the redirect to the new URL
         self._redirect(str(self.request.URL))
 
-    def _copy_translation(button_id):
+    def _copy_translation(self, button_id):
         """"""
         if 'singular' in button_id:
             match = re.match(
