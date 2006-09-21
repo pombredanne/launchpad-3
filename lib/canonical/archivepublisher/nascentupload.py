@@ -37,9 +37,9 @@ from canonical.archivepublisher.utils import (
 from canonical.librarian.utils import copy_and_close, filechunks
 
 from canonical.lp.dbschema import (
-    SourcePackageUrgency, PackagePublishingPriority,
-    DistroReleaseQueueCustomFormat, BinaryPackageFormat,
-    BuildStatus, DistroReleaseQueueStatus, PackagePublishingPocket)
+    SourcePackageUrgency, PackagePublishingPriority, PersonCreationRationale,
+    DistroReleaseQueueCustomFormat, BinaryPackageFormat, BuildStatus,
+    DistroReleaseQueueStatus, PackagePublishingPocket)
 
 from canonical.launchpad.interfaces import (
     IGPGHandler, GPGVerificationError, IGPGKeySet, IPersonSet,
@@ -651,7 +651,11 @@ class NascentUpload:
             raise UploadError(str(e))
 
         if self.policy.create_people:
-            person = getUtility(IPersonSet).ensurePerson(email, name)
+            package = self.changes['source']
+            person = getUtility(IPersonSet).ensurePerson(
+                email, name, PersonCreationRationale.SOURCEPACKAGEIMPORT,
+                comment=('when the %s package was imported into %s'
+                         % (package, self.distrorelease.displayname)))
         else:
             person = getUtility(IPersonSet).getByEmail(email)
 

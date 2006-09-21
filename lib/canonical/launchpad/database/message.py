@@ -23,6 +23,7 @@ from canonical.launchpad.interfaces import (
     IMessage, IMessageSet, IMessageChunk, IPersonSet, ILibraryFileAliasSet, 
     UnknownSender, InvalidEmailMessage, NotFoundError)
 
+from canonical.lp.dbschema import PersonCreationRationale
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol

@@ -30,8 +30,9 @@ from canonical.database.constants import nowUTC
 from canonical.archivepublisher.diskpool import Poolifier
 from canonical.archivepublisher.tagfiles import parse_tagfile
 
-from canonical.lp.dbschema import (PackagePublishingStatus, BuildStatus,
-    SourcePackageFormat)
+from canonical.lp.dbschema import (
+    PackagePublishingStatus, BuildStatus, SourcePackageFormat,
+    PersonCreationRationale)
 
 from canonical.launchpad.scripts import log
 from canonical.launchpad.scripts.gina.library import (getLibraryAlias,
@@ -932,7 +933,6 @@ def ensure_person(displayname, emailaddress, rationale, comment=None):
     person = getUtility(IPersonSet).getByEmail(emailaddress)
     if person is None:
         person, email = getUtility(IPersonSet).createPersonAndEmail(
-            emailaddress, displayname=displayname, rationale,
-            comment=comment)
+            emailaddress, rationale, comment=comment, displayname=displayname)
     return person
 

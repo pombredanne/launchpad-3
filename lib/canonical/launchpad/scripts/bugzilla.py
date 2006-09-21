@@ -36,7 +36,8 @@ from canonical.launchpad.interfaces import (
     CreateBugParams)
 from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import (
-    BugTaskImportance, BugTaskStatus, BugAttachmentType)
+    BugTaskImportance, BugTaskStatus, BugAttachmentType,
+    PersonCreationRationale)
 
 logger = logging.getLogger('canonical.launchpad.scripts.bugzilla')
 
