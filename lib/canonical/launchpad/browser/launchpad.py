@@ -254,7 +254,7 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
     usedfor = ILaunchpadRoot
 
     enable_only = ['overview', 'bugs', 'support', 'specifications',
-                   'translations', 'branches', 'calendar']
+                   'translations', 'branches']
 
     def overview(self):
         target = ''
@@ -279,7 +279,7 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
 
     def specifications(self):
         target = ''
-        text = 'Specifications'
+        text = 'Features'
         summary = 'Launchpad feature specification tracker.'
         return Link(target, text, summary)
 
@@ -291,7 +291,7 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
 
     def branches(self):
         target = 'bazaar'
-        text = 'Branches'
+        text = 'Code'
         summary = 'The Code Bazaar'
         return Link(target, text, summary)
 
