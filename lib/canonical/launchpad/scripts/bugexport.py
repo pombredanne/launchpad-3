@@ -26,6 +26,8 @@ def serialise_bugtask(bugtask):
     bug_node = ET.Element('bug', id=str(bug.id))
     bug_node.text = bug_node.tail = '\n'
 
+    if bug.duplicateof is not None:
+        addnode(bug_node, 'duplicateof', None, bug=str(bug.duplicateof.id))
     addnode(bug_node, 'datecreated',
             bug.datecreated.strftime('%Y-%m-%dT%H:%M:%SZ'))
     if bug.name is not None:
@@ -33,8 +35,6 @@ def serialise_bugtask(bugtask):
     addnode(bug_node, 'title', bug.title)
     addnode(bug_node, 'description', bug.description)
     addperson(bug_node, 'reporter', bug.owner)
-    if bug.duplicateof is not None:
-        addnode(bug_node, 'duplicateof', None, bug=str(bug.duplicateof.id))
 
     # Information from bug task:
     addnode(bug_node, 'status', bugtask.status.name)
