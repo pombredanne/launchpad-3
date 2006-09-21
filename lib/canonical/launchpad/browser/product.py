@@ -247,6 +247,7 @@ class ProductBugsMenu(ApplicationMenu):
         text = 'Change Security Contact'
         return Link('+securitycontact', text, icon='edit')
 
+
 class ProductBranchesMenu(ApplicationMenu):
 
     usedfor = IProduct

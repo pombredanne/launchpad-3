@@ -86,6 +86,7 @@ def render_bugtask_status(bugtask):
 
     assignee = bugtask.assignee
     status = bugtask.status
+    status_title = status.title.capitalize()
 
     if assignee:
         assignee_html = (
@@ -96,11 +97,11 @@ def render_bugtask_status(bugtask):
 
         if status in (dbschema.BugTaskStatus.REJECTED,
                       dbschema.BugTaskStatus.FIXCOMMITTED):
-            return '%s by %s' % (status.title.lower(), assignee_html)
+            return '%s by %s' % (status_title, assignee_html)
         else:
-            return '%s, assigned to %s' % (status.title.lower(), assignee_html)
+            return '%s, assigned to %s' % (status_title, assignee_html)
     else:
-        return status.title.capitalize() + ' (unassigned)'
+        return status_title + ' (unassigned)'
 
 
 def get_comments_for_bugtask(bugtask, truncate=False):
