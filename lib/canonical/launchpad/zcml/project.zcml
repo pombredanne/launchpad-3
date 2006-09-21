@@ -133,21 +133,6 @@
     </browser:pages>
 
     <browser:addform
-        name="+newbugtracker"
-        permission="launchpad.AnyPerson"
-        label="Register an external bug tracker"
-        class="canonical.launchpad.browser.BugTrackerAddView"
-        facet="bugs"
-        for="canonical.launchpad.interfaces.IProject"
-        schema="canonical.launchpad.interfaces.IBugTracker"
-        fields="name bugtrackertype title summary baseurl contactdetails"
-        keyword_arguments="name bugtrackertype title summary baseurl
-                           contactdetails"
-        template="../templates/bugtrackers-add.pt"
-        lp:url="/projects/$Project.name/+newbugtracker"
-        />
-
-    <browser:addform
         name="+new"
         for="canonical.launchpad.interfaces.IProjectSet"
         schema="canonical.launchpad.interfaces.IProject"
@@ -170,18 +155,14 @@
            displayWidth="30" />
     </browser:addform>
 
-    <browser:editform
+    <browser:page
         name="+edit"
         for="canonical.launchpad.interfaces.IProject"
-        schema="canonical.launchpad.interfaces.IProject"
-        fields="name displayname title summary description homepageurl
-                sourceforgeproject freshmeatproject wikiurl"
         class="canonical.launchpad.browser.ProjectEditView"
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/project-edit.pt"
-        lp:url="/projects/$Project.name/+edit">
-    </browser:editform>
+        lp:url="/projects/$Project.name/+edit" />
 
     <browser:editform
         name="+review"
@@ -339,21 +320,5 @@
             template="../templates/bazaar-sync-review.pt"
             lp:url="/projects/+syncreview" />
     </browser:pages>
-
-    <browser:pages for="canonical.launchpad.interfaces.IProjectSet"
-        permission="zope.Public"
-        facet="overview"
-        class="canonical.launchpad.browser.ProjectSetView">
-        <browser:page name="+request"
-            template="../templates/projects-request.pt"
-            lp:url="Rosetta/projects/+request" />
-    </browser:pages>
-
-    <securedutility
-        class="canonical.launchpad.database.ProjectBugTrackerSet"
-        provides="canonical.launchpad.interfaces.IProjectBugTrackerSet">
-        <allow interface="canonical.launchpad.interfaces.IProjectBugTrackerSet"
-            />
-    </securedutility>
 
 </configure>

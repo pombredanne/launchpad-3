@@ -22,7 +22,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.validators.version import sane_version
 from canonical.launchpad.scripts.productreleasefinder.hose import Hose
 from canonical.launchpad.scripts.productreleasefinder.filter import (
-    Cache, FilterPattern)
+    FilterPattern)
 
 
 class ProductReleaseFinder:
@@ -30,14 +30,11 @@ class ProductReleaseFinder:
     def __init__(self, ztm, log):
         self.ztm = ztm
         self.log = log
-        self.cache = Cache(config.productreleasefinder.cache_path,
-                           log_parent=log)
 
     def findReleases(self):
         """Scan for new releases in all products."""
         for product_name, filters in self.getFilters():
             self.handleProduct(product_name, filters)
-        self.cache.save()
 
     def getFilters(self):
         """Build the list of products and filters.
@@ -82,11 +79,13 @@ class ProductReleaseFinder:
     def handleProduct(self, product_name, filters):
         """Scan for tarballs and create ProductReleases for the given product.
         """
-        hose = Hose(filters, self.cache)
+        hose = Hose(filters, log_parent=self.log)
         for series_name, url in hose:
             if series_name is not None:
                 try:
                     self.handleRelease(product_name, series_name, url)
+                except (KeyboardInterrupt, SystemExit):
+                    raise
                 except:
                     self.log.exception("Could not successfully process "
                                        "URL %s for %s/%s",
@@ -117,7 +116,7 @@ class ProductReleaseFinder:
     def addReleaseTarball(self, product_name, series_name, release_name,
                           filename, size, file, content_type):
         """Create a ProductRelease (if needed), and attach tarball"""
-        # get the series
+        # Get the series.
         self.ztm.begin()
         try:
             product = getUtility(IProductSet).getByName(product_name)
@@ -131,7 +130,7 @@ class ProductReleaseFinder:
                 self.log.info("Created new release %s for %s/%s",
                               release_name, product_name, series_name)
 
-            # if we already have a code tarball, stop here
+            # If we already have a code tarball, stop here.
             for fileinfo in release.files:
                 if fileinfo.filetype == UpstreamFileType.CODETARBALL:
                     self.log.debug("%s/%s/%s already has a code tarball",
@@ -141,7 +140,7 @@ class ProductReleaseFinder:
 
             alias = getUtility(ILibraryFileAliasSet).create(
                 filename, size, file, content_type)
-            release.addFileAlias(alias.id)
+            release.addFileAlias(alias)
 
             self.ztm.commit()
         except:

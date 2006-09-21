@@ -188,16 +188,18 @@ class TestMirrorMethods(BzrManagerTestCase):
         # Setup a bzrworking with some history
         self.setUpOneCommit()
         # The test ProductSeries must not have a branch yet, so we can check
-        # that mirrorBranch sets the ProductSeries.branch.
-        assert self.series_helper.getSeries().branch is None
-        # Call mirrorBranch to set the series.branch and create the mirror
+        # that mirrorBranch sets the ProductSeries.import_branch.
+        assert self.series_helper.getSeries().import_branch is None
+        # Call mirrorBranch to set the series.import_branch and create
+        # the mirror
         self.bzr_manager.silent = True
         self.bzr_manager.mirrorBranch(self.sandbox.path)
-        # mirrorBranch sets the series.branch in a subprocess, we need to
-        # rollback at this point to see this change in the database
+        # mirrorBranch sets the series.import_branch in a subprocess,
+        # we need to rollback at this point to see this change in the
+        # database
         rollback()
-        # Check that mirrorBranch has set the series.branch.
-        db_branch = self.series_helper.getSeries().branch
+        # Check that mirrorBranch has set the series.import_branch.
+        db_branch = self.series_helper.getSeries().import_branch
         self.assertNotEqual(db_branch, None)
         # Use the id of the branch to locate the mirror, and check that it
         # contains some history.
