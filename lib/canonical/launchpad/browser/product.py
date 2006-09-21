@@ -53,9 +53,9 @@ from canonical.launchpad.browser.productseries import get_series_branch_error
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
-    enabled_with_permission, GetitemNavigation, LaunchpadEditFormView,
-    LaunchpadFormView, Link, Navigation, StandardLaunchpadFacets,
-    stepthrough, structured)
+    enabled_with_permission, GetitemNavigation, LaunchpadView,
+    LaunchpadEditFormView, LaunchpadFormView, Link, Navigation,
+    StandardLaunchpadFacets, stepthrough, structured)
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.widgets.product import ProductBugTrackerWidget
 
@@ -592,13 +592,11 @@ class ProductRdfView(object):
         return encodeddata
 
 
-class ProductSetView:
+class ProductSetView(LaunchpadView):
 
     __used_for__ = IProductSet
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
+    def initialize(self):
         form = self.request.form
         self.soyuz = form.get('soyuz')
         self.rosetta = form.get('rosetta')
@@ -623,9 +621,11 @@ class ProductSetView:
             try:
                 product = self.context[self.text]
             except NotFoundError:
-                product = None
-            if product is not None:
-                self.request.response.redirect(canonical_url(product))
+                return
+            url = canonical_url(product)
+            if form.get('malone'):
+                url = url + "/+bugs"
+            self.request.response.redirect(url)
 
     def searchresults(self):
         """Use searchtext to find the list of Products that match
