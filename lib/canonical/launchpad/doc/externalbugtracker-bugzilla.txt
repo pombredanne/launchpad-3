@@ -1,9 +1,15 @@
-External Systems
-================
+ExternalBugTracker: Bugzilla
+============================
 
 An ExternalBugtracker is used to talk to remote bug trackers and update bug
-watches. This document describes how they work. They work differently
-depending on which version of the bugtracker they talk to. If it's an
+watches. This document describes how the Bugzilla implementation of
+ExternalBugTracker works.
+
+Basics
+------
+
+The class that implements EBT is called Bugzilla. It works differently
+depending on which version of Bugzilla it is talking to. If it's an
 unknown version, UnsupportedBugTrackerVersion is raised:
 
     >>> from canonical.launchpad.components.externalbugtracker import Bugzilla
@@ -25,6 +31,9 @@ slightly modified implementation.
     >>> version = external_bugzilla._probe_version()
     >>> version
     u'2.20+'
+
+Status Conversion
+-----------------
 
 It contains a function for converting one of its own status to a Malone
 status. Bugzilla statuses consist of two parts, the status, and the
@@ -69,6 +78,8 @@ UNKNOWN_REMOTE_STATUS maps to Unknown without generating a warning.
     >>> external_bugzilla.convertRemoteStatus(UNKNOWN_REMOTE_STATUS).title
     'Unknown'
 
+Updating Bug Watches
+--------------------
 
 The main use of an ExternalBugtracker is to update bug watches. This is
 done through updateBugWatches(), which expects a list of bug watches to
@@ -210,39 +221,4 @@ bug tracker, an error is logged.
     ...     lambda self, data: '<invalid xml>')
     >>> external_bugzilla.updateBugWatches(gnome_bugzilla.watches)
     ERROR:...:Failed to parse XML description...
-
-checkwatches.py
----------------
-
-This updating and syncing of bug watches is done by a cronscript. We
-can't test it properly, since we don't yet have a mock HTTP server we
-can use for testing, so let's make sure that it doesn't try to contact
-any external servers.
-
-    >>> from canonical.database.sqlbase import cursor
-    >>> from canonical.database.constants import UTC_NOW
-    >>> cur = cursor()
-    >>> cur.execute("UPDATE BugWatch SET lastchecked=%s" % UTC_NOW)
-    >>> import transaction
-    >>> transaction.commit()
-
-    >>> import subprocess
-    >>> process = subprocess.Popen(
-    ...     'cronscripts/checkwatches.py', shell=True,
-    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-    ...     stderr=subprocess.PIPE)
-    >>> (out, err) = process.communicate()
-    >>> out
-    ''
-    >>> process.returncode
-    0
-
-    >>> print err
-    INFO    creating lockfile
-    ERROR   There's no debbugs db at /srv/bugs-mirror.debian.org/
-    INFO    No watches to update on http://bugs.debian.org
-    INFO    No watches to update on http://bugzilla.gnome.org/bugs
-    INFO    No watches to update on https://bugzilla.mozilla.org/
-    INFO    Skipping updating Ubuntu Bugzilla watches.
-    <BLANKLINE>
 
