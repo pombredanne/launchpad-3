@@ -97,6 +97,7 @@ spider -- StuartBishop 20050822
 >>> check("/products/firefox/+rdf")
 >>> check("/products/firefox/1.0/+rdf")
 >>> check("/products/firefox/+bugs")
+>>> check_not_found("/products/firefox/1.0/+bugs")
 >>> check("/products/firefox/+cve")
 
 >>> check_not_found("/products/firefox/+milestone")
