@@ -43,6 +43,12 @@ def serialise_bugtask(bugtask):
         addnode(bug_node, 'milestone', bugtask.milestone.name)
     if bugtask.assignee is not None:
         addperson(bug_node, 'assignee', bugtask.assignee)
+
+    if bug.tags:
+        tags_node = ET.SubElement(bug_node, 'tags')
+        tags_node.text = tags_node.tail = '\n'
+        for tag in bug.tags:
+            addnode(tags_node, 'tag', tag)
     
     subscribers = bug.getDirectSubscribers()
     if subscribers:
@@ -65,6 +71,7 @@ def serialise_bugtask(bugtask):
     for attachment in bug.attachments:
         attachment_node = ET.SubElement(bug_node, 'attachment',
                                         href=attachment.libraryfile.url)
+        attachment_node.text = attachment_node.tail = '\n'
         addnode(attachment_node, 'type', attachment.type.name)
         addnode(attachment_node, 'title', attachment.title)
         addnode(attachment_node, 'mimetype', attachment.libraryfile.mimetype)
@@ -81,10 +88,12 @@ def export_bugtasks(ztm, bugtarget, output):
         BugTaskSearchParams(user=None, omit_dupes=False, orderby='id'))]
     bugtaskset = getUtility(IBugTaskSet)
     output.write('<launchpad-bugs>\n')
-    for taskid in ids:
-        ztm.begin()
+    for count, taskid in enumerate(ids):
         task = bugtaskset.get(taskid)
         tree = ET.ElementTree(serialise_bugtask(task))
         tree.write(output)
-        ztm.abort()
+        # Periodically abort the transaction so that we don't lock
+        # everyone else out.
+        if count % 100:
+            ztm.abort()
     output.write('</launchpad-bugs>\n')
