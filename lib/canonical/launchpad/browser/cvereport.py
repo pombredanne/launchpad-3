@@ -17,7 +17,6 @@ from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.interfaces import (
     IBugTaskSet, ICveSet, BugTaskSearchParams,
     RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES)
-from canonical.launchpad.browser.bugtask import render_bugtask_status
 
 
 class BugTaskCve:
@@ -49,10 +48,6 @@ class CVEReportView(LaunchpadView):
         search_params = BugTaskSearchParams(self.user,
             status=any(*RESOLVED_BUGTASK_STATUSES))
         return self._buildBugTaskCves(search_params)
-
-    def render_bugtask(self, bugtask):
-        """See canonical.launchpad.browser.render_bugtask_status."""
-        return render_bugtask_status(bugtask)
 
     def setContextForParams(self, params):
         """Update the search params for the context for a specific view."""
