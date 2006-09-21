@@ -35,8 +35,7 @@ from canonical.lp.dbschema import (
     PersonCreationRationale)
 
 from canonical.launchpad.scripts import log
-from canonical.launchpad.scripts.gina.library import (getLibraryAlias,
-                                                      checkLibraryForFile)
+from canonical.launchpad.scripts.gina.library import getLibraryAlias
 from canonical.launchpad.scripts.gina.packages import (SourcePackageData,
     urgencymap, prioritymap, get_dsc_path, licence_cache, read_dsc,
     PoolFileNotFound)

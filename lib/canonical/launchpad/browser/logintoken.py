@@ -306,7 +306,6 @@ class ValidateEmailView(BaseLoginTokenView, LaunchpadView):
 
     def validateSignOnlyGpg(self):
         """Validate a gpg key."""
-        person_url = canonical_url(self.context.requester)
         gpghandler = getUtility(IGPGHandler)
 
         # retrieve respective key info

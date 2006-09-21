@@ -759,8 +759,6 @@ signedcodeofconduct_activate = ContextDisplayName('Activating %s')
 
 signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
 
-sourcepackage_index = ContextTitle('%s')
-
 sourcepackage_bugs = ContextDisplayName('Bugs in %s')
 
 sourcepackage_builds = ContextTitle('Builds for %s')
