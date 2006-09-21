@@ -17,7 +17,6 @@ from zope.interface import implements
 from sqlobject import (
     IntervalCol, ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
 
-from canonical.database.sqlbase import flush_database_updates
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -76,11 +75,6 @@ class ProductSeries(SQLBase, BugTargetBase):
     releaseroot = StringCol(default=None)
     releasefileglob = StringCol(default=None)
     releaseverstyle = StringCol(default=None)
-    # these fields tell us where to publish upstream as bazaar branch
-    targetarcharchive = StringCol(default=None)
-    targetarchcategory = StringCol(default=None)
-    targetarchbranch = StringCol(default=None)
-    targetarchversion = StringCol(default=None)
     # key dates on the road to import happiness
     dateautotested = UtcDateTimeCol(default=None)
     datestarted = UtcDateTimeCol(default=None)

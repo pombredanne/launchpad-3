@@ -267,6 +267,18 @@ class IShippingRequest(Interface):
     def isCancelled():
         """Return True if this request's status is CANCELLED."""
 
+    def canBeApproved():
+        """Can this request be approved?
+        
+        Only PENDING, PENDINGSPECIAL and DENIED requests can be denied.
+        """
+
+    def canBeDenied():
+        """Can this request be denied?
+        
+        Only APPROVED, PENDING and PENDINGSPECIAL requests can be denied.
+        """
+
     def markAsPendingSpecial():
         """Mark this request as pending special consideration."""
 
@@ -529,6 +541,12 @@ class IShippingRun(Interface):
         required=False, readonly=False)
 
     requests = Attribute(_('All requests that are part of this shipping run.'))
+
+    requests_count = Int(
+        title=_('A cache of the number of requests'), readonly=False,
+        description=_('This is necessary to avoid a COUNT(*) query which is '
+                      'very expensive in this case, as we have lots of '
+                      'requests on a ShippingRun'))
 
     def exportToCSVFile():
         """Generate a CSV file with all requests that are part of this

@@ -49,14 +49,14 @@ from canonical.launchpad.webapp import (
     canonical_url, GetitemNavigation, Navigation, stepthrough,
     redirection, LaunchpadView)
 from canonical.launchpad.interfaces import (
-    BugDistroReleaseTargetDetails, BugTaskSearchParams, IBugAttachmentSet,
-    IBugExternalRefSet, IBugSet, IBugTask, IBugTaskSet, IBugTaskSearch,
-    IBugWatchSet, IDistribution, IDistributionSourcePackage,
-    IDistroBugTask, IDistroRelease, IDistroReleaseBugTask,
-    IDistroReleaseSet, ILaunchBag, INullBugTask, IPerson,
+    BugDistroReleaseTargetDetails, BugTaskSearchParams,
+    IBugAttachmentSet, IBugExternalRefSet, IBugSet, IBugTask,
+    IBugTaskSet, IBugTaskSearch, IBugWatchSet, IDistribution,
+    IDistributionSourcePackage, IDistroBugTask, IDistroRelease,
+    IDistroReleaseBugTask, ILaunchBag, INullBugTask, IPerson,
     IPersonBugTaskSearch, IProduct, IProject, ISourcePackage,
-    ISourcePackageNameSet, IUpstreamBugTask, NotFoundError,
-    RESOLVED_BUGTASK_STATUSES, UnexpectedFormData,
+    IUpstreamBugTask, NotFoundError, RESOLVED_BUGTASK_STATUSES,
+    UnexpectedFormData, ISourcePackageNameSet, IDistroReleaseSet,
     UNRESOLVED_BUGTASK_STATUSES, valid_distrotask, valid_upstreamtask)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
@@ -73,8 +73,62 @@ from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
 
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.bugtask import (
-    AssigneeDisplayWidget, BugTaskBugWatchWidget, DBItemDisplayWidget,
+    AssigneeDisplayWidget, BugTaskBugWatchWidget,
+    BugTaskSourcePackageNameWidget, DBItemDisplayWidget,
     NewLineToSpacesWidget, LaunchpadRadioWidget)
+
+
+# XXX: I don't know where to place these. It used to be used in the bug
+# listing view, but right now it's only used in a test
+# (doc/displaying-bugs-and-tasks.txt) and in the CVE reports
+# (browser/cvereport.py), and it used to live in the database code, but
+# I've moved it here instead. It may be a candidate for removal..
+#   -- kiko, 2006-09-21
+def render_bugtask_status(bugtask):
+    """Return an HTML representation of the bugtask status and assignee."""
+
+    if INullBugTask.providedBy(bugtask):
+        return u"Not reported in %s" % bugtask.targetname
+
+    assignee = bugtask.assignee
+    status = bugtask.status
+    status_title = status.title.capitalize()
+
+    if not assignee:
+        return status_title + ' (unassigned)'
+
+    assignee_html = (
+        '<img alt="" src="/@@/user" /> '
+        '<a href="/people/%s/+assignedbugs">%s</a>' % (
+            urllib.quote_plus(assignee.name),
+            cgi.escape(assignee.browsername)))
+
+    if status in (dbschema.BugTaskStatus.REJECTED,
+                  dbschema.BugTaskStatus.FIXCOMMITTED):
+        return '%s by %s' % (status_title, assignee_html)
+    else:
+        return '%s, assigned to %s' % (status_title, assignee_html)
+
+
+def render_bugtask_status_elsewhere(bugtask):
+    """Return human-readable representation of the status of this bug
+    in other contexts for which it's reported.
+    """
+    related_tasks = bugtask.related_tasks
+    if not related_tasks:
+        return "not filed elsewhere"
+
+    fixes_found = len(
+        [task for task in related_tasks
+         if task.status in (BugTaskStatus.FIXCOMMITTED,
+                            BugTaskStatus.FIXRELEASED)])
+    if fixes_found:
+        return "fixed in %d of %d places" % (
+            fixes_found, len(bugtask.bug.bugtasks))
+    elif len(related_tasks) == 1:
+        return "filed in 1 other place"
+    else:
+        return "filed in %d other places" % len(related_tasks)
 
 
 def get_comments_for_bugtask(bugtask, truncate=False):
@@ -470,8 +524,7 @@ class BugTaskView(LaunchpadView):
             # comment, which were probably produced by
             # double-submissions or user errors, and which don't add
             # anything useful to the bug itself.
-            if (previous_comment and 
-                previous_comment.text_contents == comment.text_contents):
+            if previous_comment and previous_comment.isIdenticalTo(comment):
                 continue
             visible_comments.append(comment)
             previous_comment = comment
@@ -648,6 +701,9 @@ class BugTaskEditView(GeneralFormView):
                 self.importance_widget = CustomWidgetFactory(
                     DBItemDisplayWidget)
 
+        if 'sourcepackagename' in editable_field_names:
+            self.sourcepackagename_widget = CustomWidgetFactory(
+                BugTaskSourcePackageNameWidget)
         setUpWidgets(
             self, self.schema, IInputWidget, names=editable_field_names,
             initial=self.initial_values)
@@ -898,6 +954,20 @@ class BugTaskEditView(GeneralFormView):
                     object=bugtask,
                     object_before_modification=bugtask_before_modification,
                     edited_fields=field_names))
+
+        if bugtask.sourcepackagename is not None:
+            real_package_name = bugtask.sourcepackagename.name
+            entered_package_name = self.request.form.get(
+                self.sourcepackagename_widget.name)
+            if real_package_name != entered_package_name:
+                # The user entered a binary package name which got
+                # mapped to a source package.
+                self.request.response.addNotification(
+                    "'%(entered_package)s' is a binary package, this bug has"
+                    " been assigned to its source package '%(real_package)s'"
+                    " instead.",
+                    entered_package=entered_package_name,
+                    real_package=real_package_name)
 
         if (bugtask_before_modification.sourcepackagename !=
             bugtask.sourcepackagename):
