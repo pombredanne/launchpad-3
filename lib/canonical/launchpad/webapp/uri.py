@@ -3,9 +3,14 @@
 """Functions for working with generic syntax URIs."""
 
 __metaclass__ = type
-__all__ = ['Uri', 'InvalidUriError']
+__all__ = [
+    'Uri',
+    'InvalidUriError',
+    'find_uris_in_text',
+    'possible_uri_re']
 
 import re
+import socket
 
 
 # Regular expressions adapted from the ABNF in the RFC
@@ -175,13 +180,29 @@ class Uri:
             self.query = query
             self.fragment = fragment
 
-        # Basic normalisation:
+        self._normalise()
+
+    def _normalise(self):
         self.scheme = self.scheme.lower()
+
         if self.userinfo is not None:
             self.userinfo = normalise_unreserved(self.userinfo)
         if self.host is not None:
             self.host = normalise_unreserved(self.host.lower())
+        if self.port == '':
+            self.port = None
+        elif self.port is not None:
+            try:
+                defaultport = socket.getservbyname(self.scheme)
+            except socket.error:
+                defaultport = None
+            if self.port == str(defaultport):
+                self.port = None
+
+        if self.host is not None and self.path == '':
+            self.path = '/'
         self.path = normalise_unreserved(remove_dot_segments(self.path))
+
         if self.query is not None:
             self.query = normalise_unreserved(self.query)
         if self.fragment is not None:
@@ -218,6 +239,23 @@ class Uri:
 
     def __repr__(self):
         return '%s(%r)' % (self.__class__.__name__, str(self))
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return (self.scheme == other.scheme and
+                    self.authority == other.authority and
+                    self.path == other.path and
+                    self.query == other.query and
+                    self.fragment == other.fragment)
+        else:
+            return NotImplemented
+
+    def __ne__(self, other):
+        equal = self.__eq__(other)
+        if equal == NotImplemented:
+            return NotImplemented
+        else:
+            return not equal
 
     def replace(self, **parts):
         """Replace one or more parts of the URI, returning the result."""
@@ -308,3 +346,114 @@ class Uri:
         if not basepath.endswith('/'):
             basepath += '/'
         return other.path.startswith(basepath)
+
+
+# Regular expression for finding URIs in a body of text:
+#
+# From RFC 3986 ABNF for URIs:
+#
+#   URI           = scheme ":" hier-part [ "?" query ] [ "#" fragment ]
+#   hier-part     = "//" authority path-abempty
+#                 / path-absolute
+#                 / path-rootless
+#                 / path-empty
+#
+#   authority     = [ userinfo "@" ] host [ ":" port ]
+#   userinfo      = *( unreserved / pct-encoded / sub-delims / ":" )
+#   host          = IP-literal / IPv4address / reg-name
+#   reg-name      = *( unreserved / pct-encoded / sub-delims )
+#   port          = *DIGIT
+#
+#   path-abempty  = *( "/" segment )
+#   path-absolute = "/" [ segment-nz *( "/" segment ) ]
+#   path-rootless = segment-nz *( "/" segment )
+#   path-empty    = 0<pchar>
+#
+#   segment       = *pchar
+#   segment-nz    = 1*pchar
+#   pchar         = unreserved / pct-encoded / sub-delims / ":" / "@"
+#
+#   query         = *( pchar / "/" / "?" )
+#   fragment      = *( pchar / "/" / "?" )
+#
+#   unreserved    = ALPHA / DIGIT / "-" / "." / "_" / "~"
+#   pct-encoded   = "%" HEXDIG HEXDIG
+#   sub-delims    = "!" / "$" / "&" / "'" / "(" / ")"
+#                 / "*" / "+" / "," / ";" / "="
+#
+# We only match a set of known scheme names.  We don't handle
+# IP-literal either.
+#
+# We will simplify "unreserved / pct-encoded / sub-delims" as the
+# following regular expression:
+#   [-a-zA-Z0-9._~%!$&'()*+,;=]
+#
+# We also require that the path-rootless form not begin with a
+# colon to avoid matching strings like "http::foo" (to avoid bug
+# #40255).
+#
+# The path-empty pattern is not matched either, due to false
+# positives.
+#
+# Some allowed URI punctuation characters will be trimmed if they
+# appear at the end of the URI since they may be incidental in the
+# flow of the text.
+
+# Match urls or bugs or oopses.
+possible_uri_re = r'''
+\b
+(?:about|gopher|http|https|sftp|news|ftp|mailto|file|irc|jabber|xmpp)
+:
+(?:
+  (?:
+    # "//" authority path-abempty
+    //
+    (?: # userinfo
+      [%(unreserved)s:]*
+      @
+    )?
+    (?: # host
+      \d+\.\d+\.\d+\.\d+ |
+      [%(unreserved)s]*
+    )
+    (?: # port
+      : \d*
+    )?
+    (?: / [%(unreserved)s:@]* )*
+  ) | (?:
+    # path-absolute
+    /
+    (?: [%(unreserved)s:@]+
+        (?: / [%(unreserved)s:@]* )* )?
+  ) | (?:
+    # path-rootless
+    [%(unreserved)s@]
+    [%(unreserved)s:@]*
+    (?: / [%(unreserved)s:@]* )*
+  )
+)
+(?: # query
+  \?
+  [%(unreserved)s:@/\?]*
+)?
+(?: # fragment
+  \#
+  [%(unreserved)s:@/\?]*
+)?          
+''' % {'unreserved': "-a-zA-Z0-9._~%!$&'()*+,;="}
+
+possible_uri_pat = re.compile(possible_uri_re, re.IGNORECASE | re.VERBOSE)
+uri_trailers_pat = re.compile(r'((?:[,\.\?:\);]|&gt;)+)$')
+
+def find_uris_in_text(text):
+    """Scan a block of text for URIs, and yield the ones found."""
+    for match in possible_uri_pat.finditer(text):
+        uri_string = match.group()
+        # remove characters from end of URI that are not likely to be
+        # part of the URI.
+        uri_string = uri_trailers_pat.sub('', uri_string)
+        try:
+            uri = Uri(uri_string)
+        except InvalidUriError:
+            continue
+        yield uri
