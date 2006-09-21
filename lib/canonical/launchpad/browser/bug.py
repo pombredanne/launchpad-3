@@ -428,7 +428,7 @@ class BugAlsoReportInView(LaunchpadFormView):
                 " %s" % (cgi.escape(self.getBugTargetName()), confirm_button))
             self._confirm_new_task = True
 
-    @action('Continue', name='request_fix')
+    @action(u'Continue', name='request_fix')
     def continue_action(self, action, data):
         """Create new bug task.
 
