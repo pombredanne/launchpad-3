@@ -97,6 +97,25 @@ class IProductSeries(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
         'ProductSeries, the Product and if it exists, the relevant '
         'Project.')
 
+    # XXX: 2006-09-05 jamesh
+    # While it would be more sensible to call this ProductSeries.branch,
+    # I've used this name to make sure code that works with the
+    # vcs-imports branch (which used to be called branch) doesn't use
+    # this attribute by accident.
+    
+    series_branch = Choice(
+        title=_('Series Branch'),
+        vocabulary='Branch',
+        readonly=True,
+        description=_("The Bazaar branch for this series."))
+        
+    user_branch = Choice(
+        title=_('Branch'),
+        vocabulary='Branch',
+        required=False,
+        description=_("The Bazaar branch for this series.  Leave blank "
+                      "if this series is not maintained in Bazaar."))
+
     def getRelease(version):
         """Get the release in this series that has the specified version.
         Return None is there is no such release.
@@ -145,14 +164,15 @@ class IProductSeriesSet(Interface):
 
 class IProductSeriesSource(Interface):
     # revision control items
-    branch = Object(
-        title=_('Branch'),
-        schema=IBranch,
-        description=_("The Bazaar branch for this series. Note that there "
-        "may be many branches associated with a given series, such as the "
-        "branches of individual tarball releases. This branch is the real "
-        "upstream code, mapped into Bazaar from CVS or SVN if upstream "
-        "does not already use Bazaar."))
+    import_branch = Choice(
+        title=_('Import Branch'),
+        vocabulary='Branch',
+        description=_("The Bazaar branch for this series imported from "
+                      "upstream version control. Note that there may be "
+                      "many branches associated with a given series, such "
+                      "as the branches of individual tarball releases. "
+                      "This branch is the real upstream code, mapped into "
+                      "Bazaar from CVS or SVN."))
     importstatus = Attribute("The bazaar-import status of upstream "
         "revision control for this series. It can be NULL if we do not "
         "have any revision control data for this series, otherwise it "
@@ -188,15 +208,6 @@ class IProductSeriesSource(Interface):
         "'apache-2.0.*.tar.gz'."))
     releaseverstyle = Attribute("The version numbering style for this "
         "product series of releases.")
-    # these fields tell us where to publish upstream as bazaar branch
-    targetarcharchive = Text(title=_("The Arch archive into which we will "
-        "publish this code as a Bazaar branch."))
-    targetarchcategory = Text(title=_("The Arch category name to use for "
-        "this upstream when we publish it as a Bazaar branch."))
-    targetarchbranch = Text(title=_("The Arch branch name for this upstream "
-        "code, used when we publish the code as a Bazaar branch."))
-    targetarchversion = Text(title=_("The Arch version name to use when "
-        "we publish this code as a Bazaar branch."))
     dateautotested = Attribute("The date this upstream passed automatic "
         "testing.")
     datestarted = Attribute("The timestamp when we started the latest "

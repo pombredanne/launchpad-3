@@ -450,16 +450,25 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             # Get hold of an appropriate message set in the PO file,
             # creating it if necessary.
             msgid_text = potmsgset.primemsgid_.msgid
-            try:
-                pomsgset = pofile[msgid_text]
-            except NotFoundError:
+            pomsgset = pofile.getPOMsgSet(msgid_text, only_current=False)
+            if pomsgset is None:
                 pomsgset = pofile.createMessageSetFromText(msgid_text)
             # Store this pomsgset inside the list of messages to process.
             pomsgset_view = getView(pomsgset, "+translate", self.request)
             # We initialize the view so every view process its own stuff.
             pomsgset_view.initialize(from_pofile=True)
-            if pomsgset_view.error is not None:
+            if (pomsgset_view.error is not None and
+                pomsgset_view.context.potmsgset.sequence > 0):
                 # There is an error, we should store this view to render them.
+                # If potmsgset.sequence == 0 means that that message set is
+                # not current anymore. This only happens as part of a race
+                # condition, when someone gets a translation form, later, we
+                # get a new template for that context that disables some
+                # entries in that translation form, after that, the user
+                # submits the form. We accept the translation, but if it has
+                # an error, we cannot render that error so we discard it, that
+                # translation is not being used anyway, so it's not a big
+                # lose.
                 self.potmsgset_with_errors.append(pomsgset_view)
 
         if len(self.potmsgset_with_errors) == 0:

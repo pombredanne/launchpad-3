@@ -73,7 +73,8 @@ from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
 
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.bugtask import (
-    AssigneeDisplayWidget, BugTaskBugWatchWidget, DBItemDisplayWidget,
+    AssigneeDisplayWidget, BugTaskBugWatchWidget,
+    BugTaskSourcePackageNameWidget, DBItemDisplayWidget,
     NewLineToSpacesWidget, LaunchpadRadioWidget)
 
 
@@ -470,8 +471,7 @@ class BugTaskView(LaunchpadView):
             # comment, which were probably produced by
             # double-submissions or user errors, and which don't add
             # anything useful to the bug itself.
-            if (previous_comment and 
-                previous_comment.text_contents == comment.text_contents):
+            if previous_comment and previous_comment.isIdenticalTo(comment):
                 continue
             visible_comments.append(comment)
             previous_comment = comment
@@ -648,6 +648,9 @@ class BugTaskEditView(GeneralFormView):
                 self.importance_widget = CustomWidgetFactory(
                     DBItemDisplayWidget)
 
+        if 'sourcepackagename' in editable_field_names:
+            self.sourcepackagename_widget = CustomWidgetFactory(
+                BugTaskSourcePackageNameWidget)
         setUpWidgets(
             self, self.schema, IInputWidget, names=editable_field_names,
             initial=self.initial_values)
@@ -664,10 +667,10 @@ class BugTaskEditView(GeneralFormView):
             editable_field_names = list(self.fieldNames)
             editable_field_names.remove('bugwatch')
 
-            if not self._userCanEditMilestone():
+            if not self.userCanEditMilestone():
                 editable_field_names.remove("milestone")
 
-            if not self._userCanEditImportance():
+            if not self.userCanEditImportance():
                 editable_field_names.remove("importance")
         else:
             editable_field_names = ['bugwatch']
@@ -681,7 +684,7 @@ class BugTaskEditView(GeneralFormView):
                 editable_field_names += ['sourcepackagename']
             if self.context.bugwatch is None:
                 editable_field_names += ['status', 'assignee']
-                if self._userCanEditImportance():
+                if self.userCanEditImportance():
                     editable_field_names += ["importance"]
 
         return editable_field_names
@@ -691,10 +694,10 @@ class BugTaskEditView(GeneralFormView):
         if self.context.target_uses_malone:
             read_only_field_names = []
 
-            if not self._userCanEditMilestone():
+            if not self.userCanEditMilestone():
                 read_only_field_names.append("milestone")
 
-            if not self._userCanEditImportance():
+            if not self.userCanEditImportance():
                 read_only_field_names.append("importance")
         else:
             editable_field_names = self._getEditableFieldNames()
@@ -704,7 +707,7 @@ class BugTaskEditView(GeneralFormView):
 
         return read_only_field_names
 
-    def _userCanEditMilestone(self):
+    def userCanEditMilestone(self):
         """Can the user edit the Milestone field?
 
         If yes, return True, otherwise return False.
@@ -712,10 +715,13 @@ class BugTaskEditView(GeneralFormView):
         product_or_distro = self._getProductOrDistro()
 
         return (
-            "milestone" in self.fieldNames and
-            helpers.check_permission("launchpad.Edit", product_or_distro))
+            ("milestone" in self.fieldNames) and (
+                (product_or_distro.bugcontact and
+                 self.user and
+                 self.user.inTeam(product_or_distro.bugcontact)) or
+                helpers.check_permission("launchpad.Edit", product_or_distro)))
 
-    def _userCanEditImportance(self):
+    def userCanEditImportance(self):
         """Can the user edit the Importance field?
 
         If yes, return True, otherwise return False.
@@ -895,6 +901,20 @@ class BugTaskEditView(GeneralFormView):
                     object=bugtask,
                     object_before_modification=bugtask_before_modification,
                     edited_fields=field_names))
+
+        if bugtask.sourcepackagename is not None:
+            real_package_name = bugtask.sourcepackagename.name
+            entered_package_name = self.request.form.get(
+                self.sourcepackagename_widget.name)
+            if real_package_name != entered_package_name:
+                # The user entered a binary package name which got
+                # mapped to a source package.
+                self.request.response.addNotification(
+                    "'%(entered_package)s' is a binary package, this bug has"
+                    " been assigned to its source package '%(real_package)s'"
+                    " instead.",
+                    entered_package=entered_package_name,
+                    real_package=real_package_name)
 
         if (bugtask_before_modification.sourcepackagename !=
             bugtask.sourcepackagename):

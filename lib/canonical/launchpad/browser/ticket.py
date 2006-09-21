@@ -123,6 +123,11 @@ class TicketAddView(LaunchpadFormView):
 
     template = search_template
 
+    _MAX_SIMILAR_TICKETS = 10
+
+    # Do not autofocus the title widget
+    initial_focus_widget = None
+
     def setUpWidgets(self):
         # Only setup the widgets that needs validation
         if not self.add_action.submitted():
@@ -154,7 +159,9 @@ class TicketAddView(LaunchpadFormView):
                  self.context, self.request, data=self.initial_values,
                  ignore_request=False)
 
-        self.searchResults = self.context.findSimilarTickets(data['title'])
+        tickets = self.context.findSimilarTickets(data['title'])
+        self.searchResults = tickets[:self._MAX_SIMILAR_TICKETS]
+
         return self.add_template()
 
     def handleAddError(self, action, data, errors):

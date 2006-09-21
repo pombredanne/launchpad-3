@@ -21,7 +21,7 @@
     <metal:extra_info fill-slot="extra_info">
       <div tal:condition="view/searchResults">
         <p i18n:translate="">These other requests seems similar to your
-          support request. You might want to take a look at them.</p>
+          support request. You may want to take a look at them.</p>
 
         <table id="similar-tickets">
           <tbody>

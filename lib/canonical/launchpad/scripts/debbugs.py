@@ -87,9 +87,10 @@ class LogParseFailed(Exception): pass
 class InternalError(Exception): pass
 
 class Database:
-    def __init__(self, root, debbugs_pl):
+    def __init__(self, root, debbugs_pl, subdir='db-h'):
         self.root = root
         self.debbugs_pl = debbugs_pl
+        self.subdir = subdir
 
     class bug_iterator:
         index_record = re.compile(r'^(?P<package>\S+) (?P<bugid>\d+) (?P<date>\d+) (?P<status>\w+) \[(?P<originator>.*)\] (?P<severity>\w+)(?: (?P<tags>.*))?$')
@@ -138,7 +139,8 @@ class Database:
         return True
 
     def load_summary(self, bug):
-        summary = os.path.join(self.root, 'db-h', self._hash(bug), '%d.summary' % bug.id)
+        summary = os.path.join(self.root, self.subdir, self._hash(bug),
+                               '%d.summary' % bug.id)
 
         try:
             fd = open(summary)
@@ -155,7 +157,7 @@ class Database:
         version = message['format-version']
         if version is None:
             raise SummaryParseError, "%s: Missing Format-Version" % summary
-        
+
         if version != '2':
             raise SummaryVersionError, "%s: I don't understand version %s" % (summary, version)
 

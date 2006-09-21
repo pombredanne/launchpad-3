@@ -16,12 +16,14 @@ from canonical.launchpad.interfaces import (
 from canonical.lp.dbschema import PackagePublishingPocket, MirrorStatus
 
 
-class TestDistributionMirrorOverallStatus(LaunchpadFunctionalTestCase):
+class TestDistributionMirror(LaunchpadFunctionalTestCase):
 
     def setUp(self):
         LaunchpadFunctionalTestCase.setUp(self)
         login('test@canonical.com')
         mirrorset = getUtility(IDistributionMirrorSet)
+        self.release_mirror = getUtility(IDistributionMirrorSet).getByName(
+            'releases-mirror')
         self.archive_mirror = getUtility(IDistributionMirrorSet).getByName(
             'archive-mirror')
         self.hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
@@ -37,6 +39,26 @@ class TestDistributionMirrorOverallStatus(LaunchpadFunctionalTestCase):
             archrelease, pocket, component)
         removeSecurityProxy(bin_mirror).status = status
         return bin_mirror
+
+    def test_archive_mirror_without_content_should_be_disabled(self):
+        self.failUnless(self.archive_mirror.shouldDisable())
+
+    def test_archive_mirror_with_any_content_should_not_be_disabled(self):
+        src_mirror1 = self._create_source_mirror(
+            self.hoary, PackagePublishingPocket.RELEASE,
+            self.hoary.components[0], MirrorStatus.UP)
+        flush_database_updates()
+        self.failIf(self.archive_mirror.shouldDisable())
+
+    def test_release_mirror_not_missing_content_should_not_be_disabled(self):
+        expected_file_count = 1
+        mirror = self.release_mirror.ensureMirrorCDImageRelease(
+            self.hoary, flavour='ubuntu')
+        self.failIf(self.release_mirror.shouldDisable(expected_file_count))
+
+    def test_release_mirror_missing_content_should_be_disabled(self):
+        expected_file_count = 1
+        self.failUnless(self.release_mirror.shouldDisable(expected_file_count))
 
     def test_archive_mirror_without_content_status(self):
         self.failIf(self.archive_mirror.source_releases or
