@@ -51,7 +51,7 @@ class ProductSeriesSet:
             raise NotFoundError(productseriesid)
 
 
-class ProductSeries(SQLBase):
+class ProductSeries(SQLBase, BugTargetBase):
     """A series of product releases."""
     implements(IProductSeries, IProductSeriesSource, IProductSeriesSourceAdmin)
     _table = 'ProductSeries'
@@ -102,6 +102,11 @@ class ProductSeries(SQLBase):
     @property
     def displayname(self):
         return self.name
+
+    @property
+    def bugtargetname(self):
+        """See IBugTarget."""
+        return "%s %s (upstream)" % (self.product.name, self.name)
 
     @property
     def drivers(self):
@@ -292,6 +297,24 @@ class ProductSeries(SQLBase):
         # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity)
         return results.prejoin(['assignee', 'approver', 'drafter'])
+
+    def searchTasks(self, search_params):
+        """See IBugTarget."""
+        search_params.setProductSeries(self)
+        return BugTaskSet().search(search_params)
+
+    def getUsedBugTags(self):
+        """See IBugTarget."""
+        return get_bug_tags("BugTask.productseries = %s" % sqlvalues(self))
+
+    def getUsedBugTagsWithOpenCounts(self, user):
+        """See IBugTarget."""
+        return get_bug_tags_open_count(
+            "BugTask.productseries = %s" % sqlvalues(self), user)
+
+    def createBug(self, bug_params):
+        """See IBugTarget."""
+        raise NotImplementedError('Cannot file a bug against a productseries')
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""

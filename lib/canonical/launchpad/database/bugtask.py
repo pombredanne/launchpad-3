@@ -467,6 +467,7 @@ class BugTaskSet:
             'product': params.product,
             'distribution': params.distribution,
             'distrorelease': params.distrorelease,
+            'productseries': params.productseries,
             'milestone': params.milestone,
             'assignee': params.assignee,
             'sourcepackagename': params.sourcepackagename,
