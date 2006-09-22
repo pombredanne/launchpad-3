@@ -17,6 +17,7 @@ __all__ = [
     'BinaryPackageNameVocabulary',
     'BountyVocabulary',
     'BranchVocabulary',
+    'BugNominatableReleasesVocabulary',
     'BugVocabulary',
     'BugTrackerVocabulary',
     'BugWatchVocabulary',
@@ -55,6 +56,7 @@ __all__ = [
     ]
 
 import cgi
+from operator import attrgetter
 
 from zope.component import getUtility
 from zope.interface import implements, Attribute
@@ -65,7 +67,7 @@ from zope.security.proxy import isinstance as zisinstance
 from sqlobject import AND, OR, CONTAINSSTRING, SQLObjectNotFound
 
 from canonical.launchpad.helpers import shortlist
-from canonical.lp.dbschema import EmailAddressStatus
+from canonical.lp.dbschema import EmailAddressStatus, DistributionReleaseStatus
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.database import (
     Distribution, DistroRelease, Person, SourcePackageRelease, Branch,
@@ -1294,3 +1296,75 @@ class SchemaVocabulary(NamedSQLObjectHugeVocabulary):
 
     displayname = 'Select a Schema'
     _table = Schema
+
+
+class BugNominatableReleasesVocabulary(NamedSQLObjectVocabulary):
+    """The releases for which a bug can be nominated.
+
+    This is context-sensitive, so that we don't include, for example, a
+    bunch of product series when looking at the bug in a distro context.
+    """
+    def __init__(self, context=None):
+        """Set the _table depending on the context, distro or product."""
+        NamedSQLObjectVocabulary.__init__(self, context)
+
+        distribution = getUtility(ILaunchBag).distribution
+        product = getUtility(ILaunchBag).product
+        if distribution:
+            self._table = DistroRelease
+        else:
+            assert product
+            self._table = ProductSeries
+
+    def __iter__(self):
+        distribution = getUtility(ILaunchBag).distribution
+        product = getUtility(ILaunchBag).product
+        by_displayname = attrgetter("displayname")
+        bug = self.context
+
+        releases = []
+        if distribution:
+            for distrorelease in distribution.releases:
+                if not bug.canBeNominatedFor(distrorelease):
+                    continue
+
+                if (distrorelease.releasestatus ==
+                    DistributionReleaseStatus.OBSOLETE):
+                    continue
+
+                releases.append(distrorelease)
+
+            for release in sorted(releases, key=by_displayname):
+                yield self.toTerm(release)
+
+        else:
+            assert product
+
+            serieslist = []
+            for series in product.serieslist:
+                if not bug.canBeNominatedFor(series):
+                    continue
+
+                serieslist.append(series)
+
+            for series in sorted(serieslist, key=by_displayname):
+                yield self.toTerm(series)
+
+    def toTerm(self, obj):
+        return SimpleTerm(obj, obj.name, obj.name.capitalize())
+
+    def getTermByToken(self, token):
+        distribution = getUtility(ILaunchBag).distribution
+        product = getUtility(ILaunchBag).product
+
+        obj = None
+        if distribution:
+            obj = distribution.getRelease(token)
+        else:
+            assert product
+            obj = product.getSeries(token)
+
+        if obj is None:
+            raise LookupError(token)
+
+        return self.toTerm(obj)

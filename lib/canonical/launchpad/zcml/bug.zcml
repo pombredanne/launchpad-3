@@ -30,7 +30,7 @@
                         subscribe unsubscribe isSubscribed messages
                         notificationRecipientAddresses hasBranch
                         security_related tags getMessageChunks
-                        isNominatedFor getNominationFor getNominations" />
+                        canBeNominatedFor getNominationFor getNominations" />
         <require
             permission="launchpad.Edit"
             attributes="addChangeNotification addCommentNotification addWatch

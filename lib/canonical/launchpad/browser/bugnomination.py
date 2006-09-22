@@ -11,57 +11,47 @@ __all__ = [
     'BugNominationTableRowView']
 
 import datetime
-from operator import itemgetter
+from operator import attrgetter
 
 import pytz
 
+from zope.app.form import CustomWidgetFactory
+from zope.app.form.interfaces import IInputWidget
+from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
+from zope.schema import Choice
+from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.lp import dbschema
-from canonical.launchpad import helpers
+from canonical.launchpad import helpers, _
 from canonical.launchpad.browser import BugContextMenu
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IBug, IDistribution, IBugNomination)
-from canonical.launchpad.webapp import canonical_url, LaunchpadView
+    ILaunchBag, IBug, IDistribution, IBugNomination, IBugNominationForm)
+from canonical.launchpad.webapp import (
+    canonical_url, LaunchpadView, LaunchpadFormView, custom_widget, action)
+from canonical.widgets.itemswidget import LabeledMultiCheckBoxWidget
 
-class BugNominationView(LaunchpadView):
+class BugNominationView(LaunchpadFormView):
+    label = "Nominate this bug for a release"
+    schema = IBugNominationForm
+    initial_focus_widget = None
+    custom_widget('nominatable_releases', LabeledMultiCheckBoxWidget)
+
     def __init__(self, context, request):
         # Adapt the context to an IBug, because we don't need anything
         # task-specific on the nomination page.
-        LaunchpadView.__init__(self, IBug(context), request)
+        LaunchpadFormView.__init__(self, IBug(context), request)
 
-    def processNominations(self):
-        """Create nominations from the submitted form."""
-        form = self.request.form
-        if not form.get("nominate"):
-            return
-
-        launchbag = getUtility(ILaunchBag)
-        distribution = launchbag.distribution
-        product = launchbag.product
-        bug = self.context
-
-        self._nominate(bug=bug, distribution=distribution, product=product)
-
-        self.request.response.redirect(
-            canonical_url(getUtility(ILaunchBag).bugtask))
-
-    def _nominate(self, bug, distribution=None, product=None):
+    @action(_("Submit Nominations"), name="submit")
+    def nominate(self, action, data):
         """Nominate distro releases or product series for this bug."""
-        releases = self.request.form.get("release")
+        releases = data["nominatable_releases"]
         nominated_releases = []
         approved_nominations = []
 
-        if distribution:
-            assert not product
-            target_getter = distribution.getRelease
-        else:
-            assert product
-            target_getter = product.getSeries
-
         for release in releases:
-            target = target_getter(release)
-            nomination = bug.addNomination(target=target, owner=self.user)
+            nomination = self.context.addNomination(
+                target=release, owner=self.user)
 
             # If the user has the permission to approve or decline the
             # nomination, then approve the nomination right now.
@@ -69,7 +59,7 @@ class BugNominationView(LaunchpadView):
                 nomination.approve(self.user)
                 approved_nominations.append(nomination.target.bugtargetname)
             else:
-                nominated_releases.append(target.bugtargetname)
+                nominated_releases.append(release.bugtargetname)
 
         if approved_nominations:
             self.request.response.addNotification(
@@ -80,60 +70,9 @@ class BugNominationView(LaunchpadView):
                 "Added nominations for: %s" %
                 ", ".join(nominated_releases))
 
-    def getReleasesToDisplay(self):
-        """Return the list of dicts to show on the nomination page.
-
-        For a distribution context, this is all non-obsolete releases
-        that aren't already nominated. For a product this is all of its
-        series that aren't already nominated.
-
-        Each dict contains the following keys:
-
-        :name: The .name of the release
-        :displayname: A suitably display value to show for the release
-        :status: The status of the release, applicable only to
-                 IDistroRelease
-        """
-        distribution = getUtility(ILaunchBag).distribution
-        product = getUtility(ILaunchBag).product
-        by_displayname = itemgetter("displayname")
-        bug = self.context
-
-        releases = []
-        if distribution:
-            for distrorelease in distribution.releases:
-                if bug.isNominatedFor(distrorelease):
-                    continue
-
-                if (distrorelease.releasestatus ==
-                    dbschema.DistributionReleaseStatus.OBSOLETE):
-                    continue
-
-                releases.append(
-                    dict(
-                        name=distrorelease.name,
-                        displayname=distrorelease.bugtargetname,
-                        status=distrorelease.releasestatus.title))
-
-            releases.sort(key=by_displayname)
-
-            return releases
-
-        assert product
-
-        serieslist = []
-        for series in product.serieslist:
-            if bug.isNominatedFor(series):
-                continue
-
-            serieslist.append(
-                dict(
-                    name=series.name,
-                    displayname=series.bugtargetname,
-                    status=None))
-            serieslist.sort(key=by_displayname)
-
-        return serieslist
+    @property
+    def next_url(self):
+        return canonical_url(getUtility(ILaunchBag).bugtask)
 
 
 class BugNominationTableRowView(LaunchpadView):

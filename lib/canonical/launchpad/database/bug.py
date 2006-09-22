@@ -6,6 +6,7 @@ __all__ = ['Bug', 'BugSet', 'get_bug_tags', 'get_bug_tags_open_count']
 
 from cStringIO import StringIO
 from email.Utils import make_msgid
+from operator import attrgetter
 import re
 from sets import Set
 
@@ -22,7 +23,7 @@ from canonical.launchpad.interfaces import (
     IBug, IBugSet, ICveSet, NotFoundError, ILaunchpadCelebrities,
     IDistroBugTask, IDistroReleaseBugTask, ILibraryFileAliasSet,
     IBugAttachmentSet, IMessage, IUpstreamBugTask, IDistroRelease,
-    IProductSeries, IProductSeriesBugTask, DuplicateNominationError,
+    IProductSeries, IProductSeriesBugTask, NominationError,
     NominationReleaseObsoleteError, IProduct, IDistribution,
     UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
@@ -445,22 +446,42 @@ class Bug(SQLBase):
             productseries = target
             target_displayname = target.title
 
-        if self.isNominatedFor(target):
-            raise DuplicateNominationError(
-                "This bug is already nominated for %s" % target_displayname)
+        if not self.canBeNominatedFor(target):
+            raise NominationError(
+                "This bug cannot be nominated for %s" % target_displayname)
 
         return BugNomination(
             owner=owner, bug=self, distrorelease=distrorelease,
             productseries=productseries)
 
-    def isNominatedFor(self, nomination_target):
+    def canBeNominatedFor(self, nomination_target):
         """See IBug."""
         try:
             self.getNominationFor(nomination_target)
         except NotFoundError:
-            return False
-        else:
+            # No nomination exists. Let's see if the bug is already
+            # directly targeted to this nomination_target.
+            if IDistroRelease.providedBy(nomination_target):
+                target_getter = attrgetter("distrorelease")
+            elif IProductSeries.providedBy(nomination_target):
+                target_getter = attrgetter("productseries")
+            else:
+                raise AssertionError(
+                    "Expected IDistroRelease or IProductSeries target. "
+                    "Got %r." % nomination_target)
+
+            for task in self.bugtasks:
+                if target_getter(task) == nomination_target:
+                    # The bug is already targeted at this
+                    # nomination_target.
+                    return False
+
+            # No nomination or tasks are targeted at this
+            # nomination_target.
             return True
+        else:
+            # The bug is already nominated for this nomination_target.
+            return False
 
     def getNominationFor(self, nomination_target):
         """See IBug."""

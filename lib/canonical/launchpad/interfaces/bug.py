@@ -278,8 +278,8 @@ class IBug(IMessageTarget):
         canonical.launchpad.database.bugnomination.BugNomination.)
         """
 
-    def isNominatedFor(nomination_target):
-        """Is this bug nominated for this target?
+    def canBeNominatedFor(nomination_target):
+        """Can this bug nominated for this target?
 
         :nomination_target: An IDistroRelease or IProductSeries.
 

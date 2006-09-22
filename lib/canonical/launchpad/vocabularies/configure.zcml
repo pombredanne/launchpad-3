@@ -51,6 +51,11 @@
     />
 
   <vocabulary
+    name="BugNominatableReleases"
+    factory="canonical.launchpad.vocabularies.BugNominatableReleasesVocabulary"
+    />
+
+  <vocabulary
     name="BugNominationStatus"
     factory="canonical.launchpad.vocabularies.BugNominationStatusVocabulary"
     />

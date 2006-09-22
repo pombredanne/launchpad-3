@@ -18,7 +18,8 @@ The BugNomination class implements IBugNomination.
     >>> verifyClass(IBugNomination, BugNomination)
     True
 
-    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> bugset = getUtility(IBugSet)
+    >>> bug_one = bugset.get(1)
 
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> ubuntu_grumpy = ubuntu.getRelease("grumpy")
@@ -65,18 +66,43 @@ attribute.
     >>> print firefox_ms_nomination.target.bugtargetname
     firefox trunk (upstream)
 
-Use IBug.isNominatedFor to see if a bug is nominated for a particular
-distrorelease or productseries.
+Use IBug.canBeNominatedFor to see if a bug can be nominated for a
+particular distrorelease or productseries. This will consider whether
+the bug has already been nominated for that release, or even already
+targeted to that release without a nomination, which can happen for bugs
+that were reported prior to the release management/nomination
+functionality existing.
 
     >>> ubuntu_breezy_autotest = ubuntu.getRelease("breezy-autotest")
 
-    >>> bug_one.isNominatedFor(firefox_trunk)
+    >>> bug_one.canBeNominatedFor(firefox_trunk)
+    False
+
+    >>> bug_one.canBeNominatedFor(ubuntu_grumpy)
+    False
+
+    >>> bug_one.canBeNominatedFor(ubuntu_breezy_autotest)
     True
 
-    >>> bug_one.isNominatedFor(ubuntu_grumpy)
-    True
+Bug five is already targeted to Ubuntu Warty, so even though it has no
+Warty nominations, it cannot be targeted to Warty.
 
-    >>> bug_one.isNominatedFor(ubuntu_breezy_autotest)
+    >>> bug_five = bugset.get(5)
+    >>> bug_five.getNominations()
+    []
+
+    >>> def by_bugtargetname(bugtask):
+    ...     return bugtask.target.bugtargetname
+
+    >>> tasks = sorted(bug_five.bugtasks, key=by_bugtargetname)
+
+    >>> for task in tasks:
+    ...     print task.target.bugtargetname
+    firefox (upstream)
+    mozilla-firefox (Ubuntu Warty)
+
+    >>> ubuntu_warty = ubuntu.getRelease("warty")
+    >>> bug_five.canBeNominatedFor(ubuntu_warty)
     False
 
 The getNominationFor() method returns a nomination for a specific
@@ -224,9 +250,6 @@ bug #1 affects more than one Ubuntu package.
     ...     sourcepackagename=ubuntu_tbird.sourcepackagename)
     <BugTask ...>
 
-    >>> def by_bugtargetname(bugtask):
-    ...     return bugtask.target.bugtargetname
-
     >>> tasks = sorted(
     ...     bug_one.bugtasks, key=by_bugtargetname)
 
@@ -325,27 +348,26 @@ If a nomination is not found, a NotFoundError is raised.
 Error Handling
 --------------
 
-Adding a duplicate nomination raises a DuplicateNominationError.
+Trying to nominate a bug for a release for which it's already nominated
+or targeted raises a NominationError.
 
     >>> bug_one.addNomination(
     ...     target=ubuntu_grumpy, owner=no_privs)
     Traceback (most recent call last):
       ..
-    DuplicateNominationError: ...
+    NominationError: ...
 
     >>> bug_one.addNomination(
     ...     target=firefox_trunk, owner=no_privs)
     Traceback (most recent call last):
       ..
-    DuplicateNominationError: ...
+    NominationError: ...
 
 Nominating a bug for an obsolete distrorelease raises a
 NominationReleaseObsoleteError. Let's mark warty obsolete to
 demonstrate.
 
     >>> from canonical.lp.dbschema import DistributionReleaseStatus
-
-    >>> ubuntu_warty = ubuntu.getRelease("warty")
 
 (Temporarily log in as an admin user to change the release status.)
 

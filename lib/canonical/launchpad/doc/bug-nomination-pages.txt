@@ -24,87 +24,44 @@ the bug to releases for which they are drivers.
     ...     bug_one_in_ubuntu_firefox, "+nominate", request)
     >>> launchbag = getUtility(IOpenLaunchBag)
 
-Displaying Releases
--------------------
-
-The getReleasesToDisplay() method returns a list of dictionaries of
-releases to show on the nomination page. The dictionaries contain three
-keys: name, displayname, and status. The list is sorted by displayname.
-
-For distros, this returns all supported releases that aren't already
-nominated. For products, this returns all the series that aren't already
-nominated.
-
-    >>> from canonical.launchpad.interfaces import IDistributionSet, IProductSet
-
-    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
-    >>> debian = getUtility(IDistributionSet).getByName("debian")
-    >>> firefox = getUtility(IProductSet).getByName("firefox")
-
-    >>> launchbag.clear()
-    >>> launchbag.add(ubuntu)
-
-    >>> def print_releases(releases):
-    ...     for release in releases:
-    ...         print "%s, %s, %s" % (
-    ...             release['name'], release['displayname'], release['status'])
-
-    >>> print_releases(nomination_view.getReleasesToDisplay())
-    breezy-autotest, Ubuntu Breezy-autotest, Experimental
-    grumpy, Ubuntu Grumpy, Experimental
-    warty, Ubuntu Warty, Current Stable Release
-
-And upstream, this would return all Firefox series.
-
-    >>> bug_one_in_firefox = getUtility(IBugTaskSet).get(2)
-    >>> print bug_one_in_firefox.bug.id
-    1
-    >>> print bug_one_in_firefox.target.bugtargetname
-    firefox (upstream)
-
-    >>> nomination_view = getView(
-    ...     bug_one_in_firefox, "+nominate", request)
-
-    >>> launchbag.clear()
-    >>> launchbag.add(firefox)
-
-    >>> print_releases(nomination_view.getReleasesToDisplay())
-    trunk, firefox trunk (upstream), None
-
 Submitting Nominations
 ----------------------
 
-The processNominations() method processes nominations. It looks for a
-field in the request called "release", and assumes the values in that
-list to be names of releases for a distribution context, and names of
-productseries' in an upstream context.
+BugNominationView is a LaunchpadFormView. It expects a "submit" action
+to process nominations.
 
 Here's an example of nominating a bug for a distrorelease.
 
     >>> login("no-priv@canonical.com")
 
-    >>> request = LaunchpadTestRequest(form=dict(
-    ...     nominate="Submit Nominations", release=["warty"]))
+    >>> request = LaunchpadTestRequest(form={
+    ...     "field.actions.submit": "Submit Nominations",
+    ...     "field.nominatable_releases": ["warty"]})
 
     >>> nomination_view = getView(
     ...     bug_one_in_ubuntu_firefox, "+nominate", request)
 
 (Add objects to the LaunchBag that will be used by the view.)
 
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+
     >>> launchbag.clear()
     >>> launchbag.add(bug_one_in_ubuntu_firefox)
     >>> launchbag.add(bug_one_in_ubuntu_firefox.distribution)
 
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> ubuntu_warty = ubuntu.getRelease("warty")
 
     >>> bug_one = bug_one_in_ubuntu_firefox.bug
-    >>> bug_one.isNominatedFor(ubuntu_warty)
-    False
-
-    >>> nomination_view.processNominations()
-
-    >>> bug_one.isNominatedFor(ubuntu_warty)
+    >>> bug_one.canBeNominatedFor(ubuntu_warty)
     True
+
+(Process the nominations.)
+
+    >>> nomination_view.initialize()
+
+    >>> bug_one.canBeNominatedFor(ubuntu_warty)
+    False
 
     >>> len(request.response.notifications)
     1
@@ -114,8 +71,17 @@ Here's an example of nominating a bug for a distrorelease.
 
 Here's an example of nominating a bug for a productseries.
 
-    >>> request = LaunchpadTestRequest(form=dict(
-    ...     nominate="Submit Nominations", release=["trunk"]))
+    >>> bug_one_in_firefox = getUtility(IBugTaskSet).get(2)
+    >>> print bug_one_in_firefox.bug.id
+    1
+    >>> print bug_one_in_firefox.target.bugtargetname
+    firefox (upstream)
+
+    >>> firefox = bug_one_in_firefox.target
+
+    >>> request = LaunchpadTestRequest(form={
+    ...     "field.actions.submit": "Submit Nominations",
+    ...     "field.nominatable_releases": ["trunk"]})
 
     >>> nomination_view = getView(
     ...     bug_one_in_firefox, "+nominate", request)
@@ -127,13 +93,15 @@ Here's an example of nominating a bug for a productseries.
     >>> launchbag.add(bug_one_in_firefox.product)
 
     >>> firefox_trunk = firefox.getSeries("trunk")
-    >>> bug_one.isNominatedFor(firefox_trunk)
-    False
-
-    >>> nomination_view.processNominations()
-
-    >>> bug_one.isNominatedFor(firefox_trunk)
+    >>> bug_one.canBeNominatedFor(firefox_trunk)
     True
+
+(Process the nominations.)
+
+    >>> nomination_view.initialize()
+
+    >>> bug_one.canBeNominatedFor(firefox_trunk)
+    False
 
     >>> len(request.response.notifications)
     1
@@ -221,8 +189,9 @@ launchpad.Driver permission on the nomination.
     >>> cprov.inTeam(ubuntu_team)
     True
 
-    >>> request = LaunchpadTestRequest(form=dict(
-    ...     release=["grumpy"], nominate="Submit Nominations"))
+    >>> request = LaunchpadTestRequest(form={
+    ...     "field.actions.submit": "Submit Nominations",
+    ...     "field.nominatable_releases": ["grumpy"]})
 
     >>> nomination_view = getView(bug_one_in_ubuntu_firefox, "+nominate", request)
     >>> launchbag.clear()
@@ -238,7 +207,9 @@ launchpad.Driver permission on the nomination.
     Ubuntu Hoary, Declined
     Ubuntu Warty, Proposed
 
-    >>> nomination_view.processNominations()
+(Process the nominations.)
+
+    >>> nomination_view.initialize()
 
 An approved nomination, for Ubuntu Grumpy, has been added, and another
 bugtask has been added.

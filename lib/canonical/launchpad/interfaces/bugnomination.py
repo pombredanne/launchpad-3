@@ -6,21 +6,22 @@ __metaclass__ = type
 
 __all__ = [
     'BugNominationStatusError',
-    'DuplicateNominationError',
+    'NominationError',
     'IBugNomination',
+    'IBugNominationForm',
     'IBugNominationSet',
     'NominationReleaseObsoleteError']
 
-from zope.schema import Int, Datetime, Choice
+from zope.schema import Int, Datetime, Choice, Set
 from zope.interface import Interface, Attribute
 
 from canonical.lp.dbschema import BugNominationStatus
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IHasBug, IHasDateCreated, IHasOwner)
+    IHasBug, IHasDateCreated, IHasOwner, can_be_nominated_for_releases)
 
-class DuplicateNominationError(Exception):
-    """A bug cannot be nominated to the same target more than once."""
+class NominationError(Exception):
+    """The bug cannot be nominated for this release."""
 
 
 class NominationReleaseObsoleteError(Exception):
@@ -113,3 +114,11 @@ class IBugNominationSet(Interface):
         Returns an IBugNomination. Raises a NotFoundError is the
         nomination was not found.
         """
+
+
+class IBugNominationForm(Interface):
+    """The browser form for nominating bugs for releases."""
+    nominatable_releases = Set(
+        title=_("Releases that can be nominated"), required=False,
+        value_type=Choice(vocabulary="BugNominatableReleases"),
+        constraint=can_be_nominated_for_releases)

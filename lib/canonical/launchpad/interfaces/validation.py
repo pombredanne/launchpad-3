@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'can_be_nominated_for_releases',
     'validate_url',
     'valid_http_url',
     'valid_ftp_url',
@@ -49,6 +50,21 @@ from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.cve import valid_cve
 from canonical.launchpad.validators.url import valid_absolute_url
 
+def can_be_nominated_for_releases(releases):
+    """Can the bug be nominated for this release?"""
+    current_bug = getUtility(ILaunchBag).bug
+    unnominatable_releases = []
+    for release in releases:
+        if not current_bug.canBeNominatedFor(release):
+            unnominatable_releases.append(release.name.capitalize())
+
+    if unnominatable_releases:
+        raise LaunchpadValidationError(_(
+            "Sorry, this bug cannot be nominated for: %s. "
+            "Perhaps it is already nominated or targeted "
+            "for this release?") % ", ".join(unnominatable_releases))
+
+    return True
 
 def _validate_ascii_text(text):
     """Check if the given text contains only ASCII characters.
