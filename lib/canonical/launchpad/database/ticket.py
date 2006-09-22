@@ -325,15 +325,21 @@ class Ticket(SQLBase, BugLinkTargetMixin):
     @property
     def can_reopen(self):
         """See ITicket."""
-        return self.status in [TicketStatus.ANSWERED, TicketStatus.EXPIRED]
+        return self.status in [
+            TicketStatus.ANSWERED, TicketStatus.EXPIRED, TicketStatus.SOLVED]
 
     @notify_modified()
     def reopen(self, comment, datecreated=None):
         """See ITicket."""
-        assert self.can_reopen, "Ticket status != ANSWERED or EXPIRED."
-        return self._newMessage(
+        assert self.can_reopen, (
+            "Ticket status != ANSWERED, EXPIRED or SOLVED.")
+        msg = self._newMessage(
             self.owner, comment, datecreated=datecreated,
             action=TicketAction.REOPEN, newstatus=TicketStatus.OPEN)
+        self.answer = None
+        self.answerer = None
+        self.dateanswered = None
+        return msg
 
     # subscriptions
     def subscribe(self, person):

@@ -320,14 +320,15 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
 
     def test_can_reopen(self):
         """Test the can_reopen attribute in all the possible states."""
-        self._testTransitionGuard('can_reopen', ['ANSWERED', 'EXPIRED'])
+        self._testTransitionGuard(
+            'can_reopen', ['ANSWERED', 'EXPIRED', 'SOLVED'])
 
     def test_reopenFromInvalidStates(self):
         """Test that reopen cannot be called when the ticket status is
         not one of OPEN, NEEDSINFO, or ANSWERED.
         """
         self._testInvalidTransition(
-            ['ANSWERED', 'EXPIRED'], self.ticket.reopen,
+            ['ANSWERED', 'EXPIRED', 'SOLVED'], self.ticket.reopen,
             "I still have a problem.", datecreated=self.now_plus(1))
 
     def test_reopen(self):
@@ -343,6 +344,34 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
             transition_method=self.ticket.reopen,
             transition_method_args=('I still have this problem.',),
             edited_fields=['status', 'messages', 'datelastquery'])
+
+    def test_reopenFromSOLVED(self):
+        """Test that reopen() can be called when the ticket is in the
+        SOLVED state and that it returns an appropriate ITicketMessage.
+        This transition should also clear the dateanswered, answered and
+        answerer attributes.
+        """
+        self.setUpEventListeners()
+        # Mark the ticket as solved by the user.
+        self.ticket.giveAnswer(
+            self.no_priv, 'I solved my own problem',
+            datecreated=self.now_plus(0))
+        self.assertEquals(self.ticket.status, TicketStatus.SOLVED)
+
+        # Clear previous events
+        self.collected_events = []
+
+        message = self.ticket.reopen(
+            "My solution doesn't work.",
+            datecreated=self.now_plus(1))
+        self.checkTransitionMessage(
+            message, expected_owner=self.no_priv,
+            expected_action=TicketAction.REOPEN,
+            expected_status=TicketStatus.OPEN)
+        self.checkTransitionEvents(
+            message, ['status', 'messages', 'answerer', 'answer',
+                      'dateanswered', 'datelastquery'],
+            TicketStatus.OPEN.title)
 
     def test_expireTicketFromInvalidStates(self):
         """Test that expireTicket cannot be called when the ticket status is

@@ -294,14 +294,16 @@ class ITicket(IHasOwner):
         'reopen it.')
 
     def reopen(comment, datecreated=None):
-        """Reopen a ticket that was ANSWERED or EXPIRED.
+        """Reopen a ticket that was ANSWERED, EXPIRED or SOLVED.
 
         Add an ITicketMessage with action REOPEN. This changes the ticket
         status to OPEN and update the datelastquery attribute to the new
-        message creation date.
+        message creation date. When the ticket was in the SOLVED state, this
+        method should reset the dateanswered, answerer and answer attributes.
 
         This workflow method should only be called on behalf of the ticket
-        owner, when the ticket status is in one of ANSWERED or EXPIRED.
+        owner, when the ticket status is in one of ANSWERED, EXPIRED or
+        SOLVED.
 
         Return the created ITicketMessage.
 
