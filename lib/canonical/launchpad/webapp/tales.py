@@ -10,6 +10,7 @@ import bisect
 import cgi
 import re
 import os.path
+import math
 
 from zope.interface import Interface, Attribute, implements
 from zope.component import getUtility, queryAdapter
@@ -378,6 +379,34 @@ class BuildFormatterAPI(ObjectFormatterAPI):
         source = icon_map[self._context.buildstate]
 
         return image_template % (alt, title, source)
+
+
+class NumberFormatterAPI:
+    """Adapter for converting numbers to formatted strings."""
+
+    def __init__(self, number):
+        assert float(number) > 0, "Argument should be a positive number."
+        self._number = number
+
+    def bytes(self):
+        """Render number as byte contractions according to IEC60027-2."""
+        # See http://en.wikipedia.org/wiki/Binary_prefixes#Specific_units_of_IEC_60027-2_A.2
+        # Note that there is a zope.app.size.byteDisplay() function, but
+        # it really limited and doesn't work well enough for us here.
+        n = int(self._number)
+        if n == 1:
+            # Handle the singular case.
+            return "1 byte"
+        if n == 0:
+            # To avoid math.log(0, X) blowing up.
+            return "0 bytes"
+        suffixes = ["KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"]
+        exponent = int(math.log(n, 1024))
+        exponent = min(len(suffixes), exponent)
+        if exponent < 1:
+            # If this is less than 1 KiB, no need for rounding.
+            return "%s bytes" % n
+        return "%.1f %s" % (n / 1024.0 ** exponent, suffixes[exponent - 1])
 
 
 class DateTimeFormatterAPI:
