@@ -11,12 +11,13 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 
-from zope.schema import Datetime, Int, Choice, Text, TextLine, Field
+from zope.schema import Datetime, Int, Choice, Text, TextLine
 
 from canonical.launchpad.interfaces import IHasOwner, IMessageTarget
 from canonical.lp.dbschema import TicketStatus, TicketPriority
 
 from canonical.launchpad import _
+
 
 class ITicket(IHasOwner, IMessageTarget):
     """A single support request, or trouble ticket."""
@@ -38,6 +39,9 @@ class ITicket(IHasOwner, IMessageTarget):
     priority = Choice(
         title=_('Priority'), vocabulary='TicketPriority',
         default=TicketPriority.NORMAL)
+    language = Choice(
+        title=_('Language'), vocabulary='Language',
+        description=_('The language this ticket is written into'))
     owner = Choice(title=_('Owner'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam')
     assignee = Choice(title=_('Assignee'), required=False,
@@ -135,7 +139,7 @@ class ITicket(IHasOwner, IMessageTarget):
         ticket. That will be the ticket's target support contact list.
         """
 
-# Interfaces for containers
+
 class ITicketSet(Interface):
     """A container for tickets."""
 

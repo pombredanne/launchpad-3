@@ -46,23 +46,27 @@ class Ticket(SQLBase, BugLinkTargetMixin):
     description = StringCol(notNull=True)
     status = EnumCol(
         schema=TicketStatus, notNull=True, default=TicketStatus.OPEN)
-    priority = EnumCol(schema=TicketPriority, notNull=True,
-        default=TicketPriority.NORMAL)
-    assignee = ForeignKey(dbName='assignee', notNull=False,
-        foreignKey='Person', default=None)
-    answerer = ForeignKey(dbName='answerer', notNull=False,
-        foreignKey='Person', default=None)
+    priority = EnumCol(
+        schema=TicketPriority, notNull=True, default=TicketPriority.NORMAL)
+    assignee = ForeignKey(
+        dbName='assignee', notNull=False, foreignKey='Person', default=None)
+    answerer = ForeignKey(
+        dbName='answerer', notNull=False, foreignKey='Person', default=None)
+    language = ForeignKey(
+        dbName='language', notNull=True, foreignKey='Language')
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
     datedue = UtcDateTimeCol(notNull=False, default=None)
     datelastquery = UtcDateTimeCol(notNull=True, default=DEFAULT)
     datelastresponse = UtcDateTimeCol(notNull=False, default=None)
     dateanswered = UtcDateTimeCol(notNull=False, default=None)
-    product = ForeignKey(dbName='product', foreignKey='Product',
+    product = ForeignKey(
+        dbName='product', foreignKey='Product', notNull=False, default=None)
+    distribution = ForeignKey(
+        dbName='distribution', foreignKey='Distribution', notNull=False,
+        default=None)
+    sourcepackagename = ForeignKey(
+        dbName='sourcepackagename', foreignKey='SourcePackageName',
         notNull=False, default=None)
-    distribution = ForeignKey(dbName='distribution',
-        foreignKey='Distribution', notNull=False, default=None)
-    sourcepackagename = ForeignKey(dbName='sourcepackagename',
-        foreignKey='SourcePackageName', notNull=False, default=None)
     whiteboard = StringCol(notNull=False, default=None)
 
     # useful joins
@@ -287,13 +291,13 @@ class TicketSet:
     @staticmethod
     def new(title=None, description=None, owner=None,
             product=None, distribution=None, sourcepackagename=None,
-            datecreated=None):
+            datecreated=None, language=None):
         """Common implementation for ITicketTarget.newTicket()."""
         if datecreated is None:
             datecreated = UTC_NOW
         ticket = Ticket(
             title=title, description=description, owner=owner,
-            product=product, distribution=distribution,
+            product=product, distribution=distribution, language=language,
             sourcepackagename=sourcepackagename, datecreated=datecreated)
 
         # Subscribe the submitter
