@@ -385,7 +385,7 @@ class NumberFormatterAPI:
     """Adapter for converting numbers to formatted strings."""
 
     def __init__(self, number):
-        assert float(number) > 0, "Argument should be a positive number."
+        assert not float(number) < 0, "Expected a non-negative number."
         self._number = number
 
     def bytes(self):
