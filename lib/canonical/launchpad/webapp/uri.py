@@ -147,10 +147,14 @@ class Uri:
 
         if uri is not None:
             if isinstance(uri, unicode):
-                uri = uri.encode('ASCII')
+                try:
+                    uri = uri.encode('ASCII')
+                except UnicodeEncodeError:
+                    raise InvalidUriError(
+                        'URIs must consist of ASCII characters')
             match = uri_pat.match(uri)
             if match is None:
-                raise InvalidUriError('%s is not a valid URI' % uri)
+                raise InvalidUriError('"%s" is not a valid URI' % uri)
             self.scheme = match.group('scheme')
             self.userinfo = match.group('userinfo')
             self.host = match.group('host')

@@ -149,10 +149,6 @@
            field="name"
            class="zope.app.form.browser.TextWidget"
            extra="tabindex=1" />
-        <browser:widget
-           field="homepageurl"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="30" />
     </browser:addform>
 
     <browser:page
@@ -218,22 +214,6 @@
         <browser:widget
            field="owner"
            class="canonical.widgets.HiddenUserWidget" />
-        <browser:widget
-           field="homepageurl"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="30" />
-        <browser:widget
-           field="screenshotsurl"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="30" />
-        <browser:widget
-           field="wikiurl"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="30" />
-        <browser:widget
-           field="downloadurl"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="30" />
     </browser:addform>
 
     <browser:addform

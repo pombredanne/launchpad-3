@@ -14,7 +14,7 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Int, Text, TextLine
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Summary, Title
+from canonical.launchpad.fields import Summary, Title, UriField
 from canonical.launchpad.interfaces import (
         IHasOwner, IBugTarget, IHasSpecifications, PillarNameField,
         valid_webref
@@ -88,16 +88,16 @@ class IProject(IHasOwner, IBugTarget, IHasSpecifications):
             "individual products and series have drivers."),
         required=False, vocabulary='ValidPersonOrTeam')
 
-    homepageurl = TextLine(
+    homepageurl = UriField(
         title=_('Homepage URL'),
         required=False,
-        constraint=valid_webref,
+        allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
         description=_("""The project home page. Please include the http://"""))
 
-    wikiurl = TextLine(
+    wikiurl = UriField(
         title=_('Wiki URL'),
         required=False,
-        constraint=valid_webref,
+        allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
         description=_("""The URL of this project's wiki, if it has one.
             Please include the http://"""))
 
