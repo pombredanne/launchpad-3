@@ -14,7 +14,16 @@
       </ul>
 
       <ul style="text-align: right;">
-        <li class="add"><a href="/rosetta/prefs">Select Languages...</a></li>
+        <li class="add">
+          <a tal:condition="request/lp:person"
+             tal:attributes="href string:${request/lp:person/fmt:url}/+editlanguages"
+          >Select Languages...</a>
+
+          <a tal:condition="not: request/lp:person"
+             tal:attributes="href string:${request/URL}/+login">
+            Login to select your languages...
+          </a>
+        </li>
       </ul>
 
     </div>
