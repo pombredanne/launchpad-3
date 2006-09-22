@@ -39,17 +39,7 @@ class ProductSeriesNameField(ContentNameField):
             return self.context.getSeries(name)
 
 
-class IProductSeriesSet(Interface):
-    """The set of product series."""
-
-    def get(productseriesid):
-        """Return the product series with the given productseriesid.
-
-        If the product series can't be found, a NotFoundError is raised.
-        """
-
-
-class IProductSeries(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
+class IProductSeries(IHasDrivers, IHasOwner, ISpecificationGoal):
     """A series of releases. For example '2.0' or '1.3' or 'dev'."""
     # XXX Mark Shuttleworth 14/10/04 would like to get rid of id in
     # interfaces, as soon as SQLobject allows using the object directly
@@ -218,15 +208,6 @@ class IProductSeriesSource(Interface):
         "'apache-2.0.*.tar.gz'."))
     releaseverstyle = Attribute("The version numbering style for this "
         "product series of releases.")
-    # these fields tell us where to publish upstream as bazaar branch
-    targetarcharchive = Text(title=_("The Arch archive into which we will "
-        "publish this code as a Bazaar branch."))
-    targetarchcategory = Text(title=_("The Arch category name to use for "
-        "this upstream when we publish it as a Bazaar branch."))
-    targetarchbranch = Text(title=_("The Arch branch name for this upstream "
-        "code, used when we publish the code as a Bazaar branch."))
-    targetarchversion = Text(title=_("The Arch version name to use when "
-        "we publish this code as a Bazaar branch."))
     dateautotested = Attribute("The date this upstream passed automatic "
         "testing.")
     datestarted = Attribute("The timestamp when we started the latest "

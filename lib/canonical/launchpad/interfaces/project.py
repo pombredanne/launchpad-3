@@ -7,8 +7,6 @@ __metaclass__ = type
 __all__ = [
     'IProject',
     'IProjectSet',
-    'IProjectBugTracker',
-    'IProjectBugTrackerSet',
     ]
 
 from zope.component import getUtility
@@ -152,21 +150,15 @@ class IProject(IHasOwner, IBugTarget, IHasSpecifications):
 
     bounties = Attribute(_("The bounties that are related to this project."))
 
-    def bugtrackers():
-        """Return the BugTrackers for this Project."""
+    bugtracker = Choice(title=_('Bug Tracker'), required=False,
+        vocabulary='BugTracker',
+        description=_("The bug tracker the products in this project use."))
 
     def products():
         """Return Products for this Project."""
 
     def getProduct(name):
         """Get a product with name `name`."""
-
-    def shortDescription(aDesc=None):
-        """return the projects summary, setting it if aDesc is provided"""
-
-    def product(name):
-        """Return the product belonging to this project with the given
-        name."""
 
     def ensureRelatedBounty(bounty):
         """Ensure that the bounty is linked to this project. Return None.
@@ -223,13 +215,3 @@ class IProjectSet(Interface):
     def forSyncReview():
         """Return a list of projects that have productseries ready to
         import which need review."""
-
-class IProjectBugTracker(Interface):
-    id = Int(title=_('ID'))
-    project = Int(title=_('Owner'))
-    bugtracker = Int(title=_('Bug Tracker'))
-
-class IProjectBugTrackerSet(Interface):
-    def new(project, bugtracker):
-        """Create a new project bug tracker."""
-
