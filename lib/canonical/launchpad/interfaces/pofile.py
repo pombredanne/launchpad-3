@@ -10,6 +10,7 @@ __all__ = [
     'ZeroLengthPOExportError',
     'IPOFileSet',
     'IPOFile',
+    'IPOFileTranslator',
     'IPOFileAlternativeLanguage'
     ]
 
@@ -275,7 +276,7 @@ class IPOFileAlternativeLanguage(Interface):
 
 
 class IPOFileSet(Interface):
-    """A set of POFile."""
+    """A set of POFiles."""
 
     def getPOFilesPendingImport():
         """Return a list of PO files that have data to be imported."""
@@ -292,3 +293,13 @@ class IPOFileSet(Interface):
 
         Return None if there is not such IPOFile.
         """
+
+
+class IPOFileTranslator(Interface):
+    """Represents contributions from people to POFiles."""
+
+    person = Attribute("The Person this record represents.")
+    pofile = Attribute("The POFile modified by the translator.")
+    latest_posubmission = Attribute("Latest POSubmission added to this POFile.")
+    date_last_touched = Attribute("Date the latest POSubmission was added.")
+

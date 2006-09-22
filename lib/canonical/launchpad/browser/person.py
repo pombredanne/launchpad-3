@@ -31,6 +31,7 @@ __all__ = [
     'SubscribedBugTaskSearchListingView',
     'PersonRdfView',
     'PersonView',
+    'PersonTranslationView',
     'PersonGPGView',
     'TeamJoinView',
     'TeamLeaveView',
@@ -1344,6 +1345,18 @@ class PersonView(LaunchpadView):
         comment = sshkey.comment
         sshkey.destroySelf()
         self.info_message = 'Key "%s" removed' % comment
+
+
+class PersonTranslationView(LaunchpadView):
+    """View for translation-related Person pages."""
+    def initialize(self):
+        self.batchnav = BatchNavigator(self.context.translation_history,
+                                       self.request)
+
+    @cachedproperty
+    def translation_groups(self):
+        """Return translation groups a person is a member of."""
+        return list(self.context.translation_groups)
 
 
 class PersonGPGView(LaunchpadView):

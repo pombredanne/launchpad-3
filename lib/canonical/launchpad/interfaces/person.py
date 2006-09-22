@@ -318,8 +318,11 @@ class IPerson(IHasSpecifications):
                 "into another and is still valid")
                 )
 
-    touched_pofiles = Attribute("The set of pofiles which the person has "
-        "worked on in some way.")
+    translation_history = Attribute("The set of POFileTranslator objects "
+        "that represent work done by this translator.")
+
+    translation_groups = Attribute("The set of TranslationGroup objects "
+        "this person is a member of.")
 
     # title is required for the Launchpad Page Layout main template
     title = Attribute('Person Page Title')

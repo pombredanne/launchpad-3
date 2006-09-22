@@ -35,13 +35,13 @@ from canonical.launchpad.interfaces import (
     ISSHKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner,
     IBugTaskSet, UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
     EmailAddressAlreadyTaken, ILaunchpadStatisticSet, ShipItConstants,
-    ILaunchpadCelebrities)
+    ILaunchpadCelebrities, ITranslationGroupSet)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.karma import KarmaTotalCache
 from canonical.launchpad.database.logintoken import LoginToken
-from canonical.launchpad.database.pofile import POFile
+from canonical.launchpad.database.pofile import POFileTranslator
 from canonical.launchpad.database.karma import KarmaAction, Karma
 from canonical.launchpad.database.potemplate import POTemplateSet
 from canonical.launchpad.database.packagebugcontact import PackageBugContact
@@ -870,19 +870,17 @@ class Person(SQLBase):
             return None
 
     @property
-    def touched_pofiles(self):
-        results = POFile.select('''
-            POSubmission.person = %s AND
-            POSubmission.pomsgset = POMsgSet.id AND
-            POMsgSet.pofile = POFile.id
-            ''' % sqlvalues(self.id),
-            orderBy=['POFile.datecreated'],
-            prejoins=['language', 'potemplate'],
-            clauseTables=['POMsgSet', 'POFile', 'POSubmission'],
-            distinct=True)
-        # XXX: Because of a template reference to
+    def translation_history(self):
+        """See IPerson."""
+        history = POFileTranslator.select("POFileTranslator.person = %s" % sqlvalues(self),
+                                            orderBy="date_last_touched")
+        history = history.prejoin(["pofile", "pofile.potemplate",
+                                  "latest_posubmission",
+                                  "latest_posubmission.pomsgset.potmsgset.primemsgid_",
+                                  "latest_posubmission.potranslation"])
+        # XXX: See bug 60320.i Because of a template reference to
         # pofile.potemplate.displayname, it would be ideal to also
-        # prejoin above:
+        # prejoin:
         #   potemplate.potemplatename
         #   potemplate.productseries
         #   potemplate.productseries.product
@@ -899,11 +897,16 @@ class Person(SQLBase):
         # anyway. When we have deep prejoining we can just ditch all of
         # this and either use cachedproperty or cache in the view code.
         #   -- kiko, 2006-03-17
-        results = list(results)
-        ids = set(pofile.potemplate.id for pofile in results)
+        history = list(history)
+        ids = set(record.pofile.potemplate.id for record in history)
         if ids:
             list(POTemplateSet().getByIDs(ids))
-        return results
+        return history
+
+    @property
+    def translation_groups(self):
+        """See IPerson."""
+        return getUtility(ITranslationGroupSet).getByPerson(self)
 
     def validateAndEnsurePreferredEmail(self, email):
         """See IPerson."""

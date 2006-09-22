@@ -4,7 +4,8 @@ __metaclass__ = type
 __all__ = [
     'POFile',
     'DummyPOFile',
-    'POFileSet'
+    'POFileSet',
+    'POFileTranslator',
     ]
 
 import StringIO
@@ -1032,3 +1033,14 @@ class POFileSet:
                 POTemplate.sourcepackagename = %s''' % sqlvalues(
                     path, distrorelease.id, sourcepackagename.id),
                 clauseTables=['POTemplate'])
+
+
+class POFileTranslator(SQLBase):
+    """See IPOFileTranslator."""
+    pofile = ForeignKey(foreignKey='POFile', dbName='pofile', notNull=True)
+    person = ForeignKey(foreignKey='Person', dbName='person', notNull=True)
+    latest_posubmission = ForeignKey(foreignKey='POSubmission',
+        dbName='latest_posubmission', notNull=True)
+    date_last_touched = UtcDateTimeCol(dbName='date_last_touched',
+        notNull=False, default=None)
+
