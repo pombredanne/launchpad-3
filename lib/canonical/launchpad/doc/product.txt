@@ -7,8 +7,8 @@ software. It can be part of a Project or it can be standalone.
 
     >>> from zope.component import getUtility
     >>> from zope.interface.verify import verifyObject
-    >>> from canonical.launchpad.interfaces import (IProductSet, IProduct,
-    ...                                             NotFoundError)
+    >>> from canonical.launchpad.interfaces import (
+    ...     IProductSet, IProduct, IPersonSet, NotFoundError)
     >>> from canonical.launchpad.ftests import login
     >>> from canonical.database.sqlbase import flush_database_updates
 
@@ -99,6 +99,90 @@ It provides information on all the translatables available, too:
     ...    print product.name
     evolution
     netapplet
+
+
+External Bug Tracker
+--------------------
+
+If a product doesn't use Malone, it can specify that it uses an
+external bug tracker. It can either use its own bug tracker, or use its
+project's bug tracker. In order to make this logic easier for call
+sites, there is a method that takes care of it called
+getExternalBugTracker.
+
+
+Firefox uses Malone as it's bug tracker, so it can't have an external
+one.
+
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> firefox.official_malone
+    True
+
+    >>> firefox.getExternalBugTracker() is None
+    True
+
+This is true even if its project has a bug tracker specified.
+
+    >>> from canonical.launchpad.interfaces import IBugTrackerSet
+    >>> gnome_bugzilla = getUtility(IBugTrackerSet).getByName('gnome-bugzilla')
+    >>> firefox.project.bugtracker = gnome_bugzilla
+    >>> firefox.getExternalBugTracker() is None
+    True
+
+Now, if we say that Firefox doesn't use Malone, its project's bug
+tracker will be returned.
+
+    >>> firefox.official_malone = False
+    >>> firefox.bugtracker is None
+    True
+    >>> firefox.getExternalBugTracker().name
+    u'gnome-bugzilla'
+
+
+If Firefox isn't happy with its project's bug tracker it can choose to
+specify its own.
+
+    >>> debbugs = getUtility(IBugTrackerSet).getByName('debbugs')
+    >>> firefox.bugtracker = debbugs
+    >>> firefox.getExternalBugTracker().name
+    u'debbugs'
+
+
+If neither the project nor the product have specified a bug tracker,
+None will of course be returned.
+
+    >>> firefox.project.bugtracker = None
+    >>> firefox.bugtracker = None
+    >>> firefox.getExternalBugTracker() is None
+    True
+
+
+Product Creation
+================
+
+We can create new products with the createProduct() method:
+
+    >>> owner = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> product = productset.createProduct(
+    ...     owner=owner,
+    ...     name='test-product',
+    ...     displayname='Test Product',
+    ...     title='Test Product',
+    ...     summary='A test product',
+    ...     description='A description of the test product')
+
+When creating a product, a default product series is created for it:
+
+    >>> product.serieslist.count()
+    1
+    >>> trunk = product.serieslist[0]
+    >>> print trunk.name
+    trunk
+
+This series is set as the development focus for the product:
+
+    >>> product.development_focus == trunk
+    True
 
 
 Specification Listings

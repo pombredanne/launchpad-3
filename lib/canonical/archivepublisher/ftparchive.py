@@ -1,12 +1,13 @@
 # (C) Canonical Software Ltd. 2004-2006, all rights reserved.
 
 import os
+from select import select
 import subprocess
 from StringIO import StringIO
 
 from sqlobject import AND
 
-from canonical.database.sqlbase import sqlvalues
+from canonical.database.sqlbase import expire_from_cache, sqlvalues
 
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory,
@@ -33,6 +34,49 @@ def safe_mkdir(path):
     if not os.path.exists(path):
         os.makedirs(path)
 
+
+# XXX malcc: Move this somewhere useful. If generalised with timeout
+# handling and stderr passthrough, could be a single method used for
+# this and the similar requirement in test_on_merge.py.
+def run_subprocess_with_logging(process_and_args, log, prefix):
+    """Run a subprocess, gathering the output as it runs and logging it.
+
+    process_and_args is a list containing the process to run and the
+    arguments for it, just as passed in the first argument to
+    subprocess.Popen.
+
+    log is a logger to pass the output we gather.
+
+    prefix is a prefix to attach to each line of output when we log it.
+    """
+    proc = subprocess.Popen(process_and_args,
+                            stdin=subprocess.PIPE,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            close_fds=True)
+    proc.stdin.close()
+    open_readers = set([proc.stdout, proc.stderr])
+    buf = ""
+    while open_readers:
+        rlist, wlist, xlist = select(open_readers, [], [])
+        
+        for reader in rlist:
+            chunk = os.read(reader.fileno(), 1024)
+            if chunk == "":
+                open_readers.remove(reader)
+                if buf:
+                    log.debug(buf)
+            else:
+                buf += chunk
+                lines = buf.split("\n")
+                for line in lines[0:-1]:
+                    log.debug("%s%s" % (prefix, line))
+                buf = lines[-1]
+        
+    ret = proc.wait()
+    return ret
+
+    
 DEFAULT_COMPONENT = "main"
 
 CONFIG_HEADER = """
@@ -104,9 +148,9 @@ class FTPArchiveHandler:
         """Do the entire generation and run process."""
         self.createEmptyPocketRequests()
         self.log.debug("Preparing file lists and overrides.")
-        self.generateOverrides()
+        self.generateOverrides(is_careful)
         self.log.debug("Generating overrides for the distro.")
-        self.generateFileLists()
+        self.generateFileLists(is_careful)
         self.log.debug("Doing apt-ftparchive work.")
         apt_config_filename = self.generateConfig(is_careful)
         self.runApt(apt_config_filename)
@@ -114,15 +158,12 @@ class FTPArchiveHandler:
     def runApt(self, apt_config_filename):
         """Run apt in a subprocess and verify its return value. """
         self.log.debug("Filepath: %s" % apt_config_filename)
-        p = subprocess.Popen(["apt-ftparchive", "--no-contents", "generate",
-                             apt_config_filename],
-                             stdin=subprocess.PIPE,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE,
-                             close_fds=True)
-        ret = p.wait()
+        ret = run_subprocess_with_logging(["apt-ftparchive", "--no-contents",
+                                           "generate", apt_config_filename],
+                                          self.log, "a-f: ")        
         if ret:
-            raise AssertionError("Unable to run apt-ftparchive properly")
+            raise AssertionError(
+                "Failure from apt-ftparchive. Return code %s" % ret)
         return ret
 
     #
@@ -194,27 +235,37 @@ class FTPArchiveHandler:
     #
     # Override Generation
     #
-    def generateOverrides(self):
+    def generateOverrides(self, fullpublish=False):
         """Collect packages that need overrides generated, and generate them."""
-        spphs = SourcePackagePublishingHistory.select(
-            """
-            SourcePackagePublishingHistory.distrorelease = DistroRelease.id AND
-            DistroRelease.distribution = %s AND
-            SourcePackagePublishingHistory.status = %s
-            """ % sqlvalues(self.distro, PackagePublishingStatus.PUBLISHED),
-            prejoins=["sourcepackagerelease.sourcepackagename"],
-            orderBy="id", clauseTables=["DistroRelease"])
-        bpphs = BinaryPackagePublishingHistory.select(
-            """
-            BinaryPackagePublishingHistory.distroarchrelease = 
-                DistroArchRelease.id AND
-            DistroArchRelease.distrorelease = DistroRelease.id AND
-            DistroRelease.distribution = %s AND
-            BinaryPackagePublishingHistory.status = %s
-            """ % sqlvalues(self.distro, PackagePublishingStatus.PUBLISHED),
-            prejoins=["binarypackagerelease.binarypackagename"],
-            orderBy="id", clauseTables=["DistroRelease", "DistroArchRelease"])
-        self.publishOverrides(spphs, bpphs)
+        for distrorelease in self.distro.releases:
+            for pocket in PackagePublishingPocket.items:
+                if (not fullpublish and
+                    not self.publisher.isDirty(distrorelease, pocket)):
+                    continue
+
+                spphs = SourcePackagePublishingHistory.select(
+                    """
+                    SourcePackagePublishingHistory.distrorelease = %s AND
+                    SourcePackagePublishingHistory.pocket = %s AND
+                    SourcePackagePublishingHistory.status = %s
+                    """ % sqlvalues(distrorelease,
+                                    pocket,
+                                    PackagePublishingStatus.PUBLISHED),
+                    prejoins=["sourcepackagerelease.sourcepackagename"],
+                    orderBy="id")
+                bpphs = BinaryPackagePublishingHistory.select(
+                    """
+                    BinaryPackagePublishingHistory.distroarchrelease =
+                    DistroArchRelease.id AND
+                    DistroArchRelease.distrorelease = %s AND
+                    BinaryPackagePublishingHistory.pocket = %s AND
+                    BinaryPackagePublishingHistory.status = %s
+                    """ % sqlvalues(distrorelease,
+                                    pocket,
+                                    PackagePublishingStatus.PUBLISHED),
+                    prejoins=["binarypackagerelease.binarypackagename"],
+                    orderBy="id", clauseTables=["DistroArchRelease"])
+                self.publishOverrides(spphs, bpphs)
 
     def publishOverrides(self, source_publications, binary_publications):
         """Output a set of override files for use in apt-ftparchive.
@@ -290,11 +341,15 @@ class FTPArchiveHandler:
         for pub in source_publications:
             updateOverride(pub, pub.sourcepackagerelease.name,
                            pub.distrorelease.name)
+            expire_from_cache(pub.sourcepackagerelease)
+            expire_from_cache(pub)
 
         for pub in binary_publications:
             updateOverride(pub, pub.binarypackagerelease.name,
                            pub.distroarchrelease.distrorelease.name,
                            pub.priority)
+            expire_from_cache(pub.binarypackagerelease)
+            expire_from_cache(pub)
 
         # Now generate the files on disk...
         for distrorelease in overrides:
@@ -335,7 +390,6 @@ class FTPArchiveHandler:
                                        (distrorelease, component))
 
         # Start to write the files out
-        di_overrides = []
         ef = open(ef_override, "w")
         f = open(main_override , "w")
         for package, priority, section in bin_overrides:
@@ -391,18 +445,39 @@ class FTPArchiveHandler:
     # File List Generation
     #
 
-    def generateFileLists(self):
+    def generateFileLists(self, fullpublish=False):
         """Collect currently published FilePublishings and write file lists."""
-        spps = SourcePackageFilePublishing.select(
-            AND(SourcePackageFilePublishing.q.distributionID == self.distro.id,
-                SourcePackageFilePublishing.q.publishingstatus ==
-                PackagePublishingStatus.PUBLISHED))
-        pps = BinaryPackageFilePublishing.select(
-            AND(BinaryPackageFilePublishing.q.distributionID == self.distro.id,
-                BinaryPackageFilePublishing.q.publishingstatus ==
-                    PackagePublishingStatus.PUBLISHED))
+        for distrorelease in self.distro.releases:
+             for pocket in pocketsuffix:
+                if (not fullpublish and
+                    not self.publisher.isDirty(distrorelease, pocket)):
+                    continue
 
-        self.publishFileLists(spps, pps)
+                spps = SourcePackageFilePublishing.select(
+                    """
+                    distribution = %s AND
+                    publishingstatus = %s AND
+                    pocket = %s AND
+                    distroreleasename = %s
+                    """ % sqlvalues(self.distro,
+                                    PackagePublishingStatus.PUBLISHED,
+                                    pocket,
+                                    distrorelease.name),
+                    orderBy="id")
+
+                pps = BinaryPackageFilePublishing.select(
+                    """
+                    distribution = %s AND
+                    publishingstatus = %s AND
+                    pocket = %s AND
+                    distroreleasename = %s
+                    """ % sqlvalues(self.distro,
+                                    PackagePublishingStatus.PUBLISHED,
+                                    pocket,
+                                    distrorelease.name),
+                    orderBy="id")
+
+                self.publishFileLists(spps, pps)
 
     def publishFileLists(self, sourcefiles, binaryfiles):
         """Collate the set of source files and binary files provided and

@@ -95,6 +95,44 @@ Note that multi-chunk comments are only created by the email interface
 itself; adding comments through the web UI always places them in the
 same chunk.
 
+Comment omission
+----------------
+
+If a comment is strictly identical to its previous comment in sequence,
+it will be omitted. Let's add some comments and attachments to a bug to see
+this in action:
+
+    >>> from canonical.launchpad.interfaces import ILaunchBag
+    >>> import StringIO
+    >>> user = getUtility(ILaunchBag).user
+
+    >>> login("test@canonical.com")
+    >>> bug_three = getUtility(IBugSet).get(3)
+    >>> m1 = bug_three.newMessage(owner=user, subject="Hi", content="Hello there")
+    >>> m2 = bug_three.newMessage(owner=user, subject="Hi", content="Hello there")
+    >>> m3 = bug_three.newMessage(owner=user, subject="Ho", content="Hello there")
+    >>> m4 = bug_three.newMessage(owner=user, subject="Ho", content="Hello there")
+    >>> file_ = StringIO.StringIO("Bogus content makes the world go round")
+    >>> a1 = bug_three.addAttachment(owner=user, file_=file_, description="Ho",
+    ...                              filename="munchy", comment="Hello there")
+    >>> m6 = bug_three.newMessage(owner=user, subject="Ho", content="Hello there")
+    >>> bug_three.messages.count()
+    7
+
+Now checking what gets displayed. m2 and m4 should be omitted, as they are
+identical to the comment that precedes them in order; no other comments
+should be hidden.
+
+    >>> bug_three_bugtask = bug_three.bugtasks[0]
+    >>> bug_view = getView(bug_three_bugtask, '+index', LaunchpadTestRequest())
+    >>> bug_view.initialize()
+    >>> [(c.index, c.title, c.text_for_display) 
+    ...  for c in bug_view.getBugCommentsForDisplay()]
+    [(1, u'Hi', u'Hello there'),
+     (3, u'Ho', u'Hello there'),
+     (5, u'Ho', u'Hello there'),
+     (6, u'Ho', u'Hello there')]
+
 Wrapping up
 -----------
 

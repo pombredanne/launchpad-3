@@ -16,12 +16,14 @@ from zope.app.form.browser.widget import BrowserWidget, renderElement
 from zope.app.form.interfaces import (
     IDisplayWidget, IInputWidget, InputErrors, ConversionError,
     WidgetInputError)
-from zope.schema.interfaces import ValidationError
+from zope.schema.interfaces import ValidationError, InvalidValue
 from zope.app.form import Widget, CustomWidgetFactory
 from zope.app.form.utility import setUpWidget
 
-from canonical.launchpad.interfaces import IBugWatch, ILaunchBag
+from canonical.launchpad.interfaces import IBugWatch, ILaunchBag, NotFoundError
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import canonical_url
+from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.popup import SinglePopupWidget
 
 class BugTaskAssigneeWidget(Widget):
@@ -208,54 +210,6 @@ class BugTaskAssigneeWidget(Widget):
                 return self.assigned_to
 
 
-# XXX, Brad Bollenbach, 2006-08-10: This is a hack to workaround Zope's
-# RadioWidget not properly selecting the default value.
-#
-# See https://launchpad.net/bugs/56062 .
-class LaunchpadRadioWidget(RadioWidget):
-    """A widget to work around a bug in RadioWidget."""
-
-    def renderItems(self, value):
-        """Render the items with with the correct radio button selected."""
-        # XXX, Brad Bollenbach, 2006-08-11: Workaround the fact that
-        # value is a value taken directly from the form, when it should
-        # instead have been already converted to a vocabulary term, to
-        # ensure the code in the rest of this method will select the
-        # appropriate radio button.
-        if value == self._missing:
-            value = self.context.missing_value
-
-        no_value = None
-        if (value == self.context.missing_value
-            and getattr(self, 'firstItem', False)
-            and len(self.vocabulary) > 0
-            and self.context.required):
-                # Grab the first item from the iterator:
-                values = [iter(self.vocabulary).next().value]
-        elif value != self.context.missing_value:
-            values = [value]
-        else:
-            # the "no value" option will be checked
-            no_value = 'checked'
-            values = []
-
-        items = self.renderItemsWithValues(values)
-        if not self.context.required:
-            kwargs = {
-                'index': None,
-                'text': self.translate(self._messageNoValue),
-                'value': '',
-                'name': self.name,
-                'cssClass': self.cssClass}
-            if no_value:
-                option = self.renderSelectedItem(**kwargs)
-            else:
-                option = self.renderItem(**kwargs)
-            items.insert(0, option)
-
-        return items
-
-
 class BugTaskBugWatchWidget(RadioWidget):
     """A widget for linking a bug watch to a bug task."""
 
@@ -429,6 +383,36 @@ class BugTaskBugWatchWidget(RadioWidget):
         return renderElement(
             'table', cssClass=self.cssClass,
             contents='\n'.join(rendered_items))
+
+
+class BugTaskSourcePackageNameWidget(SinglePopupWidget):
+    """A widget for associating a bugtask with a SourcePackageName.
+
+    It accepts both binary and source package names.
+    """
+
+    def _toFieldValue(self, input):
+        if not input:
+            return self.context.missing_value
+
+        field = self.context
+        distribution = field.context.distribution
+        if distribution is None and field.context.distrorelease is not None:
+            distribution = field.context.distrorelease.distribution
+        assert distribution is not None, (
+            "BugTaskSourcePackageNameWidget should be used only for"
+            " bugtasks on distributions or on distribution releases.")
+
+        try:
+            source, binary = distribution.guessPackageNames(input)
+        except NotFoundError:
+            try:
+                return self.convertTokensToValues([input])[0]
+            except InvalidValue:
+                raise LaunchpadValidationError(
+                    "Launchpad doesn't know of any source package named"
+                    " '%s' in %s.", input, distribution.displayname)
+        return source
 
 
 class AssigneeDisplayWidget(BrowserWidget):
