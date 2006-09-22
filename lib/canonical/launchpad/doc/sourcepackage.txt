@@ -218,7 +218,7 @@ than nothing ... bug # 29659
     >>> len(sp.releases)
     2
 
-    >>> len(sp.releasehistory)
+    >>> sp.releasehistory.count()
     2
 
 
@@ -251,6 +251,6 @@ Direct Packagings
 releasehistory
 --------------
 
-    >>> print len(hoary_firefox_one.releasehistory)
+    >>> hoary_firefox_one.releasehistory.count()
     2
 

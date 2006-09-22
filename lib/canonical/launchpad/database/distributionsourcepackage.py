@@ -8,22 +8,19 @@ __all__ = [
     'DistributionSourcePackage',
     ]
 
-import apt_pkg
-apt_pkg.InitSystem()
-
 from sqlobject import SQLObjectNotFound
+from sqlobject.sqlbuilder import SQLConstant
 
 from zope.interface import implements
 
-from canonical.lp.dbschema import PackagePublishingStatus, TicketStatus
+from canonical.lp.dbschema import PackagePublishingStatus
 
 from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, ITicketTarget, DuplicateBugContactError,
     DeleteBugContactError, TICKET_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.database.bug import (
-    BugSet, get_bug_tags, get_bug_tags_open_count)
+from canonical.launchpad.database.bug import BugSet, get_bug_tags_open_count
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
@@ -39,7 +36,6 @@ from canonical.launchpad.database.supportcontact import SupportContact
 from canonical.launchpad.database.ticket import Ticket, TicketSet
 from canonical.launchpad.helpers import shortlist
 
-_arg_not_provided = object()
 
 class DistributionSourcePackage(BugTargetBase):
     """This is a "Magic Distribution Source Package". It is not an
@@ -102,10 +98,12 @@ class DistributionSourcePackage(BugTargetBase):
             distribution=self.distribution,
             sourcepackagerelease=spph[0].sourcepackagerelease)
 
+    # XXX: bad method name, no need to be a property -- kiko, 2006-08-16
     @property
     def currentrelease(self):
         """See IDistributionSourcePackage."""
-        sprs = SourcePackageRelease.select("""
+        order_const = "debversion_sort_key(SourcePackageRelease.version) DESC"
+        spr = SourcePackageRelease.selectFirst("""
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackageRelease.id =
                 SourcePackagePublishingHistory.sourcepackagerelease AND
@@ -115,18 +113,16 @@ class DistributionSourcePackage(BugTargetBase):
             SourcePackagePublishingHistory.status != %s
             """ % sqlvalues(self.sourcepackagename, self.distribution,
                             PackagePublishingStatus.REMOVED),
-            orderBy='datecreated',
-            clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'])
+            clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
+            orderBy=[SQLConstant(order_const),
+                     "-SourcePackagePublishingHistory.datepublished"])
 
-        # safely sort by version
-        compare = lambda a,b: apt_pkg.VersionCompare(a.version, b.version)
-        releases = sorted(shortlist(sprs, 30), cmp=compare)
-        if len(releases) == 0:
+        if spr is None:
             return None
-
-        return DistributionSourcePackageRelease(
-            distribution=self.distribution,
-            sourcepackagerelease=releases[-1])
+        else:
+            return DistributionSourcePackageRelease(
+                distribution=self.distribution,
+                sourcepackagerelease=spr)
 
     def bugtasks(self, quantity=None):
         """See IDistributionSourcePackage."""
@@ -195,6 +191,7 @@ class DistributionSourcePackage(BugTargetBase):
             return None
         return cache.binpkgnames
 
+    # XXX: bad method name, no need to be a property -- kiko, 2006-08-16
     @property
     def by_distroreleases(self):
         """See IDistributionSourcePackage."""
@@ -210,6 +207,7 @@ class DistributionSourcePackage(BugTargetBase):
         """See IDistributionSourcePackage."""
         return self._getPublishingHistoryQuery()
 
+    # XXX: bad method name, no need to be a property -- kiko, 2006-08-16
     @property
     def current_publishing_records(self):
         """See IDistributionSourcePackage."""
@@ -236,6 +234,7 @@ class DistributionSourcePackage(BugTargetBase):
             prejoinClauseTables=['SourcePackageRelease'],
             orderBy='-datecreated')
 
+    # XXX: bad method name, no need to be a property -- kiko, 2006-08-16
     @property
     def releases(self):
         """See IDistributionSourcePackage."""
@@ -371,3 +370,4 @@ class DistributionSourcePackage(BugTargetBase):
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename)
         return BugSet().createBug(bug_params)
+
