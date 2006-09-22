@@ -533,3 +533,90 @@ these events.
     (Cleanup)
     >>> ticketmessage_event_listener.unregister()
     >>> ticket_event_listener.unregister()
+
+Reopenings
+----------
+
+Whenever a ticket considered answered (in the SOLVED or INVALID state)
+is reopened, a TicketReopening is created.
+
+    (Let's register an event listener to notify us whenever a
+     TicketReopening is created.)
+
+    >>> from canonical.launchpad.interfaces import ITicketReopening
+    >>> reopening_event_listener = TestEventListener(
+    ...     ITicketReopening, ISQLObjectCreatedEvent, print_event)
+
+The most common use case is when a user confirms a solution, and then
+comes back to say that it doesn't work in fact.
+
+    >>> ticket = ubuntu.newTicket(**new_ticket_args)
+    >>> answer_message = ticket.giveAnswer(
+    ...    sample_person, "You need some setup on the Mac side. "
+    ...    "Follow the instructions at "
+    ...     "https://help.ubuntu.com/community/Installation/OldWorldMacs",
+    ...     datecreated=now_plus_one_hour)
+    >>> confirm_message = ticket.confirmAnswer(
+    ...     "I've installed BootX and the installer now boot properly.",
+    ...     answer=answer_message, datecreated=now_plus_two_hours)
+    >>> reopen_message = ticket.reopen(
+    ...     "Actually, altough the installer boots properly. I'm not able "
+    ...     "to pass beyond the partitioning.",
+    ...     datecreated=now_plus_three_hours)
+    Received SQLObjectCreatedEvent on TicketReopening
+
+The reopening record is available through the reopenings attribute.
+
+    >>> list(ticket.reopenings)
+    [<TicketReopening...>]
+    >>> reopening = ticket.reopenings[0]
+    >>> verifyObject(ITicketReopening, reopening)
+    True
+
+The reopening contain the date of the reopening in the datecreated
+attribute and the person who made the reopening in the reopener
+attribute.
+
+    >>> reopening.datecreated == now_plus_three_hours
+    True
+    >>> print reopening.reopener.displayname
+    No Privileges Person
+
+It contains the ticket prior answerer, datecreated, as well as the
+prior status in the priorstate attribute:
+
+    >>> print reopening.answerer.displayname
+    Sample Person
+    >>> reopening.dateanswered == now_plus_two_hours
+    True
+    >>> print reopening.priorstate.name
+    SOLVED
+
+
+Another example of a reopening, would be when the ticket status is set
+back to OPEN after having been rejected.
+
+    >>> ticket = ubuntu.newTicket(**new_ticket_args)
+    >>> reject_message = ticket.reject(
+    ...     sample_person, 'This is a frivoulous request.',
+    ...     datecreated=now_plus_one_hour)
+    >>> status_change_message = ticket.setStatus(
+    ...     stub, TicketStatus.OPEN, 'Disregard previous rejection. '
+    ...     'Sample Person was having a bad day.',
+    ...     datecreated=now_plus_two_hours)
+    Received SQLObjectCreatedEvent on TicketReopening
+
+    >>> reopening = ticket.reopenings[0]
+    >>> print reopening.reopener.name
+    stub
+    >>> reopening.datecreated == now_plus_two_hours
+    True
+    >>> print reopening.answerer.displayname
+    Sample Person
+    >>> reopening.dateanswered == now_plus_one_hour
+    True
+    >>> print reopening.priorstate.name
+    INVALID
+
+    (Cleanup)
+    >>> reopening_event_listener.unregister()

@@ -27,7 +27,6 @@ from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.database.ticketbug import TicketBug
 from canonical.launchpad.database.ticketmessage import TicketMessage
-from canonical.launchpad.database.ticketreopening import TicketReopening
 from canonical.launchpad.database.ticketsubscription import TicketSubscription
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
@@ -143,19 +142,6 @@ class Ticket(SQLBase, BugLinkTargetMixin):
 
     def isSubscribed(self, person):
         return bool(TicketSubscription.selectOneBy(ticket=self, person=person))
-
-    def reopen_(self, reopener):
-        """See ITicket."""
-        if not self.can_be_reopened:
-            return None
-        reop = TicketReopening(ticket=self, reopener=reopener,
-            answerer=self.answerer, dateanswered=self.dateanswered,
-            priorstate=self.status)
-        self.answerer = None
-        self.status = TicketStatus.OPEN
-        self.dateanswered = None
-        self.sync()
-        return reop
 
     def _isTargetOwnerOrAdmin(self, user):
         """Check whether user is a target owner or admin."""

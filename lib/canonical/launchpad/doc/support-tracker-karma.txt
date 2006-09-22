@@ -37,6 +37,18 @@ Setup an event listener to help ensure karma is assigned when it should.
     >>> karma_helper = KarmaAssignedEventListener(show_person=True)
     >>> karma_helper.register_listener()
 
+Define a generator that always give a date higher than the precendent
+to order our message.
+
+    >>> from datetime import datetime, timedelta
+    >>> from pytz import UTC
+    >>> def timegenerator(origin):
+    ...     now = origin
+    ...     while True:
+    ...         now += timedelta(seconds=5)
+    ...         yield now
+    >>> now = timegenerator(datetime.now(UTC))
+
 Karma Actions
 -------------
 - Creating a ticket
@@ -47,7 +59,7 @@ Karma Actions
     >>> firefox = getUtility(IProductSet)['firefox']
     >>> firefox_ticket = firefox.newTicket(
     ...     title='New ticket', description='Ticket description.',
-    ...     owner=sample_person)
+    ...     owner=sample_person, datecreated=now.next())
     >>> notify(SQLObjectCreatedEvent(firefox_ticket))
     Karma added: action=ticketcreated, product=firefox, person=name12
 
@@ -58,37 +70,42 @@ will usually be called by an automated script.
 
     >>> msg = firefox_ticket.expireTicket(
     ...     foo_bar, 'Expiring because of inactivity. Reopen if you are '
-    ...     'still having the problem and provide additional information.')
+    ...     'still having the problem and provide additional information.',
+    ...     datecreated=now.next())
 
 - Reopening a ticket
 
     >>> msg = firefox_ticket.reopen(
-    ...     "Firefox doesn't have any 'Quick Searches' in its bookmarks.")
+    ...     "Firefox doesn't have any 'Quick Searches' in its bookmarks.",
+    ...     datecreated=now.next())
     Karma added: action=ticketreopened, product=firefox, person=name12
 
 - Requesting for more information
 
     >>> msg = firefox_ticket.requestInfo(
-    ...     foo_bar, 'What "Quick Searches" do you want?')
+    ...     foo_bar, 'What "Quick Searches" do you want?',
+    ...     datecreated=now.next())
     Karma added: action=ticketrequestedinfo, product=firefox, person=name16
 
 - Giving back more information
 
     >>> msg = firefox_ticket.giveInfo(
-    ...     'The same one than shipped upstreams.')
+    ...     'The same one than shipped upstreams.',
+    ...     datecreated=now.next())
     Karma added: action=ticketgaveinfo, product=firefox, person=name12
 
 - Giving an answer to a ticket request
 
     >>> msg = firefox_ticket.giveAnswer(
     ...     foo_bar, "Ok, I see what you mean. You need to install them "
-    ...     "manually for now.")
+    ...     "manually for now.", datecreated=now.next())
     Karma added: action=ticketgaveanswer, product=firefox, person=name16
 
 - Adding a comment
 
     >>> msg = firefox_ticket.addComment(
-    ...     foo_bar, 'You could also fill a bug about that, if you like.')
+    ...     foo_bar, 'You could also fill a bug about that, if you like.',
+    ...     datecreated=now.next())
     Karma added: action=ticketcommentadded, product=firefox, person=name16
 
 - Confirming that the problem is solved
@@ -99,7 +116,7 @@ also receives karma.
 
     >>> msg = firefox_ticket.confirmAnswer(
     ...     "Ok, thanks. I'll open a bug about this then.",
-    ...     answer=msg)
+    ...     answer=msg, datecreated=now.next())
     Karma added: action=ticketansweraccepted, product=firefox, person=name12
     Karma added: action=ticketanswered, product=firefox, person=name16
 
@@ -115,7 +132,8 @@ We do not grant karma for status change made outside of workflow:
 
     >>> from canonical.lp.dbschema import TicketStatus
     >>> msg = firefox_ticket.setStatus(
-    ...     foo_bar, TicketStatus.OPEN, 'That rejection was an error.')
+    ...     foo_bar, TicketStatus.OPEN, 'That rejection was an error.',
+    ...     datecreated=now.next())
 
 - Solving own problem
 
@@ -126,7 +144,8 @@ action to the same person.
 
     >>> msg = firefox_ticket.giveAnswer(
     ...     sample_person, "I was able to import some by following the "
-    ...     "instructions on http://tinyurl.com/cyus4")
+    ...     "instructions on http://tinyurl.com/cyus4",
+    ...     datecreated=now.next())
     Karma added: action=ticketownersolved, product=firefox, person=name12
 
 - Changing the Title of a ticket:
@@ -166,12 +185,7 @@ been tested.
     >>> karma_helper.added_karma_actions == set(support_karma_actions)
     True
 
-Unregister the event listener to make sure we won't interfere in other tests.
 
+    (Unregister the event listener to make sure we won't interfere in
+    other tests.)
     >>> karma_helper.unregister_listener()
-
-- different ways of getting karma through the support tracker
-
-    * accept an answer: ITicket.acceptAnswer().  If the submitter is set as
-                        the answerer by acceptAnswer(), should we give karma
-                        to him anyway?

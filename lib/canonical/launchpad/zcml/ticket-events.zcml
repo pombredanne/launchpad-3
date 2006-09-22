@@ -32,4 +32,9 @@
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
    handler="canonical.launchpad.subscribers.karma.ticket_bug_added" />
 
+<subscriber
+   for="canonical.launchpad.interfaces.ITicket
+        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+   handler="canonical.launchpad.database.create_ticketreopening" />
+
 </configure>
