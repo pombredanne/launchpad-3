@@ -26,7 +26,7 @@ __all__ = ['SQLBase', 'quote', 'quote_like', 'quoteIdentifier', 'sqlvalues',
            'begin', 'commit', 'rollback', 'alreadyInstalledMsg', 'connect',
            'AUTOCOMMIT_ISOLATION', 'READ_COMMITTED_ISOLATION',
            'SERIALIZABLE_ISOLATION', 'DEFAULT_ISOLATION',
-           'clear_current_connection_cache']
+           'clear_current_connection_cache', 'expire_from_cache']
 
 # As per badly documented psycopg 1 constants
 AUTOCOMMIT_ISOLATION=0
@@ -366,6 +366,11 @@ def clear_current_connection_cache():
         for c in SQLBase._connection.cache.allSubCaches():
             c.clear()
 
+def expire_from_cache(obj):
+    """Expires a single object from the SQLObject cache."""
+    if getattr(SQLBase._connection, 'cache', None) is not None:
+        SQLBase._connection.cache.expire(obj.id, obj.__class__)
+
 
 def quote(x):
     r"""Quote a variable ready for inclusion into an SQL statement.
@@ -409,13 +414,22 @@ def quote(x):
 
     >>> sqlrepr(datetime(2003, 12, 4, 13, 45, 50), 'postgres')
     "'2003-12-04T13:45:50'"
+
+    This function also special cases set objects, which SQLObject's
+    sqlrepr() doesn't know how to handle.
+
+    >>> quote(set([1,2,3]))
+    '(1, 2, 3)'
     """
     if isinstance(x, datetime):
         return "'%s'" % x
     elif ISQLBase(x, None) is not None:
         return str(x.id)
-    else:
-        return sqlrepr(x, 'postgres')
+    elif isinstance(x, set):
+        # SQLObject can't cope with sets, so convert to a list, which it
+        # /does/ know how to handle.
+        x = list(x)
+    return sqlrepr(x, 'postgres')
 
 def quote_like(x):
     r"""Quote a variable ready for inclusion in a SQL statement's LIKE clause

@@ -22,6 +22,7 @@ from BeautifulSoup import BeautifulSoup
 
 from hct.util import log
 from hct.util.path import as_dir, subdir, under_only
+from canonical.launchpad.webapp.url import urlappend
 
 
 class WalkerError(Exception): pass
@@ -260,7 +261,7 @@ class HTTPWalker(WalkerBase):
 
         Returns the HTTPResponse object.
         """
-        # we build a custom opener, because we don't want redirects to be
+        # We build a custom opener, because we don't want redirects to be
         # followed.
         if self._opener is None:
             self._opener = urllib2.OpenerDirector()
@@ -287,6 +288,12 @@ class HTTPWalker(WalkerBase):
         if path.endswith("/"):
             return True
 
+        # If the URI scheme is FTP, then the URI comes from a Squid
+        # FTP listing page, which includes the trailing slash on all
+        # URIs that need it.
+        if self.scheme == 'ftp':
+            return False
+
         self.log.debug("Checking if %s is a directory" % path)
         try:
             response = self.request("HEAD", path)
@@ -295,10 +302,10 @@ class HTTPWalker(WalkerBase):
             if exc.code != 301:
                 return False
         except (IOError, socket.error), exc:
-            # raise HTTPWalkerError for other IO or socket errors
+            # Raise HTTPWalkerError for other IO or socket errors.
             raise HTTPWalkerError(str(exc))
 
-        # we have a 301 redirect error from here on.
+        # We have a 301 redirect error from here on.
         url = exc.hdrs.getheader("location")
         (scheme, netloc, redirect_path, query, fragment) \
                  = urlsplit(url, self.scheme, self.FRAGMENTS)
@@ -365,7 +372,7 @@ def walk(url, log_parent=None):
     """Return a walker for the URL given."""
     (scheme, netloc, path, query, fragment) = urlsplit(url, "file")
     if scheme in ["ftp"]:
-        # if ftp_proxy is set, use the HTTPWalker class since we are
+        # If ftp_proxy is set, use the HTTPWalker class since we are
         # talking to an HTTP proxy.
         if 'ftp_proxy' in os.environ:
             return HTTPWalker(url, log_parent)
@@ -381,4 +388,5 @@ def walk(url, log_parent=None):
 def combine_url(base, subdir, filename):
     """Combine a URL from the three parts returned by walk()."""
     subdir_url = urljoin(base, subdir)
-    return urljoin(subdir_url, filename)
+    # The "filename" component must be appended to the resulting URL.
+    return urlappend(subdir_url, filename)

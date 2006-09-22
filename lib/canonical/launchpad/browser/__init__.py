@@ -20,7 +20,6 @@ from canonical.launchpad.browser.bugcomment import *
 from canonical.launchpad.browser.bugextref import *
 from canonical.launchpad.browser.buginfestation import *
 from canonical.launchpad.browser.bugmessage import *
-from canonical.launchpad.browser.bugnomination import *
 from canonical.launchpad.browser.bugpackageinfestation import *
 from canonical.launchpad.browser.bugsubscription import *
 from canonical.launchpad.browser.bugtarget import *
@@ -30,6 +29,7 @@ from canonical.launchpad.browser.bugwatch import *
 from canonical.launchpad.browser.cal import *
 from canonical.launchpad.browser.codeofconduct import *
 from canonical.launchpad.browser.cve import *
+from canonical.launchpad.browser.cvereport import *
 from canonical.launchpad.browser.distribution import *
 from canonical.launchpad.browser.distributionmirror import *
 from canonical.launchpad.browser.distributionsourcepackage import *

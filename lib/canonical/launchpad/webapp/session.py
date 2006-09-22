@@ -96,5 +96,9 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
             if referrer is not None:
                 referrer = referrer.decode('US-ASCII', 'replace')
             session['initial_referrer'] = referrer
+            url = str(request.URL).decode('US-ASCII', 'replace')
+            if request.get('QUERY_STRING', None):
+                url = url + '?' + request['QUERY_STRING']
+            session['initial_url'] = url
 
 idmanager = LaunchpadCookieClientIdManager()
