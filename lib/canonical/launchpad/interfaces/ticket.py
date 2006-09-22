@@ -248,9 +248,10 @@ class ITicket(IHasOwner):
     def reject(user, comment, datecreated=None):
         """Mark this ticket as INVALID.
 
-        Add an ITicketMessage with action REJECT. The ticket is changed to
-        INVALID and the datelastresponse is updated to the message creation
-        date.
+        Add an ITicketMessage with action REJECT. The ticket status is changed
+        to INVALID. The created message is set as the ticket answer and its
+        owner as the ticket answerer. The datelastresponse and dateanswered
+        are updated to the message creation.
 
         Only support contacts for the ticket target, the target owner or a
         member of the admin team can reject a request. All tickets can be

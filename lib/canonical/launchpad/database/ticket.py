@@ -309,9 +309,13 @@ class Ticket(SQLBase, BugLinkTargetMixin):
             "request")
         assert self.status != TicketStatus.INVALID, (
             "Ticket is already rejected.")
-        return self._newMessage(
+        msg = self._newMessage(
             user, comment, datecreated=datecreated,
             action=TicketAction.REJECT, newstatus=TicketStatus.INVALID)
+        self.answerer = user
+        self.dateanswered = msg.datecreated
+        self.answer = msg
+        return msg
 
     @notify_modified()
     def expireTicket(self, user, comment, datecreated=None):

@@ -383,6 +383,16 @@ After rejection, the ticket is marked as invalid and the
     >>> spam_ticket.datelastresponse == now_plus_one_hour
     True
 
+The rejection message is also considered as answering the message, so the
+dateanswered, answerer and answer attributes are also updated.
+
+    >>> spam_ticket.answer == reject_message
+    True
+    >>> print spam_ticket.answerer.displayname
+    Sample Person
+    >>> spam_ticket.dateanswered == now_plus_one_hour
+    True
+
 Other scenarios
 ---------------
 

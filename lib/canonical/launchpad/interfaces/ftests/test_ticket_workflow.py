@@ -415,15 +415,25 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
         self.ubuntu.addSupportContact(self.sample_person)
         valid_statuses = [status for status in TicketStatus.items
                           if status.name != 'INVALID']
+
+        def checkRejectMessageIsAnAnswer(message):
+            # Check that the rejection message was considered answering
+            # the ticket.
+            self.assertEquals(message, self.ticket.answer)
+            self.assertEquals(self.sample_person, self.ticket.answerer)
+            self.assertEquals(message.datecreated, self.ticket.dateanswered)
+
         self._testValidTransition(
             valid_statuses,
             expected_owner=self.sample_person,
             expected_action=TicketAction.REJECT,
             expected_status=TicketStatus.INVALID,
+            extra_message_check=checkRejectMessageIsAnAnswer,
             transition_method=self.ticket.reject,
             transition_method_args=(
                 self.sample_person, 'This is lame.'),
-            edited_fields=['status', 'messages', 'datelastresponse'])
+            edited_fields=['status', 'messages', 'answerer', 'dateanswered',
+                           'answer', 'datelastresponse'])
 
     def testDisallowNoOpSetStatus(self):
         """Test that calling setStatus to change to the same status
@@ -559,7 +569,6 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
         else:
             self.assertEquals(
                 message.datecreated, self.ticket.datelastresponse)
-
 
     def checkTransitionEvents(self, message, edited_fields, status_name):
         """Helper method to validate the events triggered from the transition.
