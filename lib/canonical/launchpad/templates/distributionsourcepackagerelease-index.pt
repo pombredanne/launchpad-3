@@ -71,7 +71,7 @@
           <a
             tal:content="file/url/filename"
             tal:attributes="href file/url/fileurl">evolution_2.tar.gz</a>
-          (<span tal:replace="file/libraryfile/content/filesize" /> bytes)
+          (<span tal:replace="file/libraryfile/content/filesize/fmt:bytes" />)
         </li>
      </ul>
      <i tal:condition="not:files">No files available for download.</i>
