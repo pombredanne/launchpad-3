@@ -7,7 +7,6 @@ __all__ = [
     'IrcID', 'IrcIDSet']
 
 import itertools
-import sets
 from datetime import datetime, timedelta
 import pytz
 import sha

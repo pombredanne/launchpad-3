@@ -10,7 +10,6 @@ __all__ = [
 
 
 import datetime
-import sets
 from warnings import warn
 
 from zope.interface import implements
@@ -446,7 +445,7 @@ class ProductSeriesSourceSet:
                          import status.
         """
         queries = []
-        clauseTables = sets.Set()
+        clauseTables = set()
         # deal with the cases which require project and product
         if ( ready is not None ) or text:
             if text:
@@ -494,3 +493,4 @@ class ProductSeriesSourceSet:
         if result is None:
             return default
         return result
+
