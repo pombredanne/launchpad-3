@@ -677,7 +677,7 @@ class Person(SQLBase):
         to_addrs = set()
         for person in itertools.chain(self.administrators, [self.teamowner]):
             to_addrs.update(contactEmailAddresses(person))
-        return to_addrs
+        return sorted(to_addrs)
 
     def addMember(self, person, status=TeamMembershipStatus.APPROVED,
                   reviewer=None, comment=None):
@@ -990,7 +990,7 @@ class Person(SQLBase):
             AND date_consumed IS NULL
             """ % sqlvalues(self.id, LoginTokenType.VALIDATEEMAIL,
                             LoginTokenType.VALIDATETEAMEMAIL)
-        return sets.Set([token.email for token in LoginToken.select(query)])
+        return sorted(set(token.email for token in LoginToken.select(query)))
 
     @property
     def guessedemails(self):
