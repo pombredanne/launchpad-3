@@ -127,6 +127,7 @@ class DistroReleaseLanguage(SQLBase, RosettaStats):
         self.currentcount = current
         self.updatescount = updates
         self.rosettacount = rosetta
+        # XXX: could probably be moved to API on IPersonSet. -- kiko, 2006-09-23
         self.contributorcount = Person.select('''
             Person.id = POSubmission.person AND
             POSubmission.pomsgset = POMsgSet.id AND

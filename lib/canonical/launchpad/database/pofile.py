@@ -22,8 +22,6 @@ from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLObjectNotFound, SQLMultipleJoin
     )
 
-from canonical.cachedproperty import cachedproperty
-
 from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, sqlvalues)
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -36,8 +34,9 @@ import canonical.launchpad
 from canonical.launchpad import helpers
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.interfaces import (
-    IPOFileSet, IPOFile, IPOTemplateExporter, ILibraryFileAliasSet,
-    ILaunchpadCelebrities, ZeroLengthPOExportError, NotFoundError)
+    IPersonSet, IPOFileSet, IPOFile, IPOTemplateExporter,
+    ILibraryFileAliasSet, ILaunchpadCelebrities,
+    ZeroLengthPOExportError, NotFoundError)
 
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
@@ -52,7 +51,6 @@ from canonical.launchpad.components.poparser import (
     POSyntaxError, POHeader, POInvalidInputError)
 from canonical.librarian.interfaces import ILibrarianClient
 
-from canonical.launchpad.webapp.snapshot import Snapshot
 
 def _check_translation_perms(permission, translators, person):
     """Return True or False dependening on whether the person is part of the
@@ -100,6 +98,7 @@ def _check_translation_perms(permission, translators, person):
 
     # ok, thats all we can check, and so we must assume the answer is no
     return False
+
 
 def _can_edit_translations(pofile, person):
     """Say if a person is able to edit existing translations.
@@ -239,17 +238,10 @@ class POFile(SQLBase, RosettaStats):
         """See IPOFile."""
         return self.potemplate.translationpermission
 
-    @cachedproperty
+    @property
     def contributors(self):
         """See IPOFile."""
-        from canonical.launchpad.database.person import Person
-
-        return list(Person.select("""
-            POSubmission.person = Person.id AND
-            POSubmission.pomsgset = POMsgSet.id AND
-            POMsgSet.pofile = %d""" % self.id,
-            clauseTables=('POSubmission', 'POMsgSet'),
-            distinct=True))
+        return getUtility(IPersonSet).getPOFileContributors(self)
 
     def canEditTranslations(self, person):
         """See IPOFile."""

@@ -175,6 +175,10 @@ class POFileView(LaunchpadView):
     """A basic view for a POFile"""
     __used_for__ = IPOFile
 
+    @cachedproperty
+    def contributors(self):
+        return list(self.context.contributors)
+
 
 class POFileUploadView(POFileView):
     """A basic view for a POFile"""

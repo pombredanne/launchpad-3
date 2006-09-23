@@ -624,6 +624,9 @@ class IPersonSet(Interface):
         default ordering specified in Person._defaultOrder.
         """
 
+    def getPOFileContributors(pofile):
+        """Return all Persons that have contributed to the specified POFile."""
+
     def getAllPersons(orderBy=None):
         """Return all Persons, ignoring the merged ones.
 

@@ -1305,6 +1305,18 @@ class PersonSet:
 
         return Person.select(query, distinct=True, orderBy=orderBy)
 
+
+    def getPOFileContributors(self, pofile):
+        # Part of the reason for not doing an explicit join here is to
+        # avoid needing to distinct the results, which doesn't work with
+        # Person's default sort order.
+        contributors = Person.select("""
+            id IN (
+                SELECT DISTINCT person
+                  FROM POFileTranslator
+                  WHERE pofile = %s)""" % quote(pofile))
+        return contributors
+
     def merge(self, from_person, to_person):
         """Merge a person into another.
 
