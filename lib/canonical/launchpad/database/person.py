@@ -894,8 +894,7 @@ class Person(SQLBase):
         # one shot. The list() ensures that we materialize the query
         # before passing it on to avoid reissuing it; the template code
         # only hits this callsite once and iterates over all the results
-        # anyway. When we have deep prejoining we can just ditch all of
-        # this and either use cachedproperty or cache in the view code.
+        # anyway.
         #   -- kiko, 2006-03-17
         history = list(history)
         ids = set(record.pofile.potemplate.id for record in history)
@@ -1305,8 +1304,8 @@ class PersonSet:
 
         return Person.select(query, distinct=True, orderBy=orderBy)
 
-
     def getPOFileContributors(self, pofile):
+        """See IPersonSet."""
         # Part of the reason for not doing an explicit join here is to
         # avoid needing to distinct the results, which doesn't work with
         # Person's default sort order.
@@ -1316,6 +1315,19 @@ class PersonSet:
                   FROM POFileTranslator
                   WHERE pofile = %s)""" % quote(pofile))
         return contributors
+
+    def getPOFileContributorsByDistroRelease(self, distrorelease, language):
+        """See IPersonSet."""
+        # See comment in getPOFileContributors.
+        return Person.select('''
+            id IN (
+                SELECT DISTINCT person
+                  FROM POFileTranslator, POFile, POTemplate
+                 WHERE POFileTranslator.pofile = POFile.id AND
+                       POFile.potemplate = POTemplate.id AND
+                       POFile.language = %s AND
+                       POTemplate.distrorelease = %s)
+            ''' % sqlvalues(language, distrorelease))
 
     def merge(self, from_person, to_person):
         """Merge a person into another.

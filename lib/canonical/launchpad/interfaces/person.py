@@ -627,6 +627,11 @@ class IPersonSet(Interface):
     def getPOFileContributors(pofile):
         """Return all Persons that have contributed to the specified POFile."""
 
+    def getPOFileContributorsByDistroRelease(self, distrorelease, language):
+        """Return Persons that contributed translations to this Language 
+           in this DistroRelease.
+        """
+
     def getAllPersons(orderBy=None):
         """Return all Persons, ignoring the merged ones.
 

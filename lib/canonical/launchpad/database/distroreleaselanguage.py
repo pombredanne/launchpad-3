@@ -8,6 +8,7 @@ from datetime import datetime
 
 # Zope interfaces
 from zope.interface import implements
+from zope.component import getUtility
 
 # SQL imports
 from sqlobject import ForeignKey, IntCol
@@ -18,7 +19,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 import pytz
 
 from canonical.launchpad.interfaces import (IDistroReleaseLanguage,
-    IDistroReleaseLanguageSet)
+    IDistroReleaseLanguageSet, IPersonSet)
 from canonical.launchpad.database.person import Person
 from canonical.launchpad.database.pofile import POFile, DummyPOFile
 from canonical.launchpad.database.translator import Translator
@@ -127,16 +128,13 @@ class DistroReleaseLanguage(SQLBase, RosettaStats):
         self.currentcount = current
         self.updatescount = updates
         self.rosettacount = rosetta
-        # XXX: could probably be moved to API on IPersonSet. -- kiko, 2006-09-23
-        self.contributorcount = Person.select('''
-            id IN (
-                SELECT DISTINCT person
-                  FROM POFileTranslator, POFile, POTemplate
-                 WHERE POFileTranslator.pofile = POFile.id AND
-                       POFile.potemplate = POTemplate.id AND
-                       POFile.language = %s AND
-                       POTemplate.distrorelease = %s)
-            ''' % sqlvalues(self.language, self.distrorelease)).count()
+
+        personset = getUtility(IPersonSet)
+        dr = self.distrorelease
+        lang = self.language
+        contributors = personset.getPOFileContributorsByDistroRelease(dr, lang)
+        self.contributorcount = contributors.count()
+
         self.dateupdated = UTC_NOW
         ztm.commit()
 
