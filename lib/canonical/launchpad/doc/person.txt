@@ -342,3 +342,44 @@ Reset firefox so we don't mess up later tests.
  >>> firefox.active = True
  >>> flush_database_updates()
 
+Ticket API
+----------
+
+It's easy to find out what tickets a person is related to:
+
+  >>> name12 = personset.getByName('name16')
+  >>> [(t.title, t.status.title) for t in name12.tickets()]
+  [(u'mailto: problem in webpage', 'Answered'),
+   (u'Slow system', 'Open'),
+   (u'Firefox loses focus and gets stuck', 'Open'),
+   (u'Firefox is slow and consumes too much RAM', 'Rejected')]
+
+  >>> [(t.title, t.status.title) for t in name12.answered_tickets]
+  [(u'mailto: problem in webpage', 'Answered'),
+   (u'Firefox is slow and consumes too much RAM', 'Rejected')]
+
+  >>> [(t.title, t.status.title) for t in name12.assigned_tickets]
+  []
+
+  >>> [(t.title, t.status.title) for t in name12.subscribed_tickets]
+  [(u'Slow system', 'Open'),
+   (u'Firefox is slow and consumes too much RAM', 'Rejected')]
+
+Ubunteros
+---------
+
+To list all Ubunteros, use IPersonSet.getUbunteros():
+
+  >>> [p.name for p in personset.getUbunteros()]
+  [u'name16']
+
+To check if a person is an Ubuntero, use IPerson.is_ubuntero:
+
+  >>> foobar.is_ubuntero
+  True
+
+Branches
+--------
+
+** See branch.txt for API related to branches.
+
