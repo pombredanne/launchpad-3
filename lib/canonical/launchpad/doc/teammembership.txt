@@ -332,7 +332,7 @@ and team admins.
     2
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print to_addr
-    ['jeff.waugh@ubuntulinux.com', 'mark@hbd.com', 'foo.bar@canonical.com']
+    ['foo.bar@canonical.com', 'jeff.waugh@ubuntulinux.com', 'mark@hbd.com']
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print to_addr
     ['andrew.bennetts@ubuntulinux.com']
@@ -352,7 +352,7 @@ this case we'll send notifications only to the team admins.
     1
     >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
     >>> print to_addr
-    ['jeff.waugh@ubuntulinux.com', 'mark@hbd.com', 'foo.bar@canonical.com']
+    ['foo.bar@canonical.com', 'jeff.waugh@ubuntulinux.com', 'mark@hbd.com']
 
 Approving a proposed member should generate notifications for both the member
 and team admins.
@@ -367,7 +367,7 @@ and team admins.
     2
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print to_addr
-    ['jeff.waugh@ubuntulinux.com', 'mark@hbd.com', 'foo.bar@canonical.com']
+    ['foo.bar@canonical.com', 'jeff.waugh@ubuntulinux.com', 'mark@hbd.com']
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print to_addr
     ['andrew.bennetts@ubuntulinux.com']
@@ -384,7 +384,7 @@ The same for deactivating a membership.
     2
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print to_addr
-    ['jeff.waugh@ubuntulinux.com', 'mark@hbd.com', 'foo.bar@canonical.com']
+    ['foo.bar@canonical.com', 'jeff.waugh@ubuntulinux.com', 'mark@hbd.com']
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print to_addr
     ['andrew.bennetts@ubuntulinux.com']
