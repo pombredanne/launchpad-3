@@ -3,8 +3,6 @@
 __metaclass__ = type
 __all__ = ['POTMsgSet']
 
-import sets
-
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -18,9 +16,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.pomsgset import POMsgSet, DummyPOMsgSet
 from canonical.launchpad.database.pomsgidsighting import POMsgIDSighting
-from canonical.launchpad.database.poselection import POSelection
 from canonical.launchpad.database.posubmission import POSubmission
-from canonical.launchpad.helpers import shortlist
 
 
 class POTMsgSet(SQLBase):
@@ -308,3 +304,4 @@ class POTMsgSet(SQLBase):
 
         # Fix the newline chars.
         return text.replace(text_style, msgid_style)
+
