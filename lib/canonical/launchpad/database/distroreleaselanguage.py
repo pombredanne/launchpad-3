@@ -129,16 +129,14 @@ class DistroReleaseLanguage(SQLBase, RosettaStats):
         self.rosettacount = rosetta
         # XXX: could probably be moved to API on IPersonSet. -- kiko, 2006-09-23
         self.contributorcount = Person.select('''
-            Person.id = POSubmission.person AND
-            POSubmission.pomsgset = POMsgSet.id AND
-            POMsgSet.pofile = POFile.id AND
-            POFile.language = %s AND
-            POFile.potemplate = POTemplate.id AND
-            POTemplate.distrorelease = %s
-            ''' % sqlvalues(self.language.id, self.distrorelease.id),
-            clauseTables=['POSubmission', 'POMsgSet', 'POFile',
-                          'POTemplate'],
-            distinct=True).count()
+            id IN (
+                SELECT DISTINCT person
+                  FROM POFileTranslator, POFile, POTemplate
+                 WHERE POFileTranslator.pofile = POFile.id AND
+                       POFile.potemplate = POTemplate.id AND
+                       POFile.language = %s AND
+                       POTemplate.distrorelease = %s)
+            ''' % sqlvalues(self.language, self.distrorelease)).count()
         self.dateupdated = UTC_NOW
         ztm.commit()
 
