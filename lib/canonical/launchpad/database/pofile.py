@@ -51,7 +51,6 @@ from canonical.launchpad.components.poparser import (
     POSyntaxError, POHeader, POInvalidInputError)
 from canonical.librarian.interfaces import ILibrarianClient
 
-from canonical.launchpad.webapp.snapshot import Snapshot
 
 def _check_translation_perms(permission, translators, person):
     """Return True or False dependening on whether the person is part of the
@@ -230,8 +229,7 @@ class POFile(SQLBase, RosettaStats):
             translator = group.query_translator(self.language)
             if translator is not None:
                 translators.add(translator)
-        return sorted(list(translators),
-            key=lambda x: x.translator.name)
+        return sorted(list(translators), key=lambda x: x.translator.name)
 
     @property
     def translationpermission(self):
