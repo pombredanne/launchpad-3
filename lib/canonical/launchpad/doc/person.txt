@@ -365,6 +365,19 @@ It's easy to find out what tickets a person is related to:
   [(u'Slow system', 'Open'),
    (u'Firefox is slow and consumes too much RAM', 'Rejected')]
 
+Ubunteros
+---------
+
+To list all Ubunteros, use IPersonSet.getUbunteros():
+
+  >>> [p.name for p in personset.getUbunteros()]
+  [u'name16']
+
+To check if a person is an Ubuntero, use IPerson.is_ubuntero:
+
+  >>> foobar.is_ubuntero
+  True
+
 Branches
 --------
 

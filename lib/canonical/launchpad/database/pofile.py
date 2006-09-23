@@ -248,6 +248,9 @@ class POFile(SQLBase, RosettaStats):
             POSubmission.pomsgset = POMsgSet.id AND
             POMsgSet.pofile = %d""" % self.id,
             clauseTables=('POSubmission', 'POMsgSet'),
+            # We can't use Person._defaultOrder because this is a
+            # distinct query. -- kiko
+            orderBy=["Person.displayname", "Person.name"],
             distinct=True))
 
     def canEditTranslations(self, person):

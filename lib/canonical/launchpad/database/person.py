@@ -129,7 +129,8 @@ class Person(SQLBase):
 
     subscribed_branches = SQLRelatedJoin(
         'Branch', joinColumn='person', otherColumn='branch',
-        intermediateTable='BranchSubscription', orderBy='-id')
+        intermediateTable='BranchSubscription', prejoins=['product'],
+        orderBy='-id')
     ownedBounties = SQLMultipleJoin('Bounty', joinColumn='owner',
         orderBy='id')
     reviewerBounties = SQLMultipleJoin('Bounty', joinColumn='reviewer',
@@ -389,9 +390,11 @@ class Person(SQLBase):
     @property
     def branches(self):
         """See IPerson."""
-        ret = self.authored_branches
-        ret = ret.union(self.registered_branches)
-        ret = ret.union(self.subscribed_branches)
+        # XXX: bug 62019 is what forces us to prejoin(None) here.
+        #   -- kiko, 2006-09-23
+        ret = self.authored_branches.prejoin(None)
+        ret = ret.union(self.registered_branches.prejoin(None))
+        ret = ret.union(self.subscribed_branches.prejoin(None))
         return ret.orderBy('-id')
 
     @property
@@ -1003,11 +1006,8 @@ class Person(SQLBase):
     def pendinggpgkeys(self):
         """See IPerson."""
         logintokenset = getUtility(ILoginTokenSet)
-        # XXX cprov 20050704
-        # Use set to remove duplicated tokens, I'd appreciate something
-        # SQL DISTINCT-like functionality available for sqlobject
-        return sets.Set([token.fingerprint for token in
-                         logintokenset.getPendingGPGKeys(requesterid=self.id)])
+        return sorted(set(token.fingerprint for token in
+                      logintokenset.getPendingGPGKeys(requesterid=self.id)))
 
     @property
     def inactivegpgkeys(self):
@@ -1294,7 +1294,10 @@ class PersonSet:
     def getUbunteros(self, orderBy=None):
         """See IPersonSet."""
         if orderBy is None:
-            orderBy = Person.sortingColumns
+            # The fact that the query below is unique makes it
+            # impossible to use person_sort_key(), and rewriting it to
+            # use a subselect is more expensive. -- kiko
+            orderBy = ["Person.displayname", "Person.name"]
         sigset = getUtility(ISignedCodeOfConductSet)
         lastdate = sigset.getLastAcceptedDate()
 
