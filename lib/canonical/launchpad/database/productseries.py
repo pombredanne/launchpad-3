@@ -18,7 +18,11 @@ from sqlobject import (
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+
 from canonical.launchpad.components.bugtarget import BugTargetBase
+from canonical.launchpad.interfaces import (
+    IProductSeries, IProductSeriesSet, IProductSeriesSource,
+    IProductSeriesSourceAdmin, IProductSeriesSourceSet, NotFoundError)
 
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
@@ -30,27 +34,13 @@ from canonical.launchpad.database.specification import Specification
 from canonical.database.sqlbase import (
     SQLBase, quote, sqlvalues)
 
-from canonical.launchpad.interfaces import (
-    IProductSeries, IProductSeriesSet, IProductSeriesSource,
-    IProductSeriesSourceAdmin, IProductSeriesSourceSet, NotFoundError)
-
 from canonical.lp.dbschema import (
     EnumCol, ImportStatus, PackagingType, RevisionControlSystems,
     SpecificationSort, SpecificationGoalStatus, SpecificationFilter,
     SpecificationStatus)
 
-class ProductSeriesSet:
-    implements(IProductSeriesSet)
 
-    def get(self, productseriesid):
-        """See IProductSeriesSet."""
-        try:
-            return ProductSeries.get(productseriesid)
-        except SQLObjectNotFound:
-            raise NotFoundError(productseriesid)
-
-
-class ProductSeries(SQLBase, BugTargetBase):
+class ProductSeries(SQLBase):
     """A series of product releases."""
     implements(IProductSeries, IProductSeriesSource, IProductSeriesSourceAdmin)
     _table = 'ProductSeries'
@@ -101,11 +91,6 @@ class ProductSeries(SQLBase, BugTargetBase):
     @property
     def displayname(self):
         return self.name
-
-    @property
-    def bugtargetname(self):
-        """See IBugTarget."""
-        return "%s %s (upstream)" % (self.product.name, self.name)
 
     @property
     def drivers(self):
@@ -296,24 +281,6 @@ class ProductSeries(SQLBase, BugTargetBase):
         # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity)
         return results.prejoin(['assignee', 'approver', 'drafter'])
-
-    def searchTasks(self, search_params):
-        """See IBugTarget."""
-        search_params.setProductSeries(self)
-        return BugTaskSet().search(search_params)
-
-    def getUsedBugTags(self):
-        """See IBugTarget."""
-        return get_bug_tags("BugTask.productseries = %s" % sqlvalues(self))
-
-    def getUsedBugTagsWithOpenCounts(self, user):
-        """See IBugTarget."""
-        return get_bug_tags_open_count(
-            "BugTask.productseries = %s" % sqlvalues(self), user)
-
-    def createBug(self, bug_params):
-        """See IBugTarget."""
-        raise NotImplementedError('Cannot file a bug against a productseries')
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""

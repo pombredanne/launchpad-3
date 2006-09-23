@@ -85,10 +85,9 @@ class DistributionSourcePackage(BugTargetBase):
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
-            SourcePackageRelease.version = %s AND
-            SourcePackagePublishingHistory.status != %s
+            SourcePackageRelease.version = %s
             """ % sqlvalues(self.distribution, self.sourcepackagename,
-                            version, PackagePublishingStatus.REMOVED),
+                            version),
             orderBy='-datecreated',
             prejoinClauseTables=['SourcePackageRelease'],
             clauseTables=['DistroRelease', 'SourcePackageRelease'])

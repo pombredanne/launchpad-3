@@ -529,9 +529,8 @@ class POFile(SQLBase, RosettaStats):
 
     def createMessageSetFromText(self, text):
         """See IPOFile."""
-        try:
-            potmsgset = self.potemplate[text]
-        except KeyError:
+        potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(text, only_current=False)
+        if potmsgset is None:
             potmsgset = self.potemplate.createMessageSetFromText(text)
 
         return self.createMessageSetFromMessageSet(potmsgset)
