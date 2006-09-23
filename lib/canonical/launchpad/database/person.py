@@ -19,7 +19,7 @@ from zope.event import notify
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, SQLMultipleJoin,
     SQLRelatedJoin, SQLObjectNotFound)
-from sqlobject.sqlbuilder import AND
+from sqlobject.sqlbuilder import AND, SQLConstant
 from canonical.database.sqlbase import (
     SQLBase, quote, quote_like, cursor, sqlvalues, flush_database_updates,
     flush_database_caches)
@@ -81,10 +81,7 @@ class Person(SQLBase):
 
     implements(IPerson, ICalendarOwner)
 
-    # XXX: We should be sorting on person_sort_key(displayname,name), but
-    # SQLObject will not let us sort using a stored procedure.
-    # -- StuartBishop 20060323
-    sortingColumns = ['displayname', 'name']
+    sortingColumns = SQLConstant("person_sort_key(Person.displayname, Person.name)")
     _defaultOrder = sortingColumns
 
     name = StringCol(dbName='name', alternateID=True, notNull=True)
@@ -132,7 +129,8 @@ class Person(SQLBase):
 
     subscribed_branches = SQLRelatedJoin(
         'Branch', joinColumn='person', otherColumn='branch',
-        intermediateTable='BranchSubscription', orderBy='-id')
+        intermediateTable='BranchSubscription', prejoins=['product'],
+        orderBy='-id')
     ownedBounties = SQLMultipleJoin('Bounty', joinColumn='owner',
         orderBy='id')
     reviewerBounties = SQLMultipleJoin('Bounty', joinColumn='reviewer',
@@ -154,6 +152,25 @@ class Person(SQLBase):
     signedcocs = SQLMultipleJoin('SignedCodeOfConduct', joinColumn='owner')
     ircnicknames = SQLMultipleJoin('IrcID', joinColumn='person')
     jabberids = SQLMultipleJoin('JabberID', joinColumn='person')
+    calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
+                          default=None, forceDBName=True)
+    timezone = StringCol(dbName='timezone', default='UTC')
+
+    answered_tickets = SQLMultipleJoin('Ticket', joinColumn='answerer',
+        orderBy='-datecreated')
+    assigned_tickets = SQLMultipleJoin('Ticket', joinColumn='assignee',
+        orderBy='-datecreated')
+    created_tickets = SQLMultipleJoin('Ticket', joinColumn='owner',
+        orderBy='-datecreated')
+    subscribed_tickets = SQLRelatedJoin('Ticket', joinColumn='person',
+        otherColumn='ticket', intermediateTable='TicketSubscription',
+        orderBy='-datecreated')
+
+    def _init(self, *args, **kw):
+        """Marks the person as a team when created or fetched from database."""
+        SQLBase._init(self, *args, **kw)
+        if self._SO_val_teamownerID is not None:
+            alsoProvides(self, ITeam)
 
     # specification-related joins
     @property
@@ -191,28 +208,6 @@ class Person(SQLBase):
                 SpecificationSubscription.q.personID == self.id),
             clauseTables=['SpecificationSubscription'],
             orderBy=['-datecreated']))
-
-    # ticket related joins
-    answered_tickets = SQLMultipleJoin('Ticket', joinColumn='answerer',
-        orderBy='-datecreated')
-    assigned_tickets = SQLMultipleJoin('Ticket', joinColumn='assignee',
-        orderBy='-datecreated')
-    created_tickets = SQLMultipleJoin('Ticket', joinColumn='owner',
-        orderBy='-datecreated')
-    subscribed_tickets = SQLRelatedJoin('Ticket', joinColumn='person',
-        otherColumn='ticket', intermediateTable='TicketSubscription',
-        orderBy='-datecreated')
-
-    calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
-                          default=None, forceDBName=True)
-
-    timezone = StringCol(dbName='timezone', default='UTC')
-
-    def _init(self, *args, **kw):
-        """Marks the person as a team when created or fetched from database."""
-        SQLBase._init(self, *args, **kw)
-        if self._SO_val_teamownerID is not None:
-            alsoProvides(self, ITeam)
 
     @property
     def browsername(self):
@@ -385,21 +380,22 @@ class Person(SQLBase):
         return results
 
     def tickets(self, quantity=None):
-        ret = set(self.created_tickets)
+        ret = self.created_tickets
         ret = ret.union(self.answered_tickets)
         ret = ret.union(self.assigned_tickets)
         ret = ret.union(self.subscribed_tickets)
-        ret = sorted(ret, key=lambda a: a.datecreated)
-        ret.reverse()
+        ret = ret.orderBy("-datecreated")
         return ret[:quantity]
 
     @property
     def branches(self):
         """See IPerson."""
-        S = set(self.authored_branches)
-        S.update(self.registered_branches)
-        S.update(self.subscribed_branches)
-        return sorted(S, key=lambda x: -x.id)
+        # XXX: bug 62019 is what forces us to prejoin(None) here.
+        #   -- kiko, 2006-09-23
+        ret = self.authored_branches.prejoin(None)
+        ret = ret.union(self.registered_branches.prejoin(None))
+        ret = ret.union(self.subscribed_branches.prejoin(None))
+        return ret.orderBy('-id')
 
     @property
     def registered_branches(self):
@@ -681,7 +677,7 @@ class Person(SQLBase):
         to_addrs = set()
         for person in itertools.chain(self.administrators, [self.teamowner]):
             to_addrs.update(contactEmailAddresses(person))
-        return to_addrs
+        return sorted(to_addrs)
 
     def addMember(self, person, status=TeamMembershipStatus.APPROVED,
                   reviewer=None, comment=None):
@@ -802,7 +798,12 @@ class Person(SQLBase):
     @property
     def activemembers(self):
         """See IPerson."""
-        return self.approvedmembers.union(self.administrators)
+        # We can't use Person.sortingColumns with union() queries
+        # because the table name Person is not available in that
+        # context.
+        orderBy = SQLConstant("person_sort_key(displayname, name)")
+        return self.approvedmembers.union(self.administrators,
+                                          orderBy=orderBy)
 
     @property
     def active_member_count(self):
@@ -812,7 +813,10 @@ class Person(SQLBase):
     @property
     def inactivemembers(self):
         """See IPerson."""
-        return self.expiredmembers.union(self.deactivatedmembers)
+        # See comment in Person.activememberships
+        orderBy = SQLConstant("person_sort_key(displayname, name)")
+        return self.expiredmembers.union(self.deactivatedmembers,
+                                          orderBy=orderBy)
 
     # XXX: myactivememberships and activememberships are rather
     # confusingly named, and I just fixed bug 2871 as a consequence of
@@ -822,23 +826,23 @@ class Person(SQLBase):
     def myactivememberships(self):
         """See IPerson."""
         return TeamMembership.select("""
-            TeamMembership.person = %s AND status in (%s, %s) AND 
+            TeamMembership.person = %s AND status in %s AND 
             Person.id = TeamMembership.team
-            """ % sqlvalues(self.id, TeamMembershipStatus.APPROVED,
-                            TeamMembershipStatus.ADMIN),
+            """ % sqlvalues(self.id, [TeamMembershipStatus.APPROVED,
+                                      TeamMembershipStatus.ADMIN]),
             clauseTables=['Person'],
-            orderBy=['Person.displayname'])
+            orderBy=Person.sortingColumns)
 
     @property
     def activememberships(self):
         """See IPerson."""
         return TeamMembership.select('''
-            TeamMembership.team = %s AND status in (%s, %s) AND
+            TeamMembership.team = %s AND status in %s AND
             Person.id = TeamMembership.person
-            ''' % sqlvalues(self.id, TeamMembershipStatus.APPROVED,
-                TeamMembershipStatus.ADMIN),
+            ''' % sqlvalues(self.id, [TeamMembershipStatus.APPROVED,
+                                      TeamMembershipStatus.ADMIN]),
             clauseTables=['Person'],
-            orderBy=['Person.displayname'])
+            orderBy=Person.sortingColumns)
 
     @property
     def teams_participated_in(self):
@@ -847,9 +851,9 @@ class Person(SQLBase):
             Person.id = TeamParticipation.team
             AND TeamParticipation.person = %s
             AND Person.teamowner IS NOT NULL
-            """ % sqlvalues(self.id), clauseTables=['TeamParticipation'],
-            orderBy=['Person.name']
-            )
+            """ % sqlvalues(self.id),
+            clauseTables=['TeamParticipation'],
+            orderBy=Person.sortingColumns)
 
     @property
     def defaultexpirationdate(self):
@@ -988,7 +992,7 @@ class Person(SQLBase):
             AND date_consumed IS NULL
             """ % sqlvalues(self.id, LoginTokenType.VALIDATEEMAIL,
                             LoginTokenType.VALIDATETEAMEMAIL)
-        return sets.Set([token.email for token in LoginToken.select(query)])
+        return sorted(set(token.email for token in LoginToken.select(query)))
 
     @property
     def guessedemails(self):
@@ -1004,11 +1008,8 @@ class Person(SQLBase):
     def pendinggpgkeys(self):
         """See IPerson."""
         logintokenset = getUtility(ILoginTokenSet)
-        # XXX cprov 20050704
-        # Use set to remove duplicated tokens, I'd appreciate something
-        # SQL DISTINCT-like functionality available for sqlobject
-        return sets.Set([token.fingerprint for token in
-                         logintokenset.getPendingGPGKeys(requesterid=self.id)])
+        return sorted(set(token.fingerprint for token in
+                      logintokenset.getPendingGPGKeys(requesterid=self.id)))
 
     @property
     def inactivegpgkeys(self):
@@ -1084,8 +1085,6 @@ class Person(SQLBase):
 class PersonSet:
     """The set of persons."""
     implements(IPersonSet)
-
-    _defaultOrder = Person.sortingColumns
 
     def __init__(self):
         self.title = 'People registered with Launchpad'
@@ -1193,14 +1192,14 @@ class PersonSet:
     def getAllPersons(self, orderBy=None):
         """See IPersonSet."""
         if orderBy is None:
-            orderBy = self._defaultOrder
+            orderBy = Person.sortingColumns
         query = AND(Person.q.teamownerID==None, Person.q.mergedID==None)
         return Person.select(query, orderBy=orderBy)
 
     def getAllValidPersons(self, orderBy=None):
         """See IPersonSet."""
         if orderBy is None:
-            orderBy = self._defaultOrder
+            orderBy = Person.sortingColumns
         return Person.select(
             "Person.id = ValidPersonOrTeamCache.id AND teamowner IS NULL",
             clauseTables=["ValidPersonOrTeamCache"], orderBy=orderBy
@@ -1213,13 +1212,14 @@ class PersonSet:
     def getAllTeams(self, orderBy=None):
         """See IPersonSet."""
         if orderBy is None:
-            orderBy = self._defaultOrder
+            orderBy = Person.sortingColumns
         return Person.select(Person.q.teamownerID!=None, orderBy=orderBy)
 
     def find(self, text, orderBy=None):
         """See IPersonSet."""
         if orderBy is None:
-            orderBy = self._defaultOrder
+            # See comment in Person.activememberships
+            orderBy = SQLConstant("person_sort_key(displayname, name)")
         text = text.lower()
         # Teams may not have email addresses, so we need to either use a LEFT
         # OUTER JOIN or do a UNION between two queries. Using a UNION makes 
@@ -1235,7 +1235,8 @@ class PersonSet:
     def findPerson(self, text="", orderBy=None):
         """See IPersonSet."""
         if orderBy is None:
-            orderBy = self._defaultOrder
+            # See comment in Person.activememberships
+            orderBy = SQLConstant("person_sort_key(displayname, name)")
         text = text.lower()
         base_query = ('Person.teamowner IS NULL AND Person.merged IS NULL AND '
                       'EmailAddress.person = Person.id')
@@ -1259,7 +1260,8 @@ class PersonSet:
     def findTeam(self, text, orderBy=None):
         """See IPersonSet."""
         if orderBy is None:
-            orderBy = self._defaultOrder
+            # See comment in Person.activememberships
+            orderBy = SQLConstant("person_sort_key(displayname, name)")
         text = text.lower()
         # Teams may not have email addresses, so we need to either use a LEFT
         # OUTER JOIN or do a UNION between two queries. Using a UNION makes 
@@ -1294,7 +1296,10 @@ class PersonSet:
     def getUbunteros(self, orderBy=None):
         """See IPersonSet."""
         if orderBy is None:
-            orderBy = self._defaultOrder
+            # The fact that the query below is unique makes it
+            # impossible to use person_sort_key(), and rewriting it to
+            # use a subselect is more expensive. -- kiko
+            orderBy = ["Person.displayname", "Person.name"]
         sigset = getUtility(ISignedCodeOfConductSet)
         lastdate = sigset.getLastAcceptedDate()
 
