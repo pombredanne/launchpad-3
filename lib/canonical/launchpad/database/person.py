@@ -878,7 +878,7 @@ class Person(SQLBase):
                                   "latest_posubmission",
                                   "latest_posubmission.pomsgset.potmsgset.primemsgid_",
                                   "latest_posubmission.potranslation"])
-        # XXX: See bug 60320.i Because of a template reference to
+        # XXX: See bug 60320. Because of a template reference to
         # pofile.potemplate.displayname, it would be ideal to also
         # prejoin:
         #   potemplate.potemplatename
@@ -1306,28 +1306,30 @@ class PersonSet:
 
     def getPOFileContributors(self, pofile):
         """See IPersonSet."""
-        # Part of the reason for not doing an explicit join here is to
-        # avoid needing to distinct the results, which doesn't work with
-        # Person's default sort order.
         contributors = Person.select("""
-            id IN (
-                SELECT DISTINCT person
-                  FROM POFileTranslator
-                  WHERE pofile = %s)""" % quote(pofile))
+            POFileTranslator.person = Person.id AND
+            POFileTranslator.pofile = %s""" % quote(pofile),
+            clauseTables=["POFileTranslator"],
+            distinct=True,
+            # Can't use Person.sortingColumns because this is a distinct
+            # query.
+            orderBy=["Person.displayname", "Person.name"])
         return contributors
 
     def getPOFileContributorsByDistroRelease(self, distrorelease, language):
         """See IPersonSet."""
-        # See comment in getPOFileContributors.
-        return Person.select('''
-            id IN (
-                SELECT DISTINCT person
-                  FROM POFileTranslator, POFile, POTemplate
-                 WHERE POFileTranslator.pofile = POFile.id AND
-                       POFile.potemplate = POTemplate.id AND
-                       POFile.language = %s AND
-                       POTemplate.distrorelease = %s)
-            ''' % sqlvalues(language, distrorelease))
+        contributors = Person.select("""
+            POFileTranslator.person = Person.id AND
+            POFileTranslator.pofile = POFile.id AND
+            POFile.language = %s AND
+            POFile.potemplate = POTemplate.id AND
+            POTemplate.distrorelease = %s"""
+                % sqlvalues(language, distrorelease),
+            clauseTables=["POFileTranslator", "POFile", "POTemplate"],
+            distinct=True,
+            # See comment in getPOFileContributors.
+            orderBy=["Person.displayname", "Person.name"])
+        return contributors
 
     def merge(self, from_person, to_person):
         """Merge a person into another.
