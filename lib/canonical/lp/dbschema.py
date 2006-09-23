@@ -148,10 +148,10 @@ class DBSchemaValidator(validators.Validator):
         >>> validator = DBSchemaValidator(schema=BugTaskStatus)
         >>> validator.fromPython(BugTaskStatus.FIXCOMMITTED, None)
         25
-        >>> validator.fromPython(object(), None)
+        >>> validator.fromPython(tuple(), None)
         Traceback (most recent call last):
         ...
-        TypeError: Not a DBSchema Item: <object object at 0x...>
+        TypeError: Not a DBSchema Item: ()
         >>> validator.fromPython(ImportTestStatus.NEW, None)
         Traceback (most recent call last):
         ...
@@ -171,7 +171,7 @@ class DBSchemaValidator(validators.Validator):
             # We use repr(value) because if it's a tuple (yes, it has been
             # seen in some cases) then the interpolation would swallow that
             # fact, confusing poor programmers like Daniel.
-            raise TypeError('Not a DBSchema Item: %r' % value)
+            raise TypeError('Not a DBSchema Item: %s' % repr(value))
         # Using != rather than 'is not' in order to cope with Security Proxy
         # proxied items and their schemas.
         if value.schema != self.schema:
