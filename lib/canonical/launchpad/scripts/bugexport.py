@@ -64,6 +64,8 @@ def serialise_bugtask(bugtask):
         addnode(comment_node, 'date',
                 comment.datecreated.strftime('%Y-%m-%dT%H:%M:%SZ'))
         addnode(comment_node, 'text', comment.text_for_display)
+        # Note that these are just references to the attachments
+        # that are serialised after the comments.
         for attachment in comment.bugattachments:
             addnode(comment_node, 'attachment', None,
                     href=attachment.libraryfile.url)
@@ -75,7 +77,7 @@ def serialise_bugtask(bugtask):
         addnode(attachment_node, 'type', attachment.type.name)
         addnode(attachment_node, 'title', attachment.title)
         addnode(attachment_node, 'mimetype', attachment.libraryfile.mimetype)
-        # attach the attachment file contents, base 64 encoded.
+        # Attach the attachment file contents, base 64 encoded.
         addnode(attachment_node, 'contents',
                 base64.encodestring(attachment.libraryfile.read()))
 
@@ -83,7 +85,10 @@ def serialise_bugtask(bugtask):
 
 
 def export_bugtasks(ztm, bugtarget, output):
-    # Collect bug task IDs
+    # Collect bug task IDs.
+    # XXX 2006-09-25 jamesh
+    # This will only get the IDs of public bugs.  We probably want to
+    # be able to do a separate private bugs dump.
     ids = [task.id for task in bugtarget.searchTasks(
         BugTaskSearchParams(user=None, omit_dupes=False, orderby='id'))]
     bugtaskset = getUtility(IBugTaskSet)
