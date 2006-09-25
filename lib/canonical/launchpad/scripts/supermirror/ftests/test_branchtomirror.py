@@ -49,6 +49,8 @@ class TestBranchToMirror(unittest.TestCase):
         os.environ.update({'HOME': self.testdir})
         self.authserver = AuthserverTacTestSetup()
         self.authserver.setUp()
+        # We set the log level to CRITICAL so that the log messages
+        # are suppressed.
         logging.basicConfig(level=logging.CRITICAL)
 
     def tearDown(self):
@@ -113,6 +115,8 @@ class TestBranchToMirrorFormats(TestCaseWithRepository):
         super(TestBranchToMirrorFormats, self).setUp()
         self.authserver = AuthserverTacTestSetup()
         self.authserver.setUp()
+        # We set the log level to CRITICAL so that the log messages
+        # are suppressed.
         logging.basicConfig(level=logging.CRITICAL)
 
     def tearDown(self):
@@ -210,6 +214,8 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         TestCaseInTempDir.setUp(self)
         self.authserver = AuthserverTacTestSetup()
         self.authserver.setUp()
+        # We set the log level to CRITICAL so that the log messages
+        # are suppressed.
         logging.basicConfig(level=logging.CRITICAL)
 
     def tearDown(self):
@@ -282,6 +288,8 @@ class TestErrorHandling(unittest.TestCase):
         self.branch._mirrorFailed = lambda logger, err: self.errors.append(err)
         self.branch._openSourceBranch = lambda: None
         self.branch._mirrorToDestBranch = lambda: None
+        # We set the log level to CRITICAL so that the log messages
+        # are suppressed.
         logging.basicConfig(level=logging.CRITICAL)
 
     def tearDown(self):

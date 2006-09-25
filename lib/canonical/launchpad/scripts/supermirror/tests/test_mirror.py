@@ -10,6 +10,8 @@ from canonical.testing import reset_logging
 class TestMirrorCommand(unittest.TestCase):
 
     def setUp(self):
+        # We set the log level to CRITICAL so that the log messages
+        # are suppressed.
         logging.basicConfig(level=logging.CRITICAL)
         self.logger = logging.getLogger()
 

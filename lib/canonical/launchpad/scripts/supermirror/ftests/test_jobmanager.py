@@ -22,6 +22,8 @@ class TestJobManager(unittest.TestCase):
 
     def setUp(self):
         self.masterlock = 'master.lock'
+        # We set the log level to CRITICAL so that the log messages
+        # are suppressed.
         logging.basicConfig(level=logging.CRITICAL)
 
     def tearDown(self):
