@@ -116,6 +116,8 @@
     <resource name="ticket" file="../images/ticket.png" />
     <resource name="topic" file="../images/topic_icon.gif" />
     <resource name="translation-file" file="../images/nyet.png" />
+    <resource name="translation-newline" file="../images/translation-newline.png" />
+    <resource name="translation-space" file="../images/translation-space.png" />
     <resource name="translation-template" file="../images/nyet.png" />
     <resource name="translations" file="../images/rosetta-icon.png" />
     <resource name="treeCollapsed" file="../images/treeCollapsed.gif" />
