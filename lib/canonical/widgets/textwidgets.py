@@ -30,5 +30,13 @@ class UriWidget(TextWidget):
                 uri = Uri(input.strip())
             except InvalidUriError, e:
                 raise ConversionError(str(e))
+            # If there is a policy 
+            if self.context.trailing_slash is not None:
+                if self.context.trailing_slash:
+                    if not uri.path.endswith('/'):
+                        uri = uri.replace(path=uri.path + '/')
+                else:
+                    uri = uri.replace(path=uri.path.rstrip('/'))
+                    
             input = str(uri)
         return TextWidget._toFieldValue(self, input)
