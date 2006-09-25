@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 import httplib
+import logging
 import os
 import shutil
 import socket
@@ -33,10 +34,10 @@ from canonical.launchpad.scripts.supermirror.branchtomirror import (
 from canonical.authserver.client.branchstatus import BranchStatusClient
 from canonical.authserver.ftests.harness import AuthserverTacTestSetup
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import LaunchpadFunctionalLayer, reset_logging
 
 
-class TestBranchToMirror(LaunchpadFunctionalTestCase):
+class TestBranchToMirror(unittest.TestCase):
 
     layer = LaunchpadFunctionalLayer
 
@@ -44,17 +45,16 @@ class TestBranchToMirror(LaunchpadFunctionalTestCase):
 
     def setUp(self):
         self.testdir = tempfile.mkdtemp()
-        LaunchpadFunctionalTestCase.setUp(self)
         # Change the HOME environment variable in order to ignore existing
         # user config files.
         os.environ.update({'HOME': self.testdir})
         self.authserver = AuthserverTacTestSetup()
         self.authserver.setUp()
+        logging.basicConfig(level=logging.CRITICAL)
 
     def tearDown(self):
         shutil.rmtree(self.testdir)
         self.authserver.tearDown()
-        LaunchpadFunctionalTestCase.tearDown(self)
 
     def _getBranchDir(self, branchname):
         return os.path.join(self.testdir, branchname)
@@ -68,7 +68,7 @@ class TestBranchToMirror(LaunchpadFunctionalTestCase):
         to_mirror = BranchToMirror(srcbranchdir, destbranchdir, client, 1)
 
         tree = createbranch(srcbranchdir)
-        to_mirror.mirror()
+        to_mirror.mirror(logging.getLogger())
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         self.assertEqual(tree.last_revision(),
                          mirrored_branch.last_revision())
@@ -95,7 +95,7 @@ class TestBranchToMirror(LaunchpadFunctionalTestCase):
         os.makedirs(srcbranchdir)
         tree = bzrlib.bzrdir.BzrDir.create_standalone_workingtree(srcbranchdir)
         
-        to_mirror.mirror()
+        to_mirror.mirror(logging.getLogger())
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         self.assertEqual(None, mirrored_branch.last_revision())
 
@@ -114,6 +114,7 @@ class TestBranchToMirrorFormats(TestCaseWithRepository):
         super(TestBranchToMirrorFormats, self).setUp()
         self.authserver = AuthserverTacTestSetup()
         self.authserver.setUp()
+        logging.basicConfig(level=logging.CRITICAL)
 
     def tearDown(self):
         self.authserver.tearDown()
@@ -180,7 +181,7 @@ class TestBranchToMirrorFormats(TestCaseWithRepository):
         # Mirror src-branch to dest-branch
         client = BranchStatusClient()
         to_mirror = BranchToMirror('src-branch', 'dest-branch', client, 1)
-        to_mirror.mirror()
+        to_mirror.mirror(logging.getLogger())
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         return mirrored_branch
 
@@ -210,6 +211,7 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         TestCaseInTempDir.setUp(self)
         self.authserver = AuthserverTacTestSetup()
         self.authserver.setUp()
+        logging.basicConfig(level=logging.CRITICAL)
 
     def tearDown(self):
         self.authserver.tearDown()
@@ -230,7 +232,7 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         client = BranchStatusClient()
         mybranch = BranchToMirror(
             non_existant_branch, dest_dir, client, 1)
-        mybranch.mirror()
+        mybranch.mirror(logging.getLogger())
         self.failIf(os.path.exists(dest_dir), 'dest-dir should not exist')
 
     def testMissingSourceWhines(self):
@@ -240,7 +242,7 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         client.mirrorComplete(1, NULL_REVISION)
         mybranch = BranchToMirror(
             non_existant_branch, "anothernonsensedir", client, 1)
-        mybranch.mirror()
+        mybranch.mirror(logging.getLogger())
         transaction.abort()
         branch = database.Branch.get(1)
         self.assertEqual(1, branch.mirror_failures)
@@ -264,7 +266,7 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         client.mirrorComplete(1, NULL_REVISION)
         mybranch = BranchToMirror(
             'missingrevision', "missingrevisiontarget", client, 1)
-        mybranch.mirror()
+        mybranch.mirror(logging.getLogger())
         transaction.abort()
         branch = database.Branch.get(1)
         self.assertEqual(1, branch.mirror_failures)
@@ -281,9 +283,13 @@ class TestErrorHandling(unittest.TestCase):
         self.branch._mirrorFailed = lambda err, m=None: self.errors.append(err)
         self.branch._openSourceBranch = lambda: None
         self.branch._mirrorToDestBranch = lambda: None
+        logging.basicConfig(level=logging.CRITICAL)
+
+    def tearDown(self):
+        reset_logging()
 
     def _runMirrorAndCheckError(self, expected_error):
-        self.branch.mirror()
+        self.branch.mirror(logging.getLogger())
         self.assertEqual(len(self.errors), 1)
         error = str(self.errors[0])
         if not error.startswith(expected_error):

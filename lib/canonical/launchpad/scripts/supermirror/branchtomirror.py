@@ -99,7 +99,7 @@ class BranchToMirror:
         """Log that the mirroring of this branch failed."""
         self.branch_status_client.mirrorFailed(self.branch_id, str(error_msg))
 
-    def mirror(self):
+    def mirror(self, logger):
         """Open source and destination branches and pull source into
         destination.
         """
