@@ -24,12 +24,7 @@
 
     <browser:menus
         module="canonical.launchpad.browser"
-        classes="TranslationGroupSetContextMenu"
-        />
-
-    <browser:menus
-        module="canonical.launchpad.browser"
-        classes="TranslationGroupContextMenu"
+        classes="TranslationGroupSetContextMenu TranslationGroupContextMenu"
         />
 
     <browser:url

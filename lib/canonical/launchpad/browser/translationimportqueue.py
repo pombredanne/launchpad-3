@@ -25,10 +25,9 @@ from canonical.launchpad import helpers
 from canonical.launchpad.browser.launchpad import RosettaContextMenu
 from canonical.launchpad.interfaces import (
     ITranslationImportQueueEntry, ITranslationImportQueue, ICanonicalUrlData,
-    IPOTemplateSet, ILanguageSet, IRosettaApplication, ITranslationGroupSet,
-    NotFoundError, UnexpectedFormData)
+    IPOTemplateSet, ILanguageSet, NotFoundError, UnexpectedFormData)
 from canonical.launchpad.webapp import (
-    GetitemNavigation, LaunchpadView, Link, canonical_url)
+    GetitemNavigation, LaunchpadView, canonical_url)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.generalform import GeneralFormView
 

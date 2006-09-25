@@ -23,7 +23,7 @@ from canonical.launchpad.interfaces import (
     ITranslationGroup, ITranslationGroupSet, ILanguageSet,
     IPersonSet, ILaunchBag, NotFoundError
     )
-from canonical.launchpad.webapp import GetitemNavigation, Link
+from canonical.launchpad.webapp import GetitemNavigation
 
 
 class TranslationGroupNavigation(GetitemNavigation):
