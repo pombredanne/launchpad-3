@@ -34,7 +34,7 @@
       <li class="download" tal:repeat="file context/files">
         <a tal:content="file/url/filename"
            tal:attributes="href file/url/fileurl"></a>
-        (<span tal:replace="file/libraryfile/content/filesize" /> bytes)
+        (<span tal:replace="file/libraryfile/content/filesize/fmt:bytes" />)
       </li>
     </ul>
     <p tal:condition="not: context/files">
