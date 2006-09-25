@@ -18,11 +18,12 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
 from zope.component import getUtility
 
+from canonical.launchpad.browser.launchpad import RosettaContextMenu
 from canonical.launchpad.interfaces import (
     ITranslationGroup, ITranslationGroupSet, ILanguageSet,
     IPersonSet, ILaunchBag, NotFoundError
     )
-from canonical.launchpad.webapp import GetitemNavigation, ContextMenu, Link
+from canonical.launchpad.webapp import GetitemNavigation, Link
 
 
 class TranslationGroupNavigation(GetitemNavigation):
@@ -35,54 +36,12 @@ class TranslationGroupSetNavigation(GetitemNavigation):
     usedfor = ITranslationGroupSet
 
 
-class TranslationGroupSetContextMenu(ContextMenu):
+class TranslationGroupSetContextMenu(RosettaContextMenu):
     usedfor = ITranslationGroupSet
-    links = ['overview', 'about', 'preferences', 'import_queue', 'translation_groups']
-
-    def overview(self):
-        text = 'Overview'
-        return Link('..', text)
-
-    def about(self):
-        text = 'About Rosetta'
-        return Link('../+about', text)
-
-    def preferences(self):
-        text = 'Translation preferences'
-        return Link('../prefs', text)
-
-    def import_queue(self):
-        text = 'Import queue'
-        return Link('../imports', text)
-
-    def translation_groups(self):
-        text = 'Translation groups'
-        return Link('', text)
 
 
-class TranslationGroupContextMenu(ContextMenu):
+class TranslationGroupContextMenu(RosettaContextMenu):
     usedfor = ITranslationGroup
-    links = ['overview', 'about', 'preferences', 'import_queue', 'translation_groups']
-
-    def overview(self):
-        text = 'Overview'
-        return Link('..', text)
-
-    def about(self):
-        text = 'About Rosetta'
-        return Link('../+about', text)
-
-    def preferences(self):
-        text = 'Translation preferences'
-        return Link('../prefs', text)
-
-    def import_queue(self):
-        text = 'Import queue'
-        return Link('../imports', text)
-
-    def translation_groups(self):
-        text = 'Translation groups'
-        return Link('', text)
 
 
 class TranslationGroupView:

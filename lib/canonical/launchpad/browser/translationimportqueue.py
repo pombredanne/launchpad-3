@@ -8,6 +8,7 @@ __all__ = [
     'TranslationImportQueueEntryNavigation',
     'TranslationImportQueueEntryURL',
     'TranslationImportQueueEntryView',
+    'TranslationImportQueueEntryContextMenu',
     'TranslationImportQueueContextMenu',
     'TranslationImportQueueNavigation',
     'TranslationImportQueueView',
@@ -21,11 +22,13 @@ from zope.interface import implements
 from zope.app.form.browser.widget import renderElement
 
 from canonical.launchpad import helpers
+from canonical.launchpad.browser.launchpad import RosettaContextMenu
 from canonical.launchpad.interfaces import (
     ITranslationImportQueueEntry, ITranslationImportQueue, ICanonicalUrlData,
-    IPOTemplateSet, ILanguageSet, NotFoundError, UnexpectedFormData)
+    IPOTemplateSet, ILanguageSet, IRosettaApplication, ITranslationGroupSet,
+    NotFoundError, UnexpectedFormData)
 from canonical.launchpad.webapp import (
-    GetitemNavigation, LaunchpadView, ContextMenu, Link, canonical_url)
+    GetitemNavigation, LaunchpadView, Link, canonical_url)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.generalform import GeneralFormView
 
@@ -182,33 +185,15 @@ class TranslationImportQueueEntryView(GeneralFormView):
 
 
 class TranslationImportQueueNavigation(GetitemNavigation):
-
     usedfor = ITranslationImportQueue
 
 
-class TranslationImportQueueContextMenu(ContextMenu):
+class TranslationImportQueueContextMenu(RosettaContextMenu):
     usedfor = ITranslationImportQueue
-    links = ['overview', 'about', 'preferences', 'import_queue', 'translation_groups']
 
-    def overview(self):
-        text = 'Overview'
-        return Link('..', text)
 
-    def about(self):
-        text = 'About Rosetta'
-        return Link('../+about', text)
-
-    def preferences(self):
-        text = 'Translation preferences'
-        return Link('../prefs', text)
-
-    def import_queue(self):
-        text = 'Import queue'
-        return Link('', text)
-
-    def translation_groups(self):
-        text = 'Translation groups'
-        return Link('../groups', text)
+class TranslationImportQueueEntryContextMenu(RosettaContextMenu):
+    usedfor = ITranslationImportQueueEntry
 
 
 class TranslationImportQueueView(LaunchpadView):
