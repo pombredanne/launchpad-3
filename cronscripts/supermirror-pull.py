@@ -18,5 +18,5 @@ if __name__ == '__main__':
 
     log = logger(options, 'branch-puller')
 
-    mirror()
+    mirror(log)
 

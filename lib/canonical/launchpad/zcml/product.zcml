@@ -148,6 +148,9 @@
             facet="translations"
             template="../templates/product-portlet-translatables.pt"
             lp:url="/products/evolution/+portlet-translatables" />
+        <browser:page
+            name="+portlet-aboutcve"
+            template="../templates/portlet-aboutcve.pt" />
     </browser:pages>
 
     <browser:pages
@@ -179,6 +182,14 @@
         lp:url="/projects/$Product.name/+rdf"
         attribute="__call__"
         />
+
+    <browser:page
+      for="canonical.launchpad.interfaces.IProduct"
+      class="canonical.launchpad.browser.CVEReportView"
+      permission="zope.Public"
+      name="+cve"
+      facet="bugs"
+      template="../templates/product-cvereport.pt" />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProduct"

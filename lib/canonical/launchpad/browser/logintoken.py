@@ -522,6 +522,8 @@ class ValidateEmailView(BaseLoginTokenView, LaunchpadView):
             else:
                 return email
 
+        # New email validated by the user. We must add it to our emailaddress
+        # table.
         email = emailset.new(emailaddress, requester)
         return email
 
@@ -651,7 +653,8 @@ class MergePeopleView(BaseLoginTokenView, LaunchpadView):
         # The user proved that he has access to this email address of the
         # dupe account, so we can assign it to him.
         requester = self.context.requester
-        email = getUtility(IEmailAddressSet).getByEmail(self.context.email)
+        emailset = getUtility(IEmailAddressSet)
+        email = emailset.getByEmail(self.context.email)
         email.person = requester.id
         requester.validateAndEnsurePreferredEmail(email)
 
@@ -662,7 +665,7 @@ class MergePeopleView(BaseLoginTokenView, LaunchpadView):
 
         # Now we must check if the dupe account still have registered email
         # addresses. If it hasn't we can actually do the merge.
-        if getUtility(IEmailAddressSet).getByPerson(self.dupe):
+        if emailset.getByPerson(self.dupe):
             self.mergeCompleted = False
             return
 

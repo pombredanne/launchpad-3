@@ -39,7 +39,7 @@ class ProductSeriesNameField(ContentNameField):
             return self.context.getSeries(name)
 
 
-class IProductSeries(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
+class IProductSeries(IHasDrivers, IHasOwner, ISpecificationGoal):
     """A series of releases. For example '2.0' or '1.3' or 'dev'."""
     # XXX Mark Shuttleworth 14/10/04 would like to get rid of id in
     # interfaces, as soon as SQLobject allows using the object directly

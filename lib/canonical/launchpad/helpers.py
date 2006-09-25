@@ -539,8 +539,7 @@ def msgid_html(text, flags, space=TranslationConstants.SPACE_CHAR,
                 type, content = segment
 
                 if type == 'interpolation':
-                    formatted_line += ('<span class="interpolation">%s</span>'
-                        % content)
+                    formatted_line += ('<code>%s</code>' % content)
                 elif type == 'string':
                     formatted_line += content
 

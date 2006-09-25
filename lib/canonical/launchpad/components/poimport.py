@@ -126,14 +126,15 @@ def import_po(pofile_or_potemplate, file, importer, published=True):
     errors = []
     for pomessage in parser.messages:
         # Add the English msgid.
-        try:
-            potmsgset = potemplate.getPOTMsgSetByMsgIDText(pomessage.msgid)
+        potmsgset = potemplate.getPOTMsgSetByMsgIDText(pomessage.msgid)
+        if potmsgset is None:
+            # It's the first time we see this msgid.
+            potmsgset = potemplate.createMessageSetFromText(pomessage.msgid)
+        else:
+            # Note that we saw it.
             potmsgset.makeMessageIDSighting(
                 pomessage.msgid, TranslationConstants.SINGULAR_FORM,
                 update=True)
-        except NotFoundError:
-            # It's the first time we see this msgid.
-            potmsgset = potemplate.createMessageSetFromText(pomessage.msgid)
 
         # Add the English plural form.
         if pomessage.msgidPlural is not None and pomessage.msgidPlural != '':
