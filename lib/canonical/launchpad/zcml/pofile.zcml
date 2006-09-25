@@ -63,9 +63,6 @@
             name="+portlet-translators"
             template="../templates/pofile-portlet-translators.pt" />
         <browser:page
-            name="+portlet-quickhelp"
-            template="../templates/pofile-portlet-quickhelp.pt" />
-        <browser:page
             name="+portlet-stats"
             template="../templates/pofile-portlet-stats.pt" />
 

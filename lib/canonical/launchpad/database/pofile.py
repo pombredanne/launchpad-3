@@ -230,8 +230,7 @@ class POFile(SQLBase, RosettaStats):
             translator = group.query_translator(self.language)
             if translator is not None:
                 translators.add(translator)
-        return sorted(list(translators),
-            key=lambda x: x.translator.name)
+        return sorted(list(translators), key=lambda x: x.translator.name)
 
     @property
     def translationpermission(self):

@@ -7,7 +7,6 @@ __all__ = [
     'IrcID', 'IrcIDSet']
 
 import itertools
-import sets
 from datetime import datetime, timedelta
 import pytz
 import sha
@@ -723,7 +722,6 @@ class Person(SQLBase):
         tm.syncUpdate()
 
     def _getMembersByStatus(self, status):
-        # XXX Needs a system doc test. SteveAlexander 2005-04-23
         query = ("TeamMembership.team = %s AND TeamMembership.status = %s "
                  "AND TeamMembership.person = Person.id" %
                  sqlvalues(self.id, status))
@@ -1138,7 +1136,7 @@ class PersonSet:
         person = self._newPerson(name, displayname, hide_email_addresses,
                                  password=password)
 
-        email = getUtility(IEmailAddressSet).new(email, person.id)
+        email = getUtility(IEmailAddressSet).new(email, person)
         return person, email
 
     def _newPerson(self, name, displayname, hide_email_addresses,
@@ -1839,15 +1837,13 @@ class EmailAddressSet:
             return default
         return result
 
-    def new(self, email, personID, status=EmailAddressStatus.NEW):
-        # XXX: this should not take a personID, but a real person.
-        #   -- kiko, 2006-08-14
+    def new(self, email, person, status=EmailAddressStatus.NEW):
         email = email.strip()
         if self.getByEmail(email):
             raise EmailAddressAlreadyTaken(
                 "The email address %s is already registered." % email)
         assert status in EmailAddressStatus.items
-        return EmailAddress(email=email, status=status, person=personID)
+        return EmailAddress(email=email, status=status, person=person)
 
 
 class SSHKey(SQLBase):
