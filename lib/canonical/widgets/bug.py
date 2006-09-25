@@ -63,15 +63,15 @@ class BugTagsWidget(TextWidget):
             # see if it's a ConstraintNotSatisfied error and change it
             # to a better one. For simplicity, we care only about the
             # first error.
-            validation_errors = input_error.args[2]
-            for validatation_error in validation_errors.args[0]:
-                if isinstance(validatation_error, ConstraintNotSatisfied):
+            validation_errors = input_error.errors
+            for validation_error in validation_errors.args[0]:
+                if isinstance(validation_error, ConstraintNotSatisfied):
                     self._error = WidgetInputError(
-                        input_error.args[0], input_error.args[1],
+                        input_error.field_name, input_error.widget_title,
                         LaunchpadValidationError(
                             "'%s' isn't a valid tag name. Only alphanumeric"
                             " characters may be used.",
-                            validatation_error.args[0]))
+                            validation_error.args[0]))
                 raise self._error
             else:
                 raise
