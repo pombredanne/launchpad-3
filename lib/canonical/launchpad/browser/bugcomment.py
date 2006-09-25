@@ -76,6 +76,17 @@ class BugComment:
             self.text_for_display = text
             self.was_truncated = False
 
+    def isIdenticalTo(self, other):
+        if self.text_for_display != other.text_for_display:
+            return False
+        if self.title != other.title:
+            return False
+        if self.bugattachments or other.bugattachments:
+            # We shouldn't collapse comments which have attachments;
+            # there's really no possible identity in that case.
+            return False
+        return True
+
 
 class BugCommentView(LaunchpadView):
     """View for a single bug comment."""

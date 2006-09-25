@@ -103,6 +103,7 @@
     <!-- XXX mpt 20060822: Remove this once we use "(Optional)" instead -->
     <resource name="retry" file="../images/retry.png" />
     <resource name="search" file="../images/search_icon.gif" />
+    <resource name="sorry-closed" file="../images/sorry-closed.png" />
     <resource name="spec" file="../images/topic_icon.gif" />
     <resource name="stop" file="../images/stop.png" />
     <resource name="sprint" file="../images/backtalk.gif" />
