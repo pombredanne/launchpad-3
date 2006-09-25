@@ -6,6 +6,8 @@ __metaclass__ = type
 __all__ = ['TranslationGroupNavigation',
            'TranslationGroupSetNavigation',
            'TranslationGroupView',
+           'TranslationGroupSetContextMenu',
+           'TranslationGroupContextMenu',
            'TranslationGroupAddTranslatorView',
            'TranslationGroupSetAddView']
 
@@ -20,7 +22,7 @@ from canonical.launchpad.interfaces import (
     ITranslationGroup, ITranslationGroupSet, ILanguageSet,
     IPersonSet, ILaunchBag, NotFoundError
     )
-from canonical.launchpad.webapp import GetitemNavigation
+from canonical.launchpad.webapp import GetitemNavigation, ContextMenu, Link
 
 
 class TranslationGroupNavigation(GetitemNavigation):
@@ -31,6 +33,56 @@ class TranslationGroupNavigation(GetitemNavigation):
 class TranslationGroupSetNavigation(GetitemNavigation):
 
     usedfor = ITranslationGroupSet
+
+
+class TranslationGroupSetContextMenu(ContextMenu):
+    usedfor = ITranslationGroupSet
+    links = ['overview', 'about', 'preferences', 'import_queue', 'translation_groups']
+
+    def overview(self):
+        text = 'Overview'
+        return Link('..', text)
+
+    def about(self):
+        text = 'About Rosetta'
+        return Link('../+about', text)
+
+    def preferences(self):
+        text = 'Translation preferences'
+        return Link('../prefs', text)
+
+    def import_queue(self):
+        text = 'Import queue'
+        return Link('../imports', text)
+
+    def translation_groups(self):
+        text = 'Translation groups'
+        return Link('', text)
+
+
+class TranslationGroupContextMenu(ContextMenu):
+    usedfor = ITranslationGroup
+    links = ['overview', 'about', 'preferences', 'import_queue', 'translation_groups']
+
+    def overview(self):
+        text = 'Overview'
+        return Link('..', text)
+
+    def about(self):
+        text = 'About Rosetta'
+        return Link('../+about', text)
+
+    def preferences(self):
+        text = 'Translation preferences'
+        return Link('../prefs', text)
+
+    def import_queue(self):
+        text = 'Import queue'
+        return Link('../imports', text)
+
+    def translation_groups(self):
+        text = 'Translation groups'
+        return Link('', text)
 
 
 class TranslationGroupView:

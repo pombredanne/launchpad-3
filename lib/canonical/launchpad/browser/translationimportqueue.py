@@ -188,11 +188,27 @@ class TranslationImportQueueNavigation(GetitemNavigation):
 
 class TranslationImportQueueContextMenu(ContextMenu):
     usedfor = ITranslationImportQueue
-    links = ['overview']
+    links = ['overview', 'about', 'preferences', 'import_queue', 'translation_groups']
 
     def overview(self):
+        text = 'Overview'
+        return Link('..', text)
+
+    def about(self):
+        text = 'About Rosetta'
+        return Link('../+about', text)
+
+    def preferences(self):
+        text = 'Translation preferences'
+        return Link('../prefs', text)
+
+    def import_queue(self):
         text = 'Import queue'
         return Link('', text)
+
+    def translation_groups(self):
+        text = 'Translation groups'
+        return Link('../groups', text)
 
 
 class TranslationImportQueueView(LaunchpadView):
