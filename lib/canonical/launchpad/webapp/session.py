@@ -5,6 +5,7 @@ __metaclass__ = type
 
 from cookielib import domain_match
 from zope.component import getUtility
+from zope.app.session.interfaces import ISession
 from zope.app.session.http import CookieClientIdManager
 from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 
@@ -54,7 +55,20 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
         session to be shared between virtual hosts where possible, and
         we set the secure key to stop the session key being sent to
         insecure URLs like the Librarian.
+
+        We also log the referrer url on creation of a new
+        requestid so we can track where first time users arrive from.
         """
+        if request.getCookies().has_key(self.namespace):
+            # Session has already been set in a previous request
+            new_session = False
+        elif request.response.getCookie(self.namespace, None) is not None:
+            # Session has already been set for the first time in this request
+            new_session = False
+        else:
+            # Session has never been set
+            new_session = True
+
         CookieClientIdManager.setRequestId(self, request, id)
 
         cookie = request.response.getCookie(self.namespace)
@@ -75,5 +89,16 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
                     or domain_match(request_domain, dotted_domain)):
                 cookie['domain'] = dotted_domain
                 break
+
+        if new_session:
+            session = ISession(request)['launchpad.session']
+            referrer = request.get('HTTP_REFERER', None)
+            if referrer is not None:
+                referrer = referrer.decode('US-ASCII', 'replace')
+            session['initial_referrer'] = referrer
+            url = str(request.URL).decode('US-ASCII', 'replace')
+            if request.get('QUERY_STRING', None):
+                url = url + '?' + request['QUERY_STRING']
+            session['initial_url'] = url
 
 idmanager = LaunchpadCookieClientIdManager()

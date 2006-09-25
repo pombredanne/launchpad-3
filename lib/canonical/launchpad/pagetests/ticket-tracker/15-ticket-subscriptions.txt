@@ -2,64 +2,68 @@
 Ticket Subscriptions
 ====================
 
-The ticket page should show a "Subscribe" link.
+Users can subscribe to specific tickets. When they are subscribed they
+will receive notifications for any changes to the ticket.
 
-  >>> print http(r"""
-  ... GET /products/firefox/+ticket/2/ HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Subscribe...
+To subscribe, users use the 'Subscribe' link and then confirm that
+they want to subscribe by clicking on the 'Subscribe' button.
 
-The ticket should have a +subscribe page, which should have a heading
-inviting you to subscribe and a form submit button to do so.
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/products/firefox/+ticket/2')
+    >>> link = user_browser.getLink('Subscribe')
+    >>> link.url
+    '.../+ticket/2/+subscribe'
+    >>> link.click()
+    >>> print user_browser.title
+    Subscription to request #2
 
-  >>> print http(r"""
-  ... GET /products/firefox/+ticket/2/+subscribe HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Subscribe to request...
-  <input type="submit" name="subscribe"...value="Subscribe" />...
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup.first('h1')
+    <h1>Subscribe to request</h1>
+    >>> user_browser.getControl('Subscribe').click()
 
-POSTing that form back to the ticket page should show a portal message
-saying you have subscribed, and also list Foo Bar in the subscribers
-portlet, and finally change the link to "Unsubscribe".
+A message confirming that he was subscribed is displayed and the user
+name appears in the 'Subscribers' portlet:
 
-  >>> print http(r"""
-  ... POST /products/firefox/+ticket/2/ HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 19
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... subscribe=Subscribe""")
-  HTTP/1.1 200 Ok
-  ...You have subscribed to this request...
-  ...+subscribe">Unsubscribe</a>...
-  ...Subscribers to request #2:...
-  ...Foo Bar...
+    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> print soup.first('p', 'informational message').renderContents()
+    You have subscribed to this request.
 
-The +subscribe page should now talk about "Unsubscribing".
+    >>> portlet = soup.first('div', id='ticket-subscribers')
+    >>> portlet.first('h4')
+    <h4>Subscribers to request #2:</h4>
+    >>> portlet.first('ul')
+    <ul class="people">
+      <li>
+        <a href="http://launchpad.dev/people/name12">Sample Person</a>
+      </li>
+    </ul>
 
-  >>> print http(r"""
-  ... GET /products/firefox/+ticket/2/+subscribe HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Unsubscribe from request...
-  <input type="submit" name="subscribe"...value="Unsubscribe" />...
+When the user is subscribed to the ticket, the 'Subscribe' link becomes
+an 'Unsubscribe' link. To unsubscribe, the user follows that link and
+then click on the 'Unsubscribe' button.
 
-And POSTing it to the ticket page should unsubscribe the user from this
-ticket.
+    >>> link = user_browser.getLink('Unsubscribe')
+    >>> link.url
+    '.../+ticket/2/+subscribe'
+    >>> link.click()
 
-  >>> print http(r"""
-  ... POST /products/firefox/+ticket/2/ HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 21
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... subscribe=Unsubscribe""")
-  HTTP/1.1 200 Ok
-  ...You have unsubscribed from this request...
-  ...+subscribe">Subscribe</a>...
+    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup.first('h1')
+    <h1>Unsubscribe from request</h1>
+    >>> user_browser.getControl('Unsubscribe').click()
+
+A confirmation is displayed and the user, which was unsubscribed from
+the ticket, doesn't appear anymore in the subscribers portlet:
+
+    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> print soup.first('p', 'informational message').renderContents()
+    You have unsubscribed from this request.
+
+    >>> portlet = soup.first('div', id='ticket-subscribers')
+    >>> portlet.first('p')
+    <p>
+      <i>No subscribers.</i>
+    </p>
 

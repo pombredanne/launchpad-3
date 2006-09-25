@@ -18,7 +18,7 @@
   <h1>
     <tal:distro replace="context/distribution/displayname">Ubuntu
     Linux</tal:distro>
-    mirror "<tal:mirror replace="context/name">foobar</tal:mirror>"
+    mirror "<tal:mirror replace="context/title">foobar</tal:mirror>"
   </h1>
 </metal:heading>
 

@@ -12,11 +12,11 @@ from canonical.launchpad.ftests import login
 from canonical.launchpad.systemhomes import ShipItApplication
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 from canonical.launchpad.database import (
-    ShippingRequest, ShippingRequestSet, StandardShipItRequestSet, PersonSet,
-    CountrySet)
+    ShippingRequest, ShippingRequestSet, StandardShipItRequestSet)
 from canonical.launchpad.layers import (
     ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer, setFirstLayer)
-from canonical.lp.dbschema import ShipItFlavour
+from canonical.launchpad.interfaces import ShippingRequestPriority
+from canonical.lp.dbschema import ShipItFlavour, ShippingRequestStatus
 
 
 class TestShippingRequestSet(LaunchpadFunctionalTestCase):
@@ -101,6 +101,64 @@ class TestSecondsAndThirdRequestsAreCorrectlyHandled(
             third_request = self._make_new_request_through_web(flavour)
             self.failUnless(third_request.isPendingSpecial(), flavour)
             self._ship_request(third_request)
+
+
+class TestShippingRun(LaunchpadFunctionalTestCase):
+
+    def test_create_shipping_run_sets_requests_count(self):
+        requestset = ShippingRequestSet()
+        approved_request_ids = requestset.getUnshippedRequestsIDs(
+            ShippingRequestPriority.NORMAL)
+        non_approved_request = requestset.getOldestPending()
+        self.failIf(non_approved_request is None)
+        run = requestset._create_shipping_run(
+            approved_request_ids + [non_approved_request.id])
+        self.failUnless(run.requests_count == len(approved_request_ids))
+
+
+class TestShippingRequest(LaunchpadFunctionalTestCase):
+
+    def test_requests_that_can_be_approved_denied_or_changed(self):
+        requestset = ShippingRequestSet()
+
+        # Requests pending approval can be approved and denied but not
+        # changed.
+        pending_request = requestset.getOldestPending()
+        self.failUnless(pending_request.isAwaitingApproval())
+        self.failUnless(pending_request.canBeApproved())
+        self.failUnless(pending_request.canBeDenied())
+
+        # Requests pending special consideration can be approved and denied
+        # too.
+        pending_special_request = pending_request
+        pending_special_request.status = ShippingRequestStatus.PENDINGSPECIAL
+        self.failUnless(pending_special_request.isPendingSpecial())
+        self.failUnless(pending_special_request.canBeApproved())
+        self.failUnless(pending_special_request.canBeDenied())
+
+        # Denied requests can be approved but can't be denied.
+        denied_request = pending_request
+        denied_request.status = ShippingRequestStatus.DENIED
+        self.failUnless(denied_request.isDenied())
+        self.failUnless(denied_request.canBeApproved())
+        self.failIf(denied_request.canBeDenied())
+
+        # Cancelled requests can't be approved and denied.
+        cancelled_request = denied_request
+        cancelled_request.status = ShippingRequestStatus.CANCELLED
+        self.failUnless(cancelled_request.isCancelled())
+        self.failIf(cancelled_request.canBeApproved())
+        self.failIf(cancelled_request.canBeDenied())
+
+        # Like cancelled requests, shipped ones can't be approved, neither
+        # denied.
+        shipped_request = cancelled_request
+        shipped_request.status = ShippingRequestStatus.APPROVED
+        shippingrun = requestset._create_shipping_run([shipped_request.id])
+        flush_database_updates()
+        self.failUnless(shipped_request.isShipped())
+        self.failIf(shipped_request.canBeApproved())
+        self.failIf(shipped_request.canBeDenied())
 
 
 def test_suite():
