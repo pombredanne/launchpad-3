@@ -45,17 +45,17 @@ def main():
 
     (options, args) = parser.parse_args()
 
-    log = logger(options, "initialiase")
+    log = logger(options, "initialise")
 
     if len(args) != 1:
         log.error("Need to be given exactly one non-option argument. "
-                  "Namely the distrorelease to initialiase.")
+                  "Namely the distrorelease to initialise.")
         return 1
 
     distrorelease_name = args[0]
 
     log.debug("Acquiring lock")
-    lock = GlobalLock('/var/lock/launchpad-initialiase.lock')
+    lock = GlobalLock('/var/lock/launchpad-initialise.lock')
     lock.acquire(blocking=True)
 
     log.debug("Initialising connection.")

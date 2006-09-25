@@ -4,10 +4,10 @@
 __metaclass__ = type
 __all__ = ['Bug', 'BugSet', 'get_bug_tags', 'get_bug_tags_open_count']
 
+import operator
+import re
 from cStringIO import StringIO
 from email.Utils import make_msgid
-import re
-from sets import Set
 
 from zope.app.content_types import guess_content_type
 from zope.component import getUtility
@@ -40,11 +40,13 @@ from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent)
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.lp.dbschema import BugAttachmentType, BugTaskStatus
+from canonical.lp.dbschema import BugAttachmentType
+
 
 _bug_tag_query_template = """
         SELECT %(columns)s FROM %(tables)s WHERE
             %(condition)s GROUP BY BugTag.tag ORDER BY BugTag.tag"""
+
 
 def get_bug_tags(context_clause):
     """Return all the bug tags as a list of strings.
@@ -156,6 +158,7 @@ class Bug(SQLBase):
     cves = SQLRelatedJoin('Cve', intermediateTable='BugCve',
         orderBy='sequence', joinColumn='bug', otherColumn='cve')
     cve_links = SQLMultipleJoin('BugCve', joinColumn='bug', orderBy='id')
+    # XXX: why is subscriptions ordered by ID? -- kiko, 2006-09-23
     subscriptions = SQLMultipleJoin(
             'BugSubscription', joinColumn='bug', orderBy='id',
             prejoins=["person"])
@@ -267,11 +270,12 @@ class Bug(SQLBase):
         # Direct subscriptions always take precedence over indirect
         # subscriptions.
         direct_subscribers = set(self.getDirectSubscribers())
-        return list(indirect_subscribers.difference(direct_subscribers))
+        return sorted(indirect_subscribers.difference(direct_subscribers),
+                      key=operator.attrgetter('id'))
 
     def notificationRecipientAddresses(self):
         """See canonical.launchpad.interfaces.IBug."""
-        emails = Set()
+        emails = set()
         for direct_subscriber in self.getDirectSubscribers():
             emails.update(contactEmailAddresses(direct_subscriber))
 
@@ -283,7 +287,7 @@ class Bug(SQLBase):
                 "Indirect subscribers found on private bug. "
                 "A private bug should never have implicit subscribers!")
 
-        return list(emails)
+        return sorted(emails)
 
     def addChangeNotification(self, text, person, when=None):
         """See IBug."""

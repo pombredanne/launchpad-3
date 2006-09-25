@@ -69,11 +69,20 @@ you might prefer that to read, simply:
 
   assigned to Foo Bar
 
-Let's see some examples of how this works:
+We define a helper that uses the BugTaskListingView class (obtained via
++listing-view) to render the status:
 
   >>> from canonical.launchpad.interfaces import ILaunchBag
-  >>> from canonical.launchpad.browser.bugtask import render_bugtask_status
   >>> from canonical.lp.dbschema import BugTaskStatus
+  >>> from zope.component import getView
+  >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+  >>> def render_bugtask_status(task):
+  ...   view = getView(task, "+listing-view", LaunchpadTestRequest())
+  ...   return view.status
+
+Let's see some examples of how this works:
+
   >>> login("foo.bar@canonical.com")
   >>> foobar = getUtility(ILaunchBag).user
 
@@ -111,7 +120,6 @@ Let's see some examples of how this works:
 
 This code also works for null bug tasks:
 
-  >>> from canonical.launchpad.browser.bugtask import render_bugtask_status
   >>> from canonical.launchpad.components.bugtask import NullBugTask
   >>> from canonical.launchpad.database import Bug, Product
   >>> bug_one = Bug.get(1)
@@ -129,8 +137,12 @@ Status Elsewhere
 ----------------
 
 It's often useful to present information about the status of a bug in
-other contexts. The render_bugtask_status_elsewhere function provides a
-human-readable string containing such information.
+other contexts. Again, the listing-view holds a method which provides us
+with this information; let's define a helper for it:
+
+  >>> def render_bugtask_status_elsewhere(task):
+  ...   view = getView(task, "+listing-view", LaunchpadTestRequest())
+  ...   return view.status_elsewhere
 
 The main questions of interest, in order, are:
 
@@ -140,8 +152,6 @@ The main questions of interest, in order, are:
 
 Let's see some examples:
 
-  >>> from canonical.launchpad.browser.bugtask import (
-  ...   render_bugtask_status_elsewhere)
   >>> render_bugtask_status_elsewhere(bugtaskset.get(13))
   'not filed elsewhere'
 

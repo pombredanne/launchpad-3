@@ -57,11 +57,9 @@ def do_paranoid_email_content_validation(from_addr, to_addrs, subject, body):
     # still exists in modern Z3 -- StuartBishop 20050319
     assert (zisinstance(to_addrs, (list, tuple, sets.Set, set))
             and len(to_addrs) > 0), 'Invalid To: %r' % (to_addrs,)
-    assert zisinstance(from_addr, basestring), \
-            'Invalid From: %r' % (from_addr,)
-    assert zisinstance(subject, basestring), \
-            'Invalid Subject: %r' % (from_addr,)
-    assert zisinstance(body, basestring), 'Invalid body: %r' % (from_addr,)
+    assert zisinstance(from_addr, basestring), 'Invalid From: %r' % from_addr
+    assert zisinstance(subject, basestring), 'Invalid Subject: %r' % subject
+    assert zisinstance(body, basestring), 'Invalid body: %r' % body
     for addr in to_addrs:
         assert zisinstance(addr, basestring) and bool(addr), \
                 'Invalid recipient: %r in %r' % (addr, to_addrs)
