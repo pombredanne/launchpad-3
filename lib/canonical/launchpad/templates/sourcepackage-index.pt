@@ -93,7 +93,7 @@
         <li tal:repeat="file files">
           <a tal:content="file/url/filename"
              tal:attributes="href file/url/fileurl">foo-bar_2.dsc</a>
-          (<span tal:replace="file/libraryfile/content/filesize" /> bytes)
+          (<span tal:replace="file/libraryfile/content/filesize/fmt:bytes" />)
         </li>
       </ul>
     </tal:files>
