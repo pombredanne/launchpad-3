@@ -618,10 +618,6 @@ ins {
   padding: 0.5em;
 }
 
-.interpolation {
-  background-color: #7090a0;
-}
-
 /* see launchpad.js:activateCollapsables() */
 .collapsible legend a, .collapsible legend a:visited {
     text-decoration: none;
