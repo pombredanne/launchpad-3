@@ -178,6 +178,28 @@ Let's try uploading a file with some weird characters in them:
     >>> bug_one.attachments[-1].libraryfile.url
     'http://.../fo%C3%B6%20bar'
 
+If a filename contains a slash, it will be converted to a dash instead.
+We do this since otherwise it won't be possible to download the file
+from the librarian.
+
+    >>> filecontent.filename = u'foo/bar/baz'
+    >>> add_request = LaunchpadTestRequest(form={
+    ...     'field.subject': u'Title',
+    ...     'field.comment': u'Some comment.',
+    ...     'field.include_attachment': 'on',
+    ...     'field.filecontent': filecontent,
+    ...     'field.attachment_description': 'blah',
+    ...     'field.patch': u'',
+    ...     'FORM_SUBMIT': ''})
+    >>> add_comment_view = getView(bugtask, '+addcomment-form', add_request)
+    >>> len(add_comment_view.errors)
+    0
+    >>> add_comment_view.process_form()
+    Attachment added: u'foo-bar-baz'
+    >>> bug_one.attachments[-1].libraryfile.filename
+    u'foo-bar-baz'
+    >>> bug_one.attachments[-1].libraryfile.url
+    'http://.../foo-bar-baz'
 
     >>> config.launchpad.max_bug_attachment_size = old_max_bug_attachment_size
     >>> event_listener.unregister()

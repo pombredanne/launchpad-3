@@ -43,7 +43,7 @@ from canonical.launchpad.components.poparser import (POSyntaxError,
     POInvalidInputError)
 
 standardPOFileTopComment = ''' %(languagename)s translation for %(origin)s
- Copyright (c) %(copyright)s %(year)s
+ Copyright %(copyright)s %(year)s
  This file is distributed under the same license as the %(origin)s package.
  FIRST AUTHOR <EMAIL@ADDRESS>, %(year)s.
 
@@ -109,7 +109,11 @@ class POTemplate(SQLBase, RosettaStats):
 
     def __getitem__(self, key):
         """See IPOTemplate."""
-        return self.getPOTMsgSetByMsgIDText(key, onlyCurrent=True)
+        potmsgset = self.getPOTMsgSetByMsgIDText(key, only_current=True)
+        if potmsgset is None:
+            raise NotFoundError(key)
+        else:
+            return potmsgset
 
     # properties
     @property
@@ -247,26 +251,22 @@ class POTemplate(SQLBase, RosettaStats):
                 sourcepackagename=self.sourcepackagename)
         raise AssertionError('Unknown POTemplate translation target')
 
-    def getPOTMsgSetByMsgIDText(self, key, onlyCurrent=False):
+    def getPOTMsgSetByMsgIDText(self, key, only_current=False):
         """See IPOTemplate."""
         query = 'potemplate = %s' % sqlvalues(self.id)
-        if onlyCurrent:
+        if only_current:
             query += ' AND sequence > 0'
 
         # Find a message ID with the given text.
         try:
             pomsgid = POMsgID.byMsgid(key)
         except SQLObjectNotFound:
-            raise NotFoundError(key)
+            return None
 
         # Find a message set with the given message ID.
 
-        result = POTMsgSet.selectOne(query +
+        return POTMsgSet.selectOne(query +
             (' AND primemsgid = %s' % sqlvalues(pomsgid.id)))
-
-        if result is None:
-            raise NotFoundError(key)
-        return result
 
     def getPOTMsgSetBySequence(self, sequence):
         """See IPOTemplate."""
@@ -434,7 +434,7 @@ class POTemplate(SQLBase, RosettaStats):
             'languagecode': language_code,
             'date': now.isoformat(' '),
             'templatedate': self.datecreated,
-            'copyright': '(c) %d Canonical Ltd, and Rosetta Contributors'
+            'copyright': '(c) %d Rosetta Contributors and Canonical Ltd'
                          % now.year,
             'nplurals': language.pluralforms or 1,
             'pluralexpr': language.pluralexpression or '0',

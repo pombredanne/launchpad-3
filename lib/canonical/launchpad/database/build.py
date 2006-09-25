@@ -141,6 +141,10 @@ class Build(SQLBase):
     @property
     def calculated_buildstart(self):
         """See IBuild."""
+        assert self.was_built, "value is not suitable for pending builds."
+        assert self.datebuilt and self.buildduration, (
+            "value is not suitable for this build record (%d)"
+            % self.id)
         return self.datebuilt - self.buildduration
 
     def retry(self):
@@ -221,10 +225,9 @@ class Build(SQLBase):
         # have no preferredemail. They are the autosync ones (creator = katie,
         # 3583 packages) and the untouched sources since we have migrated from
         # DAK (the rest). We should not spam Debian maintainers.
-        if (config.builddmaster.notify_owner and
-            self.sourcepackagerelease.creator.preferredemail):
-            recipients.add(
-                self.sourcepackagerelease.creator.preferredemail.email)
+        creator = self.sourcepackagerelease.creator
+        if config.builddmaster.notify_owner:
+            recipients = recipients.union(contactEmailAddresses(creator))
 
         subject = "[Build #%d] %s" % (self.id, self.title)
 
@@ -267,12 +270,8 @@ class Build(SQLBase):
         message = template % replacements
 
         for toaddress in recipients:
-            # XXX cprov 20060825: Why some simple_sendmail callsite
-            # doesn't use the str() cast to the addresses returned from
-            # contactEmailAddresses() and don't expload with:
-            # AssertionError: Expected an ASCII str object, got: u'...'
             simple_sendmail(
-                fromaddress, str(toaddress), subject, message,
+                fromaddress, toaddress, subject, message,
                 headers=extra_headers)
 
 

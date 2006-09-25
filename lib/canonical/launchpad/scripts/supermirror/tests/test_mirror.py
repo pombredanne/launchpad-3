@@ -1,11 +1,22 @@
-import unittest
+import logging
 from StringIO import StringIO
+import unittest
 
 from canonical.launchpad.scripts.supermirror import mirror
 from canonical.launchpad.scripts.supermirror.jobmanager import LockError
+from canonical.testing import reset_logging
 
 
 class TestMirrorCommand(unittest.TestCase):
+
+    def setUp(self):
+        # We set the log level to CRITICAL so that the log messages
+        # are suppressed.
+        logging.basicConfig(level=logging.CRITICAL)
+        self.logger = logging.getLogger()
+
+    def tearDown(self):
+        reset_logging()
 
     def testmirror(self):
         self.startMirror()
@@ -30,11 +41,11 @@ class TestMirrorCommand(unittest.TestCase):
         self.assertEquals(call_log[0], ("__init__",))
         self.assertEquals(call_log[1], ("lock",))
         self.assertEquals(call_log[2], ("addBranches",))
-        self.assertEquals(call_log[3], ("run",))
+        self.assertEquals(call_log[3], ("run", self.logger))
         self.assertEquals(call_log[4], ("unlock",))
 
     def startMirror(self):
-        self.assertEqual(0, mirror(managerClass=MockJobManager))
+        self.assertEqual(0, mirror(self.logger, managerClass=MockJobManager))
 
 
 class TestMockJobManager(unittest.TestCase):
@@ -79,8 +90,8 @@ class MockJobManager:
         MockJobManager.locked = False
         self._call_log.append(("unlock",))
 
-    def run(self):
-        self._call_log.append(("run",))
+    def run(self, logger):
+        self._call_log.append(("run", logger))
 
 
 def test_suite():

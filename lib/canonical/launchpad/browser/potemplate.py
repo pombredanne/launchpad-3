@@ -193,13 +193,12 @@ class POTemplateView(LaunchpadView):
     def upload(self):
         """Handle a form submission to change the contents of the template."""
 
-        file = self.request.form['file']
-
+        file = self.request.form.get('file')
         if not isinstance(file, FileUpload):
-            if file == '':
+            if not file:
                 self.request.response.addErrorNotification(
-                    "Ignored your upload because you didn't select a file to"
-                    " upload.")
+                    "Your upload was ignored because you didn't select a "
+                    "file. Please select a file and try again.")
             else:
                 # XXX: Carlos Perello Marin 2004/12/30
                 # Epiphany seems to have an unpredictable bug with upload
@@ -209,8 +208,8 @@ class POTemplateView(LaunchpadView):
                 # object in "file". We show an error if we see that behaviour.
                 # For more info, look at bug #116.
                 self.request.response.addErrorNotification(
-                    "The upload failed because there was a problem receiving"
-                    " the data.")
+                    "Your upload failed because there was a problem receiving"
+                    " data. Please try again.")
             return
 
         filename = file.filename
@@ -316,14 +315,13 @@ class POTemplateExportView(BaseExportView):
         if self.request.method != 'POST':
             return
 
-        pofiles = []
         what = self.request.form.get('what')
-
         if what == 'all':
             export_potemplate = True
 
             pofiles =  self.context.pofiles
         elif what == 'some':
+            pofiles = []
             export_potemplate = 'potemplate' in self.request.form
 
             for key in self.request.form:
@@ -343,14 +341,13 @@ class POTemplateExportView(BaseExportView):
             return
 
         format_name = self.request.form.get('format')
-
         try:
             format = RosettaFileFormat.items[format_name]
         except KeyError:
-            raise RuntimeError("Unsupported format.")
+            self.errorMessage = 'Please select a valid format for download.'
+            return
 
         request_set = getUtility(IPOExportRequestSet)
-
         if export_potemplate:
             request_set.addRequest(self.user, self.context, pofiles, format)
         else:
