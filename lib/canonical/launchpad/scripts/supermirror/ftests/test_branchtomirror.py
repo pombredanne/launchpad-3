@@ -33,7 +33,6 @@ from canonical.launchpad.scripts.supermirror.branchtomirror import (
     BranchToMirror)
 from canonical.authserver.client.branchstatus import BranchStatusClient
 from canonical.authserver.ftests.harness import AuthserverTacTestSetup
-from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 from canonical.testing import LaunchpadFunctionalLayer, reset_logging
 
 
@@ -280,7 +279,7 @@ class TestErrorHandling(unittest.TestCase):
         self.branch = BranchToMirror('foo', 'bar', client, 1)
         # Stub out everything that we don't need to test
         client.startMirroring = lambda branch_id: None
-        self.branch._mirrorFailed = lambda err, m=None: self.errors.append(err)
+        self.branch._mirrorFailed = lambda logger, err: self.errors.append(err)
         self.branch._openSourceBranch = lambda: None
         self.branch._mirrorToDestBranch = lambda: None
         logging.basicConfig(level=logging.CRITICAL)
