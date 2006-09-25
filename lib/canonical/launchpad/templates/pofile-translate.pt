@@ -142,13 +142,8 @@
                 </tr>
               </thead>
               <tbody class="greater">
-                <tal:loop repeat="entry view/batchnav/currentBatch">
-                  <tal:pomsgsetview
-                    define="pomsgset_view python:view.getPOMsgSetViewFromPOTMsgSet(entry)">
-                    <metal:pomsgsetview
-                      use-macro="pomsgset_view/@@+pomsgset-translate/pomsgset-view"
-                      />
-                  </tal:pomsgsetview>
+                <tal:loop repeat="pomsgset_view view/pomsgset_views">
+                  <div tal:replace="structure pomsgset_view" />
                 </tal:loop>
               </tbody>
               <tfoot>

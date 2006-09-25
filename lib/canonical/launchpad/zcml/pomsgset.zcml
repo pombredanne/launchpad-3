@@ -47,16 +47,18 @@
         />
 
     <browser:page
-      for="*"
-      name="+pomsgset-translate"
-      permission="launchpad.AnyPerson"
-      template="../templates/pomsgset-translate-macros.pt" />
-
-    <browser:page
         name="+translate"
         for="canonical.launchpad.interfaces.IPOMsgSet"
         permission="launchpad.AnyPerson"
         template="../templates/pomsgset-translate.pt"
+        class="canonical.launchpad.browser.POMsgSetPageView"
+        />
+
+    <browser:page
+        name="+translate-one"
+        for="canonical.launchpad.interfaces.IPOMsgSet"
+        permission="launchpad.AnyPerson"
+        template="../templates/pomsgset-translate-one.pt"
         class="canonical.launchpad.browser.POMsgSetView"
         />
 

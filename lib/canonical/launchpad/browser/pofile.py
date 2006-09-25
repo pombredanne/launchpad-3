@@ -318,12 +318,26 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         # Setup the batching for this page.
         self.batchnav = BatchNavigator(
             self.getSelectedPOTMsgSet(), self.request, size=10)
-        current_batch = self.batchnav.currentBatch()
         self.start = self.batchnav.start
+        current_batch = self.batchnav.currentBatch()
         self.size = current_batch.size
 
+        self.pomsgset_views = []
+        for potmsgset in current_batch:
+            self.pomsgset_views.append(self._buildPOMsgSetView(potmsgset))
         # Handle any form submission.
         self.process_form()
+
+    def _buildPOMsgSetView(self, potmsgset):
+        """Build a POMsgSetView for a given POTMsgSet."""
+        language = self.context.language
+        variant = self.context.variant
+        pomsgset = potmsgset.getPOMsgSet(language.code, variant)
+        if pomsgset is None:
+            pomsgset = potmsgset.getDummyPOMsgSet(language.code, variant)
+        pomsgsetview = getView(pomsgset, "+translate-one", self.request)
+        pomsgsetview.set_from_pofile()
+        return pomsgsetview
 
     def _initialize_show_option(self):
         # Get any value given by the user
@@ -451,8 +465,10 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             if pomsgset is None:
                 pomsgset = pofile.createMessageSetFromText(msgid_text)
             # Store this pomsgset inside the list of messages to process.
-            pomsgset_view = getView(pomsgset, "+translate", self.request)
+            pomsgset_view = getView(pomsgset, "+translate-one", self.request)
             # We initialize the view so every view process its own stuff.
+            # XXX: completely brokwn right now
+            pomsgset_view.set_from_pofile()
             pomsgset_view.initialize(from_pofile=True)
             if (pomsgset_view.error is not None and
                 pomsgset_view.context.potmsgset.sequence > 0):
@@ -546,17 +562,6 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         """Return the tab index value to navigate the form."""
         self._table_index_value += 1
         return self._table_index_value
-
-    def getPOMsgSetViewFromPOTMsgSet(self, potmsgset):
-        """Return the view class for a given IPOMsgSet."""
-        pomsgset = potmsgset.getPOMsgSet(
-            self.context.language.code, self.context.variant)
-        if pomsgset is None:
-            pomsgset = potmsgset.getDummyPOMsgSet(
-                self.context.language.code, self.context.variant)
-        pomsgsetview = getView(pomsgset, "+translate", self.request)
-        pomsgsetview.initialize(from_pofile=True)
-        return pomsgsetview
 
     def render(self):
         if self.redirecting:
