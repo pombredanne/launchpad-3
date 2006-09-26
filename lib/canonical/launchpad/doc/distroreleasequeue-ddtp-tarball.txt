@@ -126,8 +126,8 @@ Let's use the script to fetch the ddtp-tarball upload:
   ...    config.root, "scripts", "ftpmaster-tools", "queue")
 
   >>> process = subprocess.Popen([sys.executable, script, "-Q", "accepted",
-  ...                             "-R", "breezy-autotest", "fetch", "trans",
-  ...                             "-D", "ubuntutest"],
+  ...                             "-s", "breezy-autotest", "fetch", "trans",
+  ...                             "-d", "ubuntutest"],
   ...                            stdout=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
   >>> process.returncode
