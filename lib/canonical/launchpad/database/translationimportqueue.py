@@ -232,13 +232,13 @@ class TranslationImportQueueEntry(SQLBase):
             pofile = potemplate.newPOFile(
                 language.code, variant=variant, requester=self.importer)
 
-        if self.is_published and pofile.path != entry.path:
+        if self.is_published and pofile.path != self.path:
             # This entry comes from upstream, which means that the path we got
             # is exactly the right one. If it's different from what pofile
             # has, that would mean that either the entry changed its path
             # since previous upload or that we had to guess it and now that we
             # got the right path, we should fix it.
-            pofile.path = entry.path
+            pofile.path = self.path
 
         if (sourcepackagename is None and
             potemplate.sourcepackagename is not None):

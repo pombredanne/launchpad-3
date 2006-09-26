@@ -155,6 +155,10 @@ Now let's get a PO file to import.
 
     >>> pofile = potemplate.newPOFile('cy')
 
+Let's set its path.
+
+    >>> pofile.path = u'po/cy.po'
+
 It's newly created, so it has no message sets yet.
 
     >>> pofile.currentMessageSets().count()

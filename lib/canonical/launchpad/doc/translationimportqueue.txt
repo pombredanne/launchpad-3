@@ -26,6 +26,10 @@ Here we have some imports and utility fetch.
     >>> translationimportqueue = getUtility(ITranslationImportQueue)
     >>> rosetta_expert = getUtility(ILaunchpadCelebrities).rosetta_expert
 
+Login as a user without privileges.
+
+    >>> login('no-priv@canonical.com')
+
 First, we are going to try to do the guess against the Evolution product. That
 means that we are going to use the ProductSeries.id = 3
 
@@ -34,7 +38,7 @@ means that we are going to use the ProductSeries.id = 3
 Attach the file to the product series, without associate it with any potemplate.
 
     >>> entry = translationimportqueue.addOrUpdateEntry(
-    ...     'po/sr.po', 'foo', True, rosetta_expert,
+    ...     u'po/sr.po', 'foo', True, rosetta_expert,
     ...      productseries=evolution_productseries)
 
 This entry has no information about the IPOFile where it should be attached to:
@@ -55,7 +59,7 @@ IPOTemplate.
     >>> hoary_distrorelease = DistroRelease.get(3)
     >>> evolution_sourcepackagename = SourcePackageName.get(9)
     >>> entry = translationimportqueue.addOrUpdateEntry(
-    ...     'po/sr.po', 'foo', True, rosetta_expert,
+    ...     u'po/sr.po', 'foo', True, rosetta_expert,
     ...      distrorelease=hoary_distrorelease,
     ...      sourcepackagename=evolution_sourcepackagename)
     >>> transaction.commit()
@@ -90,7 +94,7 @@ And store current creation and status change date:
 Now, we do a new upload.
 
     >>> entry = translationimportqueue.addOrUpdateEntry(
-    ...     'po/sr.po', 'foo', True, rosetta_expert,
+    ...     u'po/sr.po', 'foo', True, rosetta_expert,
     ...      distrorelease=hoary_distrorelease,
     ...      sourcepackagename=evolution_sourcepackagename)
     >>> transaction.commit()
@@ -123,7 +127,7 @@ Need to update our saved date_status_changed to detect if it changes now.
 Do the new upload.
 
     >>> po_sr_entry = translationimportqueue.addOrUpdateEntry(
-    ...     'po/sr.po', 'foo', True, rosetta_expert,
+    ...     u'po/sr.po', 'foo', True, rosetta_expert,
     ...      distrorelease=hoary_distrorelease,
     ...      sourcepackagename=evolution_sourcepackagename)
 
@@ -153,7 +157,7 @@ Reset any pofile/potemplate information we have for the po_sr_entry.
 
     >>> po_sr_entry.potemplate = None
 
-Change the pofile.path value
+Change the pofile.path value to prevent that we find it by path in next test.
 
     >>> pofile = po_sr_entry.getGuessedPOFile()
     >>> if pofile is not None:
@@ -172,14 +176,14 @@ to be imported.
 
     >>> pot_entry.status.title
     'Needs Review'
-    >>> po_sr_entry.getGuessedPOFile() is not None
-    False
+    >>> po_sr_entry.getGuessedPOFile() is None
+    True
 
 But if that entry is imported, the guessing algorithm works.
 
     >>> pot_entry.status = RosettaImportStatus.IMPORTED
-    >>> po_sr_entry.getGuessedPOFile() is not None
-    True
+    >>> po_sr_entry.getGuessedPOFile() is None
+    False
 
 getGuessedPOFile with KDE
 -------------------------
