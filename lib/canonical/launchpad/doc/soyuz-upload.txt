@@ -235,10 +235,8 @@ Create the katie user and register it in a team that is allowed to
 do uploads:
 
   >>> from canonical.launchpad.interfaces import IPersonSet, IEmailAddressSet
-  >>> from canonical.lp.dbschema import PersonCreationRationale
   >>> name, address = "Katie", "katie@rockhopper.ubuntu.com"
-  >>> user = getUtility(IPersonSet).ensurePerson(
-  ...     address, name, PersonCreationRationale.UNKNOWN)
+  >>> user = getUtility(IPersonSet).ensurePerson(address, name)
   >>> assert user is not None
   >>> email = getUtility(IEmailAddressSet).getByEmail(address)
   >>> user.validateAndEnsurePreferredEmail(email)

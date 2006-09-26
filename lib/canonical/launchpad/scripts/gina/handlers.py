@@ -530,13 +530,9 @@ class SourcePackageHandler:
 
         Returns the created SourcePackageRelease, or None if it failed.
         """
-
         displayname, emailaddress = src.maintainer
         maintainer = ensure_person(
-            displayname, emailaddress,
-            PersonCreationRationale.SOURCEPACKAGEIMPORT,
-            comment=('when the %s package was imported into %s'
-                     % (src.package, distrorelease.displayname)))
+            displayname, emailaddress, src.package, distrorelease.displayname)
 
         # XXX: Check it later -- Debonzi 20050516
         #         if src.dsc_signing_key_owner:
@@ -924,14 +920,22 @@ class BinaryPackagePublisher:
 
 
 
-def ensure_person(displayname, emailaddress, rationale, comment=None):
+def ensure_person(displayname, emailaddress, package_name, distrorelease_name):
     """Return a person by its email.
 
-    Create and Return if does not exist.
+    :package_name: The imported package that mentions the person with the
+                   given email address.
+    :distrorelease_name: The distrorelease into which the package is to be
+                         imported.
+
+    Create and return a new Person if it does not exist.
     """
     person = getUtility(IPersonSet).getByEmail(emailaddress)
     if person is None:
+        comment=('when the %s package was imported into %s'
+                 % (package_name, distrorelease_name))
         person, email = getUtility(IPersonSet).createPersonAndEmail(
-            emailaddress, rationale, comment=comment, displayname=displayname)
+            emailaddress, PersonCreationRationale.SOURCEPACKAGEIMPORT,
+            comment=comment, displayname=displayname)
     return person
 

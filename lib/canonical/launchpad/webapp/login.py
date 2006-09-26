@@ -242,7 +242,7 @@ class LoginOrRegister:
                     "Launchpad account. If this is you and you've "
                     "forgotten your password, Launchpad can "
                     '<a href="/+forgottenpassword">reset it for you.</a>'
-                    % "&#8220;%s&#8221;" % cgi.escape(self.email))
+                    % cgi.escape(self.email))
                 return
             else:
                 # This is an unvalidated profile; let's move on with the

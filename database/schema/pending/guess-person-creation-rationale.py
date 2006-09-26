@@ -26,6 +26,49 @@ from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.scripts import logger, logger_options
 from canonical.launchpad.interfaces import IPersonSet
 
+from canonical.launchpad.database import SourcePackageRelease, Person
+
+
+def getFirstUploadedPackage(person):
+    """Return the first SourcePackageRelease having this person as the
+    maintainer or creator.
+
+    Return None if there's no SourcePackageRelease with this person as
+    maintainer or creator.
+
+    The first SourcePackageRelease will be that with the oldest dateuploaded.
+    """
+    query = """
+        (SourcePackageRelease.maintainer = %(person)s OR
+         SourcePackageRelease.creator = %(person)s
+        ) AND
+        SourcePackageRelease.id IN (
+            SELECT DISTINCT ON (uploaddistrorelease, sourcepackagename)
+                   sourcepackagerelease.id
+              FROM sourcepackagerelease
+              ORDER BY uploaddistrorelease, sourcepackagename, 
+                       dateuploaded
+        ) """ % sqlvalues(person=person)
+    return SourcePackageRelease.selectFirst(
+        query,
+        orderBy=['SourcePackageRelease.dateuploaded',
+                 'SourcePackageRelease.id'])
+
+
+def getUnvalidatedProfileIDs():
+    """Return the IDs of all unvalidated Launchpad profiles.
+
+    The unvalidated profiles are the ones not present in the
+    ValidPersonOrTeamCache view.
+    """
+    query = """
+        SELECT id FROM Person 
+        EXCEPT 
+        SELECT id FROM ValidPersonOrTeamCache
+        """
+    conn = Person._connection
+    return [id for (id,) in conn.queryAll(query)]
+
 
 def main():
     parser = OptionParser()
@@ -42,7 +85,7 @@ def main():
     ztm = initZopeless(dbuser='launchpad', implicitBegin=False)
     personset = getUtility(IPersonSet)
     ztm.begin()
-    unvalidated_profile_ids = personset.getUnvalidatedProfileIDs()
+    unvalidated_profile_ids = getUnvalidatedProfileIDs()
     ztm.abort()
 
     updated_profiles_by_rationale = {}
@@ -65,7 +108,7 @@ def main():
             ztm.abort()
             continue
 
-        pkg = profile.getFirstUploadedPackage()
+        pkg = getFirstUploadedPackage(profile)
         if pkg is not None:
             profile.creation_rationale = rationale.SOURCEPACKAGEIMPORT
             profile.creation_comment = (

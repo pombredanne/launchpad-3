@@ -32,7 +32,8 @@ from canonical.launchpad.interfaces.specificationtarget import (
 from canonical.launchpad.interfaces.validation import (
     valid_emblem, valid_hackergotchi, valid_unregistered_email)
 
-from canonical.lp.dbschema import TeamSubscriptionPolicy, TeamMembershipStatus
+from canonical.lp.dbschema import (
+    TeamSubscriptionPolicy, TeamMembershipStatus, PersonCreationRationale)
 
 
 class PersonNameField(ContentNameField):
@@ -156,12 +157,17 @@ class IPerson(IHasSpecifications):
     # created in this db
     datecreated = Datetime(
         title=_('Date Created'), required=True, readonly=True)
-    creation_rationale = Int(
+    creation_rationale = Choice(
         title=_("Rationale for this entry's creation"), required=False,
-        readonly=False)
+        readonly=False, values=PersonCreationRationale.items)
     creation_comment = TextLine(
-        title=_("Comment for this entry's creation"), required=False,
-        readonly=False)
+        title=_("Comment for this entry's creation"),
+        description=_(
+            "This comment may be displayed verbatim in a web page, so it "
+            "has to follow some structural constraints, that is, it must "
+            "be of the form: 'when %(action_details)s' (i.e. 'when the "
+            "foo package was imported into Ubuntu Breezy')."),
+        required=False, readonly=False)
     # bounty relations
     ownedBounties = Attribute('Bounties issued by this person.')
     reviewerBounties = Attribute('Bounties reviewed by this person.')
@@ -409,17 +415,6 @@ class IPerson(IHasSpecifications):
         Return an iterable of matching results.
         """
 
-    def getFirstUploadedPackage():
-        """Return the first SourcePackageRelease having this person as the
-        maintainer or creator.
-        
-        Return None if there's no SourcePackageRelease with this person as
-        maintainer or creator.
-
-        The first SourcePackageRelease will be that with the oldest
-        dateuploaded.
-        """
-
     def latestMaintainedPackages():
         """Return SourcePackageReleases maintained by this person.
 
@@ -588,6 +583,9 @@ class IPersonSet(Interface):
             hide_email_addresses=False):
         """Create a new Person and an EmailAddress with the given email.
 
+        The comment must be of the following form: "when %(action_details)s"
+        (i.e. "when the foo package was imported into Ubuntu Breezy").
+
         Return the newly created Person and EmailAddress if everything went
         fine or a (None, None) tuple otherwise.
 
@@ -600,6 +598,9 @@ class IPersonSet(Interface):
         """Make sure that there is a person in the database with the given
         email address. If necessary, create the person, using the
         displayname given.
+
+        The comment must be of the following form: "when %(action_details)s"
+        (i.e. "when the foo package was imported into Ubuntu Breezy").
 
         XXX sabdfl 14/06/05 this should be extended to be similar or
         identical to the other person creation argument lists, so we can
@@ -627,13 +628,6 @@ class IPersonSet(Interface):
         ignore_merged is True.
 
         Return None if there is no person with the given name.
-        """
-
-    def getUnvalidatedProfileIDs():
-        """Return the IDs of all unvalidated Launchpad profiles.
-
-        The unvalidated profiles are the ones not present in the
-        ValidPersonOrTeamCache view.
         """
 
     def getAllTeams(orderBy=None):

@@ -47,7 +47,6 @@ __all__ = [
 
 import cgi
 import urllib
-import sets
 from StringIO import StringIO
 
 from zope.event import notify
@@ -644,45 +643,52 @@ class FOAFSearchView:
 
 
 class PersonClaimView(LaunchpadFormView):
+    """The page where a user can claim an unvalidated profile."""
 
     schema = IPersonClaim
 
     def validate(self, data):
-        email = getUtility(IEmailAddressSet).getByEmail(data['emailaddress'])
-        msg = ""
+        emailaddress = data.get('emailaddress')
+        if emailaddress is None:
+            self.setFieldError(
+                'emailaddress', 'Please enter the email address')
+            return
+
+        email = getUtility(IEmailAddressSet).getByEmail(emailaddress)
+        error = ""
         if email is None:
             # Email not registered in launchpad, ask the user to try another
             # one.
-            msg = ("We couldn't find this email address. Please try another "
-                   "one that could possibly be associated with this profile. "
-                   "Note that this profile's name (%s) was generated based "
-                   "on the email address it's associated with."
-                   % self.context.name)
+            error = ("We couldn't find this email address. Please try another "
+                     "one that could possibly be associated with this profile. "
+                     "Note that this profile's name (%s) was generated based "
+                     "on the email address it's associated with."
+                     % self.context.name)
         elif email.person != self.context:
             if email.person.is_valid_person:
-                msg = ("This email address is associated with yet another "
-                       "Launchpad profile, which you seem to have used at "
-                       "some point. If that's the case, you can "
-                       '<a href="/people/+requestmerge?field.dupeaccount=%s">'
-                       "combine this profile with the other one</a> (you'll "
-                       "have to log in with the other profile first, "
-                       "though). If that's not the case, please try with a "
-                       "different email address."
-                       % self.context.name)
+                error = ("This email address is associated with yet another "
+                         "Launchpad profile, which you seem to have used at "
+                         "some point. If that's the case, you can "
+                         '<a href="/people/+requestmerge?field.dupeaccount=%s">'
+                         "combine this profile with the other one</a> (you'll "
+                         "have to log in with the other profile first, "
+                         "though). If that's not the case, please try with a "
+                         "different email address."
+                         % self.context.name)
             else:
                 # There seems to be another unvalidated profile for you!
-                msg = ("Although this email address is not associated with "
-                       "this profile, it's associated with yet another one. "
-                       'You can <a href="%s/+claim">claim that other '
-                       'profile</a> and then later '
-                       '<a href="/people/+requestmerge">combine</a> both of '
-                       'them into a single one.'
-                       % canonical_url(email.person))
+                error = ("Although this email address is not associated with "
+                         "this profile, it's associated with yet another one. "
+                         'You can <a href="%s/+claim">claim that other '
+                         'profile</a> and then later '
+                         '<a href="/people/+requestmerge">combine</a> both of '
+                         'them into a single one.'
+                         % canonical_url(email.person))
         else:
             # Yay! You got the right email this time.
             pass
-        if msg:
-            self.setFieldError('emailaddress', msg)
+        if error:
+            self.setFieldError('emailaddress', error)
 
     @property
     def next_url(self):
@@ -696,9 +702,9 @@ class PersonClaimView(LaunchpadFormView):
             tokentype=LoginTokenType.PROFILECLAIM)
         token.sendClaimProfileEmail()
         self.request.response.addInfoNotification(_(
-            "An email message was sent to '%s'. Follow the "
-            "instructions on that message to finish claiming this "
-            "profile." % email))
+            "An email message was sent to '%(email)s'. Follow the "
+            "instructions in that message to finish claiming this "
+            "profile.", email=email))
 
 
 class PersonRdfView:

@@ -103,3 +103,6 @@ class ILibraryFileAliasSet(Interface):
 
     def __getitem__(self, key):
         """Lookup an ILibraryFileAlias by id."""
+    
+    def findBySHA1(sha1):
+        """Lookup an ILibraryFileAlias by sha1."""

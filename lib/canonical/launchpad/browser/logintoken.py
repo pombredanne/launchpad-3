@@ -24,16 +24,15 @@ from canonical.database.sqlbase import flush_database_updates
 
 from canonical.widgets import PasswordChangeWidget
 
-from canonical.lp.dbschema import (
-    EmailAddressStatus, LoginTokenType, PersonCreationRationale)
+from canonical.lp.dbschema import EmailAddressStatus, LoginTokenType
 from canonical.lp.dbschema import GPGKeyAlgorithm
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.login import logInPerson
 from canonical.launchpad.webapp import (
-    canonical_url, GeneralFormView, GetitemNavigation, LaunchpadView, action,
-    LaunchpadFormView, custom_widget)
+    action, canonical_url, custom_widget, GeneralFormView, GetitemNavigation,
+    LaunchpadView, LaunchpadFormView)
 
 from canonical.launchpad.interfaces import (
     IPersonSet, IEmailAddressSet, ILaunchBag, ILoginTokenSet, IPerson,
@@ -568,8 +567,10 @@ class NewAccountView(BaseLoginTokenView, GeneralFormView):
             # This is a placeholder profile automatically created by one of
             # our scripts, let's just confirm its email address and set a
             # password.
-            assert not self.email.person.is_valid_person
             person = self.email.person
+            assert not person.is_valid_person, (
+                'Account %s has already been claimed and this should '
+                'have been caught by the validate() method.' % person.name)
             email = self.email
             # The user is not yet logged in, but we need to set some
             # things on his new account, so we need to remove the security

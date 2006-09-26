@@ -30,10 +30,8 @@ given email address is not associated with that profile.
     >>> browser.getControl('Email address').value = 'non@existent.org'
     >>> browser.getControl('E-mail Me').click()
     >>> soup = BeautifulSoup(browser.contents)
-    >>> from textwrap import wrap
     >>> for tag in soup('div', 'message'):
-    ...     for line in wrap(tag.renderContents()):
-    ...         print line
+    ...     print tag.renderContents()
     We couldn't find this email address. Please try another one that could
     possibly be associated with this profile. Note that this profile's
     name (limi) was generated based on the email address it's associated
@@ -45,8 +43,7 @@ Then he tries with Sample Person's email address.
     >>> browser.getControl('E-mail Me').click()
     >>> soup = BeautifulSoup(browser.contents)
     >>> for tag in soup('div', 'message'):
-    ...     for line in wrap(tag.renderContents()):
-    ...         print line
+    ...     print tag.renderContents()
     This email address is associated with yet another Launchpad profile,
     which you seem to have used at some point. If that's the case, you can
     <a href="/people/+requestmerge?field.dupeaccount=limi">combine this
@@ -61,8 +58,7 @@ this one is associated with an unvalidated profile.
     >>> browser.getControl('E-mail Me').click()
     >>> soup = BeautifulSoup(browser.contents)
     >>> for tag in soup('div', 'message'):
-    ...     for line in wrap(tag.renderContents()):
-    ...         print line
+    ...     print tag.renderContents()
     Although this email address is not associated with this profile, it's
     associated with yet another one. You can <a
     href="http://launchpad.dev/people/mpo/+claim">claim that other

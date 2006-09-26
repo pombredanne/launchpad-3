@@ -1026,28 +1026,6 @@ class Person(SQLBase):
         gpgkeyset = getUtility(IGPGKeySet)
         return gpgkeyset.getGPGKeys(ownerid=self.id)
 
-    # XXX: This method is meant to be used only by the
-    # guess-person-creation-rationale script, which should be run only once in
-    # production, so we can get rid of it once we ran the script.
-    # -- Guilherme Salgado, 2006-09-20
-    def getFirstUploadedPackage(self):
-        """See IPerson."""
-        query = """
-            (SourcePackageRelease.maintainer = %(person)s OR
-             SourcePackageRelease.creator = %(person)s
-            ) AND
-            SourcePackageRelease.id IN (
-                SELECT DISTINCT ON (uploaddistrorelease, sourcepackagename)
-                       sourcepackagerelease.id
-                  FROM sourcepackagerelease
-                  ORDER BY uploaddistrorelease, sourcepackagename, 
-                           dateuploaded
-            ) """ % sqlvalues(person=self)
-        return SourcePackageRelease.selectFirst(
-            query,
-            orderBy=['SourcePackageRelease.dateuploaded',
-                     'SourcePackageRelease.id'])
-
     def latestMaintainedPackages(self):
         """See IPerson."""
         return self._latestReleaseQuery()
@@ -1203,20 +1181,6 @@ class PersonSet:
         if ignore_merged:
             query = AND(query, Person.q.mergedID==None)
         return Person.selectOne(query)
-
-    # XXX: This method is meant to be used only by the
-    # guess-person-creation-rationale script, which should be run only once in
-    # production, so we can get rid of it once we ran the script.
-    # -- Guilherme Salgado, 2006-09-20
-    def getUnvalidatedProfileIDs(self):
-        """See IPersonSet."""
-        query = """
-            SELECT id FROM Person 
-            EXCEPT 
-            SELECT id FROM ValidPersonOrTeamCache
-            """
-        conn = Person._connection
-        return [id for (id,) in conn.queryAll(query)]
 
     def updateStatistics(self, ztm):
         """See IPersonSet."""

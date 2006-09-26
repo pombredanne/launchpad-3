@@ -652,16 +652,20 @@ class NascentUpload:
 
         if self.policy.create_people:
             package = self.changes['source']
+            # The distrorelease property may raise an UploadError in case
+            # there's no distrorelease with a name equal to
+            # self.changes['distribution'], but we don't want the upload to
+            # fail at this point, so we'll catch the exception and move on.
             try:
                 release = self.distrorelease.displayname
             except UploadError:
                 # We can use any random name here, because the fact that this
                 # distrorelease was not found will cause the whole transaction
                 # to be rolled back at some point.
-                release = 'UNKNONW'
+                release = 'UNKNOWN'
             person = getUtility(IPersonSet).ensurePerson(
-                email, name, PersonCreationRationale.SOURCEPACKAGEIMPORT,
-                comment=('when the %s package was imported into %s'
+                email, name, PersonCreationRationale.SOURCEPACKAGEUPLOAD,
+                comment=('when the %s package was uploaded to %s'
                          % (package, release)))
         else:
             person = getUtility(IPersonSet).getByEmail(email)

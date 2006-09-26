@@ -313,7 +313,7 @@ class Bugzilla:
 
             person = self.personset.ensurePerson(
                 email, displayname, PersonCreationRationale.BUGIMPORT,
-                comment=('when importing bugs from %s.'
+                comment=('when importing bugs from %s'
                          % self.bugtracker.baseurl))
 
             # Bugzilla performs similar address checks to Launchpad, so

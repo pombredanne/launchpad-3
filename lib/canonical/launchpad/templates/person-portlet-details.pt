@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" tal:condition="context/is_valid_person_or_team">
   <h4><span tal:replace="context/browsername" />:</h4>
 
   <div class="portletBody portletContent">

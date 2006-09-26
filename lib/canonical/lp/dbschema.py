@@ -3504,3 +3504,11 @@ class PersonCreationRationale(DBSchema):
         to create a Person entry to associate with the email.
         """)
 
+    SOURCEPACKAGEUPLOAD = Item(7, """
+        This person was mentioned in a source package uploaded.
+
+        Some uploaded packages may be uploaded with a maintainer that is not
+        registered in Launchpad, and in these cases, soyuz may decide to
+        create the new Person instead of complaining.
+        """)
+

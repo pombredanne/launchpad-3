@@ -32,9 +32,18 @@ You can create a new person using the createPersonAndEmail method of
 IPersonSet. All you need for that is a valid email address. You can also 
 hide the user email addresses.
 
+Some of our scripts may create Person entries, and in these cases they must
+provide a rationale and a comment (optional) for the creation of that Person
+entry. These are displayed on the home pages of unvalidated Launchpad
+profiles, to make it clear that those profiles were not created by the
+people they represent and why they had to be created. Because the comment
+will be displayed verbatim in a web page, it must start with the word "when"
+followed by a description of the action that caused the entry to be created.
+
     >>> from canonical.lp.dbschema import PersonCreationRationale
     >>> p, email = personset.createPersonAndEmail(
-    ...     'randomuser@randomhost.com', PersonCreationRationale.UNKNOWN,
+    ...     'randomuser@randomhost.com', PersonCreationRationale.POFILEIMPORT,
+    ...     comment='when importing the Portuguese translation of firefox',
     ...     hide_email_addresses=True)
     >>> p.teamowner is None
     True
@@ -45,20 +54,32 @@ hide the user email addresses.
     >>> p.hide_email_addresses
     True
 
+When a new sourcepackage is imported and a Person entry has to be created
+because we don't know about the maintainer of that package, the code to create
+the person should look like this:
+
+    >>> person, emailaddress = personset.createPersonAndEmail(
+    ...     'random@random.com', PersonCreationRationale.SOURCEPACKAGEIMPORT,
+    ...     comment='when the ed package was imported into Ubuntu Breezy')
+    >>> person.is_valid_person
+    False
+    >>> person.creation_comment
+    u'when the ed package was imported into Ubuntu Breezy'
+
+
 In case of failure of creating a new person or email the method returns 
 (None, None). Let's demonstrate this trying to create a person with 
 an invalid email.
 
     >>> p2, invalid_email = personset.createPersonAndEmail(
-    ...     'test#canonical.com', PersonCreationRationale.UNKNOWN)
+    ...     'test#canonical.com')
     >>> p2, invalid_email
     (None, None)
 
 And now with the same name of a existing account
 
     >>> p3, invalid_email = personset.createPersonAndEmail(
-    ...     'randomemail@randomhost.com',PersonCreationRationale.UNKNOWN,
-    ...     name='name12')
+    ...     'randomemail@randomhost.com', name='name12')
     >>> p3, invalid_email
     (None, None)
 

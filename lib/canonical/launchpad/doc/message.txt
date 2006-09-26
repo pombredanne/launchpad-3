@@ -332,6 +332,12 @@ UnknownSender: u'invalid@example.com'
 >>> msg.subject
 u'Foo Bar Bazarooney!'
 
+When the fromEmail() method creates a new Person entry, it'll set the
+creation_rationale accordingly.
+
+>>> msg.owner.creation_rationale.name
+'FROMEMAILMESSAGE'
+
 It also will refuse to deal with messages without a From: or Reply-To:
 header, or a missing Message-Id: or Date: header. These are required, and if
 they are missing then the email was sent from a broken email client or
