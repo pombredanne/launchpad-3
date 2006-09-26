@@ -129,7 +129,7 @@ def main():
                    options.careful or options.careful_domination)
     try_and_commit("doing apt-ftparchive", publisher.C_doFTPArchive,
                    options.careful or options.careful_apt)
-    try_and_commit("generating Indexes", publisher.writeIndexes,
+    try_and_commit("generating Indexes", publisher.C_writeIndexes,
                    options.careful or options.careful_apt)
     try_and_commit("doing release files", publisher.D_writeReleaseFiles,
                    options.careful)

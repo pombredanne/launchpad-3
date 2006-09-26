@@ -235,12 +235,14 @@ class IDistroRelease(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
         given language, or a DummyDistroReleaseLanguage.
         """
 
-    def createUploadedSourcePackageRelease(sourcepackagename, version,
-            maintainer, dateuploaded, builddepends, builddependsindep,
-            architecturehintlist, component, creator, urgency,
-            changelog, dsc, dscsigningkey, section, manifest):
-        """Create a sourcepackagerelease with this distrorelease set to
-        be the uploadeddistrorelease.
+    def createUploadedSourcePackageRelease(
+        sourcepackagename, version, maintainer, dateuploaded, builddepends,
+        builddependsindep, architecturehintlist, component, creator, urgency,
+        changelog, dsc, dscsigningkey, section, manifest, maintainer_rfc822,
+        standards_version, dsc_format, binary_line):
+        """Create an uploads SourcePackageRelease
+
+        Set this distrorelease set to be the uploadeddistrorelease.
         """
 
     def getComponentByName(name):

@@ -360,6 +360,21 @@ mentioned in bug # 30621)
   ...
    -- James Troup <james@nocrew.org>  Wed,  2 Apr 2003 17:19:47 +0100
 
+Check the contents of the new fields required for NoMoreAptFtparchive implementation:
+
+  >>> ed_spr.maintainer_rfc822
+  u'James Troup <james@nocrew.org>'
+
+  >>> ed_spr.standards_version
+  u'3.5.8.0'
+
+  >>> ed_spr.dsc_format
+  u'1.0'
+
+  >>> ed_spr.binary_line
+  u'ed'
+
+
 Roll back everything so that we can try again
 
   >>> import transaction

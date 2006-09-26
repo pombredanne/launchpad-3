@@ -713,28 +713,21 @@ class DistroRelease(SQLBase, BugTargetBase):
         return getUtility(IBuildSet).getBuildsByArchIds(
             arch_ids, status, name, pocket)
 
-    def createUploadedSourcePackageRelease(self, sourcepackagename,
-            version, maintainer, dateuploaded, builddepends,
-            builddependsindep, architecturehintlist, component,
-            creator, urgency, changelog, dsc, dscsigningkey, section,
-            manifest):
+    def createUploadedSourcePackageRelease(
+        self, sourcepackagename, version, maintainer, dateuploaded,
+        builddepends, builddependsindep, architecturehintlist, component,
+        creator, urgency, changelog, dsc, dscsigningkey, section, manifest,
+        maintainer_rfc822, standards_version, dsc_format, binary_line):
         """See IDistroRelease."""
-        return SourcePackageRelease(uploaddistrorelease=self,
-                                    sourcepackagename=sourcepackagename,
-                                    version=version,
-                                    maintainer=maintainer,
-                                    dateuploaded=dateuploaded,
-                                    builddepends=builddepends,
-                                    builddependsindep=builddependsindep,
-                                    architecturehintlist=architecturehintlist,
-                                    component=component,
-                                    creator=creator,
-                                    urgency=urgency,
-                                    changelog=changelog,
-                                    dsc=dsc,
-                                    dscsigningkey=dscsigningkey,
-                                    section=section,
-                                    manifest=manifest)
+        return SourcePackageRelease(
+            uploaddistrorelease=self, sourcepackagename=sourcepackagename,
+            version=version, maintainer=maintainer, dateuploaded=dateuploaded,
+            builddepends=builddepends, builddependsindep=builddependsindep,
+            architecturehintlist=architecturehintlist, component=component,
+            creator=creator, urgency=urgency, changelog=changelog, dsc=dsc,
+            dscsigningkey=dscsigningkey, section=section, manifest=manifest,
+            maintainer_rfc822=maintainer_rfc822, dsc_format=dsc_format,
+            standards_version=standards_version, binary_line=binary_line)
 
     def getComponentByName(self, name):
         """See IDistroRelease."""

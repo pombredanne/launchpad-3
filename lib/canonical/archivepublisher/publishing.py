@@ -128,6 +128,27 @@ class Publisher(object):
         self.log.debug("* Step C: Set apt-ftparchive up and run it")
         self.apt_handler.run(is_careful)
 
+    def C_writeIndexes(self, is_careful):
+        """Write Index files (Packages & Sources) using LP information.
+
+        Iterates over all distroreleases and its pockets and components.
+        """
+        self.log.debug("* Step C': write indexes derictly from DB")
+        for distrorelease in self.distro:
+            for pocket, suffix in pocketsuffix.items():
+                if not is_careful:
+                    if not self.isDirty(distrorelease, pocket):
+                        self.log.debug("Skipping index generation for %s/%s" %
+                                   (distrorelease.name, pocket))
+                        continue
+                    if not distrorelease.isUnstable():
+                        # See comment in B_dominate
+                        assert pocket != PackagePublishingPocket.RELEASE
+
+                for component in distrorelease.components:
+                    self._writeComponentIndexes(
+                        distrorelease, pocket, component)
+
     def D_writeReleaseFiles(self, is_careful):
         """Write out the Release files for the provided distribution.
 
@@ -180,6 +201,7 @@ class Publisher(object):
         all_architectures = set()
         all_files = set()
         for component, architectures in release_files_needed[full_name].items():
+
             all_components.add(component)
             for architecture in architectures:
                 self._writeDistroArchRelease(
@@ -193,7 +215,9 @@ class Publisher(object):
         else:
             drsummary += pocket.name.capitalize()
 
-        f = open(os.path.join(self._config.distsroot, full_name, "Release"), "w")
+        f = open(os.path.join(
+            self._config.distsroot, full_name, "Release"), "w")
+
         stanza = DISTRORELEASE_STANZA % (
                     self.distro.displayname,
                     self.distro.displayname,
@@ -214,26 +238,6 @@ class Publisher(object):
             self._writeSumLine(full_name, f, file_name, sha)
 
         f.close()
-
-    def writeIndexes(self, is_careful):
-        """Write Index files (Packages & Sources) using LP information.
-
-        Iterates over all distroreleases and its pockets and components.
-        """
-        for distrorelease in self.distro:
-            for pocket, suffix in pocketsuffix.items():
-                if not is_careful:
-                    if not self.isDirty(distrorelease, pocket):
-                        self.log.debug("Skipping index generation for %s/%s" %
-                                   (distrorelease.name, pocket))
-                        continue
-                    if not distrorelease.isUnstable():
-                        # See comment in B_dominate
-                        assert pocket != PackagePublishingPocket.RELEASE
-
-                for component in distrorelease.components:
-                    self._writeComponentIndexes(
-                        distrorelease, pocket, component)
 
     def _writeComponentIndexes(self, distrorelease, pocket, component):
         """Write Index files for single distrorelease + pocket + component.

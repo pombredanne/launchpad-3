@@ -479,29 +479,20 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
                               spf.libraryfile.content.filesize,
                               spf.libraryfile.filename)
              for spf in spr.files])
-        # XXX cprov 20060906: these fields are wrong and should be
-        # properly stored/retrieved in the DB.
-        maintainer = "%s <NDA>" % spr.maintainer.displayname
-        binary_list = ' '.join(
-            [pub_bin.binarypackagerelease.name
-             for pub_bin in self.publishedBinaries()])
-        standards_version = '3.5.10.0'
-        format = '1.0'
 
         replacement = {
             'package': spr.name,
-            'binary': binary_list,
+            'binary': spr.binary_line,
             'version': spr.version,
-            'maintainer': maintainer,
+            'maintainer': spr.maintainer_rfc822,
             'build_depends': spr.builddependsindep,
             'arch': spr.architecturehintlist,
-            'standards_version': standards_version,
-            'format': format,
+            'standards_version': spr.standards_version,
+            'format': spr.dsc_format,
             'directory': makePoolPath(spr.name, self.component.name),
             'files': files,
             }
         return source_stanza_template % replacement
-
 
 
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
@@ -569,16 +560,13 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         """See IArchivePublisher"""
         bpr = self.binarypackagerelease
         spr = bpr.build.sourcepackagerelease
-        # XXX cprov 20060906: these fields are wrong and should be
-        # properly stored/retrieved in the DB.
-        maintainer = "%s <NDA>" % spr.maintainer.displayname
 
         replacement = {
             'package': bpr.name,
             'priority': self.priority.title,
             'section': self.section.name,
             'installed_size': bpr.installedsize,
-            'maintainer': maintainer,
+            'maintainer': spr.maintainer_rfc822,
             'arch': bpr.build.distroarchrelease.architecturetag,
             'version': bpr.version,
             'replaces': bpr.replaces,
