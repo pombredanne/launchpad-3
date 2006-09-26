@@ -272,3 +272,37 @@ It also records the owner as the answerer and marks his answer with the
     <p>OK, this example requires some SVG features that will only be available
     in Firefox 2.0.</p>
 
+History
+=======
+
+The history of the ticket is available on the 'History' page.
+
+    >>> anon_browser.getLink('History').click()
+    >>> print anon_browser.title
+    History of support request #2
+
+It lists all the actions performed through workflow on the request:
+
+    >>> soup = BeautifulSoup(anon_browser.contents)
+    >>> action_listing = soup.first('table', 'listing')
+    >>> for header in action_listing.fetch('th'):
+    ...     print header.renderContents()
+    Date
+    Who
+    Action
+    New State
+    >>> for row in action_listing.first('tbody').fetch('tr'):
+    ...     cells = row.fetch('td')
+    ...     who = cells[1].first('a').renderContents()
+    ...     action = cells[2].renderContents()
+    ...     newstatus = cells[3].renderContents()
+    ...     print who, action, newstatus
+    Foo Bar              Reject                       Invalid
+    Foo Bar              Change status                Open
+    No Privileges Person Request for more information Needs information
+    Sample Person        Give more information        Open
+    No Privileges Person Answer                       Answered
+    Sample Person        Confirm                      Solved
+    Sample Person        Comment                      Solved
+    Sample Person        Reopen                       Open
+    Sample Person        Confirm                      Solved

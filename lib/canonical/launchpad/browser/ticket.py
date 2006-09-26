@@ -502,7 +502,7 @@ class TicketContextMenu(ContextMenu):
     def history(self):
         text = 'History'
         return Link('+history', text, icon='list',
-                    enabled=bool(self.context.reopenings))
+                    enabled=bool(self.context.messages))
 
     def subscription(self):
         if self.user is not None and self.context.isSubscribed(self.user):
