@@ -12,6 +12,7 @@ __all__ = [
     ]
 
 import re
+import operator
 import gettextpo
 from math import ceil
 from xml.sax.saxutils import escape as xml_escape
@@ -659,47 +660,44 @@ class POMsgSetView(LaunchpadView):
         self.translations = self.context.active_texts
         pluralform_indexes = range(len(self.translations))
         for index in pluralform_indexes:
-            wiki, elsewhere, suggested, alt_submissions = self._buildSubmissions(index)
+            wiki, elsewhere, suggested, alt_submissions = self._buildAllSubmissions(index)
             self.submission_blocks[index] = [wiki, elsewhere, suggested, alt_submissions]
         self.translation_range = pluralform_indexes
 
-    def _buildSubmissions(self, index):
+    def _buildAllSubmissions(self, index):
         active = set([self.translations[index]])
         wiki = set(self.context.getWikiSubmissions(index))
         current = set(self.context.getCurrentSubmissions(index))
         suggested = set(self.context.getSuggestedSubmissions(index))
 
-        # XXX: stable sorting
-
-        wiki = sorted(helpers.shortlist(wiki - current - suggested - active))
         if self.is_multi_line:
             title = "Suggestions"
         else:
             title = "Suggestion"
-        wiki = POMsgSetSubmissions(title, wiki[:self.max_entries],
-            self.is_multi_line, self.max_entries)
+        wiki = wiki - current - suggested - active
+        wiki = self._buildSubmissions(title, wiki)
 
-        elsewhere = sorted(helpers.shortlist(current - suggested - active))
-        elsewhere = POMsgSetSubmissions("Used elsewhere", elsewhere[:self.max_entries],
-            self.is_multi_line, self.max_entries)
+        elsewhere = current - suggested - active
+        elsewhere = self._buildSubmissions("Used elsewhere", elsewhere)
 
-        suggested = sorted(helpers.shortlist(suggested))
-        suggested = POMsgSetSubmissions("Suggested elsewhere", suggested[:self.max_entries],
-            self.is_multi_line, self.max_entries)
-
+        suggested = self._buildSubmissions("Suggested elsewhere", suggested) 
         if self.second_lang_msgset is None:
             alt_submissions = []
             title = None
         else:
             sec_lang = self.second_lang_pofile.language
             sec_lang_potmsgset = self.second_lang_msgset.potmsgset
-            alt_submissions = helpers.shortlist(
-                sec_lang_potmsgset.getCurrentSubmissions(sec_lang, index))
+            alt_submissions = sec_lang_potmsgset.getCurrentSubmissions(sec_lang, index)
             title = "%s (Alternate Language)" % sec_lang.englishname
 
-        alt_submissions = POMsgSetSubmissions(title, alt_submissions[:self.max_entries],
-                                   self.is_multi_line, self.max_entries)
+        alt_submissions = self._buildSubmissions(title, alt_submissions)
         return wiki, elsewhere, suggested, alt_submissions
+
+    def _buildSubmissions(self, title, submissions):
+        submissions = sorted(submissions, key=operator.attrgetter("datecreated"),
+                             reverse=True)
+        return POMsgSetSubmissions(title, submissions[:self.max_entries],
+                                   self.is_multi_line, self.max_entries)
 
     def generateNextTabIndex(self):
         """Return the tab index value to navigate the form."""
@@ -903,8 +901,7 @@ class POMsgSetZoomedView(POMsgSetView):
         # We are viewing this class directly from an IPOMsgSet, we should
         # point to the parent batch of messages.
         pofile_batch_url = '+translate?start=%d' % (self.sequence - 1)
-        return '/'.join(
-            [canonical_url(self.context.pofile), pofile_batch_url])
+        return '/'.join([canonical_url(self.context.pofile), pofile_batch_url])
 
     @cachedproperty
     def zoom_alt(self):
