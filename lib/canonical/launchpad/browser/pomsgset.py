@@ -10,7 +10,11 @@ __all__ = [
     'POMsgSetSubmissions',
     ]
 
+import re
 import gettextpo
+from math import ceil
+from xml.sax.saxutils import escape as xml_escape
+
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.utility import setUpWidgets
 from zope.app.form.browser import DropdownWidget
@@ -28,6 +32,161 @@ from canonical.launchpad.webapp import (
     canonical_url)
 from canonical.launchpad.webapp import urlparse
 from canonical.launchpad.webapp.batching import BatchNavigator
+
+
+CHARACTERS_PER_LINE = 50
+
+#
+# Translation-related formatting functions
+#
+
+def contract_rosetta_tabs(text):
+    """Replace Rosetta representation of tab characters with their native form."""
+    return helpers.text_replaced(text, {'[tab]': '\t', r'\[tab]': '[tab]'})
+
+
+def expand_rosetta_tabs(unicode_text):
+    """Replace tabs with their Rosetta representation."""
+    return helpers.text_replaced(unicode_text, {u'\t': u'[tab]', u'[tab]': ur'\[tab]'})
+
+
+def msgid_html(text, flags, space=TranslationConstants.SPACE_CHAR,
+               newline=TranslationConstants.NEWLINE_CHAR):
+    r"""Convert a message ID to a HTML representation."""
+    lines = []
+
+    # Replace leading and trailing spaces on each line with special markup.
+    for line in xml_escape(text).split('\n'):
+        # Pattern:
+        # - group 1: zero or more spaces: leading whitespace
+        # - group 2: zero or more groups of (zero or
+        #   more spaces followed by one or more non-spaces): maximal string
+        #   which doesn't begin or end with whitespace
+        # - group 3: zero or more spaces: trailing whitespace
+        match = re.match('^( *)((?: *[^ ]+)*)( *)$', line)
+
+        if match:
+            lines.append(
+                space * len(match.group(1)) +
+                match.group(2) +
+                space * len(match.group(3)))
+        else:
+            raise AssertionError(
+                "A regular expression that should always match didn't.")
+
+    if 'c-format' in flags:
+        # Replace c-format sequences with marked-up versions. If there is a
+        # problem parsing the c-format sequences on a particular line, that
+        # line is left unformatted.
+        for i in range(len(lines)):
+            formatted_line = ''
+
+            try:
+                segments = parse_cformat_string(lines[i])
+            except UnrecognisedCFormatString:
+                continue
+
+            for segment in segments:
+                type, content = segment
+
+                if type == 'interpolation':
+                    formatted_line += ('<code>%s</code>' % content)
+                elif type == 'string':
+                    formatted_line += content
+
+            lines[i] = formatted_line
+
+    # Replace newlines and tabs with their respective representations.
+    html = expand_rosetta_tabs(newline.join(lines))
+    html = helpers.text_replaced(html, {
+        '[tab]': TranslationConstants.TAB_CHAR,
+        r'\[tab]': TranslationConstants.TAB_CHAR_ESCAPED
+        })
+    return html
+
+
+def convert_newlines_to_web_form(unicode_text):
+    """Convert an Unicode text from any newline style to the one used on web
+    forms, that's the Windows style ('\r\n')."""
+
+    assert isinstance(unicode_text, unicode), (
+        "The given text must be unicode instead of %s" % type(unicode_text))
+
+    if unicode_text is None:
+        return None
+    elif u'\r\n' in unicode_text:
+        # The text is already using the windows newline chars
+        return unicode_text
+    elif u'\n' in unicode_text:
+        return helpers.text_replaced(unicode_text, {u'\n': u'\r\n'})
+    else:
+        return helpers.text_replaced(unicode_text, {u'\r': u'\r\n'})
+
+
+def count_lines(text):
+    '''Count the number of physical lines in a string. This is always at least
+    as large as the number of logical lines in a string.'''
+    count = 0
+
+    for line in text.split('\n'):
+        if len(line) == 0:
+            count += 1
+        else:
+            count += int(ceil(float(len(line)) / CHARACTERS_PER_LINE))
+
+    return count
+
+
+def parse_cformat_string(string):
+    """Parse a printf()-style format string into a sequence of interpolations
+    and non-interpolations."""
+
+    # The sequence '%%' is not counted as an interpolation. Perhaps splitting
+    # into 'special' and 'non-special' sequences would be better.
+
+    # This function works on the basis that s can be one of three things: an
+    # empty string, a string beginning with a sequence containing no
+    # interpolations, or a string beginning with an interpolation.
+
+    segments = []
+    end = string
+    plain_re = re.compile('(%%|[^%])+')
+    interpolation_re = re.compile('%[^diouxXeEfFgGcspmn]*[diouxXeEfFgGcspmn]')
+
+    while end:
+        # Check for a interpolation-less prefix.
+
+        match = plain_re.match(end)
+
+        if match:
+            segment = match.group(0)
+            segments.append(('string', segment))
+            end = end[len(segment):]
+            continue
+
+        # Check for an interpolation sequence at the beginning.
+
+        match = interpolation_re.match(end)
+
+        if match:
+            segment = match.group(0)
+            segments.append(('interpolation', segment))
+            end = end[len(segment):]
+            continue
+
+        # Give up.
+        raise UnrecognisedCFormatString(string)
+
+    return segments
+
+#
+# Exceptions and helper classes
+#
+
+class UnrecognisedCFormatString(ValueError):
+    """Exception raised when a string containing C format sequences can't be
+    parsed."""
+
 
 class POTMsgSetBatchNavigator(BatchNavigator):
 
@@ -80,6 +239,9 @@ class CustomDropdownWidget(DropdownWidget):
         """Render the select widget without the div tag."""
         return contents
 
+#
+# Standard UI classes
+#
 
 class POMsgSetFacets(StandardLaunchpadFacets):
     usedfor = IPOMsgSet
@@ -141,6 +303,9 @@ class POMsgSetAppMenus(ApplicationMenu):
         text = 'View Template'
         return Link('../../', text, icon='languages')
 
+#
+# Views
+#
 
 class POMsgSetIndexView:
     """A view to forward to the translation form."""
@@ -350,7 +515,7 @@ class POMsgSetPageView(LaunchpadView):
                 break
             value = self.form[msgset_ID_LANGCODE_translation_PLURALFORM]
             self.form_posted_translations[pluralform] = (
-                helpers.contract_rosetta_tabs(value))
+                contract_rosetta_tabs(value))
         else:
             raise AssertionError("There were more than 100 plural forms!")
 
@@ -480,19 +645,25 @@ class POMsgSetView(LaunchpadView):
         self.from_pofile = True
 
     def initialize(self):
-        self.alt = self.request.form.get('alt', '')
         self.potmsgset = self.context.potmsgset
         self.pofile = self.context.pofile
-        self.translations = None
+        self.pofile_language = self.pofile.language
 
+        # XXX: Built as a consequence of range
+        self.translations = None
         self.submission_blocks = []
 
+        # XXX
+        self.alt = self.request.form.get('alt', '')
         # XXX
         self.form_posted_needsreview = False
         # XXX
         self._table_index_value = 0
         # XXX
         self.error = None
+
+        # XXX: move msgid_html and count_lines and
+        # convert_newlines_to_web_form to functions in this module
 
     def generateNextTabIndex(self):
         """Return the tab index value to navigate the form."""
@@ -513,17 +684,25 @@ class POMsgSetView(LaunchpadView):
             # msgid but forms should have them as '\r\n' so we need to change
             # them before showing them.
             if translation is not None:
-                return helpers.convert_newlines_to_web_form(translation)
+                return convert_newlines_to_web_form(translation)
             else:
                 return None
         else:
             raise IndexError('Translation out of range')
 
+        # XXX: to avoid the use of this method you'd need a list of
+        # objects to render stuff, objects which had: index,
+        # translation, tabindex and active submission. Tabindex is kinda
+        # tricky because we need two per translation form -- one for the
+        # entry/textarea and one for the is_fuzzy checkbox.
+
     @cachedproperty
     def translation_range(self):
         """Return a list with all indexes we have to get translations."""
+        # XXX: document it builds translations and suggestions, rename
 
-        # XXX: document it builds translations and suggestions
+        # XXX: this needs to take into account form-posted stuff, as
+        # does is_fuzzy, to handle error posting.
         self.translations = self.context.active_texts
 
         indexes = range(len(self.translations))
@@ -608,7 +787,7 @@ class POMsgSetView(LaunchpadView):
                 return None
 
     #
-    # Display helpers
+    # Display-related methods
     #
 
     @cachedproperty
@@ -630,13 +809,13 @@ class POMsgSetView(LaunchpadView):
         It will never be bigger than 12.
         """
         if self.is_plural:
-            singular_lines = helpers.count_lines(
+            singular_lines = count_lines(
                 self.msgids[TranslationConstants.SINGULAR_FORM].msgid)
-            plural_lines = helpers.count_lines(
+            plural_lines = count_lines(
                 self.msgids[TranslationConstants.PLURAL_FORM].msgid)
             lines = max(singular_lines, plural_lines)
         else:
-            lines = helpers.count_lines(
+            lines = count_lines(
                 self.msgids[TranslationConstants.SINGULAR_FORM].msgid)
 
         return min(lines, 12)
@@ -656,7 +835,7 @@ class POMsgSetView(LaunchpadView):
     def msgid(self):
         """Return a msgid string prepared to render in a web page."""
         msgid = self.msgids[TranslationConstants.SINGULAR_FORM].msgid
-        return helpers.msgid_html(msgid, self.potmsgset.flags())
+        return msgid_html(msgid, self.potmsgset.flags())
 
     @property
     def msgid_plural(self):
@@ -666,12 +845,12 @@ class POMsgSetView(LaunchpadView):
         """
         if self.is_plural:
             msgid = self.msgids[TranslationConstants.PLURAL_FORM].msgid
-            return helpers.msgid_html(msgid, self.potmsgset.flags())
+            return msgid_html(msgid, self.potmsgset.flags())
         else:
             return None
 
     # XXX 20060915 mpt: Detecting tabs, newlines, and leading/trailing spaces
-    # is being done one way here, and another way in helpers.py.
+    # is being done one way here, and another way in the functions above.
 
     @property
     def msgid_has_tab(self):
