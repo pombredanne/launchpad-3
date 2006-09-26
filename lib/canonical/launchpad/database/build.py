@@ -396,7 +396,7 @@ class BuildSet:
         # Fallback to ordering by -id as a tie-breaker.
         orderBy.append("-id")
 
-        # End of XXX
+        # End of duplication (see XXX cprov 20060925 above).
 
         if name:
             condition_clauses.append("Build.sourcepackagerelease="
