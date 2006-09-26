@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'IBugWatch',
     'IBugWatchSet',
+    'NoBugTrackerFound',
     ]
 
 from zope.interface import Interface, Attribute
@@ -102,3 +103,25 @@ class IBugWatchSet(Interface):
         :bugtracker: The external IBugTracker.
         :remotebug: A string.
         """
+
+    def getBugTrackerAndBug(url):
+        """Extract the bug tracker and the bug number for the given URL.
+
+        A tuple of a registered bugtracker and the bug number is returned.
+
+        A NoBugTrackerFound exception is raised if the base URL can be
+        extracted, but no such bug tracker is registered in Launchpad.
+
+        If no bug tracker type can be guessed, (None, None) is
+        returned.
+        """
+
+
+class NoBugTrackerFound(Exception):
+    """No bug tracker with the base_url is registered in Launchpad."""
+
+    def __init__(self, base_url, remote_bug, bugtracker_type):
+        Exception.__init__(self, base_url, remote_bug, bugtracker_type)
+        self.base_url = base_url
+        self.remote_bug = remote_bug
+        self.bugtracker_type = bugtracker_type

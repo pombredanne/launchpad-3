@@ -27,7 +27,7 @@ from canonical.launchpad.webapp import urlappend, urlsplit
 from canonical.launchpad.webapp.snapshot import Snapshot
 
 from canonical.launchpad.interfaces import (
-    IBugWatch, IBugWatchSet, IBugTrackerSet, NotFoundError)
+    IBugWatch, IBugWatchSet, IBugTrackerSet, NoBugTrackerFound, NotFoundError)
 from canonical.launchpad.database.bugset import BugSetBase
 
 
@@ -206,3 +206,28 @@ class BugWatchSet(BugSetBase):
             bug=bug, owner=owner, datecreated=UTC_NOW, lastchanged=UTC_NOW, 
             bugtracker=bugtracker, remotebug=remotebug)
 
+    def getBugTrackerAndBug(self, url):
+        """See IBugWatchSet."""
+        #XXX: This should be a dict.
+        for pattern, trackertype in [
+            (bugzillaref, BugTrackerType.BUGZILLA),
+            (roundupref, BugTrackerType.ROUNDUP),
+            (tracref, BugTrackerType.TRAC),
+            ]:
+            match = pattern.match(url)
+            if not match:
+                continue
+
+            bugtrackerset = getUtility(IBugTrackerSet)
+            baseurl = match.group(1)
+            remotebug = match.group(2)
+            # Check whether we have a registered bug tracker already.
+            bugtracker = bugtrackerset.queryByBaseURL(baseurl)
+            if bugtracker is None and baseurl.endswith('/'):
+                bugtracker = bugtrackerset.queryByBaseURL(baseurl[:-1])
+
+            if bugtracker is not None:
+                return bugtracker, remotebug
+            else:
+                raise NoBugTrackerFound(baseurl, remotebug, trackertype)
+        return None, None
