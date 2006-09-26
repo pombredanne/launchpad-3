@@ -6,7 +6,8 @@ __all__ = [
     'POMsgSetView',
     'POMsgSetPageView',
     'POMsgSetFacets',
-    'POMsgSetAppMenus'
+    'POMsgSetAppMenus',
+    'POMsgSetSubmissions',
     ]
 
 import gettextpo
@@ -15,12 +16,13 @@ from zope.app.form.utility import setUpWidgets
 from zope.app.form.browser import DropdownWidget
 from zope.app.form.interfaces import IInputWidget
 from zope.component import getUtility, getView
+from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     UnexpectedFormData, IPOMsgSet, TranslationConstants, NotFoundError,
-    ILanguageSet, IPOFileAlternativeLanguage)
+    ILanguageSet, IPOFileAlternativeLanguage, IPOMsgSetSubmissions)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ApplicationMenu, Link, LaunchpadView,
     canonical_url)
@@ -483,11 +485,7 @@ class POMsgSetView(LaunchpadView):
         self.pofile = self.context.pofile
         self.translations = None
 
-        # We don't know the suggestions either.
-        self._wiki_submissions = None
-        self._current_submissions = None
-        self._suggested_submissions = None
-        self._second_language_submissions = None
+        self.submission_blocks = []
 
         # XXX
         self.form_posted_needsreview = False
@@ -495,6 +493,123 @@ class POMsgSetView(LaunchpadView):
         self._table_index_value = 0
         # XXX
         self.error = None
+
+    def generateNextTabIndex(self):
+        """Return the tab index value to navigate the form."""
+        self._table_index_value += 1
+        return self._table_index_value
+
+    def getTranslation(self, index):
+        """Return the active translation for the pluralform 'index'.
+
+        There are as many translations as the plural form information defines
+        for that language/pofile. If one of those translations does not
+        exists, it will have a None value. If the potmsgset is not a plural
+        form one, we only have one entry.
+        """
+        if index in self.translation_range:
+            translation = self.translations[index]
+            # We store newlines as '\n', '\r' or '\r\n', depending on the
+            # msgid but forms should have them as '\r\n' so we need to change
+            # them before showing them.
+            if translation is not None:
+                return helpers.convert_newlines_to_web_form(translation)
+            else:
+                return None
+        else:
+            raise IndexError('Translation out of range')
+
+    @cachedproperty
+    def translation_range(self):
+        """Return a list with all indexes we have to get translations."""
+
+        # XXX: document it builds translations and suggestions
+        self.translations = self.context.active_texts
+
+        indexes = range(len(self.translations))
+
+        for index in indexes:
+            wiki, elsewhere, suggested, alt_submissions = self._buildSubmissions(index)
+            self.submission_blocks.append([wiki, elsewhere, suggested, alt_submissions])
+
+        return indexes
+
+    def _buildSubmissions(self, index):
+        active = set([self.translations[index]])
+        wiki = set(self.context.getWikiSubmissions(index))
+        current = set(self.context.getCurrentSubmissions(index))
+        suggested = set(self.context.getSuggestedSubmissions(index))
+
+        # XXX: stable sorting
+
+        wiki = sorted(helpers.shortlist(wiki - current - suggested - active))
+        if self.is_multi_line:
+            title = "Suggestions"
+        else:
+            title = "Suggestion"
+        wiki = POMsgSetSubmissions(title, wiki[:self.max_entries],
+            self.is_multi_line, self.max_entries)
+
+        elsewhere = sorted(helpers.shortlist(current - suggested - active))
+        elsewhere = POMsgSetSubmissions("Used elsewhere", elsewhere[:self.max_entries],
+            self.is_multi_line, self.max_entries)
+
+        suggested = sorted(helpers.shortlist(suggested))
+        suggested = POMsgSetSubmissions("Suggested elsewhere", suggested[:self.max_entries],
+            self.is_multi_line, self.max_entries)
+
+        if self.second_lang_msgset is None:
+            alt_submissions = []
+            title = None
+        else:
+            sec_lang = self.second_lang_pofile.language
+            sec_lang_potmsgset = self.second_lang_msgset.potmsgset
+            alt_submissions = helpers.shortlist(
+                sec_lang_potmsgset.getCurrentSubmissions(sec_lang, index))
+            title = "%s (Alternate Language)" % sec_lang.englishname
+
+        alt_submissions = POMsgSetSubmissions(title, alt_submissions[:self.max_entries],
+                                   self.is_multi_line, self.max_entries)
+        return wiki, elsewhere, suggested, alt_submissions
+
+    #
+    # Second lang code handling
+    #
+
+    @cachedproperty
+    def second_lang_code(self):
+        if (self.alt == '' and
+            self.context.pofile.language.alt_suggestion_language is not None):
+            return self.context.pofile.language.alt_suggestion_language.code
+        elif self.alt == '':
+            return None
+        else:
+            return self.alt
+
+    @cachedproperty
+    def second_lang_pofile(self):
+        """Return the IPOFile for the alternative translation or None."""
+        if self.second_lang_code is not None:
+            return self.context.pofile.potemplate.getPOFileByLang(
+                self.second_lang_code)
+        else:
+            return None
+
+    @cachedproperty
+    def second_lang_msgset(self):
+        """Return the IPOMsgSet for the alternative translation or None."""
+        if self.second_lang_pofile is None:
+            return None
+        else:
+            msgid = self.potmsgset.primemsgid_.msgid
+            try:
+                return self.second_lang_pofile[msgid]
+            except NotFoundError:
+                return None
+
+    #
+    # Display helpers
+    #
 
     @cachedproperty
     def msgids(self):
@@ -599,12 +714,6 @@ class POMsgSetView(LaunchpadView):
         return self.potmsgset.filereferences
 
     @property
-    def translation_range(self):
-        """Return a list with all indexes we have to get translations."""
-        self._prepare_translations()
-        return range(len(self.translations))
-
-    @property
     def is_fuzzy(self):
         """Return whether this pomsgset is set as fuzzy."""
         # XXX?
@@ -612,37 +721,6 @@ class POMsgSetView(LaunchpadView):
             return self.form_posted_needsreview
         else:
             return self.context.isfuzzy
-
-    @cachedproperty
-    def second_lang_code(self):
-        if (self.alt == '' and
-            self.context.pofile.language.alt_suggestion_language is not None):
-            return self.context.pofile.language.alt_suggestion_language.code
-        elif self.alt == '':
-            return None
-        else:
-            return self.alt
-
-    @cachedproperty
-    def second_lang_pofile(self):
-        """Return the IPOFile for the alternative translation or None."""
-        if self.second_lang_code is not None:
-            return self.context.pofile.potemplate.getPOFileByLang(
-                self.second_lang_code)
-        else:
-            return None
-
-    @cachedproperty
-    def second_lang_msgset(self):
-        """Return the IPOMsgSet for the alternative translation or None."""
-        if self.second_lang_pofile is None:
-            return None
-        else:
-            msgid = self.potmsgset.primemsgid_.msgid
-            try:
-                return self.second_lang_pofile[msgid]
-            except NotFoundError:
-                return None
 
     @cachedproperty
     def zoom_url(self):
@@ -688,135 +766,15 @@ class POMsgSetView(LaunchpadView):
         else:
             return None
 
-    def generateNextTabIndex(self):
-        """Return the tab index value to navigate the form."""
-        self._table_index_value += 1
-        return self._table_index_value
 
-    def _prepare_translations(self):
-        """Prepare self.translations to be used."""
-        if self.translations is not None:
-            # We have already the translations prepared.
-            return
 
-        # XXX: form_posted_crap
-        self.translations = self.context.active_texts
+class POMsgSetSubmissions(LaunchpadView):
+    """XXX"""
+    implements(IPOMsgSetSubmissions)
+    def __init__(self, title, submissions, is_multi_line, max_entries):
+        self.title = title
+        self.submissions = submissions
+        self.is_multi_line = is_multi_line
+        self.max_entries = max_entries
 
-    def getTranslation(self, index):
-        """Return the active translation for the pluralform 'index'.
-
-        There are as many translations as the plural form information defines
-        for that language/pofile. If one of those translations does not
-        exists, it will have a None value. If the potmsgset is not a plural
-        form one, we only have one entry.
-        """
-        self._prepare_translations()
-
-        if index in self.translation_range:
-            translation = self.translations[index]
-            # We store newlines as '\n', '\r' or '\r\n', depending on the
-            # msgid but forms should have them as '\r\n' so we need to change
-            # them before showing them.
-            if translation is not None:
-                return helpers.convert_newlines_to_web_form(translation)
-            else:
-                return None
-        else:
-            raise IndexError('Translation out of range')
-
-    # The three functions below are tied to the UI policy. In essence, they
-    # will present up to self.max_entries, or all available, proposed
-    # translations from each of the following categories in order:
-    #
-    #   - new submissions to this pofile by people who don't have permission
-    #     to write here
-    #   - items actually published or currently active elsewhere
-    #   - new submissions to ANY similar pofile for the same msgset from
-    #     people who did not have write permission THERE
-    def get_wiki_submissions(self, index):
-        """Return a list of submissions from any translatable resource.
-
-        The amount of entries will be limited to self.max_entries. If it's
-        None, we will get all available submissions.
-
-        The list will not include the entries already in the 'suggested' and
-        'current' submissions.
-        """
-        if self._wiki_submissions is not None:
-            return self._wiki_submissions
-        curr = self.getTranslation(index)
-
-        wiki = self.context.getWikiSubmissions(index)
-        suggested = self.get_suggested_submissions(index)
-        suggested_texts = [s.potranslation.translation
-                           for s in suggested]
-        current = self.get_current_submissions(index)
-        current_texts = [c.potranslation.translation
-                         for c in current]
-        self._wiki_submissions = [submission for submission in wiki
-            if submission.potranslation.translation != curr and
-            submission.potranslation.translation not in suggested_texts and
-            submission.potranslation.translation not in current_texts]
-        if self.max_entries is not None:
-            self._wiki_submissions = self._wiki_submissions[:self.max_entries]
-        return self._wiki_submissions
-
-    def get_current_submissions(self, index):
-        """Return a list of submissions that are being used in any place.
-
-        The amount of entries will be limited to self.max_entries. If it's
-        None, we will get all available submissions.
-
-        The list will not include the entries already in the 'suggested'
-        submissions.
-        """
-        if self._current_submissions is not None:
-            return self._current_submissions
-        curr = self.getTranslation(index)
-
-        current = helpers.shortlist(self.context.getCurrentSubmissions(index))
-
-        suggested = self.get_suggested_submissions(index)
-        suggested_texts = [s.potranslation.translation
-                           for s in suggested]
-        self._current_submissions = [submission
-            for submission in current 
-            if submission.potranslation.translation != curr and
-            submission.potranslation.translation not in suggested_texts]
-        if self.max_entries is not None:
-            self._current_submissions = (
-                self._current_submissions[:self.max_entries])
-        return self._current_submissions
-
-    def get_suggested_submissions(self, index):
-        """Return a list of submissions that are suggestions for self.context.
-
-        The amount of entries will be limited to self.max_entries. If it's
-        None, we will get all available submissions.
-        """
-        if self._suggested_submissions is not None:
-            return self._suggested_submissions
-
-        self._suggested_submissions = helpers.shortlist(
-            self.context.getSuggestedSubmissions(index))
-        if self.max_entries is not None:
-            self._suggested_submissions = (
-                self._suggested_submissions[:self.max_entries])
-        return self._suggested_submissions
-
-    def get_alternate_language_submissions(self, index):
-        """Get suggestions for translations from the alternate language for
-        this potemplate."""
-        if self._second_language_submissions is not None:
-            return self._second_language_submissions
-        if self.second_lang_msgset is None:
-            return []
-        sec_lang = self.second_lang_pofile.language
-        sec_lang_potmsgset = self.second_lang_msgset.potmsgset
-        self._second_language_submissions = helpers.shortlist(
-            sec_lang_potmsgset.getCurrentSubmissions(sec_lang, index))
-        if self.max_entries is not None:
-            self._second_language_submissions = (
-                self._second_language_submissions[:self.max_entries])
-        return self._second_language_submissions
 

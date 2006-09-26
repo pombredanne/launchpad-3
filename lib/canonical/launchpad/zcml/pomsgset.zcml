@@ -22,6 +22,10 @@
         set_schema="canonical.launchpad.interfaces.IPOMsgSet" />
     </content>
 
+    <content class="canonical.launchpad.browser.POMsgSetSubmissions">
+      <allow interface="canonical.launchpad.interfaces.IPOMsgSetSubmissions" />
+    </content>
+
     <browser:url
         for="canonical.launchpad.interfaces.IPOMsgSet"
         path_expression="string:${potmsgset/sequence}"
@@ -48,6 +52,7 @@
 
     <browser:page
         name="+translate"
+        facet="translations"
         for="canonical.launchpad.interfaces.IPOMsgSet"
         permission="launchpad.AnyPerson"
         template="../templates/pomsgset-translate.pt"
@@ -56,10 +61,18 @@
 
     <browser:page
         name="+translate-one"
+        facet="translations"
         for="canonical.launchpad.interfaces.IPOMsgSet"
         permission="launchpad.AnyPerson"
         template="../templates/pomsgset-translate-one.pt"
         class="canonical.launchpad.browser.POMsgSetView"
+        />
+
+    <browser:page
+        name="+display"
+        for="canonical.launchpad.interfaces.IPOMsgSetSubmissions"
+        permission="launchpad.AnyPerson"
+        template="../templates/pomsgset-submissions.pt"
         />
 
 </facet>
