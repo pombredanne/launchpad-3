@@ -227,4 +227,20 @@
   permission="zope.Public"
   />
 
+
+<adapter
+  provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+  for="zope.interface.Interface"
+  factory="canonical.launchpad.browser.launchpad.DefaultStructuralObjectPresentation"
+  permission="zope.Public"
+  />
+
+<browser:page
+  for="zope.interface.Interface"
+  name="+structural-heading"
+  class="canonical.launchpad.browser.StructuralObjectPresentationView"
+  template="../templates/launchpad-structuralheader.pt"
+  permission="zope.Public"
+  />
+
 </configure>

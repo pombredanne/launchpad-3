@@ -47,14 +47,15 @@
     <ul id="menu" tal:content="structure context/@@+breadcrumbs" />
     <!-- id="menu" should be id="locationbar" -->
     <tal:maintenance replace="structure context/@@+maintenancemessage" />
-    <div id="structuralobject">
-      <img alt="" src="/@@/nyet-heading" />
-      <div class="secondary"><h2>structural object secondary</h2></div>
-      <div class="primary">structural object primary</div>
-      <p id="structuralobjectchildren">
-        <span class="primary">structural object children row 1</span>
-        <span class="secondary">structural object children row 2</span>
-      </p>
+    <div id="structuralobject"
+        tal:define="structuralobject context/lp:structuralobject">
+      <tal:if condition="structuralobject">
+      <tal:structuralobject
+          replace="structure structuralobject/@@+structural-heading" />
+      </tal:if>
+      <tal:if condition="not: structuralobject">
+        No structural object!
+      </tal:if>
     </div>
     <form id="globalsearch" action="/search" method="GET">
       <div>
