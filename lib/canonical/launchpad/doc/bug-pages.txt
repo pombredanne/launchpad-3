@@ -248,7 +248,8 @@ Bug Navigation
 --------------
 
 The +subscribe link has different text depending on if the user is
-subscribe to the bug, or if a team is subscribed to it.
+subscribed to the bug, or if a team the user of a member of is
+subscribed to it.
 
 If the user isn't subscribed to the bug and neither of his teams are
 subscribed to it, 'Subscribe' is shown.
@@ -304,9 +305,9 @@ still say 'Unsubscribe':
     >>> bug_menu.subscription().icon
     'remove'
 
-However, if we now unsubscribe Foo Bar, but leaving the Launchpad team
-subscribed, it will say 'Subscribe/Unsubscribe' since he will have the
-option of either subscribe himself or unsubscribe the Launchpad team.
+However, if we now unsubscribe Foo Bar, it will say
+'Subscribe/Unsubscribe' since he will have the option of either
+subscribing himself or unsubscribing the Launchpad team.
 
     >>> bug_one.unsubscribe(foo_bar)
 
@@ -345,6 +346,47 @@ we can't know if the user is subscribed or not.
 
     >>> bug_menu.subscription().icon
     'edit'
+
+Subscribers from duplicates have the option to unsubscribe as well. For
+example, Steve Alexander can currently subscribe to bug #3.
+
+    >>> bug_three = bugset.get(3)
+    >>> bug_three_bugtask = bug_three.bugtasks[0]
+
+    >>> login("steve.alexander@ubuntulinux.com")
+
+    >>> bug_menu = BugContextMenu(bug_three_bugtask)
+    >>> bug_menu.subscription().text
+    'Subscribe'
+
+Bug if bug #2, a bug that Steve is directly subscribed to, is marked as
+a dupe of bug #3, then Steve gets indirectly subscribed to bug #3, and
+is presented with the Unsubscribe link.
+
+    >>> from canonical.launchpad.ftests import syncUpdate
+
+    >>> bug_two.duplicateof = bug_three
+    >>> syncUpdate(bug_two)
+
+    >>> bug_menu.subscription().text
+    'Unsubscribe'
+
+Now, let's revert that duplicate marking and demonstrate it again, this
+time where the subscription from the duplicate is of a /team/ of which
+the current user is a member. So, for Foo Bar, bug #3 has a simple
+Subscribe link initially.
+
+    >>> bug_two.duplicateof = None
+    >>> syncUpdate(bug_two)
+
+XXX
+
+But when bug #2 is duped against bug #3, the link changes to
+Subscribe/Unsubscribe, because Foo Bar can subscribe himself, or
+unsubscribe the Ubuntu Team, which got indirectly subscribed to bug #3
+from the dupe, bug #2.
+
+XXX
 
 Bug Edit Page
 =============

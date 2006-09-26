@@ -221,6 +221,10 @@ class Bug(SQLBase):
         bs = BugSubscription.selectBy(bug=self, person=person)
         return bool(bs.count())
 
+    def isSubscribedToDupes(self, person):
+        """See canonical.launchpad.interfaces.IBug."""
+        return None
+
     def getDirectSubscribers(self):
         """See canonical.launchpad.interfaces.IBug."""
         return [sub.person for sub in self.subscriptions]
@@ -261,11 +265,13 @@ class Bug(SQLBase):
                 else:
                     indirect_subscribers.add(product.owner)
 
-        # Subscribers, whether direct or indirect, from duplicate bugs become
-        # indirect subscribers of this bug.
+        # Indirectly subscribe *only* direct subscribers from dupes, so they
+        # later unsubscribe from the dupe target by unsubscribing from the
+        # duplicate(s) that caused them to be indirectly subscribed to this
+        # bug. This wouldn't be possible for indirect subscribers, because
+        # indirect subscribers cannot unsubscribe from bugs.
         for dupe in self.duplicates:
             indirect_subscribers.update(dupe.getDirectSubscribers())
-            indirect_subscribers.update(dupe.getIndirectSubscribers())
 
         # Direct subscriptions always take precedence over indirect
         # subscriptions.

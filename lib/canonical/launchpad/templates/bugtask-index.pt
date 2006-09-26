@@ -40,6 +40,15 @@
      Reported this bug as also occurring in upstream firefox
   </p>
 
+  <p class="informational message"
+     id="number_of_dupes"
+     tal:condition="context/bug/duplicates"
+     tal:define="number_of_dupes context/bug/duplicates/count">
+    This bug has been reported
+    <span tal:condition="python:number_of_dupes + 1">2</span>
+    times
+  </p>
+
   <p tal:condition="context/bug/duplicateof" class="informational message">
     This report is a duplicate of
     <a tal:attributes="href context/bug/duplicateof/fmt:url;

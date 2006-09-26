@@ -198,6 +198,13 @@ class IBug(IMessageTarget):
         If person is None, the return value is always False.
         """
 
+    def isSubscribedToDupes(person):
+        """Is person directly subscribed to dupes of this bug?
+
+        Returns True if the user is directly subscribed to at least one
+        duplicate of this bug, otherwise False.
+        """
+
     def getDirectSubscribers():
         """A list of IPersons that are directly subscribed to this bug.
 
