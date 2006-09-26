@@ -2769,8 +2769,14 @@ class RevisionControlSystems(DBSchema):
     revision control systems.
     """
 
+    NONE = Item(0, """
+        None
+
+        No upstream version control system selected.
+        """)
+
     CVS = Item(1, """
-        Concurrent Version System
+        CVS
 
         The Concurrent Version System is very widely used among
         older open source projects, it was the first widespread

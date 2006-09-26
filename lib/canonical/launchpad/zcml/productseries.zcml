@@ -197,17 +197,14 @@
       lp:url="/products/$Product.name/$Series.name/+addmilestone">
     </browser:addform>
 
-    <browser:pages
-        for="canonical.launchpad.interfaces.IProductSeriesSource"
-        class="canonical.launchpad.browser.ProductSeriesView"
+    <browser:page
+        for="canonical.launchpad.interfaces.IProductSeries"
+        name="+source"
+        class="canonical.launchpad.browser.ProductSeriesSourceView"
+        template="../templates/productseries-source.pt"
         facet="overview"
-        permission="launchpad.Edit">
-        <browser:page
-            name="+source"
-            template="../templates/productseries-source.pt"
-            lp:url="/products/$Product.name/$ProductSeries.name/+source"
-            />
-    </browser:pages>
+        permission="launchpad.EditSource"
+        lp:url="/products/$Product.name/$ProductSeries.name/+source2" />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSeriesSourceAdmin"

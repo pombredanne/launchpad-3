@@ -13,7 +13,7 @@ __all__ = [
     ]
 
 
-from zope.schema import  Choice, Datetime, Int, Text, Object
+from zope.schema import  Choice, Datetime, Int, Object, Text, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad.fields import ContentNameField
@@ -184,28 +184,35 @@ class IProductSeriesSource(Interface):
     syncinterval = Attribute("The time between sync attempts for this "
         "series. In some cases we might want to sync once a week, in "
         "others, several times per day.")
-    rcstype = Int(title=_("Type of Revision"),
+    rcstype = Choice(title=_("Type of RCS"),
+        required=True, vocabulary='RevisionControlSystems',
         description=_("The type of revision control used for "
         "the upstream branch of this series. Can be CVS, SVN, BK or "
         "Arch."))
-    cvsroot = Text(title=_("The CVS server root at which the upstream "
-        "code for this branch can be found."))
-    cvsmodule = Text(title=_("The CVS module for this branch."))
+    cvsroot = TextLine(title=_("Repository root"), required=False,
+        description=_('Example: :pserver:anonymous@anoncvs.gnome.org:'
+                      '/cvs/gnome'))
+    cvsmodule = TextLine(title=_("Module"), required=False)
     cvstarfileurl = Text(title=_("A URL where a tarball of the CVS "
         "repository can be found. This can sometimes be faster than "
         "trying to query the server for commit-by-commit data."))
-    cvsbranch = Text(title=_("The branch of this module that represents "
-        "the upstream branch for this series."))
-    svnrepository = Text(title=_("The URL for the SVN branch where "
-        "the upstream code for this series can be found."))
+    cvsbranch = TextLine(title=_("Branch name"), required=False,
+        description=_('The branch representing the upstream codebase for '
+                      'this product series.'))
+    svnrepository = TextLine(title=_("Repository"), required=False,
+        description=_('The URL (Internet address) of the repository and '
+                      'branch to be imported, in svn:// or http(s):// '
+                      'format. This must be the correct upstream branch '
+                      'for the trunk series of Evolution.'))
     # where are the tarballs released from this branch placed?
-    releaseroot = Text(title=_("The URL of the root directory for releases "
-        "made as part of this series."))
-    releasefileglob = Text(title=_("A pattern-matching 'glob' expression "
-        "that should match all the releases made as part of this series. "
-        "For example, if release tarball filenames take the form "
-        "'apache-2.0.35.tar.gz' then the glob would be "
-        "'apache-2.0.*.tar.gz'."))
+    releaseroot = TextLine(title=_("Root directory URL"), required=False,
+        description=_('The directory containing releases that are part of '
+                      'this series. Launchpad automatically scans this '
+                      'directory regularly to import new releases.'))
+    releasefileglob = TextLine(title=_("Filename pattern"), required=False,
+        description=_('Launchpad uses this pattern to find new releases '
+                      'of Evolution when they are uploaded to the root '
+                      'directory.'))
     releaseverstyle = Attribute("The version numbering style for this "
         "product series of releases.")
     dateautotested = Attribute("The date this upstream passed automatic "

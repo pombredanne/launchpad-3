@@ -10,6 +10,7 @@ __all__ = ['ProductSeriesNavigation',
            'ProductSeriesView',
            'ProductSeriesEditView',
            'ProductSeriesAppointDriverView',
+           'ProductSeriesSourceView',
            'ProductSeriesRdfView',
            'ProductSeriesSourceSetView',
            'ProductSeriesReviewView',
@@ -21,6 +22,7 @@ import re
 from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.formlib import form
 from zope.publisher.browser import FileUpload
 
 from CVS.protocol import CVSRoot
@@ -32,14 +34,16 @@ from canonical.launchpad.helpers import (
 from canonical.launchpad.interfaces import (
     ICountry, IPOTemplateSet, ILaunchpadCelebrities,
     ISourcePackageNameSet, validate_url, IProductSeries,
-    ITranslationImportQueue, IProductSeriesSourceSet, NotFoundError)
+    ITranslationImportQueue, IProductSeriesSource,
+    IProductSeriesSourceSet, NotFoundError)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     Link, enabled_with_permission, Navigation, ApplicationMenu, stepto,
     canonical_url, LaunchpadView, StandardLaunchpadFacets,
-    LaunchpadEditFormView, action, custom_widget
+    LaunchpadFormView, LaunchpadEditFormView, action, custom_widget
     )
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.widgets.textwidgets import StrippedTextWidget
 
 from canonical.launchpad import _
 
@@ -83,6 +87,7 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
         summary = 'Someone with permission to set goals this series'
         return Link('+driver', text, summary, icon='edit')
 
+    @enabled_with_permission('launchpad.EditSource')
     def editsource(self):
         text = 'Edit Source'
         return Link('+source', text, icon='edit')
@@ -622,6 +627,71 @@ class ProductSeriesAppointDriverView(SQLObjectEditView):
     def changed(self):
         # If the name changed then the URL changed, so redirect
         self.request.response.redirect(canonical_url(self.context))
+
+
+class ProductSeriesSourceView(LaunchpadEditFormView):
+    schema = IProductSeriesSource
+    field_names = ['rcstype', 'cvsroot', 'cvsmodule', 'cvsbranch',
+                   'svnrepository', 'releaseroot', 'releasefileglob']
+
+    custom_widget('cvsroot', StrippedTextWidget, displayWidth=50)
+    custom_widget('cvsmodule', StrippedTextWidget, displayWidth=20)
+    custom_widget('cvsbranch', StrippedTextWidget, displayWidth=20)
+    custom_widget('svnrepository', StrippedTextWidget, displayWidth=50)
+    custom_widget('releaseroot', StrippedTextWidget, displayWidth=40)
+    custom_widget('releasefileglob', StrippedTextWidget, displayWidth=40)
+
+    def validate(self, data):
+        rcstype = data.get('rcstype')
+        if rcstype is not None:
+            # Make sure fields for unselected revision control systems
+            # are blanked out:
+            if rcstype != RevisionControlSystems.CVS:
+                data['cvsroot'] = None
+                data['cvsmodule'] = None
+                data['cvsbranch'] = None
+            if rcstype != RevisionControlSystems.SVN:
+                data['svnrepository'] = None
+
+        if rcstype == RevisionControlSystems.CVS:
+            cvsroot = data.get('cvsroot')
+            cvsmodule = data.get('cvsmodule')
+            cvsbranch = data.get('cvsbranch')
+            if not (cvsroot and cvsmodule and
+                    validate_cvs_root(cvsroot, cvsmodule)):
+                self.setFieldError('cvsroot',
+                                   'Your CVS root and module are invalid.')
+            if not (cvsbranch and validate_cvs_branch(cvsbranch)):
+                self.setFieldError('cvsbranch',
+                                   'Your CVS branch name is invalid.')
+            if cvsroot and cvsmodule and cvsbranch:
+                series = getUtility(IProductSeriesSourceSet).getByCVSDetails(
+                    cvsroot, cvsmodule, cvsbranch)
+                if self.context != series and series is not None:
+                    self.addError('CVS repository details already in use '
+                                  'by another product.')
+
+        elif rcstype == RevisionControlSystems.SVN:
+            svnrepository = data.get('svnrepository')
+            if not (svnrepository and validate_svn_repo(svnrepository)):
+                self.setFieldError('svnrepository',
+                                   'Please give valid Subversion server '
+                                   'details.')
+            if svnrepository:
+                series = getUtility(IProductSeriesSourceSet).getBySVNDetails(
+                    svnrepository)
+                if self.context != series and series is not None:
+                    self.setFieldError('svnrepository',
+                                       'Subversion repository details '
+                                       'already in use by another product.')
+
+    @action(_('Update RCS Details'), name='update')
+    def update_action(self, action, data):
+        self.updateContextFromData(data)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
 
 
 class ProductSeriesReviewView(SQLObjectEditView):
