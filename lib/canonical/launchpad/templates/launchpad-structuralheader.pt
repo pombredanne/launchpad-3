@@ -2,7 +2,7 @@
       <img alt="" src="/@@/nyet-heading" />
       <div class="secondary"><h2 tal:content="view/getMinorHeading">structural object secondary</h2></div>
       <div class="primary" tal:content="view/getMajorHeading">structural object primary</div>
-      <p id="structuralobjectchildren">
+      <div id="structuralobjectchildren">
         <tal:if condition="python:view.num_lists == 0">
           (no children)
         </tal:if>
@@ -26,5 +26,5 @@
           </span>
         </tal:if>
 
-      </p>
+      </div>
     </div>
