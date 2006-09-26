@@ -64,9 +64,7 @@ from sqlobject.main import SQLObjectNotFound
 import canonical.lp
 from canonical.launchpad.interfaces import NotFoundError
 
-# XXX: should we remove hctapi or do something about it being hopelessly
-# outdated?. See also XXX from kiko in March. -- DavidAllouche 2006-09-21
-# from pybaz import NameParser
+from pybaz import NameParser
 
 from canonical.lp.dbschema import (
     ManifestEntryType, ManifestEntryHint, RevisionControlSystems
