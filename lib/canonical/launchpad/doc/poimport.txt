@@ -534,7 +534,7 @@ Now, is time to check the notification email.
     ...
     5.  [msg 0]
     "The msgid_Plural field has changed since last time this .po file was
-    generated, please notify this error to rosetta@ubuntu.com":
+    generated, please report this error to ...
     <BLANKLINE>
     #, c-format
     msgid "Singular %d"

@@ -451,6 +451,7 @@
             Configuration for Rosetta admin tools
         </description>
         <key name="dbuser" datatype="string" default="rosettaadmin" />
+        <key name="email" datatype="string" default="rosetta@launchpad.net" />
     </sectiontype>
 
     <sectiontype name="poimport">

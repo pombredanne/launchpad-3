@@ -21,6 +21,8 @@ from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLObjectNotFound, SQLMultipleJoin
     )
 
+from canonical.config import config
+
 from canonical.cachedproperty import cachedproperty
 
 from canonical.database.sqlbase import (
@@ -701,7 +703,8 @@ class POFile(SQLBase, RosettaStats):
         template = open(template_file).read()
         message = template % replacements
 
-        fromaddress = 'Rosetta SWAT Team <rosetta@ubuntu.com>'
+        fromaddress = ('Rosetta SWAT Team <%s>' %
+                       config.rosetta.rosettaadmin.email)
         toaddress = helpers.contactEmailAddresses(entry_to_import.importer)
 
         simple_sendmail(fromaddress, toaddress, subject, message)
