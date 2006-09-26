@@ -51,6 +51,40 @@ class TestQueueTool(TestCase):
         self.assertRaises(
             CommandRunnerError, self.execute_command, 'foo')
 
+    def testHelpAction(self):
+        """Check if help is working properly.
+
+        Without arguments 'help' should return the docstring summary of
+        all available actions.
+
+        Optionally we can pass arguments corresponding to the specific
+        actions we want to see the help, not available actions will be
+        reported.
+        """
+        queue_action = self.execute_command('help')
+        self.assertEqual(
+            ['Running: "help"',
+             '\tinfo : Present the Queue item including its contents. ',
+             '\taccept : Accept the contents of a queue item. ',
+             '\treport : Present a report about the size of available queues ',
+             '\treject : Reject the contents of a queue item. ',
+             '\toverride : Override information in a queue item content. ',
+             '\tfetch : Fetch the contents of a queue item. '],
+            self.test_output)
+
+        queue_action = self.execute_command('help fetch')
+        self.assertEqual(
+            ['Running: "help fetch"',
+             '\tfetch : Fetch the contents of a queue item. '],
+            self.test_output)
+
+        queue_action = self.execute_command('help foo')
+        self.assertEqual(
+            ['Running: "help foo"',
+             'Not available action(s): foo'],
+            self.test_output)
+
+
     def testInfoAction(self):
         """Check INFO queue action without arguments present all items."""
         queue_action = self.execute_command('info')

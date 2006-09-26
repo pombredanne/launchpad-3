@@ -389,12 +389,13 @@ class QueueAction:
         return from_address, recipient_addresses
 
 
-class QueueActionHelp:
+class QueueActionHelp(QueueAction):
     """Present provided actions summary"""
     def __init__(self, **kargs):
         self.kargs = kargs
         self.kargs['no_mail'] = True
         self.actions = kargs['terms']
+        self.display = kargs['display']
 
     def initialize(self):
         """Mock initialization """
@@ -402,13 +403,27 @@ class QueueActionHelp:
 
     def run (self):
         """Present the actions description summary"""
-        # present summary for specific or all commands
+        # present summary for specific or all actions
         if not self.actions:
             actions_help = queue_actions.items()
+            not_available_actions = []
         else:
-            actions_help = [(k, v) for k, v in queue_actions.items()
-                            if k in self.actions]
-        # extract summary from docstring of specified commands
+            actions_help = [
+                (action, provider)
+                for action, provider in queue_actions.items()
+                if action in self.actions
+                ]
+            not_available_actions = [
+                action for action in self.actions
+                if action not in queue_actions.keys()
+                ]
+        # present not available requested action if any.
+        if not_available_actions:
+            self.display(
+                "Not available action(s): %s" %
+                ", ".join(not_available_actions))
+
+        # extract summary from docstring of specified available actions
         for action, wrapper in actions_help:
             if action is 'help':
                 continue
