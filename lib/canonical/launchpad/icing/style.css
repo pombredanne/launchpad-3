@@ -536,7 +536,7 @@ a:hover.button {
 #globalheader img {
   display: none;
 }
-#globalheader h1.launchpad a {
+#globalheader div.launchpad a {
   float: right;
   display: block;
   width: 90px;

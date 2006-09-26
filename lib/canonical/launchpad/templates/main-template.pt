@@ -25,14 +25,14 @@
   <body onload="DynarchMenu.setup('menu', {electric: true});" id="document">
 
     <div id="globalheader">
-      <h1 class="launchpad">
+      <div class="launchpad">
         <img
           alt=""
           src="/+icing/globalheader_launchpad.gif"
           width="34"
           height="16"
         /><a href="/">Launchpad</a>
-      </h1>
+      </div>
       <ul class="home">
         <li><a href="/" title="Home">Home</a></li>
       </ul>
