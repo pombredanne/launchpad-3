@@ -394,7 +394,12 @@ datebuilt, it makes the diagnosis of problems in current DB easier.
 
 
 Only builds in failed_states (FAILEDTOBUILD, MANUALDEPWAIT and
-CHROOTWAIT) can be retried.
+CHROOTWAIT) can be retried. We must check if Soyuz is able to accept
+its result in case of success, i.e., we should not be able to retry a
+build for a released pocket.
+
+All those conditions are controlled by IBuild.can_be_retried() property
+(see above).
 
   >>> failed_build = getUtility(IBuildSet).getByBuildID(9)
 
@@ -404,17 +409,10 @@ CHROOTWAIT) can be retried.
   >>> failed_build.buildstate.name
   'FAILEDTOBUILD'
 
-Additionally, we must check if Soyuz is able to accept its result in
-case of success, i.e., we should not be able to retry a build for a
-released pocket.
-
-All those conditions as controlled by IBuild.can_be_retried() property
-(see above).
-
   >>> failed_build.can_be_retried
   False
 
-Attempt to retry this build record will fail with and AssertionError:
+Attempt to retry this build record will fail with an AssertionError:
 
   >>> failed_build.retry()
   Traceback (most recent call last):

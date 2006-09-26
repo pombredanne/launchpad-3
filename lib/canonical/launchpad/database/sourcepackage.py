@@ -488,6 +488,10 @@ class SourcePackage(BugTargetBase):
         """ % sqlvalues(self.sourcepackagename.id, self.distrorelease.id,
                         PackagePublishingStatus.PUBLISHED)]
 
+        # XXX cprov 20060925: It would be nice if we could encapsulate
+        # the chunk of code below (which deals with the optional paramenters)
+        # and share it with IBuildSet.getBuildsByArchIds()
+
         # exclude gina-generated and security (dak-made) builds
         # buildstate == FULLYBUILT && datebuilt == null
         condition_clauses.append(
@@ -516,8 +520,10 @@ class SourcePackage(BugTargetBase):
         else:
             orderBy = ["-Build.datebuilt"]
 
-        # all orders fallback to -id if the primary order doesn't succeed
+        # Fallback to ordering by -id as a tie-breaker.
         orderBy.append("-id")
+
+        # End of XXX
 
         return Build.select(' AND '.join(condition_clauses),
                             clauseTables=clauseTables, orderBy=orderBy)

@@ -44,7 +44,13 @@ portlet (end of the html chunk):
 
 
 Check "Build History" contents, see the information about several
-job processed by this builder (status, title, duration):
+job processed by this builder, things like:
+
+ * SUPERSEDED builds contain title
+ * MANUALDEWAIT builds contain: title, dependencies-line, start,
+   finished, duration and a link to the build log.
+ * FAILEDTOBUILD builds are similar to MANUALDEPWAIT, but they don't
+   contain dependencies-line.
 
   >>> anon_browser.getLink("Build History").click()
   >>> anon_browser.contents

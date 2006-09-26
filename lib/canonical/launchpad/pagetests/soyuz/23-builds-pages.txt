@@ -28,6 +28,10 @@ Check the contents of the distro builds list page.
 Check the presence of some build titles, specially the 'not
 initialized' one (fix bug #52704)
 
+ * SUPERSEDED and NEEDSBUILD builds contain title
+ * MANUALDEWAIT builds contain: title, dependencies-line, start,
+   finished, duration and a link to the build log.
+
   >>> browser.getControl(name="build_state").value = ['all']
   >>> browser.getControl("Update").click()
   >>> browser.contents

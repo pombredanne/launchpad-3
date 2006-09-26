@@ -361,6 +361,10 @@ class BuildSet:
             condition_clauses = [('distroarchrelease IN %s'
                                   % sqlvalues(arch_ids))]
 
+        # XXX cprov 20060925: It would be nice if we could encapsulate
+        # the chunk of code below (which deals with the optional paramenters)
+        # and share it with ISourcePackage.getBuildRecords()
+
         # exclude gina-generated and security (dak-made) builds
         # buildstate == FULLYBUILT && datebuilt == null
         condition_clauses.append(
@@ -389,8 +393,10 @@ class BuildSet:
         else:
             orderBy = ["-Build.datebuilt"]
 
-        # all orders fallback to -id if the primary order doesn't succeed
+        # Fallback to ordering by -id as a tie-breaker.
         orderBy.append("-id")
+
+        # End of XXX
 
         if name:
             condition_clauses.append("Build.sourcepackagerelease="
