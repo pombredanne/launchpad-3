@@ -1701,14 +1701,14 @@ class TicketAction(DBSchema):
     """
 
     REQUESTINFO = Item(10, """
-        Request for additional information
+        Request for more information
 
         This message asks for more information about the support
         request.
         """)
 
     GIVEINFO = Item(20, """
-        Reply with more information
+        Give more information
 
         In this message, the submitter provides more information about the
         request.
@@ -1728,19 +1728,19 @@ class TicketAction(DBSchema):
         """)
 
     CONFIRM = Item(40, """
-        Confirmation
+        Confirm
 
         This message confirms that an answer solved the problem.
         """)
 
     REJECT = Item(50, """
-        Rejection
+        Reject
 
         This message rejects a support request as invalid.
         """)
 
     EXPIRE = Item(70, """
-        Expiration
+        Expire
 
         Automatic message created when the ticket is expired.
         """)
@@ -1753,7 +1753,7 @@ class TicketAction(DBSchema):
         """)
 
     SETSTATUS = Item(90, """
-        Status change
+        Change status
 
         Message from an administrator that explain why the ticket status
         was changed.
