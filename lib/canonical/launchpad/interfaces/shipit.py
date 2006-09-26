@@ -236,23 +236,48 @@ class IShippingRequest(Interface):
         You must not set approved quantities on a non-approved request.
         """
 
+    def setRequestedQuantities(quantities):
+        """Set the requested quantities using the given values.
+
+        :quantities: must be a dictionary mapping flavours to architectures
+                     and quantities, i.e.
+                     {ShipItFlavour.UBUNTU:
+                        {ShipItArchitecture.X86: quantity1,
+                         ShipItArchitecture.PPC: quantity2}
+                     }
+
+        You must not set requested quantities on a shipped/cancelled request.
+        """
+
     def isAwaitingApproval():
-        """Return True if this request is still waiting for approval."""
+        """Return True if this request's status is PENDING."""
 
     def isPendingSpecial():
-        """Return True if this request has been marked as pending special."""
+        """Return True if this request's status is PENDINGSPECIAL."""
 
     def isDenied():
-        """Return True if this request has been denied."""
+        """Return True if this request's status is DENIED."""
 
     def isShipped():
-        """Return True if this request has been shipped."""
+        """Return True if this request's status is SHIPPED."""
 
     def isApproved():
-        """Return True if this request has been approved."""
+        """Return True if this request's status is APPROVED."""
 
     def isCancelled():
-        """Return True if this request has been cancelled."""
+        """Return True if this request's status is CANCELLED."""
+
+    def canBeApproved():
+        """Can this request be approved?
+        
+        Only PENDING, PENDINGSPECIAL and DENIED requests can be denied.
+        """
+
+    def canBeDenied():
+        """Can this request be denied?
+        
+        Only APPROVED, PENDING and PENDINGSPECIAL requests can be denied.
+        """
 
     def markAsPendingSpecial():
         """Mark this request as pending special consideration."""
@@ -516,6 +541,12 @@ class IShippingRun(Interface):
         required=False, readonly=False)
 
     requests = Attribute(_('All requests that are part of this shipping run.'))
+
+    requests_count = Int(
+        title=_('A cache of the number of requests'), readonly=False,
+        description=_('This is necessary to avoid a COUNT(*) query which is '
+                      'very expensive in this case, as we have lots of '
+                      'requests on a ShippingRun'))
 
     def exportToCSVFile():
         """Generate a CSV file with all requests that are part of this

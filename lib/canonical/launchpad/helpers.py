@@ -34,7 +34,6 @@ from canonical.launchpad.interfaces import (
     ILaunchBag, IRequestPreferredLanguages,
     IRequestLocalLanguages, ITeam, TranslationConstants)
 from canonical.launchpad.components.poparser import POParser
-from canonical.launchpad.validators.gpg import valid_fingerprint
 
 
 def text_replaced(text, replacements, _cache={}):
@@ -540,8 +539,7 @@ def msgid_html(text, flags, space=TranslationConstants.SPACE_CHAR,
                 type, content = segment
 
                 if type == 'interpolation':
-                    formatted_line += ('<span class="interpolation">%s</span>'
-                        % content)
+                    formatted_line += ('<code>%s</code>' % content)
                 elif type == 'string':
                     formatted_line += content
 
@@ -593,33 +591,6 @@ def test_diff(lines_a, lines_b):
         tofile='actual',
         lineterm='',
         )))
-
-
-def sanitiseFingerprint(fpr):
-    """Returns sanitised fingerprint if fpr is well-formed,
-    otherwise returns False.
-
-    >>> sanitiseFingerprint('C858 2652 1A6E F6A6 037B  B3F7 9FF2 583E 681B 6469')
-    'C85826521A6EF6A6037BB3F79FF2583E681B6469'
-    >>> sanitiseFingerprint('c858 2652 1a6e f6a6 037b  b3f7 9ff2 583e 681b 6469')
-    'C85826521A6EF6A6037BB3F79FF2583E681B6469'
-    >>> sanitiseFingerprint('681B 6469')
-    False
-
-    >>> sanitiseFingerprint('abnckjdiue')
-    False
-
-    """
-    # replace the white spaces
-    fpr = fpr.replace(' ', '')
-
-    # convert to upper case
-    fpr = fpr.upper()
-
-    if not valid_fingerprint(fpr):
-        return False
-
-    return fpr
 
 
 def check_permission(permission_name, context):

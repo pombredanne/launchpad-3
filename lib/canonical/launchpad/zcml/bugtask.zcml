@@ -34,8 +34,7 @@
             attributes="product sourcepackagename distribution
                         distrorelease milestone status statusexplanation
                         importance assignee bugwatch age owner targetname
-                        title related_tasks statusdisplayhtml statuselsewhere
-                        asEmailHeaderValue
+                        title related_tasks asEmailHeaderValue
                         target_uses_malone bugtask_branches" />
         <require
             permission="launchpad.Edit"
@@ -147,47 +146,27 @@
         template="../templates/bug-portlet-subscribers.pt"
         permission="zope.Public" />
 
-    <browser:editform
+    <browser:page
         name="+edit"
         for="canonical.launchpad.interfaces.IBugTask"
-        schema="canonical.launchpad.interfaces.IBug"
         class="canonical.launchpad.browser.bug.BugEditView"
-        permission="launchpad.Edit"
         template="../templates/bug-edit.pt"
-        fields="title description tags name"
-        lp:url="malone/bugs/$Bug.id/+edit">
-        <browser:widget
-           field="title"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="30" />
-        <browser:widget
-           field="tags"
-           class="canonical.widgets.bug.BugTagsWidget" />
-    </browser:editform>
+        permission="launchpad.Edit"
+        />
 
-    <browser:editform
+    <browser:page
         name="+secrecy"
         for="canonical.launchpad.interfaces.IBugTask"
-        schema="canonical.launchpad.interfaces.IBug"
-        class="canonical.launchpad.browser.bug.BugEditView"
-        label="Bug visibility and security"
+        class="canonical.launchpad.browser.bug.BugSecrecyEditView"
         permission="launchpad.Edit"
-        template="../templates/bug-secrecy.pt"
-        fields="private security_related"
-        lp:url="malone/bugs/$Bug.id/+secrecy">
-    </browser:editform>
+        template="../templates/bug-secrecy.pt" />
 
-    <browser:editform
+    <browser:page
         name="+duplicate"
         for="canonical.launchpad.interfaces.IBugTask"
-        schema="canonical.launchpad.interfaces.IBug"
-        class="canonical.launchpad.browser.bug.BugEditView"
-        label="Mark bug report as a duplicate"
+        class="canonical.launchpad.browser.BugMarkAsDuplicateView"
         permission="launchpad.AnyPerson"
-        template="../templates/bug-mark-as-duplicate.pt"
-        fields="duplicateof"
-        lp:url="malone/bugs/$Bug.id/+duplicate">
-    </browser:editform>
+        template="../templates/bug-mark-as-duplicate.pt" />
 
     <!-- NullBugTask -->
     <content class="canonical.launchpad.components.bugtask.NullBugTask">
@@ -333,6 +312,13 @@
         permission="launchpad.View"
         template="../templates/bugtask-view.pt"
         lp:url="malone/tasks/$BugTask.id/+index">
+    </browser:page>
+
+    <browser:page
+        name="+listing-view"
+        for="canonical.launchpad.interfaces.IBugTask"
+        class="canonical.launchpad.browser.BugTaskListingView"
+        permission="launchpad.View">
     </browser:page>
 
     <browser:defaultView

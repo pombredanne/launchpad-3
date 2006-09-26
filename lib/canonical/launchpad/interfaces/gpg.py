@@ -52,18 +52,6 @@ class IGPGKeySet(Interface):
         inactive ones.
         """
 
-    def deactivateGPGKey(key_id):
-        """Deactivate a Key inside Launchpad Context.
-
-        Returns the modified key or None if the key wasn't found.
-        """
-
-    def activateGPGKey(key_id):
-        """Reactivate a Key inside Launchpad Context.
-
-        Returns the modified key or None if the key wasn't found.
-        """
-
     def getGPGKeys(ownerid=None, active=True):
         """Return OpenPGP keys ordered by id.
 

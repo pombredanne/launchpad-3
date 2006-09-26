@@ -16,7 +16,7 @@ open a new connection, let's invoke it in dry-run mode.
 INFO
 
   >>> process = subprocess.Popen([sys.executable, script,
-  ...                             "-R", "breezy-autotest", "info"],
+  ...                             "-s", "breezy-autotest", "info"],
   ...                             stdout=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
   >>> process.returncode
@@ -46,7 +46,7 @@ INFO
 INFO by ID, return an error if it's not present in the specified queue:
 
   >>> process = subprocess.Popen([sys.executable, script,
-  ...                             "-R", "breezy-autotest",
+  ...                             "-s", "breezy-autotest",
   ...                             "-Q", "rejected", "info", "1"],
   ...                             stdout=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
@@ -62,7 +62,7 @@ INFO by ID, return an error if it's not present in the specified queue:
 Same for wrong distribution/distrorelease
 
   >>> process = subprocess.Popen([sys.executable, script,
-  ...                             "-R", "hoary",
+  ...                             "-s", "hoary",
   ...                             "info", "1"],
   ...                             stdout=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
@@ -71,7 +71,7 @@ Same for wrong distribution/distrorelease
   >>> print stdout
   Initialising connection to queue new
   Running: "info 1"
-  Item 1 is in ubuntu/breezy-autotest not in ubuntu/hoary
+  Item 1 is in ubuntu/breezy-autotest-RELEASE not in ubuntu/hoary-RELEASE
   Aborting current transaction
   <BLANKLINE>
 
@@ -79,7 +79,7 @@ Same for wrong distribution/distrorelease
 Check the custom uploads presentation:
 
   >>> process = subprocess.Popen([sys.executable, script, "-Q", "unapproved",
-  ...                             "-R", "breezy-autotest", "info"],
+  ...                             "-s", "breezy-autotest-updates", "info"],
   ...                             stdout=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
   >>> process.returncode
@@ -87,7 +87,7 @@ Check the custom uploads presentation:
   >>> print stdout
   Initialising connection to queue unapproved
   Running: "info"
-  Listing ubuntu/breezy-autotest (UNAPPROVED) 1/1
+  Listing ubuntu/breezy-autotest-updates (UNAPPROVED) 1/1
   ---------|----|----------------------|----------------------|---------------
          5 | -- | netapplet-1.0.0.tar. | -                    | ...
            | * netapplet-1.0.0.tar.gz Format: ROSETTA_TRANSLATIONS
@@ -99,7 +99,7 @@ Check the custom uploads presentation:
 SOURCE OVERRIDE
 
   >>> process = subprocess.Popen([sys.executable, script, "-N",
-  ...                             "-R", "breezy-autotest",
+  ...                             "-s", "breezy-autotest",
   ...                             "override", "3", "source",
   ...                             "universe/base"], stdout=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
@@ -118,7 +118,7 @@ SOURCE OVERRIDE
 BINARY OVERRIDE
 
   >>> process = subprocess.Popen([sys.executable, script, "-N",
-  ...                             "-R", "breezy-autotest",
+  ...                             "-s", "breezy-autotest",
   ...                             "override", "pmount", "binary",
   ...                             "universe/web/extra"],
   ...                            stdout=subprocess.PIPE)
@@ -136,7 +136,11 @@ BINARY OVERRIDE
   <BLANKLINE>
 
 
-ACCEPT
+Accepting a source package generates an email.
+XXX: Ideally, we would be able to test the functionality of the queue tool
+via an API, without having to shell the script. This would enable us to get
+a mailer stub into place and check if a mail was really going to be sent, 
+instead of relying on log output. See bug 56722.
 
   >>> libpath = '/var/tmp/fatsam.test/'
   >>> for directory in ['00', '00', '00']:
@@ -149,7 +153,7 @@ ACCEPT
   >>> libfile.close()
 
   >>> process = subprocess.Popen([sys.executable, script, "-NM", "accept",
-  ...                             "-R", "breezy-autotest",
+  ...                             "-s", "breezy-autotest",
   ...                             "alsa-utils", "-A", "foo@bar.com"],
   ...                            stdout=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
@@ -179,10 +183,31 @@ ACCEPT
   <BLANKLINE>
 
 
+Accepting a binary package doesn't generate an email.
+
+  >>> process = subprocess.Popen([sys.executable, script, "-NM", "accept",
+  ...                             "-s", "breezy-autotest",
+  ...                             "mozilla-firefox", "-A", "foo@bar.com"],
+  ...                            stdout=subprocess.PIPE)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  0
+  >>> print stdout
+  Initialising connection to queue new
+  Running: "accept mozilla-firefox"
+  Accepting ubuntu/breezy-autotest (NEW) 1/6
+  ---------------------------------------------------------------------------
+  Accepting mozilla-firefox
+  ---------------------------------------------------------------------------
+                                                                1/6 total
+  DRY RUN requested, not committing.
+  <BLANKLINE>
+
+
 REJECT
 
   >>> process = subprocess.Popen([sys.executable, script, "-N", "reject",
-  ...                             "-R", "breezy-autotest", "alsa-utils"],
+  ...                             "-s", "breezy-autotest", "alsa-utils"],
   ...                            stdout=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
   >>> process.returncode
@@ -216,11 +241,47 @@ REJECT
   <BLANKLINE>
 
 
+Also works for rejecting DistroReleaseQueueBuilds (issue mentioned in
+bug #57662)
+
+  >>> process = subprocess.Popen([sys.executable, script, "-N", "reject",
+  ...                             "-s", "breezy-autotest", "2"],
+  ...                            stdout=subprocess.PIPE)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  0
+  >>> print stdout
+  Initialising connection to queue new
+  Running: "reject 2"
+  Rejecting ubuntu/breezy-autotest (NEW) 1/6
+  ---------------------------------------------------------------------------
+  Rejecting pmount
+  Would be sending a mail:
+     Subject: netapplet-1.0.0.tar.gz Rejected
+     Sender: Root <root@localhost>
+     Recipients: Root <root@localhost>
+     Bcc:
+     Body:
+  Rejected:
+  i386 build of pmount 0.1-1 in ubuntu breezy-autotest RELEASE (19) was REJECTED
+  <BLANKLINE>
+  Fake Changesfile
+  <BLANKLINE>
+  ===
+  <BLANKLINE>
+  If you don't understand why your files were rejected, or if the
+  override file requires editing, reply to this email.
+  <BLANKLINE>
+  ---------------------------------------------------------------------------
+                                                                 1/6 total
+  DRY RUN requested, not committing.
+  <BLANKLINE>
+
 
 FETCH CHANGES
 
   >>> process = subprocess.Popen([sys.executable, script,
-  ...                             "-R", "breezy-autotest", "fetch", "pmount"],
+  ...                             "-s", "breezy-autotest", "fetch", "pmount"],
   ...                            stdout=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
   >>> process.returncode

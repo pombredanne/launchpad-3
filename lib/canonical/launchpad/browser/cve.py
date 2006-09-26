@@ -8,7 +8,6 @@ __all__ = [
     'CveSetNavigation',
     'CveContextMenu',
     'CveSetContextMenu',
-    'CveView',
     'CveLinkView',
     'CveUnlinkView',
     'CveSetView',
@@ -19,6 +18,7 @@ from zope.component import getUtility
 from canonical.launchpad.webapp.batching import BatchNavigator
 
 from canonical.launchpad.interfaces import ICve, ICveSet, ILaunchBag, IBug
+from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.validators.cve import valid_cve
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, GetitemNavigation)
@@ -28,6 +28,9 @@ from canonical.launchpad.webapp.generalform import GeneralFormView
 class CveSetNavigation(GetitemNavigation):
 
     usedfor = ICveSet
+
+    def breadcrumb(self):
+        return "CVE reports"
 
 class CveContextMenu(ContextMenu):
 
@@ -57,15 +60,6 @@ class CveSetContextMenu(ContextMenu):
         text = 'Find CVEs'
         summary = 'Find CVEs in Launchpad'
         return Link('', text, summary)
-
-
-class CveView:
-
-    __used_for__ = ICve
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
 
 
 class CveLinkView(GeneralFormView):
@@ -145,5 +139,3 @@ class CveSetView:
             self.results = self.context.search(text=self.text)
             self.matches = self.results.count()
         return self.results
-
-

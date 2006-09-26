@@ -17,6 +17,7 @@ This test will check the upload of dist-upgrade tarballs
 
   >>> class MockOptions:
   ...     distro = "ubuntutest"
+  ...     distrorelease = None
 
   >>> from canonical.launchpad.ftests import import_public_test_keys
   >>> import_public_test_keys()
@@ -110,8 +111,8 @@ Rejecting item from accepted queue (very unlikely, normally it would
 be rejecting from unapproved or new, fix bug #54649):
 
   >>> process = subprocess.Popen([sys.executable, script, "-Q", "accepted",
-  ...                             "-R", "breezy-autotest", "reject", "dist",
-  ...                             "-D", "ubuntutest", "-M"],
+  ...                             "-s", "breezy-autotest", "reject", "dist",
+  ...                             "-d", "ubuntutest", "-M"],
   ...                            stdout=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
   >>> process.returncode
@@ -136,8 +137,8 @@ Accepting from rejected queue (ressurecting an reject upload is also
 very unlikely, however it's only for testing purpose, fix #54649):
 
   >>> process = subprocess.Popen([sys.executable, script, "-Q", "rejected",
-  ...                             "-R", "breezy-autotest", "accept", "dist",
-  ...                             "-D", "ubuntutest", "-M"],
+  ...                             "-s", "breezy-autotest", "accept", "dist",
+  ...                             "-d", "ubuntutest", "-M"],
   ...                            stdout=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
   >>> process.returncode
@@ -160,8 +161,8 @@ very unlikely, however it's only for testing purpose, fix #54649):
 Let's use the script to fetch the dist-upgrader upload:
 
   >>> process = subprocess.Popen([sys.executable, script, "-Q", "accepted",
-  ...                             "-R", "breezy-autotest", "fetch", "dist",
-  ...                             "-D", "ubuntutest"],
+  ...                             "-s", "breezy-autotest", "fetch", "dist",
+  ...                             "-d", "ubuntutest"],
   ...                            stdout=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
   >>> process.returncode

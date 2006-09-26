@@ -31,7 +31,10 @@ check_launchpad_on_merge: build check importdcheck hctcheck
 	$(MAKE) -C sourcecode check_for_launchpad PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
-check_merge: build check importdcheck hctcheck
+check_not_a_ui_merge:
+	[ ! -f do-not-merge-to-mainline.txt ]
+
+check_merge: check_not_a_ui_merge build check importdcheck hctcheck
 	# Work around the current idiom of 'make check' getting too long
 	# because of hct and related tests. note that this is a short
 	# term solution, the long term solution will need to be 
@@ -48,7 +51,7 @@ hctcheck: build
 
 importdcheck: build
 	env PYTHONPATH=$(PYTHONPATH) \
-	${PYTHON} -t ./lib/importd/test_all.py
+	${PYTHON} -t ./lib/importd/test_all.py "$$TESTFILTER"
 
 check: build
 	# Run all tests. test_on_merge.py takes care of setting up the

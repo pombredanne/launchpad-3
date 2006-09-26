@@ -114,7 +114,7 @@ class ShippingRequest(SQLBase):
         flavours = set()
         for requested_cds in self.getAllRequestedCDs():
             flavours.add(requested_cds.flavour)
-        return flavours
+        return sorted(flavours)
 
     def getTotalApprovedCDs(self):
         """See IShippingRequest"""
@@ -152,6 +152,11 @@ class ShippingRequest(SQLBase):
             requested_cds[flavour] = requested_arches
 
         return requested_cds
+
+    def setRequestedQuantities(self, quantities):
+        """See IShippingRequest"""
+        assert not (self.isShipped() or self.isCancelled())
+        self._setQuantities(quantities, set_approved=False, set_requested=True)
 
     def setApprovedQuantities(self, quantities):
         """See IShippingRequest"""
@@ -263,6 +268,20 @@ class ShippingRequest(SQLBase):
     def isPendingSpecial(self):
         """See IShippingRequest"""
         return self.status == ShippingRequestStatus.PENDINGSPECIAL
+
+    def canBeApproved(self):
+        """See IShippingRequest"""
+        statuses = [ShippingRequestStatus.DENIED,
+                    ShippingRequestStatus.PENDINGSPECIAL,
+                    ShippingRequestStatus.PENDING]
+        return self.status in statuses
+
+    def canBeDenied(self):
+        """See IShippingRequest"""
+        statuses = [ShippingRequestStatus.APPROVED,
+                    ShippingRequestStatus.PENDINGSPECIAL,
+                    ShippingRequestStatus.PENDING]
+        return self.status in statuses
 
     def markAsPendingSpecial(self):
         """See IShippingRequest"""
@@ -501,6 +520,7 @@ class ShippingRequestSet:
             request.status = ShippingRequestStatus.SHIPPED
             shipment = ShipmentSet().new(
                 request, request.shippingservice, shippingrun)
+        shippingrun.requests_count = shippingrun.requests.count()
         return shippingrun
 
     def _sumRequestedCDCount(self, quantities):
@@ -983,6 +1003,7 @@ class ShippingRun(SQLBase):
     csvfile = ForeignKey(
         dbName='csvfile', foreignKey='LibraryFileAlias', default=None)
     sentforshipping = BoolCol(notNull=True, default=False)
+    requests_count = IntCol(notNull=True, default=0)
 
     @property
     def requests(self):

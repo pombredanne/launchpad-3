@@ -64,14 +64,14 @@ def probe_archive_mirror(mirror, logfile, unchecked_mirrors, logger):
         unchecked_mirrors.append(url)
         prober = ProberFactory(url)
 
-        prober.deferred.addCallbacks(
+        deferred = semaphore.run(prober.probe)
+        deferred.addCallbacks(
             callbacks.ensureMirrorRelease, callbacks.deleteMirrorRelease)
 
-        prober.deferred.addCallback(callbacks.updateMirrorStatus)
-        prober.deferred.addErrback(logger.error)
+        deferred.addCallback(callbacks.updateMirrorStatus)
+        deferred.addErrback(logger.error)
 
-        prober.deferred.addBoth(checkComplete, url, unchecked_mirrors)
-        semaphore.run(prober.probe)
+        deferred.addBoth(checkComplete, url, unchecked_mirrors)
 
 
 def probe_release_mirror(mirror, logfile, unchecked_mirrors, logger):
@@ -100,9 +100,9 @@ def probe_release_mirror(mirror, logfile, unchecked_mirrors, logger):
             # Use a RedirectAwareProberFactory because CD mirrors are allowed
             # to redirect, and we need to cope with that.
             prober = RedirectAwareProberFactory(url)
-            prober.deferred.addErrback(callbacks.logMissingURL, url)
-            d = semaphore.run(prober.probe)
-            deferredList.append(d)
+            deferred = semaphore.run(prober.probe)
+            deferred.addErrback(callbacks.logMissingURL, url)
+            deferredList.append(deferred)
 
         deferredList = defer.DeferredList(deferredList, consumeErrors=True)
         deferredList.addCallback(callbacks.ensureOrDeleteMirrorCDImageRelease)
@@ -220,9 +220,13 @@ def main(argv):
     # disabled and notify their owners.
     disabled_mirrors_count = 0
     ztm.begin()
+    expected_iso_images_count = None
     for mirror in probed_mirrors:
         _create_probe_record(mirror, logfiles[mirror.id])
-        if not mirror.hasContent():
+        if (mirror.content == MirrorContent.RELEASE
+            and expected_iso_images_count is None):
+            expected_iso_images_count = len(mirror.getExpectedCDImagePaths())
+        if mirror.shouldDisable(expected_iso_images_count):
             disabled_mirrors_count += 1
             mirror.disableAndNotifyOwner()
 

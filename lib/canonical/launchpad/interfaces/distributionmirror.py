@@ -134,6 +134,8 @@ class IDistributionMirror(Interface):
     source_releases = Attribute('All MirrorDistroReleaseSources of this mirror')
     arch_releases = Attribute('All MirrorDistroArchReleases of this mirror')
     last_probe_record = Attribute('The last MirrorProbeRecord for this mirror.')
+    has_ftp_or_rsync_base_url = Bool(
+        title=_('Does this mirror have a ftp or rsync base URL?'))
 
     def getSummarizedMirroredSourceReleases():
         """Return a summarized list of this distribution_mirror's 
@@ -153,6 +155,18 @@ class IDistributionMirror(Interface):
         each distro_arch_release of this distribution mirror.
         """
 
+    def getOverallStatus():
+        """Return this mirror's overall status.
+
+        For ARCHIVE mirrors, the overall status is the worst status of all
+        of this mirror's content objects (MirrorDistroArchRelease,
+        MirrorDistroReleaseSource or MirrorCDImageDistroReleases).
+
+        For RELEASE mirrors, the overall status is either UPTODATE, if the
+        mirror contains all ISO images that it should or UNKNOWN if it doesn't
+        contain one or more ISO images.
+        """
+
     def isOfficial():
         """Return True if this is an official mirror."""
 
@@ -161,6 +175,22 @@ class IDistributionMirror(Interface):
 
         A mirror's content is stored as one of MirrorDistroReleaseSources,
         MirrorDistroArchReleases or MirrorCDImageDistroReleases.
+        """
+
+    def shouldDisable(self, expected_file_count=None):
+        """Should this mirror be marked disabled?
+
+        If this is a RELEASE mirror then expected_file_count must not be None,
+        and it should be disabled if the number of cdimage_releases it
+        contains is smaller than the given expected_file_count.
+
+        If this is an ARCHIVE mirror, then it should be disabled only if it
+        has no content at all.
+
+        We could use len(self.getExpectedCDImagePaths()) to obtain the
+        expected_file_count, but that's not a good idea because that method
+        gets the expected paths from releases.ubuntu.com, which is something
+        we don't have control over.
         """
 
     def disableAndNotifyOwner():
