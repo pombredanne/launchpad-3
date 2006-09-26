@@ -25,14 +25,14 @@
   <body onload="DynarchMenu.setup('menu', {electric: true});" id="document">
 
     <div id="globalheader">
-      <h1 class="launchpad">
+      <div class="launchpad">
         <img
           alt=""
           src="/+icing/globalheader_launchpad.gif"
           width="34"
           height="16"
         /><a href="/">Launchpad</a>
-      </h1>
+      </div>
       <ul class="home">
         <li><a href="/" title="Home">Home</a></li>
       </ul>
@@ -51,10 +51,10 @@
       <img alt="" src="/@@/nyet-heading" />
       <div class="secondary"><h2>structural object secondary</h2></div>
       <div class="primary">structural object primary</div>
-      <p id="structuralobjectchildren">
+      <div id="structuralobjectchildren">
         <span class="primary">structural object children row 1</span>
         <span class="secondary">structural object children row 2</span>
-      </p>
+      </div>
     </div>
     <form id="globalsearch" action="/search" method="GET">
       <div>
