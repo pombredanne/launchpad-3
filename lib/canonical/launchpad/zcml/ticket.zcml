@@ -63,9 +63,6 @@
     for="canonical.launchpad.interfaces.ITicket"
     permission="zope.Public">
     <browser:page
-      name="+index"
-      template="../templates/ticket-index.pt" />
-    <browser:page
       name="+history"
       template="../templates/ticket-history.pt" />
     <browser:page
@@ -82,17 +79,12 @@
       template="../templates/ticket-portlet-subscribers.pt" />
   </browser:pages>
 
-  <browser:pages
+  <browser:page
+    name="+index"
     for="canonical.launchpad.interfaces.ITicket"
     class="canonical.launchpad.browser.TicketWorkflowView"
-    permission="launchpad.AnyPerson">
-    <browser:page
-      name="+reopen"
-      template="../templates/ticket-reopen.pt" />
-    <browser:page
-      name="+workflow"
-      template="../templates/ticket-workflow.pt" />
-  </browser:pages>
+    permission="zope.Public"
+    template="../templates/ticket-index.pt" />
 
   <browser:page
     name="+reject"
@@ -133,21 +125,6 @@
     permission="launchpad.Admin"
     template="../templates/ticket-change-status.pt" />
 
-  <browser:addform
-    name="+addmessage"
-    for="canonical.launchpad.interfaces.ITicket"
-    schema="canonical.launchpad.interfaces.IMessageOnTicket"
-    class="canonical.launchpad.browser.MessageAddView"
-    label="Add message or comment"
-    fields="subject content owner resolved"
-    keyword_arguments="subject content owner resolved"
-    permission="launchpad.AnyPerson"
-    template="../templates/message-add.pt">
-    <browser:widget
-      field="owner"
-      class="canonical.widgets.HiddenUserWidget" />
-  </browser:addform>
-
   <browser:page
     name="+linkbug"
     for="canonical.launchpad.interfaces.ITicket"
@@ -161,6 +138,13 @@
     class="canonical.launchpad.browser.BugsUnlinkView"
     permission="launchpad.AnyPerson"
     template="../templates/ticket-unlinkbugs.pt" />
+
+  <browser:page
+    name="+display"
+    for="canonical.launchpad.interfaces.ITicketMessage"
+    class="canonical.launchpad.browser.TicketMessageDisplayView"
+    permission="zope.Public"
+    template="../templates/ticketmessage-display.pt" />
 
   <!-- TicketSet -->
   <content class="canonical.launchpad.database.TicketSet">

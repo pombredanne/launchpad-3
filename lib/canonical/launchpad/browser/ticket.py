@@ -10,6 +10,7 @@ __all__ = [
     'TicketContextMenu',
     'TicketEditView',
     'TicketMakeBugView',
+    'TicketMessageDisplayView',
     'TicketSetContextMenu',
     'TicketSetNavigation',
     'TicketRejectView',
@@ -23,64 +24,24 @@ from zope.event import notify
 from zope.formlib import form
 from zope.interface import providedBy
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.interfaces import (
-    ITicket, ITicketChangeStatusForm, ITicketSet, CreateBugParams)
+    ITicket, ITicketAddMessageForm, ITicketChangeStatusForm, ITicketSet,
+    CreateBugParams, UnexpectedFormData)
 from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
     GeneralFormView, LaunchpadView, action, LaunchpadFormView,
     LaunchpadEditFormView, custom_widget)
 from canonical.launchpad.webapp.snapshot import Snapshot
-
+from canonical.lp.dbschema import TicketStatus, TicketAction
 
 class TicketSetNavigation(Navigation):
 
     usedfor = ITicketSet
 
-
-class TicketWorkflowView(LaunchpadView):
-    """View managing the ticket workflow action, i.e. action changing
-    its status.
-    """
-
-    def initialize(self):
-        self.is_owner = self.user == self.context.owner
-
-        if not self.user or self.request.method != "POST":
-            # No post, nothing to do
-            return
-
-        ticket_unmodified = Snapshot(
-            self.context, providing=providedBy(self.context))
-        modified_fields = set()
-
-        form = self.request.form
-        response = self.request.response
-
-        # establish if the user is trying to reject the ticket
-        reject = form.get('reject', None)
-        if reject is not None:
-            if self.context.reject(self.user):
-                response.addNotification(("You have rejected this request."))
-                modified_fields.add('status')
-
-        # establish if the user is trying to reopen the ticket
-        reopen = form.get('reopen', None)
-        if reopen is not None:
-            if self.context.reopen(self.user):
-                response.addNotification(_("You have reopened this request."))
-                modified_fields.add('status')
-
-        if len(modified_fields) > 0:
-            notify(SQLObjectModifiedEvent(
-                self.context, ticket_unmodified, list(modified_fields)))
-
-    @property
-    def can_reject(self):
-        """Whether the current user can reject this ticket."""
-        return self.user and self.context.canReject(self.user)
 
 class TicketSubscriptionView(LaunchpadView):
     """View for subscribing and unsubscribing from a ticket."""
@@ -345,6 +306,167 @@ class TicketRejectView(LaunchpadFormView):
             self.request.response.redirect(canonical_url(self.context))
             return
         LaunchpadFormView.initialize(self)
+
+
+class TicketWorkflowView(LaunchpadFormView):
+    """View managing the ticket workflow action, i.e. action changing
+    its status.
+    """
+    schema = ITicketAddMessageForm
+
+    def validate(self, data):
+        """When the action is confirm, find and validate the message
+        that was selected. When another action is used, only make sure
+        that a message was provided.
+        """
+        if self.confirm_action.submitted():
+            self.validateConfirmAnswer(data)
+        else:
+            if not data.get('message'):
+                self.setFieldError('message', _('Please enter a message.'))
+
+    def hasActions(self):
+        """Return True if some actions are possible for this user."""
+        for action in self.actions:
+            if action.available():
+                return True
+        return False
+
+    def canAddComment(self, action):
+        """Return if the comment action should be displayed.
+
+        Comments can be added when the ticket is solved or invalid
+        """
+        return (self.user is not None and
+                self.context.status in [
+                    TicketStatus.SOLVED, TicketStatus.INVALID])
+
+    @action(_('Add Comment'), name='comment', condition=canAddComment)
+    def comment_action(self, action, data):
+        """Add a comment to a resolved ticket."""
+        self.context.addComment(self.user, data['message'])
+        self.next_url = canonical_url(self.context)
+
+    def canAddAnswer(self, action):
+        """Return if the answer action should be displayed."""
+        return (self.user is not None and
+                self.user != self.context.owner and
+                self.context.can_give_answer)
+
+    @action(_('Add Answer'), name='answer', condition=canAddAnswer)
+    def answer_action(self, action, data):
+        """Add an answer to the ticket."""
+        self.context.giveAnswer(self.user, data['message'])
+        self.next_url = canonical_url(self.context)
+
+    def canSelfAnswer(self, action):
+        """Return if the selfanswer action should be displayed."""
+        return (self.user == self.context.owner and
+                self.context.can_give_answer)
+
+    @action(_('I Solved my Problem'), name="selfanswer",
+            condition=canSelfAnswer)
+    def selfanswer_action(self, action, data):
+        """Action called when the owner provides the solution to his problem."""
+        self.answer_action.success(data)
+        self.next_url = canonical_url(self.context)
+
+    def canRequestInfo(self, action):
+        """Return if the requestinfo action should be displayed."""
+        return (self.user is not None and
+                self.user != self.context.owner and
+                self.context.can_request_info)
+
+    @action(_('Add Information Request'), name='requestinfo',
+            condition=canRequestInfo)
+    def requestinfo_action(self, action, data):
+        """Add a request for more information to the ticket."""
+        self.context.requestInfo(self.user, data['message'])
+        self.next_url = canonical_url(self.context)
+
+    def canGiveInfo(self, action):
+        """Return if the giveinfo action should be displayed."""
+        return (self.user == self.context.owner and
+                self.context.can_give_info)
+
+    @action(_("I'm Providing More Information"), name='giveinfo',
+            condition=canGiveInfo)
+    def giveinfo_action(self, action, data):
+        """Give additional informatin on the request."""
+        self.context.giveInfo(data['message'])
+        self.next_url = canonical_url(self.context)
+
+    def validateConfirmAnswer(self, data):
+        """Make sure that a valid message id was provided as the confirmed
+        answer."""
+        # No widget is used for the answer, we are using hidden fields
+        # in the template for that. So, if the answer is missing, it's
+        # either a programming error or an invalid handcrafted URL
+        msgid = int(self.request.form.get('answer_id', -1))
+        if msgid == -1:
+            raise UnexpectedFormData('answer_id is missing')
+        for message in self.context.messages:
+            if msgid == message.id:
+                data['answer'] = message
+                return
+        raise UnexpectedFormData('invalid answer id: %s' % msgid)
+
+    def canConfirm(self, action):
+        """Return if the confirm action should be displayed."""
+        return (self.user == self.context.owner and
+                self.context.can_confirm_answer)
+
+    @action(_("This Solved my Problem"), name='confirm',
+            condition=canConfirm)
+    def confirm_action(self, action, data):
+        """Confirm that an answer solved the request."""
+        # The confirmation message is not given by the user when the
+        # 'This Solved my Problem' button on the main ticket view.
+        if not data['message']:
+            data['message'] = 'User confirmed that the request is solved.'
+        self.context.confirmAnswer(data['message'], answer=data['answer'])
+        self.next_url = canonical_url(self.context)
+
+    def canReopen(self, action):
+        """Return if the reopen action should be displayed."""
+        return (self.user == self.context.owner and
+                self.context.can_reopen)
+
+    @action(_("I'm Still Having This Problem"), name='reopen',
+            condition=canReopen)
+    def reopen_action(self, action, data):
+        """State that the problem is still occuring and provide new
+        information about it."""
+        self.context.reopen(data['message'])
+        self.next_url = canonical_url(self.context)
+
+
+class TicketMessageDisplayView(LaunchpadView):
+    """View that renders a TicketMessage in the context of a Ticket."""
+
+    def __init__(self, context, request):
+        LaunchpadView.__init__(self, context, request)
+        self.ticket = context.ticket
+
+    @cachedproperty
+    def isBestAnswer(self):
+        """Return True when this message is marked as solving the ticket."""
+        return (self.context == self.ticket.answer and
+                self.context.action in [
+                    TicketAction.ANSWER, TicketAction.CONFIRM])
+
+    def getBodyCSSClass(self):
+        """Return the CSS class to use for this message's body."""
+        if self.isBestAnswer:
+            return "boardCommentBody highlighted"
+        else:
+            return "boardCommentBody"
+
+    def canConfirmAnswer(self):
+        """Return True if the user can confirm this answer."""
+        return (self.user == self.ticket.owner and
+                self.ticket.can_confirm_answer and
+                self.context.action == TicketAction.ANSWER)
 
 
 class TicketContextMenu(ContextMenu):

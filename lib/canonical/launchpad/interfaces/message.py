@@ -4,10 +4,8 @@ __metaclass__ = type
 
 __all__ = [
     'IMessage',
-    'IMessageOnTicket',
     'IMessageSet',
     'IMessageChunk',
-    'IAddMessage',
     'UnknownSender',
     'MissingSubject',
     'DuplicateMessageId',
@@ -64,16 +62,6 @@ class IMessage(Interface):
         """Iterate over all the message chunks."""
 
 
-class IMessageOnTicket(IMessage):
-    """A specific extension to the basic Message, used for ITickets."""
-
-    resolved = Bool(title=_("Resolved"), required=False,
-        description=_("Check this box to indicate that you think this "
-        "problem is resolved. Note: only the person who made the technical "
-        "support request can actually close the ticket, other people can "
-        "only indicate that they believe it has been answered."))
-
-
 class IMessageSet(Interface):
     """Set of IMessage"""
 
@@ -124,12 +112,6 @@ class IMessageChunk(Interface):
     sequence = Int(title=_('Sequence order'), required=True, readonly=True)
     content = Text(title=_('Text content'), required=False, readonly=True)
     blob = Int(title=_('Binary content'), required=False, readonly=True)
-
-
-class IAddMessage(Interface):
-    """This schema is used to generate the add comment form"""
-    subject = TextLine(title=_("Subject"), required=True)
-    content = Text(title=_("Body"), required=True)
 
 
 class UnknownSender(NotFoundError):

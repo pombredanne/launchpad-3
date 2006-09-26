@@ -10,6 +10,7 @@ by browser/ticket.py and should really live there.
 __metaclass__ = type
 
 __all__ = [
+    'ITicketAddMessageForm',
     'ITicketChangeStatusForm',
     ]
 
@@ -18,6 +19,14 @@ from zope.interface import Interface
 from zope.schema import Choice, Text
 
 from canonical.launchpad import _
+
+
+class ITicketAddMessageForm(Interface):
+    """Schema for adding a message to a ticket. This usually includes
+    a status change as well.
+    """
+
+    message = Text(title=_('Message'), required=False)
 
 
 class ITicketChangeStatusForm(Interface):
