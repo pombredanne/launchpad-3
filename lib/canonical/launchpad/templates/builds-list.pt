@@ -111,9 +111,6 @@
                  tal:attributes="href bq/builder/fmt:url"/>
             </td>
           </tal:buildqueue>
-          <tal:no_buildqueue condition="not: bq">
-            <td>Build not initialized yet.</td>
-          </tal:no_buildqueue>
         </tr>
         </tal:not_built>
       </tal:build>
