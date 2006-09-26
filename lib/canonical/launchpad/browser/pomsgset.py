@@ -8,6 +8,7 @@ __all__ = [
     'POMsgSetFacets',
     'POMsgSetAppMenus',
     'POMsgSetSubmissions',
+    'POMsgSetZoomedView',
     ]
 
 import re
@@ -33,8 +34,6 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp import urlparse
 from canonical.launchpad.webapp.batching import BatchNavigator
 
-
-CHARACTERS_PER_LINE = 50
 
 #
 # Translation-related formatting functions
@@ -126,6 +125,7 @@ def convert_newlines_to_web_form(unicode_text):
 def count_lines(text):
     '''Count the number of physical lines in a string. This is always at least
     as large as the number of logical lines in a string.'''
+    CHARACTERS_PER_LINE = 50
     count = 0
 
     for line in text.split('\n'):
@@ -329,7 +329,8 @@ class POMsgSetPageView(LaunchpadView):
         self.pofile = self.context.pofile
         self.redirecting = False
 
-        self.pomsgset_view = getView(self.context, "+translate-one", self.request)
+        self.pomsgset_view = getView(self.context, "+translate-one-zoomed",
+                                     self.request)
 
         # By default the submitted values are None
         self.form = self.request.form
@@ -426,11 +427,6 @@ class POMsgSetPageView(LaunchpadView):
 
     def _select_alternate_language(self):
         """Handle a form submission to choose other language suggestions."""
-        if self.from_pofile:
-            # We are part of an IPOFile translation form, its view class will
-            # handle this submission.
-            return
-
         selected_second_lang = self.alternative_language_widget.getInputValue()
         if selected_second_lang is None:
             self.alt = ''
@@ -533,20 +529,17 @@ class POMsgSetPageView(LaunchpadView):
         self._extract_form_posted_translations()
 
         if self.form_posted_translations is None:
-            # There are not translations interesting for us.
-            if not self.from_pofile:
-                # We are in a the single message view, we don't have a
-                # filtering option.
-                next_url = self.batchnav.nextBatchURL()
-                if next_url is None or next_url == '':
-                    # We are already at the end of the batch, forward to the
-                    # first one.
-                    next_url = self.batchnav.firstBatchURL()
-                if next_url is None:
-                    # Stay in whatever URL we are atm.
-                    next_url = ''
-                self._redirect(next_url)
-            return
+            # We are in a the single message view, we don't have a
+            # filtering option.
+            next_url = self.batchnav.nextBatchURL()
+            if next_url is None or next_url == '':
+                # We are already at the end of the batch, forward to the
+                # first one.
+                next_url = self.batchnav.firstBatchURL()
+            if next_url is None:
+                # Stay in whatever URL we are atm.
+                next_url = ''
+            self._redirect(next_url)
 
         has_translations = False
         for form_posted_translation_key in self.form_posted_translations.keys():
@@ -568,24 +561,23 @@ class POMsgSetPageView(LaunchpadView):
                 # Save the error message gettext gave us to show it to the
                 # user.
                 self.error = str(e)
-        if not self.from_pofile:
-            # This page is being rendered as a single message view.
-            if self.error is None:
-                # There are no errors, we should jump to the next message.
-                next_url = self.batchnav.nextBatchURL()
-                if next_url is None or next_url == '':
-                    # We are already at the end of the batch, forward to the
-                    # first one.
-                    next_url = self.batchnav.firstBatchURL()
-                if next_url is None:
-                    # Stay in whatever URL we are atm.
-                    next_url = ''
-                self._redirect(next_url)
-            else:
-                # Notify the errors.
-                self.request.response.addErrorNotification(
-                    "There is an error in the translation you provided."
-                    " Please, correct it before continuing.")
+        # This page is being rendered as a single message view.
+        if self.error is None:
+            # There are no errors, we should jump to the next message.
+            next_url = self.batchnav.nextBatchURL()
+            if next_url is None or next_url == '':
+                # We are already at the end of the batch, forward to the
+                # first one.
+                next_url = self.batchnav.firstBatchURL()
+            if next_url is None:
+                # Stay in whatever URL we are atm.
+                next_url = ''
+            self._redirect(next_url)
+        else:
+            # Notify the errors.
+            self.request.response.addErrorNotification(
+                "There is an error in the translation you provided."
+                " Please, correct it before continuing.")
 
     def process_form(self):
         """Check whether the form was submitted and calls the right callback.
@@ -639,19 +631,17 @@ class POMsgSetView(LaunchpadView):
 
     __used_for__ = IPOMsgSet
 
-    from_pofile = False
-
-    def set_from_pofile(self):
-        self.from_pofile = True
-
     def initialize(self):
+        # XXX: to avoid the use of python in the view, we'd need objects
+        # to render whatever represents a translation for a plural form,
+        # objects which had: index, translation, tabindex and active
+        # submission. Tabindex is kinda tricky because we need two per
+        # translation form -- one for the entry/textarea and one for the
+        # is_fuzzy checkbox.
+
         self.potmsgset = self.context.potmsgset
         self.pofile = self.context.pofile
         self.pofile_language = self.pofile.language
-
-        # XXX: Built as a consequence of range
-        self.translations = None
-        self.submission_blocks = []
 
         # XXX
         self.alt = self.request.form.get('alt', '')
@@ -662,56 +652,16 @@ class POMsgSetView(LaunchpadView):
         # XXX
         self.error = None
 
-        # XXX: move msgid_html and count_lines and
-        # convert_newlines_to_web_form to functions in this module
-
-    def generateNextTabIndex(self):
-        """Return the tab index value to navigate the form."""
-        self._table_index_value += 1
-        return self._table_index_value
-
-    def getTranslation(self, index):
-        """Return the active translation for the pluralform 'index'.
-
-        There are as many translations as the plural form information defines
-        for that language/pofile. If one of those translations does not
-        exists, it will have a None value. If the potmsgset is not a plural
-        form one, we only have one entry.
-        """
-        if index in self.translation_range:
-            translation = self.translations[index]
-            # We store newlines as '\n', '\r' or '\r\n', depending on the
-            # msgid but forms should have them as '\r\n' so we need to change
-            # them before showing them.
-            if translation is not None:
-                return convert_newlines_to_web_form(translation)
-            else:
-                return None
-        else:
-            raise IndexError('Translation out of range')
-
-        # XXX: to avoid the use of this method you'd need a list of
-        # objects to render stuff, objects which had: index,
-        # translation, tabindex and active submission. Tabindex is kinda
-        # tricky because we need two per translation form -- one for the
-        # entry/textarea and one for the is_fuzzy checkbox.
-
-    @cachedproperty
-    def translation_range(self):
-        """Return a list with all indexes we have to get translations."""
-        # XXX: document it builds translations and suggestions, rename
-
+        # XXX: document this builds translations and suggestions
         # XXX: this needs to take into account form-posted stuff, as
         # does is_fuzzy, to handle error posting.
+        self.submission_blocks = {}
         self.translations = self.context.active_texts
-
-        indexes = range(len(self.translations))
-
-        for index in indexes:
+        pluralform_indexes = range(len(self.translations))
+        for index in pluralform_indexes:
             wiki, elsewhere, suggested, alt_submissions = self._buildSubmissions(index)
-            self.submission_blocks.append([wiki, elsewhere, suggested, alt_submissions])
-
-        return indexes
+            self.submission_blocks[index] = [wiki, elsewhere, suggested, alt_submissions]
+        self.translation_range = pluralform_indexes
 
     def _buildSubmissions(self, index):
         active = set([self.translations[index]])
@@ -750,6 +700,31 @@ class POMsgSetView(LaunchpadView):
         alt_submissions = POMsgSetSubmissions(title, alt_submissions[:self.max_entries],
                                    self.is_multi_line, self.max_entries)
         return wiki, elsewhere, suggested, alt_submissions
+
+    def generateNextTabIndex(self):
+        """Return the tab index value to navigate the form."""
+        self._table_index_value += 1
+        return self._table_index_value
+
+    def getTranslation(self, index):
+        """Return the active translation for the pluralform 'index'.
+
+        There are as many translations as the plural form information defines
+        for that language/pofile. If one of those translations does not
+        exists, it will have a None value. If the potmsgset is not a plural
+        form one, we only have one entry.
+        """
+        if index in self.translation_range:
+            translation = self.translations[index]
+            # We store newlines as '\n', '\r' or '\r\n', depending on the
+            # msgid but forms should have them as '\r\n' so we need to change
+            # them before showing them.
+            if translation is not None:
+                return convert_newlines_to_web_form(translation)
+            else:
+                return None
+        else:
+            raise IndexError('Translation out of range')
 
     #
     # Second lang code handling
@@ -851,7 +826,6 @@ class POMsgSetView(LaunchpadView):
 
     # XXX 20060915 mpt: Detecting tabs, newlines, and leading/trailing spaces
     # is being done one way here, and another way in the functions above.
-
     @property
     def msgid_has_tab(self):
         """Determine whether any of the messages contain tab characters."""
@@ -904,34 +878,15 @@ class POMsgSetView(LaunchpadView):
     @cachedproperty
     def zoom_url(self):
         """Return the URL where we should from the zoom icon."""
-        if self.from_pofile:
-            # We are viewing this class from an IPOFile, so we should point to
-            # a concrete entry.
-            return '/'.join([canonical_url(self.context), '+translate'])
-        else:
-            # We are viewing this class directly from an IPOMsgSet, we should
-            # point to the parent batch of messages.
-            pofile_batch_url = '+translate?start=%d' % (self.sequence - 1)
-            return '/'.join(
-                [canonical_url(self.context.pofile), pofile_batch_url])
+        return '/'.join([canonical_url(self.context), '+translate'])
 
     @cachedproperty
     def zoom_alt(self):
-        if self.from_pofile:
-            # We are viewing this class from an IPOFile, so we should point to
-            # a concrete entry.
-            return 'View all details of this message'
-        else:
-            return 'Return to multiple messages view.'
+        return 'View all details of this message'
 
     @cachedproperty
     def zoom_icon(self):
-        if self.from_pofile:
-            # We are viewing this class from an IPOFile, so we should point to
-            # a concrete entry.
-            return '/@@/zoom-in'
-        else:
-            return '/@@/zoom-out'
+        return '/@@/zoom-in'
 
     @cachedproperty
     def max_entries(self):
@@ -939,12 +894,29 @@ class POMsgSetView(LaunchpadView):
 
         If there is no limit, we return None.
         """
-        if self.from_pofile:
-            # Limit the amount of suggestions to 3.
-            return 3
-        else:
-            return None
+        return 3
 
+
+class POMsgSetZoomedView(POMsgSetView):
+    @cachedproperty
+    def zoom_url(self):
+        # We are viewing this class directly from an IPOMsgSet, we should
+        # point to the parent batch of messages.
+        pofile_batch_url = '+translate?start=%d' % (self.sequence - 1)
+        return '/'.join(
+            [canonical_url(self.context.pofile), pofile_batch_url])
+
+    @cachedproperty
+    def zoom_alt(self):
+        return 'Return to multiple messages view.'
+
+    @cachedproperty
+    def zoom_icon(self):
+        return '/@@/zoom-out'
+
+    @cachedproperty
+    def max_entries(self):
+        return None
 
 
 class POMsgSetSubmissions(LaunchpadView):

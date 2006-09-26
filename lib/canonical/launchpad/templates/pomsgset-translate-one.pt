@@ -1,4 +1,10 @@
 <tr class="translation">
+  <td>
+    <a tal:attributes="href view/zoom_url"><img tal:attributes="
+          alt view/zoom_alt;
+          title view/zoom_alt;
+          src view/zoom_icon;" /></a>
+  </td>
   <td style="text-align: right;">
     <span tal:replace="view/sequence">1</span>.
     <input
@@ -6,13 +12,6 @@
       tal:attributes="
       name string:msgset_${view/potmsgset/id}"
       />
-  </td>
-  <td>
-    <a tal:attributes="href view/zoom_url">
-      <img tal:attributes="
-        alt view/zoom_alt;
-        title view/zoom_alt;
-        src view/zoom_icon;" /></a>
   </td>
   <th style="border-style: dotted; border-width: 1px 0 0;">
     <label class="language-code" tal:condition="not:view/is_plural">
@@ -38,8 +37,7 @@
 </tr>
 <tr
   tal:condition="view/msgid_has_tab"
-  class="discreet secondary translation"
->
+  class="discreet secondary translation">
   <td colspan="2" />
   <th>
     <img alt="Note:" src="/@@/info" title="This is a note to translators" />
@@ -203,11 +201,11 @@
         </td>
       </tr>
     </tal:active>
-    <tal:submission_blocks repeat="submission_block view/submission_blocks">
+    <tal:submission_block define="submission_block python:view.submission_blocks[index]">
       <tal:submissions repeat="submissions submission_block">
         <div tal:replace="structure submissions/@@+display" />
       </tal:submissions>
-    </tal:submission_blocks>
+    </tal:submission_block>
   </tal:plural-forms>
   <tr class="secondary">
     <td colspan="4" />
@@ -232,7 +230,7 @@
       </div>
     </td>
   </tr>
-  </tal:language-code>
+</tal:language-code>
 <tr tal:condition="view/comment" class="secondary">
   <th colspan="3"><label>Translator note:</label></th>
   <td />

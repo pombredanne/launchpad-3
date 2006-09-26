@@ -69,6 +69,15 @@
         />
 
     <browser:page
+        name="+translate-one-zoomed"
+        facet="translations"
+        for="canonical.launchpad.interfaces.IPOMsgSet"
+        permission="launchpad.AnyPerson"
+        template="../templates/pomsgset-translate-one.pt"
+        class="canonical.launchpad.browser.POMsgSetZoomedView"
+        />
+
+    <browser:page
         name="+display"
         for="canonical.launchpad.interfaces.IPOMsgSetSubmissions"
         permission="launchpad.AnyPerson"

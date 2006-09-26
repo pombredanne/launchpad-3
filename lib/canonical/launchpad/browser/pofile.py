@@ -34,11 +34,12 @@ from canonical.launchpad.webapp import (
     LaunchpadView, Navigation)
 from canonical.launchpad.webapp.batching import BatchNavigator
 
-class CustomDropdownWidget(DropdownWidget):
 
+class CustomDropdownWidget(DropdownWidget):
     def _div(self, cssClass, contents, **kw):
         """Render the select widget without the div tag."""
         return contents
+
 
 class POFileNavigation(Navigation):
 
@@ -96,12 +97,8 @@ class POFileFacets(StandardLaunchpadFacets):
     enable_only = ['overview', 'translations']
 
     def _parent_url(self):
-        """Return the URL of the thing the PO template of this PO file is
-        attached to.
-        """
-
+        """Return URL of whatever POTemplate of this POFile is attached to."""
         potemplate = self.context.potemplate
-
         if potemplate.distrorelease:
             source_package = potemplate.distrorelease.getSourcePackage(
                 potemplate.sourcepackagename)
@@ -336,7 +333,6 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         if pomsgset is None:
             pomsgset = potmsgset.getDummyPOMsgSet(language.code, variant)
         pomsgsetview = getView(pomsgset, "+translate-one", self.request)
-        pomsgsetview.set_from_pofile()
         return pomsgsetview
 
     def _initialize_show_option(self):
@@ -468,8 +464,6 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             pomsgset_view = getView(pomsgset, "+translate-one", self.request)
             # We initialize the view so every view process its own stuff.
             # XXX: completely brokwn right now
-            pomsgset_view.set_from_pofile()
-            pomsgset_view.initialize(from_pofile=True)
             if (pomsgset_view.error is not None and
                 pomsgset_view.context.potmsgset.sequence > 0):
                 # There is an error, we should store this view to render them.
@@ -582,7 +576,6 @@ class POExportView(BaseExportView):
             return
 
         format_name = self.request.form.get('format')
-
         try:
             format = RosettaFileFormat.items[format_name]
         except KeyError:
