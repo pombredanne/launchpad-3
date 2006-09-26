@@ -332,8 +332,10 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         pomsgset = potmsgset.getPOMsgSet(language.code, variant)
         if pomsgset is None:
             pomsgset = potmsgset.getDummyPOMsgSet(language.code, variant)
-        pomsgsetview = getView(pomsgset, "+translate-one", self.request)
-        return pomsgsetview
+        pomsgset_view = getView(pomsgset, "+translate-one", self.request)
+        # XXX: do properly
+        pomsgset_view.prepare(pomsgset.active_texts, None, 1, self.second_lang_code)
+        return pomsgset_view
 
     def _initialize_show_option(self):
         # Get any value given by the user
@@ -371,6 +373,7 @@ This only needs to be done once per language. Thanks for helping Rosetta.
 
     @property
     def second_lang_code(self):
+        # XXX: share with POMsgSetView
         if (self.alt == '' and
             self.context.language.alt_suggestion_language is not None):
             return self.context.language.alt_suggestion_language.code
@@ -382,14 +385,6 @@ This only needs to be done once per language. Thanks for helping Rosetta.
                                      "supported.")
         else:
             return self.alt
-
-    @property
-    def second_lang_pofile(self):
-        if self.second_lang_code is not None:
-            return self.context.potemplate.getPOFileByLang(
-                self.second_lang_code)
-        else:
-            return None
 
     @property
     def completeness(self):
@@ -460,9 +455,9 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             pomsgset = pofile.getPOMsgSet(msgid_text, only_current=False)
             if pomsgset is None:
                 pomsgset = pofile.createMessageSetFromText(msgid_text)
+
             # Store this pomsgset inside the list of messages to process.
             pomsgset_view = getView(pomsgset, "+translate-one", self.request)
-            # We initialize the view so every view process its own stuff.
             # XXX: completely brokwn right now
             if (pomsgset_view.error is not None and
                 pomsgset_view.context.potmsgset.sequence > 0):

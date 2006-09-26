@@ -253,9 +253,7 @@ class POMsgSetFacets(StandardLaunchpadFacets):
         """Return the URL of the thing the PO template of this PO file is
         attached to.
         """
-
         potemplate = self.context.pofile.potemplate
-
         if potemplate.distrorelease:
             source_package = potemplate.distrorelease.getSourcePackage(
                 potemplate.sourcepackagename)
@@ -330,9 +328,6 @@ class POMsgSetPageView(LaunchpadView):
         self.pofile = self.context.pofile
         self.redirecting = False
 
-        self.pomsgset_view = getView(self.context, "+translate-one-zoomed",
-                                     self.request)
-
         # By default the submitted values are None
         self.form = self.request.form
         self.form_posted_translations = None
@@ -398,6 +393,16 @@ class POMsgSetPageView(LaunchpadView):
 
         # Handle any form submission.
         self.process_form()
+
+        self.pomsgset_view = getView(self.context, "+translate-one-zoomed",
+                                     self.request)
+
+        # XXX: DO IT PROPERLY
+        # XXX: this needs to take into account form-posted stuff, as
+        # does is_fuzzy, to handle error posting.
+        translations = self.context.active_texts
+        self.pomsgset_view.prepare(translations, self.error, 1, self.second_lang_code)
+
 
     @cachedproperty
     def second_lang_code(self):
@@ -632,37 +637,57 @@ class POMsgSetView(LaunchpadView):
 
     __used_for__ = IPOMsgSet
 
+    # self.translations
+    # self.error
+    # self._table_index_value
+    # self.form_posted_needsreview
+    # self.second_lang_potmsgset
+    # self.sec_lang
+    # self.potmsgset
+    # self.pofile
+    # self.pofile_language
+    # self.msgids
+    # self.submission_blocks
+    # self.translation_range
+
+    def prepare(self, translations, error, initial_tabindex, second_lang_code):
+        self.translations = translations
+        self.error = error
+        self._table_index_value = initial_tabindex
+        # XXX: do properly
+        self.form_posted_needsreview = False
+
+        # Set up alternative language
+        if second_lang_code is None:
+            self.sec_lang = None
+            self.second_lang_potmsgset = None
+        else:
+            potemplate = self.context.pofile.potemplate
+            second_lang_pofile = potemplate.getPOFileByLang(second_lang_code)
+            self.sec_lang = second_lang_pofile.language
+            msgid = self.potmsgset.primemsgid_.msgid
+            try:
+                self.second_lang_potmsgset = second_lang_pofile[msgid].potmsgset
+            except NotFoundError:
+                pass
+
     def initialize(self):
         # XXX: to avoid the use of python in the view, we'd need objects
-        # to render whatever represents a translation for a plural form,
-        # objects which had: index, translation, tabindex and active
-        # submission. Tabindex is kinda tricky because we need two per
-        # translation form -- one for the entry/textarea and one for the
-        # is_fuzzy checkbox.
-
+        # to render whatever represents a translation for a plural form.
         self.potmsgset = self.context.potmsgset
         self.pofile = self.context.pofile
         self.pofile_language = self.pofile.language
 
-        # XXX
-        self.alt = self.request.form.get('alt', '')
-        # XXX
-        self.form_posted_needsreview = False
-        # XXX
-        self._table_index_value = 0
-        # XXX
-        self.error = None
+        # XXX: document this builds translations, msgids and suggestions
+        self.msgids = helpers.shortlist(self.potmsgset.getPOMsgIDs())
+        assert len(self.msgids) > 0, (
+            'Found a POTMsgSet without any POMsgIDSighting')
 
-        # XXX: document this builds translations and suggestions
-        # XXX: this needs to take into account form-posted stuff, as
-        # does is_fuzzy, to handle error posting.
         self.submission_blocks = {}
-        self.translations = self.context.active_texts
-        pluralform_indexes = range(len(self.translations))
-        for index in pluralform_indexes:
+        self.translation_range = range(len(self.translations))
+        for index in self.translation_range:
             wiki, elsewhere, suggested, alt_submissions = self._buildAllSubmissions(index)
             self.submission_blocks[index] = [wiki, elsewhere, suggested, alt_submissions]
-        self.translation_range = pluralform_indexes
 
     def _buildAllSubmissions(self, index):
         active = set([self.translations[index]])
@@ -681,14 +706,14 @@ class POMsgSetView(LaunchpadView):
         elsewhere = self._buildSubmissions("Used elsewhere", elsewhere)
 
         suggested = self._buildSubmissions("Suggested elsewhere", suggested) 
-        if self.second_lang_msgset is None:
+
+        if self.second_lang_potmsgset is None:
             alt_submissions = []
             title = None
         else:
-            sec_lang = self.second_lang_pofile.language
-            sec_lang_potmsgset = self.second_lang_msgset.potmsgset
-            alt_submissions = sec_lang_potmsgset.getCurrentSubmissions(sec_lang, index)
-            title = "%s (Alternate Language)" % sec_lang.englishname
+            alt_submissions = self.sec_lang_potmsgset.getCurrentSubmissions(
+                self.sec_lang, index)
+            title = "%s (Alternate Language)" % self.sec_lang.englishname
 
         alt_submissions = self._buildSubmissions(title, alt_submissions)
         return wiki, elsewhere, suggested, alt_submissions
@@ -725,52 +750,10 @@ class POMsgSetView(LaunchpadView):
             raise IndexError('Translation out of range')
 
     #
-    # Second lang code handling
-    #
-
-    @cachedproperty
-    def second_lang_code(self):
-        if (self.alt == '' and
-            self.context.pofile.language.alt_suggestion_language is not None):
-            return self.context.pofile.language.alt_suggestion_language.code
-        elif self.alt == '':
-            return None
-        else:
-            return self.alt
-
-    @cachedproperty
-    def second_lang_pofile(self):
-        """Return the IPOFile for the alternative translation or None."""
-        if self.second_lang_code is not None:
-            return self.context.pofile.potemplate.getPOFileByLang(
-                self.second_lang_code)
-        else:
-            return None
-
-    @cachedproperty
-    def second_lang_msgset(self):
-        """Return the IPOMsgSet for the alternative translation or None."""
-        if self.second_lang_pofile is None:
-            return None
-        else:
-            msgid = self.potmsgset.primemsgid_.msgid
-            try:
-                return self.second_lang_pofile[msgid]
-            except NotFoundError:
-                return None
-
-    #
     # Display-related methods
     #
 
     @cachedproperty
-    def msgids(self):
-        msgids = helpers.shortlist(self.potmsgset.getPOMsgIDs())
-        assert len(msgids) > 0, (
-            'Found a POTMsgSet without any POMsgIDSighting')
-        return msgids
-
-    @property
     def is_plural(self):
         """Return whether there are plural forms."""
         return len(self.msgids) > 1
@@ -793,24 +776,24 @@ class POMsgSetView(LaunchpadView):
 
         return min(lines, 12)
 
-    @property
+    @cachedproperty
     def is_multi_line(self):
         """Return whether the singular or plural msgid have more than one line.
         """
         return self.max_lines_count > 1
 
-    @property
+    @cachedproperty
     def sequence(self):
         """Return the position number of this potmsgset."""
         return self.potmsgset.sequence
 
-    @property
+    @cachedproperty
     def msgid(self):
         """Return a msgid string prepared to render in a web page."""
         msgid = self.msgids[TranslationConstants.SINGULAR_FORM].msgid
         return msgid_html(msgid, self.potmsgset.flags())
 
-    @property
+    @cachedproperty
     def msgid_plural(self):
         """Return a msgid plural string prepared to render as a web page.
 
@@ -901,7 +884,7 @@ class POMsgSetZoomedView(POMsgSetView):
         # We are viewing this class directly from an IPOMsgSet, we should
         # point to the parent batch of messages.
         pofile_batch_url = '+translate?start=%d' % (self.sequence - 1)
-        return '/'.join([canonical_url(self.context.pofile), pofile_batch_url])
+        return '/'.join([canonical_url(self.pofile), pofile_batch_url])
 
     @cachedproperty
     def zoom_alt(self):
