@@ -77,10 +77,12 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
              'add_package', 'add_milestone', 'add_release',
              'add_potemplate', 'rdf', 'review']
 
+    @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Change Series Details'
         return Link('+edit', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def driver(self):
         text = 'Appoint driver'
         summary = 'Someone with permission to set goals this series'
@@ -630,8 +632,9 @@ class ProductSeriesAppointDriverView(SQLObjectEditView):
 
 class ProductSeriesSourceView(LaunchpadEditFormView):
     schema = IProductSeries
-    field_names = ['rcstype', 'cvsroot', 'cvsmodule', 'cvsbranch',
-                   'svnrepository', 'releaseroot', 'releasefileglob']
+    field_names = ['rcstype', 'user_branch', 'cvsroot', 'cvsmodule',
+                   'cvsbranch', 'svnrepository', 'releaseroot',
+                   'releasefileglob']
 
     custom_widget('cvsroot', StrippedTextWidget, displayWidth=50)
     custom_widget('cvsmodule', StrippedTextWidget, displayWidth=20)
@@ -684,9 +687,47 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
                                        'Subversion repository details '
                                        'already in use by another product.')
 
+    def isAdmin(self):
+        return check_permission('launchpad.Admin', self.context)
+
     @action(_('Update RCS Details'), name='update')
     def update_action(self, action, data):
+        old_rcstype = self.context.rcstype
         self.updateContextFromData(data)
+        importable_rcstypes = [RevisionControlSystems.CVS,
+                               RevisionControlSystems.SVN]
+        if self.context.rcstype in importable_rcstypes:
+            if not isAdmin() or (old_rcstype is None and
+                                 self.context.rcstype is not None):
+                self.context.importstatus = ImportStatus.TESTING
+        self.request.response.addInfoNotification(
+            'Upstream RCS details recorded.')
+
+    def allowResetToAutotest(self, action):
+        return self.isAdmin() and self.context.autoTestFailed()
+
+    @action(_('Rerun import in the Autotester'), name='resettoautotest',
+            condition=allowResetToAutotest)
+    def resettoautotest_action(self, action, data):
+        self.updateContextFromData(data)
+        self.context.importstatus = ImportStatus.TESTING
+        self.request.response.addInfoNotification(
+            'Source import reset to TESTING')
+
+    # XXXX: 2006-09-27 jamesh
+    # Are these conditions for approving an import correct?  Should we
+    # only be providing this option if the import has been tested and
+    # we have valid CVS or Subversion details?
+    def allowCertify(self, action):
+        return self.isAdmin() and not self.context.syncCertified()
+
+    @action(_('Approve import for production and publication'), name='certify',
+            condition=allowCertify)
+    def certify_action(self, action, data):
+        self.updateContextFromData(data)
+        self.context.certifyForSync()
+        self.request.response.addInfoNotification(
+            'Source import certified for publication')
 
     @property
     def next_url(self):

@@ -45,17 +45,32 @@
           <label>
             <input type="radio" name="field.rcstype" value="None"
                    onClick="updateWidgets()"
-                   tal:attributes="checked python:selected_rcstype.name == 'NONE'" />
-            Do not import branch
+                   tal:attributes="checked selected_rcstype/enumvalue:NONE" />
+            No revision control system
           </label>
         </div>
 
         <fieldset>
           <legend>
             <label>
+              <input type="radio" name="field.rcstype" value="Bazaar"
+                   onClick="updateWidgets()"
+                   tal:attributes="checked selected_rcstype/enumvalue:BAZAAR" />
+              Bazaar
+            </label>
+          </legend>
+
+          <tal:widget define="widget nocall:view/widgets/user_branch">
+            <metal:block use-macro="context/@@launchpad_widget_macros/launchpad_widget_row" />
+          </tal:widget>
+        </fieldset>
+
+        <fieldset>
+          <legend>
+            <label>
               <input type="radio" name="field.rcstype" value="CVS"
                    onClick="updateWidgets()"
-                   tal:attributes="checked python:selected_rcstype.name == 'CVS'" />
+                   tal:attributes="checked selected_rcstype/enumvalue:CVS" />
               CVS
             </label>
           </legend>
@@ -75,7 +90,7 @@
             <label>
               <input type="radio" name="field.rcstype" value="Subversion"
                    onClick="updateWidgets()"
-                   tal:attributes="checked python:selected_rcstype.name == 'SVN'" />
+                   tal:attributes="checked selected_rcstype/enumvalue:SVN" />
               Subversion
             </label>
           </legend>
@@ -109,6 +124,7 @@
               break;
             }
           }
+          form['field.user_branch'].disabled = (rcstype != 'Bazaar');
           form['field.cvsroot'].disabled = (rcstype != 'CVS');
           form['field.cvsbranch'].disabled = (rcstype != 'CVS');
           form['field.cvsmodule'].disabled = (rcstype != 'CVS');
