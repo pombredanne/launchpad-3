@@ -82,8 +82,19 @@ for an individual package.
 
 Checking UnexpectedFormData on unknown build_state values (bug #41104)
 
-  >>> user_browser.handleErrors = False
   >>> browser.open("http://localhost/+builds/bob/+history?build_state=foo")
   Traceback (most recent call last):
   ...
   UnexpectedFormData: No suitable state found for value "foo"
+
+Checking that we show the right message for a distribution that doesn't have any
+builds.
+
+  >>> browser.open("http://launchpad.dev/distros/debian/+builds")
+  >>> browser.contents
+  '...No Currently building builds for Debian GNU/Linux...'
+
+  >>> browser.getControl(name="build_state").value = ['all']
+  >>> browser.getControl("Update").click()
+  >>> browser.contents
+  '...No builds for Debian GNU/Linux...'
