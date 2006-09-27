@@ -16,7 +16,8 @@ __all__ = [
 
 import re
 from zope.app.form.browser import DropdownWidget
-from zope.component import getUtility, getView
+from zope.component import getUtility
+from zope.app import zapi
 from zope.publisher.browser import FileUpload
 
 from canonical.lp.dbschema import RosettaFileFormat
@@ -268,25 +269,20 @@ class POFileTranslateView(BaseTranslationView):
         self._initializeShowOption()
         BaseTranslationView.initialize(self)
 
-        self.pomsgset_views = []
-        for potmsgset in self.batchnav.currentBatch():
-            self.pomsgset_views.append(self._buildPOMsgSetView(potmsgset))
-
     #
     # BaseTranslationView API
     #
 
-    def _initializeBatching(self):
-        self.batchnav = BatchNavigator(self._getSelectedPOTMsgSets(),
-                                       self.request, size=self.DEFAULT_SIZE)
+    def _buildBatchNavigator(self):
+        return BatchNavigator(self._getSelectedPOTMsgSets(),
+                              self.request, size=self.DEFAULT_SIZE)
 
-    def _buildRedirectParams(self):
-        parameters = BaseTranslationView._buildRedirectParams(self)
-        if self.show and self.show != self.DEFAULT_SHOW:
-            parameters['show'] = self.show
-        return parameters
+    def _initializeSubViews(self):
+        self.pomsgset_views = []
+        for potmsgset in self.batchnav.currentBatch():
+            self.pomsgset_views.append(self._buildPOMsgSetView(potmsgset))
 
-    def _submit_translations(self):
+    def _submitTranslations(self):
         """Handle a form submission to store new translations."""
         for key in self.request.form:
             match = re.match('msgset_(\d+)$', key)
@@ -310,7 +306,7 @@ class POFileTranslateView(BaseTranslationView):
             if pomsgset is None:
                 pomsgset = self.pofile.createMessageSetFromText(msgid_text)
 
-            error = self._store_translations(pomsgset)
+            error = self._storeTranslations(pomsgset)
             if error and pomsgset.sequence > 0:
                 # There is an error, we should store this view to render them.
                 # If potmsgset.sequence == 0 means that that message set is
@@ -337,6 +333,12 @@ class POFileTranslateView(BaseTranslationView):
         else:
             self._redirectToNextPage()
 
+    def _buildRedirectParams(self):
+        parameters = BaseTranslationView._buildRedirectParams(self)
+        if self.show and self.show != self.DEFAULT_SHOW:
+            parameters['show'] = self.show
+        return parameters
+
     #
     # Specific methods
     #
@@ -348,7 +350,9 @@ class POFileTranslateView(BaseTranslationView):
         pomsgset = potmsgset.getPOMsgSet(language.code, variant)
         if pomsgset is None:
             pomsgset = potmsgset.getDummyPOMsgSet(language.code, variant)
-        pomsgset_view = getView(pomsgset, "+translate-one", self.request)
+
+        pomsgset_view = zapi.queryMultiAdapter(
+            (pomsgset, self.request), name="+translate-one")
         self._prepareView(pomsgset_view, pomsgset,
                           self.errors.get(pomsgset.potmsgset))
         return pomsgset_view

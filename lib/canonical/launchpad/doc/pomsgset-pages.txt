@@ -78,7 +78,7 @@ It does not have a plural msgid.
 
 And thus, it only has one translation.
 
-    >>> pomsgset_view.translation_range
+    >>> pomsgset_view.pluralform_indexes
     [0]
 
 Which is the one we wanted.

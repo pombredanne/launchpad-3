@@ -21,7 +21,8 @@ from zope.app.form import CustomWidgetFactory
 from zope.app.form.utility import setUpWidgets
 from zope.app.form.browser import DropdownWidget
 from zope.app.form.interfaces import IInputWidget
-from zope.component import getUtility, getView
+from zope.component import getUtility
+from zope.app import zapi
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
@@ -41,20 +42,21 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 #
 
 def contract_rosetta_tabs(text):
-    """Replace Rosetta representation of tab characters with their native form."""
+    """Replace Rosetta representation of tabs with their native characters."""
     return helpers.text_replaced(text, {'[tab]': '\t', r'\[tab]': '[tab]'})
 
 
 def expand_rosetta_tabs(unicode_text):
     """Replace tabs with their Rosetta representation."""
-    return helpers.text_replaced(unicode_text, {u'\t': u'[tab]', u'[tab]': ur'\[tab]'})
+    return helpers.text_replaced(unicode_text,
+                                 {u'\t': u'[tab]', u'[tab]': ur'\[tab]'})
 
 
 def msgid_html(text, flags, space=TranslationConstants.SPACE_CHAR,
                newline=TranslationConstants.NEWLINE_CHAR):
-    r"""Convert a message ID to a HTML representation."""
-    lines = []
+    """Convert a message ID to a HTML representation."""
 
+    lines = []
     # Replace leading and trailing spaces on each line with special markup.
     for line in xml_escape(text).split('\n'):
         # Pattern:
@@ -98,6 +100,8 @@ def msgid_html(text, flags, space=TranslationConstants.SPACE_CHAR,
 
     # Replace newlines and tabs with their respective representations.
     html = expand_rosetta_tabs(newline.join(lines))
+    # XXX: why does this just replace the tabs with constants?!
+    #    -- kiko, 2006-09-23
     html = helpers.text_replaced(html, {
         '[tab]': TranslationConstants.TAB_CHAR,
         r'\[tab]': TranslationConstants.TAB_CHAR_ESCAPED
@@ -360,6 +364,7 @@ class BaseTranslationView(LaunchpadView):
 
         self.redirecting = False
         self.tabindex = self.TabIndex()
+
         # XXX: describe how these work
         self.form_posted_translations = {}
         self.form_posted_needsreview = {}
@@ -387,32 +392,40 @@ class BaseTranslationView(LaunchpadView):
         self._initializeAltLanguage()
 
         # XXX: why here, because of redirect in process_form
-        self._initializeBatching()
+        self.batchnav = self._buildBatchNavigator()
         self.start = self.batchnav.start
         self.size = self.batchnav.currentBatch().size
 
-        self._process_form()
+        if self.request.method == 'POST' and self.user is not None:
+            self._submitTranslations()
+
+        self._initializeSubViews()
 
     #
     # API Hooks
     #
 
-    def _initializeBatching(self):
+    def _buildBatchNavigator(self):
         """XXX"""
         raise NotImplementedError
 
-    def _submit_translations(self):
+    def _initializeSubViews(self):
         """XXX"""
+        raise NotImplementedError
+
+    def _submitTranslations(self):
+        """XXX needs to call _storeTranslations, set up errors, can call
+        _redirectToNextPage"""
         raise NotImplementedError
 
     #
     # Helper methods that should be used for POMsgSetView.prepare() and
-    # _submit_translations().
+    # _submitTranslations().
     #
 
-    def _store_translations(self, pomsgset):
+    def _storeTranslations(self, pomsgset):
         """XXX"""
-        self._extract_form_posted_translations(pomsgset)
+        self._extractFormPostedTranslations(pomsgset)
         translations = self.form_posted_translations[pomsgset]
         if not translations:
             # A post with no content -- nothing to be done. I'm not sure
@@ -432,7 +445,9 @@ class BaseTranslationView(LaunchpadView):
 
     def _prepareView(self, pomsgset_view, pomsgset, error):
         """XXX"""
-        # XXX: we should try and assert this method is not called before _process_form
+        # XXX: it would be nice if we could easily check if
+        # this is being called in the right order, after
+        # _storeTranslations(). -- kiko, 2006-0-27
         if self.form_posted_translations.has_key(pomsgset):
             translations = self.form_posted_translations[pomsgset]
         else:
@@ -491,13 +506,7 @@ class BaseTranslationView(LaunchpadView):
         # plural form information for this language.
         return True
 
-    def _process_form(self):
-        if self.request.method != 'POST' or self.user is None:
-            # The form was not submitted or the user is not logged in.
-            return
-        self._submit_translations()
-
-    def _extract_form_posted_translations(self, pomsgset):
+    def _extractFormPostedTranslations(self, pomsgset):
         """Parse the form submitted to the translation widget looking for
         translations.
 
@@ -602,6 +611,10 @@ class BaseTranslationView(LaunchpadView):
             next_url = ''
         self._redirect(next_url)
 
+    #
+    # LaunchpadView API
+    #
+
     def render(self):
         if self.redirecting:
             return u''
@@ -617,20 +630,21 @@ class POMsgSetPageView(BaseTranslationView):
         # XXX: describe
         self.error = None
         BaseTranslationView.initialize(self)
-        self.pomsgset_view = getView(self.context, "+translate-one-zoomed",
-                                     self.request)
-        self._prepareView(self.pomsgset_view, self.context, self.error)
 
     #
     # BaseTranslationView API
     #
 
-    def _initializeBatching(self):
-        # Setup the batching for this page.
-        self.batchnav = POTMsgSetBatchNavigator(self.pofile.potemplate.getPOTMsgSets(),
-                                                self.request, size=1)
+    def _buildBatchNavigator(self):
+        return POTMsgSetBatchNavigator(self.pofile.potemplate.getPOTMsgSets(),
+                                       self.request, size=1)
 
-    def _submit_translations(self):
+    def _initializeSubViews(self):
+        self.pomsgset_view = zapi.queryMultiAdapter(
+            (self.context, self.request), name="+translate-one-zoomed")
+        self._prepareView(self.pomsgset_view, self.context, self.error)
+
+    def _submitTranslations(self):
         """Handle a form submission for the translation form.
 
         The form contains translations, some of which will be unchanged, some
@@ -639,7 +653,7 @@ class POMsgSetPageView(BaseTranslationView):
         submitted message sets, where each message set will have information
         on any validation errors it has.
         """
-        self.error = self._store_translations(self.context)
+        self.error = self._storeTranslations(self.context)
 
         # This page is being rendered as a single message view.
         if self.error:
@@ -666,7 +680,7 @@ class POMsgSetView(LaunchpadView):
     # self.second_lang_potmsgset
     # self.msgids
     # self.submission_blocks
-    # self.translation_range
+    # self.pluralform_indexes
 
     def prepare(self, translations, is_fuzzy, error, tabindex, second_lang_code):
         self.translations = translations
@@ -689,20 +703,27 @@ class POMsgSetView(LaunchpadView):
                     pass
 
     def initialize(self):
-        # XXX: to avoid the use of python in the view, we'd need objects
-        # to hold the data representing a pomsgset translation for a
-        # plural form.
+        # XXX: the heart of the optimization problem here is that
+        # _buildAllSubmissions() is very expensive. We need to move to
+        # building submissions and active texts in one fell swoop in the
+        # parent view, and then supplying them all via prepare(). This
+        # would cut the number of (expensive) queries per-page by an
+        # order of 30. -- kiko, 2006-09-27
+
         # XXX: document this builds translations, msgids and suggestions
         self.msgids = helpers.shortlist(self.context.potmsgset.getPOMsgIDs())
         assert len(self.msgids) > 0, (
             'Found a POTMsgSet without any POMsgIDSighting')
 
         self.submission_blocks = {}
-        # XXX: s/translation_range/pluralform_indexes/
-        self.translation_range = range(len(self.translations))
-        for index in self.translation_range:
+        self.pluralform_indexes = range(len(self.translations))
+        for index in self.pluralform_indexes:
             wiki, elsewhere, suggested, alt_submissions = self._buildAllSubmissions(index)
             self.submission_blocks[index] = [wiki, elsewhere, suggested, alt_submissions]
+
+        # XXX: to avoid the use of python in the view, we'd need objects
+        # to hold the data representing a pomsgset translation for a
+        # plural form.
 
     def _buildAllSubmissions(self, index):
         active = set([self.translations[index]])
@@ -752,7 +773,7 @@ class POMsgSetView(LaunchpadView):
         exists, it will have a None value. If the potmsgset is not a plural
         form one, we only have one entry.
         """
-        if index in self.translation_range:
+        if index in self.pluralform_indexes:
             translation = self.translations[index]
             # We store newlines as '\n', '\r' or '\r\n', depending on the
             # msgid but forms should have them as '\r\n' so we need to change
