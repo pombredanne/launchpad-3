@@ -313,7 +313,9 @@ class BugTaskView(LaunchpadView):
 
     def userIsSubscribed(self):
         """Is the user subscribed to this bug?"""
-        return self.context.bug.isSubscribed(self.user)
+        return (
+            self.context.bug.isSubscribed(self.user) or
+            self.context.bug.isSubscribedToDupes(self.user))
 
     def render(self):
         # Prevent normal rendering when redirecting to the bug list
@@ -365,9 +367,11 @@ class BugTaskView(LaunchpadView):
             self._handleUnsubscribeOtherUser(user)
 
     def _handleUnsubscribeCurrentUser(self):
-        # Handle unsubscribing the current user, which requires
-        # special-casing when the bug is private.
+        # Handle unsubscribing the current user, which requires special-casing
+        # when the bug is private. The user must be unsubscribed from all dupes
+        # too, or they would keep getting mail about this bug!
         self.context.bug.unsubscribe(self.user)
+        self.context.bug.unsubscribeFromDupes(self.user)
 
         if helpers.check_permission("launchpad.View", self.context.bug):
             # The user still has permission to see this bug, so no
@@ -392,7 +396,11 @@ class BugTaskView(LaunchpadView):
         assert user != self.user, (
             "Expected a user other than the currently logged-in user.")
 
+        # We'll also unsubscribe the other user from dupes of this bug,
+        # otherwise they'll keep getting this bug's mail.
         self.context.bug.unsubscribe(user)
+        self.context.bug.unsubscribeFromDupes(user)
+
         self.notices.append(
             "%s has been unsubscribed from this bug." %
             cgi.escape(user.displayname))

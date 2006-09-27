@@ -34,22 +34,39 @@ this.
   >>> browser.url
   'http://localhost/products/firefox/+bug/1/'
 
-  >>> from BeautifulSoup import BeautifulSoup
-  >>> soup = BeautifulSoup(browser.contents)
-  >>> for p_tag in soup('p', 'informational message'):
-  ...   print p_tag.string
+  >>> from canonical.launchpad.ftests.test_pages import find_tags_by_class
+  >>> for tag in find_tags_by_class(browser.contents, "informational message"):
+  ...   print tag.string
   You have been subscribed to this bug.
 
-  >>> def print_subscribers(bug_page):
+  >>> DIRECT_SUBS_PORTLET_INDEX = 0
+  >>> INDIRECT_SUBS_PORTLET_INDEX = 1
+
+  >>> def print_direct_subscribers(bug_page):
+  ...     print_subscribers(bug_page, DIRECT_SUBS_PORTLET_INDEX)
+
+  >>> def print_indirect_subscribers(bug_page):
+  ...     print_subscribers(bug_page, INDIRECT_SUBS_PORTLET_INDEX)
+
+  >>> def print_subscribers(bug_page, subscriber_portlet_index):
   ...     """Print the subscribers listed in the subscriber portlet."""
-  ...     soup = BeautifulSoup(bug_page)
-  ...     subscriber_portlet_headers = soup.fetchText(
-  ...        'Subscribers to bug 1:')
-  ...     assert len(subscriber_portlet_headers) == 1
-  ...     subscriber_portlet = subscriber_portlet_headers[0].parent.parent
-  ...     for li in subscriber_portlet.fetch('ul', 'people')[0].fetch('li'):
-  ...         print li.a.string
-  >>> print_subscribers(browser.contents)
+  ...     import re
+  ...     from canonical.launchpad.ftests.test_pages import find_portlet
+  ...     bug_id = re.search(r"bug #(\d+)", bug_page, re.IGNORECASE).group(1)
+  ...     subscriber_portlet = find_portlet(
+  ...         bug_page, 'Subscribers to bug %s:' % bug_id)
+  ...     try:
+  ...         portlet = subscriber_portlet.fetch(
+  ...             'ul', "people")[subscriber_portlet_index]
+  ...     except IndexError:
+  ...         # No portlet with this index, as can happen if there are
+  ...         # no indirect subscribers, so just print an empty string
+  ...         print ""
+  ...     else:
+  ...         for li in portlet.fetch('li'):
+  ...             if li.a:
+  ...                 print li.a.string
+  >>> print_direct_subscribers(browser.contents)
   Steve Alexander
   Sample Person
   Foo Bar
@@ -76,9 +93,8 @@ the user this time, and inform the user.
   >>> browser.url
   'http://localhost/products/firefox/+bug/1/'
 
-  >>> soup = BeautifulSoup(browser.contents)
-  >>> for p_tag in soup('p', 'informational message'):
-  ...   print p_tag.string
+  >>> for tag in find_tags_by_class(browser.contents, 'informational message'):
+  ...   print tag.string
   You have been unsubscribed from this bug.
 
   >>> subscribe_link = browser.getLink('Subscribe')
@@ -97,7 +113,7 @@ first subscribing one of Foo Bar's teams.
   >>> browser.url
   'http://localhost/products/firefox/+bug/1'
 
-  >>> print_subscribers(browser.contents)
+  >>> print_direct_subscribers(browser.contents)
   Steve Alexander
   Sample Person
   Launchpad Developers
@@ -127,12 +143,11 @@ Let's unsubscribe the Launchpad team.
   >>> browser.url
   'http://localhost/products/firefox/+bug/1/'
 
-  >>> soup = BeautifulSoup(browser.contents)
-  >>> for p_tag in soup('p', 'informational message'):
-  ...   print p_tag.string
+  >>> for tag in find_tags_by_class(browser.contents, 'informational message'):
+  ...   print tag.string
   Launchpad Developers has been unsubscribed from this bug.
 
-  >>> print_subscribers(browser.contents)
+  >>> print_direct_subscribers(browser.contents)
   Steve Alexander
   Sample Person
 
@@ -154,13 +169,12 @@ that page and press the Cancel button, we will return to the bug page.
   >>> cancel_button.click()
   >>> browser.url
   'http://localhost/products/firefox/+bug/1/'
-  >>> soup = BeautifulSoup(browser.contents)
 
 Foo Bar wasn't subscribed to the bug.
 
-  >>> len(soup('p', 'informational message'))
+  >>> len(find_tags_by_class(browser.contents, 'informational message'))
   0
-  >>> print_subscribers(browser.contents)
+  >>> print_direct_subscribers(browser.contents)
   Steve Alexander
   Sample Person
 
@@ -169,7 +183,7 @@ Subscriptions and Duplicate Bugs
 
 Because we auto-subscribe users that are directly subscribed to dupes of
 a bug, we give the option to unsubscribe from dupe target bugs. Behind
-the scenes, this is just unsubscribing the user from the duplicate of
+the scenes, this is just unsubscribing the user from the duplicate(s) of
 this bug that caused us to auto-subscribe them.
 
 For example, Steve Alexander can currently subscribe to bug #3.
@@ -190,7 +204,7 @@ For example, Steve Alexander can currently subscribe to bug #3.
 
 Bug if bug #2, a bug that Steve is directly subscribed to, is marked as
 a dupe of bug #3, then Steve gets indirectly subscribed to bug #3, and
-is presented with the Unsubscribe link.
+is presented with the Unsubscribe link instead.
 
   >>> stevea_browser.open(
   ...     "http://launchpad.dev/products/ubuntu-product/+bug/2/+duplicate")
@@ -199,6 +213,9 @@ is presented with the Unsubscribe link.
   >>> stevea_browser.getControl("Change").click()
 
   >>> stevea_browser.open("http://launchpad.dev/bugs/3")
+
+  >>> print_indirect_subscribers(stevea_browser.contents)
+  Steve Alexander
 
   >>> unsubscribe_link = stevea_browser.getLink("Unsubscribe")
 
@@ -212,7 +229,62 @@ dupe of bug #3, so he'll no longer get mail from bug #3.
 
   >>> stevea_browser.getControl("Continue").click()
 
-  >>> soup = BeautifulSoup(stevea_browser.contents)
-  >>> for p_tag in soup('p', 'informational message'):
-  ...   print p_tag.string
-  You have been unsubscribed from this bug.
+XXX, Brad Bollenbach, 2006-09-27: Printing the tag here, instead of
+tag.string, due to https://launchpad.net/bugs/62634
+
+  >>> for tag in find_tags_by_class(
+  ...     stevea_browser.contents, 'informational message'):
+  ...   print tag
+  <p...You have been unsubscribed from this bug...
+  <p...id="number_of_dupes"...
+
+(There are no longer any indirect subscribers, because Steve was
+unsubscribed from the dupes and thus is no longer indirectly subscribed
+to bug #3.)
+
+  >>> print_indirect_subscribers(stevea_browser.contents)
+
+This unsubscribe behaviour is team-aware too, so you can unsubscribe
+your teams from a bug, even when the team's subscription comes from a
+duplicate. For example, let's login as Foo Bar, subscribe ubuntu-team to
+bug #2, and notice how bug #3's indirect subscriptions are update to
+include that team.
+
+  >>> foobar_browser = Browser()
+  >>> foobar_browser.handleErrors = False
+  >>> foobar_browser.addHeader(
+  ...     "Authorization", "Basic foo.bar@canonical.com:test")
+
+  >>> foobar_browser.open("http://launchpad.dev/bugs/2")
+  >>> foobar_browser.getLink("Subscribe Someone Else").click()
+  >>> foobar_browser.getControl("Person").value = "ubuntu-team"
+  >>> foobar_browser.getControl("Add").click()
+
+  >>> foobar_browser.open("http://launchpad.dev/bugs/3")
+
+  >>> print_indirect_subscribers(foobar_browser.contents)
+  Ubuntu Team
+
+The subscribe link for Foo Bar now says "Subscribe/Unsubscribe", because
+Foo Bar can subscribe himself directly to this bug, or unsubscribe
+ubuntu-team.
+
+  >>> subscribe_link = foobar_browser.getLink("Subscribe/Unsubscribe")
+  >>> subscribe_link.click()
+
+Foo Bar can unsubscribe ubuntu-team, and ubuntu-team will no longer show
+up in the indirect subscriptions.
+
+  >>> subscription_field = foobar_browser.getControl(name="field.subscription")
+  >>> subscription_field.value = ["ubuntu-team"]
+  >>> foobar_browser.getControl("Continue").click()
+
+  >>> for tag in find_tags_by_class(
+  ...     foobar_browser.contents, 'informational message'):
+  ...   print tag
+  <p...Ubuntu Team has been unsubscribed from this bug...
+  <p...id="number_of_dupes"...
+
+(ubuntu-team is no longer an indirect subscriber.)
+
+  >>> print_indirect_subscribers(foobar_browser.contents)
