@@ -10,7 +10,7 @@
     <input
       type="hidden"
       tal:attributes="
-      name string:msgset_${view/potmsgset/id}"
+      name string:msgset_${context/potmsgset/id}"
       />
   </td>
   <th style="border-style: dotted; border-width: 1px 0 0;">
@@ -90,9 +90,7 @@
       src="/@@/info"
       title="This note was provided by the software developer."
       />
-    <span
-      tal:content="view/source_comment"
-      tal:omit-tag="">
+    <span tal:replace="view/source_comment">
       This refers to the content type.
     </span>
   </td>
@@ -109,12 +107,12 @@
   </td>
 </tr>
 <tal:language-code
-  define="language_code view/pofile_language/code">
+  define="language_code context/pofile/language/code">
   <tal:plural-forms repeat="index view/translation_range">
     <tr class="secondary">
       <th colspan="3">
         <label class="language-code">
-          <span tal:replace="view/pofile_language/englishname">
+          <span tal:replace="context/pofile/language/englishname">
             Welsh
           </span>:
         </label>
@@ -132,11 +130,11 @@
           type="text"
           tal:condition="not:view/is_multi_line"
           tal:attributes="
-            name string:msgset_${view/potmsgset/id}_${language_code}_translation_${index};
+            name string:msgset_${context/potmsgset/id}_${language_code}_translation_${index};
             value python:view.getTranslation(index);
             tabindex view/tabindex/next;
-            lang view/pofile_language/dashedcode;
-            dir view/pofile_language/abbreviated_text_dir;
+            lang context/pofile/language/dashedcode;
+            dir context/pofile/language/abbreviated_text_dir;
             " />
         <tal:block condition="view/is_multi_line">
           <tal:comment tal:replace="nothing">
@@ -153,11 +151,11 @@
             <textarea
               style="width: 100%;"
               tal:attributes="
-                name string:msgset_${view/potmsgset/id}_${language_code}_translation_${index};
+                name string:msgset_${context/potmsgset/id}_${language_code}_translation_${index};
                 rows view/max_lines_count;
                 tabindex view/tabindex/next;
-                lang view/pofile_language/dashedcode;
-                dir view/pofile_language/abbreviated_text_dir;
+                lang context/pofile/language/dashedcode;
+                dir context/pofile/language/abbreviated_text_dir;
                 ">
 <tal:content replace="python:view.getTranslation(index)" /></textarea>
           </tal:with-content>
@@ -174,11 +172,11 @@
             <textarea
               style="width: 100%;"
               tal:attributes="
-                name string:msgset_${view/potmsgset/id}_${language_code}_translation_${index};
+                name string:msgset_${context/potmsgset/id}_${language_code}_translation_${index};
                 rows view/max_lines_count;
                 tabindex view/tabindex/next;
-                lang view/pofile_language/dashedcode;
-                dir view/pofile_language/abbreviated_text_dir;
+                lang context/pofile/language/dashedcode;
+                dir context/pofile/language/abbreviated_text_dir;
                 "></textarea>
           </tal:without-content>
         </tal:block>
@@ -217,7 +215,7 @@
             value="fuzzy"
             tal:attributes="
               checked view/is_fuzzy;
-              name string:msgset_${view/potmsgset/id}_${language_code}_needsreview;
+              name string:msgset_${context/potmsgset/id}_${language_code}_needsreview;
               tabindex view/tabindex/next
               " />
           <tal:block condition="not:view/is_plural">

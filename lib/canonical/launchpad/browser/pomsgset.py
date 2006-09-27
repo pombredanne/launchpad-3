@@ -333,6 +333,10 @@ class POMsgSetIndexView:
 class BaseTranslationView(LaunchpadView):
     """XXX"""
 
+    # There will never be 100 plural forms.  Usually, we'll be iterating
+    # over just two or three.
+    MAX_PLURAL_FORMS = 100
+
     class TabIndex:
         """XXX"""
         def __init__(self):
@@ -354,11 +358,11 @@ class BaseTranslationView(LaunchpadView):
                 be stored and reviewed for acceptance later by the
                 designated translators.""")
 
-        self.tabindex = self.TabIndex()
         self.redirecting = False
-
-        self._initializeBatching()
-        self._initializeAltLanguage()
+        self.tabindex = self.TabIndex()
+        # XXX: describe how these work
+        self.form_posted_translations = {}
+        self.form_posted_needsreview = {}
 
         if not self.has_plural_form_information:
             # Cannot translate this IPOFile without the plural form
@@ -380,6 +384,13 @@ class BaseTranslationView(LaunchpadView):
             """ % self.pofile.language.englishname)
             return
 
+        self._initializeAltLanguage()
+
+        # XXX: why here, because of redirect in process_form
+        self._initializeBatching()
+        self.start = self.batchnav.start
+        self.size = self.batchnav.currentBatch().size
+
         self._process_form()
 
     #
@@ -395,7 +406,46 @@ class BaseTranslationView(LaunchpadView):
         raise NotImplementedError
 
     #
+    # Helper methods that should be used for POMsgSetView.prepare() and
+    # _submit_translations().
     #
+
+    def _store_translations(self, pomsgset):
+        """XXX"""
+        self._extract_form_posted_translations(pomsgset)
+        translations = self.form_posted_translations[pomsgset]
+        if not translations:
+            # A post with no content -- nothing to be done. I'm not sure
+            # this could be an UnexpectedFormData..
+            return None
+        is_fuzzy = self.form_posted_needsreview.get(pomsgset, False)
+
+        try:
+            pomsgset.updateTranslationSet(person=self.user,
+                new_translations=translations, fuzzy=is_fuzzy, published=False)
+        except gettextpo.error, e:
+            # Save the error message gettext gave us to show it to the
+            # user.
+            return str(e)
+        else:
+            return None
+
+    def _prepareView(self, pomsgset_view, pomsgset, error):
+        """XXX"""
+        # XXX: we should try and assert this method is not called before _process_form
+        if self.form_posted_translations.has_key(pomsgset):
+            translations = self.form_posted_translations[pomsgset]
+        else:
+            translations = pomsgset.active_texts
+        if self.form_posted_needsreview.has_key(pomsgset):
+            is_fuzzy = self.form_posted_needsreview[pomsgset]
+        else:
+            is_fuzzy = pomsgset.isfuzzy
+        pomsgset_view.prepare(translations, is_fuzzy, error, self.tabindex,
+                              self.second_lang_code)
+
+    #
+    # Internals
     #
 
     def _initializeAltLanguage(self):
@@ -410,9 +460,8 @@ class BaseTranslationView(LaunchpadView):
             try:
                 alternative_language = getUtility(ILanguageSet)[second_lang_code]
             except NotFoundError:
-                alternative_language = None
-
-            if alternative_language:
+                pass
+            else:
                 initial_values['alternative_language'] = alternative_language
 
         self.alternative_language_widget = CustomWidgetFactory(CustomDropdownWidget)
@@ -421,11 +470,17 @@ class BaseTranslationView(LaunchpadView):
             names=['alternative_language'], initial=initial_values)
 
         if not second_lang_code and self.pofile.language.alt_suggestion_language:
+            # If there's a standard suggested language and no other
+            # language was provided, show it off.
+            # XXX: this is actually half-wrong, since it will appear
+            # selected in the dropdown in subsequent pages. We'd need to
+            # store the alternate_language separately to deal with
+            # this..
             second_lang_code = self.pofile.language.alt_suggestion_language.code
 
-        # XXX: would self.alternative_language be more useful?
+        # We store second_lang_code for use in hidden inputs in the
+        # other forms in the translation pages.
         self.second_lang_code = second_lang_code
-
 
     @property
     def has_plural_form_information(self):
@@ -441,6 +496,65 @@ class BaseTranslationView(LaunchpadView):
             # The form was not submitted or the user is not logged in.
             return
         self._submit_translations()
+
+    def _extract_form_posted_translations(self, pomsgset):
+        """Parse the form submitted to the translation widget looking for
+        translations.
+
+        Store the new translations at self.form_posted_translations and its
+        status at self.form_posted_needsreview.
+
+        In this method, we look for various keys in the form, and use them as
+        follows:
+
+        - 'msgset_ID' to know if self is part of the submitted form. If it
+          isn't found, we stop parsing the form and return.
+        - 'msgset_ID_LANGCODE_translation_PLURALFORM': Those will be the
+          submitted translations and we will have as many entries as plural
+          forms the language self.context.language has.
+        - 'msgset_ID_LANGCODE_needsreview': If present, will note that the
+          'needs review' flag has been set for the given translations.
+
+        In all those form keys, 'ID' is the ID of the POTMsgSet.
+        """
+        potmsgset_ID = pomsgset.potmsgset.id
+        language_code = pomsgset.pofile.language.code
+
+        msgset_ID = 'msgset_%d' % potmsgset_ID
+        if msgset_ID not in self.request.form:
+            # If this form does not have data about the msgset id, then
+            # do nothing at all.
+            return
+
+        msgset_ID_LANGCODE_needsreview = 'msgset_%d_%s_needsreview' % (
+            potmsgset_ID, language_code)
+
+        self.form_posted_needsreview[pomsgset] = (
+            msgset_ID_LANGCODE_needsreview in self.request.form)
+
+        # Note the trailing underscore: we append the plural form number later.
+        msgset_ID_LANGCODE_translation_ = 'msgset_%d_%s_translation_' % (
+            potmsgset_ID, language_code)
+
+        # Extract the translations from the form, and store them in
+        # self.form_posted_translations. We try plural forms in turn,
+        # starting at 0.
+        for pluralform in xrange(self.MAX_PLURAL_FORMS):
+            msgset_ID_LANGCODE_translation_PLURALFORM = '%s%s' % (
+                msgset_ID_LANGCODE_translation_, pluralform)
+            if msgset_ID_LANGCODE_translation_PLURALFORM not in self.request.form:
+                # Stop when we reach the first plural form which is
+                # missing from the form.
+                break
+
+            raw_value = self.request.form[msgset_ID_LANGCODE_translation_PLURALFORM]
+            value = contract_rosetta_tabs(raw_value)
+
+            if not self.form_posted_translations.has_key(pomsgset):
+                self.form_posted_translations[pomsgset] = {}
+            self.form_posted_translations[pomsgset][pluralform] = value
+        else:
+            raise AssertionError("More than 100 plural forms were submitted!")
 
     #
     # Redirection
@@ -473,6 +587,21 @@ class BaseTranslationView(LaunchpadView):
 
         self.request.response.redirect(new_url)
 
+    def _redirectToNextPage(self):
+        # update the statistics for this po file
+        # XXX: performance issue?
+        self.pofile.updateStatistics()
+
+        next_url = self.batchnav.nextBatchURL()
+        if next_url is None or next_url == '':
+            # We are already at the end of the batch, forward to the
+            # first one.
+            next_url = self.batchnav.firstBatchURL()
+        if next_url is None:
+            # Stay in whatever URL we are atm.
+            next_url = ''
+        self._redirect(next_url)
+
     def render(self):
         if self.redirecting:
             return u''
@@ -485,17 +614,12 @@ class POMsgSetPageView(BaseTranslationView):
     __used_for__ = IPOMsgSet
     def initialize(self):
         self.pofile = self.context.pofile
-
+        # XXX: describe
+        self.error = None
         BaseTranslationView.initialize(self)
-
         self.pomsgset_view = getView(self.context, "+translate-one-zoomed",
                                      self.request)
-        # By default the submitted values are None
-        self.form_posted_translations = None
-        self.form_posted_needsreview = None
-        self.error = None
-        self.pomsgset_view.prepare(self.context.active_texts,
-             self.error, self.tabindex, self.second_lang_code)
+        self._prepareView(self.pomsgset_view, self.context, self.error)
 
     #
     # BaseTranslationView API
@@ -505,9 +629,6 @@ class POMsgSetPageView(BaseTranslationView):
         # Setup the batching for this page.
         self.batchnav = POTMsgSetBatchNavigator(self.pofile.potemplate.getPOTMsgSets(),
                                                 self.request, size=1)
-        current_batch = self.batchnav.currentBatch()
-        self.start = self.batchnav.start
-        self.size = current_batch.size
 
     def _submit_translations(self):
         """Handle a form submission for the translation form.
@@ -518,136 +639,15 @@ class POMsgSetPageView(BaseTranslationView):
         submitted message sets, where each message set will have information
         on any validation errors it has.
         """
-        # Extract the values from the form and set self.form_posted_translations
-        # and self.form_posted_needsreview.
-        self._extract_form_posted_translations()
+        self.error = self._store_translations(self.context)
 
-        if self.form_posted_translations is None:
-            # We are in a the single message view, we don't have a
-            # filtering option.
-            next_url = self.batchnav.nextBatchURL()
-            if next_url is None or next_url == '':
-                # We are already at the end of the batch, forward to the
-                # first one.
-                next_url = self.batchnav.firstBatchURL()
-            if next_url is None:
-                # Stay in whatever URL we are atm.
-                next_url = ''
-            self._redirect(next_url)
-
-        has_translations = False
-        for form_posted_translation_key in self.form_posted_translations.keys():
-            if self.form_posted_translations[form_posted_translation_key] != '':
-                has_translations = True
-                break
-
-        if has_translations:
-            try:
-                self.context.updateTranslationSet(
-                    person=self.user,
-                    new_translations=self.form_posted_translations,
-                    fuzzy=self.form_posted_needsreview,
-                    published=False)
-
-                # update the statistis for this po file
-                self.context.pofile.updateStatistics()
-            except gettextpo.error, e:
-                # Save the error message gettext gave us to show it to the
-                # user.
-                self.error = str(e)
         # This page is being rendered as a single message view.
-        if self.error is None:
-            # There are no errors, we should jump to the next message.
-            next_url = self.batchnav.nextBatchURL()
-            if next_url is None or next_url == '':
-                # We are already at the end of the batch, forward to the
-                # first one.
-                next_url = self.batchnav.firstBatchURL()
-            if next_url is None:
-                # Stay in whatever URL we are atm.
-                next_url = ''
-            self._redirect(next_url)
-        else:
-            # Notify the errors.
+        if self.error:
             self.request.response.addErrorNotification(
-                "There is an error in the translation you provided."
-                " Please, correct it before continuing.")
-
-    #
-    #
-    #
-
-    def _extract_form_posted_translations(self):
-        """Parse the form submitted to the translation widget looking for
-        translations.
-
-        Store the new translations at self.form_posted_translations and its
-        status at self.form_posted_needsreview.
-
-        In this method, we look for various keys in the form, and use them as
-        follows:
-
-        - 'msgset_ID' to know if self is part of the submitted form. If it
-          isn't found, we stop parsing the form and return.
-        - 'msgset_ID_LANGCODE_translation_PLURALFORM': Those will be the
-          submitted translations and we will have as many entries as plural
-          forms the language self.context.language has.
-        - 'msgset_ID_LANGCODE_needsreview': If present, will note that the
-          'needs review' flag has been set for the given translations.
-
-        In all those form keys, 'ID' is self.context.potmsgset.id.
-        """
-        msgset_ID = 'msgset_%d' % self.context.potmsgset.id
-        msgset_ID_LANGCODE_needsreview = 'msgset_%d_%s_needsreview' % (
-            self.context.potmsgset.id, self.pofile.language.code)
-
-        # We will add the plural form number later.
-        msgset_ID_LANGCODE_translation_ = 'msgset_%d_%s_translation_' % (
-            self.context.potmsgset.id, self.pofile.language.code)
-
-        # If this form does not have data about the msgset id, then do nothing
-        # at all.
-        if msgset_ID not in self.form:
-            return
-
-        self.form_posted_translations = {}
-
-        self.form_posted_needsreview = (
-            msgset_ID_LANGCODE_needsreview in self.form)
-
-        # Extract the translations from the form, and store them in
-        # self.form_posted_translations .
-
-        # There will never be 100 plural forms.  Usually, we'll be iterating
-        # over just two or three.
-        # We try plural forms in turn, starting at 0, and leave the loop as
-        # soon as we don't find a translation for a plural form.
-        for pluralform in xrange(100):
-            msgset_ID_LANGCODE_translation_PLURALFORM = '%s%s' % (
-                msgset_ID_LANGCODE_translation_, pluralform)
-            if msgset_ID_LANGCODE_translation_PLURALFORM not in self.form:
-                break
-            value = self.form[msgset_ID_LANGCODE_translation_PLURALFORM]
-            self.form_posted_translations[pluralform] = (
-                contract_rosetta_tabs(value))
+                "There is an error in the translation you provided. "
+                "Please correct it before continuing.")
         else:
-            raise AssertionError("There were more than 100 plural forms!")
-
-    def _prepare_translations_crap_to_do_with_form_posts(self):
-        if self.form_posted_translations is None:
-            self.form_posted_translations = {}
-
-        # Fill the list of translations based on the input the user
-        # submitted.
-        form_posted_translations_keys = self.form_posted_translations.keys()
-        form_posted_translations_keys.sort()
-        self.translations = [
-            self.form_posted_translations[form_posted_translations_key]
-            for form_posted_translations_key in form_posted_translations_keys]
-
-        if not self.translations:
-            # We didn't get any translation from the website.
-            self.translations = self.context.active_texts
+            self._redirectToNextPage()
 
 
 class POMsgSetView(LaunchpadView):
@@ -662,25 +662,19 @@ class POMsgSetView(LaunchpadView):
 
     # self.translations
     # self.error
-    # self._table_index_value
-    # self.form_posted_needsreview
-    # self.second_lang_potmsgset
     # self.sec_lang
-    # self.potmsgset
-    # self.pofile
-    # self.pofile_language
+    # self.second_lang_potmsgset
     # self.msgids
     # self.submission_blocks
     # self.translation_range
 
-    def prepare(self, translations, error, tabindex, second_lang_code):
+    def prepare(self, translations, is_fuzzy, error, tabindex, second_lang_code):
         self.translations = translations
         self.error = error
+        self.is_fuzzy = is_fuzzy
         self.tabindex = tabindex
-        # XXX: do properly
-        self.form_posted_needsreview = False
 
-        # Set up alternative language
+        # Set up alternative language variables. These could be 
         self.sec_lang = None
         self.second_lang_potmsgset = None
         if second_lang_code is not None:
@@ -696,17 +690,15 @@ class POMsgSetView(LaunchpadView):
 
     def initialize(self):
         # XXX: to avoid the use of python in the view, we'd need objects
-        # to render whatever represents a translation for a plural form.
-        self.potmsgset = self.context.potmsgset
-        self.pofile = self.context.pofile
-        self.pofile_language = self.pofile.language
-
+        # to hold the data representing a pomsgset translation for a
+        # plural form.
         # XXX: document this builds translations, msgids and suggestions
-        self.msgids = helpers.shortlist(self.potmsgset.getPOMsgIDs())
+        self.msgids = helpers.shortlist(self.context.potmsgset.getPOMsgIDs())
         assert len(self.msgids) > 0, (
             'Found a POTMsgSet without any POMsgIDSighting')
 
         self.submission_blocks = {}
+        # XXX: s/translation_range/pluralform_indexes/
         self.translation_range = range(len(self.translations))
         for index in self.translation_range:
             wiki, elsewhere, suggested, alt_submissions = self._buildAllSubmissions(index)
@@ -808,13 +800,13 @@ class POMsgSetView(LaunchpadView):
     @cachedproperty
     def sequence(self):
         """Return the position number of this potmsgset."""
-        return self.potmsgset.sequence
+        return self.context.potmsgset.sequence
 
     @cachedproperty
     def msgid(self):
         """Return a msgid string prepared to render in a web page."""
         msgid = self.msgids[TranslationConstants.SINGULAR_FORM].msgid
-        return msgid_html(msgid, self.potmsgset.flags())
+        return msgid_html(msgid, self.context.potmsgset.flags())
 
     @property
     def msgid_plural(self):
@@ -824,7 +816,7 @@ class POMsgSetView(LaunchpadView):
         """
         if self.is_plural:
             msgid = self.msgids[TranslationConstants.PLURAL_FORM].msgid
-            return msgid_html(msgid, self.potmsgset.flags())
+            return msgid_html(msgid, self.context.potmsgset.flags())
         else:
             return None
 
@@ -858,7 +850,7 @@ class POMsgSetView(LaunchpadView):
     @property
     def source_comment(self):
         """Return the source code comments for this IPOMsgSet."""
-        return self.potmsgset.sourcecomment
+        return self.context.potmsgset.sourcecomment
 
     @property
     def comment(self):
@@ -868,16 +860,7 @@ class POMsgSetView(LaunchpadView):
     @property
     def file_references(self):
         """Return the file references for this IPOMsgSet."""
-        return self.potmsgset.filereferences
-
-    @property
-    def is_fuzzy(self):
-        """Return whether this pomsgset is set as fuzzy."""
-        # XXX?
-        if self.form_posted_needsreview is not None:
-            return self.form_posted_needsreview
-        else:
-            return self.context.isfuzzy
+        return self.context.potmsgset.filereferences
 
     @cachedproperty
     def zoom_url(self):
@@ -903,13 +886,14 @@ class POMsgSetView(LaunchpadView):
 
 
 class POMsgSetZoomedView(POMsgSetView):
+    """XXX"""
     @cachedproperty
     def zoom_url(self):
         # We are viewing this class directly from an IPOMsgSet, we should
         # point to the parent batch of messages.
         # XXX: preserve second_lang_code and other form parameters?
         pofile_batch_url = '+translate?start=%d' % (self.sequence - 1)
-        return '/'.join([canonical_url(self.pofile), pofile_batch_url])
+        return '/'.join([canonical_url(self.context.pofile), pofile_batch_url])
 
     @cachedproperty
     def zoom_alt(self):

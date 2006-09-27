@@ -258,15 +258,17 @@ class POFileTranslateView(BaseTranslationView):
     __used_for__ = IPOFile
 
     DEFAULT_SHOW = 'all'
+    DEFAULT_SIZE = 10
 
     def initialize(self):
         self.pofile = self.context
-        self.potmsgsets_with_errors = []
-        self.pomsgset_views = []
+        # XXX: describe
+        self.errors = {}
 
         self._initializeShowOption()
         BaseTranslationView.initialize(self)
 
+        self.pomsgset_views = []
         for potmsgset in self.batchnav.currentBatch():
             self.pomsgset_views.append(self._buildPOMsgSetView(potmsgset))
 
@@ -275,28 +277,20 @@ class POFileTranslateView(BaseTranslationView):
     #
 
     def _initializeBatching(self):
-        # Setup the batching for this page.
-        self.batchnav = BatchNavigator(self.getSelectedPOTMsgSets(),
-                                       self.request, size=10)
-        self.start = self.batchnav.start
-        current_batch = self.batchnav.currentBatch()
-        self.size = current_batch.size
+        self.batchnav = BatchNavigator(self._getSelectedPOTMsgSets(),
+                                       self.request, size=self.DEFAULT_SIZE)
 
     def _buildRedirectParams(self):
         parameters = BaseTranslationView._buildRedirectParams(self)
-        if self.show and self.show != 'all':
+        if self.show and self.show != self.DEFAULT_SHOW:
             parameters['show'] = self.show
         return parameters
 
     def _submit_translations(self):
         """Handle a form submission to store new translations."""
-        # First, we get the set of IPOTMsgSet objects submitted.
-        pofile = self.context
         for key in self.request.form:
             match = re.match('msgset_(\d+)$', key)
-
             if not match:
-                # The form's key is not one that we are looking for.
                 continue
 
             id = int(match.group(1))
@@ -306,21 +300,18 @@ class POFileTranslateView(BaseTranslationView):
                 # form instead of ours, and he uses a POTMsgSet id that
                 # does not exist for this POTemplate.
                 raise UnexpectedFormData(
-                    "Got translation for POTMsgID %d which is not in the"
-                    " template." % id)
+                    "Got translation for POTMsgID %d which is not in the "
+                    "template." % id)
 
             # Get hold of an appropriate message set in the PO file,
             # creating it if necessary.
             msgid_text = potmsgset.primemsgid_.msgid
-            pomsgset = pofile.getPOMsgSet(msgid_text, only_current=False)
+            pomsgset = self.pofile.getPOMsgSet(msgid_text, only_current=False)
             if pomsgset is None:
-                pomsgset = pofile.createMessageSetFromText(msgid_text)
+                pomsgset = self.pofile.createMessageSetFromText(msgid_text)
 
-            # Store this pomsgset inside the list of messages to process.
-            pomsgset_view = getView(pomsgset, "+translate-one", self.request)
-            # XXX: completely brokwn right now
-            if (pomsgset_view.error is not None and
-                pomsgset_view.context.potmsgset.sequence > 0):
+            error = self._store_translations(pomsgset)
+            if error and pomsgset.sequence > 0:
                 # There is an error, we should store this view to render them.
                 # If potmsgset.sequence == 0 means that that message set is
                 # not current anymore. This only happens as part of a race
@@ -331,31 +322,23 @@ class POFileTranslateView(BaseTranslationView):
                 # an error, we cannot render that error so we discard it, that
                 # translation is not being used anyway, so it's not a big
                 # lose.
-                self.potmsgsets_with_errors.append(pomsgset_view)
+                self.errors[pomsgset.potmsgset] = error
 
-        if len(self.potmsgsets_with_errors) == 0:
-            # Get the next set of message sets.
-            next_url = self.batchnav.nextBatchURL()
-            if next_url is None or next_url == '':
-                # We are already at the end of the batch, forward to the first
-                # one.
-                next_url = self.batchnav.firstBatchURL()
-            if next_url is None:
-                # Stay in whatever URL we are atm.
-                next_url = ''
-            self._redirect(next_url)
-        else:
+        if self.errors:
             # Notify the errors.
-            self.request.response.addErrorNotification(
-                "There are %d errors in the translations you provided."
-                " Please, correct them before continuing." %
-                    len(self.potmsgsets_with_errors))
-
-        # update the statistis for this po file
-        self.context.updateStatistics()
+            if len(self.errors) == 1:
+                message = ("There is an error in a translation you provided. "
+                           "Please correct it before continuing.")
+            else:
+                message = ("There are %d errors in the translations you "
+                           "provided. Please correct them before "
+                           "continuing." % len(self.errors))
+            self.request.response.addErrorNotification(message)
+        else:
+            self._redirectToNextPage()
 
     #
-    #
+    # Specific methods
     #
 
     def _buildPOMsgSetView(self, potmsgset):
@@ -366,8 +349,8 @@ class POFileTranslateView(BaseTranslationView):
         if pomsgset is None:
             pomsgset = potmsgset.getDummyPOMsgSet(language.code, variant)
         pomsgset_view = getView(pomsgset, "+translate-one", self.request)
-        # XXX: do properly
-        pomsgset_view.prepare(pomsgset.active_texts, None, self.tabindex, self.second_lang_code)
+        self._prepareView(pomsgset_view, pomsgset,
+                          self.errors.get(pomsgset.potmsgset))
         return pomsgset_view
 
     def _initializeShowOption(self):
@@ -376,6 +359,7 @@ class POFileTranslateView(BaseTranslationView):
 
         if self.show not in (
             'translated', 'untranslated', 'all', 'need_review'):
+            # XXX: should this be an UnexpectedFormData?
             self.show = self.DEFAULT_SHOW
         self.show_all = False
         self.show_need_review = False
@@ -393,13 +377,11 @@ class POFileTranslateView(BaseTranslationView):
         elif self.show == 'need_review':
             self.show_need_review = True
             self.shown_count = self.context.fuzzy_count
+        else:
+            raise AssertionError("Bug in _initializeShowOption")
 
-    def getSelectedPOTMsgSets(self):
+    def _getSelectedPOTMsgSets(self):
         """Return a list of the POTMsgSets that will be rendered."""
-        if len(self.potmsgsets_with_errors) > 0:
-            # Return the msgsets with errors.
-            return self.potmsgsets_with_errors
-
         # The set of message sets we get is based on the selection of kind
         # of strings we have in our form.
         pofile = self.context
