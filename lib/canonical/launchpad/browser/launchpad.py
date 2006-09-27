@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 """Browser code for the launchpad application."""
 
 __metaclass__ = type
@@ -13,7 +13,9 @@ __all__ = [
     'MaloneApplicationNavigation',
     'SoftTimeoutView',
     'OneZeroTemplateStatus',
-    'IcingFolder'
+    'IcingFolder',
+    'StructuralObjectPresentationView',
+    'StructuralObjectPresentation'
     ]
 
 import cgi
@@ -36,7 +38,8 @@ from canonical.launchpad.interfaces import (
     IProjectSet, ILoginTokenSet, IKarmaActionSet, IPOTemplateNameSet,
     IBazaarApplication, ICodeOfConductSet, IRegistryApplication,
     ISpecificationSet, ISprintSet, ITicketSet, IBuilderSet, IBountySet,
-    ILaunchpadCelebrities, IBugSet, IBugTrackerSet, ICveSet)
+    ILaunchpadCelebrities, IBugSet, IBugTrackerSet, ICveSet,
+    IStructuralObjectPresentation)
 from canonical.launchpad.layers import (
     setFirstLayer, ShipItEdUbuntuLayer, ShipItKUbuntuLayer, ShipItUbuntuLayer)
 from canonical.launchpad.components.cal import MergedCalendar
@@ -638,3 +641,117 @@ class IcingFolder:
     def browserDefault(self, request):
         return self, ()
 
+
+class StructuralObjectPresentationView(LaunchpadView):
+
+    # Object attributes used by the page template:
+    #   num_lists: 0, 1 or 2
+    #   children: []
+    #   more_children: 0
+    #   altchildren: []
+    #   more_altchildren: 0
+
+    def initialize(self):
+        self.structuralpresentation = IStructuralObjectPresentation(
+            self.context)
+
+        max_altchildren = 4
+        altchildren = self.structuralpresentation.listAltChildren(
+            max_altchildren)
+        if not altchildren:
+            max_children = 8
+            children = self.structuralpresentation.listChildren(max_children)
+            altchildcount = 0
+        else:
+            max_children = 4
+            children = self.structuralpresentation.listChildren(max_children)
+            altchildcount = self.structuralpresentation.countAltChildren()
+
+        if children:
+            childcount = self.structuralpresentation.countChildren()
+        else:
+            childcount = 0
+
+        if altchildren:
+            altchildren = list(altchildren)
+            assert len(altchildren) <= max_altchildren
+            if altchildcount > max_altchildren:
+                self.altchildren = altchildren[:-1]
+            else:
+                self.altchildren = altchildren
+            self.more_altchildren = altchildcount - len(self.altchildren)
+        else:
+            self.more_altchildren = 0
+            self.altchildren = []
+
+        children = list(children)
+        assert len(children) <= max_children
+        if childcount <= max_children:
+            self.children = children[:-1]
+        else:
+            self.children = children
+        self.more_children = childcount - len(self.children)
+
+        if not children and not altchildren:
+            self.num_lists = 0
+        elif altchildren:
+            self.num_lists = 2
+        else:
+            self.num_lists = 1
+
+    def getMinorHeading(self):
+        return self.structuralpresentation.getMinorHeading()
+
+    def getMajorHeading(self):
+        return self.structuralpresentation.getMajorHeading()
+
+    def getGotchiURL(self):
+        return '/+not-found-gotchi'
+
+
+class StructuralObjectPresentation:
+    """Base class for StructuralObjectPresentation adapters."""
+
+    implements(IStructuralObjectPresentation)
+
+    def __init__(self, context):
+        self.context = context
+
+    def getMajorHeading(self):
+        raise NotImplementedError()
+
+    def getMinorHeading(self):
+        return None
+
+    def listChildren(self, num):
+        return []
+
+    def countChildren(self):
+        return 0
+
+    def listAltChildren(self, num):
+        return None
+
+    def countAltChildren(self):
+        raise NotImplementedError()
+
+
+class DefaultStructuralObjectPresentation(StructuralObjectPresentation):
+
+    def getMajorHeading(self):
+        if hasattr(self.context, 'title'):
+            return self.context.title
+        else:
+            return 'no title'
+
+    def listChildren(self, num):
+        return ['name%s' % n for n in range(num)]
+
+    def countChildren(self):
+        return 50
+
+    def listAltChildren(self, num):
+        return ['altname%s' % n for n in range(num)]
+
+    def countAltChildren(self):
+        return 4

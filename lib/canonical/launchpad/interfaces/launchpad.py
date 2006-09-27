@@ -35,6 +35,7 @@ __all__ = [
     'IAfterTraverseEvent', 'AfterTraverseEvent',
     'IBeforeTraverseEvent', 'BeforeTraverseEvent', 'IBreadcrumb',
     'IBasicLaunchpadRequest', 'IHasSecurityContact',
+    'IStructuralObjectPresentation'
     ]
 
 
@@ -618,4 +619,26 @@ class IBreadcrumb(Interface):
     url = Attribute('Absolute url of this breadcrumb.')
 
     text = Attribute('Text of this breadcrumb.')
+
+
+class IStructuralObjectPresentation(Interface):
+    """Adapter that defines how a structural object is presented in the UI."""
+
+    def getMajorHeading():
+        """major heading"""
+
+    def getMinorHeading():
+        """can be None"""
+
+    def listChildren(num):
+        """List up to num children.  Return empty string for none of these"""
+
+    def countChildren():
+        """Return the total number of children."""
+
+    def listAltChildren(num):
+        """List up to num alternative children.  Return None if alt children are not supported"""
+
+    def countAltChildren():
+        """Return the total number of alt children.  Will be called only if listAltChildren returns something."""
 

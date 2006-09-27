@@ -948,3 +948,21 @@ class PermissionRequiredQuery:
                     "required:permission")
         return check_permission(name, self.context)
 
+
+class GotoStructuralObject:
+    """lp:structuralobject
+
+    Returns None when there is no structural object.
+    """
+
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def structuralobject(self):
+        # The structural object is the nearest object with a facet menu.
+        try:
+            facetmenu = nearest_menu(self.context, IFacetMenu)
+        except NoCanonicalUrl:
+            return None
+        return facetmenu.context
