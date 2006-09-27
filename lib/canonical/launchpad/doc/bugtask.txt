@@ -353,6 +353,18 @@ affect upstream, i.e., bugs that don't have an IUpstreamBugTask.
 
     >>> test_helper.tearDownBugsElsewhereTests()
 
+The search filter can also return bugs that are related to CVE reports:
+
+    >>> params = BugTaskSearchParams(
+    ...     has_cve=True, orderby='id', user=None)
+    >>> tasks_with_cves = ubuntu.searchTasks(params)
+    >>> for bugtask in tasks_with_cves:
+    ...     print bugtask.bug.id, bugtask.targetname
+    1 mozilla-firefox (Ubuntu)
+    1 Ubuntu
+    1 evolution (Ubuntu)
+    2 Ubuntu
+
 Bug Task Targets
 ----------------
 
@@ -525,10 +537,6 @@ like these, use the NullBugTask object.
     >>> actual_related_task_ids.sort()
     >>> expected_related_task_ids == actual_related_task_ids
     True
-    >>> null_bugtask.statusdisplayhtml
-    u'Not reported in netapplet (upstream)'
-    >>> null_bugtask.statuselsewhere
-    'fixed in 2 of 7 places'
 
 The astute reader will have noticed that NullBugTask automatically
 "marked" itself as providing the correct IBugTask interface. Let's see

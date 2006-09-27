@@ -319,10 +319,10 @@ For a given distribution as well:
 
   >>> L = ubuntu.getBuildRecords(status=BuildStatus.FULLYBUILT)
   >>> for l in L:
-  ...     print l.datecreated, l.id, l.buildstate.value
-  2005-03-24 00:00:00+00:00 19 1
-  2005-03-24 00:00:00+00:00 16 1
-  2005-03-24 00:00:00+00:00 7 1
+  ...     print l.datebuilt, l.id, l.buildstate.value
+  2005-03-25 00:00:01+00:00 19 1
+  2005-03-25 00:00:01+00:00 16 1
+  2005-03-25 00:00:01+00:00 7 1
   2004-09-27 11:57:13+00:00 18 1
   2004-09-27 11:57:13+00:00 2 1
 
@@ -331,25 +331,6 @@ Retrieve the current PENDING builds
   >>> builds = ubuntu.getBuildRecords(status=BuildStatus.NEEDSBUILD)
   >>> builds.count()
   2
-
-Inspect the FAILED builds:
-
-  >>> failures = ubuntu.getBuildRecords(status=BuildStatus.FAILEDTOBUILD)
-  >>> failures.count()
-  1
-
-Retrieve the single entry:
-
-  >>> failed_build = failures[0]
-  >>> failed_build.title
-  u'i386 build of pmount 0.1-1 in ubuntu warty RELEASE'
-
-Retry the failed build record for released distroreleases failed:
-
-  >>> failed_build.retry()
-  Traceback (most recent call last):
-  ...
-  AssertionError: Build 9 can not be retried
 
 Note, by ordering the build by BuildQueue.lastscore, it already notice
 the existence of a new pending build, since retry already creates a
@@ -388,6 +369,9 @@ or using optional pocket argument:
   ...    pocket=PackagePublishingPocket.SECURITY).count()
   0
 
+
+== AssertionErrors in IBuild ==
+
 Build records inserted by gina doesn't provide calculated_buildstart
 value, since they miss fields used in its calculation.
 
@@ -407,3 +391,30 @@ datebuilt, it makes the diagnosis of problems in current DB easier.
   Traceback (most recent call last):
   ...
   AssertionError: value is not suitable for this build record (10)
+
+
+Only builds in failed_states (FAILEDTOBUILD, MANUALDEPWAIT and
+CHROOTWAIT) can be retried. We must check if Soyuz is able to accept
+its result in case of success, i.e., we should not be able to retry a
+build for a released pocket.
+
+All those conditions are controlled by IBuild.can_be_retried() property
+(see above).
+
+  >>> failed_build = getUtility(IBuildSet).getByBuildID(9)
+
+  >>> failed_build.title
+  u'i386 build of pmount 0.1-1 in ubuntu warty RELEASE'
+
+  >>> failed_build.buildstate.name
+  'FAILEDTOBUILD'
+
+  >>> failed_build.can_be_retried
+  False
+
+Attempt to retry this build record will fail with an AssertionError:
+
+  >>> failed_build.retry()
+  Traceback (most recent call last):
+  ...
+  AssertionError: Build 9 can not be retried

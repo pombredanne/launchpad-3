@@ -1715,10 +1715,9 @@ class PersonEditEmailsView:
 
     def unvalidatedAndGuessedEmails(self):
         """Return a Set containing all unvalidated and guessed emails."""
-        emailset = sets.Set()
-        emailset = emailset.union(
-            [e.email for e in self.context.guessedemails])
-        emailset = emailset.union([e for e in self.context.unvalidatedemails])
+        emailset = set()
+        emailset = emailset.union(e.email for e in self.context.guessedemails)
+        emailset = emailset.union(e for e in self.context.unvalidatedemails)
         return emailset
 
     def emailFormSubmitted(self):
