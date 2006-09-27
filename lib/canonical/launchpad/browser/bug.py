@@ -111,12 +111,15 @@ class BugContextMenu(ContextMenu):
         if user is None:
             text = 'Subscribe/Unsubscribe'
             icon = 'edit'
-        elif user is not None and self.context.bug.isSubscribed(user):
+        elif user is not None and (
+            self.context.bug.isSubscribed(user) or
+            self.context.bug.isSubscribedToDupes(user)):
             text = 'Unsubscribe'
             icon = 'remove'
         else:
             for team in user.teams_participated_in:
-                if self.context.bug.isSubscribed(team):
+                if (self.context.bug.isSubscribed(team) or
+                    self.context.bug.isSubscribedToDupes(team)):
                     text = 'Subscribe/Unsubscribe'
                     icon = 'edit'
                     break

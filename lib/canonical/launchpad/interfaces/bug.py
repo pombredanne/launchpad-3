@@ -189,6 +189,9 @@ class IBug(IMessageTarget):
     def unsubscribe(person):
         """Remove this person's subscription to this bug."""
 
+    def unsubscribeFromDupes(person):
+        """Remove this person's subscription from all dupes of this bug."""
+
     def isSubscribed(person):
         """Is person subscribed to this bug?
 

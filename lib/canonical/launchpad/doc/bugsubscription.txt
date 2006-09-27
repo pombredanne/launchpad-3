@@ -286,7 +286,7 @@ be unsubscribed from dupes.
     >>> bug_five = bugset.get(5)
     >>> bug_six = bugset.get(6)
 
-    >>> bug_five.duplicateof == bug_six
+    >>> bug_six.duplicateof == bug_five
     True
 
     >>> bug_five.isSubscribedToDupes(sample_person)
@@ -296,6 +296,7 @@ be unsubscribed from dupes.
     <BugSubscription...>
 
     >>> bug_five.isSubscribedToDupes(sample_person)
+    True
 
 Subscribing and Unsubscribing
 =============================
@@ -304,14 +305,41 @@ To subscribe people to and unsubscribe people from a bug, use
 IBug.subscribe and IBug.unsubscribe:
 
     >>> foobar = personset.getByName("name16")
-    >>> subscribed_people = [s.person.name for s in bug.subscriptions]
-    >>> "foobar" not in subscribed_people
-    True
+
+    >>> bug.isSubscribed(foobar)
+    False
     >>> bug.subscribe(foobar)
     <BugSubscription at ...>
-    >>> subscriptions = [s.person.id for s in bug.subscriptions]
-    >>> 16 in subscriptions
+    >>> bug.isSubscribed(foobar)
     True
+
+    >>> bug.unsubscribe(foobar)
+    >>> bug.isSubscribed(foobar)
+    False
+
+To unsubscribe from all dupes for a bug, call
+IBug.unsubscribeFromDupes. This is useful because direct subscribers
+from dupes are automatically subscribed to dupe targets, so we provide
+them a way to unsubscribe.
+
+For example, Sample Person can be unsubscribed from bug #6, by
+unsubscribing them from the dupes of bug #5, because bug #6 is a dupe of
+bug #5.
+
+    >>> bug_six.duplicateof == bug_five
+    True
+
+    >>> bug_six.isSubscribed(sample_person)
+    True
+
+The return value of unsubscribeFromDupes() is a list of bugs from which
+the user was unsubscribed.
+
+    >>> [bug.id for bug in bug_five.unsubscribeFromDupes(sample_person)]
+    [6]
+
+    >>> bug_six.isSubscribed(sample_person)
+    False
 
 Automatic Subscriptions on Bug Creation
 =======================================

@@ -1,11 +1,8 @@
 Personal Subscriptions
 ======================
 
-The user should be able to subscribe and unsubscribe from bugs in
-Launchpad.
-
-When they are not subscribed, they should see the "Subscribe" link in
-the actions portlet.
+Users can subscribe to bugs reported in Malone, via the "Subscribe" link
+in the actions portlet.
 
   >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
   >>> browser.open('http://localhost/products/firefox/+bug/1')
@@ -16,9 +13,8 @@ the actions portlet.
   >>> subscribe_link.text
   'Subscribe'
 
-If they follow that link, they should be able to see the page that asks them
-if they want to subscribe. The "Subscribe" button should be visible on the
-page.
+Clicking the link brings you to the subscription page, from which the
+subscription link is also visible.
 
   >>> subscribe_link.click()
 
@@ -30,8 +26,8 @@ page.
 
   >>> submit = browser.getControl('Continue')
 
-Now, let's POST that back to the bug home page. It should show the user. It
-should also show a message, and the link should change to "Unsubscribe".
+Clicking "Continue" subscribes the user to the bug, and tells the user
+this.
 
   >>> submit.click()
 
@@ -58,9 +54,7 @@ should also show a message, and the link should change to "Unsubscribe".
   Sample Person
   Foo Bar
 
-
-Now, we want to view the +subscribe page again. It should say "Unsubscribe"
-because we are now a subscriber.
+The "Subscribe" link now says "Unsubscribe".
 
   >>> subscribe_link = browser.getLink('Unsubscribe')
   >>> subscribe_link.text
@@ -71,8 +65,8 @@ because we are now a subscriber.
   >>> browser.url
   'http://localhost/products/firefox/+bug/1/+subscribe'
 
-And if we POST that back to the bug home page, we will be unsubscribed in a
-spectacular fashion.
+Clicking the "Continue" button from the +subscribe page will unsubscribe
+the user this time, and inform the user.
 
   >>> subscription_widget.value
   ['name16']
@@ -91,7 +85,8 @@ spectacular fashion.
   >>> subscribe_link.text
   'Subscribe'
 
-Let's subscribe one of Foo Bar's team to see what happens.
+Users can unsubscribe teams to which they belong. Let's demonstrate by
+first subscribing one of Foo Bar's teams.
 
   >>> browser.getLink('Subscribe Someone Else').click()
   >>> browser.url
@@ -113,8 +108,8 @@ Now the subscribe link says 'Subscribe/Unsubscribe'.
   >>> subscribe_link.text
   'Subscribe/Unsubscribe'
 
-If we go to it, we'll have the option of both subscribing Foo Bar, and
-to unsubscribe the Launchpad team.
+Clicking it gives us the option of both subscribing Foo Bar, and
+unsubscribing the Launchpad team.
 
   >>> subscribe_link.click()
   >>> browser.url
@@ -168,3 +163,56 @@ Foo Bar wasn't subscribed to the bug.
   >>> print_subscribers(browser.contents)
   Steve Alexander
   Sample Person
+
+Subscriptions and Duplicate Bugs
+--------------------------------
+
+Because we auto-subscribe users that are directly subscribed to dupes of
+a bug, we give the option to unsubscribe from dupe target bugs. Behind
+the scenes, this is just unsubscribing the user from the duplicate of
+this bug that caused us to auto-subscribe them.
+
+For example, Steve Alexander can currently subscribe to bug #3.
+
+  >>> from zope.testbrowser.testing import Browser
+
+  >>> stevea_browser = Browser()
+  >>> stevea_browser.handleErrors = False
+
+  >>> stevea_browser.addHeader(
+  ...     "Authorization", "Basic steve.alexander@ubuntulinux.com:test")
+
+  >>> stevea_browser.open("http://launchpad.dev/bugs/3")
+  >>> subscribe_link = stevea_browser.getLink("Subscribe")
+
+  >>> subscribe_link.text
+  'Subscribe'
+
+Bug if bug #2, a bug that Steve is directly subscribed to, is marked as
+a dupe of bug #3, then Steve gets indirectly subscribed to bug #3, and
+is presented with the Unsubscribe link.
+
+  >>> stevea_browser.open(
+  ...     "http://launchpad.dev/products/ubuntu-product/+bug/2/+duplicate")
+
+  >>> stevea_browser.getControl("Duplicate Of").value = "3"
+  >>> stevea_browser.getControl("Change").click()
+
+  >>> stevea_browser.open("http://launchpad.dev/bugs/3")
+
+  >>> unsubscribe_link = stevea_browser.getLink("Unsubscribe")
+
+  >>> unsubscribe_link.text
+  'Unsubscribe'
+
+When he chooses to unsubscribe, he will be unsubscribed from bug #2, the
+dupe of bug #3, so he'll no longer get mail from bug #3.
+
+  >>> unsubscribe_link.click()
+
+  >>> stevea_browser.getControl("Continue").click()
+
+  >>> soup = BeautifulSoup(stevea_browser.contents)
+  >>> for p_tag in soup('p', 'informational message'):
+  ...   print p_tag.string
+  You have been unsubscribed from this bug.

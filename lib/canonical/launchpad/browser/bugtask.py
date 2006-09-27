@@ -278,6 +278,7 @@ class BugTaskView(LaunchpadView):
 
     def initialize(self):
         """Set up the needed widgets."""
+        bug = self.context.bug
         # See render() for how this flag is used.
         self._redirecting_to_bug_list = False
 
@@ -285,7 +286,7 @@ class BugTaskView(LaunchpadView):
             return
 
         # Set up widgets in order to handle subscription requests.
-        if self.context.bug.isSubscribed(self.user):
+        if (bug.isSubscribed(self.user) or bug.isSubscribedToDupes(self.user)):
             subscription_terms = [
                 SimpleTerm(
                     self.user, self.user.name, 'Unsubscribe me from this bug')]
@@ -294,7 +295,7 @@ class BugTaskView(LaunchpadView):
                 SimpleTerm(
                     self.user, self.user.name, 'Subscribe me to this bug')]
         for team in self.user.teams_participated_in:
-            if self.context.bug.isSubscribed(team):
+            if (bug.isSubscribed(team) or bug.isSubscribedToDupes(team)):
                 subscription_terms.append(
                     SimpleTerm(
                         team, team.name,
@@ -311,7 +312,7 @@ class BugTaskView(LaunchpadView):
         self.handleSubscriptionRequest()
 
     def userIsSubscribed(self):
-        """Return whether the user is subscribed to the bug or not."""
+        """Is the user subscribed to this bug?"""
         return self.context.bug.isSubscribed(self.user)
 
     def render(self):

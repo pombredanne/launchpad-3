@@ -213,6 +213,16 @@ class Bug(SQLBase):
                 BugSubscription.delete(sub.id)
                 return
 
+    def unsubscribeFromDupes(self, person):
+        """See canonical.launchpad.interfaces.IBug."""
+        bugs_unsubscribed = []
+        for dupe in self.duplicates:
+            if dupe.isSubscribed(person):
+                dupe.unsubscribe(person)
+                bugs_unsubscribed.append(dupe)
+
+        return bugs_unsubscribed
+
     def isSubscribed(self, person):
         """See canonical.launchpad.interfaces.IBug."""
         if person is None:
@@ -223,7 +233,11 @@ class Bug(SQLBase):
 
     def isSubscribedToDupes(self, person):
         """See canonical.launchpad.interfaces.IBug."""
-        return None
+        for dupe in self.duplicates:
+            if dupe.isSubscribed(person):
+                return True
+
+        return False
 
     def getDirectSubscribers(self):
         """See canonical.launchpad.interfaces.IBug."""
