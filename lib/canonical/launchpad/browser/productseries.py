@@ -235,18 +235,7 @@ def validate_svn_repo(repo):
 class ProductSeriesView(LaunchpadView):
 
     def initialize(self):
-        self.product = self.context.product
         self.form = self.request.form
-        self.displayname = self.context.displayname
-        self.summary = self.context.summary
-        self.rcstype = self.context.rcstype
-        self.cvsroot = self.context.cvsroot
-        self.cvsmodule = self.context.cvsmodule
-        self.cvsbranch = self.context.cvsbranch
-        self.svnrepository = self.context.svnrepository
-        self.releaseroot = self.context.releaseroot
-        self.releasefileglob = self.context.releasefileglob
-        self.name = self.context.name
         self.has_errors = False
 
         # Whether there is more than one PO template.
@@ -272,8 +261,6 @@ class ProductSeriesView(LaunchpadView):
             return
 
         dispatch_table = {
-            'edit_productseries_source': self.editSource,
-            'admin_productseries_source': self.adminSource,
             'set_ubuntu_pkg': self.setCurrentUbuntuPackage,
             'translations_upload': self.translationsUpload
         }
@@ -308,189 +295,6 @@ class ProductSeriesView(LaunchpadView):
             pass
         ubuntu = self.curr_ubuntu_release.distribution
         self.ubuntu_history = self.context.getPackagingInDistribution(ubuntu)
-
-    def rcs_selector(self):
-        html = '<select name="rcstype">\n'
-        html += '  <option value="cvs" onClick="morf(\'cvs\')"'
-        if self.rcstype == RevisionControlSystems.CVS:
-            html += ' selected'
-        html += '>CVS</option>\n'
-        html += '  <option value="svn" onClick="morf(\'svn\')"'
-        if self.rcstype == RevisionControlSystems.SVN:
-            html += ' selected'
-        html += '>Subversion</option>\n'
-        html += '</select>\n'
-        return html
-
-    def cvs_details_already_in_use(self, cvsroot, cvsmodule, cvsbranch):
-        """Check if the CVS details are in use by another ProductSeries.
-
-        Return True if the CVS details don't exist in the database or 
-        if it's already set in this ProductSeries, otherwise return False.
-        """
-        productseries = getUtility(IProductSeriesSet).getByCVSDetails(
-            cvsroot, cvsmodule, cvsbranch) 
-        if productseries is None or productseries == self.context:
-            return True
-        else: 
-            return False 
-
-    def svn_details_already_in_use(self, svnrepository): 
-        """Check if the SVN details are in use by another ProductSeries.
-
-        Return True if the SVN details don't exist in the database or
-        if it's already set in this ProductSeries, otherwise return False.
-        """
-        productseries = getUtility(IProductSeriesSet).getBySVNDetails(
-            svnrepository)
-        if productseries is None or productseries == self.context:
-            return True
-        else: 
-            return False 
-
-    def editSource(self, fromAdmin=False):
-        """Edit the upstream revision control details for this series."""
-        form = self.form
-        if self.context.syncCertified() and not fromAdmin:
-            self.request.response.addErrorNotification(
-                    'This Source has been certified and is now '
-                    'unmodifiable.'
-                    )
-            self.has_errors = True
-            return
-        # get the form content, defaulting to what was there
-        rcstype = form.get("rcstype")
-        if rcstype == 'cvs':
-            self.rcstype = RevisionControlSystems.CVS
-            self.cvsroot = form.get("cvsroot").strip()
-            self.cvsmodule = form.get("cvsmodule").strip()
-            self.cvsbranch = form.get("cvsbranch").strip()
-            self.svnrepository = None
-        elif rcstype == 'svn':
-            self.rcstype = RevisionControlSystems.SVN
-            self.cvsroot = None 
-            self.cvsmodule = None 
-            self.cvsbranch = None 
-            self.svnrepository = form.get("svnrepository").strip()
-        else:
-            raise NotImplementedError, 'Unknown RCS %s' % rcstype
-        # FTP release details
-        self.releaseroot = form.get("releaseroot")
-        self.releasefileglob = form.get("releasefileglob") 
-        if self.releaseroot:
-            if not validate_release_root(self.releaseroot):
-                self.request.response.addErrorNotification(
-                    'Invalid release root URL')
-                self.has_errors = True
-                return
-        # make sure we at least got something for the relevant rcs
-        if rcstype == 'cvs':
-            if not (self.cvsroot and self.cvsmodule and self.cvsbranch):
-                if not fromAdmin:
-                    self.request.response.addErrorNotification(
-                        'Please give valid CVS details')
-                    self.has_errors = True
-                return
-            if not validate_cvs_branch(self.cvsbranch):
-                self.request.response.addErrorNotification(
-                    'Your CVS branch name is invalid.')
-                self.has_errors = True
-                return
-            if not validate_cvs_root(self.cvsroot, self.cvsmodule):
-                self.request.response.addErrorNotification(
-                    'Your CVS root and module are invalid.')
-                self.has_errors = True
-                return
-            if self.svnrepository:
-                self.request.response.addErrorNotification(
-                    'Please remove the SVN repository.')
-                self.has_errors = True
-                return
-            if not self.cvs_details_already_in_use(self.cvsroot, self.cvsmodule,
-                    self.cvsbranch):
-                self.request.response.addErrorNotification(
-                    'CVS repository details already in use by another product.')
-                self.has_errors = True
-                return
-        elif rcstype == 'svn':
-            if not validate_svn_repo(self.svnrepository):
-                self.request.response.addErrorNotification(
-                    'Please give valid SVN server details.')
-                self.has_errors = True
-                return
-            if (self.cvsroot or self.cvsmodule or self.cvsbranch):
-                self.request.response.addErrorNotification(
-                    'Please remove the CVS repository details.')
-                self.has_errors = True
-                return
-            if not self.svn_details_already_in_use(self.svnrepository):
-                self.request.response.addErrorNotification(
-                    'SVN repository details already in use by another product.')
-                self.has_errors = True
-                return
-        oldrcstype = self.context.rcstype
-        self.context.rcstype = self.rcstype
-        self.context.cvsroot = self.cvsroot
-        self.context.cvsmodule = self.cvsmodule
-        self.context.cvsbranch = self.cvsbranch
-        self.context.svnrepository = self.svnrepository
-        self.context.releaseroot = self.releaseroot
-        self.context.releasefileglob = self.releasefileglob
-        if not fromAdmin:
-            self.context.importstatus = ImportStatus.TESTING
-        elif (oldrcstype is None and self.rcstype is not None):
-            self.context.importstatus = ImportStatus.TESTING
-        # make sure we also update the ubuntu packaging if it has been
-        # modified
-        self.setCurrentUbuntuPackage()
-        if not self.has_errors:
-            self.request.response.redirect(canonical_url(self.context))
-
-    def adminSource(self):
-        """Make administrative changes to the source details of the
-        upstream.
-
-        Since this is a superset of the editing function we can
-        call the edit method of the view class to get any editing changes,
-        then continue parsing the form here, looking for admin-type
-        changes.
-        """
-        form = self.form
-        # FTP release details
-        self.releaseroot = form.get("releaseroot", self.releaseroot) or None
-        self.releasefileglob = form.get("releasefileglob",
-                self.releasefileglob) or None
-        if self.releaseroot:
-            if not validate_release_root(self.releaseroot):
-                self.request.response.addErrorNotification(
-                    'Invalid release root URL')
-                self.has_errors = True
-                return
-        # look for admin changes and retrieve those
-        self.cvsroot = form.get('cvsroot', self.cvsroot) or None
-        self.cvsmodule = form.get('cvsmodule', self.cvsmodule) or None
-        self.cvsbranch = form.get('cvsbranch', self.cvsbranch) or None
-        self.svnrepository = form.get(
-            'svnrepository', self.svnrepository) or None
-
-        # possibly resubmit for testing
-        if self.context.autoTestFailed() and form.get('resetToAutotest', False):
-            self.context.importstatus = ImportStatus.TESTING
-
-        # Return if there were any errors, so as not to update anything.
-        if self.has_errors:
-            return
-        # update the database
-        self.context.releaseroot = self.releaseroot
-        self.context.releasefileglob = self.releasefileglob
-        # find and handle editing changes
-        self.editSource(fromAdmin=True)
-        if self.form.get('syncCertified', None):
-            if not self.context.syncCertified():
-                self.context.certifyForSync()
-        if self.form.get('autoSyncEnabled', None):
-            if not self.context.autoSyncEnabled():
-                self.context.enableAutoSync()
 
     def setCurrentUbuntuPackage(self):
         """Set the Packaging record for this product series in the current

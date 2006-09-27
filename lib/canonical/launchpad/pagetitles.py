@@ -655,8 +655,6 @@ productseries_packaging = ContextDisplayName('Packaging of %s in distributions')
 
 productseries_source = 'Import product series'
 
-productseries_sourceadmin = 'Add source import'
-
 productseries_translations = ContextTitle('Translation templates for %s')
 
 productseries_translations_upload = 'Request new translations upload'

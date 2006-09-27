@@ -201,19 +201,7 @@
         template="../templates/productseries-source.pt"
         facet="overview"
         permission="launchpad.EditSource"
-        lp:url="/products/$Product.name/$ProductSeries.name/+source2" />
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IProductSeriesSourceAdmin"
-        class="canonical.launchpad.browser.ProductSeriesView"
-        facet="overview"
-        permission="launchpad.Admin">
-        <browser:page
-            name="+sourceadmin"
-            template="../templates/productseries-sourceadmin.pt"
-            lp:url="/products/$Product.name/$ProductSeries.name/+sourceadmin"
-            />
-    </browser:pages>
+        lp:url="/products/$Product.name/$ProductSeries.name/+source" />
 
     <browser:editform
         name="+review"

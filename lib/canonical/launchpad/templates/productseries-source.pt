@@ -30,76 +30,78 @@
       distributed upstream development.
     </p>
 
-    <metal:formbody fill-slot="widgets">
+    <metal:formbody fill-slot="widgets"
+        tal:define="selected_rcstype python:view.widgets['rcstype']._getFormValue()">
 
-      <h2>Source import details</h2>
+      <div class="formHelp">
+        Enter details below for only the selected Repository type.
+      </div>
 
-      <fieldset tal:define="selected_rcstype python:view.widgets['rcstype']._getFormValue()">
-        <legend>Revision control repository</legend>
+      <div>
+        <label>
+          <input type="radio" name="field.rcstype" value="None"
+                 onClick="updateWidgets()"
+                 tal:attributes="checked selected_rcstype/enumvalue:NONE" />
+          No revision control system
+        </label>
+      </div>
 
-        <div class="formHelp">
-          Enter details below for only the selected Repository type.
-        </div>
-
-        <div>
+      <fieldset>
+        <legend>
           <label>
-            <input type="radio" name="field.rcstype" value="None"
-                   onClick="updateWidgets()"
-                   tal:attributes="checked selected_rcstype/enumvalue:NONE" />
-            No revision control system
+            <input type="radio" name="field.rcstype" value="Bazaar"
+                 onClick="updateWidgets()"
+                 tal:attributes="checked selected_rcstype/enumvalue:BAZAAR" />
+            Bazaar
           </label>
-        </div>
+        </legend>
 
-        <fieldset>
-          <legend>
-            <label>
-              <input type="radio" name="field.rcstype" value="Bazaar"
-                   onClick="updateWidgets()"
-                   tal:attributes="checked selected_rcstype/enumvalue:BAZAAR" />
-              Bazaar
-            </label>
-          </legend>
-
-          <tal:widget define="widget nocall:view/widgets/user_branch">
-            <metal:block use-macro="context/@@launchpad_widget_macros/launchpad_widget_row" />
-          </tal:widget>
-        </fieldset>
-
-        <fieldset>
-          <legend>
-            <label>
-              <input type="radio" name="field.rcstype" value="CVS"
-                   onClick="updateWidgets()"
-                   tal:attributes="checked selected_rcstype/enumvalue:CVS" />
-              CVS
-            </label>
-          </legend>
-          <tal:widget define="widget nocall:view/widgets/cvsroot">
-            <metal:block use-macro="context/@@launchpad_widget_macros/launchpad_widget_row" />
-          </tal:widget>
-          <tal:widget define="widget nocall:view/widgets/cvsmodule">
-            <metal:block use-macro="context/@@launchpad_widget_macros/launchpad_widget_row" />
-          </tal:widget>
-          <tal:widget define="widget nocall:view/widgets/cvsbranch">
-            <metal:block use-macro="context/@@launchpad_widget_macros/launchpad_widget_row" />
-          </tal:widget>
-        </fieldset>
-
-        <fieldset>
-          <legend>
-            <label>
-              <input type="radio" name="field.rcstype" value="Subversion"
-                   onClick="updateWidgets()"
-                   tal:attributes="checked selected_rcstype/enumvalue:SVN" />
-              Subversion
-            </label>
-          </legend>
-
-          <tal:widget define="widget nocall:view/widgets/svnrepository">
-            <metal:block use-macro="context/@@launchpad_widget_macros/launchpad_widget_row" />
-          </tal:widget>
-        </fieldset>
+        <tal:widget define="widget nocall:view/widgets/user_branch">
+          <metal:block use-macro="context/@@launchpad_widget_macros/launchpad_widget_row" />
+        </tal:widget>
       </fieldset>
+
+      <fieldset>
+        <legend>
+          <label>
+            <input type="radio" name="field.rcstype" value="CVS"
+                 onClick="updateWidgets()"
+                 tal:attributes="checked selected_rcstype/enumvalue:CVS" />
+            CVS
+          </label>
+        </legend>
+        <tal:widget define="widget nocall:view/widgets/cvsroot">
+          <metal:block use-macro="context/@@launchpad_widget_macros/launchpad_widget_row" />
+        </tal:widget>
+        <tal:widget define="widget nocall:view/widgets/cvsmodule">
+          <metal:block use-macro="context/@@launchpad_widget_macros/launchpad_widget_row" />
+        </tal:widget>
+        <tal:widget define="widget nocall:view/widgets/cvsbranch">
+          <metal:block use-macro="context/@@launchpad_widget_macros/launchpad_widget_row" />
+        </tal:widget>
+      </fieldset>
+
+      <fieldset>
+        <legend>
+          <label>
+            <input type="radio" name="field.rcstype" value="Subversion"
+                 onClick="updateWidgets()"
+                 tal:attributes="checked selected_rcstype/enumvalue:SVN" />
+            Subversion
+          </label>
+        </legend>
+
+        <tal:widget define="widget nocall:view/widgets/svnrepository">
+          <metal:block use-macro="context/@@launchpad_widget_macros/launchpad_widget_row" />
+        </tal:widget>
+      </fieldset>
+
+      <tal:has-import-status condition="context/importstatus">
+        <h2>Import Status</h2>
+
+        <p>The current import status is:
+          <b tal:content="context/importstatus/title">$title</b>. </p>
+      </tal:has-import-status>
 
       <fieldset>
         <legend>FTP Details</legend>
