@@ -21,23 +21,7 @@
       <!-- 1-0 inprogress Needs "Related Questions" portlet -->
     </metal:portlets>
 
-
-<div metal:fill-slot="main">
-
-  <p tal:repeat="notice view/notices" tal:content="notice"
-     class="informational message">
-    notice goes here
-  </p>
-
-  <p tal:condition="context/superseded_by" class="warning message">
-    This specification has been superseded. See the newer specification
-    "<b><a tal:content="context/superseded_by/title"
-           tal:attributes="href context/superseded_by/fmt:url">new spec
-    title</a></b>" for updated plans.
-  </p>
-
-
-    <table class="summary">
+    <table metal:fill-slot="data" class="summary">
       <tbody>
         <tr>
           <th>Priority:</th>
@@ -138,6 +122,21 @@
         </tr>
       </tbody>
     </table>
+
+<div metal:fill-slot="main">
+
+  <p tal:repeat="notice view/notices" tal:content="notice"
+     class="informational message">
+    notice goes here
+  </p>
+
+  <p tal:condition="context/superseded_by" class="warning message">
+    This specification has been superseded. See the newer specification
+    "<b><a tal:content="context/superseded_by/title"
+           tal:attributes="href context/superseded_by/fmt:url">new spec
+    title</a></b>" for updated plans.
+  </p>
+
     <tal:desc replace="structure context/summary/fmt:text-to-html">
       The spec summary will go here.
     </tal:desc>
