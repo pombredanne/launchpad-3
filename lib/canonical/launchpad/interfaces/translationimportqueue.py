@@ -217,8 +217,10 @@ class ITranslationImportQueue(Interface):
         imported from the Needs Review status to the Accepted one.
         """
 
-    def executeOptimisticBlock():
+    def executeOptimisticBlock(ztm):
         """Try to move entries from the Needs Review status to Blocked one.
+
+        :arg ztm: Zope transaction manager object.
 
         This method moves all .po entries that are on the same directory that
         a .pot entry that has the status Blocked to that same status.

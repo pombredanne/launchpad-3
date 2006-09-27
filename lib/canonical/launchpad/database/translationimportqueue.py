@@ -693,7 +693,7 @@ class TranslationImportQueue:
 
         return there_are_entries_approved
 
-    def executeOptimisticBlock(self):
+    def executeOptimisticBlock(self, ztm):
         """See ITranslationImportQueue."""
         num_blocked = 0
         for entry in self.iterNeedsReview():
@@ -722,6 +722,8 @@ class TranslationImportQueue:
                 # are blocked, so we can block it too.
                 entry.status = RosettaImportStatus.BLOCKED
                 num_blocked += 1
+                # Do the commit to save the changes.
+                ztm.commit()
 
         return num_blocked
 
