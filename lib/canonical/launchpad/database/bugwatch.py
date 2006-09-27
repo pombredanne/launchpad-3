@@ -33,7 +33,7 @@ from canonical.launchpad.database.bugset import BugSetBase
 
 bugzillaref = re.compile(r'(https?://.+/)show_bug.cgi.+id=(\d+).*')
 roundupref = re.compile(r'(https?://.+/)issue(\d+).*')
-tracref = re.compile(r'(https?://.+/)tickets/(\d+)')
+tracref = re.compile(r'(https?://.+/)ticket/(\d+)')
 
 
 class BugWatch(SQLBase):

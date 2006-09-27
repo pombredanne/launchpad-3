@@ -36,8 +36,9 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.interfaces import (
     IAddBugTaskForm, IBug, ILaunchBag, IBugSet, IBugTaskSet,
     IBugWatchSet, IDistributionSourcePackage, IDistroBugTask,
-    IDistroReleaseBugTask, NotFoundError, UnexpectedFormData,
-    valid_distrotask, valid_upstreamtask, ICanonicalUrlData)
+    IDistroReleaseBugTask, NoBugTrackerFound, NotFoundError,
+    UnexpectedFormData, valid_distrotask, valid_upstreamtask,
+    ICanonicalUrlData)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import check_permission
@@ -388,7 +389,13 @@ class BugAlsoReportInView(LaunchpadFormView):
                 "%s uses Malone as its bug tracker, and it can't at the"
                 " same time be linked to a remote bug." % cgi.escape(
                     target.displayname))
-        elif link_to_bugwatch and remotebug is None:
+
+        if target.official_malone:
+            # The rest of the validation applies only to targets not
+            # using Malone.
+            return
+
+        if link_to_bugwatch and remotebug is None:
             #XXX: This should use setFieldError, but the widget isn't
             #     rendered in a way that allows the error to be
             #     displayed next to the widget.
@@ -396,12 +403,43 @@ class BugAlsoReportInView(LaunchpadFormView):
             self.addError(
                 "Please specify the remote bug number in the remote "
                 "bug tracker.")
-        elif link_to_bugwatch and bugtracker is None:
+        elif link_to_bugwatch and '://' in remotebug:
+            # An URL was entered instead of the bug id, try to find out
+            # which bug and bug tracker it's referring to.
+            bugwatch_set = getUtility(IBugWatchSet)
+            try:
+                url_bugtracker, url_bug = bugwatch_set.getBugTrackerAndBug(
+                    remotebug)
+            except NoBugTrackerFound, error:
+                # XXX: The user should be able to press a button here in
+                #      order to register the tracker.
+                #      -- Bjorn Tillenius, 2006-09-26
+                self.addError(
+                    "The bug tracker at %s isn't registered in Launchpad."
+                    ' You have to'
+                    ' <a href="/malone/bugtrackers/+newbugtracker">register'
+                    ' it</a> before you can link any bugs to it.' % (
+                        cgi.escape(error.base_url)))
+            else:
+                if url_bugtracker is None:
+                    self.addError(
+                        "Launchpad doesn't know what kind of bug tracker"
+                        ' the URL %s is pointing at.' % cgi.escape(remotebug))
+                else:
+                    # Modify the data dict so that the action handler
+                    # won't have to extract the bug tracker and bug from
+                    # the URL as well.
+                    data['bugtracker'] = bugtracker = url_bugtracker
+                    data['remotebug'] = remotebug = url_bug
+
+        if link_to_bugwatch and bugtracker is None:
             #XXX: This should use setFieldError, but the widget isn't
             #     rendered in a way that allows the error to be
             #     displayed next to the widget.
             #     -- Bjorn Tillenius, 2006-09-12
             self.addError("Please specify a bug tracker.")
+
+
         if len(self.errors) > 0:
             # The checks below should be made only if the form doesn't
             # contain any errors.

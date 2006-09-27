@@ -40,7 +40,7 @@ that product is required:
 
     >>> form = {
     ...     'field.actions.request_fix': '', 'field.product': '',
-    ...     'field.bugtracker': '2',
+    ...     'field.bugtracker-empty-marker': '1',
     ...     'field.link_to_bugwatch.used': '', 'field.remotebug': ''}
     >>> add_task_view = get_and_setup_view(firefox_task, '+upstreamtask', form)
     >>> add_task_view.render_upstreamtask()
@@ -149,6 +149,7 @@ tracker, but omit the remote bug number, an error message is given:
     >>> form['field.actions.request_fix'] = u''
     >>> form['field.product'] = u'thunderbird'
     >>> form['field.link_to_bugwatch'] = 'on'
+    >>> form['field.bugtracker'] = '2'
     >>> form['field.remotebug']
     ''
     >>> add_task_view = get_and_setup_view(firefox_task, '+upstreamtask', form)
@@ -200,6 +201,24 @@ the bug watch's status later.
     >>> thunderbird_task.importance.title
     'Unknown'
 
+
+Instead of specifying a bug tracker and a remote bug, it's possible to
+provide a URL instead of the bug id.
+
+    >>> del form['field.bugtracker']
+    >>> form['field.product'] = u'gnome-terminal'
+    >>> form['field.remotebug'] = (
+    ...     u'http://bugzilla.gnome.org/bugs/show_bug.cgi?id=168')
+    >>> add_task_view = get_and_setup_view(firefox_task, '+upstreamtask', form)
+    >>> add_task_view.render_upstreamtask()
+    SQLObjectCreatedEvent: <BugWatch at ...>
+    SQLObjectCreatedEvent: <BugTask at ...>
+    ''
+
+    >>> for bugwatch in bug_four.watches:
+    ...     print "%s: %s" % (bugwatch.bugtracker.title, bugwatch.remotebug)
+    GnomeGBug GTracker: 168
+    GnomeGBug GTracker: 84
 
 If we try to add a bug watch together with a product which does use
 Malone, an error will occur.
