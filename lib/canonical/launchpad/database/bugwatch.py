@@ -31,11 +31,6 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.database.bugset import BugSetBase
 
 
-bugzillaref = re.compile(r'(https?://.+/)show_bug.cgi.+id=(\d+).*')
-roundupref = re.compile(r'(https?://.+/)issue(\d+).*')
-tracref = re.compile(r'(https?://.+/)ticket/(\d+)')
-
-
 class BugWatch(SQLBase):
     """See canonical.launchpad.interfaces.IBugWatch."""
     implements(IBugWatch)
@@ -129,6 +124,12 @@ class BugWatchSet(BugSetBase):
     def __init__(self, bug=None):
         BugSetBase.__init__(self, bug)
         self.title = 'A set of bug watches'
+        self.bugtracker_references = {
+            BugTrackerType.BUGZILLA: re.compile(
+                r'(https?://.+/)show_bug.cgi.+id=(\d+).*'),
+            BugTrackerType.ROUNDUP: re.compile(r'(https?://.+/)issue(\d+).*'),
+            BugTrackerType.TRAC: re.compile(r'(https?://.+/)ticket/(\d+)'),
+            }
 
     def get(self, watch_id):
         """See canonical.launchpad.interfaces.IBugWatchSet."""
@@ -174,11 +175,7 @@ class BugWatchSet(BugSetBase):
     def fromText(self, text, bug, owner):
         """See IBugTrackerSet.fromText."""
         watches = set([])
-        for pattern, trackertype in [
-            (bugzillaref, BugTrackerType.BUGZILLA),
-            (roundupref, BugTrackerType.ROUNDUP),
-            (tracref, BugTrackerType.TRAC),
-            ]:
+        for trackertype, pattern in self.bugtracker_references.items():
             watches = watches.union(self._find_watches(pattern, 
                 trackertype, text, bug, owner))
         return sorted(watches, key=lambda a: (a.bugtracker.name,
@@ -208,12 +205,7 @@ class BugWatchSet(BugSetBase):
 
     def getBugTrackerAndBug(self, url):
         """See IBugWatchSet."""
-        #XXX: This should be a dict.
-        for pattern, trackertype in [
-            (bugzillaref, BugTrackerType.BUGZILLA),
-            (roundupref, BugTrackerType.ROUNDUP),
-            (tracref, BugTrackerType.TRAC),
-            ]:
+        for trackertype, pattern in self.bugtracker_references.items():
             match = pattern.match(url)
             if not match:
                 continue

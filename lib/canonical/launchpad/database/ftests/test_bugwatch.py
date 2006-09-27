@@ -96,11 +96,11 @@ class RoundUpGetBugTrackerAndBugTest(GetBugTrackerAndBugTestBase):
     bug_id = '377'
 
 
-class TracUpGetBugTrackerAndBugTest(GetBugTrackerAndBugTestBase):
+class TracGetBugTrackerAndBugTest(GetBugTrackerAndBugTestBase):
     """Make sure BugWatchSet.getBugTrackerAndBug works with Trac URLs."""
 
     bugtracker_type = BugTrackerType.TRAC
-    bug_url = 'http://some.host/some/path/tickets/42'
+    bug_url = 'http://some.host/some/path/ticket/42'
     base_url = 'http://some.host/some/path/'
     bug_id = '42'
 
@@ -109,7 +109,7 @@ def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(BugzillaGetBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(RoundUpGetBugTrackerAndBugTest))
-    suite.addTest(unittest.makeSuite(TracUpGetBugTrackerAndBugTest))
+    suite.addTest(unittest.makeSuite(TracGetBugTrackerAndBugTest))
     return suite
 
 
