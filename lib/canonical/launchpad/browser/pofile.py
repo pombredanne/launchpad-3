@@ -288,6 +288,72 @@ class POFileTranslateView(BaseTranslationView):
             parameters['show'] = self.show
         return parameters
 
+    def _submit_translations(self):
+        """Handle a form submission to store new translations."""
+        # First, we get the set of IPOTMsgSet objects submitted.
+        pofile = self.context
+        for key in self.request.form:
+            match = re.match('msgset_(\d+)$', key)
+
+            if not match:
+                # The form's key is not one that we are looking for.
+                continue
+
+            id = int(match.group(1))
+            potmsgset = self.context.potemplate.getPOTMsgSetByID(id)
+            if potmsgset is None:
+                # This should only happen if someone tries to POST his own
+                # form instead of ours, and he uses a POTMsgSet id that
+                # does not exist for this POTemplate.
+                raise UnexpectedFormData(
+                    "Got translation for POTMsgID %d which is not in the"
+                    " template." % id)
+
+            # Get hold of an appropriate message set in the PO file,
+            # creating it if necessary.
+            msgid_text = potmsgset.primemsgid_.msgid
+            pomsgset = pofile.getPOMsgSet(msgid_text, only_current=False)
+            if pomsgset is None:
+                pomsgset = pofile.createMessageSetFromText(msgid_text)
+
+            # Store this pomsgset inside the list of messages to process.
+            pomsgset_view = getView(pomsgset, "+translate-one", self.request)
+            # XXX: completely brokwn right now
+            if (pomsgset_view.error is not None and
+                pomsgset_view.context.potmsgset.sequence > 0):
+                # There is an error, we should store this view to render them.
+                # If potmsgset.sequence == 0 means that that message set is
+                # not current anymore. This only happens as part of a race
+                # condition, when someone gets a translation form, later, we
+                # get a new template for that context that disables some
+                # entries in that translation form, after that, the user
+                # submits the form. We accept the translation, but if it has
+                # an error, we cannot render that error so we discard it, that
+                # translation is not being used anyway, so it's not a big
+                # lose.
+                self.potmsgsets_with_errors.append(pomsgset_view)
+
+        if len(self.potmsgsets_with_errors) == 0:
+            # Get the next set of message sets.
+            next_url = self.batchnav.nextBatchURL()
+            if next_url is None or next_url == '':
+                # We are already at the end of the batch, forward to the first
+                # one.
+                next_url = self.batchnav.firstBatchURL()
+            if next_url is None:
+                # Stay in whatever URL we are atm.
+                next_url = ''
+            self._redirect(next_url)
+        else:
+            # Notify the errors.
+            self.request.response.addErrorNotification(
+                "There are %d errors in the translations you provided."
+                " Please, correct them before continuing." %
+                    len(self.potmsgsets_with_errors))
+
+        # update the statistis for this po file
+        self.context.updateStatistics()
+
     #
     #
     #
@@ -355,72 +421,6 @@ class POFileTranslateView(BaseTranslationView):
         # the exact amount of entries we need to render the page and thus is a
         # waste of resources to fetch all items always.
         return ret
-
-    def _submit_translations(self):
-        """Handle a form submission to store new translations."""
-        # First, we get the set of IPOTMsgSet objects submitted.
-        pofile = self.context
-        for key in self.form:
-            match = re.match('msgset_(\d+)$', key)
-
-            if not match:
-                # The form's key is not one that we are looking for.
-                continue
-
-            id = int(match.group(1))
-            potmsgset = self.context.potemplate.getPOTMsgSetByID(id)
-            if potmsgset is None:
-                # This should only happen if someone tries to POST his own
-                # form instead of ours, and he uses a POTMsgSet id that
-                # does not exist for this POTemplate.
-                raise UnexpectedFormData(
-                    "Got translation for POTMsgID %d which is not in the"
-                    " template." % id)
-
-            # Get hold of an appropriate message set in the PO file,
-            # creating it if necessary.
-            msgid_text = potmsgset.primemsgid_.msgid
-            pomsgset = pofile.getPOMsgSet(msgid_text, only_current=False)
-            if pomsgset is None:
-                pomsgset = pofile.createMessageSetFromText(msgid_text)
-
-            # Store this pomsgset inside the list of messages to process.
-            pomsgset_view = getView(pomsgset, "+translate-one", self.request)
-            # XXX: completely brokwn right now
-            if (pomsgset_view.error is not None and
-                pomsgset_view.context.potmsgset.sequence > 0):
-                # There is an error, we should store this view to render them.
-                # If potmsgset.sequence == 0 means that that message set is
-                # not current anymore. This only happens as part of a race
-                # condition, when someone gets a translation form, later, we
-                # get a new template for that context that disables some
-                # entries in that translation form, after that, the user
-                # submits the form. We accept the translation, but if it has
-                # an error, we cannot render that error so we discard it, that
-                # translation is not being used anyway, so it's not a big
-                # lose.
-                self.potmsgsets_with_errors.append(pomsgset_view)
-
-        if len(self.potmsgsets_with_errors) == 0:
-            # Get the next set of message sets.
-            next_url = self.batchnav.nextBatchURL()
-            if next_url is None or next_url == '':
-                # We are already at the end of the batch, forward to the first
-                # one.
-                next_url = self.batchnav.firstBatchURL()
-            if next_url is None:
-                # Stay in whatever URL we are atm.
-                next_url = ''
-            self._redirect(next_url)
-        else:
-            # Notify the errors.
-            self.request.response.addErrorNotification(
-                "There are %d errors in the translations you provided."
-                " Please, correct them before continuing." %
-                    len(self.potmsgsets_with_errors))
-
-        # update the statistis for this po file
-        self.context.updateStatistics()
 
     @property
     def completeness(self):

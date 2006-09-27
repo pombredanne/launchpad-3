@@ -59,11 +59,13 @@
             <input type="submit" value="Change" />
           </form>
         </div>
-        <form method="GET" style="text-align: right;" action="+translate">
+        <form method="get" style="text-align: right;" action="+translate">
           <!-- the hidden elements -->
-          <input type="hidden" name="alt" value=""
+          <input type="hidden" name="field.alternative_language" value=""
                  tal:condition="view/second_lang_code"
                  tal:attributes="value view/second_lang_code" />
+            <input type="hidden" name="start" value=""
+                   tal:attributes="value view/start" />
           <input type="hidden" name="batch" value=""
                  tal:attributes="value view/size" />
           <label>Show:</label>
@@ -121,7 +123,7 @@
         <tal:block condition="view/batchnav/currentBatch">
           <form method="POST" action="+translate">
             <!-- the hidden elements -->
-            <input type="hidden" name="alt"
+            <input type="hidden" name="field.alternative_language"
                    tal:condition="view/second_lang_code"
                    tal:attributes="value view/second_lang_code" />
             <input type="hidden" name="show"
@@ -163,9 +165,8 @@
         <p class="discreet">
           Translation status:
           <span class="language-code"
-                tal:content="context/language/englishname"
-                tal:omit-tag="">Spanish</span>
-          <span tal:replace="view/completeness" tal:omit-tag="">0 %</span>
+                tal:replace="context/language/englishname">Spanish</span>
+          <span tal:replace="view/completeness">0 %</span>
         </p>
       </tal:havepluralforms>
     </div>

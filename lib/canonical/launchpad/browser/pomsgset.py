@@ -349,10 +349,16 @@ class BaseTranslationView(LaunchpadView):
             # The user is not an official translator, we should show a
             # warning.
             self.request.response.addWarningNotification("""
-                You are not an official translator for this file. You can"
-                 still make suggestions, and your translations will be"
-                 stored and reviewed for acceptance later by the designated"
-                 translators.""")
+                You are not an official translator for this file. You
+                can still make suggestions, and your translations will
+                be stored and reviewed for acceptance later by the
+                designated translators.""")
+
+        self.tabindex = self.TabIndex()
+        self.redirecting = False
+
+        self._initializeBatching()
+        self._initializeAltLanguage()
 
         if not self.has_plural_form_information:
             # Cannot translate this IPOFile without the plural form
@@ -372,24 +378,30 @@ class BaseTranslationView(LaunchpadView):
             This only needs to be done once per language. Thanks for helping Rosetta.
             </p>
             """ % self.pofile.language.englishname)
+            return
 
-        self.form = self.request.form
-        self.tabindex = self.TabIndex()
-        self.redirecting = False
+        self._process_form()
 
-        self._initializeBatching()
-        self._initializeAltLanguage()
-
-        self.process_form()
+    #
+    # API Hooks
+    #
 
     def _initializeBatching(self):
         """XXX"""
         raise NotImplementedError
 
+    def _submit_translations(self):
+        """XXX"""
+        raise NotImplementedError
+
+    #
+    #
+    #
+
     def _initializeAltLanguage(self):
         """XXX"""
         initial_values = {}
-        second_lang_code = self.form.get("field.alternative_language")
+        second_lang_code = self.request.form.get("field.alternative_language")
         if second_lang_code:
             if isinstance(second_lang_code, list):
                 raise UnexpectedFormData("You specified more than one alternative "
@@ -424,30 +436,11 @@ class BaseTranslationView(LaunchpadView):
         # plural form information for this language.
         return True
 
-    #
-    # Form processing
-    #
-
-    def process_form(self):
-        """Check whether the form was submitted and calls the right callback.
-        """
+    def _process_form(self):
         if self.request.method != 'POST' or self.user is None:
             # The form was not submitted or the user is not logged in.
             return
-
-        dispatch_table = {
-            'submit_translations': self._submit_translations,
-            }
-        dispatch_to = [(key, method)
-                        for key,method in dispatch_table.items()
-                        if key in self.form
-                      ]
-        if len(dispatch_to) != 1:
-            raise UnexpectedFormData(
-                "There should be only one command in the form",
-                dispatch_to)
-        key, method = dispatch_to[0]
-        method()
+        self._submit_translations()
 
     #
     # Redirection
@@ -516,66 +509,6 @@ class POMsgSetPageView(BaseTranslationView):
         self.start = self.batchnav.start
         self.size = current_batch.size
 
-    #
-    #
-    #
-
-    def _extract_form_posted_translations(self):
-        """Parse the form submitted to the translation widget looking for
-        translations.
-
-        Store the new translations at self.form_posted_translations and its
-        status at self.form_posted_needsreview.
-
-        In this method, we look for various keys in the form, and use them as
-        follows:
-
-        - 'msgset_ID' to know if self is part of the submitted form. If it
-          isn't found, we stop parsing the form and return.
-        - 'msgset_ID_LANGCODE_translation_PLURALFORM': Those will be the
-          submitted translations and we will have as many entries as plural
-          forms the language self.context.language has.
-        - 'msgset_ID_LANGCODE_needsreview': If present, will note that the
-          'needs review' flag has been set for the given translations.
-
-        In all those form keys, 'ID' is self.context.potmsgset.id.
-        """
-        msgset_ID = 'msgset_%d' % self.context.potmsgset.id
-        msgset_ID_LANGCODE_needsreview = 'msgset_%d_%s_needsreview' % (
-            self.context.potmsgset.id, self.pofile.language.code)
-
-        # We will add the plural form number later.
-        msgset_ID_LANGCODE_translation_ = 'msgset_%d_%s_translation_' % (
-            self.context.potmsgset.id, self.pofile.language.code)
-
-        # If this form does not have data about the msgset id, then do nothing
-        # at all.
-        if msgset_ID not in self.form:
-            return
-
-        self.form_posted_translations = {}
-
-        self.form_posted_needsreview = (
-            msgset_ID_LANGCODE_needsreview in self.form)
-
-        # Extract the translations from the form, and store them in
-        # self.form_posted_translations .
-
-        # There will never be 100 plural forms.  Usually, we'll be iterating
-        # over just two or three.
-        # We try plural forms in turn, starting at 0, and leave the loop as
-        # soon as we don't find a translation for a plural form.
-        for pluralform in xrange(100):
-            msgset_ID_LANGCODE_translation_PLURALFORM = '%s%s' % (
-                msgset_ID_LANGCODE_translation_, pluralform)
-            if msgset_ID_LANGCODE_translation_PLURALFORM not in self.form:
-                break
-            value = self.form[msgset_ID_LANGCODE_translation_PLURALFORM]
-            self.form_posted_translations[pluralform] = (
-                contract_rosetta_tabs(value))
-        else:
-            raise AssertionError("There were more than 100 plural forms!")
-
     def _submit_translations(self):
         """Handle a form submission for the translation form.
 
@@ -639,6 +572,66 @@ class POMsgSetPageView(BaseTranslationView):
             self.request.response.addErrorNotification(
                 "There is an error in the translation you provided."
                 " Please, correct it before continuing.")
+
+    #
+    #
+    #
+
+    def _extract_form_posted_translations(self):
+        """Parse the form submitted to the translation widget looking for
+        translations.
+
+        Store the new translations at self.form_posted_translations and its
+        status at self.form_posted_needsreview.
+
+        In this method, we look for various keys in the form, and use them as
+        follows:
+
+        - 'msgset_ID' to know if self is part of the submitted form. If it
+          isn't found, we stop parsing the form and return.
+        - 'msgset_ID_LANGCODE_translation_PLURALFORM': Those will be the
+          submitted translations and we will have as many entries as plural
+          forms the language self.context.language has.
+        - 'msgset_ID_LANGCODE_needsreview': If present, will note that the
+          'needs review' flag has been set for the given translations.
+
+        In all those form keys, 'ID' is self.context.potmsgset.id.
+        """
+        msgset_ID = 'msgset_%d' % self.context.potmsgset.id
+        msgset_ID_LANGCODE_needsreview = 'msgset_%d_%s_needsreview' % (
+            self.context.potmsgset.id, self.pofile.language.code)
+
+        # We will add the plural form number later.
+        msgset_ID_LANGCODE_translation_ = 'msgset_%d_%s_translation_' % (
+            self.context.potmsgset.id, self.pofile.language.code)
+
+        # If this form does not have data about the msgset id, then do nothing
+        # at all.
+        if msgset_ID not in self.form:
+            return
+
+        self.form_posted_translations = {}
+
+        self.form_posted_needsreview = (
+            msgset_ID_LANGCODE_needsreview in self.form)
+
+        # Extract the translations from the form, and store them in
+        # self.form_posted_translations .
+
+        # There will never be 100 plural forms.  Usually, we'll be iterating
+        # over just two or three.
+        # We try plural forms in turn, starting at 0, and leave the loop as
+        # soon as we don't find a translation for a plural form.
+        for pluralform in xrange(100):
+            msgset_ID_LANGCODE_translation_PLURALFORM = '%s%s' % (
+                msgset_ID_LANGCODE_translation_, pluralform)
+            if msgset_ID_LANGCODE_translation_PLURALFORM not in self.form:
+                break
+            value = self.form[msgset_ID_LANGCODE_translation_PLURALFORM]
+            self.form_posted_translations[pluralform] = (
+                contract_rosetta_tabs(value))
+        else:
+            raise AssertionError("There were more than 100 plural forms!")
 
     def _prepare_translations_crap_to_do_with_form_posts(self):
         if self.form_posted_translations is None:
@@ -889,7 +882,7 @@ class POMsgSetView(LaunchpadView):
     @cachedproperty
     def zoom_url(self):
         """Return the URL where we should from the zoom icon."""
-        # XXX: preserve self.second_lang_code?
+        # XXX: preserve second_lang_code and other form parameters?
         return '/'.join([canonical_url(self.context), '+translate'])
 
     @cachedproperty
@@ -914,7 +907,7 @@ class POMsgSetZoomedView(POMsgSetView):
     def zoom_url(self):
         # We are viewing this class directly from an IPOMsgSet, we should
         # point to the parent batch of messages.
-        # XXX: preserve self.second_lang_code?
+        # XXX: preserve second_lang_code and other form parameters?
         pofile_batch_url = '+translate?start=%d' % (self.sequence - 1)
         return '/'.join([canonical_url(self.pofile), pofile_batch_url])
 

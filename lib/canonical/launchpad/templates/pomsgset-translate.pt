@@ -40,11 +40,6 @@
         <!-- Alternative suggestions. -->
         <div metal:define-macro="editform">
           <form method="get" action="+translate">
-            <!-- XXX: these two variables only really make sense for pofile-translate.. -->
-            <input type="hidden" name="start" value=""
-                   tal:attributes="value view/start" />
-            <input type="hidden" name="batch" value=""
-                   tal:attributes="value view/size" />
             <tal:comment replace="nothing">
               Suggestions from this alternative language will be displayed as
               well as suggestions from the translation language. In the case
@@ -61,7 +56,7 @@
         <!-- The translation form. -->
         <form method="POST" action="+translate">
           <!-- the hidden elements -->
-          <input type="hidden" name="alt"
+          <input type="hidden" name="field.alternative_language"
                  tal:condition="view/second_lang_code"
                  tal:attributes="value view/second_lang_code" />
           <table class="listing" style="margin-top: 0.5em;">
