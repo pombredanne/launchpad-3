@@ -114,7 +114,7 @@ class ShippingRequest(SQLBase):
         flavours = set()
         for requested_cds in self.getAllRequestedCDs():
             flavours.add(requested_cds.flavour)
-        return flavours
+        return sorted(flavours)
 
     def getTotalApprovedCDs(self):
         """See IShippingRequest"""
@@ -268,6 +268,20 @@ class ShippingRequest(SQLBase):
     def isPendingSpecial(self):
         """See IShippingRequest"""
         return self.status == ShippingRequestStatus.PENDINGSPECIAL
+
+    def canBeApproved(self):
+        """See IShippingRequest"""
+        statuses = [ShippingRequestStatus.DENIED,
+                    ShippingRequestStatus.PENDINGSPECIAL,
+                    ShippingRequestStatus.PENDING]
+        return self.status in statuses
+
+    def canBeDenied(self):
+        """See IShippingRequest"""
+        statuses = [ShippingRequestStatus.APPROVED,
+                    ShippingRequestStatus.PENDINGSPECIAL,
+                    ShippingRequestStatus.PENDING]
+        return self.status in statuses
 
     def markAsPendingSpecial(self):
         """See IShippingRequest"""

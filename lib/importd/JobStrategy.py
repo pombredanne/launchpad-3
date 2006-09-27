@@ -86,8 +86,6 @@ class CSCVSStrategy(JobStrategy):
         self.dir = dir
         self.logger = logger
         target_manager = aJob.makeTargetManager()
-        target_manager.createMaster()
-        target_manager.createMirror()
         working_dir = self.getWorkingDir(aJob, dir)
         target_path = target_manager.createImportTarget(working_dir)
         self.runtobaz("-SC", "%s.1:" % aJob.branchfrom, target_path, logger)
@@ -101,7 +99,6 @@ class CSCVSStrategy(JobStrategy):
         self.logger = logger
         self.dir = dir
         target_manager = aJob.makeTargetManager()
-        target_manager.rollbackToMirror()
         working_dir = self.getWorkingDir(aJob, dir)
         target_path = target_manager.getSyncTarget(working_dir)
         branch = SCM.branch(self.job.targetBranchName())
@@ -292,6 +289,8 @@ class CvsWorkingTree:
         """Initialise or update the cscvs cache.
 
         :precondition: `treeExists` is true.
+        :precondition: the target branch exists for cscvs to scan for imported
+            revisions.
         """
         tree = self.cscvsCvsTree()
         one_week = 168 # hours
