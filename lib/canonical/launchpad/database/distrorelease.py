@@ -1107,12 +1107,12 @@ class DistroRelease(SQLBase, BugTargetBase):
         cur.execute('''
             INSERT INTO SecureBinaryPackagePublishingHistory (
                 binarypackagerelease, distroarchrelease, status,
-                component, section, priority, datecreated, datepublished,
-                pocket, embargo)
+                component, section, priority, archive, datecreated,
+                datepublished, pocket, embargo)
             SELECT bpph.binarypackagerelease, %s as distroarchrelease,
                    bpph.status, bpph.component, bpph.section, bpph.priority,
-                   %s as datecreated, %s as datepublished, %s as pocket,
-                   false as embargo
+                   bpph.archive, %s as datecreated, %s as datepublished,
+                   %s as pocket, false as embargo
             FROM BinaryPackagePublishingHistory AS bpph
             WHERE bpph.distroarchrelease = %s AND bpph.status in (%s, %s) AND
                   bpph.pocket = %s
@@ -1134,9 +1134,9 @@ class DistroRelease(SQLBase, BugTargetBase):
         cur.execute('''
             INSERT INTO SecureSourcePackagePublishingHistory (
                 sourcepackagerelease, distrorelease, status, component,
-                section, datecreated, datepublished, pocket, embargo)
+                section, archive, datecreated, datepublished, pocket, embargo)
             SELECT spph.sourcepackagerelease, %s as distrorelease,
-                   spph.status, spph.component, spph.section,
+                   spph.status, spph.component, spph.section, spph.archive,
                    %s as datecreated, %s as datepublished,
                    %s as pocket, false as embargo
             FROM SourcePackagePublishingHistory AS spph
