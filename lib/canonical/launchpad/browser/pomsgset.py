@@ -332,9 +332,7 @@ class BaseTranslationView(LaunchpadView):
             return self.index
 
     def initialize(self):
-        self.form = self.request.form
-        self.tabindex = self.TabIndex()
-        self.redirecting = False
+        assert self.pofile, "Child class must define self.pofile"
 
         if not self.pofile.canEditTranslations(self.user):
             # The user is not an official translator, we should show a
@@ -364,6 +362,38 @@ class BaseTranslationView(LaunchpadView):
             </p>
             """ % self.pofile.language.englishname)
 
+        self.form = self.request.form
+        self.tabindex = self.TabIndex()
+        self.redirecting = False
+
+        self._initializeBatching()
+        self._initializeAltLanguage()
+
+        self.process_form()
+
+    def _initializeBatching(self):
+        """XXX"""
+        raise NotImplementedError
+
+    def _initializeAltLanguage(self):
+        """XXX"""
+        self.alt = self.form.get('alt', '')
+        initial_value = {}
+        if self.second_lang_code:
+            try:
+                initial_value['alternative_language'] = getUtility(
+                    ILanguageSet)[self.second_lang_code]
+            except NotFoundError:
+                # A bogus alt value was supplied, redirect back to sanity.
+                self.alt = None
+                # XXX: we should really redirect in this case, to get rid of
+                # the bogus URL parameter.
+        self.alternative_language_widget = CustomWidgetFactory(
+            CustomDropdownWidget)
+        setUpWidgets(
+            self, IPOFileAlternativeLanguage, IInputWidget,
+            names=['alternative_language'], initial=initial_value)
+
     @property
     def has_plural_form_information(self):
         """Return whether we know the plural forms for this language."""
@@ -386,76 +416,15 @@ class BaseTranslationView(LaunchpadView):
         else:
             return None
 
-    def render(self):
-        if self.redirecting:
-            return u''
-        else:
-            return LaunchpadView.render(self)
-
-
-class POMsgSetPageView(BaseTranslationView):
-    """A view for the page that renders a single translation."""
-    __used_for__ = IPOMsgSet
-    def initialize(self):
-        self.potmsgset = self.context.potmsgset
-        self.pofile = self.context.pofile
-
-        BaseTranslationView.initialize(self)
-
-
-        # By default the submitted values are None
-        self.form = self.request.form
-        self.form_posted_translations = None
-        self.form_posted_needsreview = None
-        self.error = None
-
-        # Setup the batching for this page.
-        potemplate = self.context.pofile.potemplate
-        self.batchnav = POTMsgSetBatchNavigator(
-            potemplate.getPOTMsgSets(), self.request, size=1)
-        current_batch = self.batchnav.currentBatch()
-        self.start = self.batchnav.start
-        self.size = current_batch.size
-
-        self.alt = self.form.get('alt', '')
-        initial_value = {}
-        if self.alt:
-            if isinstance(self.alt, list):
-                raise UnexpectedFormData(
-                    "You specified more than one alternative language; only "
-                    "one is currently supported.")
-
-            initial_value['alternative_language'] = getUtility(
-                ILanguageSet)[self.alt]
-
-        # Initialize the widget to list languages.
-        self.alternative_language_widget = CustomWidgetFactory(
-            CustomDropdownWidget)
-        setUpWidgets(
-            self, IPOFileAlternativeLanguage, IInputWidget,
-            names=['alternative_language'], initial=initial_value)
-
-        # Handle any form submission.
-        self.process_form()
-
-        self.pomsgset_view = getView(self.context, "+translate-one-zoomed",
-                                     self.request)
-
-        # XXX: DO IT PROPERLY
-        # XXX: this needs to take into account form-posted stuff, as
-        # does is_fuzzy, to handle error posting.
-        translations = self.context.active_texts
-        self.pomsgset_view.prepare(translations, self.error,
-            self.tabindex, self.second_lang_code)
+    #
+    # Form processing
+    #
 
     def process_form(self):
         """Check whether the form was submitted and calls the right callback.
         """
-        if (self.request.method != 'POST' or self.user is None or
-            'pofile_translation_filter' in self.form):
+        if self.request.method != 'POST' or self.user is None:
             # The form was not submitted or the user is not logged in.
-            # If we get 'pofile_translation_filter' we should ignore that POST
-            # because it's useless for this view.
             return
 
         dispatch_table = {
@@ -475,14 +444,89 @@ class POMsgSetPageView(BaseTranslationView):
 
     def _select_alternate_language(self):
         """Handle a form submission to choose other language suggestions."""
+        # XXX: why does this need handling in the view? I suspect if we
+        # change the method to be GET instead of POST, we can just
+        # remove this code altogether!
+        #   -- kiko, 2006-06-22
         selected_second_lang = self.alternative_language_widget.getInputValue()
         if selected_second_lang is None:
             self.alt = ''
         else:
             self.alt = selected_second_lang.code
+        new_url = self.batchnav.generateBatchURL(
+            self.batchnav.currentBatch())
+        self._redirect(new_url)
 
-        # Now, do the redirect to the new URL
-        self._redirect(str(self.request.URL))
+    #
+    # Redirection
+    #
+
+    def _buildRedirectParams(self):
+        parameters = {}
+        if self.alt:
+            parameters['alt'] = self.alt
+        return parameters
+
+    def _redirect(self, new_url):
+        """Redirect to the given url adding the selected filtering rules."""
+        assert new_url is not None, ('The new URL cannot be None.')
+        if not new_url:
+            new_url = str(self.request.URL)
+            if self.request.get('QUERY_STRING'):
+                new_url += '?%s' % self.request.get('QUERY_STRING')
+        self.redirecting = True
+
+        parameters = self._buildRedirectParams()
+        params_str = '&'.join(
+            ['%s=%s' % (key, value) for key, value in parameters.items()])
+        if params_str:
+            if '?' not in new_url:
+                new_url += '?'
+            else:
+                new_url += '&'
+            new_url += params_str
+
+        self.request.response.redirect(new_url)
+
+    def render(self):
+        if self.redirecting:
+            return u''
+        else:
+            return LaunchpadView.render(self)
+
+
+class POMsgSetPageView(BaseTranslationView):
+    """A view for the page that renders a single translation."""
+    __used_for__ = IPOMsgSet
+    def initialize(self):
+        self.pofile = self.context.pofile
+
+        BaseTranslationView.initialize(self)
+
+        self.pomsgset_view = getView(self.context, "+translate-one-zoomed",
+                                     self.request)
+        # By default the submitted values are None
+        self.form_posted_translations = None
+        self.form_posted_needsreview = None
+        self.error = None
+        self.pomsgset_view.prepare(self.context.active_texts,
+             self.error, self.tabindex, self.second_lang_code)
+
+    #
+    # BaseTranslationView API
+    #
+
+    def _initializeBatching(self):
+        # Setup the batching for this page.
+        self.batchnav = POTMsgSetBatchNavigator(self.pofile.potemplate.getPOTMsgSets(),
+                                                self.request, size=1)
+        current_batch = self.batchnav.currentBatch()
+        self.start = self.batchnav.start
+        self.size = current_batch.size
+
+    #
+    #
+    #
 
     def _extract_form_posted_translations(self):
         """Parse the form submitted to the translation widget looking for
@@ -502,15 +546,15 @@ class POMsgSetPageView(BaseTranslationView):
         - 'msgset_ID_LANGCODE_needsreview': If present, will note that the
           'needs review' flag has been set for the given translations.
 
-        In all those form keys, 'ID' is self.potmsgset.id.
+        In all those form keys, 'ID' is self.context.potmsgset.id.
         """
-        msgset_ID = 'msgset_%d' % self.potmsgset.id
+        msgset_ID = 'msgset_%d' % self.context.potmsgset.id
         msgset_ID_LANGCODE_needsreview = 'msgset_%d_%s_needsreview' % (
-            self.potmsgset.id, self.pofile.language.code)
+            self.context.potmsgset.id, self.pofile.language.code)
 
         # We will add the plural form number later.
         msgset_ID_LANGCODE_translation_ = 'msgset_%d_%s_translation_' % (
-            self.potmsgset.id, self.pofile.language.code)
+            self.context.potmsgset.id, self.pofile.language.code)
 
         # If this form does not have data about the msgset id, then do nothing
         # at all.
@@ -620,23 +664,6 @@ class POMsgSetPageView(BaseTranslationView):
             # We didn't get any translation from the website.
             self.translations = self.context.active_texts
 
-    def _redirect(self, new_url):
-        """Redirect to the given url adding the selected filtering rules."""
-        assert new_url is not None, ('The new URL cannot be None.')
-        if new_url == '':
-            new_url = str(self.request.URL)
-            if self.request.get('QUERY_STRING'):
-                new_url += '?%s' % self.request.get('QUERY_STRING')
-        self.redirecting = True
-        if self.alt:
-            if '?' not in new_url:
-                new_url += '?'
-            else:
-                new_url += '&'
-            new_url += 'alt=%s' % self.alt
-
-        self.request.response.redirect(new_url)
-
 
 class POMsgSetView(LaunchpadView):
     """Holds all data needed to show an IPOMsgSet.
@@ -669,18 +696,18 @@ class POMsgSetView(LaunchpadView):
         self.form_posted_needsreview = False
 
         # Set up alternative language
-        if second_lang_code is None:
-            self.sec_lang = None
-            self.second_lang_potmsgset = None
-        else:
+        self.sec_lang = None
+        self.second_lang_potmsgset = None
+        if second_lang_code is not None:
             potemplate = self.context.pofile.potemplate
             second_lang_pofile = potemplate.getPOFileByLang(second_lang_code)
-            self.sec_lang = second_lang_pofile.language
-            msgid = self.potmsgset.primemsgid_.msgid
-            try:
-                self.second_lang_potmsgset = second_lang_pofile[msgid].potmsgset
-            except NotFoundError:
-                pass
+            if second_lang_pofile:
+                self.sec_lang = second_lang_pofile.language
+                msgid = self.context.potmsgset.primemsgid_.msgid
+                try:
+                    self.second_lang_potmsgset = second_lang_pofile[msgid].potmsgset
+                except NotFoundError:
+                    pass
 
     def initialize(self):
         # XXX: to avoid the use of python in the view, we'd need objects
@@ -722,9 +749,9 @@ class POMsgSetView(LaunchpadView):
             alt_submissions = []
             title = None
         else:
-            alt_submissions = self.sec_lang_potmsgset.getCurrentSubmissions(
+            alt_submissions = self.second_lang_potmsgset.getCurrentSubmissions(
                 self.sec_lang, index)
-            title = "%s (Alternate Language)" % self.sec_lang.englishname
+            title = self.sec_lang.englishname
 
         alt_submissions = self._buildSubmissions(title, alt_submissions)
         return wiki, elsewhere, suggested, alt_submissions

@@ -15,20 +15,14 @@ __all__ = [
     'POExportView']
 
 import re
-from zope.app.form import CustomWidgetFactory
-from zope.app.form.utility import setUpWidgets
 from zope.app.form.browser import DropdownWidget
-from zope.app.form.interfaces import IInputWidget
 from zope.component import getUtility, getView
 from zope.publisher.browser import FileUpload
 
-from canonical.cachedproperty import cachedproperty
 from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad.interfaces import (
-    IPOFile, IPOExportRequestSet, ILaunchBag, ILanguageSet,
-    ITranslationImportQueue, UnexpectedFormData, NotFoundError,
-    IPOFileAlternativeLanguage
-    )
+    IPOFile, IPOExportRequestSet, ILaunchBag, ITranslationImportQueue,
+    UnexpectedFormData, NotFoundError)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ApplicationMenu, Link, canonical_url,
     LaunchpadView, Navigation)
@@ -267,36 +261,36 @@ class POFileTranslateView(BaseTranslationView):
 
     def initialize(self):
         self.pofile = self.context
+        self.potmsgsets_with_errors = []
+        self.pomsgset_views = []
+
+        self._initializeShowOption()
         BaseTranslationView.initialize(self)
 
-        self.potmsgset_with_errors = []
-        self._initialize_show_option()
-        self.alt = self.form.get('alt', '')
+        for potmsgset in self.batchnav.currentBatch():
+            self.pomsgset_views.append(self._buildPOMsgSetView(potmsgset))
 
-        initial_value = {}
-        if self.second_lang_code:
-            initial_value['alternative_language'] = getUtility(
-                ILanguageSet)[self.second_lang_code]
+    #
+    # BaseTranslationView API
+    #
 
-        # Initialize the widget to list languages.
-        self.alternative_language_widget = CustomWidgetFactory(
-            CustomDropdownWidget)
-        setUpWidgets(
-            self, IPOFileAlternativeLanguage, IInputWidget,
-            names=['alternative_language'], initial=initial_value)
-
+    def _initializeBatching(self):
         # Setup the batching for this page.
-        self.batchnav = BatchNavigator(
-            self.getSelectedPOTMsgSet(), self.request, size=10)
+        self.batchnav = BatchNavigator(self.getSelectedPOTMsgSets(),
+                                       self.request, size=10)
         self.start = self.batchnav.start
         current_batch = self.batchnav.currentBatch()
         self.size = current_batch.size
 
-        self.pomsgset_views = []
-        for potmsgset in current_batch:
-            self.pomsgset_views.append(self._buildPOMsgSetView(potmsgset))
-        # Handle any form submission.
-        self.process_form()
+    def _buildRedirectParams(self):
+        parameters = BaseTranslationView._buildRedirectParams(self)
+        if self.show and self.show != 'all':
+            parameters['show'] = self.show
+        return parameters
+
+    #
+    #
+    #
 
     def _buildPOMsgSetView(self, potmsgset):
         """Build a POMsgSetView for a given POTMsgSet."""
@@ -310,9 +304,9 @@ class POFileTranslateView(BaseTranslationView):
         pomsgset_view.prepare(pomsgset.active_texts, None, self.tabindex, self.second_lang_code)
         return pomsgset_view
 
-    def _initialize_show_option(self):
+    def _initializeShowOption(self):
         # Get any value given by the user
-        self.show = self.form.get('show')
+        self.show = self.request.form.get('show')
 
         if self.show not in (
             'translated', 'untranslated', 'all', 'need_review'):
@@ -334,49 +328,35 @@ class POFileTranslateView(BaseTranslationView):
             self.show_need_review = True
             self.shown_count = self.context.fuzzy_count
 
-    @property
-    def completeness(self):
-        return '%.0f%%' % self.context.translatedPercentage()
+    def getSelectedPOTMsgSets(self):
+        """Return a list of the POTMsgSets that will be rendered."""
+        if len(self.potmsgsets_with_errors) > 0:
+            # Return the msgsets with errors.
+            return self.potmsgsets_with_errors
 
-    def process_form(self):
-        """Check whether the form was submitted and calls the right callback.
-        """
-        if self.request.method != 'POST' or self.user is None:
-            # The form was not submitted or the user is not logged in.
-            return
-
-        dispatch_table = {
-            'select_alternate_language': self._select_alternate_language,
-            'submit_translations': self._store_translations
-            }
-        dispatch_to = [(key, method)
-                        for key,method in dispatch_table.items()
-                        if key in self.form
-                      ]
-        if len(dispatch_to) != 1:
-            raise UnexpectedFormData(
-                "There should be only one command in the form",
-                dispatch_to)
-        key, method = dispatch_to[0]
-        method()
-
-    def _select_alternate_language(self):
-        """Handle a form submission to choose other language suggestions."""
-        # XXX: why does this need handling in the view? I suspect if we
-        # change the method to be GET instead of POST, we can just
-        # remove this code altogether!
-        #   -- kiko, 2006-06-22
-        selected_second_lang = self.alternative_language_widget.getInputValue()
-        if selected_second_lang is None:
-            self.alt = ''
+        # The set of message sets we get is based on the selection of kind
+        # of strings we have in our form.
+        pofile = self.context
+        potemplate = pofile.potemplate
+        if self.show == 'all':
+            ret = potemplate.getPOTMsgSets()
+        elif self.show == 'translated':
+            ret = pofile.getPOTMsgSetTranslated()
+        elif self.show == 'need_review':
+            ret = pofile.getPOTMsgSetFuzzy()
+        elif self.show == 'untranslated':
+            ret = pofile.getPOTMsgSetUntranslated()
         else:
-            self.alt = selected_second_lang.code
+            raise UnexpectedFormData('show = "%s"' % self.show)
+        # We cannot listify the results to avoid additional count queries,
+        # because we could end with a list of more than 32000 items with
+        # an average list of 5000 items.
+        # The batch system will slice the list of items so we will fetch only
+        # the exact amount of entries we need to render the page and thus is a
+        # waste of resources to fetch all items always.
+        return ret
 
-        new_url = self.batchnav.generateBatchURL(
-            self.batchnav.currentBatch())
-        self._redirect(new_url)
-
-    def _store_translations(self):
+    def _submit_translations(self):
         """Handle a form submission to store new translations."""
         # First, we get the set of IPOTMsgSet objects submitted.
         pofile = self.context
@@ -419,9 +399,9 @@ class POFileTranslateView(BaseTranslationView):
                 # an error, we cannot render that error so we discard it, that
                 # translation is not being used anyway, so it's not a big
                 # lose.
-                self.potmsgset_with_errors.append(pomsgset_view)
+                self.potmsgsets_with_errors.append(pomsgset_view)
 
-        if len(self.potmsgset_with_errors) == 0:
+        if len(self.potmsgsets_with_errors) == 0:
             # Get the next set of message sets.
             next_url = self.batchnav.nextBatchURL()
             if next_url is None or next_url == '':
@@ -437,63 +417,14 @@ class POFileTranslateView(BaseTranslationView):
             self.request.response.addErrorNotification(
                 "There are %d errors in the translations you provided."
                 " Please, correct them before continuing." %
-                    len(self.potmsgset_with_errors))
+                    len(self.potmsgsets_with_errors))
 
         # update the statistis for this po file
         self.context.updateStatistics()
 
-    def _redirect(self, new_url):
-        """Redirect to the given url adding the selected filtering rules."""
-        assert new_url is not None, ('The new URL cannot be None.')
-
-        if new_url == '':
-            new_url = str(self.request.URL)
-            if self.request.get('QUERY_STRING'):
-                new_url += '?%s' % self.request.get('QUERY_STRING')
-        self.redirecting = True
-        parameters = {}
-        if self.alt:
-            parameters['alt'] = self.alt
-        if self.show and self.show != 'all':
-            parameters['show'] = self.show
-        params_str = '&'.join(
-            ['%s=%s' % (key, value) for key, value in parameters.items()])
-        if '?' not in new_url and params_str:
-            new_url += '?'
-        elif params_str:
-            new_url += '&'
-
-        if params_str:
-            new_url += params_str
-        self.request.response.redirect(new_url)
-
-    def getSelectedPOTMsgSet(self):
-        """Return a list of the POTMsgSets that will be rendered."""
-        if len(self.potmsgset_with_errors) > 0:
-            # Return the msgsets with errors.
-            return self.potmsgset_with_errors
-
-        # The set of message sets we get is based on the selection of kind
-        # of strings we have in our form.
-        pofile = self.context
-        potemplate = pofile.potemplate
-        if self.show == 'all':
-            ret = potemplate.getPOTMsgSets()
-        elif self.show == 'translated':
-            ret = pofile.getPOTMsgSetTranslated()
-        elif self.show == 'need_review':
-            ret = pofile.getPOTMsgSetFuzzy()
-        elif self.show == 'untranslated':
-            ret = pofile.getPOTMsgSetUntranslated()
-        else:
-            raise UnexpectedFormData('show = "%s"' % self.show)
-        # We cannot listify the results to avoid additional count queries,
-        # because we could end with a list of more than 32000 items with
-        # an average list of 5000 items.
-        # The batch system will slice the list of items so we will fetch only
-        # the exact amount of entries we need to render the page and thus is a
-        # waste of resources to fetch all items always.
-        return ret
+    @property
+    def completeness(self):
+        return '%.0f%%' % self.context.translatedPercentage()
 
 
 class POExportView(BaseExportView):
