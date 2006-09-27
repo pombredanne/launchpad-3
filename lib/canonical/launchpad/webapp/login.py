@@ -228,6 +228,8 @@ class LoginOrRegister:
         if isinstance(redirection_url, list):
             # Remove blank entries.
             redirection_url_list = [url for url in redirection_url if url]
+            # XXX: Shouldn't this be an UnexpectedFormData?
+            # -- Guilherme Salgado, 2006-09-27
             assert len(redirection_url_list) == 1, redirection_url_list
             redirection_url = redirection_url_list[0]
 

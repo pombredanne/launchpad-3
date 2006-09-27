@@ -165,7 +165,7 @@ class IPerson(IHasSpecifications):
         description=_(
             "This comment may be displayed verbatim in a web page, so it "
             "has to follow some structural constraints, that is, it must "
-            "be of the form: 'when %(action_details)s' (i.e. 'when the "
+            "be of the form: 'when %(action_details)s' (e.g 'when the "
             "foo package was imported into Ubuntu Breezy')."),
         required=False, readonly=False)
     # bounty relations
@@ -584,7 +584,7 @@ class IPersonSet(Interface):
         """Create a new Person and an EmailAddress with the given email.
 
         The comment must be of the following form: "when %(action_details)s"
-        (i.e. "when the foo package was imported into Ubuntu Breezy").
+        (e.g. "when the foo package was imported into Ubuntu Breezy").
 
         Return the newly created Person and EmailAddress if everything went
         fine or a (None, None) tuple otherwise.
@@ -600,7 +600,7 @@ class IPersonSet(Interface):
         displayname given.
 
         The comment must be of the following form: "when %(action_details)s"
-        (i.e. "when the foo package was imported into Ubuntu Breezy").
+        (e.g. "when the foo package was imported into Ubuntu Breezy").
 
         XXX sabdfl 14/06/05 this should be extended to be similar or
         identical to the other person creation argument lists, so we can

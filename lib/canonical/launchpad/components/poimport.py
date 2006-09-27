@@ -20,7 +20,7 @@ class OldPOImported(Exception):
     """Raised when an older PO file is imported."""
 
 
-def getLastTranslator(parser, pofile=None):
+def getLastTranslator(parser, pofile):
     """Return the person that appears as Last-Translator in a parsed PO file.
 
     If the person is unknown in launchpad, the account will be created.
