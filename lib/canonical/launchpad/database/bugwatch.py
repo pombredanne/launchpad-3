@@ -129,6 +129,8 @@ class BugWatchSet(BugSetBase):
                 r'(https?://.+/)show_bug.cgi.+id=(\d+).*'),
             BugTrackerType.ROUNDUP: re.compile(r'(https?://.+/)issue(\d+).*'),
             BugTrackerType.TRAC: re.compile(r'(https?://.+/)ticket/(\d+)'),
+            BugTrackerType.DEBBUGS:  re.compile(
+                r'(https?://.+/)cgi-bin/bugreport\.cgi\?bug=(\d+)'),
             }
 
     def get(self, watch_id):

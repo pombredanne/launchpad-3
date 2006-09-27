@@ -105,11 +105,21 @@ class TracGetBugTrackerAndBugTest(GetBugTrackerAndBugTestBase):
     bug_id = '42'
 
 
+class DebbugsGetBugTrackerAndBugTest(GetBugTrackerAndBugTestBase):
+    """Make sure BugWatchSet.getBugTrackerAndBug works with Trac URLs."""
+
+    bugtracker_type = BugTrackerType.DEBBUGS
+    bug_url = 'http://some.host/some/path/cgi-bin/bugreport.cgi?bug=42'
+    base_url = 'http://some.host/some/path/'
+    bug_id = '42'
+
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(BugzillaGetBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(RoundUpGetBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(TracGetBugTrackerAndBugTest))
+    suite.addTest(unittest.makeSuite(DebbugsGetBugTrackerAndBugTest))
     return suite
 
 
