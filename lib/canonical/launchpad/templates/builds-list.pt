@@ -118,9 +118,9 @@
     </tbody>
   </table>
 
-      <div tal:condition="not: batch">
-        No <span tal:replace="view/state/title" /> builds for
-        <span tal:replace="context/title" />.
+      <div id="empty-result" tal:condition="not: batch">
+        No <tal:state condition="view/state" replace="view/state/title" />
+        builds for <span tal:replace="context/title" />.
       </div>
 
       <tal:navigation

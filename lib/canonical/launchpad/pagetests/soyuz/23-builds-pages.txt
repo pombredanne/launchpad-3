@@ -1,8 +1,9 @@
-
 Those pages are based in the BuildRecordView class and
 template/builds-list.pt. Basically they have a buildstate selector
 action via HTTP GET and present a batched list of build records
 according the selected buildstate, by default All
+
+  >>> from canonical.launchpad.ftests.test_pages import find_tag_by_id
 
   >>> def check_optional_search(contents):
   ...     """Check if the label and/or the field for the optional
@@ -87,15 +88,14 @@ fact, the same mechanisms, we simply check if they render with no
 tracebacks:
 
   >>> browser.open("http://localhost/distros/ubuntu/hoary/+builds")
-  >>> browser.open("http://localhost/distros/ubuntu/hoary/+source/pmount/+builds")
+  >>> browser.open(
+  ...   "http://localhost/distros/ubuntu/hoary/+source/pmount/+builds")
 
 We check that the "names containing" field doesn't appear on the build list
 for an individual package.
 
   >>> print check_optional_search(browser.contents)
   not present
-
-  >>> browser.open("http://localhost/+builds/+build/7")
 
 Checking UnexpectedFormData on unknown build_state values (bug #41104)
 
@@ -104,3 +104,17 @@ Checking UnexpectedFormData on unknown build_state values (bug #41104)
   Traceback (most recent call last):
   ...
   UnexpectedFormData: No suitable state found for value "foo"
+
+
+Check if page still working for sourcepackages with no builds. (bug #62545)
+
+  >>> browser.open(
+  ...   "http://localhost/distros/ubuntu/hoary/+source/pmount/"
+  ...   "+builds?build_state=all")
+
+  >>> print find_tag_by_id(browser.contents, 'empty-result')
+   <div id="empty-result">
+           No
+           builds for pmount in Test Distro Hoary.
+         </div>
+
