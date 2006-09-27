@@ -356,6 +356,14 @@ class Item:
     def __hash__(self):
         return self.value
 
+    # This property is provided as a way to get at the other schema
+    # items from a security wrapped Item instance when there are no
+    # security declarations for the DBSchema class.  It is used by the
+    # enumvalue TALES expression.
+    @property
+    def schema_items(self):
+        return self.schema.items
+
 # TODO: make a metaclass for dbschemas that looks for ALLCAPS attributes
 #       and makes the introspectible.
 #       Also, makes the description the same as the docstring.
