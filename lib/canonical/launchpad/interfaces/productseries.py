@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'IProductSeries',
     'IProductSeriesSet',
-    'IProductSeriesSource',
     'IProductSeriesSourceAdmin',
     ]
 
@@ -144,8 +143,6 @@ class IProductSeries(IHasDrivers, IHasOwner, ISpecificationGoal):
     def newMilestone(name, dateexpected=None):
         """Create a new milestone for this DistroRelease."""
 
-
-class IProductSeriesSource(Interface):
     # revision control items
     import_branch = Choice(
         title=_('Import Branch'),

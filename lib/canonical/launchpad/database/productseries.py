@@ -20,8 +20,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.launchpad.interfaces import (
-    IProductSeries, IProductSeriesSet, IProductSeriesSource,
-    IProductSeriesSourceAdmin, NotFoundError)
+    IProductSeries, IProductSeriesSet, IProductSeriesSourceAdmin,
+    NotFoundError)
 
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
@@ -41,7 +41,7 @@ from canonical.lp.dbschema import (
 
 class ProductSeries(SQLBase):
     """A series of product releases."""
-    implements(IProductSeries, IProductSeriesSource, IProductSeriesSourceAdmin)
+    implements(IProductSeries, IProductSeriesSourceAdmin)
     _table = 'ProductSeries'
 
     product = ForeignKey(dbName='product', foreignKey='Product', notNull=True)

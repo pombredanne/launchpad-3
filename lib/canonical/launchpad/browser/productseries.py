@@ -34,8 +34,7 @@ from canonical.launchpad.helpers import (
 from canonical.launchpad.interfaces import (
     ICountry, IPOTemplateSet, ILaunchpadCelebrities,
     ISourcePackageNameSet, validate_url, IProductSeries,
-    ITranslationImportQueue, IProductSeriesSource,
-    IProductSeriesSet, NotFoundError)
+    ITranslationImportQueue, IProductSeriesSet, NotFoundError)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     Link, enabled_with_permission, Navigation, ApplicationMenu, stepto,
@@ -630,7 +629,7 @@ class ProductSeriesAppointDriverView(SQLObjectEditView):
 
 
 class ProductSeriesSourceView(LaunchpadEditFormView):
-    schema = IProductSeriesSource
+    schema = IProductSeries
     field_names = ['rcstype', 'cvsroot', 'cvsmodule', 'cvsbranch',
                    'svnrepository', 'releaseroot', 'releasefileglob']
 
