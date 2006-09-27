@@ -201,6 +201,14 @@ class POTMsgSetBatchNavigator(BatchNavigator):
         schema, netloc, path, parameters, query, fragment = (
             urlparse(str(request.URL)))
 
+        # For safety, delete the start and batch variables, if they
+        # appear in the URL. The situation in which 'start' appears
+        # today is when the alternative language form is posted back and
+        # includes it.
+        if 'start' in request:
+            del request.form['start']
+        if 'batch' in request.form:
+            del request.form['batch']
         # 'path' will be like: 'POTURL/LANGCODE/POTSEQUENCE/+translate' and
         # we are interested on the POTSEQUENCE.
         self.start_path, pot_sequence, self.page = path.rsplit('/', 2)
@@ -228,6 +236,9 @@ class POTMsgSetBatchNavigator(BatchNavigator):
         sequence = batch.startNumber()
         url = '/'.join([self.start_path, str(sequence), self.page])
         qs = self.request.environment.get('QUERY_STRING', '')
+        # cleanQueryString ensures we get rid of any bogus 'start' or
+        # 'batch' form variables we may have received via the URL.
+        qs = self.cleanQueryString(qs)
         if qs:
             # There are arguments that we should preserve.
             url = '%s?%s' % (url, qs)
@@ -377,22 +388,32 @@ class BaseTranslationView(LaunchpadView):
 
     def _initializeAltLanguage(self):
         """XXX"""
-        self.alt = self.form.get('alt', '')
-        initial_value = {}
-        if self.second_lang_code:
+        initial_values = {}
+        second_lang_code = self.form.get("field.alternative_language")
+        if second_lang_code:
+            if isinstance(second_lang_code, list):
+                raise UnexpectedFormData("You specified more than one alternative "
+                                         "languages; only one is currently "
+                                         "supported.")
             try:
-                initial_value['alternative_language'] = getUtility(
-                    ILanguageSet)[self.second_lang_code]
+                alternative_language = getUtility(ILanguageSet)[second_lang_code]
             except NotFoundError:
-                # A bogus alt value was supplied, redirect back to sanity.
-                self.alt = None
-                # XXX: we should really redirect in this case, to get rid of
-                # the bogus URL parameter.
-        self.alternative_language_widget = CustomWidgetFactory(
-            CustomDropdownWidget)
+                alternative_language = None
+
+            if alternative_language:
+                initial_values['alternative_language'] = alternative_language
+
+        self.alternative_language_widget = CustomWidgetFactory(CustomDropdownWidget)
         setUpWidgets(
             self, IPOFileAlternativeLanguage, IInputWidget,
-            names=['alternative_language'], initial=initial_value)
+            names=['alternative_language'], initial=initial_values)
+
+        if not second_lang_code and self.pofile.language.alt_suggestion_language:
+            second_lang_code = self.pofile.language.alt_suggestion_language.code
+
+        # XXX: would self.alternative_language be more useful?
+        self.second_lang_code = second_lang_code
+
 
     @property
     def has_plural_form_information(self):
@@ -402,19 +423,6 @@ class BaseTranslationView(LaunchpadView):
         # If there are no plural forms, we assume that we have the
         # plural form information for this language.
         return True
-
-    @cachedproperty
-    def second_lang_code(self):
-        if isinstance(self.alt, list):
-            raise UnexpectedFormData("You specified more than one alternative "
-                                     "languages; only one is currently "
-                                     "supported.")
-        elif self.alt:
-            return self.alt
-        elif self.pofile.language.alt_suggestion_language is not None:
-            return self.pofile.language.alt_suggestion_language.code
-        else:
-            return None
 
     #
     # Form processing
@@ -429,7 +437,6 @@ class BaseTranslationView(LaunchpadView):
 
         dispatch_table = {
             'submit_translations': self._submit_translations,
-            'select_alternate_language': self._select_alternate_language
             }
         dispatch_to = [(key, method)
                         for key,method in dispatch_table.items()
@@ -442,29 +449,14 @@ class BaseTranslationView(LaunchpadView):
         key, method = dispatch_to[0]
         method()
 
-    def _select_alternate_language(self):
-        """Handle a form submission to choose other language suggestions."""
-        # XXX: why does this need handling in the view? I suspect if we
-        # change the method to be GET instead of POST, we can just
-        # remove this code altogether!
-        #   -- kiko, 2006-06-22
-        selected_second_lang = self.alternative_language_widget.getInputValue()
-        if selected_second_lang is None:
-            self.alt = ''
-        else:
-            self.alt = selected_second_lang.code
-        new_url = self.batchnav.generateBatchURL(
-            self.batchnav.currentBatch())
-        self._redirect(new_url)
-
     #
     # Redirection
     #
 
     def _buildRedirectParams(self):
         parameters = {}
-        if self.alt:
-            parameters['alt'] = self.alt
+        if self.second_lang_code:
+            parameters['field.alternative_language'] = self.second_lang_code
         return parameters
 
     def _redirect(self, new_url):
@@ -897,6 +889,7 @@ class POMsgSetView(LaunchpadView):
     @cachedproperty
     def zoom_url(self):
         """Return the URL where we should from the zoom icon."""
+        # XXX: preserve self.second_lang_code?
         return '/'.join([canonical_url(self.context), '+translate'])
 
     @cachedproperty
@@ -921,6 +914,7 @@ class POMsgSetZoomedView(POMsgSetView):
     def zoom_url(self):
         # We are viewing this class directly from an IPOMsgSet, we should
         # point to the parent batch of messages.
+        # XXX: preserve self.second_lang_code?
         pofile_batch_url = '+translate?start=%d' % (self.sequence - 1)
         return '/'.join([canonical_url(self.pofile), pofile_batch_url])
 

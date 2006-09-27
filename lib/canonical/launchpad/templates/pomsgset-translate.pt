@@ -39,7 +39,8 @@
 
         <!-- Alternative suggestions. -->
         <div metal:define-macro="editform">
-          <form method="POST" action="+translate">
+          <form method="get" action="+translate">
+            <!-- XXX: these two variables only really make sense for pofile-translate.. -->
             <input type="hidden" name="start" value=""
                    tal:attributes="value view/start" />
             <input type="hidden" name="batch" value=""
@@ -53,8 +54,7 @@
             </tal:comment>
             <label>Make suggestions from:</label>
             <tal:language-widget content="structure view/alternative_language_widget" />
-            <input
-              type="submit" name='select_alternate_language' value="Change" />
+            <input type="submit" value="Change" />
           </form>
         </div>
 
