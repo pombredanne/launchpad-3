@@ -10,7 +10,7 @@ import operator
 
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    IProductSeriesSourceSet, IBazaarApplication, IProductSet)
+    IProductSeriesSet, IBazaarApplication, IProductSet)
 from canonical.lp.dbschema import ImportStatus
 from canonical.launchpad.webapp import (
     Navigation, stepto, enabled_with_permission, ApplicationMenu, Link)
@@ -41,7 +41,7 @@ class BazaarApplicationView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.seriesset = getUtility(IProductSeriesSourceSet)
+        self.seriesset = getUtility(IProductSeriesSet)
 
     def branches(self):
         """List of all branches in the system."""
@@ -95,5 +95,5 @@ class BazaarApplicationNavigation(Navigation):
     @stepto('series')
     def series(self):
         # DEPRECATED
-        return getUtility(IProductSeriesSourceSet)
+        return getUtility(IProductSeriesSet)
 

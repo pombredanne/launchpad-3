@@ -9,7 +9,6 @@ __all__ = [
     'IProductSeriesSet',
     'IProductSeriesSource',
     'IProductSeriesSourceAdmin',
-    'IProductSeriesSourceSet',
     ]
 
 
@@ -146,22 +145,6 @@ class IProductSeries(IHasDrivers, IHasOwner, ISpecificationGoal):
         """Create a new milestone for this DistroRelease."""
 
 
-class IProductSeriesSet(Interface):
-    """Interface representing the set of ProductSeries."""
-
-    def __getitem__(series_id):
-        """Return the ProductSeries with the given id.
-
-        Raise NotFoundError if there is no such series.
-        """
-
-    def get(series_id, default=None):
-        """Return the ProductSeries with the given id.
-
-        Return the default value if there is no such series.
-        """
-
-
 class IProductSeriesSource(Interface):
     # revision control items
     import_branch = Choice(
@@ -250,10 +233,22 @@ class IProductSeriesSourceAdmin(Interface):
     def enableAutoSync():
         """enable this series RCS for automatic baz syncronisation"""
 
-# XXX matsubara 2005-11-30: This class should be renamed to IProductSeriesSet
-# https://launchpad.net/products/launchpad/+bug/5247
-class IProductSeriesSourceSet(Interface):
-    """The set of ProductSeries with a view to source imports"""
+
+class IProductSeriesSet(Interface):
+    """Interface representing the set of ProductSeries."""
+
+    def __getitem__(series_id):
+        """Return the ProductSeries with the given id.
+
+        Raise NotFoundError if there is no such series.
+        """
+
+    def get(series_id, default=None):
+        """Return the ProductSeries with the given id.
+
+        Return the default value if there is no such series.
+        """
+
     def search(ready=None, text=None, forimport=None, importstatus=None,
                start=None, length=None):
         """return a list of series matching the arguments, which are passed

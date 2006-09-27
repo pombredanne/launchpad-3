@@ -2791,28 +2791,13 @@ class RevisionControlSystems(DBSchema):
         in the CVS design.
         """)
 
-    ARCH = Item(3, """
-        The Arch Revision Control System
+    BAZAAR = Item(3, """
+        Bazaar
 
         An open source revision control system that combines truly
         distributed branching with advanced merge algorithms. This
         removes the scalability problems of centralised revision
         control.
-        """)
-
-    PACKAGE = Item(4, """
-        Package
-
-        DEPRECATED DO NOT USE
-        """)
-
-
-    BITKEEPER = Item(5, """
-        Bitkeeper
-
-        A commercial revision control system that, like Arch, uses
-        distributed branches to allow for faster distributed
-        development.
         """)
 
 

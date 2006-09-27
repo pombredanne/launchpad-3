@@ -104,10 +104,7 @@ PollSecrecyVocabulary = vocab_factory(dbschema.PollSecrecy)
 RemoteBugTaskStatusVocabulary = vocab_factory(dbschema.BugTaskStatus)
 RemoteBugTaskImportanceVocabulary = vocab_factory(dbschema.BugTaskImportance)
 RevisionControlSystemsVocabulary = vocab_factory(
-    dbschema.RevisionControlSystems,
-    noshow=[dbschema.RevisionControlSystems.ARCH,
-            dbschema.RevisionControlSystems.PACKAGE,
-            dbschema.RevisionControlSystems.BITKEEPER])
+    dbschema.RevisionControlSystems)
 ShipItFlavourVocabulary = vocab_factory(dbschema.ShipItFlavour)
 SpecificationDeliveryVocabulary =  vocab_factory(dbschema.SpecificationDelivery)
 SpecificationPriorityVocabulary = vocab_factory(dbschema.SpecificationPriority)

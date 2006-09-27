@@ -30,12 +30,12 @@ from CVS.protocol import CVSRoot
 from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
 
 from canonical.launchpad.helpers import (
-    request_languages, browserLanguages, is_tar_filename)
+    browserLanguages, check_permission, is_tar_filename, request_languages)
 from canonical.launchpad.interfaces import (
     ICountry, IPOTemplateSet, ILaunchpadCelebrities,
     ISourcePackageNameSet, validate_url, IProductSeries,
     ITranslationImportQueue, IProductSeriesSource,
-    IProductSeriesSourceSet, NotFoundError)
+    IProductSeriesSet, NotFoundError)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     Link, enabled_with_permission, Navigation, ApplicationMenu, stepto,
@@ -327,7 +327,7 @@ class ProductSeriesView(LaunchpadView):
         Return True if the CVS details don't exist in the database or 
         if it's already set in this ProductSeries, otherwise return False.
         """
-        productseries = getUtility(IProductSeriesSourceSet).getByCVSDetails(
+        productseries = getUtility(IProductSeriesSet).getByCVSDetails(
             cvsroot, cvsmodule, cvsbranch) 
         if productseries is None or productseries == self.context:
             return True
@@ -340,7 +340,7 @@ class ProductSeriesView(LaunchpadView):
         Return True if the SVN details don't exist in the database or
         if it's already set in this ProductSeries, otherwise return False.
         """
-        productseries = getUtility(IProductSeriesSourceSet).getBySVNDetails(
+        productseries = getUtility(IProductSeriesSet).getBySVNDetails(
             svnrepository)
         if productseries is None or productseries == self.context:
             return True
@@ -665,7 +665,7 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
                 self.setFieldError('cvsbranch',
                                    'Your CVS branch name is invalid.')
             if cvsroot and cvsmodule and cvsbranch:
-                series = getUtility(IProductSeriesSourceSet).getByCVSDetails(
+                series = getUtility(IProductSeriesSet).getByCVSDetails(
                     cvsroot, cvsmodule, cvsbranch)
                 if self.context != series and series is not None:
                     self.addError('CVS repository details already in use '
@@ -678,7 +678,7 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
                                    'Please give valid Subversion server '
                                    'details.')
             if svnrepository:
-                series = getUtility(IProductSeriesSourceSet).getBySVNDetails(
+                series = getUtility(IProductSeriesSet).getBySVNDetails(
                     svnrepository)
                 if self.context != series and series is not None:
                     self.setFieldError('svnrepository',

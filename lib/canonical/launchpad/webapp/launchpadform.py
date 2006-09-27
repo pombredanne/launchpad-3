@@ -155,7 +155,8 @@ class LaunchpadFormView(LaunchpadView):
         # if the field is not marked as required.
         #
         # To work around this, we pass a subset of widgets to
-        # getWidgetsData().
+        # getWidgetsData().  Reported as:
+        #     http://www.zope.org/Collectors/Zope3-dev/717
         widgets = []
         for input, widget in self.widgets.__iter_input_and_widget__():
             if (input and IInputWidget.providedBy(widget) and

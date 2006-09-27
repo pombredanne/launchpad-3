@@ -5,7 +5,6 @@ __metaclass__ = type
 __all__ = [
     'ProductSeries',
     'ProductSeriesSet',
-    'ProductSeriesSourceSet',
     ]
 
 
@@ -22,7 +21,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.launchpad.interfaces import (
     IProductSeries, IProductSeriesSet, IProductSeriesSource,
-    IProductSeriesSourceAdmin, IProductSeriesSourceSet, NotFoundError)
+    IProductSeriesSourceAdmin, NotFoundError)
 
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
@@ -381,12 +380,6 @@ class ProductSeriesSet:
         except SQLObjectNotFound:
             return default
 
-
-# XXX matsubara, 2005-11-30: This class should be merged with ProductSeriesSet
-# https://launchpad.net/products/launchpad-bazaar/+bug/5247
-class ProductSeriesSourceSet:
-    """See IProductSeriesSourceSet"""
-    implements(IProductSeriesSourceSet)
     def search(self, ready=None, text=None, forimport=None, importstatus=None,
                start=None, length=None):
         query, clauseTables = self._querystr(
@@ -447,7 +440,7 @@ class ProductSeriesSourceSet:
         return query, clauseTables
 
     def getByCVSDetails(self, cvsroot, cvsmodule, cvsbranch, default=None):
-        """See IProductSeriesSourceSet."""
+        """See IProductSeriesSet."""
         result = ProductSeries.selectOneBy(
             cvsroot=cvsroot, cvsmodule=cvsmodule, cvsbranch=cvsbranch)
         if result is None:
@@ -455,7 +448,7 @@ class ProductSeriesSourceSet:
         return result
 
     def getBySVNDetails(self, svnrepository, default=None):
-        """See IProductSeriesSourceSet."""
+        """See IProductSeriesSet."""
         result = ProductSeries.selectOneBy(svnrepository=svnrepository)
         if result is None:
             return default
