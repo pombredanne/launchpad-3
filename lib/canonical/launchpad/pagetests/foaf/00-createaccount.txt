@@ -330,6 +330,10 @@
   Location: http://localhost:9000/people/foo
   ...
 
+  >>> foo = PersonSet().getByName('foo')
+  >>> foo.creation_rationale.name
+  'OWNER_CREATED_LAUNCHPAD'
+
 
   New account was created with name 'foo' and the hide email addresses option is
   turned on.
@@ -424,6 +428,13 @@ redirection_url in the form post below.
   Location: https://shipit.ubuntu.com
   ...
 
+  We'll also track that this account was initially created because the user
+  wanted to request some CDs on shipit, by setting the correct
+  creation_rationale.
+
+  >>> foo2 = PersonSet().getByName('foo-baz2')
+  >>> foo2.creation_rationale.name
+  'OWNER_CREATED_SHIPIT'
 
   If we try to go to that token's page again, we'll see a message explaining
   that the confirmation that token was created for is already concluded, so we

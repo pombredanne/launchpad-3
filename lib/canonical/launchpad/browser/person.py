@@ -704,7 +704,7 @@ class PersonClaimView(LaunchpadFormView):
         self.request.response.addInfoNotification(_(
             "An email message was sent to '%(email)s'. Follow the "
             "instructions in that message to finish claiming this "
-            "profile.", email=email))
+            "profile."), email=email)
 
 
 class PersonRdfView:

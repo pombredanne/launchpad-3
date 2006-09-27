@@ -109,6 +109,10 @@ class LoginOrRegister:
     submitted = False
     email = None
 
+    # XXX: If you add a new origin here, you must also add a new entry on
+    # NewAccountView.urls_and_rationales in browser/logintoken.py. Ideally,
+    # we should be storing the rationale in the logintoken too, but this
+    # should do for now. -- Guilherme Salgado, 2006-09-27
     registered_origins = {
         'shipit-ubuntu': ShipItConstants.ubuntu_url,
         'shipit-edubuntu': ShipItConstants.edubuntu_url,

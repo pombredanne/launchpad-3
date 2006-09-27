@@ -5,8 +5,6 @@ ALTER TABLE Person ADD COLUMN creation_comment text;
 
 -- The below commands are to speed up the update of Person.creation_rationale
 -- of existing unvalidated profiles.
--- XXX: Should this update be moved into a sql script inside the pending/
--- directory?
 SELECT Person.id INTO TEMPORARY TABLE InvalidOnes
 FROM Person LEFT OUTER JOIN ValidPersonOrTeamCache
     ON Person.id=ValidPersonOrTeamCache.id
@@ -17,5 +15,14 @@ UPDATE Person SET creation_rationale = 1
 FROM InvalidOnes
 WHERE InvalidOnes.id = Person.id;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (67, 39, 0);
+UPDATE Person SET creation_rationale = 8
+FROM ValidPersonOrTeamCache
+WHERE ValidPersonOrTeamCache.id = Person.id 
+    AND Person.teamowner IS NULL;
+
+-- The creation_rationale can be NULL only for teams
+ALTER TABLE Person ADD CONSTRAINT creation_rationale_not_null_for_people
+    CHECK (creation_rationale IS NULL = teamowner IS NOT NULL);
+
+INSERT INTO LaunchpadDatabaseRevision VALUES (67, 21, 0);
 

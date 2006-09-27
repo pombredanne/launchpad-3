@@ -24,8 +24,9 @@ from canonical.database.sqlbase import flush_database_updates
 
 from canonical.widgets import PasswordChangeWidget
 
-from canonical.lp.dbschema import EmailAddressStatus, LoginTokenType
-from canonical.lp.dbschema import GPGKeyAlgorithm
+from canonical.lp.dbschema import (
+    EmailAddressStatus, GPGKeyAlgorithm, LoginTokenType,
+    PersonCreationRationale)
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
@@ -36,7 +37,8 @@ from canonical.launchpad.webapp import (
 
 from canonical.launchpad.interfaces import (
     IPersonSet, IEmailAddressSet, ILaunchBag, ILoginTokenSet, IPerson,
-    IGPGKeySet, IGPGHandler, GPGVerificationError, GPGKeyNotFoundError)
+    IGPGKeySet, IGPGHandler, GPGVerificationError, GPGKeyNotFoundError,
+    ShipItConstants, UBUNTU_WIKI_URL)
 
 UTC = pytz.timezone('UTC')
 
@@ -529,6 +531,15 @@ class ValidateEmailView(BaseLoginTokenView, LaunchpadView):
 
 class NewAccountView(BaseLoginTokenView, GeneralFormView):
 
+    urls_and_rationales = {
+        ShipItConstants.ubuntu_url:
+            PersonCreationRationale.OWNER_CREATED_SHIPIT,
+        ShipItConstants.kubuntu_url:
+            PersonCreationRationale.OWNER_CREATED_SHIPIT,
+        ShipItConstants.edubuntu_url:
+            PersonCreationRationale.OWNER_CREATED_SHIPIT,
+        UBUNTU_WIKI_URL: PersonCreationRationale.OWNER_CREATED_UBUNTU_WIKI}
+
     def initialize(self):
         self.expected_token_types = (LoginTokenType.NEWACCOUNT,)
         self.top_of_page_errors = []
@@ -580,7 +591,7 @@ class NewAccountView(BaseLoginTokenView, GeneralFormView):
             naked_person.displayname = displayname
             naked_person.hide_email_addresses = hide_email_addresses
             naked_person.password = password
-            naked_person.creation_rationale = None
+            naked_person.creation_rationale = self._getCreationRationale()
             naked_person.creation_comment = None
         else:
             person, email = self._createPersonAndEmail(
@@ -590,6 +601,17 @@ class NewAccountView(BaseLoginTokenView, GeneralFormView):
         self.context.consume()
         self.logInPersonByEmail(email.email)
         self.success(_("Registration completed successfully"))
+
+    def _getCreationRationale(self):
+        """Return the creation rationale that should be used for this person.
+
+        If there's a rationale for the logintoken's redirection_url, then use
+        it, otherwise uses PersonCreationRationale.OWNER_CREATED_LAUNCHPAD.
+        """
+        rationale = self.urls_and_rationales.get(self.context.redirection_url)
+        if rationale is None:
+            rationale = PersonCreationRationale.OWNER_CREATED_LAUNCHPAD
+        return rationale
 
     def _createPersonAndEmail(
             self, displayname, hide_email_addresses, password):
@@ -601,9 +623,11 @@ class NewAccountView(BaseLoginTokenView, GeneralFormView):
         Also fire ObjectCreatedEvents for both the newly created Person
         and EmailAddress.
         """
+        rationale = self._getCreationRationale()
         person, email = getUtility(IPersonSet).createPersonAndEmail(
-            self.context.email, displayname=displayname, password=password,
-            passwordEncrypted=True, hide_email_addresses=hide_email_addresses)
+            self.context.email, rationale, displayname=displayname,
+            password=password, passwordEncrypted=True,
+            hide_email_addresses=hide_email_addresses)
 
         notify(ObjectCreatedEvent(person))
         notify(ObjectCreatedEvent(email))
