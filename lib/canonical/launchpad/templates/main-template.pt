@@ -145,6 +145,7 @@
                       ><metal:notifications
                           use-macro="context/@@+main-template-macros/notifications" />
                       </tal:notifications>
+                      <metal:block define-slot="data" />
                       <metal:block define-slot="main" />
                     </div>
                     <ul id="left_nav">
