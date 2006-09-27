@@ -152,8 +152,11 @@
     </th>
     <td />
     <td>
-      &ldquo;<img alt="" src="/@@/translation-newline" />&rdquo; represents
-      a new line.
+      <img
+        alt="There are line breaks here. Each one"
+        src="/@@/translation-newline"
+      />
+      represents a line break.
       Start a new line in the equivalent position in the translation.
     </td>
   </tr>
@@ -167,8 +170,11 @@
     </th>
     <td />
     <td>
-      &ldquo;<img alt=" " src="/@@/translation-space" />&rdquo; represents
-      a space.
+      <img
+        alt="There are leading/trailing spaces here. Each one"
+        src="/@@/translation-space"
+      />
+      represents a space character.
       Enter a space in the equivalent position in the translation.
     </td>
   </tr>
