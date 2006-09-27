@@ -153,7 +153,7 @@
                            name="submit_translations"
                            value="Save &amp; Continue"
                            style="text-align: right;"
-                           tal:attributes="tabindex view/generateNextTabIndex" />
+                           tal:attributes="tabindex view/tabindex/next" />
                   </th>
                 </tr>
               </tfoot>

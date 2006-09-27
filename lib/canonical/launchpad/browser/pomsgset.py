@@ -319,32 +319,31 @@ class POMsgSetIndexView:
         self.request.response.redirect(url)
 
 
-class POMsgSetPageView(LaunchpadView):
+class BaseTranslationView(LaunchpadView):
     """XXX"""
-    __used_for__ = IPOMsgSet
+
+    class TabIndex:
+        """XXX"""
+        def __init__(self):
+            self.index = 0
+
+        def next(self):
+            self.index += 1
+            return self.index
+
     def initialize(self):
         self.form = self.request.form
-        self.potmsgset = self.context.potmsgset
-        self.pofile = self.context.pofile
+        self.tabindex = self.TabIndex()
         self.redirecting = False
-
-        # By default the submitted values are None
-        self.form = self.request.form
-        self.form_posted_translations = None
-        self.form_posted_needsreview = None
-        self.error = None
-
-        # XXX
-        self._table_index_value = 0
 
         if not self.pofile.canEditTranslations(self.user):
             # The user is not an official translator, we should show a
             # warning.
-            self.request.response.addWarningNotification(
-                "You are not an official translator for this file. You can"
-                " still make suggestions, and your translations will be"
-                " stored and reviewed for acceptance later by the designated"
-                " translators.")
+            self.request.response.addWarningNotification("""
+                You are not an official translator for this file. You can"
+                 still make suggestions, and your translations will be"
+                 stored and reviewed for acceptance later by the designated"
+                 translators.""")
 
         if not self.has_plural_form_information:
             # Cannot translate this IPOFile without the plural form
@@ -364,6 +363,51 @@ class POMsgSetPageView(LaunchpadView):
             This only needs to be done once per language. Thanks for helping Rosetta.
             </p>
             """ % self.pofile.language.englishname)
+
+    @property
+    def has_plural_form_information(self):
+        """Return whether we know the plural forms for this language."""
+        if self.pofile.potemplate.hasPluralMessage():
+            return self.pofile.language.pluralforms is not None
+        # If there are no plural forms, we assume that we have the
+        # plural form information for this language.
+        return True
+
+    @cachedproperty
+    def second_lang_code(self):
+        if isinstance(self.alt, list):
+            raise UnexpectedFormData("You specified more than one alternative "
+                                     "languages; only one is currently "
+                                     "supported.")
+        elif self.alt:
+            return self.alt
+        elif self.pofile.language.alt_suggestion_language is not None:
+            return self.pofile.language.alt_suggestion_language.code
+        else:
+            return None
+
+    def render(self):
+        if self.redirecting:
+            return u''
+        else:
+            return LaunchpadView.render(self)
+
+
+class POMsgSetPageView(BaseTranslationView):
+    """A view for the page that renders a single translation."""
+    __used_for__ = IPOMsgSet
+    def initialize(self):
+        self.potmsgset = self.context.potmsgset
+        self.pofile = self.context.pofile
+
+        BaseTranslationView.initialize(self)
+
+
+        # By default the submitted values are None
+        self.form = self.request.form
+        self.form_posted_translations = None
+        self.form_posted_needsreview = None
+        self.error = None
 
         # Setup the batching for this page.
         potemplate = self.context.pofile.potemplate
@@ -401,35 +445,33 @@ class POMsgSetPageView(LaunchpadView):
         # XXX: this needs to take into account form-posted stuff, as
         # does is_fuzzy, to handle error posting.
         translations = self.context.active_texts
-        self.pomsgset_view.prepare(translations, self.error, 1, self.second_lang_code)
+        self.pomsgset_view.prepare(translations, self.error,
+            self.tabindex, self.second_lang_code)
 
+    def process_form(self):
+        """Check whether the form was submitted and calls the right callback.
+        """
+        if (self.request.method != 'POST' or self.user is None or
+            'pofile_translation_filter' in self.form):
+            # The form was not submitted or the user is not logged in.
+            # If we get 'pofile_translation_filter' we should ignore that POST
+            # because it's useless for this view.
+            return
 
-    @cachedproperty
-    def second_lang_code(self):
-        # XXX: duped from POMsgSetView
-        if (self.alt == '' and
-            self.context.pofile.language.alt_suggestion_language is not None):
-            return self.context.pofile.language.alt_suggestion_language.code
-        elif self.alt == '':
-            return None
-        else:
-            return self.alt
-
-    @property
-    def has_plural_form_information(self):
-        """Return whether we know the plural forms for this language."""
-        if self.context.pofile.potemplate.hasPluralMessage():
-            return self.context.pofile.language.pluralforms is not None
-        else:
-            # If there are no plural forms, we could assume that we have
-            # the plural form information for this language.
-            return True
-
-    def generateNextTabIndex(self):
-        """Return the tab index value to navigate the form."""
-        # XXX: duped from POMsgSetView, and fucked up
-        self._table_index_value += 1
-        return self._table_index_value
+        dispatch_table = {
+            'submit_translations': self._submit_translations,
+            'select_alternate_language': self._select_alternate_language
+            }
+        dispatch_to = [(key, method)
+                        for key,method in dispatch_table.items()
+                        if key in self.form
+                      ]
+        if len(dispatch_to) != 1:
+            raise UnexpectedFormData(
+                "There should be only one command in the form",
+                dispatch_to)
+        key, method = dispatch_to[0]
+        method()
 
     def _select_alternate_language(self):
         """Handle a form submission to choose other language suggestions."""
@@ -441,29 +483,6 @@ class POMsgSetPageView(LaunchpadView):
 
         # Now, do the redirect to the new URL
         self._redirect(str(self.request.URL))
-
-    def _redirect(self, new_url):
-        """Redirect to the given url adding the selected filtering rules."""
-        assert new_url is not None, ('The new URL cannot be None.')
-        if new_url == '':
-            new_url = str(self.request.URL)
-            if self.request.get('QUERY_STRING'):
-                new_url += '?%s' % self.request.get('QUERY_STRING')
-        self.redirecting = True
-        if self.alt:
-            if '?' not in new_url:
-                new_url += '?'
-            else:
-                new_url += '&'
-            new_url += 'alt=%s' % self.alt
-
-        self.request.response.redirect(new_url)
-
-    def render(self):
-        if self.redirecting:
-            return u''
-        else:
-            return LaunchpadView.render(self)
 
     def _extract_form_posted_translations(self):
         """Parse the form submitted to the translation widget looking for
@@ -585,31 +604,6 @@ class POMsgSetPageView(LaunchpadView):
                 "There is an error in the translation you provided."
                 " Please, correct it before continuing.")
 
-    def process_form(self):
-        """Check whether the form was submitted and calls the right callback.
-        """
-        if (self.request.method != 'POST' or self.user is None or
-            'pofile_translation_filter' in self.form):
-            # The form was not submitted or the user is not logged in.
-            # If we get 'pofile_translation_filter' we should ignore that POST
-            # because it's useless for this view.
-            return
-
-        dispatch_table = {
-            'submit_translations': self._submit_translations,
-            'select_alternate_language': self._select_alternate_language
-            }
-        dispatch_to = [(key, method)
-                        for key,method in dispatch_table.items()
-                        if key in self.form
-                      ]
-        if len(dispatch_to) != 1:
-            raise UnexpectedFormData(
-                "There should be only one command in the form",
-                dispatch_to)
-        key, method = dispatch_to[0]
-        method()
-
     def _prepare_translations_crap_to_do_with_form_posts(self):
         if self.form_posted_translations is None:
             self.form_posted_translations = {}
@@ -625,6 +619,23 @@ class POMsgSetPageView(LaunchpadView):
         if not self.translations:
             # We didn't get any translation from the website.
             self.translations = self.context.active_texts
+
+    def _redirect(self, new_url):
+        """Redirect to the given url adding the selected filtering rules."""
+        assert new_url is not None, ('The new URL cannot be None.')
+        if new_url == '':
+            new_url = str(self.request.URL)
+            if self.request.get('QUERY_STRING'):
+                new_url += '?%s' % self.request.get('QUERY_STRING')
+        self.redirecting = True
+        if self.alt:
+            if '?' not in new_url:
+                new_url += '?'
+            else:
+                new_url += '&'
+            new_url += 'alt=%s' % self.alt
+
+        self.request.response.redirect(new_url)
 
 
 class POMsgSetView(LaunchpadView):
@@ -650,10 +661,10 @@ class POMsgSetView(LaunchpadView):
     # self.submission_blocks
     # self.translation_range
 
-    def prepare(self, translations, error, initial_tabindex, second_lang_code):
+    def prepare(self, translations, error, tabindex, second_lang_code):
         self.translations = translations
         self.error = error
-        self._table_index_value = initial_tabindex
+        self.tabindex = tabindex
         # XXX: do properly
         self.form_posted_needsreview = False
 
@@ -793,7 +804,7 @@ class POMsgSetView(LaunchpadView):
         msgid = self.msgids[TranslationConstants.SINGULAR_FORM].msgid
         return msgid_html(msgid, self.potmsgset.flags())
 
-    @cachedproperty
+    @property
     def msgid_plural(self):
         """Return a msgid plural string prepared to render as a web page.
 
@@ -907,5 +918,4 @@ class POMsgSetSubmissions(LaunchpadView):
         self.submissions = submissions
         self.is_multi_line = is_multi_line
         self.max_entries = max_entries
-
 

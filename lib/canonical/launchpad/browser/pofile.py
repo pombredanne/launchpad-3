@@ -33,6 +33,7 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ApplicationMenu, Link, canonical_url,
     LaunchpadView, Navigation)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.browser.pomsgset import BaseTranslationView
 
 
 class CustomDropdownWidget(DropdownWidget):
@@ -251,7 +252,7 @@ class POFileUploadView(POFileView):
                 canonical_url(translation_import_queue))
 
 
-class POFileTranslateView(POFileView):
+class POFileTranslateView(BaseTranslationView):
     """The View class for a POFile or a DummyPOFile.
 
     Note that the DummyPOFile is presented if there is no POFile in the
@@ -265,10 +266,10 @@ class POFileTranslateView(POFileView):
     DEFAULT_SHOW = 'all'
 
     def initialize(self):
-        self.form = self.request.form
-        self.redirecting = False
+        self.pofile = self.context
+        BaseTranslationView.initialize(self)
+
         self.potmsgset_with_errors = []
-        self._table_index_value = 0
         self._initialize_show_option()
         self.alt = self.form.get('alt', '')
 
@@ -283,34 +284,6 @@ class POFileTranslateView(POFileView):
         setUpWidgets(
             self, IPOFileAlternativeLanguage, IInputWidget,
             names=['alternative_language'], initial=initial_value)
-
-        if not self.context.canEditTranslations(self.user):
-            # The user is not an official translator, we should show a
-            # warning.
-            self.request.response.addWarningNotification(
-                "You are not an official translator for this file. You can"
-                " still make suggestions, and your translations will be"
-                " stored and reviewed for acceptance later by the designated"
-                " translators.")
-
-        if not self.has_plural_form_information:
-            # Cannot translate this IPOFile without the plural form
-            # information. Show the info to add it to our system.
-            self.request.response.addErrorNotification("""
-<p>
-Rosetta can&#8217;t handle the plural items in this file, because it
-doesn&#8217;t yet know how plural forms work for %s.
-</p>
-<p>
-To fix this, please e-mail the <a
-href="mailto:rosetta-users@lists.ubuntu.com">Rosetta users mailing list</a>
-with this information, preferably in the format described in the
-<a href="https://wiki.ubuntu.com/RosettaFAQ">Rosetta FAQ</a>.
-</p>
-<p>
-This only needs to be done once per language. Thanks for helping Rosetta.
-</p>
-""" % self.context.language.englishname)
 
         # Setup the batching for this page.
         self.batchnav = BatchNavigator(
@@ -334,7 +307,7 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             pomsgset = potmsgset.getDummyPOMsgSet(language.code, variant)
         pomsgset_view = getView(pomsgset, "+translate-one", self.request)
         # XXX: do properly
-        pomsgset_view.prepare(pomsgset.active_texts, None, 1, self.second_lang_code)
+        pomsgset_view.prepare(pomsgset.active_texts, None, self.tabindex, self.second_lang_code)
         return pomsgset_view
 
     def _initialize_show_option(self):
@@ -360,31 +333,6 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         elif self.show == 'need_review':
             self.show_need_review = True
             self.shown_count = self.context.fuzzy_count
-
-    @property
-    def has_plural_form_information(self):
-        """Return whether we know the plural forms for this language."""
-        if self.context.potemplate.hasPluralMessage():
-            # If there are no plural forms, we don't mind if we have or not
-            # the plural form information.
-            return self.context.language.pluralforms is not None
-        else:
-            return True
-
-    @property
-    def second_lang_code(self):
-        # XXX: share with POMsgSetView
-        if (self.alt == '' and
-            self.context.language.alt_suggestion_language is not None):
-            return self.context.language.alt_suggestion_language.code
-        elif self.alt == '':
-            return None
-        elif isinstance(self.alt, list):
-            raise UnexpectedFormData("You specified more than one alternative "
-                                     "languages; only one is currently "
-                                     "supported.")
-        else:
-            return self.alt
 
     @property
     def completeness(self):
@@ -546,17 +494,6 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         # the exact amount of entries we need to render the page and thus is a
         # waste of resources to fetch all items always.
         return ret
-
-    def generateNextTabIndex(self):
-        """Return the tab index value to navigate the form."""
-        self._table_index_value += 1
-        return self._table_index_value
-
-    def render(self):
-        if self.redirecting:
-            return u''
-        else:
-            return LaunchpadView.render(self)
 
 
 class POExportView(BaseExportView):

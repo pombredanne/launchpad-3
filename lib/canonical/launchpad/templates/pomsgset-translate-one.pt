@@ -134,7 +134,7 @@
           tal:attributes="
             name string:msgset_${view/potmsgset/id}_${language_code}_translation_${index};
             value python:view.getTranslation(index);
-            tabindex view/generateNextTabIndex;
+            tabindex view/tabindex/next;
             lang view/pofile_language/dashedcode;
             dir view/pofile_language/abbreviated_text_dir;
             " />
@@ -155,7 +155,7 @@
               tal:attributes="
                 name string:msgset_${view/potmsgset/id}_${language_code}_translation_${index};
                 rows view/max_lines_count;
-                tabindex view/generateNextTabIndex;
+                tabindex view/tabindex/next;
                 lang view/pofile_language/dashedcode;
                 dir view/pofile_language/abbreviated_text_dir;
                 ">
@@ -176,7 +176,7 @@
               tal:attributes="
                 name string:msgset_${view/potmsgset/id}_${language_code}_translation_${index};
                 rows view/max_lines_count;
-                tabindex view/generateNextTabIndex;
+                tabindex view/tabindex/next;
                 lang view/pofile_language/dashedcode;
                 dir view/pofile_language/abbreviated_text_dir;
                 "></textarea>
@@ -218,7 +218,7 @@
             tal:attributes="
               checked view/is_fuzzy;
               name string:msgset_${view/potmsgset/id}_${language_code}_needsreview;
-              tabindex view/generateNextTabIndex
+              tabindex view/tabindex/next
               " />
           <tal:block condition="not:view/is_plural">
             Someone should review this translation
