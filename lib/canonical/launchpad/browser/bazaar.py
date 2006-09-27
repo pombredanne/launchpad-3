@@ -87,13 +87,7 @@ class BazaarApplicationNavigation(Navigation):
 
     newlayer = canonical.launchpad.layers.BazaarLayer
 
-    @stepto('products')
-    def products(self):
-        # DEPRECATED
-        return getUtility(IProductSet)
-
     @stepto('series')
     def series(self):
-        # DEPRECATED
         return getUtility(IProductSeriesSet)
 

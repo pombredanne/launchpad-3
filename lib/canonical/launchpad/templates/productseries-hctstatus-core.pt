@@ -28,7 +28,7 @@
       tal:content="structure context/user_branch/@@+product-summary-listing" />
 </tal:block>
 
-<tal:block tal:condition="context/rcstype">
+<tal:block tal:condition="not:context/rcstype/enumvalue:NONE">
 
   <p>We have the following revision control system details on file for the
   branch:</p>

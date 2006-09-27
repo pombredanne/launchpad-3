@@ -4,11 +4,11 @@
   <div class="portletBody">
     <div class="portletContent">
       <b>Revision control system:</b><br />
-      <span tal:condition="context/rcstype"
+      <span tal:condition="not:context/rcstype/enumvalue:NONE"
       tal:replace="context/rcstype/title">CVS</span>
-      <i tal:condition="not: context/rcstype">None given</i>
+      <i tal:condition="context/rcstype/enumvalue:NONE">None given</i>
       <br />
-      <tal:block condition="context/rcstype">
+      <tal:block condition="not:context/rcstype/enumvalue:NONE">
         <tal:block condition="python:context.rcstype.name=='CVS'">
           <b>CVS root:</b><br />
           <span tal:replace="context/cvsroot/fmt:shorten/25">cvsrt</span><br />
