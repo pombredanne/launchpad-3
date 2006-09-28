@@ -30,21 +30,28 @@
   <br />
   <div>
 
+  <p>
   <strong>Your bug may already have been reported.</strong> Please have a look through the list of bugs below to see if one of them describes the bug you were going to report. If you find a matching bug, you may wish to subscribe to it.
+  </p>
 
 <div tal:replace="structure view/batch_navigator/@@+table-view-without-navlinks" />
-  <form action=""
-        tal:attributes="action string:${context/fmt:url}/+filebug"
-        method="post"
-        enctype="multipart/form-data"
-        accept-charset="UTF-8">
-    <input type="hidden" name="field.title"
-           tal:attributes="value request/field.title" />
-    <div class="actions">
-      <input tal:replace="structure view/actions/field.actions.no_dupe_found/render" />
-    </div>
-  </form>
+<tal:most-common-bugs define="most_common_bugs_navigator view/getMostCommonBugs">
+  <h2>Common Bugs</h2>
+  <div tal:replace="structure most_common_bugs_navigator/@@+table-view-without-navlinks" />
+</tal:most-common-bugs>
+
+<form action=""
+      tal:attributes="action string:${context/fmt:url}/+filebug"
+      method="post"
+      enctype="multipart/form-data"
+      accept-charset="UTF-8">
+  <input type="hidden" name="field.title"
+         tal:attributes="value request/field.title" />
+  <div class="actions">
+    <input tal:replace="structure view/actions/field.actions.no_dupe_found/render" />
   </div>
+</form>
+</div>
 </div>
 
 </body>

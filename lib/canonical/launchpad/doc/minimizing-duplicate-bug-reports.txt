@@ -61,3 +61,22 @@ subscribed to the bug.
     >>> for bug in firefox.getMostCommonBugs(current_user):
     ...     print "%s, %s" % (bug.title, bug.duplicates.count())
     Firefox install instructions should be complete, 2
+
+An admin will, of course, see the private bug.
+
+    >>> login("foo.bar@canonical.com")
+
+    >>> current_user = getUtility(ILaunchBag).user
+
+    >>> for bug in firefox.getMostCommonBugs(current_user):
+    ...     print "%s, %s" % (bug.title, bug.duplicates.count())
+    Firefox install instructions should be complete, 2
+    Firefox does not support SVG, 1
+
+When the context has /no/ duplicate bugs, an empty list is returned.
+
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+
+    >>> kubuntu = getUtility(IDistributionSet).getByName("kubuntu")
+    >>> kubuntu.getMostCommonBugs(current_user)
+    []

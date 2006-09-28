@@ -190,7 +190,7 @@ class FileBugView(GeneralFormView, FileBugViewMixin):
 
 class FileBugSearchForDupesView(LaunchpadFormView, FileBugViewMixin):
     schema = IBugAddForm
-    field_names = ['title']
+    field_names = ['title', 'comment', 'packagename']
     custom_widget('title', TextWidget, displayWidth=40)
     columns_to_show = ["id", "summary", "status"]
 
@@ -222,11 +222,8 @@ class FileBugSearchForDupesView(LaunchpadFormView, FileBugViewMixin):
             matching_bugtasks[:self._MATCHING_BUGS_LIMIT],
             self.request, columns_to_show=self.columns_to_show,
             size=self._MATCHING_BUGS_LIMIT)
-        # XXX: 2006-08-24, Brad Bollenbach: We need functionality
-        # similar to formlib where an action can return the rendered
-        # page, rather than this hack that changes the default template
-        # that will be rendered.
-        self.template = self._DISPLAY_DUPES
+
+        return self._DISPLAY_DUPES()
 
     def validate_search(self, action, data):
         """Make sure some keywords are provided."""
@@ -239,11 +236,85 @@ class FileBugSearchForDupesView(LaunchpadFormView, FileBugViewMixin):
         # Return an empty list of errors to satisfy the validation API,
         # and say "we've handled the validation and found no errors."
         return ()
-    
-    @action("I don't see my bug in this list", name="no_dupe_found")
+
+    @action("I don't see my bug in this list",
+            name="no_dupe_found", validator="validate_no_dupe_found")
     def handle_no_dupe_found(self, action, data):
         """Show the simple bug form."""
-        self.template = self._FILEBUG_FORM
+        return self._FILEBUG_FORM()
+
+    def validate_no_dupe_found(self, action, data):
+        return ()
+
+    @action("Submit Bug Report", name="submit_bug")
+    def handle_submit_bug(self, action, data):
+        """Add a bug to this IBugTarget."""
+        title = data.get("title")
+        comment = data.get("comment")
+        packagename = data.get("packagename")
+        distribution = getUtility(ILaunchBag).distribution
+        product = getUtility(ILaunchBag).product
+
+        context = self.context
+        if distribution is not None:
+            # We're being called from the generic bug filing form, so manually
+            # set the chosen distribution as the context.
+            context = distribution
+
+        # Ensure that no package information is used, if the user
+        # enters a package name but then selects "I don't know".
+        if self.request.form.get("packagename_option") == "none":
+            packagename = None
+
+        notification = "Thank you for your bug report."
+        if IDistribution.providedBy(context) and packagename:
+            # We don't know if the package name we got was a source or binary
+            # package name, so let the Soyuz API figure it out for us.
+            packagename = str(packagename)
+            try:
+                sourcepackagename, binarypackagename = (
+                    context.guessPackageNames(packagename))
+            except NotFoundError:
+                # guessPackageNames may raise NotFoundError. It would be
+                # nicer to allow people to indicate a package even if
+                # never published, but the quick fix for now is to note
+                # the issue and move on.
+                notification += (
+                    "<br /><br />The package %s is not published in %s; the "
+                    "bug was targeted only to the distribution."
+                    % (packagename, context.displayname))
+                comment += ("\r\n\r\nNote: the original reporter indicated "
+                            "the bug was in package %r; however, that package "
+                            "was not published in %s."
+                            % (packagename, context.displayname))
+                params = CreateBugParams(
+                    title=title, comment=comment, owner=self.user)
+            else:
+                context = context.getSourcePackage(sourcepackagename.name)
+                params = CreateBugParams(
+                    title=title, comment=comment, owner=self.user,
+                    binarypackagename=binarypackagename)
+        else:
+            params = CreateBugParams(
+                title=title, comment=comment, owner=self.user)
+
+        bug = context.createBug(params)
+        notify(SQLObjectCreatedEvent(bug))
+
+        # Give the user some feedback on the bug just opened.
+        self.request.response.addNotification(notification)
+        self.request.response.redirect(canonical_url(bug.bugtasks[0]))
+
+    def getMostCommonBugs(self):
+        """Return a TableBatchNavigator of the most common bugs.
+
+        'Most common' means bugs that have the most duplicates.
+        """
+        return TableBatchNavigator(
+            self.context.getMostCommonBugs(
+                self.user, limit=self._MATCHING_BUGS_LIMIT),
+            self.request, columns_to_show=self.columns_to_show,
+            size=self._MATCHING_BUGS_LIMIT)
 
 
 class BugTargetBugListingView:

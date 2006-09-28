@@ -20,20 +20,15 @@
 
 <div metal:fill-slot="main">
 
-  <p class="error message"
-     tal:define="status view/update"
-     tal:condition="status"
-     tal:content="status" />
-
   <tal:uses_malone tal:condition="context/official_malone">
-  <form action="." 
-        tal:attributes="action request/URL" 
+  <form action="."
+        tal:attributes="action request/URL"
         method="post"
         enctype="multipart/form-data">
 
-  <div tal:condition="view/packagename_widget|nothing"
+  <div tal:condition="view/widgets/packagename|nothing"
        style="margin-top: 1em">
-    <label tal:attributes="for view/packagename_widget/name">
+    <label tal:attributes="for view/widgets/packagename/name">
       In what package did you find this bug?
     </label>
     <ul style="list-style: none">
@@ -47,26 +42,26 @@
       <li style="margin-top: 4px">
         <input type="radio" name="packagename_option" value="choose"
                id="choose" />
-        <span tal:content="structure view/packagename_widget" />
+        <span tal:content="structure view/widgets/packagename" />
       </li>
     </ul>
   </div>
 
   <div style="margin-top: 1em">
-    <label tal:content="structure view/title_widget/label"
-           tal:attributes="for view/title_widget/name" />
-    <div tal:content="structure view/title_widget" />
+    <label tal:content="structure view/widgets/title/label"
+           tal:attributes="for view/widgets/title/name" />
+    <div tal:content="structure view/widgets/title" />
   </div>
 
   <div style="margin-top: 1em">
-    <label tal:attributes="for view/comment_widget/name">
+    <label tal:attributes="for view/widgets/comment/name">
       Further information, steps to reproduce, etc.
     </label>
-    <div tal:content="structure view/comment_widget" />
+    <div tal:content="structure view/widgets/comment" />
   </div>
 
-  <div style="margin-top: 1em">
-    <input type="submit" name="UPDATE_SUBMIT" value="Submit Bug Report" />
+  <div class="actions">
+    <input tal:replace="structure view/actions/field.actions.submit_bug/render" />
   </div>
 
   </form>

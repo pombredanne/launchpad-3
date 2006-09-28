@@ -31,27 +31,32 @@ class BugTargetBase:
 
     def getMostCommonBugs(self, user, limit=10):
         """See canonical.launchpad.interfaces.IBugTarget."""
+        constraints = []
         bug_privacy_clause = get_bug_privacy_filter(user)
-        context_clause = self._getBugTaskContextWhereClause()
+        if bug_privacy_clause:
+            constraints.append(bug_privacy_clause)
+        constraints.append(self._getBugTaskContextWhereClause())
         c = cursor()
         c.execute("""
         SELECT duplicateof, COUNT(duplicateof)
         FROM Bug
         WHERE duplicateof IN (
-                  SELECT DISTINCT(Bug.id)
-                  FROM Bug, BugTask
-                  WHERE BugTask.bug = Bug.id AND
-                  %s AND
-                  %s)
+            SELECT DISTINCT(Bug.id)
+            FROM Bug, BugTask
+            WHERE BugTask.bug = Bug.id AND
+            %s)
         GROUP BY duplicateof
         ORDER BY COUNT(duplicateof) DESC
         LIMIT %d
-        """ % (bug_privacy_clause, context_clause, limit))
+        """ % ("AND\n".join(constraints), limit))
 
         common_bug_ids = [
             str(bug_id) for (bug_id, dupe_count) in c.fetchall()]
 
-        return Bug.select("Bug.id IN (%s)" % ", ".join(common_bug_ids))
+        if not common_bug_ids:
+            return []
+        return list(
+            Bug.select("Bug.id IN (%s)" % ", ".join(common_bug_ids)))
 
     @property
     def open_bugtasks(self):
