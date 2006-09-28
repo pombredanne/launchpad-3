@@ -806,13 +806,20 @@ class POMsgSetView(LaunchpadView):
 
         The decreasing order of preference this method encodes is:
             - Active translations to other contexts (elsewhere)
-            - Non-editor translations to this context (non_editor)
+            - Non-active translations to this context and to the pofile
+              from which this translation was imported (non_editor)
             - Non-editor translations to other contexts (wiki)
         """
         def build_dict(subs):
+            """Build a dict of POSubmissions keyed on its translation text."""
             return dict((sub.potranslation.translation, sub) for sub in subs)
 
         def prune_dict(main, pruners):
+            """Build dict from main pruning keys present in any of pruners.
+
+            Return a dict with all items in main whose keys do not occur
+            in any of pruners. main is a dict, pruners is a list of dicts.
+            """
             pruners_merged = {}
             for pruner in pruners:
                 pruners_merged.update(pruner)
@@ -924,13 +931,12 @@ class POMsgSetView(LaunchpadView):
 
     @cachedproperty
     def is_multi_line(self):
-        """Return whether the singular or plural msgid have more than one line.
-        """
+        """Return whether the msgid has more than one line."""
         return self.max_lines_count > 1
 
     @cachedproperty
     def sequence(self):
-        """Return the position number of this potmsgset."""
+        """Return the position number of this potmsgset in the pofile."""
         return self.context.potmsgset.sequence
 
     @cachedproperty
