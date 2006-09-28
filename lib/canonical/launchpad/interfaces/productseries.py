@@ -165,7 +165,7 @@ class IProductSeries(IHasDrivers, IHasOwner, ISpecificationGoal):
         "series. In some cases we might want to sync once a week, in "
         "others, several times per day.")
     rcstype = Choice(title=_("Type of RCS"),
-        required=True, vocabulary='RevisionControlSystems',
+        required=False, vocabulary='RevisionControlSystems',
         description=_("The type of revision control used for "
         "the upstream branch of this series. Can be CVS, SVN, BK or "
         "Arch."))

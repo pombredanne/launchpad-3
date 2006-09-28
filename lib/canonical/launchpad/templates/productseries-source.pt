@@ -22,7 +22,7 @@
 <div metal:fill-slot="main">
 
   <div metal:use-macro="context/@@launchpad_form/form">
-    <p metal-fill-slot="extra_info" tal:condition="not:view/has_errors">
+    <p metal-fill-slot="extra_info" tal:condition="not:view/errors">
       Once you enter the details of the <abbr title="revision control
       system">RCS</abbr> you use for this product series, Launchpad can
       attempt to import that code and publish it as a Bazaar branch.  This
@@ -30,32 +30,19 @@
       distributed upstream development.
     </p>
 
-    <metal:formbody fill-slot="widgets"
-        tal:define="selected_rcstype python:view.widgets['rcstype']._getFormValue()">
+    <metal:formbody fill-slot="widgets">
 
       <div class="formHelp">
         Enter details below for only the selected Repository type.
       </div>
 
-      <div>
-        <label>
-          <input type="radio" name="field.rcstype" value="None"
-                 onClick="updateWidgets()"
-                 tal:attributes="checked selected_rcstype/enumvalue:NONE" />
-          No revision control system
-        </label>
-      </div>
-
       <fieldset>
         <legend>
           <label>
-            <input type="radio" name="field.rcstype" value="Bazaar"
-                 onClick="updateWidgets()"
-                 tal:attributes="checked selected_rcstype/enumvalue:BAZAAR" />
-            Bazaar
+            <input tal:replace="structure view/rcstype_none" />
+            No revision control system, or Bazaar
           </label>
         </legend>
-
         <tal:widget define="widget nocall:view/widgets/user_branch">
           <metal:block use-macro="context/@@launchpad_widget_macros/launchpad_widget_row" />
         </tal:widget>
@@ -64,9 +51,7 @@
       <fieldset>
         <legend>
           <label>
-            <input type="radio" name="field.rcstype" value="CVS"
-                 onClick="updateWidgets()"
-                 tal:attributes="checked selected_rcstype/enumvalue:CVS" />
+            <input tal:replace="structure view/rcstype_cvs" />
             CVS
           </label>
         </legend>
@@ -84,9 +69,7 @@
       <fieldset>
         <legend>
           <label>
-            <input type="radio" name="field.rcstype" value="Subversion"
-                 onClick="updateWidgets()"
-                 tal:attributes="checked selected_rcstype/enumvalue:SVN" />
+            <input tal:replace="structure view/rcstype_svn" />
             Subversion
           </label>
         </legend>
@@ -95,6 +78,8 @@
           <metal:block use-macro="context/@@launchpad_widget_macros/launchpad_widget_row" />
         </tal:widget>
       </fieldset>
+
+      <input tal:replace="structure view/rcstype_emptymarker" />
 
       <tal:has-import-status condition="context/importstatus">
         <h2>Import Status</h2>
@@ -126,7 +111,6 @@
               break;
             }
           }
-          form['field.user_branch'].disabled = (rcstype != 'Bazaar');
           form['field.cvsroot'].disabled = (rcstype != 'CVS');
           form['field.cvsbranch'].disabled = (rcstype != 'CVS');
           form['field.cvsmodule'].disabled = (rcstype != 'CVS');

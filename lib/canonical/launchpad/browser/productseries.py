@@ -19,8 +19,10 @@ __all__ = ['ProductSeriesNavigation',
 import cgi
 import re
 
+from BeautifulSoup import BeautifulSoup
+
 from zope.component import getUtility
-from zope.app.form.browser import TextAreaWidget
+from zope.app.form.browser import TextAreaWidget, RadioWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.formlib import form
 from zope.publisher.browser import FileUpload
@@ -440,6 +442,7 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
                    'cvsbranch', 'svnrepository', 'releaseroot',
                    'releasefileglob']
 
+    custom_widget('rcstype', RadioWidget)
     custom_widget('cvsroot', StrippedTextWidget, displayWidth=50)
     custom_widget('cvsmodule', StrippedTextWidget, displayWidth=20)
     custom_widget('cvsbranch', StrippedTextWidget, displayWidth=20)
@@ -447,9 +450,25 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
     custom_widget('releaseroot', StrippedTextWidget, displayWidth=40)
     custom_widget('releasefileglob', StrippedTextWidget, displayWidth=40)
 
+    def setUpWidgets(self):
+        LaunchpadEditFormView.setUpWidgets(self)
+
+        # Extract the radio buttons from the rcstype widget, so we can
+        # display them separately in the form.
+        soup = BeautifulSoup(self.widgets['rcstype']())
+        [norcs_button, cvs_button,
+         svn_button, empty_marker] = soup.findAll('input')
+        norcs_button['onclick'] = 'updateWidgets()'
+        cvs_button['onclick'] = 'updateWidgets()'
+        svn_button['onclick'] = 'updateWidgets()'
+        self.rcstype_none = str(norcs_button)
+        self.rcstype_cvs = str(cvs_button)
+        self.rcstype_svn = str(svn_button)
+        self.rcstype_emptymarker = str(empty_marker)
+
     def validate(self, data):
         rcstype = data.get('rcstype')
-        if rcstype is not None:
+        if rcstype in data:
             # Make sure fields for unselected revision control systems
             # are blanked out:
             if rcstype != RevisionControlSystems.CVS:
@@ -498,35 +517,41 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
     def update_action(self, action, data):
         old_rcstype = self.context.rcstype
         self.updateContextFromData(data)
-        importable_rcstypes = [RevisionControlSystems.CVS,
-                               RevisionControlSystems.SVN]
-        if self.context.rcstype in importable_rcstypes:
-            if not isAdmin() or (old_rcstype is None and
-                                 self.context.rcstype is not None):
+        if self.context.rcstype is None:
+            self.context.importstatus = None
+        else:
+            if not self.isAdmin() or (old_rcstype is None and
+                                      self.context.rcstype is not None):
                 self.context.importstatus = ImportStatus.TESTING
         self.request.response.addInfoNotification(
-            'Upstream RCS details recorded.')
+            'Upstream RCS details updated.')
 
     def allowResetToAutotest(self, action):
         return self.isAdmin() and self.context.autoTestFailed()
 
+    def validateResetToAutotest(self, action, data):
+        if data.get('rcstype') is None:
+            self.addError('Can not rerun import without RCS details.')
+
     @action(_('Rerun import in the Autotester'), name='resettoautotest',
-            condition=allowResetToAutotest)
+            condition=allowResetToAutotest, validator=validateResetToAutotest)
     def resettoautotest_action(self, action, data):
         self.updateContextFromData(data)
         self.context.importstatus = ImportStatus.TESTING
         self.request.response.addInfoNotification(
             'Source import reset to TESTING')
 
-    # XXXX: 2006-09-27 jamesh
-    # Are these conditions for approving an import correct?  Should we
-    # only be providing this option if the import has been tested and
-    # we have valid CVS or Subversion details?
     def allowCertify(self, action):
         return self.isAdmin() and not self.context.syncCertified()
 
+    def validateCertify(self, action, data):
+        if data.get('rcstype') is None:
+            self.addError('Can not certify import without RCS details.')
+        if self.context.syncCertified():
+            self.addError('Import has already been approved.')
+
     @action(_('Approve import for production and publication'), name='certify',
-            condition=allowCertify)
+            condition=allowCertify, validator=validateCertify)
     def certify_action(self, action, data):
         self.updateContextFromData(data)
         self.context.certifyForSync()

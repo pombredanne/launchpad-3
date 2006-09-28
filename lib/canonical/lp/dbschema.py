@@ -2777,12 +2777,6 @@ class RevisionControlSystems(DBSchema):
     revision control systems.
     """
 
-    NONE = Item(0, """
-        None
-
-        No upstream version control system selected.
-        """)
-
     CVS = Item(1, """
         CVS
 
@@ -2797,15 +2791,6 @@ class RevisionControlSystems(DBSchema):
         Subversion aims to address some of the shortcomings in
         CVS, but retains the central server bottleneck inherent
         in the CVS design.
-        """)
-
-    BAZAAR = Item(3, """
-        Bazaar
-
-        An open source revision control system that combines truly
-        distributed branching with advanced merge algorithms. This
-        removes the scalability problems of centralised revision
-        control.
         """)
 
 
