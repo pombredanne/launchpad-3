@@ -365,15 +365,6 @@ class BaseTranslationView(LaunchpadView):
     def initialize(self):
         assert self.pofile, "Child class must define self.pofile"
 
-        if not self.pofile.canEditTranslations(self.user):
-            # The user is not an official translator, we should show a
-            # warning.
-            self.request.response.addWarningNotification("""
-                You are not an official translator for this file. You
-                can still make suggestions, and your translations will
-                be stored and reviewed for acceptance later by the
-                designated translators.""")
-
         self.redirecting = False
         self.tabindex = self.TabIndex()
 
@@ -542,6 +533,11 @@ class BaseTranslationView(LaunchpadView):
         # If there are no plural forms, we assume that we have the
         # plural form information for this language.
         return True
+
+    @property
+    def user_is_official_translator(self):
+        """Determine whether the current user is an official translator."""
+        return self.from_pofile or self.pofile.canEditTranslations(self.user)
 
     def _extractFormPostedTranslations(self, pomsgset):
         """Look for translations for this POMsgSet in the form submitted.
