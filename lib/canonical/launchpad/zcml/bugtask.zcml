@@ -314,6 +314,13 @@
         lp:url="malone/tasks/$BugTask.id/+index">
     </browser:page>
 
+    <browser:page
+        name="+listing-view"
+        for="canonical.launchpad.interfaces.IBugTask"
+        class="canonical.launchpad.browser.BugTaskListingView"
+        permission="launchpad.View">
+    </browser:page>
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistroBugTask"
         name="+index" />

@@ -202,16 +202,6 @@ class POMsgSetView(LaunchpadView):
             names=['alternative_language'], initial=initial_value)
 
         if (not self.from_pofile and
-            not self.pofile.canEditTranslations(self.user)):
-            # The user is not an official translator, we should show a
-            # warning.
-            self.request.response.addWarningNotification(
-                "You are not an official translator for this file. You can"
-                " still make suggestions, and your translations will be"
-                " stored and reviewed for acceptance later by the designated"
-                " translators.")
-
-        if (not self.from_pofile and
             not self.has_plural_form_information):
             # Cannot translate this IPOFile without the plural form
             # information. Show the info to add it to our system.
@@ -247,6 +237,11 @@ This only needs to be done once per language. Thanks for helping Rosetta.
 
         # Handle any form submission.
         self.process_form()
+
+    @property
+    def user_is_official_translator(self):
+        """Determine whether the current user is an official translator."""
+        return self.from_pofile or self.pofile.canEditTranslations(self.user)
 
     @cachedproperty
     def msgids(self):
@@ -307,12 +302,32 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         else:
             return None
 
+    # XXX 20060915 mpt: Detecting tabs, newlines, and leading/trailing spaces
+    # is being done one way here, and another way in helpers.py.
+
     @property
     def msgid_has_tab(self):
-        """Return whether there are a msgid with a '\t' char."""
+        """Determine whether any of the messages contain tab characters."""
         for msgid in self.msgids:
             if '\t' in msgid.msgid:
                 return True
+        return False
+
+    @property
+    def msgid_has_newline(self):
+        """Determine whether any of the messages contain newline characters."""
+        for msgid in self.msgids:
+            if '\n' in msgid.msgid:
+                return True
+        return False
+
+    @property
+    def msgid_has_leading_or_trailing_space(self):
+        """Determine whether any messages contain leading or trailing spaces."""
+        for msgid in self.msgids:
+            for line in msgid.msgid.splitlines():
+                if line.startswith(' ') or line.endswith(' '):
+                    return True
         return False
 
     @property
