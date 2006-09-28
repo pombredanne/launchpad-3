@@ -49,25 +49,27 @@ Normal strings get passed through unmodified.
     >>> expand_rosetta_tabs(u'foo\\nbar')
     u'foo\\nbar'
 
-Tabs get converted to u'[tab]'.
+Tabs get converted to a special constant TranslationConstants.TAB_CHAR
+which renders as below:
 
     >>> expand_rosetta_tabs(u'foo\tbar')
-    u'foo[tab]bar'
+    u'foo<code>[tab]</code>bar'
 
-Literal occurrences of u'[tab]' get escaped.
+Literal occurrences of u'[tab]' get escaped to a special constant
+TranslationConstants.TAB_CHAR_ESCAPED which renders them as below:
 
     >>> expand_rosetta_tabs(u'foo[tab]bar')
-    u'foo\\[tab]bar'
+    u'foo<code>\\[tab]</code>bar'
 
 Escaped ocurrences themselves get escaped.
 
     >>> expand_rosetta_tabs(u'foo\\[tab]bar')
-    u'foo\\\\[tab]bar'
+    u'foo\\<code>\\[tab]</code>bar'
 
 And so on...
 
     >>> expand_rosetta_tabs(u'foo\\\\[tab]bar')
-    u'foo\\\\\\[tab]bar'
+    u'foo\\\\<code>\\[tab]</code>bar'
 
 
 parse_cformat_string
