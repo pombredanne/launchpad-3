@@ -11,7 +11,6 @@ import os
 import shutil
 import gc
 
-from bzrlib.bzrdir import ScratchDir
 import bzrlib.branch
 from bzrlib.tests import TestCaseInTempDir
 from bzrlib.tests.repository_implementations.test_repository import (
