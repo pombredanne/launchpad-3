@@ -18,7 +18,7 @@
                  tal:attributes="href submission/person/fmt:url" >Foo</a> to
               <a tal:content="submission/pomsgset/potmsgset/potemplate/displayname"
                  tal:attributes="href submission/pomsgset/potmsgset/potemplate/fmt:url" >Foo</a> on
-              <span tal:content="submission/datecreated/fmt:datetime">
+              <span tal:replace="submission/datecreated/fmt:datetime">
                 2006-08-05 01:04 UTC
               </span>
               <metal:extra define-slot="extra" />

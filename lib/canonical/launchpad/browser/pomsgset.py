@@ -791,10 +791,10 @@ class POMsgSetView(LaunchpadView):
         self.suggestion_blocks = {}
         self.pluralform_indexes = range(len(self.translations))
         for index in self.pluralform_indexes:
-            wiki, elsewhere, non_editor, alt_lang_suggestions = \
+            non_editor, elsewhere, wiki, alt_lang_suggestions = \
                 self._buildAllSuggestions(index)
             self.suggestion_blocks[index] = \
-                [wiki, elsewhere, non_editor, alt_lang_suggestions]
+                [non_editor, elsewhere, wiki, alt_lang_suggestions]
 
     def _buildAllSuggestions(self, index):
         """Builds all suggestions for a certain plural form index.
@@ -872,7 +872,7 @@ class POMsgSetView(LaunchpadView):
         # What a relief -- no need to do pruning here for alternative
         # languages as they are highly unlikely to collide.
         alt_lang_suggestions = self._buildSuggestions(title, alt_submissions)
-        return wiki, elsewhere, non_editor, alt_lang_suggestions
+        return non_editor, elsewhere, wiki, alt_lang_suggestions
 
     def _buildSuggestions(self, title, submissions):
         """Return a POMsgSetSuggestions object for the provided submissions."""
