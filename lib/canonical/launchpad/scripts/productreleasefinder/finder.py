@@ -84,6 +84,8 @@ class ProductReleaseFinder:
             if series_name is not None:
                 try:
                     self.handleRelease(product_name, series_name, url)
+                except (KeyboardInterrupt, SystemExit):
+                    raise
                 except:
                     self.log.exception("Could not successfully process "
                                        "URL %s for %s/%s",
@@ -114,7 +116,7 @@ class ProductReleaseFinder:
     def addReleaseTarball(self, product_name, series_name, release_name,
                           filename, size, file, content_type):
         """Create a ProductRelease (if needed), and attach tarball"""
-        # get the series
+        # Get the series.
         self.ztm.begin()
         try:
             product = getUtility(IProductSet).getByName(product_name)
@@ -128,7 +130,7 @@ class ProductReleaseFinder:
                 self.log.info("Created new release %s for %s/%s",
                               release_name, product_name, series_name)
 
-            # if we already have a code tarball, stop here
+            # If we already have a code tarball, stop here.
             for fileinfo in release.files:
                 if fileinfo.filetype == UpstreamFileType.CODETARBALL:
                     self.log.debug("%s/%s/%s already has a code tarball",

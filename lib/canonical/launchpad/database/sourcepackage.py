@@ -5,22 +5,19 @@ __all__ = [
     'SourcePackage',
     ]
 
-import apt_pkg
-# apt_pkg requires this sillyness
-apt_pkg.InitSystem()
-
 from warnings import warn
 
 from zope.interface import implements
 
 from sqlobject import SQLObjectNotFound
+from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates, sqlvalues
 
 from canonical.lp.dbschema import (
     PackagingType, PackagePublishingPocket, BuildStatus,
-    PackagePublishingStatus, TicketStatus)
+    PackagePublishingStatus)
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
@@ -43,11 +40,6 @@ from canonical.launchpad.database.distributionsourcepackagerelease import (
 from canonical.launchpad.database.distroreleasesourcepackagerelease import (
     DistroReleaseSourcePackageRelease)
 from canonical.launchpad.database.build import Build
-
-
-def compare_version(a, b):
-    """Safely compares the version of two source packages"""
-    return apt_pkg.VersionCompare(a.version, b.version)
 
 
 class SourcePackage(BugTargetBase):
@@ -142,6 +134,7 @@ class SourcePackage(BugTargetBase):
             return None
         return self.currentrelease.format
 
+    # XXX: should not be a property -- kiko, 2006-08-16
     @property
     def changelog(self):
         """See ISourcePackage"""
@@ -185,7 +178,8 @@ class SourcePackage(BugTargetBase):
     @property
     def releases(self):
         """See ISourcePackage."""
-        ret = SourcePackageRelease.select('''
+        order_const = "debversion_sort_key(SourcePackageRelease.version)"
+        releases = SourcePackageRelease.select('''
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackagePublishingHistory.distrorelease = %s AND
             SourcePackagePublishingHistory.status != %s AND
@@ -193,19 +187,19 @@ class SourcePackage(BugTargetBase):
                 SourcePackageRelease.id
             ''' % sqlvalues(self.sourcepackagename, self.distrorelease,
                             PackagePublishingStatus.REMOVED),
-            clauseTables=['SourcePackagePublishingHistory'])
+            clauseTables=['SourcePackagePublishingHistory'],
+            orderBy=[SQLConstant(order_const),
+                     "SourcePackagePublishingHistory.datepublished"])
 
-        # sort by version number
-        releases = sorted(shortlist(ret, longest_expected=15),
-                          cmp=compare_version)
         return [DistributionSourcePackageRelease(
-            distribution=self.distribution,
-            sourcepackagerelease=release) for release in releases]
+                distribution=self.distribution,
+                sourcepackagerelease=release) for release in releases]
 
     @property
     def releasehistory(self):
         """See ISourcePackage."""
-        ret = SourcePackageRelease.select('''
+        order_const = "debversion_sort_key(SourcePackageRelease.version)"
+        releases = SourcePackageRelease.select('''
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
@@ -215,10 +209,10 @@ class SourcePackage(BugTargetBase):
                 SourcePackageRelease.id
             ''' % sqlvalues(self.sourcepackagename, self.distribution,
                             PackagePublishingStatus.REMOVED),
-            clauseTables=['DistroRelease', 'SourcePackagePublishingHistory'])
-
-        # sort by debian version number
-        return sorted(list(ret), cmp=compare_version)
+            clauseTables=['DistroRelease', 'SourcePackagePublishingHistory'],
+            orderBy=[SQLConstant(order_const),
+                     "SourcePackagePublishingHistory.datepublished"])
+        return releases
 
     @property
     def name(self):
@@ -313,7 +307,7 @@ class SourcePackage(BugTargetBase):
         ps = self.productseries
         if ps is None:
             return False
-        return ps.branch is not None
+        return ps.import_branch is not None
 
     @property
     def published_by_pocket(self):
@@ -477,7 +471,6 @@ class SourcePackage(BugTargetBase):
         """See IHasBuildRecords"""
         clauseTables = ['SourcePackageRelease',
                         'SourcePackagePublishingHistory']
-        orderBy = ["-datebuilt"]
 
         condition_clauses = ["""
         Build.sourcepackagerelease = SourcePackageRelease.id AND
@@ -489,15 +482,15 @@ class SourcePackage(BugTargetBase):
         """ % sqlvalues(self.sourcepackagename.id, self.distrorelease.id,
                         PackagePublishingStatus.PUBLISHED)]
 
-        # exclude gina-generated builds
+        # XXX cprov 20060925: It would be nice if we could encapsulate
+        # the chunk of code below (which deals with the optional paramenters)
+        # and share it with IBuildSet.getBuildsByArchIds()
+
+        # exclude gina-generated and security (dak-made) builds
         # buildstate == FULLYBUILT && datebuilt == null
         condition_clauses.append(
             "NOT (Build.buildstate=%s AND Build.datebuilt is NULL)"
             % sqlvalues(BuildStatus.FULLYBUILT))
-
-        # XXX cprov 20060214: still not ordering ALL results (empty status)
-        # properly, the pending builds will pre presented in the DESC
-        # 'datebuilt' order. bug # 31392
 
         if status is not None:
             condition_clauses.append("Build.buildstate=%s"
@@ -507,12 +500,24 @@ class SourcePackage(BugTargetBase):
             condition_clauses.append(
                 "Build.pocket = %s" % sqlvalues(pocket))
 
-        # Order NEEDSBUILD by lastscore, it should present the build
-        # in a more natural order.
-        if status == BuildStatus.NEEDSBUILD:
+        # Ordering according status
+        # * NEEDSBUILD & BUILDING by -lastscore
+        # * SUPERSEDED by -datecreated
+        # * FULLYBUILT & FAILURES by -datebuilt
+        # It should present the builds in a more natural order.
+        if status in [BuildStatus.NEEDSBUILD, BuildStatus.BUILDING]:
             orderBy = ["-BuildQueue.lastscore"]
             clauseTables.append('BuildQueue')
             condition_clauses.append('BuildQueue.build = Build.id')
+        elif status == BuildStatus.SUPERSEDED or status is None:
+            orderBy = ["-Build.datecreated"]
+        else:
+            orderBy = ["-Build.datebuilt"]
+
+        # Fallback to ordering by -id as a tie-breaker.
+        orderBy.append("-id")
+
+        # End of duplication (see XXX cprov 20060925 above).
 
         return Build.select(' AND '.join(condition_clauses),
                             clauseTables=clauseTables, orderBy=orderBy)

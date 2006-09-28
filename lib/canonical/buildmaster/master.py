@@ -212,23 +212,19 @@ class BuilddMaster:
                               % distrorelease.name)
             return
 
-        # 1. get all sourcepackagereleases published or pending in this
-        # distrorelease
-        sources_published = distrorelease.getAllReleasesByStatus(
-            dbschema.PackagePublishingStatus.PUBLISHED)
-        self._logger.info("Found %d source(s) published in %s." %
-                          (sources_published.count(), distrorelease.name))
-
-        release_archs = set(distrorelease.architectures)
-        if not release_archs:
+        # listify to avoid hitting this MultipleJoin multiple times
+        distrorelease_architectures = list(distrorelease.architectures)
+        if not distrorelease_architectures:
             self._logger.warn("No architectures defined for %s, skipping"
                               % distrorelease.name)
             return
 
-        legal_archs = release_archs.intersection(self._archreleases.keys())
+        registered_arch_ids = set(dar.id for dar in self._archreleases.keys())
+        release_arch_ids = set(dar.id for dar in distrorelease_architectures)
+        legal_arch_ids = release_arch_ids.intersection(registered_arch_ids)
+        legal_archs = [dar for dar in distrorelease_architectures
+                       if dar.id in legal_arch_ids]
         if not legal_archs:
-            # Avoid entering in the huge loop if we don't find at least
-            # one architecture for which we can build on.
             self._logger.warn("Chroots missing for %s, skipping"
                               % distrorelease.name)
             return
@@ -239,9 +235,15 @@ class BuilddMaster:
         pas_verify = BuildDaemonPackagesArchSpecific(config.builddmaster.root,
                                                      distrorelease)
 
+        sources_published = distrorelease.getAllReleasesByStatus(
+            dbschema.PackagePublishingStatus.PUBLISHED)
+        self._logger.info("Found %d source(s) published in %s." %
+                          (sources_published.count(), distrorelease.name))
+
         # XXX cprov 20050831: Entering this loop with no supported
         # architecture results in a corruption of the persistent DBNotes
         # instance for self._archreleases, it ends up empty. Bug 2070.
+        # XXX: I have no idea what celso is talking about above. -- kiko
         for pubrec in sources_published:
             build_archs = determineArchitecturesToBuild(
                             pubrec, legal_archs, distrorelease, pas_verify)
@@ -269,8 +271,9 @@ class BuilddMaster:
                                   pubrec.pocket.title))
             pubrec.sourcepackagerelease.createBuild(
                 distroarchrelease=archrelease,
-                processor=archrelease.default_processor,
-                pocket=pubrec.pocket)
+                pocket=pubrec.pocket,
+                processor=archrelease.default_processor)
+
 
     def addMissingBuildQueueEntries(self):
         """Create missing Buildd Jobs. """
@@ -508,7 +511,7 @@ class BuilddMaster:
 
             # retry build if missing dependencies is empty
             self._logger.debug('RETRY: "%s"' % build.title)
-            build.reset()
+            build.retry()
 
         self.commit()
 
@@ -607,6 +610,7 @@ class BuilddMaster:
                     dbschema.BuildStatus.SUPERSEDED)
                 build_candidate.destroySelf()
 
+        self.commit()
 
     def startBuild(self, builders, builder, queueItem):
         """Find the list of files and give them to the builder."""

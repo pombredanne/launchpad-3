@@ -195,10 +195,48 @@ And check again.
     >>> pofile_es.rosettaCount()
     1
 
-Also, we can see that the messages appears in the new URL.
+Also, we can see that we got redirected to next batch, that is the first one.
 
     >>> pofile_view.request.response.getHeader('Location')
     'http://127.0.0.1?start=0&show=untranslated'
+
+The messsage's sequence is the position of that message in latest imported
+template. We are going to test now what happens when we submit a potmsgset
+that has a sequence == 0. It means that that msgset is disabled and we don't
+serve such messages in our translation form, but we could get it in some
+situations, like when this set of actions happen:
+
+ - A user gets a translation form for the template X.
+ - A new template X is imported into the system that removes some messages
+   from the previous import.
+ - Previous user, submits the translation form he got for the old template X.
+
+The problem here is that some of the messages on that form are disabled so
+their sequence is 0.
+
+    >>> from canonical.launchpad.database import POTMsgSet
+    >>> potmsgset = POTMsgSet.get(161)
+    >>> potmsgset.sequence
+    0
+    >>> request = LaunchpadTestRequest(form={
+    ...     'batch': '10',
+    ...     'start': '0',
+    ...     'show': 'untranslated',
+    ...     'msgset_161': None,
+    ...     'msgset_161_es_translation_0': 'Foo',
+    ...     'submit_translations': 'Save &amp; Continue'})
+    >>> request.method = 'POST'
+    >>> pofile_view = getView(pofile_es, '+translate', request)
+    >>> pofile_view.initialize()
+
+And we can see that we didn't get errors.
+
+    >>> pomsgset = potmsgset.getPOMsgSet(
+    ...     pofile_es.language.code, pofile_es.variant)
+    >>> pomsgset.active_texts
+    [u'Foo']
+    >>> pofile_view.potmsgset_with_errors
+    []
 
 Now, we are going to check the alternative language submission.
 

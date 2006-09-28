@@ -1,3 +1,4 @@
+<tal:layout define="columns1 default">
 <html xmlns="http://www.w3.org/1999/xhtml"
       xml:lang="en" lang="en"
       metal:use-macro="context/@@main_template/master"
@@ -5,14 +6,44 @@
 >
   <body>
     <metal:heading fill-slot="pageheading">
-      <h1>Coming events</h1>
+      <h1>Launchpad&rsquo;s calendar is closed</h1>
     </metal:heading>
-
-    <metal:leftportlets fill-slot="portlets_one">
-      <div tal:replace="structure context/@@+portlet-subscriptions|nothing" />
-    </metal:leftportlets>
-
     <div metal:fill-slot="main">
+      <table>
+        <tbody>
+          <tr>
+            <td>
+              <img
+                alt=""
+                src="/@@/sorry-closed"
+                style="float: left; margin-right: 1em;"
+              />
+            </td>
+            <td>
+              <p>
+                We&rsquo;ve removed the calendar application.
+                It wasn&rsquo;t up to Launchpad standards,
+                and we don&rsquo;t have time to bring it up to speed.
+                Sorry about that.
+              </p>
+              <p>
+                If there was important data kept in this calendar,
+                you can still download it as an iCal (<code>.ics</code>) file
+                for use in a calendar program like Evolution or Sunbird.
+              </p>
+              <ul class="menu">
+                <li class="download">
+                  <a tal:attributes="href string:${context/fmt:url}/+icalendar"
+                  >Download the calendar</a>
+                </li>
+              </ul>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <tal:oldcalendar condition="nothing">
+
+        <div tal:replace="structure context/@@+portlet-subscriptions|nothing" />
 
       <table class="listing" tal:condition="view/events">
         <thead>
@@ -35,7 +66,9 @@
       <p tal:condition="not: view/events">
       No events in the next two weeks.
       </p>
-    </div>
 
+      </tal:oldcalendar>
+    </div>
   </body>
 </html>
+</tal:layout>

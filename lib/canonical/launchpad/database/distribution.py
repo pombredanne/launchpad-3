@@ -11,8 +11,6 @@ from sqlobject import (
     SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND, OR
 
-from canonical.cachedproperty import cachedproperty
-
 from canonical.database.sqlbase import quote, quote_like, SQLBase, sqlvalues
 
 from canonical.launchpad.database.bugtarget import BugTargetBase
@@ -31,7 +29,6 @@ from canonical.launchpad.database.binarypackagename import (
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.distributionbounty import DistributionBounty
-from canonical.launchpad.database.cve import CveSet
 from canonical.launchpad.database.distributionmirror import DistributionMirror
 from canonical.launchpad.database.distributionsourcepackage import (
     DistributionSourcePackage)
@@ -51,11 +48,10 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.url import urlparse
 
 from canonical.lp.dbschema import (
-    EnumCol, BugTaskStatus,
-    DistributionReleaseStatus, MirrorContent,
-    TranslationPermission, SpecificationSort,
-    SpecificationFilter, SpecificationStatus,
-    MirrorPulseType, PackagePublishingStatus, TicketStatus)
+    EnumCol, DistributionReleaseStatus, MirrorContent,
+    TranslationPermission, SpecificationSort, SpecificationFilter,
+    SpecificationStatus, MirrorPulseType, PackagePublishingStatus,
+    BugTaskStatus)
 
 from canonical.launchpad.interfaces import (
     IBuildSet, IDistribution, IDistributionSet, IHasBuildRecords,
@@ -252,16 +248,6 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         """See canonical.launchpad.interfaces.IBugTarget."""
         bug_params.setBugTarget(distribution=self)
         return BugSet().createBug(bug_params)
-
-    @cachedproperty
-    def open_cve_bugtasks(self):
-        """See IDistribution."""
-        return list(CveSet().getOpenBugTasks(distribution=self))
-
-    @cachedproperty
-    def resolved_cve_bugtasks(self):
-        """See IDistribution."""
-        return list(CveSet().getResolvedBugTasks(distribution=self))
 
     @property
     def currentrelease(self):
@@ -714,8 +700,9 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         if self.currentrelease is None:
             # Distribution with no releases can't have anything
             # published in it.
-            raise NotFoundError('Distribution has no releases; %r was never '
-                                'published in it' % pkgname)
+            raise NotFoundError('%s has no releases; %r was never '
+                                'published in it'
+                                % (self.displayname, pkgname))
 
         # The way this method works is that is tries to locate a pair of
         # packages related to that name. If it locates a binary package,
@@ -747,38 +734,46 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
                     binarypackagename=binarypackagename.name,
                     distribution=self,
                     orderBy=['-id'])
-                if publishing is None:
-                    # Yes, it's a binary package name, but it has never been
-                    # publishing in this distro.
-                    raise NotFoundError('Unpublished binary package: %s' % pkgname)
-            sourcepackagename = SourcePackageName.byName(publishing.sourcepackagename)
-        else:
-            sourcepackagename = SourcePackageName.selectOneBy(name=pkgname)
-            if sourcepackagename is None:
-                # Not a binary package name, not a source package name,
-                # game over!
+            if publishing is not None:
+                sourcepackagename = SourcePackageName.byName(
+                                        publishing.sourcepackagename)
+                return (sourcepackagename, binarypackagename)
+
+        sourcepackagename = SourcePackageName.selectOneBy(name=pkgname)
+        if sourcepackagename is None:
+            # Not a binary package name, not a source package name,
+            # game over!
+            if binarypackagename:
+                raise NotFoundError('Binary package %s not published in %s'
+                                    % (pkgname, self.displayname))
+            else:
                 raise NotFoundError('Unknown package: %s' % pkgname)
 
-            # Note that in the source package case, we don't restrict
-            # the search to the distribution release, making a best
-            # effort to find a package.
-            publishing = SourcePackagePublishingHistory.selectFirst('''
-                SourcePackagePublishingHistory.distrorelease =
-                    DistroRelease.id AND
-                DistroRelease.distribution = %s AND
-                SourcePackagePublishingHistory.sourcepackagerelease =
-                    SourcePackageRelease.id AND
-                SourcePackageRelease.sourcepackagename = %s AND
-                SourcePackagePublishingHistory.status = %s
-                ''' % sqlvalues(self, sourcepackagename,
-                                PackagePublishingStatus.PUBLISHED),
-                clauseTables=['SourcePackageRelease', 'DistroRelease'],
-                distinct=True,
-                orderBy="id")
-            if publishing is None:
-                raise NotFoundError('Unpublished source package: %s' % pkgname)
+        # Note that in the source package case, we don't restrict
+        # the search to the distribution release, making a best
+        # effort to find a package.
+        publishing = SourcePackagePublishingHistory.selectFirst('''
+            SourcePackagePublishingHistory.distrorelease =
+                DistroRelease.id AND
+            DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.sourcepackagerelease =
+                SourcePackageRelease.id AND
+            SourcePackageRelease.sourcepackagename = %s AND
+            SourcePackagePublishingHistory.status = %s
+            ''' % sqlvalues(self, sourcepackagename,
+                            PackagePublishingStatus.PUBLISHED),
+            clauseTables=['SourcePackageRelease', 'DistroRelease'],
+            distinct=True,
+            orderBy="id")
 
-        return (sourcepackagename, binarypackagename)
+        if publishing is None:
+            raise NotFoundError('Package %s not published in %s'
+                                % (pkgname, self.displayname))
+
+        # Note the None here: if no source package was published for the
+        # the binary package we found above, assume we ran into a red
+        # herring and just ignore the binary package name hit.
+        return (sourcepackagename, None)
 
 
 class DistributionSet:
