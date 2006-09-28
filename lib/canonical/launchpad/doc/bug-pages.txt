@@ -195,6 +195,56 @@ indentical to the second, we really only display one comment:
 Bug Portlets
 ============
 
+Subscribers Portlet
+-------------------
+
+The subscribers portlet has three sections: direct subscribers,
+subscribers from dupes, and other indirect subscribers, like assignees
+and bug contacts.
+
+Call getSubscribersFromDupes() on the view to get a list of people that
+are subscribed to dupes of this bug, but not subscribed to the current
+bug. This is used to populate the "From duplicates" section of the
+portlet.
+
+For example, bug six is a dupe of bug five. Bug five initially has no
+subscribers from dupes.
+
+    >>> request = LaunchpadTestRequest()
+    >>> bugset = getUtility(IBugSet)
+
+    >>> bug_five = bugset.get(5)
+    >>> bug_six = bugset.get(6)
+
+    >>> bug_six.duplicateof == bug_five
+    True
+
+    >>> subscribers_portlet_view = getView(
+    ...     bug_five, "+portlet-subscribers", request)
+
+    >>> subscribers_portlet_view.getSubscribersFromDupes()
+    []
+
+Now, if we explicit subscribe carlos to bug six, bug five sees on
+subscriber from a dupe.
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> bug_six.subscribe(getUtility(IPersonSet).getByName("carlos"))
+    <BugSubscription...>
+
+    >>> sorted(subscriber.name
+    ...        for subscriber in
+    ...        subscribers_portlet_view.getSubscribersFromDupes())
+    [u'carlos']
+
+Call getSubscribersAlsoNotified() to get the list of remaining indirect
+bug subscribers.
+
+    >>> sorted(subscriber.name
+    ...        for subscriber in
+    ...        subscribers_portlet_view.getSubscribersAlsoNotified())
+    [u'name12', u'name16']
+
 Duplicates Portlet
 ------------------
 
@@ -204,9 +254,7 @@ remain in the current context. If the dupe has not been reported in
 the current context, the dupe link will be to the generic
 /bugs/$bug.id redirect link.
 
-    >>> bugset = getUtility(IBugSet)
     >>> bugtaskset = getUtility(IBugTaskSet)
-    >>> request = LaunchpadTestRequest()
 
 Bug 6 is a duplicate of bug 5, and since both bugs affect Firefox, the
 duplicate link remains in the current context.
@@ -255,7 +303,6 @@ If the user isn't subscribed to the bug and neither of his teams are
 subscribed to it, 'Subscribe' is shown.
 
     >>> login("foo.bar@canonical.com")
-    >>> from canonical.launchpad.interfaces import IPersonSet
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bug_one.isSubscribed(foo_bar)

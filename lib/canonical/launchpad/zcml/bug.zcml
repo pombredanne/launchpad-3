@@ -138,6 +138,7 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IBug"
+        class="canonical.launchpad.browser.BugSubscriberPortletView"
         name="+portlet-subscribers"
         template="../templates/bug-portlet-subscribers.pt"
         permission="zope.Public" />
