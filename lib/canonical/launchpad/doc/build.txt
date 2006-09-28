@@ -210,6 +210,14 @@ For full architectures in hoary:
   >>> bs.getBuildsByArchIds(arch_ids).count()
   5
 
+Method still working when empty arch_ids list or None is passed :
+
+  >>> bs.getBuildsByArchIds([]).count()
+  0
+
+  >>> bs.getBuildsByArchIds(None).count()
+  0
+
 Using build status, only the succesfully built ones:
 
   >>> bs.getBuildsByArchIds(arch_ids,
@@ -368,6 +376,28 @@ or using optional pocket argument:
   ...    status=BuildStatus.NEEDSBUILD,
   ...    pocket=PackagePublishingPocket.SECURITY).count()
   0
+
+Check IHasBuildRecords when implemented by Builder:
+
+  >>> from canonical.launchpad.interfaces import IBuilderSet
+  >>> bob = getUtility(IBuilderSet)['bob']
+
+  >>> bob_builds = bob.getBuildRecords()
+  >>> bob_builds.count()
+  10
+
+  >>> bob_failed_builds = bob.getBuildRecords(status=BuildStatus.FAILEDTOBUILD)
+  >>> bob_failed_builds.count()
+  1
+
+  >>> bob_pmount_builds = bob.getBuildRecords(name='pmount')
+  >>> bob_pmount_builds.count()
+  4
+
+  >>> bob_pmount_ok_builds = bob.getBuildRecords(
+  ...    status=BuildStatus.FULLYBUILT, name='pmo')
+  >>> bob_pmount_ok_builds.count()
+  3
 
 
 == AssertionErrors in IBuild ==
