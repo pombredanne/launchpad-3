@@ -14,6 +14,7 @@ import unittest
 from bzrlib.bzrdir import BzrDir
 from bzrlib.branch import Branch
 from bzrlib.errors import DivergedBranches
+from bzrlib.urlutils import local_path_to_url
 from zope.component import getUtility
 
 from canonical.database.sqlbase import commit
@@ -31,7 +32,7 @@ class TestImportdPublisher(ImportdTestCase):
         ImportdTestCase.setUp(self)
         self.importd_publisher = ImportdPublisher(
             logging, self.sandbox.path, self.series_id,
-            'file://' + self.bzrmirrors)
+            local_path_to_url(self.bzrmirrors))
 
     def assertGoodMirror(self):
         """Helper to check that the mirror branch matches expectations."""
