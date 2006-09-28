@@ -416,8 +416,12 @@ class BaseTranslationView(LaunchpadView):
         if (self.request.method == 'POST' and 
             self.request.form.get("submit_translations") and
             self.user is not None):
-            # Check if this is really the form we want to post to
-            self._submitTranslations()
+            # Check if this is really the form we are listening for..
+            if self._submitTranslations():
+                # .. and if no errors occurred, adios. Otherwise, we
+                # need to set up the subviews for error display and
+                # correction.
+                return
 
         # Slave view initialization depends on _submitTranslations being
         # called, because the form data needs to be passed in to it --
@@ -439,6 +443,9 @@ class BaseTranslationView(LaunchpadView):
     def _submitTranslations(self):
         """Handle translations submitted via a form.
 
+        Return True if processing went fine; return False if errors
+        occurred.
+
         Implementing this method is complicated. It needs to find out
         what POMsgSets were updated in the form post, call
         _storeTranslations() for each of those, check for errors that
@@ -458,10 +465,11 @@ class BaseTranslationView(LaunchpadView):
         Return a string with an error if one occurs, otherwise None.
         """
         self._extractFormPostedTranslations(pomsgset)
-        translations = self.form_posted_translations[pomsgset]
+        translations = self.form_posted_translations.get(pomsgset, None)
         if not translations:
-            # A post with no content -- nothing to be done. I'm not sure
-            # this could be an UnexpectedFormData..
+            # A post with no content -- not an error, but nothing to be
+            # done. XXX: I'm not sure but I suspect this could be an
+            # UnexpectedFormData..
             return None
         is_fuzzy = self.form_posted_needsreview.get(pomsgset, False)
 
@@ -476,7 +484,7 @@ class BaseTranslationView(LaunchpadView):
             return None
 
     def _prepareView(self, pomsgset_view, pomsgset, error):
-        """Prepare data for subview and call POMsgSetView.prepare."""
+        """Prepare data for display in a subview; calls POMsgSetView.prepare."""
         # XXX: it would be nice if we could easily check if
         # this is being called in the right order, after
         # _storeTranslations(). -- kiko, 2006-0-27
@@ -665,8 +673,13 @@ class BaseTranslationView(LaunchpadView):
 
 
 class POMsgSetPageView(BaseTranslationView):
-    """A view for the page that renders a single translation."""
+    """A view for the page that renders a single translation.
+
+    See BaseTranslationView for details on how this works."""
     __used_for__ = IPOMsgSet
+
+    # Holds the subview for this page.
+    pomsgset_view = None
     def initialize(self):
         self.pofile = self.context.pofile
         # XXX: describe
@@ -678,32 +691,27 @@ class POMsgSetPageView(BaseTranslationView):
     #
 
     def _buildBatchNavigator(self):
+        """See BaseTranslationView._buildBatchNavigator."""
         return POTMsgSetBatchNavigator(self.pofile.potemplate.getPOTMsgSets(),
                                        self.request, size=1)
 
     def _initializeSubViews(self):
+        """See BaseTranslationView._initializeSubViews."""
         self.pomsgset_view = zapi.queryMultiAdapter(
             (self.context, self.request), name="+translate-one-zoomed")
         self._prepareView(self.pomsgset_view, self.context, self.error)
 
     def _submitTranslations(self):
-        """Handle a form submission for the translation form.
-
-        The form contains translations, some of which will be unchanged, some
-        of which will be modified versions of old translations and some of
-        which will be new. Returns a dictionary mapping sequence numbers to
-        submitted message sets, where each message set will have information
-        on any validation errors it has.
-        """
+        """See BaseTranslationView._submitTranslations."""
         self.error = self._storeTranslations(self.context)
-
-        # This page is being rendered as a single message view.
         if self.error:
             self.request.response.addErrorNotification(
                 "There is an error in the translation you provided. "
                 "Please correct it before continuing.")
-        else:
-            self._redirectToNextPage()
+            return False
+
+        self._redirectToNextPage()
+        return True
 
 
 class POMsgSetView(LaunchpadView):

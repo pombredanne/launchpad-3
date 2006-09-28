@@ -282,16 +282,18 @@ class POFileTranslateView(BaseTranslationView):
     #
 
     def _buildBatchNavigator(self):
+        """See BaseTranslationView._buildBatchNavigator."""
         return BatchNavigator(self._getSelectedPOTMsgSets(),
                               self.request, size=self.DEFAULT_SIZE)
 
     def _initializeSubViews(self):
+        """See BaseTranslationView._initializeSubViews."""
         self.pomsgset_views = []
         for potmsgset in self.batchnav.currentBatch():
             self.pomsgset_views.append(self._buildPOMsgSetView(potmsgset))
 
     def _submitTranslations(self):
-        """Handle a form submission to store new translations."""
+        """See BaseTranslationView._submitTranslations."""
         for key in self.request.form:
             match = re.match('msgset_(\d+)$', key)
             if not match:
@@ -340,8 +342,10 @@ class POFileTranslateView(BaseTranslationView):
                            "provided. Please correct them before "
                            "continuing." % len(self.errors))
             self.request.response.addErrorNotification(message)
-        else:
-            self._redirectToNextPage()
+            return False
+
+        self._redirectToNextPage()
+        return True
 
     def _buildRedirectParams(self):
         parameters = BaseTranslationView._buildRedirectParams(self)
