@@ -72,14 +72,15 @@ In case of failure of creating a new person or email the method returns
 an invalid email.
 
     >>> p2, invalid_email = personset.createPersonAndEmail(
-    ...     'test#canonical.com')
+    ...     'test#canonical.com', PersonCreationRationale.UNKNOWN)
     >>> p2, invalid_email
     (None, None)
 
 And now with the same name of a existing account
 
     >>> p3, invalid_email = personset.createPersonAndEmail(
-    ...     'randomemail@randomhost.com', name='name12')
+    ...     'randomemail@randomhost.com', PersonCreationRationale.UNKNOWN, 
+    ...     name='name12')
     >>> p3, invalid_email
     (None, None)
 

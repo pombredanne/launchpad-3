@@ -78,8 +78,8 @@ getLastTranslator() function of components/poimport.py.
     >>> person.creation_rationale.name
     'POFILEIMPORT'
     >>> person.creation_comment
-    u'when importing the Afar (aa) translation of evolution-2.2 in Evolution
-    trunk'
+    u'when importing the Afar (aa) translation of evolution-2.2 in Ubuntu
+    Hoary package "evolution"'
 
 Now, is time to create the new potemplate
 
