@@ -186,6 +186,14 @@ Check that suggestions come in from other contexts:
   >>> suggested in browser.contents
   True
 
+Check that no other suggestions are presented (since no others are
+relevant for this message):
+
+  >>> "<label>Suggestion" not in browser.contents
+  True
+  >>> "<label>Used elsewhere:</label>" not in browser.contents
+  True
+
 Check for the translator note:
 
   >>> "This is an example of commenttext for a multiline msgset" in browser.contents
