@@ -590,10 +590,13 @@ class ShippingRequestsView:
     recipient_text = ''
 
     @cachedproperty
-    def requests_totals(self):
-        requests = shortlist(
-            self.batchNavigator.currentBatch(), longest_expected=100)
-        return getUtility(IShippingRequestSet).getTotalsForRequests(requests)
+    def shipitrequests(self):
+        return shortlist(self.batchNavigator.currentBatch(), longest_expected=100)
+
+    @cachedproperty
+    def totals_for_shipitrequests(self):
+        requestset = getUtility(IShippingRequestSet)
+        return requestset.getTotalsForRequests(self.shipitrequests)
 
     def _build_options(self, names_and_titles, selected_name):
         """Return a list of _SelectMenuOption elements with the given names

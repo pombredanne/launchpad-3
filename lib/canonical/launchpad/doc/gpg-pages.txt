@@ -94,7 +94,7 @@ Use a valid fingerprint to import a new key.
 This new key will be pending validation, though.
 
     >>> view.context.pendinggpgkeys
-    Set([u'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'])
+    [u'A419AE861E88BC9E04B9C26FBA2B9389DFD20543']
 
 And while the validation is not finished, it's possible to cancel the
 validation, removing the key from the list of pending validation keys.
@@ -111,7 +111,7 @@ an error message.
     'No key(s) pending validation selected.'
 
     >>> view.context.pendinggpgkeys
-    Set([u'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'])
+    [u'A419AE861E88BC9E04B9C26FBA2B9389DFD20543']
 
 Now we specify the key and it's removed from the list of keys pending
 validation.
@@ -127,7 +127,7 @@ validation.
     'Cancelled validation of key(s): A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
 
     >>> view.context.pendinggpgkeys
-    Set([])
+    []
 
 
 And knock the server out, finally:

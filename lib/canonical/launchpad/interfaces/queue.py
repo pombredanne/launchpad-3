@@ -310,12 +310,12 @@ class IUploadSet(Interface):
     def get(queue_id):
         """Retrieve an IUpload by a given id"""
 
-    def count(status=None, distrorelease=None):
+    def count(status=None, distrorelease=None, pocket=None):
         """Number of IUpload present in a given status.
 
         If status is ommitted return the number of all entries.
         'distrorelease' is optional and restrict the results in given
-        distrorelease.
+        distrorelease, same for pocket.
         """
 
 class IHasQueueItems(Interface):

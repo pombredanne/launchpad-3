@@ -1,5 +1,7 @@
 # Copyright 2005 Canonical Ltd
 
+# XXX 20060914 mpt: All Calendar pages should return HTTP 410 Gone.
+
 __metaclass__ = type
 
 __all__ = [

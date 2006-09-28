@@ -112,14 +112,6 @@ class IDistroRelease(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
     previous_releases = Attribute("Previous distroreleases from the same "
         "distribution.")
 
-    open_cve_bugtasks = Attribute(
-        "Any bugtasks on this distrorelease that are for bugs with "
-        "CVE references, and are still open.")
-
-    resolved_cve_bugtasks = Attribute(
-        "Any bugtasks on this distrorelease that are for bugs with "
-        "CVE references, and are resolved.")
-
     main_archive = Attribute('Main Archive')
 
     def isUnstable():

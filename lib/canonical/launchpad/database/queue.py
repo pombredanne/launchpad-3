@@ -581,15 +581,17 @@ class UploadSet:
         except SQLObjectNotFound:
             raise NotFoundError(queue_id)
 
-    def count(self, status=None, distrorelease=None):
+    def count(self, status=None, distrorelease=None, pocket=None):
         """See IUploadSet."""
         clauses = []
         if status:
             clauses.append("status=%s" % sqlvalues(status))
 
         if distrorelease:
-            clauses.append("distrorelease=%s" % sqlvalues(distrorelease.id))
+            clauses.append("distrorelease=%s" % sqlvalues(distrorelease))
+
+        if pocket:
+            clauses.append("pocket=%s" % sqlvalues(pocket))
 
         query = " AND ".join(clauses)
         return Upload.select(query).count()
-

@@ -84,7 +84,7 @@ Do the upload into the system.
   True
 
   >>> build = source_package_release.createBuild(
-  ...      dapper_amd64, pocket=PackagePublishingPocket.RELEASE)
+  ...      dapper_amd64, PackagePublishingPocket.RELEASE)
   >>> mock_options = MockOptions()
   >>> mock_options.buildid = build.id
   >>> pmount_upload.policy.setOptions(mock_options)
