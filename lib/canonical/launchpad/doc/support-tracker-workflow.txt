@@ -620,3 +620,30 @@ back to OPEN after having been rejected.
 
     (Cleanup)
     >>> reopening_event_listener.unregister()
+
+Using an IMessage as Explanation
+--------------------------------
+
+In all the workflow methods, it is possible to pass an IMessage instead of
+a string.
+
+    >>> from canonical.launchpad.interfaces import IMessageSet
+    >>> messageset = getUtility(IMessageSet)
+    >>> ticket = ubuntu.newTicket(**new_ticket_args)
+    >>> reject_message = messageset.fromText(
+    ...     'Reject', 'Because I feel like it.', sample_person)
+    >>> ticket_message = ticket.reject(sample_person,reject_message)
+    >>> print ticket_message.subject
+    Reject
+    >>> print ticket_message.text_contents
+    Because I feel like it.
+    >>> ticket_message.rfc822msgid == reject_message.rfc822msgid
+    True
+
+The IMessage owner must be the same than the person passed to the workflow
+method.
+
+    >>> ticket.setStatus(stub, TicketStatus.OPEN, reject_message)
+    Traceback (most recent call last):
+      ...
+    AssertionError...

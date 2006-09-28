@@ -15,7 +15,7 @@ from sqlobject import (
 from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.launchpad.interfaces import (
-    IBugLinkTarget, ILaunchpadCelebrities, ITicket, ITicketSet,
+    IBugLinkTarget, ILaunchpadCelebrities, IMessage, ITicket, ITicketSet,
     TICKET_STATUS_DEFAULT_SEARCH)
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
@@ -378,15 +378,32 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         datelastresponse attribute is updated to the message creation date.
         The datelastquery attribute is updated when the message owner is the
         same than the ticket owner, otherwise the datelastresponse is updated.
+
+        :owner: An IPerson.
+        :content: A string or an IMessage. When it's an IMessage, the owner
+                  must be the same than the :owner: parameter.
+        :action: A TicketAction.
+        :newstatus: A TicketStatus.
+        :subject: The Message subject, default to followup_subject. Ignored
+                  when content is an IMessage.
+        :datecreated: A datetime object which will be used as the Message
+                      creation date. Ignored when content is an IMessage.
+        :update_ticket_dates: A bool.
         """
-        if subject is None:
-            subject = self.followup_subject
-        if datecreated is None:
-            datecreated=UTC_NOW
-        msg = Message(
-            owner=owner, rfc822msgid=make_msgid('lptickets'), subject=subject,
-            datecreated=datecreated)
-        chunk = MessageChunk(message=msg, content=content, sequence=1)
+        if IMessage.providedBy(content):
+            assert owner == content.owner, (
+                'The IMessage has the wrong owner.')
+            msg = content
+        else:
+            if subject is None:
+                subject = self.followup_subject
+            if datecreated is None:
+                datecreated=UTC_NOW
+            msg = Message(
+                owner=owner, rfc822msgid=make_msgid('lptickets'),
+                subject=subject, datecreated=datecreated)
+            chunk = MessageChunk(message=msg, content=content, sequence=1)
+
         tktmsg = TicketMessage(
             ticket=self, message=msg, action=action, newstatus=newstatus)
         notify(SQLObjectCreatedEvent(tktmsg, user=tktmsg.owner))

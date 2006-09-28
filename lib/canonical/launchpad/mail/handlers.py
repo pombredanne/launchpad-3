@@ -283,16 +283,13 @@ class SupportTrackerHandler:
                 # No such ticket, don't process the email.
                 return False
 
-            unmodified_ticket = Snapshot(ticket, providing=providedBy(ticket))
             messageset = getUtility(IMessageSet)
             message = messageset.fromEmail(
                 signed_msg.parsed_string,
                 owner=getUtility(ILaunchBag).user,
                 filealias=filealias,
                 parsed_message=signed_msg)
-            ticket.linkMessage(message)
-            notify(SQLObjectModifiedEvent(
-                ticket, unmodified_ticket, ['messages']))
+            ticket.addComment(message.owner, message)
             return True
         else:
             return False
