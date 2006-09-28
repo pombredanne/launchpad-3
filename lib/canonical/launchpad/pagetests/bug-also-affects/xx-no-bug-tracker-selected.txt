@@ -7,12 +7,11 @@ checkbox is checked, we get an error message.
     >>> browser.getLink('Upstream').click()
 
     >>> browser.getControl('Product').value = 'thunderbird'
-    >>> browser.getControl(name='field.link_to_bugwatch').value = True
     >>> browser.getControl('Remote Bug Tracker').value = []
     >>> browser.getControl(name='field.remotebug').value = '12'
     >>> browser.getControl('Continue').click()
 
     >>> print browser.contents
     <!...There is 1 error...
-    ...Please specify a bug tracker...
+    ...Please specify the bug tracker...
 

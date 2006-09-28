@@ -40,8 +40,7 @@ that product is required:
 
     >>> form = {
     ...     'field.actions.request_fix': '', 'field.product': '',
-    ...     'field.bugtracker-empty-marker': '1',
-    ...     'field.link_to_bugwatch.used': '', 'field.remotebug': ''}
+    ...     'field.bugtracker-empty-marker': '1', 'field.remotebug': ''}
     >>> add_task_view = get_and_setup_view(firefox_task, '+upstreamtask', form)
     >>> add_task_view.render_upstreamtask()
     ''
@@ -143,20 +142,18 @@ are set to the default values.
     'Undecided'
 
 On the same form, we can add a bug watch. If we specify a remote bug
-tracker, but omit the remote bug number, an error message is given:
+number, but omit the remote bug tracker, an error message is given:
 
     >>> del form['field.actions.confirm']
     >>> form['field.actions.request_fix'] = u''
     >>> form['field.product'] = u'thunderbird'
-    >>> form['field.link_to_bugwatch'] = 'on'
-    >>> form['field.bugtracker'] = '2'
-    >>> form['field.remotebug']
-    ''
+    >>> form['field.bugtracker'] = u''
+    >>> form['field.remotebug'] = u'84'
     >>> add_task_view = get_and_setup_view(firefox_task, '+upstreamtask', form)
     >>> add_task_view.render_upstreamtask()
     ''
-    >>> add_task_view.form_wide_errors
-    ['Please specify the remote bug number in the remote bug tracker.']
+    >>> print add_task_view.getWidgetError('bugtracker')
+    Please specify the bug tracker where the bug is located.
 
 Note that this caused the transaction to be aborted, thus the bugtasks
 that got added earlier are now gone:
@@ -164,10 +161,10 @@ that got added earlier are now gone:
     >>> len(bug_four.bugtasks)
     1
 
-If we specify a remote bug number as well, both the task and the bug
+If we specify a remote bug tracker as well, both the task and the bug
 watch will be added without any confirmation needee:
 
-    >>> form['field.remotebug'] = u'84'
+    >>> form['field.bugtracker'] = u'2'
     >>> add_task_view = get_and_setup_view(firefox_task, '+upstreamtask', form)
     >>> add_task_view.render_upstreamtask()
     SQLObjectCreatedEvent: <BugWatch at ...>
@@ -224,6 +221,7 @@ If we try to add a bug watch together with a product which does use
 Malone, an error will occur.
 
     >>> form['field.product'] = u'evolution'
+    >>> form['field.bugtracker'] = u'1'
     >>> form['field.remotebug'] = u'42'
     >>> add_task_view = get_and_setup_view(firefox_task, '+upstreamtask', form)
     >>> add_task_view.render_upstreamtask()
@@ -236,7 +234,8 @@ There's a method for easily retrieving the target display name for use
 on the confirmation page. If we request a fix in an upstream product,
 its display name is returned:
 
-    >>> del form['field.link_to_bugwatch']
+    >>> del form['field.bugtracker']
+    >>> form['field.remotebug'] = u''
     >>> form['field.product'] = u'alsa-utils'
     >>> add_task_view = get_and_setup_view(firefox_task, '+upstreamtask', form)
     >>> add_task_view.render_upstreamtask()

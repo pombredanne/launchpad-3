@@ -25,7 +25,6 @@ space in the bug number it will be stripped.
   >>> browser.getControl('Product').value = 'alsa-utils'
   >>> browser.getControl(name='field.bugtracker').value = ['1']
   >>> browser.getControl(name='field.remotebug').value = '   1234   '
-  >>> browser.getControl(name='field.link_to_bugwatch').value = True
   >>> browser.getControl('Continue').click()
 
 Redirected to the newly created bugtask page

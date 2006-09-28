@@ -547,9 +547,6 @@ class IAddBugTaskForm(Interface):
     product = IUpstreamBugTask['product']
     distribution = IDistroBugTask['distribution']
     sourcepackagename = IDistroBugTask['sourcepackagename']
-    link_to_bugwatch = Bool(
-        title=_('Link to a bug in another bug tracker:'),
-        required=False)
     bugtracker = Choice(
         title=_('Remote Bug Tracker'), required=False, vocabulary='BugTracker',
         description=_("The bug tracker in which the remote bug is found. "
@@ -557,5 +554,5 @@ class IAddBugTaskForm(Interface):
             "from the Malone home page."))
     remotebug = StrippedTextLine(
         title=_('Remote Bug'), required=False, description=_(
-            "The bug number of this bug in the remote bug tracker."))
+            "The bug number or URL of this bug in the remote bug tracker."))
 

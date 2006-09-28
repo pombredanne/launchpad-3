@@ -47,6 +47,8 @@ from canonical.launchpad.webapp import (
     action, custom_widget, GeneralFormView, LaunchpadEditFormView, stepthrough)
 from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
 from canonical.widgets.bug import BugTagsWidget
+from canonical.widgets.textwidgets import StrippedTextWidget
+
 
 class BugSetNavigation(Navigation):
 
@@ -266,17 +268,33 @@ class BugWithoutContextView:
 class BugTrackerWidget(SelectWidget):
     """Custom widget for selecting a bug tracker.
 
-    This is needed since we don't want the bug tracker to be required,
-    but you still shouldn't be abled to select "(no option)".
+    It fixes some bugs in SelectWidget as well as providing a custom
+    (no value) message.
     """
 
-    firstItem = True
+    firstItem = False
+    _messageNoValue = "(Unlinked/Guess from bug URL)"
 
     def renderItems(self, value):
-        """We don't want the (no option) value to be rendered."""
+        """Bug fix for SelectWidget.renderItems.
+
+        It makes sure that the (no value) option is correctly selected
+        if the widget isn't reqired, and there's no input.
+        """
+        # Handle buggy widget implementation; we should get
+        # self.context.missing_value here, but instead we get
+        # self._missing.
+        if value == self._missing:
+            value = self.context.missing_value
         items = SelectWidget.renderItems(self, value)
-        if not self.context.required:
+        if value == self.context.missing_value and not self.context.required:
+            # Remove the unselected empty option and replace it with a
+            # selected one.
             items = items[1:]
+            selected_option = (
+                '<option value="" selected="selected">%s</option>' % (
+                    self._messageNoValue))
+            items.insert(0, selected_option)
         return items
 
 
@@ -285,6 +303,7 @@ class BugAlsoReportInView(LaunchpadFormView):
 
     schema = IAddBugTaskForm
     custom_widget('bugtracker', BugTrackerWidget)
+    custom_widget('remotebug', StrippedTextWidget, displayWidth=50)
 
     index = ViewPageTemplateFile('../templates/bugtask-requestfix.pt')
     _confirm_new_task = False
@@ -292,14 +311,7 @@ class BugAlsoReportInView(LaunchpadFormView):
     def __init__(self, context, request):
         LaunchpadFormView.__init__(self, context, request)
         self.notifications = []
-        self.field_names = ['link_to_bugwatch', 'bugtracker', 'remotebug']
-
-    def setUpWidgets(self):
-        LaunchpadFormView.setUpWidgets(self)
-        link_bug_widget = self.widgets['link_to_bugwatch']
-        onkeypress_js = "selectWidget('%s', event);" % link_bug_widget.name
-        self.widgets['remotebug'].extra = 'onkeypress="%s"' % onkeypress_js
-        self.widgets['bugtracker'].extra = 'onchange="%s"' % onkeypress_js
+        self.field_names = ['remotebug', 'bugtracker']
 
     def setUpLabelAndWidgets(self, label, target_field_names):
         """Initialize the form and render it."""
@@ -310,6 +322,10 @@ class BugAlsoReportInView(LaunchpadFormView):
             self.widgets[field_name]
             for field_name in self.field_names
             if field_name in target_field_names]
+        self.bugwatch_widgets = [
+            self.widgets[field_name]
+            for field_name in self.field_names
+            if field_name not in target_field_names]
 
     def render_upstreamtask(self):
         self.setUpLabelAndWidgets("Request fix in a product", ['product'])
@@ -357,7 +373,6 @@ class BugAlsoReportInView(LaunchpadFormView):
             * If bugtracker is not None, remotebug has to be not None
             * If the target uses Malone, a bug watch can't be added.
         """
-        link_to_bugwatch = data.get('link_to_bugwatch')
         remotebug = data.get('remotebug')
         bugtracker = data.get('bugtracker')
         product = data.get('product')
@@ -384,7 +399,7 @@ class BugAlsoReportInView(LaunchpadFormView):
             # no point in trying to validate further.
             return
 
-        if link_to_bugwatch and target.official_malone:
+        if remotebug and target.official_malone:
             self.addError(
                 "%s uses Malone as its bug tracker, and it can't at the"
                 " same time be linked to a remote bug." % cgi.escape(
@@ -395,15 +410,7 @@ class BugAlsoReportInView(LaunchpadFormView):
             # using Malone.
             return
 
-        if link_to_bugwatch and remotebug is None:
-            #XXX: This should use setFieldError, but the widget isn't
-            #     rendered in a way that allows the error to be
-            #     displayed next to the widget.
-            #     -- Bjorn Tillenius, 2006-09-12
-            self.addError(
-                "Please specify the remote bug number in the remote "
-                "bug tracker.")
-        elif link_to_bugwatch and '://' in remotebug:
+        if remotebug is not None and '://' in remotebug:
             # An URL was entered instead of the bug id, try to find out
             # which bug and bug tracker it's referring to.
             bugwatch_set = getUtility(IBugWatchSet)
@@ -422,22 +429,22 @@ class BugAlsoReportInView(LaunchpadFormView):
                         cgi.escape(error.base_url)))
             else:
                 if url_bugtracker is None:
-                    self.addError(
+                    self.setFieldError(
+                        'remotebug',
                         "Launchpad doesn't know what kind of bug tracker"
-                        ' the URL %s is pointing at.' % cgi.escape(remotebug))
+                        ' this URL is pointing at.')
                 else:
                     # Modify the data dict so that the action handler
                     # won't have to extract the bug tracker and bug from
                     # the URL as well.
                     data['bugtracker'] = bugtracker = url_bugtracker
                     data['remotebug'] = remotebug = url_bug
-
-        if link_to_bugwatch and bugtracker is None:
-            #XXX: This should use setFieldError, but the widget isn't
-            #     rendered in a way that allows the error to be
-            #     displayed next to the widget.
-            #     -- Bjorn Tillenius, 2006-09-12
-            self.addError("Please specify a bug tracker.")
+        elif remotebug is not None and bugtracker is None:
+            # The user entered a bug number, so he needs to enter a bug
+            # tracker as well.
+            self.setFieldError(
+                'bugtracker',
+                "Please specify the bug tracker where the bug is located.")
 
 
         if len(self.errors) > 0:
@@ -449,7 +456,7 @@ class BugAlsoReportInView(LaunchpadFormView):
         if confirm_action.submitted():
             # The user confirmed that he does want to add the task.
             return
-        if not target.official_malone and not link_to_bugwatch:
+        if not target.official_malone and not remotebug:
             confirm_button = (
                 '<input style="font-size: smaller" type="submit"'
                 ' value="%s" name="%s" />' % (
@@ -480,7 +487,6 @@ class BugAlsoReportInView(LaunchpadFormView):
         sourcepackagename = data.get('sourcepackagename')
         bugtracker = data.get('bugtracker')
         remotebug = data.get('remotebug')
-        link_to_bugwatch = data.get('link_to_bugwatch')
 
         if product is not None:
             target = product
@@ -497,10 +503,11 @@ class BugAlsoReportInView(LaunchpadFormView):
             product=product,
             distribution=distribution, sourcepackagename=sourcepackagename)
 
-        if link_to_bugwatch:
-            user = getUtility(ILaunchBag).user
+        if remotebug:
+            assert bugtracker is not None, (
+                "validate() should have ensured that bugtracker is not None.")
             bug_watch = getUtility(IBugWatchSet).createBugWatch(
-                bug=taskadded.bug, owner=user, bugtracker=bugtracker,
+                bug=taskadded.bug, owner=self.user, bugtracker=bugtracker,
                 remotebug=remotebug)
             notify(SQLObjectCreatedEvent(bug_watch))
             if not target.official_malone:
