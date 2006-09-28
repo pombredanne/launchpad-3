@@ -9,6 +9,7 @@ __all__ = [
     'POMsgSetAppMenus',
     'POMsgSetSubmissions',
     'POMsgSetZoomedView',
+    'BaseTranslationView',
     ]
 
 import re
@@ -412,7 +413,10 @@ class BaseTranslationView(LaunchpadView):
         self.start = self.batchnav.start
         self.size = self.batchnav.currentBatch().size
 
-        if self.request.method == 'POST' and self.user is not None:
+        if (self.request.method == 'POST' and 
+            self.request.form.get("submit_translations") and
+            self.user is not None):
+            # Check if this is really the form we want to post to
             self._submitTranslations()
 
         # Slave view initialization depends on _submitTranslations being
@@ -803,11 +807,6 @@ class POMsgSetView(LaunchpadView):
                              reverse=True)
         return POMsgSetSubmissions(title, submissions[:self.max_entries],
                                    self.is_multi_line, self.max_entries)
-
-    def generateNextTabIndex(self):
-        """Return the tab index value to navigate the form."""
-        self._table_index_value += 1
-        return self._table_index_value
 
     def getTranslation(self, index):
         """Return the active translation for the pluralform 'index'.
