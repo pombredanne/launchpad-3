@@ -38,18 +38,6 @@ class BzrManager:
         working_dir = self.job.getWorkingDir(dir)
         return self._targetTreePath(working_dir)
 
-    def createMaster(self):
-       """Do nothing. For compatibility with ArchiveManager."""
-
-    def createMirror(self):
-       """Do nothing. For compatibility with ArchiveManager."""
-
-    def nukeMaster(self):
-       """Do nothing. For compatibility with ArchiveManager."""
-
-    def rollbackToMirror(self):
-        """Do nothing. For compatibility with ArchiveManager."""
-
     def _targetTreePath(self, working_dir):
         return os.path.join(working_dir, "bzrworking")
 

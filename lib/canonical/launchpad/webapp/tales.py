@@ -324,7 +324,7 @@ class BugTaskFormatterAPI(ObjectFormatterAPI):
             importance = self._context.importance.title.lower()
             alt = "(%s)" % importance
             title = importance.capitalize()
-            if importance not in ("untriaged", "wishlist"):
+            if importance not in ("undecided", "wishlist"):
                 # The other status names do not make a lot of sense on
                 # their own, so tack on a noun here.
                 title += " importance"
@@ -351,6 +351,33 @@ class MilestoneFormatterAPI(ObjectFormatterAPI):
     def icon(self):
         """Return the appropriate <img> tag for the milestone icon."""
         return '<img alt="" src="/@@/milestone" />'
+
+
+class BuildFormatterAPI(ObjectFormatterAPI):
+    """Adapter for IBuild objects to a formatted string.
+
+    Used for fmt:icon.
+    """
+    def icon(self):
+        """Return the appropriate <img> tag for the build icon."""
+        image_template = '<img alt="%s" title="%s" src="%s" />'
+
+        icon_map = {
+            dbschema.BuildStatus.NEEDSBUILD: "/@@/build-needed",
+            dbschema.BuildStatus.FULLYBUILT: "/@@/build-success",
+            dbschema.BuildStatus.FAILEDTOBUILD: "/@@/build-failure",
+            dbschema.BuildStatus.MANUALDEPWAIT: "/@@/build-depwait",
+            dbschema.BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
+            # XXX cprov 20060321: proper icons
+            dbschema.BuildStatus.SUPERSEDED: "/@@/topic",
+            dbschema.BuildStatus.BUILDING: "/@@/progress",
+            }
+
+        alt = '[%s]' % self._context.buildstate.name
+        title = self._context.buildstate.name
+        source = icon_map[self._context.buildstate]
+
+        return image_template % (alt, title, source)
 
 
 class DateTimeFormatterAPI:

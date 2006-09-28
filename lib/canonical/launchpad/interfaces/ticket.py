@@ -121,6 +121,19 @@ class ITicket(IHasOwner, IMessageTarget):
     def unsubscribe(person):
         """Remove the person's subscription to this ticket."""
 
+    def getSubscribers():
+        """Return a list of Person that should be notified of changes to this
+        ticket. That is the union of getDirectSubscribers() and
+        getIndirectSubscribers().
+        """
+
+    def getDirectSubscribers():
+        """Return the set of persons who are subscribed to this ticket."""
+
+    def getIndirectSubscribers():
+        """Return the set of persons who are implicitely subscribed to this
+        ticket. That will be the ticket's target support contact list.
+        """
 
 # Interfaces for containers
 class ITicketSet(Interface):

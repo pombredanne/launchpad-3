@@ -33,7 +33,7 @@ from canonical.launchpad.interfaces import (
     UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
 
 
-debbugsseveritymap = {None:        dbschema.BugTaskImportance.UNTRIAGED,
+debbugsseveritymap = {None:        dbschema.BugTaskImportance.UNDECIDED,
                       'wishlist':  dbschema.BugTaskImportance.WISHLIST,
                       'minor':     dbschema.BugTaskImportance.LOW,
                       'normal':    dbschema.BugTaskImportance.MEDIUM,
@@ -103,7 +103,7 @@ class BugTask(SQLBase, BugTaskMixin):
     importance = dbschema.EnumCol(
         dbName='importance', notNull=True,
         schema=dbschema.BugTaskImportance,
-        default=dbschema.BugTaskImportance.UNTRIAGED)
+        default=dbschema.BugTaskImportance.UNDECIDED)
     assignee = ForeignKey(
         dbName='assignee', foreignKey='Person',
         notNull=False, default=None)
@@ -352,29 +352,6 @@ class BugTask(SQLBase, BugTaskMixin):
 
         return header_value
 
-    @property
-    def statusdisplayhtml(self):
-        """See canonical.launchpad.interfaces.IBugTask."""
-        # XXX sabdfl 20060813 this should be in browser code, not database
-        # code!
-        assignee = self.assignee
-        status = self.status
-
-        if assignee:
-            assignee_html = (
-                '<img alt="" src="/@@/user" /> '
-                '<a href="/people/%s/+assignedbugs">%s</a>' % (
-                    urllib.quote_plus(assignee.name),
-                    cgi.escape(assignee.browsername)))
-
-            if status in (dbschema.BugTaskStatus.REJECTED,
-                          dbschema.BugTaskStatus.FIXCOMMITTED):
-                return '%s by %s' % (status.title.lower(), assignee_html)
-            else:
-                return '%s, assigned to %s' % (status.title.lower(), assignee_html)
-        else:
-            return status.title.lower() + ' (unassigned)'
-
 
 def search_value_to_where_condition(search_value):
     """Convert a search value to a WHERE condition.
@@ -472,7 +449,6 @@ class BugTaskSet:
             'product': params.product,
             'distribution': params.distribution,
             'distrorelease': params.distrorelease,
-            'productseries': params.productseries,
             'milestone': params.milestone,
             'assignee': params.assignee,
             'sourcepackagename': params.sourcepackagename,
@@ -513,6 +489,10 @@ class BugTaskSet:
 
         if params.omit_dupes:
             extra_clauses.append("Bug.duplicateof is NULL")
+
+        if params.has_cve:
+            extra_clauses.append("BugTask.bug IN "
+                                 "(SELECT DISTINCT bug FROM BugCve)")
 
         if params.attachmenttype is not None:
             clauseTables.append('BugAttachment')
@@ -569,7 +549,8 @@ class BugTaskSet:
 
         if params.pending_bugwatch_elsewhere:
             # Include only bugtasks that have other bugtasks on targets
-            # not using Malone, and have no bug watch.
+            # not using Malone, which are not Rejected, and have no bug
+            # watch.
             pending_bugwatch_elsewhere_clause = """
                 EXISTS (
                     SELECT TRUE FROM BugTask AS RelatedBugTask
@@ -584,8 +565,9 @@ class BugTaskSet:
                             OtherDistribution.official_malone IS FALSE
                             OR OtherProduct.official_malone IS FALSE
                             )
+                        AND RelatedBugTask.status != %s
                     )
-                """
+                """ % sqlvalues(dbschema.BugTaskStatus.REJECTED)
 
             extra_clauses.append(pending_bugwatch_elsewhere_clause)
 

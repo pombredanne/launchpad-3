@@ -33,7 +33,7 @@
           <br />
         </tal:block>
       </tal:block>
-      <tal:block condition="context/branch">
+      <tal:block condition="context/import_branch">
         <b>Bazaar branch:</b> Published<br />
       </tal:block>
     </div>

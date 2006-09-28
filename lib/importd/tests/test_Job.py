@@ -6,24 +6,9 @@
 __metaclass__ = type
 
 import unittest
-import sys
 import os
-import logging
-import shutil
 import datetime
 
-import gnarly.process
-import gnarly.process.unix_process
-gnarly.process.Popen = gnarly.process.unix_process.Popen
-
-import pybaz.errors
-import pybaz as arch
-import pybaz.backends.forkexec
-pybaz.backend.spawning_strategy = \
-    pybaz.backends.forkexec.PyArchSpawningStrategy
-
-from importd.archivemanager import ArchiveManager
-from importd.bzrmanager import BzrManager
 from importd.Job import Job, CopyJob
 from importd import JobStrategy
 from importd.tests import testutil, helpers
@@ -71,81 +56,35 @@ class TestRunJob(helpers.SandboxTestCase):
         self.assertEqual(self.strategy_args, [(job, jobdir, None)])
 
 
-class TestBazFullPackage(unittest.TestCase):
-
-    def testFullPackageVersion(self):
-        """test full package version is calculated correctly"""
-        aJob = Job()
-        aJob.archivename = "archive"
-        aJob.nonarchname = "category--branch--1"
-        self.assertEqual(
-            aJob.bazFullPackageVersion(), "archive/category--branch--1")
-
-    def testFullPackageVersionNoBranch(self):
-        """test full package version is correct with no branch name"""
-        aJob = Job()
-        aJob.archivename = "archive"
-        aJob.nonarchname = "category--1"
-        self.assertEqual(
-            aJob.bazFullPackageVersion(), "archive/category--1")
-
-
 class TestJobWorkingDir(helpers.JobTestCase):
-
-    jobHelperType = helpers.ArchiveManagerJobHelper
 
     def testGetWorkingDir(self):
         """Job.getWorkingDir creates a directory with the right name"""
-        job = self.job_helper.makeJob()
         basedir = self.sandbox.path
-        version = self.job_helper.version
-        workingdir = self.sandbox.join(version.fullname)
+        # Try getWorkingDir with series 42, to check the format string
+        self.job_helper.series_id = 42
+        job = self.job_helper.makeJob()
+        workingdir = self.sandbox.join('series-0000002a')
+        path = job.getWorkingDir(basedir)
+        self.assertEqual(path, workingdir)
+        self.failUnless(os.path.exists(workingdir))
+        # Try getWorkingDir with series 1, to check that the data is passed
+        # around correctly.
+        self.job_helper.series_id = 1
+        job = self.job_helper.makeJob()
+        workingdir = self.sandbox.join('series-00000001')
         path = job.getWorkingDir(basedir)
         self.assertEqual(path, workingdir)
         self.failUnless(os.path.exists(workingdir))
 
 
-class NukeTargetsJobHelper(helpers.ArchiveManagerJobHelper):
-    """Job Factory for nukeTargets test cases."""
-
-    targetManagerType = None
-
-    def makeJob(self):
-        job = helpers.ArchiveManagerJobHelper.makeJob(self)
-        job.targetManagerType = self.targetManagerType
-        job.nukeMasterCalled = 0
-        target_manager_factory = job.makeTargetManager
-        def make_instrumented_target_manager():
-            target_manager = target_manager_factory()
-            assert isinstance(target_manager, self.targetManagerType)
-            nuke_master = target_manager.nukeMaster
-            def instrumented_nuke_master():
-                job.nukeMasterCalled += 1
-                nuke_master()
-            target_manager.nukeMaster = instrumented_nuke_master
-            return target_manager
-        job.makeTargetManager = make_instrumented_target_manager
-        return job
-
-
-class NukeTargetJobTestCase(helpers.JobTestCase):
-
-    jobHelperType = NukeTargetsJobHelper
-
-
-class NukeTargetsTestsMixin:
-    """nukeTargets tests using an abstract target manager."""
-
-    targetManagerType = None
+class TestNukeTargets(helpers.JobTestCase):
+    """Run nukeTargets tests with BzrManager."""
 
     def testNukeTargets(self):
-        # nukeTarget removes tree and calls ArchiveManager.nukeMaster.
         # The scope of this test is:
         # - nukeTargets accepts a directory and a logger.
         # - nukeTargets deletes the workingdir.
-        # - nukeTargets calls the TargetManager's nukeMaster method.
-        # - TargetManager.nukeMaster is called with acceptable arguments.
-        self.job_helper.targetManagerType = self.targetManagerType
         job = self.job_helper.makeJob()
         basedir = self.sandbox.path
         workingdir = job.getWorkingDir(basedir)
@@ -153,22 +92,8 @@ class NukeTargetsTestsMixin:
         # create a file to test recursive directory removal
         open(os.path.join(workingdir, 'some_file'), 'w').close()
         logger = testutil.makeSilentLogger()
-        assert job.nukeMasterCalled == 0
         job.nukeTargets(basedir, logger)
         self.failIf(os.path.exists(workingdir))
-        self.assertEqual(job.nukeMasterCalled, 1)
-
-
-class TestArchNukeTargets(NukeTargetJobTestCase, NukeTargetsTestsMixin):
-    """Run nukeTargets tests with ArchiveManager."""
-
-    targetManagerType = ArchiveManager
-
-
-class TestBzrNukeTargets(NukeTargetJobTestCase, NukeTargetsTestsMixin):
-    """Run nukeTargets tests with BzrManager."""
-
-    targetManagerType = BzrManager
 
 
 class TestRepoType(unittest.TestCase):
@@ -207,7 +132,6 @@ class TestGetJob(helpers.ZopelessTestCase):
     def testGetBuilders(self):
         '''get a builders list from the db'''
         import importd.util
-        from canonical.lp.dbschema import ImportStatus
         jobs = importd.util.jobsFromDB("slave_home",
                                        "archive_mirror_dir",
                                        autotest = False)
@@ -225,8 +149,8 @@ class TestGetJob(helpers.ZopelessTestCase):
 
     def testGetPackageJob(self):
         '''get a usable package job from the db'''
-        from canonical.launchpad.database import SourcePackage, \
-                SourcePackageRelease, DistroRelease
+        from canonical.launchpad.database import (
+            SourcePackageRelease, DistroRelease)
         pkgid = sampleData.package_import_id
         drid = sampleData.package_import_distrorelease_id
         spr = SourcePackageRelease.get(pkgid)
@@ -260,29 +184,14 @@ class TestGetJob(helpers.ZopelessTestCase):
         day_seconds = 24 * 60 * 60
         self.assertEqual(job.frequency, day_seconds)
 
-    def testGetJobTarget(self):
-        """get the arch target details for a job from the db"""
+    def testGetJobSeriesId(self):
+        # Check that Job.from_series sets job.seriesID to the database id of
+        # the ProductSeries.
+        """get the seriesID for a job from the database"""
         from canonical.launchpad.database import ProductSeries
         series = ProductSeries.get(sampleData.cvs_job_id)
-        series.targetarcharchive = 'joe@example.org'
-        series.targetarchcategory = 'foo'
-        series.targetarchbranch = 'bar'
-        series.targetarchversion = '4.2'
         job = CopyJob().from_series(series)
-        self.assertEqual(job.archivename, 'joe@example.org')
-        self.assertEqual(job.nonarchname, 'foo--bar--4.2')
-
-    def testGetJobTargetNull(self):
-        """get automatic target for a job without arch details in the db"""
-        from canonical.launchpad.database import ProductSeries
-        series = ProductSeries.get(sampleData.cvs_job_id)
-        series.targetarcharchive = None
-        series.targetarchcategory = None
-        series.targetarchbranch = None
-        series.targetarchversion = None
-        job = CopyJob().from_series(series)
-        self.assertEqual(job.archivename, 'unnamed@bazaar.ubuntu.com')
-        self.assertEqual(job.nonarchname, 'series--%d' % sampleData.cvs_job_id)
+        self.assertEqual(job.seriesID, sampleData.cvs_job_id)
 
 
 class MockJob(object):
