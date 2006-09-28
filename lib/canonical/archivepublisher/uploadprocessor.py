@@ -255,8 +255,7 @@ class UploadProcessor:
                 # the new exception will be handled by the caller just like
                 # the one we caught would have been, by failing the upload
                 # with no email.
-                self.log.exception(
-                    "Unhandled exception processing upload", exc_info=True)
+                self.log.exception("Unhandled exception processing upload")
                 upload.reject("Unhandled exception processing upload: %s" % e)
                                 
             if upload.rejected:

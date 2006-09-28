@@ -221,3 +221,4 @@ Finally, let's make sure that bug notifications were added:
            Status: Unconfirmed => Confirmed
 
     >>> event_listener.unregister()
+

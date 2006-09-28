@@ -176,12 +176,11 @@ class BugWatchSet(BugSetBase):
 
     def fromText(self, text, bug, owner):
         """See IBugTrackerSet.fromText."""
-        watches = set([])
+        watches = set()
         for trackertype, pattern in self.bugtracker_references.items():
             watches = watches.union(self._find_watches(pattern, 
                 trackertype, text, bug, owner))
-        return sorted(watches, key=lambda a: (a.bugtracker.name,
-            a.remotebug))
+        return sorted(watches, key=lambda a: (a.bugtracker.name, a.remotebug))
 
     def fromMessage(self, message, bug):
         """See IBugWatchSet."""

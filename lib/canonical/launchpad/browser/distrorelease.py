@@ -148,7 +148,7 @@ class DistroReleaseBugsMenu(ApplicationMenu):
         return Link('+filebug', 'Report a Bug', icon='add')
 
     def cve(self):
-        return Link('+cve', 'CVE List', icon='cve')
+        return Link('+cve', 'CVE Reports', icon='cve')
 
 
 class DistroReleaseSpecificationsMenu(ApplicationMenu):
