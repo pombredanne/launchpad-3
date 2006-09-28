@@ -537,7 +537,7 @@ class BaseTranslationView(LaunchpadView):
     @property
     def user_is_official_translator(self):
         """Determine whether the current user is an official translator."""
-        return self.from_pofile or self.pofile.canEditTranslations(self.user)
+        return self.pofile.canEditTranslations(self.user)
 
     def _extractFormPostedTranslations(self, pomsgset):
         """Look for translations for this POMsgSet in the form submitted.
