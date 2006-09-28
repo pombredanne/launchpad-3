@@ -812,6 +812,13 @@ class POMsgSetView(LaunchpadView):
         """
         def build_dict(subs):
             """Build a dict of POSubmissions keyed on its translation text."""
+            # When duplicate translations occur in subs, the last
+            # submission in the sequence is the one stored as a
+            # consequence of how dict() works; in this case the
+            # sequences are ordered by -datecreated and therefore the
+            # oldest duplicate is the one selected. This is why the date
+            # for Carlos' submission in 35-rosetta-suggestions.txt is
+            # 2005-04-07 and not 2005-05-06.
             return dict((sub.potranslation.translation, sub) for sub in subs)
 
         def prune_dict(main, pruners):
