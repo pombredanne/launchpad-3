@@ -250,9 +250,12 @@ class POFileUploadView(POFileView):
 class POFileTranslateView(BaseTranslationView):
     """The View class for a POFile or a DummyPOFile.
 
-    Note that the DummyPOFile is presented if there is no POFile in the
-    database, but the user wants to render one. Check the traverse_potemplate
-    function for more information about when the user is looking at a POFile,
+    This view is based on BaseTranslationView and implements the API
+    defined by tht class.
+
+    Note that DummyPOFiles are presented if there is no POFile in the
+    database but the user wants to translate it. See how POTemplate
+    traversal is done for details about how we decide between a POFile
     or a DummyPOFile.
     """
 
@@ -263,7 +266,12 @@ class POFileTranslateView(BaseTranslationView):
 
     def initialize(self):
         self.pofile = self.context
-        # XXX: describe
+        # The handling of errors is slightly tricky here. Because this
+        # form displays multiple POMsgSetViews, we need to track the
+        # various errors individually. This dictionary is keyed on
+        # POTMsgSet; it's a slightly unusual key value but it will be
+        # useful for doing display of only widgets with errors when we
+        # do that.
         self.errors = {}
 
         self._initializeShowOption()
@@ -307,21 +315,23 @@ class POFileTranslateView(BaseTranslationView):
                 pomsgset = self.pofile.createMessageSetFromText(msgid_text)
 
             error = self._storeTranslations(pomsgset)
-            if error and pomsgset.sequence > 0:
-                # There is an error, we should store this view to render them.
-                # If potmsgset.sequence == 0 means that that message set is
-                # not current anymore. This only happens as part of a race
-                # condition, when someone gets a translation form, later, we
-                # get a new template for that context that disables some
-                # entries in that translation form, after that, the user
-                # submits the form. We accept the translation, but if it has
-                # an error, we cannot render that error so we discard it, that
-                # translation is not being used anyway, so it's not a big
-                # lose.
+            if error and pomsgset.sequence != 0:
+                # There is an error, we should store it to be rendered
+                # together with its respective view.
+                #
+                # The check for potmsgset.sequence != 0 is meant to catch
+                # messages which are not current anymore. This only
+                # happens as part of a race condition, when someone gets
+                # a translation form, we get a new template for
+                # that context that disables some entries in that
+                # translation form, and after that, the user submits the
+                # form. We accept the translation, but if it has an
+                # error, we cannot render that error so we discard it,
+                # that translation is not being used anyway, so it's not
+                # a big loss.
                 self.errors[pomsgset.potmsgset] = error
 
         if self.errors:
-            # Notify the errors.
             if len(self.errors) == 1:
                 message = ("There is an error in a translation you provided. "
                            "Please correct it before continuing.")

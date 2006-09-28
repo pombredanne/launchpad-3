@@ -335,14 +335,33 @@ class POMsgSetIndexView:
 
 
 class BaseTranslationView(LaunchpadView):
-    """XXX"""
+    """Base class that implements a framework for modifying translations.
 
+    This class provides a basis for building a batched translation page.
+    It relies on one or more subviews being used to actually display the
+    translations and form elements. It processes the form submitted and
+    constructs data which can be then fed back into the subviews.
+
+    The subviews must be (or behave like) POMsgSetViews.
+
+    Child classes must define:
+        - self.pofile
+        - _buildBatchNavigator()
+        - _initializeSubViews()
+        - _submitTranslations()
+    """
+
+    pofile = None
     # There will never be 100 plural forms.  Usually, we'll be iterating
     # over just two or three.
     MAX_PLURAL_FORMS = 100
 
     class TabIndex:
-        """XXX"""
+        """Holds a counter which can be globally incremented.
+
+        This is shared between main and subviews to ensure tabindex is
+        incremented sequentially and sanely.
+        """
         def __init__(self):
             self.index = 0
 
@@ -365,13 +384,20 @@ class BaseTranslationView(LaunchpadView):
         self.redirecting = False
         self.tabindex = self.TabIndex()
 
-        # XXX: describe how these work
+        # These two dictionaries hold translation data parsed from the
+        # form submission. They exist mainly because of the need to
+        # redisplay posted translations when they contain errors; if not
+        # _submitTranslations could take care of parsing and saving
+        # translations without the need to store them in instance
+        # variables. To understand more about how they work, see
+        # _extractFormPostedTranslations, _prepareView and
+        # _storeTranslations.
         self.form_posted_translations = {}
         self.form_posted_needsreview = {}
 
         if not self.has_plural_form_information:
-            # Cannot translate this IPOFile without the plural form
-            # information. Show the info to add it to our system.
+            # This POFile needs administrator setup.
+            # XXX: this should refer people to +addticket, right? -- kiko
             self.request.response.addErrorNotification("""
             <p>
             Rosetta can&#8217;t handle the plural items in this file, because it
@@ -391,14 +417,23 @@ class BaseTranslationView(LaunchpadView):
 
         self._initializeAltLanguage()
 
-        # XXX: why here, because of redirect in process_form
+        # The batch navigator needs to be initialized early, before
+        # _submitTranslations is called; the reason for this is that
+        # _submitTranslations, in the case of no errors, redirects to
+        # the next batch page.
         self.batchnav = self._buildBatchNavigator()
+        # These two variables are stored for the sole purpose of being
+        # output in hidden inputs that preserve the current navigation
+        # when submitting forms.
         self.start = self.batchnav.start
         self.size = self.batchnav.currentBatch().size
 
         if self.request.method == 'POST' and self.user is not None:
             self._submitTranslations()
 
+        # Slave view initialization depends on _submitTranslations being
+        # called, because the form data needs to be passed in to it --
+        # again, because of error handling.
         self._initializeSubViews()
 
     #
@@ -406,16 +441,22 @@ class BaseTranslationView(LaunchpadView):
     #
 
     def _buildBatchNavigator(self):
-        """XXX"""
+        """Construct a BatchNavigator of POTMsgSets and return it."""
         raise NotImplementedError
 
     def _initializeSubViews(self):
-        """XXX"""
+        """Construct subviews as necessary."""
         raise NotImplementedError
 
     def _submitTranslations(self):
-        """XXX needs to call _storeTranslations, set up errors, can call
-        _redirectToNextPage"""
+        """Handle translations submitted via a form.
+
+        Implementing this method is complicated. It needs to find out
+        what POMsgSets were updated in the form post, call
+        _storeTranslations() for each of those, check for errors that
+        may have occurred during that (displaying them using
+        addErrorNotification), and otherwise call _redirectToNextPage if
+        everything went fine."""
         raise NotImplementedError
 
     #
@@ -424,7 +465,10 @@ class BaseTranslationView(LaunchpadView):
     #
 
     def _storeTranslations(self, pomsgset):
-        """XXX"""
+        """Store the translation submitted for a POMsgSet.
+
+        Return a string with an error if one occurs, otherwise None.
+        """
         self._extractFormPostedTranslations(pomsgset)
         translations = self.form_posted_translations[pomsgset]
         if not translations:
@@ -444,7 +488,7 @@ class BaseTranslationView(LaunchpadView):
             return None
 
     def _prepareView(self, pomsgset_view, pomsgset, error):
-        """XXX"""
+        """Prepare data for subview and call POMsgSetView.prepare."""
         # XXX: it would be nice if we could easily check if
         # this is being called in the right order, after
         # _storeTranslations(). -- kiko, 2006-0-27
@@ -464,7 +508,7 @@ class BaseTranslationView(LaunchpadView):
     #
 
     def _initializeAltLanguage(self):
-        """XXX"""
+        """Initialize the alternative language widget and check form data."""
         initial_values = {}
         second_lang_code = self.request.form.get("field.alternative_language")
         if second_lang_code:
@@ -507,11 +551,10 @@ class BaseTranslationView(LaunchpadView):
         return True
 
     def _extractFormPostedTranslations(self, pomsgset):
-        """Parse the form submitted to the translation widget looking for
-        translations.
+        """Look for translations for this POMsgSet in the form submitted.
 
         Store the new translations at self.form_posted_translations and its
-        status at self.form_posted_needsreview.
+        fuzzy status at self.form_posted_needsreview, keyed on the POMsgSet.
 
         In this method, we look for various keys in the form, and use them as
         follows:
@@ -570,6 +613,10 @@ class BaseTranslationView(LaunchpadView):
     #
 
     def _buildRedirectParams(self):
+        """Construct parameters for redirection.
+
+        Redefine this method if you have additional parameters to preserve.
+        """
         parameters = {}
         if self.second_lang_code:
             parameters['field.alternative_language'] = self.second_lang_code
@@ -597,8 +644,9 @@ class BaseTranslationView(LaunchpadView):
         self.request.response.redirect(new_url)
 
     def _redirectToNextPage(self):
-        # update the statistics for this po file
-        # XXX: performance issue?
+        """After a successful submission, redirect to the next batch page."""
+        # XXX: isn't this a hell of a performance issue, hitting this
+        # same table for every submit? -- kiko, 2006-09-27
         self.pofile.updateStatistics()
 
         next_url = self.batchnav.nextBatchURL()
@@ -616,6 +664,7 @@ class BaseTranslationView(LaunchpadView):
     #
 
     def render(self):
+        """No need to output HTML if we are just redirecting."""
         if self.redirecting:
             return u''
         else:
@@ -671,7 +720,6 @@ class POMsgSetView(LaunchpadView):
     in which case, we would have up to 100 instances of this class using the
     same information at self.form.
     """
-
     __used_for__ = IPOMsgSet
 
     # self.translations
@@ -688,7 +736,9 @@ class POMsgSetView(LaunchpadView):
         self.is_fuzzy = is_fuzzy
         self.tabindex = tabindex
 
-        # Set up alternative language variables. These could be 
+        # Set up alternative language variables. XXX: This could be made
+        # much simpler if we built submissions externally in the parent
+        # view, as suggested in initialize() below. -- kiko
         self.sec_lang = None
         self.second_lang_potmsgset = None
         if second_lang_code is not None:
@@ -710,20 +760,25 @@ class POMsgSetView(LaunchpadView):
         # would cut the number of (expensive) queries per-page by an
         # order of 30. -- kiko, 2006-09-27
 
-        # XXX: document this builds translations, msgids and suggestions
+        # XXX: to avoid the use of python in the view, we'd need objects
+        # to hold the data representing a pomsgset translation for a
+        # plural form. -- kiko, 2006-09-27
+
+        # This code is where we hit the database collecting message IDs
+        # and submissions for this POMsgSet.
         self.msgids = helpers.shortlist(self.context.potmsgset.getPOMsgIDs())
         assert len(self.msgids) > 0, (
             'Found a POTMsgSet without any POMsgIDSighting')
 
+        # We store lists of POMsgSetSubmissions objects in a
+        # submission_blocks dictionary, keyed on plural form index; this
+        # allows us later to just iterate over them in the view code
+        # using a generic template.
         self.submission_blocks = {}
         self.pluralform_indexes = range(len(self.translations))
         for index in self.pluralform_indexes:
             wiki, elsewhere, suggested, alt_submissions = self._buildAllSubmissions(index)
             self.submission_blocks[index] = [wiki, elsewhere, suggested, alt_submissions]
-
-        # XXX: to avoid the use of python in the view, we'd need objects
-        # to hold the data representing a pomsgset translation for a
-        # plural form.
 
     def _buildAllSubmissions(self, index):
         active = set([self.translations[index]])
@@ -883,21 +938,21 @@ class POMsgSetView(LaunchpadView):
         """Return the file references for this IPOMsgSet."""
         return self.context.potmsgset.filereferences
 
-    @cachedproperty
+    @property
     def zoom_url(self):
         """Return the URL where we should from the zoom icon."""
-        # XXX: preserve second_lang_code and other form parameters?
+        # XXX: preserve second_lang_code and other form parameters? -- kiko
         return '/'.join([canonical_url(self.context), '+translate'])
 
-    @cachedproperty
+    @property
     def zoom_alt(self):
         return 'View all details of this message'
 
-    @cachedproperty
+    @property
     def zoom_icon(self):
         return '/@@/zoom-in'
 
-    @cachedproperty
+    @property
     def max_entries(self):
         """Return the max number of entries to show as suggestions.
 
@@ -907,30 +962,39 @@ class POMsgSetView(LaunchpadView):
 
 
 class POMsgSetZoomedView(POMsgSetView):
-    """XXX"""
-    @cachedproperty
+    """A view that displays a POMsgSet, but zoomed in. See POMsgSetPageView."""
+    @property
     def zoom_url(self):
         # We are viewing this class directly from an IPOMsgSet, we should
         # point to the parent batch of messages.
-        # XXX: preserve second_lang_code and other form parameters?
+        # XXX: preserve second_lang_code and other form parameters? -- kiko
         pofile_batch_url = '+translate?start=%d' % (self.sequence - 1)
         return '/'.join([canonical_url(self.context.pofile), pofile_batch_url])
 
-    @cachedproperty
+    @property
     def zoom_alt(self):
         return 'Return to multiple messages view.'
 
-    @cachedproperty
+    @property
     def zoom_icon(self):
         return '/@@/zoom-out'
 
-    @cachedproperty
+    @property
     def max_entries(self):
         return None
 
+#
+# Pseudo-content class
+#
 
 class POMsgSetSubmissions(LaunchpadView):
-    """XXX"""
+    """Holds data of a specific POSubmission type for a POMsgSet.
+
+    When displaying POMsgSets in POMsgSetView we display different types
+    of submissions: suggestions, translations that occur in other
+    contexts, and translations in alternate languages. See
+    POMsgSetView._buildSubmissions for details.
+    """
     implements(IPOMsgSetSubmissions)
     def __init__(self, title, submissions, is_multi_line, max_entries):
         self.title = title
