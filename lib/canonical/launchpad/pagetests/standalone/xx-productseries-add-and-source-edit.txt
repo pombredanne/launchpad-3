@@ -11,7 +11,7 @@ Open the "Upstream Source Import" page for a series.
   ...<h1>Upstream source import</h1>...
   ...
 
-Add CVS source import details, but no Source Package.
+Add CVS source import details.
 
   >>> print http(r"""
   ... POST /products/firefox/trunk/+source HTTP/1.1
@@ -19,11 +19,10 @@ Add CVS source import details, but no Source Package.
   ... Content-Type: application/x-www-form-urlencoded
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ...
-  ... ubuntupkg=&rcstype=cvs&cvsroot=%3Apserver%3Aanonymous%40cvs-mirror.mozilla.org%3A%2Fcvsroot&cvsmodule=mozilla&cvsbranch=main&edit_productseries_source=Update+RCS+Details""")
-  HTTP/1.1 303 See Other 
+  ... rcstype=cvs&cvsroot=%3Apserver%3Aanonymous%40cvs-mirror.mozilla.org%3A%2Fcvsroot&cvsmodule=mozilla&cvsbranch=main&edit_productseries_source=Update+RCS+Details""")
+  HTTP/1.1 303 See Other
   ...
-  Location: http://.../products/firefox/trunk...
-  ...
+  Location: http://.../products/firefox/trunk
 
 We check if the info we just entered on the form is displayed correctly
 
@@ -37,35 +36,6 @@ We check if the info we just entered on the form is displayed correctly
   ...<td>:pserver:anonymous@cvs-mirror.mozilla.org:/cvsroot</td>...
   ...
 
-Now add a Source Package name, but try a non-existent one.
-
-  >>> print http(r"""
-  ... POST /products/firefox/trunk/+source HTTP/1.1
-  ... Content-Type: application/x-www-form-urlencoded
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... 
-  ... ubuntupkg=moz&rcstype=cvs&cvsroot=%3Apserver%3Aanonymous%40cvs-mirror.mozilla.org%3A%2Fcvsroot&cvsmodule=mozilla&cvsbranch=main&edit_productseries_source=Update+RCS+Details""")
-  HTTP/1.1 200 Ok
-  ...
-  ...Invalid source package name moz...
-  ...
-
-Now put in a valid Source Package Name.
-
-  >>> print http(r"""
-  ... POST /products/firefox/trunk/+source HTTP/1.1
-  ... Accept-Language: en-us,en;q=0.5
-  ... Content-Length: 192
-  ... Content-Type: application/x-www-form-urlencoded
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Referer: http://.../products/firefox/trunk/+source
-  ... 
-  ... ubuntupkg=mozilla-firefox&rcstype=cvs&cvsroot=%3Apserver%3Aanonymous%40cvs-mirror.mozilla.org%3A%2Fcvsroot&cvsmodule=mozilla&cvsbranch=main&edit_productseries_source=Update+RCS+Details""")
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
-  Location: http://.../products/firefox/trunk
-
 Test if we can add the FTP Details
 
   >>> print http(r"""
@@ -73,11 +43,10 @@ Test if we can add the FTP Details
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... Content-Type: application/x-www-form-urlencoded
   ... 
-  ... ubuntupkg=&rcstype=cvs&cvsroot=%3Apserver%3Aanonymous%40anoncvs.gnome.org%3A%2Fcvs%2Falsa&cvsmodule=alsa-utils&cvsbranch=alsa&releaseroot=ftp%3A%2F%2Fwww.mozilla.org%2Fpub%2Falsa&releasefileglob=alsa.*.src.tgz&edit_productseries_source=Update+RCS+Details""")
+  ... rcstype=cvs&cvsroot=%3Apserver%3Aanonymous%40anoncvs.gnome.org%3A%2Fcvs%2Falsa&cvsmodule=alsa-utils&cvsbranch=alsa&releaseroot=ftp%3A%2F%2Fwww.mozilla.org%2Fpub%2Falsa&releasefileglob=alsa.*.src.tgz&edit_productseries_source=Update+RCS+Details""")
   HTTP/1.1 303 See Other
   ...
-  Location: http://.../products/alsa-utils/trunk...
-  ...
+  Location: http://.../products/alsa-utils/trunk
 
 And we test if the validator is working adding the same CVS details to
 another product
@@ -88,7 +57,7 @@ another product
   ... Content-Type: application/x-www-form-urlencoded
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ...
-  ... ubuntupkg=netapplet&rcstype=cvs&cvsroot=%3Apserver%3Aanonymous%40cvs-mirror.mozilla.org%3A%2Fcvsroot&cvsmodule=mozilla&cvsbranch=main&edit_productseries_source=Update+RCS+Details""")
+  ... rcstype=cvs&cvsroot=%3Apserver%3Aanonymous%40cvs-mirror.mozilla.org%3A%2Fcvsroot&cvsmodule=mozilla&cvsbranch=main&edit_productseries_source=Update+RCS+Details""")
   HTTP/1.1 200 Ok
   ...
   ...CVS repository details already in use by another product...
@@ -101,7 +70,7 @@ Now we test if we can edit again changing the RCS
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... Content-Type: application/x-www-form-urlencoded
   ... 
-  ... ubuntupkg=alsa-utils&rcstype=svn&svnrepository=svn%3A%2F%2Falsa.com&releaseroot=ftp%3A%2F%2Fwww.mozilla.org%2Fpub%2Falsa&releasefileglob=alsa.*.src.tgz&edit_productseries_source=Update+RCS+Details""")
+  ... rcstype=svn&svnrepository=svn%3A%2F%2Falsa.com&releaseroot=ftp%3A%2F%2Fwww.mozilla.org%2Fpub%2Falsa&releasefileglob=alsa.*.src.tgz&edit_productseries_source=Update+RCS+Details""")
   HTTP/1.1 303 See Other
   Content-Length: 0
   ...
@@ -115,7 +84,7 @@ svnrepository to another ProductSeries
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... Content-Type: application/x-www-form-urlencoded
   ... 
-  ... ubuntupkg=mozilla&rcstype=svn&svnrepository=svn%3A%2F%2Falsa.com&releaseroot=ftp%3A%2F%2Fwww.mozilla.org%2Fpub%2Falsa&releasefileglob=alsa.*.src.tgz&edit_productseries_source=Update+RCS+Details""")
+  ... rcstype=svn&svnrepository=svn%3A%2F%2Falsa.com&releaseroot=ftp%3A%2F%2Fwww.mozilla.org%2Fpub%2Falsa&releasefileglob=alsa.*.src.tgz&edit_productseries_source=Update+RCS+Details""")
   HTTP/1.1 200 Ok
   ...
   ...SVN repository details already in use by another product...
