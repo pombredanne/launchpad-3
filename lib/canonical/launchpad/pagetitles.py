@@ -900,6 +900,8 @@ ticket_change_status = ContextId('Change status of support request #%s')
 
 ticket_edit = ContextId('Edit support request #%s details')
 
+ticket_confirm_answer = ContextId('Confirm an answer to support request #%s')
+
 def ticket_index(context, view):
     text = (
         smartquote('%s support request #%d: "%s"') %

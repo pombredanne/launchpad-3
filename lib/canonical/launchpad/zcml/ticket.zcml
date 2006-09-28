@@ -87,6 +87,13 @@
     template="../templates/ticket-index.pt" />
 
   <browser:page
+    name="+confirm"
+    for="canonical.launchpad.interfaces.ITicket"
+    class="canonical.launchpad.browser.TicketConfirmAnswerView"
+    permission="launchpad.AnyPerson"
+    template="../templates/ticket-confirm-answer.pt" />
+
+  <browser:page
     name="+reject"
     for="canonical.launchpad.interfaces.ITicket"
     class="canonical.launchpad.browser.TicketRejectView"

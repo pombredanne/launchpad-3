@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'TicketAddView',
     'TicketChangeStatusView',
+    'TicketConfirmAnswerView',
     'TicketContextMenu',
     'TicketEditView',
     'TicketMakeBugView',
@@ -439,6 +440,38 @@ class TicketWorkflowView(LaunchpadFormView):
         information about it."""
         self.context.reopen(data['message'])
         self.next_url = canonical_url(self.context)
+
+
+class TicketConfirmAnswerView(TicketWorkflowView):
+    """Specialized workflow view for the +confirm link sent in email
+    notifications.
+    """
+
+    def initialize(self):
+        # This page is only available to the owner
+        if self.user != self.context.owner:
+            self.request.response.addErrorNotification(_(
+                "Only the support request owner can confirm an answer."))
+            self.request.response.redirect(canonical_url(self.context))
+            return
+
+        # Check that the ticket is in a state where a confirmation
+        # is possible.
+        if (not self.confirm_action.submitted() and
+            not self.context.can_confirm_answer):
+            self.request.response.addErrorNotification(_(
+                "The support request is not in a state where you can confirm "
+                "an answer."))
+            self.request.response.redirect(canonical_url(self.context))
+            return
+
+        TicketWorkflowView.initialize(self)
+
+    def getAnswerMessage(self):
+        """Return the message that should be confirmed."""
+        data = {}
+        self.validateConfirmAnswer(data)
+        return data['answer']
 
 
 class TicketMessageDisplayView(LaunchpadView):
