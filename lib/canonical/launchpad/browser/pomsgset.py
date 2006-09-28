@@ -7,7 +7,7 @@ __all__ = [
     'POMsgSetPageView',
     'POMsgSetFacets',
     'POMsgSetAppMenus',
-    'POMsgSetSubmissions',
+    'POMsgSetSuggestions',
     'POMsgSetZoomedView',
     'BaseTranslationView',
     ]
@@ -30,7 +30,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     UnexpectedFormData, IPOMsgSet, TranslationConstants, NotFoundError,
-    ILanguageSet, IPOFileAlternativeLanguage, IPOMsgSetSubmissions)
+    ILanguageSet, IPOFileAlternativeLanguage, IPOMsgSetSuggestions)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ApplicationMenu, Link, LaunchpadView,
     canonical_url)
@@ -487,7 +487,7 @@ class BaseTranslationView(LaunchpadView):
         """Prepare data for display in a subview; calls POMsgSetView.prepare."""
         # XXX: it would be nice if we could easily check if
         # this is being called in the right order, after
-        # _storeTranslations(). -- kiko, 2006-0-27
+        # _storeTranslations(). -- kiko, 2006-09-27
         if self.form_posted_translations.has_key(pomsgset):
             translations = self.form_posted_translations[pomsgset]
         else:
@@ -681,7 +681,10 @@ class POMsgSetPageView(BaseTranslationView):
     pomsgset_view = None
     def initialize(self):
         self.pofile = self.context.pofile
-        # XXX: describe
+        # Since we are only displaying a single message, we only hold on
+        # to one error for it. The variable is set to the failing
+        # POMsgSet (a device of BaseTranslationView._storeTranslations)
+        # in _submitTranslations.
         self.error = None
         BaseTranslationView.initialize(self)
 
@@ -727,17 +730,28 @@ class POMsgSetView(LaunchpadView):
     # self.sec_lang
     # self.second_lang_potmsgset
     # self.msgids
-    # self.submission_blocks
+    # self.suggestion_blocks
     # self.pluralform_indexes
 
     def prepare(self, translations, is_fuzzy, error, tabindex, second_lang_code):
+        """Primes the view with information that is gathered by a parent view.
+
+        translations is a dictionary indexed by plural form index;
+        BaseTranslationView constructed it based on active_texts
+        overlaid with form-submitted translations. is_fuzzy is a flag
+        tht is similarly constructed.
+
+        tabindex is a TabIndex object.
+
+        second_lang_code is the result of submiting field.alternative_value.
+        """
         self.translations = translations
         self.error = error
         self.is_fuzzy = is_fuzzy
         self.tabindex = tabindex
 
         # Set up alternative language variables. XXX: This could be made
-        # much simpler if we built submissions externally in the parent
+        # much simpler if we built suggestions externally in the parent
         # view, as suggested in initialize() below. -- kiko
         self.sec_lang = None
         self.second_lang_potmsgset = None
@@ -754,8 +768,8 @@ class POMsgSetView(LaunchpadView):
 
     def initialize(self):
         # XXX: the heart of the optimization problem here is that
-        # _buildAllSubmissions() is very expensive. We need to move to
-        # building submissions and active texts in one fell swoop in the
+        # _buildAllSuggestions() is very expensive. We need to move to
+        # building suggestions and active texts in one fell swoop in the
         # parent view, and then supplying them all via prepare(). This
         # would cut the number of (expensive) queries per-page by an
         # order of 30. -- kiko, 2006-09-27
@@ -765,38 +779,81 @@ class POMsgSetView(LaunchpadView):
         # plural form. -- kiko, 2006-09-27
 
         # This code is where we hit the database collecting message IDs
-        # and submissions for this POMsgSet.
+        # and suggestions for this POMsgSet.
         self.msgids = helpers.shortlist(self.context.potmsgset.getPOMsgIDs())
         assert len(self.msgids) > 0, (
             'Found a POTMsgSet without any POMsgIDSighting')
 
-        # We store lists of POMsgSetSubmissions objects in a
-        # submission_blocks dictionary, keyed on plural form index; this
+        # We store lists of POMsgSetSuggestions objects in a
+        # suggestion_blocks dictionary, keyed on plural form index; this
         # allows us later to just iterate over them in the view code
         # using a generic template.
-        self.submission_blocks = {}
+        self.suggestion_blocks = {}
         self.pluralform_indexes = range(len(self.translations))
         for index in self.pluralform_indexes:
-            wiki, elsewhere, suggested, alt_submissions = self._buildAllSubmissions(index)
-            self.submission_blocks[index] = [wiki, elsewhere, suggested, alt_submissions]
+            wiki, elsewhere, non_editor, alt_lang_suggestions = \
+                self._buildAllSuggestions(index)
+            self.suggestion_blocks[index] = \
+                [wiki, elsewhere, non_editor, alt_lang_suggestions]
 
-    def _buildAllSubmissions(self, index):
-        active = set([self.translations[index]])
-        wiki = set(self.context.getWikiSubmissions(index))
-        current = set(self.context.getCurrentSubmissions(index))
-        suggested = set(self.context.getSuggestedSubmissions(index))
+    def _buildAllSuggestions(self, index):
+        """Builds all suggestions for a certain plural form index.
 
+        This method does the ugly nitty gritty of making sure we don't
+        display duplicated suggestions; this is done by checking the
+        translation strings in each submission and grabbing only one
+        submission per string.
+
+        The decreasing order of preference this method encodes is:
+            - Active translations to other contexts (elsewhere)
+            - Non-editor translations to this context (non_editor)
+            - Non-editor translations to other contexts (wiki)
+        """
+        def build_dict(subs):
+            return dict((sub.potranslation.translation, sub) for sub in subs)
+
+        def prune_dict(main, pruners):
+            pruners_merged = {}
+            for pruner in pruners:
+                pruners_merged.update(pruner)
+            out = {}
+            for key, value in main.items():
+                if key in pruners_merged:
+                    continue
+                out[key] = value
+            return out
+
+        wiki = self.context.getWikiSubmissions(index)
+        wiki_translations = build_dict(wiki)
+
+        current = self.context.getCurrentSubmissions(index)
+        current_translations = build_dict(current)
+
+        non_editor = self.context.getSuggestedSubmissions(index)
+        non_editor_translations = build_dict(non_editor)
+
+        # Use bogus dictionary to keep consistent with other
+        # translations; it's only used for pruning.
+        active_translations = {self.translations[index]: None}
+
+        wiki_translations_clean = prune_dict(wiki_translations,
+           [current_translations, non_editor_translations, active_translations])
+        wiki = self._buildSuggestions("Suggested elsewhere",
+            wiki_translations_clean.values())
+
+        non_editor_translations = prune_dict(non_editor_translations,
+            [current_translations, active_translations])
         if self.is_multi_line:
             title = "Suggestions"
         else:
             title = "Suggestion"
-        wiki = wiki - current - suggested - active
-        wiki = self._buildSubmissions(title, wiki)
+        non_editor = self._buildSuggestions(title,
+            non_editor_translations.values())
 
-        elsewhere = current - suggested - active
-        elsewhere = self._buildSubmissions("Used elsewhere", elsewhere)
-
-        suggested = self._buildSubmissions("Suggested elsewhere", suggested) 
+        elsewhere_translations = prune_dict(current_translations,
+                                            [active_translations])
+        elsewhere = self._buildSuggestions("Used elsewhere",
+            elsewhere_translations.values())
 
         if self.second_lang_potmsgset is None:
             alt_submissions = []
@@ -805,14 +862,17 @@ class POMsgSetView(LaunchpadView):
             alt_submissions = self.second_lang_potmsgset.getCurrentSubmissions(
                 self.sec_lang, index)
             title = self.sec_lang.englishname
+        # What a relief -- no need to do pruning here for alternative
+        # languages as they are highly unlikely to collide.
+        alt_lang_suggestions = self._buildSuggestions(title, alt_submissions)
+        return wiki, elsewhere, non_editor, alt_lang_suggestions
 
-        alt_submissions = self._buildSubmissions(title, alt_submissions)
-        return wiki, elsewhere, suggested, alt_submissions
-
-    def _buildSubmissions(self, title, submissions):
-        submissions = sorted(submissions, key=operator.attrgetter("datecreated"),
+    def _buildSuggestions(self, title, submissions):
+        """Return a POMsgSetSuggestions object for the provided submissions."""
+        submissions = sorted(submissions,
+                             key=operator.attrgetter("datecreated"),
                              reverse=True)
-        return POMsgSetSubmissions(title, submissions[:self.max_entries],
+        return POMsgSetSuggestions(title, submissions[:self.max_entries],
                                    self.is_multi_line, self.max_entries)
 
     def getTranslation(self, index):
@@ -982,15 +1042,9 @@ class POMsgSetZoomedView(POMsgSetView):
 # Pseudo-content class
 #
 
-class POMsgSetSubmissions(LaunchpadView):
-    """Holds data of a specific POSubmission type for a POMsgSet.
-
-    When displaying POMsgSets in POMsgSetView we display different types
-    of submissions: suggestions, translations that occur in other
-    contexts, and translations in alternate languages. See
-    POMsgSetView._buildSubmissions for details.
-    """
-    implements(IPOMsgSetSubmissions)
+class POMsgSetSuggestions(LaunchpadView):
+    """See IPOMsgSetSuggestions."""
+    implements(IPOMsgSetSuggestions)
     def __init__(self, title, submissions, is_multi_line, max_entries):
         self.title = title
         self.submissions = submissions
