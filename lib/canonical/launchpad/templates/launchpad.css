@@ -103,7 +103,7 @@ body {
   color: #66a;
 }
 :link, .hierarchy :visited, .footer :visited,
-.facets :visited, #pillars :visited, #subpillars :visited, .portlet :visited {
+.facets :visited, .portlet :visited {
   background: none;
   color: #000088;
 }
@@ -301,6 +301,9 @@ ol {
 
 /* -- Form controls: -- */
 
+input[type="text"], input[type="submit"], input[type="reset"] {
+  font-size: 1em; /* Forces a readable font size in Safari */
+}
 textarea {
   border: 1px solid #8cacbb;
   color: black;
@@ -438,43 +441,12 @@ ul.app>li.current {
   font-size: smaller;
   margin: 0 0 1em 0;
 }
-.sitemap, #subpillars {
-  background-color: #f4f5f8;
-}
-#pillars, #subpillars {
-  display: inline;
-  margin: 0;
-  padding: 0;
-}
-#pillars {
-  background-color: #dee7ec;
-  float: left;
-  width: 47%;
-}
-#subpillars {
-  float: left;
-  font-size: smaller;
-  margin-left: 6%;
-  width: 42%;
-}
-#pillars li, #subpillars li {
-  list-style: none;
-  margin: 0;
-}
 .sitemap li {
   display: block;
   padding: 0.25em 1em;
 }
 .sitemap :link, .sitemap :visited {
   text-decoration: none;
-}
-#pillars li.current, .facets li.current {
-  background-color: #f4f5f8;
-  color: inherit;
-}
-#subpillars li.current {
-  background-color: #dee7ec;
-  border: 1px solid #8cacbb;
 }
 /* The following paddings/margins aren't yet robust when zoomed. */
 ul.facets {
@@ -616,10 +588,6 @@ ins {
   background-color: #f7f9fa;
   border: 1px dotted #8cacbb;
   padding: 0.5em;
-}
-
-.interpolation {
-  background-color: #7090a0;
 }
 
 /* see launchpad.js:activateCollapsables() */
@@ -890,16 +858,13 @@ ul.search>li, li.search {
 
 /* Used for source and translator comments on the translation page. */
 
-.po-comment {
-  background-color: #efe;
-  border: thin solid #8a8;
-  margin: 0.5em 0;
-  padding: 0.5em;
+.translation code { /* an interpolation code, such as %i */
+  font-weight: bold;
 }
-
-.po-message-special {
-  color: white;
-  background-color: #93bee2;
+.translation samp { /* a leading/trailing space */
+  background: url(/@@/translation-space) center center no-repeat;
+  padding: 0 4px; /* should be half the width of /@@/translation-space */
+  white-space: pre; /* stops consecutive spaces from collapsing */
 }
 
 /* Used in default-error.pt so people actually notice exceptions */
