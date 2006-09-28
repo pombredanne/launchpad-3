@@ -114,7 +114,7 @@ class ShippingRequest(SQLBase):
         flavours = set()
         for requested_cds in self.getAllRequestedCDs():
             flavours.add(requested_cds.flavour)
-        return flavours
+        return sorted(flavours)
 
     def getTotalApprovedCDs(self):
         """See IShippingRequest"""

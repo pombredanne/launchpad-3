@@ -48,7 +48,7 @@ initialized' one (fix bug #52704)
   ...i386 build of libstdc++ b8p in ubuntu hoary RELEASE...
   ...Missing Dependencies...
   ...cpp (&gt;= 4:4.0.1-3), gcc-4.0 (&gt;= 4.0.1-2)...
-  ...Built started:...
+  ...Build started:...
   ...2006-02-27 23:53:59 UTC...
   ...Bob The Builder...
   ...Build finished:...
@@ -99,7 +99,6 @@ for an individual package.
 
 Checking UnexpectedFormData on unknown build_state values (bug #41104)
 
-  >>> user_browser.handleErrors = False
   >>> browser.open("http://localhost/+builds/bob/+history?build_state=foo")
   Traceback (most recent call last):
   ...
@@ -114,7 +113,18 @@ Check if page still working for sourcepackages with no builds. (bug #62545)
 
   >>> print find_tag_by_id(browser.contents, 'empty-result')
    <div id="empty-result">
-           No
-           builds for pmount in Test Distro Hoary.
-         </div>
+           No builds for pmount in Test Distro Hoary.
+   </div>
 
+
+Checking that we show the right message for a distribution that
+doesn't have any builds.
+
+  >>> browser.open("http://launchpad.dev/distros/debian/+builds")
+  >>> browser.contents
+  '...No Currently building builds for Debian GNU/Linux...'
+
+  >>> browser.getControl(name="build_state").value = ['all']
+  >>> browser.getControl("Update").click()
+  >>> browser.contents
+  '...No builds for Debian GNU/Linux...'
