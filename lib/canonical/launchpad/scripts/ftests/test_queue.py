@@ -37,9 +37,7 @@ class TestQueueTool(TestCase):
         Return the used QueueAction instance.
         """
         self.test_output = []
-
         queue = name_queue_map[queue_name]
-
         runner = CommandRunner(
             queue, distribution_name, suite_name, announcelist, no_mail,
             display=self._test_display)
@@ -65,14 +63,41 @@ class TestQueueTool(TestCase):
         # was passed.
         self.assertEqual(queue_size, queue_action.items_size)
 
+    def testInfoActionDoesNotSupportWildCards(self):
+        """Check if an wildcard-like filter raises CommandRunnerError."""
+        self.assertRaises(
+            CommandRunnerError, self.execute_command, 'info *')
+
     def testInfoActionByID(self):
-        """Check INFO queue action filtering by ID"""
+        """Check INFO queue action filtering by ID.
+
+        It should work as expected in case of existent ID in specified the
+        location.
+        Otherwise it raises CommandRunnerError if:
+         * ID not found
+         * specified ID doesn't match given suite name
+         * specified ID doesn't match the queue name
+        """
         queue_action = self.execute_command('info 1')
         # check if only one item was retrieved
         self.assertEqual(1, queue_action.items_size)
 
         displaynames = [item.displayname for item in queue_action.items]
         self.assertEqual(['mozilla-firefox'], displaynames)
+
+        # not found ID
+        self.assertRaises(
+            CommandRunnerError, self.execute_command, 'info 100')
+
+        # looking in the wrong suite
+        kw = {'suite_name': 'breezy-autotest-backports'}
+        self.assertRaises(
+            CommandRunnerError, self.execute_command, 'info 1', **kw)
+
+        # looking in the wrong queue
+        kw = {'queue_name': 'done'}
+        self.assertRaises(
+            CommandRunnerError, self.execute_command, 'info 1', **kw)
 
     def testInfoActionByName(self):
         """Check INFO queue action filtering by name"""
@@ -84,7 +109,7 @@ class TestQueueTool(TestCase):
         displaynames = [item.displayname for item in queue_action.items]
         self.assertEqual(['pmount'], displaynames)
 
-    def testRemovedPublishRecordDoesNotAffectQueueNewNess(self):
+    def testRemovedPublishRecordDoesNotAffectQueueNewness(self):
         """Check if REMOVED published record does not affect file NEWness.
 
         We only mark a file as *known* if there is a PUBLISHED record with
