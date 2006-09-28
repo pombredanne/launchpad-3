@@ -49,7 +49,7 @@ class ImportdSourceTransportTestCase(SandboxTestCase):
         special remote_dir.
         """
         self.transport = ImportdSourceTransport(
-            self.logger, self.local_source, self.remote_dir)
+            self.logger, self.local_source, 'file://' + self.remote_dir)
 
     def tearDown(self):
         SandboxTestCase.tearDown(self)

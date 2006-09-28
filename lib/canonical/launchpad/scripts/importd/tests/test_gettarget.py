@@ -32,9 +32,11 @@ class ImportdTargetGetterTestCase(ImportdTestCase):
     def setUp(self):
         ImportdTestCase.setUp(self)
         self.importd_publisher = ImportdPublisher(
-            logging, self.sandbox.path, self.series_id, self.bzrmirrors)
+            logging, self.sandbox.path, self.series_id,
+            'file://' + self.bzrmirrors)
         self.importd_getter = ImportdTargetGetter(
-            logging, self.sandbox.path, self.series_id, self.bzrmirrors)
+            logging, self.sandbox.path, self.series_id,
+            'file://' + self.bzrmirrors)
 
     def setUpMirror(self):
         self.setUpOneCommit()

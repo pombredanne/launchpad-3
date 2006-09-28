@@ -31,17 +31,19 @@ class TestImportdSourceTransport(ImportdSourceTransportTestCase):
     def testLocalSourceNormalisation(self):
         # The ImportdSourceTransport constructor strips trailing path
         # delimiters at the end of local_source
-        transport = self.makeTransport('/foo/bar', self.remote_dir)
+        transport = self.makeTransport('/foo/bar', 'file://' + self.remote_dir)
         self.assertEqual(transport.local_source, '/foo/bar')
-        transport = self.makeTransport('/foo/bar/', self.remote_dir)
+        transport = self.makeTransport('/foo/bar/',
+                                       'file://' + self.remote_dir)
         self.assertEqual(transport.local_source, '/foo/bar')
 
     def testLocalTarball(self):
         # _localTarball gives sensible output whether or not there are trailing
         # slashes in the provided local_source path.
-        transport = self.makeTransport('/foo/bar', self.remote_dir)
+        transport = self.makeTransport('/foo/bar', 'file://' + self.remote_dir)
         self.assertEqual(transport._localTarball(), '/foo/bar.tgz')
-        transport = self.makeTransport('/foo/bar/', self.remote_dir)
+        transport = self.makeTransport('/foo/bar/',
+                                       'file://' + self.remote_dir)
         self.assertEqual(transport._localTarball(), '/foo/bar.tgz')
 
 

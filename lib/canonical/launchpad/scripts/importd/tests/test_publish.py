@@ -30,7 +30,8 @@ class TestImportdPublisher(ImportdTestCase):
     def setUp(self):
         ImportdTestCase.setUp(self)
         self.importd_publisher = ImportdPublisher(
-            logging, self.sandbox.path, self.series_id, self.bzrmirrors)
+            logging, self.sandbox.path, self.series_id,
+            'file://' + self.bzrmirrors)
 
     def assertGoodMirror(self):
         """Helper to check that the mirror branch matches expectations."""
