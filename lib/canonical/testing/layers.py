@@ -29,6 +29,7 @@ from urllib import urlopen
 import psycopg
 from sqlos.interfaces import IConnectionName
 import transaction
+from zope.app import zapi
 from zope.component import getUtility
 from zope.component.interfaces import ComponentLookupError
 from zope.security.management import getSecurityPolicy
@@ -36,9 +37,10 @@ from zope.security.simplepolicies import PermissiveSecurityPolicy
 
 from canonical.config import config
 from canonical.database.sqlbase import ZopelessTransactionManager
-from canonical.launchpad.interfaces import IOpenLaunchBag
+from canonical.launchpad.interfaces import IMailBox, IOpenLaunchBag
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, is_logged_in
 import canonical.launchpad.mail.stub
+from canonical.launchpad.mail.mailbox import TestMailBox
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.lp import initZopeless
 from canonical.librarian.ftests.harness import LibrarianTestSetup
@@ -510,7 +512,9 @@ class LaunchpadZopelessLayer(
     """
     @classmethod
     def setUp(cls):
-        pass
+        # Make a TestMailBox available
+        # This is registered via ZCML in the LaunchpadFunctionalLayer
+        zapi.getGlobalSiteManager().provideUtility(IMailBox, TestMailBox())
 
     @classmethod
     def tearDown(cls):

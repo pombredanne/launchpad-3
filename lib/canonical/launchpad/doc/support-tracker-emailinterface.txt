@@ -119,12 +119,9 @@ the general mail processor.
 
     >>> from canonical.launchpad.mail.incoming import handleMail
     >>> handleMail()
-    INFO:process-mail:Opening the mail box.
-    INFO:process-mail:Processing mail 0
     Ticket #1 modified.
     Comment from Sample Person: This is a new comment.
     <BLANKLINE>
-    INFO:process-mail:Closing the mail box.
 
     >>> ticket_one = getUtility(ITicketSet).get(1)
     >>> '<comment1@localhost>' in [
