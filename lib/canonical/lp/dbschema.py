@@ -2778,7 +2778,7 @@ class RevisionControlSystems(DBSchema):
     """
 
     CVS = Item(1, """
-        CVS
+        Concurrent Version System
 
         The Concurrent Version System is very widely used among
         older open source projects, it was the first widespread
