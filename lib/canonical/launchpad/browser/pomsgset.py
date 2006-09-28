@@ -507,6 +507,12 @@ class BaseTranslationView(LaunchpadView):
         """Initialize the alternative language widget and check form data."""
         initial_values = {}
         second_lang_code = self.request.form.get("field.alternative_language")
+
+        if not second_lang_code and self.pofile.language.alt_suggestion_language:
+            # If there's a standard alternative language and no
+            # user-specified language was provided, preselect it.
+            second_lang_code = self.pofile.language.alt_suggestion_language.code
+
         if second_lang_code:
             if isinstance(second_lang_code, list):
                 raise UnexpectedFormData("You specified more than one alternative "
@@ -515,7 +521,9 @@ class BaseTranslationView(LaunchpadView):
             try:
                 alternative_language = getUtility(ILanguageSet)[second_lang_code]
             except NotFoundError:
-                pass
+                # Oops, a bogus code was provided! XXX: should this be
+                # UnexpectedFormData too?
+                second_lang_code = None
             else:
                 initial_values['alternative_language'] = alternative_language
 
@@ -523,15 +531,6 @@ class BaseTranslationView(LaunchpadView):
         setUpWidgets(
             self, IPOFileAlternativeLanguage, IInputWidget,
             names=['alternative_language'], initial=initial_values)
-
-        if not second_lang_code and self.pofile.language.alt_suggestion_language:
-            # If there's a standard suggested language and no other
-            # language was provided, show it off.
-            # XXX: this is actually half-wrong, since it will appear
-            # selected in the dropdown in subsequent pages. We'd need to
-            # store the alternate_language separately to deal with
-            # this..
-            second_lang_code = self.pofile.language.alt_suggestion_language.code
 
         # We store second_lang_code for use in hidden inputs in the
         # other forms in the translation pages.
