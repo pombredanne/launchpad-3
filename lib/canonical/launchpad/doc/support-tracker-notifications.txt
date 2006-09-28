@@ -1,6 +1,21 @@
 Support Tracker Email Notifications
 ===================================
 
+    (Let's define a helper function which commits the transaction, so
+    that the notifications are queued in stub.test_emails and pops these
+    notifications from the queue.)
+    >>> from canonical.launchpad.mail import stub
+    >>> import email
+    >>> import transaction
+    >>> def pop_notifications():
+    ...     transaction.commit()
+    ...     notifications = [
+    ...         email.message_from_string(raw_message)
+    ...         for fromaddr, toaddrs, raw_message in sorted(stub.test_emails)
+    ...     ]
+    ...     stub.test_emails = []
+    ...     return notifications
+
 When a ticket is created or changed, an email notification is sent out,
 informing the subscribers and the support contacts about the change.
 Let's start with creating a ticket, and see what the resulting
@@ -17,11 +32,6 @@ notification looks like:
     ...    "I insert the install CD in the CD-ROM drive, but it won't boot.")
     >>> notify(SQLObjectCreatedEvent(ubuntu_ticket))
 
-Notifications emails are sent once the transaction is commited.
-
-    >>> import transaction
-    >>> transaction.commit()
-
 The notifications get sent to the ticket's subscribers and the ticket's
 target support contacts. Initially, only the submitter, Sample Person,
 is subscribed to the ticket and there is no support contact registered
@@ -31,15 +41,11 @@ on Ubuntu, so only 1 notification is sent:
     []
     >>> [sub.person.displayname for sub in ubuntu_ticket.subscriptions]
     [u'Sample Person']
-    >>> from canonical.launchpad.mail import stub
-    >>> len(stub.test_emails)
+
+    >>> notifications = pop_notifications()
+    >>> len(notifications)
     1
 
-    >>> import email
-    >>> notifications = [
-    ...     email.message_from_string(raw_message)
-    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
-    ...     ]
     >>> add_notification = notifications[0]
     >>> add_notification['From']
     'Sample Person <ticket...@support.launchpad.net>'
@@ -55,60 +61,63 @@ on Ubuntu, so only 1 notification is sent:
     I insert the install CD in the CD-ROM drive, but it won't boot.
     <BLANKLINE>
 
-    >>> stub.test_emails = []
+Register the Ubuntu Team as Ubuntu's support contact, so that they get
+notified about the changes as well:
 
-Let's simulate that the no-priv answers the support ticket. This
-involves only creating a new message. We also register the Ubuntu Team
-as Ubuntu's support contact, so that they get notified about the
-changes as well:
-
-    >>> from canonical.launchpad.event import SQLObjectModifiedEvent
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
     >>> from canonical.launchpad.interfaces import ITicket, IPersonSet
-    >>> from zope.interface import providedBy
-
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
     >>> ubuntu.addSupportContact(ubuntu_team)
     True
+
+Edit Notifications
+------------------
+
+If we edit the title and description of the request, a notification will be
+sent.
+
+    >>> from canonical.launchpad.event import SQLObjectModifiedEvent
+    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from zope.interface import providedBy
+
     >>> login('no-priv@canonical.com')
     >>> no_priv = getUtility(ILaunchBag).user
     >>> unmodified_ticket = Snapshot(
     ...     ubuntu_ticket, providing=providedBy(ubuntu_ticket))
-    >>> comment = ubuntu_ticket.newMessage(
-    ...     no_priv, ubuntu_ticket.followup_subject,
-    ...     'You have to change the boot order in the BIOS.')
+    >>> ubuntu_ticket.title = "Installer doesn't work on a Mac"
+    >>> ubuntu_ticket.description = """I insert the install CD in the CD-ROM
+    ... drive, but it won't boot.
+    ...
+    ... It boots straight into MacOS 9."""
     >>> notify(SQLObjectModifiedEvent(
-    ...     ubuntu_ticket, unmodified_ticket, ['messages']))
+    ...     ubuntu_ticket, unmodified_ticket, ['title', 'description']))
 
-Now two copies of the notification got sent, one to Sample Person, and
+Two copies of the notification got sent, one to Sample Person, and
 one to Ubuntu Team:
 
-    >>> transaction.commit()
-    >>> len(stub.test_emails)
+    >>> notifications = pop_notifications()
+    >>> len(notifications)
     2
 
-    >>> notifications = [
-    ...     email.message_from_string(raw_message)
-    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
-    ...     ]
-    >>> [email_msg['To'] for email_msg in notifications]
-    ['support@ubuntu.com', 'test@canonical.com']
     >>> edit_notification = notifications[0]
-    >>> edit_notification['Subject']
-    "[Support #...]: Re: Can't install Ubuntu"
-
     >>> notification_body = edit_notification.get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     Support request #... on Ubuntu changed:
     http://.../distros/ubuntu/+ticket/...
     <BLANKLINE>
-    Comment:
-    You have to change the boot order in the BIOS.
+    Summary changed to:
+    Installer doesn't work on a Mac
+    <BLANKLINE>
+    Description changed to:
+    I insert the install CD in the CD-ROM
+    drive, but it won't boot.
+    <BLANKLINE>
+    It boots straight into MacOS 9.
     <BLANKLINE>
 
-    >>> stub.test_emails = []
+XXX flacoste 2006/09/19 Add checks for notification of change to
+assignee, status whiteboard, priority and source package.
 
-If we trigger a modification event, even though no changes worth
+If we trigger a modification event when no changes worth
 notifying about was made, no notification is sent:
 
     >>> unmodified_ticket = Snapshot(
@@ -116,9 +125,13 @@ notifying about was made, no notification is sent:
     >>> notify(SQLObjectModifiedEvent(
     ...     ubuntu_ticket, unmodified_ticket, ['status']))
 
-    >>> transaction.commit()
-    >>> len(stub.test_emails)
+    >>> notifications = pop_notifications()
+    >>> len(notifications)
     0
+
+
+Bug Linking and Unlinking Notifications
+---------------------------------------
 
 If we create a bug from the support request, it will be reported as a
 bug that has been linked to the request:
@@ -136,14 +149,9 @@ bug that has been linked to the request:
     >>> notify(SQLObjectModifiedEvent(
     ...     ubuntu_ticket, unmodified_ticket, ['bugs']))
 
-    >>> transaction.commit()
-    >>> len(stub.test_emails)
+    >>> notifications = pop_notifications()
+    >>> len(notifications)
     2
-
-    >>> notifications = [
-    ...     email.message_from_string(raw_message)
-    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
-    ...     ]
     >>> edit_notification = notifications[0]
     >>> notification_body = edit_notification.get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
@@ -154,8 +162,6 @@ bug that has been linked to the request:
         http://.../bugs/11
     <BLANKLINE>
 
-    >>> stub.test_emails = []
-
 And if we remove the link again, we get:
 
     >>> unmodified_ticket = Snapshot(ubuntu_ticket,
@@ -165,14 +171,10 @@ And if we remove the link again, we get:
     >>> notify(SQLObjectModifiedEvent(
     ...     ubuntu_ticket, unmodified_ticket, ['bugs']))
 
-    >>> transaction.commit()
-    >>> len(stub.test_emails)
+    >>> notifications = pop_notifications()
+    >>> len(notifications)
     2
 
-    >>> notifications = [
-    ...     email.message_from_string(raw_message)
-    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
-    ...     ]
     >>> edit_notification = notifications[0]
     >>> notification_body = edit_notification.get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
@@ -183,43 +185,386 @@ And if we remove the link again, we get:
         http://.../bugs/11
     <BLANKLINE>
 
-    >>> stub.test_emails = []
+Workflow Notifications
+----------------------
 
-Edits to the title and description also causes notifications to be sent:
+Notifications are also sent when workflow actions are done on tickets.
+The content of the notification will be different depending on the
+workflow action done.
 
-    >>> unmodified_ticket = Snapshot(
-    ...     ubuntu_ticket, providing=providedBy(ubuntu_ticket))
-    >>> ubuntu_ticket.title = 'Better Title'
-    >>> ubuntu_ticket.description = """A better description.
-    ...
-    ... The description spans more than one line."""
-    >>> notify(SQLObjectModifiedEvent(
-    ...     ubuntu_ticket, unmodified_ticket, ['title', 'description']))
+    >>> request_message = ubuntu_ticket.requestInfo(
+    ...     no_priv, "What is your Mac model?")
 
-    >>> transaction.commit()
-    >>> len(stub.test_emails)
-    2
+    >>> notifications = pop_notifications()
+    >>> [email_msg['To'] for email_msg in notifications]
+    ['support@ubuntu.com', 'test@canonical.com']
+    >>> support_notification = notifications[0]
+    >>> support_notification['Subject']
+    "[Support #...]: Re: Installer doesn't work on a Mac"
 
-    >>> notifications = [
-    ...     email.message_from_string(raw_message)
-    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
-    ...     ]
-    >>> edit_notification = notifications[0]
-    >>> notification_body = edit_notification.get_payload(decode=True)
+For workflow notifications, the content of the notification is slightly
+different based on whether you are the request owner or somebody else.
+
+For example, the notification to the support contacts and everybody
+other subscribers except the request owner will look like this:
+
+    >>> notification_body = support_notification.get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     Support request #... on Ubuntu changed:
     http://.../distros/ubuntu/+ticket/...
     <BLANKLINE>
-    Summary changed to:
-    Better Title
+        Status: Open => Needs information
     <BLANKLINE>
-    Description changed to:
-    A better description.
-    <BLANKLINE>
-    The description spans more than one line.
+    No Privileges Person requested for more information:
+    What is your Mac model?
     <BLANKLINE>
 
-    >>> stub.test_emails = []
+But the owner notification has a slightly different preamble and has
+an extra footer.
 
-XXX flacoste 2006/09/19 Add checks for notification of change to
-assignee, status whiteboard, priority and source package.
+    >>> notification_body = notifications[1].get_payload(decode=True)
+    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    Your support request #... on Ubuntu changed:
+    http://.../distros/ubuntu/+ticket/...
+    <BLANKLINE>
+        Status: Open => Needs information
+    <BLANKLINE>
+    No Privileges Person requested for more information:
+    What is your Mac model?
+    <BLANKLINE>
+    To answer this request for more information, you can either reply to
+    this email or enter your reply at the following page:
+    http://.../distros/ubuntu/+ticket/...
+    <BLANKLINE>
+
+Of course, if the owner unsubscribe from the request, he won't receives
+a notification.
+
+    >>> login('test@canonical.com')
+    >>> ubuntu_ticket.unsubscribe(sample_person)
+    >>> message = ubuntu_ticket.giveInfo('A PowerMac 7200.')
+
+    >>> notifications = pop_notifications()
+    >>> [email_msg['To'] for email_msg in notifications]
+    ['support@ubuntu.com']
+
+    >>> notification_body = notifications[0].get_payload(decode=True)
+    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    Support request #... on Ubuntu changed:
+    http://.../distros/ubuntu/+ticket/...
+    <BLANKLINE>
+        Status: Needs information => Open
+    <BLANKLINE>
+    Sample Person gave more information on the request:
+    A PowerMac 7200.
+    <BLANKLINE>
+
+We already saw the notifications sent for the requestInfo() and
+giveInfo() transitions, let's see the other ones.
+
+    (Subscribe the owner back, to compare the different notifications
+    sent)
+    >>> ubuntu_ticket.subscribe(sample_person)
+    <TicketSubscription ...>
+
+Notifications for expireTicket()
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    >>> login('no-priv@canonical.com')
+    >>> message = ubuntu_ticket.expireTicket(
+    ...     no_priv, "Expired because of no recent activity.")
+
+    >>> notifications = pop_notifications()
+    >>> [email_msg['To'] for email_msg in notifications]
+    ['support@ubuntu.com', 'test@canonical.com']
+
+Default notification when the request is expired:
+
+    >>> notification_body = notifications[0].get_payload(decode=True)
+    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    Support request #... on Ubuntu changed:
+    http://.../distros/ubuntu/+ticket/...
+    <BLANKLINE>
+        Status: Open => Expired
+    <BLANKLINE>
+    No Privileges Person expired the request:
+    Expired because of no recent activity.
+    <BLANKLINE>
+
+Notification received by the owner:
+
+    >>> notification_body = notifications[1].get_payload(decode=True)
+    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    Your support request #... on Ubuntu changed:
+    http://.../distros/ubuntu/+ticket/...
+    <BLANKLINE>
+        Status: Open => Expired
+    <BLANKLINE>
+    No Privileges Person expired the request:
+    Expired because of no recent activity.
+    <BLANKLINE>
+    If you're still having this problem, you can reopen your request either
+    by replying to this email or by going to the following page and
+    entering more information about your problem:
+    http://.../distros/ubuntu/+ticket/...
+    <BLANKLINE>
+
+Notifications for reopen()
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+(This example will also show that comments are wrapped for 72 columns
+display)
+
+    >>> login('test@canonical.com')
+    >>> message = ubuntu_ticket.reopen(
+    ...     "I really need some help. I tried googling a bit but didn't find "
+    ...     "anything useful.\n\nPlease provide some help to a newbie.")
+
+    >>> notifications = pop_notifications()
+    >>> [email_msg['To'] for email_msg in notifications]
+    ['support@ubuntu.com', 'test@canonical.com']
+
+Default notification when the owner reopens the request:
+
+    >>> notification_body = notifications[0].get_payload(decode=True)
+    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    Support request #... on Ubuntu changed:
+    http://.../distros/ubuntu/+ticket/...
+    <BLANKLINE>
+        Status: Expired => Open
+    <BLANKLINE>
+    Sample Person is still having a problem:
+    I really need some help. I tried googling a bit but didn't find anything
+    useful.
+    <BLANKLINE>
+    Please provide some help to a newbie.
+    <BLANKLINE>
+
+Notification received by the owner:
+
+    >>> notification_body = notifications[1].get_payload(decode=True)
+    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    Your support request #... on Ubuntu changed:
+    http://.../distros/ubuntu/+ticket/...
+    <BLANKLINE>
+        Status: Expired => Open
+    <BLANKLINE>
+    Sample Person is still having a problem:
+    I really need some help. I tried googling a bit but didn't find anything
+    useful.
+    <BLANKLINE>
+    Please provide some help to a newbie.
+    <BLANKLINE>
+
+Notifications for giveAnswer()
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    >>> login('no-priv@canonical.com')
+    >>> answer_message = ubuntu_ticket.giveAnswer(
+    ...     no_priv, "Actually, your model is an OldWorld Mac. It needs "
+    ...     "some configuration on the Mac side to boot the installer. You "
+    ...     "will need to install BootX and some other files in your System "
+    ...     "Folder.\n\nConsult "
+    ...     "https://help.ubuntu.com/community/Installation/OldWorldMacs "
+    ...     "for all the details.")
+
+    >>> notifications = pop_notifications()
+    >>> [email_msg['To'] for email_msg in notifications]
+    ['support@ubuntu.com', 'test@canonical.com']
+
+Default notification when an answer is proposed:
+
+    >>> notification_body = notifications[0].get_payload(decode=True)
+    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    Support request #... on Ubuntu changed:
+    http://.../distros/ubuntu/+ticket/...
+    <BLANKLINE>
+        Status: Open => Answered
+    <BLANKLINE>
+    No Privileges Person proposed the following answer:
+    Actually, your model is an OldWorld Mac. It needs some configuration on
+    the Mac side to boot the installer. You will need to install BootX and
+    some other files in your System Folder.
+    <BLANKLINE>
+    Consult https://help.ubuntu.com/community/Installation/OldWorldMacs for
+    all the details.
+    <BLANKLINE>
+
+Notification received by the owner:
+
+    >>> notification_body = notifications[1].get_payload(decode=True)
+    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    Your support request #... on Ubuntu changed:
+    http://.../distros/ubuntu/+ticket/...
+    <BLANKLINE>
+        Status: Open => Answered
+    <BLANKLINE>
+    No Privileges Person proposed the following answer:
+    Actually, your model is an OldWorld Mac. It needs some configuration on
+    the Mac side to boot the installer. You will need to install BootX and
+    some other files in your System Folder.
+    <BLANKLINE>
+    Consult https://help.ubuntu.com/community/Installation/OldWorldMacs for
+    all the details.
+    <BLANKLINE>
+    If this answers your request, please go to the following page to let us
+    know that it is solved:
+    http://.../distros/ubuntu/+ticket/.../+confirm?answer_id=...
+    <BLANKLINE>
+    If you still need support, you can reply to this email or go to the
+    following page to enter your feedback:
+    http://.../distros/ubuntu/+ticket/...
+    <BLANKLINE>
+
+Notifications for confirm()
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    >>> login('test@canonical.com')
+    >>> message = ubuntu_ticket.confirmAnswer(
+    ...     "I've installed BootX and the installer CD is now booting. "
+    ...     "Thanks!", answer=answer_message)
+
+    >>> notifications = pop_notifications()
+    >>> [email_msg['To'] for email_msg in notifications]
+    ['support@ubuntu.com', 'test@canonical.com']
+
+Default notification when the owner confirms an answer:
+
+    >>> notification_body = notifications[0].get_payload(decode=True)
+    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    Support request #... on Ubuntu changed:
+    http://.../distros/ubuntu/+ticket/...
+    <BLANKLINE>
+        Status: Answered => Solved
+    <BLANKLINE>
+    Sample Person confirmed that the request is solved:
+    I've installed BootX and the installer CD is now booting. Thanks!
+    <BLANKLINE>
+
+Notification received by the owner:
+
+    >>> notification_body = notifications[1].get_payload(decode=True)
+    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    Your support request #... on Ubuntu changed:
+    http://.../distros/ubuntu/+ticket/...
+    <BLANKLINE>
+        Status: Answered => Solved
+    <BLANKLINE>
+    Sample Person confirmed that the request is solved:
+    I've installed BootX and the installer CD is now booting. Thanks!
+    <BLANKLINE>
+
+Notifications for addComment()
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    >>> login('no-priv@canonical.com')
+    >>> message = ubuntu_ticket.addComment(
+    ...     no_priv, "Unless you have lots of RAM... and even then, the "
+    ...     "system will probably be very slow.")
+
+    >>> notifications = pop_notifications()
+    >>> [email_msg['To'] for email_msg in notifications]
+    ['support@ubuntu.com', 'test@canonical.com']
+
+Default notification when a comment is posted:
+
+    >>> notification_body = notifications[0].get_payload(decode=True)
+    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    Support request #... on Ubuntu changed:
+    http://.../distros/ubuntu/+ticket/...
+    <BLANKLINE>
+    No Privileges Person posted a new comment:
+    Unless you have lots of RAM... and even then, the system will probably
+    be very slow.
+    <BLANKLINE>
+
+Notification received by the owner:
+
+    >>> notification_body = notifications[1].get_payload(decode=True)
+    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    Your support request #... on Ubuntu changed:
+    http://.../distros/ubuntu/+ticket/...
+    <BLANKLINE>
+    No Privileges Person posted a new comment:
+    Unless you have lots of RAM... and even then, the system will probably
+    be very slow.
+    <BLANKLINE>
+
+Notifications for reject()
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    >>> login('foo.bar@canonical.com')
+    >>> foo_bar = getUtility(ILaunchBag).user
+    >>> message = ubuntu_ticket.reject(
+    ...     foo_bar, "Yeah! It will be awfully slow.")
+
+    >>> notifications = pop_notifications()
+    >>> [email_msg['To'] for email_msg in notifications]
+    ['support@ubuntu.com', 'test@canonical.com']
+
+Default notification when the request is rejected:
+
+    >>> notification_body = notifications[0].get_payload(decode=True)
+    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    Support request #... on Ubuntu changed:
+    http://.../distros/ubuntu/+ticket/...
+    <BLANKLINE>
+        Status: Solved => Invalid
+    <BLANKLINE>
+    Foo Bar rejected the request:
+    Yeah! It will be awfully slow.
+    <BLANKLINE>
+
+Notification received by the owner:
+
+    >>> notification_body = notifications[1].get_payload(decode=True)
+    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    Your support request #... on Ubuntu changed:
+    http://.../distros/ubuntu/+ticket/...
+    <BLANKLINE>
+        Status: Solved => Invalid
+    <BLANKLINE>
+    Foo Bar rejected the request:
+    Yeah! It will be awfully slow.
+    <BLANKLINE>
+    If you think that this rejection was a mistake, you can post a comment
+    explaining your point of view either by replying to this email or at
+    the following page:
+    http://.../distros/ubuntu/+ticket/...
+
+Notifications for setStatus()
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    >>> from canonical.lp.dbschema import TicketStatus
+    >>> message = ubuntu_ticket.setStatus(
+    ...     foo_bar, TicketStatus.SOLVED, "The rejection was a mistake.")
+
+    >>> notifications = pop_notifications()
+    >>> [email_msg['To'] for email_msg in notifications]
+    ['support@ubuntu.com', 'test@canonical.com']
+
+Default notification when somebody changes the status:
+
+    >>> notification_body = notifications[0].get_payload(decode=True)
+    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    Support request #... on Ubuntu changed:
+    http://.../distros/ubuntu/+ticket/...
+    <BLANKLINE>
+        Status: Invalid => Solved
+    <BLANKLINE>
+    Foo Bar changed the request status:
+    The rejection was a mistake.
+    <BLANKLINE>
+
+Notification received by the owner:
+
+    >>> notification_body = notifications[1].get_payload(decode=True)
+    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    Your support request #... on Ubuntu changed:
+    http://.../distros/ubuntu/+ticket/...
+    <BLANKLINE>
+        Status: Invalid => Solved
+    <BLANKLINE>
+    Foo Bar changed the request status:
+    The rejection was a mistake.
+    <BLANKLINE>

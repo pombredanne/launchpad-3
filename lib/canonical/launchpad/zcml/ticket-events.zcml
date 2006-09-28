@@ -5,12 +5,17 @@
 <subscriber
    for="canonical.launchpad.interfaces.ITicket
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
-   handler="canonical.launchpad.mailnotification.notify_ticket_added" />
+   handler="canonical.launchpad.mailnotification.TicketAddedNotification" />
 
 <subscriber
    for="canonical.launchpad.interfaces.ITicket
         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-   handler="canonical.launchpad.mailnotification.notify_ticket_modified" />
+   handler="canonical.launchpad.mailnotification.TicketModifiedDefaultNotification" />
+
+<subscriber
+   for="canonical.launchpad.interfaces.ITicket
+        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+   handler="canonical.launchpad.mailnotification.TicketModifiedOwnerNotification" />
 
 <subscriber
    for="canonical.launchpad.interfaces.ITicket
