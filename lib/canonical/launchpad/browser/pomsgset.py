@@ -47,9 +47,10 @@ def contract_rosetta_tabs(text):
 
 
 def expand_rosetta_tabs(unicode_text):
-    """Replace tabs with their Rosetta representation."""
+    """Replace tabs with their Rosetta representations."""
     return helpers.text_replaced(unicode_text,
-                                 {u'\t': u'[tab]', u'[tab]': ur'\[tab]'})
+                                 {u'\t': TranslationConstants.TAB_CHAR,
+                                  u'[tab]': TranslationConstants.TAB_CHAR_ESCAPED})
 
 
 def msgid_html(text, flags, space=TranslationConstants.SPACE_CHAR,
@@ -98,15 +99,7 @@ def msgid_html(text, flags, space=TranslationConstants.SPACE_CHAR,
 
             lines[i] = formatted_line
 
-    # Replace newlines and tabs with their respective representations.
-    html = expand_rosetta_tabs(newline.join(lines))
-    # XXX: why does this just replace the tabs with constants?!
-    #    -- kiko, 2006-09-23
-    html = helpers.text_replaced(html, {
-        '[tab]': TranslationConstants.TAB_CHAR,
-        r'\[tab]': TranslationConstants.TAB_CHAR_ESCAPED
-        })
-    return html
+    return expand_rosetta_tabs(newline.join(lines))
 
 
 def convert_newlines_to_web_form(unicode_text):
