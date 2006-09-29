@@ -85,6 +85,13 @@ class DistributionMirror(SQLBase):
             orderBy='-date_created')
 
     @property
+    def all_probe_records(self):
+        """See IDistributionMirror"""
+        return MirrorProbeRecord.select(
+            MirrorProbeRecord.q.distribution_mirrorID==self.id,
+            orderBy='-date_created')
+
+    @property
     def title(self):
         """See IDistributionMirror"""
         if self.displayname:

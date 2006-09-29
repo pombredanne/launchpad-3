@@ -11,6 +11,7 @@ from zope.event import notify
 
 from sourcerer.deb.version import Version
 
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp import (
@@ -19,6 +20,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.interfaces import (
     IDistributionMirror, validate_distribution_mirror_schema)
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.cachedproperty import cachedproperty
 
 
 class DistributionMirrorFacets(StandardLaunchpadFacets):
@@ -31,11 +33,17 @@ class DistributionMirrorOverviewMenu(ApplicationMenu):
 
     usedfor = IDistributionMirror
     facet = 'overview'
-    links = ['edit', 'admin']
+    links = ['proberlogs', 'edit', 'admin']
 
+    @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Edit Details'
         return Link('+edit', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def proberlogs(self):
+        text = 'Content check logs'
+        return Link('+prober-logs', text, icon='info')
 
     @enabled_with_permission('launchpad.Admin')
     def admin(self):
@@ -54,6 +62,10 @@ class _FlavoursByDistroRelease:
 
 
 class DistributionMirrorView(LaunchpadView):
+
+    @cachedproperty
+    def probe_records(self):
+        return BatchNavigator(self.context.all_probe_records, self.request)
 
     def getSummarizedMirroredSourceReleases(self):
         mirrors = self.context.getSummarizedMirroredSourceReleases()

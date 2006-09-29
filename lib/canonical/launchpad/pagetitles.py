@@ -280,6 +280,8 @@ distributionmirror_index = ContextTitle('Mirror %s')
 
 distributionmirror_mark_official = ContextTitle('Mark mirror %s as official')
 
+distributionmirror_prober_logs = ContextTitle('%s mirror prober logs')
+
 distribution_allpackages = ContextTitle('All packages in %s')
 
 distribution_bugcontact = ContextTitle('Change bug contact for %s')
