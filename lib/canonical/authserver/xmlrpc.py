@@ -28,24 +28,6 @@ class UserDetailsResource(xmlrpc.XMLRPC):
         return self.storage.authUser(loginID,
                                      sshaDigestedPassword.decode('base64'))
 
-    def xmlrpc_createUser(self, loginID, sshaDigestedPassword, displayname,
-                          emailAddresses):
-        """Create a user
-
-        loginID is actually the preferred email address but has not been
-        renamed to avoid breaking the API.
-        
-        :returns: user dict, or TBD if there is an error such as a database
-            constraint being violated.
-        """
-        if self.debug:
-            print ("createUser(%r, %r, %r, %r)"
-                   % (loginID, sshaDigestedPassword, displayname,
-                      emailAddresses))
-        return self.storage.createUser(loginID,
-                                       sshaDigestedPassword.decode('base64'), 
-                                       displayname, list(emailAddresses))
-
     def xmlrpc_changePassword(self, loginID, sshaDigestedPassword,
                               newSshaDigestedPassword):
         if self.debug:
@@ -94,22 +76,6 @@ class UserDetailsResourceV2(xmlrpc.XMLRPC):
         if self.debug:
             print 'authUser(%r, %r)' % (loginID, password)
         return self.storage.authUser(loginID, password)
-        
-    def xmlrpc_createUser(self, loginID, password, displayname,
-                          emailAddresses):
-        """Create a user
-
-        loginID is actually the preferred email address, but has not been
-        updated to avoid breaking the API.
-        
-        :returns: user dict, or TBD if there is an error such as a database
-            constraint being violated.
-        """
-        if self.debug:
-            print ("createUser(%r, %r, %r, %r)"
-                   % (loginID, password, displayname, emailAddresses))
-        return self.storage.createUser(loginID, password, displayname,
-                                       emailAddresses)
         
     def xmlrpc_changePassword(self, loginID, oldPassword, newPassword):
         """Change a password

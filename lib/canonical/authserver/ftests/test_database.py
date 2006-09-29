@@ -296,47 +296,6 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
                                                 ssha)
         self.assertEqual({}, userDict)
 
-    def test_createUser(self):
-        # Creating a user should return a user dict with that user's details
-        storage = DatabaseUserDetailsStorage(None)
-        ssha = SSHADigestEncryptor().encrypt('supersecret!')
-        displayname = 'Testy the Test User'
-        emailaddresses = ['test1@test.test', 'test2@test.test']
-        # This test needs a real Transaction, because it calls rollback
-        trans = adbapi.Transaction(None, self.connection)
-        userDict = storage._createUserInteraction(
-            trans, ssha, displayname, emailaddresses
-        )
-        self.assertNotEqual({}, userDict)
-        self.assertEqual(displayname, userDict['displayname'])
-        self.assertEqual(emailaddresses, userDict['emailaddresses'])
-        self.assertEqual('TestyTheTestUser', userDict['wikiname'])
-
-    def test_createUserUnicode(self):
-        # Creating a user should return a user dict with that user's details
-        storage = DatabaseUserDetailsStorage(None)
-        ssha = SSHADigestEncryptor().encrypt('supersecret!')
-        # Name with an e acute, and an apostrophe too.
-        displayname = u'Test\xc3\xa9 the Test\' User'
-        emailaddresses = ['test1@test.test', 'test2@test.test']
-        # This test needs a real Transaction, because it calls rollback
-        trans = adbapi.Transaction(None, self.connection)
-        userDict = storage._createUserInteraction(
-            trans, ssha, displayname, emailaddresses
-        )
-        self.assertNotEqual({}, userDict)
-        self.assertEqual(displayname, userDict['displayname'])
-        self.assertEqual(emailaddresses, userDict['emailaddresses'])
-
-        # Check that the nickname was correctly generated (and that getUser
-        # returns the same values that createUser returned)
-        userDict2 = storage._getUserInteraction(self.cursor, 'test1')
-        self.assertEqual(userDict, userDict2)
-
-    # FIXME: behaviour of this case isn't defined yet
-    ##def test_createUserFailure(self):
-    ##    # Creating a user with a loginID that already exists should fail
-
     def test_changePassword(self):
         storage = DatabaseUserDetailsStorage(None)
         # Changing a password should return a user dict with that user's details
