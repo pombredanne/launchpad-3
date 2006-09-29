@@ -148,6 +148,12 @@ class ProductReleaseFinder:
         self.log.debug("Filename portion is %s", filename)
 
         version = path.split_version(path.name(filename))[1]
+
+        # Tarballs pulled from a Debian-style archive often have
+        # ".orig" appended to the version number.  We don't want this.
+        if version.endswith('.orig'):
+            version = version[:-len('.orig')]
+        
         self.log.debug("Version is %s", version)
         if version is None:
             self.log.error("Unable to parse version from %s", url)

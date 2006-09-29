@@ -165,7 +165,7 @@ class HandleReleaseTestCase(unittest.TestCase):
 
         # create a release tarball
         fp = open(os.path.join(
-            self.release_root, 'evolution-42.0.tar.gz'), 'w')
+            self.release_root, 'evolution-42.0.orig.tar.gz'), 'w')
         fp.write('foo')
         fp.close()
 
@@ -173,7 +173,7 @@ class HandleReleaseTestCase(unittest.TestCase):
                          False)
 
         prf.handleRelease('evolution', 'trunk',
-                          self.release_url + '/evolution-42.0.tar.gz')
+                          self.release_url + '/evolution-42.0.orig.tar.gz')
 
         self.assertEqual(prf.hasReleaseTarball('evolution', 'trunk', '42.0'),
                          True)
@@ -187,7 +187,7 @@ class HandleReleaseTestCase(unittest.TestCase):
         fileinfo = release.files[0]
         self.assertEqual(fileinfo.filetype, UpstreamFileType.CODETARBALL)
         self.assertEqual(fileinfo.libraryfile.filename,
-                         'evolution-42.0.tar.gz')
+                         'evolution-42.0.orig.tar.gz')
 
         # verify that the fileinfo object is sane
         self.failUnless(verifyObject(IProductReleaseFile, fileinfo))
