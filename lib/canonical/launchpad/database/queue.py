@@ -24,7 +24,7 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 
 from canonical.lp.dbschema import (
-    EnumCol, DistroReleaseQueueStatus, DistroReleaseQueueCustomFormat,
+    EnumCol, PackageUploadStatus, DistroReleaseQueueCustomFormat,
     PackagePublishingPocket, PackagePublishingStatus)
 
 from canonical.launchpad.interfaces import (
@@ -59,8 +59,8 @@ class PackageUpload(SQLBase):
     _defaultOrder = ['id']
 
     status = EnumCol(dbName='status', unique=False, notNull=True,
-                     default=DistroReleaseQueueStatus.NEW,
-                     schema=DistroReleaseQueueStatus)
+                     default=PackageUploadStatus.NEW,
+                     schema=PackageUploadStatus)
 
     distrorelease = ForeignKey(dbName="distrorelease",
                                foreignKey='DistroRelease')
@@ -107,17 +107,17 @@ class PackageUpload(SQLBase):
 
     def setNew(self):
         """See IPackageUpload."""
-        if self.status == DistroReleaseQueueStatus.NEW:
+        if self.status == PackageUploadStatus.NEW:
             raise QueueInconsistentStateError(
                 'Queue item already new')
-        self._SO_set_status(DistroReleaseQueueStatus.NEW)
+        self._SO_set_status(PackageUploadStatus.NEW)
 
     def setUnapproved(self):
         """See IPackageUpload."""
-        if self.status == DistroReleaseQueueStatus.UNAPPROVED:
+        if self.status == PackageUploadStatus.UNAPPROVED:
             raise QueueInconsistentStateError(
                 'Queue item already unapproved')
-        self._SO_set_status(DistroReleaseQueueStatus.UNAPPROVED)
+        self._SO_set_status(PackageUploadStatus.UNAPPROVED)
 
     def setAccepted(self):
         """See IPackageUpload."""
@@ -125,7 +125,7 @@ class PackageUpload(SQLBase):
         # NascentUpload/UploadPolicies checks
         assert self.distrorelease.canUploadToPocket(self.pocket)
 
-        if self.status == DistroReleaseQueueStatus.ACCEPTED:
+        if self.status == PackageUploadStatus.ACCEPTED:
             raise QueueInconsistentStateError(
                 'Queue item already accepted')
 
@@ -137,7 +137,7 @@ class PackageUpload(SQLBase):
             # See bug #31038 for details.
             for distrorelease in self.distrorelease.distribution:
                 if distrorelease.getQueueItems(
-                    status=DistroReleaseQueueStatus.ACCEPTED,
+                    status=PackageUploadStatus.ACCEPTED,
                     name=source.sourcepackagerelease.name,
                     version=source.sourcepackagerelease.version,
                     exact_match=True).count() > 0:
@@ -161,21 +161,21 @@ class PackageUpload(SQLBase):
                 raise QueueInconsistentStateError(info)
 
         # if the previous checks applied and pass we do set the value
-        self._SO_set_status(DistroReleaseQueueStatus.ACCEPTED)
+        self._SO_set_status(PackageUploadStatus.ACCEPTED)
 
     def setDone(self):
         """See IPackageUpload."""
-        if self.status == DistroReleaseQueueStatus.DONE:
+        if self.status == PackageUploadStatus.DONE:
             raise QueueInconsistentStateError(
                 'Queue item already done')
-        self._SO_set_status(DistroReleaseQueueStatus.DONE)
+        self._SO_set_status(PackageUploadStatus.DONE)
 
     def setRejected(self):
         """See IPackageUpload."""
-        if self.status == DistroReleaseQueueStatus.REJECTED:
+        if self.status == PackageUploadStatus.REJECTED:
             raise QueueInconsistentStateError(
                 'Queue item already rejected')
-        self._SO_set_status(DistroReleaseQueueStatus.REJECTED)
+        self._SO_set_status(PackageUploadStatus.REJECTED)
 
     # XXX cprov 20060314: following properties should be redesigned to
     # reduce the duplicated code.
@@ -271,7 +271,7 @@ class PackageUpload(SQLBase):
 
     def realiseUpload(self, logger=None):
         """See IPackageUpload."""
-        assert self.status == DistroReleaseQueueStatus.ACCEPTED
+        assert self.status == PackageUploadStatus.ACCEPTED
         # Explode if something wrong like warty/RELEASE pass through
         # NascentUpload/UploadPolicies checks
         assert self.distrorelease.canUploadToPocket(self.pocket)

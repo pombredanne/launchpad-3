@@ -21,7 +21,7 @@ from canonical.launchpad.database import GPGKey, Person
 from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.mail import stub
 from canonical.lp.dbschema import (
-    DistributionReleaseStatus, DistroReleaseQueueStatus,
+    DistributionReleaseStatus, PackageUploadStatus,
     PackagePublishingStatus, GPGKeyAlgorithm)
 from canonical.testing import LaunchpadZopelessLayer
 from canonical.zeca.ftests.harness import ZecaTestSetup
@@ -184,7 +184,7 @@ class TestUploadProcessor(unittest.TestCase):
         # This is required so that the next upload of a later version of
         # the same package will work correctly.
         queue_items = self.breezy.getQueueItems(
-            status=DistroReleaseQueueStatus.NEW, name="bar",
+            status=PackageUploadStatus.NEW, name="bar",
             version="1.0-1", exact_match=True)
         self.assertEqual(queue_items.count(), 1)
         queue_item = queue_items[0]
@@ -219,12 +219,12 @@ class TestUploadProcessor(unittest.TestCase):
 
         # And verify that the queue item is in the unapproved state.
         queue_items = self.breezy.getQueueItems(
-            status=DistroReleaseQueueStatus.UNAPPROVED, name="bar",
+            status=PackageUploadStatus.UNAPPROVED, name="bar",
             version="1.0-2", exact_match=True)
         self.assertEqual(queue_items.count(), 1)
         queue_item = queue_items[0]
         self.assertEqual(
-            queue_item.status, DistroReleaseQueueStatus.UNAPPROVED,
+            queue_item.status, PackageUploadStatus.UNAPPROVED,
             "Expected queue item to be in UNAPPROVED status.")
 
 

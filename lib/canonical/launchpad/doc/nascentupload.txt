@@ -384,9 +384,9 @@ First up, construct an upload of just the ed source...
 
 The ed source would be in NEW, so punt it into accepted.
 
-  >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
+  >>> from canonical.lp.dbschema import PackageUploadStatus
   >>> from canonical.launchpad.interfaces import QueueInconsistentStateError
-  >>> new_queue = hoary.getQueueItems(DistroReleaseQueueStatus.NEW)
+  >>> new_queue = hoary.getQueueItems(PackageUploadStatus.NEW)
   >>> for item in new_queue:
   ...     try:
   ...         print "%s/%s" % (item.sourcepackagerelease.name, 
@@ -439,7 +439,7 @@ queue entry in the database.
   >>> success
   False
 
-  >>> hoary.getQueueItems(DistroReleaseQueueStatus.NEW).count()
+  >>> hoary.getQueueItems(PackageUploadStatus.NEW).count()
   1
 
 Next we send in the binaries, since the source should be in ACCEPTED the

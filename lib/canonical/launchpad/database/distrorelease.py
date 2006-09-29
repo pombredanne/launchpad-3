@@ -27,7 +27,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.lp.dbschema import (
     PackagePublishingStatus, EnumCol, DistributionReleaseStatus,
-    DistroReleaseQueueStatus, PackagePublishingPocket, SpecificationSort,
+    PackageUploadStatus, PackagePublishingPocket, SpecificationSort,
     SpecificationGoalStatus, SpecificationFilter)
 
 from canonical.launchpad.interfaces import (
@@ -874,7 +874,7 @@ class DistroRelease(SQLBase, BugTargetBase):
             len(changesfilecontent), StringIO(changesfilecontent),
             'text/plain')
         return PackageUpload(distrorelease=self,
-                             status=DistroReleaseQueueStatus.NEW,
+                             status=PackageUploadStatus.NEW,
                              pocket=pocket,
                              changesfile=changes_file,
                              archive=self.main_archive)

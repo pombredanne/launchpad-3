@@ -39,7 +39,7 @@ from canonical.librarian.utils import copy_and_close, filechunks
 from canonical.lp.dbschema import (
     SourcePackageUrgency, PackagePublishingPriority,
     DistroReleaseQueueCustomFormat, BinaryPackageFormat,
-    BuildStatus, DistroReleaseQueueStatus, PackagePublishingPocket)
+    BuildStatus, PackageUploadStatus, PackagePublishingPocket)
 
 from canonical.launchpad.interfaces import (
     IGPGHandler, GPGVerificationError, IGPGKeySet, IPersonSet,
@@ -959,7 +959,7 @@ class NascentUpload:
                 # remove the support for this use case, see further
                 # info in bug #55774.
                 self.logger.debug("Checking in the ACCEPTED queue")
-                q = dr.getQueueItems(status=DistroReleaseQueueStatus.ACCEPTED)
+                q = dr.getQueueItems(status=PackageUploadStatus.ACCEPTED)
                 for qitem in q:
                     self.logger.debug("Looking at qitem %s/%s" % (
                         qitem.sourcepackagerelease.name,

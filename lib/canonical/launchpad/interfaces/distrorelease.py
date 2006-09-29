@@ -16,7 +16,7 @@ from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces import (
     IHasOwner, IHasDrivers, IBugTarget, ISpecificationGoal)
 
-from canonical.lp.dbschema import DistroReleaseQueueStatus
+from canonical.lp.dbschema import PackageUploadStatus
 from canonical.launchpad.validators.email import valid_email
 
 from canonical.launchpad import _

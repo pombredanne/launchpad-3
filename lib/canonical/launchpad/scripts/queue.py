@@ -36,16 +36,16 @@ from canonical.launchpad.mail import sendmail
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 from canonical.librarian.utils import filechunks
 from canonical.lp.dbschema import (
-    DistroReleaseQueueStatus, PackagePublishingPriority,
+    PackageUploadStatus, PackagePublishingPriority,
     PackagePublishingPocket)
 
 
 name_queue_map = {
-    "new": DistroReleaseQueueStatus.NEW,
-    "unapproved": DistroReleaseQueueStatus.UNAPPROVED,
-    "accepted": DistroReleaseQueueStatus.ACCEPTED,
-    "done": DistroReleaseQueueStatus.DONE,
-    "rejected": DistroReleaseQueueStatus.REJECTED
+    "new": PackageUploadStatus.NEW,
+    "unapproved": PackageUploadStatus.UNAPPROVED,
+    "accepted": PackageUploadStatus.ACCEPTED,
+    "done": PackageUploadStatus.DONE,
+    "rejected": PackageUploadStatus.REJECTED
     }
 
 name_priority_map = {

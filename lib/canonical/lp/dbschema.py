@@ -96,7 +96,7 @@ __all__ = (
 'TranslationPriority',
 'TranslationPermission',
 'TranslationValidationStatus',
-'DistroReleaseQueueStatus',
+'PackageUploadStatus',
 'DistroReleaseQueueCustomFormat',
 'UpstreamFileType',
 'UpstreamReleaseVersionStyle',
@@ -1954,7 +1954,7 @@ class TranslationPermission(DBSchema):
         reviewed before being accepted by the designated translator.""")
 
 
-class DistroReleaseQueueStatus(DBSchema):
+class PackageUploadStatus(DBSchema):
     """Distro Release Queue Status
 
     An upload has various stages it must pass through before becoming part

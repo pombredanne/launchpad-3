@@ -22,7 +22,7 @@ from canonical.launchpad.interfaces import (
     IBazaarApplication, IPackageUpload, IBuilderSet,
     IBuilder, IBuild, ISpecificationSubscription, IHasDrivers)
 
-from canonical.lp.dbschema import DistroReleaseQueueStatus
+from canonical.lp.dbschema import PackageUploadStatus
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -779,7 +779,7 @@ class ViewDistroReleaseQueue(EditDistroReleaseQueue):
         if EditDistroReleaseQueue.checkAuthenticated(self, user):
             return True
         # deny access to non-admin on unapproved records
-        if self.obj.status == DistroReleaseQueueStatus.UNAPPROVED:
+        if self.obj.status == PackageUploadStatus.UNAPPROVED:
             return False
 
         return True

@@ -14,7 +14,7 @@ from canonical.launchpad.scripts.queue import (
     CommandRunner, CommandRunnerError, name_queue_map)
 from canonical.lp.dbschema import (
     PackagePublishingStatus, PackagePublishingPocket,
-    DistroReleaseQueueStatus)
+    PackageUploadStatus)
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -58,7 +58,7 @@ class TestQueueTool(TestCase):
         # of records in sampledata
         bat = getUtility(IDistributionSet)['ubuntu']['breezy-autotest']
         queue_size = getUtility(IPackageUploadSet).count(
-            status=DistroReleaseQueueStatus.NEW,
+            status=PackageUploadStatus.NEW,
             distrorelease=bat, pocket= PackagePublishingPocket.RELEASE)
         self.assertEqual(queue_size, queue_action.size)
         # check if none of them was filtered, since not filter term
