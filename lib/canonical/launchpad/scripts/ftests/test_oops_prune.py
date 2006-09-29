@@ -23,7 +23,7 @@ from canonical.testing import LaunchpadZopelessLayer
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.scripts.oops import (
         referenced_oops, old_oops_files, unwanted_oops_files,
-        path_to_oopsid
+        path_to_oopsid, prune_empty_oops_directories
         )
 from canonical.launchpad.webapp import errorlog
 
@@ -43,7 +43,8 @@ class TestOopsPrune(unittest.TestCase):
                     self.oops_dir, some_date.strftime('%Y-%m-%d')
                     )
             os.mkdir(date_dir)
-            for oops_id in ['A666','A1234','A5678']:
+            # Note - one of these is lowercase to demonstrate case handling
+            for oops_id in ['A666','A1234', 'A5678', 'a666']:
                 oops_filename = os.path.join(date_dir, '000.%s' % oops_id)
                 open(oops_filename, 'w').write('Fnord')
 
@@ -100,7 +101,7 @@ class TestOopsPrune(unittest.TestCase):
 
     def test_old_oops_files(self):
         old = set(old_oops_files(self.oops_dir, 90))
-        self.failUnlessEqual(len(old), 6)
+        self.failUnlessEqual(len(old), 8)
         # Make sure the paths are valid
         for old_path in old:
             self.failUnless(os.path.exists(old_path))
@@ -110,12 +111,11 @@ class TestOopsPrune(unittest.TestCase):
 
     def test_unwanted_oops_files(self):
         unwanted = set(unwanted_oops_files(self.oops_dir, 90))
-        self.failUnlessEqual(len(unwanted), 5) # One is referenced
         # Make sure that A666 isn't unwanted
         unwanted_ids = set(path_to_oopsid(path) for path in unwanted)
         self.failUnlessEqual(
                 unwanted_ids,
-                set(['2A1234', '2A5678', '3A666', '3A1234', '3A5678'])
+                set(['2A1234', '2A5678', '3A666', '3a666', '3A1234', '3A5678'])
                 )
         # Make sure the paths are valid
         for unwanted_path in unwanted:
@@ -153,6 +153,7 @@ class TestOopsPrune(unittest.TestCase):
                 found_oops_files,
                 set([
                     '%dA666' % today_day_count,
+                    '%da666' % today_day_count,
                     '%dA1234' % today_day_count,
                     '%dA5678' % today_day_count,
                     ])
@@ -167,9 +168,43 @@ class TestOopsPrune(unittest.TestCase):
                 found_oops_files.add(
                         path_to_oopsid(os.path.join(dirpath, filename))
                         )
+        # Note that we err on the side of caution when we find files
+        # differing by case.
         self.failUnlessEqual(
                 found_oops_files,
-                set([self.referenced_oops_code])
+                set(['2A666', '2a666'])
+                )
+
+        # The directory containing only old, unreferenced OOPS files should
+        # have been removed.
+        self.failIf(
+                os.path.isdir(os.path.join(self.oops_dir, '2006-01-03')),
+                'Script failed to remove 2006-01-03 directory'
+                )
+
+    def test_prune_empty_oops_directories(self):
+        # And a directory empty of OOPS reports
+        os.mkdir(os.path.join(self.oops_dir, '2038-12-01'))
+        os.mkdir(os.path.join(self.oops_dir, '2001-12-01'))
+
+        # And a directory empty of OOPS reports, but with some rubbish
+        os.mkdir(os.path.join(self.oops_dir, '2001-12-02'))
+        open(
+                os.path.join( self.oops_dir, '2001-12-02', 'foo'), 'w'
+                ).write('foo')
+
+        prune_empty_oops_directories(self.oops_dir)
+
+        # Most directories should still be there
+        for date in ['2006-01-02', '2006-01-03', '2001-12-02']:
+            self.failUnless(
+                os.path.isdir(os.path.join(self.oops_dir, date))
+                )
+
+        # But the empty ones should be gone
+        for date in ['2038-12-01', '2001-12-01']:
+            self.failIf(
+                os.path.isdir(os.path.join(self.oops_dir, date))
                 )
 
 

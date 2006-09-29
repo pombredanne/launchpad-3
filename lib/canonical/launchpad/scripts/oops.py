@@ -5,7 +5,8 @@
 __metaclass__ = type
 
 __all__ = [
-    'referenced_oops', 'unwanted_oops_files', 'path_to_oopsid'
+    'referenced_oops', 'unwanted_oops_files', 'path_to_oopsid',
+    'prune_empty_oops_directories',
     ]
 
 from datetime import date, timedelta, datetime
@@ -13,7 +14,7 @@ import re
 import os
 import os.path
 
-from pytz import UTC
+from pytz import utc
 
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.webapp import errorlog
@@ -72,7 +73,7 @@ def path_to_oopsid(path):
     match = re.search('^(\d+)-(\d+)-(\d+)$', date_str)
     year, month, day = (int(bit) for bit in match.groups())
     oops_id = path.split('.')[-1]
-    day = (datetime(year, month, day, tzinfo=UTC) - errorlog.epoch).days + 1
+    day = (datetime(year, month, day, tzinfo=utc) - errorlog.epoch).days + 1
     return '%d%s' % (day, oops_id)
 
 
@@ -84,7 +85,7 @@ def unwanted_oops_files(root_path, days):
 
     for oops_path in old_oops_files(root_path, days):
         oopsid = path_to_oopsid(oops_path)
-        if oopsid not in wanted_oops:
+        if oopsid.upper() not in wanted_oops:
             yield oops_path
 
 
@@ -118,4 +119,15 @@ def old_oops_files(root_path, days):
         for filename in filenames:
             if re.search(r'(?i)^\d+\.[a-z]+\d+$', filename) is not None:
                 yield os.path.join(dirpath, filename)
+
+def prune_empty_oops_directories(root_path):
+    for filename in os.listdir(root_path):
+        if re.search(r'^\d\d\d\d-\d\d-\d\d$', filename) is None:
+            continue
+        path = os.path.join(root_path, filename)
+        if not os.path.isdir(path):
+            continue
+        if os.listdir(path):
+            continue
+        os.rmdir(path)
 
