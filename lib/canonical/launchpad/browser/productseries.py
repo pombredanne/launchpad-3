@@ -198,21 +198,6 @@ def get_series_branch_error(product, branch):
                    canonical_url(product), cgi.escape(product.displayname)))
     return None
 
-def validate_cvs_root(cvsroot, cvsmodule):
-    try:
-        root = CVSRoot(cvsroot + '/' + cvsmodule)
-    except ValueError:
-        return False
-    valid_module = re.compile('^[a-zA-Z][a-zA-Z0-9_/.+-]*$')
-    if not valid_module.match(cvsmodule):
-        return False
-    # 'CVS' is illegal as a module name
-    if cvsmodule == 'CVS':
-        return False
-    if root.method == 'local' or root.hostname.count('.') == 0:
-        return False
-    return True
-
 
 # A View Class for ProductSeries
 #
@@ -421,6 +406,22 @@ class ProductSeriesAppointDriverView(SQLObjectEditView):
     def changed(self):
         # If the name changed then the URL changed, so redirect
         self.request.response.redirect(canonical_url(self.context))
+
+
+def validate_cvs_root(cvsroot, cvsmodule):
+    try:
+        root = CVSRoot(cvsroot + '/' + cvsmodule)
+    except ValueError:
+        return False
+    valid_module = re.compile('^[a-zA-Z][a-zA-Z0-9_/.+-]*$')
+    if not valid_module.match(cvsmodule):
+        return False
+    # 'CVS' is illegal as a module name
+    if cvsmodule == 'CVS':
+        return False
+    if root.method == 'local' or root.hostname.count('.') == 0:
+        return False
+    return True
 
 
 class ProductSeriesSourceView(LaunchpadEditFormView):
