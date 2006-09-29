@@ -192,7 +192,7 @@ class ProberTimeout(ProberError):
         ProberError.__init__(self, *args)
 
     def __str__(self):
-        return ("Getting %s took longer than %s seconds"
+        return ("HEAD request on %s took longer than %s seconds"
                 % (self.url, self.timeout))
 
 

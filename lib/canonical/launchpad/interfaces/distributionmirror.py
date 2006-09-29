@@ -170,13 +170,6 @@ class IDistributionMirror(Interface):
     def isOfficial():
         """Return True if this is an official mirror."""
 
-    def hasContent():
-        """Return True if this mirror has any content.
-
-        A mirror's content is stored as one of MirrorDistroReleaseSources,
-        MirrorDistroArchReleases or MirrorCDImageDistroReleases.
-        """
-
     def shouldDisable(self, expected_file_count=None):
         """Should this mirror be marked disabled?
 
@@ -274,14 +267,14 @@ class IDistributionMirrorSet(Interface):
         """Return the DistributionMirror with the given id."""
 
     def getMirrorsToProbe(content_type, ignore_last_probe=False):
-        """Return all official and enabled mirrors with the given content type
-        that need to be probed.
+        """Return all official mirrors with the given content type that need
+        to be probed.
 
         A mirror needs to be probed either if it was never probed before or if
         it wasn't probed in the last PROBE_INTERVAL hours.
 
-        If ignore_last_probe is True, then all mirrors of the given content
-        will be probed even if they were last probed in the last 
+        If ignore_last_probe is True, then all official mirrors of the given
+        content type will be probed even if they were probed in the last 
         PROBE_INTERVAL hours.
         """
 

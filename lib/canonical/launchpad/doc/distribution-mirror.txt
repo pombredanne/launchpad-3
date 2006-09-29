@@ -181,8 +181,8 @@ The distributionmirror-prober script is used to check what a mirror contains
 and when it was last updated. This script should run at least once a day, so
 we know the information we display is always up to date.
 
-This script will probe only official and enabled ARCHIVE or RELEASE mirrors
-that weren't probed in the last 23 (the value of PROBE_INTERVAL) hours.
+This script will probe only official ARCHIVE or RELEASE mirrors that
+weren't probed in the last 23 (the value of PROBE_INTERVAL) hours.
 
     >>> [mirror.name
     ...  for mirror in mirrorset.getMirrorsToProbe(MirrorContent.ARCHIVE)]
@@ -195,8 +195,6 @@ that weren't probed in the last 23 (the value of PROBE_INTERVAL) hours.
     >>> valid_mirror = mirrorset[1]
     >>> valid_mirror.name
     u'archive-mirror'
-    >>> valid_mirror.enabled is True
-    True
     >>> from StringIO import StringIO
     >>> log_file = StringIO()
     >>> log_file.write("Fake probe, nothing useful here.")
@@ -223,9 +221,10 @@ that weren't probed in the last 23 (the value of PROBE_INTERVAL) hours.
     [u'archive-404-mirror', u'archive-mirror', u'archive-mirror2']
 
 If when we finish probing a mirror, that mirror doesn't have any
-MirrorDistroReleaseSource of MirrorDistroArchRelease, that mirror is marked as
+MirrorDistroReleaseSource or MirrorDistroArchRelease, that mirror is marked as
 disabled and a notification is sent to its owner and to the distribution's
 mirror admin. This is done using IDistributionMirror.disableAndNotifyOwner().
+Disabling a mirror causes it not to show up on the public mirror listings.
 
     >>> valid_mirror.enabled
     True
@@ -430,7 +429,7 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     >>> print stderr
     INFO    Probing Archive Mirrors
     INFO    Probed 3 mirrors.
-    INFO    Disabled 1 mirrors because no content was found on them.
+    INFO    Disabled 1 mirror(s) that were previously enabled.
     INFO    Done.
     <BLANKLINE>
 
@@ -444,7 +443,7 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     >>> print stderr
     INFO    Probing Release Mirrors
     INFO    Probed 3 mirrors.
-    INFO    Disabled 1 mirrors because no content was found on them.
+    INFO    Disabled 1 mirror(s) that were previously enabled.
     INFO    Done.
     <BLANKLINE>
 
@@ -465,7 +464,7 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     <BLANKLINE>
 
     But we can override the default behaviour and tell the prober to check all
-    enabled mirrors independently if they were probed recently or not.
+    official mirrors independently if they were probed recently or not.
 
     >>> cmd += ' --force'
     >>> prober = subprocess.Popen(
@@ -476,7 +475,7 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     <BLANKLINE>
     >>> print stderr
     INFO    Probing Release Mirrors
-    INFO    Probed 2 mirrors.
+    INFO    Probed 3 mirrors.
     INFO    Done.
     <BLANKLINE>
 

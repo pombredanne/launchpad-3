@@ -147,11 +147,6 @@ class DistributionMirror(SQLBase):
         """See IDistributionMirror"""
         return self.official_candidate and self.official_approved
 
-    def hasContent(self):
-        """See IDistributionMirror"""
-        return bool(self.source_releases or self.arch_releases or
-                    self.cdimage_releases)
-
     def shouldDisable(self, expected_file_count=None):
         """See IDistributionMirror"""
         if self.content == MirrorContent.RELEASE:
@@ -163,7 +158,7 @@ class DistributionMirror(SQLBase):
             if expected_file_count > self.cdimage_releases.count():
                 return True
         else:
-            if not self.hasContent():
+            if not (self.source_releases or self.arch_releases):
                 return True
         return False
 
@@ -379,8 +374,7 @@ class DistributionMirrorSet:
             FROM distributionmirror 
             LEFT OUTER JOIN mirrorproberecord
                 ON mirrorproberecord.distribution_mirror = distributionmirror.id
-            WHERE distributionmirror.enabled IS TRUE
-                AND distributionmirror.content = %s
+            WHERE distributionmirror.content = %s
                 AND distributionmirror.official_candidate IS TRUE
                 AND distributionmirror.official_approved IS TRUE
             GROUP BY distributionmirror.id

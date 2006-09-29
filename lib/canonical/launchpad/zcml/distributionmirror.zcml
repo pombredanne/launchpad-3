@@ -60,7 +60,7 @@
         label="Change mirror details"
         class="canonical.launchpad.browser.DistributionMirrorEditView"
         fields="name displayname description http_base_url ftp_base_url
-                rsync_base_url speed country content enabled official_candidate"
+                rsync_base_url speed country content official_candidate"
         template="../templates/distributionmirror-edit.pt">
     </browser:editform>
 

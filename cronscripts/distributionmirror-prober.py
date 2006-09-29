@@ -227,6 +227,7 @@ def main(argv):
     # mirrors appear to have no content mirrored, and, if so, mark them as
     # disabled and notify their owners.
     disabled_mirrors_count = 0
+    reenabled_mirrors_count = 0
     ztm.begin()
     expected_iso_images_count = None
     for mirror in probed_mirrors:
@@ -235,14 +236,25 @@ def main(argv):
             and expected_iso_images_count is None):
             expected_iso_images_count = len(mirror.getExpectedCDImagePaths())
         if mirror.shouldDisable(expected_iso_images_count):
-            disabled_mirrors_count += 1
+            if mirror.enabled:
+                disabled_mirrors_count += 1
             mirror.disableAndNotifyOwner()
+        else:
+            # Ensure the mirror is enabled, so that it shows up on public
+            # mirror listings.
+            if not mirror.enabled:
+                mirror.enabled = True
+                reenabled_mirrors_count += 1
 
     ztm.commit()
 
-    if disabled_mirrors_count:
+    if disabled_mirrors_count > 0:
         logger_obj.info(
-            'Disabled %d mirrors because no content was found on them.'
+            'Disabled %d mirror(s) that were previously enabled.'
+            % disabled_mirrors_count)
+    if reenabled_mirrors_count > 0:
+        logger_obj.info(
+            'Enabled %d mirror(s) that were previously disabled.'
             % disabled_mirrors_count)
     logger_obj.info('Done.')
     return 0

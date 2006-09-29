@@ -23,10 +23,10 @@ __all__ = [
     'LayerConsistencyError', 'LayerIsolationError',
     ]
 
+import time
 from urllib import urlopen
 
 import psycopg
-from sqlos.interfaces import IConnectionName
 import transaction
 from zope.component import getUtility
 from zope.component.interfaces import ComponentLookupError
