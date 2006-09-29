@@ -56,18 +56,44 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSeries"
-        facet="overview"
         permission="zope.Public">
         <browser:page
+            name="+index"
+            facet="overview"
+            template="../templates/productseries-index.pt"
+            lp:url="/products/$Product.name/$ProductSeries.name/" />
+        <browser:page
+            name="+hctstatus-core"
+            facet="overview"
+            template="../templates/productseries-hctstatus-core.pt"
+            lp:url="/products/$Product.name/$ProductSeries.name/+hctstatus-core" />
+        <browser:page
+            name="+table-releases"
+            facet="overview"
+            template="../templates/productseries-table-releases.pt"
+            lp:url="/$Product.name/$ProductSeries.name/+table-releases" />
+        <browser:page
+            name="+portlet-details"
+            facet="overview"
+            template="../templates/productseries-portlet-details.pt" />
+        <browser:page
+            name="+portlet-summary"
+            facet="overview"
+            template="../templates/object-portlet-summary.pt"
+            />
+        <browser:page
             name="+portlet-source"
+            facet="overview"
             template="../templates/productseries-portlet-source.pt"
             lp:url="/products/$Product.name/$ProductSeries.name/+portlet-source" />
         <browser:page
             name="+portlet-packages"
+            facet="overview"
             template="../templates/productseries-portlet-packages.pt"
             lp:url="/products/$Product.name/$ProductSeries.name/+portlet-packages" />
         <browser:page
             name="+portlet-releases"
+            facet="overview"
             template="../templates/productseries-portlet-releases.pt"
             lp:url="/products/$Product.name/$ProductSeries.name/+portlet-releases" />
         <browser:page
@@ -76,20 +102,16 @@
             template="../templates/object-portlet-milestones.pt"
             lp:url="/products/evolution/2.2/+portlet-milestones" />
         <browser:page
-            name="+table-releases"
-            template="../templates/productseries-table-releases.pt"
-            lp:url="/$Product.name/$ProductSeries.name/+table-releases" />
+            name="+portlet-potemplates"
+            facet="overview"
+            template="../templates/object-portlet-potemplates.pt"
+            />
     </browser:pages>
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSeries"
         class="canonical.launchpad.browser.ProductSeriesView"
         permission="zope.Public">
-        <browser:page
-            name="+index"
-            facet="overview"
-            template="../templates/productseries-index.pt"
-            lp:url="/products/$Product.name/$ProductSeries.name/" />
         <browser:page
             name="+translations"
             facet="translations"
@@ -104,25 +126,6 @@
             facet="overview"
             template="../templates/productseries-ubuntupkg.pt"
             lp:url="/products/$Product.name/$ProductSeries.name/+ubuntupkg" />
-        <browser:page
-            name="+hctstatus-core"
-            facet="overview"
-            template="../templates/productseries-hctstatus-core.pt"
-            lp:url="/products/$Product.name/$ProductSeries.name/+hctstatus-core" />
-        <browser:page
-            name="+portlet-details"
-            facet="overview"
-            template="../templates/productseries-portlet-details.pt" />
-        <browser:page
-            name="+portlet-summary"
-            facet="overview"
-            template="../templates/object-portlet-summary.pt"
-            />
-        <browser:page
-            name="+portlet-potemplates"
-            facet="overview"
-            template="../templates/object-portlet-potemplates.pt"
-            />
     </browser:pages>
 
     <browser:page
