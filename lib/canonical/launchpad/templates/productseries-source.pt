@@ -88,17 +88,6 @@
           <b tal:content="context/importstatus/title">$title</b>. </p>
       </tal:has-import-status>
 
-      <fieldset>
-        <legend>FTP Details</legend>
-
-        <tal:widget define="widget nocall:view/widgets/releaseroot">
-          <metal:block use-macro="context/@@launchpad_widget_macros/launchpad_widget_row" />
-        </tal:widget>
-        <tal:widget define="widget nocall:view/widgets/releasefileglob">
-          <metal:block use-macro="context/@@launchpad_widget_macros/launchpad_widget_row" />
-        </tal:widget>
-      </fieldset>
-
       <script type="text/javascript">
         function updateWidgets() {
           /* which rcs type radio button has been selected? */

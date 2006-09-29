@@ -10,14 +10,17 @@ __all__ = [
     'IProductSeriesSourceAdmin',
     ]
 
+import re
 
 from zope.schema import  Choice, Datetime, Int, Object, Text, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad.fields import ContentNameField
 from canonical.launchpad.interfaces import (
-    IBranch, IBugTarget, ISpecificationGoal, IHasOwner, IHasDrivers)
+    IBranch, IBugTarget, ISpecificationGoal, IHasOwner, IHasDrivers,
+    validate_url)
 
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad import _
 
@@ -35,6 +38,26 @@ class ProductSeriesNameField(ContentNameField):
             return self.context.product.getSeries(name)
         else:
             return self.context.getSeries(name)
+
+
+def validate_cvs_branch(branch):
+    if branch and re.match('^[a-zA-Z][a-zA-Z0-9_-]*$', branch):
+        return True
+    else:
+        raise LaunchpadValidationError('Your CVS branch name is invalid.')
+
+def validate_svn_repo(repo):
+    if validate_url(repo, ["http", "https", "svn", "svn+ssh"]):
+        return True
+    else:
+        raise LaunchpadValidationError(
+            'Please give valid Subversion server details.')
+
+def validate_release_root(value):
+    if validate_url(value, ["http", "https", "ftp"]):
+        return True
+    else:
+        raise LaunchpadValidationError('Invalid release root URL')
 
 
 class IProductSeries(IHasDrivers, IHasOwner, ISpecificationGoal):
@@ -177,15 +200,18 @@ class IProductSeries(IHasDrivers, IHasOwner, ISpecificationGoal):
         "repository can be found. This can sometimes be faster than "
         "trying to query the server for commit-by-commit data."))
     cvsbranch = TextLine(title=_("Branch name"), required=False,
+        constraint=validate_cvs_branch,
         description=_('The branch representing the upstream codebase for '
                       'this product series.'))
     svnrepository = TextLine(title=_("Repository"), required=False,
+        constraint=validate_svn_repo,
         description=_('The URL (Internet address) of the repository and '
                       'branch to be imported, in svn:// or http(s):// '
                       'format. This must be the correct upstream branch '
                       'for the trunk series of Evolution.'))
     # where are the tarballs released from this branch placed?
     releaseroot = TextLine(title=_("Root directory URL"), required=False,
+        constraint=validate_release_root,
         description=_('The directory containing releases that are part of '
                       'this series. Launchpad automatically scans this '
                       'directory regularly to import new releases.'))

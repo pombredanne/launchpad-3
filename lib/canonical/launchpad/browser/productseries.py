@@ -213,20 +213,6 @@ def validate_cvs_root(cvsroot, cvsmodule):
         return False
     return True
 
-def validate_cvs_branch(branch):
-    if not len(branch):
-        return False
-    valid_branch = re.compile('^[a-zA-Z][a-zA-Z0-9_-]*$')
-    if valid_branch.match(branch):
-        return True
-    return False
-
-def validate_release_root(repo):
-    return validate_url(repo, ["http", "https", "ftp"])
-
-def validate_svn_repo(repo):
-    return validate_url(repo, ["http", "https", "svn", "svn+ssh"])
-
 
 # A View Class for ProductSeries
 #
@@ -409,8 +395,11 @@ class ProductSeriesView(LaunchpadView):
 class ProductSeriesEditView(LaunchpadEditFormView):
 
     schema = IProductSeries
-    field_names = ['name', 'summary', 'user_branch']
+    field_names = ['name', 'summary', 'user_branch', 'releaseroot',
+                   'releasefileglob']
     custom_widget('summary', TextAreaWidget, height=7, width=62)
+    custom_widget('releaseroot', StrippedTextWidget, displayWidth=40)
+    custom_widget('releasefileglob', StrippedTextWidget, displayWidth=40)
 
     def validate(self, data):
         branch = data.get('user_branch')
@@ -439,16 +428,13 @@ class ProductSeriesAppointDriverView(SQLObjectEditView):
 class ProductSeriesSourceView(LaunchpadEditFormView):
     schema = IProductSeries
     field_names = ['rcstype', 'user_branch', 'cvsroot', 'cvsmodule',
-                   'cvsbranch', 'svnrepository', 'releaseroot',
-                   'releasefileglob']
+                   'cvsbranch', 'svnrepository']
 
     custom_widget('rcstype', RadioWidget)
     custom_widget('cvsroot', StrippedTextWidget, displayWidth=50)
     custom_widget('cvsmodule', StrippedTextWidget, displayWidth=20)
     custom_widget('cvsbranch', StrippedTextWidget, displayWidth=20)
     custom_widget('svnrepository', StrippedTextWidget, displayWidth=50)
-    custom_widget('releaseroot', StrippedTextWidget, displayWidth=40)
-    custom_widget('releasefileglob', StrippedTextWidget, displayWidth=40)
 
     def setUpWidgets(self):
         LaunchpadEditFormView.setUpWidgets(self)
@@ -486,7 +472,7 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
                     validate_cvs_root(cvsroot, cvsmodule)):
                 self.setFieldError('cvsroot',
                                    'Your CVS root and module are invalid.')
-            if not (cvsbranch and validate_cvs_branch(cvsbranch)):
+            if not cvsbranch:
                 self.setFieldError('cvsbranch',
                                    'Your CVS branch name is invalid.')
             if cvsroot and cvsmodule and cvsbranch:
@@ -498,7 +484,7 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
 
         elif rcstype == RevisionControlSystems.SVN:
             svnrepository = data.get('svnrepository')
-            if not (svnrepository and validate_svn_repo(svnrepository)):
+            if not svnrepository:
                 self.setFieldError('svnrepository',
                                    'Please give valid Subversion server '
                                    'details.')
