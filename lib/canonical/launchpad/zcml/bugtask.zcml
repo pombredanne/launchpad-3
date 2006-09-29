@@ -34,8 +34,7 @@
             attributes="product sourcepackagename distribution
                         distrorelease milestone status statusexplanation
                         importance assignee bugwatch age owner targetname
-                        title related_tasks statusdisplayhtml statuselsewhere
-                        asEmailHeaderValue
+                        title related_tasks asEmailHeaderValue
                         target_uses_malone bugtask_branches" />
         <require
             permission="launchpad.Edit"
@@ -313,6 +312,13 @@
         permission="launchpad.View"
         template="../templates/bugtask-view.pt"
         lp:url="malone/tasks/$BugTask.id/+index">
+    </browser:page>
+
+    <browser:page
+        name="+listing-view"
+        for="canonical.launchpad.interfaces.IBugTask"
+        class="canonical.launchpad.browser.BugTaskListingView"
+        permission="launchpad.View">
     </browser:page>
 
     <browser:defaultView

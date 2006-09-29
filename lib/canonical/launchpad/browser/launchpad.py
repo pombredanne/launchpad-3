@@ -19,6 +19,7 @@ __all__ = [
     ]
 
 import cgi
+import errno
 import urllib
 import os.path
 import time
@@ -26,7 +27,11 @@ from datetime import timedelta, datetime
 
 from zope.app.datetimeutils import parseDatetimetz, tzinfo, DateTimeError
 from zope.component import getUtility
+from zope.interface import implements
 from zope.security.interfaces import Unauthorized
+from zope.app.content_types import guess_content_type
+from zope.publisher.interfaces.browser import IBrowserPublisher
+from zope.publisher.interfaces import NotFound
 
 import canonical.launchpad.layers
 from canonical.config import config
@@ -39,13 +44,13 @@ from canonical.launchpad.interfaces import (
     IBazaarApplication, ICodeOfConductSet, IRegistryApplication,
     ISpecificationSet, ISprintSet, ITicketSet, IBuilderSet, IBountySet,
     ILaunchpadCelebrities, IBugSet, IBugTrackerSet, ICveSet,
-    IStructuralObjectPresentation)
-from canonical.launchpad.layers import (
-    setFirstLayer, ShipItEdUbuntuLayer, ShipItKUbuntuLayer, ShipItUbuntuLayer)
+    IStructuralObjectPresentation, ITranslationImportQueue,
+    ITranslationGroupSet)
+
 from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView,
-    Navigation, stepto)
+    StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView, Navigation,
+    stepto, canonical_url)
 
 # XXX SteveAlexander, 2005-09-22, this is imported here because there is no
 #     general timedelta to duration format adapter available.  This should
@@ -257,7 +262,7 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
     usedfor = ILaunchpadRoot
 
     enable_only = ['overview', 'bugs', 'support', 'specifications',
-                   'translations', 'branches', 'calendar']
+                   'translations', 'branches']
 
     def overview(self):
         target = ''
@@ -282,7 +287,7 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
 
     def specifications(self):
         target = ''
-        text = 'Specifications'
+        text = 'Features'
         summary = 'Launchpad feature specification tracker.'
         return Link(target, text, summary)
 
@@ -294,7 +299,7 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
 
     def branches(self):
         target = 'bazaar'
-        text = 'Branches'
+        text = 'Code'
         summary = 'The Code Bazaar'
         return Link(target, text, summary)
 
@@ -315,29 +320,31 @@ class MaloneContextMenu(ContextMenu):
 
 class RosettaContextMenu(ContextMenu):
     usedfor = IRosettaApplication
-    links = ['about', 'preferences', 'imports']
-
-    def upload(self):
-        target = '+upload'
-        text = 'Upload'
-        return Link(target, text)
-
-    def download(self):
-        target = '+export'
-        text = 'Download'
-        return Link(target, text)
+    links = ['about', 'preferences', 'import_queue', 'translation_groups']
 
     def about(self):
         text = 'About Rosetta'
-        return Link('+about', text)
+        rosetta_application = getUtility(IRosettaApplication)
+        url = '/'.join([canonical_url(rosetta_application), '+about'])
+        return Link(url, text)
 
     def preferences(self):
-        text = 'Preferences'
-        return Link('prefs', text)
+        text = 'Translation preferences'
+        rosetta_application = getUtility(IRosettaApplication)
+        url = '/'.join([canonical_url(rosetta_application), 'prefs'])
+        return Link(url, text)
 
-    def imports(self):
+    def import_queue(self):
         text = 'Import queue'
-        return Link('imports', text)
+        import_queue = getUtility(ITranslationImportQueue)
+        url = canonical_url(import_queue)
+        return Link(url, text)
+
+    def translation_groups(self):
+        text = 'Translation groups'
+        translation_group_set = getUtility(ITranslationGroupSet)
+        url = canonical_url(translation_group_set)
+        return Link(url, text)
 
 
 class LoginStatus:
@@ -567,14 +574,6 @@ class OneZeroTemplateStatus(LaunchpadView):
 
         self.excluded_from_run = sorted(excluded)
 
-
-from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.interface import implements
-from zope.publisher.interfaces import NotFound
-
-from zope.app.content_types import guess_content_type
-import os.path
-import errno
 
 
 here = os.path.dirname(os.path.realpath(__file__))
