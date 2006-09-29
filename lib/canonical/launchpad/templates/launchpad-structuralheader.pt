@@ -1,7 +1,9 @@
-    <div id="structuralobject">
-      <img alt="" src="/@@/nyet-heading" />
-      <div class="secondary"><h2 tal:content="view/getMinorHeading">structural object secondary</h2></div>
-      <div class="primary" tal:content="view/getMajorHeading">structural object primary</div>
+<div id="structuralobjectheading">
+  <img alt="" src="/@@/nyet-heading" />
+  <h1 class="major" tal:content="view/getMajorHeading">Ubuntu 6.10</h1>
+  <div class="minor" tal:content="view/getMinorHeading">Edgy Eft</div>
+</div>
+
       <div id="structuralobjectchildren">
         <tal:if condition="python:view.num_lists == 0">
           (no children)
@@ -26,5 +28,4 @@
           </span>
         </tal:if>
 
-      </div>
-    </div>
+</div>

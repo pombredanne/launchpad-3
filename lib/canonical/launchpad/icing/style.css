@@ -204,16 +204,27 @@ hr, #globalheader label {
   background-position: 2px 4px;
 }
 #globalfooter {
+  clear: both;
   position: relative;
   margin: 0px 22px 0px 52px;
   padding-top: 10px;
   padding-bottom: 20px;
 }
-#footera {
+#copyright {
   float: left;
+  width: 45%;
 }
-#footerb {
+#applications {
   float: right;
+  width: 45%;
+}
+#colophon {
+  clear: left;
+  float: left;
+  margin-top: 0.5em;
+  border-top: 1px solid #ccc;
+  padding: 0.5em 0 2em;
+  width: auto;
 }
 #globalfooter a {
   color: #000000;
@@ -353,10 +364,10 @@ ul#applicationchooser {
   background-repeat: no-repeat;
   background-position: top right;
 }
-ul#applicationchooser span {
+ul#applicationchooser li {
   display: inline;
 }
-ul#applicationchooser span a {
+ul#applicationchooser li {
   float: left;
   display: block;
   width: 82px;
@@ -378,7 +389,7 @@ ul#applicationchooser li a:hover {
 ul#applicationchooser li a#applicationchooser_selected {
   background-position: -200px 0px;
 }
-ul#left_nav {
+#left_nav {
 	float: left;
 	width: 200px;
 	overflow: hidden;
@@ -387,11 +398,11 @@ ul#left_nav {
 	list-style: none;
 	font-size: 11px;
 }
-ul#left_nav li {
+#left_nav .portlet {
 	clear: both;
 	float: left;
 }
-ul#left_nav li a {
+#left_nav .portlet h2 {
 	float: left;
 	display: block;
 	width: 180px;
@@ -408,11 +419,11 @@ ul#left_nav li a {
 	color: #FFFFFF;
 	font-weight: bold;
 }
-ul#left_nav li a:hover {
+#left_nav .portlet h2:hover {
 	background-color: #A3A3A3;
 	text-decoration: none;
 }
-ul#left_nav li ul {
+#left_nav .portlet ul {
 	clear: both;
 	float: left;
 	width: 192px;
@@ -422,11 +433,11 @@ ul#left_nav li ul {
 	list-style: none;
 	background-color: #EBEBEB;
 }
-ul#left_nav li ul li {
+#left_nav .portlet ul li {
 	clear: both;
 	float: left;
 }
-ul#left_nav li ul li a {
+#left_nav .portlet ul li a {
 	float: left;
 	width: 180px;
 	height: auto !important;
@@ -437,20 +448,20 @@ ul#left_nav li ul li a {
 	color: #717171;
 	border-bottom: 1px solid #D2D2D2;
 }
-ul#left_nav li ul li a:hover {
+#left_nav .portlet ul li a:hover {
 	background-color: #EBEBEB;
 	text-decoration: underline;
 	color: #414141;
 }
-ul#left_nav li.active a {
+#left_nav li.active a {
 	background-color: #9BC11B;
 }
-ul#left_nav li.active a:hover {
+#left_nav li.active a:hover {
 	background-color: #AFDB1F;
 }
-ul#left_nav li.active ul,
-ul#left_nav li.active ul li a,
-ul#left_nav li.active ul li a:hover {
+#left_nav li.active ul,
+#left_nav li.active ul li a,
+#left_nav li.active ul li a:hover {
 	background-color: #EBF6C7;
 }
 #globalsearch {
@@ -570,23 +581,28 @@ a:hover.button {
   text-indent: -9999px;
   overflow: hidden;
 }
-#structuralobject {
+#structuralobjectheading {
   float: left;
   margin: 0px 0px 0px 38px;
   width: 50%;
 }
-#structuralobject img {
+#structuralobjectheading img {
   float: left;
   margin: 0px 0px 0px 10px;
 }
-#structuralobject h2 {
+#structuralobjectheading h1 {
   padding: 18px 0px 4px 0px;
 }
-#structuralobject .primary {
+#structuralobjectheading .major {
   float: left;
   margin: 10px 0px 0px 0px;
   font-size: 1.2em;
   font-weight: bold;
+}
+#structuralobjectchildren {
+  float: left;
+  margin: 12px 0 0 0;
+  width: 25%;
 }
 #applicationchooser {
   clear: both;
