@@ -48,14 +48,6 @@ class IUserDetailsStorage(Interface):
         :returns: user dict if authenticated, otherwise empty dict
         """
 
-    def changePassword(loginID, sshaDigestedPassword, newSshaDigestedPassword):
-        """Change a password
-
-        :param loginID: A login ID, same as for getUser.
-        :param sshaDigestedPassword: SSHA digest of the current password.
-        :param newSshaDigestedPassword: SSHA digest of the new password.
-        """
-
     def getSSHKeys(archiveName):
         """Retrieve SSH public keys for a given push mirror archive
         
@@ -104,14 +96,6 @@ class IUserDetailsStorageV2(Interface):
         :param loginID: A login ID, same as for getUser.
         :param password: A password, in clear text.
         :returns: user dict if authenticated, otherwise empty dict
-        """
-
-    def changePassword(loginID, oldPassword, newPassword):
-        """Change a password
-
-        :param loginID: A login ID, same as for getUser.
-        :param oldPassword: The current password.
-        :param newPassword: The password to change to.
         """
 
     def getSSHKeys(archiveName):

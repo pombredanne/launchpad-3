@@ -28,16 +28,6 @@ class UserDetailsResource(xmlrpc.XMLRPC):
         return self.storage.authUser(loginID,
                                      sshaDigestedPassword.decode('base64'))
 
-    def xmlrpc_changePassword(self, loginID, sshaDigestedPassword,
-                              newSshaDigestedPassword):
-        if self.debug:
-            print ("changePassword(%r, %r, %r)"
-                   % (loginID, sshaDigestedPassword, newSshaDigestedPassword))
-        return self.storage.changePassword(
-            loginID, sshaDigestedPassword.decode('base64'),
-            newSshaDigestedPassword.decode('base64')
-        )
-
     def xmlrpc_getSSHKeys(self, loginID):
         """Retrieve SSH public keys for a given user
         
@@ -76,18 +66,6 @@ class UserDetailsResourceV2(xmlrpc.XMLRPC):
         if self.debug:
             print 'authUser(%r, %r)' % (loginID, password)
         return self.storage.authUser(loginID, password)
-        
-    def xmlrpc_changePassword(self, loginID, oldPassword, newPassword):
-        """Change a password
-
-        :param loginID: A login ID, same as for getUser.
-        :param sshaDigestedPassword: The current password.
-        :param newSshaDigestedPassword: The password to change to.
-        """
-        if self.debug:
-            print ("changePassword(%r, %r, %r)"
-                   % (loginID, oldPassword, newPassword))
-        return self.storage.changePassword(loginID, oldPassword, newPassword)
         
     def xmlrpc_getSSHKeys(self, loginID):
         """Retrieve SSH public keys for a given user

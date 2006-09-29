@@ -48,25 +48,6 @@ class UserDetailsStorageMixin:
         )
         return [row[0] for row in transaction.fetchall()]
 
-    def _addEmailAddresses(self, transaction, emailAddresses, personID):
-        """Add some email addresses to a person
-       
-        First email address is PREFERRED, others are VALIDATED
-        """
-        transaction.execute(utf8('''
-            INSERT INTO EmailAddress (person, email, status)
-            VALUES (%s, %s, %s)'''
-            % sqlvalues(personID, emailAddresses[0].encode('utf-8'),
-                        dbschema.EmailAddressStatus.PREFERRED))
-            )
-        for emailAddress in emailAddresses[1:]:
-            transaction.execute(utf8('''
-                INSERT INTO EmailAddress (person, email, status)
-                VALUES (%s, %s, %s)'''
-                % sqlvalues(personID, emailAddress.encode('utf-8'),
-                            dbschema.EmailAddressStatus.VALIDATED))
-            )
-
     def getSSHKeys(self, archiveName):
         ri = self.connectionPool.runInteraction
         return ri(self._getSSHKeysInteraction, archiveName)
@@ -118,14 +99,6 @@ class UserDetailsStorageMixin:
         authorisedKeys = [(dbschema.SSHKeyType.items[keytype].title, keytext)
                           for keytype, keytext in authorisedKeys]
         return authorisedKeys
-
-    def _wikinameExists(self, transaction, wikiname):
-        """Is a wikiname already taken?"""
-        transaction.execute(utf8(
-            "SELECT count(*) FROM Wikiname WHERE wikiname = %s"
-            % sqlvalues(wikiname))
-        )
-        return bool(transaction.fetchone()[0])
 
     def _getPerson(self, transaction, loginID):
         # We go through some contortions with assembling the SQL to ensure that
@@ -277,34 +250,6 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
             'salt': salt,
         }
 
-    def changePassword(self, loginID, sshaDigestedPassword,
-                       newSshaDigestedPassword):
-        ri = self.connectionPool.runInteraction
-        return ri(self._changePasswordInteraction, loginID,
-                  sshaDigestedPassword.encode('base64'),
-                  newSshaDigestedPassword.encode('base64'))
-
-    def _changePasswordInteraction(self, transaction, loginID,
-                                   sshaDigestedPassword,
-                                   newSshaDigestedPassword):
-        """The interaction for changePassword."""
-        userDict = self._authUserInteraction(transaction, loginID,
-                                             sshaDigestedPassword)
-        if not userDict:
-            return {}
-
-        personID = userDict['id']
-        
-        transaction.execute(utf8('''
-            UPDATE Person
-            SET password = %s
-            WHERE Person.id = %s'''
-            % sqlvalues(newSshaDigestedPassword, personID))
-        )
-        
-        userDict['salt'] = saltFromDigest(newSshaDigestedPassword)
-        return userDict
-
 
 def saltFromDigest(digest):
     """Extract the salt from a SSHA digest.
@@ -422,32 +367,6 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             'wikiname': wikiname,
             'teams': self._getTeams(transaction, personID),
         }
-
-    def changePassword(self, loginID, oldPassword, newPassword):
-        ri = self.connectionPool.runInteraction
-        return ri(self._changePasswordInteraction, loginID,
-                  oldPassword, newPassword)
-
-    def _changePasswordInteraction(self, transaction, loginID,
-                                   oldPassword, newPassword):
-        """The interaction for changePassword."""
-        # First authenticate with the old password
-        userDict = self._authUserInteraction(transaction, loginID, oldPassword)
-        if not userDict:
-            return {}
-
-        personID = userDict['id']
-        newPasswordDigest = self.encryptor.encrypt(newPassword)
-        
-        # XXX: typo in query ("'%s'")?
-        transaction.execute(utf8('''
-            UPDATE Person
-            SET password = '%s'
-            WHERE Person.id = %s'''
-            % sqlvalues(newPasswordDigest, personID))
-        )
-        
-        return userDict
 
     def getBranchesForUser(self, personID):
         ri = self.connectionPool.runInteraction
