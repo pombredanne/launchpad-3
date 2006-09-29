@@ -4,14 +4,9 @@ __metaclass__ = type
 
 __all__ = ['DistributionMirrorEditView', 'DistributionMirrorFacets',
            'DistributionMirrorOverviewMenu', 'DistributionMirrorAddView',
-           'DistributionMirrorUploadFileListView', 'DistributionMirrorView',
-           'DistributionMirrorOfficialApproveView']
+           'DistributionMirrorView', 'DistributionMirrorOfficialApproveView']
 
-from StringIO import StringIO
-
-from zope.component import getUtility
 from zope.app.event.objectevent import ObjectCreatedEvent
-from zope.app.content_types import guess_content_type
 from zope.event import notify
 
 from sourcerer.deb.version import Version
@@ -22,8 +17,7 @@ from canonical.launchpad.webapp import (
     canonical_url, StandardLaunchpadFacets, Link, ApplicationMenu, 
     enabled_with_permission)
 from canonical.launchpad.interfaces import (
-    IDistributionMirror, validate_distribution_mirror_schema,
-    ILibraryFileAliasSet)
+    IDistributionMirror, validate_distribution_mirror_schema)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
 
@@ -123,18 +117,4 @@ class DistributionMirrorEditView(SQLObjectEditView):
 
     def validate(self, form_values):
         validate_distribution_mirror_schema(form_values)
-
-
-class DistributionMirrorUploadFileListView(GeneralFormView):
-
-    def process(self, file_list=None):
-        if file_list is not None:
-            filename = self.request.get('field.file_list').filename
-            content_type, encoding = guess_content_type(
-                name=filename, body=file_list)
-            library_file = getUtility(ILibraryFileAliasSet).create(
-                name=filename, size=len(file_list),
-                file=StringIO(file_list), contentType=content_type)
-            self.context.file_list = library_file
-        self._nextURL = canonical_url(self.context)
 

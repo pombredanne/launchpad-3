@@ -22,9 +22,9 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 
 from canonical.archivepublisher.diskpool import Poolifier
 from canonical.lp.dbschema import (
-    MirrorSpeed, MirrorContent, MirrorPulseType, MirrorStatus,
-    PackagePublishingPocket, EnumCol, PackagePublishingStatus,
-    SourcePackageFileType, BinaryPackageFileType)
+    MirrorSpeed, MirrorContent, MirrorStatus, PackagePublishingPocket,
+    EnumCol, PackagePublishingStatus, SourcePackageFileType,
+    BinaryPackageFileType)
 
 from canonical.launchpad.interfaces import (
     IDistributionMirror, IMirrorDistroReleaseSource, IMirrorDistroArchRelease,
@@ -64,20 +64,14 @@ class DistributionMirror(SQLBase):
         notNull=False, default=None, unique=True)
     rsync_base_url = StringCol(
         notNull=False, default=None, unique=True)
-    pulse_source = StringCol(
-        notNull=False, default=None)
     enabled = BoolCol(
         notNull=True, default=False)
-    file_list = ForeignKey(
-        dbName='file_list', foreignKey='LibraryFileAlias')
     speed = EnumCol(
         notNull=True, schema=MirrorSpeed)
     country = ForeignKey(
         dbName='country', foreignKey='Country', notNull=True)
     content = EnumCol(
         notNull=True, schema=MirrorContent)
-    pulse_type = EnumCol(
-        notNull=True, schema=MirrorPulseType, default=MirrorPulseType.PUSH)
     official_candidate = BoolCol(
         notNull=True, default=False)
     official_approved = BoolCol(

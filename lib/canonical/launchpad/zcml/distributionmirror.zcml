@@ -11,9 +11,8 @@
         <require
             permission="launchpad.Edit"
             set_attributes="name displayname description http_base_url
-                            ftp_base_url rsync_base_url pulse_source enabled
-                            speed country content file_list pulse_type
-                            official_candidate" />
+                            ftp_base_url rsync_base_url enabled speed
+                            country content official_candidate" />
         <require
             permission="launchpad.Admin"
             set_attributes="official_approved" />
@@ -75,19 +74,6 @@
         fields="official_approved"
         template="../templates/distributionmirror-mark-official.pt">
     </browser:editform>
-
-    <browser:generalform
-        name="+uploadfilelist"
-        facet="overview"
-        for="canonical.launchpad.interfaces.IDistributionMirror"
-        schema="canonical.launchpad.interfaces.IDistributionMirror"
-        permission="launchpad.Edit"
-        label="Upload File List"
-        class="canonical.launchpad.browser.DistributionMirrorUploadFileListView"
-        fields="file_list"
-        keyword_arguments="file_list"
-        template="../templates/distributionmirror-uploadfilelist.pt">
-    </browser:generalform>
 
     <!-- DistributionMirrorSet -->
     <content class="canonical.launchpad.database.DistributionMirrorSet">

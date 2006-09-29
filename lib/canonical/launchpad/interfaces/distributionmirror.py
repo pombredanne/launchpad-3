@@ -7,16 +7,14 @@ __all__ = ['IDistributionMirror', 'IMirrorDistroArchRelease',
            'IDistributionMirrorSet', 'IMirrorCDImageDistroRelease',
            'PROBE_INTERVAL', 'UnableToFetchCDImageFileList']
 
-from zope.schema import Bool, Choice, Datetime, TextLine, Bytes, Int
+from zope.schema import Bool, Choice, Datetime, Int, TextLine
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 
-from canonical.lp.dbschema import MirrorPulseType
 from canonical.launchpad.fields import UniqueField, ContentNameField
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.validation import (
-    valid_http_url, valid_ftp_url, valid_rsync_url, valid_webref,
-    valid_distributionmirror_file_list)
+    valid_http_url, valid_ftp_url, valid_rsync_url)
 from canonical.launchpad import _
 
 
@@ -91,11 +89,6 @@ class IDistributionMirror(Interface):
     rsync_base_url = DistroRsyncUrlField(
         title=_('Rsync URL'), required=False, readonly=False,
         constraint=valid_rsync_url)
-    pulse_source = TextLine(
-        title=_('Pulse Source'), required=False, readonly=False,
-        description=_("The URL where we can pulse this mirror, in case this "
-                      "mirror's pulse type is Pull."),
-        constraint=valid_webref)
     enabled = Bool(
         title=_('Probe this mirror for its content periodically'),
         required=False, readonly=False, default=False)
@@ -113,14 +106,6 @@ class IDistributionMirror(Interface):
             'mirror contains packages for this distributin and is meant to be '
             'used in conjunction with apt.'),
         vocabulary='MirrorContent')
-    file_list = Bytes(
-        title=_("File List"), required=False, readonly=False,
-        description=_("A text file containing the list of files that are "
-                      "mirrored on this mirror."),
-        constraint=valid_distributionmirror_file_list)
-    pulse_type = Choice(
-        title=_('Pulse Type'), required=True, readonly=False,
-        vocabulary='MirrorPulseType', default=MirrorPulseType.PUSH)
     official_candidate = Bool(
         title=_('Apply to be an official mirror of this distribution'),
         required=False, readonly=False, default=True)

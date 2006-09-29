@@ -17,7 +17,7 @@ from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces import (
     IHasOwner, IHasDrivers, IBugTarget, ISpecificationTarget,
-    IHasSecurityContact, ITicketTarget, PillarNameField)
+    IHasSecurityContact, PillarNameField)
 from canonical.launchpad.validators.name import name_validator
 
 
@@ -199,10 +199,10 @@ class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
         if it's not found.
         """
 
-    def newMirror(owner, speed, country, content, pulse_type, displayname=None,
+    def newMirror(owner, speed, country, content, displayname=None,
                   description=None, http_base_url=None, ftp_base_url=None,
-                  rsync_base_url=None, file_list=None, pulse_source=None,
-                  official_candidate=False, enabled=False):
+                  rsync_base_url=None, enabled=False,
+                  official_candidate=False):
         """Create a new DistributionMirror for this distribution."""
 
     def getMilestone(name):
