@@ -496,6 +496,15 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
                                        'Subversion repository details '
                                        'already in use by another product.')
 
+        if self.resettoautotest_action.submitted():
+            if rcstype is None:
+                self.addError('Can not rerun import without RCS details.')
+        elif self.certify_action.submitted():
+            if data.get('rcstype') is None:
+                self.addError('Can not certify import without RCS details.')
+            if self.context.syncCertified():
+                self.addError('Import has already been approved.')
+
     def isAdmin(self):
         return check_permission('launchpad.Admin', self.context)
 
@@ -515,12 +524,8 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
     def allowResetToAutotest(self, action):
         return self.isAdmin() and self.context.autoTestFailed()
 
-    def validateResetToAutotest(self, action, data):
-        if data.get('rcstype') is None:
-            self.addError('Can not rerun import without RCS details.')
-
     @action(_('Rerun import in the Autotester'), name='resettoautotest',
-            condition=allowResetToAutotest, validator=validateResetToAutotest)
+            condition=allowResetToAutotest)
     def resettoautotest_action(self, action, data):
         self.updateContextFromData(data)
         self.context.importstatus = ImportStatus.TESTING
@@ -530,14 +535,8 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
     def allowCertify(self, action):
         return self.isAdmin() and not self.context.syncCertified()
 
-    def validateCertify(self, action, data):
-        if data.get('rcstype') is None:
-            self.addError('Can not certify import without RCS details.')
-        if self.context.syncCertified():
-            self.addError('Import has already been approved.')
-
     @action(_('Approve import for production and publication'), name='certify',
-            condition=allowCertify, validator=validateCertify)
+            condition=allowCertify)
     def certify_action(self, action, data):
         self.updateContextFromData(data)
         self.context.certifyForSync()
