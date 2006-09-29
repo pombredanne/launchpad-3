@@ -102,15 +102,17 @@ __all__ = (
 'UpstreamReleaseVersionStyle',
 )
 
-from canonical.database.constants import DEFAULT
-
-from zope.interface.advice import addClassAdvisor
 import sys
 import warnings
+
+from zope.interface.advice import addClassAdvisor
+from zope.security.proxy import isinstance as zope_isinstance
 
 from sqlobject.col import SOCol, Col
 from sqlobject.include import validators
 import sqlobject.constraints as consts
+
+from canonical.database.constants import DEFAULT
 
 
 class SODBSchemaEnumCol(SOCol):
@@ -146,6 +148,10 @@ class DBSchemaValidator(validators.Validator):
         >>> validator = DBSchemaValidator(schema=BugTaskStatus)
         >>> validator.fromPython(BugTaskStatus.FIXCOMMITTED, None)
         25
+        >>> validator.fromPython(tuple(), None)
+        Traceback (most recent call last):
+        ...
+        TypeError: Not a DBSchema Item: ()
         >>> validator.fromPython(ImportTestStatus.NEW, None)
         Traceback (most recent call last):
         ...
@@ -155,15 +161,13 @@ class DBSchemaValidator(validators.Validator):
         """
         if value is None:
             return None
+        if value is DEFAULT:
+            return value
         if isinstance(value, int):
             raise TypeError(
                 'Need to set a dbschema Enum column to a dbschema Item,'
                 ' not an int')
-        # Allow this to work in the presence of security proxies.
-        ##if not isinstance(value, Item):
-        if value is DEFAULT:
-            return value
-        if value.__class__ != Item:
+        if not zope_isinstance(value, Item):
             # We use repr(value) because if it's a tuple (yes, it has been
             # seen in some cases) then the interpolation would swallow that
             # fact, confusing poor programmers like Daniel.
@@ -329,9 +333,7 @@ class Item:
             warnings.warn('comparison of DBSchema Item to an int: %r' % self,
                 stacklevel=stacklevel)
             return False
-        # Cannot use isinstance, because 'other' might be security proxied.
-        ##elif isinstance(other, Item):
-        elif other.__class__ == Item:
+        elif zope_isinstance(other, Item):
             return self.value == other.value and self.schema == other.schema
         else:
             return False
@@ -702,6 +704,7 @@ class PackagingType(DBSchema):
         relationship with the libneon product.
         """)
 
+
 ##XXX: (gpg+dbschema) cprov 20041004
 ## the data structure should be rearranged to support 4 field
 ## needed: keynumber(1,16,17,20), keyalias(R,g,D,G), title and description
@@ -902,6 +905,7 @@ class EmailAddressStatus(DBSchema):
         The email address was validated and is the person's choice for
         receiving notifications from Launchpad.
         """)
+
 
 class TeamMembershipStatus(DBSchema):
     """TeamMembership Status
@@ -1222,24 +1226,24 @@ class SpecificationDelivery(DBSchema):
     NEEDSINFRASTRUCTURE = Item(40, """
         Needs Infrastructure
 
-        Work cannot proceed on this feature, because it depends on
+        Work cannot proceed, because the feature depends on
         infrastructure (servers, databases, connectivity, system
-        administration work) which has not been done.
+        administration work) that has not been supplied.
         """)
 
     BLOCKED = Item(50, """
         Blocked
 
         Work cannot proceed on this specification because it depends on
-        another feature in a different specification which has not yet been
-        done. Note: the other specification should be listed as a blocker of
-        this one.
+        a separate feature that has not yet been implemented.
+        (The specification for that feature should be listed as a blocker of
+        this one.)
         """)
 
     STARTED = Item(60, """
         Started
 
-        Work has begun on this feature, but has not yet been published
+        Work has begun, but has not yet been published
         except as informal branches or patches. No indication is given as to
         whether or not this work will be completed for the targeted release.
         """)
@@ -1247,25 +1251,22 @@ class SpecificationDelivery(DBSchema):
     SLOW = Item(65, """
         Slow progress
 
-        Work has been slow on this item and it has a high risk of not being
-        delivered on time. Help is wanted on direction or assistance is
-        needed with the implementation of the feature.
+        Work has been slow on this item, and it has a high risk of not being
+        delivered on time. Help is wanted with the implementation.
         """)
 
     GOOD = Item(70, """
         Good progress
 
-        This functionality is making good progress and is considered on
-        track for delivery in the targeted release.
+        The feature is considered on track for delivery in the targeted release.
         """)
 
     BETA = Item(75, """
         Beta Available
 
-        The code for this feature has reached the point where a beta version
-        that implements substantially all of the required functionality
-        is being published for widespread testing, in personal package
-        archives or a personal release, but the code is not yet in the
+        A beta version, implementing substantially all of the feature,
+        has been published for widespread testing in personal package
+        archives or a personal release. The code is not yet in the
         main archive or mainline branch. Testing and feedback are solicited.
         """)
 
@@ -1273,18 +1274,17 @@ class SpecificationDelivery(DBSchema):
         Needs Code Review
 
         The developer is satisfied that the feature has been well
-        implemented, and is now ready for review and final sign-off on the
-        feature, after which it will be marked implemented or deployed.
+        implemented. It is now ready for review and final sign-off,
+        after which it will be marked implemented or deployed.
         """)
 
     AWAITINGDEPLOYMENT = Item(85, """
         Deployment
 
-        The work contemplated in this specification has been done, and can
-        be deployed in the production environment, but the system
-        administrators have not yet attended to that. This status is
-        typically used for web services where code is not released but
-        instead is pushed into production.
+        The implementation has been done, and can be deployed in the production
+        environment, but this has not yet been done by the system
+        administrators. (This status is typically used for Web services where
+        code is not released but instead is pushed into production.
         """)
 
     IMPLEMENTED = Item(90, """
@@ -1349,7 +1349,7 @@ class SpecificationPriority(DBSchema):
     LOW = Item(10, """
         Low
 
-        The specification is low priority. We would like to have it in the
+        We would like to have it in the
         code, but it's not on any critical path and is likely to get bumped
         in favour of higher-priority work. The idea behind the specification
         is sound and the project leaders would incorporate this
@@ -1360,16 +1360,15 @@ class SpecificationPriority(DBSchema):
     MEDIUM = Item(50, """
         Medium
 
-        The specification is of a medium, or normal priority. The project
-        developers will definitely get to this feature but perhaps not in
-        the next major release or two.
+        The project developers will definitely get to this feature,
+        but perhaps not in the next major release or two.
         """)
 
     HIGH = Item(70, """
         High
 
-        This specification is strongly desired by the project leaders.
-        The feature will definitely get review time and contributions would
+        Strongly desired by the project leaders.
+        The feature will definitely get review time, and contributions would
         be most effective if directed at a feature with this priority.
         """)
 
@@ -1534,25 +1533,24 @@ class SpecificationStatus(DBSchema):
     APPROVED = Item(10, """
         Approved
 
-        This specification has been approved. The project team believe that
-        it is ready to be implemented without substantial further issues being
-        encountered.
+        The project team believe that the specification is ready to be
+        implemented, without substantial issues being encountered.
         """)
 
     PENDINGAPPROVAL = Item(15, """
         Pending Approval
 
-        This spec has been reviewed, and is considered to be ready for final
-        approval. The reviewer believes that the specification is clearly
-        written and adequately addresses all the important issues that will
+        Reviewed and considered ready for final approval.
+        The reviewer believes the specification is clearly written,
+        and adequately addresses all important issues that will
         be raised during implementation.
         """)
 
     PENDINGREVIEW = Item(20, """
         Review
 
-        This spec has been put in a reviewers queue. The reviewer will
-        assess the clarity and comprehensiveness of the spec, and decide
+        Has been put in a reviewer's queue. The reviewer will
+        assess it for clarity and comprehensiveness, and decide
         whether further work is needed before the spec can be considered for
         actual approval.
         """)
@@ -1560,43 +1558,37 @@ class SpecificationStatus(DBSchema):
     DRAFT = Item(30, """
         Drafting
 
-        The specification is actively being drafted. The spec should only be
-        in this state if it has a drafter in place, and the spec is under
-        regular revision. Please do not park specs in the "drafting" state
-        indefinitely.
+        The specification is actively being drafted, with a drafter in place
+        and frequent revision occurring.
+        Do not park specs in the "drafting" state indefinitely.
         """)
 
     DISCUSSION = Item(35, """
         Discussion
 
-        This specification still needs active discussion. Use this state to
-        indicate that the feature needs further group discussions at a
-        sprint, for example.
+        Still needs active discussion, at a sprint for example.
         """)
 
     NEW = Item(40, """
         New
 
-        This specification has just been registered. No thought have been
-        given yet to implementation strategy, dependencies or presentation/UI
-        issues.
+        No thought has yet been given to implementation strategy, dependencies,
+        or presentation/UI issues.
         """)
 
     SUPERSEDED = Item(60, """
         Superseded
 
-        This specification is still interesting, but has been superseded by
-        a newer spec, or set of specs, that clarify or describe a newer way
-        to implement the desired feature(s). Please use the newer specs and
-        not this one.
+        Still interesting, but superseded by a newer spec or set of specs that
+        clarify or describe a newer way to implement the desired feature.
+        Please use the newer specs and not this one.
         """)
 
     OBSOLETE = Item(70, """
         Obsolete
 
-        This specification has been obsoleted. Probably, we decided not to
-        implement it for some reason. It should not be displayed, and people
-        should not put any effort into implementing it.
+        The specification has been obsoleted, probably because it was decided
+        against. People should not put any effort into implementing it.
         """)
 
 
@@ -1740,8 +1732,6 @@ class TicketSort(DBSchema):
 
     Sort tickets from oldset to newest.
     """)
-
-
 
 
 class TicketStatus(DBSchema):
@@ -1924,6 +1914,7 @@ class TranslationPriority(DBSchema):
         A low priority POTemplate should only show up if a comprehensive
         search or complete listing is requested by the user.  """)
 
+
 class TranslationPermission(DBSchema):
     """Translation Permission System
 
@@ -1961,6 +1952,7 @@ class TranslationPermission(DBSchema):
         language. People who are not designated translators can still make
         suggestions for new translations, but those suggestions need to be
         reviewed before being accepted by the designated translator.""")
+
 
 class DistroReleaseQueueStatus(DBSchema):
     """Distro Release Queue Status
@@ -2014,6 +2006,7 @@ class DistroReleaseQueueStatus(DBSchema):
         DistroRelease it was targetting. As for the 'done' state, this state
         is present to allow logging tools to record the rejection and then
         clean up any subsequently unnecessary records.  """)
+
 
 # If you change this (add items, change the meaning, whatever) search for
 # the token ##CUSTOMFORMAT## e.g. database/queue.py or nascentupload.py and
@@ -2107,6 +2100,7 @@ class PackagePublishingStatus(DBSchema):
         and thus will not be considered in most queries about source
         packages in distroreleases. """)
 
+
 class PackagePublishingPriority(DBSchema):
     """Package Publishing Priority
 
@@ -2154,6 +2148,7 @@ class PackagePublishingPriority(DBSchema):
         other priority levels; or packages which are only useful to people
         who have very specialised needs.
         """)
+
 
 class PackagePublishingPocket(DBSchema):
     """Package Publishing Pocket
@@ -2204,6 +2199,7 @@ class PackagePublishingPocket(DBSchema):
 
         Backported packages.
         """)
+
 
 class SourcePackageRelationships(DBSchema):
     """Source Package Relationships
@@ -2680,8 +2676,8 @@ class BugTaskImportance(DBSchema):
         documentation fix.
         """)
 
-    UNTRIAGED = Item(5, """
-        Untriaged
+    UNDECIDED = Item(5, """
+        Undecided
 
         A relevant developer or manager has not yet decided how
         important this bug is.
@@ -3284,6 +3280,7 @@ class RosettaFileFormat(DBSchema):
         The .qm format as used by programs using the QT toolkit.
         """)
 
+
 class TranslationValidationStatus(DBSchema):
     """Translation Validation Status
 
@@ -3441,3 +3438,4 @@ class TextDirection(DBSchema):
 
         Text is normally written from left to right in this language.
         """)
+

@@ -3,6 +3,7 @@
 __metaclass__ = type
 __all__ = ['Ticket', 'TicketSet']
 
+import operator
 from email.Utils import make_msgid
 
 from zope.event import notify
@@ -202,6 +203,26 @@ class Ticket(SQLBase, BugLinkTargetMixin):
                 sub.destroySelf()
                 return
 
+    def getSubscribers(self):
+        """See ITicket."""
+        direct = set(self.getDirectSubscribers())
+        indirect = set(self.getIndirectSubscribers())
+        return sorted(direct.union(indirect), key=operator.attrgetter('name'))
+
+    def getDirectSubscribers(self):
+        """See ITicket."""
+        return self.subscribers
+
+    def getIndirectSubscribers(self):
+        """See ITicket."""
+        support_contacts = set(self.target.support_contacts)
+        if self.sourcepackagename:
+            source_package = self.target.getSourcePackage(
+                self.sourcepackagename.name)
+            support_contacts.update(source_package.support_contacts)
+
+        return sorted(support_contacts, key=operator.attrgetter('name'))
+
     def newMessage(self, owner=None, subject=None, content=None,
                    when=UTC_NOW):
         """Create a new Message and link it to this ticket."""
@@ -276,16 +297,8 @@ class TicketSet:
             product=product, distribution=distribution,
             sourcepackagename=sourcepackagename, datecreated=datecreated)
 
-        support_contacts = list(ticket.target.support_contacts)
-        if ticket.sourcepackagename:
-            source_package = ticket.target.getSourcePackage(
-                ticket.sourcepackagename.name)
-            support_contacts += source_package.support_contacts
-
-        # Subscribe the submitter and the support contacts.
+        # Subscribe the submitter
         ticket.subscribe(owner)
-        for support_contact in support_contacts:
-            ticket.subscribe(support_contact)
 
         return ticket
 

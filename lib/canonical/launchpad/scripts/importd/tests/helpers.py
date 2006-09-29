@@ -50,8 +50,8 @@ class ImportdTestCase(unittest.TestCase):
 
     def mirrorPath(self):
         series = self.series_helper.getSeries()
-        assert series.branch is not None
-        branch_id = series.branch.id
+        assert series.import_branch is not None
+        branch_id = series.import_branch.id
         return os.path.join(self.bzrmirrors, '%08x' % branch_id)
 
 

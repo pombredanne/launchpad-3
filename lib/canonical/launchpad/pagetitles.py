@@ -217,7 +217,7 @@ build_changes = ContextTitle('Changes in %s')
 
 build_index = ContextTitle('Build details for %s')
 
-build_reset = ContextTitle('Reset %s')
+build_retry = ContextTitle('Retry %s')
 
 build_rescore = ContextTitle('Rescore %s')
 
@@ -232,6 +232,8 @@ builder_cancel = ContextTitle(smartquote('Cancel job for "%s"'))
 builder_mode = ContextTitle(smartquote('Change mode for "%s"'))
 
 builder_admin = ContextTitle(smartquote('Administer "%s" builder'))
+
+builder_history = ContextTitle(smartquote('Build History for "%s"'))
 
 calendar_index = ContextTitle('%s')
 
@@ -622,6 +624,8 @@ product_branches = ContextDisplayName(
     smartquote("%s's Bazaar branches registered in Launchpad"))
 
 product_distros = ContextDisplayName('%s packages: Comparison of distributions')
+
+product_cvereport = ContextTitle('CVE reports for %s')
 
 product_edit = ContextTitle('%s in Launchpad')
 

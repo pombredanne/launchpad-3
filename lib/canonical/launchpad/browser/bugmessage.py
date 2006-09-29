@@ -67,14 +67,18 @@ class BugMessageAddFormView(GeneralFormView):
         if not (include_attachment and file_):
             return
 
+        # Slashes in filenames cause problems, convert them to dashes
+        # instead.
+        filename = file_.filename.replace('/', '-')
+
         # Process the attachment.
         bug.addAttachment(
             owner=self.user, file_=StringIO(filecontent),
-            filename=file_.filename, description=attachment_description,
+            filename=filename, description=attachment_description,
             comment=message, is_patch=patch)
 
         self.request.response.addNotification(
-            "Attachment %(filename)s added to bug.", filename=file_.filename)
+            "Attachment %(filename)s added to bug.", filename=filename)
 
     @property
     def _keyword_arguments(self):

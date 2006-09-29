@@ -79,8 +79,8 @@ class StandardLaunchpadFacets(FacetMenu):
     # provide your own 'usedfor' in subclasses.
     #   usedfor = IWhatever
 
-    links = ['overview', 'bugs', 'support', 'specifications',
-             'translations', 'branches', 'calendar']
+    links = ['overview', 'branches', 'bugs', 'specifications', 'translations',
+        'support']
 
     enable_only = ['overview', 'bugs', 'specifications',
                    'translations', 'calendar']
@@ -120,8 +120,8 @@ class StandardLaunchpadFacets(FacetMenu):
 
     def specifications(self):
         target = '+specs'
-        text = 'Specifications'
-        summary = 'Feature Specifications and Plans'
+        text = 'Features'
+        summary = 'Feature specifications and plans'
         return Link(target, text, summary)
 
     def bounties(self):
@@ -140,7 +140,7 @@ class StandardLaunchpadFacets(FacetMenu):
         # this is disabled by default, because relatively few objects have
         # branch views
         target = '+branches'
-        text = 'Branches'
+        text = 'Code'
         summary = 'View related branches of code'
         return Link(target, text, summary=summary)
 

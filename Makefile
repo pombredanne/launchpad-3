@@ -51,7 +51,7 @@ hctcheck: build
 
 importdcheck: build
 	env PYTHONPATH=$(PYTHONPATH) \
-	${PYTHON} -t ./lib/importd/test_all.py
+	${PYTHON} -t ./lib/importd/test_all.py "$$TESTFILTER"
 
 check: build
 	# Run all tests. test_on_merge.py takes care of setting up the
@@ -121,8 +121,7 @@ start: inplace stop
 # so killing them after is a race condition.
 stop: build
 	@ LPCONFIG=${LPCONFIG} ${PYTHON} \
-	    utilities/killservice.py librarian trebuchet \
-                                     buildsequencer launchpad
+	    utilities/killservice.py librarian buildsequencer launchpad
 
 harness:
 	PYTHONPATH=lib python -i lib/canonical/database/harness.py

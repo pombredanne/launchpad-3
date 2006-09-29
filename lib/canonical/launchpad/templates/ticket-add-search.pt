@@ -21,7 +21,7 @@
     <p metal:fill-slot="extra_info">
       Please enter a short description (at least 4 words) that describes your
       problem. We will use it to look for similar support requests that
-      might already exists.
+      may already exist.
     </p>
 
     <div class="actions" metal:fill-slot="buttons">

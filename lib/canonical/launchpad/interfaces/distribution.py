@@ -154,14 +154,6 @@ class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
         "about the state of packages in the distribution, we should "
         "interpret that query in the context of the currentrelease.")
 
-    open_cve_bugtasks = Attribute(
-        "Any bugtasks on this distribution that are for bugs with "
-        "CVE references, and are still open.")
-
-    resolved_cve_bugtasks = Attribute(
-        "Any bugtasks on this distribution that are for bugs with "
-        "CVE references, and are resolved.")
-
     full_functionality = Attribute(
         "Whether or not we enable the full functionality of Launchpad for "
         "this distribution. Currently only Ubuntu and some derivatives "
