@@ -60,46 +60,25 @@ class GetFiltersTestCase(unittest.TestCase):
 
         evolution = getUtility(IProductSet).getByName('evolution')
         trunk = evolution.getSeries('trunk')
-        trunk.releaseroot = ('http://ftp.gnome.org/pub/GNOME/sources/'
-                             'evolution/2.7/')
-        trunk.releasefileglob = 'evolution-*.tar.gz'
-
-        # a product without a release root set for the series
-        firefox = getUtility(IProductSet).getByName('firefox')
-        firefox.releaseroot = ('http://releases.mozilla.org/pub/'
-                               'mozilla.org/firefox/releases/')
-        onezero = firefox.getSeries('1.0')
-        onezero.releaseroot = None
-        onezero.releasefileglob = '1.0*/source/firefox-1.0*-source.tar.bz2'
-
+        trunk.releasefileglob = ('http://ftp.gnome.org/pub/GNOME/sources/'
+                                 'evolution/2.7/evolution-*.tar.gz')
         ztm.commit()
 
         logging.basicConfig(level=logging.CRITICAL)
         prf = ProductReleaseFinder(ztm, logging.getLogger())
         # get the filters for evolution and firefox
         for product_name, filters in prf.getFilters():
-            if product_name == 'firefox':
-                firefox_filters = filters
-            elif product_name == 'evolution':
+            if product_name == 'evolution':
                 evo_filters = filters
-
-        self.assertEqual(len(firefox_filters), 1)
-        self.failUnless(isinstance(firefox_filters[0], FilterPattern))
-        self.assertEqual(firefox_filters[0].key, '1.0')
-        self.assertEqual(firefox_filters[0].base_url,
-            'http://releases.mozilla.org/pub/mozilla.org/firefox/releases/')
-        self.assertEqual(firefox_filters[0].glob,
-            '1.0*/source/firefox-1.0*-source.tar.bz2')
-        self.failUnless(firefox_filters[0].match(
-            'http://releases.mozilla.org/pub/mozilla.org/firefox/releases/'
-            '1.0.8/source/firefox-1.0.8-source.tar.bz2'))
 
         self.assertEqual(len(evo_filters), 1)
         self.failUnless(isinstance(evo_filters[0], FilterPattern))
         self.assertEqual(evo_filters[0].key, 'trunk')
         self.assertEqual(evo_filters[0].base_url,
             'http://ftp.gnome.org/pub/GNOME/sources/evolution/2.7/')
-        self.assertEqual(evo_filters[0].glob, 'evolution-*.tar.gz')
+        self.assertEqual(evo_filters[0].urlglob,
+            'http://ftp.gnome.org/pub/GNOME/sources/evolution/2.7/'
+            'evolution-*.tar.gz')
         self.failUnless(evo_filters[0].match(
             'http://ftp.gnome.org/pub/GNOME/sources/evolution/2.7/'
             'evolution-2.7.1.tar.gz'))
@@ -147,10 +126,10 @@ class HandleProductTestCase(unittest.TestCase):
         prf = DummyProductReleaseFinder(None, logging.getLogger())
 
         filters = [
-            FilterPattern('series1', self.release_url + '/product/1',
-                          'product-1.*.tar.gz'),
-            FilterPattern('series2', self.release_url + '/product/2',
-                          'product-2.*.tar.gz'),
+            FilterPattern('series1', self.release_url +
+                          '/product/1/product-1.*.tar.gz'),
+            FilterPattern('series2', self.release_url +
+                          '/product/2/product-2.*.tar.gz'),
             ]
 
         

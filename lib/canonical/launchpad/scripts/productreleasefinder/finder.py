@@ -50,20 +50,11 @@ class ProductReleaseFinder:
             filters = []
 
             for series in product.serieslist:
-                if series.releasefileglob:
-                    releasefileglob = series.releasefileglob
-                else:
-                    continue
-
-                if series.releaseroot:
-                    releaseroot = series.releaseroot
-                elif product.releaseroot:
-                    releaseroot = product.releaseroot
-                else:
+                if not series.releasefileglob:
                     continue
 
                 filters.append(FilterPattern(series.name,
-                                             releaseroot, releasefileglob))
+                                             series.releasefileglob))
 
             if not len(filters):
                 continue
