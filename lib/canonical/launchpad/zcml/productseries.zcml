@@ -11,13 +11,13 @@
         <allow interface="canonical.launchpad.interfaces.IProductSeries" />
         <require
             permission="launchpad.Edit"
-            set_attributes="product name owner driver summary user_branch"
+            set_attributes="product name owner driver summary user_branch
+                releasefileglob"
             />
         <require
             permission="launchpad.EditSource"
             set_attributes="importstatus rcstype cvsroot cvsmodule
-                cvstarfileurl cvsbranch svnrepository releaseroot
-                releasefileglob"
+                cvstarfileurl cvsbranch svnrepository"
             />
         <require
             permission="launchpad.Admin"

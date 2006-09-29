@@ -35,4 +35,9 @@ UPDATE ProductSeries SET
 
 ALTER TABLE ProductSeries DROP COLUMN releaseroot;
 
+-- The releasefileglob should be a valid absolute URL
+ALTER TABLE ProductSeries
+  ADD CONSTRAINT valid_releasefileglob
+    CHECK (valid_absolute_url(releasefileglob));
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (67, 95, 0);
