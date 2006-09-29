@@ -509,7 +509,7 @@ class MakeJobFileStep(JobBuildStep):
         what = "job file %s" % (self.jobfile)
         log.msg(what)
         args = {'job': self.job,
-                'method': 'toFile',
+                'method': 'prepare',
                 'args': [os.path.join(self.workdir, self.jobfile)],
                 'dir': self.workdir
         }
