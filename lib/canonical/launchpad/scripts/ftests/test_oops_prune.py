@@ -64,6 +64,40 @@ class TestOopsPrune(unittest.TestCase):
                 referenced_oops()
                 )
 
+        # We also check in other places besides MessageChunk for oops ids
+        cur = cursor()
+        cur.execute("UPDATE Message SET subject='OOPS-1MessageSubject666'")
+        cur.execute("""
+            UPDATE Bug SET
+                title='OOPS-1BugTitle666',
+                description='OOPS-1BugDescription666'
+            """)
+        cur.execute("""
+            UPDATE BugTask
+                SET statusexplanation='foo OOPS1BugTaskStatusExplanation666'
+            """)
+        cur.execute("""
+            UPDATE Ticket SET
+                title='OOPS - 1TicketTitle666 bar',
+                description='OOPS-1TicketDescription666',
+                whiteboard='OOPS-1TicketWhiteboard666'
+            """)
+        self.failUnlessEqual(
+                set([
+                    self.referenced_oops_code,
+                    '1MESSAGESUBJECT666',
+                    '1BUGTITLE666',
+                    '1BUGDESCRIPTION666',
+                    '1BUGTASKSTATUSEXPLANATION666',
+                    '1TICKETTITLE666',
+                    '1TICKETDESCRIPTION666',
+                    '1TICKETWHITEBOARD666',
+                    ]),
+                referenced_oops()
+                )
+
+
+
     def test_old_oops_files(self):
         old = set(old_oops_files(self.oops_dir, 90))
         self.failUnlessEqual(len(old), 6)

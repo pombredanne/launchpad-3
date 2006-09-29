@@ -34,10 +34,9 @@ def referenced_oops():
         UNION ALL
         SELECT content FROM MessageChunk WHERE content %(posix_oops_match)s
         UNION ALL
-        SELECT title || ' ' || description || ' ' || name
+        SELECT title || ' ' || description
         FROM Bug WHERE title %(posix_oops_match)s
             OR description %(posix_oops_match)s
-            OR name %(posix_oops_match)s
         UNION ALL
         SELECT statusexplanation FROM BugTask
         WHERE statusexplanation %(posix_oops_match)s
