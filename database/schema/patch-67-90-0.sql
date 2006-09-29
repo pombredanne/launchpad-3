@@ -1,5 +1,5 @@
 /*
- * This patch renames DistroReleaseQueue* to Upload* and adds the
+ * This patch renames DistroReleaseQueue* to PackageUpload* and adds the
  * Archive table.
  */
 
@@ -293,14 +293,27 @@ SELECT binarypackagepublishing.id,
        sourcepackagerelease.sourcepackagename = sourcepackagename.id;
 
 -- Data migration for distribution and publishing tables
+--- Each distribution needs a main archive
+INSERT INTO ARCHIVE (id) SELECT id FROM Distribution;
+UPDATE Distribution SET main_archive = id;
 
---- We need a main archive for our distros. Create one only if there's
---- data around.
-INSERT INTO ARCHIVE (id) select distinct 1 from distribution; 
-UPDATE Distribution SET main_archive = 1;
 --- Update the publishing tables to reference this archive
-UPDATE SecureSourcePackagePublishingHistory SET archive=1;
-UPDATE SecureBinaryPackagePublishingHistory SET archive=1;
+UPDATE SecureSourcePackagePublishingHistory
+   SET archive = (
+       SELECT distribution.main_archive
+        FROM Distribution, DistroRelease
+       WHERE distribution.id = distrorelease.distribution
+         AND distrorelease.id =
+             securesourcepackagepublishinghistory.distrorelease);
+
+UPDATE SecureBinaryPackagePublishingHistory
+   SET archive = (
+       SELECT distribution.main_archive
+        FROM Distribution, DistroRelease, DistroArchRelease
+       WHERE distribution.id = distrorelease.distribution
+         AND distrorelease.id = distroarchrelease.distrorelease
+         AND distroarchrelease.id =
+             securebinarypackagepublishinghistory.distroarchrelease);
 
 -- Render the archive columns NOT NULL in the publishing tables
 ALTER TABLE SecureSourcePackagePublishingHistory
@@ -323,23 +336,31 @@ CREATE INDEX securebinarypackagepublishinghistory__archive__idx
 -- DRQ -> UQ
 ALTER TABLE DistroReleaseQueue DROP CONSTRAINT distroreleasequeue_changesfile_fk;
 ALTER TABLE DistroReleaseQueue DROP CONSTRAINT distroreleasequeue_distrorelease_fk;
-ALTER TABLE DistroReleaseQueue RENAME TO Upload;
-ALTER TABLE distroreleasequeue_id_seq RENAME TO upload_id_seq;
-ALTER TABLE Upload
-    ALTER COLUMN id SET DEFAULT nextval('upload_id_seq');
-ALTER INDEX distroreleasequeue_pkey RENAME TO upload_pkey;
-ALTER INDEX distroreleasequeue_distrorelease_key RENAME TO upload_distrorelease_key;
-ALTER TABLE Upload ADD COLUMN Archive INTEGER;
-UPDATE Upload SET archive=1;
-ALTER TABLE Upload ALTER COLUMN Archive SET NOT NULL;
-ALTER TABLE Upload
-         ADD CONSTRAINT upload_changesfile_fk 
+ALTER TABLE DistroReleaseQueue RENAME TO PackageUpload;
+ALTER TABLE distroreleasequeue_id_seq RENAME TO packageupload_id_seq;
+ALTER TABLE PackageUpload
+    ALTER COLUMN id SET DEFAULT nextval('packageupload_id_seq');
+ALTER INDEX distroreleasequeue_pkey RENAME TO packageupload_pkey;
+ALTER INDEX distroreleasequeue_distrorelease_key RENAME TO packageupload_distrorelease_key;
+ALTER TABLE PackageUpload ADD COLUMN Archive INTEGER;
+
+UPDATE PackageUpload SET archive=(
+       SELECT main_archive
+         FROM Distribution, DistroRelease
+        WHERE DistroRelease.id = PackageUpload.distrorelease
+          AND Distribution.id = DistroRelease.distribution
+          );
+
+
+ALTER TABLE PackageUpload ALTER COLUMN Archive SET NOT NULL;
+ALTER TABLE PackageUpload
+         ADD CONSTRAINT packageupload_changesfile_fk 
             FOREIGN KEY (changesfile) REFERENCES libraryfilealias(id);
-ALTER TABLE Upload
-         ADD CONSTRAINT upload_distrorelease_fk
+ALTER TABLE PackageUpload
+         ADD CONSTRAINT packageupload_distrorelease_fk
 	    FOREIGN KEY (distrorelease) REFERENCES distrorelease(id);
-ALTER TABLE Upload
-         ADD CONSTRAINT upload_archive_fk
+ALTER TABLE PackageUpload
+         ADD CONSTRAINT packageupload_archive_fk
 	    FOREIGN KEY (archive) REFERENCES archive(id);
 	    
 -- DRQS -> UQS
@@ -347,21 +368,21 @@ ALTER TABLE DistroReleaseQueueSource
     DROP CONSTRAINT distroreleasequeuesource_distroreleasequeue_fk;
 ALTER TABLE DistroReleaseQueueSource 
     DROP CONSTRAINT distroreleasequeuesource_sourcepackagerelease_fk;
-ALTER TABLE DistroReleaseQueueSource RENAME TO UploadSource;
-ALTER TABLE UploadSource RENAME COLUMN DistroReleaseQueue TO Upload;
-ALTER TABLE distroreleasequeuesource_id_seq RENAME TO uploadsource_id_seq;
-ALTER TABLE UploadSource
-    ALTER COLUMN id SET DEFAULT nextval('uploadsource_id_seq');
-ALTER INDEX distroreleasequeuesource_pkey RENAME TO uploadsource_pkey;
+ALTER TABLE DistroReleaseQueueSource RENAME TO PackageUploadSource;
+ALTER TABLE PackageUploadSource RENAME COLUMN DistroReleaseQueue TO PackageUpload;
+ALTER TABLE distroreleasequeuesource_id_seq RENAME TO packageuploadsource_id_seq;
+ALTER TABLE PackageUploadSource
+    ALTER COLUMN id SET DEFAULT nextval('packageuploadsource_id_seq');
+ALTER INDEX distroreleasequeuesource_pkey RENAME TO packageuploadsource_pkey;
 ALTER INDEX distroreleasequeuesource__distroreleasequeue__sourcepackagerele 
-  RENAME TO uploadsource__distroreleasequeue__sourcepackagerelease;
+  RENAME TO packageuploadsource__distroreleasequeue__sourcepackagerelease;
 ALTER INDEX distroreleasequeuesource__sourcepackagerelease__idx 
-  RENAME TO uploadsource__sourcepackagerelease__idx;
-ALTER TABLE UploadSource
-               ADD CONSTRAINT uploadsource_upload_fk
-	          FOREIGN KEY (upload) REFERENCES Upload(id);
-ALTER TABLE UploadSource
-               ADD CONSTRAINT uploadsource_sourcepackagerelease_fk
+  RENAME TO packageuploadsource__sourcepackagerelease__idx;
+ALTER TABLE PackageUploadSource
+               ADD CONSTRAINT packageuploadsource_packageupload_fk
+	          FOREIGN KEY (packageupload) REFERENCES PackageUpload(id);
+ALTER TABLE PackageUploadSource
+               ADD CONSTRAINT packageuploadsource_sourcepackagerelease_fk
 	          FOREIGN KEY (sourcepackagerelease) 
 		   REFERENCES SourcePackageRelease(id);
 		  
@@ -370,22 +391,22 @@ ALTER TABLE DistroReleaseQueueBuild
     DROP CONSTRAINT distroreleasequeuebuild_build_fk;
 ALTER TABLE DistroReleaseQueueBuild
     DROP CONSTRAINT distroreleasequeuebuild_distroreleasequeue_fk;
-ALTER TABLE DistroReleaseQueueBuild RENAME TO UploadBuild;
-ALTER TABLE UploadBuild RENAME COLUMN DistroReleaseQueue TO Upload;
-ALTER TABLE distroreleasequeuebuild_id_seq RENAME TO uploadbuild_id_seq;
-ALTER TABLE UploadBuild
-    ALTER COLUMN id SET DEFAULT nextval('uploadbuild_id_seq');
-ALTER INDEX distroreleasequeuebuild_pkey RENAME TO uploadbuild_pkey;
+ALTER TABLE DistroReleaseQueueBuild RENAME TO PackageUploadBuild;
+ALTER TABLE PackageUploadBuild RENAME COLUMN DistroReleaseQueue TO PackageUpload;
+ALTER TABLE distroreleasequeuebuild_id_seq RENAME TO packageuploadbuild_id_seq;
+ALTER TABLE PackageUploadBuild
+    ALTER COLUMN id SET DEFAULT nextval('packageuploadbuild_id_seq');
+ALTER INDEX distroreleasequeuebuild_pkey RENAME TO packageuploadbuild_pkey;
 ALTER INDEX distroreleasequeuebuild__distroreleasequeue__build__unique
-  RENAME TO uploadbuild__upload__build__unique;
+  RENAME TO packageuploadbuild__packageupload__build__unique;
 ALTER INDEX distroreleasequeuebuild__build__idx 
-  RENAME TO uploadbuild__build__idx;
-ALTER TABLE UploadBuild 
-    ADD CONSTRAINT uploadbuild_build_fk 
+  RENAME TO packageuploadbuild__build__idx;
+ALTER TABLE PackageUploadBuild 
+    ADD CONSTRAINT packageuploadbuild_build_fk 
        FOREIGN KEY (build) REFERENCES Build(id);
-ALTER TABLE UploadBuild 
-    ADD CONSTRAINT uploadbuild_upload_fk 
-       FOREIGN KEY (upload) REFERENCES Upload(id);
+ALTER TABLE PackageUploadBuild 
+    ADD CONSTRAINT packageuploadbuild_packageupload_fk 
+       FOREIGN KEY (packageupload) REFERENCES PackageUpload(id);
   
 
 -- DRQC -> UQC
@@ -393,22 +414,27 @@ ALTER TABLE DistroReleaseQueueCustom
     DROP CONSTRAINT distroreleasequeuecustom_distroreleasequeue_fk;
 ALTER TABLE DistroReleaseQueueCustom
     DROP CONSTRAINT distroreleasequeuecustom_libraryfilealias_fk;
-ALTER TABLE DistroReleaseQueueCustom RENAME TO UploadCustom;
-ALTER TABLE UploadCustom RENAME COLUMN DistroReleaseQueue TO Upload;
-ALTER TABLE distroreleasequeuecustom_id_seq RENAME TO uploadcustom_id_seq;
-ALTER TABLE UploadCustom
-    ALTER COLUMN id SET DEFAULT nextval('uploadcustom_id_seq');
-ALTER INDEX distroreleasequeuecustom_pkey RENAME TO uploadcustom_pkey;
-ALTER TABLE UploadCustom 
-    ADD CONSTRAINT uploadcustom_upload_fk 
-       FOREIGN KEY (upload) REFERENCES Upload(id);
-ALTER TABLE UploadCustom 
-    ADD CONSTRAINT uploadcustom_libraryfilealias_fk 
+ALTER TABLE DistroReleaseQueueCustom RENAME TO PackageUploadCustom;
+ALTER TABLE PackageUploadCustom RENAME COLUMN DistroReleaseQueue TO PackageUpload;
+ALTER TABLE distroreleasequeuecustom_id_seq RENAME TO packageuploadcustom_id_seq;
+ALTER TABLE PackageUploadCustom
+    ALTER COLUMN id SET DEFAULT nextval('packageuploadcustom_id_seq');
+ALTER INDEX distroreleasequeuecustom_pkey RENAME TO packageuploadcustom_pkey;
+ALTER TABLE PackageUploadCustom 
+    ADD CONSTRAINT packageuploadcustom_packageupload_fk 
+       FOREIGN KEY (packageupload) REFERENCES PackageUpload(id);
+ALTER TABLE PackageUploadCustom 
+    ADD CONSTRAINT packageuploadcustom_libraryfilealias_fk 
        FOREIGN KEY (libraryfilealias) REFERENCES LibraryFileAlias(id);
 
 /* Miscellaneous extra archive columns */
 ALTER TABLE SourcePackageRelease ADD COLUMN UploadArchive INTEGER;
-UPDATE SourcePackageRelease SET UploadArchive=1;
+UPDATE SourcePackageRelease SET UploadArchive=(
+       SELECT main_archive
+         FROM Distribution, DistroRelease
+        WHERE DistroRelease.id = SourcePackageRelease.uploaddistrorelease
+          AND Distribution.id = DistroRelease.distribution
+          );
 ALTER TABLE SourcePackageRelease ALTER COLUMN UploadArchive SET NOT NULL;
 ALTER TABLE SourcePackageRelease 
     ADD CONSTRAINT sourcepackagerelease_uploadarchive_fk 

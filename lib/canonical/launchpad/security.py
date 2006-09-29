@@ -19,7 +19,7 @@ from canonical.launchpad.interfaces import (
     IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
     IShippingRun, ISpecification, ITicket, ITranslationImportQueueEntry,
     ITranslationImportQueue, IDistributionMirror, IHasBug,
-    IBazaarApplication, IUpload, IBuilderSet,
+    IBazaarApplication, IPackageUpload, IBuilderSet,
     IBuilder, IBuild, ISpecificationSubscription, IHasDrivers)
 
 from canonical.lp.dbschema import DistroReleaseQueueStatus
@@ -758,7 +758,7 @@ class AdminTranslationImportQueue(OnlyRosettaExpertsAndAdmins):
 
 class EditDistroReleaseQueue(AdminByAdminsTeam):
     permission = 'launchpad.Edit'
-    usedfor = IUpload
+    usedfor = IPackageUpload
 
     def checkAuthenticated(self, user):
         """Check user presence in admins or distrorelease upload admin team."""
@@ -769,7 +769,7 @@ class EditDistroReleaseQueue(AdminByAdminsTeam):
 
 class ViewDistroReleaseQueue(EditDistroReleaseQueue):
     permission = 'launchpad.View'
-    usedfor = IUpload
+    usedfor = IPackageUpload
 
     def checkAuthenticated(self, user):
         """Allow only members of the admin team to view unapproved entries.

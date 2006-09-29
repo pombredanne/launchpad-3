@@ -5,9 +5,9 @@
     xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
 
-    <content class="canonical.launchpad.database.Upload">
+    <content class="canonical.launchpad.database.PackageUpload">
       <implements
-          interface="canonical.launchpad.interfaces.IUpload" />
+          interface="canonical.launchpad.interfaces.IPackageUpload" />
       <require
           permission="launchpad.View"
           attributes="id status distrorelease pocket changesfile
@@ -25,24 +25,24 @@
           />
     </content>
 
-    <content class="canonical.launchpad.database.UploadSource">
-        <allow interface="canonical.launchpad.interfaces.IUploadSource" />
+    <content class="canonical.launchpad.database.PackageUploadSource">
+        <allow interface="canonical.launchpad.interfaces.IPackageUploadSource" />
     </content>
 
-    <content class="canonical.launchpad.database.UploadBuild">
-        <allow interface="canonical.launchpad.interfaces.IUploadBuild" />
+    <content class="canonical.launchpad.database.PackageUploadBuild">
+        <allow interface="canonical.launchpad.interfaces.IPackageUploadBuild" />
     </content>
 
-    <content class="canonical.launchpad.database.UploadCustom">
-        <allow interface="canonical.launchpad.interfaces.IUploadCustom" />
+    <content class="canonical.launchpad.database.PackageUploadCustom">
+        <allow interface="canonical.launchpad.interfaces.IPackageUploadCustom" />
     </content>
 
-    <!-- UploadSet -->
+    <!-- PackageUploadSet -->
     <securedutility
-        class="canonical.launchpad.database.UploadSet"
-        provides="canonical.launchpad.interfaces.IUploadSet">
+        class="canonical.launchpad.database.PackageUploadSet"
+        provides="canonical.launchpad.interfaces.IPackageUploadSet">
         <allow
-          interface="canonical.launchpad.interfaces.IUploadSet" />
+          interface="canonical.launchpad.interfaces.IPackageUploadSet" />
     </securedutility>
 
 

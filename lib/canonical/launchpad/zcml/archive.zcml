@@ -10,4 +10,15 @@
        <allow interface="canonical.launchpad.interfaces.IArchive"/>
     </content>
 
+    <!-- ArchiveSet -->
+    <content class="canonical.launchpad.database.ArchiveSet">
+        <allow interface="canonical.launchpad.interfaces.IArchiveSet"/>
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.ArchiveSet"
+        provides="canonical.launchpad.interfaces.IArchiveSet">
+        <allow interface="canonical.launchpad.interfaces.IArchiveSet" />
+    </securedutility>
+
 </configure>

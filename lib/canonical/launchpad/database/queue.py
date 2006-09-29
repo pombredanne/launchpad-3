@@ -2,11 +2,11 @@
 
 __metaclass__ = type
 __all__ = [
-    'Upload',
-    'UploadBuild',
-    'UploadSource',
-    'UploadCustom',
-    'UploadSet',
+    'PackageUpload',
+    'PackageUploadBuild',
+    'PackageUploadSource',
+    'PackageUploadCustom',
+    'PackageUploadSet',
     ]
 
 import os
@@ -28,10 +28,10 @@ from canonical.lp.dbschema import (
     PackagePublishingPocket, PackagePublishingStatus)
 
 from canonical.launchpad.interfaces import (
-    IUpload, IUploadBuild, IUploadSource,
-    IUploadCustom, NotFoundError, QueueStateWriteProtectedError,
+    IPackageUpload, IPackageUploadBuild, IPackageUploadSource,
+    IPackageUploadCustom, NotFoundError, QueueStateWriteProtectedError,
     QueueInconsistentStateError, QueueSourceAcceptError,
-    QueueBuildAcceptError, IUploadSet, pocketsuffix)
+    QueueBuildAcceptError, IPackageUploadSet, pocketsuffix)
 
 from canonical.librarian.interfaces import DownloadFailed
 
@@ -41,7 +41,7 @@ from canonical.launchpad.database.publishing import (
 
 from canonical.cachedproperty import cachedproperty
 
-# There are imports below in UploadCustom for various bits
+# There are imports below in PackageUploadCustom for various bits
 # of the archivepublisher which cause circular import errors if they
 # are placed here.
 
@@ -52,9 +52,9 @@ def debug(logger, msg):
         logger.debug(msg)
 
 
-class Upload(SQLBase):
+class PackageUpload(SQLBase):
     """A Queue item for Lucille."""
-    implements(IUpload)
+    implements(IPackageUpload)
 
     _defaultOrder = ['id']
 
@@ -75,16 +75,16 @@ class Upload(SQLBase):
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
     
 
-    # Join this table to the UploadBuild and the
-    # UploadSource objects which are related.
-    sources = SQLMultipleJoin('UploadSource',
-                              joinColumn='upload')
-    builds = SQLMultipleJoin('UploadBuild',
-                             joinColumn='upload')
+    # Join this table to the PackageUploadBuild and the
+    # PackageUploadSource objects which are related.
+    sources = SQLMultipleJoin('PackageUploadSource',
+                              joinColumn='packageupload')
+    builds = SQLMultipleJoin('PackageUploadBuild',
+                             joinColumn='packageupload')
 
     # Also the custom files associated with the build.
-    customfiles = SQLMultipleJoin('UploadCustom',
-                                  joinColumn='upload')
+    customfiles = SQLMultipleJoin('PackageUploadCustom',
+                                  joinColumn='packageupload')
 
 
     def _set_status(self, value):
@@ -106,21 +106,21 @@ class Upload(SQLBase):
             'provided methods to set it.')
 
     def setNew(self):
-        """See IUpload."""
+        """See IPackageUpload."""
         if self.status == DistroReleaseQueueStatus.NEW:
             raise QueueInconsistentStateError(
                 'Queue item already new')
         self._SO_set_status(DistroReleaseQueueStatus.NEW)
 
     def setUnapproved(self):
-        """See IUpload."""
+        """See IPackageUpload."""
         if self.status == DistroReleaseQueueStatus.UNAPPROVED:
             raise QueueInconsistentStateError(
                 'Queue item already unapproved')
         self._SO_set_status(DistroReleaseQueueStatus.UNAPPROVED)
 
     def setAccepted(self):
-        """See IUpload."""
+        """See IPackageUpload."""
         # Explode if something wrong like warty/RELEASE pass through
         # NascentUpload/UploadPolicies checks
         assert self.distrorelease.canUploadToPocket(self.pocket)
@@ -164,14 +164,14 @@ class Upload(SQLBase):
         self._SO_set_status(DistroReleaseQueueStatus.ACCEPTED)
 
     def setDone(self):
-        """See IUpload."""
+        """See IPackageUpload."""
         if self.status == DistroReleaseQueueStatus.DONE:
             raise QueueInconsistentStateError(
                 'Queue item already done')
         self._SO_set_status(DistroReleaseQueueStatus.DONE)
 
     def setRejected(self):
-        """See IUpload."""
+        """See IPackageUpload."""
         if self.status == DistroReleaseQueueStatus.REJECTED:
             raise QueueInconsistentStateError(
                 'Queue item already rejected')
@@ -181,12 +181,12 @@ class Upload(SQLBase):
     # reduce the duplicated code.
     @cachedproperty
     def containsSource(self):
-        """See IUpload."""
+        """See IPackageUpload."""
         return self.sources
 
     @cachedproperty
     def containsBuild(self):
-        """See IUpload."""
+        """See IPackageUpload."""
         return self.builds
 
     @cachedproperty
@@ -196,19 +196,19 @@ class Upload(SQLBase):
 
     @cachedproperty
     def containsInstaller(self):
-        """See IUpload."""
+        """See IPackageUpload."""
         return (DistroReleaseQueueCustomFormat.DEBIAN_INSTALLER
                 in self._customFormats)
 
     @cachedproperty
     def containsTranslation(self):
-        """See IUpload."""
+        """See IPackageUpload."""
         return (DistroReleaseQueueCustomFormat.ROSETTA_TRANSLATIONS
                 in self._customFormats)
 
     @cachedproperty
     def containsUpgrader(self):
-        """See IUpload."""
+        """See IPackageUpload."""
         return (DistroReleaseQueueCustomFormat.DIST_UPGRADER
                 in self._customFormats)
 
@@ -220,12 +220,12 @@ class Upload(SQLBase):
 
     @cachedproperty
     def datecreated(self):
-        """See IUpload."""
+        """See IPackageUpload."""
         return self.changesfile.content.datecreated
 
     @cachedproperty
     def displayname(self):
-        """See IUpload"""
+        """See IPackageUpload"""
         names = []
         for queue_source in self.sources:
             names.append(queue_source.sourcepackagerelease.name)
@@ -237,7 +237,7 @@ class Upload(SQLBase):
 
     @cachedproperty
     def displayarchs(self):
-        """See IUpload"""
+        """See IPackageUpload"""
         archs = []
         for queue_source in self.sources:
             archs.append('source')
@@ -249,7 +249,7 @@ class Upload(SQLBase):
 
     @cachedproperty
     def displayversion(self):
-        """See IUpload"""
+        """See IPackageUpload"""
         if self.sources:
             return self.sources[0].sourcepackagerelease.version
         if self.builds:
@@ -270,7 +270,7 @@ class Upload(SQLBase):
             return self.builds[0].build.sourcepackagerelease
 
     def realiseUpload(self, logger=None):
-        """See IUpload."""
+        """See IPackageUpload."""
         assert self.status == DistroReleaseQueueStatus.ACCEPTED
         # Explode if something wrong like warty/RELEASE pass through
         # NascentUpload/UploadPolicies checks
@@ -289,38 +289,38 @@ class Upload(SQLBase):
         self.setDone()
 
     def addSource(self, spr):
-        """See IUpload."""
-        return UploadSource(upload=self,
+        """See IPackageUpload."""
+        return PackageUploadSource(packageupload=self,
                             sourcepackagerelease=spr.id)
 
     def addBuild(self, build):
-        """See IUpload."""
-        return UploadBuild(upload=self,
+        """See IPackageUpload."""
+        return PackageUploadBuild(packageupload=self,
                            build=build.id)
 
     def addCustom(self, library_file, custom_type):
-        """See IUpload."""
-        return UploadCustom(upload=self,
+        """See IPackageUpload."""
+        return PackageUploadCustom(packageupload=self,
                             libraryfilealias=library_file.id,
                             customformat=custom_type)
 
 
-class UploadBuild(SQLBase):
+class PackageUploadBuild(SQLBase):
     """A Queue item's related builds (for Lucille)."""
-    implements(IUploadBuild)
+    implements(IPackageUploadBuild)
 
     _defaultOrder = ['id']
 
-    upload = ForeignKey(
-        dbName='upload',
-        foreignKey='Upload'
+    packageupload = ForeignKey(
+        dbName='packageupload',
+        foreignKey='PackageUpload'
         )
 
     build = ForeignKey(dbName='build', foreignKey='Build')
 
     def checkComponentAndSection(self):
-        """See IUploadBuild."""
-        distrorelease = self.upload.distrorelease
+        """See IPackageUploadBuild."""
+        distrorelease = self.packageupload.distrorelease
         for binary in self.build.binarypackages:
             if binary.component not in distrorelease.components:
                 raise QueueBuildAcceptError(
@@ -332,18 +332,18 @@ class UploadBuild(SQLBase):
                                                            distrorelease.name))
 
     def publish(self, logger=None):
-        """See IUploadBuild."""
+        """See IPackageUploadBuild."""
         # Determine the build's architecturetag.
         build_archtag = self.build.distroarchrelease.architecturetag
         # Determine the target arch release.
         # This will raise NotFoundError if anything odd happens.
-        target_dar = self.upload.distrorelease[build_archtag]
+        target_dar = self.packageupload.distrorelease[build_archtag]
         debug(logger, "Publishing build to %s/%s/%s" % (
             target_dar.distrorelease.distribution.name,
             target_dar.distrorelease.name,
             build_archtag))
         # And get the other distroarchreleases
-        other_dars = set(self.upload.distrorelease.architectures)
+        other_dars = set(self.packageupload.distrorelease.architectures)
         other_dars = other_dars - set([target_dar])
         # First up, publish everything in this build into that dar.
         published_binaries = []
@@ -369,22 +369,22 @@ class UploadBuild(SQLBase):
                     priority=binary.priority,
                     status=PackagePublishingStatus.PENDING,
                     datecreated=UTC_NOW,
-                    pocket=self.upload.pocket,
+                    pocket=self.packageupload.pocket,
                     embargo=False,
                     archive=each_target_dar.main_archive
                     )
                 published_binaries.append(sbpph)
 
 
-class UploadSource(SQLBase):
+class PackageUploadSource(SQLBase):
     """A Queue item's related sourcepackagereleases (for Lucille)."""
-    implements(IUploadSource)
+    implements(IPackageUploadSource)
 
     _defaultOrder = ['id']
 
-    upload = ForeignKey(
-        dbName='upload',
-        foreignKey='Upload'
+    packageupload = ForeignKey(
+        dbName='packageupload',
+        foreignKey='PackageUpload'
         )
 
     sourcepackagerelease = ForeignKey(
@@ -393,8 +393,8 @@ class UploadSource(SQLBase):
         )
 
     def checkComponentAndSection(self):
-        """See IUploadSource."""
-        distrorelease = self.upload.distrorelease
+        """See IPackageUploadSource."""
+        distrorelease = self.packageupload.distrorelease
         component = self.sourcepackagerelease.component
         section = self.sourcepackagerelease.section
 
@@ -409,37 +409,37 @@ class UploadSource(SQLBase):
                                                        distrorelease.name))
 
     def publish(self, logger=None):
-        """See IUploadSource."""
+        """See IPackageUploadSource."""
         # Publish myself in the distrorelease pointed at by my queue item.
         # XXX: dsilvers: 20051020: What do we do here to support embargoed
         # sources? bug 3408
         debug(logger, "Publishing source %s/%s to %s/%s" % (
             self.sourcepackagerelease.name,
             self.sourcepackagerelease.version,
-            self.upload.distrorelease.distribution.name,
-            self.upload.distrorelease.name))
+            self.packageupload.distrorelease.distribution.name,
+            self.packageupload.distrorelease.name))
 
         return SecureSourcePackagePublishingHistory(
-            distrorelease=self.upload.distrorelease,
+            distrorelease=self.packageupload.distrorelease,
             sourcepackagerelease=self.sourcepackagerelease,
             component=self.sourcepackagerelease.component,
             section=self.sourcepackagerelease.section,
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
-            pocket=self.upload.pocket,
+            pocket=self.packageupload.pocket,
             embargo=False,
-            archive=self.upload.distrorelease.main_archive)
+            archive=self.packageupload.distrorelease.main_archive)
 
 
-class UploadCustom(SQLBase):
+class PackageUploadCustom(SQLBase):
     """A Queue item's related custom format uploads."""
-    implements(IUploadCustom)
+    implements(IPackageUploadCustom)
 
     _defaultOrder = ['id']
 
-    upload = ForeignKey(
-        dbName='upload',
-        foreignKey='Upload'
+    packageupload = ForeignKey(
+        dbName='packageupload',
+        foreignKey='PackageUpload'
         )
 
     customformat = EnumCol(dbName='customformat', unique=False,
@@ -451,7 +451,7 @@ class UploadCustom(SQLBase):
                                   notNull=True)
 
     def publish(self, logger=None):
-        """See IUploadCustom."""
+        """See IPackageUploadCustom."""
         # This is a marker as per the comment in dbschema.py.
         ##CUSTOMFORMAT##
         # Essentially, if you alter anything to do with what custom formats
@@ -459,9 +459,9 @@ class UploadCustom(SQLBase):
         # grep for the marker in the source tree and fix it up in every place
         # so marked.
         debug(logger, "Publishing custom %s to %s/%s" % (
-            self.upload.displayname,
-            self.upload.distrorelease.distribution.name,
-            self.upload.distrorelease.name))
+            self.packageupload.displayname,
+            self.packageupload.distrorelease.distribution.name,
+            self.packageupload.distrorelease.name))
 
         name = "publish_" + self.customformat.name
         method = getattr(self, name, None)
@@ -472,7 +472,7 @@ class UploadCustom(SQLBase):
                 self.customformat.name))
 
     def temp_filename(self):
-        """See IUploadCustom."""
+        """See IPackageUploadCustom."""
         temp_dir = tempfile.mkdtemp()
         temp_file_name = os.path.join(temp_dir, self.libraryfilealias.filename)
         temp_file = file(temp_file_name, "wb")
@@ -482,11 +482,11 @@ class UploadCustom(SQLBase):
 
     @property
     def archive_config(self):
-        """See IUploadCustom."""
+        """See IPackageUploadCustom."""
         # XXX cprov 20050303: use the Zope Component Lookup to instantiate
         # the object in question and avoid circular imports
         from canonical.archivepublisher.config import Config as ArchiveConfig
-        distrorelease = self.upload.distrorelease
+        distrorelease = self.packageupload.distrorelease
         return ArchiveConfig(distrorelease.distribution)
 
     def _publishCustom(self, action_method):
@@ -497,8 +497,8 @@ class UploadCustom(SQLBase):
         """
         temp_filename = self.temp_filename()
         full_suite_name = "%s%s" % (
-            self.upload.distrorelease.name,
-            pocketsuffix[self.upload.pocket])
+            self.packageupload.distrorelease.name,
+            pocketsuffix[self.packageupload.pocket])
         try:
             action_method(
                 self.archive_config.archiveroot, temp_filename,
@@ -507,7 +507,7 @@ class UploadCustom(SQLBase):
             shutil.rmtree(os.path.dirname(temp_filename))
 
     def publish_DEBIAN_INSTALLER(self, logger=None):
-        """See IUploadCustom."""
+        """See IPackageUploadCustom."""
         # XXX cprov 20050303: We need to use the Zope Component Lookup
         # to instantiate the object in question and avoid circular imports
         from canonical.archivepublisher.debian_installer import (
@@ -516,7 +516,7 @@ class UploadCustom(SQLBase):
         self._publishCustom(process_debian_installer)
 
     def publish_DIST_UPGRADER(self, logger=None):
-        """See IUploadCustom."""
+        """See IPackageUploadCustom."""
         # XXX cprov 20050303: We need to use the Zope Component Lookup
         # to instantiate the object in question and avoid circular imports
         from canonical.archivepublisher.dist_upgrader import (
@@ -534,11 +534,11 @@ class UploadCustom(SQLBase):
         self._publishCustom(process_ddtp_tarball)
 
     def publish_ROSETTA_TRANSLATIONS(self, logger=None):
-        """See IUploadCustom."""
+        """See IPackageUploadCustom."""
         # XXX: dsilvers: 20051115: We should be able to get a
         # sourcepackagerelease directly.
         sourcepackagerelease = (
-            self.upload.builds[0].build.sourcepackagerelease)
+            self.packageupload.builds[0].build.sourcepackagerelease)
 
         if sourcepackagerelease.component.name != 'main':
             # XXX: CarlosPerelloMarin 20060216 This should be implemented
@@ -559,30 +559,30 @@ class UploadCustom(SQLBase):
                     self.libraryfilealias.url)
 
 
-class UploadSet:
-    """See IUploadSet"""
-    implements(IUploadSet)
+class PackageUploadSet:
+    """See IPackageUploadSet"""
+    implements(IPackageUploadSet)
 
     def __iter__(self):
-        """See IUploadSet."""
-        return iter(Upload.select())
+        """See IPackageUploadSet."""
+        return iter(PackageUpload.select())
 
     def __getitem__(self, queue_id):
-        """See IUploadSet."""
+        """See IPackageUploadSet."""
         try:
-            return Upload.get(queue_id)
+            return PackageUpload.get(queue_id)
         except SQLObjectNotFound:
             raise NotFoundError(queue_id)
 
     def get(self, queue_id):
-        """See IUploadSet."""
+        """See IPackageUploadSet."""
         try:
-            return Upload.get(queue_id)
+            return PackageUpload.get(queue_id)
         except SQLObjectNotFound:
             raise NotFoundError(queue_id)
 
     def count(self, status=None, distrorelease=None, pocket=None):
-        """See IUploadSet."""
+        """See IPackageUploadSet."""
         clauses = []
         if status:
             clauses.append("status=%s" % sqlvalues(status))
@@ -594,4 +594,4 @@ class UploadSet:
             clauses.append("pocket=%s" % sqlvalues(pocket))
 
         query = " AND ".join(clauses)
-        return Upload.select(query).count()
+        return PackageUpload.select(query).count()

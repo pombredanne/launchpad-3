@@ -19,7 +19,7 @@ from canonical.config import config
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.builder import BuildQueue
-from canonical.launchpad.database.queue import UploadBuild
+from canonical.launchpad.database.queue import PackageUploadBuild
 from canonical.launchpad.helpers import (
     get_email_template, contactEmailAddresses)
 from canonical.launchpad.interfaces import (
@@ -68,10 +68,10 @@ class Build(SQLBase):
     @property
     def changesfile(self):
         """See IBuild"""
-        queue_item = UploadBuild.selectOneBy(build=self)
+        queue_item = PackageUploadBuild.selectOneBy(build=self)
         if queue_item is None:
             return None
-        return queue_item.upload.changesfile
+        return queue_item.packageupload.changesfile
 
     @property
     def distrorelease(self):

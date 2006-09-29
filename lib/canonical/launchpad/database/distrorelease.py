@@ -68,7 +68,7 @@ from canonical.launchpad.database.section import Section
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.specification import Specification
-from canonical.launchpad.database.queue import Upload
+from canonical.launchpad.database.queue import PackageUpload
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.helpers import shortlist
 
@@ -873,71 +873,71 @@ class DistroRelease(SQLBase, BugTargetBase):
         changes_file = file_alias_set.create(changesfilename,
             len(changesfilecontent), StringIO(changesfilecontent),
             'text/plain')
-        return Upload(distrorelease=self,
-                      status=DistroReleaseQueueStatus.NEW,
-                      pocket=pocket,
-                      changesfile=changes_file,
-                      archive=self.main_archive)
+        return PackageUpload(distrorelease=self,
+                             status=DistroReleaseQueueStatus.NEW,
+                             pocket=pocket,
+                             changesfile=changes_file,
+                             archive=self.main_archive)
 
     def getQueueItems(self, status=None, name=None, version=None,
                       exact_match=False, pocket=None):
         """See IDistroRelease."""
 
         default_clauses = ["""
-            upload.distrorelease = %s""" % sqlvalues(self.id)]
+            packageupload.distrorelease = %s""" % sqlvalues(self.id)]
 
         # restrict result to a given pocket
         if pocket is not None:
             default_clauses.append(
-                    "upload.pocket = %s" % sqlvalues(pocket))
+                    "packageupload.pocket = %s" % sqlvalues(pocket))
 
 
         # XXX cprov 20060606: We may reorganise this code, creating
-        # some new methods provided by IUploadSet, as:
+        # some new methods provided by IPackageUploadSet, as:
         # getByStatus and getByName.
         if not status:
             assert not version and not exact_match
-            return Upload.select(
+            return PackageUpload.select(
                 " AND ".join(default_clauses),
                 orderBy=['-id'])
 
         default_clauses.append("""
-        upload.status = %s""" % sqlvalues(status))
-
+        packageupload.status = %s""" % sqlvalues(status))
+        
         if not name:
             assert not version and not exact_match
-            return Upload.select(
+            return PackageUpload.select(
                 " AND ".join(default_clauses),
                 orderBy=['-id'])
 
         source_where_clauses = default_clauses + ["""
-            upload.id = uploadsource.upload
+            packageupload.id = packageuploadsource.packageupload
             """]
 
         build_where_clauses = default_clauses + ["""
-            upload.id = uploadbuild.upload
+            packageupload.id = packageuploadbuild.packageupload
             """]
 
         custom_where_clauses = default_clauses + ["""
-            upload.id = uploadcustom.upload
+            packageupload.id = packageuploadcustom.packageupload
             """]
 
         # modify source clause to lookup on sourcepackagerelease
         source_where_clauses.append("""
-            uploadsource.sourcepackagerelease =
+            packageuploadsource.sourcepackagerelease =
             sourcepackagerelease.id""")
         source_where_clauses.append(
             "sourcepackagerelease.sourcepackagename = sourcepackagename.id")
 
         # modify build clause to lookup on binarypackagerelease
         build_where_clauses.append(
-            "uploadbuild.build = binarypackagerelease.build")
+            "packageuploadbuild.build = binarypackagerelease.build")
         build_where_clauses.append(
             "binarypackagerelease.binarypackagename = binarypackagename.id")
 
         # modify custom clause to lookup on libraryfilealias
         custom_where_clauses.append(
-            "uploadcustom.libraryfilealias = "
+            "packageuploadcustom.libraryfilealias = "
             "libraryfilealias.id")
 
         # attempt to exact or similar names in builds, sources and custom
@@ -976,37 +976,37 @@ class DistroRelease(SQLBase, BugTargetBase):
                     % quote_like(version))
 
         source_clauseTables = [
-            'UploadSource',
+            'PackageUploadSource',
             'SourcePackageRelease',
             'SourcePackageName',
             ]
         source_orderBy = ['-sourcepackagerelease.dateuploaded']
 
         build_clauseTables = [
-            'UploadBuild',
+            'PackageUploadBuild',
             'BinaryPackageRelease',
             'BinaryPackageName',
             ]
         build_orderBy = ['-binarypackagerelease.datecreated']
 
         custom_clauseTables = [
-            'UploadCustom',
+            'PackageUploadCustom',
             'LibraryFileAlias',
             ]
         custom_orderBy = ['-LibraryFileAlias.id']
 
         source_where_clause = " AND ".join(source_where_clauses)
-        source_results = Upload.select(
+        source_results = PackageUpload.select(
             source_where_clause, clauseTables=source_clauseTables,
             orderBy=source_orderBy)
 
         build_where_clause = " AND ".join(build_where_clauses)
-        build_results = Upload.select(
+        build_results = PackageUpload.select(
             build_where_clause, clauseTables=build_clauseTables,
             orderBy=build_orderBy)
 
         custom_where_clause = " AND ".join(custom_where_clauses)
-        custom_results = Upload.select(
+        custom_results = PackageUpload.select(
             custom_where_clause, clauseTables=custom_clauseTables,
             orderBy=custom_orderBy)
 

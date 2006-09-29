@@ -31,7 +31,7 @@ from zope.security.interfaces import Unauthorized
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IPerson, IPublishedPackageSet,
-    NotFoundError, ILaunchBag)
+    NotFoundError, ILaunchBag, IArchiveSet)
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -442,6 +442,7 @@ class DistributionSetAddView(AddView):
             raise Unauthorized(
                 "Need an authenticated user in order to create a"
                 " distribution.")
+        archive = getUtility(IArchiveSet).new()
         distribution = getUtility(IDistributionSet).new(
             name=data['name'],
             displayname=data['displayname'],
@@ -450,7 +451,8 @@ class DistributionSetAddView(AddView):
             description=data['description'],
             domainname=data['domainname'],
             members=data['members'],
-            owner=owner)
+            owner=owner,
+            main_archive = archive)
         notify(ObjectCreatedEvent(distribution))
         self._nextURL = data['name']
         return distribution

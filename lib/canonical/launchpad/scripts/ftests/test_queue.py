@@ -9,7 +9,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IDistroReleaseQueueSet)
+    IDistributionSet, IPackageUploadSet)
 from canonical.launchpad.scripts.queue import (
     CommandRunner, CommandRunnerError, name_queue_map)
 from canonical.lp.dbschema import (
@@ -57,7 +57,7 @@ class TestQueueTool(TestCase):
         # check if the considered queue size matches the existent number
         # of records in sampledata
         bat = getUtility(IDistributionSet)['ubuntu']['breezy-autotest']
-        queue_size = getUtility(IDistroReleaseQueueSet).count(
+        queue_size = getUtility(IPackageUploadSet).count(
             status=DistroReleaseQueueStatus.NEW,
             distrorelease=bat, pocket= PackagePublishingPocket.RELEASE)
         self.assertEqual(queue_size, queue_action.size)

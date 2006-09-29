@@ -133,7 +133,7 @@ class TestUploadProcessor(unittest.TestCase):
         self.assertTrue("Unhandled exception processing upload: Exception "
                         "raised by BrokenUploadPolicy for testing." in raw_msg)
 
-        # Ensure PQM fails
+        # Ensure PQM fails until I'm ready
         self.assertTrue(False)
 
     def testUploadToFrozenDistro(self):
