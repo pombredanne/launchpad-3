@@ -36,8 +36,6 @@ from canonical.launchpad.interfaces import (
     ISpecificationSet, ISprintSet, ITicketSet, IBuilderSet, IBountySet,
     ILaunchpadCelebrities, IBugSet, IBugTrackerSet, ICveSet,
     ITranslationImportQueue, ITranslationGroupSet)
-from canonical.launchpad.layers import (
-    setFirstLayer, ShipItEdUbuntuLayer, ShipItKUbuntuLayer, ShipItUbuntuLayer)
 from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView, Navigation,
@@ -158,10 +156,17 @@ class Breadcrumbs(LaunchpadView):
                 # XXX: SteveAlexander, 2006-06-09, this is putting the
                 #      full URL in as the lpm:mid.  We want just the path
                 #      here instead.
-                L.append('<li class="item" lpm:mid="%s/+menudata">'
+                ##L.append('<li class="item" lpm:mid="%s/+menudata">'
+                ##         '<a href="%s">%s</a>'
+                ##         '</li>'
+                ##         % (crumb.url, crumb.url, cgi.escape(crumb.text)))
+
+                # Disable these menus for now.  To be re-enabled on the ui 1.0
+                # branch.
+                L.append('<li class="item">'
                          '<a href="%s">%s</a>'
                          '</li>'
-                         % (crumb.url, crumb.url, cgi.escape(crumb.text)))
+                         % (crumb.url, cgi.escape(crumb.text)))
 
             #L.append(
             #    '<li class="item">'
