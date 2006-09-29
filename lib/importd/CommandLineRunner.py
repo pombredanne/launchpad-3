@@ -15,18 +15,6 @@ from canonical.launchpad.database import Product
 from importd.Job import Job
 import canonical
 
-# XXX: disable use of gnarly in pybaz. Temporarily needed until baz support is
-# removed from cscvs -- David Allouche 2006-09-07
-import pybaz
-import pybaz.backends.forkexec
-pybaz.backend.spawning_strategy = pybaz.backends.forkexec.PyArchSpawningStrategy
-
-# XXX: disable use of twisted process handling. Temporarily needed until uses
-# of gnarly are removed from cscvs -- David Allouche 2006-09-07
-import gnarly.process
-import gnarly.process.unix_process
-gnarly.process.Popen = gnarly.process.unix_process.Popen
-
 
 class Doer(object):
 
