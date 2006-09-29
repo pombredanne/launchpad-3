@@ -24,7 +24,7 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 
 from canonical.lp.dbschema import (
-    EnumCol, PackageUploadStatus, DistroReleaseQueueCustomFormat,
+    EnumCol, PackageUploadStatus, PackageUploadCustomFormat,
     PackagePublishingPocket, PackagePublishingStatus)
 
 from canonical.launchpad.interfaces import (
@@ -197,25 +197,25 @@ class PackageUpload(SQLBase):
     @cachedproperty
     def containsInstaller(self):
         """See IPackageUpload."""
-        return (DistroReleaseQueueCustomFormat.DEBIAN_INSTALLER
+        return (PackageUploadCustomFormat.DEBIAN_INSTALLER
                 in self._customFormats)
 
     @cachedproperty
     def containsTranslation(self):
         """See IPackageUpload."""
-        return (DistroReleaseQueueCustomFormat.ROSETTA_TRANSLATIONS
+        return (PackageUploadCustomFormat.ROSETTA_TRANSLATIONS
                 in self._customFormats)
 
     @cachedproperty
     def containsUpgrader(self):
         """See IPackageUpload."""
-        return (DistroReleaseQueueCustomFormat.DIST_UPGRADER
+        return (PackageUploadCustomFormat.DIST_UPGRADER
                 in self._customFormats)
 
     @cachedproperty
     def containsDdtp(self):
-        """See IDistroReleaseQueue."""
-        return (DistroReleaseQueueCustomFormat.DDTP_TARBALL
+        """See IPackageUpload."""
+        return (PackageUploadCustomFormat.DDTP_TARBALL
                 in self._customFormats)
 
     @cachedproperty
@@ -444,7 +444,7 @@ class PackageUploadCustom(SQLBase):
 
     customformat = EnumCol(dbName='customformat', unique=False,
                            default=None, notNull=True,
-                           schema=DistroReleaseQueueCustomFormat)
+                           schema=PackageUploadCustomFormat)
 
     libraryfilealias = ForeignKey(dbName='libraryfilealias',
                                   foreignKey="LibraryFileAlias",
@@ -525,7 +525,7 @@ class PackageUploadCustom(SQLBase):
         self._publishCustom(process_dist_upgrader)
 
     def publish_DDTP_TARBALL(self, logger=None):
-        """See IDistroReleaseQueueCustom."""
+        """See IPackageUploadCustom."""
         # XXX cprov 20050303: We need to use the Zope Component Lookup
         # to instantiate the object in question and avoid circular imports
         from canonical.archivepublisher.ddtp_tarball import (

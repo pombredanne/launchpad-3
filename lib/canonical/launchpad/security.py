@@ -756,7 +756,7 @@ class AdminTranslationImportQueue(OnlyRosettaExpertsAndAdmins):
     usedfor = ITranslationImportQueue
 
 
-class EditDistroReleaseQueue(AdminByAdminsTeam):
+class EditPackageUpload(AdminByAdminsTeam):
     permission = 'launchpad.Edit'
     usedfor = IPackageUpload
 
@@ -767,7 +767,7 @@ class EditDistroReleaseQueue(AdminByAdminsTeam):
 
         return user.inTeam(self.obj.distrorelease.distribution.upload_admin)
 
-class ViewDistroReleaseQueue(EditDistroReleaseQueue):
+class ViewPackageUpload(EditPackageUpload):
     permission = 'launchpad.View'
     usedfor = IPackageUpload
 
@@ -776,7 +776,7 @@ class ViewDistroReleaseQueue(EditDistroReleaseQueue):
 
         Any logged in user can view entries in other state.
         """
-        if EditDistroReleaseQueue.checkAuthenticated(self, user):
+        if EditPackageUpload.checkAuthenticated(self, user):
             return True
         # deny access to non-admin on unapproved records
         if self.obj.status == PackageUploadStatus.UNAPPROVED:

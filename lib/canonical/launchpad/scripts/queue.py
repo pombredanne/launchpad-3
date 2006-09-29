@@ -86,7 +86,7 @@ class QueueAction:
     """Queue Action base class.
 
     Implements a bunch of common/useful method designed to provide easy
-    DistroReleaseQueue handling.
+    PackageUpload handling.
     """
 
     def __init__(self, distribution_name, suite_name, queue, terms,

@@ -97,7 +97,7 @@ __all__ = (
 'TranslationPermission',
 'TranslationValidationStatus',
 'PackageUploadStatus',
-'DistroReleaseQueueCustomFormat',
+'PackageUploadCustomFormat',
 'UpstreamFileType',
 'UpstreamReleaseVersionStyle',
 )
@@ -2011,7 +2011,7 @@ class PackageUploadStatus(DBSchema):
 # If you change this (add items, change the meaning, whatever) search for
 # the token ##CUSTOMFORMAT## e.g. database/queue.py or nascentupload.py and
 # update the stuff marked with it.
-class DistroReleaseQueueCustomFormat(DBSchema):
+class PackageUploadCustomFormat(DBSchema):
     """Custom formats valid for the upload queue
 
     An upload has various files potentially associated with it, from source

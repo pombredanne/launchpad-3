@@ -38,7 +38,7 @@ from canonical.librarian.utils import copy_and_close, filechunks
 
 from canonical.lp.dbschema import (
     SourcePackageUrgency, PackagePublishingPriority,
-    DistroReleaseQueueCustomFormat, BinaryPackageFormat,
+    PackageUploadCustomFormat, BinaryPackageFormat,
     BuildStatus, PackageUploadStatus, PackagePublishingPocket)
 
 from canonical.launchpad.interfaces import (
@@ -56,10 +56,10 @@ from canonical.launchpad.mail import format_address
 # the marker in the codebase and make sure the same changes are made
 # everywhere which needs them.
 custom_sections = {
-    'raw-installer': DistroReleaseQueueCustomFormat.DEBIAN_INSTALLER,
-    'raw-translations': DistroReleaseQueueCustomFormat.ROSETTA_TRANSLATIONS,
-    'raw-dist-upgrader': DistroReleaseQueueCustomFormat.DIST_UPGRADER,
-    'raw-ddtp-tarball': DistroReleaseQueueCustomFormat.DDTP_TARBALL,
+    'raw-installer': PackageUploadCustomFormat.DEBIAN_INSTALLER,
+    'raw-translations': PackageUploadCustomFormat.ROSETTA_TRANSLATIONS,
+    'raw-dist-upgrader': PackageUploadCustomFormat.DIST_UPGRADER,
+    'raw-ddtp-tarball': PackageUploadCustomFormat.DDTP_TARBALL,
     }
 
 changes_mandatory_fields = set([
