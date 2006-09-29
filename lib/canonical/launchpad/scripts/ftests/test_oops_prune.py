@@ -97,8 +97,6 @@ class TestOopsPrune(unittest.TestCase):
                 referenced_oops()
                 )
 
-
-
     def test_old_oops_files(self):
         old = set(old_oops_files(self.oops_dir, 90))
         self.failUnlessEqual(len(old), 8)
@@ -111,7 +109,7 @@ class TestOopsPrune(unittest.TestCase):
 
     def test_unwanted_oops_files(self):
         unwanted = set(unwanted_oops_files(self.oops_dir, 90))
-        # Make sure that A666 isn't unwanted
+        # Make sure that 2A666 and 2a666 are wanted.
         unwanted_ids = set(path_to_oopsid(path) for path in unwanted)
         self.failUnlessEqual(
                 unwanted_ids,

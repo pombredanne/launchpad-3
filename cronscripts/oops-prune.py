@@ -35,7 +35,7 @@ def main():
 
     log = logger(options, 'oops-prune')
 
-    ztm = initZopeless(isolation=AUTOCOMMIT_ISOLATION)
+    ztm = initZopeless(dbuser='oopsprune', isolation=AUTOCOMMIT_ISOLATION)
     for oops_directory in oops_directories:
         for oops_path in unwanted_oops_files(oops_directory, 90):
             log.info("Removing %s", oops_path)
