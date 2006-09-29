@@ -53,11 +53,11 @@ def validate_svn_repo(repo):
         raise LaunchpadValidationError(
             'Please give valid Subversion server details.')
 
-def validate_release_root(value):
+def validate_release_glob(value):
     if validate_url(value, ["http", "https", "ftp"]):
         return True
     else:
-        raise LaunchpadValidationError('Invalid release root URL')
+        raise LaunchpadValidationError('Invalid release URL pattern')
 
 
 class IProductSeries(IHasDrivers, IHasOwner, ISpecificationGoal):
@@ -210,15 +210,12 @@ class IProductSeries(IHasDrivers, IHasOwner, ISpecificationGoal):
                       'format. This must be the correct upstream branch '
                       'for the trunk series of Evolution.'))
     # where are the tarballs released from this branch placed?
-    releaseroot = TextLine(title=_("Root directory URL"), required=False,
-        constraint=validate_release_root,
-        description=_('The directory containing releases that are part of '
-                      'this series. Launchpad automatically scans this '
-                      'directory regularly to import new releases.'))
-    releasefileglob = TextLine(title=_("Filename pattern"), required=False,
-        description=_('Launchpad uses this pattern to find new releases '
-                      'of Evolution when they are uploaded to the root '
-                      'directory.'))
+    releasefileglob = TextLine(title=_("Release URL pattern"),
+        required=False, constraint=validate_release_glob,
+        description=_('A URL pattern that matches releases that are part '
+                      'of this series.  Launchpad automatically scans this '
+                      'site to import new releases.  Example: '
+                      'http://ftp.gnu.org/gnu/emacs/emacs-21.*.tar.gz'))
     releaseverstyle = Attribute("The version numbering style for this "
         "product series of releases.")
     dateautotested = Attribute("The date this upstream passed automatic "
