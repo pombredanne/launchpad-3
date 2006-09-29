@@ -482,6 +482,10 @@ class QueueActionFetch(QueueAction):
             self.display("Constructing %s" % queue_item.changesfile.filename)
             changes_file_alias = queue_item.changesfile
             changes_file_alias.open()
+            # do not overwrite files on disk (bug # 62976)
+            if os.path.exists(queue_item.changesfile.filename):
+                raise CommandRunnerError("%s already present on disk"
+                                         % queue_item.changesfile.filename)
             changes_file = open(queue_item.changesfile.filename, "w")
             changes_file.write(changes_file_alias.read())
             changes_file.close()
@@ -503,6 +507,10 @@ class QueueActionFetch(QueueAction):
             for libfile in file_list:
                 self.display("Constructing %s" % libfile.filename)
                 libfile.open()
+                # do not overwrite files on disk (bug # 62976)
+                if os.path.exists(libfile.filename):
+                    raise CommandRunnerError("%s already present on disk"
+                                             % libfile.filename)
                 out_file = open(libfile.filename, "w")
                 for chunk in filechunks(libfile):
                     out_file.write(chunk)
@@ -532,6 +540,7 @@ class QueueActionReject(QueueAction):
                 self.display('** %s could not be rejected due %s'
                              % (queue_item.displayname, info))
             else:
+                queue_item.syncUpdate()
                 summary = []
                 for queue_source in queue_item.sources:
                     # XXX: dsilvers: 20060203: This needs to be able to
@@ -601,6 +610,7 @@ class QueueActionAccept(QueueAction):
                 self.display('** %s could not be accepted due %s'
                              % (queue_item.displayname, info))
             else:
+                queue_item.syncUpdate()
                 summary = []
                 for queue_source in queue_item.sources:
                     # XXX: dsilvers: 20060203: This needs to be able to

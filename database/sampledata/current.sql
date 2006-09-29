@@ -1552,6 +1552,8 @@ INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) 
 INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (5, 1, 10, 20, 1);
 INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (6, 0, 10, 0, 1);
 INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (7, 0, 10, 0, 1);
+INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (8, 1, 10, 0, 1);
+INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (9, 1, 10, 0, 1);
 
 
 ALTER TABLE distroreleasequeue ENABLE TRIGGER ALL;
@@ -1580,6 +1582,8 @@ ALTER TABLE distroreleasequeuesource DISABLE TRIGGER ALL;
 
 INSERT INTO distroreleasequeuesource (id, distroreleasequeue, sourcepackagerelease) VALUES (1, 3, 17);
 INSERT INTO distroreleasequeuesource (id, distroreleasequeue, sourcepackagerelease) VALUES (2, 4, 25);
+INSERT INTO distroreleasequeuesource (id, distroreleasequeue, sourcepackagerelease) VALUES (3, 8, 30);
+INSERT INTO distroreleasequeuesource (id, distroreleasequeue, sourcepackagerelease) VALUES (4, 9, 31);
 
 
 ALTER TABLE distroreleasequeuesource ENABLE TRIGGER ALL;
@@ -8605,6 +8609,8 @@ INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, d
  -- Sample Person <test@canonical.com> Tue, 10 Feb 2006 10:10:08 +0300', NULL, NULL, 'powerpc i386', NULL, 1, NULL, 16, 21, 3, 1);
 INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (28, 1, '2.6.15.3', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'any', NULL, 1, NULL, 16, 22, 3, 1);
 INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (29, 1, '0.00', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, NULL, 16, 17, 3, 1);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (30, 1, '1.0', '2006-09-28 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, NULL, 16, 20, 10, 1);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (31, 1, '1.0', '2006-09-28 18:19:01', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, NULL, 16, 20, 10, 1);
 
 
 ALTER TABLE sourcepackagerelease ENABLE TRIGGER ALL;

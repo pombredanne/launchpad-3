@@ -321,13 +321,18 @@ class IHasQueueItems(Interface):
         """Get the union of builds, sources and custom queue items.
 
         Returns builds, sources and custom queue items in a given state,
-        matching a give name and version terms. If 'status' is not supplied,
-        return all items in the queues. if 'name' and 'version'
-        are supplied return only items which the sourcepackage name or
-        binarypackage name or the filename match (SQL LIKE).
-        'name' doesn't require 'version'
+        matching a give name and version terms.
+
+        If 'status' is not supplied, return all items in the queues,
+        it supports multiple status as a list.
+
+        If 'name' and 'version' are supplied return only items which the
+        sourcepackage name or binarypackage name or the filename match
+        (SQL LIKE). 'name' doesn't require 'version'
         'version' doesn't has effect on custom queue items
-        If pocket is specified return only queue items inside it, otherwise
-        return all pockets.
+
+        If 'pocket' is specified return only queue items inside it, otherwise
+        return all pockets, it supports multiple pockets as a list.
+
         Use 'exact_match' argument for precise results.
         """
