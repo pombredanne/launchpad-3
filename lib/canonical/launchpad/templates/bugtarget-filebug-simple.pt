@@ -21,6 +21,23 @@
 <div metal:fill-slot="main">
 
   <tal:uses_malone tal:condition="context/official_malone">
+
+  <ol>
+    <tal:filebug-step repeat="step view/getSteps">
+      <li tal:condition="step/selected"
+          tal:content="step/title"
+          style="font-weight: bold">
+          A selected step
+      </li>
+      <li tal:condition="not:step/selected"
+          tal:content="step/title"
+          class="discreet"
+          style="font-size: 100%">
+          An unselected step
+      </li>
+    </tal:filebug-step>
+  </ol>
+
   <form action="."
         tal:attributes="action request/URL"
         method="post"

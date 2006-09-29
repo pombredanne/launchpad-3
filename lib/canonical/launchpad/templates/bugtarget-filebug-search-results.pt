@@ -22,22 +22,76 @@
 <div metal:fill-slot="main">
 
   <ol>
-    <li class="fieldRequired">Describe the bug in brief
-    <li style="font-weight: bold">See if it's already been reported
-    <li class="fieldRequired">Describe the bug in more detail
+    <tal:filebug-step repeat="step view/getSteps">
+      <li tal:condition="step/selected"
+          tal:content="step/title"
+          style="font-weight: bold">
+          A selected step
+      </li>
+      <li tal:condition="not:step/selected"
+          tal:content="step/title"
+          class="discreet"
+          style="font-size: 100%">
+          An unselected step
+      </li>
+    </tal:filebug-step>
   </ol>
 
-  <br />
-  <div>
+<div tal:define="similar_bugs view/getSimilarBugs">
 
+<tal:similar-bugs condition="similar_bugs">
   <p>
   <strong>Your bug may already have been reported.</strong> Please have a look through the list of bugs below to see if one of them describes the bug you were going to report. If you find a matching bug, you may wish to subscribe to it.
   </p>
 
-<div tal:replace="structure view/batch_navigator/@@+table-view-without-navlinks" />
-<tal:most-common-bugs define="most_common_bugs_navigator view/getMostCommonBugs">
+  <table class="listing">
+    <thead>
+      <tr><th colspan="2">Summary</th></tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="bug similar_bugs"
+          tal:attributes="title bug/description/fmt:shorten/500"
+          title="bug description goes here">
+        <td tal:content="bug/id" class="amount" width="10%">1</td>
+        <td>
+          <a href="#"
+             tal:content="bug/title"
+             tal:attributes="href bug/fmt:url">
+             Firefox doesn't work
+          </a>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</tal:similar-bugs>
+
+<tal:no-similar-bugs condition="not:similar_bugs">
+  <p><em>No bugs matching "<span tal:content="view/getSearchText">foobar</span>" were found.</em></p>
+</tal:no-similar-bugs>
+
+<tal:most-common-bugs define="most_common_bugs view/getMostCommonBugs"
+                      condition="most_common_bugs">
   <h2>Common Bugs</h2>
-  <div tal:replace="structure most_common_bugs_navigator/@@+table-view-without-navlinks" />
+
+  <table class="listing">
+    <thead>
+      <tr><th colspan="2">Summary</th></tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="bug most_common_bugs"
+          tal:attributes="title bug/description/fmt:shorten/500"
+          title="bug description goes here">
+        <td class="amount" tal:content="bug/id" width="10%">1</td>
+        <td>
+          <a href="#"
+             tal:content="bug/title"
+             tal:attributes="href bug/fmt:url">
+             Firefox doesn't work
+          </a>
+        </td>
+      </tr>
+    </tbody>
+  </table>
 </tal:most-common-bugs>
 
 <form action=""

@@ -206,24 +206,46 @@ class FileBugSearchForDupesView(LaunchpadFormView, FileBugViewMixin):
 
     focused_element_id = 'field.title'
 
+    # The steps in the filebug workflow, which are displayed on each
+    # page of the process.
+    _FILEBUG_STEPS = [
+        ("search", "Describe the bug in brief"),
+        ("check_for_similar", "See if it's already been reported"),
+        ("filebug", "Describe the bug in more detail")]
+
+    current_step = "search"
+
     @action("See if it's already been reported",
             name="search", validator="validate_search")
-    def handle_search(self, action, data):
+    def search_action(self, action, data):
         """Search for similar bug reports."""
-        params = BugTaskSearchParams(self.user, searchtext=data['title'])
-        matching_bugtasks = self.context.searchTasks(params)
-
-        # Force the batch size to be equal to the maximum number of
-        # results we show, because we don't expect users will actually
-        # page through batches of potentially similar bugs. Instead, we
-        # show only the first _MATCHING_BUGS_LIMIT number of similar
-        # bugs.
-        self.batch_navigator = TableBatchNavigator(
-            matching_bugtasks[:self._MATCHING_BUGS_LIMIT],
-            self.request, columns_to_show=self.columns_to_show,
-            size=self._MATCHING_BUGS_LIMIT)
-
+        self.current_step = "check_for_similar"
         return self._DISPLAY_DUPES()
+
+    def getSteps(self):
+        steps = []
+        for step_name, step_title in self._FILEBUG_STEPS:
+            is_current_step = step_name == self.current_step
+            steps.append(
+                dict(selected=is_current_step, title=step_title))
+        return steps
+
+    def getSimilarBugs(self):
+        """Return the similar bugs based on the user search."""
+        matching_bugs = []
+        title = self.getSearchText()
+        params = BugTaskSearchParams(self.user, searchtext=title)
+        for bugtask in self.context.searchTasks(params):
+            if not bugtask.bug in matching_bugs:
+                matching_bugs.append(bugtask.bug)
+                if len(matching_bugs) >= self._MATCHING_BUGS_LIMIT:
+                    break
+
+        return matching_bugs
+
+    def getSearchText(self):
+        """Return the search string entered by the user."""
+        return self.widgets['title'].getInputValue()
 
     def validate_search(self, action, data):
         """Make sure some keywords are provided."""
@@ -239,15 +261,20 @@ class FileBugSearchForDupesView(LaunchpadFormView, FileBugViewMixin):
 
     @action("I don't see my bug in this list",
             name="no_dupe_found", validator="validate_no_dupe_found")
-    def handle_no_dupe_found(self, action, data):
+    def no_dupe_found_action(self, action, data):
         """Show the simple bug form."""
-        return self._FILEBUG_FORM()
+        return self.showFileBugForm()
 
     def validate_no_dupe_found(self, action, data):
         return ()
 
-    @action("Submit Bug Report", name="submit_bug")
-    def handle_submit_bug(self, action, data):
+    def showFileBugForm(self):
+        self.current_step = "filebug"
+        return self._FILEBUG_FORM()
+
+    @action("Submit Bug Report", name="submit_bug",
+            failure="showFileBugForm")
+    def submit_bug_action(self, action, data):
         """Add a bug to this IBugTarget."""
         title = data.get("title")
         comment = data.get("comment")
@@ -310,11 +337,8 @@ class FileBugSearchForDupesView(LaunchpadFormView, FileBugViewMixin):
 
         'Most common' means bugs that have the most duplicates.
         """
-        return TableBatchNavigator(
-            self.context.getMostCommonBugs(
-                self.user, limit=self._MATCHING_BUGS_LIMIT),
-            self.request, columns_to_show=self.columns_to_show,
-            size=self._MATCHING_BUGS_LIMIT)
+        return self.context.getMostCommonBugs(
+            self.user, limit=self._MATCHING_BUGS_LIMIT)
 
 
 class BugTargetBugListingView:

@@ -28,10 +28,21 @@
         enctype="multipart/form-data"
         accept-charset="UTF-8">
 
+
     <ol>
-      <li style="font-weight: bold">Describe the bug in brief</li>
-      <li class="fieldRequired">See if it's already been reported</li>
-      <li class="fieldRequired">Describe the bug in more detail</li>
+      <tal:filebug-step repeat="step view/getSteps">
+        <li tal:condition="step/selected"
+            tal:content="step/title"
+            style="font-weight: bold">
+            A selected step
+        </li>
+        <li tal:condition="not:step/selected"
+            tal:content="step/title"
+            class="discreet"
+            style="font-size: 100%">
+            An unselected step
+        </li>
+      </tal:filebug-step>
     </ol>
 
     <div style="margin-top: 1em"
