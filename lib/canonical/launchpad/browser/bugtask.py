@@ -668,6 +668,8 @@ class BugTaskEditView(GeneralFormView):
             editable_field_names = list(self.fieldNames)
             editable_field_names.remove('bugwatch')
 
+            # XXX, Brad Bollenbach, 2006-09-29: Permission checking
+            # doesn't belong here! See https://launchpad.net/bugs/63000
             if not self.userCanEditMilestone():
                 editable_field_names.remove("milestone")
 
