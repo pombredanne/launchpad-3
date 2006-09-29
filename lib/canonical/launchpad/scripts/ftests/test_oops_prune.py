@@ -6,8 +6,9 @@
 
 __metaclass__ = type
 
-from datetime import date, timedelta
+from datetime import datetime, timedelta
 import os
+import re
 import shutil
 from subprocess import Popen, PIPE, STDOUT
 import sys
@@ -15,11 +16,14 @@ import tempfile
 from textwrap import dedent
 import unittest
 
+from pytz import UTC
+
 from canonical.config import config
 from canonical.testing import LaunchpadZopelessLayer
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.scripts.oops import (
-        referenced_oops, old_oops_files, unwanted_oops_files
+        referenced_oops, old_oops_files, unwanted_oops_files,
+        path_to_oopsid
         )
 from canonical.launchpad.webapp import errorlog
 
@@ -30,10 +34,11 @@ class TestOopsPrune(unittest.TestCase):
         self.oops_dir = tempfile.mkdtemp()
 
         # Create some fake OOPS files
-        self.today = date.today()
+        self.today = datetime.now(tz=UTC)
         self.ages_ago = errorlog.epoch + timedelta(days=1)
+        self.awhile_ago = self.ages_ago + timedelta(days=1)
 
-        for some_date in [self.today, self.ages_ago]:
+        for some_date in [self.today, self.ages_ago, self.awhile_ago]:
             date_dir = os.path.join(
                     self.oops_dir, some_date.strftime('%Y-%m-%d')
                     )
@@ -42,44 +47,49 @@ class TestOopsPrune(unittest.TestCase):
                 oops_filename = os.path.join(date_dir, '000.%s' % oops_id)
                 open(oops_filename, 'w').write('Fnord')
 
-        old_day_count = (self.ages_ago - errorlog.epoch).days + 1
-
         # Create a reference to one of the old OOPS reports in the DB
+        self.referenced_oops_code = '2A666'
         cur = cursor()
         cur.execute("""
             INSERT INTO MessageChunk(message, sequence, content)
-            VALUES (1, 99, 'OOPS-%dA666')
-            """ % old_day_count)
+            VALUES (1, 99, 'OOPS-%s')
+            """ % self.referenced_oops_code)
 
     def tearDown(self):
         shutil.rmtree(self.oops_dir)
 
-    def path_to_oopsid(self, path):
-        '''Extract the OOPS id from a path to an OOPS file'''
-        return path.split('.')[-1]
-
     def test_referenced_oops(self):
         self.failUnlessEqual(
-                set(['A666']),
+                set([self.referenced_oops_code]),
                 referenced_oops()
                 )
 
     def test_old_oops_files(self):
         old = set(old_oops_files(self.oops_dir, 90))
-        self.failUnlessEqual(len(old), 3)
+        self.failUnlessEqual(len(old), 6)
         # Make sure the paths are valid
         for old_path in old:
             self.failUnless(os.path.exists(old_path))
+            self.failUnless(
+                    '2006-01' in old_path, '%s not in old area' % old_path
+                    )
 
     def test_unwanted_oops_files(self):
         unwanted = set(unwanted_oops_files(self.oops_dir, 90))
-        self.failUnlessEqual(len(unwanted), 2) # One is referenced
+        self.failUnlessEqual(len(unwanted), 5) # One is referenced
         # Make sure that A666 isn't unwanted
-        unwanted_ids = set(self.path_to_oopsid(path) for path in unwanted)
+        unwanted_ids = set(path_to_oopsid(path) for path in unwanted)
         self.failUnlessEqual(
                 unwanted_ids,
-                set(['A1234', 'A5678'])
+                set(['2A1234', '2A5678', '3A666', '3A1234', '3A5678'])
                 )
+        # Make sure the paths are valid
+        for unwanted_path in unwanted:
+            self.failUnless(os.path.exists(unwanted_path))
+            self.failUnless(
+                    '2006-01' in unwanted_path,
+                    'New OOPS %s unwanted' % unwanted_path
+                    )
 
     def test_script(self):
         unwanted = unwanted_oops_files(self.oops_dir, 90)
@@ -101,10 +111,17 @@ class TestOopsPrune(unittest.TestCase):
         found_oops_files = set()
         for dirpath, dirnames, filenames in os.walk(today_dir):
             for filename in filenames:
-                found_oops_files.add(self.path_to_oopsid(filename))
+                found_oops_files.add(
+                        path_to_oopsid(os.path.join(dirpath,filename))
+                        )
+        today_day_count = (self.today - errorlog.epoch).days + 1
         self.failUnlessEqual(
                 found_oops_files,
-                set(['A666', 'A1234', 'A5678'])
+                set([
+                    '%dA666' % today_day_count,
+                    '%dA1234' % today_day_count,
+                    '%dA5678' % today_day_count,
+                    ])
                 )
 
         old_dir = os.path.join(
@@ -113,10 +130,12 @@ class TestOopsPrune(unittest.TestCase):
         found_oops_files = set()
         for dirpath, dirnames, filenames in os.walk(old_dir):
             for filename in filenames:
-                found_oops_files.add(self.path_to_oopsid(filename))
+                found_oops_files.add(
+                        path_to_oopsid(os.path.join(dirpath, filename))
+                        )
         self.failUnlessEqual(
                 found_oops_files,
-                set(['A666'])
+                set([self.referenced_oops_code])
                 )
 
 

@@ -4,12 +4,19 @@
 
 __metaclass__ = type
 
-from datetime import date, timedelta
+__all__ = [
+    'referenced_oops', 'unwanted_oops_files', 'path_to_oopsid'
+    ]
+
+from datetime import date, timedelta, datetime
 import re
 import os
 import os.path
 
+from pytz import UTC
+
 from canonical.database.sqlbase import cursor
+from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.tales import FormattersAPI
 
 def referenced_oops():
@@ -55,12 +62,19 @@ def referenced_oops():
                 'PostgreSQL regexp matched content that Python regexp ' \
                 'did not (%r)' % (content,)
             code_string = group_dict['oopscode']
-            just_the_code = re.search(
-                    '(?i)([a-z]+\d+)$', code_string
-                    ).group(1).upper()
-            referenced_codes.add(just_the_code)
+            referenced_codes.add(code_string.upper())
 
     return referenced_codes
+
+
+def path_to_oopsid(path):
+    '''Extract the OOPS id from a path to an OOPS file'''
+    date_str = os.path.basename(os.path.dirname(path))
+    match = re.search('^(\d+)-(\d+)-(\d+)$', date_str)
+    year, month, day = (int(bit) for bit in match.groups())
+    oops_id = path.split('.')[-1]
+    day = (datetime(year, month, day, tzinfo=UTC) - errorlog.epoch).days + 1
+    return '%d%s' % (day, oops_id)
 
 
 def unwanted_oops_files(root_path, days):
@@ -70,9 +84,8 @@ def unwanted_oops_files(root_path, days):
     wanted_oops = referenced_oops()
 
     for oops_path in old_oops_files(root_path, days):
-        oops_filename = os.path.basename(oops_path)
-        timestamp, oops_code = oops_filename.split('.', 1)
-        if oops_code not in wanted_oops:
+        oopsid = path_to_oopsid(oops_path)
+        if oopsid not in wanted_oops:
             yield oops_path
 
 
