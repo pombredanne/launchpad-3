@@ -23,7 +23,6 @@
     <include file="buglinktarget.zcml" />
     <include file="buginfestation.zcml" />
     <include file="bugmessage.zcml" />
-    <include file="bugnomination.zcml" />
     <include file="bugnotification.zcml" />
     <include file="bugpackageinfestation.zcml" />
     <include file="bugsubscription.zcml" />

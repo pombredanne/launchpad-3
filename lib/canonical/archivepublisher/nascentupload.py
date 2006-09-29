@@ -1574,7 +1574,18 @@ class NascentUpload:
         return candidates
 
     def _checkSourceBackports(self, uploaded_file):
-        """ """
+        """Reject source upload if it is newer than that in BACKPORTS.
+
+        If the proposed source version is newer than the newest version
+        of the same source in BACKPORTS, the upload will be rejected.
+
+        It must not be called for uploads in BACKPORTS pocket itself,
+
+        It does nothing BACKPORTS does not contain any version of the
+        proposed source.
+        """
+        assert self.pocket != PackagePublishingPocket.BACKPORTS
+
         backports = self._getPublishedSources(
             uploaded_file, PackagePublishingPocket.BACKPORTS)
 
@@ -1591,7 +1602,18 @@ class NascentUpload:
 
 
     def _checkBinaryBackports(self, uploaded_file, archtag):
-        """ """
+        """Reject binary upload if it is newer than that in BACKPORTS.
+
+        If the proposed binary version is newer than the newest version
+        of the same binary in BACKPORTS, the upload will be rejected.
+
+        It must not be called for uploads in BACKPORTS pocket itself,
+
+        It does nothing BACKPORTS does not contain any version of the
+        proposed binary.
+        """
+        assert self.pocket != PackagePublishingPocket.BACKPORTS
+
         backports = self._getPublishedBinaries(
             uploaded_file, archtag, PackagePublishingPocket.BACKPORTS)
 
@@ -1656,7 +1678,8 @@ class NascentUpload:
                         uploaded_file.package))
                     uploaded_file.new = True
 
-                self._checkSourceBackports(uploaded_file)
+                if self.pocket != PackagePublishingPocket.BACKPORTS:
+                    self._checkSourceBackports(uploaded_file)
 
             elif not uploaded_file.is_source:
                 self.logger.debug("getPublishedReleases()")
@@ -1698,7 +1721,8 @@ class NascentUpload:
                         uploaded_file.package))
                     uploaded_file.new = True
 
-                self._checkBinaryBackports(uploaded_file, archtag)
+                if self.pocket != PackagePublishingPocket.BACKPORTS:
+                    self._checkBinaryBackports(uploaded_file, archtag)
 
     def verify_acl(self):
         """Verify that the uploaded files are okay for their named components
@@ -1936,8 +1960,8 @@ class NascentUpload:
                 build.buildstate = BuildStatus.FULLYBUILT
             else:
                 # No luck. Make one.
-                build = spr.createBuild(dar, status=BuildStatus.FULLYBUILT,
-                                        pocket=self.pocket)
+                build = spr.createBuild(
+                    dar, self.pocket, status=BuildStatus.FULLYBUILT)
                 self.logger.debug("Build %s created" % build.id)
             self.policy.build = build
         else:
@@ -1950,9 +1974,7 @@ class NascentUpload:
                 build.pocket != self.pocket):
                 raise UploadError("Attempt to upload binaries specifying "
                                   "build %s, where they don't fit" % build_id)
-                
             self.policy.build = build
-            
             self.logger.debug("Build %s found" % self.policy.build.id)
 
         return self.policy.build

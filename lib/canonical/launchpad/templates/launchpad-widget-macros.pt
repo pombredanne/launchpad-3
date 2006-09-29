@@ -6,7 +6,8 @@
 
   <body>
     <metal:block define-macro="launchpad_widget_rows">
-      <div class="row" tal:repeat="widget view/widgets">
+      <div class="row" tal:define="widgets widgets|view/widgets"
+                       tal:repeat="widget widgets">
         <metal:block define-macro="launchpad_widget_row">
         
           <div class="field">
