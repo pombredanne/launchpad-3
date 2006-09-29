@@ -41,7 +41,7 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     Link, enabled_with_permission, Navigation, ApplicationMenu, stepto,
     canonical_url, LaunchpadView, StandardLaunchpadFacets,
-    LaunchpadFormView, LaunchpadEditFormView, action, custom_widget
+    LaunchpadEditFormView, action, custom_widget
     )
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.widgets.textwidgets import StrippedTextWidget
