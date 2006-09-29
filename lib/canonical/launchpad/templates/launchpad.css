@@ -253,9 +253,6 @@ ul {
   list-style-image: url(/@@/bullet);
   margin: 0.5em 0 0 24px; /* because bullet graphics are px width */
 }
-ul.menu, div.menu {
-  font-size: smaller;
-}
 ol {
   margin: 0.5em 0 0 1.5em;
 }
@@ -1209,8 +1206,36 @@ dl.faq ol {
 
 /* Dynamic menus */
 
+#menuroot li {
+  background: url(/@@/divider) center right no-repeat;
+}
+* html #menuroot li {
+  padding-right: 2em;
+}
+#menuroot li:hover {
+  background: url(/@@/divider-highlighted) center right no-repeat;
+}
+#menuroot li li:hover {
+  background: #8cacbb;
+}
+#menuroot li ul {
+  border: 1px solid red;
+}
+#menuroot li li {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  background: #dee7ec;
+}
+#menuroot li li a {
+  display: block;
+  width: 100%;
+  padding: 0 0 0 6px !important;
+}
+#menuroot li li a:hover {
+  background: #8cacbb;
+}
 ul.menuroot > li > ul.menu {
-  font-size: smaller;
   z-index: 2000;
 }
 ul.menuroot, ul.menu {
@@ -1287,6 +1312,7 @@ ul.menuroot {
 .menu .item {
   display: block;
   float: none;
+  width: 100%;
 }
 .item a {
   text-decoration: none;
