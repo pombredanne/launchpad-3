@@ -20,25 +20,25 @@ First, get a product that has some ProductSeries in the sample data.
 A ProductSeries can be retrieved using the associated product and the series
 name.
 
->>> milestones = firefox.getSeries('milestones')
+>>> trunk = firefox.getSeries('trunk')
 
 Verify that the resulting object correctly implements the IProductSeries
 interface.
 
->>> verifyObject(IProductSeries, milestones)
+>>> verifyObject(IProductSeries, trunk)
 True
 
 And verify that it looks like the series we think it should be.
 
->>> milestones.product == firefox
+>>> trunk.product == firefox
 True
->>> milestones.name
-u'milestones'
+>>> trunk.name
+u'trunk'
 
 It's also possible to ask a product for all its associated series.
 
 >>> onedotzero = firefox.getSeries('1.0')
->>> list(firefox.serieslist) == [onedotzero, milestones]
+>>> list(firefox.serieslist) == [onedotzero, trunk]
 True
 
 New ProductSeries are created using Product.newSeries.
@@ -174,7 +174,7 @@ There is one completed, declined spec:
 Now lets make b incomplete, but accepted.
 
  >>> b.delivery = SpecificationDelivery.BETA
- >>> b.status = SpecificationStatus.BRAINDUMP
+ >>> b.status = SpecificationStatus.NEW
  >>> shim = b.acceptBy(b.owner)
  >>> shim = b.updateLifecycleStatus(b.owner)
  >>> flush_database_updates()
@@ -364,4 +364,3 @@ And finally the case where they are all set:
  danner
  edgar
 
- 

@@ -11,7 +11,7 @@
              title="Informational specification"
              tal:condition="context/informational" />
 <tal:block condition="context/milestone">
-  <img src="/@@/target" />&nbsp;<a
+  <img alt="" src="/@@/milestone" />&nbsp;<a
      tal:attributes="href context/milestone/fmt:url"
      tal:content="context/milestone/name">colony3</a>
 </tal:block>

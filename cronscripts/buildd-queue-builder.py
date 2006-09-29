@@ -15,14 +15,16 @@ from optparse import OptionParser
 
 from zope.component import getUtility
 
+from sourcerer.deb.version import Version
+
+from canonical.lp import initZopeless, READ_COMMITTED_ISOLATION
 from canonical.config import config
+from canonical.buildmaster.master import BuilddMaster
+
 from canonical.launchpad.interfaces import IDistroArchReleaseSet
-from canonical.launchpad.scripts.builddmaster import BuilddMaster
 from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger)
-from canonical.lp import (
-    initZopeless, READ_COMMITTED_ISOLATION)
 
 _default_lockfile = '/var/lock/buildd-master.lock'
 
@@ -42,7 +44,8 @@ def rebuildQueue(log, tm):
     # For each distrorelease we care about; scan for sourcepackagereleases
     # with no build associated with the distroarchreleases we're
     # interested in
-    for distrorelease in distroreleases:
+    for distrorelease in sorted(distroreleases,
+        key=lambda x: (x.distribution, Version(x.version))):
         buildMaster.createMissingBuilds(distrorelease)
 
     # inspect depwaiting and look retry those which seems possible

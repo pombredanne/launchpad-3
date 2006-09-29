@@ -40,9 +40,6 @@
               <a href="/products/rosetta/+bugs">Rosetta</a>
             </li>
             <li>
-              <a href="/products/launchpad-cal/+bugs">Calendar</a>
-            </li>
-            <li>
               <a href="/products/soyuz/+bugs">distribution management</a>
             </li>
             <li>
@@ -53,7 +50,7 @@
         <li>
           <p>
             Got an idea for a new feature? Search
-            <a href="https://launchpad.net/projects/launchpad/+specs"
+            <a href="https://launchpad.net/projects/launchpad-project/+specs"
             >Blueprint</a> to see if it&#8217;s planned.
             If not,
             write up the summary, and discuss it with us on IRC.

@@ -27,11 +27,11 @@ To create a new Specification, use ISpecificationSet.new:
     >>> print newspec.name
     mng
 
-It should be possible to retrieve a specification by its name 
+It should be possible to retrieve a specification by its name
     >>> upstream_firefox.getSpecification('mng').name
     u'mng'
 
-And if we try to retrieve a non-existent specification we should get None 
+And if we try to retrieve a non-existent specification we should get None
     >>> print upstream_firefox.getSpecification('nonexistentspec')
     None
 
@@ -89,9 +89,10 @@ ISpecification.getDelta(). If there are no changes, None will be
 returned:
 
     >>> from canonical.database.constants import UTC_NOW
+    >>> from canonical.launchpad.interfaces import IBugSet
     >>> from canonical.launchpad.webapp.snapshot import Snapshot
-    >>> from canonical.launchpad.interfaces import ISpecification
-    >>> unmodified_spec = Snapshot(ubuspec, providing=ISpecification)
+    >>> from zope.interface import providedBy
+    >>> unmodified_spec = Snapshot(ubuspec, providing=providedBy(ubuspec))
     >>> ubuspec.getDelta(unmodified_spec, jdub) is None
     True
 
@@ -108,7 +109,7 @@ Now, let's do a bunch of changes, and see what the result looks like:
     >>> ubuspec.approver = sabdfl
     >>> ubuspec.assignee = jdub
     >>> ubuspec.drafter = jdub
-    >>> ubuspec.linkBug(2)
+    >>> ubuspec.linkBug(getUtility(IBugSet).get(2))
     <...>
 
     >>> delta = ubuspec.getDelta(unmodified_spec, jdub)
@@ -309,8 +310,8 @@ We can change our mind, and decline the goal now.
 And finally, if we propose a new goal, then the decision status is
 invalidated.
 
- >>> ms = upstream_firefox.getSeries('milestones')
- >>> e4x.proposeGoal(ms, sabdfl)
+ >>> trunk = upstream_firefox.getSeries('trunk')
+ >>> e4x.proposeGoal(trunk, sabdfl)
  >>> e4x.goalstatus.title
  'Proposed'
  >>> e4x.goal_decider is not None
@@ -333,7 +334,7 @@ We will use the "canvas" spec to show of this lifecycle tracking.
 First, lets show that canvas has not really progressed very far.
 
  >>> canvas.status.title
- 'Braindump'
+ 'New'
  >>> canvas.delivery.title
  'Unknown'
  >>> print canvas.starter
@@ -458,5 +459,3 @@ And finally show the rollback to "started".
  False
  >>> canvas.date_completed is not None
  False
-
-

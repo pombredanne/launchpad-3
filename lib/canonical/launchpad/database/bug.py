@@ -2,12 +2,12 @@
 """Launchpad bug-related database table classes."""
 
 __metaclass__ = type
-__all__ = ['Bug', 'BugSet', 'get_bug_tags']
+__all__ = ['Bug', 'BugSet', 'get_bug_tags', 'get_bug_tags_open_count']
 
+import operator
+import re
 from cStringIO import StringIO
 from email.Utils import make_msgid
-import re
-from sets import Set
 
 from zope.app.content_types import guess_content_type
 from zope.component import getUtility
@@ -21,7 +21,8 @@ from sqlobject import SQLObjectNotFound
 from canonical.launchpad.interfaces import (
     IBug, IBugSet, ICveSet, NotFoundError, ILaunchpadCelebrities,
     IDistroBugTask, IDistroReleaseBugTask, ILibraryFileAliasSet,
-    IBugAttachmentSet, IMessage, IUpstreamBugTask)
+    IBugAttachmentSet, IMessage, IUpstreamBugTask,
+    UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT
@@ -33,13 +34,18 @@ from canonical.launchpad.database.message import (
     MessageSet, Message, MessageChunk)
 from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugtask import (
-    BugTask, BugTaskSet, bugtask_sort_key)
+    BugTask, BugTaskSet, bugtask_sort_key, get_bug_privacy_filter)
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent)
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lp.dbschema import BugAttachmentType
+
+
+_bug_tag_query_template = """
+        SELECT %(columns)s FROM %(tables)s WHERE
+            %(condition)s GROUP BY BugTag.tag ORDER BY BugTag.tag"""
 
 
 def get_bug_tags(context_clause):
@@ -49,12 +55,53 @@ def get_bug_tags(context_clause):
     specific context. The SQL clause can only use the BugTask table to
     choose the context.
     """
+    from_tables = ['BugTag', 'BugTask']
+    select_columns = ['BugTag.tag']
+    conditions = ['BugTag.bug = BugTask.bug', '(%s)' % context_clause]
+
     cur = cursor()
-    cur.execute(
-        "SELECT DISTINCT BugTag.tag FROM BugTag, BugTask WHERE"
-        " BugTag.bug = BugTask.bug AND (%s) ORDER BY BugTag.tag" % (
-            context_clause))
+    cur.execute(_bug_tag_query_template % dict(
+            columns=', '.join(select_columns),
+            tables=', '.join(from_tables),
+            condition=' AND '.join(conditions)))
     return shortlist([row[0] for row in cur.fetchall()])
+
+
+def get_bug_tags_open_count(maincontext_clause, user,
+                            count_subcontext_clause=None):
+    """Return all the used bug tags with their open bug count.
+
+    maincontext_clause is a SQL condition clause, limiting the used tags
+    to a specific context.
+    count_subcontext_clause is a SQL condition clause, limiting the open bug
+    count to a more limited context, for example a source package.
+
+    Both SQL clauses may only use the BugTask table to choose the context.
+    """
+    from_tables = ['BugTag', 'BugTask', 'Bug']
+    count_conditions = ['BugTask.status IN (%s)' % ','.join(
+        sqlvalues(*UNRESOLVED_BUGTASK_STATUSES))]
+    if count_subcontext_clause:
+        count_conditions.append(count_subcontext_clause)
+    select_columns = [
+        'BugTag.tag',
+        'COUNT (CASE WHEN %s THEN Bug.id ELSE NULL END)' %
+            ' AND '.join(count_conditions),
+        ]
+    conditions = [
+        'BugTag.bug = BugTask.bug',
+        'Bug.id = BugTag.bug',
+        '(%s)' % maincontext_clause]
+    privacy_filter = get_bug_privacy_filter(user)
+    if privacy_filter:
+        conditions.append(privacy_filter)
+
+    cur = cursor()
+    cur.execute(_bug_tag_query_template % dict(
+            columns=', '.join(select_columns),
+            tables=', '.join(from_tables),
+            condition=' AND '.join(conditions)))
+    return shortlist([(row[0], row[1]) for row in cur.fetchall()])
 
 
 class BugTag(SQLBase):
@@ -111,6 +158,7 @@ class Bug(SQLBase):
     cves = SQLRelatedJoin('Cve', intermediateTable='BugCve',
         orderBy='sequence', joinColumn='bug', otherColumn='cve')
     cve_links = SQLMultipleJoin('BugCve', joinColumn='bug', orderBy='id')
+    # XXX: why is subscriptions ordered by ID? -- kiko, 2006-09-23
     subscriptions = SQLMultipleJoin(
             'BugSubscription', joinColumn='bug', orderBy='id',
             prejoins=["person"])
@@ -136,7 +184,7 @@ class Bug(SQLBase):
     @property
     def bugtasks(self):
         """See IBug."""
-        result = BugTask.selectBy(bugID=self.id)
+        result = BugTask.selectBy(bug=self)
         result.prejoin(["assignee"])
         return sorted(result, key=bugtask_sort_key)
 
@@ -170,7 +218,7 @@ class Bug(SQLBase):
         if person is None:
             return False
 
-        bs = BugSubscription.selectBy(bugID=self.id, personID=person.id)
+        bs = BugSubscription.selectBy(bug=self, person=person)
         return bool(bs.count())
 
     def getDirectSubscribers(self):
@@ -222,11 +270,12 @@ class Bug(SQLBase):
         # Direct subscriptions always take precedence over indirect
         # subscriptions.
         direct_subscribers = set(self.getDirectSubscribers())
-        return list(indirect_subscribers.difference(direct_subscribers))
+        return sorted(indirect_subscribers.difference(direct_subscribers),
+                      key=operator.attrgetter('id'))
 
     def notificationRecipientAddresses(self):
         """See canonical.launchpad.interfaces.IBug."""
-        emails = Set()
+        emails = set()
         for direct_subscriber in self.getDirectSubscribers():
             emails.update(contactEmailAddresses(direct_subscriber))
 
@@ -238,7 +287,7 @@ class Bug(SQLBase):
                 "Indirect subscribers found on private bug. "
                 "A private bug should never have implicit subscribers!")
 
-        return list(emails)
+        return sorted(emails)
 
     def addChangeNotification(self, text, person, when=None):
         """See IBug."""
@@ -259,7 +308,7 @@ class Bug(SQLBase):
         msg = Message(
             parent=parent, owner=owner, subject=subject,
             rfc822msgid=make_msgid('malone'))
-        MessageChunk(messageID=msg.id, content=content, sequence=1)
+        MessageChunk(message=msg, content=content, sequence=1)
 
         bugmsg = BugMessage(bug=self, message=msg)
 
@@ -320,7 +369,7 @@ class Bug(SQLBase):
 
     def hasBranch(self, branch):
         """See canonical.launchpad.interfaces.IBug."""
-        branch = BugBranch.selectOneBy(branchID=branch.id, bugID=self.id)
+        branch = BugBranch.selectOneBy(branch=branch, bug=self)
 
         return branch is not None
 
@@ -365,17 +414,24 @@ class Bug(SQLBase):
             BugMessage.message = Message.id AND
             BugMessage.bug = %s
             """ % sqlvalues(self),
-            prejoins=["message", "message.owner"],
             clauseTables=["BugMessage", "Message"],
-            orderBy=["Message.datecreated", "MessageChunk.sequence"])
+            # XXX: See bug 60745. There is an issue that presents itself
+            # here if we prejoin message.owner: because Message is
+            # already in the clauseTables, the SQL generated joins
+            # against message twice and that causes the results to
+            # break. -- kiko, 2006-09-16
+            prejoinClauseTables=["Message"],
+            # Note the ordering by Message.id here; while datecreated in
+            # production is never the same, it can be in the test suite.
+            orderBy=["Message.datecreated", "Message.id",
+                     "MessageChunk.sequence"])
         return chunks
 
     def _getTags(self):
         """Get the tags as a sorted list of strings."""
         tags = [
             bugtag.tag
-            for bugtag in BugTag.selectBy(
-                bugID=self.id, orderBy='tag')
+            for bugtag in BugTag.selectBy(bug=self, orderBy='tag')
             ]
         return tags
 
@@ -388,7 +444,7 @@ class Bug(SQLBase):
         added_tags = new_tags.difference(old_tags)
         removed_tags = old_tags.difference(new_tags)
         for removed_tag in removed_tags:
-            tag = BugTag.selectOneBy(bugID=self.id, tag=removed_tag)
+            tag = BugTag.selectOneBy(bug=self, tag=removed_tag)
             tag.destroySelf()
         for added_tag in added_tags:
             BugTag(bug=self, tag=added_tag)
@@ -511,8 +567,8 @@ class BugSet:
                 subject=params.title, distribution=params.distribution,
                 rfc822msgid=rfc822msgid, owner=params.owner)
             MessageChunk(
-                messageID=params.msg.id, sequence=1, content=params.comment,
-                blobID=None)
+                message=params.msg, sequence=1, content=params.comment,
+                blob=None)
 
         # Extract the details needed to create the bug and optional msg.
         if not params.description:
@@ -523,7 +579,7 @@ class BugSet:
 
         bug = Bug(
             title=params.title, description=params.description,
-            private=params.private, owner=params.owner.id,
+            private=params.private, owner=params.owner,
             datecreated=params.datecreated,
             security_related=params.security_related)
 

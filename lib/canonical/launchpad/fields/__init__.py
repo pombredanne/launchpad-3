@@ -1,6 +1,6 @@
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 
-from zope.schema import Password, Text, TextLine, Field, Int
+from zope.schema import Choice, Field, Int, Text, TextLine, Password
 from zope.schema.interfaces import IPassword, IText, ITextLine, IField, IInt
 from zope.interface import implements, Attribute
 
@@ -21,6 +21,9 @@ class ISummary(IText):
 
 class IDescription(IText):
     """A Field that implements a Description"""
+
+class IWhiteboard(IText):
+    """A Field that implements a Whiteboard"""
 
 class ITimeInterval(ITextLine):
     """A field that captures a time interval in days, hours, minutes."""
@@ -119,6 +122,12 @@ class Summary(Text):
 # A field capture a Launchpad object description
 class Description(Text):
     implements(IDescription)
+
+
+# Whiteboard
+# A field capture a Launchpad object whiteboard
+class Whiteboard(Text):
+    implements(IWhiteboard)
 
 
 # TimeInterval
@@ -242,4 +251,31 @@ class ShipItReason(Text):
 
 class ShipItQuantity(Int):
     implements(IShipItQuantity)
+
+
+class ProductBugTracker(Choice):
+    """A bug tracker used by a Product.
+
+    It accepts all the values in the vocabulary, as well as a special
+    marker object, which represents the Malone bug tracker.
+    This field uses two attributes to model its state, 'official_malone'
+    and 'bugtracker'
+    """
+    malone_marker = object()
+
+    def get(self, ob):
+        if ob.official_malone:
+            return self.malone_marker
+        else:
+            return ob.bugtracker
+
+    def set(self, ob, value):
+        if self.readonly:
+            raise TypeError("Can't set values on read-only fields.")
+        if value is self.malone_marker:
+            ob.official_malone = True
+            ob.bugtracker = None
+        else:
+            ob.official_malone = False
+            ob.bugtracker = value
 

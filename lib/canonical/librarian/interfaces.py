@@ -4,11 +4,16 @@ __metaclass__ = type
 
 from zope.interface import Interface
 
-class UploadFailed(Exception):
+
+class LibrarianFailure(Exception):
+    """Base class for failures trying to use the libararian."""
+
+
+class UploadFailed(LibrarianFailure):
     pass
 
 
-class DownloadFailed(Exception):
+class DownloadFailed(LibrarianFailure):
     pass
 
 

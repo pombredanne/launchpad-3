@@ -147,3 +147,37 @@ def spec_modified(spec, event):
                 distribution=spec.distribution)
 
 
+def _assignKarmaUsingTicketContext(person, ticket, actionname):
+    """Assign Karma with the given actionname to the given person.
+
+    Use the given ticket's context as the karma context.
+    """
+    person.assignKarma(
+        actionname, product=ticket.product, distribution=ticket.distribution,
+        sourcepackagename=ticket.sourcepackagename)
+
+
+def ticket_modified(ticket, event):
+    """Check changes made to <ticket> and assign karma to user if needed."""
+    user = event.user
+    old_ticket = event.object_before_modification
+
+    if old_ticket.description != ticket.description:
+        _assignKarmaUsingTicketContext(
+            user, ticket, 'ticketdescriptionchanged')
+
+    if old_ticket.title != ticket.title:
+        _assignKarmaUsingTicketContext(user, ticket, 'tickettitlechanged')
+
+
+def ticket_comment_added(ticketmessage, event):
+    """Assign karma to the user which added <ticketmessage>."""
+    ticket = ticketmessage.ticket
+    _assignKarmaUsingTicketContext(event.user, ticket, 'ticketcommentadded')
+
+
+def ticket_bug_added(ticketbug, event):
+    """Assign karma to the user which added <ticketbug>."""
+    ticket = ticketbug.ticket
+    _assignKarmaUsingTicketContext(event.user, ticket, 'ticketlinkedtobug')
+

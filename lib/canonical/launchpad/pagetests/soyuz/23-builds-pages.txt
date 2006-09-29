@@ -1,0 +1,117 @@
+
+Those pages are based in the BuildRecordView class and
+template/builds-list.pt. Basically they have a buildstate selector
+action via HTTP GET and present a batched list of build records
+according the selected buildstate, by default All
+
+  >>> def check_optional_search(contents):
+  ...     """Check if the label and/or the field for the optional
+  ...     "names containing" search are present in the given page contents.
+  ...
+  ...     Return "present" if they're both here, "not present" if they're
+  ...     both not here, and "mismatch" if only one or the other is here.
+  ...     """
+  ...
+  ...     label_present = "with names containing:" in contents
+  ...     field_present = '<input id="build_text"' in contents
+  ...     if label_present and field_present:
+  ...         return "present"
+  ...     elif not label_present and not field_present:
+  ...         return "not present"
+  ...     else:
+  ...         return "mismatch"
+
+Check the contents of the distro builds list page.
+
+  >>> browser.open("http://localhost/distros/ubuntu/+builds")
+
+Check the presence of some build titles, specially the 'not
+initialized' one (fix bug #52704)
+
+ * SUPERSEDED and NEEDSBUILD builds contain title
+ * MANUALDEWAIT builds contain: title, dependencies-line, start,
+   finished, duration and a link to the build log.
+
+  >>> browser.getControl(name="build_state").value = ['all']
+  >>> browser.getControl("Update").click()
+  >>> browser.contents
+  '...NEEDSBUILD...
+  ...i386 build of at 0.00 in ubuntu warty RELEASE...
+  ...SUPERSEDED...
+  ...i386 build of at 0.00 in ubuntu warty RELEASE...
+  ...SUPERSEDED...
+  ...i386 build of linux-source-2.6.15 2.6.15.3 in ubuntu warty RELEASE...
+  ...SUPERSEDED...
+  ... i386 build of netapplet 0.99.6-1 in ubuntu warty RELEASE...
+  ...MANUALDEPWAIT...
+  ...i386 build of libstdc++ b8p in ubuntu hoary RELEASE...
+  ...Missing Dependencies...
+  ...cpp (&gt;= 4:4.0.1-3), gcc-4.0 (&gt;= 4.0.1-2)...
+  ...Built started:...
+  ...2006-02-27 23:53:59 UTC...
+  ...Bob The Builder...
+  ...Build finished:...
+  ...2006-02-28 00:00:01 UTC...
+  ...six minutes...see the log...'
+
+  >>> browser.getControl(name="build_state").value = ['built']
+  >>> browser.getControl("Update").click()
+  >>> browser.contents
+  '...i386 build of mozilla-firefox 0.9 in ubuntu warty...'
+
+On this page, the "names containing" search field appears.
+
+  >>> print check_optional_search(browser.contents)
+  present
+
+Check the results of some searches on build state.
+
+  >>> browser.getControl(name="build_state").value = ['built']
+  >>> browser.getControl("Update").click()
+  >>> browser.contents
+  '...i386 build of pmount 0.1-1 in ubuntu hoary...
+  ...i386 build of mozilla-firefox 0.9 in ubuntu warty...'
+
+  >>> browser.getControl(name="build_state").value = ['depwait']
+  >>> browser.getControl("Update").click()
+  >>> browser.contents
+  '...i386 build of libstdc++ b8p in ubuntu hoary...'
+
+  >>> browser.getControl(name="build_state").value = ['failed']
+  >>> browser.getControl("Update").click()
+  >>> browser.contents
+  '...i386 build of pmount 0.1-1 in ubuntu warty...'
+
+Since the other pages tends to present a similar result and use, in
+fact, the same mechanisms, we simply check if they render with no
+tracebacks:
+
+  >>> browser.open("http://localhost/distros/ubuntu/hoary/+builds")
+  >>> browser.open("http://localhost/distros/ubuntu/hoary/+source/pmount/+builds")
+
+We check that the "names containing" field doesn't appear on the build list
+for an individual package.
+
+  >>> print check_optional_search(browser.contents)
+  not present
+
+  >>> browser.open("http://localhost/+builds/+build/7")
+
+Checking UnexpectedFormData on unknown build_state values (bug #41104)
+
+  >>> browser.open("http://localhost/+builds/bob/+history?build_state=foo")
+  Traceback (most recent call last):
+  ...
+  UnexpectedFormData: No suitable state found for value "foo"
+
+Checking that we show the right message for a distribution that doesn't have any
+builds.
+
+  >>> browser.open("http://launchpad.dev/distros/debian/+builds")
+  >>> browser.contents
+  '...No Currently building builds for Debian GNU/Linux...'
+
+  >>> browser.getControl(name="build_state").value = ['all']
+  >>> browser.getControl("Update").click()
+  >>> browser.contents
+  '...No builds for Debian GNU/Linux...'

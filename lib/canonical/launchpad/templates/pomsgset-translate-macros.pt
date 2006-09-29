@@ -5,7 +5,7 @@
       :submissions: A list of IPOSubmission objects.
   </tal:comment>
   <tal:block condition="submissions">
-    <tr class="secondary">
+    <tr class="secondary translation">
       <th colspan="3" style="border: inherit;">
         <label><metal:title define-slot="suggestion-title" />:</label>
       </th>
@@ -22,9 +22,12 @@
               tal:content="submission/potranslation/translation"
               >suggestion</div>
             <div class="discreet">
-              &mdash;
+              &mdash; By
               <a tal:content="submission/person/browsername"
-                 tal:attributes="href submission/person/fmt:url">Foo Bar</a>
+                 tal:attributes="href submission/person/fmt:url" >Foo</a> on
+              <span tal:content="submission/datecreated/fmt:datetime">
+                2006-08-05 01:04 UTC
+              </span>
             </div>
           </tal:submission>
         </tal:block>
@@ -41,9 +44,12 @@
                   "structure submission/potranslation/translation/fmt:text-to-html"
                 >suggestion</div>
               <div class="discreet">
-                &mdash;
+                &mdash; By
                 <a tal:content="submission/person/browsername"
-                   tal:attributes="href submission/person/fmt:url" >Foo Bar</a>
+                   tal:attributes="href submission/person/fmt:url" >Foo</a> on
+                <span tal:content="submission/datecreated/fmt:datetime">
+                  2006-08-05 01:04 UTC
+                </span>
                 <tal:block
                   define="submissions_remaining python:len(submissions)-1"
                   condition="submissions_remaining">
@@ -64,9 +70,12 @@
                   "structure submission/potranslation/translation/fmt:text-to-html"
                 >suggestion</div>
               <div class="discreet">
-                &mdash;
+                &mdash; By
                 <a tal:content="submission/person/browsername"
-                   tal:attributes="href submission/person/fmt:url" >Foo Bar</a>
+                   tal:attributes="href submission/person/fmt:url" >Foo</a> on
+                <span tal:content="submission/datecreated/fmt:datetime">
+                  2006-08-05 01:04 UTC
+                </span>
               </div>
             </tal:submission>
           </tal:maxentries>
@@ -80,7 +89,7 @@
   This macro expects the following variable defined:
       :pomsgset_view: An IPOMsgSet View.
   </tal:comment>
-  <tr>
+  <tr class="translation">
     <td style="text-align: right;">
       <span tal:replace="pomsgset_view/sequence">1</span>.
       <input
@@ -109,7 +118,7 @@
       The original text.
     </td>
   </tr>
-  <tr class="secondary" tal:condition="pomsgset_view/is_plural">
+  <tr class="secondary translation" tal:condition="pomsgset_view/is_plural">
     <th colspan="3">
       <label>English plural:</label>
     </th>
@@ -118,20 +127,61 @@
       plural source
     </td>
   </tr>
-  <tr class="discreet secondary" tal:condition="pomsgset_view/msgid_has_tab">
-    <td colspan="4" />
+  <tr
+    tal:condition="pomsgset_view/msgid_has_tab"
+    class="discreet secondary translation"
+  >
+    <td colspan="2" />
+    <th>
+      <img alt="Note:" src="/@@/info" title="This is a note to translators" />
+    </th>
+    <td />
     <td>
-      <img
-        alt="Note:"
-        src="/@@/info"
-        title="This is a note to translators"
-        />
       <code>[tab]</code> represents a tab character.
       Please write it exactly the same way, <code>[tab]</code>, in your
       translation.
     </td>
   </tr>
-  <tr class="discreet secondary" tal:condition="pomsgset_view/source_comment">
+  <tr
+    tal:condition="pomsgset_view/msgid_has_newline"
+    class="discreet secondary translation"
+  >
+    <td colspan="2" />
+    <th>
+      <img alt="Note:" src="/@@/info" title="This is a note to translators" />
+    </th>
+    <td />
+    <td>
+      <img
+        alt="There are line breaks here. Each one"
+        src="/@@/translation-newline"
+      />
+      represents a line break.
+      Start a new line in the equivalent position in the translation.
+    </td>
+  </tr>
+  <tr
+    tal:condition="pomsgset_view/msgid_has_leading_or_trailing_space"
+    class="discreet secondary translation"
+  >
+    <td colspan="2" />
+    <th>
+      <img alt="Note:" src="/@@/info" title="This is a note to translators" />
+    </th>
+    <td />
+    <td>
+      <img
+        alt="There are leading/trailing spaces here. Each one"
+        src="/@@/translation-space"
+      />
+      represents a space character.
+      Enter a space in the equivalent position in the translation.
+    </td>
+  </tr>
+  <tr
+    tal:condition="pomsgset_view/source_comment"
+    class="discreet secondary translation"
+  >
     <td colspan="4" />
     <td>
       <img
@@ -233,6 +283,23 @@
         </tal:block>
       </td>
     </tr>
+    <tal:active
+      define="active python:pomsgset_view.context.getActiveSubmission(index)"
+      condition="active">
+      <tr class="discreet secondary">
+        <th colspan="3" style="padding-bottom: 1em;">
+          Translated by:
+        </th>
+        <td class="icon left right" />
+        <td style="overflow: auto;">
+          <a tal:content="active/person/browsername"
+             tal:attributes="href active/person/fmt:url">Foo Bar</a> on
+          <span tal:content="active/datecreated/fmt:datetime">
+            2006-08-05 01:04 UTC
+          </span>
+        </td>
+      </tr>
+    </tal:active>
     <tal:block
       define="submissions python:pomsgset_view.get_suggested_submissions(index)">
       <metal:submissions

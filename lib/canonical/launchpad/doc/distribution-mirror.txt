@@ -8,10 +8,11 @@ to create a new mirror you should use the Distribution.newMirror method.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, IPersonSet, ICountrySet, IDistroReleaseSet,
-    ...     IDistroArchReleaseSet, IDistributionMirrorSet)
+    ...     IDistroArchReleaseSet, IDistributionMirrorSet,
+    ...     ILibraryFileAliasSet)
     >>> from canonical.lp.dbschema import (
     ...     PackagePublishingPocket, MirrorSpeed, MirrorContent,
-    ...     PackagePublishingStatus)
+    ...     PackagePublishingStatus, MirrorStatus)
     >>> mirrorset = getUtility(IDistributionMirrorSet)
     >>> distroset = getUtility(IDistributionSet)
     >>> ubuntu = distroset.get(1)
@@ -22,6 +23,8 @@ to create a new mirror you should use the Distribution.newMirror method.
     >>> http_base_url = 'http://foo.bar.com/pub'
     >>> new_mirror = ubuntu.newMirror(
     ...     owner, speed, country, content, http_base_url=http_base_url)
+    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+    >>> LibrarianTestSetup().setUp()
 
 When a new mirror is created we'll generate a unique name for it, based on its
 host name and content.
@@ -107,25 +110,25 @@ From every distribution, you can easily get a list with its official ARCHIVE
 or RELEASE mirrors. This is available through the archive_mirrors and 
 release_mirrors properties of IDistribution.
 
-    >>> [(mirror.name, mirror.country.name) 
+    >>> [(mirror.name, mirror.speed.title, mirror.country.name) 
     ...  for mirror in ubuntu.archive_mirrors]
-    [(u'archive-mirror', u'Afghanistan'),
-     (u'archive-404-mirror', u'British Indian Ocean Territory'),
-     (u'archive-mirror2', u'Antarctica')]
+    [(u'archive-404-mirror', '2 Mbps', u'British Indian Ocean Territory'),
+     (u'archive-mirror', '128 Kbps', u'Afghanistan'),
+     (u'archive-mirror2', '128 Kbps', u'Antarctica')]
 
-    >>> [(mirror.name, mirror.country.name) 
+    >>> [(mirror.name, mirror.speed.title, mirror.country.name) 
     ...  for mirror in ubuntu.release_mirrors]
-    [(u'unreachable-mirror', u'British Indian Ocean Territory'),
-     (u'releases-mirror', u'British Indian Ocean Territory'),
-     (u'releases-mirror2', u'Germany')]
+    [(u'releases-mirror', '2 Mbps', u'British Indian Ocean Territory'),
+     (u'releases-mirror2', '2 Mbps', u'Germany'),
+     (u'unreachable-mirror', '512 Kbps', u'British Indian Ocean Territory')]
 
 The list of unofficial mirrors can easily be obtained, so that the
 distribution owner can see them and mark the ones that should be official.
 
-    >>> [(mirror.name, mirror.country.name) 
+    >>> [(mirror.name, mirror.speed.title, mirror.country.name) 
     ...  for mirror in ubuntu.unofficial_mirrors]
-    [(u'invalid-mirror', u'British Indian Ocean Territory'),
-     (u'foo.bar.com-archive', u'Brazil')]
+    [(u'foo.bar.com-archive', '2 Mbps', u'Brazil'),
+     (u'invalid-mirror', '2 Mbps', u'British Indian Ocean Territory')]
 
 It's possible to retrieve a mirror by its name:
 
@@ -151,14 +154,12 @@ The getBy*Url methods return the corresponding mirrors:
 
     >>> http_mirror = mirrorset.getByHttpUrl(
     ...     'http://localhost:11375/valid-mirror')
-    >>> verifyObject(IDistributionMirror, http_mirror)
-    True
 
     >>> print mirrorset.getByHttpUrl('http://non-existent-url')
     None
 
     >>> ftp_mirror = mirrorset.getByFtpUrl('ftp://localhost/example-ftp')
-    >>> verifyObject(IDistributionMirror, ftp_mirror)
+    >>> ftp_mirror.has_ftp_or_rsync_base_url
     True
 
     >>> print mirrorset.getByFtpUrl('ftp://non-existent-url')
@@ -166,7 +167,7 @@ The getBy*Url methods return the corresponding mirrors:
 
     >>> rsync_mirror = mirrorset.getByRsyncUrl(
     ...     'rsync://localhost/example-rsync')
-    >>> verifyObject(IDistributionMirror, rsync_mirror)
+    >>> rsync_mirror.has_ftp_or_rsync_base_url
     True
 
     >>> print mirrorset.getByRsyncUrl('rsync://non-existent-url')
@@ -185,11 +186,11 @@ that weren't probed in the last 23 (the value of PROBE_INTERVAL) hours.
 
     >>> [mirror.name
     ...  for mirror in mirrorset.getMirrorsToProbe(MirrorContent.ARCHIVE)]
-    [u'archive-mirror', u'archive-404-mirror', u'archive-mirror2']
+    [u'archive-404-mirror', u'archive-mirror', u'archive-mirror2']
 
     >>> [mirror.name
     ...  for mirror in mirrorset.getMirrorsToProbe(MirrorContent.RELEASE)]
-    [u'unreachable-mirror', u'releases-mirror', u'releases-mirror2']
+    [u'releases-mirror', u'releases-mirror2', u'unreachable-mirror']
 
     >>> valid_mirror = mirrorset[1]
     >>> valid_mirror.name
@@ -199,8 +200,11 @@ that weren't probed in the last 23 (the value of PROBE_INTERVAL) hours.
     >>> from StringIO import StringIO
     >>> log_file = StringIO()
     >>> log_file.write("Fake probe, nothing useful here.")
-    >>> proberecord = valid_mirror.newProbeRecord(log_file)
-    >>> flush_database_updates()
+    >>> log_file.seek(0)
+    >>> library_alias = getUtility(ILibraryFileAliasSet).create(
+    ...     name='foo', size=len(log_file.getvalue()),
+    ...     file=log_file, contentType='text/plain')
+    >>> proberecord = valid_mirror.newProbeRecord(library_alias)
 
     >>> [mirror.name
     ...  for mirror in mirrorset.getMirrorsToProbe(MirrorContent.ARCHIVE)]
@@ -208,7 +212,7 @@ that weren't probed in the last 23 (the value of PROBE_INTERVAL) hours.
 
     >>> [mirror.name
     ...  for mirror in mirrorset.getMirrorsToProbe(MirrorContent.RELEASE)]
-    [u'unreachable-mirror', u'releases-mirror', u'releases-mirror2']
+    [u'releases-mirror', u'releases-mirror2', u'unreachable-mirror']
 
     The getMirrorsToProbe() method also accepts a ignore_last_probe argument,
     that, if True, will ignore previous probe records for all mirrors.
@@ -216,24 +220,16 @@ that weren't probed in the last 23 (the value of PROBE_INTERVAL) hours.
     >>> mirrors = mirrorset.getMirrorsToProbe(
     ...     MirrorContent.ARCHIVE, ignore_last_probe=True)
     >>> [mirror.name for mirror in mirrors]
-    [u'archive-mirror', u'archive-404-mirror', u'archive-mirror2']
-
-    Now we change delete the MirrorProbeRecord we've just created, to make
-    sure this mirror is probed by our prober script.
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> naked_record = removeSecurityProxy(proberecord)
-    >>> naked_record.destroySelf()
-    >>> flush_database_updates()
+    [u'archive-404-mirror', u'archive-mirror', u'archive-mirror2']
 
 If when we finish probing a mirror, that mirror doesn't have any
 MirrorDistroReleaseSource of MirrorDistroArchRelease, that mirror is marked as
 disabled and a notification is sent to its owner and to the distribution's
 mirror admin. This is done using IDistributionMirror.disableAndNotifyOwner().
 
-    >>> other_mirror = mirrorset[2]
-    >>> other_mirror.enabled
+    >>> valid_mirror.enabled
     True
-    >>> other_mirror.disableAndNotifyOwner()
+    >>> valid_mirror.disableAndNotifyOwner()
 
     Commit, so the email is actually sent.
     >>> import transaction
@@ -251,14 +247,19 @@ mirror admin. This is done using IDistributionMirror.disableAndNotifyOwner().
     >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_message)
     >>> msg['To']
-    'Foo Bar <foo.bar@canonical.com>'
-    >>> other_mirror.enabled
+    'Mark Shuttleworth <mark@hbd.com>'
+    >>> valid_mirror.enabled
     False
 
     Enable the mirror again.
     >>> from canonical.launchpad.ftests import login
-    >>> login('foo.bar@canonical.com')
-    >>> other_mirror.enabled = True
+    >>> valid_mirror.enabled = True
+
+    Now we delete the MirrorProbeRecord we've just created, to make
+    sure this mirror is probed by our prober script.
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> naked_record = removeSecurityProxy(proberecord)
+    >>> naked_record.destroySelf()
     >>> flush_database_updates()
     >>> transaction.commit()
 
@@ -482,11 +483,11 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     >>> http_server.tearDown()
     >>> transaction.commit()
 
-    >>> [(mirror.name, mirror.country.name) 
+    >>> [(mirror.name, mirror.speed.title, mirror.country.name) 
     ...  for mirror in ubuntu.disabled_mirrors]
-    [(u'unreachable-mirror', u'British Indian Ocean Territory'),
-     (u'archive-404-mirror', u'British Indian Ocean Territory'),
-     (u'foo.bar.com-archive', u'Brazil')]
+    [(u'archive-404-mirror', '2 Mbps', u'British Indian Ocean Territory'),
+     (u'foo.bar.com-archive', '2 Mbps', u'Brazil'),
+     (u'unreachable-mirror', '512 Kbps', u'British Indian Ocean Territory')]
 
 
 Mirror content
@@ -497,9 +498,7 @@ them.
 
 First, let's check the source and arch releases of one archive mirror.
 
-    >>> ubuntu.archive_mirrors.count()
-    2
-    >>> archive_mirror = ubuntu.archive_mirrors[0]
+    >>> archive_mirror = mirrorset.getByName('archive-mirror')
     >>> archive_mirror.name
     u'archive-mirror'
 
@@ -521,3 +520,32 @@ First, let's check the source and arch releases of one archive mirror.
     (u'Warty', 'Up to date')
     (u'Hoary', 'Up to date')
 
+Because all MirrorDistroArchReleases and MirrorDistroReleaseSources of this
+mirror have 'Up to date' as status, this mirror's overall status will also be
+'Up to date'.
+
+    >>> archive_mirror.getOverallStatus().title
+    'Up to date'
+
+
+Now we check the MirrorCDImageDistroReleases of a release mirror.
+
+    >>> release_mirror = mirrorset.getByName('releases-mirror')
+    >>> release_mirror.name
+    u'releases-mirror'
+
+    >>> mirrored_releases = []
+    >>> for mirror_cdimage_release in release_mirror.cdimage_releases:
+    ...     mirrored_releases.append(
+    ...         (mirror_cdimage_release.distrorelease.displayname,
+    ...          mirror_cdimage_release.flavour))
+    >>> [release for release in sorted(mirrored_releases)]
+    [(u'Hoary', u'kubuntu'), (u'Hoary', u'ubuntu'), (u'Warty', u'ubuntu')]
+
+
+In the case of release mirrors, they're said to be up-to-date if they
+mirror all ISO images contained in http://releases.ubuntu.com, which is
+the case here.  Otherwise, their status is unknown.
+
+    >>> release_mirror.getOverallStatus().title
+    'Up to date'
