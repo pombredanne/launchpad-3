@@ -251,10 +251,6 @@ COMMENT ON COLUMN ProductSeries.svnrepository IS 'The URL of the SVN branch
 where the upstream productseries code can be found. This single URL is the
 equivalent of the cvsroot, cvsmodule and cvsbranch for CVS. Only used if
 rcstype is SVN.';
-COMMENT ON COLUMN ProductSeries.bkrepository IS 'The URL of the BK branch
-where the upstream productseries code can be found. This single URL is the
-equivalent of the cvsroot, cvsmodule and cvsbranch. Only used if rcstype is
-BK.';
 COMMENT ON COLUMN ProductSeries.releasefileglob IS 'A fileglob that lets us
 see which URLs are potentially new upstream tarball releases. For example:
 http://ftp.gnu.org/gnu/libtool/libtool-1.5.*.gz.';
@@ -262,15 +258,6 @@ COMMENT ON COLUMN ProductSeries.releaseverstyle IS 'An enum giving the style
 of this product series release version numbering system.  The options are
 documented in dbschema.UpstreamReleaseVersionStyle.  Most applications use
 Gnu style numbering, but there are other alternatives.';
-COMMENT ON COLUMN ProductSeries.targetarchcategory IS 'The category name of
-the bazaar branch to which we publish new changesets detected in the
-upstream revision control system.';
-COMMENT ON COLUMN ProductSeries.targetarchbranch IS 'The branch name of the
-bazaar branch to which we publish new changesets detected in the upstream
-revision control system.';
-COMMENT ON COLUMN ProductSeries.targetarchversion IS 'The version of the
-bazaar branch to which we publish new changesets detected in the upstream
-revision control system.';
 COMMENT ON COLUMN ProductSeries.dateprocessapproved IS 'The timestamp when
 this upstream import was certified for processing. Processing means it has
 passed autotesting, and is being moved towards production syncing. If the
