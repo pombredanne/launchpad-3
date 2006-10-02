@@ -1909,13 +1909,13 @@ class NascentUpload:
         arg_dscsigningkey = self.dsc_signing_key
         arg_manifest = None
         # extra fields required to generate archive indexes in future.
-        arg_maintainer_rfc822 = guess_encoding(
+        arg_dsc_maintainer_rfc822 = guess_encoding(
             self.dsc_contents['maintainer'])
-        arg_standards_version = guess_encoding(
+        arg_dsc_standards_version = guess_encoding(
             self.dsc_contents['standards-version'])
         arg_dsc_format = guess_encoding(
             self.dsc_contents['format'])
-        arg_binary_line = guess_encoding(
+        arg_dsc_binaries_hint = guess_encoding(
             self.dsc_contents['binary'])
 
         self.policy.sourcepackagerelease = (
@@ -1935,10 +1935,10 @@ class NascentUpload:
             dscsigningkey=arg_dscsigningkey,
             section=arg_section,
             manifest=arg_manifest,
-            maintainer_rfc822=arg_maintainer_rfc822,
-            standards_version=arg_standards_version,
+            dsc_maintainer_rfc822=arg_dsc_maintainer_rfc822,
+            dsc_standards_version=arg_dsc_standards_version,
             dsc_format=arg_dsc_format,
-            binary_line=arg_binary_line,
+            dsc_binaries_hint=arg_dsc_binaries_hint,
             ))
 
         for uploaded_file in self.dsc_files:

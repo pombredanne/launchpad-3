@@ -73,10 +73,12 @@ class SourcePackageRelease(SQLBase):
     # records doesn't satisfy this condition. We will sort it before using
     # landing 'NoMoreAptFtparchive' implementation for main archive. For
     # PPA (primary target) we don't need populate old records.
-    maintainer_rfc822 = StringCol(dbName='maintainer_rfc822', notNull=True)
-    standards_version = StringCol(dbName='standards_version', notNull=True)
+    dsc_maintainer_rfc822 = StringCol(
+        dbName='dsc_maintainer_rfc822', notNull=True)
+    dsc_standards_version = StringCol(
+        dbName='dsc_standards_version', notNull=True)
     dsc_format = StringCol(dbName='dsc_format', notNull=True)
-    binary_line = StringCol(dbName='binary_line', notNull=True)
+    dsc_binaries_hint = StringCol(dbName='dsc_binaries_hint', notNull=True)
 
     # MultipleJoins
     builds = SQLMultipleJoin('Build', joinColumn='sourcepackagerelease',

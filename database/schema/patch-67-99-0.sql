@@ -5,10 +5,10 @@ SET client_min_messages=ERROR;
 -- Ideally they should be NOT NULL (they are in content classes
 -- and interfaces) however we need to migrate old data before
 -- setting it.
-ALTER TABLE SourcePackageRelease ADD COLUMN maintainer_rfc822 text;
-ALTER TABLE SourcePackageRelease ADD COLUMN standards_version text;
+ALTER TABLE SourcePackageRelease ADD COLUMN dsc_maintainer_rfc822 text;
+ALTER TABLE SourcePackageRelease ADD COLUMN dsc_standards_version text;
 ALTER TABLE SourcePackageRelease ADD COLUMN dsc_format text;
-ALTER TABLE SourcePackageRelease ADD COLUMN binary_line text;
+ALTER TABLE SourcePackageRelease ADD COLUMN dsc_binaries_hint text;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (67, 99, 0);
 

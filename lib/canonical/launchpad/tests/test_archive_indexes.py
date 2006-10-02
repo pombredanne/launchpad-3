@@ -56,9 +56,9 @@ class TestNativeArchiveIndexes(LaunchpadZopelessTestCase):
 
     def getPubSource(self, sourcename='foo', version='666', builddepends='',
                      builddependsindep='', architecturehintlist='',
-                     standards_version='3.6.2', dsc_format='1.0',
-                     binary_line='foo-bin',
-                     maintainer_rfc822='Foo Bar <foo@bar.com>'):
+                     dsc_standards_version='3.6.2', dsc_format='1.0',
+                     dsc_binaries_hint='foo-bin',
+                     dsc_maintainer_rfc822='Foo Bar <foo@bar.com>'):
         """Return a mock source publishing record."""
         spn = getUtility(ISourcePackageNameSet).getOrCreateByName(sourcename)
 
@@ -78,10 +78,10 @@ class TestNativeArchiveIndexes(LaunchpadZopelessTestCase):
             dsc='',
             dscsigningkey=self.signingkey,
             manifest=None,
-            maintainer_rfc822=maintainer_rfc822,
-            standards_version=standards_version,
+            dsc_maintainer_rfc822=dsc_maintainer_rfc822,
+            dsc_standards_version=dsc_standards_version,
             dsc_format=dsc_format,
-            binary_line=binary_line
+            dsc_binaries_hint=dsc_binaries_hint
             )
 
         filename = '%s.dsc' % sourcename
@@ -174,7 +174,7 @@ class TestNativeArchiveIndexes(LaunchpadZopelessTestCase):
              u'Files:',
              u' 3e47b75000b0924b6c9ba5759a7cf15d 7 foo.dsc',
              u''],
-            pub_source.stanza().splitlines())
+            pub_source.index_stanza().splitlines())
 
     def testBinaryStanza(self):
         """Check just-created binary publication Index stanza."""
@@ -199,7 +199,7 @@ class TestNativeArchiveIndexes(LaunchpadZopelessTestCase):
              u'Bugs: NDA',
              u'Origin: NDA',
              u'Task: NDA'],
-            pub_binary.stanza().splitlines())
+            pub_binary.index_stanza().splitlines())
 
 
 def test_suite():

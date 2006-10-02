@@ -471,7 +471,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return "%s %s in %s" % (name, release.version,
                                 self.distrorelease.name)
 
-    def stanza(self):
+    def index_stanza(self):
         """See IArchivePublisher"""
         spr = self.sourcepackagerelease
         files = ''.join(
@@ -482,12 +482,12 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         replacement = {
             'package': spr.name,
-            'binary': spr.binary_line,
+            'binary': spr.dsc_binaries_hint,
             'version': spr.version,
-            'maintainer': spr.maintainer_rfc822,
+            'maintainer': spr.dsc_maintainer_rfc822,
             'build_depends': spr.builddependsindep,
             'arch': spr.architecturehintlist,
-            'standards_version': spr.standards_version,
+            'standards_version': spr.dsc_standards_version,
             'format': spr.dsc_format,
             'directory': makePoolPath(spr.name, self.component.name),
             'files': files,
@@ -556,7 +556,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                                    distrorelease.name,
                                    self.distroarchrelease.architecturetag)
 
-    def stanza(self):
+    def index_stanza(self):
         """See IArchivePublisher"""
         bpr = self.binarypackagerelease
         spr = bpr.build.sourcepackagerelease
@@ -566,7 +566,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             'priority': self.priority.title,
             'section': self.section.name,
             'installed_size': bpr.installedsize,
-            'maintainer': spr.maintainer_rfc822,
+            'maintainer': spr.dsc_maintainer_rfc822,
             'arch': bpr.build.distroarchrelease.architecturetag,
             'version': bpr.version,
             'replaces': bpr.replaces,

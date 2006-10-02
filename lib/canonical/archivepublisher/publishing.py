@@ -262,7 +262,7 @@ class Publisher(object):
         for spp in distrorelease.getSourcePackagePublishing(
             PackagePublishingStatus.PUBLISHED, pocket=pocket,
             component=component):
-            source_index.write(spp.stanza().encode('utf-8'))
+            source_index.write(spp.index_stanza().encode('utf-8'))
 
         source_index.close()
 
@@ -279,7 +279,7 @@ class Publisher(object):
             for bpp in distrorelease.getBinaryPackagePublishing(
                 archtag=arch.architecturetag, pocket=pocket,
                 component=component):
-                package_index.write(bpp.stanza().encode('utf-8'))
+                package_index.write(bpp.index_stanza().encode('utf-8'))
 
             package_index.close()
 

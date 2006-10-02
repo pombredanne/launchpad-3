@@ -82,7 +82,7 @@ SourcePackagPublishingHistory implements both interfaces properly:
 
 Generating respective "Sources" stanzas based on IArchivePublishBase:
 
- >>> print spph.stanza()
+ >>> print spph.index_stanza()
  <BLANKLINE>
  Package: alsa-utils
  Binary: alsa-mixer
@@ -143,7 +143,7 @@ BinaryPackageFile and ISecureBinaryPackagePublishingHistory
 
 Generating respective "Packages" stanzas based on IArchivePublishBase:
 
- >>> print bpph.stanza()
+ >>> print bpph.index_stanza()
  <BLANKLINE>
  Package: mozilla-firefox
  Priority: Important
