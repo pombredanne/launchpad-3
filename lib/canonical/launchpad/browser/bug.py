@@ -17,12 +17,13 @@ __all__ = [
     'BugMarkAsDuplicateView',
     'BugSecrecyEditView']
 
+import cgi
 import operator
 
-from zope.app.form import CustomWidgetFactory
 from zope.app.form.interfaces import WidgetsError
 from zope.app.form.browser import TextWidget
 from zope.app.form.browser.itemswidgets import SelectWidget
+from zope.app.form.interfaces import WidgetsError
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.event import notify
@@ -30,14 +31,16 @@ from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, structured, Navigation, LaunchpadView)
+    action, canonical_url, ContextMenu, LaunchpadFormView, LaunchpadView,
+    Link, Navigation, structured)
 from canonical.launchpad.interfaces import (
     IAddBugTaskForm, IBug, ILaunchBag, IBugSet, IBugTaskSet,
-    IBugWatchSet, IDistroBugTask, IDistroReleaseBugTask,
-    NotFoundError, UnexpectedFormData, valid_distrotask, valid_upstreamtask,
-    ICanonicalUrlData)
+    IBugWatchSet, IDistributionSourcePackage, IDistroBugTask,
+    IDistroReleaseBugTask, NotFoundError, UnexpectedFormData,
+    valid_distrotask, valid_upstreamtask, ICanonicalUrlData)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import SQLObjectCreatedEvent
+from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
     action, custom_widget, GeneralFormView, LaunchpadEditFormView, stepthrough)
@@ -74,9 +77,9 @@ class BugSetNavigation(Navigation):
 class BugContextMenu(ContextMenu):
     usedfor = IBug
     links = ['editdescription', 'markduplicate', 'visibility', 'addupstream',
-             'adddistro', 'subscription', 'addsubscriber', 'addcomment',
-             'nominate', 'addbranch', 'linktocve', 'unlinkcve', 'filebug',
-             'activitylog']
+             'adddistro', 'subscription',
+             'addsubscriber', 'addcomment', 'addbranch', 'linktocve',
+             'unlinkcve', 'filebug', 'activitylog', 'backportfix']
 
     def __init__(self, context):
         # Always force the context to be the current bugtask, so that we don't
@@ -126,10 +129,6 @@ class BugContextMenu(ContextMenu):
         text = 'Subscribe Someone Else'
         return Link('+addsubscriber', text, icon='add')
 
-    def nominate(self):
-        text = 'Nominate for release'
-        return Link('+nominate', text, icon='milestone')
-
     def addcomment(self):
         text = 'Comment/Attach File'
         return Link('+addcomment', text, icon='add')
@@ -161,6 +160,13 @@ class BugContextMenu(ContextMenu):
         text = 'Activity Log'
         return Link('+activity', text, icon='list')
 
+    def backportfix(self):
+        enabled = (
+            IDistroBugTask.providedBy(self.context) or
+            IDistroReleaseBugTask.providedBy(self.context))
+        text = 'Backport Fix to Releases'
+        return Link('+backport', text, icon='bug', enabled=enabled)
+
 
 class BugView:
     """View class for presenting information about an IBug."""
@@ -176,6 +182,28 @@ class BugView:
         'current' is determined by simply looking in the ILaunchBag utility.
         """
         return getUtility(ILaunchBag).bugtask
+
+    def taskLink(self, bugtask):
+        """Return the proper link to the bugtask whether it's editable"""
+        user = getUtility(ILaunchBag).user
+        if check_permission('launchpad.Edit', user):
+            return canonical_url(bugtask) + "/+editstatus"
+        else:
+            return canonical_url(bugtask) + "/+viewstatus"
+
+    def getFixRequestRowCSSClassForBugTask(self, bugtask):
+        """Return the fix request row CSS class for the bugtask.
+
+        The class is used to style the bugtask's row in the "fix requested for"
+        table on the bug page.
+        """
+        if bugtask == self.currentBugTask():
+            # The "current" bugtask is highlighted.
+            return 'highlight'
+        else:
+            # Anything other than the "current" bugtask gets no
+            # special row styling.
+            return ''
 
     @property
     def subscription(self):
@@ -251,105 +279,73 @@ class BugTrackerWidget(SelectWidget):
         return items
 
 
-class BugAlsoReportInView(GeneralFormView):
+class BugAlsoReportInView(LaunchpadFormView):
     """View class for reporting a bug in other contexts."""
 
     schema = IAddBugTaskForm
-    fieldNames = None
+    custom_widget('bugtracker', BugTrackerWidget)
+
     index = ViewPageTemplateFile('../templates/bugtask-requestfix.pt')
-    confirmation_page = ViewPageTemplateFile(
-        '../templates/bugtask-confirm-unlinked.pt')
-    process_status = None
-    saved_process_form = GeneralFormView.process_form
-    show_confirmation = False
-    _nextURL = None
+    _confirm_new_task = False
 
     def __init__(self, context, request):
-        """Override GeneralFormView.__init__() not to set up widgets."""
-        self.context = context
-        self.request = request
-        self.fieldNames = ['link_to_bugwatch', 'bugtracker', 'remotebug']
-        self.errors = {}
+        LaunchpadFormView.__init__(self, context, request)
+        self.notifications = []
+        self.field_names = ['link_to_bugwatch', 'bugtracker', 'remotebug']
 
-    def process_form(self):
-        """Simply return the current status.
+    def setUpWidgets(self):
+        LaunchpadFormView.setUpWidgets(self)
+        link_bug_widget = self.widgets['link_to_bugwatch']
+        onkeypress_js = "selectWidget('%s', event);" % link_bug_widget.name
+        self.widgets['remotebug'].extra = 'onkeypress="%s"' % onkeypress_js
+        self.widgets['bugtracker'].extra = 'onchange="%s"' % onkeypress_js
 
-        We override it, since we need to do some setup before processing
-        the form.
-        """
-        return self.process_status
-
-    @property
-    def _keyword_arguments(self):
-        """All the fields should be given as keyword arguments."""
-        return self.fieldNames
-
-    def initializeAndRender(self):
-        """Process the widgets and render the page."""
-        self.bugtracker_widget = CustomWidgetFactory(BugTrackerWidget)
-        self._setUpWidgets()
-        # Add some javascript to make the bug watch widgets enabled only
-        # when the checkbox is checked.
-        self.disable_bugwatch_widgets_js = (
-            "<!--\n"
-            "setDisabled(!document.getElementById('%s').checked, '%s', '%s');"
-            "\n-->" % (
-                self.link_to_bugwatch_widget.name,
-                self.bugtracker_widget.name,
-                self.remotebug_widget.name))
-        checkbox_onclick = (
-            "onClick=\"setDisabled(!this.checked, '%s', '%s')\"" % (
-                self.bugtracker_widget.name, self.remotebug_widget.name))
-        self.link_to_bugwatch_widget.extra = checkbox_onclick
-
-        self.saved_process_form()
-        return self.index()
+    def setUpLabelAndWidgets(self, label, target_field_names):
+        """Initialize the form and render it."""
+        self.label = label
+        self.field_names.extend(target_field_names)
+        self.initialize()
+        self.target_widgets = [
+            self.widgets[field_name]
+            for field_name in self.field_names
+            if field_name in target_field_names]
 
     def render_upstreamtask(self):
-        self.label = "Request fix in a product"
-        self.fieldNames.append('product')
-        return self.initializeAndRender()
+        self.setUpLabelAndWidgets("Request fix in a product", ['product'])
+        selected_product = None
+        if IDistributionSourcePackage.providedBy(self.context.target):
+            for source_package in self.context.target.by_distroreleases:
+                if source_package.direct_packaging is not None:
+                    selected_product = (
+                        source_package.direct_packaging.productseries.product)
+                    self.widgets['product'].setRenderedValue(selected_product)
+                    break
+        if selected_product is not None:
+            external_tracker = selected_product.getExternalBugTracker()
+            if external_tracker is not None:
+                self.widgets['bugtracker'].setRenderedValue(external_tracker)
+        return self.render()
 
     def render_distrotask(self):
-        self.label = "Request fix in a distribution"
-        self.fieldNames.extend(['distribution', 'sourcepackagename'])
-        return self.initializeAndRender()
-
-    def getAllWidgets(self):
-        """Return all the widgets used by this view."""
-        return GeneralFormView.widgets(self)
-
-    def widgets(self):
-        """Return the widgets that should be rendered by the main macro.
-
-        We will place the bug watch widgets ourself, so we don't want
-        them rendered automatically.
-        """
-        bug_watch_widgets = [
-            self.schema['bugtracker'],
-            self.schema['remotebug'],
-            self.schema['link_to_bugwatch'],
-            ]
-        return [
-            widget for widget in GeneralFormView.widgets(self)
-            if widget.context not in bug_watch_widgets
-            ]
+        self.setUpLabelAndWidgets(
+            "Request fix in a distribution",
+            ['distribution', 'sourcepackagename'])
+        return self.render()
 
     def getBugTargetName(self):
         """Return the name of the fix target.
 
         This is either the chosen product or distribution.
         """
-        if 'distribution' in self.fieldNames:
-            target = self.distribution_widget.getInputValue()
-        elif 'product' in self.fieldNames:
-            target = self.product_widget.getInputValue()
+        if 'distribution' in self.field_names:
+            target = self.widgets['distribution'].getInputValue()
+        elif 'product' in self.field_names:
+            target = self.widgets['product'].getInputValue()
         else:
             raise AssertionError(
                 'Either a product or distribution widget should be present'
                 ' in the form.')
         return target.displayname
-
 
     def validate(self, data):
         """Validate the form.
@@ -360,54 +356,94 @@ class BugAlsoReportInView(GeneralFormView):
             * If bugtracker is not None, remotebug has to be not None
             * If the target uses Malone, a bug watch can't be added.
         """
-        errors = []
-        widgets_data = {}
         link_to_bugwatch = data.get('link_to_bugwatch')
-        bugtracker = data.get('bugtracker')
         remotebug = data.get('remotebug')
+        bugtracker = data.get('bugtracker')
         product = data.get('product')
         distribution = data.get('distribution')
         sourcepackagename = data.get('sourcepackagename')
         if product:
             target = product
-            valid_upstreamtask(self.context.bug, product)
+            try:
+                valid_upstreamtask(self.context.bug, product)
+            except WidgetsError, errors:
+                for error in errors:
+                    self.setFieldError('product', error.snippet())
         elif distribution:
             target = distribution
-            valid_distrotask(
-                self.context.bug, distribution, sourcepackagename,
-                on_create=True)
+            try:
+                valid_distrotask(
+                    self.context.bug, distribution, sourcepackagename,
+                    on_create=True)
+            except WidgetsError, errors:
+                for error in errors:
+                    self.setFieldError('sourcepackagename', error.snippet())
         else:
-            raise UnexpectedFormData(
-                'Neither product nor distribution was provided')
+            # Validation failed for either the product or distribution,
+            # no point in trying to validate further.
+            return
+
         if link_to_bugwatch and target.official_malone:
-            errors.append(LaunchpadValidationError(
+            self.addError(
                 "%s uses Malone as its bug tracker, and it can't at the"
-                " same time be linked to a remote bug.",
-                target.displayname))
+                " same time be linked to a remote bug." % cgi.escape(
+                    target.displayname))
         elif link_to_bugwatch and remotebug is None:
-            errors.append(LaunchpadValidationError(
+            #XXX: This should use setFieldError, but the widget isn't
+            #     rendered in a way that allows the error to be
+            #     displayed next to the widget.
+            #     -- Bjorn Tillenius, 2006-09-12
+            self.addError(
                 "Please specify the remote bug number in the remote "
-                "bug tracker."))
-            widgets_data['bugtracker'] = bugtracker
-            widgets_data['remotebug'] = remotebug
+                "bug tracker.")
+        elif link_to_bugwatch and bugtracker is None:
+            #XXX: This should use setFieldError, but the widget isn't
+            #     rendered in a way that allows the error to be
+            #     displayed next to the widget.
+            #     -- Bjorn Tillenius, 2006-09-12
+            self.addError("Please specify a bug tracker.")
+        if len(self.errors) > 0:
+            # The checks below should be made only if the form doesn't
+            # contain any errors.
+            return
 
-        if errors:
-            raise WidgetsError(errors, widgetsData=widgets_data)
+        confirm_action = self.confirm_action
+        if confirm_action.submitted():
+            # The user confirmed that he does want to add the task.
+            return
+        if not target.official_malone and not link_to_bugwatch:
+            confirm_button = (
+                '<input style="font-size: smaller" type="submit"'
+                ' value="%s" name="%s" />' % (
+                    confirm_action.label, confirm_action.__name__))
+            #XXX: This text should be re-written to be more compact. I'm not
+            #     doing it now, though, since it might go away completely
+            #     soon. -- Bjorn Tillenius, 2006-09-13
+            self.notifications.append(
+                "%s doesn't use Malone as its bug tracker. If you don't add"
+                " a bug watch now you have to keep track of the status"
+                " manually. You can however link to an external bug tracker"
+                " at a later stage in order to get automatic status updates."
+                " Are you sure you want to request a fix anyway?"
+                " %s" % (cgi.escape(self.getBugTargetName()), confirm_button))
+            self._confirm_new_task = True
 
-    def submitted(self):
-        for submit_button in ['FORM_SUBMIT', 'CONFIRM', 'CANCEL']:
-            if submit_button in self.request.form:
-                return True
-        else:
-            return False
-
-    def process(self, product=None, distribution=None, sourcepackagename=None,
-                bugtracker=None, remotebug=None, link_to_bugwatch=False):
+    @action(u'Continue', name='request_fix')
+    def continue_action(self, action, data):
         """Create new bug task.
 
         Only one of product and distribution may be not None, and
         if distribution is None, sourcepackagename has to be None.
         """
+        if self._confirm_new_task:
+            return
+        product = data.get('product')
+        distribution = data.get('distribution')
+        sourcepackagename = data.get('sourcepackagename')
+        bugtracker = data.get('bugtracker')
+        remotebug = data.get('remotebug')
+        link_to_bugwatch = data.get('link_to_bugwatch')
+
         if product is not None:
             target = product
         elif distribution is not None:
@@ -416,23 +452,6 @@ class BugAlsoReportInView(GeneralFormView):
             raise AssertionError(
                 'validate() should ensure that a product or distribution'
                 ' is present')
-
-        if not target.official_malone and not link_to_bugwatch:
-            if 'CANCEL' in self.request.form:
-                # The user chose not to add an unlinked bugtask, let
-                # him edit the information before processing it.
-                return
-            elif 'FORM_SUBMIT' in self.request.form:
-                # The user hasn't confirmed that he really wants to add an
-                # unlinked task.
-                self.show_confirmation = True
-                self.index = self.confirmation_page
-                return
-            else:
-                # The user confirmed adding the unlinked bugtask.
-                assert 'CONFIRM' in self.request.form, (
-                    'process() should be called only if CANCEL, CONFIRM,'
-                    ' or FORM_SUBMIT is submitted.')
 
         taskadded = getUtility(IBugTaskSet).createTask(
             self.context.bug,
@@ -456,8 +475,17 @@ class BugAlsoReportInView(GeneralFormView):
             taskadded.importance = BugTaskImportance.UNKNOWN
 
         notify(SQLObjectCreatedEvent(taskadded))
-        self._nextURL = canonical_url(taskadded)
-        return ''
+        self.next_url = canonical_url(taskadded)
+
+    @action('Yes, request fix anyway', name='confirm')
+    def confirm_action(self, action, data):
+        self.continue_action.success(data)
+
+    def render(self):
+        """Render the page with only one submit button."""
+        # The confirmation button shouldn't be rendered automatically.
+        self.actions = [self.continue_action]
+        return LaunchpadFormView.render(self)
 
 
 class BugSetView:
@@ -505,6 +533,8 @@ class BugEditView(BugEditViewBase):
 
     def validate(self, data):
         """Make sure new tags are confirmed."""
+        if 'tags' not in data:
+            return
         confirm_action = self.confirm_tag_action
         if confirm_action.submitted():
             # Validation is needed only for the change action.

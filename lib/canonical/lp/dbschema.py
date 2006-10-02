@@ -35,7 +35,6 @@ __all__ = (
 'BranchLifecycleStatus',
 'BranchReviewStatus',
 'BugBranchStatus',
-'BugNominationStatus',
 'BugTaskStatus',
 'BugAttachmentType',
 'BugTrackerType',
@@ -103,15 +102,17 @@ __all__ = (
 'UpstreamReleaseVersionStyle',
 )
 
-from canonical.database.constants import DEFAULT
-
-from zope.interface.advice import addClassAdvisor
 import sys
 import warnings
+
+from zope.interface.advice import addClassAdvisor
+from zope.security.proxy import isinstance as zope_isinstance
 
 from sqlobject.col import SOCol, Col
 from sqlobject.include import validators
 import sqlobject.constraints as consts
+
+from canonical.database.constants import DEFAULT
 
 
 class SODBSchemaEnumCol(SOCol):
@@ -147,6 +148,10 @@ class DBSchemaValidator(validators.Validator):
         >>> validator = DBSchemaValidator(schema=BugTaskStatus)
         >>> validator.fromPython(BugTaskStatus.FIXCOMMITTED, None)
         25
+        >>> validator.fromPython(tuple(), None)
+        Traceback (most recent call last):
+        ...
+        TypeError: Not a DBSchema Item: ()
         >>> validator.fromPython(ImportTestStatus.NEW, None)
         Traceback (most recent call last):
         ...
@@ -156,15 +161,13 @@ class DBSchemaValidator(validators.Validator):
         """
         if value is None:
             return None
+        if value is DEFAULT:
+            return value
         if isinstance(value, int):
             raise TypeError(
                 'Need to set a dbschema Enum column to a dbschema Item,'
                 ' not an int')
-        # Allow this to work in the presence of security proxies.
-        ##if not isinstance(value, Item):
-        if value is DEFAULT:
-            return value
-        if value.__class__ != Item:
+        if not zope_isinstance(value, Item):
             # We use repr(value) because if it's a tuple (yes, it has been
             # seen in some cases) then the interpolation would swallow that
             # fact, confusing poor programmers like Daniel.
@@ -330,9 +333,7 @@ class Item:
             warnings.warn('comparison of DBSchema Item to an int: %r' % self,
                 stacklevel=stacklevel)
             return False
-        # Cannot use isinstance, because 'other' might be security proxied.
-        ##elif isinstance(other, Item):
-        elif other.__class__ == Item:
+        elif zope_isinstance(other, Item):
             return self.value == other.value and self.schema == other.schema
         else:
             return False
@@ -703,6 +704,7 @@ class PackagingType(DBSchema):
         relationship with the libneon product.
         """)
 
+
 ##XXX: (gpg+dbschema) cprov 20041004
 ## the data structure should be rearranged to support 4 field
 ## needed: keynumber(1,16,17,20), keyalias(R,g,D,G), title and description
@@ -903,6 +905,7 @@ class EmailAddressStatus(DBSchema):
         The email address was validated and is the person's choice for
         receiving notifications from Launchpad.
         """)
+
 
 class TeamMembershipStatus(DBSchema):
     """TeamMembership Status
@@ -1731,8 +1734,6 @@ class TicketSort(DBSchema):
     """)
 
 
-
-
 class TicketStatus(DBSchema):
     """The current status of a Support Request
 
@@ -1913,6 +1914,7 @@ class TranslationPriority(DBSchema):
         A low priority POTemplate should only show up if a comprehensive
         search or complete listing is requested by the user.  """)
 
+
 class TranslationPermission(DBSchema):
     """Translation Permission System
 
@@ -1950,6 +1952,7 @@ class TranslationPermission(DBSchema):
         language. People who are not designated translators can still make
         suggestions for new translations, but those suggestions need to be
         reviewed before being accepted by the designated translator.""")
+
 
 class DistroReleaseQueueStatus(DBSchema):
     """Distro Release Queue Status
@@ -2003,6 +2006,7 @@ class DistroReleaseQueueStatus(DBSchema):
         DistroRelease it was targetting. As for the 'done' state, this state
         is present to allow logging tools to record the rejection and then
         clean up any subsequently unnecessary records.  """)
+
 
 # If you change this (add items, change the meaning, whatever) search for
 # the token ##CUSTOMFORMAT## e.g. database/queue.py or nascentupload.py and
@@ -2096,6 +2100,7 @@ class PackagePublishingStatus(DBSchema):
         and thus will not be considered in most queries about source
         packages in distroreleases. """)
 
+
 class PackagePublishingPriority(DBSchema):
     """Package Publishing Priority
 
@@ -2143,6 +2148,7 @@ class PackagePublishingPriority(DBSchema):
         other priority levels; or packages which are only useful to people
         who have very specialised needs.
         """)
+
 
 class PackagePublishingPocket(DBSchema):
     """Package Publishing Pocket
@@ -2193,6 +2199,7 @@ class PackagePublishingPocket(DBSchema):
 
         Backported packages.
         """)
+
 
 class SourcePackageRelationships(DBSchema):
     """Source Package Relationships
@@ -2551,34 +2558,6 @@ class BranchReviewStatus(DBSchema):
 
         The reviewer is satisfied that the branch can be merged without
         further changes.
-        """)
-
-
-class BugNominationStatus(DBSchema):
-    """Bug Nomination Status
-
-    The status of the decision to fix a bug in a specific release.
-    """
-
-    PROPOSED = Item(10, """
-        Proposed
-
-        This nomination hasn't yet been reviewed, or is still under
-        review.
-        """)
-
-    APPROVED = Item(20, """
-        Approved
-
-        The release management team has approved fixing the bug for this
-        release.
-        """)
-
-    DECLINED = Item(30, """
-        Declined
-
-        The release management team has declined fixing the bug for this
-        release.
         """)
 
 
@@ -3206,7 +3185,7 @@ class MirrorStatus(DBSchema):
         """)
 
     UNKNOWN = Item(8, """
-        Unknown
+        Unknown freshness
 
         We couldn't determine when this mirror's content was last updated.
         """)
@@ -3300,6 +3279,7 @@ class RosettaFileFormat(DBSchema):
 
         The .qm format as used by programs using the QT toolkit.
         """)
+
 
 class TranslationValidationStatus(DBSchema):
     """Translation Validation Status
@@ -3458,3 +3438,4 @@ class TextDirection(DBSchema):
 
         Text is normally written from left to right in this language.
         """)
+

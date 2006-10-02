@@ -270,12 +270,9 @@ class SourcePackageRelease(SQLBase):
                                         filetype=determined_filetype,
                                         libraryfile=file)
 
-    def createBuild(self, distroarchrelease, processor=None,
-                    status=BuildStatus.NEEDSBUILD,
-                    pocket=None):
+    def createBuild(self, distroarchrelease, pocket, processor=None,
+                    status=BuildStatus.NEEDSBUILD):
         """See ISourcePackageRelease."""
-        # ensure pocket can't be ommited
-        assert pocket is not None
         # Guess a processor if one is not provided
         if processor is None:
             pf = distroarchrelease.processorfamily
@@ -296,13 +293,13 @@ class SourcePackageRelease(SQLBase):
 
     def getBuildByArch(self, distroarchrelease):
         """See ISourcePackageRelease."""
+	# Look for a published build
         query = """
         Build.id = BinaryPackageRelease.build AND
         BinaryPackageRelease.id =
             BinaryPackagePublishingHistory.binarypackagerelease AND
         BinaryPackagePublishingHistory.distroarchrelease = %s AND
-        Build.sourcepackagerelease = %s AND
-        BinaryPackageRelease.architecturespecific = true
+        Build.sourcepackagerelease = %s
         """  % sqlvalues(distroarchrelease.id, self.id)
 
         tables = ['BinaryPackageRelease', 'BinaryPackagePublishingHistory']
@@ -315,9 +312,8 @@ class SourcePackageRelease(SQLBase):
         # nasty code.
         build = Build.selectFirst(query, clauseTables=tables, orderBy="id")
 
+        # If not, look for a build directly in this distroarchrelease.
         if build is None:
-            # follow the architecture independent path, there is only one
-            # build for all architectures.
             build = Build.selectOneBy(
                 distroarchrelease=distroarchrelease,
                 sourcepackagerelease=self)
