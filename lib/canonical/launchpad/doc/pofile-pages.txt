@@ -95,7 +95,7 @@ It's time to test that we get the right message sets from the submitted form.
 
 We get the first entry that should be in the form, the one with id == 130.
 
-    >>> for potmsgset in pofile_view.getSelectedPOTMsgSet():
+    >>> for potmsgset in pofile_view._getSelectedPOTMsgSets():
     ...     if potmsgset.id == 130:
     ...         break
 
@@ -111,7 +111,8 @@ And as it's the first entry, its sequence number is also the right one.
 
 Test that the associated msgid is the one we want.
 
-    >>> pomsgset_view = pofile_view.getPOMsgSetViewFromPOTMsgSet(potmsgset)
+    >>> pomsgset_view = pofile_view._buildPOMsgSetView(potmsgset)
+    >>> pomsgset_view.initialize()
     >>> pomsgset_view.msgid
     u'evolution addressbook'
 
@@ -132,7 +133,7 @@ It does not have a plural msgid.
 
 And thus, it only has one translation.
 
-    >>> pomsgset_view.translation_range
+    >>> pomsgset_view.pluralform_indexes
     [0]
 
 Which is the one we wanted.
@@ -149,12 +150,12 @@ will work as expected when navigating over the translation form.
 
 First time we call it, first position.
 
-    >>> pofile_view.generateNextTabIndex()
+    >>> pofile_view.tabindex.next()
     1
 
 Next time we call it, it's increased.
 
-    >>> pofile_view.generateNextTabIndex()
+    >>> pofile_view.tabindex.next()
     2
 
 It's time to check the submission of translations and the IPOFile statistics
@@ -235,8 +236,8 @@ And we can see that we didn't get errors.
     ...     pofile_es.language.code, pofile_es.variant)
     >>> pomsgset.active_texts
     [u'Foo']
-    >>> pofile_view.potmsgset_with_errors
-    []
+    >>> pofile_view.errors
+    {}
 
 Now, we are going to check the alternative language submission.
 
@@ -246,14 +247,11 @@ Now, we are going to check the alternative language submission.
     ...     'start': '10',
     ...     'field.alternative_language': 'fr',
     ...     'select_alternate_language': 'Change'})
-    >>> request.method = 'POST'
+    >>> request.method = 'get'
     >>> pofile_view = getView(pofile_es, '+translate', request)
     >>> pofile_view.initialize()
-    >>> pofile_view.request.response.getHeader('Location')
-    'http://127.0.0.1?start=10&alt=fr'
-
     >>> pofile_view.second_lang_code
-    u'fr'
+    'fr'
 
 Let's check that the upload form sets the right fields.
 

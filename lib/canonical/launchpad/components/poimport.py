@@ -9,10 +9,10 @@ from email.Utils import parseaddr
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-        IPOTemplate, IPOFile, IPersonSet, NotFoundError
+        IPOTemplate, IPOFile, IPersonSet, NotFoundError, TranslationConstants
         )
 from canonical.launchpad.components.poparser import POParser
-from canonical.launchpad.helpers import TranslationConstants
+
 
 class OldPOImported(Exception):
     """Raised when an older PO file is imported."""

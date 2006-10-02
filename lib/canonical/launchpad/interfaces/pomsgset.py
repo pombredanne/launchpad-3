@@ -5,7 +5,10 @@ from zope.schema import Bool
 
 __metaclass__ = type
 
-__all__ = ['IPOMsgSet']
+__all__ = [
+    'IPOMsgSet',
+    'IPOMsgSetSubmissions',
+]
 
 class IPOMsgSet(Interface):
 
@@ -130,3 +133,10 @@ class IPOMsgSet(Interface):
 
         The new values will reflect current status of this entry.
         """
+
+
+class IPOMsgSetSubmissions(Interface):
+    """XXX"""
+    title = Attribute("XXX")
+    submissions = Attribute("XXX")
+

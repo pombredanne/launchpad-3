@@ -34,13 +34,14 @@ from canonical.launchpad.interfaces import (
     IProjectSet, ILoginTokenSet, IKarmaActionSet, IPOTemplateNameSet,
     IBazaarApplication, ICodeOfConductSet, IRegistryApplication,
     ISpecificationSet, ISprintSet, ITicketSet, IBuilderSet, IBountySet,
-    ILaunchpadCelebrities, IBugSet, IBugTrackerSet, ICveSet)
+    ILaunchpadCelebrities, IBugSet, IBugTrackerSet, ICveSet,
+    ITranslationImportQueue, ITranslationGroupSet)
 from canonical.launchpad.layers import (
     setFirstLayer, ShipItEdUbuntuLayer, ShipItKUbuntuLayer, ShipItUbuntuLayer)
 from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView,
-    Navigation, stepto)
+    StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView, Navigation,
+    stepto, canonical_url)
 
 # XXX SteveAlexander, 2005-09-22, this is imported here because there is no
 #     general timedelta to duration format adapter available.  This should
@@ -310,29 +311,31 @@ class MaloneContextMenu(ContextMenu):
 
 class RosettaContextMenu(ContextMenu):
     usedfor = IRosettaApplication
-    links = ['about', 'preferences', 'imports']
-
-    def upload(self):
-        target = '+upload'
-        text = 'Upload'
-        return Link(target, text)
-
-    def download(self):
-        target = '+export'
-        text = 'Download'
-        return Link(target, text)
+    links = ['about', 'preferences', 'import_queue', 'translation_groups']
 
     def about(self):
         text = 'About Rosetta'
-        return Link('+about', text)
+        rosetta_application = getUtility(IRosettaApplication)
+        url = '/'.join([canonical_url(rosetta_application), '+about'])
+        return Link(url, text)
 
     def preferences(self):
-        text = 'Preferences'
-        return Link('prefs', text)
+        text = 'Translation preferences'
+        rosetta_application = getUtility(IRosettaApplication)
+        url = '/'.join([canonical_url(rosetta_application), 'prefs'])
+        return Link(url, text)
 
-    def imports(self):
+    def import_queue(self):
         text = 'Import queue'
-        return Link('imports', text)
+        import_queue = getUtility(ITranslationImportQueue)
+        url = canonical_url(import_queue)
+        return Link(url, text)
+
+    def translation_groups(self):
+        text = 'Translation groups'
+        translation_group_set = getUtility(ITranslationGroupSet)
+        url = canonical_url(translation_group_set)
+        return Link(url, text)
 
 
 class LoginStatus:

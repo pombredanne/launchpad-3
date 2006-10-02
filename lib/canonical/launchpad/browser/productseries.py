@@ -434,9 +434,6 @@ class ProductSeriesView(LaunchpadView):
             self.context.importstatus = ImportStatus.TESTING
         elif (oldrcstype is None and self.rcstype is not None):
             self.context.importstatus = ImportStatus.TESTING
-        # make sure we also update the ubuntu packaging if it has been
-        # modified
-        self.setCurrentUbuntuPackage()
         if not self.has_errors:
             self.request.response.redirect(canonical_url(self.context))
 
