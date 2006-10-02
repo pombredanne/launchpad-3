@@ -239,7 +239,7 @@ the message as a comment.
 The other alternative is that the owner wanted to reopen the request.
 But it is more likely that an email after he marked the problem as
 solved would come as a reply to another comment, so it is safer to
-assume it was a commentline 117.
+assume it was a comment.
 
 And from the Invalid:
 
