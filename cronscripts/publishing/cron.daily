@@ -71,7 +71,8 @@ process-accepted.py -v -v -v $DISTRONAME
 mkdir -p ${DISTSCOPYROOT}/dists
 # Move the backup dists folder into place
 mv ${DISTSCOPYROOT}/dists ${ARCHIVEROOT}/dists.new
-# Bring it up-to-date efficiently with rsync
+# Bring it up-to-date efficiently with rsync. --delete is required to
+# ensure we don't ressurect things previously deleted, bug 58835.
 rsync -aH --delete ${DISTSROOT}/ ${ARCHIVEROOT}/dists.new
 
 # XXX: dsilvers: 20060204: DAK created some extra d-i pockets which

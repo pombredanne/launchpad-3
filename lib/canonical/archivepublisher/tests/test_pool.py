@@ -102,13 +102,13 @@ class TestPool(unittest.TestCase):
 
         self.assertTrue(
             os.path.isfile(self.pathFor("main", "foo", "foo-1.0.deb")))
-        self.assertTrue(
-            not os.path.islink(self.pathFor("main", "foo", "foo-1.0.deb")))
+        self.assertFalse(
+            os.path.islink(self.pathFor("main", "foo", "foo-1.0.deb")))
 
         self.assertTrue(
             os.path.isfile(self.pathFor("main", "bar", "bar-1.0.deb")))
-        self.assertTrue(
-            not os.path.islink(self.pathFor("main", "bar", "bar-1.0.deb")))
+        self.assertFalse(
+            os.path.islink(self.pathFor("main", "bar", "bar-1.0.deb")))
 
     def testRemoveFile(self):
         """canonical.archivepublisher.DiskPool.removeFile should work."""
@@ -116,22 +116,22 @@ class TestPool(unittest.TestCase):
         size = self.pool.removeFile("main", "bar", "bar-1.0.deb")
 
         # Check it's gone and reported the right size for a symlink
-        self.assertTrue(
-            not os.path.exists(self.pathFor("main", "bar", "bar-1.0.deb")))
+        self.assertFalse(
+            os.path.exists(self.pathFor("main", "bar", "bar-1.0.deb")))
         self.assertEqual(35, size)
         
         # Remove the file for foo
         self.pool.removeFile("main", "foo", "foo-1.0.deb")
 
         # Check it's gone
-        self.assertTrue(
-            not os.path.exists(self.pathFor("main", "foo", "foo-1.0.deb")))
+        self.assertFalse(
+            os.path.exists(self.pathFor("main", "foo", "foo-1.0.deb")))
         
         # Check the symlink became a real file
         self.assertTrue(
             os.path.isfile(self.pathFor("universe", "foo", "foo-1.0.deb")))
-        self.assertTrue(
-            not os.path.islink(self.pathFor("universe", "foo", "foo-1.0.deb")))
+        self.assertFalse(
+            os.path.islink(self.pathFor("universe", "foo", "foo-1.0.deb")))
 
         # Delete the final copy of foo, check we reported the right size
         size = self.pool.removeFile("universe", "foo", "foo-1.0.deb")
