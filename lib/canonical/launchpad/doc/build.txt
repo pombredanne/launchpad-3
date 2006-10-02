@@ -395,7 +395,7 @@ Check IHasBuildRecords when implemented by Builder:
   4
 
   >>> bob_pmount_ok_builds = bob.getBuildRecords(
-  ...    status=BuildStatus.FULLYBUILT, name='pmo')
+  ...    status=BuildStatus.FULLYBUILT, name='pmount')
   >>> bob_pmount_ok_builds.count()
   3
 

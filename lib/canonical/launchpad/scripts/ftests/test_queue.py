@@ -90,14 +90,14 @@ class TestQueueTool(TestCase):
             CommandRunnerError, self.execute_command, 'info 100')
 
         # looking in the wrong suite
-        kw = {'suite_name': 'breezy-autotest-backports'}
         self.assertRaises(
-            CommandRunnerError, self.execute_command, 'info 1', **kw)
+            CommandRunnerError, self.execute_command, 'info 1',
+            suite_name='breezy-autotest-backports')
 
         # looking in the wrong queue
-        kw = {'queue_name': 'done'}
         self.assertRaises(
-            CommandRunnerError, self.execute_command, 'info 1', **kw)
+            CommandRunnerError, self.execute_command, 'info 1',
+            queue_name='done')
 
     def testInfoActionByName(self):
         """Check INFO queue action filtering by name"""
