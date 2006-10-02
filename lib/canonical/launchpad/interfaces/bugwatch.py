@@ -104,16 +104,17 @@ class IBugWatchSet(Interface):
         :remotebug: A string.
         """
 
-    def getBugTrackerAndBug(url):
+    def extractBugTrackerAndBug(url):
         """Extract the bug tracker and the bug number for the given URL.
 
-        A tuple of a registered bugtracker and the bug number is returned.
+        A tuple in the form of (bugtracker, remotebug) is returned,
+        where bugtracker is a registered IBugTracer, and remotebug is a
+        text string.
 
         A NoBugTrackerFound exception is raised if the base URL can be
         extracted, but no such bug tracker is registered in Launchpad.
 
-        If no bug tracker type can be guessed, (None, None) is
-        returned.
+        If no bug tracker type can be guessed, None is returned.
         """
 
 

@@ -16,8 +16,8 @@ from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.lp.dbschema import BugTrackerType
 
 
-class GetBugTrackerAndBugTestBase(LaunchpadFunctionalTestCase):
-    """Test base for testing BugWatchSet.getBugTrackerAndBug."""
+class ExtractBugTrackerAndBugTestBase(LaunchpadFunctionalTestCase):
+    """Test base for testing BugWatchSet.extractBugTrackerAndBug."""
 
     # A URL to an unregistered bug tracker.
     base_url = None
@@ -40,32 +40,32 @@ class GetBugTrackerAndBugTestBase(LaunchpadFunctionalTestCase):
             'test@canonical.com')
 
     def test_unknown_baseurl(self):
-        # The returned bug tracker will be None if getBugTrackerAndBug
-        # can't even decide what kind of bug tracker the bug URL points
-        # to.
-        remote_data = self.bugwatch_set.getBugTrackerAndBug(
+        # extractBugTrackerAndBug returns None if it can't even decide
+        # what kind of bug tracker the bug URL points to.
+        remote_data = self.bugwatch_set.extractBugTrackerAndBug(
             'http://no.such/base/url/42')
         self.assertEqual(remote_data, None)
 
     def test_registered_tracker_url(self):
-        # If getBugTrackerAndBug can extract a base URL, and there is a
+        # If extractBugTrackerAndBug can extract a base URL, and there is a
         # bug tracker registered with that URL, the registered bug
         # tracker will be returned, together with the bug id that was
         # extracted from the bug URL.
         expected_tracker = self.bugtracker_set.ensureBugTracker(
              self.base_url, self.sample_person, self.bugtracker_type)
-        bugtracker, bug = self.bugwatch_set.getBugTrackerAndBug(self.bug_url)
+        bugtracker, bug = self.bugwatch_set.extractBugTrackerAndBug(
+            self.bug_url)
         self.assertEqual(bugtracker, expected_tracker)
         self.assertEqual(bug, self.bug_id)
 
     def test_unregistered_tracker_url(self):
-        # A NoBugTrackerFound exception is raised if getBugTrackerAndBug
+        # A NoBugTrackerFound exception is raised if extractBugTrackerAndBug
         # can extract a base URL and bug id from the URL but there's no
         # such bug tracker registered in Launchpad.
         self.failUnless(
             self.bugtracker_set.queryByBaseURL(self.base_url) is None)
         try:
-            bugtracker, bug = self.bugwatch_set.getBugTrackerAndBug(
+            bugtracker, bug = self.bugwatch_set.extractBugTrackerAndBug(
                 self.bug_url)
         except NoBugTrackerFound, error:
             # The raised exception should contain enough information so
@@ -74,11 +74,12 @@ class GetBugTrackerAndBugTestBase(LaunchpadFunctionalTestCase):
             self.assertEqual(error.remote_bug, self.bug_id)
             self.assertEqual(error.bugtracker_type, self.bugtracker_type)
         else:
-            self.fail("NoBugTrackerFound wasn't raised by getBugTrackerAndBug")
+            self.fail(
+                "NoBugTrackerFound wasn't raised by extractBugTrackerAndBug")
 
 
-class BugzillaGetBugTrackerAndBugTest(GetBugTrackerAndBugTestBase):
-    """Make sure BugWatchSet.getBugTrackerAndBug works with Bugzilla URLs."""
+class BugzillaExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
+    """Make sure BugWatchSet.extractBugTrackerAndBug works with Bugzilla URLs."""
 
     bugtracker_type = BugTrackerType.BUGZILLA
     bug_url = 'http://some.host/bugs/show_bug.cgi?id=3224'
@@ -86,8 +87,8 @@ class BugzillaGetBugTrackerAndBugTest(GetBugTrackerAndBugTestBase):
     bug_id = '3224'
 
 
-class RoundUpGetBugTrackerAndBugTest(GetBugTrackerAndBugTestBase):
-    """Make sure BugWatchSet.getBugTrackerAndBug works with RoundUp URLs."""
+class RoundUpExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
+    """Make sure BugWatchSet.extractBugTrackerAndBug works with RoundUp URLs."""
 
     bugtracker_type = BugTrackerType.ROUNDUP
     bug_url = 'http://some.host/some/path/issue377'
@@ -95,8 +96,8 @@ class RoundUpGetBugTrackerAndBugTest(GetBugTrackerAndBugTestBase):
     bug_id = '377'
 
 
-class TracGetBugTrackerAndBugTest(GetBugTrackerAndBugTestBase):
-    """Make sure BugWatchSet.getBugTrackerAndBug works with Trac URLs."""
+class TracExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
+    """Make sure BugWatchSet.extractBugTrackerAndBug works with Trac URLs."""
 
     bugtracker_type = BugTrackerType.TRAC
     bug_url = 'http://some.host/some/path/ticket/42'
@@ -104,8 +105,8 @@ class TracGetBugTrackerAndBugTest(GetBugTrackerAndBugTestBase):
     bug_id = '42'
 
 
-class DebbugsGetBugTrackerAndBugTest(GetBugTrackerAndBugTestBase):
-    """Make sure BugWatchSet.getBugTrackerAndBug works with Trac URLs."""
+class DebbugsExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
+    """Make sure BugWatchSet.extractBugTrackerAndBug works with Trac URLs."""
 
     bugtracker_type = BugTrackerType.DEBBUGS
     bug_url = 'http://some.host/some/path/cgi-bin/bugreport.cgi?bug=42'
@@ -115,10 +116,10 @@ class DebbugsGetBugTrackerAndBugTest(GetBugTrackerAndBugTestBase):
 
 def test_suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(BugzillaGetBugTrackerAndBugTest))
-    suite.addTest(unittest.makeSuite(RoundUpGetBugTrackerAndBugTest))
-    suite.addTest(unittest.makeSuite(TracGetBugTrackerAndBugTest))
-    suite.addTest(unittest.makeSuite(DebbugsGetBugTrackerAndBugTest))
+    suite.addTest(unittest.makeSuite(BugzillaExtractBugTrackerAndBugTest))
+    suite.addTest(unittest.makeSuite(RoundUpExtractBugTrackerAndBugTest))
+    suite.addTest(unittest.makeSuite(TracExtractBugTrackerAndBugTest))
+    suite.addTest(unittest.makeSuite(DebbugsExtractBugTrackerAndBugTest))
     return suite
 
 

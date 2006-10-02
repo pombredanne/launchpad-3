@@ -204,7 +204,7 @@ class BugWatchSet(BugSetBase):
             bug=bug, owner=owner, datecreated=UTC_NOW, lastchanged=UTC_NOW, 
             bugtracker=bugtracker, remotebug=remotebug)
 
-    def getBugTrackerAndBug(self, url):
+    def extractBugTrackerAndBug(self, url):
         """See IBugWatchSet."""
         for trackertype, pattern in self.bugtracker_references.items():
             match = pattern.match(url)
