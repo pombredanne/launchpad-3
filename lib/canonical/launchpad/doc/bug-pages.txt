@@ -245,6 +245,29 @@ bug subscribers.
     ...        subscribers_portlet_view.getSubscribersAlsoNotified())
     [u'name12', u'name16']
 
+Explicit subscriptions take precedence over implicit ones. So if Carlos
+subscribes directly to bug #5, he will no longer appear in the
+getSubscribersFromDupes() result.
+
+    >>> bug_five.subscribe(getUtility(IPersonSet).getByName("carlos"))
+    <BugSubscription...>
+
+    >>> sorted(subscriber.name
+    ...        for subscriber in
+    ...        subscribers_portlet_view.getSubscribersFromDupes())
+    []
+
+Likewise, if Sample Person subscribes directly to bug five, he will no
+longer appear in the also notified list.
+
+    >>> bug_five.subscribe(getUtility(IPersonSet).getByName("name12"))
+    <BugSubscription...>
+
+    >>> sorted(subscriber.name
+    ...        for subscriber in
+    ...        subscribers_portlet_view.getSubscribersAlsoNotified())
+    [u'name16']
+
 Duplicates Portlet
 ------------------
 

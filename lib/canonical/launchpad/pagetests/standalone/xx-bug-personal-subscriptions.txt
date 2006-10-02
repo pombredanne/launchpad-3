@@ -34,9 +34,8 @@ this.
   >>> browser.url
   'http://localhost/products/firefox/+bug/1/'
 
-  >>> from canonical.launchpad.ftests.test_pages import find_tags_by_class
   >>> for tag in find_tags_by_class(browser.contents, "informational message"):
-  ...   print tag.string
+  ...   print tag.renderContents()
   You have been subscribed to this bug.
 
   >>> DIRECT_SUBS_PORTLET_INDEX = 0
@@ -51,7 +50,6 @@ this.
   >>> def print_subscribers(bug_page, subscriber_portlet_index):
   ...     """Print the subscribers listed in the subscriber portlet."""
   ...     import re
-  ...     from canonical.launchpad.ftests.test_pages import find_portlet
   ...     bug_id = re.search(r"bug #(\d+)", bug_page, re.IGNORECASE).group(1)
   ...     subscriber_portlet = find_portlet(
   ...         bug_page, 'Subscribers to bug %s:' % bug_id)
@@ -65,7 +63,7 @@ this.
   ...     else:
   ...         for li in portlet.fetch('li'):
   ...             if li.a:
-  ...                 print li.a.string
+  ...                 print li.a.renderContents()
   >>> print_direct_subscribers(browser.contents)
   Steve Alexander
   Sample Person
@@ -94,7 +92,7 @@ the user this time, and inform the user.
   'http://localhost/products/firefox/+bug/1/'
 
   >>> for tag in find_tags_by_class(browser.contents, 'informational message'):
-  ...   print tag.string
+  ...   print tag.renderContents()
   You have been unsubscribed from this bug.
 
   >>> subscribe_link = browser.getLink('Subscribe')
@@ -144,7 +142,7 @@ Let's unsubscribe the Launchpad team.
   'http://localhost/products/firefox/+bug/1/'
 
   >>> for tag in find_tags_by_class(browser.contents, 'informational message'):
-  ...   print tag.string
+  ...   print tag.renderContents()
   Launchpad Developers has been unsubscribed from this bug.
 
   >>> print_direct_subscribers(browser.contents)
@@ -234,15 +232,53 @@ tag.string, due to https://launchpad.net/bugs/62634
 
   >>> for tag in find_tags_by_class(
   ...     stevea_browser.contents, 'informational message'):
-  ...   print tag
-  <div...You have been unsubscribed from this bug and 1 duplicate (<a...#2</a>)...
-  <p...id="number_of_dupes"...
+  ...   print tag.renderContents()
+  You have been unsubscribed from this bug and 1 duplicate (<a...#2</a>)...
 
 (There are no longer any indirect subscribers, because Steve was
 unsubscribed from the dupes and thus is no longer indirectly subscribed
 to bug #3.)
 
   >>> print_indirect_subscribers(stevea_browser.contents)
+
+Let's repeat this example, with Steve subscribed to two different dupes,
+to see how the unsubscribe notification changes slightly, because he
+gets unsubscribed from more than one duplicate.
+
+  >>> stevea_browser.open(
+  ...     "http://launchpad.dev/products/firefox/+bug/1/+duplicate")
+  >>> stevea_browser.getControl("Duplicate Of").value = "3"
+  >>> stevea_browser.getControl("Change").click()
+
+(Resubscribe Steve to bug #2, because he was unsubscribed in the
+previous example.)
+
+  >>> stevea_browser.open(
+  ...     "http://launchpad.dev/products/ubuntu-product/+bug/2/+subscribe")
+  >>> stevea_browser.getControl("Continue").click()
+
+  >>> stevea_browser.open("http://launchpad.dev/bugs/3")
+
+  >>> print_indirect_subscribers(stevea_browser.contents)
+  Steve Alexander
+  Sample Person
+
+  >>> stevea_browser.getLink("Unsubscribe").click()
+  >>> stevea_browser.getControl("Continue").click()
+
+  >>> for tag in find_tags_by_class(
+  ...     stevea_browser.contents, 'informational message'):
+  ...   print tag.renderContents()
+  You have been unsubscribed from this bug and 2 duplicates (<a...#1</a>, <a...#2</a>)...
+  This bug has been reported 3 times
+
+(Let's undupe bug #1 from bug #3, since it's unneeded for the examples
+that follow.)
+
+  >>> stevea_browser.open(
+  ...     "http://launchpad.dev/products/firefox/+bug/1/+duplicate")
+  >>> stevea_browser.getControl("Duplicate Of").value = ""
+  >>> stevea_browser.getControl("Change").click()
 
 This unsubscribe behaviour is team-aware too, so you can unsubscribe
 your teams from a bug, even when the team's subscription comes from a
@@ -281,9 +317,9 @@ up in the indirect subscriptions.
 
   >>> for tag in find_tags_by_class(
   ...     foobar_browser.contents, 'informational message'):
-  ...   print tag
-  <div...Ubuntu Team has been unsubscribed from this bug and 1 duplicate (<a...#2</a>)...
-  <p...id="number_of_dupes"...
+  ...   print tag.renderContents()
+  Ubuntu Team has been unsubscribed from this bug and 1 duplicate (<a...#2</a>)...
+  This bug has been reported 2 times
 
 (ubuntu-team is no longer an indirect subscriber.)
 

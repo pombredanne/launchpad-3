@@ -1,8 +1,7 @@
 A bug with duplicates shows a message of how many times it's been reported.
 
-    >>> from canonical.launchpad.ftests.test_pages import find_tag_by_id
-
     >>> user_browser.open("http://launchpad.dev/bugs/5")
 
-    >>> print find_tag_by_id(user_browser.contents, "number_of_dupes")
-    <p...This bug has been reported...2...times...
+    >>> tag = find_tag_by_id(user_browser.contents, "number_of_dupes")
+    >>> print tag.renderContents()
+    This bug has been reported 2 times

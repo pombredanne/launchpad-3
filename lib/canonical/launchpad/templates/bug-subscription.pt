@@ -35,7 +35,8 @@
     and in different distributions.
   </p>
 
-  <p tal:condition="view/shouldShowUnsubscribeWarning" class="warning message">
+  <p tal:condition="view/shouldShowUnsubscribeFromDupesWarning"
+     class="warning message">
     Unsubscribing yourself or a team from a bug also unsubscribes from
     duplicates.
   </p>

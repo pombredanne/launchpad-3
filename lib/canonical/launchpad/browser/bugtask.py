@@ -317,8 +317,12 @@ class BugTaskView(LaunchpadView):
             self.context.bug.isSubscribed(self.user) or
             self.context.bug.isSubscribedToDupes(self.user))
 
-    def shouldShowUnsubscribeWarning(self):
-        """Should we warn the user about the catch to unsubscribing?"""
+    def shouldShowUnsubscribeFromDupesWarning(self):
+        """Should we warn the user about unsubscribing and duplicates?
+
+        The warning should tell the user that, when unsubscribing, they
+        will also be unsubscribed from dupes of this bug.
+        """
         if self.userIsSubscribed():
             return True
 
@@ -384,23 +388,11 @@ class BugTaskView(LaunchpadView):
         # too, or they would keep getting mail about this bug!
         self.context.bug.unsubscribe(self.user)
         unsubed_dupes = self.context.bug.unsubscribeFromDupes(self.user)
-        unsubed_dupes_msg_fragment = self._getUnsubscribedDupesMsgFragment(
-            unsubed_dupes)
 
-        if helpers.check_permission("launchpad.View", self.context.bug):
-            # The user still has permission to see this bug, so no
-            # special-casing needed.
-            self.request.response.addNotification(
-                "You have been unsubscribed from this bug%s." %
-                unsubed_dupes_msg_fragment)
-        else:
-            # Add a notification message rather than appending to
-            # .notices, because this message has to cross a redirect.
-            self.request.response.addNotification((
-                "You have been unsubscribed from bug %d%s. You no "
-                "longer have access to this private bug.") %
-                (self.context.bug.id, unsubed_dupes_msg_fragment))
+        self.request.response.addNotification(
+            self._getUnsubscribeNotification(self.user, unsubed_dupes))
 
+        if not helpers.check_permission("launchpad.View", self.context.bug):
             # Redirect the user to the bug listing, because they can no
             # longer see a private bug from which they've unsubscribed.
             self.request.response.redirect(
@@ -416,36 +408,69 @@ class BugTaskView(LaunchpadView):
         # otherwise they'll keep getting this bug's mail.
         self.context.bug.unsubscribe(user)
         unsubed_dupes = self.context.bug.unsubscribeFromDupes(user)
+        self.request.response.addNotification(
+            self._getUnsubscribeNotification(user, unsubed_dupes))
+
+    def _getUnsubscribeNotification(self, user, unsubed_dupes):
+        """Construct and return the unsubscribe-from-bug feedback message.
+
+        :user: The IPerson or ITeam that was unsubscribed from the bug.
+        :unsubed_dupes: The list of IBugs that are dupes from which the
+                        user was unsubscribed.
+        """
+        current_bug = self.context.bug
+        current_user = self.user
         unsubed_dupes_msg_fragment = self._getUnsubscribedDupesMsgFragment(
             unsubed_dupes)
 
-        self.request.response.addNotification(
-            "%s has been unsubscribed from this bug%s." %
-            (cgi.escape(user.displayname), unsubed_dupes_msg_fragment))
+        if user == current_user:
+            # Consider that the current user may have been "locked out"
+            # of a bug if they unsubscribed themselves from a private
+            # bug!
+            if helpers.check_permission("launchpad.View", current_bug):
+                # The user still has permission to see this bug, so no
+                # special-casing needed.
+                return (
+                    "You have been unsubscribed from this bug%s." %
+                    unsubed_dupes_msg_fragment)
+            else:
+                return (
+                    "You have been unsubscribed from bug %d%s. You no "
+                    "longer have access to this private bug.") % (
+                        bug.id, unsubed_dupes_msg_fragment)
+        else:
+            return "%s has been unsubscribed from this bug%s." % (
+                cgi.escape(user.displayname), unsubed_dupes_msg_fragment)
 
     def _getUnsubscribedDupesMsgFragment(self, unsubed_dupes):
-        # Return a string telling the user what dupes were unsubscribed from.
+        """Return the duplicates fragment of the unsubscription notification.
+
+        This piece lists the duplicates from which the user was
+        unsubscribed.
+        """
         if not unsubed_dupes:
             return ""
 
-        unsubed_dupes_msg_fragment = " and "
-        if len(unsubed_dupes) > 1:
-            unsubed_dupes_msg_fragment += "%d duplicates ("
+        dupe_links = []
+        for unsubed_dupe in unsubed_dupes:
+            dupe_links.append(
+                '<a href="%s" title="%s">#%d</a>' % (
+                canonical_url(unsubed_dupe), unsubed_dupe.title,
+                unsubed_dupe.id))
+        dupe_links_string = ", ".join(dupe_links)
+
+        num_dupes = len(unsubed_dupes)
+        if num_dupes > 1:
+            plural_suffix = "s"
         else:
-            unsubed_dupes_msg_fragment += "1 duplicate ("
+            plural_suffix = ""
 
-            dupe_links = []
-            for unsubed_dupe in unsubed_dupes:
-                dupe_links.append(
-                    '<a href="%s" title="%s">#%d</a>' % (
-                    canonical_url(unsubed_dupe), unsubed_dupe.title,
-                    unsubed_dupe.id))
-
-            unsubed_dupes_msg_fragment += ", ".join(dupe_links)
-
-            unsubed_dupes_msg_fragment += ")"
-
-        return unsubed_dupes_msg_fragment
+        return (
+            " and %(num_dupes)d duplicate%(plural_suffix)s "
+            "(%(dupe_links_string)s)") % ({
+                'num_dupes': num_dupes,
+                'plural_suffix': plural_suffix,
+                'dupe_links_string': dupe_links_string})
 
     def reportBugInContext(self):
         form = self.request.form
