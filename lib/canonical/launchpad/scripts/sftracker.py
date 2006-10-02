@@ -60,8 +60,8 @@ def parse_date(datestr):
 def sanitise_name(name):
     """Sanitise a string to pass the valid_name() constraint"""
     name = re.sub(r'[^a-z0-9\+\.\-]+', '-', name.lower())
-    if not name[0].isalpha():
-        name = 'x-' + name
+    if not name[0].isalnum():
+        name = 'x' + name
     while name.endswith('-'):
         name = name[:-1]
     return name

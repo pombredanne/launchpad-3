@@ -164,7 +164,8 @@ class SanitiseNameTestCase(unittest.TestCase):
         self.assertEqual(sftracker.sanitise_name('Core (C Code)'),
                          'core-c-code')
         self.assertEqual(sftracker.sanitise_name('python-2.4'), 'python-2.4')
-        self.assertEqual(sftracker.sanitise_name('1.0'), 'x-1.0')
+        self.assertEqual(sftracker.sanitise_name('1.0'), '1.0')
+        self.assertEqual(sftracker.sanitise_name('+42'), 'x+42')
 
 
 class PersonMappingTestCase(unittest.TestCase):
