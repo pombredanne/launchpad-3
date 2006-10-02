@@ -11,7 +11,7 @@ Sotho. We expect them to be told they can only make contributions:
   >>> browser.open('http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/st/+translate')
   >>> browser.url
   'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/st/+translate'
-  >>> 'You are not an official translator for this file' in browser.contents
+  >>> 'Your translations will be held for review' in browser.contents
   True
 
 However, in Afrikaans, No Privileges Person DOES have the ability to edit

@@ -393,7 +393,7 @@
       </table>
     </fieldset>
 
-    <fieldset tal:condition="view/shouldShowBugsElsewhereBox">
+    <fieldset tal:condition="view/shouldShowUpstreamStatusBox">
       <legend>Upstream status</legend>
 
           <table>
@@ -421,8 +421,14 @@
                   </label>
               </td>
             </tr>
-            <tr tal:condition="view/shouldShowNoPackageWidget">
+            <tr>
               <td>
+                <label tal:attributes="for view/tag_widget/name"
+                       tal:content="structure view/tag_widget/label">
+                  Tag
+                </label>: <input tal:replace="structure view/tag_widget" />
+              </td>
+              <td tal:condition="view/shouldShowNoPackageWidget">
                   <span tal:content="structure view/has_no_package_widget" />
                   <label for="field.has_no_package">
                     Hide bugs with packages specified

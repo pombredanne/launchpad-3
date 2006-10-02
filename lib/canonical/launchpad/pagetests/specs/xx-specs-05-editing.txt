@@ -10,7 +10,7 @@ First, we need to load the +edit page.
   >>> features_domain = 'http://features.launchpad.dev'
   >>> spec_path = '/products/firefox/+spec/extension-manager-upgrades'
   >>> browser.open(features_domain + spec_path)
-  >>> browser.getLink('Edit Details').click()
+  >>> browser.getLink('Edit title and summary').click()
   >>> browser.url
   'http://features.launchpad.dev/products/firefox/+spec/extension-manager-upgrades/+edit'
 
@@ -59,7 +59,7 @@ specification home page.
 Also, we would like to assign these to someone other than Carlos, and we
 would also like to have a drafter associated with it.
 
-  >>> browser.getLink('Change People').click()
+  >>> browser.getLink('Change people').click()
   >>> browser.getControl('Assignee').value = 'tsukimi@quaqua.net'
   >>> browser.getControl('Drafter').value = 'daf@canonical.com'
   >>> browser.getControl('Approver').value = 'stuart.bishop@canonical.com'
@@ -71,12 +71,26 @@ would also like to have a drafter associated with it.
 Finally, we should be able to change the status metadata (definition status,
 implementation status, estimated man days etc) of the specification.
 
-  >>> browser.getLink('Change Status').click()
+  >>> browser.getLink('Change status').click()
   >>> browser.getControl('Definition Status').value = ['Drafting']
-  >>> browser.getControl('Estimated Developer Days').value = '5'
+  >>> # browser.getControl('Estimated Developer Days').value = '5'
   >>> browser.getControl('Implementation Status').value = ['Slow progress']
   >>> browser.getControl('Status Whiteboard').value = 'XXX'
   >>> browser.getControl('Change').click()
   >>> browser.url
   'http://features.launchpad.dev/products/firefox/+spec/extension-manager-upgrades'
 
+Any logged in user can edit a specification whiteboard.
+
+  >>> user_browser.open(
+  ...     'http://features.launchpad.dev/distros/kubuntu/'
+  ...     '+spec/krunch-desktop-plan')
+
+  >>> user_browser.getLink('Edit whiteboard').click()
+  >>> user_browser.getControl('Whiteboard').value = 'XXX by Sample Person'
+  >>> user_browser.getControl('Change').click()
+  >>> user_browser.url
+  'http://features.launchpad.dev/distros/kubuntu/+spec/krunch-desktop-plan'
+
+  >>> 'XXX by Sample Person' in user_browser.contents
+  True

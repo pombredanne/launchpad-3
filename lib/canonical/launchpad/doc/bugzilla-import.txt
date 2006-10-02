@@ -356,7 +356,7 @@ and attach a watch to the upstream bug tracker:
   Task: evolution (upstream)
       Status: UNCONFIRMED
       Product: evolution
-      Importance: UNTRIAGED
+      Importance: UNDECIDED
       Watch: http://bugzilla.gnome.org/show_bug.cgi?id=273041
   Task: evolution (Ubuntu)
       Status: UNCONFIRMED
@@ -369,7 +369,7 @@ and attach a watch to the upstream bug tracker:
       Status: UNCONFIRMED
       Distro: debian
       Source package: evolution
-      Importance: UNTRIAGED
+      Importance: UNDECIDED
       Watch: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1234
   Messages:
       Author: Sample Person

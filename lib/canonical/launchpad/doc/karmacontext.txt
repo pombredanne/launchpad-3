@@ -6,6 +6,7 @@ action was performed, we're able to find out who contributes the most to a
 given product.  We can have this on a per-category (Bug Management,
 Translations, etc) basis or in general, across all categories.
 
+    >>> import operator
     >>> from zope.component import getUtility
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import (
@@ -35,7 +36,7 @@ product/distribution grouped by categories.
 
     >>> contributors = ubuntu.getTopContributorsGroupedByCategory(limit=2)
     >>> sorted_categories = sorted(contributors.keys(),
-    ...                            key=lambda category: category.title)
+    ...                            key=operator.attrgetter('title'))
     >>> for category in sorted_categories:
     ...     people = [(person.name, karmavalue) 
     ...               for person, karmavalue in contributors[category]]

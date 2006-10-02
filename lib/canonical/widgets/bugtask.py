@@ -4,7 +4,6 @@
 
 __metaclass__ = type
 
-
 import os
 from xml.sax.saxutils import escape
 
@@ -17,12 +16,14 @@ from zope.app.form.browser.widget import BrowserWidget, renderElement
 from zope.app.form.interfaces import (
     IDisplayWidget, IInputWidget, InputErrors, ConversionError,
     WidgetInputError)
-from zope.schema.interfaces import ValidationError
+from zope.schema.interfaces import ValidationError, InvalidValue
 from zope.app.form import Widget, CustomWidgetFactory
 from zope.app.form.utility import setUpWidget
 
-from canonical.launchpad.interfaces import IBugWatch, ILaunchBag
+from canonical.launchpad.interfaces import IBugWatch, ILaunchBag, NotFoundError
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import canonical_url
+from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.popup import SinglePopupWidget
 
 class BugTaskAssigneeWidget(Widget):
@@ -384,6 +385,36 @@ class BugTaskBugWatchWidget(RadioWidget):
             contents='\n'.join(rendered_items))
 
 
+class BugTaskSourcePackageNameWidget(SinglePopupWidget):
+    """A widget for associating a bugtask with a SourcePackageName.
+
+    It accepts both binary and source package names.
+    """
+
+    def _toFieldValue(self, input):
+        if not input:
+            return self.context.missing_value
+
+        field = self.context
+        distribution = field.context.distribution
+        if distribution is None and field.context.distrorelease is not None:
+            distribution = field.context.distrorelease.distribution
+        assert distribution is not None, (
+            "BugTaskSourcePackageNameWidget should be used only for"
+            " bugtasks on distributions or on distribution releases.")
+
+        try:
+            source, binary = distribution.guessPackageNames(input)
+        except NotFoundError:
+            try:
+                return self.convertTokensToValues([input])[0]
+            except InvalidValue:
+                raise LaunchpadValidationError(
+                    "Launchpad doesn't know of any source package named"
+                    " '%s' in %s.", input, distribution.displayname)
+        return source
+
+
 class AssigneeDisplayWidget(BrowserWidget):
     """A widget for displaying an assignee."""
 
@@ -401,7 +432,7 @@ class AssigneeDisplayWidget(BrowserWidget):
             assignee = assignee_field.get(bugtask)
         if assignee:
             person_img = renderElement(
-                'img', style="padding-bottom: 2px", src="/@@/user.gif", alt="")
+                'img', style="padding-bottom: 2px", src="/@@/user", alt="")
             return renderElement(
                 'a', href=canonical_url(assignee),
                 contents="%s %s" % (person_img, escape(assignee.browsername)))

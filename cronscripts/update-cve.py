@@ -13,16 +13,17 @@ import gzip
 import StringIO
 import timing
 import _pythonpath
-from xml.dom.minidom import parseString
 
 from optparse import OptionParser
+
+import cElementTree
 
 from canonical.lp import initZopeless
 from canonical.config import config
 from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
-from canonical.launchpad.scripts.cveimport import update_one_cve
+from canonical.launchpad.scripts.cveimport import CVEDB_NS, update_one_cve
 
 _default_lock_file = '/var/lock/launchpad-update-cve.lock'
 
@@ -70,8 +71,8 @@ def main(log, cvefile=None, cveurl=None):
     # start analysing the data
     timing.start()
     log.info("Processing CVE XML...")
-    dom = parseString(cve_db)
-    items = dom.getElementsByTagName('item')
+    dom = cElementTree.fromstring(cve_db)
+    items = dom.findall(CVEDB_NS + 'item')
     log.info("Updating database...")
     for item in items:
         txn.begin()
@@ -79,8 +80,6 @@ def main(log, cvefile=None, cveurl=None):
         txn.commit()
     timing.finish()
     log.info('%d seconds to update database.' % timing.seconds())
-    log.info('Cleaning up...')
-    dom.unlink()
 
 
 if __name__ == '__main__':

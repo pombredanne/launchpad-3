@@ -1,10 +1,10 @@
 Check that the productseries RDF export works.
 
   >>> print http(r"""
-  ... GET /products/firefox/milestones/+rdf HTTP/1.1
+  ... GET /products/firefox/trunk/+rdf HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  Content-Disposition: attachment; filename=firefox-milestones.rdf
+  Content-Disposition: attachment; filename=firefox-trunk.rdf
   Content-Length: ...
   Content-Type: application/rdf+xml
   <BLANKLINE>

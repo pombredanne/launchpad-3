@@ -21,55 +21,46 @@
     tal:define="specs view/specs;
                 has_any_specs view/has_any_specifications">
 
+      <h1>Feature specifications</h1>
+
   <tal:no_specs condition="not: has_any_specs">
 
-    <h1>This is the Blueprint Feature Tracker</h1>
-
     <p>
-      Blueprint is a feature tracker in Launchpad. It is designed to let
-      projects keep track of the features they intend to implement over the
-      next few releases. It can generate reports of the project roadmap, as
-      well as helping to keep developers informed about specification status
-      changes by email.
+      Launchpad lets projects track the features they intend to implement over
+      the next few releases. It can generate reports of the project roadmap, as
+      well as notifying developers of specification status changes.
+      Examples:
+      <a href="/distros/ubuntu/+specs">Ubuntu specifications</a>,
+      <a href="/products/bzr/+specs">Bazaar specifications</a>.
     </p>
 
     <tal:not_person condition="not: view/is_person">
-    <p>
-      Choose <img src="/@@/add.gif" /> <a href="+addspec">New Specification</a>
-      to register a first specification for
-      <span tal:replace="context/displayname">Firefox</span>.
-    </p>
+      <ul class="menu">
+        <li class="add">
+          <a href="+addspec">Register the first specification</a>
+          for <span tal:replace="context/displayname">Firefox</span>
+        </li>
+      </ul>
     </tal:not_person>
 
     <p>
-      You might want to read the following:
-    </p>
-
-    <ul>
-      <li>
-        <a href="https://help.launchpad.net/BlueprintDocumentation"
-        >Blueprint documentation</a>
-      </li>
-      <li>
-        <a href="/distros/ubuntu/+specs">Ubuntu specifications</a> (example)
-      </li>
-      <li>
-        <a href="/projects/mozilla/+specs">Mozilla specifications</a> (example)
-      </li>
-    </ul>
-
-    <p>
-      Blueprint lets you keep track of who is responsible for what, and also
-      lets you take control of the planning of releases. You can approve
+      Launchpad lets you plan releases, and keep track of who is responsible
+      for what. You can approve
       feature specifications as goals for a particular release, and then
-      generate a simple report showing your progress towards feature
+      generate a simple report of progress towards feature
       completion for that release.
     </p>
+
+      <ul class="menu">
+        <li class="info">
+          <a href="https://help.launchpad.net/BlueprintDocumentation"
+          >More about tracking features</a>
+        </li>
+      </ul>
 
   </tal:no_specs>
 
   <tal:has_any_specs condition="has_any_specs">
-    <h1>Feature specifications</h1>
 
     <form name="spec_search" method="GET">
 
@@ -99,7 +90,7 @@
           <th tal:content="view/goaltitle">Hack!</th>
         </tr>
       </thead>
-      <tbody class="lesser">
+      <tbody>
         <tr tal:repeat="spec specs">
           <td>
             <span class="sortkey" tal:content="spec/priority/sortkey" />
@@ -121,8 +112,12 @@
                   tal:attributes="
                   class string:specstatus${spec/status/name}">Approved</span>
           </td>
-          <td tal:attributes="class string:specdelivery${spec/delivery/name}"
-              tal:content="spec/delivery/title">Deployed</td>
+          <td>
+            <span class="sortkey" tal:content="spec/delivery/sortkey" />
+            <span
+              tal:attributes="class string:specdelivery${spec/delivery/name}"
+              tal:content="spec/delivery/title">Deployed</span>
+          </td>
           <td>
             <a tal:condition="spec/assignee"
                tal:attributes="href spec/assignee/fmt:url"

@@ -17,7 +17,10 @@ __all__ = [
     'DistributionReleaseMirrorsView',
     'DistributionDisabledMirrorsView',
     'DistributionUnofficialMirrorsView',
+    'DistributionLaunchpadUsageEditView',
     ]
+
+import operator
 
 from zope.component import getUtility
 from zope.app.form.browser.add import AddView
@@ -33,9 +36,9 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, ApplicationMenu, LaunchpadView,
-    enabled_with_permission, GetitemNavigation, stepthrough, stepto,
-    canonical_url, redirection)
+    action, ApplicationMenu, canonical_url, enabled_with_permission,
+    GetitemNavigation, LaunchpadEditFormView, LaunchpadView, Link,
+    redirection, StandardLaunchpadFacets, stepthrough, stepto)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import DistributionReleaseStatus
 
@@ -75,10 +78,10 @@ class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
     def traverse_ticket(self, name):
         # tickets should be ints
         try:
-            ticket_num = int(name)
+            ticket_id = int(name)
         except ValueError:
             raise NotFoundError
-        return self.context.getTicket(ticket_num)
+        return self.context.getTicket(ticket_id)
 
     redirection('+ticket', '+tickets')
 
@@ -96,11 +99,11 @@ class DistributionFacets(StandardLaunchpadFacets):
     usedfor = IDistribution
 
     enable_only = ['overview', 'bugs', 'support', 'specifications',
-                   'translations', 'calendar']
+                   'translations']
 
     def specifications(self):
         target = '+specs'
-        text = 'Specifications'
+        text = 'Features'
         summary = 'Feature specifications for %s' % self.context.displayname
         return Link(target, text, summary)
 
@@ -117,9 +120,10 @@ class DistributionOverviewMenu(ApplicationMenu):
     usedfor = IDistribution
     facet = 'overview'
     links = ['edit', 'driver', 'search', 'allpkgs', 'members', 'mirror_admin',
-             'reassign', 'addrelease', 'builds', 'release_mirrors',
-             'archive_mirrors', 'disabled_mirrors', 'unofficial_mirrors',
-             'newmirror', 'launchpad_usage', 'upload_admin']
+             'reassign', 'addrelease', 'top_contributors', 'builds',
+             'release_mirrors', 'archive_mirrors', 'disabled_mirrors',
+             'unofficial_mirrors', 'newmirror', 'launchpad_usage',
+             'upload_admin']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -142,6 +146,10 @@ class DistributionOverviewMenu(ApplicationMenu):
         enabled = self.context.full_functionality
         return Link('+newmirror', text, enabled=enabled, icon='add')
 
+    def top_contributors(self):
+        text = 'Top Contributors'
+        return Link('+topcontributors', text, icon='info')
+
     def release_mirrors(self):
         text = 'Show CD Mirrors'
         enabled = self.context.full_functionality
@@ -156,7 +164,7 @@ class DistributionOverviewMenu(ApplicationMenu):
         text = 'Show Disabled Mirrors'
         enabled = False
         user = getUtility(ILaunchBag).user
-        if (self.context.full_functionality and user is not None and 
+        if (self.context.full_functionality and user is not None and
             user.inTeam(self.context.mirror_admin)):
             enabled = True
         return Link('+disabledmirrors', text, enabled=enabled, icon='info')
@@ -165,7 +173,7 @@ class DistributionOverviewMenu(ApplicationMenu):
         text = 'Show Unofficial Mirrors'
         enabled = False
         user = getUtility(ILaunchBag).user
-        if (self.context.full_functionality and user is not None and 
+        if (self.context.full_functionality and user is not None and
             user.inTeam(self.context.mirror_admin)):
             enabled = True
         return Link('+unofficialmirrors', text, enabled=enabled, icon='info')
@@ -217,7 +225,7 @@ class DistributionBugsMenu(ApplicationMenu):
     links = ['new', 'bugcontact', 'securitycontact', 'cve_list']
 
     def cve_list(self):
-        text = 'CVE List'
+        text = 'CVE Reports'
         return Link('+cve', text, icon='cve')
 
     def new(self):
@@ -371,7 +379,8 @@ class DistributionView(BuildRecordsView):
                      self.translation_focus.id != release.id))
             ]
 
-        return sorted(releases, key=lambda a: a.version, reverse=True)
+        return sorted(releases, key=operator.attrgetter('version'),
+                      reverse=True)
 
 
 class DistributionAllPackagesView(LaunchpadView):
@@ -388,6 +397,22 @@ class DistributionEditView(SQLObjectEditView):
 
     def changed(self):
         self.request.response.redirect(canonical_url(self.context))
+
+
+class DistributionLaunchpadUsageEditView(LaunchpadEditFormView):
+    """View class for defining Launchpad usage."""
+
+    schema = IDistribution
+    field_names = ["official_rosetta", "official_malone"]
+    label = "Describe Launchpad usage"
+
+    @action("Change", name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
 
 
 class DistributionSetView:
@@ -439,16 +464,20 @@ class DistributionBugContactEditView(SQLObjectEditView):
     def changed(self):
         """Redirect to the distribution page."""
         distribution = self.context
-        contact_email = None
+        contact_display_value = None
 
         if distribution.bugcontact:
-            contact_email = distribution.bugcontact.preferredemail.email
+            if distribution.bugcontact.preferredemail:
+                contact_display_value = (
+                    distribution.bugcontact.preferredemail.email)
+            else:
+                contact_display_value = distribution.bugcontact.displayname
 
-        if contact_email:
-            # The bug contact was set to a new person or team.
+        # The bug contact was set to a new person or team.
+        if contact_display_value:
             self.request.response.addNotification(
                 "Successfully changed the distribution bug contact to %s" %
-                contact_email)
+                contact_display_value)
         else:
             # The bug contact was set to noone.
             self.request.response.addNotification(
@@ -463,14 +492,17 @@ class DistributionBugContactEditView(SQLObjectEditView):
 class DistributionMirrorsView(LaunchpadView):
 
     def _groupMirrorsByCountry(self, mirrors):
-        """Given a list of mirrors, create a dictionary mapping country names
-        to a list of mirrors on that country and return this dictionary.
+        """Given a list of mirrors, create and return list of dictionaries
+        containing the country names and the list of mirrors on that country.
+
+        This list is ordered by country name.
         """
         mirrors_by_country = {}
         for mirror in mirrors:
             mirrors = mirrors_by_country.setdefault(mirror.country.name, [])
             mirrors.append(mirror)
-        return mirrors_by_country
+        return [dict(country=country, mirrors=mirrors)
+                for country, mirrors in sorted(mirrors_by_country.items())]
 
 
 class DistributionArchiveMirrorsView(DistributionMirrorsView):

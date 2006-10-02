@@ -21,8 +21,10 @@ permitted_database_imports = text_lines_to_set("""
     canonical.librarian.db
     canonical.doap.fileimporter
     canonical.foaf.nickname
+    canonical.archivepublisher.ftparchive
+    canonical.archivepublisher.publishing
     canonical.archivepublisher.domination
-    canonical.launchpad.hctapi
+    canonical.archivepublisher.deathrow
     canonical.launchpad.vocabularies.dbobjects
     canonical.librarian.client
     importd.Job

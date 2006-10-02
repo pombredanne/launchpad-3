@@ -2,8 +2,12 @@
 
 __metaclass__ = type
 
-import os, os.path, atexit, sys
+import tempfile
+import os
+import atexit
+import sys
 from signal import signal, SIGTERM
+
 from canonical.config import config
 
 def pidfile_path(service_name):
@@ -84,10 +88,12 @@ def make_pidfile(service_name):
         sys.exit(-1 * SIGTERM)
     signal(SIGTERM, remove_pidfile_handler)
 
-    outf = open(pidfile, 'w')
+    fd, tempname = tempfile.mkstemp()
+    outf = os.fdopen(fd, 'w')
     outf.write(str(os.getpid())+'\n')
     outf.flush()
     outf.close()
+    os.rename(tempname, pidfile)
 
 
 def remove_pidfile(service_name):

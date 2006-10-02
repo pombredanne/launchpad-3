@@ -9,7 +9,6 @@ import os
 import time
 
 from canonical.lp import initZopeless
-from canonical.launchpad.database import Distribution
 from contrib.glock import GlobalLock
 
 class PoppyInterfaceFailure(Exception):

@@ -9,12 +9,11 @@
     </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-trackers" />
+    <div tal:replace="structure context/@@+portlet-latestspecs" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure context/@@+portlet-details" />
-    <div tal:replace="structure context/@@+portlet-latestspecs" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
@@ -66,7 +65,7 @@
     </p>
 
     <p>
-        <img alt="" src="/@@/add.gif" /><a href="+newproduct">Register another
+        <img alt="" src="/@@/add" /><a href="+newproduct">Register another
         product</a> for this project.
     </p>
 

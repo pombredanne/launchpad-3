@@ -23,7 +23,7 @@ We can use the magic productrelease property to map this to a ProductRelease:
    >>> print pr.product.name
    firefox
    >>> print pr.productseries.name
-   milestones
+   trunk
    >>> print pr.version
    0.9
 
@@ -48,7 +48,7 @@ after it:
    >>> print pr.product.name
    netapplet
    >>> print pr.productseries.name
-   releases
+   trunk
    >>> print pr.version
    1.0
 
@@ -113,7 +113,7 @@ It also offers an easy way of checking the number of tickets open on the
 package in the distribution:
 
    >>> print spr.open_ticket_count
-   0
+   1
 
 Nobody's having trouble with firefox!
 

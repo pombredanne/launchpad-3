@@ -21,9 +21,18 @@ Let's look at a bug that has no attachments:
 Creating attachments
 --------------------
 
-To create an attachment, call IBug.addAttachment:
+To create an attachment, call IBug.addAttachment. It will emit an
+SQLObjectCreatedEvent in order to trigger email notifications:
 
     >>> from StringIO import StringIO
+
+    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from canonical.launchpad.event.interfaces import (
+    ...     ISQLObjectCreatedEvent)
+    >>> def attachment_added(attachment, event):
+    ...     print "Attachment added: %r" % attachment.libraryfile.filename
+    >>> event_listener = TestEventListener(
+    ...     IBugAttachment, ISQLObjectCreatedEvent, attachment_added)
 
     >>> filecontent = "Some useful information."
     >>> file_ = StringIO(filecontent)
@@ -42,6 +51,7 @@ To create an attachment, call IBug.addAttachment:
     ...     description="this fixes the bug",
     ...     comment=message,
     ...     is_patch=False)
+    Attachment added: u'foo.bar'
     <BugAttachment ...>
 
     >>> import transaction
@@ -63,6 +73,7 @@ IBug.addAttachment's comment parameter can also be a string.
     ...     description="this fixes the bug",
     ...     comment="a string comment",
     ...     is_patch=False)
+    Attachment added: u'foo.baz'
     <BugAttachment ...>
 
 The librarian won't allow empty files, so the view that creates the
@@ -101,7 +112,7 @@ testrunner is 1024, so let's create a file larger than that and try to
 upload it:
 
     >>> filecontent = StringIO('x'*1025)
-    >>> filecontent.filename = 'foo.bar'
+    >>> filecontent.filename = 'foo.txt'
     >>> add_request = LaunchpadTestRequest(form={
     ...     'field.subject': u'Title',
     ...     'field.comment': u'Some comment.',
@@ -135,6 +146,16 @@ means no limit:
     >>> len(add_comment_view.errors)
     0
     >>> add_comment_view.process_form()
+    Attachment added: u'foo.txt'
+
+Since the SQLObjectCreatedEvent was generated, a notification about the
+attachment was added.
+
+    >>> from canonical.launchpad.database import BugNotification
+    >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> print latest_notification.message.text_contents
+    ** Attachment added: "blah"
+       http://.../foo.txt
 
 Let's try uploading a file with some weird characters in them:
 
@@ -151,13 +172,37 @@ Let's try uploading a file with some weird characters in them:
     >>> len(add_comment_view.errors)
     0
     >>> add_comment_view.process_form()
+    Attachment added: u'fo\xf6 bar'
     >>> bug_one.attachments[-1].libraryfile.filename
     u'fo\xf6 bar'
     >>> bug_one.attachments[-1].libraryfile.url
     'http://.../fo%C3%B6%20bar'
 
+If a filename contains a slash, it will be converted to a dash instead.
+We do this since otherwise it won't be possible to download the file
+from the librarian.
+
+    >>> filecontent.filename = u'foo/bar/baz'
+    >>> add_request = LaunchpadTestRequest(form={
+    ...     'field.subject': u'Title',
+    ...     'field.comment': u'Some comment.',
+    ...     'field.include_attachment': 'on',
+    ...     'field.filecontent': filecontent,
+    ...     'field.attachment_description': 'blah',
+    ...     'field.patch': u'',
+    ...     'FORM_SUBMIT': ''})
+    >>> add_comment_view = getView(bugtask, '+addcomment-form', add_request)
+    >>> len(add_comment_view.errors)
+    0
+    >>> add_comment_view.process_form()
+    Attachment added: u'foo-bar-baz'
+    >>> bug_one.attachments[-1].libraryfile.filename
+    u'foo-bar-baz'
+    >>> bug_one.attachments[-1].libraryfile.url
+    'http://.../foo-bar-baz'
 
     >>> config.launchpad.max_bug_attachment_size = old_max_bug_attachment_size
+    >>> event_listener.unregister()
 
 Security
 --------

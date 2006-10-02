@@ -1,12 +1,18 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 #
 
+"""Utilities to aid testing archivepublisher."""
+
+__metaclass__ = type
+
 # Utility functions/classes for testing the archive publisher.
 
 from canonical.archivepublisher.tests import datadir
 from canonical.lp.dbschema import (
     PackagePublishingPocket, PackagePublishingStatus,
     DistributionReleaseStatus)
+
+__all__ = ['FakeLogger']
 
 class FakeLogger:
     def debug(self, *args, **kwargs):
@@ -16,18 +22,23 @@ class FakeLogger:
         pass
 
 
-class FakeDistribution(object):
+class FakeDistribution:
     def __init__(self, name, conf):
         self.name = name.decode('utf-8')
         self.lucilleconfig = conf.decode('utf-8')
+        self.releases = []
+
+    def registerRelease(self, release):
+        self.releases.append(release)
 
     def __getitem__(self, name):
-        for dr in drs:
-            if dr.name == name:
-                return dr
+        for release in self.releases:
+            if release.name == name:
+                return release
+        return None
 
 
-class FakeDistroRelease(object):
+class FakeDistroRelease:
     def __init__(self, name, conf, distro):
         self.name = name.decode('utf-8')
         self.lucilleconfig = conf.decode('utf-8')
@@ -35,15 +46,16 @@ class FakeDistroRelease(object):
         self.architectures = [FakeDistroArchRelease(self, "i386"),
                               FakeDistroArchRelease(self, "powerpc")]
         self.releasestatus = DistributionReleaseStatus.DEVELOPMENT
+        self.distribution.registerRelease(self)
 
 
-class FakeDistroArchRelease(object):
-    def __init__(self, dr, archtag):
-        self.distrorelease = dr
+class FakeDistroArchRelease:
+    def __init__(self, release, archtag):
+        self.distrorelease = release
         self.architecturetag = archtag
 
 
-class FakeSource(object):
+class FakeSource:
     def __init__(self, version, status, name=""):
         self.version = version.decode('utf-8')
         self.status = status
@@ -58,7 +70,7 @@ class FakeSource(object):
             )
 
 
-class FakeBinary(object):
+class FakeBinary:
     def __init__(self, version, status, name=""):
         self.version = version.decode('utf-8')
         self.status = status
@@ -73,58 +85,116 @@ class FakeBinary(object):
             )
 
 
-class FakeSourcePublishing(object):
-    def __init__(self, source, component, filename, alias, section="", dr=""):
-        self.sourcepackagename = source.decode('utf-8')
-        self.componentname = component.decode('utf-8')
-        self.libraryfilealiasfilename = filename.decode('utf-8')
+class FakeSourcePublishing:
+    """Mocks a SourcePackagePublishingHistory object."""
+    id = 1
+    
+    def __init__(self, source, component, alias, section, dr):
+        class Dummy: id = 1
+        self.sourcepackagerelease = Dummy()
+        self.sourcepackagerelease.name = source
+        self.component = Dummy()
+        self.component.name = component
         self.libraryfilealias = alias
-        self.sourcepackagepublishing = FakeSource(
-            "", PackagePublishingStatus.PENDING)
-        self.sectionname = section.decode('utf-8')
-        self.distroreleasename = dr.decode('utf-8')
+        self.section = Dummy()
+        self.section.name = section
+        self.distrorelease = Dummy()
+        self.distrorelease.name = dr
         self.pocket = PackagePublishingPocket.RELEASE
 
     def _deepCopy(self):
         return FakeSourcePublishing(
-            self.sourcepackagename.encode('utf-8'),
-            self.componentname.encode('utf-8'),
-            self.libraryfilealiasfilename.encode('utf-8'),
+            self.sourcepackage.name,
+            self.component.name,
             self.libraryfilealias,
-            self.sectionname.encode('utf-8'),
-            self.distroreleasename.encode('utf-8')
+            self.section.name,
+            self.distrorelease.name,
             )
 
-class FakeBinaryPublishing(object):
-    def __init__(self, source, component, filename, alias,
-                 section="", dr="", prio=0, archtag = ""):
-        self.sourcepackagename = source.decode('utf-8')
-        self.binarypackagename = source.decode('utf-8')
-        self.componentname = component.decode('utf-8')
-        self.libraryfilealiasfilename = filename.decode('utf-8')
+class FakeBinaryPublishing:
+    """Mocks a BinaryPackagePublishingHistory object."""
+    id = 1
+    
+    def __init__(self, binary, source, component, alias,
+                 section, dr, prio, archtag):
+        class Dummy: id = 1
+        self.binarypackagerelease = Dummy()
+        self.binarypackagerelease.name = source
+        self.sourcepackagerelease = Dummy()
+        self.sourcepackagerelease.name = source
+        self.binarypackage = Dummy()
+        self.binarypackage.name = source
+        self.component = Dummy()
+        self.component.name = component
+        self.section = Dummy()
+        self.section.name = section
+        self.distroarchrelease = Dummy()
+        self.distroarchrelease.distrorelease = Dummy()
+        self.distroarchrelease.distrorelease.name = dr
         self.libraryfilealias = alias
-        self.binarypackagepublishing = FakeBinary(
-            "", PackagePublishingStatus.PENDING)
-        self.sectionname = section.decode('utf-8')
-        self.distroreleasename = dr.decode('utf-8')
         self.priority = prio
-        self.architecturetag = archtag.decode('utf-8')
+        self.architecturetag = archtag
         self.pocket = PackagePublishingPocket.RELEASE
 
     def _deepCopy(self):
         return FakeBinaryPublishing(
-            self.sourcepackagename.encode('utf-8'),
-            self.componentname.encode('utf-8'),
-            self.libraryfilealiasfilename.encode('utf-8'),
+            self.binarypackagerelease.name,
+            self.sourcepackagerelease.name,
+            self.component.name,
             self.libraryfilealias,
-            self.sectionname.encode('utf-8'),
-            self.distroreleasename.encode('utf-8'),
+            self.section.name,
+            self.distrorelease.name,
             self.priority,
-            self.architecturetag.encode('utf-8')
+            self.architecturetag,
             )
 
 
+class FakeSourceFilePublishing:
+    """Mocks a SourcePackageFilePublishing object."""
+    def __init__(self, source, component, leafname, alias, section, dr):
+        self.sourcepackagename = source
+        self.componentname = component
+        self.libraryfilealiasfilename = leafname
+        self.libraryfilealias = alias
+        self.sectionname = section
+        self.distroreleasename = dr
+        self.pocket = PackagePublishingPocket.RELEASE
+
+    def _deepCopy(self):
+        return FakeSourceFilePublishing(
+            self.sourcepackagename,
+            self.componentname,
+            self.libraryfilealiasfilename,
+            self.libraryfilealias,
+            self.sectionname,
+            self.distroreleasename,
+            )
+
+class FakeBinaryFilePublishing:
+    """Mocks a BinaryPackageFilePublishing object."""
+    def __init__(self, source, component, leafname, alias, section, dr, archtag):
+        self.sourcepackagename = source
+        self.componentname = component
+        self.libraryfilealiasfilename = leafname
+        self.libraryfilealias = alias
+        self.sectionname = section
+        self.distroreleasename = dr
+        self.architecturetag = archtag
+        self.pocket = PackagePublishingPocket.RELEASE
+
+    def _deepCopy(self):
+        return FakeBinaryFilePublishing(
+            self.sourcepackagename,
+            self.componentname,
+            self.libraryfilealiasfilename,
+            self.libraryfilealias,
+            self.sectionname,
+            self.distroreleasename,
+            self.architecturetag,
+            )
+
 sentinel = object()
+
 
 def _deepCopy(thing):
     if type(thing) == dict:
@@ -147,7 +217,7 @@ def _deepCopy(thing):
     return thing # Assume we can't copy it deeply
 
 
-class FakeDownloadClient(object):
+class FakeDownloadClient:
     """Fake up a FileDownloadClient for the tests"""
     def __init__(self):
         pass
@@ -161,7 +231,7 @@ class FakeDownloadClient(object):
         return "/%s/%s/%s" % (alias, alias, alias)
 
 
-class FakeUploadClient(object):
+class FakeUploadClient:
     """Fake up a FileUploadClient for the tests"""
     def __init__(self):
         pass
@@ -176,7 +246,7 @@ class FakeUploadClient(object):
 
 
 # NOTE: If you alter the configs here remember to add tests in test_config.py
-dist = FakeDistribution("ubuntu",
+fake_ubuntu = FakeDistribution("ubuntu",
                         """
 [publishing]
 pendingremovalduration=5
@@ -189,16 +259,16 @@ cacheroot=FOO/cache
 miscroot=FOO/misc
                         """.replace("FOO",datadir("distro")).replace("BAR","ubuntu"));
 
-drs = [
+fake_ubuntu_releases = [
     FakeDistroRelease("warty",
                       """
 [publishing]
 components = main restricted universe
-                      """, dist),
+                      """, fake_ubuntu),
     FakeDistroRelease("hoary",
                       """
 [publishing]
 components = main restricted universe
-                      """, dist)
+                      """, fake_ubuntu)
     ]
 

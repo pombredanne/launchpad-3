@@ -103,7 +103,7 @@ body {
   color: #66a;
 }
 :link, .hierarchy :visited, .footer :visited,
-.facets :visited, #pillars :visited, #subpillars :visited, .portlet :visited {
+.facets :visited, .portlet :visited {
   background: none;
   color: #000088;
 }
@@ -141,7 +141,7 @@ h4, h5, h6 {
   margin-bottom: 0;
 }
 h5.languages {
-  background-image: url(/@@/languages.gif);
+  background-image: url(/@@/languages);
   background-repeat: no-repeat;
 }
 label {
@@ -236,12 +236,12 @@ table.sortable img.sortarrow {
   padding-left: 2px;
 }
 th.ascending {
-  background-image: url(/@@/arrowDown.gif);
+  background-image: url(/@@/arrowDown);
   background-position: center right;
   background-repeat: no-repeat;
 }
 th.descending {
-  background-image: url(/@@/arrowUp.gif);
+  background-image: url(/@@/arrowUp);
   background-position: center right;
   background-repeat: no-repeat;
 }
@@ -250,10 +250,10 @@ ol, ul {
 }
 ul { 
   list-style-type: square;
-  list-style-image: url(/@@/bullet.gif);
+  list-style-image: url(/@@/bullet);
   margin: 0.5em 0 0 24px; /* because bullet graphics are px width */
 }
-ul.menu {
+ul.menu, div.menu {
   font-size: smaller;
 }
 ol {
@@ -300,11 +300,18 @@ ol {
 }
 
 /* -- Form controls: -- */
+
+input[type="text"], input[type="submit"], input[type="reset"] {
+  font-size: 1em; /* Forces a readable font size in Safari */
+}
 textarea {
   border: 1px solid #8cacbb;  
   color: black;
   background-color: white;
   font-family: sans-serif;
+  width: 100%;
+}
+input.urlTextType {
   width: 100%;
 }
 .fieldRequired {
@@ -434,43 +441,12 @@ ul.app>li.current {
   font-size: smaller;
   margin: 0 0 1em 0;
 }
-.sitemap, #subpillars {
-  background-color: #f4f5f8;
-}
-#pillars, #subpillars {
-  display: inline;
-  margin: 0;
-  padding: 0;
-}
-#pillars {
-  background-color: #dee7ec;
-  float: left;
-  width: 47%;
-}
-#subpillars {
-  float: left;
-  font-size: smaller;
-  margin-left: 6%;
-  width: 42%;
-}
-#pillars li, #subpillars li {
-  list-style: none;
-  margin: 0;
-}
 .sitemap li {
   display: block;
   padding: 0.25em 1em;
 }
 .sitemap :link, .sitemap :visited {
   text-decoration: none;
-}
-#pillars li.current, .facets li.current {
-  background-color: #f4f5f8;
-  color: inherit;
-}
-#subpillars li.current {
-  background-color: #dee7ec;
-  border: 1px solid #8cacbb;
 }
 /* The following paddings/margins aren't yet robust when zoomed. */
 ul.facets {
@@ -614,10 +590,6 @@ ins {
   padding: 0.5em;
 }
 
-.interpolation {
-  background-color: #7090a0;
-}
-
 /* see launchpad.js:activateCollapsables() */
 .collapsible legend a, .collapsible legend a:visited {
     text-decoration: none;
@@ -686,7 +658,7 @@ tr.highlight {
 .importanceMEDIUM    { color: Green; }
 .importanceLOW       { color: Black; }
 .importanceWISHLIST  { color: Blue; }
-.importanceUNTRIAGED { color: #999; }
+.importanceUNDECIDED { color: #999; }
 
 /* Spec definition, delivery and priority */
 
@@ -696,7 +668,7 @@ tr.highlight {
 .specstatusPENDINGAPPROVAL { color: #f09; }
 .specstatusPENDINGREVIEW   { color: #f09; }
 .specstatusDRAFT           { color: #930; }
-.specstatusBRAINDUMP       { color: Red; }
+.specstatusNEW             { color: Red; }
 .specstatusSUPERSEDED      { color: Gray; }
 .specstatusOBSOLETE        { color: Gray; }
 
@@ -708,6 +680,7 @@ tr.highlight {
 .specpriorityESSENTIAL     { color: Red; }
 
 .specdeliveryUNKNOWN            {color: Gray; }
+.specdeliveryNOTSTARTED         {color: Gray; }
 .specdeliveryDEFERRED           {color: Red; }
 .specdeliveryNEEDSINFRASTUCTURE {color: Red; }
 .specdeliveryBLOCKED            {color: Red; }
@@ -781,17 +754,10 @@ tr.highlight {
   padding: 0;
   margin: 0;
 }
-/* used to mark dummy data with div entity */
-.dummy {
-  background-color: #eeeeee;
-  color: #656565;
-}
+
 /* Various custom list formats: */
 ul.add>li, li.add {
-  list-style-image: url(/@@/add.gif);
-}
-ul.alert>li, li.alert {
-  list-style-image: url(/@@/alert_icon.gif);
+  list-style-image: url(/@@/add);
 }
 ul.architecture>li, li.architecture {
   list-style-image: url(/@@/architecture);
@@ -817,47 +783,35 @@ ul.bug.low>li, li.bug.low {
 ul.bug.remote>li, li.bug.remote {
   list-style-image: url(/@@/bug-remote);
 }
-ul.bugs>li, li.bugs {
-  list-style-image: url(/@@/bugs);
-}
 ul.build-success>li, li.build-success {
   list-style-image: url(/@@/build-success);
 }
 ul.cve>li, li.cve {
   list-style-image: url(/@@/cve);
 }
-ul.document>li, li.document {
-  list-style-image: url(/@@/document_icon.gif);
-}
 ul.download>li, li.download {
-  list-style-image: url(/@@/download.png);
+  list-style-image: url(/@@/download);
 }
 ul.edit>li, li.edit {
-  list-style-image: url(/@@/edit.gif);
-}
-ul.file>li, li.file {
-  list-style-image: url(/@@/file);
+  list-style-image: url(/@@/edit);
 }
 ul.info>li, li.info {
-  list-style-image: url(/@@/info_icon.gif);
+  list-style-image: url(/@@/info);
 }
 ul.languages>li, li.languages {
-  list-style-image: url(/@@/languages.gif);
+  list-style-image: url(/@@/languages);
 }
 ul.list>li, li.list {
   list-style-image: url(/@@/list);
 }
 ul.locked>li, li.locked {
-  list-style-image: url(/@@/lock_icon.gif);
+  list-style-image: url(/@@/locked);
 }
 ul.mail>li, li.mail {
-  list-style-image: url(/@@/mail_icon.gif);
+  list-style-image: url(/@@/mail);
 }
 ul.milestone>li, li.milestone {
-  list-style-image: url(/@@/target);
-}
-ul.news>li, li.news {
-  list-style-image: url(/@@/news);
+  list-style-image: url(/@@/milestone);
 }
 ul.packages>li, li.packages {
   list-style-image: url(/@@/package-binary);
@@ -866,10 +820,10 @@ ul.sources>li, li.sources {
   list-style-image: url(/@@/package-source);
 }
 ul.products>li, li.products {
-  list-style-image: url(/@@/product_icon.gif);
+  list-style-image: url(/@@/product);
 }
 ul.person>li, li.person, ul.people>li, li.people {
-  list-style-image: url(/@@/user.gif);
+  list-style-image: url(/@@/user);
 }
 ul.remove>li, li.remove {
   list-style-image: url(/@@/remove);
@@ -880,40 +834,34 @@ ul.spec>li, li.spec {
 ul.sprint>li, li.sprint {
     list-style-image: url(/@@/sprint);
 }
-ul.statistic>li, ul.statistics, li.statistic {
-    list-style-image: url(/@@/statistic);
-}
 ul.ticket>li, li.ticket {
     list-style-image: url(/@@/ticket);
 }
 ul.up>li, li.up {
-    list-style-image: url(/@@/up);
+    list-style-image: url(/@@/arrowUp);
 }
 ul.webref>li, li.webref {
-    list-style-image: url(/@@/link_icon.gif);
+    list-style-image: url(/@@/link);
 }
 ul.translations>li, li.translations {
   list-style-image: url(/@@/translations);
 }
 dl.products>dt:before {
-  content: url(/@@/product_icon.gif);
+  content: url(/@@/product);
 }
 ul.search>li, li.search {
-  list-style-image: url(/@@/search_icon.gif);
+  list-style-image: url(/@@/search);
 }
 
 /* Used for source and translator comments on the translation page. */
 
-.po-comment {
-  background-color: #efe;
-  border: thin solid #8a8;
-  margin: 0.5em 0;
-  padding: 0.5em;
+.translation code { /* an interpolation code, such as %i */
+  font-weight: bold;
 }
-
-.po-message-special {
-  color: white;
-  background-color: #93bee2;
+.translation samp { /* a leading/trailing space */
+  background: url(/@@/translation-space) center center no-repeat;
+  padding: 0 4px; /* should be half the width of /@@/translation-space */
+  white-space: pre; /* stops consecutive spaces from collapsing */
 }
 
 /* Used in default-error.pt so people actually notice exceptions */
@@ -967,7 +915,7 @@ input[type="image"] {
   text-align: left;
 }
 .required:after {
-  background: url(/@@/required.gif) center left no-repeat;
+  background: url(/@@/required) center left no-repeat;
   color: #999999;
   content: '(Required)';
   font-weight: normal;  
@@ -1136,21 +1084,6 @@ Calendar stuff.
   border: 1px #884631 solid;
 }
 
-.error-notification,
-.warning-notification {
-  background-position: 5px 0.5em;
-  padding-left: 30px;
-  background-color: #ff9070;
-  border: 1px solid #ddb0b0;
-  color: Black;
-  background-image: url(/@@/alert_icon.gif);
-  font-size: 85%;
-  font-weight: bold;
-  margin: 1em 0em 0em 0em;
-  padding: 0.5em 1em 0.5em 3em;
-  background-repeat: no-repeat;
-}
-
 .oopsid {
   font-weight: bold;
   color: #cc0000;
@@ -1189,13 +1122,13 @@ dl.faq ol {
 }
 .warning {background-color: #fcdd99; color: black;}
 .warning.message, .warning .message {
-  background-image: url(/@@/alert_icon.gif);
+  background-image: url(/@@/warning);
 }
 .informational {background-color: #fcfc99; color: black;}
 .informational.message, .informational .message {
-  background-image: url(/@@/info_icon.gif);
+  background-image: url(/@@/info);
 }
 .debugging {background-color: #666; color: white;}
 .debugging.message, .debugging .message {
-  background-image: url(/@@/info_icon.gif);
+  background-image: url(/@@/info);
 }
