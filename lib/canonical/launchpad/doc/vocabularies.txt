@@ -163,10 +163,10 @@ o PersonActiveMembership - all the teams the person is an active member of.
     admins Launchpad Administrators Launchpad Administrators
     launchpad-buildd-admins Launchpad Buildd Admins Launchpad Buildd Admins
     launchpad Launchpad Developers Launchpad Developers
+    testing-spanish-team testing Spanish team testing Spanish team
     name18 Ubuntu Gnome Team Ubuntu Gnome Team
     ubuntu-team Ubuntu Team Ubuntu Team
     vcs-imports VCS imports VCS imports
-    testing-spanish-team testing Spanish team testing Spanish team
 
     >>> launchpad_team = getUtility(IPersonSet).getByName('launchpad')
     >>> launchpad_team in person_active_membership

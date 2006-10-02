@@ -9,9 +9,7 @@ from zope.component import getUtility
 from sqlobject import (
     BoolCol, ForeignKey, SQLMultipleJoin, SQLRelatedJoin, StringCol,
     SQLObjectNotFound)
-from sqlobject.sqlbuilder import AND, OR
-
-from canonical.cachedproperty import cachedproperty
+from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
 from canonical.database.sqlbase import quote, quote_like, SQLBase, sqlvalues
 
@@ -31,7 +29,6 @@ from canonical.launchpad.database.binarypackagename import (
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.distributionbounty import DistributionBounty
-from canonical.launchpad.database.cve import CveSet
 from canonical.launchpad.database.distributionmirror import DistributionMirror
 from canonical.launchpad.database.distributionsourcepackage import (
     DistributionSourcePackage)
@@ -51,11 +48,9 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.url import urlparse
 
 from canonical.lp.dbschema import (
-    EnumCol, BugTaskStatus,
-    DistributionReleaseStatus, MirrorContent,
-    TranslationPermission, SpecificationSort,
-    SpecificationFilter, SpecificationStatus,
-    MirrorPulseType, PackagePublishingStatus, TicketStatus)
+    EnumCol, BugTaskStatus, DistributionReleaseStatus, MirrorContent,
+    TranslationPermission, SpecificationSort, SpecificationFilter,
+    SpecificationStatus, MirrorPulseType, PackagePublishingStatus)
 
 from canonical.launchpad.interfaces import (
     IBuildSet, IDistribution, IDistributionSet, IHasBuildRecords,
@@ -248,16 +243,6 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         """See canonical.launchpad.interfaces.IBugTarget."""
         bug_params.setBugTarget(distribution=self)
         return BugSet().createBug(bug_params)
-
-    @cachedproperty
-    def open_cve_bugtasks(self):
-        """See IDistribution."""
-        return list(CveSet().getOpenBugTasks(distribution=self))
-
-    @cachedproperty
-    def resolved_cve_bugtasks(self):
-        """See IDistribution."""
-        return list(CveSet().getResolvedBugTasks(distribution=self))
 
     @property
     def currentrelease(self):
@@ -692,10 +677,8 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
             (fti @@ ftq(%s) OR
              DistributionSourcePackageCache.name ILIKE '%%' || %s || '%%')
             """ % (quote(self.id), quote(text), quote_like(text)),
-            selectAlso='rank(fti, ftq(%s)) AS rank' % sqlvalues(text),
-            orderBy=['-rank'],
-            prejoins=["sourcepackagename"],
-            distinct=True)
+            orderBy=[SQLConstant('rank(fti, ftq(%s)) DESC' % quote(text))],
+            prejoins=["sourcepackagename"])
         return [dspc.distributionsourcepackage for dspc in dspcaches]
 
     def guessPackageNames(self, pkgname):
