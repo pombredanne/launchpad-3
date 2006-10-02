@@ -92,7 +92,7 @@ class TestNativePublishing(LaunchpadZopelessTestCase):
             dsc_maintainer_rfc822 = 'Foo Bar <foo@bar.com>',
             dsc_standards_version = '3.6.2',
             dsc_format = '1.0',
-            dsc_binaries_hint = '%s-bin' % spn.name
+            dsc_binaries= '%s-bin' % spn.name
             )
 
         spr.addFile(alias)

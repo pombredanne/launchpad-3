@@ -57,7 +57,7 @@ class TestNativeArchiveIndexes(LaunchpadZopelessTestCase):
     def getPubSource(self, sourcename='foo', version='666', builddepends='',
                      builddependsindep='', architecturehintlist='',
                      dsc_standards_version='3.6.2', dsc_format='1.0',
-                     dsc_binaries_hint='foo-bin',
+                     dsc_binaries='foo-bin',
                      dsc_maintainer_rfc822='Foo Bar <foo@bar.com>'):
         """Return a mock source publishing record."""
         spn = getUtility(ISourcePackageNameSet).getOrCreateByName(sourcename)
@@ -81,7 +81,7 @@ class TestNativeArchiveIndexes(LaunchpadZopelessTestCase):
             dsc_maintainer_rfc822=dsc_maintainer_rfc822,
             dsc_standards_version=dsc_standards_version,
             dsc_format=dsc_format,
-            dsc_binaries_hint=dsc_binaries_hint
+            dsc_binaries=dsc_binaries
             )
 
         filename = '%s.dsc' % sourcename

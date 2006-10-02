@@ -78,7 +78,7 @@ class SourcePackageRelease(SQLBase):
     dsc_standards_version = StringCol(
         dbName='dsc_standards_version', notNull=True)
     dsc_format = StringCol(dbName='dsc_format', notNull=True)
-    dsc_binaries_hint = StringCol(dbName='dsc_binaries_hint', notNull=True)
+    dsc_binaries = StringCol(dbName='dsc_binaries', notNull=True)
 
     # MultipleJoins
     builds = SQLMultipleJoin('Build', joinColumn='sourcepackagerelease',

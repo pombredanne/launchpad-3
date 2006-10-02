@@ -1915,7 +1915,7 @@ class NascentUpload:
             self.dsc_contents['standards-version'])
         arg_dsc_format = guess_encoding(
             self.dsc_contents['format'])
-        arg_dsc_binaries_hint = guess_encoding(
+        arg_dsc_binaries = guess_encoding(
             self.dsc_contents['binary'])
 
         self.policy.sourcepackagerelease = (
@@ -1938,7 +1938,7 @@ class NascentUpload:
             dsc_maintainer_rfc822=arg_dsc_maintainer_rfc822,
             dsc_standards_version=arg_dsc_standards_version,
             dsc_format=arg_dsc_format,
-            dsc_binaries_hint=arg_dsc_binaries_hint,
+            dsc_binaries=arg_dsc_binaries,
             ))
 
         for uploaded_file in self.dsc_files:

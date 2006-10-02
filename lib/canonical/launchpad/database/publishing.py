@@ -482,7 +482,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         replacement = {
             'package': spr.name,
-            'binary': spr.dsc_binaries_hint,
+            'binary': spr.dsc_binaries,
             'version': spr.version,
             'maintainer': spr.dsc_maintainer_rfc822,
             'build_depends': spr.builddependsindep,

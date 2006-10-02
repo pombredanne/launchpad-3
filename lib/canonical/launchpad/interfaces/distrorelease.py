@@ -240,7 +240,7 @@ class IDistroRelease(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
         builddependsindep, architecturehintlist, component, creator, urgency,
         changelog, dsc, dscsigningkey, section, manifest,
         dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
-        dsc_binary_line):
+        dsc_binaries):
         """Create an uploads SourcePackageRelease
 
         Set this distrorelease set to be the uploadeddistrorelease.

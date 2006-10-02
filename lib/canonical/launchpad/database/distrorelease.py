@@ -718,7 +718,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         builddepends, builddependsindep, architecturehintlist, component,
         creator, urgency, changelog, dsc, dscsigningkey, section, manifest,
         dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
-        dsc_binaries_hint):
+        dsc_binaries):
         """See IDistroRelease."""
         return SourcePackageRelease(
             uploaddistrorelease=self, sourcepackagename=sourcepackagename,
@@ -729,7 +729,7 @@ class DistroRelease(SQLBase, BugTargetBase):
             dscsigningkey=dscsigningkey, section=section, manifest=manifest,
             dsc_maintainer_rfc822=dsc_maintainer_rfc822, dsc_format=dsc_format,
             dsc_standards_version=dsc_standards_version,
-            dsc_binaries_hint=dsc_binaries_hint)
+            dsc_binaries=dsc_binaries)
 
     def getComponentByName(self, name):
         """See IDistroRelease."""

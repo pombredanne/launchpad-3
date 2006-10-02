@@ -362,16 +362,16 @@ mentioned in bug # 30621)
 
 Check the contents of the new fields required for NoMoreAptFtparchive implementation:
 
-  >>> ed_spr.maintainer_rfc822
+  >>> ed_spr.dsc_maintainer_rfc822
   u'James Troup <james@nocrew.org>'
 
-  >>> ed_spr.standards_version
+  >>> ed_spr.dsc_standards_version
   u'3.5.8.0'
 
   >>> ed_spr.dsc_format
   u'1.0'
 
-  >>> ed_spr.binary_line
+  >>> ed_spr.dsc_binaries
   u'ed'
 
 
