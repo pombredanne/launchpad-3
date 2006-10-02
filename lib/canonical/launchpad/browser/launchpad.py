@@ -698,11 +698,11 @@ class StructuralObjectPresentationView(LaunchpadView):
         else:
             self.num_lists = 1
 
-    def getMinorHeading(self):
-        return self.structuralpresentation.getMinorHeading()
+    def getIntroHeading(self):
+        return self.structuralpresentation.getIntroHeading()
 
-    def getMajorHeading(self):
-        return self.structuralpresentation.getMajorHeading()
+    def getMainHeading(self):
+        return self.structuralpresentation.getMainHeading()
 
     def getGotchiURL(self):
         return '/+not-found-gotchi'
@@ -716,10 +716,10 @@ class StructuralObjectPresentation:
     def __init__(self, context):
         self.context = context
 
-    def getMajorHeading(self):
+    def getIntroHeading(self):
         raise NotImplementedError()
 
-    def getMinorHeading(self):
+    def getMainHeading(self):
         return None
 
     def listChildren(self, num):
@@ -737,7 +737,7 @@ class StructuralObjectPresentation:
 
 class DefaultStructuralObjectPresentation(StructuralObjectPresentation):
 
-    def getMajorHeading(self):
+    def getMainHeading(self):
         if hasattr(self.context, 'title'):
             return self.context.title
         else:

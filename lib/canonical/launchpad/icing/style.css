@@ -582,6 +582,8 @@ a:hover.button {
   overflow: hidden;
 }
 #structuralobjectheading {
+  background: none;
+  color: black;
   float: left;
   margin: 0px 0px 0px 38px;
   width: 50%;
@@ -590,14 +592,10 @@ a:hover.button {
   float: left;
   margin: 0px 0px 0px 10px;
 }
-#structuralobjectheading h1 {
-  padding: 18px 0px 4px 0px;
-}
-#structuralobjectheading .major {
-  float: left;
-  margin: 10px 0px 0px 0px;
-  font-size: 1.2em;
+#structuralobjectheading .main {
   font-weight: bold;
+  margin: 10px 0px 0px 0px;
+  font-size: 1.5em;
 }
 #structuralobjectchildren {
   float: left;

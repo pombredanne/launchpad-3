@@ -624,10 +624,10 @@ class IBreadcrumb(Interface):
 class IStructuralObjectPresentation(Interface):
     """Adapter that defines how a structural object is presented in the UI."""
 
-    def getMajorHeading():
-        """major heading"""
+    def getIntroHeading():
+        """Any heading introduction needed (e.g. "Ubuntu source package:")."""
 
-    def getMinorHeading():
+    def getMainHeading():
         """can be None"""
 
     def listChildren(num):
