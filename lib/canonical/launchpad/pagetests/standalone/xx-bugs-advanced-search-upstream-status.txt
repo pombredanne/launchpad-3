@@ -44,8 +44,7 @@ bugtasks on contexts that don't use Malone are Rejected, those bugs
 are not included in the report.
 
     >>> from zope.component import getUtility
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.ftests import login, logout, syncUpdate
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> from canonical.lp.dbschema import BugTaskStatus
 
@@ -55,14 +54,12 @@ are not included in the report.
     >>> for bugtask in bug_two.bugtasks:
     ...     if not bugtask.target_uses_malone:
     ...         bugtask.transitionToStatus(BugTaskStatus.REJECTED)
-
-    >>> flush_database_updates()
+    ...         syncUpdate(bugtask)
 
     >>> for bugtask in bug_two.bugtasks:
     ...     print "%s, %s" % (bugtask.target.bugtargetname, bugtask.status.title)
     ubuntu-product (upstream), Rejected
     Ubuntu, Unconfirmed
-    Ubuntu Hoary, Unconfirmed
     mozilla-firefox (Debian), Rejected
     mozilla-firefox (Debian Woody), Rejected
     >>> logout()

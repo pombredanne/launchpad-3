@@ -209,7 +209,7 @@ class PersonFacets(StandardLaunchpadFacets):
     usedfor = IPerson
 
     enable_only = ['overview', 'bugs', 'support', 'specifications',
-                   'branches', 'translations', 'calendar']
+                   'branches', 'translations']
 
     def overview(self):
         text = 'Overview'
@@ -230,7 +230,7 @@ class PersonFacets(StandardLaunchpadFacets):
         return Link('+tickets', text, summary)
 
     def specifications(self):
-        text = 'Specifications'
+        text = 'Features'
         summary = (
             'Feature specifications that %s is involved with' %
             self.context.browsername)
@@ -244,7 +244,7 @@ class PersonFacets(StandardLaunchpadFacets):
         return Link('+bounties', text, summary)
 
     def branches(self):
-        text = 'Branches'
+        text = 'Code'
         summary = ('Bazaar Branches and revisions registered and authored '
                    'by %s' % self.context.browsername)
         return Link('+branches', text, summary)
@@ -1325,7 +1325,7 @@ class PersonView(LaunchpadView):
             self.error_message = 'Invalid public key'
             return
 
-        getUtility(ISSHKeySet).new(self.user.id, keytype, keytext, comment)
+        getUtility(ISSHKeySet).new(self.user, keytype, keytext, comment)
         self.info_message = 'SSH public key added.'
 
     def remove_ssh(self):
@@ -1333,7 +1333,7 @@ class PersonView(LaunchpadView):
         if not key_id:
             raise UnexpectedFormData('SSH Key was not defined')
 
-        sshkey = getUtility(ISSHKeySet).get(key_id)
+        sshkey = getUtility(ISSHKeySet).getByID(key_id)
         if sshkey is None:
             self.error_message = "Cannot remove a key that doesn't exist"
             return
@@ -1643,10 +1643,9 @@ class PersonEditEmailsView:
 
     def unvalidatedAndGuessedEmails(self):
         """Return a Set containing all unvalidated and guessed emails."""
-        emailset = sets.Set()
-        emailset = emailset.union(
-            [e.email for e in self.context.guessedemails])
-        emailset = emailset.union([e for e in self.context.unvalidatedemails])
+        emailset = set()
+        emailset = emailset.union(e.email for e in self.context.guessedemails)
+        emailset = emailset.union(e for e in self.context.unvalidatedemails)
         return emailset
 
     def emailFormSubmitted(self):
