@@ -43,6 +43,8 @@ Now we serialise it as XML, and print it:
   >>> tree = ET.ElementTree(node)
   >>> tree.write(sys.stdout)
   <bug id="1">
+  <private>False</private>
+  <security_related>False</security_related>
   <datecreated>2004-01-01T20:58:04Z</datecreated>
   <title>Firefox does not support SVG</title>
   <description>Firefox needs to support embedded SVG images, now that the standard has been finalised.
@@ -99,6 +101,7 @@ successively serialising each of the tasks for that product.
   ...
   </bug>
   <bug id="6">
+  ...
   <duplicateof bug="5" />
   ...
   <title>Firefox crashes when Save As dialog for a nonexistent window is closed</title>
@@ -147,3 +150,30 @@ encoding:
   </contents>
   </attachment>
   ...
+
+
+Private Bugs
+------------
+
+By default a bug export will not include any private bugs.  However,
+they can be included by passing the --include-private flag to the
+import script.  To test this, we'll make a bug private:
+
+  >>> bug1.private = True
+  >>> ztm.commit()
+
+
+Now we'll do a dump not including private bugs:
+
+  >>> output = StringIO()
+  >>> export_bugtasks(ztm, firefox, output)
+  >>> '<bug id="1">' in output.getvalue()
+  False
+
+
+However, bug #1 will appear in the export if we include private bugs:
+
+  >>> output = StringIO()
+  >>> export_bugtasks(ztm, firefox, output, include_private=True)
+  >>> '<bug id="1">' in output.getvalue()
+  True

@@ -22,6 +22,9 @@ def main(argv):
     parser.add_option('-p', '--product', metavar='PRODUCT', action='store',
                       help='Which product to export',
                       type='string', dest='product', default=None)
+    parser.add_option('--include-private', action='store_true',
+                      help='Include private bugs in dump',
+                      dest='include_private', default=False)
 
     options, args = parser.parse_args(argv[1:])
 
@@ -38,7 +41,7 @@ def main(argv):
     if product is None:
         parser.error('Product %s does not exist' % options.product)
 
-    export_bugtasks(ztm, product, output)
+    export_bugtasks(ztm, product, output, include_private=include_private)
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))

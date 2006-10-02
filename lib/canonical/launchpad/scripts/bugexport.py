@@ -9,7 +9,8 @@ import base64
 import cElementTree as ET
 
 from zope.component import getUtility
-from canonical.launchpad.interfaces import IBugTaskSet, BugTaskSearchParams
+from canonical.launchpad.interfaces import (
+    IBugTaskSet, BugTaskSearchParams, ILaunchpadCelebrities)
 from canonical.launchpad.browser.bugtask import get_comments_for_bugtask
 
 def addnode(parent, elementname, content, **attrs):
@@ -26,6 +27,8 @@ def serialise_bugtask(bugtask):
     bug_node = ET.Element('bug', id=str(bug.id))
     bug_node.text = bug_node.tail = '\n'
 
+    addnode(bug_node, 'private', str(bug.private))
+    addnode(bug_node, 'security_related', str(bug.security_related))
     if bug.duplicateof is not None:
         addnode(bug_node, 'duplicateof', None, bug=str(bug.duplicateof.id))
     addnode(bug_node, 'datecreated',
@@ -84,13 +87,15 @@ def serialise_bugtask(bugtask):
     return bug_node
 
 
-def export_bugtasks(ztm, bugtarget, output):
+def export_bugtasks(ztm, bugtarget, output, include_private=False):
     # Collect bug task IDs.
-    # XXX 2006-09-25 jamesh
-    # This will only get the IDs of public bugs.  We probably want to
-    # be able to do a separate private bugs dump.
+    if include_private:
+        # The admin team can see all bugs
+        user = getUtility(ILaunchpadCelebrities).admin
+    else:
+        user = None
     ids = [task.id for task in bugtarget.searchTasks(
-        BugTaskSearchParams(user=None, omit_dupes=False, orderby='id'))]
+        BugTaskSearchParams(user=user, omit_dupes=False, orderby='id'))]
     bugtaskset = getUtility(IBugTaskSet)
     output.write('<launchpad-bugs>\n')
     for count, taskid in enumerate(ids):
