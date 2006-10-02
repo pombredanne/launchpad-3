@@ -111,9 +111,6 @@
                  tal:attributes="href bq/builder/fmt:url"/>
             </td>
           </tal:buildqueue>
-          <tal:no_buildqueue condition="not: bq">
-            <td>Build not initialized yet.</td>
-          </tal:no_buildqueue>
         </tr>
         </tal:not_built>
       </tal:build>
@@ -122,8 +119,8 @@
   </table>
 
       <div tal:condition="not: batch">
-        No <span tal:replace="view/state/title" /> builds for
-        <span tal:replace="context/title" />.
+        No <span tal:replace="view/state/title|nothing" /> builds for <span 
+            tal:replace="context/title" />.
       </div>
 
       <tal:navigation

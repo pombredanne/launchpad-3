@@ -7,8 +7,6 @@ __all__ = [
     'ProjectSet',
     ]
 
-import sets
-
 from zope.interface import implements
 
 from sqlobject import (
@@ -306,7 +304,7 @@ class ProjectSet:
         should be limited to projects that are active in those Launchpad
         applications.
         """
-        clauseTables = sets.Set()
+        clauseTables = set()
         clauseTables.add('Project')
         queries = []
         if rosetta:
@@ -341,3 +339,4 @@ class ProjectSet:
 
         query = " AND ".join(queries)
         return Project.select(query, distinct=True, clauseTables=clauseTables)
+
