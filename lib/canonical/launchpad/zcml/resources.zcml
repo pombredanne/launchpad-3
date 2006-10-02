@@ -88,6 +88,10 @@
     <resource name="person-mini" file="../images/nyet-mini.png" />
     <resource name="person-heading" file="../images/nyet-heading.png" />
     <resource name="person-mugshot" file="../images/nyet-mugshot.png" />
+    <resource name="person-inactive" file="../images/nyet.png" />
+    <resource name="person-inactive-mini" file="../images/nyet-mini.png" />
+    <resource name="person-inactive-heading" file="../images/nyet-heading.png" />
+    <resource name="person-inactive-mugshot" file="../images/nyet-mugshot.png" />
     <resource name="product" file="../images/product_icon.gif" />
     <resource name="product-mini" file="../images/nyet-mini.png" />
     <resource name="product-heading" file="../images/nyet-heading.png" />

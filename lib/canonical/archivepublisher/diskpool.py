@@ -356,8 +356,7 @@ class DiskPool:
             # To do this currently we need to rebuild data model calling
             # self.scan().
             # malcc 20060803: I think this comment is incorrect.
-            self._reallyRemove(component, sourcename, filename)
-            return
+            return self._reallyRemove(component, sourcename, filename)
 
         assert component == pool_entry.defcomp
 
