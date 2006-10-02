@@ -389,11 +389,8 @@ class Person(SQLBase):
     @property
     def branches(self):
         """See IPerson."""
-        # XXX: bug 62019 is what forces us to prejoin(None) here.
-        #   -- kiko, 2006-09-23
-        ret = self.authored_branches.prejoin(None)
-        ret = ret.union(self.registered_branches.prejoin(None))
-        ret = ret.union(self.subscribed_branches.prejoin(None))
+        ret = self.authored_branches.union(self.registered_branches)
+        ret = ret.union(self.subscribed_branches)
         return ret.orderBy('-id')
 
     @property
@@ -1831,13 +1828,11 @@ class SSHKey(SQLBase):
 class SSHKeySet:
     implements(ISSHKeySet)
 
-    def new(self, personID, keytype, keytext, comment):
-        # XXX: why does this API accept a personID? That's crazy.
-        #   -- kiko, 2006-06-22
-        return SSHKey(personID=personID, keytype=keytype, keytext=keytext,
+    def new(self, person, keytype, keytext, comment):
+        return SSHKey(person=person, keytype=keytype, keytext=keytext,
                       comment=comment)
 
-    def get(self, id, default=None):
+    def getByID(self, id, default=None):
         try:
             return SSHKey.get(id)
         except SQLObjectNotFound:
