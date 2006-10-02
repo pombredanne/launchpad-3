@@ -199,7 +199,7 @@ special = {
     'support-tracker-emailinterface.txt': LayeredDocFileSuite(
             '../doc/support-tracker-emailinterface.txt',
             setUp=supportTrackerSetUp, tearDown=supportTrackerTearDown,
-            layer=LaunchpadZopelessLayer
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer
             ),
     'person-karma.txt': FunctionalDocFileSuite(
             '../doc/person-karma.txt',
