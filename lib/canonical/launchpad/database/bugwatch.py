@@ -124,14 +124,12 @@ class BugWatchSet(BugSetBase):
     def __init__(self, bug=None):
         BugSetBase.__init__(self, bug)
         self.title = 'A set of bug watches'
-        self.bugtracker_references = {
-            BugTrackerType.BUGZILLA: re.compile(
-                r'(https?://.+/)show_bug.cgi.+id=(\d+).*'),
-            BugTrackerType.ROUNDUP: re.compile(r'(https?://.+/)issue(\d+).*'),
-            BugTrackerType.TRAC: re.compile(r'(https?://.+/)ticket/(\d+)'),
-            BugTrackerType.DEBBUGS:  re.compile(
-                r'(https?://.+/)cgi-bin/bugreport\.cgi\?bug=(\d+)'),
-            }
+        self.bugtracker_parse_functions = {
+            BugTrackerType.BUGZILLA: self.parseBugzillaURL,
+            BugTrackerType.DEBBUGS:  self.parseDebbugsURL,
+            BugTrackerType.ROUNDUP: self.parseRoundupURL,
+            BugTrackerType.TRAC: self.parseTracURL,
+        }
 
     def get(self, watch_id):
         """See canonical.launchpad.interfaces.IBugWatchSet."""
@@ -204,22 +202,79 @@ class BugWatchSet(BugSetBase):
             bug=bug, owner=owner, datecreated=UTC_NOW, lastchanged=UTC_NOW, 
             bugtracker=bugtracker, remotebug=remotebug)
 
+    def parseBugzillaURL(self, scheme, host, path, query):
+        """Extract the Bugzilla base URL and bug ID."""
+        bug_page = 'show_bug.cgi'
+        if not path.endswith(bug_page):
+            return None
+        if query.get('id'):
+            # This is a Bugzilla URL.
+            remote_bug = query['id']
+        elif query.get('issue'):
+            # This is a Issuezilla URL.
+            remote_bug = query['issue']
+        else:
+            return None
+        base_path = path[:-len(bug_page)]
+        base_url = urlunsplit((scheme, host, base_path, '', ''))
+        return base_url, remote_bug
+
+    def parseDebbugsURL(self, scheme, host, path, query):
+        """Extract the Debbugs base URL and bug ID."""
+        bug_page = 'cgi-bin/bugreport.cgi'
+        if not path.endswith(bug_page):
+            return None
+
+        remote_bug = query.get('bug')
+        if remote_bug is None or not remote_bug.isdigit():
+            return None
+
+        base_path = path[:-len(bug_page)]
+        base_url = urlunsplit((scheme, host, base_path, '', ''))
+        return base_url, remote_bug
+
+    def parseRoundupURL(self, scheme, host, path, query):
+        """Extract the RoundUp base URL and bug ID."""
+        match = re.match(r'(.*/)issue(\d+)', path)
+        if not match:
+            return None
+        base_path = match.group(1)
+        remote_bug = match.group(2)
+
+        base_url = urlunsplit((scheme, host, base_path, '', ''))
+        return base_url, remote_bug
+
+    def parseTracURL(self, scheme, host, path, query):
+        """Extract the Trac base URL and bug ID."""
+        match = re.match(r'(.*/)ticket/(\d+)', path)
+        if not match:
+            return None
+        base_path = match.group(1)
+        remote_bug = match.group(2)
+
+        base_url = urlunsplit((scheme, host, base_path, '', ''))
+        return base_url, remote_bug
+
     def extractBugTrackerAndBug(self, url):
         """See IBugWatchSet."""
-        for trackertype, pattern in self.bugtracker_references.items():
-            match = pattern.match(url)
-            if not match:
-                continue
+        for trackertype, parse_func in self.bugtracker_parse_functions.items():
+            scheme, host, path, query_string, frag = urlsplit(url)
+            query = {}
+            for query_part in query_string.split('&'):
+                key, value = urllib.splitvalue(query_part)
+                query[key] = value
 
+            bugtracker_data = parse_func(scheme, host, path, query)
+            if not bugtracker_data:
+                continue
+            base_url, remote_bug = bugtracker_data
             bugtrackerset = getUtility(IBugTrackerSet)
-            baseurl = match.group(1)
-            remotebug = match.group(2)
             # Check whether we have a registered bug tracker already.
-            bugtracker = bugtrackerset.queryByBaseURL(baseurl)
+            bugtracker = bugtrackerset.queryByBaseURL(base_url)
 
             if bugtracker is not None:
-                return bugtracker, remotebug
+                return bugtracker, remote_bug
             else:
-                raise NoBugTrackerFound(baseurl, remotebug, trackertype)
+                raise NoBugTrackerFound(base_url, remote_bug, trackertype)
         else:
             return None

@@ -87,6 +87,19 @@ class BugzillaExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
     bug_id = '3224'
 
 
+class IssuezillaExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
+    """Make sure BugWatchSet.extractBugTrackerAndBug works with Issuezilla.
+
+    Issuezilla is practically the same as Buzilla, so we treat it as a
+    normal BUGZILLA type.
+    """
+
+    bugtracker_type = BugTrackerType.BUGZILLA
+    bug_url = 'http://some.host/bugs/show_bug.cgi?issue=3224'
+    base_url = 'http://some.host/bugs/'
+    bug_id = '3224'
+
+
 class RoundUpExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
     """Make sure BugWatchSet.extractBugTrackerAndBug works with RoundUp URLs."""
 
@@ -117,6 +130,7 @@ class DebbugsExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(BugzillaExtractBugTrackerAndBugTest))
+    suite.addTest(unittest.makeSuite(IssuezillaExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(RoundUpExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(TracExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(DebbugsExtractBugTrackerAndBugTest))
