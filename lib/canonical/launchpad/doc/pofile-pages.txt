@@ -356,3 +356,7 @@ POMsgSet.
     True
 
 And that's all, folks!
+
+    >>> fail
+    True
+

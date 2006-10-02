@@ -170,11 +170,11 @@
         </td>
       </tr>
     </tal:active>
-    <tal:submission_block define="submission_block python:view.submission_blocks[plural_index]">
-      <tal:submissions repeat="submissions submission_block">
-        <div tal:replace="structure submissions/@@+display" />
-      </tal:submissions>
-    </tal:submission_block>
+    <tal:suggestion_block define="suggestion_block python:view.suggestion_blocks[plural_index]">
+      <tal:suggestions repeat="suggestions suggestion_block">
+        <div tal:replace="structure suggestions/@@+display" />
+      </tal:suggestions>
+    </tal:suggestion_block>
     <tr class="discreet secondary">
       <th colspan="3">
         <label>New suggestion:</label>

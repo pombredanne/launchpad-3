@@ -22,8 +22,8 @@
         set_schema="canonical.launchpad.interfaces.IPOMsgSet" />
     </content>
 
-    <content class="canonical.launchpad.browser.POMsgSetSubmissions">
-      <allow interface="canonical.launchpad.interfaces.IPOMsgSetSubmissions" />
+    <content class="canonical.launchpad.browser.POMsgSetSuggestions">
+      <allow interface="canonical.launchpad.interfaces.IPOMsgSetSuggestions" />
     </content>
 
     <browser:url
@@ -79,9 +79,9 @@
 
     <browser:page
         name="+display"
-        for="canonical.launchpad.interfaces.IPOMsgSetSubmissions"
+        for="canonical.launchpad.interfaces.IPOMsgSetSuggestions"
         permission="launchpad.AnyPerson"
-        template="../templates/pomsgset-submissions.pt"
+        template="../templates/pomsgset-suggestions.pt"
         />
 
 </facet>

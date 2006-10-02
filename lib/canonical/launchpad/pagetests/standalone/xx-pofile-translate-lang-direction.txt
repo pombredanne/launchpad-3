@@ -1,55 +1,49 @@
 In order to correctly display multilingual text and handle input, 
 the browser needs to know the language and text direction for sections
-of the document.
+of the document. This information is used for a number of things including:
 
-This information is used for a number of things including:
- * right or left justification of text blocks depending on the
-   dominant text direction.
- * Selection of the correct glyphs for CJK text (a set of Unicode code
-   points are shared by these languages).
+     * right or left justification of text blocks depending on the
+       dominant text direction.
+     * Selection of the correct glyphs for CJK text (a set of Unicode code
+       points are shared by these languages).
 
-
-The input boxes on the Rosetta translation form provide this
-information through the "lang" and "dir" HTML attributes.  Note that
-HTML uses a dash as the separator in language codes rather than an
-underscore.
+The input boxes on the Rosetta translation form provide this information
+through the "lang" and "dir" HTML attributes.  Note that HTML uses a dash as
+the separator in language codes rather than an underscore.
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
   >>> browser.open('http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/en_AU/+translate')
   >>> browser.url
   'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/en_AU/+translate'
-  >>> print browser.contents
-  <!DOCTYPE html PUBLIC...
-  <textarea...
-            lang="en-AU"
-            name="msgset_130_en_AU_translation_0"
-            dir="ltr" tabindex=...></textarea>
-  ...
-  <textarea...
-            lang="en-AU"
-            name="msgset_139_en_AU_translation_0"
-            dir="ltr" tabindex=...></textarea>
-  ...
+  >>> control = browser.getControl(name="msgset_130_en_AU_translation_0")
+  >>> control.mech_control.attrs.get('dir')
+  'ltr'
+  >>> control = browser.getControl(name="msgset_139_en_AU_translation_0")
+  >>> control.mech_control.attrs.get('dir')
+  'ltr'
 
-When entering Hebrew translations, the form controls are set to right
-to left:
+When entering Hebrew translations, the form controls are set to right to left:
 
   >>> browser.open('http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/he/+translate')
   >>> browser.url
   'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/he/+translate'
-  >>> from BeautifulSoup import BeautifulSoup
-  >>> soup = BeautifulSoup(browser.contents)
-  >>> soup.find(attrs={"name" : "msgset_130_he_translation_0"})
-  <textarea ... lang="he" name="msgset_130_he_translation_0" dir="rtl" tabindex=...></textarea>
-  >>> soup.find(attrs={"name" : "msgset_139_he_translation_0"})
-  <textarea ... lang="he" name="msgset_139_he_translation_0" dir="rtl" tabindex=...></textarea>
+  >>> control = browser.getControl(name="msgset_130_he_translation_0")
+  >>> control.mech_control.attrs.get('dir')
+  'rtl'
+  >>> control = browser.getControl(name="msgset_139_he_translation_0")
+  >>> control.mech_control.attrs.get('dir')
+  'rtl'
 
-Suggestion text is also tagged with it's language code and text
+If we post the form with suggestions, the form controls are still set to rtl:
+
+  >>> browser.open('http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/he/+translate?field.alternative_language=es')
+  >>> control = browser.getControl(name="msgset_130_he_translation_0")
+  >>> control.mech_control.attrs.get('dir')
+  'rtl'
+
+But suggestion text is tagged with its language code and its own text
 direction:
 
-  >>> browser.open('http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/he/+translate?alt=es')
-  >>> browser.url
-  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/he/+translate?alt=es'
   >>> soup = BeautifulSoup(browser.contents)
   >>> soup.findAll(name='div')[10]
-  <div lang="es" dir="ltr"><p>libreta de direcciones de Evolution</p></div>
+  <div lang="es" dir="ltr">libreta de direcciones de Evolution</div>
