@@ -423,7 +423,7 @@ ul#applicationchooser li a#applicationchooser_selected {
 	background-color: #A3A3A3;
 	text-decoration: none;
 }
-#left_nav .portlet ul {
+#actions ul {
 	clear: both;
 	float: left;
 	width: 192px;
@@ -437,7 +437,7 @@ ul#applicationchooser li a#applicationchooser_selected {
 	clear: both;
 	float: left;
 }
-#left_nav .portlet ul li a {
+#actions li a {
 	float: left;
 	width: 180px;
 	height: auto !important;
@@ -448,15 +448,15 @@ ul#applicationchooser li a#applicationchooser_selected {
 	color: #717171;
 	border-bottom: 1px solid #D2D2D2;
 }
-#left_nav .portlet ul li a:hover {
+#actions li a:hover {
 	background-color: #EBEBEB;
 	text-decoration: underline;
 	color: #414141;
 }
-#left_nav li.active a {
+#actions li.active a {
 	background-color: #9BC11B;
 }
-#left_nav li.active a:hover {
+#actions li.active a:hover {
 	background-color: #AFDB1F;
 }
 #left_nav li.active ul,
@@ -766,12 +766,12 @@ a.closed {
 #mainarea.tab-code div#left_nav div.portlet.active a {
   background-color: #CE4227;
 }
-  #mainarea.tab-code div#left_nav div.portlet.active a:hover {
+#mainarea.tab-code div#left_nav div.portlet.active a:hover {
   background-color: #E2563B;
 }
 #mainarea.tab-code div#left_nav div.portlet.active ul,
 #mainarea.tab-code div#left_nav div.portlet.active ul li a,
-  #mainarea.tab-code div#left_nav div.portlet.active ul li a:hover {
+#mainarea.tab-code div#left_nav div.portlet.active ul li a:hover {
   background-color: #FCF4F2;
 }
 /* tab-bugs */
