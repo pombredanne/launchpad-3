@@ -43,10 +43,9 @@ class GetBugTrackerAndBugTestBase(LaunchpadFunctionalTestCase):
         # The returned bug tracker will be None if getBugTrackerAndBug
         # can't even decide what kind of bug tracker the bug URL points
         # to.
-        bugtracker, bug = self.bugwatch_set.getBugTrackerAndBug(
+        remote_data = self.bugwatch_set.getBugTrackerAndBug(
             'http://no.such/base/url/42')
-        self.assertEqual(bugtracker, None)
-        self.assertEqual(bug, None)
+        self.assertEqual(remote_data, None)
 
     def test_registered_tracker_url(self):
         # If getBugTrackerAndBug can extract a base URL, and there is a

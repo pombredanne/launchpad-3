@@ -223,4 +223,5 @@ class BugWatchSet(BugSetBase):
                 return bugtracker, remotebug
             else:
                 raise NoBugTrackerFound(baseurl, remotebug, trackertype)
-        return None, None
+        else:
+            return None

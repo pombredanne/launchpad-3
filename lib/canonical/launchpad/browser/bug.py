@@ -415,8 +415,7 @@ class BugAlsoReportInView(LaunchpadFormView):
             # which bug and bug tracker it's referring to.
             bugwatch_set = getUtility(IBugWatchSet)
             try:
-                url_bugtracker, url_bug = bugwatch_set.getBugTrackerAndBug(
-                    remotebug)
+                remote_data = bugwatch_set.getBugTrackerAndBug(remotebug)
             except NoBugTrackerFound, error:
                 # XXX: The user should be able to press a button here in
                 #      order to register the tracker.
@@ -428,7 +427,7 @@ class BugAlsoReportInView(LaunchpadFormView):
                     ' it</a> before you can link any bugs to it.' % (
                         cgi.escape(error.base_url)))
             else:
-                if url_bugtracker is None:
+                if remote_data is None:
                     self.setFieldError(
                         'remotebug',
                         "Launchpad doesn't know what kind of bug tracker"
@@ -437,8 +436,8 @@ class BugAlsoReportInView(LaunchpadFormView):
                     # Modify the data dict so that the action handler
                     # won't have to extract the bug tracker and bug from
                     # the URL as well.
-                    data['bugtracker'] = bugtracker = url_bugtracker
-                    data['remotebug'] = remotebug = url_bug
+                    bugtracker, remotebug = remote_data
+                    data['bugtracker'], data['remotebug'] = remote_data
         elif remotebug is not None and bugtracker is None:
             # The user entered a bug number, so he needs to enter a bug
             # tracker as well.
