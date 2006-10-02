@@ -216,8 +216,6 @@ class BugWatchSet(BugSetBase):
             remotebug = match.group(2)
             # Check whether we have a registered bug tracker already.
             bugtracker = bugtrackerset.queryByBaseURL(baseurl)
-            if bugtracker is None and baseurl.endswith('/'):
-                bugtracker = bugtrackerset.queryByBaseURL(baseurl[:-1])
 
             if bugtracker is not None:
                 return bugtracker, remotebug
