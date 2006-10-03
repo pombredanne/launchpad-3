@@ -652,17 +652,14 @@ class NascentUpload:
 
         if self.policy.create_people:
             package = self.changes['source']
-            # The distrorelease property may raise an UploadError in case
+            # XXX: The distrorelease property may raise an UploadError in case
             # there's no distrorelease with a name equal to
-            # self.changes['distribution'], but we don't want the upload to
-            # fail at this point, so we'll catch the exception and move on.
-            try:
-                release = self.distrorelease.displayname
-            except UploadError:
-                # We can use any random name here, because the fact that this
-                # distrorelease was not found will cause the whole transaction
-                # to be rolled back at some point.
-                release = 'UNKNOWN'
+            # self.changes['distribution'] or even a raw Exception in some
+            # tests, but we don't want the upload to fail at this point nor
+            # catch the exception here, so we'll hardcode the distro here for
+            # now and leave the rationale without a specific release.
+            # -- Guilherme Salgado, 2006-10-03
+            release = 'Ubuntu'
             person = getUtility(IPersonSet).ensurePerson(
                 email, name, PersonCreationRationale.SOURCEPACKAGEUPLOAD,
                 comment=('when the %s package was uploaded to %s'
