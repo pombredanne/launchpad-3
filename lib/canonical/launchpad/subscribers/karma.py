@@ -181,7 +181,7 @@ TicketAction2KarmaAction = {
     TicketAction.SETSTATUS: None,
     TicketAction.COMMENT: 'ticketcommentadded',
     TicketAction.ANSWER: 'ticketgaveanswer',
-    TicketAction.CONFIRM: None, # Handle giveAnswer() and confirmAnswer()
+    TicketAction.CONFIRM: None, # Handled in giveAnswer() and confirmAnswer()
     TicketAction.EXPIRE: None,
     TicketAction.REJECT: 'ticketrejected',
     TicketAction.REOPEN: 'ticketreopened',

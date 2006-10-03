@@ -38,7 +38,7 @@ Setup an event listener to help ensure karma is assigned when it should.
     >>> karma_helper.register_listener()
 
 Define a generator that always give a date higher than the precendent
-to order our message.
+to order our messages.
 
     >>> from datetime import datetime, timedelta
     >>> from pytz import UTC

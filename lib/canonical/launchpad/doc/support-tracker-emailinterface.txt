@@ -122,7 +122,7 @@ state.
 Open and Needs Information
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In the Open and Needs Information state, we assume the message provides
+In the Open and Needs Information states, we assume the message provides
 more information on the problem.
 
 For example, from the Open state:

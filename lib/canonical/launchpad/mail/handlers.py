@@ -305,7 +305,7 @@ class SupportTrackerHandler:
         the ticket owner.
 
         When the ticket status is OPEN or NEEDINFO,
-        the message is an GIVEINFO action; when the status is ANSWERED
+        the message is a GIVEINFO action; when the status is ANSWERED
         or EXPIRED, we interpret the message as a reopenening request;
         otherwise it's a comment.
         """
@@ -322,7 +322,7 @@ class SupportTrackerHandler:
         """Choose the right workflow action for a message coming from a user
         that is not the ticket owner.
 
-        When the ticket status is OPEN, NEEDSINFO or ANSWERED, we interpret
+        When the ticket status is OPEN, NEEDSINFO, or ANSWERED, we interpret
         the message as containing an answer. (If it was really a request for
         more information, the owner will still be able to answer it while
         reopening the request.)

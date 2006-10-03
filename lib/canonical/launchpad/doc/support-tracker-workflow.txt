@@ -2,7 +2,7 @@ Support Tracker Workflow
 ========================
 
 The state of a support ticket is tracked through its status attribute.
-Six statuses are used to model a ticket lifecyle. These are defined
+Six statuses are used to model a ticket lifecycle. These are defined
 in the TicketStatus enumeration.
 
     >>> from canonical.lp.dbschema import TicketStatus
@@ -14,7 +14,7 @@ in the TicketStatus enumeration.
     EXPIRED
     INVALID
 
-Status change occurs in consequence to an user action. The possible
+Status change occurs in consequence of a user action. The possible
 actions are defined in the TicketAction enumeration.
 
     >>> from canonical.lp.dbschema import TicketAction
@@ -52,7 +52,7 @@ the Ubuntu Team that owns the distribution.
     >>> ubuntu.addSupportContact(sample_person)
     True
 
-A ticket starts its lifecyle in the Open state.
+A ticket starts its lifecycle in the Open state.
 
     >>> from datetime import datetime, timedelta
     >>> from pytz import UTC
@@ -101,7 +101,7 @@ history:
     >>> print request_message.owner.displayname
     Sample Person
 
-The ticket message contain the action that was executed in the action
+The ticket message contains the action that was executed in the action
 attribute and the status of the ticket after the action was executed in
 the newstatus attribute:
 
@@ -281,8 +281,8 @@ the 'answer' attribute will contain the message that closed the request.
 
 Another case is when nobody comes to answer the message, either because
 the request is too complex or too vague. These requests can be expired
-by using the expireTicket() method. (This will usually be done
-automatically by a cron script.)
+by using the expireTicket() method. (See support-tracker-expiration.txt
+for the documentation of the cron script handling this task.)
 
     >>> ticket = ubuntu.newTicket(**new_ticket_args)
     >>> expire_message = ticket.expireTicket(
@@ -337,7 +337,7 @@ message or a request for Ubuntu CDs.
     ...     datecreated=now)
 
 The reject() method is used for such purpose. Only a support contact,
-product or distribution owner, or an administrator can reject a ticket.
+a product or distribution owner, or an administrator can reject a ticket.
 
 The canReject() method can be used to test if a user is allowed to
 reject the request. It takes as parameter the user who would reject the

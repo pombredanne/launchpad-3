@@ -106,7 +106,7 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
 
         login('no-priv@canonical.com')
         for method in workflow_methods:
-            self.failUnless(getattr, getattr(self.ticket, method))
+            self.failUnless(getattr(self.ticket, method))
 
     def test_can_request_info(self):
         """Test the can_request_info attribute in all the possible states."""
@@ -154,7 +154,7 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
 
     def test_requestInfoFromInvalidStates(self):
         """Test that requestInfo cannot be called when the ticket status is
-        not OPEN or NEEDSINFO.
+        not OPEN, NEEDSINFO, or ANSWERED.
         """
         self._testInvalidTransition(
             ['OPEN', 'NEEDSINFO', 'ANSWERED'], self.ticket.requestInfo,
@@ -194,7 +194,7 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
 
     def test_giveAnswerFromInvalidStates(self):
         """Test that giveAnswer cannot be called when the ticket status is
-        is not OPEN, NEEDSINFO, or ANSWERED.
+        not OPEN, NEEDSINFO, or ANSWERED.
         """
         self._testInvalidTransition(
             ['OPEN', 'NEEDSINFO', 'ANSWERED'], self.ticket.giveAnswer,
@@ -222,8 +222,8 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
         # When the owner gives the answer, the ticket moves straight to
         # SOLVED
         def checkAnswerMessage(message):
-            """Check the attributes that are set when an answer is
-            confirmed.
+            """Check additional attributes set when the owner gives the
+            answers.
             """
             self.assertEquals(message, self.ticket.answer)
             self.assertEquals(self.no_priv, self.ticket.answerer)

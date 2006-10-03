@@ -2,8 +2,8 @@ Support Request Workflow
 ========================
 
 The status of a support request changes based on the action done by
-users on the request. To demonstrate the workflow approache, we will
-use the existing ticket #2 on the Firefox product which was filed by
+users on the request. To demonstrate the workflow, we will use the
+existing ticket #2 on the Firefox product which was filed by
 'Sample Person'.
 
     (We will use one browser objects for the owner, and one for the user

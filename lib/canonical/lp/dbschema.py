@@ -1697,7 +1697,7 @@ class TicketPriority(DBSchema):
 
 
 class TicketAction(DBSchema):
-    """An enumeration of the action done on a ticket.
+    """An enumeration of the possible actions done on a ticket.
 
     This enumeration is used to tag the action done by a user with
     each TicketMessage. Most of these action indicates a status change

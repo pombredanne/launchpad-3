@@ -142,7 +142,7 @@ class ITicket(IHasOwner):
 
         The user requesting more information cannot be the ticket's owner.
         This workflow method should only be called when the ticket status is
-        OPEN, NEEDSINFO.
+        OPEN or NEEDSINFO.
 
         It can also be called when the ticket is in the ANSWERED state, but
         in that case, the status will stay unchanged.
@@ -152,7 +152,7 @@ class ITicket(IHasOwner):
         This method should fire an ISQLObjectCreatedEvent for the created
         ITicketMessage and an ISQLObjectModifiedEvent for the ticket.
 
-        :user: IPerson giving the answer.
+        :user: IPerson requesting for the information.
         :question: A string or IMessage containing the question.
         :datecreated: Date for the answer. Defaults to the current time.
         """

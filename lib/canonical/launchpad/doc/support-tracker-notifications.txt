@@ -205,8 +205,8 @@ workflow action done.
 For workflow notifications, the content of the notification is slightly
 different based on whether you are the request owner or somebody else.
 
-For example, the notification to the support contacts and everybody
-other subscribers except the request owner will look like this:
+For example, the notification to the support contacts and every other
+subscribers except the request owner will look like this:
 
     >>> notification_body = support_notification.get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE

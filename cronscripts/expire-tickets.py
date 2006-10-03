@@ -2,7 +2,7 @@
 
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
-""" Expire all tickets in the OPEN and NEEDSINFO state that didn't receive
+""" Expire all tickets in the OPEN and NEEDSINFO states that didn't receive
 any activitiy in the last X days.
 
 The expiration period is configured through
@@ -30,7 +30,7 @@ def main(argv):
     parser = optparse.OptionParser(
         usage="usage: %prog [options]",
         description="This script expires tickets in the OPEN and NEEDSINFO "
-        "state that didn't have any activity in the last X days. The number "
+        "states that didn't have any activity in the last X days. The number "
         "of days is configured through "
         "config.tickettracker.days_before_expiration.")
 

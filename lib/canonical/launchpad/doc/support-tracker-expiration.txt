@@ -6,7 +6,7 @@ the support tracker. That's why we have a script which runs daily to
 expire old tickets on which there was no activity for the past two
 weeks.
 
-That expiration is configured through the
+The expiration period is set using the
 config.tickettracker.days_before_expiration configuration variable. It
 defaults to 15 days.
 
