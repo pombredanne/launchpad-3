@@ -40,4 +40,4 @@ ALTER TABLE ProductSeries
   ADD CONSTRAINT valid_releasefileglob
     CHECK (valid_absolute_url(releasefileglob));
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (67, 95, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (67, 23, 0);
