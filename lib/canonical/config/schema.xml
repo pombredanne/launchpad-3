@@ -602,29 +602,6 @@
         </key>
     </sectiontype>
 
-    <sectiontype name="trebuchet_server">
-        <!-- Not 'existing-directory' because the test runner needs to
-        create it. Not 'existing-dirpath' because ZConfig will enforce it
-        for all sections, not just the one we are using -->
-        <key name="root" datatype="string" required="yes" />
-        <key name="launch" datatype="boolean" required="no" default="no" />
-        <key name="spew" datatype="boolean" required="no" default="no" />
-        <key name="logfile" datatype="string" required="no" default="-" />
-    </sectiontype>
-
-    <sectiontype name="trebuchet">
-        <key name="dbuser" datatype="string" default="trebuchet" />
-
-        <key name="port" datatype="port-number" default="4280">
-            <description>
-                Port number Trebuchet listens for XML-RPC requests on.
-            </description>
-        </key>
-
-        <section name="*" type="trebuchet_server" attribute="server"
-            required="no" />
-    </sectiontype>
-
     <sectiontype name="buildsequencer_job">
         <key name="command" datatype="string">
             <description>
@@ -662,7 +639,7 @@
         <key name="launch" datatype="boolean" default="false">
             <description>
                 If true, the buildsequencer will be started by the startup
-                scripts. This is similar to trebuchet_server/launch.
+                scripts.
             </description>
         </key>
         <key name="logfile" datatype="string">
@@ -817,7 +794,6 @@
         <section name="*" type="productreleasefinder"
 		 attribute="productreleasefinder" />
         <section name="*" type="gina" attribute="gina" />
-        <section name="*" type="trebuchet" attribute="trebuchet" />
         <section name="*" type="karmacacheupdater"
             attribute="karmacacheupdater" />
         <section name="*" type="expiredmembershipsflagger"

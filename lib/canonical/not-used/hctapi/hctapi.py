@@ -65,6 +65,7 @@ import canonical.lp
 from canonical.launchpad.interfaces import NotFoundError
 
 from pybaz import NameParser
+
 from canonical.lp.dbschema import (
     ManifestEntryType, ManifestEntryHint, RevisionControlSystems
     )
