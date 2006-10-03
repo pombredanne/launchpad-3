@@ -127,6 +127,27 @@ class DebbugsExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
     bug_id = '42'
 
 
+class SFExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
+    """Make sure BugWatchSet.extractBugTrackerAndBug works with SF URLs.
+
+    We have only one SourceForge tracker registered in Launchpad, so we
+    don't care about the aid and group_id, only about atid which is the
+    bug id.
+    """
+
+    bugtracker_type = BugTrackerType.SOURCEFORGE
+    bug_url = (
+        'http://sourceforge.net/tracker/index.php?'
+        'func=detail&aid=1568562&group_id=84122&atid=575154')
+    base_url = 'http://sourceforge.net/'
+    bug_id = '575154'
+
+    def test_unregistered_tracker_url(self):
+        # The SourceForge tracker is always registered, so this test
+        # doesn't make sense for SourceForge URLs.
+        pass
+
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(BugzillaExtractBugTrackerAndBugTest))
@@ -134,6 +155,7 @@ def test_suite():
     suite.addTest(unittest.makeSuite(RoundUpExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(TracExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(DebbugsExtractBugTrackerAndBugTest))
+    suite.addTest(unittest.makeSuite(SFExtractBugTrackerAndBugTest))
     return suite
 
 

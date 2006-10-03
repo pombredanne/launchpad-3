@@ -128,6 +128,7 @@ class BugWatchSet(BugSetBase):
             BugTrackerType.BUGZILLA: self.parseBugzillaURL,
             BugTrackerType.DEBBUGS:  self.parseDebbugsURL,
             BugTrackerType.ROUNDUP: self.parseRoundupURL,
+            BugTrackerType.SOURCEFORGE: self.parseSourceForgeURL,
             BugTrackerType.TRAC: self.parseTracURL,
         }
 
@@ -253,6 +254,19 @@ class BugWatchSet(BugSetBase):
         remote_bug = match.group(2)
 
         base_url = urlunsplit((scheme, host, base_path, '', ''))
+        return base_url, remote_bug
+
+    def parseSourceForgeURL(self, scheme, host, path, query):
+        """Extract the SourceForge base URL and bug ID."""
+        if not path.startswith('/tracker/'):
+            return None
+        if not query.get('atid'):
+            return None
+
+        remote_bug = query['atid']
+        # There's only one SF instance.
+        base_url = 'http://sourceforge.net/'
+
         return base_url, remote_bug
 
     def extractBugTrackerAndBug(self, url):
