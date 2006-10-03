@@ -46,6 +46,7 @@ from canonical.launchpad.interfaces import (
     ICalendarOwner, ITranslationImportQueue, NotFoundError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
@@ -55,7 +56,7 @@ from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, GetitemNavigation, LaunchpadView,
     LaunchpadEditFormView, LaunchpadFormView, Link, Navigation,
-    StandardLaunchpadFacets, stepthrough, structured)
+    StandardLaunchpadFacets, stepto, stepthrough, structured)
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.widgets.product import ProductBugTrackerWidget
 
@@ -67,6 +68,13 @@ class ProductNavigation(
 
     def breadcrumb(self):
         return self.context.displayname
+
+    @stepto('.bzr')
+    def dotbzr(self):
+        if self.context.development_focus.series_branch:
+            return BranchRef(self.context.development_focus.series_branch)
+        else:
+            return None
 
     @stepthrough('+spec')
     def traverse_spec(self, name):
