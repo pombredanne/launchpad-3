@@ -302,16 +302,17 @@ class BugAlsoReportInView(LaunchpadFormView):
     """View class for reporting a bug in other contexts."""
 
     schema = IAddBugTaskForm
-    custom_widget('bugtracker', BugTrackerWidget)
-    custom_widget('remotebug', StrippedTextWidget, displayWidth=50)
+    custom_widget('bug_url', StrippedTextWidget, displayWidth=50)
 
     index = ViewPageTemplateFile('../templates/bugtask-requestfix.pt')
     _confirm_new_task = False
+    extracted_bug = None
+    extracted_bugtracker = None
 
     def __init__(self, context, request):
         LaunchpadFormView.__init__(self, context, request)
         self.notifications = []
-        self.field_names = ['remotebug', 'bugtracker']
+        self.field_names = ['bug_url']
 
     def setUpLabelAndWidgets(self, label, target_field_names):
         """Initialize the form and render it."""
@@ -337,10 +338,6 @@ class BugAlsoReportInView(LaunchpadFormView):
                         source_package.direct_packaging.productseries.product)
                     self.widgets['product'].setRenderedValue(selected_product)
                     break
-        if selected_product is not None:
-            external_tracker = selected_product.getExternalBugTracker()
-            if external_tracker is not None:
-                self.widgets['bugtracker'].setRenderedValue(external_tracker)
         return self.render()
 
     def render_distrotask(self):
@@ -370,11 +367,8 @@ class BugAlsoReportInView(LaunchpadFormView):
         Check that:
             * We have a unique upstream task
             * We have a unique distribution task
-            * If bugtracker is not None, remotebug has to be not None
-            * If the target uses Malone, a bug watch can't be added.
+            * If the target uses Malone, a bug_url has to be None.
         """
-        remotebug = data.get('remotebug')
-        bugtracker = data.get('bugtracker')
         product = data.get('product')
         distribution = data.get('distribution')
         sourcepackagename = data.get('sourcepackagename')
@@ -399,7 +393,8 @@ class BugAlsoReportInView(LaunchpadFormView):
             # no point in trying to validate further.
             return
 
-        if remotebug and target.official_malone:
+        bug_url = data.get('bug_url')
+        if bug_url and target.official_malone:
             self.addError(
                 "%s uses Malone as its bug tracker, and it can't at the"
                 " same time be linked to a remote bug." % cgi.escape(
@@ -410,17 +405,18 @@ class BugAlsoReportInView(LaunchpadFormView):
             # using Malone.
             return
 
-        if remotebug is not None and '://' in remotebug:
+        if bug_url is not None:
             # An URL was entered instead of the bug id, try to find out
             # which bug and bug tracker it's referring to.
             bugwatch_set = getUtility(IBugWatchSet)
             try:
-                remote_data = bugwatch_set.getBugTrackerAndBug(remotebug)
+                remote_data = bugwatch_set.extractBugTrackerAndBug(bug_url)
             except NoBugTrackerFound, error:
                 # XXX: The user should be able to press a button here in
                 #      order to register the tracker.
                 #      -- Bjorn Tillenius, 2006-09-26
-                self.addError(
+                self.setFieldError(
+                    'bug_url',
                     "The bug tracker at %s isn't registered in Launchpad."
                     ' You have to'
                     ' <a href="/malone/bugtrackers/+newbugtracker">register'
@@ -429,22 +425,13 @@ class BugAlsoReportInView(LaunchpadFormView):
             else:
                 if remote_data is None:
                     self.setFieldError(
-                        'remotebug',
+                        'bug_url',
                         "Launchpad doesn't know what kind of bug tracker"
                         ' this URL is pointing at.')
                 else:
-                    # Modify the data dict so that the action handler
-                    # won't have to extract the bug tracker and bug from
-                    # the URL as well.
-                    bugtracker, remotebug = remote_data
-                    data['bugtracker'], data['remotebug'] = remote_data
-        elif remotebug is not None and bugtracker is None:
-            # The user entered a bug number, so he needs to enter a bug
-            # tracker as well.
-            self.setFieldError(
-                'bugtracker',
-                "Please specify the bug tracker where the bug is located.")
-
+                    # Assign attributes, so that the action handler can
+                    # access the extracted bugtracker and bug.
+                    self.extracted_bugtracker, self.extracted_bug = remote_data
 
         if len(self.errors) > 0:
             # The checks below should be made only if the form doesn't
@@ -455,7 +442,7 @@ class BugAlsoReportInView(LaunchpadFormView):
         if confirm_action.submitted():
             # The user confirmed that he does want to add the task.
             return
-        if not target.official_malone and not remotebug:
+        if not target.official_malone and not bug_url:
             confirm_button = (
                 '<input style="font-size: smaller" type="submit"'
                 ' value="%s" name="%s" />' % (
@@ -484,8 +471,8 @@ class BugAlsoReportInView(LaunchpadFormView):
         product = data.get('product')
         distribution = data.get('distribution')
         sourcepackagename = data.get('sourcepackagename')
-        bugtracker = data.get('bugtracker')
-        remotebug = data.get('remotebug')
+        bugtracker = self.extracted_bugtracker
+        remotebug = self.extracted_bug
 
         if product is not None:
             target = product

@@ -96,23 +96,8 @@ we add a bug watch as well.
     >>> browser.getControl(name='field.distribution').value
     ['debian']
     >>> browser.getControl("Source Package Name").value = "alsa-utils"
-    >>> browser.getControl(name='field.remotebug').value = '123'
-    >>> browser.getControl(name='field.bugtracker').value = []
-
-If we submit the form without specifying a bug tracker, we get an error.
-
-    >>> browser.getControl('Continue').click()
-    >>> browser.url
-    'http://localhost/products/firefox/+bug/1/+distrotask'
-    >>> print browser.contents
-    <...
-    ...Please specify the bug tracker where the bug is located...
-
-
-If we specify a bug tracker, the Debian task gets added an we get
-redirected to its page.
-
-    >>> browser.getControl(name='field.bugtracker').value = ['1']
+    >>> browser.getControl('URL').value = (
+    ...     'http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=123')
     >>> browser.getControl('Continue').click()
     >>> browser.url
     'http://localhost/distros/debian/+source/alsa-utils/+bug/1'
@@ -123,7 +108,8 @@ error, because Ubuntu uses Malone as its bug tracker
     >>> browser.getLink(url='+distrotask').click()
     >>> browser.getControl('Distribution').value = ['ubuntu']
     >>> browser.getControl('Source Package Name').value = 'thunderbird'
-    >>> browser.getControl(name='field.remotebug').value = '42'
+    >>> browser.getControl('URL').value = (
+    ...     'https://bugzilla.mozilla.org/show_bug.cgi?id=84')
     >>> browser.getControl('Continue').click()
     >>> browser.url
     'http://localhost/distros/debian/+source/alsa-utils/+bug/1/+distrotask'
@@ -133,7 +119,7 @@ error, because Ubuntu uses Malone as its bug tracker
 
 If we remove the remote bug it will work.
 
-    >>> browser.getControl(name='field.remotebug').value = ''
+    >>> browser.getControl('URL').value = ''
     >>> browser.getControl('Continue').click()
     >>> browser.url
     'http://localhost/distros/ubuntu/+source/thunderbird/+bug/1'
@@ -179,7 +165,7 @@ we really want to do this.
 The form is shown as well, so it's possible to easily change the
 field values, in order to add a bug watch.
 
-    >>> browser.getControl(name='field.remotebug') is not None
+    >>> browser.getControl('URL') is not None
     True
 
 Of course, if we simply press Continue again, nothing will happen, the
