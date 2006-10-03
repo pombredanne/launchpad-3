@@ -190,9 +190,7 @@ class FileBugView(GeneralFormView, FileBugViewMixin):
 
 class FileBugSearchForDupesView(LaunchpadFormView, FileBugViewMixin):
     schema = IBugAddForm
-    field_names = ['title', 'comment', 'packagename']
     custom_widget('title', TextWidget, displayWidth=40)
-    columns_to_show = ["id", "summary", "status"]
 
     _MATCHING_BUGS_LIMIT = 10
     _SEARCH_FOR_DUPES = ViewPageTemplateFile(
@@ -214,6 +212,43 @@ class FileBugSearchForDupesView(LaunchpadFormView, FileBugViewMixin):
         ("filebug", "Describe the bug in more detail")]
 
     current_step = "search"
+
+    @property
+    def field_names(self):
+        """Return the list of field names to display."""
+        context = self.context
+        if IProduct.providedBy(context):
+            return ['title', 'comment']
+        else:
+            assert (
+                IDistribution.providedBy(context) or
+                IDistributionSourcePackage.providedBy(context))
+
+            return ['title', 'comment', 'packagename']
+
+    @property
+    def initial_values(self):
+        """Give packagename a default value, if applicable."""
+        if not IDistributionSourcePackage.providedBy(self.context):
+            return {}
+
+        return {'packagename': self.context.name}
+
+    def setUpWidgets(self):
+        """Customize the onKeyPress event of the package name chooser."""
+        LaunchpadFormView.setUpWidgets(self)
+
+        if "packagename" in self.field_names:
+            self.widgets["packagename"].onKeyPress = (
+                "selectWidget('choose', event)")
+
+    def contextUsesMalone(self):
+        """Does the context use Malone as its official bugtracker?"""
+        return self.getProductOrDistroFromContext().official_malone
+
+    def shouldSelectPackageName(self):
+        """Should the choose-a-package radio button be selected?"""
+        return bool(self.initial_values.get("packagename"))
 
     @action("See if it's already been reported",
             name="search", validator="validate_search")
@@ -333,10 +368,7 @@ class FileBugSearchForDupesView(LaunchpadFormView, FileBugViewMixin):
         self.request.response.redirect(canonical_url(bug.bugtasks[0]))
 
     def getMostCommonBugs(self):
-        """Return a TableBatchNavigator of the most common bugs.
-
-        'Most common' means bugs that have the most duplicates.
-        """
+        """Return a list of the most duplicated bugs."""
         return self.context.getMostCommonBugs(
             self.user, limit=self._MATCHING_BUGS_LIMIT)
 

@@ -350,7 +350,7 @@ class DistributionSourcePackage(BugTargetBase):
         """See BugTargetBase."""
         return (
             "BugTask.distribution = %d AND BugTask.sourcepackagename = %d" % (
-            self.id, self.sourcepackagename.id))
+            self.distribution.id, self.sourcepackagename.id))
 
     def searchTasks(self, search_params):
         """See IBugTarget."""

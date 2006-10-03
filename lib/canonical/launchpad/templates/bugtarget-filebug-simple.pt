@@ -20,7 +20,7 @@
 
 <div metal:fill-slot="main">
 
-  <tal:uses_malone tal:condition="context/official_malone">
+  <tal:uses_malone tal:condition="view/contextUsesMalone">
 
   <ol>
     <tal:filebug-step repeat="step view/getSteps">
@@ -48,17 +48,20 @@
     <label tal:attributes="for view/widgets/packagename/name">
       In what package did you find this bug?
     </label>
-    <ul style="list-style: none">
+    <ul style="list-style: none"
+        tal:define="select_packagename view/shouldSelectPackageName">
       <li>
         <input type="radio" name="packagename_option" value="none"
-               id="no-package" checked />
+               id="no-package"
+               tal:attributes="checked not:select_packagename"/>
         <label style="font-weight: normal" for="no-package">
           I don't know
         </label>
       </li>
       <li style="margin-top: 4px">
         <input type="radio" name="packagename_option" value="choose"
-               id="choose" />
+               id="choose"
+               tal:attributes="checked select_packagename"/>
         <span tal:content="structure view/widgets/packagename" />
       </li>
     </ul>
@@ -83,19 +86,9 @@
 
   </form>
 
-  <script type="text/javascript">
-    <!--
-    function selectPrivacyForSecurityBugs(security_checkbox) {
-      if (security_checkbox.checked == true) {
-        document.getElementById("field.private").checked = true;
-      }
-    }
-    -->
-  </script>
-
   </tal:uses_malone>
 
-  <tal:not_uses_malone tal:condition="not: context/official_malone">
+  <tal:not_uses_malone tal:condition="not: view/contextUsesMalone">
     <p class="error message">
       <span tal:replace="context/displayname">Alsa Utils</span> does not use Malone as its bug tracker.
     </p>

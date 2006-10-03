@@ -43,6 +43,14 @@
         permission="zope.Public"
         name="+bugs"
         template="../templates/buglisting-default.pt"/>
+
+    <browser:page
+        name="+filebug"
+        for="canonical.launchpad.interfaces.IBugTarget"
+        class="canonical.launchpad.browser.FileBugSearchForDupesView"
+        facet="bugs"
+        permission="launchpad.AnyPerson" />
+
   </facet>
 
   <!-- Macros -->

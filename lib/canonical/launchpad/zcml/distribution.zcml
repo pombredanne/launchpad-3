@@ -227,13 +227,6 @@
             class="canonical.widgets.HiddenUserWidget" />
     </browser:addform>
 
-    <browser:page
-        name="+filebug"
-        for="canonical.launchpad.interfaces.IDistribution"
-        class="canonical.launchpad.browser.FileBugSearchForDupesView"
-        facet="bugs"
-        permission="launchpad.AnyPerson" />
-
     <browser:generalform
         name="+filebug-advanced"
         for="canonical.launchpad.interfaces.IDistribution"
