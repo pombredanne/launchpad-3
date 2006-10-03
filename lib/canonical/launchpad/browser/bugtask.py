@@ -668,6 +668,8 @@ class BugTaskEditView(GeneralFormView):
             editable_field_names = list(self.fieldNames)
             editable_field_names.remove('bugwatch')
 
+            # XXX, Brad Bollenbach, 2006-09-29: Permission checking
+            # doesn't belong here! See https://launchpad.net/bugs/63000
             if not self.userCanEditMilestone():
                 editable_field_names.remove("milestone")
 
@@ -1167,9 +1169,7 @@ class BugTaskSearchListingView(LaunchpadView):
     owner_error = ""
     assignee_error = ""
 
-    def __init__(self, context, request):
-        LaunchpadView.__init__(self, context, request)
-
+    def initialize(self):
         if self._personContext():
             self.schema = IPersonBugTaskSearch
         else:
@@ -1194,6 +1194,7 @@ class BugTaskSearchListingView(LaunchpadView):
         self.tag_widget = CustomWidgetFactory(BugTagsWidget)
         setUpWidgets(self, self.schema, IInputWidget)
         self.validateVocabulariesAdvancedForm()
+        self.validate_search_params()
 
     @property
     def columns_to_show(self):
@@ -1237,6 +1238,12 @@ class BugTaskSearchListingView(LaunchpadView):
                     "Unexpected value for field '%s'. Perhaps your bookmarks "
                     "are out of date or you changed the URL by hand?" % field_name)
 
+
+        try:
+            getWidgetsData(self, schema=self.schema, names=['tag'])
+        except WidgetsError:
+            self.form_has_errors = True
+
         orderby = get_sortorder_from_request(self.request)
         bugset = getUtility(IBugTaskSet)
         for orderby_col in orderby:
@@ -1259,8 +1266,6 @@ class BugTaskSearchListingView(LaunchpadView):
         search criteria taken from the request. Params in :extra_params: take
         precedence over request params.
         """
-        self.validate_search_params()
-
         widget_names = [
                 "searchtext", "status", "assignee", "importance",
                 "owner", "omit_dupes", "has_patch",
