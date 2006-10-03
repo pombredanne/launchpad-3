@@ -202,15 +202,16 @@ We can find builds given a source package release and architecture tag.
   >>> bs.getBuildBySRAndArchtag(20,'i386').count()
   5
 
-Exercises IHasBuildRecords' base method getBuildsByArchIds():
+IHasBuildRecords uses a base method provided by IBuildSet,
+getBuildsByArchIds():
 
-For full architectures in hoary:
+It receives list of architectures IDs:
 
   >>> arch_ids = [arch.id for arch in hoary.architectures]
   >>> bs.getBuildsByArchIds(arch_ids).count()
   5
 
-Method still working when empty arch_ids list or None is passed :
+It still working for empty list or None:
 
   >>> bs.getBuildsByArchIds([]).count()
   0
@@ -218,7 +219,7 @@ Method still working when empty arch_ids list or None is passed :
   >>> bs.getBuildsByArchIds(None).count()
   0
 
-Using build status, only the succesfully built ones:
+Using build status, only the successfully built ones:
 
   >>> bs.getBuildsByArchIds(arch_ids,
   ...     status=BuildStatus.FULLYBUILT).count()
