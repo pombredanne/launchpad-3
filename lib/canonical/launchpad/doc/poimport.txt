@@ -73,13 +73,15 @@ getLastTranslator() function of components/poimport.py.
     >>> parser.finish()
     >>> potemplates = getUtility(IPOTemplateSet).getAllByName('evolution-2.2')
     >>> aa = getUtility(ILanguageSet)['aa']
+    >>> potemplate = potemplates[0]
+    >>> potemplate.displayname
+    u'evolution-2.2 in Evolution trunk'
     >>> pofile = getUtility(IPOFileSet).getDummy(potemplates[0], aa)
     >>> person = getLastTranslator(parser, pofile)
     >>> person.creation_rationale.name
     'POFILEIMPORT'
     >>> person.creation_comment
-    u'when importing the Afar (aa) translation of evolution-2.2 in Ubuntu
-    Hoary package "evolution"'
+    u'when importing the Afar (aa) translation of evolution-2.2 in Evolution trunk'
 
 Now, is time to create the new potemplate
 
