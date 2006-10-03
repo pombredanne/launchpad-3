@@ -380,6 +380,10 @@ class BaseTranslationView(LaunchpadView):
         self.form_posted_translations = {}
         self.form_posted_needsreview = {}
 
+        # This dictionary hold the text requested by the user to be copied to
+        # the textarea.
+        self.form_copied_translations = {}
+
         if not self.has_plural_form_information:
             # This POFile needs administrator setup.
             # XXX: this should refer people to +addticket, right? -- kiko
@@ -413,80 +417,22 @@ class BaseTranslationView(LaunchpadView):
         self.start = self.batchnav.start
         self.size = self.batchnav.currentBatch().size
 
-        if (self.request.method == 'POST' and 
-            self.request.form.get("submit_translations") and
-            self.user is not None):
-            # Check if this is really the form we are listening for..
-            if self._submitTranslations():
-                # .. and if no errors occurred, adios. Otherwise, we
-                # need to set up the subviews for error display and
-                # correction.
-                return
+        if self.request.method == 'POST' and self.user is not None:
+            if self.request.form.get("submit_translations"):
+                # Check if this is really the form we are listening for..
+                if self._submitTranslations():
+                    # .. and if no errors occurred, adios. Otherwise, we
+                    # need to set up the subviews for error display and
+                    # correction.
+                    return
+            else:
+                # Check and do any copy request we got.
+                self._submitCopyRequest()
 
         # Slave view initialization depends on _submitTranslations being
         # called, because the form data needs to be passed in to it --
         # again, because of error handling.
         self._initializeSubViews()
-
-##############################################################################
-##############################################################################
-##############################################################################
-##############################################################################
-    def _copy_translation(self, button_id):
-        """"""
-        if 'singular' in button_id:
-            match = re.match(
-                'msgset_(\d+)_singular_copy', button_id)
-        if 'plural' in button_id:
-            match = re.match(
-                'msgset_(\d+)_plural_copy', button_id)
-        if 'translation' in button_id:
-            match = re.match(
-                'msgset_(\d+)_(\S+)_translation_(\d+)_copy', button_id)
-        if 'suggestion' in button_id:
-            match = re.match(
-                'msgset_(\d+)_(\S+)_suggestion_(\d+)_(\d+)_copy', button_id)
-
-    def process_form(self):
-        """Check whether the form was submitted and calls the right callback.
-        """
-        if (self.request.method != 'POST' or self.user is None or
-            'pofile_translation_filter' in self.form):
-            # The form was not submitted or the user is not logged in.
-            # If we get 'pofile_translation_filter' we should ignore that POST
-            # because it's useless for this view.
-            return
-
-        for key in self.form.keys():
-            if (key == 'submit_translations'):
-                self._submit_translations()
-                return
-            if (key == 'select_alternate_language'):
-                self._select_alternate_language()
-                return
-            if (key.startswith('msgset_%d_singular_copy' % self.potmsgset.id) or
-                key.startswith('msgset_%d_plural_copy' % self.potmsgset.id)):
-                self._copy_translation(key)
-                return
-
-            for plural in range(self.pofile.language.pluralforms):
-                if key.startswith('msgset_%d_%s_translation_%d_copy' % (
-                    self.potmsgset.id, self.pofile.language.code, plural)):
-                    self._copy_translation(key)
-                    return
-
-                suggestion_copy = 'msgset_%d_%s_suggestion_(\d+)_%d_copy\.(x|y)' % (
-                    self.potmsgset.id, self.pofile.language.code, plural)
-                match = re.match(suggestion_copy, key)
-                if match is not None:
-                    self._copy_translation(key)
-                    return
-
-##############################################################################
-##############################################################################
-##############################################################################
-##############################################################################
-
 
     #
     # API Hooks
@@ -513,6 +459,11 @@ class BaseTranslationView(LaunchpadView):
         addErrorNotification), and otherwise call _redirectToNextPage if
         everything went fine."""
         raise NotImplementedError
+
+    def _submitCopyRequest(self):
+        """Handle translation copy requests."""
+        raise NotImplementedError
+
 
     #
     # Helper methods that should be used for POMsgSetView.prepare() and
@@ -543,12 +494,57 @@ class BaseTranslationView(LaunchpadView):
         else:
             return None
 
+    def _copyTranslation(self, pomsgset, button_id):
+        """Perform the copy associated with :arg button_id:
+
+        :arg button_id: String with the name of the copy button submitted.
+        """
+        self.form_copied_translations[pomsgset] = {}
+        if 'singular' in button_id:
+            match = re.match(
+                'msgset_(\d+)_singular_copy\.(x|y)', button_id)
+            potmsgset_id = match.group(1)
+            potmsgset = self.pofile.potemplate.getPOTMsgSetByID(potmsgset_id)
+            pomsgids = potmsgset.getPOMsgIDs()
+            text_to_copy = pomsgids[TranslationConstants.SINGULAR_FORM].msgid
+            dict_with_copies = {}
+            for plural_index in range(self.pofile.language.pluralforms):
+                if plural_index == TranslationConstants.SINGULAR_FORM:
+                    dict_with_copies[plural_index] = text_to_copy
+                else:
+                    dict_with_copies[plural_index] = None
+            self.form_copied_translations[pomsgset] = dict_with_copies
+
+        if 'plural' in button_id:
+            match = re.match(
+                'msgset_(\d+)_plural_copy\.(x|y)', button_id)
+            potmsgset_id = match.group(1)
+            potmsgset = self.pofile.potemplate.getPOTMsgSetByID(potmsgset_id)
+            pomsgids = potmsgset.getPOMsgIDs()
+            text_to_copy = pomsgids[TranslationConstants.PLURAL_FORM].msgid
+            dict_with_copies = {}
+            for plural_index in range(self.pofile.language.pluralforms):
+                if plural_index == TranslationConstants.SINGULAR_FORM:
+                    dict_with_copies[plural_index] = None
+                else:
+                    dict_with_copies[plural_index] = text_to_copy
+            self.form_copied_translations[pomsgset] = dict_with_copies
+
+        if 'translation' in button_id:
+            match = re.match(
+                'msgset_(\d+)_(\S+)_translation_(\d+)_copy\.(x|y)', button_id)
+        if 'suggestion' in button_id:
+            match = re.match(
+                'msgset_(\d+)_(\S+)_suggestion_(\d+)_(\d+)_copy\.(x|y)', button_id)
+
     def _prepareView(self, pomsgset_view, pomsgset, error):
         """Prepare data for display in a subview; calls POMsgSetView.prepare."""
         # XXX: it would be nice if we could easily check if
         # this is being called in the right order, after
         # _storeTranslations(). -- kiko, 2006-09-27
-        if self.form_posted_translations.has_key(pomsgset):
+        if self.form_copied_translations.has_key(pomsgset):
+            translations = self.form_copied_translations[pomsgset]
+        elif self.form_posted_translations.has_key(pomsgset):
             translations = self.form_posted_translations[pomsgset]
         else:
             translations = pomsgset.active_texts
@@ -936,8 +932,9 @@ class POMsgSetView(LaunchpadView):
         submissions = sorted(submissions,
                              key=operator.attrgetter("datecreated"),
                              reverse=True)
-        return POMsgSetSuggestions(title, submissions[:self.max_entries],
-                                   self.max_entries)
+        return POMsgSetSuggestions(
+            title, self.context, submissions[:self.max_entries],
+            self.max_entries)
 
     def getTranslation(self, index):
         """Return the active translation for the pluralform 'index'.
@@ -1085,7 +1082,8 @@ class POMsgSetZoomedView(POMsgSetView):
 class POMsgSetSuggestions(LaunchpadView):
     """See IPOMsgSetSuggestions."""
     implements(IPOMsgSetSuggestions)
-    def __init__(self, title, submissions, max_entries):
+    def __init__(self, title, pomsgset, submissions, max_entries):
         self.title = title
+        self.pomsgset = pomsgset
         self.submissions = submissions
         self.max_entries = max_entries

@@ -251,7 +251,7 @@ class POFileTranslateView(BaseTranslationView):
     """The View class for a POFile or a DummyPOFile.
 
     This view is based on BaseTranslationView and implements the API
-    defined by tht class.
+    defined by that class.
 
     Note that DummyPOFiles are presented if there is no POFile in the
     database but the user wants to translate it. See how POTemplate
@@ -346,6 +346,31 @@ class POFileTranslateView(BaseTranslationView):
 
         self._redirectToNextPage()
         return True
+
+    def _submitCopyRequest(self):
+        """See BaseTranslationView._submitCopyRequest."""
+        search_pattern = 'msgset_(\d+)_(singular|plural'
+        for plural_index in range(self.pofile.language.pluralforms):
+            search_pattern = '%s|(%s_translation_%d)' % (
+                search_pattern, self.context.language.code, plural_index)
+            search_pattern = '%s|((\S+)_suggestion_(\d+)_%d)' % (
+                search_pattern, plural_index)
+        search_pattern = '%s)_copy\.(x|y)' % search_pattern
+        for key in self.request.form:
+            match = re.match(search_pattern, key)
+            if match is not None:
+                # group #1 is the potmsgset.id
+                potmsgset_id = match.group(1)
+                import pdb; pdb.set_trace()
+                potmsgset = self.pofile.potemplate.getPOTMsgSetByID(
+                    potmsgset_id)
+                pomsgset = potmsgset.getPOMsgSet(
+                    self.pofile.language.code, self.pofile.variant)
+                if pomsgset is None:
+                    pomsgset = self.pofile.createMessageSetFromMessageSet(
+                        potmsgset)
+                self._copyTranslation(pomsgset, key)
+                return
 
     def _buildRedirectParams(self):
         parameters = BaseTranslationView._buildRedirectParams(self)
