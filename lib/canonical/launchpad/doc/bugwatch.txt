@@ -103,7 +103,9 @@ To create a bugwatch, use IBugWatchSet.createBugWatch:
 Creating SF.net Bug Watches
 ---------------------------
 
-The URLifier for these bug watches deals with SF.net's horrible URLs.
+SourceForge.net bug watch URLs are generated using the
+"/support/tracker.php" script, which will redirect to the URL with the
+group_id and aid arguments filled in:
 
     >>> sftracker = bugtrackerset['sf']
     >>> sample_person = getUtility(IPersonSet).get(12)
