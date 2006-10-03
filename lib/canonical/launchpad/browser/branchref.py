@@ -1,13 +1,15 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
+"""Browser code used to implement virtual '.bzr' directories."""
+
 __metaclass__ = type
 __all__ = [
     'BranchRef'
     ]
 
 from zope.interface import implements
-
 from zope.publisher.interfaces.browser import IBrowserPublisher
+
 from canonical.config import config
 from canonical.launchpad.interfaces import IBranchRef
 from canonical.launchpad.webapp import Navigation, stepto, stepthrough
