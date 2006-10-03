@@ -658,7 +658,7 @@ class NascentUpload:
             # fail at this point, so we'll catch the exception and move on.
             try:
                 release = self.distrorelease.displayname
-            except Exception:
+            except UploadError:
                 # We can use any random name here, because the fact that this
                 # distrorelease was not found will cause the whole transaction
                 # to be rolled back at some point.

@@ -14,6 +14,7 @@ from zope.component import getUtility
 from canonical.archivepublisher.tests.test_uploadprocessor import (
     MockOptions, MockLogger)
 from canonical.archivepublisher.uploadpolicy import AbstractUploadPolicy
+from canonical.archivepublisher.nascentupload import UploadError
 from canonical.archivepublisher.uploadprocessor import UploadProcessor
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
@@ -38,7 +39,7 @@ class BrokenUploadPolicy(AbstractUploadPolicy):
 
     def setDistroReleaseAndPocket(self, dr_name):
         """Raise an exception upload processing is not expecting."""
-        raise Exception("Exception raised by BrokenUploadPolicy for testing.")
+        raise UploadError("Exception raised by BrokenUploadPolicy for testing.")
 
 
 class TestUploadProcessor(unittest.TestCase):
@@ -130,8 +131,8 @@ class TestUploadProcessor(unittest.TestCase):
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
         daniel = "Daniel Silverstone <daniel.silverstone@canonical.com>"
         self.assertEqual(to_addrs, [daniel])
-        self.assertTrue("Unhandled exception processing upload: Exception "
-                        "raised by BrokenUploadPolicy for testing." in raw_msg)
+        self.assertTrue(
+            "Exception raised by BrokenUploadPolicy for testing." in raw_msg)
 
     def testUploadToFrozenDistro(self):
         """Uploads to a frozen distrorelease should work, but be unapproved.
