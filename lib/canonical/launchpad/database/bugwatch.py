@@ -102,6 +102,7 @@ class BugWatchSet(BugSetBase):
 
     implements(IBugWatchSet)
     table = BugWatch
+    url_pattern = re.compile(r'(\bhttps?://.+/.*?)\.?\s')
 
     def __init__(self, bug=None):
         BugSetBase.__init__(self, bug)
@@ -124,44 +125,39 @@ class BugWatchSet(BugSetBase):
     def search(self):
         return BugWatch.select()
 
-    def _find_watches(self, pattern, trackertype, text, bug, owner):
-        """Find the watches in a piece of text, based on a given pattern and
-        tracker type."""
-        newwatches = []
-        # let's look for matching entries
-        matches = pattern.findall(text)
-        if len(matches) == 0:
-            return []
-        for match in matches:
-            # let's see if we already know about this bugtracker
-            bugtrackerset = getUtility(IBugTrackerSet)
-            baseurl = match[0]
-            remotebug = match[1]
-            # make sure we have a bugtracker
-            bugtracker = bugtrackerset.ensureBugTracker(baseurl, owner,
-                trackertype)
-            # see if there is a bugwatch for this remote bug on this bug
-            bugwatch = None
-            for watch in bug.watches:
-                if (watch.bugtracker == bugtracker and
-                    watch.remotebug == remotebug):
-                    bugwatch = watch
-                    break
-            if bugwatch is None:
-                bugwatch = BugWatch(bugtracker=bugtracker, bug=bug,
-                    remotebug=remotebug, owner=owner)
-                newwatches.append(bugwatch)
-                if len(newwatches) > 0:
-                    flush_database_updates()
-        return newwatches
-
     def fromText(self, text, bug, owner):
         """See IBugTrackerSet.fromText."""
-        watches = set()
-        for trackertype, pattern in self.bugtracker_references.items():
-            watches = watches.union(self._find_watches(pattern, 
-                trackertype, text, bug, owner))
-        return sorted(watches, key=lambda a: (a.bugtracker.name, a.remotebug))
+        newwatches = []
+        # Let's find all the URLs and see if they are bug references.
+        matches = self.url_pattern.findall(text)
+        if len(matches) == 0:
+            return []
+
+        for url in matches:
+            try:
+                bugwatch_data = self.extractBugTrackerAndBug(url)
+            except NoBugTrackerFound, error:
+                bugtracker = getUtility(IBugTrackerSet).ensureBugTracker(
+                    error.base_url, owner, error.bugtracker_type)
+                remotebug = error.remote_bug
+            else:
+                if bugwatch_data is None:
+                    continue
+                bugtracker, remotebug = bugwatch_data
+
+            for bugwatch in bug.watches:
+                if (bugwatch.bugtracker == bugtracker and
+                    bugwatch.remotebug == remotebug):
+                    break
+            else:
+                # This bug doesn't have such a bug watch, let's create
+                # one.
+                bugwatch = BugWatch(
+                    bugtracker=bugtracker, bug=bug, remotebug=remotebug,
+                    owner=owner)
+                newwatches.append(bugwatch)
+
+        return newwatches
 
     def fromMessage(self, message, bug):
         """See IBugWatchSet."""
