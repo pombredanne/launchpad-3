@@ -155,6 +155,20 @@
         />
 
     <adapter
+        for="int"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.NumberFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
+        for="long"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.NumberFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
         for="types.NoneType"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.NoneFormatter"
@@ -179,6 +193,13 @@
         for="canonical.launchpad.interfaces.IMilestone"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.MilestoneFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IBuild"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BuildFormatterAPI"
         name="fmt"
         />
 
@@ -271,7 +292,7 @@
         />
 
     <!-- Default favicon -->
-    <browser:favicon for="*" file="../images/launchpad_favicon.png" />
+    <browser:favicon for="*" file="../images/launchpad.png" />
 
     <!-- LaunchBag Utility -->
     <utility
@@ -296,7 +317,7 @@
         />
 
     <!-- Resource unnamed view, allowing Z3 preferred spelling
-        /@@/favicon.png to access resource and resourceDirectory -->
+        /@@/launchpad-icon-small to access resource and resourceDirectory -->
     <browser:page
         name=""
         for="canonical.launchpad.interfaces.ILaunchpadRoot"

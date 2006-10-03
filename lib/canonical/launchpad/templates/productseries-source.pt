@@ -31,38 +31,6 @@
 
   <form method="post" name="mf">
 
-    <h2>Package in Ubuntu,
-        <span tal:replace="view/curr_ubuntu_release/title">
-          The Hoary Hedgehog Release
-        </span>
-    </h2>
-
-    <table>
-      <tbody>
-        <tr>
-          <th><label>Source package:</label></th>
-          <td>
-            <div>
-              <input type="text" name="ubuntupkg" size="30" value=""
-                     tal:attributes="value view/curr_ubuntu_pkgname" />
-            </div>
-            <div class="formHelp">
-              The name of the <strong>source</strong> package in the
-              current release of Ubuntu (version
-              <span tal:replace= "view/curr_ubuntu_release/version">4.10</span>,
-              <span tal:replace="view/curr_ubuntu_release/title">
-                The Hoary Hedgehog Release
-              </span>).  It&#8217;s very important to link exactly the right
-              branch to the relevant Ubuntu package, to ensure that bugs,
-              patches and translations are correctly shared. Do not enter
-              "HEAD", "MAIN", or "TRUNK" unless you are certain that the
-              package is actually based on HEAD.
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-
     <h2>Source import details</h2>
 
     <fieldset>

@@ -13,6 +13,7 @@ __all__ = [
     'BugTaskEditView',
     'BugTaskPortletView',
     'BugTaskStatusView',
+    'BugTaskListingView',
     'BugListingPortletView',
     'BugTaskSearchListingView',
     'BugTargetView',
@@ -44,18 +45,19 @@ from zope.security.proxy import isinstance as zope_isinstance
 from canonical.config import config
 from canonical.lp import dbschema
 from canonical.launchpad import _
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
     canonical_url, GetitemNavigation, Navigation, stepthrough,
     redirection, LaunchpadView)
 from canonical.launchpad.interfaces import (
-    BugDistroReleaseTargetDetails, BugTaskSearchParams, IBugAttachmentSet,
-    IBugExternalRefSet, IBugSet, IBugTask, IBugTaskSet, IBugTaskSearch,
-    IBugWatchSet, IDistribution, IDistributionSourcePackage,
-    IDistroBugTask, IDistroRelease, IDistroReleaseBugTask,
-    IDistroReleaseSet, ILaunchBag, INullBugTask, IPerson,
+    BugDistroReleaseTargetDetails, BugTaskSearchParams,
+    IBugAttachmentSet, IBugExternalRefSet, IBugSet, IBugTask,
+    IBugTaskSet, IBugTaskSearch, IBugWatchSet, IDistribution,
+    IDistributionSourcePackage, IDistroBugTask, IDistroRelease,
+    IDistroReleaseBugTask, ILaunchBag, INullBugTask, IPerson,
     IPersonBugTaskSearch, IProduct, IProject, ISourcePackage,
-    ISourcePackageNameSet, IUpstreamBugTask, NotFoundError,
-    RESOLVED_BUGTASK_STATUSES, UnexpectedFormData,
+    IUpstreamBugTask, NotFoundError, RESOLVED_BUGTASK_STATUSES,
+    UnexpectedFormData, ISourcePackageNameSet, IDistroReleaseSet,
     UNRESOLVED_BUGTASK_STATUSES, valid_distrotask, valid_upstreamtask)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
@@ -72,7 +74,8 @@ from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
 
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.bugtask import (
-    AssigneeDisplayWidget, BugTaskBugWatchWidget, DBItemDisplayWidget,
+    AssigneeDisplayWidget, BugTaskBugWatchWidget,
+    BugTaskSourcePackageNameWidget, DBItemDisplayWidget,
     NewLineToSpacesWidget, LaunchpadRadioWidget)
 
 
@@ -449,17 +452,36 @@ class BugTaskView(LaunchpadView):
             IDistroBugTask.providedBy(self.context) or
             IDistroReleaseBugTask.providedBy(self.context))
 
-    def getBugComments(self):
-        """Return all the bug comments together with their index."""
+    @cachedproperty
+    def comments(self):
         comments = get_comments_for_bugtask(self.context, truncate=True)
         assert len(comments) > 0, "A bug should have at least one comment."
-        # The first comment doesn't add any value if it's the same as the
-        # description.
-        initial_comment = comments[0]
-        if initial_comment.text_contents == self.context.bug.description:
-            return comments[1:]
-        else:
-            return comments
+        return comments
+
+    def getBugCommentsForDisplay(self):
+        """Return all the bug comments together with their index."""
+        # The first comment is generally identical to the description,
+        # and we include a special link to it in the template if it
+        # isn't.
+        comments = self.comments[1:]
+
+        visible_comments = []
+        previous_comment = None
+        for comment in comments:
+            # Omit comments that are identical to their previous
+            # comment, which were probably produced by
+            # double-submissions or user errors, and which don't add
+            # anything useful to the bug itself.
+            if previous_comment and previous_comment.isIdenticalTo(comment):
+                continue
+            visible_comments.append(comment)
+            previous_comment = comment
+
+        return visible_comments
+
+    def wasDescriptionModified(self):
+        """Return a boolean indicating whether the description was modified"""
+        return self.comments[0].text_contents != self.context.bug.description
 
 
 class BugTaskPortletView:
@@ -627,6 +649,9 @@ class BugTaskEditView(GeneralFormView):
                 self.importance_widget = CustomWidgetFactory(
                     DBItemDisplayWidget)
 
+        if 'sourcepackagename' in editable_field_names:
+            self.sourcepackagename_widget = CustomWidgetFactory(
+                BugTaskSourcePackageNameWidget)
         setUpWidgets(
             self, self.schema, IInputWidget, names=editable_field_names,
             initial=self.initial_values)
@@ -643,10 +668,12 @@ class BugTaskEditView(GeneralFormView):
             editable_field_names = list(self.fieldNames)
             editable_field_names.remove('bugwatch')
 
-            if not self._userCanEditMilestone():
+            # XXX, Brad Bollenbach, 2006-09-29: Permission checking
+            # doesn't belong here! See https://launchpad.net/bugs/63000
+            if not self.userCanEditMilestone():
                 editable_field_names.remove("milestone")
 
-            if not self._userCanEditImportance():
+            if not self.userCanEditImportance():
                 editable_field_names.remove("importance")
         else:
             editable_field_names = ['bugwatch']
@@ -660,7 +687,7 @@ class BugTaskEditView(GeneralFormView):
                 editable_field_names += ['sourcepackagename']
             if self.context.bugwatch is None:
                 editable_field_names += ['status', 'assignee']
-                if self._userCanEditImportance():
+                if self.userCanEditImportance():
                     editable_field_names += ["importance"]
 
         return editable_field_names
@@ -670,10 +697,10 @@ class BugTaskEditView(GeneralFormView):
         if self.context.target_uses_malone:
             read_only_field_names = []
 
-            if not self._userCanEditMilestone():
+            if not self.userCanEditMilestone():
                 read_only_field_names.append("milestone")
 
-            if not self._userCanEditImportance():
+            if not self.userCanEditImportance():
                 read_only_field_names.append("importance")
         else:
             editable_field_names = self._getEditableFieldNames()
@@ -683,7 +710,7 @@ class BugTaskEditView(GeneralFormView):
 
         return read_only_field_names
 
-    def _userCanEditMilestone(self):
+    def userCanEditMilestone(self):
         """Can the user edit the Milestone field?
 
         If yes, return True, otherwise return False.
@@ -691,10 +718,13 @@ class BugTaskEditView(GeneralFormView):
         product_or_distro = self._getProductOrDistro()
 
         return (
-            "milestone" in self.fieldNames and
-            helpers.check_permission("launchpad.Edit", product_or_distro))
+            ("milestone" in self.fieldNames) and (
+                (product_or_distro.bugcontact and
+                 self.user and
+                 self.user.inTeam(product_or_distro.bugcontact)) or
+                helpers.check_permission("launchpad.Edit", product_or_distro)))
 
-    def _userCanEditImportance(self):
+    def userCanEditImportance(self):
         """Can the user edit the Importance field?
 
         If yes, return True, otherwise return False.
@@ -875,6 +905,20 @@ class BugTaskEditView(GeneralFormView):
                     object_before_modification=bugtask_before_modification,
                     edited_fields=field_names))
 
+        if bugtask.sourcepackagename is not None:
+            real_package_name = bugtask.sourcepackagename.name
+            entered_package_name = self.request.form.get(
+                self.sourcepackagename_widget.name)
+            if real_package_name != entered_package_name:
+                # The user entered a binary package name which got
+                # mapped to a source package.
+                self.request.response.addNotification(
+                    "'%(entered_package)s' is a binary package, this bug has"
+                    " been assigned to its source package '%(real_package)s'"
+                    " instead.",
+                    entered_package=entered_package_name,
+                    real_package=real_package_name)
+
         if (bugtask_before_modification.sourcepackagename !=
             bugtask.sourcepackagename):
             # The source package was changed, so tell the user that we've
@@ -917,6 +961,65 @@ class BugTaskStatusView(LaunchpadView):
         self.importance_widget = CustomWidgetFactory(DBItemDisplayWidget)
 
         setUpWidgets(self, IBugTask, IDisplayWidget, names=field_names)
+
+
+class BugTaskListingView(LaunchpadView):
+    """A view designed for displaying bug tasks in lists."""
+    # Note that this right now is only used in tests and to render
+    # status in the CVEReportView. It may be a candidate for refactoring
+    # or removal.
+    @property
+    def status(self):
+        """Return an HTML representation of the bugtask status and assignee."""
+        bugtask = self.context
+
+        if INullBugTask.providedBy(bugtask):
+            return u"Not reported in %s" % bugtask.targetname
+
+        assignee = bugtask.assignee
+        status = bugtask.status
+        status_title = status.title.capitalize()
+
+        if not assignee:
+            return status_title + ' (unassigned)'
+
+        assignee_html = (
+            '<img alt="" src="/@@/user" /> '
+            '<a href="/people/%s/+assignedbugs">%s</a>' % (
+                urllib.quote(assignee.name),
+                cgi.escape(assignee.browsername)))
+
+        if status in (dbschema.BugTaskStatus.REJECTED,
+                      dbschema.BugTaskStatus.FIXCOMMITTED):
+            return '%s by %s' % (status_title, assignee_html)
+        else:
+            return '%s, assigned to %s' % (status_title, assignee_html)
+
+    @property
+    def status_elsewhere(self):
+        """Return human-readable representation of the status of this bug
+        in other contexts for which it's reported.
+        """
+        bugtask = self.context
+        related_tasks = bugtask.related_tasks
+        if not related_tasks:
+            return "not filed elsewhere"
+
+        fixes_found = len(
+            [task for task in related_tasks
+             if task.status in (BugTaskStatus.FIXCOMMITTED,
+                                BugTaskStatus.FIXRELEASED)])
+        if fixes_found:
+            return "fixed in %d of %d places" % (
+                fixes_found, len(bugtask.bug.bugtasks))
+        elif len(related_tasks) == 1:
+            return "filed in 1 other place"
+        else:
+            return "filed in %d other places" % len(related_tasks)
+
+    def render(self):
+        """Make rendering this template-less view not crash."""
+        return u""
 
 
 class BugListingPortletView(LaunchpadView):
@@ -1049,7 +1152,8 @@ def upstream_status_vocabulary_factory(context):
             "hide_upstream",
             title="Show only bugs that are not known to affect upstream"),
         SimpleTerm(
-            "only_closed", title="Show only bugs that are closed upstream"),
+            "only_resolved_upstream",
+            title="Show only bugs that are resolved upstream"),
             ]
     return SimpleVocabulary(terms)
 
@@ -1065,9 +1169,7 @@ class BugTaskSearchListingView(LaunchpadView):
     owner_error = ""
     assignee_error = ""
 
-    def __init__(self, context, request):
-        LaunchpadView.__init__(self, context, request)
-
+    def initialize(self):
         if self._personContext():
             self.schema = IPersonBugTaskSearch
         else:
@@ -1092,6 +1194,7 @@ class BugTaskSearchListingView(LaunchpadView):
         self.tag_widget = CustomWidgetFactory(BugTagsWidget)
         setUpWidgets(self, self.schema, IInputWidget)
         self.validateVocabulariesAdvancedForm()
+        self.validate_search_params()
 
     @property
     def columns_to_show(self):
@@ -1126,13 +1229,20 @@ class BugTaskSearchListingView(LaunchpadView):
         """
         # The only way the user should get these field values incorrect is
         # through a stale bookmark or a hand-hacked URL.
-        for field_name in ("status", "importance", "milestone", "component"):
+        for field_name in ("status", "importance", "milestone", "component",
+                           "status_upstream"):
             try:
                 getWidgetsData(self, schema=self.schema, names=[field_name])
             except WidgetsError:
                 raise UnexpectedFormData(
                     "Unexpected value for field '%s'. Perhaps your bookmarks "
                     "are out of date or you changed the URL by hand?" % field_name)
+
+
+        try:
+            getWidgetsData(self, schema=self.schema, names=['tag'])
+        except WidgetsError:
+            self.form_has_errors = True
 
         orderby = get_sortorder_from_request(self.request)
         bugset = getUtility(IBugTaskSet)
@@ -1156,8 +1266,6 @@ class BugTaskSearchListingView(LaunchpadView):
         search criteria taken from the request. Params in :extra_params: take
         precedence over request params.
         """
-        self.validate_search_params()
-
         widget_names = [
                 "searchtext", "status", "assignee", "importance",
                 "owner", "omit_dupes", "has_patch",
@@ -1211,8 +1319,8 @@ class BugTaskSearchListingView(LaunchpadView):
             status_upstream = data['status_upstream']
             if status_upstream == 'pending_bugwatch':
                 data['pending_bugwatch_elsewhere'] = True
-            elif status_upstream == 'only_closed':
-                data['status_elsewhere'] = RESOLVED_BUGTASK_STATUSES
+            elif status_upstream == 'only_resolved_upstream':
+                data['only_resolved_upstream'] = True
             elif status_upstream == 'hide_upstream':
                 data['has_no_upstream_bugtask'] = True
             del data['status_upstream']
@@ -1243,7 +1351,7 @@ class BugTaskSearchListingView(LaunchpadView):
         widget_values = []
 
         vocabulary_registry = getVocabularyRegistry()
-        for term in vocabulary_registry.get(None, vocabulary_name):
+        for term in vocabulary_registry.get(self.context, vocabulary_name):
             widget_values.append(
                 dict(
                     value=term.token, title=term.title or term.token,

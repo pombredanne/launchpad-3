@@ -79,7 +79,7 @@ class IBugTask(IHasDateCreated, IHasBug):
         default=dbschema.BugTaskStatus.UNCONFIRMED)
     importance = Choice(
         title=_('Importance'), vocabulary='BugTaskImportance',
-        default=dbschema.BugTaskImportance.UNTRIAGED)
+        default=dbschema.BugTaskImportance.UNDECIDED)
     statusexplanation = Text(
         title=_("Status notes (optional)"), required=False)
     assignee = Choice(
@@ -123,12 +123,6 @@ class IBugTask(IHasDateCreated, IHasBug):
                          readonly=True)
     related_tasks = Attribute("IBugTasks related to this one, namely other "
                               "IBugTasks on the same IBug.")
-    statusdisplayhtml = Attribute(
-        "A HTML representation of the status. This field produces "
-        "its value from the status, assignee and milestone values.")
-    statuselsewhere = Attribute(
-        "A human-readable representation of the status of this IBugTask's bug "
-        "in the other contexts in which it's reported.")
     # This property does various database queries. It is a property so a
     # "snapshot" of its value will be taken when a bugtask is modified, which
     # allows us to compare it to the current value and see if there are any new
@@ -231,6 +225,7 @@ class IBugTaskSearchBase(Interface):
         title=_('Target'), value_type=IBugTask['milestone'], required=False)
     component = List(
         title=_('Component'), value_type=IComponent['name'], required=False)
+    tag = List(title=_("Tag"), value_type=Tag(), required=False)
     status_upstream = Choice(
         title=_('Status Upstream'), required=False,
         vocabulary="AdvancedBugTaskUpstreamStatus")
@@ -245,6 +240,9 @@ class IBugTaskSearch(IBugTaskSearchBase):
     for status to be a List field on a search form, where more than
     one value can be selected.)
     """
+    status_upstream = Choice(
+        title=_('Status Upstream'), required=False,
+        vocabulary="AdvancedBugTaskUpstreamStatus")
     tag = List(
         title=_("Tags (separated by whitespace)"),
         value_type=Tag(), required=False)
@@ -389,15 +387,14 @@ class BugTaskSearchParams:
     project = None
     distribution = None
     distrorelease = None
-    productseries = None
     def __init__(self, user, bug=None, searchtext=None, status=None,
                  importance=None, milestone=None,
                  assignee=None, sourcepackagename=None, owner=None,
                  statusexplanation=None, attachmenttype=None,
                  orderby=None, omit_dupes=False, subscriber=None,
                  component=None, pending_bugwatch_elsewhere=False,
-                 status_elsewhere=None, has_no_upstream_bugtask=False,
-                 tag=None):
+                 only_resolved_upstream=False, has_no_upstream_bugtask=False,
+                 tag=None, has_cve=False):
         self.bug = bug
         self.searchtext = searchtext
         self.status = status
@@ -414,9 +411,10 @@ class BugTaskSearchParams:
         self.subscriber = subscriber
         self.component = component
         self.pending_bugwatch_elsewhere = pending_bugwatch_elsewhere
-        self.status_elsewhere = status_elsewhere
+        self.only_resolved_upstream = only_resolved_upstream
         self.has_no_upstream_bugtask = has_no_upstream_bugtask
         self.tag = tag
+        self.has_cve = has_cve
 
         self._has_context = False
 
@@ -442,12 +440,6 @@ class BugTaskSearchParams:
         """Set the distrorelease context on which to filter the search."""
         assert not self._has_context
         self.distrorelease = distrorelease
-        self._has_context = True
-
-    def setProductSeries(self, productseries):
-        """Set the productseries context on which to filter the search."""
-        assert not self._has_context
-        self.productseries = productseries
         self._has_context = True
 
     def setSourcePackage(self, sourcepackage):

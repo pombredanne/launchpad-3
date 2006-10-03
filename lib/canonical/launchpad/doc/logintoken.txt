@@ -42,7 +42,7 @@ unconfirmed email addresses.
 
     >>> flush_database_updates()
     >>> foobar.unvalidatedemails
-    Set([u'foo.bar2@canonical.com'])
+    [u'foo.bar2@canonical.com']
 
 It's possible to create another token for the same purpose, but this won't
 cause that email to show up twice on foobar's list of unconfirmed emails.
@@ -52,7 +52,7 @@ cause that email to show up twice on foobar's list of unconfirmed emails.
     ...     LoginTokenType.VALIDATEEMAIL)
     >>> flush_database_updates()
     >>> foobar.unvalidatedemails
-    Set([u'foo.bar2@canonical.com'])
+    [u'foo.bar2@canonical.com']
 
 Once foobar finished the process, confirming his new email address, we mark
 the token as consumed.
@@ -74,4 +74,5 @@ of unconfirmed emails anymore.
 
     >>> flush_database_updates()
     >>> foobar.unvalidatedemails
-    Set([])
+    []
+

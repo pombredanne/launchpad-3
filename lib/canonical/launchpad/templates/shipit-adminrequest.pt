@@ -26,7 +26,8 @@
         Schema validation errors.
       </div>
 
-      <form method="POST" action="" name="adminrequest">
+      <form method="post" tal:attributes="action request/URL"
+            name="adminrequest">
 
       <h2>Quantities</h2>
 

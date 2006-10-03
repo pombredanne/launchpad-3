@@ -1,3 +1,4 @@
+import logging
 import os
 import shutil
 import tempfile
@@ -14,13 +15,19 @@ from canonical.launchpad.scripts.supermirror.ftests import createbranch
 from canonical.launchpad.scripts.supermirror import jobmanager
 from canonical.authserver.client.branchstatus import BranchStatusClient
 from canonical.authserver.ftests.harness import AuthserverTacTestSetup
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import LaunchpadFunctionalLayer, reset_logging
 
 
 class TestJobManager(unittest.TestCase):
 
     def setUp(self):
         self.masterlock = 'master.lock'
+        # We set the log level to CRITICAL so that the log messages
+        # are suppressed.
+        logging.basicConfig(level=logging.CRITICAL)
+
+    def tearDown(self):
+        reset_logging()
 
     def testExistance(self):
         from canonical.launchpad.scripts.supermirror.jobmanager import (
@@ -131,7 +138,7 @@ class TestJobManagerInLaunchpad(unittest.TestCase):
 
         self.assertEqual(len(manager.branches_to_mirror), 5)
 
-        manager.run()
+        manager.run(logging.getLogger())
 
         self.assertEqual(len(manager.branches_to_mirror), 0)
         self.assertMirrored(brancha)

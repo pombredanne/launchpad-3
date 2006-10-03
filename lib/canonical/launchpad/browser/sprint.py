@@ -50,7 +50,7 @@ class SprintFacets(StandardLaunchpadFacets):
     enable_only = ['overview', 'specifications']
 
     def specifications(self):
-        text = 'Specifications'
+        text = 'Features'
         summary = 'Topics for discussion at %s' % self.context.title
         return Link('+specs', text, summary)
 
@@ -340,7 +340,7 @@ class SprintMeetingExportView(LaunchpadView):
                 spec.priority < SpecificationPriority.LOW):
                 continue
 
-            if spec.status not in [SpecificationStatus.BRAINDUMP,
+            if spec.status not in [SpecificationStatus.NEW,
                                    SpecificationStatus.DRAFT]:
                 continue
 

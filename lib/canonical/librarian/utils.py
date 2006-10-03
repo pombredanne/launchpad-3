@@ -1,13 +1,13 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['copy_and_close', 'sha1_from_path']
+__all__ = ['copy_and_close', 'sha1_from_path', 'filechunks']
 
 import sha
 
 MEGABYTE = 1024*1024
 
-def _filechunks(file, chunk_size=4*MEGABYTE):
+def filechunks(file, chunk_size=4*MEGABYTE):
     """Return an iterator which reads chunks of the given file."""
     return iter(lambda: file.read(chunk_size), '')
 
@@ -22,7 +22,7 @@ def copy_and_close(from_file, to_file):
     local filesystem.
     Both file_descriptors are closed before return.
     """
-    for chunk in _filechunks(from_file):
+    for chunk in filechunks(from_file):
         to_file.write(chunk)
     from_file.close()
     to_file.close()
@@ -32,7 +32,7 @@ def sha1_from_path(path):
     the_file = open(path)
     the_hash = sha.new()
 
-    for chunk in _filechunks(the_file):
+    for chunk in filechunks(the_file):
         the_hash.update(chunk)
 
     the_file.close()

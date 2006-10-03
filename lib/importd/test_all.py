@@ -50,7 +50,6 @@ import unittest
 lp_root = os.path.realpath(os.path.join(__file__, '..', '..', '..'))
 sys.path[:] = [p for p in sys.path if os.path.abspath(p) != lp_root]
 
-
 from importd.tests.testutil import TestVisitor, TestSuite
 
 
