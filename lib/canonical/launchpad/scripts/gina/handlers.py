@@ -517,9 +517,11 @@ class SourcePackageHandler:
                     sourcepackagerelease.id AND
                 sourcepackagepublishinghistory.distrorelease = 
                     distrorelease.id AND
+                sourcepackagepublishinghistory.archive = %s AND
                 distrorelease.distribution = %s
-                """ % (sourcepackagename.id, quote(version),
-                       distrorelease.distribution.id)
+                """ % (sourcepackagename, quote(version),
+                       distrorelease.main_archive
+                       distrorelease.distribution)
         ret = SourcePackageRelease.select(query,
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
             orderBy=["-SourcePackagePublishingHistory.datecreated"])
@@ -640,8 +642,10 @@ class SourcePackagePublisher:
         ret = SecureSourcePackagePublishingHistory.select(
                 """sourcepackagerelease = %s
                    AND distrorelease = %s
+                   AND archive = %s
                    AND status in (%s, %s)""" %
-                (sourcepackagerelease.id, self.distrorelease.id,
+                (sourcepackagerelease, self.distrorelease,
+                 self.distrorelease.main_archive,
                  PackagePublishingStatus.PUBLISHED,
                  PackagePublishingStatus.PENDING),
                 orderBy=["-datecreated"])
@@ -916,8 +920,10 @@ class BinaryPackagePublisher:
         ret = SecureBinaryPackagePublishingHistory.select(
                 """binarypackagerelease = %s
                    AND distroarchrelease = %s
+                   AND archive = %s
                    AND status in (%s, %s)""" %
-                (binarypackage.id, self.distroarchrelease.id,
+                (binarypackage, self.distroarchrelease,
+                 self.distroarchrelease.main_archive,
                  PackagePublishingStatus.PUBLISHED,
                  PackagePublishingStatus.PENDING),
                 orderBy=["-datecreated"])

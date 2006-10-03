@@ -87,10 +87,12 @@ class DistroArchRelease(SQLBase):
         """See IDistroArchRelease """
         query = """
             BinaryPackagePublishingHistory.distroarchrelease = %s AND
+            BinaryPackagePublishingHistory.archive = %s AND
             BinaryPackagePublishingHistory.status = %s AND
             BinaryPackagePublishingHistory.pocket = %s
             """ % sqlvalues(
                     self,
+                    self.main_archive,
                     PackagePublishingStatus.PUBLISHED,
                     PackagePublishingPocket.RELEASE
                  )
@@ -144,6 +146,7 @@ class DistroArchRelease(SQLBase):
         """See IDistroArchRelease."""
         bprs = BinaryPackageRelease.select("""
             BinaryPackagePublishingHistory.distroarchrelease = %s AND
+            BinaryPackagePublishingHistory.archive = %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackagePublishingHistory.status != %s AND
@@ -152,6 +155,7 @@ class DistroArchRelease(SQLBase):
             (BinaryPackageRelease.fti @@ ftq(%s) OR
              BinaryPackageName.name ILIKE '%%' || %s || '%%')
             """ % (quote(self),
+                   quote(self.main_archive),
                    quote(PackagePublishingStatus.REMOVED),
                    quote(text),
                    quote_like(text)),
@@ -197,8 +201,9 @@ class DistroArchRelease(SQLBase):
         queries.append("""
         binarypackagerelease=binarypackagerelease.id AND
         binarypackagerelease.binarypackagename=%s AND
-        distroarchrelease=%s
-        """ % sqlvalues(binary_name.id, self.id))
+        distroarchrelease=%s AND
+        archive = %s
+        """ % sqlvalues(binary_name, self, self.main_archive))
 
         if pocket is not None:
             queries.append("pocket=%s" % sqlvalues(pocket.value))
@@ -237,7 +242,8 @@ class DistroArchRelease(SQLBase):
               % self.architecturetag)
 
         dirty_pockets = set()
-        queries = ["distroarchrelease=%s" % sqlvalues(self)]
+        queries = ["distroarchrelease=%s AND archive = %s" %
+                   sqlvalues(self, self.main_archive)]
 
         target_status = [PackagePublishingStatus.PENDING]
         if is_careful:

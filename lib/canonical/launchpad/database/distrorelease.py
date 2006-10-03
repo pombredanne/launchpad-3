@@ -222,13 +222,14 @@ class DistroRelease(SQLBase, BugTargetBase):
         # first update the source package count
         query = """
             SourcePackagePublishingHistory.distrorelease = %s AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.status = %s AND
             SourcePackagePublishingHistory.pocket = %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename =
                 SourcePackageName.id
-            """ % sqlvalues(self.id,
+            """ % sqlvalues(self, self.main_archive,
                             PackagePublishingStatus.PUBLISHED,
                             PackagePublishingPocket.RELEASE)
         self.sourcecount = SourcePackageName.select(
@@ -249,11 +250,12 @@ class DistroRelease(SQLBase, BugTargetBase):
             BinaryPackagePublishingHistory.pocket = %s AND
             BinaryPackagePublishingHistory.distroarchrelease =
                 DistroArchRelease.id AND
-            DistroArchRelease.distrorelease = %s
+            DistroArchRelease.distrorelease = %s AND
+            BinaryPackagePublishingHistory.archive = %s
             """ % sqlvalues(
                 PackagePublishingStatus.PUBLISHED,
                 PackagePublishingPocket.RELEASE,
-                self.id)
+                self, self.main_archive)
         ret = BinaryPackageName.select(
             query, distinct=True, clauseTables=clauseTables).count()
         self.binarycount = ret
@@ -592,8 +594,8 @@ class DistroRelease(SQLBase, BugTargetBase):
 
     def getAllReleasesByStatus(self, status):
         """See IDistroRelease."""
-        queries = ['distrorelease=%s AND status=%s'
-                   % sqlvalues(self.id, status)]
+        queries = ['distrorelease=%s AND archive=%s AND status=%s'
+                   % sqlvalues(self, self.main_archive, status)]
 
         if not self.isUnstable():
             queries.append(
@@ -614,9 +616,10 @@ class DistroRelease(SQLBase, BugTargetBase):
             SourcePackageRelease.sourcepackagename=
                 SourcePackageName.id AND
             SourcePackagePublishingHistory.distrorelease=%s AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.status=%s AND
             SourcePackagePublishingHistory.pocket=%s
-            """ %  sqlvalues(self.id, status, pocket)
+            """ %  sqlvalues(self, self.main_archive, status, pocket)
 
         return SourcePackagePublishingHistory.select(
             clause, orderBy=orderBy, clauseTables=clauseTables)
@@ -643,8 +646,10 @@ class DistroRelease(SQLBase, BugTargetBase):
         SourcePackageRelease.sourcepackagename =
             SourcePackageName.id AND
         DistroArchRelease.distrorelease = %s AND
+        BinaryPackagePublishingHistory.archive = %s AND
         BinaryPackagePublishingHistory.status = %s
-        """ % sqlvalues(self.id, PackagePublishingStatus.PUBLISHED)]
+        """ % sqlvalues(self, self.main_archive,
+                        PackagePublishingStatus.PUBLISHED)]
 
         if name:
             query.append('BinaryPackageName.name = %s' % sqlvalues(name))
@@ -736,12 +741,14 @@ class DistroRelease(SQLBase, BugTargetBase):
             BinaryPackagePublishingHistory.distroarchrelease =
                 DistroArchRelease.id AND
             DistroArchRelease.distrorelease = %s AND
+            BinaryPackagePublishingHistory.archive = %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename =
                 BinaryPackageName.id AND
             BinaryPackagePublishingHistory.status != %s
-            """ % sqlvalues(self, PackagePublishingStatus.REMOVED),
+            """ % sqlvalues(self, self.archive,
+                            PackagePublishingStatus.REMOVED),
             distinct=True,
             clauseTables=['BinaryPackagePublishingHistory',
                           'DistroArchRelease',
@@ -760,12 +767,14 @@ class DistroRelease(SQLBase, BugTargetBase):
             BinaryPackagePublishingHistory.distroarchrelease =
                 DistroArchRelease.id AND
             DistroArchRelease.distrorelease = %s AND
+            BinaryPackagePublishingHistory.archive = %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename =
                 BinaryPackageName.id AND
             BinaryPackagePublishingHistory.status != %s
-            """ % sqlvalues(self, PackagePublishingStatus.REMOVED),
+            """ % sqlvalues(self, self.main_archive,
+                            PackagePublishingStatus.REMOVED),
             distinct=True,
             clauseTables=['BinaryPackagePublishingHistory',
                           'DistroArchRelease',
@@ -794,8 +803,9 @@ class DistroRelease(SQLBase, BugTargetBase):
             BinaryPackagePublishingHistory.distroarchrelease =
                 DistroArchRelease.id AND
             DistroArchRelease.distrorelease = %s AND
+            BinaryPackagePublishingHistory.archive = %s AND
             BinaryPackagePublishingHistory.status != %s
-            """ % sqlvalues(binarypackagename, self,
+            """ % sqlvalues(binarypackagename, self, self.main_archive,
                             PackagePublishingStatus.REMOVED),
             orderBy='-datecreated',
             clauseTables=['BinaryPackagePublishingHistory',
@@ -1028,13 +1038,14 @@ class DistroRelease(SQLBase, BugTargetBase):
 
     def initialiseFromParent(self):
         """See IDistroRelease."""
+        archive = self.main_archive
         assert self.parentrelease is not None, "Parent release must be present"
         assert SourcePackagePublishingHistory.selectBy(
-            distrorelease=self).count() == 0, \
+            distrorelease=self, archive=archive).count() == 0, \
             "Source Publishing must be empty"
         for arch in self.architectures:
             assert BinaryPackagePublishingHistory.selectBy(
-                distroarchrelease=arch).count() == 0, \
+                distroarchrelease=arch, archive=archive).count() == 0, \
                 "Binary Publishing must be empty"
             try:
                 parent_arch = self.parentrelease[arch.architecturetag]

@@ -257,6 +257,7 @@ class Dominator(object):
                      binarypackagepublishinghistory.status = %s) AND
                     binarypackagepublishinghistory.distroarchrelease =
                         distroarchrelease.id AND
+                    binarypackagepublishinghistory.archive = %s AND
                     distroarchrelease.distrorelease = %s AND
                     binarypackagepublishinghistory.binarypackagerelease =
                         binarypackagerelease.id AND
@@ -264,7 +265,8 @@ class Dominator(object):
                     build.sourcepackagerelease = %s AND
                     binarypackagepublishinghistory.pocket = %s''' % sqlvalues(
                     PENDING, PUBLISHED, SUPERSEDED,
-                    pub_record.distrorelease.id, srcpkg_release.id,
+                    pub_record.distrorelease.main_archive,
+                    pub_record.distrorelease, srcpkg_release,
                     pub_record.pocket),
                     clauseTables=['DistroArchRelease', 'BinaryPackageRelease',
                                   'Build'])
@@ -279,9 +281,10 @@ class Dominator(object):
                     # at least one other PUBLISHED for the spr. This happens
                     # when a package is moved between components.
                     if SecureSourcePackagePublishingHistory.selectBy(
-                        distroreleaseID=pub_record.distrorelease.id,
+                        distrorelease=pub_record.distrorelease,
                         pocket=pub_record.pocket,
                         status=PackagePublishingStatus.PUBLISHED,
+                        archive=pub_record.distrorelease.main_archive,
                         sourcepackagereleaseID=srcpkg_release.id).count() == 0:
                         # Zero PUBLISHED for this spr, so nothing to take over
                         # for us, so leave it for consideration next time.
@@ -312,7 +315,7 @@ class Dominator(object):
         # should be false.
 
         sources = SecureSourcePackagePublishingHistory.selectBy(
-            distroreleaseID=dr.id, pocket=pocket,
+            distroreleaseID=dr.id, archive=dr.main_archive, pocket=pocket,
             status=PackagePublishingStatus.PUBLISHED)
 
         self._dominateSource(self._sortPackages(sources))
@@ -339,23 +342,24 @@ class Dominator(object):
                 BinaryPackageName bpn, SecureBinaryPackagePublishingHistory
                 sbpph WHERE bpr.binarypackagename = bpn.id AND
                 sbpph.binarypackagerelease = bpr.id AND
-                sbpph.distroarchrelease = %s AND sbpph.status = %s
-                AND sbpph.pocket = %s
+                sbpph.distroarchrelease = %s AND sbpph.archive = %s AND
+                sbpph.status = %s AND sbpph.pocket = %s
                 GROUP BY bpn.id""" % sqlvalues(
-                distroarchrelease.id, PackagePublishingStatus.PUBLISHED,
-                pocket))
+                distroarchrelease, distroarchrelease.main_archive,
+                PackagePublishingStatus.PUBLISHED, pocket))
 
             binaries = SecureBinaryPackagePublishingHistory.select(
                 """
                 securebinarypackagepublishinghistory.distroarchrelease = %s
+                AND securebinarypackagepublishinghistory.archive = %s
                 AND securebinarypackagepublishinghistory.pocket = %s
                 AND securebinarypackagepublishinghistory.status = %s AND
                 securebinarypackagepublishinghistory.binarypackagerelease =
                     binarypackagerelease.id
                 AND binarypackagerelease.binarypackagename IN (
                     SELECT name FROM PubDomHelper WHERE count > 1)"""
-                % sqlvalues (distroarchrelease.id, pocket,
-                             PackagePublishingStatus.PUBLISHED),
+                % sqlvalues (distroarchrelease, distroarchrelease.main_archive,
+                             pocket, PackagePublishingStatus.PUBLISHED),
                 clauseTables=['BinaryPackageRelease'])
             
             self._dominateBinary(self._sortPackages(binaries, False))
@@ -367,16 +371,18 @@ class Dominator(object):
             cur.execute("DROP TABLE PubDomHelper")
 
         sources = SecureSourcePackagePublishingHistory.selectBy(
-            distroreleaseID=dr.id, pocket=pocket,
+            distroreleaseID=dr.id, archive=dr.main_archive, pocket=pocket,
             status=PackagePublishingStatus.SUPERSEDED)
         
         binaries = SecureBinaryPackagePublishingHistory.select("""
             securebinarypackagepublishinghistory.distroarchrelease =
                 distroarchrelease.id AND
             distroarchrelease.distrorelease = %s AND
+            securebinarypackagepublishinghistory.archive = %s AND
             securebinarypackagepublishinghistory.status = %s AND
             securebinarypackagepublishinghistory.pocket = %s""" %
-            sqlvalues(dr.id, PackagePublishingStatus.SUPERSEDED, pocket),
+            sqlvalues(dr, dr.main_archive,
+                      PackagePublishingStatus.SUPERSEDED, pocket),
             clauseTables=['DistroArchRelease'])
 
         self._judgeSuperseded(sources, binaries, config)

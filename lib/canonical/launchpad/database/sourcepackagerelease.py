@@ -235,11 +235,12 @@ class SourcePackageRelease(SQLBase):
             BinaryPackagePublishingHistory.distroarchrelease =
                DistroArchRelease.id AND
             DistroArchRelease.distrorelease = %d AND
+            BinaryPackagePublishingHistory.archive = %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                BinaryPackageRelease.id AND
             BinaryPackageRelease.build = Build.id AND
             Build.sourcepackagerelease = %d
-            """ % (distroRelease.id, self.id),
+            """ % (distroRelease, distroRelease.main_archive, self),
             clauseTables=clauseTables))
 
         return archReleases
@@ -290,8 +291,11 @@ class SourcePackageRelease(SQLBase):
         BinaryPackageRelease.id =
             BinaryPackagePublishingHistory.binarypackagerelease AND
         BinaryPackagePublishingHistory.distroarchrelease = %s AND
+        BinaryPackagePublishingHistory.archive = %s AND
         Build.sourcepackagerelease = %s
-        """  % sqlvalues(distroarchrelease.id, self.id)
+        """  % sqlvalues(distroarchrelease,
+                         distroarchrelease.main_archive,
+                         self)
 
         tables = ['BinaryPackageRelease', 'BinaryPackagePublishingHistory']
 

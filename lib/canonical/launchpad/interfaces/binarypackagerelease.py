@@ -85,6 +85,6 @@ class IBinaryPackageReleaseSet(Interface):
         """Returns a set of binarypackagereleases that matchs pattern
         inside a distrorelease"""
 
-    def getByNameInDistroRelease(distroreleaseID, name):
+    def getByNameInDistroRelease(distrorelease, name):
         """Get an BinaryPackageRelease in a DistroRelease by its name"""
 

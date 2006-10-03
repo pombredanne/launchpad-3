@@ -147,8 +147,11 @@ class VPOExportSet:
             AND SourcePackageRelease.sourcepackagename =
                 POTemplate.sourcepackagename AND
             Component.name = %s AND
-            SourcePackagePublishingHistory.status != %s
-            ''' % sqlvalues(component, PackagePublishingStatus.REMOVED)
+            SourcePackagePublishingHistory.status != %s AND
+            SourcePackagePublishingHistory.archive = %s
+            ''' % sqlvalues(component,
+                            PackagePublishingStatus.REMOVED,
+                            release.main_archive)
 
         if languagepack is not None:
             where += ''' AND
@@ -203,8 +206,11 @@ class VPOExportSet:
                 SourcePackageRelease.sourcepackagename =
                     POTemplate.sourcepackagename AND
                 Component.name = %s AND
-                SourcePackagePublishingHistory.status != %s
-                ''' % sqlvalues(component, PackagePublishingStatus.REMOVED)
+                SourcePackagePublishingHistory.status != %s AND
+                SourcePackagePublishingHistory.archive = %s
+                ''' % sqlvalues(component,
+                                PackagePublishingStatus.REMOVED,
+                                release.main_archive)
 
         if languagepack is not None:
             where += ''' AND
