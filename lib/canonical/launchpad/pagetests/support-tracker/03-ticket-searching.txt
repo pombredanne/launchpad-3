@@ -140,11 +140,11 @@ Unfortunately, the search doesn't return any similar requests:
     [...No results for search <strong>firefox is slow</strong>...]
 
 Joe observes under the search widget that there are checkboxes to select
-the ticket status to search. He notices that only 'Open' and
-'Answered' are selected. He selects 'Invalid', and run his search again.
+the ticket status to search. He notices that only some statuses are selected.
+He adds 'Invalid' to the selection, and run his search again.
 
     >>> browser.getControl(name='field.status').displayValue
-    ['\xa0Open', '\xa0Answered']
+    ['\xa0Open', '\xa0Needs information', '\xa0Answered', '\xa0Solved']
     >>> browser.getControl('Invalid').selected = True
     >>> browser.getControl('Search').click()
 

@@ -1784,7 +1784,8 @@ class TicketSort(DBSchema):
     STATUS = Item(10, """
     by status
 
-    Sort tickets by status: Open, Answered, Rejected.
+    Sort tickets by status: Open, Needs information, Answered, Solved,
+    Expired, Invalid.
 
     NEWEST_FIRST should be used as a secondary sort key.
     """)
@@ -1823,7 +1824,7 @@ class TicketStatus(DBSchema):
         answer.
         """)
 
-    ANSWERED = Item(20, """
+    ANSWERED = Item(18, """
         Answered
 
         An answer was given on this request. We assume that the answer
@@ -1831,7 +1832,7 @@ class TicketStatus(DBSchema):
         status back to OPEN if that is not the case.
         """)
 
-    SOLVED = Item(22, """
+    SOLVED = Item(20, """
         Solved
 
         The submitter confirmed that an answer solved his problem.

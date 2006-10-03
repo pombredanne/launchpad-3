@@ -211,8 +211,9 @@ You can sort also from oldest to newest using the OLDEST_FIRST constant:
     New ticket
     Another ticket
 
-You can sort by status, (the status order is OPEN, ANSWERED, INVALID),
-this also sorts from newest to oldest as a secondary key.
+You can sort by status, (the status order is OPEN, NEEDSINFO, ANSWERED,
+SOLVED, EXPIRED, INVALID), this also sorts from newest to oldest as a
+secondary key.
 
     >>> for t in target.searchTickets(search_text='request index',
     ...                               status=None,
@@ -225,7 +226,7 @@ this also sorts from newest to oldest as a secondary key.
     Invalid Ticket title4
 
 (In the previous example, we used status=None to search for all
-statuses, by default only OPEN and ANSWERED tickets are searched.)
+statuses, by default INVALID and EXPIRED tickets are excluded.)
 
 If there is no search_text and the requested sort order is RELEVANCY,
 the tickets will be sorted NEWEST_FIRST.

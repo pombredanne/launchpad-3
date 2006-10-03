@@ -34,7 +34,9 @@ class IHasTickets(Interface):
         """
 
 
-TICKET_STATUS_DEFAULT_SEARCH = (TicketStatus.OPEN, TicketStatus.ANSWERED)
+TICKET_STATUS_DEFAULT_SEARCH = (
+    TicketStatus.OPEN, TicketStatus.NEEDSINFO, TicketStatus.ANSWERED,
+    TicketStatus.SOLVED)
 
 
 class ITicketTarget(IHasTickets):
