@@ -58,36 +58,17 @@ class BugWatch(SQLBase):
     def url(self):
         """See canonical.launchpad.interfaces.IBugWatch."""
         url_formats = {
-            BugTrackerType.BUGZILLA: 'show_bug.cgi?id=%s',
-            BugTrackerType.TRAC:     'ticket/%s',
-            BugTrackerType.DEBBUGS:  'cgi-bin/bugreport.cgi?bug=%s',
-            BugTrackerType.ROUNDUP:  'issue%s'
+            BugTrackerType.BUGZILLA:    'show_bug.cgi?id=%s',
+            BugTrackerType.TRAC:        'ticket/%s',
+            BugTrackerType.DEBBUGS:     'cgi-bin/bugreport.cgi?bug=%s',
+            BugTrackerType.ROUNDUP:     'issue%s',
+            BugTrackerType.SOURCEFORGE: 'support/tracker.php?aid=%s',
         }
         bt = self.bugtracker.bugtrackertype
-        if bt == BugTrackerType.SOURCEFORGE:
-            return self._sf_url()
-        elif not url_formats.has_key(bt):
+        if not url_formats.has_key(bt):
             raise AssertionError('Unknown bug tracker type %s' % bt)
         return urlappend(self.bugtracker.baseurl,
                          url_formats[bt] % self.remotebug)
-
-    def _sf_url(self):
-        # XXX: validate that the bugtracker URL has atid and group_id in
-        # it.
-        #
-        # Sourceforce has a pretty nasty URL model, with two codes that
-        # specify what project are looking at. This code disassembles
-        # it, sets the bug number and then reassembles it again.
-        # http://sourceforge.net/tracker/?atid=737291
-        #                                &group_id=136955
-        #                                &func=detail
-        #                                &aid=1337833
-        method, base, path, query, frag = urlsplit(self.bugtracker.baseurl)
-        params = cgi.parse_qs(query)
-        params['func'] = "detail"
-        params['aid'] = self.remotebug
-        query = urllib.urlencode(params, doseq=True)
-        return urlunsplit((method, base, path, query, frag))
 
     @property
     def needscheck(self):

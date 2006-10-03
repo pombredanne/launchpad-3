@@ -100,30 +100,19 @@ To create a bugwatch, use IBugWatchSet.createBugWatch:
     True
 
 
-Creating a SF.net Bugtracker
-----------------------------
-
-    >>> from canonical.lp.dbschema import BugTrackerType
-    >>> sf = ("http://sourceforge.net/tracker/?atid=737291"
-    ...       "&group_id=136955&func=browse")
-    >>> bugtrackerset.ensureBugTracker(sf, sample_person,
-    ...     BugTrackerType.SOURCEFORGE, "GNUTelephony BTS", "My summary",
-    ...     "My contact details", "gnutelephony-bugs")
-    <BugTracker at 0x...>
-    >>> gtb = bugtrackerset['gnutelephony-bugs']
-
 Creating SF.net Bug Watches
 ---------------------------
 
 The URLifier for these bug watches deals with SF.net's horrible URLs.
 
+    >>> sftracker = bugtrackerset['sf']
     >>> sample_person = getUtility(IPersonSet).get(12)
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bugwatch = getUtility(IBugWatchSet).createBugWatch(
-    ...     bug=bug_one, owner=sample_person, bugtracker=gtb,
+    ...     bug=bug_one, owner=sample_person, bugtracker=sftracker,
     ...     remotebug='1337833')
     >>> bugwatch.url
-    'http://sourceforge.net/tracker/?aid=1337833&group_id=136955&atid=737291&func=detail'
+    u'http://sourceforge.net/support/tracker.php?aid=1337833'
 
 
 Syncing the Status with Linked Bugtasks
