@@ -60,6 +60,14 @@
   </browser:editform>
 
   <browser:page
+      name="+claim"
+      for="canonical.launchpad.interfaces.IPerson"
+      class="canonical.launchpad.browser.PersonClaimView"
+      permission="zope.Public"
+      template="../templates/person-claim.pt">
+  </browser:page>
+
+  <browser:page
       name="+changepassword"
       for="canonical.launchpad.interfaces.IPerson"
       class="canonical.launchpad.browser.PersonChangePasswordView"

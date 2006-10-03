@@ -51,13 +51,15 @@ People are not valid if they don't have a password
 But teams are
 
     >>> cur.execute("""
-    ...     UPDATE Person SET teamowner = %(stub_id)s WHERE id = %(sabdfl_id)s
+    ...     UPDATE Person SET teamowner = %(stub_id)s, creation_rationale = NULL
+    ...         WHERE id = %(sabdfl_id)s
     ...     """, vars())
     >>> is_valid(sabdfl_id)
     True
 
     >>> cur.execute("""
-    ...     UPDATE Person SET teamowner = NULL WHERE id = %(sabdfl_id)s
+    ...     UPDATE Person SET teamowner = NULL, creation_rationale = 8
+    ...         WHERE id = %(sabdfl_id)s
     ...     """, vars())
     >>> is_valid(sabdfl_id)
     False
@@ -141,8 +143,8 @@ Creating and deleting rows will populate things correctly
     >>> is_valid(888888)
     False
     >>> cur.execute("""
-    ...     INSERT INTO Person (id, name, displayname, password)
-    ...     VALUES (888888, 'tempy', 'tempy the temp account', 'secret')
+    ...     INSERT INTO Person (id, name, displayname, password, creation_rationale)
+    ...     VALUES (888888, 'tempy', 'tempy the temp account', 'secret', 1)
     ...     """)
     >>> is_valid(888888)
     False
