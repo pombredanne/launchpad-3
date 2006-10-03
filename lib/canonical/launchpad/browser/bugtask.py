@@ -386,8 +386,13 @@ class BugTaskView(LaunchpadView):
         # Handle unsubscribing the current user, which requires special-casing
         # when the bug is private. The user must be unsubscribed from all dupes
         # too, or they would keep getting mail about this bug!
-        self.context.bug.unsubscribe(self.user)
+
+        # ** Important ** We call unsubscribeFromDupes() before
+        # unsubscribe(), because if the bug is private, the current user
+        # will be prevented from calling methods on the main bug after
+        # they unsubscribe from it!
         unsubed_dupes = self.context.bug.unsubscribeFromDupes(self.user)
+        self.context.bug.unsubscribe(self.user)
 
         self.request.response.addNotification(
             self._getUnsubscribeNotification(self.user, unsubed_dupes))
@@ -437,7 +442,7 @@ class BugTaskView(LaunchpadView):
                 return (
                     "You have been unsubscribed from bug %d%s. You no "
                     "longer have access to this private bug.") % (
-                        bug.id, unsubed_dupes_msg_fragment)
+                        current_bug.id, unsubed_dupes_msg_fragment)
         else:
             return "%s has been unsubscribed from this bug%s." % (
                 cgi.escape(user.displayname), unsubed_dupes_msg_fragment)
