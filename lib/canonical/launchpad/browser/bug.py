@@ -22,7 +22,6 @@ import operator
 
 from zope.app.form.interfaces import WidgetsError
 from zope.app.form.browser import TextWidget
-from zope.app.form.browser.itemswidgets import SelectWidget
 from zope.app.form.interfaces import WidgetsError
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
@@ -263,39 +262,6 @@ class BugWithoutContextView:
         # An example of practicality beating purity.
         bugtasks = sorted(self.context.bugtasks, key=operator.attrgetter('id'))
         self.request.response.redirect(canonical_url(bugtasks[0]))
-
-
-class BugTrackerWidget(SelectWidget):
-    """Custom widget for selecting a bug tracker.
-
-    It fixes some bugs in SelectWidget as well as providing a custom
-    (no value) message.
-    """
-
-    firstItem = False
-    _messageNoValue = "(Unlinked/Guess from bug URL)"
-
-    def renderItems(self, value):
-        """Bug fix for SelectWidget.renderItems.
-
-        It makes sure that the (no value) option is correctly selected
-        if the widget isn't reqired, and there's no input.
-        """
-        # Handle buggy widget implementation; we should get
-        # self.context.missing_value here, but instead we get
-        # self._missing.
-        if value == self._missing:
-            value = self.context.missing_value
-        items = SelectWidget.renderItems(self, value)
-        if value == self.context.missing_value and not self.context.required:
-            # Remove the unselected empty option and replace it with a
-            # selected one.
-            items = items[1:]
-            selected_option = (
-                '<option value="" selected="selected">%s</option>' % (
-                    self._messageNoValue))
-            items.insert(0, selected_option)
-        return items
 
 
 class BugAlsoReportInView(LaunchpadFormView):
