@@ -27,7 +27,8 @@ from canonical.launchpad.webapp import urlappend, urlsplit
 from canonical.launchpad.webapp.snapshot import Snapshot
 
 from canonical.launchpad.interfaces import (
-    IBugWatch, IBugWatchSet, IBugTrackerSet, NoBugTrackerFound, NotFoundError)
+    IBugWatch, IBugWatchSet, IBugTrackerSet, ILaunchpadCelebrities,
+    NoBugTrackerFound, NotFoundError)
 from canonical.launchpad.database.bugset import BugSetBase
 
 
@@ -238,17 +239,22 @@ class BugWatchSet(BugSetBase):
         return base_url, remote_bug
 
     def parseSourceForgeURL(self, scheme, host, path, query):
-        """Extract the SourceForge base URL and bug ID."""
+        """Extract the SourceForge base URL and bug ID.
+
+        Only the path is considered. If it looks like a SF URL, we
+        return the global SF instance. This makes it possible for people
+        to use alternative host names, like sf.net.
+        """
         if not path.startswith('/tracker/'):
             return None
         if not query.get('atid'):
             return None
 
         remote_bug = query['atid']
-        # There's only one SF instance.
-        base_url = 'http://sourceforge.net/'
+        # There's only one global SF instance registered in Launchpad.
+        sf_tracker = getUtility(ILaunchpadCelebrities).sourceforge_tracker
 
-        return base_url, remote_bug
+        return sf_tracker.baseurl, remote_bug
 
     def extractBugTrackerAndBug(self, url):
         """See IBugWatchSet."""

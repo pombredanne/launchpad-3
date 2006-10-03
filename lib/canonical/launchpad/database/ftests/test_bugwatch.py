@@ -137,8 +137,8 @@ class SFExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
 
     bugtracker_type = BugTrackerType.SOURCEFORGE
     bug_url = (
-        'http://sourceforge.net/tracker/index.php?'
-        'func=detail&aid=1568562&group_id=84122&atid=575154')
+        'http://sf.net/tracker/index.php'
+        '?func=detail&aid=1568562&group_id=84122&atid=575154')
     base_url = 'http://sourceforge.net/'
     bug_id = '575154'
 
