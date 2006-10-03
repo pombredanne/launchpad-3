@@ -471,7 +471,6 @@ class SourcePackage(BugTargetBase):
         """See IHasBuildRecords"""
         clauseTables = ['SourcePackageRelease',
                         'SourcePackagePublishingHistory']
-        orderBy = ["-datebuilt"]
 
         condition_clauses = ["""
         Build.sourcepackagerelease = SourcePackageRelease.id AND
@@ -483,15 +482,15 @@ class SourcePackage(BugTargetBase):
         """ % sqlvalues(self.sourcepackagename.id, self.distrorelease.id,
                         PackagePublishingStatus.PUBLISHED)]
 
-        # exclude gina-generated builds
+        # XXX cprov 20060925: It would be nice if we could encapsulate
+        # the chunk of code below (which deals with the optional paramenters)
+        # and share it with IBuildSet.getBuildsByArchIds()
+
+        # exclude gina-generated and security (dak-made) builds
         # buildstate == FULLYBUILT && datebuilt == null
         condition_clauses.append(
             "NOT (Build.buildstate=%s AND Build.datebuilt is NULL)"
             % sqlvalues(BuildStatus.FULLYBUILT))
-
-        # XXX cprov 20060214: still not ordering ALL results (empty status)
-        # properly, the pending builds will pre presented in the DESC
-        # 'datebuilt' order. bug # 31392
 
         if status is not None:
             condition_clauses.append("Build.buildstate=%s"
@@ -501,12 +500,24 @@ class SourcePackage(BugTargetBase):
             condition_clauses.append(
                 "Build.pocket = %s" % sqlvalues(pocket))
 
-        # Order NEEDSBUILD by lastscore, it should present the build
-        # in a more natural order.
-        if status == BuildStatus.NEEDSBUILD:
+        # Ordering according status
+        # * NEEDSBUILD & BUILDING by -lastscore
+        # * SUPERSEDED by -datecreated
+        # * FULLYBUILT & FAILURES by -datebuilt
+        # It should present the builds in a more natural order.
+        if status in [BuildStatus.NEEDSBUILD, BuildStatus.BUILDING]:
             orderBy = ["-BuildQueue.lastscore"]
             clauseTables.append('BuildQueue')
             condition_clauses.append('BuildQueue.build = Build.id')
+        elif status == BuildStatus.SUPERSEDED or status is None:
+            orderBy = ["-Build.datecreated"]
+        else:
+            orderBy = ["-Build.datebuilt"]
+
+        # Fallback to ordering by -id as a tie-breaker.
+        orderBy.append("-id")
+
+        # End of duplication (see XXX cprov 20060925 above).
 
         return Build.select(' AND '.join(condition_clauses),
                             clauseTables=clauseTables, orderBy=orderBy)

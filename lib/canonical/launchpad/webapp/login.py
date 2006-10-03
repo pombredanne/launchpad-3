@@ -318,7 +318,7 @@ def logInPerson(request, principal, email):
     """Log the person in. Password validation must be done in callsites."""
     session = ISession(request)
     authdata = session['launchpad.authenticateduser']
-    previous_login = authdata.get('personid')
+    assert principal.id is not None, 'principal.id is None!'
     authdata['personid'] = principal.id
     authdata['logintime'] = datetime.utcnow()
     authdata['login'] = email
