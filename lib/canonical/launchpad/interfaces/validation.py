@@ -369,14 +369,10 @@ def validate_distribution_mirror_schema(form_values):
                   values suplied by the user.
     """
     errors = []
-    # XXX: I think this should be changed to require one of HTTP or FTP at
-    # least --a mirror with only an rsync URL is not of much use.
-    # -- Guilherme Salgado, 2006-09-29
-    if not (form_values['http_base_url'] or form_values['ftp_base_url']
-            or form_values['rsync_base_url']):
+    if not (form_values['http_base_url'] or form_values['ftp_base_url']):
         errors.append(LaunchpadValidationError(_(
-            "All mirrors require at least one URL (HTTP, FTP or "
-            "Rsync) to be specified.")))
+            "All mirrors require at least an HTTP or FTP URL to be "
+            "specified.")))
 
     if errors:
         raise WidgetsError(errors)

@@ -305,12 +305,14 @@ IDistributionMirror.
 
 For Release mirrors, these files are listed in a file stored in
 http://releases.ubuntu.com/. This file is parsed by
-mirror.getExpectedCDImagePaths(), which returns a list of 
+get_expected_cdimage_paths(), which returns a list of 
 (distrorelease, flavour name, path) elements.
 (For testing we have a sample of that file stored in our tree, which is
 pointed by the config.distributionmirrorprober.releases_file_list_url option)
 
-    >>> for (dummy, dummy, paths) in sorted(mirror.getExpectedCDImagePaths()):
+    >>> from canonical.launchpad.scripts.distributionmirror_prober import (
+    ...     get_expected_cdimage_paths)
+    >>> for (dummy, dummy, paths) in sorted(get_expected_cdimage_paths()):
     ...     for path in paths:
     ...         if '5.04' in path:
     ...             print path
@@ -479,6 +481,34 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     INFO    Done.
     <BLANKLINE>
 
+    When a mirror is not reachabe or fail to mirror the content that it
+    should, it's marked as disabled (as you can see above) and thus not
+    shown on the public mirror listings. We'll keep probing these disabled
+    mirrors and once they're reachabe and don't fail the content check
+    we'll enable them again.
+
+    >>> release_mirror = mirrorset.getByName('releases-mirror')
+    >>> release_mirror.enabled
+    True
+    >>> release_mirror.enabled = False
+    >>> flush_database_updates()
+    >>> transaction.commit()
+    >>> prober = subprocess.Popen(
+    ...     cmd, shell=True,stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.PIPE)
+    >>> stdout, stderr = prober.communicate()
+    >>> print stderr
+    INFO    Probing Release Mirrors
+    INFO    Probed 3 mirrors.
+    INFO    Enabled 1 mirror(s) that were previously disabled.
+    INFO    Done.
+    <BLANKLINE>
+
+    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> flush_database_caches()
+    >>> release_mirror.enabled
+    True
+
     >>> http_server.tearDown()
     >>> transaction.commit()
 
@@ -529,7 +559,6 @@ mirror have 'Up to date' as status, this mirror's overall status will also be
 
 Now we check the MirrorCDImageDistroReleases of a release mirror.
 
-    >>> release_mirror = mirrorset.getByName('releases-mirror')
     >>> release_mirror.name
     u'releases-mirror'
 

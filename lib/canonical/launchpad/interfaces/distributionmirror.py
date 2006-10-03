@@ -122,6 +122,7 @@ class IDistributionMirror(Interface):
     all_probe_records = Attribute('All MirrorProbeRecords for this mirror.')
     has_ftp_or_rsync_base_url = Bool(
         title=_('Does this mirror have a ftp or rsync base URL?'))
+    base_url = Attribute('The HTTP or FTP base URL of this mirror')
 
     def getSummarizedMirroredSourceReleases():
         """Return a summarized list of this distribution_mirror's 
@@ -166,7 +167,7 @@ class IDistributionMirror(Interface):
         If this is an ARCHIVE mirror, then it should be disabled only if it
         has no content at all.
 
-        We could use len(self.getExpectedCDImagePaths()) to obtain the
+        We could use len(get_expected_cdimage_paths()) to obtain the
         expected_file_count, but that's not a good idea because that method
         gets the expected paths from releases.ubuntu.com, which is something
         we don't have control over.
@@ -228,17 +229,6 @@ class IDistributionMirror(Interface):
         Return a list containing, for each path, the DistroRelease, the
         PackagePublishingPocket and the Component to which that given
         Sources.gz file refer to and the path to the file itself.
-        """
-
-    def getExpectedCDImagePaths():
-        """Get all paths where we can find CD image files on this mirror.
-
-        Return a list containing, for each DistroRelease and flavour, a list
-        of CD image file paths for that DistroRelease and flavour.
-
-        This list is read from a file located at http://releases.ubuntu.com,
-        so if something goes wrong while reading that file, an
-        UnableToFetchCDImageFileList exception will be raised.
         """
 
 

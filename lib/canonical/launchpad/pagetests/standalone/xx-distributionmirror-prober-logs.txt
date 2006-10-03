@@ -11,10 +11,8 @@ mirror's distribution.
     >>> browser.url
     'http://launchpad.dev/distros/ubuntu/+mirror/archive-mirror2/+prober-logs'
 
-    >>> print browser.contents
-    <...
-    1...of...1...result...
-    ...
+    >>> "1</span> result" in browser.contents
+    True
 
 
 A random logged in user won't have the rights to see that page.

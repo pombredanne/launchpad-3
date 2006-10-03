@@ -15,12 +15,11 @@
       </tr>
       <tr tal:repeat="mirror country_and_mirrors/mirrors">
         <td>
-          <a tal:condition="mirror/http_base_url"
-             tal:attributes="href mirror/http_base_url"
+          <a tal:condition="mirror/base_url"
+             tal:attributes="href mirror/base_url"
              tal:content="mirror/title">Mirror Name</a>
-          <a tal:condition="not:mirror/http_base_url"
-             tal:attributes="href mirror/ftp_base_url"
-             tal:content="mirror/title">Mirror Name</a>
+          <span tal:condition="not:mirror/base_url"
+                tal:content="mirror/title">Mirror Name</a>
         </td>
         <td><span tal:replace="mirror/speed/title" /></td>
         <td tal:define="status mirror/getOverallStatus">

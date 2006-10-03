@@ -18,14 +18,16 @@ The mirror content checker failed to locate any files that a
 log file[1] of the content check should give you more detailed
 information of what failed.
 
-To have this mirror shown on mirror listings again, you should:
+If this was a temporary failure and has been now corrected, the mirror will
+appear on the mirror listings right after the next content check.
+
+If this mirror didn't have any failures recently, this notification may
+have been caused by Launchpad not having the correct details on how to
+reach this mirror, so you may want to:
 
 * Verify the details registered in Launchpad for this mirror.
 
 * Ensure the path to the mirror contents is correct.
-
-If this was a temporary failure and has been now corrected, the mirror will
-appear on the mirror listings right after the next content check.
 
 If all the details are correct and the mirror is reachable, this report
 may be due to a problem with the mirror checker.  If you believe this to

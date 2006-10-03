@@ -15,7 +15,7 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h1>Content check logs for
+  <h1>Prober logs for
     "<tal:mirror replace="context/title">foobar</tal:mirror>"
   </h1>
 </metal:heading>

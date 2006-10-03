@@ -8,7 +8,6 @@ __all__ = ['DistributionMirror', 'MirrorDistroArchRelease',
            'DistributionMirrorSet', 'MirrorCDImageDistroRelease']
 
 from datetime import datetime, timedelta, MINYEAR
-import urllib2
 import pytz
 
 from zope.interface import implements
@@ -28,9 +27,8 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.interfaces import (
     IDistributionMirror, IMirrorDistroReleaseSource, IMirrorDistroArchRelease,
-    IMirrorProbeRecord, IDistributionMirrorSet, PROBE_INTERVAL,
-    IDistroRelease, IDistroArchRelease, IMirrorCDImageDistroRelease,
-    UnableToFetchCDImageFileList, pocketsuffix)
+    IMirrorProbeRecord, IDistributionMirrorSet, PROBE_INTERVAL, pocketsuffix,
+    IDistroRelease, IDistroArchRelease, IMirrorCDImageDistroRelease)
 from canonical.launchpad.database.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 from canonical.launchpad.database.publishing import (
@@ -78,6 +76,14 @@ class DistributionMirror(SQLBase):
         notNull=True, default=False)
 
     @property
+    def base_url(self):
+        """See IDistributionMirror"""
+        if self.http_base_url is not None:
+            return self.http_base_url
+        else:
+            return self.ftp_base_url
+
+    @property
     def last_probe_record(self):
         """See IDistributionMirror"""
         return MirrorProbeRecord.selectFirst(
@@ -87,9 +93,8 @@ class DistributionMirror(SQLBase):
     @property
     def all_probe_records(self):
         """See IDistributionMirror"""
-        return MirrorProbeRecord.select(
-            MirrorProbeRecord.q.distribution_mirrorID==self.id,
-            orderBy='-date_created')
+        return MirrorProbeRecord.selectBy(
+            distribution_mirror=self, orderBy='-date_created')
 
     @property
     def title(self):
@@ -305,29 +310,6 @@ class DistributionMirror(SQLBase):
             """ % sqlvalues(distribution=self.distribution, mirrorid=self)
         return MirrorDistroArchRelease.select(query)
 
-    def _getCDImageFileList(self):
-        url = config.distributionmirrorprober.releases_file_list_url
-        try:
-            return urllib2.urlopen(url)
-        except urllib2.URLError, e:
-            raise UnableToFetchCDImageFileList(
-                'Unable to fetch %s: %s' % (url, e))
-
-    def getExpectedCDImagePaths(self):
-        """See IDistributionMirror"""
-        d = {}
-        for line in self._getCDImageFileList().readlines():
-            flavour, releasename, path, size = line.split('\t')
-            paths = d.setdefault((flavour, releasename), [])
-            paths.append(path)
-
-        paths = []
-        for key, value in d.items():
-            flavour, releasename = key
-            release = self.distribution.getRelease(releasename)
-            paths.append((release, flavour, value))
-        return paths
-
     def getExpectedPackagesPaths(self):
         """See IDistributionMirror"""
         paths = []
@@ -445,7 +427,7 @@ class _MirrorReleaseMixIn:
         """
         raise NotImplementedError
 
-    def getLatestPublishingEntry(time_interval):
+    def getLatestPublishingEntry(self, time_interval):
         """Return the publishing entry with the most recent datepublished.
 
         Time interval must be a tuple of the form (start, end), and only

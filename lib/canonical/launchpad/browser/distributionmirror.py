@@ -42,7 +42,7 @@ class DistributionMirrorOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def proberlogs(self):
-        text = 'Content check logs'
+        text = 'Prober logs'
         return Link('+prober-logs', text, icon='info')
 
     @enabled_with_permission('launchpad.Admin')
