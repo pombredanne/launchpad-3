@@ -88,11 +88,6 @@ class ITicket(IHasOwner):
     target = Attribute('The product or distribution to which this ticket '
         'belongs.')
 
-    is_resolved = Attribute(
-        "Is this ticket considered resolved? Tickets with a status of "
-        "ANSWERED, SOLVED, EXPIRED, and INVALID are considered "
-        "resolved.")
-
     # joins
     subscriptions = Attribute('The set of subscriptions to this ticket.')
     reopenings = Attribute("Records of times when this was reopened.")

@@ -136,11 +136,6 @@ class Ticket(SQLBase, BugLinkTargetMixin):
             return subject
         return 'Re: ' + subject
 
-    @property
-    def is_resolved(self):
-        """See ITicket."""
-        return self.status not in [TicketStatus.OPEN, TicketStatus.NEEDSINFO]
-
     def isSubscribed(self, person):
         return bool(TicketSubscription.selectOneBy(ticket=self, person=person))
 
