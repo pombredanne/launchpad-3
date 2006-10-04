@@ -15,10 +15,13 @@ __all__ = [
     'BugTextView',
     'BugURL',
     'BugMarkAsDuplicateView',
-    'BugSecrecyEditView']
+    'BugSecrecyEditView',
+    'UpstreamBugTaskAddView',
+    ]
 
 import cgi
 import operator
+import urllib
 
 from zope.app.form.interfaces import WidgetsError
 from zope.app.form.browser import TextWidget
@@ -33,11 +36,11 @@ from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, LaunchpadFormView, LaunchpadView,
     Link, Navigation, structured)
 from canonical.launchpad.interfaces import (
-    IAddBugTaskForm, IBug, ILaunchBag, IBugSet, IBugTaskSet,
-    IBugWatchSet, IDistributionSourcePackage, IDistroBugTask,
-    IDistroReleaseBugTask, NoBugTrackerFound, NotFoundError,
-    UnexpectedFormData, valid_distrotask, valid_upstreamtask,
-    ICanonicalUrlData)
+    IAddBugTaskForm, IBug, IBugSet, IBugTaskSet, IBugWatchSet,
+    ICanonicalUrlData, IDistributionSourcePackage, IDistroBugTask,
+    IDistroReleaseBugTask, ILaunchBag, IUpstreamBugTask,
+    NoBugTrackerFound, NotFoundError, UnexpectedFormData,
+    valid_distrotask, valid_upstreamtask)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import check_permission
@@ -264,13 +267,48 @@ class BugWithoutContextView:
         self.request.response.redirect(canonical_url(bugtasks[0]))
 
 
-class BugAlsoReportInView(LaunchpadFormView):
+class BugAlsoReportInBaseView:
+
+    def validateProduct(self, product):
+        try:
+            valid_upstreamtask(self.context.bug, product)
+        except WidgetsError, errors:
+            for error in errors:
+                self.setFieldError('product', error.snippet())
+            return False
+        else:
+            return True
+
+
+class UpstreamBugTaskAddView(LaunchpadFormView, BugAlsoReportInBaseView):
+
+    schema = IUpstreamBugTask
+    field_names = ['product']
+
+    def initialize(self):
+        LaunchpadFormView.initialize(self)
+        if self.widgets['product'].hasInput():
+            self._validate(action=None, data={})
+
+    def validate(self, data):
+        if data.get('product'):
+            self.validateProduct(data['product'])
+
+    @action('Continue', name='continue')
+    def continue_action(self, action, data):
+        self.next_url = '%s/+upstreamtask-2?field.product=%s' % (
+            canonical_url(self.context), urllib.quote(data['product'].name))
+
+
+class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
     """View class for reporting a bug in other contexts."""
 
     schema = IAddBugTaskForm
     custom_widget('bug_url', StrippedTextWidget, displayWidth=50)
 
     index = ViewPageTemplateFile('../templates/bugtask-requestfix.pt')
+    upstream_page = ViewPageTemplateFile(
+        '../templates/bugtask-requestfix-upstream.pt')
     _confirm_new_task = False
     extracted_bug = None
     extracted_bugtracker = None
@@ -304,6 +342,7 @@ class BugAlsoReportInView(LaunchpadFormView):
                         source_package.direct_packaging.productseries.product)
                     self.widgets['product'].setRenderedValue(selected_product)
                     break
+        self.index = self.upstream_page
         return self.render()
 
     def render_distrotask(self):
@@ -340,11 +379,13 @@ class BugAlsoReportInView(LaunchpadFormView):
         sourcepackagename = data.get('sourcepackagename')
         if product:
             target = product
-            try:
-                valid_upstreamtask(self.context.bug, product)
-            except WidgetsError, errors:
-                for error in errors:
-                    self.setFieldError('product', error.snippet())
+            if not self.validateProduct(product):
+                product_name = self.request.form.get('field.product', '')
+                self.request.response.redirect(
+                    "%s/+upstreamtask?field.product=%s" % (
+                        canonical_url(self.context),
+                        urllib.quote(product_name)))
+                return
         elif distribution:
             target = distribution
             try:

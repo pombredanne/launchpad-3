@@ -265,10 +265,16 @@
     <browser:page
         name="+upstreamtask"
         for="canonical.launchpad.interfaces.IBugTask"
+        class="canonical.launchpad.browser.bug.UpstreamBugTaskAddView"
+        permission="launchpad.AnyPerson"
+        template="../templates/bugtask-upstreamtask.pt" />
+
+    <browser:page
+        name="+upstreamtask-2"
+        for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.bug.BugAlsoReportInView"
         permission="launchpad.AnyPerson"
-        attribute="render_upstreamtask"
-        lp:url="malone/bugs/$Bug.id/+upstreamtask">
+        attribute="render_upstreamtask">
     </browser:page>
 
     <browser:page
