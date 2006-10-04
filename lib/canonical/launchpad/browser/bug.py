@@ -337,7 +337,7 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
             if field_name not in target_field_names]
 
     def render_upstreamtask(self):
-        self.setUpLabelAndWidgets("Request fix in a product", ['product'])
+        self.setUpLabelAndWidgets("Add affected product to bug", ['product'])
         selected_product = None
         if IDistributionSourcePackage.providedBy(self.context.target):
             for source_package in self.context.target.by_distroreleases:
@@ -351,7 +351,7 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
 
     def render_distrotask(self):
         self.setUpLabelAndWidgets(
-            "Request fix in a distribution",
+            "Add affected source package to bug",
             ['distribution', 'sourcepackagename'])
         return self.render()
 
