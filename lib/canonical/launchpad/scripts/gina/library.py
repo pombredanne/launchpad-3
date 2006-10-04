@@ -10,12 +10,6 @@ import sha
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import ILibraryFileAliasSet
-from canonical.launchpad.database import LibraryFileContent
-from canonical.launchpad.scripts import execute_zcml_for_scripts
-
-
-execute_zcml_for_scripts()
-librarian = getUtility(ILibraryFileAliasSet)
 
 
 def _libType(fname):
@@ -33,7 +27,7 @@ def _libType(fname):
 
 
 def getLibraryAlias(root, filename):
-    global librarian
+    librarian = getUtility(ILibraryFileAliasSet)
     if librarian is None:
         return None
     fname = os.path.join(root, filename)
@@ -54,5 +48,6 @@ def checkLibraryForFile(path, filename):
         digester.update(chunk)
     digest = digester.hexdigest()
     openfile.close()
-    return LibraryFileContent.selectBy(sha1=digest).count() > 0
+    librarian = getUtility(ILibraryFileAliasSet)
+    return librarian.findBySHA1(digest).count() > 0
 

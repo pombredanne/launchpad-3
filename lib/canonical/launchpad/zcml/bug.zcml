@@ -27,14 +27,15 @@
                         productinfestations packageinfestations watches
                         externalrefs cves cve_links duplicates
                         attachments tickets specifications followup_subject
-                        subscribe unsubscribe isSubscribed messages
-                        notificationRecipientAddresses hasBranch
-                        security_related tags getMessageChunks" />
+                        isSubscribed messages notificationRecipientAddresses
+                        hasBranch security_related tags getMessageChunks
+                        isSubscribedToDupes" />
         <require
             permission="launchpad.Edit"
             attributes="addChangeNotification addCommentNotification addWatch
                         linkCVE unlinkCVE findCvesInText newMessage
-                        linkMessage addBranch addAttachment"
+                        linkMessage addBranch addAttachment unsubscribeFromDupes
+                        subscribe unsubscribe"
             set_attributes="datecreated date_last_updated name title description
                             ownerID owner duplicateof communityscore
                             communitytimestamp hits hitstimestamp activityscore
@@ -137,6 +138,7 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IBug"
+        class="canonical.launchpad.browser.BugSubscriberPortletView"
         name="+portlet-subscribers"
         template="../templates/bug-portlet-subscribers.pt"
         permission="zope.Public" />

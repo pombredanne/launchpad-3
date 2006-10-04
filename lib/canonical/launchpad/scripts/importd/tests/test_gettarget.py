@@ -16,6 +16,7 @@ from bzrlib.branch import Branch
 from bzrlib.builtins import get_format_type
 from bzrlib.bzrdir import BzrDir
 from bzrlib.repository import Repository
+from bzrlib.urlutils import local_path_to_url
 from zope.component import getUtility
 
 from canonical.database.sqlbase import commit
@@ -32,9 +33,11 @@ class ImportdTargetGetterTestCase(ImportdTestCase):
     def setUp(self):
         ImportdTestCase.setUp(self)
         self.importd_publisher = ImportdPublisher(
-            logging, self.sandbox.path, self.series_id, self.bzrmirrors)
+            logging, self.sandbox.path, self.series_id,
+            local_path_to_url(self.bzrmirrors))
         self.importd_getter = ImportdTargetGetter(
-            logging, self.sandbox.path, self.series_id, self.bzrmirrors)
+            logging, self.sandbox.path, self.series_id,
+            local_path_to_url(self.bzrmirrors))
 
     def setUpMirror(self):
         self.setUpOneCommit()
