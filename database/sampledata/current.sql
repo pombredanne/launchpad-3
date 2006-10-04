@@ -522,6 +522,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 ALTER TABLE archconfig DISABLE TRIGGER ALL;
 
 
@@ -2832,6 +2835,14 @@ ALTER TABLE mirrorsourcecontent DISABLE TRIGGER ALL;
 
 
 ALTER TABLE mirrorsourcecontent ENABLE TRIGGER ALL;
+
+
+ALTER TABLE nameblacklist DISABLE TRIGGER ALL;
+
+INSERT INTO nameblacklist (id, regexp, "comment") VALUES (1, 'blacklist', 'For testing purposes');
+
+
+ALTER TABLE nameblacklist ENABLE TRIGGER ALL;
 
 
 ALTER TABLE packagebugcontact DISABLE TRIGGER ALL;
