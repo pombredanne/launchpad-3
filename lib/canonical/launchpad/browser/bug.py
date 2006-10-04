@@ -289,10 +289,30 @@ class UpstreamBugTaskAddView(LaunchpadFormView, BugAlsoReportInBaseView):
     schema = IUpstreamBugTask
     field_names = ['product']
 
+    def _getUpstream(self, distro_package):
+        """Return the upstream if there is a packaging link."""
+        for source_package in distro_package.by_distroreleases:
+            if source_package.direct_packaging is not None:
+                return source_package.direct_packaging.productseries.product
+        else:
+            return None
+
     def initialize(self):
         LaunchpadFormView.initialize(self)
         if self.widgets['product'].hasInput():
             self._validate(action=None, data={})
+        elif IDistributionSourcePackage.providedBy(self.context.target):
+            upstream = self._getUpstream(self.context.target)
+            if upstream is not None:
+                try:
+                    valid_upstreamtask(self.context.bug, upstream)
+                except WidgetsError:
+                    # There is already a task for the upstream.
+                    pass
+                else:
+                    self.request.response.redirect(
+                        "+upstreamtask-2?field.product=%s" % urllib.quote(
+                            upstream.name))
 
     def validate(self, data):
         if data.get('product'):
@@ -338,14 +358,6 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
 
     def render_upstreamtask(self):
         self.setUpLabelAndWidgets("Add affected product to bug", ['product'])
-        selected_product = None
-        if IDistributionSourcePackage.providedBy(self.context.target):
-            for source_package in self.context.target.by_distroreleases:
-                if source_package.direct_packaging is not None:
-                    selected_product = (
-                        source_package.direct_packaging.productseries.product)
-                    self.widgets['product'].setRenderedValue(selected_product)
-                    break
         self.index = self.upstream_page
         return self.render()
 
