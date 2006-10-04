@@ -1649,7 +1649,7 @@ INSERT INTO emailaddress (id, email, person, status) VALUES (49, 'stub@fastmail.
 INSERT INTO emailaddress (id, email, person, status) VALUES (50, 'marilize@hbd.com', 55, 4);
 INSERT INTO emailaddress (id, email, person, status) VALUES (51, 'jordi@ubuntu.com', 56, 4);
 INSERT INTO emailaddress (id, email, person, status) VALUES (52, 'daniel.silverstone@canonical.com', 26, 4);
-INSERT INTO emailaddress (id, email, person, status) VALUES (53, 'bugzilla-importer@launchpad.net', 58, 4);
+INSERT INTO emailaddress (id, email, person, status) VALUES (53, 'bug-importer@launchpad.net', 58, 4);
 INSERT INTO emailaddress (id, email, person, status) VALUES (54, 'rosetta@launchpad.net', 30, 4);
 INSERT INTO emailaddress (id, email, person, status) VALUES (55, 'salgado@ubuntu.com', 29, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (56, 'cprov@ubuntu.com', 28, 2);
