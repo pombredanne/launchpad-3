@@ -34,7 +34,7 @@ from canonical.launchpad.interfaces import (
     IProjectSet, ILoginTokenSet, IKarmaActionSet, IPOTemplateNameSet,
     IBazaarApplication, ICodeOfConductSet, IRegistryApplication,
     ISpecificationSet, ISprintSet, ITicketSet, IBuilderSet, IBountySet,
-    ILaunchpadCelebrities, IBugSet, IBugTrackerSet, ICveSet)
+    ILaunchpadCelebrities, IBugSet, IBugTrackerSet, ICveSet, NotFoundError)
 from canonical.launchpad.layers import (
     setFirstLayer, ShipItEdUbuntuLayer, ShipItKUbuntuLayer, ShipItUbuntuLayer)
 from canonical.launchpad.components.cal import MergedCalendar
@@ -441,8 +441,33 @@ class LaunchpadRootNavigation(Navigation):
     def traverse(self, name):
         if name in self.stepto_utilities:
             return getUtility(self.stepto_utilities[name])
-        else:
-            return None
+
+        # Allow traversal to ~foo for People
+        # XXX: Needs page test -- StuartBishop 20060922
+        if name.startswith('~'):
+            return getUtility(IPersonSet)[name[1:].lower()]
+
+        # XXX: Needs page tests for these three cases, plus 404.
+        # -- StuartBishop 20060922
+        distro_set = getUtility(IDistributionSet)
+        try:
+            return distro_set[name.lower()]
+        except NotFoundError:
+            pass
+
+        product_set = getUtility(IProductSet)
+        try:
+            return product_set[name.lower()]
+        except NotFoundError:
+            pass
+
+        project_set = getUtility(IProjectSet)
+        try:
+            return project_set[name.lower()]
+        except NotFoundError:
+            pass
+
+        return None
 
     @stepto('calendar')
     def calendar(self):
