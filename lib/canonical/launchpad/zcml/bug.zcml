@@ -165,7 +165,7 @@
         name="+package"
         for="canonical.launchpad.interfaces.IBugSet"
         schema="canonical.launchpad.interfaces.IBugAddForm"
-        class="canonical.launchpad.browser.bugtarget.FileBugView"
+        class="canonical.launchpad.browser.bugtarget.FileBugAdvancedView"
         label="Report a bug about a package"
         fields="distribution packagename title comment security_related"
         arguments=""

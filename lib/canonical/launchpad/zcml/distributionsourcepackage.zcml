@@ -80,27 +80,6 @@
       />
   </browser:pages>
 
-  <browser:generalform
-      name="+filebug-advanced"
-      for="canonical.launchpad.interfaces.IDistributionSourcePackage"
-      schema="canonical.launchpad.interfaces.IBugAddForm"
-      label="Report a bug"
-      fields="packagename title comment security_related"
-      class="canonical.launchpad.browser.FileBugView"
-      facet="bugs"
-      keyword_arguments="packagename title comment security_related"
-      permission="launchpad.AnyPerson"
-      template="../templates/bugtarget-filebug-advanced.pt">
-      <browser:widget
-         field="title"
-         class="zope.app.form.browser.TextWidget"
-         displayWidth="50" />
-      <browser:widget
-         field="comment"
-         class="zope.app.form.browser.TextAreaWidget"
-         width="62" />
-  </browser:generalform>
-
   <browser:page
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"
     name="+subscribe"
