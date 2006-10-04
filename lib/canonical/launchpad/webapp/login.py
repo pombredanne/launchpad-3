@@ -109,6 +109,10 @@ class LoginOrRegister:
     submitted = False
     email = None
 
+    # XXX: If you add a new origin here, you must also add a new entry on
+    # NewAccountView.urls_and_rationales in browser/logintoken.py. Ideally,
+    # we should be storing the rationale in the logintoken too, but this
+    # should do for now. -- Guilherme Salgado, 2006-09-27
     registered_origins = {
         'shipit-ubuntu': ShipItConstants.ubuntu_url,
         'shipit-edubuntu': ShipItConstants.edubuntu_url,
@@ -216,23 +220,6 @@ class LoginOrRegister:
         with a link to the user complete the registration process.
         """
         request = self.request
-        self.email = request.form.get(self.input_email).strip()
-        person = getUtility(IPersonSet).getByEmail(self.email)
-        if person is not None:
-            msg = ('The email address %s is already registered in our system. '
-                   'If you are sure this is your email address, please go to '
-                   'the <a href="/+forgottenpassword">Forgotten Password</a> '
-                   'page and follow the instructions to retrieve your '
-                   'password.') % cgi.escape(self.email)
-            self.registration_error = msg
-            return
-
-        if not valid_email(self.email):
-            self.registration_error = (
-                "The email address you provided isn't valid. "
-                "Please verify it and try again.")
-            return
-
         # For some reason, redirection_url can sometimes be a list, and
         # sometimes a string.  See OOPS-68D508, where redirection_url has
         # the following value:
@@ -241,14 +228,39 @@ class LoginOrRegister:
         if isinstance(redirection_url, list):
             # Remove blank entries.
             redirection_url_list = [url for url in redirection_url if url]
-            assert len(redirection_url_list) == 1
+            # XXX: Shouldn't this be an UnexpectedFormData?
+            # -- Guilherme Salgado, 2006-09-27
+            assert len(redirection_url_list) == 1, redirection_url_list
             redirection_url = redirection_url_list[0]
+
+        self.email = request.form.get(self.input_email).strip()
+        if not valid_email(self.email):
+            self.registration_error = (
+                "The email address you provided isn't valid. "
+                "Please verify it and try again.")
+            return
+
+        person = getUtility(IPersonSet).getByEmail(self.email)
+        if person is not None:
+            if person.is_valid_person:
+                self.registration_error = (
+                    "Sorry, someone with the address %s already has a "
+                    "Launchpad account. If this is you and you've "
+                    "forgotten your password, Launchpad can "
+                    '<a href="/+forgottenpassword">reset it for you.</a>'
+                    % cgi.escape(self.email))
+                return
+            else:
+                # This is an unvalidated profile; let's move on with the
+                # registration process as if we had never seen it.
+                pass
+
         logintokenset = getUtility(ILoginTokenSet)
         token = logintokenset.new(
             requester=None, requesteremail=None, email=self.email,
             tokentype=LoginTokenType.NEWACCOUNT,
             redirection_url=redirection_url)
-        token.sendNewUserEmail(request.getApplicationURL())
+        token.sendNewUserEmail()
 
     def login_success(self):
         return (self.submitted and
@@ -362,7 +374,7 @@ class ForgottenPasswordPage:
         logintokenset = getUtility(ILoginTokenSet)
         token = logintokenset.new(
             person, email, email, LoginTokenType.PASSWORDRECOVERY)
-        token.sendPasswordResetEmail(request.getApplicationURL())
+        token.sendPasswordResetEmail()
         self.submitted = True
         return
 

@@ -173,7 +173,7 @@ be used instead.
     >>> firefox.owner = previous_owner
     >>> firefox.bugcontact = lifeless
 
-3. Subscribers (whether direct or indirect) from duplicate bugs
+3. Direct subscribers of duplicate bugs.
 
     >>> keybuk = personset.getByName("keybuk")
 
@@ -186,9 +186,10 @@ be used instead.
     ...     person.name for person in linux_source_bug_dupe.getDirectSubscribers())
     [u'keybuk']
 
-(Assigning stub to the dupe bug will demonstrate how he, as an indirect
-subscriber of the dupe, becomes an indirect subscriber of the dupe
-target.)
+Indirect subscribers of duplicates are *not* subscribed to dupe
+targets. For example, assigning stub to the dupe bug will demonstrate
+how he, as an indirect subscriber of the dupe, but does not get
+subscribed to the dupe target.
 
     >>> linux_source_bug_dupe.bugtasks[0].transitionToAssignee(
     ...     personset.getByName("stub"))
@@ -203,7 +204,7 @@ target.)
 
     >>> sorted(
     ...     person.name for person in linux_source_bug.getIndirectSubscribers())
-    [u'keybuk', u'lifeless', u'name12', u'no-priv', u'stub', u'ubuntu-team']
+    [u'keybuk', u'lifeless', u'name12', u'no-priv', u'ubuntu-team']
 
 When a bug is marked private, all its indirect subscribers become direct
 subscribers.
@@ -232,7 +233,7 @@ subscribers.
     >>> sorted(
     ...     person.name for person in linux_source_bug.getDirectSubscribers())
     [u'keybuk', u'lifeless', u'name12', u'name16', u'no-priv', u'sabdfl',
-     u'stub', u'ubuntu-team']
+     u'ubuntu-team']
 
 A private bug never has indirect subscribers. Since all our indirect
 subscribers have been made into direct subscribers, let's add another
@@ -255,7 +256,7 @@ indirect_subscribers will include only martin-pitt.
     >>> sorted(
     ...     person.name for person in linux_source_bug.getDirectSubscribers())
     [u'keybuk', u'lifeless', u'name12', u'name16', u'no-priv', u'sabdfl',
-     u'stub', u'ubuntu-team']
+     u'ubuntu-team']
     >>> sorted(
     ...     person.name for person in linux_source_bug.getIndirectSubscribers())
     [u'martin-pitt']
@@ -266,15 +267,35 @@ IBug.notificationRecipientAddresses().
 
    >>> sorted(linux_source_bug.notificationRecipientAddresses())
    ['foo.bar@canonical.com', 'mark@hbd.com', 'no-priv@canonical.com',
-    'robertc@robertcollins.net', 'stuart.bishop@canonical.com',
-    'support@ubuntu.com', 'test@canonical.com']
+    'robertc@robertcollins.net', 'support@ubuntu.com', 'test@canonical.com']
 
 To find out if someone is already directly subscribed to a bug, call
 IBug.isSubscribed, passing in an IPerson:
 
     >>> linux_source_bug.isSubscribed(personset.getByName("debonzi"))
     False
-    >>> linux_source_bug.isSubscribed(personset.getByName("name12"))
+    >>> linux_source_bug.isSubscribed(sample_person)
+    True
+
+Call isSubscribedToDupes to see if a user is directly subscribed to
+dupes of a bug. This is useful for, for example, figuring out how to
+display the Subscribe/Unsubscribe menu option, and in TAL, for deciding
+whether the user needs to be warned, while unsubscribing, that they will
+be unsubscribed from dupes.
+
+    >>> bug_five = bugset.get(5)
+    >>> bug_six = bugset.get(6)
+
+    >>> bug_six.duplicateof == bug_five
+    True
+
+    >>> bug_five.isSubscribedToDupes(sample_person)
+    False
+
+    >>> bug_six.subscribe(sample_person)
+    <BugSubscription...>
+
+    >>> bug_five.isSubscribedToDupes(sample_person)
     True
 
 Subscribing and Unsubscribing
@@ -284,14 +305,41 @@ To subscribe people to and unsubscribe people from a bug, use
 IBug.subscribe and IBug.unsubscribe:
 
     >>> foobar = personset.getByName("name16")
-    >>> subscribed_people = [s.person.name for s in bug.subscriptions]
-    >>> "foobar" not in subscribed_people
-    True
+
+    >>> bug.isSubscribed(foobar)
+    False
     >>> bug.subscribe(foobar)
     <BugSubscription at ...>
-    >>> subscriptions = [s.person.id for s in bug.subscriptions]
-    >>> 16 in subscriptions
+    >>> bug.isSubscribed(foobar)
     True
+
+    >>> bug.unsubscribe(foobar)
+    >>> bug.isSubscribed(foobar)
+    False
+
+To unsubscribe from all dupes for a bug, call
+IBug.unsubscribeFromDupes. This is useful because direct subscribers
+from dupes are automatically subscribed to dupe targets, so we provide
+them a way to unsubscribe.
+
+For example, Sample Person can be unsubscribed from bug #6, by
+unsubscribing them from the dupes of bug #5, because bug #6 is a dupe of
+bug #5.
+
+    >>> bug_six.duplicateof == bug_five
+    True
+
+    >>> bug_six.isSubscribed(sample_person)
+    True
+
+The return value of unsubscribeFromDupes() is a list of bugs from which
+the user was unsubscribed.
+
+    >>> [bug.id for bug in bug_five.unsubscribeFromDupes(sample_person)]
+    [6]
+
+    >>> bug_six.isSubscribed(sample_person)
+    False
 
 Automatic Subscriptions on Bug Creation
 =======================================
