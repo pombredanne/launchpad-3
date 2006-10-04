@@ -10,6 +10,7 @@ import shutil
 import unittest
 
 from bzrlib.branch import Branch
+from bzrlib.urlutils import local_path_to_url
 import CVS
 import cscvs.cmds.cache
 import cscvs.cmds.totla
@@ -231,8 +232,9 @@ class TestCvsStrategyBzr(CvsStrategyTestCase):
         CvsStrategyTestCase.setUp(self)
         self.job.targetManagerType = SilentBzrManager
         self.job.working_root = self.sandbox.path
-        self.push_prefix = self.job.push_prefix
-        os.mkdir(self.push_prefix)
+        push_prefix = self.job.push_prefix
+        os.mkdir(push_prefix)
+        self.push_prefix = self.job.push_prefix = local_path_to_url(push_prefix)
         self.utilities_helper = helpers.ZopelessUtilitiesHelper()
         self.utilities_helper.setUp()
         self.series_helper = ProductSeriesHelper()
