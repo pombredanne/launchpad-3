@@ -202,6 +202,17 @@ If the address is unparsable, we get an error.
   ...
   UploadError: Cannot Parse Me <FOOO>: no @ found in email address part.
 
+If the email address is not yet registered and policy.create_people is True,
+a new Person will be created.
+
+  >>> orig_create_people = ed_upload.policy.create_people
+  >>> ed_upload.policy.create_people = True
+  >>> addr = ed_upload.parse_address("Baz <baz@canonical.com>")
+  >>> addr['person'].creation_rationale.name
+  'SOURCEPACKAGEUPLOAD'
+  >>> addr['person'].creation_comment
+  u'when the ed package was uploaded to Ubuntu'
+  >>> ed_upload.policy.create_people = orig_create_people
 
 
 The upload can extract distributions and distroreleases if it tries

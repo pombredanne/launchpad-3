@@ -37,7 +37,7 @@ from canonical.archivepublisher.utils import (
 from canonical.librarian.utils import copy_and_close, filechunks
 
 from canonical.lp.dbschema import (
-    SourcePackageUrgency, PackagePublishingPriority,
+    SourcePackageUrgency, PackagePublishingPriority, PersonCreationRationale,
     PackageUploadCustomFormat, BinaryPackageFormat,
     BuildStatus, PackageUploadStatus, PackagePublishingPocket)
 
@@ -651,7 +651,19 @@ class NascentUpload:
             raise UploadError(str(e))
 
         if self.policy.create_people:
-            person = getUtility(IPersonSet).ensurePerson(email, name)
+            package = self.changes['source']
+            # XXX: The distrorelease property may raise an UploadError in case
+            # there's no distrorelease with a name equal to
+            # self.changes['distribution'] or even a raw Exception in some
+            # tests, but we don't want the upload to fail at this point nor
+            # catch the exception here, so we'll hardcode the distro here for
+            # now and leave the rationale without a specific release.
+            # -- Guilherme Salgado, 2006-10-03
+            release = 'Ubuntu'
+            person = getUtility(IPersonSet).ensurePerson(
+                email, name, PersonCreationRationale.SOURCEPACKAGEUPLOAD,
+                comment=('when the %s package was uploaded to %s'
+                         % (package, release)))
         else:
             person = getUtility(IPersonSet).getByEmail(email)
 
