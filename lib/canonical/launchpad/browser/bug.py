@@ -12,6 +12,7 @@ __all__ = [
     'BugContextMenu',
     'BugWithoutContextView',
     'DeprecatedAssignedBugsView',
+    'BugSubscriberPortletView',
     'BugTextView',
     'BugURL',
     'BugMarkAsDuplicateView',
@@ -108,12 +109,15 @@ class BugContextMenu(ContextMenu):
         if user is None:
             text = 'Subscribe/Unsubscribe'
             icon = 'edit'
-        elif user is not None and self.context.bug.isSubscribed(user):
+        elif user is not None and (
+            self.context.bug.isSubscribed(user) or
+            self.context.bug.isSubscribedToDupes(user)):
             text = 'Unsubscribe'
             icon = 'remove'
         else:
             for team in user.teams_participated_in:
-                if self.context.bug.isSubscribed(team):
+                if (self.context.bug.isSubscribed(team) or
+                    self.context.bug.isSubscribedToDupes(team)):
                     text = 'Subscribe/Unsubscribe'
                     icon = 'edit'
                     break
@@ -510,6 +514,29 @@ class BugAlsoReportInView(LaunchpadFormView):
         return LaunchpadFormView.render(self)
 
 
+class BugSubscriberPortletView(LaunchpadView):
+    """View class for the bug subscriber portlet."""
+    def __init__(self, context, request):
+        LaunchpadView.__init__(self, IBug(context), request)
+
+    def getSubscribersFromDupes(self):
+        """Return a list of IPersons that are subscribed from dupes."""
+        bug = self.context
+        return [subscriber
+                for subscriber in bug.getIndirectSubscribers()
+                if bug.isSubscribedToDupes(subscriber)]
+
+    def getSubscribersAlsoNotified(self):
+        """Return a list of IPersons indirectly subscribed to this bug.
+
+        This list excludes subscribers from dupes.
+        """
+        bug = self.context
+        return [subscriber
+                for subscriber in bug.getIndirectSubscribers()
+                if not bug.isSubscribedToDupes(subscriber)]
+
+
 class BugEditViewBase(LaunchpadEditFormView):
     """Base class for all bug edit pages."""
 
@@ -541,6 +568,8 @@ class BugEditView(BugEditViewBase):
 
     def validate(self, data):
         """Make sure new tags are confirmed."""
+        if 'tags' not in data:
+            return
         confirm_action = self.confirm_tag_action
         if confirm_action.submitted():
             # Validation is needed only for the change action.
