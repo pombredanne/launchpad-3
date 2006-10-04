@@ -1,7 +1,7 @@
 <div id="structuralobjectheading">
   <img alt="" src="/@@/nyet-heading" />
-  <h1 class="major" tal:content="view/getMajorHeading">Ubuntu 6.10</h1>
-  <div class="minor" tal:content="view/getMinorHeading">Edgy Eft</div>
+  <div class="intro" tal:content="view/getIntroHeading">Ubuntu 6.10</div>
+  <div class="main" tal:content="view/getMainHeading">Edgy Eft</div>
 </div>
 
       <div id="structuralobjectchildren">

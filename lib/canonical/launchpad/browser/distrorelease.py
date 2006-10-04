@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'DistroReleaseNavigation',
+    'DistroReleaseSOP',
     'DistroReleaseFacets',
     'DistroReleaseView',
     'DistroReleaseEditView',
@@ -29,6 +30,7 @@ from canonical.launchpad.interfaces import (
 
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.queue import QueueItemsView
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -70,6 +72,30 @@ class DistroReleaseNavigation(GetitemNavigation, BugTargetTraversalMixin):
     @stepthrough('+package')
     def package(self, name):
         return self.context.getBinaryPackage(name)
+
+
+class DistroReleaseSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        return self.context.title
+
+    def listChildren(self, num):
+        children = []
+        for architecture in self.context.architectures:
+            children.append(architecture.architecturetag)
+        return children
+
+    def countChildren(self):
+        return self.context.architecturecount
+
+    def listAltChildren(self, num):
+        return []
+
+    def countAltChildren(self):
+        return None
 
 
 class DistroReleaseFacets(StandardLaunchpadFacets):
