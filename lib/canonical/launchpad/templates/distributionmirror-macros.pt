@@ -19,7 +19,7 @@
              tal:attributes="href mirror/base_url"
              tal:content="mirror/title">Mirror Name</a>
           <span tal:condition="not:mirror/base_url"
-                tal:content="mirror/title">Mirror Name</a>
+                tal:content="mirror/title">Mirror Name</span>
         </td>
         <td><span tal:replace="mirror/speed/title" /></td>
         <td tal:define="status mirror/getOverallStatus">
