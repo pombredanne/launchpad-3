@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'ProductNavigation',
     'ProductSetNavigation',
+    'ProductSOP',
     'ProductFacets',
     'ProductOverviewMenu',
     'ProductBugsMenu',
@@ -49,6 +50,7 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.productseries import get_series_branch_error
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp import (
@@ -99,6 +101,28 @@ class ProductSetNavigation(GetitemNavigation):
 
     def breadcrumb(self):
         return 'Products'
+
+
+class ProductSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        return self.context.title
+
+    def listChildren(self, num):
+        # XXX mpt 20061004: product series, most recent first
+        return []
+
+    def countChildren(self):
+        return 0
+
+    def listAltChildren(self, num):
+        return None
+
+    def countAltChildren(self):
+        raise NotImplementedError
 
 
 class ProductFacets(StandardLaunchpadFacets):

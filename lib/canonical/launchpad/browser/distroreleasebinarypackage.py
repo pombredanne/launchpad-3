@@ -21,6 +21,8 @@ from canonical.launchpad.webapp import (
 
 
 class DistroReleaseBinaryPackageFacets(StandardLaunchpadFacets):
+    # XXX 20061004 mpt: A DistroArchReleaseBinaryPackage is not a structural
+    # object. It should inherit all navigation from its distro release.
 
     usedfor = IDistroReleaseBinaryPackage
     enable_only = ['overview']

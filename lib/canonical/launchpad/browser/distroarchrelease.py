@@ -29,6 +29,8 @@ class DistroArchReleaseNavigation(GetitemNavigation):
         return self.context.architecturetag
 
 class DistroArchReleaseFacets(StandardLaunchpadFacets):
+    # XXX 20061004 mpt: a DistroArchRelease is not a structural
+    # object: it should inherit all navigation from its distro release.
 
     usedfor = IDistroArchRelease
     enable_only = ['overview']

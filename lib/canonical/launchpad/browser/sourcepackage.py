@@ -4,6 +4,7 @@ __metaclass__ = type
 
 __all__ = [
     'SourcePackageNavigation',
+    'SourcePackageSOP',
     'SourcePackageFacets',
     'SourcePackageView',
     ]
@@ -24,6 +25,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.packagerelationship import (
     PackageRelationship)
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -71,6 +73,28 @@ def linkify_changelog(changelog, sourcepkgnametxt):
                        r'%s (<a href="\1">\1</a>)' % sourcepkgnametxt,
                        changelog)
     return changelog
+
+
+class SourcePackageSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return self.context.distrorelease.displayname + ' source package:'
+
+    def getMainHeading(self):
+        return self.context.sourcepackagename
+
+    def listChildren(self, num):
+        # XXX mpt 20061004: Versions published, earliest first
+        return []
+
+    def countChildren(self):
+        return 0
+
+    def listAltChildren(self, num):
+        return None
+
+    def countAltChildren(self):
+        raise NotImplementedError
 
 
 class SourcePackageFacets(StandardLaunchpadFacets):

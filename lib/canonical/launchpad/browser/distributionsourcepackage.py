@@ -3,8 +3,9 @@
 __metaclass__ = type
 
 __all__ = [
-    'DistributionSourcePackageFacets',
     'DistributionSourcePackageNavigation',
+    'DistributionSourcePackageSOP',
+    'DistributionSourcePackageFacets',
     'DistributionSourcePackageView'
     ]
 
@@ -14,9 +15,33 @@ from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, ILaunchBag, DuplicateBugContactError,
     DeleteBugContactError, IPersonSet)
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu,
     GetitemNavigation, canonical_url, redirection)
+
+
+class DistributionSourcePackageSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return self.context.distribution.title + ' source package:'
+
+    def getMainHeading(self):
+        return self.context.name
+
+    def listChildren(self, num):
+        # XXX mpt 20061004: package releases, most recent first
+        return []
+
+    def countChildren(self):
+        return 0
+
+    def listAltChildren(self, num):
+        return None
+
+    def countAltChildren(self):
+        raise NotImplementedError
+
 
 
 class DistributionSourcePackageFacets(StandardLaunchpadFacets):

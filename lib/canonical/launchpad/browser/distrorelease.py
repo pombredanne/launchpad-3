@@ -80,22 +80,21 @@ class DistroReleaseSOP(StructuralObjectPresentation):
         return None
 
     def getMainHeading(self):
-        return self.context.title
+        return self.context.fullreleasename
 
     def listChildren(self, num):
-        children = []
-        for architecture in self.context.architectures:
-            children.append(architecture.architecturetag)
-        return children
-
-    def countChildren(self):
-        return self.context.architecturecount
-
-    def listAltChildren(self, num):
+        # XXX mpt 20061004: list architectures, alphabetically
         return []
 
-    def countAltChildren(self):
+    def countChildren(self):
+        return 0
+
+    def listAltChildren(self, num):
+        # XXX mpt 20061004: list releases, most recent first
         return None
+
+    def countAltChildren(self):
+        raise NotImplementedError
 
 
 class DistroReleaseFacets(StandardLaunchpadFacets):
