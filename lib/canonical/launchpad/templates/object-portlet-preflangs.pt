@@ -20,9 +20,7 @@
           >Select Languages...</a>
 
           <a tal:condition="not: request/lp:person"
-             tal:attributes="href string:${request/URL}/+login">
-            Login to select your languages...
-          </a>
+            href="/people/+editlanguages">Select Languages...</a>
         </li>
       </ul>
 

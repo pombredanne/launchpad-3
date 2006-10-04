@@ -77,10 +77,8 @@
                tal:attributes="href string:${request/lp:person/fmt:url}/+editlanguages">
               Choose Preferred Languages...
             </a> 
-            <a tal:condition="not: request/lp:person" 
-               tal:attributes="href string:${request/URL}/+login">
-              Login to Choose Preferred Languages...
-            </a> 
+            <a tal:condition="not: request/lp:person"
+              href="/people/+editlanguages">Choose Preferred Languages...</a>
             &mdash;
             <a tal:attributes="href potemplate/fmt:url">
               View Template &amp; All Languages...</a> 
