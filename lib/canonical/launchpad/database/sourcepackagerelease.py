@@ -292,7 +292,8 @@ class SourcePackageRelease(SQLBase):
             BinaryPackagePublishingHistory.binarypackagerelease AND
         BinaryPackagePublishingHistory.distroarchrelease = %s AND
         BinaryPackagePublishingHistory.archive = %s AND
-        Build.sourcepackagerelease = %s
+        Build.sourcepackagerelease = %s AND
+        Build.archive = BinaryPackagePublishingHistory.archive
         """  % sqlvalues(distroarchrelease,
                          distroarchrelease.main_archive,
                          self)
@@ -311,6 +312,7 @@ class SourcePackageRelease(SQLBase):
         if build is None:
             build = Build.selectOneBy(
                 distroarchrelease=distroarchrelease,
+                archive=distroarchrelease.main_archive,
                 sourcepackagerelease=self)
 
         return build
