@@ -22,7 +22,9 @@ class TestNameBlacklist(LaunchpadTestCase):
         self.cur.execute("""
             INSERT INTO NameBlacklist(id, regexp) VALUES (-100, 'foo')
             """)
-
+        self.cur.execute("""
+            INSERT INTO NameBlacklist(id, regexp) VALUES (-50, 'v e r b o s e')
+            """)
 
     def tearDown(self):
         self.con.rollback()
@@ -38,6 +40,9 @@ class TestNameBlacklist(LaunchpadTestCase):
         '''Call the is_blacklisted_name stored procedure and return the result
         '''
         self.cur.execute("SELECT is_blacklisted_name(%(name)s)", vars())
+        blacklisted = self.cur.fetchone()[0]
+        self.failIf(blacklisted is None, 'is_blacklisted_name returned NULL')
+        return bool(blacklisted)
 
     def test_name_blacklist_match(self):
 
@@ -71,6 +76,13 @@ class TestNameBlacklist(LaunchpadTestCase):
         self.failUnless(self.is_blacklisted_name("foo") is True)
         self.cur.execute("UPDATE NameBlacklist SET regexp='bar' || regexp")
         self.failUnless(self.is_blacklisted_name("foo") is False)
+
+    def test_case_insensitive(self):
+        self.failUnless(self.is_blacklisted_name("Foo") is True)
+
+    def test_verbose(self):
+        # Testing the VERBOSE flag is used when compiling the regexp
+        self.failUnless(self.is_blacklisted_name("verbose") is True)
 
 
 def test_suite():
