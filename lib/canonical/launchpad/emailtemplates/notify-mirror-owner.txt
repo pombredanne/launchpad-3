@@ -18,10 +18,10 @@ The mirror content checker failed to locate any files that a
 log file[1] of the content check should give you more detailed
 information of what failed.
 
-If this was a temporary failure and has been now corrected, the mirror will
-appear on the mirror listings right after the next content check.
+If this was a temporary failure and has already now corrected, the mirror
+will appear on the mirror listings right after the next content check.
 
-If this mirror didn't have any failures recently, this notification may
+If if you are sure this mirror is up and running, this notification may
 have been caused by Launchpad not having the correct details on how to
 reach this mirror, so you may want to:
 
