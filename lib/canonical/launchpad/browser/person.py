@@ -6,6 +6,7 @@ __all__ = [
     'PersonNavigation',
     'TeamNavigation',
     'PersonSetNavigation',
+    'PersonSOP',
     'PeopleContextMenu',
     'PersonFacets',
     'PersonBranchesMenu',
@@ -78,6 +79,7 @@ from canonical.launchpad.interfaces import (
     IPersonChangePassword, GPGKeyNotFoundError, UnexpectedFormData)
 
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -172,6 +174,27 @@ class PersonSetNavigation(Navigation):
 
     def traverse(self, name):
         return self.context.getByName(name)
+
+
+class PersonSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        return self.context.title
+
+    def listChildren(self, num):
+        return []
+
+    def countChildren(self):
+        return 0
+
+    def listAltChildren(self, num):
+        return None
+
+    def countAltChildren(self):
+        raise NotImplementedError
 
 
 class PeopleContextMenu(ContextMenu):

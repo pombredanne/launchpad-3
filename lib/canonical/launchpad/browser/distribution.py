@@ -5,6 +5,7 @@ __metaclass__ = type
 __all__ = [
     'DistributionNavigation',
     'DistributionSetNavigation',
+    'DistributionSOP',
     'DistributionFacets',
     'DistributionSpecificationsMenu',
     'DistributionView',
@@ -35,6 +36,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, enabled_with_permission,
     GetitemNavigation, LaunchpadEditFormView, LaunchpadView, Link,
@@ -92,6 +94,28 @@ class DistributionSetNavigation(GetitemNavigation):
 
     def breadcrumb(self):
         return 'Distributions'
+
+
+class DistributionSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        return self.context.title
+
+    def listChildren(self, num):
+        # XXX mpt 20061004: list architectures, alphabetically
+        return []
+
+    def countChildren(self):
+        return 0
+
+    def listAltChildren(self, num):
+        return None
+
+    def countAltChildren(self):
+        raise NotImplementedError
 
 
 class DistributionFacets(StandardLaunchpadFacets):

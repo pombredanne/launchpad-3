@@ -91,6 +91,8 @@ class POFileNavigation(Navigation):
 
 
 class POFileFacets(StandardLaunchpadFacets):
+    # XXX 20061004 mpt: A POFile is not a structural object. It should
+    # inherit all navigation from its product or source package.
     usedfor = IPOFile
     defaultlink = 'translations'
     enable_only = ['overview', 'translations']
