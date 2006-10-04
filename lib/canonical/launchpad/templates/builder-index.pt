@@ -24,20 +24,13 @@
         <table class="listing sortable">
           <tbody>
             <tr>
-              <td class="left icon"><img alt="" src="/@@/progress" /></td>
+              <td class="left icon">
+                  <tal:icon replace="structure job/build/fmt:icon" />
+              </td>
               <td>
                 <a tal:attributes="href job/build/fmt:url">
                   <span tal:replace="job/build/title">NAME</span>
                 </a>
-              </td>
-            </tr>
-            <tr class="secondary">
-              <td></td>
-              <td>
-                Requested
-                <tal:requested
-                  content="job/build/datecreated/fmt:datetime"
-                />
               </td>
             </tr>
             <tr class="secondary">
@@ -57,10 +50,6 @@
       <p tal:condition="not: job">
         <tal:builder content="context/title" /> is idle.
       </p>
-
-      <h2>Recent builds</h2>
-
-      <div tal:replace="structure context/@@+builds-list"/>
 
       <p class="discreet">Last updated <span tal:replace="view/now"/></p>
 

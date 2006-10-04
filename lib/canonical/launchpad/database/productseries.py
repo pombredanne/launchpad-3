@@ -10,14 +10,12 @@ __all__ = [
 
 
 import datetime
-import sets
 from warnings import warn
 
 from zope.interface import implements
 from sqlobject import (
     IntervalCol, ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
 
-from canonical.database.sqlbase import flush_database_updates
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -42,7 +40,7 @@ from canonical.lp.dbschema import (
     SpecificationStatus)
 
 
-class ProductSeries(SQLBase, BugTargetBase):
+class ProductSeries(SQLBase):
     """A series of product releases."""
     implements(IProductSeries, IProductSeriesSource, IProductSeriesSourceAdmin)
     _table = 'ProductSeries'
@@ -71,16 +69,9 @@ class ProductSeries(SQLBase, BugTargetBase):
     # where are the tarballs released from this branch placed?
     cvstarfileurl = StringCol(default=None)
     svnrepository = StringCol(default=None)
-    # XXX bkrepository is in the data model but not here
-    #   -- matsubara, 2005-10-06
     releaseroot = StringCol(default=None)
     releasefileglob = StringCol(default=None)
     releaseverstyle = StringCol(default=None)
-    # these fields tell us where to publish upstream as bazaar branch
-    targetarcharchive = StringCol(default=None)
-    targetarchcategory = StringCol(default=None)
-    targetarchbranch = StringCol(default=None)
-    targetarchversion = StringCol(default=None)
     # key dates on the road to import happiness
     dateautotested = UtcDateTimeCol(default=None)
     datestarted = UtcDateTimeCol(default=None)
@@ -98,11 +89,6 @@ class ProductSeries(SQLBase, BugTargetBase):
     @property
     def displayname(self):
         return self.name
-
-    @property
-    def bugtargetname(self):
-        """See IBugTarget."""
-        return "%s %s (upstream)" % (self.product.name, self.name)
 
     @property
     def drivers(self):
@@ -294,24 +280,6 @@ class ProductSeries(SQLBase, BugTargetBase):
         results = Specification.select(query, orderBy=order, limit=quantity)
         return results.prejoin(['assignee', 'approver', 'drafter'])
 
-    def searchTasks(self, search_params):
-        """See IBugTarget."""
-        search_params.setProductSeries(self)
-        return BugTaskSet().search(search_params)
-
-    def getUsedBugTags(self):
-        """See IBugTarget."""
-        return get_bug_tags("BugTask.productseries = %s" % sqlvalues(self))
-
-    def getUsedBugTagsWithOpenCounts(self, user):
-        """See IBugTarget."""
-        return get_bug_tags_open_count(
-            "BugTask.productseries = %s" % sqlvalues(self), user)
-
-    def createBug(self, bug_params):
-        """See IBugTarget."""
-        raise NotImplementedError('Cannot file a bug against a productseries')
-
     def getSpecification(self, name):
         """See ISpecificationTarget."""
         return self.product.getSpecification(name)
@@ -442,7 +410,7 @@ class ProductSeriesSourceSet:
                          import status.
         """
         queries = []
-        clauseTables = sets.Set()
+        clauseTables = set()
         # deal with the cases which require project and product
         if ( ready is not None ) or text:
             if text:
@@ -490,3 +458,4 @@ class ProductSeriesSourceSet:
         if result is None:
             return default
         return result
+

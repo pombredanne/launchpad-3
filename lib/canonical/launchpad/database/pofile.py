@@ -51,7 +51,6 @@ from canonical.launchpad.components.poparser import (
     POSyntaxError, POHeader, POInvalidInputError)
 from canonical.librarian.interfaces import ILibrarianClient
 
-from canonical.launchpad.webapp.snapshot import Snapshot
 
 def _check_translation_perms(permission, translators, person):
     """Return True or False dependening on whether the person is part of the
@@ -203,8 +202,7 @@ class POFile(SQLBase, RosettaStats):
     exporttime = UtcDateTimeCol(dbName='exporttime',
                                 notNull=False,
                                 default=None)
-    datecreated = UtcDateTimeCol(notNull=True,
-        default=UTC_NOW)
+    datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
     latestsubmission = ForeignKey(foreignKey='POSubmission',
         dbName='latestsubmission', notNull=False, default=None)
@@ -230,8 +228,7 @@ class POFile(SQLBase, RosettaStats):
             translator = group.query_translator(self.language)
             if translator is not None:
                 translators.add(translator)
-        return sorted(list(translators),
-            key=lambda x: x.translator.name)
+        return sorted(list(translators), key=lambda x: x.translator.name)
 
     @property
     def translationpermission(self):
@@ -248,6 +245,9 @@ class POFile(SQLBase, RosettaStats):
             POSubmission.pomsgset = POMsgSet.id AND
             POMsgSet.pofile = %d""" % self.id,
             clauseTables=('POSubmission', 'POMsgSet'),
+            # We can't use Person._defaultOrder because this is a
+            # distinct query. -- kiko
+            orderBy=["Person.displayname", "Person.name"],
             distinct=True))
 
     def canEditTranslations(self, person):
@@ -528,9 +528,8 @@ class POFile(SQLBase, RosettaStats):
 
     def createMessageSetFromText(self, text):
         """See IPOFile."""
-        try:
-            potmsgset = self.potemplate[text]
-        except KeyError:
+        potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(text, only_current=False)
+        if potmsgset is None:
             potmsgset = self.potemplate.createMessageSetFromText(text)
 
         return self.createMessageSetFromMessageSet(potmsgset)

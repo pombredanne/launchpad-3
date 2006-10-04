@@ -192,8 +192,7 @@ class DistroArchRelease(SQLBase):
         queries = []
 
         if not IBinaryPackageName.providedBy(binary_name):
-            binname_set = getUtility(IBinaryPackageNameSet)
-            binary_name = binname_set.getOrCreateByName(binary_name)
+            binary_name = BinaryPackageName.byName(binary_name)
 
         queries.append("""
         binarypackagerelease=binarypackagerelease.id AND

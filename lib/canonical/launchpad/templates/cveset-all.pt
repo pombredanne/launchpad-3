@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template/master"
+      metal:use-macro="context/@@main_template_2col/master"
       i18n:domain="malone"
 >
   <body>
@@ -11,9 +11,6 @@
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
 
 <div metal:fill-slot="main"
      tal:define="batchnav view/getAllBatched;

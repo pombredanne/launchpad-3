@@ -3,6 +3,7 @@
 __metaclass__ = type
 __all__ = ['Ticket', 'TicketSet']
 
+import operator
 from email.Utils import make_msgid
 
 from zope.event import notify
@@ -206,7 +207,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         """See ITicket."""
         direct = set(self.getDirectSubscribers())
         indirect = set(self.getIndirectSubscribers())
-        return direct.union(indirect)
+        return sorted(direct.union(indirect), key=operator.attrgetter('name'))
 
     def getDirectSubscribers(self):
         """See ITicket."""
@@ -220,7 +221,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
                 self.sourcepackagename.name)
             support_contacts.update(source_package.support_contacts)
 
-        return list(support_contacts)
+        return sorted(support_contacts, key=operator.attrgetter('name'))
 
     def newMessage(self, owner=None, subject=None, content=None,
                    when=UTC_NOW):

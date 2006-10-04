@@ -87,8 +87,10 @@ class FakeBinary:
 
 class FakeSourcePublishing:
     """Mocks a SourcePackagePublishingHistory object."""
+    id = 1
+    
     def __init__(self, source, component, alias, section, dr):
-        class Dummy: pass
+        class Dummy: id = 1
         self.sourcepackagerelease = Dummy()
         self.sourcepackagerelease.name = source
         self.component = Dummy()
@@ -111,9 +113,11 @@ class FakeSourcePublishing:
 
 class FakeBinaryPublishing:
     """Mocks a BinaryPackagePublishingHistory object."""
+    id = 1
+    
     def __init__(self, binary, source, component, alias,
                  section, dr, prio, archtag):
-        class Dummy: pass
+        class Dummy: id = 1
         self.binarypackagerelease = Dummy()
         self.binarypackagerelease.name = source
         self.sourcepackagerelease = Dummy()
