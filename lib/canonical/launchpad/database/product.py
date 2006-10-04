@@ -5,8 +5,6 @@
 __metaclass__ = type
 __all__ = ['Product', 'ProductSet']
 
-import sets
-
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -22,7 +20,7 @@ from canonical.launchpad.helpers import shortlist
 
 from canonical.lp.dbschema import (
     EnumCol, TranslationPermission, SpecificationSort, SpecificationFilter,
-    SpecificationStatus, TicketStatus)
+    SpecificationStatus)
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.launchpad.database.karma import KarmaContextMixin
@@ -295,9 +293,8 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
     @property
     def translatable_packages(self):
         """See IProduct."""
-        packages = sets.Set([package
-                            for package in self.sourcepackages
-                            if len(package.currentpotemplates) > 0])
+        packages = set(package for package in self.sourcepackages
+                       if len(package.currentpotemplates) > 0)
         # Sort packages by distrorelease.name and package.name
         return sorted(packages, key=lambda p: (p.distrorelease.name, p.name))
 
@@ -581,7 +578,7 @@ class ProductSet:
         """See canonical.launchpad.interfaces.product.IProductSet."""
         # XXX: the soyuz argument is unused
         #   -- kiko, 2006-03-22
-        clauseTables = sets.Set()
+        clauseTables = set()
         clauseTables.add('Product')
         queries = []
         if text:
@@ -605,7 +602,9 @@ class ProductSet:
         if not show_inactive:
             queries.append('Product.active IS TRUE')
         query = " AND ".join(queries)
-        return Product.select(query, distinct=True, clauseTables=clauseTables)
+        return Product.select(query, distinct=True,
+                              prejoins=["owner"],
+                              clauseTables=clauseTables)
 
     def translatables(self):
         """See IProductSet"""

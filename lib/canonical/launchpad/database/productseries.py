@@ -10,7 +10,6 @@ __all__ = [
 
 
 import datetime
-import sets
 from warnings import warn
 
 from zope.interface import implements
@@ -70,8 +69,6 @@ class ProductSeries(SQLBase):
     # where are the tarballs released from this branch placed?
     cvstarfileurl = StringCol(default=None)
     svnrepository = StringCol(default=None)
-    # XXX bkrepository is in the data model but not here
-    #   -- matsubara, 2005-10-06
     releaseroot = StringCol(default=None)
     releasefileglob = StringCol(default=None)
     releaseverstyle = StringCol(default=None)
@@ -413,7 +410,7 @@ class ProductSeriesSourceSet:
                          import status.
         """
         queries = []
-        clauseTables = sets.Set()
+        clauseTables = set()
         # deal with the cases which require project and product
         if ( ready is not None ) or text:
             if text:
@@ -461,3 +458,4 @@ class ProductSeriesSourceSet:
         if result is None:
             return default
         return result
+
