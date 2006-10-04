@@ -25,50 +25,50 @@
 
     </metal:extra_info>
 
-    <
-    <div metal:fill-slot="widgets"
-         tal:define="widget nocall:view/widgets/product;
-                     product widget/getInputValue">
-
-          <div class="field">
-
-              <label tal:content="widget/label">Label</label>
-
-              <div>
-                <a tal:attributes="href product/fmt:url"
-                   tal:content="string: ${product/displayname} (upstream)">
-                  Firefox (upstream)
-                </a> (<a href="+upstreamtask">Choose another product</a>)
-                <input type="hidden" tal:replace="structure widget/hidden" />
-              </div>
-            </div>
-
-    </div>
+    <metal:widgets 
+        metal:fill-slot="widgets"
+        tal:define="product_widget nocall:view/widgets/product;
+                    product product_widget/getInputValue">
 
 
-    <div metal:fill-slot="extra_bottom"
-         tal:define="widgets view/bugwatch_widgets">
+      <div class="field">
 
-      <p>
-            If the bug has been reported in another bug tracker, you can
-            link to it in order to keep track of its status. Malone
-            synchronizes the status automatically for you.
-            UPSTREAM
-      </p>
+        <label tal:content="product_widget/label">Label</label>
 
-      <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows" />
+        <div>
+          <a tal:attributes="href product/fmt:url"
+             tal:content="product/bugtargetname">
+            firefox (upstream)
+          </a> (<a href="+upstreamtask">Choose another product</a>)
+          <input type="hidden" tal:replace="structure product_widget/hidden" />
+        </div>
+      </div>
 
-    </div>
+      <div tal:condition="not: product/official_malone"
+          tal:define="widgets view/bugwatch_widgets;
+                      bugtracker product/getExternalBugTracker">
+        <p tal:condition="bugtracker">
+          <tal:product tal:replace="product/displayname">Evolution</tal:product>
+          uses <a tal:attributes="href bugtracker/baseurl"
+                  tal:content="bugtracker/title">Gnome Bugzilla</a> to
+          track its bugs. If you know this bug has been reported there,
+          you can link to it; Launchpad will keep track of its status
+          for you.
+        </p>
 
-    <div class="row" metal:fill-slot="extra_buttons" tal:replace="nothing">
-      If you wish to add some more buttons to the form, put those here.
-    </div>
+        <p tal:condition="not: bugtracker">
+          <tal:product tal:replace="product/displayname">Evolution</tal:product>
+          doesn't use Launchpad to track its bugs. If you know this bug
+          has been reported in another bug tracker, you can link to it;
+          Launchpad will keep track of its status for you.
+        </p>
 
-  </div>
+        <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows" />
 
-  <div tal:replace="nothing">
-    This piece will appear at the bottom of the form if you want to add
-    a footer.
+      </div>
+
+    </metal:widgets>
+
   </div>
 
 </div>
