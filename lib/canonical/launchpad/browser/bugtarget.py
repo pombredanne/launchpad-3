@@ -8,7 +8,8 @@ __all__ = [
     "BugTargetBugListingView",
     "BugTargetBugTagsView",
     "FileBugAdvancedView",
-    "FileBugGuidedView"
+    "FileBugGuidedView",
+    "FileBugInPackageView"
     ]
 
 import urllib
@@ -24,7 +25,7 @@ from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     ILaunchBag, IDistribution, IDistroRelease, IDistroReleaseSet,
     IProduct, IDistributionSourcePackage, NotFoundError, CreateBugParams,
-    IBugAddForm, BugTaskSearchParams)
+    IBugAddForm, BugTaskSearchParams, ILaunchpadCelebrities)
 from canonical.launchpad.webapp import (
     canonical_url, LaunchpadView, LaunchpadFormView, action, custom_widget)
 from canonical.launchpad.webapp.batching import TableBatchNavigator
@@ -64,6 +65,10 @@ class FileBugViewBase(LaunchpadFormView):
             self.widgets["packagename"].onKeyPress = (
                 "selectWidget('choose', event)")
 
+    def shouldShowSteps(self):
+        """Should we show the steps to report a bug?"""
+        return True
+
     def contextUsesMalone(self):
         """Does the context use Malone as its official bugtracker?"""
         return self.getProductOrDistroFromContext().official_malone
@@ -79,14 +84,15 @@ class FileBugViewBase(LaunchpadFormView):
         title = data.get("title")
         comment = data.get("comment")
         packagename = data.get("packagename")
-        security_related = data.get("security_related")
-        distribution = getUtility(ILaunchBag).distribution
+        security_related = data.get("security_related", False)
+        distribution = data.get(
+            "distribution", getUtility(ILaunchBag).distribution)
         product = getUtility(ILaunchBag).product
 
         context = self.context
         if distribution is not None:
-            # We're being called from the generic bug filing form, so manually
-            # set the chosen distribution as the context.
+            # We're being called from the generic bug filing form, so
+            # manually set the chosen distribution as the context.
             context = distribution
 
         # Ensure that no package information is used, if the user
@@ -149,7 +155,7 @@ class FileBugViewBase(LaunchpadFormView):
                 'disclose</a> this bug.')
 
         self.request.response.redirect(canonical_url(bug.bugtasks[0]))
-        
+
     def showFileBugForm(self):
         """Override this method in base classes to show the filebug form."""
         raise NotImplementedError
@@ -161,11 +167,12 @@ class FileBugAdvancedView(FileBugViewBase):
     This view skips searching for duplicates.
     """
     schema = IBugAddForm
-    # XXX, Brad Bollenbach, 2006-10-04: This assignment to actions is a hack to
-    # make the action decorator Just Work across inheritance. Technically, this
-    # isn't needed for this base class, because it defines no further actions,
-    # but I've added it just to preclude mysterious bugs if/when another
-    # action is defined in this class!
+    # XXX, Brad Bollenbach, 2006-10-04: This assignment to actions is a
+    # hack to make the action decorator Just Work across
+    # inheritance. Technically, this isn't needed for this class,
+    # because it defines no further actions, but I've added it just to
+    # preclude mysterious bugs if/when another action is defined in this
+    # class!
     actions = FileBugViewBase.actions
     custom_widget('title', TextWidget, displayWidth=40)
     template = ViewPageTemplateFile(
@@ -190,8 +197,8 @@ class FileBugAdvancedView(FileBugViewBase):
 
 class FileBugGuidedView(FileBugViewBase):
     schema = IBugAddForm
-    # XXX, Brad Bollenbach, 2006-10-04: This assignment to actions is a hack to
-    # make the action decorator Just Work across inheritance.
+    # XXX, Brad Bollenbach, 2006-10-04: This assignment to actions is a
+    # hack to make the action decorator Just Work across inheritance.
     actions = FileBugViewBase.actions
     custom_widget('title', TextWidget, displayWidth=40)
 
@@ -290,6 +297,39 @@ class FileBugGuidedView(FileBugViewBase):
         """Return a list of the most duplicated bugs."""
         return self.context.getMostCommonBugs(
             self.user, limit=self._MATCHING_BUGS_LIMIT)
+
+
+class FileBugInPackageView(FileBugViewBase):
+    """Browser view class for the top-level filebug-in-package page."""
+    schema = IBugAddForm
+    # XXX, Brad Bollenbach, 2006-10-04: This assignment to actions is a
+    # hack to make the action decorator Just Work across
+    # inheritance. Technically, this isn't needed for this class,
+    # because it defines no further actions, but I've added it just to
+    # preclude mysterious bugs if/when another action is defined in this
+    # class!
+    actions = FileBugViewBase.actions
+    template = ViewPageTemplateFile(
+        "../templates/bugtarget-filebug-simple.pt")
+    custom_widget('title', TextWidget, displayWidth=40)
+
+    @property
+    def initial_values(self):
+        return {"distribution": getUtility(ILaunchpadCelebrities).ubuntu}
+
+    @property
+    def field_names(self):
+        return ['title', 'comment', 'distribution', 'packagename']
+
+    def showFileBugForm(self):
+        return self.template()
+
+    def shouldShowSteps(self):
+        return False
+
+    def contextUsesMalone(self):
+        """Say context uses Malone so that the filebug form is shown!"""
+        return True
 
 
 class BugTargetBugListingView:

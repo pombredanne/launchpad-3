@@ -161,28 +161,12 @@
         parent_utility="canonical.launchpad.interfaces.IMaloneApplication"
         />
 
-    <browser:generalform
+    <browser:page
         name="+package"
         for="canonical.launchpad.interfaces.IBugSet"
-        schema="canonical.launchpad.interfaces.IBugAddForm"
-        class="canonical.launchpad.browser.bugtarget.FileBugAdvancedView"
-        label="Report a bug about a package"
-        fields="distribution packagename title comment security_related"
-        arguments=""
-        keyword_arguments="distribution packagename title comment
-                           security_related"
-        permission="launchpad.AnyPerson"
-        template="../templates/malone-filebug.pt"
-        lp:url="malone/bugs/+product">
-        <browser:widget
-           field="title"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="30" />
-        <browser:widget
-           field="comment"
-           class="zope.app.form.browser.TextAreaWidget"
-           height="10" />
-    </browser:generalform>
+        class="canonical.launchpad.browser.FileBugInPackageView"
+        facet="bugs"
+        permission="launchpad.AnyPerson" />
 
     <!-- BugDelta -->
     <content class="canonical.launchpad.components.bug.BugDelta">

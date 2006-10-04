@@ -193,7 +193,14 @@ bugtarget_filebug_search = ContextTitle('Is your bug already reported in %s?')
 
 bugtarget_filebug_search_results = bugtarget_filebug_search
 
-bugtarget_filebug_simple = ContextTitle('Report a bug about %s')
+def bugtarget_filebug_simple(context, view):
+    if hasattr(context, "title"):
+        # We're generating a title for a contextual bug filing page.
+        ContextTitle('Report a bug about %s')
+    else:
+        # We're generating a title for a top-level, contextless bug
+        # filing page.
+        return 'Report a bug'
 
 bugtask_backport_fixing = BugTaskBackportingTitle()
 
