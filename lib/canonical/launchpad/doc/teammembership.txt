@@ -360,8 +360,7 @@ this case we'll send notifications only to the team admins.
     >>> stub.test_emails = []
     >>> membership.person.join(ubuntu_team)
     True
-    >>> appurl = 'http://localhost:8086/'
-    >>> notify(JoinTeamRequestEvent(membership.person, membership.team, appurl))
+    >>> notify(JoinTeamRequestEvent(membership.person, membership.team))
     >>> flush_database_updates()
     >>> transaction.commit()
     >>> len(stub.test_emails)

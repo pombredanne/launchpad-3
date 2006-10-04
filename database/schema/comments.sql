@@ -716,6 +716,8 @@ COMMENT ON COLUMN Person.timezone IS 'The name of the time zone this person pref
 COMMENT ON COLUMN Person.homepage_content IS 'A home page for this person in the Launchpad. In short, this is like a personal wiki page. The person will get to edit their own page, and it will be published on /people/foo/. Note that this is in text format, and will migrate to being in Moin format as a sort of mini-wiki-homepage.';
 COMMENT ON COLUMN Person.emblem IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an emblem or icon whenever we are referring to that person.';
 COMMENT ON COLUMN Person.hackergotchi IS 'The library file alias of a hackergotchi image to display as the "face" of a person, on their home page.';
+COMMENT ON COLUMN Person.creation_rationale IS 'The rationale for the creation of this person -- a dbschema value.';
+COMMENT ON COLUMN Person.creation_comment IS 'A text comment for the creation of this person.';
 
 COMMENT ON TABLE ValidPersonOrTeamCache IS 'A materialized view listing the Person.ids of all valid people and teams.';
 

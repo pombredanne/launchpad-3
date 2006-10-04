@@ -240,6 +240,21 @@ special = {
             setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer,
             stdout_logging_level=logging.WARNING
             ),
+    'launchpadform.txt': FunctionalDocFileSuite(
+            '../doc/launchpadform.txt',
+            setUp=setUp, tearDown=tearDown, optionflags=default_optionflags,
+            layer=FunctionalLayer
+            ),
+    'launchpadformharness.txt': FunctionalDocFileSuite(
+            '../doc/launchpadformharness.txt',
+            setUp=setUp, tearDown=tearDown, optionflags=default_optionflags,
+            layer=FunctionalLayer
+            ),
+    'bug-export.txt': LayeredDocFileSuite(
+            '../doc/bug-export.txt',
+            setUp=setUp, tearDown=tearDown, optionflags=default_optionflags,
+            layer=LaunchpadZopelessLayer
+            ),
     }
 
 
