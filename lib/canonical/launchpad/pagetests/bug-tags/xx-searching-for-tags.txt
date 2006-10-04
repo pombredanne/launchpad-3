@@ -31,3 +31,15 @@ shown.
     9 Thunderbird crashes
     10 another test bug
     2 Blackhole Trash folder
+
+If an invalid tag name is entered, an error message will be displayed.
+
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/distros/ubuntu/+bugs?advanced=1')
+    >>> anon_browser.getControl('Tags').value = '!!invalid!!'
+    >>> anon_browser.getControl('Search', index=0).click()
+
+    >>> for tag in find_tags_by_class(anon_browser.contents, 'message'):
+    ...     print tag.renderContents()
+    '!!invalid!!' isn't a valid tag name. Only alphanumeric characters
+    may be used.
