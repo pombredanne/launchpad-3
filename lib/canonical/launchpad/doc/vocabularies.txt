@@ -566,8 +566,10 @@ o PersonAccountToMergeVocabulary - all non-merged people. This vocabulary
     []
 
     A person with a single and unvalidated email address can be merged.
+    >>> from canonical.lp.dbschema import PersonCreationRationale
     >>> fooperson, email = getUtility(IPersonSet).createPersonAndEmail(
-    ...     'foobaz@bar.com', name='foobaz', displayname='foo baz')
+    ...     'foobaz@bar.com', PersonCreationRationale.UNKNOWN,
+    ...     name='foobaz', displayname='foo baz')
     >>> fooperson in vocab
     True
 

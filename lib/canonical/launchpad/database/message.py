@@ -23,6 +23,7 @@ from canonical.launchpad.interfaces import (
     IMessage, IMessageSet, IMessageChunk, IPersonSet, ILibraryFileAliasSet, 
     UnknownSender, InvalidEmailMessage, NotFoundError)
 
+from canonical.lp.dbschema import PersonCreationRationale
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -229,7 +230,14 @@ class MessageSet:
                 # autocreate a person
                 sendername = ensure_unicode(from_addrs[0][0].strip())
                 senderemail = from_addrs[0][1].lower().strip()
-                owner = person_set.ensurePerson(senderemail, sendername)
+                # XXX: It's hard to define what rationale to use here, and to
+                # make things worst, it's almost impossible to provide a
+                # meaningful comment having only the email message.
+                # (https://launchpad.net/bugs/62344)
+                # -- Guilherme Salgado, 2006-08-31
+                owner = person_set.ensurePerson(
+                    senderemail, sendername,
+                    PersonCreationRationale.FROMEMAILMESSAGE)
                 if owner is None:
                     raise UnknownSender(senderemail)
 

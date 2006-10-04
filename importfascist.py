@@ -28,12 +28,12 @@ permitted_database_imports = text_lines_to_set("""
     canonical.launchpad.vocabularies.dbobjects
     canonical.librarian.client
     importd.Job
-    importd.baz2bzr
     """)
 
 
 warned_database_imports = text_lines_to_set("""
     canonical.launchpad.scripts.ftpmaster
+    canonical.launchpad.scripts.gina.handlers
     canonical.launchpad.browser.distrorelease
     canonical.launchpad.scripts.builddmaster
     canonical.launchpad.scripts.po_import
