@@ -48,28 +48,6 @@ class IUserDetailsStorage(Interface):
         :returns: user dict if authenticated, otherwise empty dict
         """
 
-    def createUser(preferredEmail, sshaDigestedPassword, displayname,
-            emailAddresses):
-        """Create a user
-        
-        :param loginID: A login ID, same as for getUser.
-        :param sshaDigestedPassword: SSHA digest of the password.
-        :param displayname: full name, for display.
-        :param emailAddresses: list of email addresses.  The loginID may appear
-            in this list as well; it doesn't matter either way.
-            
-        :returns: user dict, or TBD if there is an error such as a database
-            constraint being violated.
-        """
-
-    def changePassword(loginID, sshaDigestedPassword, newSshaDigestedPassword):
-        """Change a password
-
-        :param loginID: A login ID, same as for getUser.
-        :param sshaDigestedPassword: SSHA digest of the current password.
-        :param newSshaDigestedPassword: SSHA digest of the new password.
-        """
-
     def getSSHKeys(archiveName):
         """Retrieve SSH public keys for a given push mirror archive
         
@@ -118,27 +96,6 @@ class IUserDetailsStorageV2(Interface):
         :param loginID: A login ID, same as for getUser.
         :param password: A password, in clear text.
         :returns: user dict if authenticated, otherwise empty dict
-        """
-
-    def createUser(preferredEmail, password, displayname, emailAddresses):
-        """Create a user
-        
-        :param preferredEmail: The preferred email address for this user.
-        :param password: A password, in clear text.
-        :param displayname: full name, for display.
-        :param emailAddresses: list of email addresses.  The preferred email may
-            appear in this list as well; it doesn't matter either way.
-            
-        :returns: user dict, or TBD if there is an error such as a database
-            constraint being violated.
-        """
-
-    def changePassword(loginID, oldPassword, newPassword):
-        """Change a password
-
-        :param loginID: A login ID, same as for getUser.
-        :param oldPassword: The current password.
-        :param newPassword: The password to change to.
         """
 
     def getSSHKeys(archiveName):

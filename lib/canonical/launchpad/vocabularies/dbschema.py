@@ -87,7 +87,8 @@ BugTaskImportanceVocabulary = vocab_factory(
     dbschema.BugTaskImportance, noshow=[dbschema.BugTaskImportance.UNKNOWN])
 BugRefVocabulary = vocab_factory(dbschema.BugExternalReferenceType)
 BugTrackerTypeVocabulary = vocab_factory(dbschema.BugTrackerType,
-    noshow=[dbschema.BugTrackerType.DEBBUGS])
+    noshow=[dbschema.BugTrackerType.DEBBUGS,
+            dbschema.BugTrackerType.SOURCEFORGE])
 CveStatusVocabulary = vocab_factory(dbschema.CveStatus)
 DistributionReleaseStatusVocabulary = vocab_factory(dbschema.DistributionReleaseStatus)
 GPGKeyAlgorithmVocabulary = vocab_factory(dbschema.GPGKeyAlgorithm)
