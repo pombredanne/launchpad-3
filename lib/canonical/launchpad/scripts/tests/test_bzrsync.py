@@ -266,7 +266,7 @@ class TestBzrSyncModified(BzrSyncTestCase):
     def test_revision_modified(self):
         # test that modifications to the list of parents get caught.
         class FakeRevision:
-            revision_id = ['rev42']
+            revision_id = 'rev42'
             parent_ids = ['rev1', 'rev2']
             committer = self.AUTHOR
             message = self.LOG

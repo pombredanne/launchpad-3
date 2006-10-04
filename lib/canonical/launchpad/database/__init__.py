@@ -110,3 +110,4 @@ from canonical.launchpad.database.developmentmanifest import *
 from canonical.launchpad.database.distrocomponentuploader import *
 from canonical.launchpad.database.revision import *
 from canonical.launchpad.database.gpgkey import *
+from canonical.launchpad.database.emailaddress import *

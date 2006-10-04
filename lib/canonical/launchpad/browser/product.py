@@ -46,6 +46,7 @@ from canonical.launchpad.interfaces import (
     ICalendarOwner, ITranslationImportQueue, NotFoundError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
@@ -53,9 +54,9 @@ from canonical.launchpad.browser.productseries import get_series_branch_error
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
-    enabled_with_permission, GetitemNavigation, LaunchpadEditFormView,
-    LaunchpadFormView, Link, Navigation, StandardLaunchpadFacets,
-    stepthrough, structured)
+    enabled_with_permission, GetitemNavigation, LaunchpadView,
+    LaunchpadEditFormView, LaunchpadFormView, Link, Navigation,
+    StandardLaunchpadFacets, stepto, stepthrough, structured)
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.widgets.product import ProductBugTrackerWidget
 
@@ -67,6 +68,13 @@ class ProductNavigation(
 
     def breadcrumb(self):
         return self.context.displayname
+
+    @stepto('.bzr')
+    def dotbzr(self):
+        if self.context.development_focus.series_branch:
+            return BranchRef(self.context.development_focus.series_branch)
+        else:
+            return None
 
     @stepthrough('+spec')
     def traverse_spec(self, name):
@@ -107,7 +115,7 @@ class ProductFacets(StandardLaunchpadFacets):
     usedfor = IProduct
 
     enable_only = ['overview', 'bugs', 'support', 'specifications',
-                   'translations', 'branches', 'calendar']
+                   'translations', 'branches']
 
     links = StandardLaunchpadFacets.links
 
@@ -138,13 +146,13 @@ class ProductFacets(StandardLaunchpadFacets):
 
     def branches(self):
         target = '+branches'
-        text = 'Branches'
+        text = 'Code'
         summary = 'Branches for %s' % self.context.displayname
         return Link(target, text, summary)
 
     def specifications(self):
         target = ''
-        text = 'Specifications'
+        text = 'Features'
         summary = 'Feature specifications for %s' % self.context.displayname
         return Link(target, text, summary)
 
@@ -228,11 +236,14 @@ class ProductBugsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'bugs'
-    links = ['filebug', 'bugcontact', 'securitycontact']
+    links = ['filebug', 'bugcontact', 'securitycontact', 'cve']
 
     def filebug(self):
         text = 'Report a Bug'
         return Link('+filebug', text, icon='add')
+
+    def cve(self):
+        return Link('+cve', 'CVE Reports', icon='cve')
 
     @enabled_with_permission('launchpad.Edit')
     def bugcontact(self):
@@ -589,13 +600,11 @@ class ProductRdfView(object):
         return encodeddata
 
 
-class ProductSetView:
+class ProductSetView(LaunchpadView):
 
     __used_for__ = IProductSet
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
+    def initialize(self):
         form = self.request.form
         self.soyuz = form.get('soyuz')
         self.rosetta = form.get('rosetta')
@@ -620,9 +629,11 @@ class ProductSetView:
             try:
                 product = self.context[self.text]
             except NotFoundError:
-                product = None
-            if product is not None:
-                self.request.response.redirect(canonical_url(product))
+                return
+            url = canonical_url(product)
+            if form.get('malone'):
+                url = url + "/+bugs"
+            self.request.response.redirect(url)
 
     def searchresults(self):
         """Use searchtext to find the list of Products that match

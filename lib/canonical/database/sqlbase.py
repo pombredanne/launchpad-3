@@ -26,7 +26,7 @@ __all__ = ['SQLBase', 'quote', 'quote_like', 'quoteIdentifier', 'sqlvalues',
            'begin', 'commit', 'rollback', 'alreadyInstalledMsg', 'connect',
            'AUTOCOMMIT_ISOLATION', 'READ_COMMITTED_ISOLATION',
            'SERIALIZABLE_ISOLATION', 'DEFAULT_ISOLATION',
-           'clear_current_connection_cache']
+           'clear_current_connection_cache', 'expire_from_cache']
 
 # As per badly documented psycopg 1 constants
 AUTOCOMMIT_ISOLATION=0
@@ -365,6 +365,11 @@ def clear_current_connection_cache():
     if getattr(SQLBase._connection, 'cache', None) is not None:
         for c in SQLBase._connection.cache.allSubCaches():
             c.clear()
+
+def expire_from_cache(obj):
+    """Expires a single object from the SQLObject cache."""
+    if getattr(SQLBase._connection, 'cache', None) is not None:
+        SQLBase._connection.cache.expire(obj.id, obj.__class__)
 
 
 def quote(x):

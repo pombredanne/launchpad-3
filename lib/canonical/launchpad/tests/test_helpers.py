@@ -290,12 +290,12 @@ def test_msgid_html():
     Test treatment of tabs.
 
     >>> msgid_html(u'foo\tbar', [])
-    u'foo<span class="po-message-special">[tab]</span>bar'
+    u'foo<code>[tab]</code>bar'
 
     Test valid C format strings are formatted.
 
     >>> msgid_html(u'foo %d bar', ['c-format'])
-    u'foo <span class="interpolation">%d</span> bar'
+    u'foo <code>%d</code> bar'
 
     Test bad format strings are caught and passed through.
 
