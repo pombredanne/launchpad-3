@@ -411,12 +411,14 @@ class SourcePackage(BugTargetBase):
             return None
         return ticket
 
-    def searchTickets(self, search_text=None,
-                      status=TICKET_STATUS_DEFAULT_SEARCH, sort=None):
+    def searchTickets(
+            self, search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
+            sort=None, languages=None):
         """See ITicketTarget."""
-        return TicketSet.search(search_text=search_text, status=status,
-                                sort=sort, distribution=self.distribution,
-                                sourcepackagename=self.sourcepackagename)
+        return TicketSet.search(
+            search_text=search_text, status=status, languages=languages,
+            sort=sort, distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename)
 
     def findSimilarTickets(self, title):
         """See ITicketTarget."""

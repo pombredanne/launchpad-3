@@ -252,11 +252,13 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
             return None
         return ticket
 
-    def searchTickets(self, search_text=None,
-                      status=TICKET_STATUS_DEFAULT_SEARCH, sort=None):
+    def searchTickets(
+            self, search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
+            sort=None, languages=None):
         """See ITicketTarget."""
-        return TicketSet.search(search_text=search_text, status=status,
-                                sort=sort, product=self)
+        return TicketSet.search(
+            search_text=search_text, status=status, sort=sort, product=self,
+            languages=languages)
 
     def findSimilarTickets(self, title):
         """See ITicketTarget."""

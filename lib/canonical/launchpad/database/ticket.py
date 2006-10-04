@@ -325,6 +325,7 @@ class TicketSet:
 
         return constraints
 
+    # XXX: Should this method accept a languages argument too?
     @staticmethod
     def findSimilar(title, product=None, distribution=None,
                      sourcepackagename=None):
@@ -338,13 +339,13 @@ class TicketSet:
 
     @staticmethod
     def search(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-               sort=None,
-               product=None, distribution=None, sourcepackagename=None):
+               sort=None, product=None, distribution=None,
+               sourcepackagename=None, languages=None):
         """Common implementation for ITicketTarget.searchTickets()."""
         constraints = TicketSet._contextConstraints(
             product, distribution, sourcepackagename)
 
-        prejoins = []
+        prejoins = ['language']
         if product:
             prejoins.append('product')
         elif distribution:
@@ -362,6 +363,10 @@ class TicketSet:
         if len(status):
             constraints.append(
                 'Ticket.status IN (%s)' % ', '.join(sqlvalues(*status)))
+
+        if languages is not None and len(languages) > 0:
+            constraints.append(
+                'Ticket.language IN (%s)' % ', '.join(sqlvalues(*languages)))
 
         orderBy = TicketSet._orderByFromTicketSort(search_text, sort)
 

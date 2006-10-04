@@ -44,11 +44,20 @@
       <tal:status define="widget nocall:view/widgets/status">
         <metal:widget use-macro="widget/@@launchpad_widget_macros/launchpad_widget_row" />
       </tal:status>
+
+      <label tal:attributes="for view/widgets/languages/name"
+             tal:content="view/widgets/languages/label">
+        Languages:
+      </label>
+      <tal:languages replace="structure view/widgets/languages" />
     </form>
   </div>
+  <br />
 
-  <tal:no-results condition="not: tickets/batch"
-                  define="search_text view/search_params/search_text|nothing">
+  <tal:no-results
+    condition="not: tickets/batch"
+    define="search_text view/search_params/search_text|nothing;
+            languages view/search_params/languages|nothing">
     <p tal:condition="search_text"
        i18n:translate="">
       No results for search
@@ -57,7 +66,21 @@
     </p>
     <p tal:condition="not: search_text"
        i18n:translate="">
-      No active support requests for
+      No active support requests
+      <strong tal:condition="languages">
+        in
+        <tal:block repeat="language languages">
+          <tal:block condition="not: repeat/language/end">
+            <span tal:condition="not: repeat/language/start">,</span>
+          </tal:block>
+          <tal:block condition="repeat/language/end">
+            <span tal:condition="repeat/language/index">or</span>
+          </tal:block>
+          <span tal:replace="language/englishname">Portuguese</span>
+        </tal:block>
+      </strong>
+      
+      for
       <span i18n:name="tickettarget"
             tal:replace="context/displayname">Ubuntu 5.04</span>.
     </p>

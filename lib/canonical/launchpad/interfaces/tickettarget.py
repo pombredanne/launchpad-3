@@ -64,7 +64,7 @@ class ITicketTarget(IHasTickets):
         """
 
     def searchTickets(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-                      sort=None):
+                      sort=None, languages=None):
         """Search the object's tickets.
 
         :search_text: A string that is matched against the ticket
@@ -77,6 +77,10 @@ class ITicketTarget(IHasTickets):
         :sort:  An attribute of TicketSort. If None, a default value is used.
         When there is a search_text value, the default is to sort by RELEVANCY,
         otherwise results are sorted NEWEST_FIRST.
+
+        :languages: A sequence of Language objects to match against the
+        ticket's language. If None or an empty sequence, the language is not
+        included as a filter criteria.
         """
 
     def findSimilarTickets(title):

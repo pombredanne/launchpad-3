@@ -30,3 +30,4 @@ class ISearchTicketsForm(Interface):
     status = Set(title=_('Status:'), required=False,
                  value_type=Choice(vocabulary='TicketStatus'),
                  default=sets.Set(TICKET_STATUS_DEFAULT_SEARCH))
+

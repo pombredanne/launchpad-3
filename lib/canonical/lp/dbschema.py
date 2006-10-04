@@ -1696,6 +1696,37 @@ class TicketPriority(DBSchema):
         """)
 
 
+class TicketSearchLanguages(DBSchema):
+    """An enumveration of the languages we can use when searching for tickets.
+
+    This enumeration is part of the ITicketTarget.searchTickets() API. The
+    titles are formatted for nice display in browser code.
+
+    XXX salgado 2006/10/04 This has nothing to do with database code and
+    is really part of the ITicketTarget definitions. We should find a way
+    to define enumerations in interface code and generate easily,
+    when required, the database implementation code.
+    """
+
+    ENGLISH = Item(10, """
+        English
+
+        The english language.
+        """)
+
+    PREFERRED_LANGUAGE = Item(20, """
+        My preferred languages
+
+        Any of the user's preferred languages.
+        """)
+    
+    ANY_LANGUAGE = Item(30, """
+        Any language
+
+        Any language that we know about.
+        """)
+
+
 class TicketSort(DBSchema):
     """An enumveration of the valid ticket search sort order.
 
