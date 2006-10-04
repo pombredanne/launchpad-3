@@ -444,6 +444,8 @@ launchpad_librarianfailure = "Sorry, you can't do this right now"
 
 # launchpad_widget_macros doesn't need a title.
 
+logintoken_claimprofile = 'Claim Launchpad profile'
+
 logintoken_index = 'Launchpad: redirect to the logintoken page'
 
 logintoken_mergepeople = 'Merge Launchpad accounts'
@@ -516,6 +518,8 @@ def person_bugs(context, view):
     return view.getSearchPageHeading()
 
 person_changepassword = 'Change your password'
+
+person_claim = 'Claim account'
 
 person_codesofconduct = ContextDisplayName(smartquote("%s's code of conduct signatures"))
 
@@ -764,8 +768,6 @@ signedcodeofconduct_acknowledge = 'Acknowledge code of conduct signature'
 signedcodeofconduct_activate = ContextDisplayName('Activating %s')
 
 signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
-
-sourcepackage_index = ContextTitle('%s')
 
 sourcepackage_bugs = ContextDisplayName('Bugs in %s')
 

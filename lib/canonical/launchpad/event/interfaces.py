@@ -39,7 +39,6 @@ class IJoinTeamRequestEvent(Interface):
 
     user = Attribute("The user who requested to join the team.")
     team = Attribute("The team.")
-    appurl = Attribute("The base url. (i.e. https://launchpad.ubuntu.com)")
 
 
 class IKarmaAssignedEvent(IObjectEvent):
