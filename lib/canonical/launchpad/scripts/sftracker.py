@@ -35,7 +35,8 @@ from zope.component import getUtility
 from zope.app.content_types import guess_content_type
 
 from canonical.lp.dbschema import (
-    BugTaskImportance, BugTaskStatus, BugAttachmentType)
+    BugTaskImportance, BugTaskStatus, BugAttachmentType,
+    PersonCreationRationale)
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
     IBugSet, IBugActivitySet, IBugAttachmentSet, IBugExternalRefSet,
@@ -262,7 +263,10 @@ class TrackerImporter:
             if person is None:
                 logger.debug('creating person for %s' % email)
                 person = getUtility(IPersonSet).ensurePerson(
-                    email=email, displayname=None)
+                    email=email, displayname=None,
+                    rationale=PersonCreationRationale.BUGIMPORT,
+                    comment='when importing bugs for %s from SourceForge.net'
+                            % self.product.displayname)
             self._person_id_cache[userid] = person.id
 
         # if we are auto-verifying new accounts, make sure the person

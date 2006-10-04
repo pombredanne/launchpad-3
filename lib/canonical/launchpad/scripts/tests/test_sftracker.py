@@ -13,7 +13,8 @@ from canonical.launchpad.interfaces import (
     IEmailAddressSet, ILaunchpadCelebrities, IPersonSet, IProductSet)
 from canonical.launchpad.scripts import sftracker
 from canonical.lp.dbschema import (
-    BugTaskImportance, BugTaskStatus, BugAttachmentType)
+    BugTaskImportance, BugTaskStatus, BugAttachmentType,
+    PersonCreationRationale)
 
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -177,44 +178,59 @@ class PersonMappingTestCase(unittest.TestCase):
         person = getUtility(IPersonSet).getByEmail('foo@users.sourceforge.net')
         self.assertEqual(person, None)
 
-        importer = sftracker.TrackerImporter(None)
+        product = getUtility(IProductSet).getByName('netapplet')
+        importer = sftracker.TrackerImporter(product)
         person = importer.person('foo')
         self.assertNotEqual(person, None)
         self.assertEqual(person.guessedemails.count(), 1)
         self.assertEqual(person.guessedemails[0].email,
                          'foo@users.sourceforge.net')
+        self.assertEqual(person.creation_rationale,
+                         PersonCreationRationale.BUGIMPORT)
+        self.assertEqual(person.creation_comment,
+            'when importing bugs for NetApplet from SourceForge.net')
 
     def test_find_existing_person(self):
         person = getUtility(IPersonSet).getByEmail('foo@users.sourceforge.net')
         self.assertEqual(person, None)
         person = getUtility(IPersonSet).ensurePerson(
-            'foo@users.sourceforge.net', None)
+            'foo@users.sourceforge.net', None,
+            PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
         self.assertNotEqual(person, None)
 
-        importer = sftracker.TrackerImporter(None)
+        product = getUtility(IProductSet).getByName('netapplet')
+        importer = sftracker.TrackerImporter(product)
         self.assertEqual(importer.person('foo'), person)
 
     def test_nobody_person(self):
         # Test that TrackerImporter.person() returns None where appropriate
-        importer = sftracker.TrackerImporter(None)
+        product = getUtility(IProductSet).getByName('netapplet')
+        importer = sftracker.TrackerImporter(product)
         self.assertEqual(importer.person(None), None)
         self.assertEqual(importer.person(''), None)
         self.assertEqual(importer.person('nobody'), None)
 
     def test_verify_new_person(self):
-        importer = sftracker.TrackerImporter(None, verify_users=True)
+        product = getUtility(IProductSet).getByName('netapplet')
+        importer = sftracker.TrackerImporter(product, verify_users=True)
         person = importer.person('foo')
         self.assertNotEqual(person, None)
         self.assertNotEqual(person.preferredemail, None)
         self.assertEqual(person.preferredemail.email,
                          'foo@users.sourceforge.net')
+        self.assertEqual(person.creation_rationale,
+                         PersonCreationRationale.BUGIMPORT)
+        self.assertEqual(person.creation_comment,
+            'when importing bugs for NetApplet from SourceForge.net')
 
     def test_verify_existing_person(self):
         person = getUtility(IPersonSet).ensurePerson(
-            'foo@users.sourceforge.net', None)
+            'foo@users.sourceforge.net', None,
+            PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
         self.assertEqual(person.preferredemail, None)
 
-        importer = sftracker.TrackerImporter(None, verify_users=True)
+        product = getUtility(IProductSet).getByName('netapplet')
+        importer = sftracker.TrackerImporter(product, verify_users=True)
         person = importer.person('foo')
         self.assertNotEqual(person.preferredemail, None)
         self.assertEqual(person.preferredemail.email,
@@ -222,12 +238,14 @@ class PersonMappingTestCase(unittest.TestCase):
 
     def test_verify_doesnt_clobber_preferred_email(self):
         person = getUtility(IPersonSet).ensurePerson(
-            'foo@users.sourceforge.net', None)
+            'foo@users.sourceforge.net', None,
+            PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
         email = getUtility(IEmailAddressSet).new('foo@example.com', person.id)
         person.setPreferredEmail(email)
         self.assertEqual(person.preferredemail.email, 'foo@example.com')
 
-        importer = sftracker.TrackerImporter(None, verify_users=True)
+        product = getUtility(IProductSet).getByName('netapplet')
+        importer = sftracker.TrackerImporter(product, verify_users=True)
         person = importer.person('foo')
         self.assertNotEqual(person.preferredemail, None)
         self.assertEqual(person.preferredemail.email, 'foo@example.com')
