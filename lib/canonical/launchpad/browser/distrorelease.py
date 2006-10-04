@@ -84,7 +84,7 @@ class DistroReleaseSOP(StructuralObjectPresentation):
 
     def listChildren(self, num):
         children = []
-        for architecture in self.context.architectures:
+        for architecture in self.context.architectures[:num]:
             children.append(architecture.architecturetag)
         return children
 

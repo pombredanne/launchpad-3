@@ -685,7 +685,7 @@ class StructuralObjectPresentationView(LaunchpadView):
 
         children = list(children)
         assert len(children) <= max_children
-        if childcount <= max_children:
+        if childcount > max_children:
             self.children = children[:-1]
         else:
             self.children = children
@@ -717,10 +717,10 @@ class StructuralObjectPresentation:
         self.context = context
 
     def getIntroHeading(self):
-        raise NotImplementedError()
+        return None
 
     def getMainHeading(self):
-        return None
+        raise NotImplementedError()
 
     def listChildren(self, num):
         return []
