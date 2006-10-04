@@ -132,7 +132,7 @@ class TestMirrorUrlFromSeries(ImportdTestCase):
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
         assert self.series.import_branch.owner == vcs_imports
         assert self.series.import_branch.url is None
-        number_one = getUtility(IPersonSet).get(1, None)
+        number_one = getUtility(IPersonSet).get(1)
         assert number_one != None
         assert vcs_imports != number_one
         # First, use an improper branch owner.
