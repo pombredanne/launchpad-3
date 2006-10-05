@@ -26,7 +26,7 @@ import urllib
 
 from zope.app.form.interfaces import WidgetsError
 from zope.app.form.browser import TextWidget
-from zope.app.form.interfaces import WidgetsError
+from zope.app.form.interfaces import InputErrors, WidgetsError
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.event import notify
@@ -359,6 +359,22 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
     def render_upstreamtask(self):
         self.setUpLabelAndWidgets("Add affected product to bug", ['product'])
         self.index = self.upstream_page
+
+        try:
+            product = self.widgets['product'].getInputValue()
+        except InputErrors:
+            product_error = True
+        else:
+            product_error = not self.validateProduct(product)
+
+        if product_error:
+            product_name = self.request.form.get('field.product', '')
+            self.request.response.redirect(
+                "%s/+upstreamtask?field.product=%s" % (
+                    canonical_url(self.context),
+                    urllib.quote(product_name)))
+            return
+
         return self.render()
 
     def render_distrotask(self):
@@ -396,11 +412,6 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
         if product:
             target = product
             if not self.validateProduct(product):
-                product_name = self.request.form.get('field.product', '')
-                self.request.response.redirect(
-                    "%s/+upstreamtask?field.product=%s" % (
-                        canonical_url(self.context),
-                        urllib.quote(product_name)))
                 return
         elif distribution:
             target = distribution
