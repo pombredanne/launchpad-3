@@ -240,7 +240,7 @@ class BlacklistableContentNameField(ContentNameField):
         blacklisted = cur.fetchone()[0]
         if blacklisted:
             raise LaunchpadValidationError(
-                    "Use of the name '%(input)s' has been blocked by the "
+                    "The name '%(input)s' has been blocked by the "
                     "Launchpad administrators" % vars()
                     )
 
