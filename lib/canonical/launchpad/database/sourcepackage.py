@@ -390,11 +390,11 @@ class SourcePackage(BugTargetBase):
             limit=quantity)
         return ret
 
-    def newTicket(self, owner, title, description, datecreated=None):
+    def newTicket(self, owner, title, description, language, datecreated=None):
         """See ITicketTarget."""
         return TicketSet.new(
             title=title, description=description, owner=owner,
-            distribution=self.distribution,
+            distribution=self.distribution, language=language,
             sourcepackagename=self.sourcepackagename, datecreated=datecreated)
 
     def getTicket(self, ticket_id):

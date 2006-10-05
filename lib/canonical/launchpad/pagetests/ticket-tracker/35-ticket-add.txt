@@ -94,6 +94,7 @@ If the user doesn't provide details, he'll get an error message:
 And if he decides to remove the title, he'll be brought back to the
 first step:
 
+    >>> user_browser.getControl('Language').value = ['en']
     >>> user_browser.getControl('Summary').value = ''
     >>> user_browser.getControl('Add').click()
     >>> soup = BeautifulSoup(user_browser.contents)
@@ -103,6 +104,7 @@ first step:
 Entering a valid title and description will create the new ticket and
 redirect the user to the ticket page.
 
+    >>> user_browser.getControl('Language').value = ['en']
     >>> user_browser.getControl('Summary').value = (
     ...     'Visiting a web page requiring java crashes firefox')
     >>> user_browser.getControl('Continue').click()

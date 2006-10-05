@@ -235,10 +235,11 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
             prejoins=['product', 'owner'],
             limit=quantity)
 
-    def newTicket(self, owner, title, description, datecreated=None):
+    def newTicket(self, owner, title, description, language, datecreated=None):
         """See ITicketTarget."""
         return TicketSet.new(title=title, description=description,
-            owner=owner, product=self, datecreated=datecreated)
+            owner=owner, product=self, datecreated=datecreated,
+            language=language)
 
     def getTicket(self, ticket_id):
         """See ITicketTarget."""

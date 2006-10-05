@@ -21,11 +21,12 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IDistribution, ILaunchBag, IManageSupportContacts, IPerson, ILanguageSet,
-    ISearchTicketsForm, IRequestPreferredLanguages)
+    ISearchTicketsForm)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, GeneralFormView, LaunchpadFormView,
     LaunchpadView)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.helpers import request_languages
 from canonical.lp.dbschema import TicketSort, TicketSearchLanguages
 from canonical.widgets.itemswidget import LabeledMultiCheckBoxWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
@@ -145,18 +146,6 @@ class SearchTicketsView(LaunchpadFormView):
     # Contains the validated search parameters
     search_params = None
 
-    def _getUserLanguages(self):
-        browser_languages = IRequestPreferredLanguages(
-            self.request).getPreferredLanguages()
-        if self.user is not None and self.user.languages:
-            return self.user.languages
-        elif browser_languages:
-            return browser_languages
-        else:
-            # XXX: Not sure if we want to use IRequestLocalLanguages to try
-            # and guess the user's country. -- Guilherme Salgado, 2006-10-04
-            return []
-
     def setUpFields(self):
         LaunchpadFormView.setUpFields(self)
         terms = [SimpleTerm(TicketSearchLanguages.ENGLISH,
@@ -164,7 +153,7 @@ class SearchTicketsView(LaunchpadFormView):
                             TicketSearchLanguages.ENGLISH.title)]
 
         label = TicketSearchLanguages.PREFERRED_LANGUAGE.title
-        user_languages = self._getUserLanguages()
+        user_languages = request_languages(self.request)
         if user_languages:
             languages = ", ".join(lang.englishname for lang in user_languages)
         else:
@@ -199,11 +188,11 @@ class SearchTicketsView(LaunchpadFormView):
         """Action executed when the user clicked the search button."""
         languages = data.pop("languages")
         if languages == TicketSearchLanguages.ENGLISH:
-            # XXX: Should this become a Celebrity?
-            # -- Guilherme Salgado, 2006-10-04
+            # XXX: Should this become a Celebrity? It's going to be needed in
+            # other places too.  -- Guilherme Salgado, 2006-10-04
             languages = [getUtility(ILanguageSet)['en']]
         elif languages == TicketSearchLanguages.PREFERRED_LANGUAGE:
-            languages = self._getUserLanguages()
+            languages = request_languages(self.request)
         else:
             languages = []
         data["languages"] = languages

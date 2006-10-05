@@ -268,11 +268,11 @@ class DistributionSourcePackage(BugTargetBase):
             orderBy='-datecreated',
             limit=quantity)
 
-    def newTicket(self, owner, title, description, datecreated=None):
+    def newTicket(self, owner, title, description, language, datecreated=None):
         """See ITicketTarget."""
         return TicketSet.new(
             title=title, description=description, owner=owner,
-            distribution=self.distribution,
+            distribution=self.distribution, language=language,
             sourcepackagename=self.sourcepackagename,
             datecreated=datecreated)
 
@@ -290,12 +290,14 @@ class DistributionSourcePackage(BugTargetBase):
             return None
         return ticket
 
-    def searchTickets(self, search_text=None,
-                      status=TICKET_STATUS_DEFAULT_SEARCH, sort=None):
+    def searchTickets(
+            self, search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
+            sort=None, languages=None):
         """See ITicketTarget."""
         return TicketSet.search(search_text=search_text, status=status,
                                 sort=sort, distribution=self.distribution,
-                                sourcepackagename=self.sourcepackagename)
+                                sourcepackagename=self.sourcepackagename,
+                                languages=languages)
 
     def findSimilarTickets(self, title):
         """See ITicketTarget."""

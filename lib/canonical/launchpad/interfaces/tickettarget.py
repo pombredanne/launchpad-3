@@ -40,7 +40,7 @@ TICKET_STATUS_DEFAULT_SEARCH = (TicketStatus.OPEN, TicketStatus.ANSWERED)
 class ITicketTarget(IHasTickets):
     """An object that can have a new ticket created for  it."""
 
-    def newTicket(owner, title, description, datecreated=None):
+    def newTicket(owner, title, description, language, datecreated=None):
         """Create a new support request, or trouble ticket.
 
          A new ticket is created with status OPEN.
@@ -51,6 +51,7 @@ class ITicketTarget(IHasTickets):
         :owner: An IPerson.
         :title: A string.
         :description: A string.
+        :language: An ILanguage.
         :datecreated:  A datetime object that will be used for the datecreated
                 attribute. Defaults to canonical.database.constants.UTC_NOW.
         """

@@ -42,7 +42,7 @@
 
             <p class="formHelp"
                 tal:condition="widget/hint"
-                tal:content="widget/hint">Some Help Text
+                tal:content="structure widget/hint">Some Help Text
             </p>
              
           </div>

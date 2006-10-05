@@ -444,11 +444,11 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
             prejoins=['distribution', 'owner', 'sourcepackagename'],
             limit=quantity)
 
-    def newTicket(self, owner, title, description, datecreated=None):
+    def newTicket(self, owner, title, description, language, datecreated=None):
         """See ITicketTarget."""
         return TicketSet.new(
             title=title, description=description, owner=owner,
-            distribution=self, datecreated=datecreated)
+            distribution=self, datecreated=datecreated, language=language)
 
     def getTicket(self, ticket_id):
         """See ITicketTarget."""

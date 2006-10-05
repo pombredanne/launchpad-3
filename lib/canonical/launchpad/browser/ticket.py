@@ -25,7 +25,6 @@ from zope.app.form.browser import TextWidget
 from zope.app.pagetemplate import ViewPageTemplateFile
 
 from canonical.launchpad import _
-from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.interfaces import (
@@ -106,14 +105,14 @@ class TicketView(LaunchpadView):
 class TicketAddView(LaunchpadFormView):
     """Multi-page add view.
 
-    The user enters first his ticket summary and then he his shown a list
+    The user enters first his ticket summary and then he is shown a list
     of similar results before adding the ticket.
     """
     label = _('Make a support request')
 
     schema = ITicket
 
-    field_names = ['title', 'description']
+    field_names = ['language', 'title', 'description']
 
     custom_widget('title', TextWidget, displayWidth=40)
 
@@ -131,7 +130,7 @@ class TicketAddView(LaunchpadFormView):
     def setUpWidgets(self):
         # Only setup the widgets that needs validation
         if not self.add_action.submitted():
-            fields = self.form_fields.select('title')
+            fields = self.form_fields.select('language', 'title')
         else:
             fields = self.form_fields
         self.widgets = form.setUpWidgets(
@@ -171,8 +170,9 @@ class TicketAddView(LaunchpadFormView):
         """
         if 'title' not in data:
             # Remove the description widget
-            self.widgets = form.Widgets(
-                [(True, self.widgets['title'])], len(self.prefix)+1)
+            widgets = [(True, self.widgets[name])
+                       for name in ('language', 'title')]
+            self.widgets = form.Widgets(widgets, len(self.prefix)+1)
             return self.search_template()
         return self.continue_action.success(data)
 
@@ -181,8 +181,8 @@ class TicketAddView(LaunchpadFormView):
     # which is fixed in 3.3.0b1 and 3.2.1
     @action(_('Add'), failure=handleAddError)
     def add_action(self, action, data):
-        ticket = self.context.newTicket(self.user, data['title'],
-                                        data['description'])
+        ticket = self.context.newTicket(
+            self.user, data['title'], data['description'], data['language'])
 
         # XXX flacoste 2006/07/25 This should be moved to newTicket().
         notify(SQLObjectCreatedEvent(ticket))
@@ -195,7 +195,7 @@ class TicketEditView(LaunchpadEditFormView):
 
     schema = ITicket
     label = 'Edit request'
-    field_names = ["description", "title"]
+    field_names = ["language", "description", "title"]
 
     @action(u"Continue", name="change")
     def change_action(self, action, data):
