@@ -1292,12 +1292,9 @@ COMMENT ON COLUMN DistributionMirror.owner IS 'The owner of the mirror.';
 COMMENT ON COLUMN DistributionMirror.speed IS 'The speed of the mirror\'s Internet link.';
 COMMENT ON COLUMN DistributionMirror.country IS 'The country where the mirror is located.';
 COMMENT ON COLUMN DistributionMirror.content IS 'The content that is mirrored.';
-COMMENT ON COLUMN DistributionMirror.file_list IS 'A file containing the list of files the mirror contains. Used only in case the mirror\'s pulse_type is PULL';
 COMMENT ON COLUMN DistributionMirror.official_candidate IS 'Is the mirror a candidate for becoming an official mirror?';
 COMMENT ON COLUMN DistributionMirror.official_approved IS 'Is the mirror approved as one of the official ones?';
 COMMENT ON COLUMN DistributionMirror.enabled IS 'Is this mirror enabled?';
-COMMENT ON COLUMN DistributionMirror.pulse_type IS 'The method we should use to check if the mirror is up to date.';
-COMMENT ON COLUMN DistributionMirror.pulse_source IS 'A URL that we will use to check if the mirror is up to date, when the pulse_type is PULL.';
 
 -- MirrorDistroArchRelease
 COMMENT ON TABLE MirrorDistroArchRelease IS 'The mirror of the packages of a given Distro Arch Release.';
