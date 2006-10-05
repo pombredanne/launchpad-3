@@ -272,11 +272,11 @@ ol {
   padding: 0;
   background-color: #f4f5f8; /* changed by sabdfl, 2005-10-22 */
 }
-.portlet h4 { /* the base portlet heading */
+.portlet h2 { /* the base portlet heading */
   background-color: #dee7ec;
   border: 1px solid #8cacbb;
   font-weight: normal;
-  margin-top: 0;
+  margin: 0;
   padding: 0em 0.3em 0em 0.75em;
   display: block;
   font-size: 1em;
