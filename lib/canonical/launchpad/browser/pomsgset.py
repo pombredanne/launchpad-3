@@ -370,6 +370,7 @@ class BaseTranslationView(LaunchpadView):
         # This dictionary hold the text requested by the user to be copied to
         # the textarea.
         self.form_copied_translations = {}
+        self.form_posted_translations_store = {}
 
         if not self.has_plural_form_information:
             # This POFile needs administrator setup.
@@ -551,18 +552,23 @@ class BaseTranslationView(LaunchpadView):
         # XXX: it would be nice if we could easily check if
         # this is being called in the right order, after
         # _storeTranslations(). -- kiko, 2006-09-27
+        translations = {}
+        for plural_index in range(pomsgset.pluralforms):
+            translations[plural_index] = None
         if self.form_copied_translations.has_key(pomsgset):
             translations = self.form_copied_translations[pomsgset]
-        elif self.form_posted_translations.has_key(pomsgset):
-            translations = self.form_posted_translations[pomsgset]
-        else:
-            translations = [None]*pomsgset.pluralforms
+        if self.form_posted_translations.has_key(pomsgset):
+            posted = self.form_posted_translations[pomsgset]
+            for key in translations:
+                if translations[key] == None:
+                    translations[key] = posted[key]
         if self.form_posted_needsreview.has_key(pomsgset):
             is_fuzzy = self.form_posted_needsreview[pomsgset]
         else:
             is_fuzzy = pomsgset.isfuzzy
         pomsgset_view.prepare(
-            translations, is_fuzzy, error, self.second_lang_code)
+            self.form_posted_translations_store[pomsgset], translations,
+            is_fuzzy, error, self.second_lang_code)
 
     #
     # Internals
@@ -626,7 +632,7 @@ class BaseTranslationView(LaunchpadView):
 
         - 'msgset_ID' to know if self is part of the submitted form. If it
           isn't found, we stop parsing the form and return.
-        - 'msgset_ID_LANGCODE_translation_PLURALFORM': Those will be the
+        - 'msgset_ID_LANGCODE_translation_PLURALFORM_new': Those will be the
           submitted translations and we will have as many entries as plural
           forms the language self.context.language has.
         - 'msgset_ID_LANGCODE_needsreview': If present, will note that the
@@ -634,11 +640,12 @@ class BaseTranslationView(LaunchpadView):
 
         In all those form keys, 'ID' is the ID of the POTMsgSet.
         """
+        form = self.request.form
         potmsgset_ID = pomsgset.potmsgset.id
         language_code = pomsgset.pofile.language.code
 
         msgset_ID = 'msgset_%d' % potmsgset_ID
-        if msgset_ID not in self.request.form:
+        if msgset_ID not in form:
             # If this form does not have data about the msgset id, then
             # do nothing at all.
             return
@@ -647,7 +654,7 @@ class BaseTranslationView(LaunchpadView):
             potmsgset_ID, language_code)
 
         self.form_posted_needsreview[pomsgset] = (
-            msgset_ID_LANGCODE_needsreview in self.request.form)
+            msgset_ID_LANGCODE_needsreview in form)
 
         # Note the trailing underscore: we append the plural form number later.
         msgset_ID_LANGCODE_translation_ = 'msgset_%d_%s_translation_' % (
@@ -657,21 +664,32 @@ class BaseTranslationView(LaunchpadView):
         # self.form_posted_translations. We try plural forms in turn,
         # starting at 0.
         for pluralform in xrange(self.MAX_PLURAL_FORMS):
-            msgset_ID_LANGCODE_translation_PLURALFORM = '%s%s' % (
+            msgset_ID_LANGCODE_translation_PLURALFORM_new = '%s%s_new' % (
                 msgset_ID_LANGCODE_translation_, pluralform)
-            if msgset_ID_LANGCODE_translation_PLURALFORM not in self.request.form:
+            if msgset_ID_LANGCODE_translation_PLURALFORM_new not in form:
                 # Stop when we reach the first plural form which is
                 # missing from the form.
                 break
 
-            raw_value = self.request.form[msgset_ID_LANGCODE_translation_PLURALFORM]
+            raw_value = form[msgset_ID_LANGCODE_translation_PLURALFORM_new]
             value = contract_rosetta_tabs(raw_value)
 
             if not self.form_posted_translations.has_key(pomsgset):
                 self.form_posted_translations[pomsgset] = {}
             self.form_posted_translations[pomsgset][pluralform] = value
+
+            # Note whether this translation should be stored in our database.
+            msgset_ID_LANGCODE_translation_PLURALFORM_new_checkbox = (
+                '%s_checkbox' % msgset_ID_LANGCODE_translation_PLURALFORM_new)
+            store = (
+                msgset_ID_LANGCODE_translation_PLURALFORM_new_checkbox in form
+                )
+            if not self.form_posted_translations_store.has_key(pomsgset):
+                self.form_posted_translations_store[pomsgset] = {}
+            self.form_posted_translations_store[pomsgset][pluralform] = store
         else:
-            raise AssertionError("More than 100 plural forms were submitted!")
+            raise AssertionError('More than %d plural forms were submitted!' %
+                self.MAX_PLURAL_FORMS)
 
     #
     # Redirection
@@ -798,16 +816,22 @@ class POMsgSetView(LaunchpadView):
     # self.suggestion_blocks
     # self.pluralform_indexes
 
-    def prepare(self, translations, is_fuzzy, error, second_lang_code):
+    def prepare(self, store_flags, translations, is_fuzzy, error,
+                second_lang_code):
         """Primes the view with information that is gathered by a parent view.
 
-        translations is a dictionary indexed by plural form index;
-        BaseTranslationView constructed it based on active_texts
-        overlaid with form-submitted translations. is_fuzzy is a flag
-        tht is similarly constructed.
-
-        second_lang_code is the result of submiting field.alternative_value.
+        :arg store_flags: A dictionary that indicates whether the translation
+            associated should be stored in our database or ignored. It's
+            indexed by plural form.
+        :arg translations: A dictionary indexed by plural form index;
+            BaseTranslationView constructed it based on form-submitted
+            translations overlaid with any copy request.
+        :arg is_fuzzy: A flag that notes current fuzzy flag overlaid with the
+            form-submitted.
+        :arg error: The error related to self.context submission or None.
+        :arg second_lang_code: The result of submiting field.alternative_value.
         """
+        self.store_flags = store_flags
         self.translations = translations
         self.error = error
         self.is_fuzzy = is_fuzzy

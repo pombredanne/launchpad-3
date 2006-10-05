@@ -177,6 +177,7 @@
         <input
           type="checkbox"
           tal:attributes="
+            checked python:view.store_flags[plural_index];
             name string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_checkbox;
             " />
       </td>
