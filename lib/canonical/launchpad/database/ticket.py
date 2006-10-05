@@ -14,7 +14,8 @@ from sqlobject import (
 from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.launchpad.interfaces import (
-    IBugLinkTarget, ITicket, ITicketSet, TICKET_STATUS_DEFAULT_SEARCH)
+    IBugLinkTarget, IPerson, ITicket, ITicketSet,
+    TICKET_STATUS_DEFAULT_SEARCH)
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -323,7 +324,7 @@ class TicketSet:
 
     @staticmethod
     def findSimilar(title, product=None, distribution=None,
-                     sourcepackagename=None):
+                    sourcepackagename=None):
         """Common implementation for ITicketTarget.findSimilarTickets()."""
         constraints = TicketSet._contextConstraints(
             product, distribution, sourcepackagename)
@@ -334,8 +335,8 @@ class TicketSet:
 
     @staticmethod
     def search(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-               sort=None,
-               product=None, distribution=None, sourcepackagename=None):
+               sort=None, owner=None, product=None, distribution=None,
+               sourcepackagename=None):
         """Common implementation for ITicketTarget.searchTickets()."""
         constraints = TicketSet._contextConstraints(
             product, distribution, sourcepackagename)
@@ -358,6 +359,11 @@ class TicketSet:
         if len(status):
             constraints.append(
                 'Ticket.status IN (%s)' % ', '.join(sqlvalues(*status)))
+
+        if owner:
+            assert IPerson.providedBy(owner), (
+                "expected IPerson, got %r" % owner)
+            constraints.append('Ticket.owner = %d' % owner.id)
 
         orderBy = TicketSet._orderByFromTicketSort(search_text, sort)
 

@@ -39,7 +39,7 @@ from canonical.launchpad.database.ticket import Ticket, TicketSet
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner,
-    ITicketTarget, NotFoundError, TICKET_STATUS_DEFAULT_SEARCH)
+    ITicketTarget, NotFoundError)
 
 
 class Product(SQLBase, BugTargetBase, KarmaContextMixin):
@@ -252,11 +252,9 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
             return None
         return ticket
 
-    def searchTickets(self, search_text=None,
-                      status=TICKET_STATUS_DEFAULT_SEARCH, sort=None):
+    def searchTickets(self, **kwargs):
         """See ITicketTarget."""
-        return TicketSet.search(search_text=search_text, status=status,
-                                sort=sort, product=self)
+        return TicketSet.search(product=self, **kwargs)
 
     def findSimilarTickets(self, title):
         """See ITicketTarget."""
