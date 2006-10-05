@@ -202,7 +202,9 @@ def notify_errors_list(message, file_alias_url):
     simple_sendmail(
         get_bugmail_error_address(), [config.launchpad.errors_address],
         'Unhandled Email: %s' % file_alias_url,
-        template % {'url': file_alias_url, 'error_msg': message})
+        template % {'url': file_alias_url, 'error_msg': message},
+        headers={'X-Launchpad-Error': message}
+        )
 
 
 def generate_bug_add_email(bug):
