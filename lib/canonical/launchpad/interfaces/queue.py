@@ -324,15 +324,15 @@ class IHasQueueItems(Interface):
         matching a give name and version terms.
 
         If 'status' is not supplied, return all items in the queues,
-        it supports multiple status as a list.
+        it supports multiple statuses as a list.
 
-        If 'name' and 'version' are supplied return only items which the
-        sourcepackage name or binarypackage name or the filename match
-        (SQL LIKE). 'name' doesn't require 'version'
-        'version' doesn't has effect on custom queue items
+        If 'name' and 'version' are supplied only items which match (SQL LIKE)
+        the sourcepackage name, binarypackage name or the filename will be
+        returned.  'name' can be supplied without supplying 'version'.
+        'version' has no effect on custom queue items.
 
         If 'pocket' is specified return only queue items inside it, otherwise
-        return all pockets, it supports multiple pockets as a list.
+        return all pockets.  It supports multiple pockets as a list.
 
         Use 'exact_match' argument for precise results.
         """

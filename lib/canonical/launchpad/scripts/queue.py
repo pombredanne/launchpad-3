@@ -481,11 +481,11 @@ class QueueActionFetch(QueueAction):
         for queue_item in self.items:
             self.display("Constructing %s" % queue_item.changesfile.filename)
             changes_file_alias = queue_item.changesfile
-            changes_file_alias.open()
             # do not overwrite files on disk (bug # 62976)
             if os.path.exists(queue_item.changesfile.filename):
                 raise CommandRunnerError("%s already present on disk"
                                          % queue_item.changesfile.filename)
+            changes_file_alias.open()
             changes_file = open(queue_item.changesfile.filename, "w")
             changes_file.write(changes_file_alias.read())
             changes_file.close()
@@ -506,11 +506,11 @@ class QueueActionFetch(QueueAction):
 
             for libfile in file_list:
                 self.display("Constructing %s" % libfile.filename)
-                libfile.open()
                 # do not overwrite files on disk (bug # 62976)
                 if os.path.exists(libfile.filename):
                     raise CommandRunnerError("%s already present on disk"
                                              % libfile.filename)
+                libfile.open()
                 out_file = open(libfile.filename, "w")
                 for chunk in filechunks(libfile):
                     out_file.write(chunk)

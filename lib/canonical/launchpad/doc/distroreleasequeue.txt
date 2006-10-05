@@ -369,10 +369,13 @@ Also check the optional argument pocket:
   ...      pocket=PackagePublishingPocket.UPDATES).count()
   1
 
+Ensure list of pockets is also valid:
+
   >>> breezy_autotest.getQueueItems(
   ...      pocket=[PackagePublishingPocket.UPDATES,
   ...              PackagePublishingPocket.RELEASE]).count()
   9
+
 
 Check if association of status and pocket arguments works well:
 
@@ -495,7 +498,7 @@ the look up code won't be able to identify any duplications:
 
   >>> dup_one.syncUpdate()
 
-As expected the second item acceptation will fail and the item will
+As expected the second item acceptance will fail and the item will
 remain in the original queue
 
   >>> dup_two.setAccepted()
@@ -529,12 +532,9 @@ test after the former accepted item was published (DONE queue)
 The protection code should also identify dups with items in DONE queue
 
   >>> dup_two.setAccepted()
-
-
-Move items to their original queues.
-
-  >>> dup_one.setUnapproved()
-  >>> dup_one.syncUpdate()
+  Traceback (most recent call last):
+  ...
+  QueueInconsistentStateError: This sourcepackagerelease is already accepted in breezy-autotest.
 
 
 Check forbidden approval of not selected Section:
