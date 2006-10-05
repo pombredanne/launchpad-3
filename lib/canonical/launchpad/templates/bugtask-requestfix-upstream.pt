@@ -63,9 +63,35 @@
           Launchpad will keep track of its status for you.
         </p>
 
-        <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows" />
+       <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows" />
 
       </div>
+
+      <tal:public_bug tal:condition="not: context/bug/private">
+
+      <p tal:condition="product/bugcontact">
+        <a tal:attributes="href product/bugcontact/fmt:url"
+           tal:content="product/bugcontact/displayname">Sample Person</a>,
+           the bug contact for 
+           <tal:product tal:replace="product/displayname">Firefox</tal:product>,
+           will be notified about this bug.
+      </p>
+
+      </tal:public_bug>
+
+      <tal:private_bug tal:condition="context/bug/private">
+
+      <p tal:condition="product/bugcontact">
+        This is a confidential bug,
+        so <a tal:attributes="href product/bugcontact/fmt:url"
+           tal:content="product/bugcontact/displayname">Sample Person</a>,
+         the bug contact for 
+         <tal:product tal:replace="product/displayname">Firefox</tal:product>,
+         won't be notified about this bug. If you want him to know
+         about this bug you have to subscribe him to it.
+      </p>
+
+      </tal:private_bug>
 
     </metal:widgets>
 

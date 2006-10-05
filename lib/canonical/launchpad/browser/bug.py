@@ -291,7 +291,9 @@ class UpstreamBugTaskAddView(LaunchpadFormView, BugAlsoReportInBaseView):
 
     def _getUpstream(self, distro_package):
         """Return the upstream if there is a packaging link."""
-        for source_package in distro_package.by_distroreleases:
+        for distrorelease in distro_package.distribution.releases:
+            source_package = distrorelease.getSourcePackage(
+                distro_package.sourcepackagename)
             if source_package.direct_packaging is not None:
                 return source_package.direct_packaging.productseries.product
         else:
@@ -299,13 +301,27 @@ class UpstreamBugTaskAddView(LaunchpadFormView, BugAlsoReportInBaseView):
 
     def initialize(self):
         LaunchpadFormView.initialize(self)
+        bugtask = self.context
         if self.widgets['product'].hasInput():
             self._validate(action=None, data={})
-        elif IDistributionSourcePackage.providedBy(self.context.target):
-            upstream = self._getUpstream(self.context.target)
-            if upstream is not None:
+        elif IDistributionSourcePackage.providedBy(bugtask.target):
+            upstream = self._getUpstream(bugtask.target)
+            if upstream is None:
+                distrorelease = bugtask.distribution.currentrelease
+                if distrorelease is not None:
+                    sourcepackage = distrorelease.getSourcePackage(
+                        bugtask.sourcepackagename)
+                    self.request.response.addInfoNotification(
+                        'There is no packaging information for'
+                        " %(full_package_name)s and that's why you need"
+                        ' to choose a product manually. To fix that,'
+                        ' <a href="%(package_url)s/+packaging">update'
+                        ' packaging information for %(full_package_name)s</a>',
+                        full_package_name=bugtask.targetname,
+                        package_url=canonical_url(sourcepackage))
+            else:
                 try:
-                    valid_upstreamtask(self.context.bug, upstream)
+                    valid_upstreamtask(bugtask.bug, upstream)
                 except WidgetsError:
                     # There is already a task for the upstream.
                     pass
@@ -365,7 +381,10 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
         except InputErrors:
             product_error = True
         else:
-            product_error = not self.validateProduct(product)
+            if self.continue_action.submitted():
+                product_error = self.getWidgetError('product')
+            else:
+                product_error = not self.validateProduct(product)
 
         if product_error:
             product_name = self.request.form.get('field.product', '')
@@ -374,7 +393,11 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
                     canonical_url(self.context),
                     urllib.quote(product_name)))
             return
-
+        #XXX: Make sure this is tested.
+        #XXX: 
+        action = self.continue_action
+        action.label = u'Indicate bug in %s' % cgi.escape(product.displayname)
+        self.continue_action = action
         return self.render()
 
     def render_distrotask(self):

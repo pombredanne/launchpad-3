@@ -17,7 +17,7 @@ from zope.interface import providedBy
 from zope.interface.advice import addClassAdvisor
 from zope.event import notify
 from zope.formlib import form
-from zope.formlib.form import action
+from zope.formlib.form import action, Widgets
 from zope.app.form import CustomWidgetFactory
 
 from canonical.launchpad.webapp.publisher import LaunchpadView
@@ -147,7 +147,12 @@ class LaunchpadFormView(LaunchpadView):
         self.errors.append(message)
 
     def _validate(self, action, data):
-        for error in form.getWidgetsData(self.widgets, self.prefix, data):
+        widgets = Widgets(
+            [(input, widget)
+             for input, widget in self.widgets.__iter_input_and_widget__()
+             if not input or widget.required or widget.hasInput()],
+            len(self.prefix)+1)
+        for error in form.getWidgetsData(widgets, self.prefix, data):
             self.errors.append(error)
         for error in form.checkInvariants(self.form_fields, data):
             self.addError(error)
