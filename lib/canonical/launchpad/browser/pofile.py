@@ -360,7 +360,7 @@ class POFileTranslateView(BaseTranslationView):
             match = re.match(search_pattern, key)
             if match is not None:
                 # group #1 is the potmsgset.id
-                potmsgset_id = match.group(1)
+                potmsgset_id = int(match.group(1))
                 potmsgset = self.pofile.potemplate.getPOTMsgSetByID(
                     potmsgset_id)
                 pomsgset = potmsgset.getPOMsgSet(

@@ -30,7 +30,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     UnexpectedFormData, IPOMsgSet, TranslationConstants, NotFoundError,
-    ILanguageSet, IPOFileAlternativeLanguage, IPOMsgSetSuggestions)
+    ILanguageSet, IPOFileAlternativeLanguage, IPOMsgSetSuggestions,
+    IPOSubmissionSet)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ApplicationMenu, Link, LaunchpadView,
     canonical_url)
@@ -495,9 +496,8 @@ class BaseTranslationView(LaunchpadView):
                     dict_with_copies[plural_index] = text_to_copy
                 else:
                     dict_with_copies[plural_index] = None
-            self.form_copied_translations[pomsgset] = dict_with_copies
 
-        if 'plural' in button_id:
+        elif 'plural' in button_id:
             pomsgids = pomsgset.potmsgset.getPOMsgIDs()
             text_to_copy = pomsgids[TranslationConstants.PLURAL_FORM].msgid
             dict_with_copies = {}
@@ -506,9 +506,8 @@ class BaseTranslationView(LaunchpadView):
                     dict_with_copies[plural_index] = None
                 else:
                     dict_with_copies[plural_index] = text_to_copy
-            self.form_copied_translations[pomsgset] = dict_with_copies
 
-        if 'translation' in button_id:
+        elif 'translation' in button_id:
             match = re.match(
                 'msgset_%d_%s_translation_(\d+)_copy\.(x|y)' % (
                     pomsgset.potmsgset.id, self.pofile.language.code),
@@ -524,10 +523,28 @@ class BaseTranslationView(LaunchpadView):
                     dict_with_copies[plural_index] = text_to_copy
                 else:
                     dict_with_copies[plural_index] = None
-            self.form_copied_translations[pomsgset] = dict_with_copies
-        if 'suggestion' in button_id:
+
+        elif 'suggestion' in button_id:
             match = re.match(
-                'msgset_(\d+)_(\S+)_suggestion_(\d+)_(\d+)_copy\.(x|y)', button_id)
+                'msgset_%d_%s_suggestion_(\d+)_(\d+)_copy\.(x|y)' %(
+                    pomsgset.potmsgset.id, self.pofile.language.code),
+                button_id)
+            suggestion_posubmission_id = int(match.group(1))
+            posubmissionset = getUtility(IPOSubmissionSet)
+            suggestion_posubmission = posubmissionset.getPOSubmissionByID(
+                suggestion_posubmission_id)
+            requested_plural_index = int(match.group(2))
+            if requested_plural_index not in range(pomsgset.pluralforms):
+                raise UnexpectedFormData(
+                    "Got a copy request for a plural form that doesn't exist")
+            text_to_copy = suggestion_posubmission.potranslation.translation
+            dict_with_copies = {}
+            for plural_index in range(pomsgset.pluralforms):
+                if plural_index == requested_plural_index:
+                    dict_with_copies[plural_index] = text_to_copy
+                else:
+                    dict_with_copies[plural_index] = None
+        self.form_copied_translations[pomsgset] = dict_with_copies
 
     def _prepareView(self, pomsgset_view, pomsgset, error):
         """Prepare data for display in a subview; calls POMsgSetView.prepare."""

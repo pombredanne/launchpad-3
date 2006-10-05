@@ -1,7 +1,10 @@
 # Copyright 2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['POSubmission']
+__all__ = [
+    'POSubmission',
+    'POSubmissionSet'
+    ]
 
 from zope.interface import implements
 
@@ -14,7 +17,16 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp.dbschema import (EnumCol, RosettaTranslationOrigin,
     TranslationValidationStatus)
 
-from canonical.launchpad.interfaces import IPOSubmission
+from canonical.launchpad.interfaces import IPOSubmission, IPOSubmissionSet
+
+class POSubmissionSet:
+
+    implements(IPOSubmissionSet)
+
+    def getPOSubmissionByID(self, id):
+        """See IPOSubmissionSet."""
+        return POSubmission.get(id)
+
 
 class POSubmission(SQLBase):
 
