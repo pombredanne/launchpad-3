@@ -123,11 +123,7 @@ class SourcePackageSupportMenu(TicketTargetSupportMenu):
     usedfor = ISourcePackage
     facet = 'support'
 
-    @property
-    def links(self):
-        menu_links = list(TicketTargetSupportMenu.links)
-        menu_links.append('gethelp')
-        return menu_links
+    links = TicketTargetSupportMenu.links + ['gethelp']
 
     def gethelp(self):
         return Link('+gethelp', 'Help and Support Options', icon='info')
