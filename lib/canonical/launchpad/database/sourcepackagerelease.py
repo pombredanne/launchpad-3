@@ -148,6 +148,10 @@ class SourcePackageRelease(SQLBase):
             # imports us, so avoid circular import
             from canonical.launchpad.database.sourcepackage import \
                  SourcePackage
+            # Skip PPA publishings
+            if (publishing.distrorelease.main_archive.id !=
+                publishing.archive.id):
+                continue
             sp = SourcePackage(self.sourcepackagename,
                                publishing.distrorelease)
             sp_series = sp.productseries
@@ -292,8 +296,7 @@ class SourcePackageRelease(SQLBase):
             BinaryPackagePublishingHistory.binarypackagerelease AND
         BinaryPackagePublishingHistory.distroarchrelease = %s AND
         BinaryPackagePublishingHistory.archive = %s AND
-        Build.sourcepackagerelease = %s AND
-        Build.archive = BinaryPackagePublishingHistory.archive
+        Build.sourcepackagerelease = %s
         """  % sqlvalues(distroarchrelease,
                          distroarchrelease.main_archive,
                          self)

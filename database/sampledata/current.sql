@@ -988,12 +988,6 @@ INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, da
 INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (24, '2006-10-04 11:08:30.009791', 1, 6, 0, NULL, NULL, NULL, NULL, 26, 0, NULL, 9);
 INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (25, '2006-10-04 11:08:30.02489', 3, 11, 0, NULL, NULL, NULL, NULL, 28, 0, NULL, 9);
 INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (26, '2006-10-04 11:08:30.032089', 1, 6, 0, NULL, NULL, NULL, NULL, 28, 0, NULL, 9);
-INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (27, '2006-10-04 11:18:03.704082', 1, 6, 0, NULL, NULL, NULL, NULL, 15, 0, NULL, 1);
-INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (28, '2006-10-04 11:18:03.715935', 3, 11, 0, NULL, NULL, NULL, NULL, 16, 0, NULL, 1);
-INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (29, '2006-10-04 11:18:03.723701', 1, 6, 0, NULL, NULL, NULL, NULL, 16, 0, NULL, 1);
-INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (30, '2006-10-04 11:18:03.740947', 1, 6, 0, NULL, NULL, NULL, NULL, 26, 0, NULL, 1);
-INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (31, '2006-10-04 11:18:03.756634', 3, 11, 0, NULL, NULL, NULL, NULL, 28, 0, NULL, 1);
-INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (32, '2006-10-04 11:18:03.764083', 1, 6, 0, NULL, NULL, NULL, NULL, 28, 0, NULL, 1);
 
 
 ALTER TABLE build ENABLE TRIGGER ALL;
@@ -1010,14 +1004,7 @@ ALTER TABLE builder ENABLE TRIGGER ALL;
 ALTER TABLE buildqueue DISABLE TRIGGER ALL;
 
 INSERT INTO buildqueue (id, build, builder, logtail, created, buildstart, lastscore, manual) VALUES (1, 8, 1, 'Dummy sampledata entry, not processing', '2005-06-15 09:14:12.820778', '2005-06-15 09:20:12.820778', 1, false);
-INSERT INTO buildqueue (id, build, builder, logtail, created, buildstart, lastscore, manual) VALUES (2, 11, NULL, NULL, '2005-06-15 10:14:12.820778', NULL, 1025, false);
-INSERT INTO buildqueue (id, build, builder, logtail, created, buildstart, lastscore, manual) VALUES (3, 21, NULL, NULL, '2006-10-04 11:08:30.161153', NULL, 1010, false);
-INSERT INTO buildqueue (id, build, builder, logtail, created, buildstart, lastscore, manual) VALUES (4, 22, NULL, NULL, '2006-10-04 11:08:30.161153', NULL, 1010, false);
-INSERT INTO buildqueue (id, build, builder, logtail, created, buildstart, lastscore, manual) VALUES (5, 23, NULL, NULL, '2006-10-04 11:08:30.161153', NULL, 1010, false);
-INSERT INTO buildqueue (id, build, builder, logtail, created, buildstart, lastscore, manual) VALUES (18, 27, NULL, NULL, '2006-10-04 11:18:03.883479', NULL, 1005, false);
-INSERT INTO buildqueue (id, build, builder, logtail, created, buildstart, lastscore, manual) VALUES (19, 28, NULL, NULL, '2006-10-04 11:18:03.883479', NULL, 1005, false);
-INSERT INTO buildqueue (id, build, builder, logtail, created, buildstart, lastscore, manual) VALUES (20, 29, NULL, NULL, '2006-10-04 11:18:03.883479', NULL, 1005, false);
-
+INSERT INTO buildqueue (id, build, builder, logtail, created, buildstart, lastscore, manual) VALUES (2, 11, NULL, NULL, '2005-06-15 10:14:12.820778', NULL, 10, false);
 
 ALTER TABLE buildqueue ENABLE TRIGGER ALL;
 

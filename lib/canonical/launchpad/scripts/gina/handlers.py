@@ -30,6 +30,8 @@ from canonical.database.constants import nowUTC
 from canonical.archivepublisher.diskpool import Poolifier
 from canonical.archivepublisher.tagfiles import parse_tagfile
 
+from canonical.database.sqlbase import sqlvalues
+
 from canonical.lp.dbschema import (
     PackagePublishingStatus, BuildStatus, SourcePackageFormat,
     PersonCreationRationale)
@@ -517,9 +519,9 @@ class SourcePackageHandler:
                     distrorelease.id AND
                 sourcepackagepublishinghistory.archive = %s AND
                 distrorelease.distribution = %s
-                """ % (sourcepackagename, quote(version),
-                       distrorelease.main_archive
-                       distrorelease.distribution)
+                """ % sqlvalues(sourcepackagename, version,
+                                distrorelease.main_archive,
+                                distrorelease.distribution)
         ret = SourcePackageRelease.select(query,
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
             orderBy=["-SourcePackagePublishingHistory.datecreated"])
@@ -641,10 +643,10 @@ class SourcePackagePublisher:
                    AND distrorelease = %s
                    AND archive = %s
                    AND status in (%s, %s)""" %
-                (sourcepackagerelease, self.distrorelease,
-                 self.distrorelease.main_archive,
-                 PackagePublishingStatus.PUBLISHED,
-                 PackagePublishingStatus.PENDING),
+                sqlvalues(sourcepackagerelease, self.distrorelease,
+                          self.distrorelease.main_archive,
+                          PackagePublishingStatus.PUBLISHED,
+                          PackagePublishingStatus.PENDING),
                 orderBy=["-datecreated"])
         ret = list(ret)
         if ret:
@@ -918,10 +920,10 @@ class BinaryPackagePublisher:
                    AND distroarchrelease = %s
                    AND archive = %s
                    AND status in (%s, %s)""" %
-                (binarypackage, self.distroarchrelease,
-                 self.distroarchrelease.main_archive,
-                 PackagePublishingStatus.PUBLISHED,
-                 PackagePublishingStatus.PENDING),
+                sqlvalues(binarypackage, self.distroarchrelease,
+                          self.distroarchrelease.main_archive,
+                          PackagePublishingStatus.PUBLISHED,
+                          PackagePublishingStatus.PENDING),
                 orderBy=["-datecreated"])
         ret = list(ret)
         if ret:

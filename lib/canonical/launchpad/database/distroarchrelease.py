@@ -140,7 +140,7 @@ class DistroArchRelease(SQLBase):
         """Search BinaryPackages matching pattern and archtag"""
         binset = getUtility(IBinaryPackageReleaseSet)
         return binset.findByNameInDistroRelease(
-            self.distrorelease.id, pattern, self.architecturetag, fti)
+            self.distrorelease, pattern, self.architecturetag, fti)
 
     def searchBinaryPackages(self, text):
         """See IDistroArchRelease."""

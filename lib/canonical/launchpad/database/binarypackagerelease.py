@@ -172,13 +172,13 @@ class BinaryPackageReleaseSet:
     """A Set of BinaryPackageReleases."""
     implements(IBinaryPackageReleaseSet)
 
-    def findByNameInDistroRelease(self, distroreleaseID, pattern, archtag=None,
+    def findByNameInDistroRelease(self, distrorelease, pattern, archtag=None,
                                   fti=False):
         """Returns a set of binarypackagereleases that matchs pattern inside a
         distrorelease.
         """
         pattern = pattern.replace('%', '%%')
-        query, clauseTables = self._buildBaseQuery(distroreleaseID)
+        query, clauseTables = self._buildBaseQuery(distrorelease)
         queries = [query]
 
         match_query = ("BinaryPackageName.name LIKE lower('%%' || %s || '%%')"
@@ -232,12 +232,12 @@ class BinaryPackageReleaseSet:
         BinaryPackagePublishingHistory.distroarchrelease =
            DistroArchRelease.id AND
         BinaryPackagePublishingHistory.archive = %s AND
-        DistroArchRelease.distrorelease = %d AND
+        DistroArchRelease.distrorelease = %s AND
         BinaryPackageRelease.binarypackagename =
            BinaryPackageName.id AND
         BinaryPackagePublishingHistory.status != %s
-        """ % (distrorelease.main_archive, distrorelease,
-               dbschema.PackagePublishingStatus.REMOVED)
+        """ % sqlvalues(distrorelease.main_archive, distrorelease,
+                        dbschema.PackagePublishingStatus.REMOVED)
 
         clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchRelease',
                         'BinaryPackageRelease', 'BinaryPackageName']

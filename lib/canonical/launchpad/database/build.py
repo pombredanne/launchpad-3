@@ -410,6 +410,16 @@ class BuildSet:
             clauseTables.append('Sourcepackagerelease')
             clauseTables.append('Sourcepackagename')
 
+        # Exclude PPA builds
+        clauseTables.extend(["DistroArchRelease",
+                             "DistroRelease",
+                             "Distribution"])
+        condition_clauses.append("""
+            Build.distroarchrelease = DistroArchRelease.id AND
+            DistroArchRelease.distrorelease = DistroRelease.id AND
+            DistroRelease.distribution = Distribution.id AND
+            Distribution.main_archive = Build.archive
+            """)
 
         return Build.select(' AND '.join(condition_clauses),
                             clauseTables=clauseTables,

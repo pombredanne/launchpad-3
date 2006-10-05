@@ -88,7 +88,7 @@ BinaryPackageReleaseSet utility:
    >>> verifyObject(IBinaryPackageReleaseSet, binset)
    True
 
-   >>> ret = binset.findByNameInDistroRelease(warty.id, 'fire')
+   >>> ret = binset.findByNameInDistroRelease(warty, 'fire')
    >>> for item in ret:
    ...     print item.name
    mozilla-firefox

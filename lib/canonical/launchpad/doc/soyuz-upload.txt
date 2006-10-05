@@ -410,14 +410,14 @@ Also check the upload folders contain all the files we uploaded.
 Now let's see if all of the valid uploads are in the Upload queue marked
 as NEW and RELEASE.
 
-  >>> from canonical.launchpad.database import UploadSource
+  >>> from canonical.launchpad.database import PackageUploadSource
   >>> for name in package_names:
   ...     print name
   ...     spn = SourcePackageName.selectOneBy(name=name)
   ...     spr = SourcePackageRelease.selectOneBy(sourcepackagenameID=spn.id)
-  ...     us = UploadSource.selectOneBy(sourcepackagereleaseID=spr.id)
-  ...     assert us.upload.status.name == 'NEW'
-  ...     assert us.upload.pocket.name == 'RELEASE'
+  ...     us = PackageUploadSource.selectOneBy(sourcepackagereleaseID=spr.id)
+  ...     assert us.packageupload.status.name == 'NEW'
+  ...     assert us.packageupload.pocket.name == 'RELEASE'
   drdsl
   etherwake
 

@@ -51,7 +51,7 @@ class DeathRow:
         source_files = SourcePackageFilePublishing.select("""
             publishingstatus = %s AND
             distribution = %s AND
-            archive = %s AND
+            sourcepackagefilepublishing.archive = %s AND
             SourcePackagePublishingHistory.id =
                  SourcePackageFilePublishing.sourcepackagepublishing AND
             SourcePackagePublishingHistory.scheduleddeletiondate <= %s
@@ -64,7 +64,7 @@ class DeathRow:
         binary_files = BinaryPackageFilePublishing.select("""
             publishingstatus = %s AND
             distribution = %s AND
-            archive = %s AND
+            binarypackagefilepublishing.archive = %s AND
             BinaryPackagePublishingHistory.id =
                  BinaryPackageFilePublishing.binarypackagepublishing AND
             BinaryPackagePublishingHistory.scheduleddeletiondate <= %s
