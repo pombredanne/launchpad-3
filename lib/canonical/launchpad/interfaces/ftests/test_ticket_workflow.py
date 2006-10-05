@@ -548,7 +548,7 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
 
         It make sure that the message provides ITicketMessage and that it
         was appended to the ticket messages attribute. It also checks that
-        the subject was computed correctly and that the newstatus, action
+        the subject was computed correctly and that the new_status, action
         and owner attributes were set correctly.
 
         It also verifies that the ticket status, datelastquery (or
@@ -559,7 +559,7 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
         self.assertEquals("Re: Help!", message.subject)
         self.assertEquals(expected_owner, message.owner)
         self.assertEquals(expected_action, message.action)
-        self.assertEquals(expected_status, message.newstatus)
+        self.assertEquals(expected_status, message.new_status)
 
         self.assertEquals(message, self.ticket.messages[-1])
         self.assertEquals(expected_status, self.ticket.status)

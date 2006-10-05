@@ -100,16 +100,16 @@ class ITicket(IHasOwner):
         required=True, default=[], readonly=True)
 
     # Workflow methods
-    def setStatus(user, newstatus, comment, datecreated=None):
+    def setStatus(user, new_status, comment, datecreated=None):
         """Change the status of this ticket.
 
-        Set the ticket's status to newstatus and add an ITicketMessage
+        Set the ticket's status to new_status and add an ITicketMessage
         with action SETSTATUS.
 
         Only the ticket target owner or admin can change the status using
         this method.
 
-        It is an error to call this method with newstatus equals to the
+        It is an error to call this method with new_status equals to the
         current ticket status.
 
         Return the created ITicketMessage.
@@ -118,7 +118,7 @@ class ITicket(IHasOwner):
         ITicketMessage and an ISQLObjectModifiedEvent for the ticket.
 
         :user: The IPerson making the change.
-        :newstatus: The new TicketStatus
+        :new_status: The new TicketStatus
         :comment: A string or IMessage containing an explanation for the
                   change.
         :datecreated: Date for the message. Defaults to the current time.

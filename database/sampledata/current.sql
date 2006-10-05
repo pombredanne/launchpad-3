@@ -9258,13 +9258,13 @@ ALTER TABLE ticketbug ENABLE TRIGGER ALL;
 
 ALTER TABLE ticketmessage DISABLE TRIGGER ALL;
 
-INSERT INTO ticketmessage (id, ticket, message, "action", newstatus) VALUES (1, 6, 12, 30, 10);
-INSERT INTO ticketmessage (id, ticket, message, "action", newstatus) VALUES (2, 7, 13, 30, 10);
-INSERT INTO ticketmessage (id, ticket, message, "action", newstatus) VALUES (3, 11, 18, 30, 10);
-INSERT INTO ticketmessage (id, ticket, message, "action", newstatus) VALUES (4, 9, 19, 30, 10);
-INSERT INTO ticketmessage (id, ticket, message, "action", newstatus) VALUES (5, 8, 20, 30, 10);
-INSERT INTO ticketmessage (id, ticket, message, "action", newstatus) VALUES (6, 10, 21, 30, 10);
-INSERT INTO ticketmessage (id, ticket, message, "action", newstatus) VALUES (7, 9, 22, 30, 10);
+INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (1, 6, 12, 30, 10);
+INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (2, 7, 13, 30, 10);
+INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (3, 11, 18, 30, 10);
+INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (4, 9, 19, 30, 10);
+INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (5, 8, 20, 30, 10);
+INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (6, 10, 21, 30, 10);
+INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (7, 9, 22, 30, 10);
 
 
 ALTER TABLE ticketmessage ENABLE TRIGGER ALL;

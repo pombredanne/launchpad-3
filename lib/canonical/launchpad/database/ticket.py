@@ -146,19 +146,19 @@ class Ticket(SQLBase, BugLinkTargetMixin):
 
     # Workflow methods
     @notify_modified()
-    def setStatus(self, user, newstatus, comment, datecreated=None):
+    def setStatus(self, user, new_status, comment, datecreated=None):
         """See ITicket."""
         if not self._isTargetOwnerOrAdmin(user):
             raise Unauthorized, (
                 "Only target owner or admins can change a ticket status.")
-        assert newstatus != self.status
+        assert new_status != self.status
 
         self.answerer = None
         self.answer = None
         self.dateanswered = None
         return self._newMessage(
             user, comment, datecreated=datecreated,
-            action=TicketAction.SETSTATUS, newstatus=newstatus,
+            action=TicketAction.SETSTATUS, new_status=new_status,
             update_ticket_dates=False)
 
     @notify_modified()
@@ -166,7 +166,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         """See ITicket."""
         return self._newMessage(
             user, comment, datecreated=datecreated,
-            action=TicketAction.COMMENT, newstatus=self.status,
+            action=TicketAction.COMMENT, new_status=self.status,
             update_ticket_dates=False)
 
     @property
@@ -182,12 +182,12 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         assert self.can_request_info, (
             "Ticket status != OPEN, NEEDSINFO, or ANSWERED")
         if self.status == TicketStatus.ANSWERED:
-            newstatus = self.status
+            new_status = self.status
         else:
-            newstatus = TicketStatus.NEEDSINFO
+            new_status = TicketStatus.NEEDSINFO
         return self._newMessage(
             user, question, datecreated=datecreated,
-            action=TicketAction.REQUESTINFO, newstatus=newstatus)
+            action=TicketAction.REQUESTINFO, new_status=new_status)
 
     @property
     def can_give_info(self):
@@ -200,7 +200,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         assert self.can_give_info, "Ticket status != OPEN or NEEDSINFO"
         return self._newMessage(
             self.owner, reply, datecreated=datecreated,
-            action=TicketAction.GIVEINFO, newstatus=TicketStatus.OPEN)
+            action=TicketAction.GIVEINFO, new_status=TicketStatus.OPEN)
 
     @property
     def can_give_answer(self):
@@ -214,15 +214,15 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         assert self.can_give_answer, (
             "Ticket status != OPEN, NEEDSINFO or ANSWERED")
         if self.owner == user:
-            newstatus = TicketStatus.SOLVED
+            new_status = TicketStatus.SOLVED
             action = TicketAction.CONFIRM
         else:
-            newstatus = TicketStatus.ANSWERED
+            new_status = TicketStatus.ANSWERED
             action = TicketAction.ANSWER
 
         msg = self._newMessage(
             user, answer, datecreated=datecreated, action=action,
-            newstatus=newstatus)
+            new_status=new_status)
 
         if self.owner == user:
             self.dateanswered = msg.datecreated
@@ -259,7 +259,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         msg = self._newMessage(
             self.owner, comment, datecreated=datecreated,
             action=TicketAction.CONFIRM,
-            newstatus=TicketStatus.SOLVED)
+            new_status=TicketStatus.SOLVED)
         if answer:
             self.dateanswered = msg.datecreated
             self.answerer = answer.owner
@@ -293,7 +293,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
             "Ticket is already rejected.")
         msg = self._newMessage(
             user, comment, datecreated=datecreated,
-            action=TicketAction.REJECT, newstatus=TicketStatus.INVALID)
+            action=TicketAction.REJECT, new_status=TicketStatus.INVALID)
         self.answerer = user
         self.dateanswered = msg.datecreated
         self.answer = msg
@@ -306,7 +306,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
             "Ticket status != OPEN or NEEDSINFO")
         return self._newMessage(
             user, comment, datecreated=datecreated,
-            action=TicketAction.EXPIRE, newstatus=TicketStatus.EXPIRED)
+            action=TicketAction.EXPIRE, new_status=TicketStatus.EXPIRED)
 
     @property
     def can_reopen(self):
@@ -321,7 +321,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
             "Ticket status != ANSWERED, EXPIRED or SOLVED.")
         msg = self._newMessage(
             self.owner, comment, datecreated=datecreated,
-            action=TicketAction.REOPEN, newstatus=TicketStatus.OPEN)
+            action=TicketAction.REOPEN, new_status=TicketStatus.OPEN)
         self.answer = None
         self.answerer = None
         self.dateanswered = None
@@ -365,10 +365,10 @@ class Ticket(SQLBase, BugLinkTargetMixin):
 
         return sorted(support_contacts, key=operator.attrgetter('name'))
 
-    def _newMessage(self, owner, content, action, newstatus, subject=None,
+    def _newMessage(self, owner, content, action, new_status, subject=None,
                     datecreated=None, update_ticket_dates=True):
         """Create a new TicketMessage, link it to this ticket and update
-        the ticket's status to newstatus.
+        the ticket's status to new_status.
 
         When update_ticket_dates is True, the ticket's datelastquery or
         datelastresponse attribute is updated to the message creation date.
@@ -379,7 +379,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         :content: A string or an IMessage. When it's an IMessage, the owner
                   must be the same than the :owner: parameter.
         :action: A TicketAction.
-        :newstatus: A TicketStatus.
+        :new_status: A TicketStatus.
         :subject: The Message subject, default to followup_subject. Ignored
                   when content is an IMessage.
         :datecreated: A datetime object which will be used as the Message
@@ -401,7 +401,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
             chunk = MessageChunk(message=msg, content=content, sequence=1)
 
         tktmsg = TicketMessage(
-            ticket=self, message=msg, action=action, newstatus=newstatus)
+            ticket=self, message=msg, action=action, new_status=new_status)
         notify(SQLObjectCreatedEvent(tktmsg, user=tktmsg.owner))
         # make sure we update the relevant date of response or query
         if update_ticket_dates:
@@ -409,7 +409,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
                 self.datelastquery = msg.datecreated
             else:
                 self.datelastresponse = msg.datecreated
-        self.status = newstatus
+        self.status = new_status
         return tktmsg
 
     # IBugLinkTarget implementation

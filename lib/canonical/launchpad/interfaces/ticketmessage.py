@@ -30,7 +30,7 @@ class ITicketMessage(IMessage):
         required=True, readonly=True, default=TicketAction.COMMENT,
         vocabulary="TicketAction")
 
-    newstatus = Choice(title=_("Ticket status after message"),
+    new_status = Choice(title=_("Ticket status after message"),
         description=_("The status of the ticket after the transition related "
         "the action operated by this message."), required=True,
         readonly=True, default=TicketStatus.OPEN, vocabulary='TicketStatus')

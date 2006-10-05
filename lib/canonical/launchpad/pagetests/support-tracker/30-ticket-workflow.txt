@@ -384,8 +384,8 @@ It lists all the actions performed through workflow on the request:
     ...     cells = row.fetch('td')
     ...     who = cells[1].first('a').renderContents()
     ...     action = cells[2].renderContents()
-    ...     newstatus = cells[3].renderContents()
-    ...     print who, action, newstatus
+    ...     new_status = cells[3].renderContents()
+    ...     print who, action, new_status
     Foo Bar              Reject                       Invalid
     Foo Bar              Change status                Open
     No Privileges Person Request for more information Needs information

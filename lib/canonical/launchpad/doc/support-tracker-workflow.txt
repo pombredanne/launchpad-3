@@ -103,11 +103,11 @@ history:
 
 The ticket message contains the action that was executed in the action
 attribute and the status of the ticket after the action was executed in
-the newstatus attribute:
+the new_status attribute:
 
     >>> print request_message.action.name
     REQUESTINFO
-    >>> print request_message.newstatus.name
+    >>> print request_message.new_status.name
     NEEDSINFO
 
     >>> print request_message.text_contents
@@ -135,7 +135,7 @@ method which adds an ITicketMessage with action GIVEINFO.
 
     >>> print reply_message.action.name
     GIVEINFO
-    >>> print reply_message.newstatus.name
+    >>> print reply_message.new_status.name
     OPEN
     >>> reply_message == ticket.messages[-1]
     True
@@ -163,7 +163,7 @@ providing the answer and the answer itself.
     ...     "for all the details.", datecreated=now_plus_three_hours)
     >>> print answer_message.action.name
     ANSWER
-    >>> print answer_message.newstatus.name
+    >>> print answer_message.new_status.name
     ANSWERED
 
 After that action, the ticket's status is changed to ANSWERED and the
@@ -187,7 +187,7 @@ for that purpose.
     ...      datecreated=tomorrow)
     >>> print reopen_message.action.name
     REOPEN
-    >>> print reopen_message.newstatus.name
+    >>> print reopen_message.new_status.name
     OPEN
     >>> print reopen_message.owner.displayname
     No Privileges Person
@@ -224,7 +224,7 @@ problem. The confirmAnswer() method is used for that purpose.
     ...     datecreated=two_weeks_from_now, answer=answer_message)
     >>> print confirm_message.action.name
     CONFIRM
-    >>> print confirm_message.newstatus.name
+    >>> print confirm_message.new_status.name
     SOLVED
     >>> print confirm_message.owner.displayname
     No Privileges Person
@@ -265,7 +265,7 @@ the 'answer' attribute will contain the message that closed the request.
 
     >>> print self_answer_message.action.name
     CONFIRM
-    >>> print self_answer_message.newstatus.name
+    >>> print self_answer_message.new_status.name
     SOLVED
     >>> print ticket.status.name
     SOLVED
@@ -293,7 +293,7 @@ for the documentation of the cron script handling this task.)
     ...     datecreated=two_weeks_from_now)
     >>> print expire_message.action.name
     EXPIRE
-    >>> print expire_message.newstatus.name
+    >>> print expire_message.new_status.name
     EXPIRED
 
 The ticket is moved to the EXPIRED state and the 'datelastresponse'
@@ -372,7 +372,7 @@ rejection.
     ...     datecreated=now_plus_one_hour)
     >>> print reject_message.action.name
     REJECT
-    >>> print reject_message.newstatus.name
+    >>> print reject_message.new_status.name
     INVALID
 
 After rejection, the ticket is marked as invalid and the
@@ -433,7 +433,7 @@ The method returns the ITicketMessage recording the change:
 
     >>> print status_change_message.action.name
     SETSTATUS
-    >>> print status_change_message.newstatus.name
+    >>> print status_change_message.new_status.name
     INVALID
     >>> print ticket.status.name
     INVALID
@@ -480,7 +480,7 @@ ticket without changing its status.
 
     >>> print comment.action.name
     COMMENT
-    >>> comment.newstatus == old_status
+    >>> comment.new_status == old_status
     True
 
 This method does not update the datelastresponse and datelastquery

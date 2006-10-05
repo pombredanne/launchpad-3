@@ -464,7 +464,7 @@ COMMENT ON TABLE TicketBug IS 'A link between a ticket and a bug, showing that t
 
 COMMENT ON TABLE TicketMessage IS 'A link between a support ticket and a message. This means that the message will be displayed on the ticket page.';
 COMMENT ON COLUMN TicketMessage.action IS 'The action on the ticket that was done with this message. This is a value from the TicketAction enum.';
-COMMENT ON COLUMN TicketMessage.newstatus IS 'The status of the ticket after this message.';
+COMMENT ON COLUMN TicketMessage.new_status IS 'The status of the ticket after this message.';
 
 /* TicketReopening */
 

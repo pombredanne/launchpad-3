@@ -119,7 +119,7 @@ Support Tracker Janitor celebrity:
     >>> expiration_message = old_needs_info_ticket.messages[-1]
     >>> print expiration_message.action.name
     EXPIRE
-    >>> print expiration_message.newstatus.title
+    >>> print expiration_message.new_status.title
     Expired
     >>> print expiration_message.owner.name
     support-tracker-janitor

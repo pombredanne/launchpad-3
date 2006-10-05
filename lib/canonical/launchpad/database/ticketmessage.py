@@ -35,5 +35,5 @@ class TicketMessage(SQLBase):
     action = EnumCol(
         schema=TicketAction, notNull=True, default=TicketAction.COMMENT)
 
-    newstatus = EnumCol(
+    new_status = EnumCol(
         schema=TicketStatus, notNull=True, default=TicketStatus.OPEN)
