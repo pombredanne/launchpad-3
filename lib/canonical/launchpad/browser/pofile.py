@@ -361,7 +361,6 @@ class POFileTranslateView(BaseTranslationView):
             if match is not None:
                 # group #1 is the potmsgset.id
                 potmsgset_id = match.group(1)
-                import pdb; pdb.set_trace()
                 potmsgset = self.pofile.potemplate.getPOTMsgSetByID(
                     potmsgset_id)
                 pomsgset = potmsgset.getPOMsgSet(

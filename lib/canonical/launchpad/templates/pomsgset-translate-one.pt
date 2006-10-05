@@ -128,19 +128,19 @@
                        tal:condition="view/is_plural">[0]</span>:
         </label>
       </th>
-      <tal:with-content condition="python:view.getTranslation(plural_index)">
+      <tal:with-content condition="python:view.getActiveTranslation(plural_index)">
         <td>
           <input type="image" src="/@@/copy" title="Copy text"
             tal:attributes="
               name string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_copy"
           />
         </td>
-        <td tal:content="structure python:view.getTranslation(plural_index)">
+        <td tal:content="structure python:view.getActiveTranslation(plural_index)">
           current translation
         </td>
       </tal:with-content>
       <tal:without-content
-        condition="python:view.getTranslation(plural_index) is None">
+        condition="python:view.getActiveTranslation(plural_index) is None">
         <td />
         <td>
           (no translation yet)
@@ -184,6 +184,7 @@
         <textarea
           style="width: 100%;"
           rows=6
+          tal:content="python:view.getTranslation(plural_index)"
           tal:attributes="
             name string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new;
             lang context/pofile/language/dashedcode;

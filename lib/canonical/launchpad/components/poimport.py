@@ -12,7 +12,6 @@ from canonical.launchpad.interfaces import (
         IPOTemplate, IPOFile, IPersonSet, NotFoundError, TranslationConstants
         )
 from canonical.launchpad.components.poparser import POParser
-from canonical.launchpad.helpers import TranslationConstants
 from canonical.lp.dbschema import PersonCreationRationale
 
 class OldPOImported(Exception):

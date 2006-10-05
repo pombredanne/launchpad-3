@@ -350,24 +350,10 @@ class BaseTranslationView(LaunchpadView):
     # over just two or three.
     MAX_PLURAL_FORMS = 100
 
-    class TabIndex:
-        """Holds a counter which can be globally incremented.
-
-        This is shared between main and subviews to ensure tabindex is
-        incremented sequentially and sanely.
-        """
-        def __init__(self):
-            self.index = 0
-
-        def next(self):
-            self.index += 1
-            return self.index
-
     def initialize(self):
         assert self.pofile, "Child class must define self.pofile"
 
         self.redirecting = False
-        self.tabindex = self.TabIndex()
 
         # These two dictionaries hold translation data parsed from the
         # form submission. They exist mainly because of the need to
@@ -501,14 +487,10 @@ class BaseTranslationView(LaunchpadView):
         """
         self.form_copied_translations[pomsgset] = {}
         if 'singular' in button_id:
-            match = re.match(
-                'msgset_(\d+)_singular_copy\.(x|y)', button_id)
-            potmsgset_id = match.group(1)
-            potmsgset = self.pofile.potemplate.getPOTMsgSetByID(potmsgset_id)
-            pomsgids = potmsgset.getPOMsgIDs()
+            pomsgids = pomsgset.potmsgset.getPOMsgIDs()
             text_to_copy = pomsgids[TranslationConstants.SINGULAR_FORM].msgid
             dict_with_copies = {}
-            for plural_index in range(self.pofile.language.pluralforms):
+            for plural_index in range(pomsgset.pluralforms):
                 if plural_index == TranslationConstants.SINGULAR_FORM:
                     dict_with_copies[plural_index] = text_to_copy
                 else:
@@ -516,14 +498,10 @@ class BaseTranslationView(LaunchpadView):
             self.form_copied_translations[pomsgset] = dict_with_copies
 
         if 'plural' in button_id:
-            match = re.match(
-                'msgset_(\d+)_plural_copy\.(x|y)', button_id)
-            potmsgset_id = match.group(1)
-            potmsgset = self.pofile.potemplate.getPOTMsgSetByID(potmsgset_id)
-            pomsgids = potmsgset.getPOMsgIDs()
+            pomsgids = pomsgset.potmsgset.getPOMsgIDs()
             text_to_copy = pomsgids[TranslationConstants.PLURAL_FORM].msgid
             dict_with_copies = {}
-            for plural_index in range(self.pofile.language.pluralforms):
+            for plural_index in range(pomsgset.pluralforms):
                 if plural_index == TranslationConstants.SINGULAR_FORM:
                     dict_with_copies[plural_index] = None
                 else:
@@ -532,7 +510,21 @@ class BaseTranslationView(LaunchpadView):
 
         if 'translation' in button_id:
             match = re.match(
-                'msgset_(\d+)_(\S+)_translation_(\d+)_copy\.(x|y)', button_id)
+                'msgset_%d_%s_translation_(\d+)_copy\.(x|y)' % (
+                    pomsgset.potmsgset.id, self.pofile.language.code),
+                button_id)
+            requested_plural_index = int(match.group(1))
+            if requested_plural_index not in range(pomsgset.pluralforms):
+                raise UnexpectedFormData(
+                    "Got a copy request for a plural form that doesn't exist")
+            text_to_copy = pomsgset.active_texts[requested_plural_index]
+            dict_with_copies = {}
+            for plural_index in range(pomsgset.pluralforms):
+                if plural_index == requested_plural_index:
+                    dict_with_copies[plural_index] = text_to_copy
+                else:
+                    dict_with_copies[plural_index] = None
+            self.form_copied_translations[pomsgset] = dict_with_copies
         if 'suggestion' in button_id:
             match = re.match(
                 'msgset_(\d+)_(\S+)_suggestion_(\d+)_(\d+)_copy\.(x|y)', button_id)
@@ -547,13 +539,13 @@ class BaseTranslationView(LaunchpadView):
         elif self.form_posted_translations.has_key(pomsgset):
             translations = self.form_posted_translations[pomsgset]
         else:
-            translations = pomsgset.active_texts
+            translations = [None]*pomsgset.pluralforms
         if self.form_posted_needsreview.has_key(pomsgset):
             is_fuzzy = self.form_posted_needsreview[pomsgset]
         else:
             is_fuzzy = pomsgset.isfuzzy
-        pomsgset_view.prepare(translations, is_fuzzy, error, self.tabindex,
-                              self.second_lang_code)
+        pomsgset_view.prepare(
+            translations, is_fuzzy, error, self.second_lang_code)
 
     #
     # Internals
@@ -789,7 +781,7 @@ class POMsgSetView(LaunchpadView):
     # self.suggestion_blocks
     # self.pluralform_indexes
 
-    def prepare(self, translations, is_fuzzy, error, tabindex, second_lang_code):
+    def prepare(self, translations, is_fuzzy, error, second_lang_code):
         """Primes the view with information that is gathered by a parent view.
 
         translations is a dictionary indexed by plural form index;
@@ -797,14 +789,11 @@ class POMsgSetView(LaunchpadView):
         overlaid with form-submitted translations. is_fuzzy is a flag
         tht is similarly constructed.
 
-        tabindex is a TabIndex object.
-
         second_lang_code is the result of submiting field.alternative_value.
         """
         self.translations = translations
         self.error = error
         self.is_fuzzy = is_fuzzy
-        self.tabindex = tabindex
 
         # Set up alternative language variables. XXX: This could be made
         # much simpler if we built suggestions externally in the parent
@@ -845,7 +834,7 @@ class POMsgSetView(LaunchpadView):
         # allows us later to just iterate over them in the view code
         # using a generic template.
         self.suggestion_blocks = {}
-        self.pluralform_indexes = range(len(self.translations))
+        self.pluralform_indexes = range(self.context.pluralforms)
         for index in self.pluralform_indexes:
             wiki, elsewhere, non_editor, alt_lang_suggestions = \
                 self._buildAllSuggestions(index)
@@ -897,7 +886,7 @@ class POMsgSetView(LaunchpadView):
 
         # Use bogus dictionary to keep consistent with other
         # translations; it's only used for pruning.
-        active_translations = {self.translations[index]: None}
+        active_translations = {self.context.active_texts[index]: None}
 
         wiki_translations_clean = prune_dict(wiki_translations,
            [current_translations, non_editor_translations, active_translations])
@@ -935,6 +924,19 @@ class POMsgSetView(LaunchpadView):
         return POMsgSetSuggestions(
             title, self.context, submissions[:self.max_entries],
             self.max_entries)
+
+    def getActiveTranslation(self,index):
+        if index in self.pluralform_indexes:
+            translation = self.context.active_texts[index]
+            # We store newlines as '\n', '\r' or '\r\n', depending on the
+            # msgid but forms should have them as '\r\n' so we need to change
+            # them before showing them.
+            if translation is not None:
+                return convert_newlines_to_web_form(translation)
+            else:
+                return None
+        else:
+            raise IndexError('Translation out of range')
 
     def getTranslation(self, index):
         """Return the active translation for the pluralform 'index'.
