@@ -16,6 +16,7 @@ Firefox uses Malone, so the bug tracker field is empty.
     <select id="field.bugtracker" ... size="5" ...>
     <option value="3">Debian Bug tracker</option>
     <option value="2">GnomeGBug GTracker</option>
+    <option value="5">SourceForge.net Tracker</option>
     <option value="1">The Mozilla.org Bug Tracker</option>
     <option value="4">The Ubuntu.com bugzilla</option>
     ...

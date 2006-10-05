@@ -289,6 +289,8 @@ class UnsubscribeEmailCommand(EmailCommand):
 
         if bug.isSubscribed(person):
             bug.unsubscribe(person)
+        if bug.isSubscribedToDupes(person):
+            bug.unsubscribeFromDupes(person)
 
         return bug, current_event
 
