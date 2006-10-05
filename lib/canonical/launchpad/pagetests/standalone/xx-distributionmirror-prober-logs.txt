@@ -7,11 +7,11 @@ mirror's distribution.
     >>> browser.open(
     ...     'http://launchpad.dev/distros/ubuntu/+mirror/archive-mirror2/')
 
-    >>> browser.getLink('Content check logs').click()
+    >>> browser.getLink('Prober logs').click()
     >>> browser.url
     'http://launchpad.dev/distros/ubuntu/+mirror/archive-mirror2/+prober-logs'
 
-    >>> "1</span> result" in browser.contents
+    >>> "1 result" in browser.contents
     True
 
 
