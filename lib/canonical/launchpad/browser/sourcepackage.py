@@ -26,6 +26,7 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagerelationship import (
     PackageRelationship)
+from canonical.launchpad.browser.tickettarget import TicketTargetSupportMenu
 from canonical.launchpad.webapp.batching import BatchNavigator
 
 from canonical.launchpad.webapp import (
@@ -117,21 +118,19 @@ class SourcePackageBugsMenu(ApplicationMenu):
         return Link('+filebug', text, icon='add')
 
 
-class SourcePackageSupportMenu(ApplicationMenu):
+class SourcePackageSupportMenu(TicketTargetSupportMenu):
 
     usedfor = ISourcePackage
     facet = 'support'
-    links = ['addticket', 'support_contact', 'gethelp']
+
+    @property
+    def links(self):
+        menu_links = list(TicketTargetSupportMenu.links)
+        menu_links.append('gethelp')
+        return menu_links
 
     def gethelp(self):
         return Link('+gethelp', 'Help and Support Options', icon='info')
-
-    def addticket(self):
-        return Link('+addticket', 'Request Support', icon='add')
-
-    def support_contact(self):
-        text = 'Support Contact'
-        return Link('+support-contact', text, icon='edit')
 
 
 class SourcePackageTranslationsMenu(ApplicationMenu):

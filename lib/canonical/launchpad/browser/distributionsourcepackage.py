@@ -62,20 +62,6 @@ class DistributionSourcePackageNavigation(GetitemNavigation,
         return self.context.sourcepackagename.name
 
 
-class DistributionSourcePackageSupportMenu(ApplicationMenu):
-
-    usedfor = IDistributionSourcePackage
-    facet = 'support'
-    links = ['addticket', 'support_contact']
-
-    def addticket(self):
-        return Link('+addticket', 'Request Support', icon='add')
-
-    def support_contact(self):
-        text = 'Support Contact'
-        return Link('+support-contact', text, icon='edit')
-
-
 class DistributionSourcePackageView:
 
     def __init__(self, context, request):

@@ -56,7 +56,7 @@
         module="canonical.launchpad.browser"
         classes="
             ProductFacets ProductOverviewMenu ProductBountiesMenu
-            ProductBranchesMenu ProductSupportMenu ProductSpecificationsMenu
+            ProductBranchesMenu ProductSpecificationsMenu
             ProductTranslationsMenu ProductBugsMenu ProductSetContextMenu
             "
             />

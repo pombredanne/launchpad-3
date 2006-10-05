@@ -8,6 +8,7 @@ __all__ = [
     'ManageSupportContactView',
     'SearchTicketsView',
     'TicketTargetView',
+    'TicketTargetSupportMenu',
     ]
 
 from zope.component import getUtility
@@ -18,10 +19,10 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IDistribution, ILaunchBag, IManageSupportContacts, IPerson,
-    ISearchTicketsForm, )
+    ISearchTicketsForm, ITicketTarget)
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, GeneralFormView, LaunchpadFormView,
-    LaunchpadView)
+    action, canonical_url, custom_widget, ApplicationMenu,
+    GeneralFormView, LaunchpadFormView, LaunchpadView, Link)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import TicketSort
 from canonical.widgets.itemswidget import LabeledMultiCheckBoxWidget
@@ -232,4 +233,20 @@ class ManageSupportContactView(GeneralFormView):
                             team.displayname, self.context.displayname))
 
         self._nextURL = canonical_url(self.context) + '/+tickets'
+
+
+class TicketTargetSupportMenu(ApplicationMenu):
+    """Base menu definition for TicketTargets."""
+
+    usedfor = ITicketTarget
+    facet = 'support'
+    links = ['new', 'support_contact']
+
+    def new(self):
+        text = 'Request Support'
+        return Link('+addticket', text, icon='add')
+
+    def support_contact(self):
+        text = 'Support Contact'
+        return Link('+support-contact', text, icon='edit')
 

@@ -7,15 +7,6 @@
 
 <facet facet="support">
 
-  <browser:pages
-    for="canonical.launchpad.interfaces.IHasTickets"
-    class="canonical.launchpad.browser.TicketTargetView"
-    permission="zope.Public">
-    <browser:page
-      name="+tickets"
-      template="../templates/tickettarget-tickets.pt" />
-  </browser:pages>
-
   <browser:page
     for="canonical.launchpad.interfaces.ITicketTarget"
     class="canonical.launchpad.browser.SearchTicketsView"
@@ -49,6 +40,10 @@
     for="canonical.launchpad.interfaces.ITicketTarget"
     class="canonical.launchpad.browser.TicketAddView"
     permission="launchpad.AnyPerson" />
+
+  <browser:menus
+    module="canonical.launchpad.browser"
+    classes="TicketTargetSupportMenu" />
 
 </facet>
 

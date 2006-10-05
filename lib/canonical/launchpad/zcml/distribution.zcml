@@ -438,8 +438,8 @@
         module="canonical.launchpad.browser.distribution"
         classes="
             DistributionFacets DistributionOverviewMenu DistributionBugsMenu
-            DistributionSupportMenu DistributionBountiesMenu
-            DistributionSpecificationsMenu DistributionTranslationsMenu
+            DistributionBountiesMenu DistributionSpecificationsMenu
+            DistributionTranslationsMenu
             "
             />
 
