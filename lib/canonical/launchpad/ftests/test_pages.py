@@ -34,7 +34,7 @@ def find_tags_by_class(content, class_):
 def find_portlet(content, name):
     """Find and return the portlet with the given title"""
     for portlet in find_tags_by_class(content, 'portlet'):
-        portlet_title = portlet.find('h4').renderContents()
+        portlet_title = portlet.find('h2').renderContents()
         if name == portlet_title.strip():
             return portlet
     return None

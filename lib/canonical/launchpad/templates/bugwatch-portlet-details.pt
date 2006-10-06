@@ -1,5 +1,5 @@
 <div class="portlet">
-  <h4>Bug watch details:</h4>
+  <h2>Bug watch details</h2>
   <div class="portletBody">
     <div class="portletContent">
     Malone <a tal:attributes="href context/bug/fmt:url">Bug #

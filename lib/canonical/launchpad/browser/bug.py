@@ -5,7 +5,7 @@ __metaclass__ = type
 __all__ = [
     'BugSetNavigation',
     'BugView',
-    'BugSetView',
+    'MaloneView',
     'BugEditView',
     'BugRelatedObjectEditView',
     'BugAlsoReportInView',
@@ -21,7 +21,6 @@ __all__ = [
 import cgi
 import operator
 
-from zope.app.form.interfaces import WidgetsError
 from zope.app.form.browser import TextWidget
 from zope.app.form.interfaces import WidgetsError
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
@@ -30,21 +29,18 @@ from zope.event import notify
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.webapp import (
-    action, canonical_url, ContextMenu, LaunchpadFormView, LaunchpadView,
-    Link, Navigation, structured)
 from canonical.launchpad.interfaces import (
     IAddBugTaskForm, IBug, ILaunchBag, IBugSet, IBugTaskSet,
     IBugWatchSet, IDistributionSourcePackage, IDistroBugTask,
     IDistroReleaseBugTask, NoBugTrackerFound, NotFoundError,
-    UnexpectedFormData, valid_distrotask, valid_upstreamtask,
-    ICanonicalUrlData)
+    valid_distrotask, valid_upstreamtask, ICanonicalUrlData)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import check_permission
-from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
-    action, custom_widget, GeneralFormView, LaunchpadEditFormView, stepthrough)
+    custom_widget, action, canonical_url, ContextMenu,
+    LaunchpadFormView, LaunchpadView,LaunchpadEditFormView, stepthrough,
+    Link, Navigation, structured)
 from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
@@ -172,6 +168,31 @@ class BugContextMenu(ContextMenu):
             IDistroReleaseBugTask.providedBy(self.context))
         text = 'Backport Fix to Releases'
         return Link('+backport', text, icon='bug', enabled=enabled)
+
+
+
+class MaloneView(LaunchpadView):
+    """The default view for /malone.
+
+    Essentially, this exists only to allow forms to post IDs here and be
+    redirected to the right place.
+    """
+    # Test: standalone/xx-slash-malone-slash-bugs.txt
+    error_message = None
+    def initialize(self):
+        bug_id = self.request.form.get("id")
+        if not bug_id:
+            return
+        if bug_id.startswith("#"):
+            # Be nice to users and chop off leading hashes
+            bug_id = bug_id[1:]
+        try:
+            bug = getUtility(IBugSet).getByNameOrID(bug_id)
+        except NotFoundError:
+            self.error_message = "Bug %r is not registered." % bug_id
+        else:
+            return self.request.response.redirect(canonical_url(bug))
+
 
 
 class BugView:
@@ -510,20 +531,6 @@ class BugSubscriberPortletView(LaunchpadView):
         return [subscriber
                 for subscriber in bug.getIndirectSubscribers()
                 if not bug.isSubscribedToDupes(subscriber)]
-
-
-class BugSetView:
-    """The default view for /malone/bugs.
-
-    Essentially, this exists only to allow forms to post IDs here and be
-    redirected to the right place.
-    """
-
-    def redirectToBug(self):
-        bug_id = self.request.form.get("id")
-        if bug_id:
-            return self.request.response.redirect(bug_id)
-        return self.request.response.redirect("/malone")
 
 
 class BugEditViewBase(LaunchpadEditFormView):
