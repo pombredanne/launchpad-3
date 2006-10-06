@@ -1,9 +1,6 @@
 <div class="portlet">
-
-  <h4 tal:content="string:Search ${context/targetname} bugs:">
-    Search Mozilla Firefox bugs:
-  </h4>
-
+  <h2 tal:content="string:Search ${context/targetname} bugs"
+  >Search Mozilla Firefox bugs</h2>
   <div class="portletBody portletContent"
        tal:define="bugs_url string:${context/target/fmt:url}/+bugs">
     <b>Enter bug ID or keywords:</b><br /><br />

@@ -1,5 +1,5 @@
 <div class="portlet" tal:condition="context/sourcepackages">
-  <h4>Distribution packaging:</h4>
+  <h2>Distribution packaging</h2>
 
   <div class="portletBody portletContent ">
     This series is packaged in the following places:

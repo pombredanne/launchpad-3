@@ -1,7 +1,7 @@
 <div class="portlet">
 
-  <h4>Statistics for template
-      "<span tal:replace="context/name">templatename</span>":</h4>
+  <h2>Statistics for template
+      "<span tal:replace="context/name">templatename</span>"</h2>
 
   <div class="portletBody portletContent">
 
