@@ -1,6 +1,18 @@
 Exporting Single PO Files through the Web
 -----------------------------------------
 
+Not logged in users can't access the +export page.
+
+  >>> anon_browser.open(
+  ...     'http://launchpad.dev/distros/ubuntu/hoary'
+  ...     '/+source/evolution/+pots/evolution-2.2/es/')
+  >>> anon_browser.getLink('Download').click()
+  Traceback (most recent call last):
+  ...
+  Unauthorized:...
+
+Logged in as a regular user, the +export page is accessible.
+
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
   >>> browser.open(
   ...     'http://launchpad.dev/distros/ubuntu/hoary'
@@ -11,7 +23,8 @@ Exporting Single PO Files through the Web
   'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+export'
 
   >>> browser.title
-  'Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution" file exports'
+  'Spanish (es) translation of evolution-2.2 in Ubuntu Hoary
+  package "evolution" file exports'
 
   >>> 'PO file export' in browser.contents
   True
@@ -27,8 +40,8 @@ If we POST the page, it should add the request to the queue.
   'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es'
 
   >>> for tag in find_tags_by_class(browser.contents, 'informational'):
-  ...     print tag
-  <div class="informational message">Your request has been received. Expect to receive an email shortly.</div>
+  ...     tag.renderContents()
+  'Your request has been received. Expect to receive an email shortly.'
 
 Let's be sure that we can request po files without translations as the
 No Privileges Person.
@@ -53,10 +66,10 @@ No Privileges Person.
   'http://launchpad.dev/products/evolution/trunk/+pots/evolution-2.2/cy'
 
   >>> for tag in find_tags_by_class(browser.contents, 'informational'):
-  ...     print tag
-  <div class="informational message">Your request has been received. Expect to receive an email shortly.</div>
+  ...     tag.renderContents()
+  'Your request has been received. Expect to receive an email shortly.'
 
-Since no-privileges person isn't a valid translator for that language, the
+Since no-privileges person isn't a valid translator for Welsh (cy) language, the
 ownership of the newly created pofile is set to Rosetta Admins.
 
   >>> browser.open(
@@ -68,6 +81,8 @@ ownership of the newly created pofile is set to Rosetta Admins.
   u'Rosetta Administrators'
 
 But if we request an export from a valid translator, he gets the ownership.
+We test using the Swedish (sv) language which doesn't have a pofile for
+evolution yet; it will be created at the moment the export is requested.
 
   >>> browser.open(
   ...     'http://launchpad.dev/products/evolution/trunk/+pots/evolution-2.2/sv')
@@ -80,8 +95,8 @@ But if we request an export from a valid translator, he gets the ownership.
   'http://launchpad.dev/products/evolution/trunk/+pots/evolution-2.2/sv'
 
   >>> for tag in find_tags_by_class(browser.contents, 'informational'):
-  ...     print tag
-  <div class="informational message">Your request has been received. Expect to receive an email shortly.</div>
+  ...     tag.renderContents()
+  'Your request has been received. Expect to receive an email shortly.'
   ...
 
   >>> translation_portlet = find_portlet(

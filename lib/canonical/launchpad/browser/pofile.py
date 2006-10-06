@@ -159,7 +159,7 @@ class BaseExportView(LaunchpadView):
 
     def processForm(self):
         """Override in subclass."""
-        pass
+        raise NotImplementedError
 
     def nextURL(self):
         self.request.response.addInfoNotification(_(

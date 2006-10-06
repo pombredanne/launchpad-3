@@ -1,6 +1,18 @@
 Exporting Files from PO Templates Through the Web
 -------------------------------------------------
 
+Not logged in users can't access the +export page.
+
+  >>> anon_browser.open(
+  ...     'http://launchpad.dev/distros/ubuntu/hoary'
+  ...     '/+source/evolution/+pots/evolution-2.2/')
+  >>> anon_browser.getLink('Download').click()
+  Traceback (most recent call last):
+  ...
+  Unauthorized:...
+
+Logged in as a regular user, the +export page is accessible.
+
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
   >>> browser.open(
   ...     'http://launchpad.dev/distros/ubuntu/hoary'
@@ -11,7 +23,8 @@ Exporting Files from PO Templates Through the Web
   'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+export'
 
   >>> browser.title
-  'Export translations of \xe2\x80\x9cTemplate "evolution-2.2" in Ubuntu Hoary package "evolution"\xe2\x80\x9d'
+  'Export translations of \xe2\x80\x9cTemplate "evolution-2.2" in 
+  Ubuntu Hoary package "evolution"\xe2\x80\x9d'
 
 If we POST without the appropriate format included, we tell the user off:
 
