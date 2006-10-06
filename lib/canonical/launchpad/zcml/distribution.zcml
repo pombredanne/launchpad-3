@@ -389,7 +389,7 @@
     <browser:url
         for="canonical.launchpad.interfaces.IDistribution"
         path_expression="name"
-        parent_utility="canonical.launchpad.interfaces.IDistributionSet"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
         />
 
     <!-- XXX: WTF is distros-index hooked onto +bugs for

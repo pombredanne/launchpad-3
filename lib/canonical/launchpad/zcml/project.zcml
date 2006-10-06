@@ -287,7 +287,7 @@
     <browser:url
         for="canonical.launchpad.interfaces.IProject"
         path_expression="name"
-        parent_utility="canonical.launchpad.interfaces.IProjectSet"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
         />
 
     <browser:pages

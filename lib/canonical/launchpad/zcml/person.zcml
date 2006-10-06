@@ -40,8 +40,8 @@
 
   <browser:url
       for="canonical.launchpad.interfaces.IPerson"
-      path_expression="name"
-      parent_utility="canonical.launchpad.interfaces.IPersonSet"
+      path_expression="string:~${name}"
+      parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
       />
 
   <browser:editform

@@ -46,8 +46,7 @@
     <tr tal:repeat="translator view/translator_list">
       <td tal:content="translator/lang" />
       <td><a tal:content="translator/person/browsername"
-             tal:attributes="href
-             string:/people/${translator/person/name}" />
+              tal:attributes="href translator/person/fmt:url" />
         <tal:comment condition="nothing">
           XXX mpt 20050627: Change this to
           string:/people/${translator/person/name}/+translations

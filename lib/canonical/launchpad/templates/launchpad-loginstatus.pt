@@ -15,7 +15,7 @@
   <input type="hidden" name="loggingout" value="1" />
   Logged in as
     <a
-      tal:attributes="href string:/people/${request/lp:person/name}"
+      tal:attributes="href string:/~${request/lp:person/name}"
       tal:content="request/lp:person/browsername"
     >User's browser name
     </a>
