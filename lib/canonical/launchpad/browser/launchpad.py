@@ -448,7 +448,11 @@ class LaunchpadRootNavigation(Navigation):
         # Allow traversal to ~foo for People
         # XXX: Needs page test -- StuartBishop 20060922
         if name.startswith('~'):
-            return getUtility(IPersonSet)[name[1:].lower()]
+            person = getUtility(IPersonSet).getByName(name[1:].lower())
+            if person is None:
+                raise NotFoundError(name)
+            else:
+                return person
 
         # XXX: Needs page tests for these three cases, plus 404.
         # -- StuartBishop 20060922

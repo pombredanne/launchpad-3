@@ -39,6 +39,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.formlib import form
 from zope.interface import providedBy
 
+from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPerson, IProduct, IProductLaunchpadUsageForm,
@@ -56,7 +57,9 @@ from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, GetitemNavigation, LaunchpadView,
     LaunchpadEditFormView, LaunchpadFormView, Link, Navigation,
-    StandardLaunchpadFacets, stepto, stepthrough, structured)
+    RedirectionNavigation, StandardLaunchpadFacets, stepto, stepthrough,
+    structured)
+from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.widgets.product import ProductBugTrackerWidget
 
@@ -101,12 +104,20 @@ class ProductNavigation(
         return self.context.getSeries(name)
 
 
-class ProductSetNavigation(GetitemNavigation):
+class ProductSetNavigation(RedirectionNavigation):
 
     usedfor = IProductSet
 
     def breadcrumb(self):
         return 'Products'
+
+    redirection_root_url = config.launchpad.root_url
+
+    def traverse(self, name):
+        # Raise a 404 on an invalid product name
+        if self.context.getByName(name) is None:
+            raise NotFoundError(name)
+        return RedirectionNavigation.traverse(self, name)
 
 
 class ProductFacets(StandardLaunchpadFacets):

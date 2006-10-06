@@ -29,6 +29,7 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
+from canonical.config import config
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IPerson, IPublishedPackageSet,
     NotFoundError, ILaunchBag)
@@ -38,7 +39,8 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, enabled_with_permission,
     GetitemNavigation, LaunchpadEditFormView, LaunchpadView, Link,
-    redirection, StandardLaunchpadFacets, stepthrough, stepto)
+    redirection, RedirectionNavigation, StandardLaunchpadFacets,
+    stepthrough, stepto)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import DistributionReleaseStatus
 
@@ -86,12 +88,20 @@ class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
     redirection('+ticket', '+tickets')
 
 
-class DistributionSetNavigation(GetitemNavigation):
+class DistributionSetNavigation(RedirectionNavigation):
 
     usedfor = IDistributionSet
 
     def breadcrumb(self):
         return 'Distributions'
+
+    redirection_root_url = config.launchpad.root_url
+
+    def traverse(self, name):
+        # Raise a 404 on an invalid distribution name
+        if self.context.getByName(name) is None:
+            raise NotFoundError(name)
+        return RedirectionNavigation.traverse(self, name)
 
 
 class DistributionFacets(StandardLaunchpadFacets):

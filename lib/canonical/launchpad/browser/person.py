@@ -58,6 +58,7 @@ from zope.app.form.interfaces import (
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.lp.dbschema import (
@@ -92,8 +93,10 @@ from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
-    enabled_with_permission, Navigation, stepto, stepthrough, smartquote,
+    enabled_with_permission, Navigation, RedirectionNavigation,
+    stepto, stepthrough, smartquote,
     GeneralFormView, LaunchpadFormView, action, custom_widget)
+from canonical.launchpad.webapp.publisher import RedirectionView
 
 from canonical.launchpad.event.team import JoinTeamRequestEvent
 
@@ -158,19 +161,30 @@ class TeamNavigation(Navigation, CalendarTraversalMixin,
             person, self.context)
 
 
-class PersonSetNavigation(Navigation):
+class PersonSetNavigation(RedirectionNavigation):
 
     usedfor = IPersonSet
 
     def breadcrumb(self):
         return 'People'
 
-    @stepto('+me')
-    def me(self):
-        return getUtility(ILaunchBag).user
+    redirection_root_url = config.launchpad.root_url
 
     def traverse(self, name):
-        return self.context.getByName(name)
+        # Raise a 404 on an invalid Person name
+        if self.context.getByName(name) is None:
+            raise NotFoundError(name)
+        # Redirect to /~name
+        return RedirectionNavigation.traverse(self, '~' + name)
+            
+
+    @stepto('+me')
+    def me(self):
+        target = urlappend(
+                config.launchpad.root_url,
+                '~' + getUtility(ILaunchBag).user.name
+                )
+        return RedirectionView(target, self.request, 301)
 
 
 class PeopleContextMenu(ContextMenu):
