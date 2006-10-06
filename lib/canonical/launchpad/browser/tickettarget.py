@@ -7,9 +7,11 @@ __metaclass__ = type
 __all__ = [
     'ManageSupportContactView',
     'SearchTicketsView',
+    'TicketTargetFacetMixin',
     'TicketTargetSearchAnsweredTicketsView',
     'TicketTargetSearchMyTicketsView',
     'TicketTargetSearchOpenTicketsView',
+    'TicketTargetTraversalMixin',
     'TicketTargetView',
     'TicketTargetSupportMenu',
     ]
@@ -25,8 +27,8 @@ from canonical.launchpad.interfaces import (
     IDistribution, ILaunchBag, IManageSupportContacts, IPerson,
     ISearchTicketsForm, ITicketTarget)
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, ApplicationMenu,
-    GeneralFormView, LaunchpadFormView, LaunchpadView, Link)
+    action, canonical_url, custom_widget, redirection, stepthrough,
+    ApplicationMenu, GeneralFormView, LaunchpadFormView, LaunchpadView, Link)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import TicketStatus
 from canonical.widgets.itemswidget import LabeledMultiCheckBoxWidget
@@ -358,6 +360,32 @@ class ManageSupportContactView(GeneralFormView):
                             team.displayname, self.context.displayname))
 
         self._nextURL = canonical_url(self.context) + '/+tickets'
+
+
+class TicketTargetFacetMixin:
+    """Mixin for tickettarget facet definition."""
+
+    def support(self):
+        target = '+tickets'
+        text = 'Support'
+        summary = (
+            'Technical support requests for %s' % self.context.displayname)
+        return Link(target, text, summary)
+
+
+class TicketTargetTraversalMixin:
+    """Navigation mixin for ITicketTarget."""
+
+    @stepthrough('+ticket')
+    def traverse_ticket(self, name):
+        # tickets should be ints
+        try:
+            ticket_id = int(name)
+        except ValueError:
+            raise NotFoundError
+        return self.context.getTicket(ticket_id)
+
+    redirection('+ticket', '+tickets')
 
 
 class TicketTargetSupportMenu(ApplicationMenu):

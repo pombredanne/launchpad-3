@@ -26,7 +26,8 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagerelationship import (
     PackageRelationship)
-from canonical.launchpad.browser.tickettarget import TicketTargetSupportMenu
+from canonical.launchpad.browser.tickettarget import (
+    TicketTargetFacetMixin, TicketTargetSupportMenu)
 from canonical.launchpad.webapp.batching import BatchNavigator
 
 from canonical.launchpad.webapp import (
@@ -74,15 +75,10 @@ def linkify_changelog(changelog, sourcepkgnametxt):
     return changelog
 
 
-class SourcePackageFacets(StandardLaunchpadFacets):
+class SourcePackageFacets(TicketTargetFacetMixin, StandardLaunchpadFacets):
 
     usedfor = ISourcePackage
     enable_only = ['overview', 'bugs', 'support', 'translations']
-
-    def support(self):
-        link = StandardLaunchpadFacets.support(self)
-        link.enabled = True
-        return link
 
 
 class SourcePackageOverviewMenu(ApplicationMenu):

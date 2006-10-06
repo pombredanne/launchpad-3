@@ -50,6 +50,8 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.productseries import get_series_branch_error
+from canonical.launchpad.browser.tickettarget import (
+    TicketTargetFacetMixin, TicketTargetTraversalMixin)
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
@@ -61,7 +63,8 @@ from canonical.widgets.product import ProductBugTrackerWidget
 
 
 class ProductNavigation(
-    Navigation, BugTargetTraversalMixin, CalendarTraversalMixin):
+    Navigation, BugTargetTraversalMixin, CalendarTraversalMixin,
+    TicketTargetTraversalMixin):
 
     usedfor = IProduct
 
@@ -83,15 +86,6 @@ class ProductNavigation(
     def traverse_milestone(self, name):
         return self.context.getMilestone(name)
 
-    @stepthrough('+ticket')
-    def traverse_ticket(self, name):
-        # tickets should be ints
-        try:
-            ticket_id = int(name)
-        except ValueError:
-            raise NotFoundError
-        return self.context.getTicket(ticket_id)
-
     @stepthrough('+release')
     def traverse_release(self, name):
         return self.context.getRelease(name)
@@ -108,7 +102,7 @@ class ProductSetNavigation(GetitemNavigation):
         return 'Products'
 
 
-class ProductFacets(StandardLaunchpadFacets):
+class ProductFacets(TicketTargetFacetMixin, StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IProduct."""
 
     usedfor = IProduct
@@ -128,13 +122,6 @@ class ProductFacets(StandardLaunchpadFacets):
         target = '+bugs'
         text = 'Bugs'
         summary = 'Bugs reported about %s' % self.context.displayname
-        return Link(target, text, summary)
-
-    def support(self):
-        target = '+tickets'
-        text = 'Support'
-        summary = (
-            'Technical support requests for %s' % self.context.displayname)
         return Link(target, text, summary)
 
     def bounties(self):

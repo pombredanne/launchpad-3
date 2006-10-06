@@ -14,20 +14,17 @@ from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, ILaunchBag, DuplicateBugContactError,
     DeleteBugContactError, IPersonSet)
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
+from canonical.launchpad.browser.tickettarget import TicketTargetFacetMixin
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu,
     GetitemNavigation, canonical_url, redirection)
 
 
-class DistributionSourcePackageFacets(StandardLaunchpadFacets):
+class DistributionSourcePackageFacets(TicketTargetFacetMixin,
+                                      StandardLaunchpadFacets):
 
     usedfor = IDistributionSourcePackage
     enable_only = ['overview', 'bugs', 'support']
-
-    def support(self):
-        link = StandardLaunchpadFacets.support(self)
-        link.enabled = True
-        return link
 
 
 class DistributionSourcePackageOverviewMenu(ApplicationMenu):

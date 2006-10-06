@@ -35,6 +35,8 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.tickettarget import (
+    TicketTargetFacetMixin, TicketTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, enabled_with_permission,
     GetitemNavigation, LaunchpadEditFormView, LaunchpadView, Link,
@@ -43,7 +45,8 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import DistributionReleaseStatus
 
 
-class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
+class DistributionNavigation(
+    GetitemNavigation, BugTargetTraversalMixin, TicketTargetTraversalMixin):
 
     usedfor = IDistribution
 
@@ -74,17 +77,6 @@ class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
     def traverse_spec(self, name):
         return self.context.getSpecification(name)
 
-    @stepthrough('+ticket')
-    def traverse_ticket(self, name):
-        # tickets should be ints
-        try:
-            ticket_id = int(name)
-        except ValueError:
-            raise NotFoundError
-        return self.context.getTicket(ticket_id)
-
-    redirection('+ticket', '+tickets')
-
 
 class DistributionSetNavigation(GetitemNavigation):
 
@@ -94,7 +86,7 @@ class DistributionSetNavigation(GetitemNavigation):
         return 'Distributions'
 
 
-class DistributionFacets(StandardLaunchpadFacets):
+class DistributionFacets(TicketTargetFacetMixin, StandardLaunchpadFacets):
 
     usedfor = IDistribution
 
@@ -105,13 +97,6 @@ class DistributionFacets(StandardLaunchpadFacets):
         target = '+specs'
         text = 'Features'
         summary = 'Feature specifications for %s' % self.context.displayname
-        return Link(target, text, summary)
-
-    def support(self):
-        target = '+tickets'
-        text = 'Support'
-        summary = (
-            'Technical support requests for %s' % self.context.displayname)
         return Link(target, text, summary)
 
 
