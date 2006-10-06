@@ -72,6 +72,15 @@ def uploaderSetUp(test):
 def uploaderTearDown(test):
     LaunchpadZopelessTestSetup().tearDown()
 
+def builddmasterSetUp(test):
+    sqlos.connection.connCache = {}
+    LaunchpadZopelessTestSetup(dbuser=config.builddmaster.dbuser).setUp()
+    setGlobs(test)
+    login(ANONYMOUS)
+
+def builddmasterTearDown(test):
+    LaunchpadZopelessTestSetup().tearDown()
+
 def importdSetUp(test):
     sqlos.connection.connCache = {}
     LaunchpadZopelessTestSetup(dbuser='importd').setUp()
@@ -175,15 +184,23 @@ special = {
             setUp=uploaderSetUp, tearDown=uploaderTearDown,
             layer=LaunchpadFunctionalLayer
             ),
+    'build-notification.txt': LayeredDocFileSuite(
+            '../doc/build-notification.txt',
+            setUp=builddmasterSetUp, tearDown=builddmasterTearDown,
+            layer=ZopelessLayer, optionflags=default_optionflags
+            ),
     'revision.txt': LayeredDocFileSuite(
             '../doc/revision.txt',
             setUp=importdSetUp, tearDown=importdTearDown,
             optionflags=default_optionflags, layer=ZopelessLayer
             ),
+    # XXX flacoste 20060915 This should use a LayeredDocFileSuite
+    # but we need to register a TestMailBox and set up the
+    # LaunchpadSecurityPolicy
     'support-tracker-emailinterface.txt': FunctionalDocFileSuite(
             '../doc/support-tracker-emailinterface.txt',
-            setUp=supportTrackerSetUp, tearDown=supportTrackerTearDown,
-            layer=ZopelessLayer
+            setUp=setUp, tearDown=tearDown,
+            layer=LaunchpadFunctionalLayer
             ),
     'person-karma.txt': FunctionalDocFileSuite(
             '../doc/person-karma.txt',
@@ -223,6 +240,21 @@ special = {
             '../doc/incomingmail.txt',
             setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer,
             stdout_logging_level=logging.WARNING
+            ),
+    'launchpadform.txt': FunctionalDocFileSuite(
+            '../doc/launchpadform.txt',
+            setUp=setUp, tearDown=tearDown, optionflags=default_optionflags,
+            layer=FunctionalLayer
+            ),
+    'launchpadformharness.txt': FunctionalDocFileSuite(
+            '../doc/launchpadformharness.txt',
+            setUp=setUp, tearDown=tearDown, optionflags=default_optionflags,
+            layer=FunctionalLayer
+            ),
+    'bug-export.txt': LayeredDocFileSuite(
+            '../doc/bug-export.txt',
+            setUp=setUp, tearDown=tearDown, optionflags=default_optionflags,
+            layer=LaunchpadZopelessLayer
             ),
     }
 

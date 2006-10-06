@@ -14,6 +14,7 @@ import unittest
 from bzrlib.bzrdir import BzrDir
 from bzrlib.branch import Branch
 from bzrlib.errors import DivergedBranches
+from bzrlib.urlutils import local_path_to_url
 from zope.component import getUtility
 
 from canonical.database.sqlbase import commit
@@ -30,11 +31,13 @@ class TestImportdPublisher(ImportdTestCase):
     def setUp(self):
         ImportdTestCase.setUp(self)
         self.importd_publisher = ImportdPublisher(
-            logging, self.sandbox.path, self.series_id, self.bzrmirrors)
+            logging, self.sandbox.path, self.series_id,
+            local_path_to_url(self.bzrmirrors))
 
     def assertGoodMirror(self):
         """Helper to check that the mirror branch matches expectations."""
-        # the productseries.branch.id allows us to find the mirror branch
+        # the productseries.import_branch.id allows us to find the
+        # mirror branch
         mirror_path = self.mirrorPath()
         mirror_control = BzrDir.open(mirror_path)
         # that branch must not have a working tree
@@ -51,9 +54,9 @@ class TestImportdPublisher(ImportdTestCase):
         # branch attribute of the productseries, and pushes to a branch without
         # working tree, with a name based on the branch id.
         self.setUpOneCommit()
-        self.assertEqual(self.series_helper.getSeries().branch, None)
+        self.assertEqual(self.series_helper.getSeries().import_branch, None)
         self.importd_publisher.publish()
-        db_branch = self.series_helper.getSeries().branch
+        db_branch = self.series_helper.getSeries().import_branch
         self.assertNotEqual(db_branch, None)
         self.assertGoodMirror()
 
@@ -79,7 +82,7 @@ class TestImportdPublisher(ImportdTestCase):
             series.name, series.product.owner, series.product, url=None)
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
         assert branch.owner != vcs_imports
-        series.branch = branch
+        series.import_branch = branch
         commit()
         self.assertRaises(AssertionError, self.importd_publisher.publish)
 
@@ -101,7 +104,7 @@ class TestMirrorUrlFromSeries(ImportdTestCase):
         # that made it incorrect with sftp.
         self.assertEqual(
             mirror_url_from_series(self.sftp_prefix, self.series),
-            self.sftp_prefix + '%08x' % self.series.branch.id)
+            self.sftp_prefix + '%08x' % self.series.import_branch.id)
 
     def testSftpPrefixNoSlash(self):
         # If the prefix has no trailing slash, one should be added. It's very
@@ -109,14 +112,14 @@ class TestMirrorUrlFromSeries(ImportdTestCase):
         sftp_prefix_noslash = 'sftp://user@host/base'
         self.assertEqual(
             mirror_url_from_series(sftp_prefix_noslash, self.series),
-            sftp_prefix_noslash + '/' + '%08x' % self.series.branch.id)
+            sftp_prefix_noslash + '/' + '%08x' % self.series.import_branch.id)
 
     def testNoSeriesBranch(self):
         # mirror_url_from_series checks that the series branch is set, it
         # cannot do its job otherwise, better to fail with AssertionError than
         # with AttributeError.
-        assert self.series.branch is not None
-        self.series.branch = None
+        assert self.series.import_branch is not None
+        self.series.import_branch = None
         sftp_prefix = 'sftp://user@host/base/'
         self.assertRaises(AssertionError, mirror_url_from_series,
                           self.sftp_prefix, self.series)
@@ -127,18 +130,18 @@ class TestMirrorUrlFromSeries(ImportdTestCase):
         # not look for the branch data on the internal vcs-import publishing
         # server.
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-        assert self.series.branch.owner == vcs_imports
-        assert self.series.branch.url is None
-        number_one = getUtility(IPersonSet).get(1, None)
+        assert self.series.import_branch.owner == vcs_imports
+        assert self.series.import_branch.url is None
+        number_one = getUtility(IPersonSet).get(1)
         assert number_one != None
         assert vcs_imports != number_one
         # First, use an improper branch owner.
-        self.series.branch.owner = number_one
+        self.series.import_branch.owner = number_one
         self.assertRaises(AssertionError, mirror_url_from_series,
                           self.sftp_prefix, self.series)
         # Then use a branch with a non-NULL url.
-        self.series.branch.owner = vcs_imports
-        self.series.branch.url = 'http://example.com/branch'
+        self.series.import_branch.owner = vcs_imports
+        self.series.import_branch.url = 'http://example.com/branch'
         self.assertRaises(AssertionError, mirror_url_from_series,
                           self.sftp_prefix, self.series)
 

@@ -37,15 +37,21 @@
         classes="MaloneApplicationNavigation"
         />
 
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IMaloneApplication"
+        class="canonical.launchpad.browser.MaloneView"
+        facet="bugs"
+        permission="zope.Public"
+        name="+index"
+        template="../templates/malone-index.pt"
+        lp:url="malone/+index" />
+
     <!-- pages for the malone application -->
     <browser:pages
         for="canonical.launchpad.interfaces.IMaloneApplication"
         facet="bugs"
         permission="zope.Public">
-        <browser:page
-            name="+index"
-            template="../templates/malone-index.pt"
-            lp:url="malone/+index" />
         <browser:page
             name="+about"
             template="../templates/malone-about.pt"

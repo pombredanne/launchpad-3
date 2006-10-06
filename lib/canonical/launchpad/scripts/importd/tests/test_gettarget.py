@@ -16,6 +16,7 @@ from bzrlib.branch import Branch
 from bzrlib.builtins import get_format_type
 from bzrlib.bzrdir import BzrDir
 from bzrlib.repository import Repository
+from bzrlib.urlutils import local_path_to_url
 from zope.component import getUtility
 
 from canonical.database.sqlbase import commit
@@ -32,9 +33,11 @@ class ImportdTargetGetterTestCase(ImportdTestCase):
     def setUp(self):
         ImportdTestCase.setUp(self)
         self.importd_publisher = ImportdPublisher(
-            logging, self.sandbox.path, self.series_id, self.bzrmirrors)
+            logging, self.sandbox.path, self.series_id,
+            local_path_to_url(self.bzrmirrors))
         self.importd_getter = ImportdTargetGetter(
-            logging, self.sandbox.path, self.series_id, self.bzrmirrors)
+            logging, self.sandbox.path, self.series_id,
+            local_path_to_url(self.bzrmirrors))
 
     def setUpMirror(self):
         self.setUpOneCommit()
@@ -119,9 +122,9 @@ class TestImportdTargetGetter(ImportdTargetGetterTestCase):
         # end up with an environment that is valid for get_target in all
         # respects, except for the owner of the branch record.
         series = self.series_helper.series
-        series.branch.owner = series.product.owner
+        series.import_branch.owner = series.product.owner
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-        assert series.branch.owner != vcs_imports
+        assert series.import_branch.owner != vcs_imports
         commit()
         # This bad value of the branch owner must be enough to cause a failure.
         self.assertRaises(AssertionError, self.importd_getter.get_target)

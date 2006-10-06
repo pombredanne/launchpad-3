@@ -4,10 +4,10 @@
 __metaclass__ = type
 __all__ = ['Bug', 'BugSet', 'get_bug_tags', 'get_bug_tags_open_count']
 
+import operator
+import re
 from cStringIO import StringIO
 from email.Utils import make_msgid
-import re
-from sets import Set
 
 from zope.app.content_types import guess_content_type
 from zope.component import getUtility
@@ -40,11 +40,13 @@ from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent)
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.lp.dbschema import BugAttachmentType, BugTaskStatus
+from canonical.lp.dbschema import BugAttachmentType
+
 
 _bug_tag_query_template = """
         SELECT %(columns)s FROM %(tables)s WHERE
             %(condition)s GROUP BY BugTag.tag ORDER BY BugTag.tag"""
+
 
 def get_bug_tags(context_clause):
     """Return all the bug tags as a list of strings.
@@ -156,6 +158,7 @@ class Bug(SQLBase):
     cves = SQLRelatedJoin('Cve', intermediateTable='BugCve',
         orderBy='sequence', joinColumn='bug', otherColumn='cve')
     cve_links = SQLMultipleJoin('BugCve', joinColumn='bug', orderBy='id')
+    # XXX: why is subscriptions ordered by ID? -- kiko, 2006-09-23
     subscriptions = SQLMultipleJoin(
             'BugSubscription', joinColumn='bug', orderBy='id',
             prejoins=["person"])
@@ -210,6 +213,16 @@ class Bug(SQLBase):
                 BugSubscription.delete(sub.id)
                 return
 
+    def unsubscribeFromDupes(self, person):
+        """See canonical.launchpad.interfaces.IBug."""
+        bugs_unsubscribed = []
+        for dupe in self.duplicates:
+            if dupe.isSubscribed(person):
+                dupe.unsubscribe(person)
+                bugs_unsubscribed.append(dupe)
+
+        return bugs_unsubscribed
+
     def isSubscribed(self, person):
         """See canonical.launchpad.interfaces.IBug."""
         if person is None:
@@ -217,6 +230,14 @@ class Bug(SQLBase):
 
         bs = BugSubscription.selectBy(bug=self, person=person)
         return bool(bs.count())
+
+    def isSubscribedToDupes(self, person):
+        """See canonical.launchpad.interfaces.IBug."""
+        for dupe in self.duplicates:
+            if dupe.isSubscribed(person):
+                return True
+
+        return False
 
     def getDirectSubscribers(self):
         """See canonical.launchpad.interfaces.IBug."""
@@ -258,20 +279,23 @@ class Bug(SQLBase):
                 else:
                     indirect_subscribers.add(product.owner)
 
-        # Subscribers, whether direct or indirect, from duplicate bugs become
-        # indirect subscribers of this bug.
+        # Indirectly subscribe *only* direct subscribers from dupes, so they
+        # later unsubscribe from the dupe target by unsubscribing from the
+        # duplicate(s) that caused them to be indirectly subscribed to this
+        # bug. This wouldn't be possible for indirect subscribers, because
+        # indirect subscribers cannot unsubscribe from bugs.
         for dupe in self.duplicates:
             indirect_subscribers.update(dupe.getDirectSubscribers())
-            indirect_subscribers.update(dupe.getIndirectSubscribers())
 
         # Direct subscriptions always take precedence over indirect
         # subscriptions.
         direct_subscribers = set(self.getDirectSubscribers())
-        return list(indirect_subscribers.difference(direct_subscribers))
+        return sorted(indirect_subscribers.difference(direct_subscribers),
+                      key=operator.attrgetter('id'))
 
     def notificationRecipientAddresses(self):
         """See canonical.launchpad.interfaces.IBug."""
-        emails = Set()
+        emails = set()
         for direct_subscriber in self.getDirectSubscribers():
             emails.update(contactEmailAddresses(direct_subscriber))
 
@@ -283,7 +307,7 @@ class Bug(SQLBase):
                 "Indirect subscribers found on private bug. "
                 "A private bug should never have implicit subscribers!")
 
-        return list(emails)
+        return sorted(emails)
 
     def addChangeNotification(self, text, person, when=None):
         """See IBug."""
@@ -410,9 +434,17 @@ class Bug(SQLBase):
             BugMessage.message = Message.id AND
             BugMessage.bug = %s
             """ % sqlvalues(self),
-            prejoins=["message", "message.owner"],
             clauseTables=["BugMessage", "Message"],
-            orderBy=["Message.datecreated", "MessageChunk.sequence"])
+            # XXX: See bug 60745. There is an issue that presents itself
+            # here if we prejoin message.owner: because Message is
+            # already in the clauseTables, the SQL generated joins
+            # against message twice and that causes the results to
+            # break. -- kiko, 2006-09-16
+            prejoinClauseTables=["Message"],
+            # Note the ordering by Message.id here; while datecreated in
+            # production is never the same, it can be in the test suite.
+            orderBy=["Message.datecreated", "Message.id",
+                     "MessageChunk.sequence"])
         return chunks
 
     def _getTags(self):

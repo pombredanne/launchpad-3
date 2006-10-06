@@ -87,6 +87,10 @@
     <resource name="person-mini" file="../images/nyet-mini.png" />
     <resource name="person-heading" file="../images/nyet-heading.png" />
     <resource name="person-mugshot" file="../images/nyet-mugshot.png" />
+    <resource name="person-inactive" file="../images/nyet.png" />
+    <resource name="person-inactive-mini" file="../images/nyet-mini.png" />
+    <resource name="person-inactive-heading" file="../images/nyet-heading.png" />
+    <resource name="person-inactive-mugshot" file="../images/nyet-mugshot.png" />
     <resource name="product" file="../images/product_icon.gif" />
     <resource name="product-mini" file="../images/nyet-mini.png" />
     <resource name="product-heading" file="../images/nyet-heading.png" />
@@ -103,6 +107,7 @@
     <!-- XXX mpt 20060822: Remove this once we use "(Optional)" instead -->
     <resource name="retry" file="../images/retry.png" />
     <resource name="search" file="../images/search_icon.gif" />
+    <resource name="sorry-closed" file="../images/sorry-closed.png" />
     <resource name="spec" file="../images/topic_icon.gif" />
     <resource name="stop" file="../images/stop.png" />
     <resource name="sprint" file="../images/backtalk.gif" />
@@ -115,6 +120,8 @@
     <resource name="ticket" file="../images/ticket.png" />
     <resource name="topic" file="../images/topic_icon.gif" />
     <resource name="translation-file" file="../images/nyet.png" />
+    <resource name="translation-newline" file="../images/translation-newline.png" />
+    <resource name="translation-space" file="../images/translation-space.png" />
     <resource name="translation-template" file="../images/nyet.png" />
     <resource name="translations" file="../images/rosetta-icon.png" />
     <resource name="treeCollapsed" file="../images/treeCollapsed.gif" />

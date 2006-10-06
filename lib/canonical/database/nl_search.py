@@ -65,7 +65,10 @@ def nl_phrase_search(phrase, table, constraints=''):
     """
     terms = []
     total = table.select(constraints).count()
-    for term in nl_term_candidates(phrase):
+    term_candidates = nl_term_candidates(phrase)
+    if total == 0:
+        return '|'.join(term_candidates)
+    for term in term_candidates:
         where_clause = []
         if constraints:
             where_clause.append('(' + constraints + ')')
