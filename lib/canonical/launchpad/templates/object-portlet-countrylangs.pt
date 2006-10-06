@@ -2,7 +2,7 @@
      tal:condition="view/requestCountry"
      tal:define="country view/requestCountry">
 
-  <h4>Languages in <span tal:replace="country/name">country</span>:</h4>
+  <h2>Languages in <span tal:replace="country/name">country</span></h2>
 
   <div class="portletBody portletContent">
 

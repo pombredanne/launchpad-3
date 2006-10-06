@@ -57,7 +57,7 @@ Project.
 >>> anon_browser.open('http://launchpad.dev/products/testing')
 >>> 'This is a Test Product' in anon_browser.contents
 True
->>> '<h4>The Mozilla Project:</h4>' in anon_browser.contents
+>>> '<h2>The Mozilla Project</h2>' in anon_browser.contents
 True
 
 

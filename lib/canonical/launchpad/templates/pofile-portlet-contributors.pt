@@ -1,6 +1,6 @@
 <div class="portlet" tal:condition="context/contributors">
 
-  <h4>Contributors:</h4>
+  <h2>Contributors</h2>
 
   <div class="portletBody">
 

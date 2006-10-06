@@ -1,6 +1,6 @@
 <div class="portlet" tal:condition="context/tickets">
 
-  <h4>Related tickets:</h4>
+  <h2>Related tickets</h2>
 
   <div class="portletBody portletContent">
 
