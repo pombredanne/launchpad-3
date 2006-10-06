@@ -9,7 +9,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.interfaces import (
-    IAuthorization, IHasOwner, IPerson, ITeam, ISprintSpecification,
+    IAuthorization, IHasOwner, IPerson, ITeam, ISprint, ISprintSpecification,
     IDistribution, ITeamMembership, IProductSeriesSource, IProductSet,
     IProductSeriesSourceAdmin, IMilestone, IBug, ITranslator,
     IProduct, IProductSeries, IPOTemplate, IPOFile, IPOTemplateName,
@@ -144,9 +144,12 @@ class DriverSpecification(AuthorizationBase):
             self.obj.goal and
             check_permission("launchpad.Driver", self.obj.goal))
 
+
+# XXX matsubara: Is this ok? We have two different security adapters with the
+# same docstring. They're doing the same check but from different contexts.
 class EditSprintSpecification(AuthorizationBase):
-    """The sprint owner can say what makes it onto the agenda for the
-    sprint.
+    """The sprint owner or driver can say what makes it onto the agenda for
+    the sprint.
     """
     permission = 'launchpad.Edit'
     usedfor = ISprintSpecification
@@ -155,6 +158,20 @@ class EditSprintSpecification(AuthorizationBase):
         admins = getUtility(ILaunchpadCelebrities).admin
         return (user.inTeam(self.obj.sprint.owner) or
                 user.inTeam(self.obj.sprint.driver) or
+                user.inTeam(admins))
+
+
+class SetTopicsSprint(AuthorizationBase):
+    """The sprint owner or driver can say what makes it onto the agenda for
+    the sprint.
+    """
+    permission = 'launchpad.Driver'
+    usedfor = ISprint
+
+    def checkAuthenticated(self, user):
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.owner) or
+                user.inTeam(self.obj.driver) or
                 user.inTeam(admins))
 
 
