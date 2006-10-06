@@ -7,6 +7,9 @@ __metaclass__ = type
 __all__ = [
     'ManageSupportContactView',
     'SearchTicketsView',
+    'TicketTargetSearchAnsweredTicketsView',
+    'TicketTargetSearchMyTicketsView',
+    'TicketTargetSearchOpenTicketsView',
     'TicketTargetView',
     'TicketTargetSupportMenu',
     ]
@@ -14,6 +17,7 @@ __all__ = [
 from zope.component import getUtility
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import DropdownWidget
+from zope.app.pagetemplate import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
@@ -24,7 +28,7 @@ from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, ApplicationMenu,
     GeneralFormView, LaunchpadFormView, LaunchpadView, Link)
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.lp.dbschema import TicketSort
+from canonical.lp.dbschema import TicketStatus
 from canonical.widgets.itemswidget import LabeledMultiCheckBoxWidget
 
 
@@ -138,22 +142,72 @@ class SearchTicketsView(LaunchpadFormView):
                   orientation='horizontal')
     custom_widget('sort', DropdownWidget, cssClass='inlined-widget')
 
-    # Contains the validated search parameters
+    template = ViewPageTemplateFile('../templates/ticket-listing.pt')
+
+    # Will contain the parameters used by searchResults
     search_params = None
+
+    # Subclasses that use status in their base filter will usually set this
+    # to False
+    include_status_widget = True
+
+    @property
+    def pagetitle(self):
+        """Page title."""
+        return self.pageheading
+
+    @property
+    def pageheading(self):
+        """Heading to display above the search results."""
+        return _('Support requests for ${context}',
+                 mapping={'context': self.context.displayname})
+
+    @property
+    def empty_listing_message(self):
+        """Message displayed when no search was entered and the base filter
+        doesn't contain any tickets.
+        """
+        return _('There are no active support requests in ${context}.',
+                 mapping={'context': self.context.displayname})
+
+    def getDefaultFilter(self):
+        """Hook for subclass to provide a base search filter."""
+        return {}
+
+    def setUpFields(self):
+        """See LaunchpadFormView."""
+        LaunchpadFormView.setUpFields(self)
+        if not self.include_status_widget:
+            self.form_fields = self.form_fields.omit('status')
+
+    def setUpWidgets(self):
+        """See LaunchpadFormView."""
+        LaunchpadFormView.setUpWidgets(self)
+        # Make sure that the default filter is displayed
+        # correctly in the widgets when not overriden by the user
+        for name, value in self.getDefaultFilter().items():
+            widget = self.widgets.get(name)
+            if widget and not widget.hasValidInput():
+                widget.setRenderedValue(value)
 
     @action(_('Search'))
     def search_action(self, action, data):
-        """Action executed when the user clicked the search button."""
-        self.search_params = data
+        """Action executed when the user clicked the search button.
+
+        Saves the user submitted search parameters in an instance
+        attribute.
+        """
+        self.search_params = self.getDefaultFilter()
+        self.search_params.update(**data)
 
     def searchResults(self):
         """Return the tickets corresponding to the search."""
         if self.search_params is None:
-            # No search
-            tickets = self.context.searchTickets(sort=TicketSort.NEWEST_FIRST)
-        else:
-            tickets = self.context.searchTickets(**self.search_params)
-        return BatchNavigator(tickets, self.request)
+            # Search button wasn't clicked
+            self.search_params = self.getDefaultFilter()
+
+        return BatchNavigator(
+            self.context.searchTickets(**self.search_params), self.request)
 
     def displaySourcePackage(self):
         """We display the source package column only on distribution."""
@@ -173,6 +227,77 @@ class SearchTicketsView(LaunchpadFormView):
                 ticket.sourcepackagename)
             return '<a href="%s/+tickets">%s</a>' % (
                 canonical_url(sourcepackage), ticket.sourcepackagename.name)
+
+
+class TicketTargetSearchMyTicketsView(SearchTicketsView):
+    """View that displays and searches the support requests made by the logged
+    in user in a tickettarget context.
+    """
+
+    @property
+    def pageheading(self):
+        """See SearchTicketsView."""
+        return _('Support requests you made in ${context}',
+                 mapping={'context': self.context.displayname})
+
+    @property
+    def empty_listing_message(self):
+        """See SearchTicketsView."""
+        return _("You didn't make any support requests in ${context}.",
+                 mapping={'context': self.context.displayname})
+
+    def getDefaultFilter(self):
+        """See SearchTicketsView."""
+        return {'owner': self.user,
+                'status': list(TicketStatus.items)}
+
+
+class TicketTargetSearchOpenTicketsView(SearchTicketsView):
+    """View that displays and searches the open support requests in a
+    tickettarget context.
+    """
+
+    include_status_widget = False
+
+    @property
+    def pageheading(self):
+        """See SearchTicketsView."""
+        return _('Open support requests in ${context}',
+                 mapping={'context': self.context.displayname})
+
+    @property
+    def empty_listing_message(self):
+        """See SearchTicketsView."""
+        return _("There are no open support requests in ${context}.",
+                 mapping={'context': self.context.displayname})
+
+    def getDefaultFilter(self):
+        """See SearchTicketsView."""
+        return {'status': TicketStatus.OPEN}
+
+
+class TicketTargetSearchAnsweredTicketsView(SearchTicketsView):
+    """View that displays and searches the answered support requests in a
+    tickettarget context.
+    """
+
+    include_status_widget = False
+
+    @property
+    def pageheading(self):
+        """See SearchTicketsView."""
+        return _('Answered support requests in ${context}',
+                 mapping={'context': self.context.displayname})
+
+    @property
+    def empty_listing_message(self):
+        """See SearchTicketsView."""
+        return _("There are no answered support requests in ${context}.",
+                 mapping={'context': self.context.displayname})
+
+    def getDefaultFilter(self):
+        """See SearchTicketsView."""
+        return {'status': TicketStatus.ANSWERED}
 
 
 class ManageSupportContactView(GeneralFormView):
@@ -240,7 +365,19 @@ class TicketTargetSupportMenu(ApplicationMenu):
 
     usedfor = ITicketTarget
     facet = 'support'
-    links = ['new', 'support_contact']
+    links = ['opened', 'answered', 'myrequests', 'new', 'support_contact']
+
+    def opened(self):
+        text = 'Open'
+        return Link('+opentickets', text, icon='ticket')
+
+    def answered(self):
+        text = 'Answered'
+        return Link('+answeredtickets', text, icon='ticket')
+
+    def myrequests(self):
+        text = 'My Requests'
+        return Link('+mytickets', text, icon='ticket')
 
     def new(self):
         text = 'Request Support'

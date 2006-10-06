@@ -11,8 +11,25 @@
     for="canonical.launchpad.interfaces.ITicketTarget"
     class="canonical.launchpad.browser.SearchTicketsView"
     name="+tickets"
-    permission="zope.Public"
-    template="../templates/ticket-listing.pt" />
+    permission="zope.Public" />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITicketTarget"
+    class="canonical.launchpad.browser.TicketTargetSearchOpenTicketsView"
+    name="+opentickets"
+    permission="zope.Public" />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITicketTarget"
+    class="canonical.launchpad.browser.TicketTargetSearchAnsweredTicketsView"
+    name="+answeredtickets"
+    permission="zope.Public" />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITicketTarget"
+    class="canonical.launchpad.browser.TicketTargetSearchMyTicketsView"
+    name="+mytickets"
+    permission="launchpad.AnyPerson" />
 
   <browser:page
     for="canonical.launchpad.interfaces.IHasTickets"

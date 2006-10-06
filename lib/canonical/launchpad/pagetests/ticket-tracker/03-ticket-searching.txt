@@ -28,8 +28,8 @@ He discovers that there are no tickets on the Kubuntu support page:
 
     >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(browser.contents)
-    >>> soup('p')
-    [...No active support requests for Kubuntu...]
+    >>> print find_main_content(browser.contents).first('p').renderContents()
+    There are no active support requests in Kubuntu.
 
 
 Browsing Support Requests
@@ -135,9 +135,8 @@ Unfortunately, the search doesn't return any similar requests:
 
     >>> browser.title
     'Support requests for Ubuntu'
-    >>> soup = BeautifulSoup(browser.contents)
-    >>> soup('p')
-    [...No results for search <strong>firefox is slow</strong>...]
+    >>> print find_main_content(browser.contents).first('p').renderContents()
+    No results for search <strong>firefox is slow</strong>.
 
 Joe observes under the search widget that there are checkboxes to select
 the ticket status to search. He notices that only 'Open' and
@@ -201,6 +200,115 @@ selects the 'oldest first' sort order.
     ...Installation of Java Runtime Environment for Mozilla...2006-07-20...
     ...mailto: problem in webpage...2006-07-20...
     </table>]
+
+Common Reports
+--------------
+
+In the actions menu, we find links to some common reports.
+
+Open Requests
+~~~~~~~~~~~~~
+
+Nice Guy likes helping others. He uses the 'Open' link to view the most
+recent requests on Mozilla Firefox.
+
+    >>> browser.open('http://launchpad.dev/products/firefox/+tickets')
+    >>> browser.getLink('Open').click()
+    >>> print browser.title
+    Open support requests in Mozilla Firefox
+    >>> tickets = find_tag_by_id(browser.contents, 'ticket-listing')
+    >>> for ticket in tickets.fetch('td', 'ticket'):
+    ...     print ticket.first('a').renderContents()
+    Newly installed plug-in doesn't seem to be used
+    Firefox loses focus and gets stuck
+    Problem showing the SVG demo on W3C site
+    Firefox cannot render Bank Site
+
+That listing is also searchable. Since he's has lots of experience
+dealing with plugins problems, he always start by a search for such
+problems:
+
+    >>> browser.getControl(name='field.search_text').value = 'plug-in'
+    >>> browser.getControl('Search').click()
+    >>> tickets = find_tag_by_id(browser.contents, 'ticket-listing')
+    >>> for ticket in tickets.fetch('td', 'ticket'):
+    ...     print ticket.first('a').renderContents()
+    Newly installed plug-in doesn't seem to be used
+    Problem showing the SVG demo on W3C site
+
+Answered Requests
+~~~~~~~~~~~~~~~~~
+
+A random user has a problem with firefox in Ubuntu. He uses the
+'Answered' link on the support facet of the distribution to look for
+similar problems.
+
+    >>> browser.open('http://launchpad.dev/distros/ubuntu/+tickets')
+    >>> browser.getLink('Answered').click()
+    >>> print browser.title
+    Answered support requests in Ubuntu
+    >>> tickets = find_tag_by_id(browser.contents, 'ticket-listing')
+    >>> for ticket in tickets.fetch('td', 'ticket'):
+    ...     print ticket.first('a').renderContents()
+    mailto: problem in webpage
+
+This report is also searchable. He's having a problem with Java, so he
+enters 'Java' as a keyword and hits the search button.
+
+    >>> browser.getControl(name='field.search_text').value = 'Java'
+    >>> browser.getControl('Search').click()
+
+    >>> print find_main_content(browser.contents).first('p').renderContents()
+    No results for search <strong>Java</strong>.
+
+My Requests
+~~~~~~~~~~~
+
+Sample Person remembers posting a question on mozilla-firefox. He uses
+the 'My Requests' link on the distribution source package support facet
+to list all the requests he ever made about that package.
+
+He needs to login to access that page:
+
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/distros/ubuntu/+source/mozilla-firefox/'
+    ...     '+tickets')
+    >>> anon_browser.getLink('My Requests').click()
+    Traceback (most recent call last):
+      ...
+    Unauthorized...
+
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/distros/ubuntu/+source/mozilla-firefox/'
+    ...     '+tickets')
+    >>> user_browser.getLink('My Requests').click()
+    >>> print user_browser.title
+    Support requests you made in mozilla-firefox in ubuntu
+    >>> tickets = find_tag_by_id(user_browser.contents, 'ticket-listing')
+    >>> for ticket in tickets.fetch('td', 'ticket'):
+    ...     print ticket.first('a').renderContents()
+    mailto: problem in webpage
+    Installation of Java Runtime Environment for Mozilla
+
+His problem was about integrating his email client in firefox, so he
+enters 'email client in firefox'
+
+    >>> user_browser.getControl(name='field.search_text').value = (
+    ...     'email client in firefox')
+
+He also remembers that his question was answered, so he unselects the
+other statuses and hits the search button.
+
+    >>> user_browser.getControl('Open').selected = False
+    >>> user_browser.getControl('Rejected').selected = False
+    >>> user_browser.getControl('Search').click()
+
+The exact request he was searching for is displayed!
+
+    >>> tickets = find_tag_by_id(user_browser.contents, 'ticket-listing')
+    >>> for ticket in tickets.fetch('td', 'ticket'):
+    ...     print ticket.first('a').renderContents()
+    mailto: problem in webpage
 
 Cleanup
 -------

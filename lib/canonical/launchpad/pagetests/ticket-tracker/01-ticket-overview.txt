@@ -1,11 +1,9 @@
-
 The Launchpad Ticket Tracker
 ============================
 
 Launchpad has a "tech support request tracker" built in to it. So you
 can have your community provide technical support using Launchpad for
 any upstream application, or any distribution.
-
 
 Products
 --------
@@ -14,16 +12,14 @@ The product page displays the latest support requests in a portlet.
 
   >>> browser.open('http://launchpad.dev/products/firefox')
   >>> from BeautifulSoup import BeautifulSoup
-  >>> soup = BeautifulSoup(browser.contents)
-  >>> soup('h4')
-  [...Latest Mozilla Firefox
-  support requests:...]
-  >>> browser.getLink(url='/firefox/+ticket/4').text
-  'Firefox loses focus ...'
-  >>> browser.getLink(url='/firefox/+ticket/2').text
-  'Problem showing the SVG...'
-  >>> browser.getLink(url='/firefox/+ticket/1').text
-  'Firefox cannot render Bank Site'
+  >>> portlet = find_portlet(
+  ...    browser.contents, 'Latest Mozilla Firefox support requests:')
+  >>> for link in portlet.fetch('a'):
+  ...    print link.renderContents()
+  Newly installed plug-in doesn't seem to be used
+  Firefox loses focus and gets stuck
+  Problem showing the SVG demo on W3C site
+  Firefox cannot render Bank Site
 
 Users can request support by going to the 'Support' facet.
 
@@ -37,10 +33,8 @@ Users can request support by going to the 'Support' facet.
 That page shows all the current support requests for the product.
 
   >>> soup =BeautifulSoup(browser.contents)
-  >>> soup('h1')
-  [<h1>Support requests for
-    Mozilla Firefox
-    </h1>]
+  >>> print soup.first('h1').renderContents()
+  Support requests for Mozilla Firefox
   >>> browser.getLink('Firefox loses focus and gets stuck').url
   '.../products/firefox/+ticket/4'
 
@@ -48,6 +42,15 @@ There is also a 'Request Support' link to open new ticket.
 
   >>> browser.getLink('Request Support').url
   '.../products/firefox/+addticket'
+
+There are links to some common listing of support requests:
+
+  >>> browser.getLink('Open').url
+  '.../products/firefox/+opentickets'
+  >>> browser.getLink('Answered').url
+  '.../products/firefox/+answeredtickets'
+  >>> browser.getLink('My Requests').url
+  '.../products/firefox/+mytickets'
 
 Information on a particular ticket can be seen by browsing to the ticket
 page.
@@ -58,7 +61,6 @@ page.
   >>> soup = BeautifulSoup(browser.contents)
   >>> soup('h1')
   [<h1>Problem showing the SVG demo on W3C site</h1>]
-
 
 Distributions
 -------------
@@ -84,6 +86,14 @@ To request support for the distro, one must go to the 'Support' facet.
   >>> browser.getLink('Request Support')
   <Link...>
 
+On that facet, we will find the same common listings:
+
+  >>> browser.getLink('Open').url
+  '.../distros/ubuntu/+opentickets'
+  >>> browser.getLink('Answered').url
+  '.../distros/ubuntu/+answeredtickets'
+  >>> browser.getLink('My Requests').url
+  '.../distros/ubuntu/+mytickets'
 
 Distroreleases
 --------------
@@ -95,7 +105,6 @@ and optionally source package too.
   >>> browser.open('http://launchpad.dev/distros/ubuntu/hoary')
   >>> browser.getLink('Request Support').url
   '.../distros/ubuntu/+addticket'
-
 
 Source packages
 ---------------
@@ -112,7 +121,17 @@ the Support facet.
   >>> browser.getLink('Request Support').url
   '.../distros/ubuntu/hoary/+source/evolution/+addticket'
 
-It is also available on the distribution source package page:
+As are the common listings:
+
+  >>> browser.getLink('Open').url
+  '.../distros/ubuntu/hoary/+source/evolution/+opentickets'
+  >>> browser.getLink('Answered').url
+  '.../distros/ubuntu/hoary/+source/evolution/+answeredtickets'
+  >>> browser.getLink('My Requests').url
+  '.../distros/ubuntu/hoary/+source/evolution/+mytickets'
+
+The support facet is also available on the distribution source package
+page:
 
   >>> browser.open('http://launchpad.dev/distros/ubuntu/+source/mozilla-firefox')
   >>> browser.getLink('Support').url
@@ -122,7 +141,12 @@ It is also available on the distribution source package page:
   'Support requests for mozilla-firefox in ubuntu'
   >>> browser.getLink('Request Support').url
   '.../distros/ubuntu/+source/mozilla-firefox/+addticket'
-
+  >>> browser.getLink('Open').url
+  '.../distros/ubuntu/+source/mozilla-firefox/+opentickets'
+  >>> browser.getLink('Answered').url
+  '.../distros/ubuntu/+source/mozilla-firefox/+answeredtickets'
+  >>> browser.getLink('My Requests').url
+  '.../distros/ubuntu/+source/mozilla-firefox/+mytickets'
 
 Persons
 -------

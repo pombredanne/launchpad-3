@@ -295,3 +295,121 @@ And now we can change the status to Answered:
     Thanks!
 
     >>> stub.test_emails = []
+
+
+SearchTicketsView
+-----------------
+
+This view is used as a base class to search for tickets. It is intended
+to be easily customizable to offer more specialised report, while
+keeping those searchable.
+
+    (Define a subclass of the view to demonstrate the customizability
+    of the base view.)
+    >>> from canonical.launchpad.browser import SearchTicketsView
+    >>> class MyCustomSearchTicketsView(SearchTicketsView):
+    ...
+    ...     default_filter = {}
+    ...
+    ...     def getDefaultFilter(self):
+    ...         return dict(**self.default_filter)
+
+    (Setup an harness for easier testing.)
+    >>> from canonical.launchpad.ftests import LaunchpadFormHarness
+    >>> search_view_harness = LaunchpadFormHarness(
+    ...     ubuntu, MyCustomSearchTicketsView)
+
+By default, that class provides widgets to search by text and by status.
+
+    >>> search_view = search_view_harness.view
+    >>> search_view.widgets.get('search_text') is not None
+    True
+    >>> search_view.widgets.get('status') is not None
+    True
+
+It also includes a widget to select the sort order.
+
+    >>> search_view.widgets.get('sort') is not None
+    True
+
+The tickets matching the search are available by using the
+searchResults() method. The returned results are batched.
+
+    (We want 5 items per page for these tests.)
+    >>> from canonical.config import config
+    >>> original_default_batch_size = config.launchpad.default_batch_size
+    >>> config.launchpad.default_batch_size = 5
+
+    >>> tickets = search_view.searchResults()
+    >>> tickets
+    <canonical.launchpad.webapp.batching.BatchNavigator ...>
+    >>> print "\n".join([ticket.title for ticket in tickets.batch])
+    Continue playing after shutdown
+    Play DVDs in Totem
+    mailto: problem in webpage
+    Installation of Java Runtime Environment for Mozilla
+    Slow system
+
+These were the default results when no search is entered. The user
+can tweak the search and filter the results:
+
+    >>> search_view_harness.submit('search', {
+    ...     'field.status': ['Answered', 'Open'],
+    ...     'field.search_text': 'firefox',
+    ...     'field.sort': 'by relevancy',})
+    >>> search_view = search_view_harness.view
+    >>> tickets = search_view.searchResults()
+    >>> for ticket in tickets.batch:
+    ...     print ticket.title, ticket.status.title
+    mailto: problem in webpage  Answered
+
+Specialized views can provide a default filter by returning the
+default search parameters to use in the getDefaultFilter() method:
+
+    >>> from canonical.lp.dbschema import TicketStatus
+    >>> MyCustomSearchTicketsView.default_filter = {
+    ...     'status': [TicketStatus.ANSWERED, TicketStatus.REJECTED]}
+    >>> search_view_harness.submit('', {})
+
+In this example, only the answered and rejected tickets are listed by
+default.
+
+    >>> search_view = search_view_harness.view
+    >>> tickets = search_view.searchResults()
+    >>> for ticket in tickets.batch:
+    ...     print ticket.title
+    mailto: problem in webpage
+    Better Title
+
+The status widget displays the default criteria used:
+
+    >>> for status in search_view.widgets['status']._getFormValue():
+    ...     print status.title
+    Answered
+    Rejected
+
+The user selected search parameters will override these default
+criteria.
+
+    >>> search_view_harness.submit('search', {
+    ...     'field.status': ['Answered'],
+    ...     'field.search_text': 'firefox',
+    ...     'field.sort': 'by relevancy'})
+    >>> search_view = search_view_harness.view
+    >>> tickets = search_view.searchResults()
+    >>> for ticket in tickets.batch:
+    ...     print ticket.title
+    mailto: problem in webpage
+    >>> for status in search_view.widgets['status']._getFormValue():
+    ...     print status.title
+    Answered
+
+But a subclass can choose to remove the status widget so that only its
+pre-defined statuses are selected. This is done by setting the
+include_status_widget attribute to False.
+
+    >>> MyCustomSearchTicketsView.include_status_widget = False
+    >>> search_view_harness.submit('', {})
+    >>> 'status' in search_view.widgets
+    False
+
