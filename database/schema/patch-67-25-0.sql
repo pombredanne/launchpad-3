@@ -19,4 +19,4 @@ UPDATE ticketmessage SET action = 30, new_status = 10;
 ALTER TABLE ticketmessage ALTER COLUMN action SET NOT NULL;
 ALTER TABLE ticketmessage ALTER COLUMN new_status SET NOT NULL;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (67, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (67, 25, 0);
