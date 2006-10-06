@@ -28,7 +28,7 @@ from canonical.launchpad.webapp.snapshot import Snapshot
 
 from canonical.launchpad.interfaces import (
     IBugWatch, IBugWatchSet, IBugTrackerSet, ILaunchpadCelebrities,
-    NoBugTrackerFound, NotFoundError)
+    NoBugTrackerFound, NotFoundError, UnrecognizedBugTrackerURL)
 from canonical.launchpad.database.bugset import BugSetBase
 
 
@@ -135,15 +135,14 @@ class BugWatchSet(BugSetBase):
 
         for url in matches:
             try:
-                bugwatch_data = self.extractBugTrackerAndBug(url)
+                bugtracker, remotebug = self.extractBugTrackerAndBug(url)
             except NoBugTrackerFound, error:
                 bugtracker = getUtility(IBugTrackerSet).ensureBugTracker(
                     error.base_url, owner, error.bugtracker_type)
                 remotebug = error.remote_bug
-            else:
-                if bugwatch_data is None:
-                    continue
-                bugtracker, remotebug = bugwatch_data
+            except UnrecognizedBugTrackerURL:
+                # It doesn't look like a bug URL, so simply ignore it.
+                continue
 
             for bugwatch in bug.watches:
                 if (bugwatch.bugtracker == bugtracker and
@@ -273,5 +272,5 @@ class BugWatchSet(BugSetBase):
                 return bugtracker, remote_bug
             else:
                 raise NoBugTrackerFound(base_url, remote_bug, trackertype)
-        else:
-            return None
+
+        raise UnrecognizedBugTrackerURL(url)

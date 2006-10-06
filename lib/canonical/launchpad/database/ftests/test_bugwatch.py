@@ -11,7 +11,8 @@ from zope.component import getUtility
 from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 from canonical.launchpad.interfaces import (
-    IBugTaskSet, IBugTrackerSet, IBugWatchSet, IPersonSet, NoBugTrackerFound)
+    IBugTaskSet, IBugTrackerSet, IBugWatchSet, IPersonSet, NoBugTrackerFound,
+    UnrecognizedBugTrackerURL)
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.lp.dbschema import BugTrackerType
 
@@ -40,11 +41,12 @@ class ExtractBugTrackerAndBugTestBase(LaunchpadFunctionalTestCase):
             'test@canonical.com')
 
     def test_unknown_baseurl(self):
-        # extractBugTrackerAndBug returns None if it can't even decide
-        # what kind of bug tracker the bug URL points to.
-        remote_data = self.bugwatch_set.extractBugTrackerAndBug(
+        # extractBugTrackerAndBug raises an exception if it can't even
+        # decide what kind of bug tracker the bug URL points to.
+        self.assertRaises(
+            UnrecognizedBugTrackerURL,
+            self.bugwatch_set.extractBugTrackerAndBug,
             'http://no.such/base/url/42')
-        self.assertEqual(remote_data, None)
 
     def test_registered_tracker_url(self):
         # If extractBugTrackerAndBug can extract a base URL, and there is a

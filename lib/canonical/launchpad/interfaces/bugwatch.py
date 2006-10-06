@@ -8,6 +8,7 @@ __all__ = [
     'IBugWatch',
     'IBugWatchSet',
     'NoBugTrackerFound',
+    'UnrecognizedBugTrackerURL',
     ]
 
 from zope.interface import Interface, Attribute
@@ -126,3 +127,7 @@ class NoBugTrackerFound(Exception):
         self.base_url = base_url
         self.remote_bug = remote_bug
         self.bugtracker_type = bugtracker_type
+
+
+class UnrecognizedBugTrackerURL(Exception):
+    """The given URL isn't used by any bug tracker we support."""

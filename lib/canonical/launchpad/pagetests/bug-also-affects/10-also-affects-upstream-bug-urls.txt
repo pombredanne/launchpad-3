@@ -9,7 +9,7 @@ When adding a bug watch, you have to enter the URL of the remote bug.
     >>> user_browser.url
     'http://launchpad.dev/products/gnome-terminal/+bug/4'
 
-    >>> print find_portlet(user_browser.contents, 'Remote bug watches:')
+    >>> print find_portlet(user_browser.contents, 'Remote bug watches')
     <div class="portlet">
     ...
     <a href="http://bugzilla.gnome.org/bugs/show_bug.cgi?id=42">
@@ -49,7 +49,7 @@ registered in Launchpad, the user will be prompted to register it first.
     ...     print message.renderContents()
     There is 1 error.
     The bug tracker at http://new.trac/ isn't registered in
-    Launchpad. You have to <a href="...">register it</a> before you can
+    Launchpad. You need to <a href="...">register it</a> before you can
     link any bugs to it.
 
 Let's follow the link to register it.
@@ -75,7 +75,7 @@ time.
     >>> user_browser.url
     'http://launchpad.dev/products/alsa-utils/+bug/4'
 
-    >>> print find_portlet(user_browser.contents, 'Remote bug watches:')
+    >>> print find_portlet(user_browser.contents, 'Remote bug watches')
     <div class="portlet">
     ...
     <a href="http://new.trac/ticket/42">

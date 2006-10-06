@@ -33,7 +33,8 @@ from canonical.launchpad.interfaces import (
     IAddBugTaskForm, IBug, ILaunchBag, IBugSet, IBugTaskSet,
     IBugWatchSet, IDistributionSourcePackage, IDistroBugTask,
     IDistroReleaseBugTask, NoBugTrackerFound, NotFoundError,
-    valid_distrotask, valid_upstreamtask, ICanonicalUrlData)
+    UnrecognizedBugTrackerURL, valid_distrotask, valid_upstreamtask,
+    ICanonicalUrlData)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import check_permission
@@ -387,8 +388,10 @@ class BugAlsoReportInView(LaunchpadFormView):
         bug_url = data.get('bug_url')
         if bug_url and target.official_malone:
             self.addError(
-                "%s uses Malone as its bug tracker, and it can't at the"
-                " same time be linked to a remote bug." % cgi.escape(
+                "Bug watches can not be added for %s, as it uses Malone"
+                " as its official bug tracker. Alternatives are to add a"
+                " watch for another product, or a comment containing a"
+                " URL to the related bug report." % cgi.escape(
                     target.displayname))
 
         if target.official_malone:
@@ -397,11 +400,14 @@ class BugAlsoReportInView(LaunchpadFormView):
             return
 
         if bug_url is not None:
-            # An URL was entered instead of the bug id, try to find out
-            # which bug and bug tracker it's referring to.
+            # Try to find out which bug and bug tracker the URL is
+            # referring to.
             bugwatch_set = getUtility(IBugWatchSet)
             try:
-                remote_data = bugwatch_set.extractBugTrackerAndBug(bug_url)
+                # Assign attributes, so that the action handler can
+                # access the extracted bugtracker and bug.
+                self.extracted_bugtracker, self.extracted_bug = (
+                    bugwatch_set.extractBugTrackerAndBug( bug_url))
             except NoBugTrackerFound, error:
                 # XXX: The user should be able to press a button here in
                 #      order to register the tracker.
@@ -409,20 +415,15 @@ class BugAlsoReportInView(LaunchpadFormView):
                 self.setFieldError(
                     'bug_url',
                     "The bug tracker at %s isn't registered in Launchpad."
-                    ' You have to'
+                    ' You need to'
                     ' <a href="/malone/bugtrackers/+newbugtracker">register'
                     ' it</a> before you can link any bugs to it.' % (
                         cgi.escape(error.base_url)))
-            else:
-                if remote_data is None:
-                    self.setFieldError(
-                        'bug_url',
-                        "Launchpad doesn't know what kind of bug tracker"
-                        ' this URL is pointing at.')
-                else:
-                    # Assign attributes, so that the action handler can
-                    # access the extracted bugtracker and bug.
-                    self.extracted_bugtracker, self.extracted_bug = remote_data
+            except UnrecognizedBugTrackerURL:
+                self.setFieldError(
+                    'bug_url',
+                    "Launchpad doesn't know what kind of bug tracker"
+                    ' this URL is pointing at.')
 
         if len(self.errors) > 0:
             # The checks below should be made only if the form doesn't

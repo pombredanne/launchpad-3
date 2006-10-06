@@ -212,8 +212,10 @@ Malone, an error will occur.
     >>> add_task_view.render_upstreamtask()
     ''
     >>> add_task_view.form_wide_errors
-    [u"Evolution uses Malone as its bug tracker, and it can't at the
-       same time be linked to a remote bug."]
+    [u'Bug watches can not be added for Evolution, as it uses Malone as
+       its official bug tracker. Alternatives are to add a watch for
+       another product, or a comment containing a URL to the related bug
+       report.']
 
 There's a method for easily retrieving the target display name for use
 on the confirmation page. If we request a fix in an upstream product,
