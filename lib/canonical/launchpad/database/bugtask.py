@@ -352,29 +352,6 @@ class BugTask(SQLBase, BugTaskMixin):
 
         return header_value
 
-    @property
-    def statusdisplayhtml(self):
-        """See canonical.launchpad.interfaces.IBugTask."""
-        # XXX sabdfl 20060813 this should be in browser code, not database
-        # code!
-        assignee = self.assignee
-        status = self.status
-
-        if assignee:
-            assignee_html = (
-                '<img alt="" src="/@@/user" /> '
-                '<a href="/people/%s/+assignedbugs">%s</a>' % (
-                    urllib.quote_plus(assignee.name),
-                    cgi.escape(assignee.browsername)))
-
-            if status in (dbschema.BugTaskStatus.REJECTED,
-                          dbschema.BugTaskStatus.FIXCOMMITTED):
-                return '%s by %s' % (status.title.lower(), assignee_html)
-            else:
-                return '%s, assigned to %s' % (status.title.lower(), assignee_html)
-        else:
-            return status.title.lower() + ' (unassigned)'
-
 
 def search_value_to_where_condition(search_value):
     """Convert a search value to a WHERE condition.
@@ -472,7 +449,6 @@ class BugTaskSet:
             'product': params.product,
             'distribution': params.distribution,
             'distrorelease': params.distrorelease,
-            'productseries': params.productseries,
             'milestone': params.milestone,
             'assignee': params.assignee,
             'sourcepackagename': params.sourcepackagename,
@@ -513,6 +489,10 @@ class BugTaskSet:
 
         if params.omit_dupes:
             extra_clauses.append("Bug.duplicateof is NULL")
+
+        if params.has_cve:
+            extra_clauses.append("BugTask.bug IN "
+                                 "(SELECT DISTINCT bug FROM BugCve)")
 
         if params.attachmenttype is not None:
             clauseTables.append('BugAttachment')

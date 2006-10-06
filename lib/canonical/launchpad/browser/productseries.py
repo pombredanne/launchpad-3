@@ -33,6 +33,7 @@ from canonical.launchpad.interfaces import (
     ICountry, IPOTemplateSet, ILaunchpadCelebrities,
     ISourcePackageNameSet, validate_url, IProductSeries,
     ITranslationImportQueue, IProductSeriesSourceSet, NotFoundError)
+from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     Link, enabled_with_permission, Navigation, ApplicationMenu, stepto,
@@ -50,6 +51,13 @@ class ProductSeriesNavigation(Navigation):
 
     def breadcrumb(self):
         return 'Series ' + self.context.name
+
+    @stepto('.bzr')
+    def dotbzr(self):
+        if self.context.series_branch:
+            return BranchRef(self.context.series_branch)
+        else:
+            return None
 
     @stepto('+pots')
     def pots(self):
@@ -434,9 +442,6 @@ class ProductSeriesView(LaunchpadView):
             self.context.importstatus = ImportStatus.TESTING
         elif (oldrcstype is None and self.rcstype is not None):
             self.context.importstatus = ImportStatus.TESTING
-        # make sure we also update the ubuntu packaging if it has been
-        # modified
-        self.setCurrentUbuntuPackage()
         if not self.has_errors:
             self.request.response.redirect(canonical_url(self.context))
 
