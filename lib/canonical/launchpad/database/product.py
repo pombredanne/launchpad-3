@@ -602,7 +602,9 @@ class ProductSet:
         if not show_inactive:
             queries.append('Product.active IS TRUE')
         query = " AND ".join(queries)
-        return Product.select(query, distinct=True, clauseTables=clauseTables)
+        return Product.select(query, distinct=True,
+                              prejoins=["owner"],
+                              clauseTables=clauseTables)
 
     def translatables(self):
         """See IProductSet"""

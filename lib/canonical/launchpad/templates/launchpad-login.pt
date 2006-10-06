@@ -97,7 +97,7 @@
             <!-- 4b. just tried to log in and failed: -->
             <div tal:condition="view/login_error">
               <h1>Your login was unsuccessful</h1>
-              <p class="error" tal:content="view/login_error" />
+              <p class="error message" tal:content="view/login_error" />
             </div>
             <!-- 4. might want to log in: -->
             <p>
@@ -160,7 +160,7 @@
               tal:omit-tag
             >
               <h1>Your registration was unsuccessful</h1>
-              <p class="error"
+              <p class="error message"
                  tal:content="structure view/registration_error" />
             </div>
             <!-- 5. might want to register: -->
@@ -179,10 +179,11 @@
               <table>
                 <tr>
                   <th>
-                    <label for="email">E-mail address:</label>
+                    <label for="registeremail">E-mail address:</label>
                   </th>
                   <td>
                     <input type="text" size="30" name="loginpage_email"
+                      id="registeremail"
                       tal:attributes="value view/email|nothing"
                     />
                   </td>

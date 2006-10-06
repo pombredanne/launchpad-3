@@ -110,19 +110,19 @@ function can find a portlet by its title and return it:
   ...   <head><title>Foo</title</head>
   ...   <body>
   ...     <div class="portlet">
-  ...       <h4>Portlet 1</h4>
+  ...       <h2>Portlet 1</h2>
   ...       <div class="portletBody portletContent">
   ...         Contents of portlet 1
   ...       </div>
   ...     </div>
   ...     <div class="portlet">
-  ...       <h4>Portlet 2</h4>
+  ...       <h2>Portlet 2</h2>
   ...       <div class="portletBody portletContent">
   ...         Contents of portlet 2
   ...       </div>
   ...     </div>
   ...     <div class="portlet">
-  ...       <h4>Portlet 3</h4>
+  ...       <h2>Portlet 3</h2>
   ...       <div class="portletBody portletContent">
   ...         Contents of portlet 3
   ...       </div>
@@ -140,7 +140,7 @@ function can find a portlet by its title and return it:
 
   >>> print find_portlet(content, 'Portlet 2')
   <div class="portlet">
-    <h4>Portlet 2</h4>
+    <h2>Portlet 2</h2>
     <div class="portletBody portletContent">
       Contents of portlet 2
     </div>
