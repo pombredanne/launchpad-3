@@ -107,6 +107,20 @@ When we have an input value, the widget can edit the bug tags.
     >>> bug_one.tags
     [u'sco', u'svg']
 
+If a user enters an invalid tag, we get an error explaining what's
+wrong.
+
+    >>> request = TestRequest(form={'field.tags': u'!!!! foo $$$$'})
+    >>> tags_widget = BugTagsWidget(bug_tags_field, tag_field, request)
+    >>> tags_widget.getInputValue()
+    Traceback (most recent call last):
+    ...
+    WidgetInputError...
+
+    >>> print tags_widget._error.doc()
+    '!!!!' isn't a valid tag name. Only alphanumeric characters may be used.
+
+
 Let's take a closer look at _toFormValue() to ensure that it works
 properly:
 
@@ -127,6 +141,16 @@ And _toFieldValue():
     [u'bar', u'foo']
     >>> tags_widget._toFieldValue(u'foo   \t          bar')
     [u'bar', u'foo']
+
+A comma isn't valid in a tag name and sometimes users use commas to
+separate the tags, so we accept that as well.
+
+    >>> tags_widget._toFieldValue(u'foo, bar')
+    [u'bar', u'foo']
+
+    >>> tags_widget._toFieldValue(u'foo,bar')
+    [u'bar', u'foo']
+
 
 == Searching ==
 

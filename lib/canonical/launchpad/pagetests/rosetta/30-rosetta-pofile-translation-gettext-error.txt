@@ -29,9 +29,9 @@ Check that the previous submit was not saved.
   ... """)
   HTTP/1.1 200 Ok
   ...
-                        <td>Found <span class="interpolation">%i</span> invalid file.</td>
+                        <td>Found <code>%i</code> invalid file.</td>
   ...
-                        <td>Found <span class="interpolation">%i</span> invalid files.</td>
+                        <td>Found <code>%i</code> invalid files.</td>
   ...
 
                           <input type="text"

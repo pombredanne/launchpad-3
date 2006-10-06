@@ -21,6 +21,7 @@ from canonical.launchpad.interfaces.bounty import *
 from canonical.launchpad.interfaces.bountymessage import *
 from canonical.launchpad.interfaces.bountysubscription import *
 from canonical.launchpad.interfaces.branch import *
+from canonical.launchpad.interfaces.branchref import *
 from canonical.launchpad.interfaces.branchsubscription import *
 from canonical.launchpad.interfaces.bugactivity import *
 from canonical.launchpad.interfaces.bugattachment import *
@@ -31,7 +32,6 @@ from canonical.launchpad.interfaces.bugcve import *
 from canonical.launchpad.interfaces.buglink import *
 from canonical.launchpad.interfaces.buglinktarget_browser import *
 from canonical.launchpad.interfaces.bugmessage import *
-from canonical.launchpad.interfaces.bugnomination import *
 from canonical.launchpad.interfaces.bugnotification import *
 from canonical.launchpad.interfaces.bugsubscription import *
 from canonical.launchpad.interfaces.bugtask import *
@@ -59,6 +59,7 @@ from canonical.launchpad.interfaces.distroreleasebinarypackage import *
 from canonical.launchpad.interfaces.distroreleaselanguage import *
 from canonical.launchpad.interfaces.distroreleasepackagecache import *
 from canonical.launchpad.interfaces.distroreleasesourcepackagerelease import *
+from canonical.launchpad.interfaces.emailaddress import *
 from canonical.launchpad.interfaces.externalbugtracker import *
 from canonical.launchpad.interfaces.files import *
 from canonical.launchpad.interfaces.geoip import *

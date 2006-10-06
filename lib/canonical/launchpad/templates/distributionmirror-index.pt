@@ -18,7 +18,7 @@
   <h1>
     <tal:distro replace="context/distribution/displayname">Ubuntu
     Linux</tal:distro>
-    mirror "<tal:mirror replace="context/name">foobar</tal:mirror>"
+    mirror "<tal:mirror replace="context/title">foobar</tal:mirror>"
   </h1>
 </metal:heading>
 
@@ -54,14 +54,7 @@
 
       <tal:no-last-probe condition="not: probe">
         <p tal:condition="context/isOfficial">
-          <span tal:condition="context/http_base_url">
-            This mirror has never been verified.
-          </span>
-          <span tal:condition="not: context/http_base_url"
-                class="informational message">
-            This mirror can't be verified because it doesn't have an HTTP base
-            URL.
-          </span>
+          This mirror has never been verified.
         </p>
 
         <p tal:condition="not: context/isOfficial">

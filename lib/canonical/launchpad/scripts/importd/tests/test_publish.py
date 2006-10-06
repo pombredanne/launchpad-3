@@ -14,6 +14,7 @@ import unittest
 from bzrlib.bzrdir import BzrDir
 from bzrlib.branch import Branch
 from bzrlib.errors import DivergedBranches
+from bzrlib.urlutils import local_path_to_url
 from zope.component import getUtility
 
 from canonical.database.sqlbase import commit
@@ -30,7 +31,8 @@ class TestImportdPublisher(ImportdTestCase):
     def setUp(self):
         ImportdTestCase.setUp(self)
         self.importd_publisher = ImportdPublisher(
-            logging, self.sandbox.path, self.series_id, self.bzrmirrors)
+            logging, self.sandbox.path, self.series_id,
+            local_path_to_url(self.bzrmirrors))
 
     def assertGoodMirror(self):
         """Helper to check that the mirror branch matches expectations."""
@@ -130,7 +132,7 @@ class TestMirrorUrlFromSeries(ImportdTestCase):
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
         assert self.series.import_branch.owner == vcs_imports
         assert self.series.import_branch.url is None
-        number_one = getUtility(IPersonSet).get(1, None)
+        number_one = getUtility(IPersonSet).get(1)
         assert number_one != None
         assert vcs_imports != number_one
         # First, use an improper branch owner.

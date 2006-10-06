@@ -4,35 +4,34 @@
 
 https://launchpad.canonical.com/LaunchpadTitles
 
-** IMPORTANT ** (Brad Bollenbach, 2006-07-20) This module should not be
-put in webapp, because webapp is not domain-specific, and should not be
-put in browser, because this would make webapp depend on browser. SteveA
-has a plan to fix this overall soon.
+** IMPORTANT ** (Brad Bollenbach, 2006-07-20) This module should not be put in
+webapp, because webapp is not domain-specific, and should not be put in browser,
+because this would make webapp depend on browser. SteveA has a plan to fix this
+overall soon.
 
-This module contains string or unicode literals assigned to names, or
-functions such as this one:
+This module contains string or unicode literals assigned to names, or functions
+such as this one:
 
   def bug_index(context, view):
       return 'Bug %s: %s' % (context.id, context.title)
 
 The names of string or unicode literals and functions are the names of
-the page templates, but with hyphens changed to underscores.  So, the
-function bug_index given about is for the page template bug-index.pt.
+the page templates, but with hyphens changed to underscores.  So, the function
+bug_index given about is for the page template bug-index.pt.
 
-If the function needs to include details from the request, this is
-available from view.request.  However, these functions should not access
-view.request.  Instead, the view class should make a function or
-attribute available that provides the required information.
+If the function needs to include details from the request, this is available
+from view.request.  However, these functions should not access view.request.
+Instead, the view class should make a function or attribute available that
+provides the required information.
 
-If the function returns None, it means that the default page title for
-the whole of Launchpad should be used.  This is defined in the variable
+If the function returns None, it means that the default page title for the
+whole of Launchpad should be used.  This is defined in the variable
 DEFAULT_LAUNCHPAD_TITLE.
 
-There are shortcuts for some common substitutions at the top of this
-module.
+There are shortcuts for some common substitutions at the top of this module.
 
-The strings and functions for page titles are arranged in alphabetical
-order after the helpers.
+The strings and functions for page titles are arranged in alphabetical order
+after the helpers.
 
 """
 __metaclass__ = type
@@ -149,9 +148,6 @@ def bug_extref_edit(context, view):
 
 bug_mark_as_duplicate = ContextId('Bug #%d - Mark as duplicate')
 
-bug_nominate_for_release = LaunchbagBugID(
-    'Bug #%d - Nominate for fixing in a release')
-
 bug_removecve = LaunchbagBugID("Bug #%d - Remove CVE reference")
 
 bug_secrecy = ContextId('Bug #%d - Set visibility')
@@ -172,10 +168,6 @@ buglinktarget_unlinkbugs = 'Remove links to bug reports'
 buglisting_advanced = ContextTitle("Bugs in %s")
 
 buglisting_default = ContextTitle("Bugs in %s")
-
-def bugnomination_edit(context, view):
-    return 'Manage nomination for bug #%d in %s' % (
-        context.bug.id, context.target.bugtargetname)
 
 def bugwatch_editform(context, view):
     return 'Bug #%d - Edit external bug watch (%s in %s)' % (
@@ -286,11 +278,11 @@ default_editform = 'Default "Edit" Page'
 
 distributionmirror_edit = ContextTitle('Edit mirror %s')
 
-distributionmirror_mark_official = ContextTitle('Mark mirror %s as official')
-
 distributionmirror_index = ContextTitle('Mirror %s')
 
-distributionmirror_uploadfilelist = ContextTitle('Upload File List for %s')
+distributionmirror_mark_official = ContextTitle('Mark mirror %s as official')
+
+distributionmirror_prober_logs = ContextTitle('%s mirror prober logs')
 
 distribution_allpackages = ContextTitle('All packages in %s')
 
@@ -444,6 +436,8 @@ launchpad_librarianfailure = "Sorry, you can't do this right now"
 
 # launchpad_widget_macros doesn't need a title.
 
+logintoken_claimprofile = 'Claim Launchpad profile'
+
 logintoken_index = 'Launchpad: redirect to the logintoken page'
 
 logintoken_mergepeople = 'Merge Launchpad accounts'
@@ -516,6 +510,8 @@ def person_bugs(context, view):
     return view.getSearchPageHeading()
 
 person_changepassword = 'Change your password'
+
+person_claim = 'Claim account'
 
 person_codesofconduct = ContextDisplayName(smartquote("%s's code of conduct signatures"))
 
@@ -632,6 +628,8 @@ product_branches = ContextDisplayName(
     smartquote("%s's Bazaar branches registered in Launchpad"))
 
 product_distros = ContextDisplayName('%s packages: Comparison of distributions')
+
+product_cvereport = ContextTitle('CVE reports for %s')
 
 product_edit = ContextTitle('%s in Launchpad')
 
@@ -762,8 +760,6 @@ signedcodeofconduct_acknowledge = 'Acknowledge code of conduct signature'
 signedcodeofconduct_activate = ContextDisplayName('Activating %s')
 
 signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
-
-sourcepackage_index = ContextTitle('%s')
 
 sourcepackage_bugs = ContextDisplayName('Bugs in %s')
 

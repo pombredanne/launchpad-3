@@ -13,6 +13,7 @@ import unittest
 
 from bzrlib.bzrdir import BzrDir
 from bzrlib.branch import Branch
+from bzrlib.urlutils import local_path_to_url
 from zope.component import getUtility
 
 from canonical.database.sqlbase import commit, rollback
@@ -33,34 +34,6 @@ class NoopJob(object):
         self.logger = None
         self.seriesID = None
         self.push_prefix = None
-
-
-class TestNoopMethods(unittest.TestCase):
-    """Check presence of no-op methods needed for ArchiveManager compatibility.
-
-    The methods tested in this class are not expected to do anything, but they
-    must be present for compatibility with the ArchiveManager API.
-    """
-
-    def setUp(self):
-        job = NoopJob()
-        self.bzr_manager = BzrManager(job)
-
-    def testCreateMaster(self):
-        # BzrManager.createMaster can be called.
-        self.bzr_manager.createMaster()
-
-    def testCreateMirror(self):
-        # BzrManager.createMirror can be called.
-        self.bzr_manager.createMirror()
-
-    def testNukeMaster(self):
-        # BzrManager.nukeMaster can be called
-        self.bzr_manager.nukeMaster()
-
-    def testRollbackToMirror(self):
-        # BzrManager.rollbackToMirror can be called
-        self.bzr_manager.rollbackToMirror()
 
 
 class TestRunCommand(unittest.TestCase):
@@ -93,18 +66,13 @@ class BzrManagerJobHelper(object):
     def makeJob(self):
         job = self.jobType()
         job.slave_home = self.sandbox.path
-        job.push_prefix = self.sandbox.join('bzr-mirrors')
+        job.push_prefix = local_path_to_url(self.sandbox.join('bzr-mirrors'))
         job.seriesID = None
         return job
 
 
 class BzrManagerTestCase(unittest.TestCase):
     """Common base for BzrManager test cases."""
-
-    # XXX: Code from this class was duplicated in
-    # test_cvsstrategy.TestCvsStrategyBzr. The duplication must be fixed when
-    # removing Arch target support from importd.
-    # -- David Allouche 2006-07-27
 
     def setUp(self):
         self.sandbox = SandboxHelper()
@@ -177,11 +145,6 @@ class ProductSeriesHelper:
 
 class TestMirrorMethods(BzrManagerTestCase):
     """Test BzrManager methods that deal with the mirror branch."""
-
-    # XXX: Code from this class was duplicated in
-    # test_cvsstrategy.TestCvsStrategyBzr. The duplication must be fixed when
-    # removing Arch target support from importd.
-    # -- David Allouche 2006-07-27
 
     def setUp(self):
         self.utilities_helper = ZopelessUtilitiesHelper()
