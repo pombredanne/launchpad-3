@@ -31,8 +31,8 @@ name appears in the 'Subscribers' portlet:
     You have subscribed to this request.
 
     >>> portlet = soup.first('div', id='ticket-subscribers')
-    >>> portlet.first('h4')
-    <h4>Subscribers to request #2:</h4>
+    >>> portlet.first('h2')
+    <h2>Subscribers to request #2</h2>
     >>> portlet.first('ul')
     <ul class="people">
       <li>

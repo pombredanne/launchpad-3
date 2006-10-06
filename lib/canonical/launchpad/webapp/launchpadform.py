@@ -22,7 +22,8 @@ from zope.app.form import CustomWidgetFactory
 
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.launchpad.event import SQLObjectModifiedEvent
+from canonical.launchpad.event import (
+    SQLObjectToBeModifiedEvent, SQLObjectModifiedEvent)
 
 # marker to represent "focus the first widget in the form"
 _first_widget_marker = object()
@@ -236,6 +237,9 @@ class LaunchpadEditFormView(LaunchpadFormView):
         """
         context_before_modification = Snapshot(
             self.context, providing=providedBy(self.context))
+
+        notify(SQLObjectToBeModifiedEvent(self.context, data))
+
         if form.applyChanges(self.context, self.form_fields, data):
             field_names = [form_field.__name__
                            for form_field in self.form_fields]

@@ -129,4 +129,3 @@ and the explanation message is added to the ticket board.
     >>> print soup.fetch('div', 'boardCommentBody')[-1].renderContents()
     <p>Setting status back to 'Open'. Requests similar to a bug report
     should be linked to it, not rejected.</p>
-
