@@ -634,8 +634,9 @@ class QueueActionAccept(QueueAction):
 
         sender, recipients = self.find_addresses_from(
             queue_item.changesfile)
-        # only announce for acceptation
-        if self.announcelist is not None:
+        # only announce for acceptation if it's not for BACKPORTS
+        if (self.announcelist is not None and
+            queue_item.pocket != PackagePublishingPocket.BACKPORTS):
             recipients.append(self.announcelist)
 
         queue_item.changesfile.open()

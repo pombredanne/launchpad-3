@@ -8,6 +8,7 @@ from signal import SIGTERM
 import canonical
 from canonical.config import config
 from canonical.launchpad.daemons.tachandler import TacTestSetup
+from canonical.librarian.storage import _relFileLocation
 
 class LibrarianTestSetup(TacTestSetup):
     r"""Set up a librarian for use by functional tests.
@@ -84,4 +85,21 @@ class LibrarianTestSetup(TacTestSetup):
     def logfile(self):
         return os.path.join(self.root, 'librarian.log')
 
+def fillLibrarianFile(fileid, content='Fake Content'):
+    """Write contents in disk for a librarian sampledata."""
+    filepath = os.path.join(
+        config.librarian.server.root, _relFileLocation(fileid))
 
+    if not os.path.exists(os.path.dirname(filepath)):
+        os.makedirs(os.path.dirname(filepath))
+
+    libfile = open(filepath, 'wb')
+    libfile.write(content)
+    libfile.close()
+
+def removeLibrarianFile(fileid):
+    """Remove a pre-filled sampledata librarian file from disk."""
+    filepath = os.path.join(
+        config.librarian.server.root, _relFileLocation(fileid))
+    if os.path.exists(filepath):
+        os.remove(filepath)
