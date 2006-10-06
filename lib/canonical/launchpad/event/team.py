@@ -13,8 +13,7 @@ class JoinTeamRequestEvent:
 
     implements(IJoinTeamRequestEvent)
 
-    def __init__(self, user, team, appurl):
+    def __init__(self, user, team):
         self.user = user
         self.team = team
-        self.appurl = appurl
 
