@@ -470,6 +470,18 @@ class BaseTranslationView(LaunchpadView):
             # done. XXX: I'm not sure but I suspect this could be an
             # UnexpectedFormData..
             return None
+        store_flags = self.form_posted_translations_store.get(pomsgset, None)
+        if store_flags is None or True not in store_flags.values():
+            return None
+
+        assert len(translations) == len(store_flags), (
+            'The amount of pluralforms should match with the amount of store'
+            ' flags')
+
+        for index in translations:
+            if store_flags[index] == False:
+                translations[index] = pomsgset.active_texts[index]
+
         is_fuzzy = self.form_posted_needsreview.get(pomsgset, False)
 
         try:
@@ -553,22 +565,33 @@ class BaseTranslationView(LaunchpadView):
         # this is being called in the right order, after
         # _storeTranslations(). -- kiko, 2006-09-27
         translations = {}
+        store_flags = {}
+        copied = self.form_copied_translations.get(pomsgset, None)
+        posted = self.form_posted_translations.get(pomsgset, None)
+        posted_store = self.form_posted_translations_store.get(pomsgset, None)
         for plural_index in range(pomsgset.pluralforms):
-            translations[plural_index] = None
-        if self.form_copied_translations.has_key(pomsgset):
-            translations = self.form_copied_translations[pomsgset]
-        if self.form_posted_translations.has_key(pomsgset):
-            posted = self.form_posted_translations[pomsgset]
-            for key in translations:
-                if translations[key] == None:
-                    translations[key] = posted[key]
+            if copied is not None and copied[plural_index] is not None:
+                translations[plural_index] = copied[plural_index]
+                store_flags[plural_index] = True
+                continue
+            elif posted is not None and posted[plural_index] is not None:
+                translations[plural_index] = posted[plural_index]
+            else:
+                translations[plural_index] = None
+
+            if (posted_store is not None and
+                posted_store[plural_index] is not None):
+                store_flags[plural_index] = posted_store[plural_index]
+            else:
+                store_flags[plural_index] = False
+
         if self.form_posted_needsreview.has_key(pomsgset):
             is_fuzzy = self.form_posted_needsreview[pomsgset]
         else:
             is_fuzzy = pomsgset.isfuzzy
+
         pomsgset_view.prepare(
-            self.form_posted_translations_store[pomsgset], translations,
-            is_fuzzy, error, self.second_lang_code)
+            store_flags, translations, is_fuzzy, error, self.second_lang_code)
 
     #
     # Internals

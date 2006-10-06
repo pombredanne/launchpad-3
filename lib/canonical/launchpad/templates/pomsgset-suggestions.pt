@@ -33,7 +33,7 @@
       </a> by
       <a tal:content="submission/person/browsername"
          tal:attributes="href submission/person/fmt:url">Foo Bar</a> on
-      <span tal:content="submission/datecreated/fmt:date">
+      <span tal:content="submission/datecreated/fmt:datetime">
         2006-08-05 01:04 UTC
       </span>
     </td>

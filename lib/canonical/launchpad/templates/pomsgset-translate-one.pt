@@ -179,6 +179,8 @@
           tal:attributes="
             checked python:view.store_flags[plural_index];
             name string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_checkbox;
+            id string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_checkbox;
+            onClick string:javascript:setFocusByName('msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new');
             " />
       </td>
       <td>
@@ -190,6 +192,7 @@
             name string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new;
             lang context/pofile/language/dashedcode;
             dir context/pofile/language/abbreviated_text_dir;
+            onFocus string:javascript:checkCheckBox('msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_checkbox');
             "></textarea>
       </td>
     </tr>
