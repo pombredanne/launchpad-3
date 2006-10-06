@@ -1,7 +1,7 @@
 <div class="portlet">
 
-  <h4><span tal:replace="context/target/displayname">Ubuntu</span> ticket
-      #<span tal:replace="context/id">234</span>:</h4>
+  <h2><span tal:replace="context/target/displayname">Ubuntu</span> ticket
+      #<span tal:replace="context/id">234</span></h2>
 
   <div class="portletBody portletContent">
 
