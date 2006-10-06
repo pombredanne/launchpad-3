@@ -4,6 +4,10 @@ IBuild instance implements the 'notify' method which sends and status
 report about the current record to the
 ISourcePackageRelease.creator.preferred email.
 
+We rely on contactEmailAddresses() to DTRT, either use the
+Team.contactaddress of the Launchpad Buildd Celebrity or the
+preferredemail of its members.
+
 The report is based on the emailtemplate/build-notification.txt.
 
 All build states are supported by the current implementation, however
@@ -31,16 +35,40 @@ Notification for a FAILEDTOBUILD (failed) build record:
 
   >>> failed_candidate.notify()
   >>> transaction.commit()
+
+Check how many email the system have sent:
+
+  >>> len(stub.test_emails)
+  3
+
+We need to sort the list of emails by the second element, the recipient:
+
+  >>> stub.test_emails.sort(key=lambda x: x[1], reverse=True)
+
+The members of launchpad-buildd-admins are notified:
+
   >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
   >>> to_addrs
-  ['Mark Shuttleworth <mark@hbd.com>']
+  ['celso.providelo@canonical.com']
+
+  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+  >>> to_addrs
+  ['foo.bar@canonical.com']
+
+The maintainer is notified:
+
+  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+  >>> to_addrs
+  ['mark@hbd.com']
+
+Let's check the notification content:
+
   >>> print raw_msg
   Content-Type: text/plain; charset="utf-8"
   MIME-Version: 1.0
   Content-Transfer-Encoding: quoted-printable
-  Bcc: Launchpad Buildd <lp_buildd@localhost>
   X-Launchpad-Build-State: FAILEDTOBUILD
-  To: Mark Shuttleworth <mark@hbd.com>
+  To: mark@hbd.com
   From: Launchpad Buildd System <noreply@launchpad.net>
   Subject: [Build #17] i386 build of pmount 0.1-1 in ubuntu breezy-autotest RELEASE
   ...
@@ -50,7 +78,8 @@ Notification for a FAILEDTOBUILD (failed) build record:
   Return-Path: bounces@canonical.com
   X-Generated-By: Launchpad (canonical.com)
   <BLANKLINE>
-   * Source Package Release: pmount - 0.1-1
+   * Source Package: pmount
+   * Version: 0.1-1
    * Architecture: i386
    * State: Failed to build
    * Duration: three minutes
@@ -61,9 +90,10 @@ Notification for a FAILEDTOBUILD (failed) build record:
   contact a member of the Launchpad Buildd Administrators team.
   <BLANKLINE>
   --
-  i386 build of pmount 0.1-1 in ubuntu breezy-autotest
+  i386 build of pmount 0.1-1 in ubuntu breezy-autotest RELEASE
   http://launchpad.dev/+builds/+build/17
   <BLANKLINE>
+
 
 Notification for a pending (NEEDSBUILD) build record:
 
@@ -76,18 +106,41 @@ Notification for a pending (NEEDSBUILD) build record:
   u'sabdfl'
 
   >>> pending_candidate.notify()
-
   >>> transaction.commit()
+
+Check how many email the system have sent:
+
+  >>> len(stub.test_emails)
+  3
+
+We need to sort the list of emails by the second element, the recipient:
+
+  >>> stub.test_emails.sort(key=lambda x: x[1], reverse=True)
+
+The members of launchpad-buildd-admins are notified:
+
   >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
   >>> to_addrs
-  ['Mark Shuttleworth <mark@hbd.com>']
+  ['celso.providelo@canonical.com']
+
+  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+  >>> to_addrs
+  ['foo.bar@canonical.com']
+
+The maintainer is notified:
+
+  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+  >>> to_addrs
+  ['mark@hbd.com']
+
+Check the notification content:
+
   >>> print raw_msg
   Content-Type: text/plain; charset="utf-8"
   MIME-Version: 1.0
   Content-Transfer-Encoding: quoted-printable
-  Bcc: Launchpad Buildd <lp_buildd@localhost>
   X-Launchpad-Build-State: NEEDSBUILD
-  To: Mark Shuttleworth <mark@hbd.com>
+  To: mark@hbd.com
   From: Launchpad Buildd System <noreply@launchpad.net>
   Subject: [Build #11] i386 build of alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE
   ...
@@ -97,7 +150,8 @@ Notification for a pending (NEEDSBUILD) build record:
   Return-Path: bounces@canonical.com
   X-Generated-By: Launchpad (canonical.com)
   <BLANKLINE>
-   * Source Package Release: alsa-utils - 1.0.9a-4ubuntu1
+   * Source Package: alsa-utils
+   * Version: 1.0.9a-4ubuntu1
    * Architecture: i386
    * State: Needs building
    * Duration: not available
@@ -108,9 +162,10 @@ Notification for a pending (NEEDSBUILD) build record:
   contact a member of the Launchpad Buildd Administrators team.
   <BLANKLINE>
   --
-  i386 build of alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary
+  i386 build of alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE
   http://launchpad.dev/+builds/+build/11
   <BLANKLINE>
+
 
 
 Notification for a BUILDING build record:
@@ -123,19 +178,42 @@ Notification for a BUILDING build record:
   >>> building_candidate.sourcepackagerelease.creator.name
   u'sabdfl'
 
-
   >>> building_candidate.notify()
   >>> transaction.commit()
+
+Check how many email the system have sent:
+
+  >>> len(stub.test_emails)
+  3
+
+We need to sort the list of emails by the second element, the recipient:
+
+  >>> stub.test_emails.sort(key=lambda x: x[1], reverse=True)
+
+The members of launchpad-buildd-admins are notified:
+
   >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
   >>> to_addrs
-  ['Mark Shuttleworth <mark@hbd.com>']
+  ['celso.providelo@canonical.com']
+
+  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+  >>> to_addrs
+  ['foo.bar@canonical.com']
+
+The maintainer is notified:
+
+  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+  >>> to_addrs
+  ['mark@hbd.com']
+
+Check the notification content:
+
   >>> print raw_msg
   Content-Type: text/plain; charset="utf-8"
   MIME-Version: 1.0
   Content-Transfer-Encoding: quoted-printable
-  Bcc: Launchpad Buildd <lp_buildd@localhost>
   X-Launchpad-Build-State: BUILDING
-  To: Mark Shuttleworth <mark@hbd.com>
+  To: mark@hbd.com
   From: Launchpad Buildd System <noreply@launchpad.net>
   Subject: [Build #8] i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
   ...
@@ -145,7 +223,8 @@ Notification for a BUILDING build record:
   Return-Path: bounces@canonical.com
   X-Generated-By: Launchpad (canonical.com)
   <BLANKLINE>
-   * Source Package Release: mozilla-firefox - 0.9
+   * Source Package: mozilla-firefox
+   * Version: 0.9
    * Architecture: i386
    * State: Currently building
    * Duration: not finished
@@ -156,7 +235,7 @@ Notification for a BUILDING build record:
   contact a member of the Launchpad Buildd Administrators team.
   <BLANKLINE>
   --
-  i386 build of mozilla-firefox 0.9 in ubuntu hoary
+  i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
   http://launchpad.dev/+builds/+build/8
   <BLANKLINE>
 
@@ -171,19 +250,42 @@ Notification for a SUPERSEDED build record:
   >>> superseded_candidate.sourcepackagerelease.creator.name
   u'sabdfl'
 
-
   >>> superseded_candidate.notify()
   >>> transaction.commit()
+
+Check how many email the system have sent:
+
+  >>> len(stub.test_emails)
+  3
+
+We need to sort the list of emails by the second element, the recipient:
+
+  >>> stub.test_emails.sort(key=lambda x: x[1], reverse=True)
+
+The members of launchpad-buildd-admins are notified:
+
   >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
   >>> to_addrs
-  ['Mark Shuttleworth <mark@hbd.com>']
+  ['celso.providelo@canonical.com']
+
+  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+  >>> to_addrs
+  ['foo.bar@canonical.com']
+
+The maintainer is notified:
+
+  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+  >>> to_addrs
+  ['mark@hbd.com']
+
+Check the notification content:
+
   >>> print raw_msg
   Content-Type: text/plain; charset="utf-8"
   MIME-Version: 1.0
   Content-Transfer-Encoding: quoted-printable
-  Bcc: Launchpad Buildd <lp_buildd@localhost>
   X-Launchpad-Build-State: SUPERSEDED
-  To: Mark Shuttleworth <mark@hbd.com>
+  To: mark@hbd.com
   From: Launchpad Buildd System <noreply@launchpad.net>
   Subject: [Build #15] i386 build of at 0.00 in ubuntu warty RELEASE
   ...
@@ -193,7 +295,8 @@ Notification for a SUPERSEDED build record:
   Return-Path: bounces@canonical.com
   X-Generated-By: Launchpad (canonical.com)
   <BLANKLINE>
-   * Source Package Release: at - 0.00
+   * Source Package: at
+   * Version: 0.00
    * Architecture: i386
    * State: Build for superseded Source
    * Duration: not available
@@ -204,12 +307,12 @@ Notification for a SUPERSEDED build record:
   contact a member of the Launchpad Buildd Administrators team.
   <BLANKLINE>
   --
-  i386 build of at 0.00 in ubuntu warty
+  i386 build of at 0.00 in ubuntu warty RELEASE
   http://launchpad.dev/+builds/+build/15
   <BLANKLINE>
 
 
-Check if the 'build_notification' config option really suppress
+Check if the 'build_notification' configuration option really suppress
 notification as promised:
 
   >>> from canonical.config import config
@@ -229,42 +332,31 @@ the SPR owner, but still sending it to the default recipient:
   >>> config.builddmaster.send_build_notification = True
   >>> config.builddmaster.notify_owner = False
   >>> superseded_candidate = buildset.getByBuildID(15)
+
   >>> superseded_candidate.notify()
   >>> transaction.commit()
+
+Check how many email the system have sent:
+
+  >>> len(stub.test_emails)
+  2
+
+We need to sort the list of emails by the second element, the recipient:
+
+  >>> stub.test_emails.sort(key=lambda x: x[1], reverse=True)
+
+Only the members of launchpad-buildd-admins are notified:
+
   >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
   >>> to_addrs
-  ['Launchpad Buildd <lp_buildd@localhost>']
-  >>> print raw_msg
-  Content-Type: text/plain; charset="utf-8"
-  MIME-Version: 1.0
-  Content-Transfer-Encoding: quoted-printable
-  X-Launchpad-Build-State: SUPERSEDED
-  To: Launchpad Buildd <lp_buildd@localhost>
-  From: Launchpad Buildd System <noreply@launchpad.net>
-  Subject: [Build #15] i386 build of at 0.00 in ubuntu warty RELEASE
-  ...
-  Reply-To: Launchpad Buildd System <noreply@launchpad.net>
-  Sender: bounces@canonical.com
-  Errors-To: bounces@canonical.com
-  Return-Path: bounces@canonical.com
-  X-Generated-By: Launchpad (canonical.com)
-  <BLANKLINE>
-   * Source Package Release: at - 0.00
-   * Architecture: i386
-   * State: Build for superseded Source
-   * Duration: not available
-   * Build Log: not available
-   * Builder: not available
-  <BLANKLINE>
-  If you want further information about this situation, feel free to
-  contact a member of the Launchpad Buildd Administrators team.
-  <BLANKLINE>
-  --
-  i386 build of at 0.00 in ubuntu warty
-  http://launchpad.dev/+builds/+build/15
-  <BLANKLINE>
+  ['celso.providelo@canonical.com']
+
+  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+  >>> to_addrs
+  ['foo.bar@canonical.com']
 
 
 Just to keep the config sane, as it was before:
 
   >>> config.builddmaster.notify_owner = True
+

@@ -7,15 +7,17 @@ __metaclass__ = type
 __all__ = [
     'IProduct',
     'IProductSet',
+    'IProductLaunchpadUsageForm',
     ]
 
 from zope.schema import Bool, Choice, Int, Text, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Description, Summary, Title
+from canonical.launchpad.fields import (
+    Description, ProductBugTracker, Summary, Title)
 from canonical.launchpad.interfaces import (
-    IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget,
+    IHasOwner, IHasDrivers, IBugTarget, ISpecificationTarget,
     IHasSecurityContact, IKarmaContext, PillarNameField)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.validation import valid_webref
@@ -28,8 +30,8 @@ class ProductNameField(PillarNameField):
         return IProduct
 
 
-class IProduct(IHasOwner, IBugTarget, ISpecificationTarget,
-               IHasSecurityContact, ITicketTarget, IKarmaContext):
+class IProduct(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
+               IHasSecurityContact, IKarmaContext):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -119,7 +121,7 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget,
         title=_('Homepage URL'),
         required=False,
         constraint=valid_webref,
-        description=_("""The product home page. Please include 
+        description=_("""The product home page. Please include
             the http://"""))
 
     wikiurl = TextLine(
@@ -190,6 +192,20 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget,
     reviewed = Bool(title=_('Reviewed'), description=_("""Whether or not
         this product has been reviewed."""))
 
+    def getExternalBugTracker():
+        """Return the external bug tracker used by this bug tracker.
+
+        If the product uses Malone, return None.
+        If the product doesn't have a bug tracker specified, return the
+        project bug tracker instead.
+        """
+
+    bugtracker = Choice(title=_('Bug Tracker'), required=False,
+        vocabulary='BugTracker',
+        description=_(
+            "The external bug tracker this product uses, if it's different"
+            " from its Project's bug tracker."))
+
     official_malone = Bool(title=_('Uses Malone Officially'),
         required=True, description=_('Check this box to indicate that '
         'this application officially uses Malone for bug tracking '
@@ -207,6 +223,11 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget,
 
     serieslist = Attribute(_("""An iterator over the ProductSeries for this
         product"""))
+
+    development_focus = Choice(
+        title=_('Development focus'), required=True,
+        vocabulary='FilteredProductSeries',
+        description=_('The product series where development is focused'))
 
     name_with_project = Attribute(_("Returns the product name prefixed "
         "by the project name, if a project is associated with this "
@@ -262,7 +283,7 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget,
         None.
         """
 
-    def newSeries(owner, name, summary):
+    def newSeries(owner, name, summary, branch=None):
         """Creates a new ProductSeries for this product."""
 
     def getSeries(name):
@@ -360,3 +381,12 @@ class IProductSet(Interface):
         """return a count of the number of products in the Launchpad that
         are both active and reviewed."""
 
+
+class IProductLaunchpadUsageForm(Interface):
+    """Form for indicating whether Rosetta or Malone is used."""
+
+    official_rosetta = IProduct['official_rosetta']
+    bugtracker = ProductBugTracker(
+        title=_('Bug Tracker'),
+        description=_('Where are bugs primarily tracked?'),
+        vocabulary="BugTracker")

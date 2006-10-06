@@ -79,7 +79,7 @@ class MailWrapper:
                 # If the user has gone through the trouble of wrapping
                 # the lines, we shouldn't re-wrap them for him.
                 wrapped_lines += (
-                    [indentation + lines[0]] + 
+                    [indentation + lines[0]] +
                     [self.indent + line for line in lines[1:]])
 
             if not self.indent_first_line:
@@ -552,25 +552,6 @@ def send_bug_notification(bug, user, subject, contents, to_addrs=None,
             body=body, headers=headers)
 
 
-def add_bug_duplicate_notification(duplicate_bug, user):
-    """Add a notification that a bug was marked a dup of a bug.
-
-    An email will be sent the duplicate_bug.duplicateOf's subscribers
-    telling them which bug has been marked as a dup of their bug.
-    duplicate_bug is an IBug whose .duplicateof is not
-    None.
-    """
-    bug = duplicate_bug.duplicateof
-    if bug is None:
-        return
-    subject = u"[Bug %d] %s" % (bug.id, bug.title)
-
-    body = u"** Bug %d has been marked a duplicate of this bug" % (
-        duplicate_bug.id,)
-
-    bug.addChangeNotification(body, person=user)
-
-
 def get_cc_list(bug):
     """Return the list of people that are CC'd on this bug.
 
@@ -682,13 +663,6 @@ def notify_bug_modified(modified_bug, event):
     assert bug_delta is not None
 
     add_bug_change_notifications(bug_delta)
-
-    if bug_delta.duplicateof is not None:
-        # This bug was marked as a duplicate, so notify the dup
-        # target subscribers of this as well.
-        add_bug_duplicate_notification(
-            duplicate_bug=bug_delta.bug,
-            user=event.user)
 
 
 def add_bug_change_notifications(bug_delta):
@@ -892,9 +866,7 @@ def send_ticket_notification(ticket_event, subject, body):
     ticket = ticket_event.object
 
     sent_addrs = set()
-    subscribers = [subscription.person
-                   for subscription in ticket.subscriptions]
-    for notified_person in subscribers:
+    for notified_person in ticket.getSubscribers():
         for address in contactEmailAddresses(notified_person):
             if address not in sent_addrs:
                 from_address = format_address(

@@ -21,7 +21,7 @@ Now, let's go ahead and mark bug 2 as a duplicate of bug 1.
   ...
   ... 1
   ... -----------------------------17976867087135254391306687757
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... Content-Disposition: form-data; name="field.actions.change"
   ...
   ... Change
   ... -----------------------------17976867087135254391306687757--
@@ -31,23 +31,14 @@ Now, let's go ahead and mark bug 2 as a duplicate of bug 1.
   ...
   Location: http://.../distros/debian/+source/mozilla-firefox/+bug/2
 
-When the bug is marked as a duplicate, two notifications were added:
+When the bug is marked as a duplicate, a notification was generated, to
+tell bug 2's subscribers that their bug is a dupe of bug 1:
 
     >>> from canonical.launchpad.database import BugNotification
     >>> BugNotification.select().count()
-    2
-
-One regarding bug 1:
+    1
 
     >>> notification = BugNotification.select(orderBy='-id')[0]
-    >>> notification.bug.id
-    1
-    >>> print notification.message.text_contents
-    ** Bug 2 has been marked a duplicate of this bug
-
-And one regarding bug 2:
-
-    >>> notification = BugNotification.select(orderBy='-id')[1]
     >>> notification.bug.id
     2
     >>> print notification.message.text_contents

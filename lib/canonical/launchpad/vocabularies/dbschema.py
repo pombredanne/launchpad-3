@@ -41,8 +41,10 @@ __all__ = [
     'SprintSpecificationStatusVocabulary',
     'TeamSubscriptionPolicyVocabulary',
     'TicketPriorityVocabulary',
+    'TicketSortVocabulary',
     'TicketStatusVocabulary',
     'TranslationPermissionVocabulary',
+    'UpstreamFileTypeVocabulary',
     ]
 
 from canonical.lp import dbschema
@@ -84,7 +86,8 @@ BugTaskImportanceVocabulary = vocab_factory(
     dbschema.BugTaskImportance, noshow=[dbschema.BugTaskImportance.UNKNOWN])
 BugRefVocabulary = vocab_factory(dbschema.BugExternalReferenceType)
 BugTrackerTypeVocabulary = vocab_factory(dbschema.BugTrackerType,
-    noshow=[dbschema.BugTrackerType.DEBBUGS])
+    noshow=[dbschema.BugTrackerType.DEBBUGS,
+            dbschema.BugTrackerType.SOURCEFORGE])
 CveStatusVocabulary = vocab_factory(dbschema.CveStatus)
 DistributionReleaseStatusVocabulary = vocab_factory(dbschema.DistributionReleaseStatus)
 GPGKeyAlgorithmVocabulary = vocab_factory(dbschema.GPGKeyAlgorithm)
@@ -108,6 +111,8 @@ SpecificationGoalStatusVocabulary = vocab_factory(dbschema.SpecificationGoalStat
 SprintSpecificationStatusVocabulary =  vocab_factory(dbschema.SprintSpecificationStatus)
 TeamSubscriptionPolicyVocabulary = vocab_factory(
         dbschema.TeamSubscriptionPolicy)
+TicketSortVocabulary =  vocab_factory(dbschema.TicketSort)
 TicketStatusVocabulary =  vocab_factory(dbschema.TicketStatus)
 TicketPriorityVocabulary = vocab_factory(dbschema.TicketPriority)
 TranslationPermissionVocabulary = vocab_factory(dbschema.TranslationPermission)
+UpstreamFileTypeVocabulary = vocab_factory(dbschema.UpstreamFileType)

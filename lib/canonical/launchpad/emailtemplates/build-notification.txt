@@ -1,5 +1,6 @@
 
- * Source Package Release: %(source_title)s
+ * Source Package: %(source_name)s
+ * Version: %(source_version)s
  * Architecture: %(architecturetag)s
  * State: %(build_state)s
  * Duration: %(build_duration)s

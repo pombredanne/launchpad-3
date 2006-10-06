@@ -19,6 +19,7 @@ __all__ = [
     'TeamListView',
     'UbunteroListView',
     'FOAFSearchView',
+    'PersonClaimView',
     'PersonSpecWorkLoadView',
     'PersonSpecFeedbackView',
     'PersonChangePasswordView',
@@ -46,7 +47,6 @@ __all__ = [
 
 import cgi
 import urllib
-import sets
 from StringIO import StringIO
 
 from zope.event import notify
@@ -54,17 +54,17 @@ from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
 from zope.app.content_types import guess_content_type
 from zope.app.form.interfaces import (
-        IInputWidget, ConversionError, WidgetInputError, WidgetsError)
+        IInputWidget, ConversionError, WidgetInputError)
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 
-from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
     TeamSubscriptionPolicy, SpecificationFilter)
 
+from canonical.widgets import PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
@@ -74,26 +74,28 @@ from canonical.launchpad.interfaces import (
     ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
     IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet, IPollSet,
     IAdminRequestPeopleMerge, NotFoundError, UNRESOLVED_BUGTASK_STATUSES,
-    IPersonChangePassword)
+    IPersonChangePassword, GPGKeyNotFoundError, UnexpectedFormData,
+    IPersonClaim)
 
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
-from canonical.launchpad.helpers import (
-        obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
+
+from canonical.launchpad.helpers import obfuscateEmail, convertToHtmlCode
+
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
-from canonical.launchpad.mail.sendmail import simple_sendmail, format_address
-from canonical.launchpad.event.team import JoinTeamRequestEvent
+
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
     enabled_with_permission, Navigation, stepto, stepthrough, smartquote,
-    redirection, GeneralFormView, LaunchpadFormView, action, custom_widget)
-from canonical.widgets import PasswordChangeWidget
+    GeneralFormView, LaunchpadFormView, action, custom_widget)
+
+from canonical.launchpad.event.team import JoinTeamRequestEvent
 
 from canonical.launchpad import _
 
@@ -206,7 +208,7 @@ class PersonFacets(StandardLaunchpadFacets):
     usedfor = IPerson
 
     enable_only = ['overview', 'bugs', 'support', 'specifications',
-                   'branches', 'translations', 'calendar']
+                   'branches', 'translations']
 
     def overview(self):
         text = 'Overview'
@@ -227,7 +229,7 @@ class PersonFacets(StandardLaunchpadFacets):
         return Link('+tickets', text, summary)
 
     def specifications(self):
-        text = 'Specifications'
+        text = 'Features'
         summary = (
             'Feature specifications that %s is involved with' %
             self.context.browsername)
@@ -241,7 +243,7 @@ class PersonFacets(StandardLaunchpadFacets):
         return Link('+bounties', text, summary)
 
     def branches(self):
-        text = 'Branches'
+        text = 'Code'
         summary = ('Bazaar Branches and revisions registered and authored '
                    'by %s' % self.context.browsername)
         return Link('+branches', text, summary)
@@ -500,6 +502,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         text = 'Administer'
         return Link(target, text, icon='edit')
 
+
 class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     usedfor = ITeam
@@ -639,6 +642,71 @@ class FOAFSearchView:
         return BatchNavigator(results, self.request)
 
 
+class PersonClaimView(LaunchpadFormView):
+    """The page where a user can claim an unvalidated profile."""
+
+    schema = IPersonClaim
+
+    def validate(self, data):
+        emailaddress = data.get('emailaddress')
+        if emailaddress is None:
+            self.setFieldError(
+                'emailaddress', 'Please enter the email address')
+            return
+
+        email = getUtility(IEmailAddressSet).getByEmail(emailaddress)
+        error = ""
+        if email is None:
+            # Email not registered in launchpad, ask the user to try another
+            # one.
+            error = ("We couldn't find this email address. Please try another "
+                     "one that could possibly be associated with this profile. "
+                     "Note that this profile's name (%s) was generated based "
+                     "on the email address it's associated with."
+                     % self.context.name)
+        elif email.person != self.context:
+            if email.person.is_valid_person:
+                error = ("This email address is associated with yet another "
+                         "Launchpad profile, which you seem to have used at "
+                         "some point. If that's the case, you can "
+                         '<a href="/people/+requestmerge?field.dupeaccount=%s">'
+                         "combine this profile with the other one</a> (you'll "
+                         "have to log in with the other profile first, "
+                         "though). If that's not the case, please try with a "
+                         "different email address."
+                         % self.context.name)
+            else:
+                # There seems to be another unvalidated profile for you!
+                error = ("Although this email address is not associated with "
+                         "this profile, it's associated with yet another one. "
+                         'You can <a href="%s/+claim">claim that other '
+                         'profile</a> and then later '
+                         '<a href="/people/+requestmerge">combine</a> both of '
+                         'them into a single one.'
+                         % canonical_url(email.person))
+        else:
+            # Yay! You got the right email this time.
+            pass
+        if error:
+            self.setFieldError('emailaddress', error)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    @action(_("E-mail Me"), name="confirm")
+    def confirm_action(self, action, data):
+        email = data['emailaddress']
+        token = getUtility(ILoginTokenSet).new(
+            requester=None, requesteremail=None, email=email,
+            tokentype=LoginTokenType.PROFILECLAIM)
+        token.sendClaimProfileEmail()
+        self.request.response.addInfoNotification(_(
+            "An email message was sent to '%(email)s'. Follow the "
+            "instructions in that message to finish claiming this "
+            "profile."), email=email)
+
+
 class PersonRdfView:
     """A view that sets its mime-type to application/rdf+xml"""
 
@@ -753,6 +821,15 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
     @property
     def current_package(self):
         """Get the package whose bugs are currently being searched."""
+        if not (
+            self.distribution_widget.hasInput() and
+            self.distribution_widget.getInputValue()):
+            raise UnexpectedFormData("A distribution is required")
+        if not (
+            self.sourcepackagename_widget.hasInput() and
+            self.sourcepackagename_widget.getInputValue()):
+            raise UnexpectedFormData("A sourcepackagename is required")
+
         distribution = self.distribution_widget.getInputValue()
         return distribution.getSourcePackage(
             self.sourcepackagename_widget.getInputValue())
@@ -1116,17 +1193,6 @@ class PersonView(LaunchpadView):
             keys.append("%s %s %s" % (type_name, key.keytext, key.comment))
         return "\n".join(keys)
 
-    # XXX: these three methods are obsolete and can trivially be
-    # replaced in TAL. -- kiko, 2006-08-09
-    def sshkeysCount(self):
-        return self.context.sshkeys.count()
-
-    def gpgkeysCount(self):
-        return self.context.gpgkeys.count()
-
-    def signedcocsCount(self):
-        return self.context.signedcocs.count()
-
     def performCoCChanges(self):
         """Make changes to code-of-conduct signature records for this
         person."""
@@ -1299,9 +1365,8 @@ class PersonView(LaunchpadView):
 
         action = self.request.form.get('action')
 
-        # primary check on restrict set of 'form-like' methods.
         if action and (action not in self.permitted_actions):
-            self.error_message = 'Forbidden Form Method: %s' % action
+            raise UnexpectedFormData("Action was not defined")
 
         getattr(self, action)()
 
@@ -1311,6 +1376,11 @@ class PersonView(LaunchpadView):
             kind, keytext, comment = sshkey.split(' ', 2)
         except ValueError:
             self.error_message = 'Invalid public key'
+            return
+
+        if not (kind and keytext and comment):
+            self.error_message = 'Invalid public key'
+            return
 
         if kind == 'ssh-rsa':
             keytype = SSHKeyType.RSA
@@ -1318,22 +1388,23 @@ class PersonView(LaunchpadView):
             keytype = SSHKeyType.DSA
         else:
             self.error_message = 'Invalid public key'
+            return
 
-        getUtility(ISSHKeySet).new(self.user.id, keytype, keytext, comment)
+        getUtility(ISSHKeySet).new(self.user, keytype, keytext, comment)
         self.info_message = 'SSH public key added.'
 
     def remove_ssh(self):
-        try:
-            id = self.request.form.get('key')
-        except ValueError:
-            self.error_message = "Can't remove key that doesn't exist"
+        key_id = self.request.form.get('key')
+        if not key_id:
+            raise UnexpectedFormData('SSH Key was not defined')
 
-        sshkey = getUtility(ISSHKeySet).get(id)
+        sshkey = getUtility(ISSHKeySet).getByID(key_id)
         if sshkey is None:
-            self.error_message = "Can't remove key that doesn't exist"
+            self.error_message = "Cannot remove a key that doesn't exist"
+            return
 
         if sshkey.person != self.user:
-            self.error_message = "Cannot remove someone else's key"
+            raise UnexpectedFormData("Cannot remove someone else's key")
 
         comment = sshkey.comment
         sshkey.destroySelf()
@@ -1350,10 +1421,10 @@ class PersonGPGView(LaunchpadView):
     key = None
     fingerprint = None
 
-    key_import_failed = False
-    invalid_fingerprint = False
-    key_already_imported = False
     key_ok = False
+    invalid_fingerprint = False
+    key_retrieval_failed = False
+    key_already_imported = False
 
     error_message = None
     info_message = None
@@ -1363,8 +1434,8 @@ class PersonGPGView(LaunchpadView):
         return getUtility(IGPGHandler).getURLForKeyInServer(self.fingerprint)
 
     def form_action(self):
-        permitted_actions = ['claim_gpg', 'deactivate_gpg', 'remove_gpgtoken',
-                             'revalidate_gpg']
+        permitted_actions = [
+            'claim_gpg', 'deactivate_gpg', 'remove_gpgtoken', 'reactivate_gpg']
         if self.request.method != "POST":
             return ''
         action = self.request.form.get('action')
@@ -1375,7 +1446,10 @@ class PersonGPGView(LaunchpadView):
     def claim_gpg(self):
         # XXX cprov 20050401 As "Claim GPG key" takes a lot of time, we
         # should process it throught the NotificationEngine.
-        self.fingerprint = sanitiseFingerprint(self.request.form.get('fingerprint'))
+        gpghandler = getUtility(IGPGHandler)
+        fingerprint = self.request.form.get('fingerprint')
+        self.fingerprint = gpghandler.sanitizeFingerprint(fingerprint)
+
         if not self.fingerprint:
             self.invalid_fingerprint = True
             return
@@ -1385,19 +1459,10 @@ class PersonGPGView(LaunchpadView):
             self.key_already_imported = True
             return
 
-        # import the key to the local keyring
-        gpghandler = getUtility(IGPGHandler)
-        result, key = gpghandler.retrieveKey(self.fingerprint)
-
-        if not result:
-            # XXX: The retrieveKey API is weird. When result is None,
-            # the key returns the error value. This should be changed to
-            # be a standard exception, instead. -- kiko, 2006-08-10
-
-            # OOPS out if the keyserver is down.
-            assert "Connection refused" not in key, "The keyserver is not running, help!"
-
-            self.key_import_failed = True
+        try:
+            key = gpghandler.retrieveKey(self.fingerprint)
+        except GPGKeyNotFoundError:
+            self.key_retrieval_failed = True
             return
 
         self.key = key
@@ -1408,87 +1473,102 @@ class PersonGPGView(LaunchpadView):
     def deactivate_gpg(self):
         key_ids = self.request.form.get('DEACTIVATE_GPGKEY')
 
-        if key_ids is not None:
-            comment = 'Key(s):<code>'
+        if key_ids is None:
+            self.error_message = 'No Key(s) selected for deactivation.'
+            return
 
-            # verify if we have multiple entries to deactive
-            if not isinstance(key_ids, list):
-                key_ids = [key_ids]
+        # verify if we have multiple entries to deactive
+        if not isinstance(key_ids, list):
+            key_ids = [key_ids]
 
-            gpgkeyset = getUtility(IGPGKeySet)
+        gpgkeyset = getUtility(IGPGKeySet)
 
-            for key_id in key_ids:
-                gpgkeyset.deactivateGPGKey(key_id)
-                gpgkey = gpgkeyset.get(key_id)
-                comment += ' %s' % gpgkey.displayname
+        deactivated_keys = []
+        for key_id in key_ids:
+            gpgkey = gpgkeyset.get(key_id)
+            if gpgkey is None:
+                continue
+            if gpgkey.owner != self.user:
+                self.error_message = "Cannot deactivate someone else's key"
+                return
+            gpgkey.active = False
+            deactivated_keys.append(gpgkey.displayname)
 
-            comment += '</code> deactivated'
-            flush_database_updates()
-            self.info_message = comment
-
-        self.error_message = 'No Key(s) selected for deactivation.'
+        flush_database_updates()
+        self.info_message = (
+            'Deactivated key(s): %s' % ", ".join(deactivated_keys))
 
     def remove_gpgtoken(self):
-        tokenfprs = self.request.form.get('REMOVE_GPGTOKEN')
+        token_fingerprints = self.request.form.get('REMOVE_GPGTOKEN')
 
-        if tokenfprs is not None:
-            comment = 'Token(s) for:<code>'
-            logintokenset = getUtility(ILoginTokenSet)
+        if token_fingerprints is None:
+            self.error_message = 'No key(s) pending validation selected.'
+            return
 
-            # verify if we have multiple entries to deactive
-            if not isinstance(tokenfprs, list):
-                tokenfprs = [tokenfprs]
+        logintokenset = getUtility(ILoginTokenSet)
+        if not isinstance(token_fingerprints, list):
+            token_fingerprints = [token_fingerprints]
 
-            for tokenfpr in tokenfprs:
-                # retrieve token info
-                logintokenset.deleteByFingerprintRequesterAndType(
-                    tokenfpr, self.user, LoginTokenType.VALIDATEGPG)
-                logintokenset.deleteByFingerprintRequesterAndType(
-                    tokenfpr, self.user, LoginTokenType.VALIDATESIGNONLYGPG)
-                comment += ' %s' % tokenfpr
+        cancelled_fingerprints = []
+        for fingerprint in token_fingerprints:
+            logintokenset.deleteByFingerprintRequesterAndType(
+                fingerprint, self.user, LoginTokenType.VALIDATEGPG)
+            logintokenset.deleteByFingerprintRequesterAndType(
+                fingerprint, self.user, LoginTokenType.VALIDATESIGNONLYGPG)
+            cancelled_fingerprints.append(fingerprint)
 
-            comment += '</code> key fingerprint(s) deleted.'
-            self.info_message = comment
+        self.info_message = ('Cancelled validation of key(s): %s'
+                             % ", ".join(cancelled_fingerprints))
 
-        self.error_message = 'No Token(s) selected for deletion.'
+    def reactivate_gpg(self):
+        key_ids = self.request.form.get('REACTIVATE_GPGKEY')
 
-    def revalidate_gpg(self):
-        key_ids = self.request.form.get('REVALIDATE_GPGKEY')
+        if key_ids is None:
+            self.error_message = 'No Key(s) selected for reactivation.'
+            return
 
-        if key_ids is not None:
-            found = []
-            notfound = []
-            # verify if we have multiple entries to deactive
-            if not isinstance(key_ids, list):
-                key_ids = [key_ids]
+        found = []
+        notfound = []
+        # verify if we have multiple entries to deactive
+        if not isinstance(key_ids, list):
+            key_ids = [key_ids]
 
-            gpghandler = getUtility(IGPGHandler)
-            keyset = getUtility(IGPGKeySet)
+        gpghandler = getUtility(IGPGHandler)
+        keyset = getUtility(IGPGKeySet)
 
-            for key_id in key_ids:
-                # retrieve key info from LP
-                gpgkey = keyset.get(key_id)
-                result, key = gpghandler.retrieveKey(gpgkey.fingerprint)
-                if not result:
-                    notfound.append(gpgkey.fingerprint)
-                    continue
-                self._validateGPG(key)
+        for key_id in key_ids:
+            gpgkey = keyset.get(key_id)
+            try:
+                key = gpghandler.retrieveKey(gpgkey.fingerprint)
+            except GPGKeyNotFoundError:
+                notfound.append(gpgkey.fingerprint)
+            else:
                 found.append(key.displayname)
+                self._validateGPG(key)
 
-            comment = ''
-            if len(found):
-                comment += ('Key(s):<code>%s</code> revalidation email sent '
-                            'to %s.' % (' '.join(found),
-                                         self.context.preferredemail.email))
-            if len(notfound):
-                comment += ('Key(s):<code>%s</code> were skiped because could '
-                            'not be retrived by Launchpad, verify if the key '
-                            'is correctly published in the global key ring.' %
-                            (''.join(notfound)))
+        comments = []
+        if len(found) > 0:
+            comments.append(
+                'An email was sent to %s with instructions to reactivate '
+                'the following key(s): %s'
+                % (self.context.preferredemail.email, ', '.join(found)))
+        if len(notfound) > 0:
+            if len(notfound) == 1:
+                comments.append(
+                    'Launchpad failed to retrieve the following key from '
+                    'the keyserver: %s. Please make sure this key is '
+                    'published in a keyserver (such as '
+                    '<a href="http://pgp.mit.edu">pgp.mit.edu</a>) before '
+                    'trying to reactivate it again.' % (', '.join(notfound)))
+            else:
+                comments.append(
+                    'Launchpad failed to retrieve the following keys from '
+                    'the keyserver: %s. Please make sure these keys '
+                    'are published in a keyserver (such as '
+                    '<a href="http://pgp.mit.edu">pgp.mit.edu</a>) before '
+                    'trying to reactivate them again.' % (', '.join(notfound)))
 
-            self.info_message = comment
-
-        self.error_message = 'No Key(s) selected for revalidation.'
+        self.info_message = '\n<br>\n'.join(comments)
 
     def _validateGPG(self, key):
         logintokenset = getUtility(ILoginTokenSet)
@@ -1507,8 +1587,7 @@ class PersonGPGView(LaunchpadView):
                                   tokentype,
                                   fingerprint=key.fingerprint)
 
-        appurl = self.request.getApplicationURL()
-        token.sendGPGValidationRequest(appurl, key)
+        token.sendGPGValidationRequest(key)
 
 
 class PersonChangePasswordView(LaunchpadFormView):
@@ -1591,8 +1670,7 @@ class TeamJoinView(PersonView):
 
         if self.request.form.get('join') and self.userCanRequestToJoin():
             user.join(self.context)
-            appurl = self.request.getApplicationURL()
-            notify(JoinTeamRequestEvent(user, self.context, appurl))
+            notify(JoinTeamRequestEvent(user, self.context))
             if (self.context.subscriptionpolicy ==
                 TeamSubscriptionPolicy.MODERATED):
                 self.request.response.addInfoNotification(
@@ -1628,10 +1706,9 @@ class PersonEditEmailsView:
 
     def unvalidatedAndGuessedEmails(self):
         """Return a Set containing all unvalidated and guessed emails."""
-        emailset = sets.Set()
-        emailset = emailset.union(
-            [e.email for e in self.context.guessedemails])
-        emailset = emailset.union([e for e in self.context.unvalidatedemails])
+        emailset = set()
+        emailset = emailset.union(e.email for e in self.context.guessedemails)
+        emailset = emailset.union(e for e in self.context.unvalidatedemails)
         return emailset
 
     def emailFormSubmitted(self):
@@ -1805,7 +1882,9 @@ class PersonEditEmailsView:
                 (emailaddress.person.name, emailaddress.person.id,
                  self.context.name, self.context.id, emailaddress.email)
 
-        assert emailaddress.status == EmailAddressStatus.VALIDATED
+        if emailaddress.status != EmailAddressStatus.VALIDATED:
+            self.message = "%s is already set as your contact address." % email
+            return
         self.context.setPreferredEmail(emailaddress)
         self.message = "Your contact address has been changed to: %s" % email
 
@@ -1852,9 +1931,7 @@ class RequestPeopleMergeView(AddView):
         #      problems with merge people tests.  2006-03-07
         import canonical.database.sqlbase
         canonical.database.sqlbase.flush_database_updates()
-        dupename = dupeaccount.name
-        sendMergeRequestEmail(
-            token, dupename, self.request.getApplicationURL())
+        token.sendMergeRequestEmail()
         self._nextURL = './+mergerequest-sent?dupe=%d' % dupeaccount.id
 
 
@@ -1925,21 +2002,37 @@ class AdminRequestPeopleMergeView(LaunchpadView):
         getUtility(IPersonSet).merge(self.dupe_account, self.target_account)
 
 
-class FinishedPeopleMergeRequestView:
+class FinishedPeopleMergeRequestView(LaunchpadView):
     """A simple view for a page where we only tell the user that we sent the
     email with further instructions to complete the merge.
-    
+
     This view is used only when the dupe account has a single email address.
     """
+    def initialize(self):
+        user = getUtility(ILaunchBag).user
+        try:
+            dupe_id = int(self.request.get('dupe'))
+        except (ValueError, TypeError):
+            self.request.response.redirect(canonical_url(user))
+            return
 
-    def dupe_email(self):
-        """Return the email address of the dupe account to which we sent the
-        token.
-        """
-        dupe_account = getUtility(IPersonSet).get(self.request.get('dupe'))
+        dupe_account = getUtility(IPersonSet).get(dupe_id)
         results = getUtility(IEmailAddressSet).getByPerson(dupe_account)
-        assert results.count() == 1
-        return results[0].email
+
+        result_count = results.count()
+        if not result_count:
+            # The user came back to visit this page with nothing to
+            # merge, so we redirect him away to somewhere useful.
+            self.request.response.redirect(canonical_url(user))
+            return
+        assert result_count == 1
+        self.dupe_email = results[0].email
+
+    def render(self):
+        if self.dupe_email:
+            return LaunchpadView.render(self)
+        else:
+            return ''
 
 
 class RequestPeopleMergeMultipleEmailsView:
@@ -1974,42 +2067,22 @@ class RequestPeopleMergeMultipleEmailsView:
         login = getUtility(ILaunchBag).login
         logintokenset = getUtility(ILoginTokenSet)
 
-        ids = self.request.form.get("selected")
-        if ids is not None:
+        emails = self.request.form.get("selected")
+        if emails is not None:
             # We can have multiple email adressess selected, and in this case
-            # ids will be a list. Otherwise ids will be str or int and we need
+            # emails will be a list. Otherwise it will be a string and we need
             # to make a list with that value to use in the for loop.
-            if not isinstance(ids, list):
-                ids = [ids]
+            if not isinstance(emails, list):
+                emails = [emails]
 
-            emailset = getUtility(IEmailAddressSet)
-            for id in ids:
-                email = emailset.get(id)
-                assert email in self.dupeemails
-                token = logintokenset.new(user, login, email.email,
-                                          LoginTokenType.ACCOUNTMERGE)
-                dupename = self.dupe.name
-                url = self.request.getApplicationURL()
-                sendMergeRequestEmail(token, dupename, url)
-                self.notified_addresses.append(email.email)
-
-
-def sendMergeRequestEmail(token, dupename, appurl):
-    template = open(
-        'lib/canonical/launchpad/emailtemplates/request-merge.txt').read()
-    fromaddress = format_address(
-        "Launchpad Account Merge", config.noreply_from_address)
-
-    replacements = {'longstring': token.token,
-                    'dupename': dupename,
-                    'requester': token.requester.name,
-                    'requesteremail': token.requesteremail,
-                    'toaddress': token.email,
-                    'appurl': appurl}
-    message = template % replacements
-
-    subject = "Launchpad: Merge of Accounts Requested"
-    simple_sendmail(fromaddress, str(token.email), subject, message)
+            for email in emails:
+                emailaddress = emailaddrset.getByEmail(email)
+                assert emailaddress in self.dupeemails
+                token = logintokenset.new(
+                    user, login, emailaddress.email,
+                    LoginTokenType.ACCOUNTMERGE)
+                token.sendMergeRequestEmail()
+                self.notified_addresses.append(emailaddress.email)
 
 
 class ObjectReassignmentView:
@@ -2050,6 +2123,8 @@ class ObjectReassignmentView:
     def contextName(self):
         return self.context.displayname or self.context.name
 
+    nextUrl = '.'
+
     def processForm(self):
         if self.request.method == 'POST':
             self.changeOwner()
@@ -2060,11 +2135,22 @@ class ObjectReassignmentView:
         if newOwner is None:
             return
 
+        if not self.isValidOwner(newOwner):
+            return
+
         oldOwner = getattr(self.context, self.ownerOrMaintainerAttr)
         setattr(self.context, self.ownerOrMaintainerAttr, newOwner)
         if callable(self.callback):
             self.callback(self.context, oldOwner, newOwner)
-        self.request.response.redirect('.')
+        self.request.response.redirect(self.nextUrl)
+
+    def isValidOwner(self, newOwner):
+        """Check whether the new owner is acceptable for the context object.
+
+        If it not acceptable, return False and assign an error message to
+        self.errormessage to inform the user.
+        """
+        return True
 
     def _getNewOwner(self):
         """Return the new owner for self.context, as specified by the user.

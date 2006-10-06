@@ -40,10 +40,15 @@
      Reported this bug as also occurring in upstream firefox
   </p>
 
+  <p class="informational message"
+     id="number_of_dupes"
+     tal:condition="context/bug/duplicates"
+     tal:define="number_of_dupes context/bug/duplicates/count"
+    >This bug has been reported <tal:num-times content="python:number_of_dupes + 1">2</tal:num-times> times</p>
+
   <p tal:condition="context/bug/duplicateof" class="informational message">
     This report is a duplicate of
-    <a href="#"
-       tal:attributes="href context/bug/duplicateof/fmt:url;
+    <a tal:attributes="href context/bug/duplicateof/fmt:url;
                        title context/bug/duplicateof/title"
        tal:content="string:bug #${context/bug/duplicateof/id}">bug 42</a>
   </p>
@@ -81,29 +86,31 @@
 
   <div tal:replace="structure context/@@+headline-tasks" />
 
-    <div style="font-family: monospace;"
-      tal:content="structure context/bug/description/fmt:text-to-html">
-      $Bug.description
-    </div>
+  <fieldset style="margin-bottom: 0; padding: 0 0.5em 0.5em 0.5em">
+    <legend>Description <small>(<a href="+edit">edit</a>)</small></legend>
 
-      <tal:tags define="tags context/bug/tags">
-        <div tal:condition="tags" class="discreet">
-          <b>Tags:</b>
-          <a tal:repeat="tag context/bug/tags"
-             tal:content="tag"
-               tal:attributes="
-                 href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">
-            tag
-          </a>
-        </div>
-      </tal:tags>
-      <ul class="menu">
-        <li><a href="+edit">Edit summary/description/tags</a></li>
-      </ul>
+    <div style="font-family: monospace;"
+         tal:content="structure context/bug/description/fmt:text-to-html" />
+
+    <div tal:define="tags context/bug/tags"
+         tal:condition="tags"
+         style="text-align: right; font-size: smaller; margin: 0; padding: 0">
+      <b>Tags:</b>
+      <a tal:repeat="tag tags"
+         tal:content="tag"
+           tal:attributes="
+             href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
+    </div>
+  </fieldset>
+
+  <div style="margin-bottom: 1em; text-align: center">
+    <span tal:condition="view/wasDescriptionModified" 
+          class="discreet lesser">
+      This description was updated. <a href="comments/0">View original description</a>.</span>
+  </div>
 
   <tal:branches define="bug_branches context/bug/bug_branches"
-                condition="bug_branches">
-    <strong>Related Branches</strong>
+              condition="bug_branches">
     <p tal:condition="context/bug/private"
          class="warning message">
       This bug is private, so avoid adding public branches here.
@@ -112,7 +119,7 @@
     <table class="listing">
       <thead>
         <tr>
-          <th>Bugfix Status</th>
+          <th>Related Branch</th>
           <th>Developer</th>
           <th>Revision Hint</th>
         </tr>
@@ -122,9 +129,7 @@
           <td>
             <a href="#"
                tal:attributes="href string:${bug_branch/fmt:url}/+status"
-               tal:content="bug_branch/status/title">
-              Under Development
-            </a>
+               tal:content="bug_branch/status/title">Under Development</a>
           </td>
           <td tal:content="bug_branch/branch/owner/displayname"></td>
           <td tal:content="bug_branch/revision_hint"></td>
@@ -133,7 +138,8 @@
     </table>
   </tal:branches>
 
-  <tal:comment repeat="comment view/getBugComments">
+
+  <tal:comment repeat="comment view/getBugCommentsForDisplay">
     <metal:comment-box
         metal:use-macro="context/@@bugcomment-macros/comment-box" />
   </tal:comment>

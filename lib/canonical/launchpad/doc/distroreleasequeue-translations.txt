@@ -59,7 +59,7 @@ We are going to import the pmount build.
   >>> pmount_sourcepackagename = getUtility(ISourcePackageNameSet)['pmount']
   >>> source_package_release = dapper.createUploadedSourcePackageRelease(
   ...     pmount_sourcepackagename, "0.9.7-2ubuntu2", dapper.owner, UTC_NOW,
-  ...     None, None, None, Component.get(1), dapper.owner,
+  ...     None, None, 'i386', Component.get(1), dapper.owner,
   ...     SourcePackageUrgency.LOW, None, None, GPGKey.get(1), Section.get(1),
   ...     Manifest.get(1))
 
@@ -83,7 +83,7 @@ Do the upload into the system.
   True
 
   >>> build = source_package_release.createBuild(
-  ...      dapper_amd64, pocket=PackagePublishingPocket.RELEASE)
+  ...      dapper_amd64, PackagePublishingPocket.RELEASE)
   >>> mock_options = MockOptions()
   >>> mock_options.buildid = build.id
   >>> pmount_upload.policy.setOptions(mock_options)

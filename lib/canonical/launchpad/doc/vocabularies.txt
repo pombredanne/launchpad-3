@@ -163,10 +163,10 @@ o PersonActiveMembership - all the teams the person is an active member of.
     admins Launchpad Administrators Launchpad Administrators
     launchpad-buildd-admins Launchpad Buildd Admins Launchpad Buildd Admins
     launchpad Launchpad Developers Launchpad Developers
+    testing-spanish-team testing Spanish team testing Spanish team
     name18 Ubuntu Gnome Team Ubuntu Gnome Team
     ubuntu-team Ubuntu Team Ubuntu Team
     vcs-imports VCS imports VCS imports
-    testing-spanish-team testing Spanish team testing Spanish team
 
     >>> launchpad_team = getUtility(IPersonSet).getByName('launchpad')
     >>> launchpad_team in person_active_membership
@@ -196,6 +196,79 @@ o PersonActiveMembership - all the teams the person is an active member of.
     ...
     LookupError:...
 
+o Milestone - All the milestone in a context.
+
+If no context is given, all milestones in the database are in the
+vocabulary.
+
+    >>> all_milestones = vocabulary_registry.get(None, 'Milestone')
+    >>> len(all_milestones)
+    2
+    >>> for term in all_milestones:
+    ...     print "%s: %s" % (term.value.target.name, term.value.name)
+    debian: 3.1
+    firefox: 1.0
+
+If the context is a product, only the product's milestones are in the
+vocabulary.
+
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> firefox_milestones = vocabulary_registry.get(firefox, 'Milestone')
+    >>> for term in firefox_milestones:
+    ...     print "%s: %s" % (term.value.target.name, term.value.name)
+    firefox: 1.0
+
+If the context is a bugtask, only the bugtask's target's milestones are
+in the vocabulary.
+
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> firefox_task = bug_one.bugtasks[0]
+    >>> firefox_task.targetname
+    u'firefox (upstream)'
+    >>> firefox_task_milestones = vocabulary_registry.get(
+    ...     firefox_task, 'Milestone')
+    >>> for term in firefox_task_milestones:
+    ...     print "%s: %s" % (term.value.target.name, term.value.name)
+    firefox: 1.0
+
+    >>> bug_two = getUtility(IBugSet).get(2)
+    >>> debian_woody_task = bug_two.bugtasks[-1]
+    >>> debian_woody_task.targetname
+    u'mozilla-firefox (Debian Woody)'
+    >>> debian_woody_milestones = vocabulary_registry.get(
+    ...     debian_woody_task, 'Milestone')
+    >>> debian_woody = debian_woody_task.distrorelease
+    >>> len(debian_woody_milestones)
+    0
+    >>> debian_woody.milestones.count()
+    0
+
+
+The vocabulary contains only visible milestones.
+
+    >>> one_dot_o = firefox.milestones[0]
+    >>> one_dot_o.name
+    u'1.0'
+    >>> one_dot_o.visible = False
+
+    >>> for term in all_milestones:
+    ...     print "%s: %s" % (term.value.target.name, term.value.name)
+    debian: 3.1
+    >>> len(firefox_milestones)
+    0
+    >>> len(firefox_task_milestones)
+    0
+
+
+There's one exception, though; if a bugtask is assigned to a
+non-visible milestone, that milestone will be in the vocabulary.
+
+    >>> firefox_task.milestone = one_dot_o
+    >>> for term in firefox_task_milestones:
+    ...     print "%s: %s" % (term.value.target.name, term.value.name)
+    firefox: 1.0
 
 
 Non-Enumerable Vocabularies
@@ -284,7 +357,7 @@ o BranchVocabulary - the list of bzr branches registered in Launchpad.
   Searchable by branch name or URL, and searched within the context of
   a product.
 
-    >>> from canonical.launchpad.interfaces import IProductSet, IBranchSet
+    >>> from canonical.launchpad.interfaces import IBranchSet
 
     >>> firefox = getUtility(IProductSet)["firefox"]
     >>> gnome_terminal = getUtility(IProductSet)["gnome-terminal"]
@@ -493,8 +566,10 @@ o PersonAccountToMergeVocabulary - all non-merged people. This vocabulary
     []
 
     A person with a single and unvalidated email address can be merged.
+    >>> from canonical.lp.dbschema import PersonCreationRationale
     >>> fooperson, email = getUtility(IPersonSet).createPersonAndEmail(
-    ...     'foobaz@bar.com', name='foobaz', displayname='foo baz')
+    ...     'foobaz@bar.com', PersonCreationRationale.UNKNOWN,
+    ...     name='foobaz', displayname='foo baz')
     >>> fooperson in vocab
     True
 
@@ -654,7 +729,6 @@ o SchemaVocabulary - launchpad Schema Vocabulary..
 
 o BugWatchVocabulary - all bug watches associated with a bugtask's bug
 
-    >>> from canonical.launchpad.interfaces import IBugSet
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bugtask = bug_one.bugtasks[0]
     >>> vocab = vocabulary_registry.get(bugtask, "BugWatch")

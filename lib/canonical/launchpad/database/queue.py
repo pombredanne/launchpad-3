@@ -7,7 +7,6 @@ __all__ = [
     'DistroReleaseQueueSource',
     'DistroReleaseQueueCustom',
     'DistroReleaseQueueSet',
-    'filechunks',
     ]
 
 import os
@@ -18,6 +17,8 @@ from zope.interface import implements
 
 from sqlobject import (
     ForeignKey, SQLMultipleJoin, SQLObjectNotFound)
+
+from canonical.librarian.utils import copy_and_close
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -30,30 +31,18 @@ from canonical.launchpad.interfaces import (
     IDistroReleaseQueue, IDistroReleaseQueueBuild, IDistroReleaseQueueSource,
     IDistroReleaseQueueCustom, NotFoundError, QueueStateWriteProtectedError,
     QueueInconsistentStateError, QueueSourceAcceptError,
-    QueueBuildAcceptError, IDistroReleaseQueueSet)
+    QueueBuildAcceptError, IDistroReleaseQueueSet, pocketsuffix)
 
 from canonical.librarian.interfaces import DownloadFailed
-
 
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
 
-
 from canonical.cachedproperty import cachedproperty
-
-from canonical.archivepublisher.publishing import pocketsuffix
-
 # There are imports below in DistroReleaseQueueCustom for various bits
 # of the archivepublisher which cause circular import errors if they
 # are placed here.
-
-
-def filechunks(file, chunk_size=256*1024):
-    """Return an iterator which reads chunks of the given file."""
-    # We use the two-arg form of the iterator here to form an iterator
-    # which reads chunks from the given file.
-    return iter(lambda: file.read(chunk_size), '')
 
 
 def debug(logger, msg):
@@ -297,18 +286,17 @@ class DistroReleaseQueue(SQLBase):
 
     def addSource(self, spr):
         """See IDistroReleaseQueue."""
-        return DistroReleaseQueueSource(distroreleasequeue=self.id,
-                                        sourcepackagerelease=spr.id)
+        return DistroReleaseQueueSource(distroreleasequeue=self,
+                                        sourcepackagerelease=spr)
 
     def addBuild(self, build):
         """See IDistroReleaseQueue."""
-        return DistroReleaseQueueBuild(distroreleasequeue=self.id,
-                                       build=build.id)
+        return DistroReleaseQueueBuild(distroreleasequeue=self, build=build)
 
     def addCustom(self, library_file, custom_type):
         """See IDistroReleaseQueue."""
-        return DistroReleaseQueueCustom(distroreleasequeue=self.id,
-                                        libraryfilealias=library_file.id,
+        return DistroReleaseQueueCustom(distroreleasequeue=self,
+                                        libraryfilealias=library_file,
                                         customformat=custom_type)
 
 
@@ -369,10 +357,10 @@ class DistroReleaseQueueBuild(SQLBase):
                 # XXX: dsilvers: 20051020: What do we do about embargoed
                 # binaries here? bug 3408
                 sbpph = SecureBinaryPackagePublishingHistory(
-                    binarypackagerelease=binary.id,
-                    distroarchrelease=each_target_dar.id,
-                    component=binary.component.id,
-                    section=binary.section.id,
+                    binarypackagerelease=binary,
+                    distroarchrelease=each_target_dar,
+                    component=binary.component,
+                    section=binary.section,
                     priority=binary.priority,
                     status=PackagePublishingStatus.PENDING,
                     datecreated=UTC_NOW,
@@ -426,10 +414,10 @@ class DistroReleaseQueueSource(SQLBase):
             self.distroreleasequeue.distrorelease.name))
 
         return SecureSourcePackagePublishingHistory(
-            distrorelease=self.distroreleasequeue.distrorelease.id,
-            sourcepackagerelease=self.sourcepackagerelease.id,
-            component=self.sourcepackagerelease.component.id,
-            section=self.sourcepackagerelease.section.id,
+            distrorelease=self.distroreleasequeue.distrorelease,
+            sourcepackagerelease=self.sourcepackagerelease,
+            component=self.sourcepackagerelease.component,
+            section=self.sourcepackagerelease.section,
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
             pocket=self.distroreleasequeue.pocket,
@@ -463,6 +451,11 @@ class DistroReleaseQueueCustom(SQLBase):
         # are, what their tags are, or anything along those lines, you should
         # grep for the marker in the source tree and fix it up in every place
         # so marked.
+        debug(logger, "Publishing custom %s to %s/%s" % (
+            self.distroreleasequeue.displayname,
+            self.distroreleasequeue.distrorelease.distribution.name,
+            self.distroreleasequeue.distrorelease.name))
+
         name = "publish_" + self.customformat.name
         method = getattr(self, name, None)
         if method is not None:
@@ -475,14 +468,9 @@ class DistroReleaseQueueCustom(SQLBase):
         """See IDistroReleaseQueueCustom."""
         temp_dir = tempfile.mkdtemp()
         temp_file_name = os.path.join(temp_dir, self.libraryfilealias.filename)
-
         temp_file = file(temp_file_name, "wb")
-        # Pump the file from the librarian...
         self.libraryfilealias.open()
-        for chunk in filechunks(self.libraryfilealias):
-            temp_file.write(chunk)
-        temp_file.close()
-        self.libraryfilealias.close()
+        copy_and_close(self.libraryfilealias, temp_file)
         return temp_file_name
 
     @property
@@ -545,6 +533,15 @@ class DistroReleaseQueueCustom(SQLBase):
         sourcepackagerelease = (
             self.distroreleasequeue.builds[0].build.sourcepackagerelease)
 
+        if sourcepackagerelease.component.name != 'main':
+            # XXX: CarlosPerelloMarin 20060216 This should be implemented
+            # using a more general rule to accept different policies depending
+            # on the distribution. See bug #31665 for more details.
+            # Ubuntu's MOTU told us that they are not able to handle
+            # translations like we do in main. We are going to import only
+            # packages in main.
+            return
+
         # Attach the translation tarball. It's always published.
         try:
             sourcepackagerelease.attachTranslationFiles(
@@ -577,15 +574,19 @@ class DistroReleaseQueueSet:
         except SQLObjectNotFound:
             raise NotFoundError(queue_id)
 
-    def count(self, status=None, distrorelease=None):
+    def count(self, status=None, distrorelease=None, pocket=None):
         """See IDistroReleaseQueueSet."""
         clauses = []
         if status:
             clauses.append("status=%s" % sqlvalues(status))
 
         if distrorelease:
-            clauses.append("distrorelease=%s" % sqlvalues(distrorelease.id))
+            clauses.append("distrorelease=%s" % sqlvalues(distrorelease))
+
+        if pocket:
+            clauses.append("pocket=%s" % sqlvalues(pocket))
 
         query = " AND ".join(clauses)
+
         return DistroReleaseQueue.select(query).count()
 

@@ -114,7 +114,7 @@ class ShippingRequest(SQLBase):
         flavours = set()
         for requested_cds in self.getAllRequestedCDs():
             flavours.add(requested_cds.flavour)
-        return flavours
+        return sorted(flavours)
 
     def getTotalApprovedCDs(self):
         """See IShippingRequest"""
@@ -138,7 +138,7 @@ class ShippingRequest(SQLBase):
 
     def getAllRequestedCDs(self):
         """See IShippingRequest"""
-        return RequestedCDs.selectBy(requestID=self.id)
+        return RequestedCDs.selectBy(request=self)
 
     def getRequestedCDsGroupedByFlavourAndArch(self):
         """See IShippingRequest"""
@@ -958,7 +958,7 @@ class Shipment(SQLBase):
     @property
     def request(self):
         """See IShipment"""
-        return ShippingRequest.selectOneBy(shipmentID=self.id)
+        return ShippingRequest.selectOneBy(shipment=self)
 
 
 

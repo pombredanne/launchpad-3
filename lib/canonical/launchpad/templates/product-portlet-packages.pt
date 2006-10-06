@@ -1,6 +1,6 @@
 <div class="portlet" tal:condition="context/sourcepackages">
 
-  <h4>Distro packages:</h4>
+  <h2>Distro packages</h2>
 
   <div class="portletBody portletContent">
 

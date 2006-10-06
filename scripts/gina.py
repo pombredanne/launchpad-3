@@ -27,7 +27,8 @@ from datetime import timedelta
 
 from canonical.lp import initZopeless, dbschema
 from canonical.config import config
-from canonical.launchpad.scripts import logger_options, log
+from canonical.launchpad.scripts import (
+    execute_zcml_for_scripts, logger_options, log)
 from canonical.launchpad.scripts.lockfile import LockFile
 
 from canonical.launchpad.scripts.gina import ExecutionError
@@ -54,6 +55,7 @@ def _get_keyring(keyrings_root):
 
 
 def main():
+    execute_zcml_for_scripts()
     parser = OptionParser("Usage: %prog [OPTIONS] [target ...]")
     logger_options(parser)
 
@@ -148,8 +150,6 @@ def run_gina(options, ztm, target_section):
 
     if hasattr(dbschema.PackagePublishingPocket, pocket.upper()):
         pocket = getattr(dbschema.PackagePublishingPocket, pocket.upper())
-        # XXX: should we ensure that the pocket release contains the
-        # pocket name?
     else:
         log.error("Could not find a pocket schema for %s" % pocket)
         sys.exit(1)

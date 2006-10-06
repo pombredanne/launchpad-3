@@ -100,18 +100,18 @@ True
 Finally, if the branch is not related to the person at all, role is undefined
 and the branch_role method raises an exception.
 
->>> firefox_main = branchset[1]
->>> firefox_main.author == sampleperson
+>>> thunderbird_main = branchset[2]
+>>> thunderbird_main.author == sampleperson
 False
->>> firefox_main.owner == sampleperson
+>>> thunderbird_main.owner == sampleperson
 False
->>> sampleperson in firefox_main.subscribers
+>>> sampleperson in thunderbird_main.subscribers
 False
 >>> try:
-...     sampleperson_branches_view.branch_role(firefox_main)
+...     sampleperson_branches_view.branch_role(thunderbird_main)
 ... except Exception, exception:
 ...     print exception
-Unable determine role of person u'name12' for branch u'~sabdfl/firefox/main'
+Unable determine role of person u'name12' for branch u'~stevea/thunderbird/main'
 
 == Contextual branch views ==
 
@@ -192,7 +192,8 @@ True
 >>> view = getView(gterm_dev, '+edit', TestRequest())
 >>> view.setUpFields()
 >>> [field.__name__ for field in view.form_fields]
-['url', 'title', 'summary', 'home_page', 'author', 'whiteboard']
+['product', 'url', 'name', 'title', 'summary', 'whiteboard', 'home_page',
+ 'author']
 
 When a branch's URL is null, the user is not allowed to set it.
 
@@ -202,7 +203,7 @@ True
 >>> view = getView(no_url, '+edit', TestRequest())
 >>> view.setUpFields()
 >>> [field.__name__ for field in view.form_fields]
-['title', 'summary', 'home_page', 'author', 'whiteboard']
+['product', 'name', 'title', 'summary', 'whiteboard', 'home_page', 'author']
 
 Thus, a branch cannot change between being a pull branch and a push branch
 through the web interface.

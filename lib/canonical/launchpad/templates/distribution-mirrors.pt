@@ -1,15 +1,15 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template/master"
+      metal:use-macro="context/@@main_template_2col/master"
       i18n:domain="launchpad"
 >
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
@@ -27,20 +27,8 @@
   </div>
 
   <div tal:condition="mirrors_by_country">
-    <ul>
-      <li tal:repeat="country python:sorted(mirrors_by_country.keys())">
-        <strong tal:content="country" />
-
-        <tal:block
-          tal:define="mirrors mirrors_by_country/?country; 
-                      table_id python:hash(country)">
-          <metal:mirror-list
-            use-macro="context/@@+distributionmirror-macros/mirrors-table" />
-        </tal:block>
-      <br />
-      </li>
-    </ul>
-
+    <metal:mirror-list
+      use-macro="context/@@+distributionmirror-macros/mirrors-table" />
   </div>
 
   </tal:block>

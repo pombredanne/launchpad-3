@@ -8,7 +8,6 @@
     <metal:leftportlets fill-slot="portlets_one">
       <div tal:replace="structure context/pofile/@@+portlet-about" />
       <div tal:replace="structure context/pofile/@@+portlet-details" />
-      <div tal:replace="structure context/pofile/@@+portlet-quickhelp" />
       <div tal:replace="structure context/pofile/@@+portlet-stats" />
     </metal:leftportlets>
 
@@ -84,6 +83,12 @@
             <tfoot>
               <tr>
                 <th colspan="5">
+                  <tal:review
+                    condition="not: view/user_is_official_translator"
+                  >
+                    Your translations will be held for review by the official
+                    translators for this file.
+                  </tal:review>
                   <input type="submit"
                          name="submit_translations"
                          value="Save &amp; Continue"

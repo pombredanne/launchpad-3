@@ -17,7 +17,7 @@
   u'name12'
 
   >>> [series.name for series in firefox.serieslist]
-  [u'1.0', u'milestones']
+  [u'1.0', u'trunk']
   >>> [series.owner.name for series in firefox.serieslist]
   [u'name12', u'name12']
   >>> [release.version for release in firefox.releases]
@@ -83,7 +83,7 @@
   >>> from BeautifulSoup import BeautifulSoup
   >>> soup = BeautifulSoup(admin_browser.contents)
   >>> soup.fetchText('Registrant:')[0].findNext('a').string
-  'No Privileges Person'
+  u'No Privileges Person'
 
   >>> login('no-priv@canonical.com')
 
@@ -94,7 +94,7 @@
   The dependencies are also correctly re-assigned.
 
   >>> [series.name for series in firefox.serieslist]
-  [u'1.0', u'milestones']
+  [u'1.0', u'trunk']
   >>> [series.owner.name for series in firefox.serieslist]
   [u'no-priv', u'no-priv']
   >>> [release.version for release in firefox.releases]
@@ -125,4 +125,4 @@
 
   >>> soup = BeautifulSoup(browser.contents)
   >>> soup.fetchText('Registrant:')[0].findNext('a').string
-  'Sample Person'
+  u'Sample Person'

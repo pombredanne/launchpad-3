@@ -55,31 +55,29 @@ class DistroReleaseLanguage(SQLBase, RosettaStats):
             POFile.potemplate = POTemplate.id AND
             POTemplate.distrorelease = %s
             ''' % sqlvalues(self.language.id, self.distrorelease.id),
-            prejoinClauseTables=['POTemplate'],
             clauseTables=['POTemplate'],
-            # the language listings include information from a number of
-            # places; attempt to prejoin as much as possible.
-            prejoins=["language", "potemplate.sourcepackagename",
+            prejoins=["potemplate.sourcepackagename",
                       "latestsubmission.person"],
             orderBy=['-POTemplate.priority', 'POFile.id'])
 
     @property
     def po_files_or_dummies(self):
         """See IDistroReleaseLanguage."""
-        all_pots = set(self.distrorelease.currentpotemplates)
+        pofiles = list(self.pofiles)
         # Note that only self.pofiles actually prejoins anything in;
         # this means that we issue additional queries for
         # SourcePackageName for every DummyPOFile when displaying the
         # list of templates per distribution release.
-        translated_pots = set(pofile.potemplate for pofile in self.pofiles)
-
+        translated_pots = set(pofile.potemplate for pofile in pofiles)
+        all_pots = set(self.distrorelease.currentpotemplates)
         untranslated_pots = all_pots - translated_pots
         dummies = [DummyPOFile(pot, self.language)
                    for pot in untranslated_pots]
 
-        return sorted(list(self.pofiles) + dummies,
+        return sorted(pofiles + dummies,
                       key=lambda x: (-x.potemplate.priority,
-                                     x.potemplate.potemplatename.name))
+                                     x.potemplate.potemplatename.name,
+                                     x.potemplate.id))
 
     @property
     def translators(self):
