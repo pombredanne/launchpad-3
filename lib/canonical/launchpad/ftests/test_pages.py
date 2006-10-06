@@ -67,7 +67,7 @@ class PageStoryTestCase(unittest.TestCase):
 
     layer = PageTestLayer
 
-    def __init__(self, storydir, package=None):
+    def __init__(self, name, storysuite):
         """Create a PageTest story for storydir.
 
         storydir should be an package relative file path.
@@ -77,36 +77,8 @@ class PageStoryTestCase(unittest.TestCase):
         # we do not run the super __init__ because we are not using any of
         # the base classes functionality, and we'd just have to give it a
         # meaningless method.
-        self._description = storydir
-        self._suite = unittest.TestSuite()
-
-        # we need to normalise the package name here, because it
-        # involves checking the parent stack frame.  Otherwise the
-        # files would be looked up relative to this module.
-        package = doctest._normalize_module(package)
-        abs_storydir = doctest._module_relative_path(package, storydir)
-
-        filenames = set(filename
-                        for filename in os.listdir(abs_storydir)
-                        if filename.lower().endswith('.txt'))
-        numberedfilenames = set(filename for filename in filenames
-                                if len(filename) > 4
-                                and filename[:2].isdigit()
-                                and filename[2] == '-')
-        unnumberedfilenames = filenames - numberedfilenames
-
-        # A predictable order is important, even if it remains officially
-        # undefined for un-numbered filenames.
-        numberedfilenames = sorted(numberedfilenames)
-        unnumberedfilenames = sorted(unnumberedfilenames)
-        test_scripts = unnumberedfilenames + numberedfilenames
-    
-        checker = SpecialOutputChecker()
-        for leaf_filename in test_scripts:
-            filename = os.path.join(storydir, leaf_filename)
-            self._suite.addTest(PageTestDocFileSuite(
-                filename, package=package, checker=checker, setUp=setUpGlobs
-                ))
+        self._description = name
+        self._suite = storysuite
 
     def countTestCases(self):
         return self._suite.countTestCases()
@@ -121,7 +93,7 @@ class PageStoryTestCase(unittest.TestCase):
         return self.shortDescription()
 
     def __repr__(self):
-        return "<%s storydir=%s>" % (self.__class__.__name__, self._description)
+        return "<%s name=%s>" % (self.__class__.__name__, self._description)
 
     def run(self, result=None):
         if result is None:
@@ -139,41 +111,63 @@ class PageStoryTestCase(unittest.TestCase):
         self._suite.debug()
 
 
+def PageTestSuite(storydir, package=None):
+    # we need to normalise the package name here, because it
+    # involves checking the parent stack frame.  Otherwise the
+    # files would be looked up relative to this module.
+    package = doctest._normalize_module(package)
+    abs_storydir = doctest._module_relative_path(package, storydir)
+
+    filenames = set(filename
+                    for filename in os.listdir(abs_storydir)
+                    if filename.lower().endswith('.txt'))
+    numberedfilenames = set(filename for filename in filenames
+                            if len(filename) > 4
+                            and filename[:2].isdigit()
+                            and filename[2] == '-')
+    unnumberedfilenames = filenames - numberedfilenames
+
+    # A predictable order is important, even if it remains officially
+    # undefined for un-numbered filenames.
+    numberedfilenames = sorted(numberedfilenames)
+    unnumberedfilenames = sorted(unnumberedfilenames)
+
+    # Add unnumbered tests to the suite individually.
+    checker = SpecialOutputChecker()
+    suite = PageTestDocFileSuite(
+        package=package, checker=checker,
+        layer=PageTestLayer, setUp=setUpGlobs,
+        *[os.path.join(storydir, filename)
+          for filename in unnumberedfilenames])
+
+    # Add numbered tests to the suite as a single story.
+    storysuite = PageTestDocFileSuite(
+        package=package, checker=checker,
+        layer=PageTestLayer, setUp=setUpGlobs,
+        *[os.path.join(storydir, filename)
+          for filename in numberedfilenames])
+    suite.addTest(PageStoryTestCase(storydir, storysuite))
+
+    return suite
+
+
 def test_suite():
     pagetestsdir = os.path.join('..', 'pagetests')
     abs_pagetestsdir = os.path.abspath(
         os.path.normpath(os.path.join(here, pagetestsdir)))
 
     stories = [
-        (os.path.join(pagetestsdir, d), os.path.join(abs_pagetestsdir, d))
+        os.path.join(pagetestsdir, d)
         for d in os.listdir(abs_pagetestsdir)
         if not d.startswith('.') and
            os.path.isdir(os.path.join(abs_pagetestsdir, d))
         ]
     stories.sort()
 
-    standalone_suite = unittest.TestSuite()
-    story_suite = unittest.TestSuite()
-
-    for (storydir, abs_storydir) in stories:
-        if not storydir.endswith('standalone'):
-            story_suite.addTest(PageStoryTestCase(storydir))
-        else:
-            # For standalone page tests, we just create normal
-            # PageTestDocFileSuite instances.
-            filenames = sorted(filename
-                               for filename in os.listdir(abs_storydir)
-                               if filename.lower().endswith('.txt'))
-            checker = SpecialOutputChecker()
-            for filename in filenames:
-                standalone_suite.addTest(PageTestDocFileSuite(
-                    os.path.join(storydir, filename),
-                    checker=checker, layer=PageTestLayer,
-                    setUp=setUpGlobs))
-
     suite = unittest.TestSuite()
-    suite.addTest(standalone_suite)
-    suite.addTest(story_suite)
+
+    for storydir in stories:
+        suite.addTest(PageTestSuite(storydir))
     return suite
 
 if __name__ == '__main__':
