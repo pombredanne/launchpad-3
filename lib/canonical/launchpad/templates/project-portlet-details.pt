@@ -1,6 +1,6 @@
 <div class="portlet">
 
-  <h4><span tal:replace="context/title">project title</span>:</h4>
+  <h2><span tal:replace="context/title">project title</span></h2>
 
   <div class="portletBody portletContent">
 
