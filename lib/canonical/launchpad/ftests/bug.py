@@ -18,7 +18,7 @@ def print_subscribers(bug_page, subscriber_portlet_index):
     """Print the subscribers listed in the subscriber portlet."""
     bug_id = re.search(r"bug #(\d+)", bug_page, re.IGNORECASE).group(1)
     subscriber_portlet = find_portlet(
-        bug_page, 'Subscribers to bug %s:' % bug_id)
+        bug_page, 'Subscribers to bug %s' % bug_id)
     try:
         portlet = subscriber_portlet.fetch(
             'ul', "people")[subscriber_portlet_index]
