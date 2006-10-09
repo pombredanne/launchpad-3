@@ -272,6 +272,7 @@ class BugWithoutContextView:
 
 
 class BugAlsoReportInBaseView:
+    """Base view for both classes dealing with adding new bugtasks."""
 
     def validateProduct(self, product):
         try:
@@ -285,6 +286,7 @@ class BugAlsoReportInBaseView:
 
 
 class ChooseAffectedProductView(LaunchpadFormView, BugAlsoReportInBaseView):
+    """View for choosing a product and redirect to +add-affected-product."""
 
     schema = IUpstreamBugTask
     field_names = ['product']
@@ -378,6 +380,9 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
         self.setUpLabelAndWidgets("Add affected product to bug", ['product'])
         self.index = self.upstream_page
 
+        # It's not possible to enter the product on this page, so
+        # validate the given product and redirect if there are any
+        # errors.
         try:
             product = self.widgets['product'].getInputValue()
         except InputErrors:
@@ -385,6 +390,9 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
         else:
             if (self.continue_action.submitted() or
                 self.confirm_action.submitted()):
+                # If the user submitted the form, we've already
+                # validated the widget. Get the error directly instead
+                # of trying to validate again.
                 product_error = self.getWidgetError('product')
             else:
                 product_error = not self.validateProduct(product)

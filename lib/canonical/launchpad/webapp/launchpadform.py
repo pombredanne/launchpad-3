@@ -147,6 +147,9 @@ class LaunchpadFormView(LaunchpadView):
         self.errors.append(message)
 
     def _validate(self, action, data):
+        # Remove all the widgets that are not required and don't have
+        # any input. This is to prevent FormError from being raised when
+        # widgets are conditionally hidden on the page.
         widgets = Widgets(
             [(input, widget)
              for input, widget in self.widgets.__iter_input_and_widget__()
