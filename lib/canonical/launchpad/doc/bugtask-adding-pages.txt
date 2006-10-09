@@ -148,6 +148,27 @@ event listener and register it:
     ...     Interface, ISQLObjectCreatedEvent, on_created_event)
 
 
+If an invalid product is specified, or a product that fails the
+validation (for example, a bugtask for that product already exists),
+the user will be redirect to the choose product page, which will
+display the error message.
+
+    >>> form = {'field.product': 'no-such-product'}
+    >>> add_task_view = get_and_setup_view(
+    ...     firefox_task, '+add-affected-product', form)
+    >>> add_task_view.render_upstreamtask()
+    u''
+    >>> add_task_view.request.response.getHeader('Location')
+    'http://.../+choose-affected-product?field.product=no-such-product'
+
+    >>> form = {'field.product': 'firefox'}
+    >>> add_task_view = get_and_setup_view(
+    ...     firefox_task, '+add-affected-product', form)
+    >>> add_task_view.render_upstreamtask()
+    u''
+    >>> add_task_view.request.response.getHeader('Location')
+    'http://.../+choose-affected-product?field.product=firefox'
+
 If we specify a valid product, no errors will occur, and a bugtask will
 be created:
 
