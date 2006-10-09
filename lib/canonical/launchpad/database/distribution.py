@@ -50,7 +50,7 @@ from canonical.launchpad.webapp.url import urlparse
 from canonical.lp.dbschema import (
     EnumCol, BugTaskStatus, DistributionReleaseStatus, MirrorContent,
     TranslationPermission, SpecificationSort, SpecificationFilter,
-    SpecificationStatus, MirrorPulseType, PackagePublishingStatus)
+    SpecificationStatus, PackagePublishingStatus)
 
 from canonical.launchpad.interfaces import (
     IBuildSet, IDistribution, IDistributionSet, IHasBuildRecords,
@@ -206,9 +206,8 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         return DistributionMirror.selectOneBy(distribution=self, name=name)
 
     def newMirror(self, owner, speed, country, content, displayname=None,
-                  pulse_type=MirrorPulseType.PUSH, description=None,
-                  http_base_url=None, ftp_base_url=None, pulse_source=None,
-                  rsync_base_url=None, file_list=None, official_candidate=False,
+                  description=None, http_base_url=None, ftp_base_url=None,
+                  rsync_base_url=None, official_candidate=False,
                   enabled=False):
         """See IDistribution."""
         # NB this functionality is only available to distributions that have
@@ -231,12 +230,10 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
 
         return DistributionMirror(
             distribution=self, owner=owner, name=name, speed=speed,
-            country=country, content=content, pulse_type=pulse_type,
-            displayname=displayname, description=description,
-            http_base_url=http_base_url, ftp_base_url=ftp_base_url,
-            rsync_base_url=rsync_base_url, file_list=file_list,
-            official_candidate=official_candidate, enabled=enabled,
-            pulse_source=pulse_source)
+            country=country, content=content, displayname=displayname,
+            description=description, http_base_url=http_base_url,
+            ftp_base_url=ftp_base_url, rsync_base_url=rsync_base_url,
+            official_candidate=official_candidate, enabled=enabled)
 
     def createBug(self, bug_params):
         """See canonical.launchpad.interfaces.IBugTarget."""

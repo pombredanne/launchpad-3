@@ -3,14 +3,19 @@
 import httplib
 import logging
 import os
+import urllib2
 import urlparse
+
+from zope.component import getUtility
 
 from twisted.internet import defer, protocol, reactor
 from twisted.web.http import HTTPClient
 from twisted.python.failure import Failure
 
 from canonical.config import config
-from canonical.launchpad.interfaces import IDistroArchRelease, IDistroRelease
+from canonical.launchpad.interfaces import (
+    IDistroArchRelease, IDistroRelease, ILaunchpadCelebrities,
+    UnableToFetchCDImageFileList)
 from canonical.lp.dbschema import MirrorStatus
 
 MAX_REDIRECTS = 3
@@ -141,7 +146,13 @@ class ProberFactory(protocol.ClientFactory):
             path = url
         else:
             scheme, host, port, path = self._parse(url)
-        if scheme != 'http':
+        # XXX: We don't actually know how to handle FTP responses, but we
+        # expect to be behind a squid HTTP proxy with the patch at
+        # http://www.squid-cache.org/bugs/show_bug.cgi?id=1758 applied. So, if
+        # you encounter any problems with FTP URLs you'll probably have to nag
+        # the sysadmins to fix squid for you.
+        # -- Guilherme Salgado, 2006-09-19
+        if scheme not in ('http', 'ftp'):
             raise UnknownURLScheme(scheme)
         if scheme and host:
             self.scheme = scheme
@@ -186,7 +197,7 @@ class ProberTimeout(ProberError):
         ProberError.__init__(self, *args)
 
     def __str__(self):
-        return ("Getting %s took longer than %s seconds"
+        return ("HEAD request on %s took longer than %s seconds"
                 % (self.url, self.timeout))
 
 
@@ -382,3 +393,38 @@ class MirrorCDImageProberCallbacks(object):
         self.log_file.write(
             "Failed %s: %s\n" % (url, failure.getErrorMessage()))
         return failure
+
+
+def _get_cdimage_file_list():
+    url = config.distributionmirrorprober.releases_file_list_url
+    try:
+        return urllib2.urlopen(url)
+    except urllib2.URLError, e:
+        raise UnableToFetchCDImageFileList(
+            'Unable to fetch %s: %s' % (url, e))
+
+
+def get_expected_cdimage_paths():
+    """Get all paths where we can find CD image files on a release mirror.
+
+    Return a list containing, for each Ubuntu DistroRelease and flavour, a
+    list of CD image file paths for that DistroRelease and flavour.
+
+    This list is read from a file located at http://releases.ubuntu.com,
+    so if something goes wrong while reading that file, an
+    UnableToFetchCDImageFileList exception will be raised.
+    """
+    d = {}
+    for line in _get_cdimage_file_list().readlines():
+        flavour, releasename, path, size = line.split('\t')
+        paths = d.setdefault((flavour, releasename), [])
+        paths.append(path)
+
+    ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+    paths = []
+    for key, value in d.items():
+        flavour, releasename = key
+        release = ubuntu.getRelease(releasename)
+        paths.append((release, flavour, value))
+    return paths
+
