@@ -396,8 +396,8 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
                     canonical_url(self.context),
                     urllib.quote(product_name)))
             return u''
-        #XXX: Make sure this is tested.
-        #XXX: 
+        #XXX: It doesn't work to assign self.continue_action.label directly.
+        #     -- Bjorn Tillenius, 2006-10-09
         action = self.continue_action
         action.label = u'Indicate bug in %s' % cgi.escape(product.displayname)
         self.continue_action = action
