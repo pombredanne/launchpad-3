@@ -2,9 +2,8 @@
 
 __metaclass__ = type
 __all__ = [
-    'Person', 'PersonSet', 'EmailAddress', 'EmailAddressSet', 'SSHKey',
-    'SSHKeySet', 'WikiName', 'WikiNameSet', 'JabberID', 'JabberIDSet',
-    'IrcID', 'IrcIDSet']
+    'Person', 'PersonSet', 'SSHKey', 'SSHKeySet', 'WikiName', 'WikiNameSet',
+    'JabberID', 'JabberIDSet', 'IrcID', 'IrcIDSet']
 
 import itertools
 from datetime import datetime, timedelta
@@ -33,11 +32,11 @@ from canonical.launchpad.interfaces import (
     IIrcIDSet, ISSHKeySet, IJabberIDSet, IWikiNameSet, IGPGKeySet,
     ISSHKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner,
     IBugTaskSet, UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
-    EmailAddressAlreadyTaken, ILaunchpadStatisticSet, ShipItConstants,
-    ILaunchpadCelebrities)
+    ILaunchpadStatisticSet, ShipItConstants, ILaunchpadCelebrities)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
+from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.karma import KarmaTotalCache
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.pofile import POFile
@@ -60,7 +59,8 @@ from canonical.launchpad.database.branch import Branch
 from canonical.lp.dbschema import (
     EnumCol, SSHKeyType, EmailAddressStatus, TeamSubscriptionPolicy,
     TeamMembershipStatus, LoginTokenType, SpecificationSort,
-    SpecificationFilter, SpecificationStatus, ShippingRequestStatus)
+    SpecificationFilter, SpecificationStatus, ShippingRequestStatus,
+    PersonCreationRationale)
 
 from canonical.foaf import nickname
 from canonical.cachedproperty import cachedproperty
@@ -118,6 +118,8 @@ class Person(SQLBase):
     merged = ForeignKey(dbName='merged', foreignKey='Person', default=None)
 
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    creation_rationale = EnumCol(schema=PersonCreationRationale, default=None)
+    creation_comment = StringCol(default=None)
     hide_email_addresses = BoolCol(notNull=True, default=False)
 
     # SQLRelatedJoin gives us also an addLanguage and removeLanguage for free
@@ -507,16 +509,21 @@ class Person(SQLBase):
             return cache.karma_total
 
     @property
-    def is_valid_person(self):
+    def is_valid_person_or_team(self):
         """See IPerson."""
-        if self.teamowner is not None:
-            return False
         try:
             if ValidPersonOrTeamCache.get(self.id) is not None:
                 return True
         except SQLObjectNotFound:
             pass
         return False
+
+    @property
+    def is_valid_person(self):
+        """See IPerson."""
+        if self.teamowner is not None:
+            return False
+        return self.is_valid_person_or_team
 
     def assignKarma(self, action_name, product=None, distribution=None,
                     sourcepackagename=None):
@@ -1111,9 +1118,10 @@ class PersonSet:
         team.setMembershipStatus(teamowner, TeamMembershipStatus.ADMIN)
         return team
 
-    def createPersonAndEmail(self, email, name=None, displayname=None,
-                             password=None, passwordEncrypted=False,
-                             hide_email_addresses=False):
+    def createPersonAndEmail(
+            self, email, rationale, comment=None, name=None,
+            displayname=None, password=None, passwordEncrypted=False,
+            hide_email_addresses=False):
         """See IPersonSet."""
         if name is None:
             try:
@@ -1127,48 +1135,49 @@ class PersonSet:
         if not passwordEncrypted and password is not None:
             password = getUtility(IPasswordEncryptor).encrypt(password)
 
-        displayname = displayname or name.capitalize()
-        person = self._newPerson(name, displayname, hide_email_addresses,
-                                 password=password)
+        if not displayname:
+            displayname = name.capitalize()
+        person = self._newPerson(
+            name, displayname, hide_email_addresses, rationale=rationale,
+            comment=comment, password=password)
 
         email = getUtility(IEmailAddressSet).new(email, person)
         return person, email
 
     def _newPerson(self, name, displayname, hide_email_addresses,
-                   password=None):
-        """Create a new Person with the given attributes.
+                   rationale, comment=None, password=None):
+        """Create and return a new Person with the given attributes.
 
         Also generate a wikiname for this person that's not yet used in the
         Ubuntu wiki.
         """
         assert self.getByName(name, ignore_merged=False) is None
-        person = Person(name=name, displayname=displayname,
-                        hide_email_addresses=hide_email_addresses,
-                        password=password)
+        person = Person(
+            name=name, displayname=displayname, password=password,
+            creation_rationale=rationale, creation_comment=comment,
+            hide_email_addresses=hide_email_addresses)
+
         wikinameset = getUtility(IWikiNameSet)
         wikiname = nickname.generate_wikiname(
-                    person.displayname, wikinameset.exists)
+            person.displayname, wikinameset.exists)
         wikinameset.new(person, UBUNTU_WIKI_URL, wikiname)
         return person
 
-    def ensurePerson(self, email, displayname):
+    def ensurePerson(self, email, displayname, rationale, comment=None):
         """See IPersonSet."""
         person = self.getByEmail(email)
         if person:
             return person
         person, dummy = self.createPersonAndEmail(
-                            email, displayname=displayname)
+            email, rationale, comment=comment, displayname=displayname)
         return person
 
-    def getByName(self, name, default=None, ignore_merged=True):
+    def getByName(self, name, ignore_merged=True):
         """See IPersonSet."""
         query = (Person.q.name == name)
         if ignore_merged:
             query = AND(query, Person.q.mergedID==None)
-        person = Person.selectOne(query)
-        if person is None:
-            return default
-        return person
+        return Person.selectOne(query)
 
     def updateStatistics(self, ztm):
         """See IPersonSet."""
@@ -1271,18 +1280,18 @@ class PersonSet:
             """ % quote(text)
         return results.union(Person.select(name_query), orderBy=orderBy)
 
-    def get(self, personid, default=None):
+    def get(self, personid):
         """See IPersonSet."""
         try:
             return Person.get(personid)
         except SQLObjectNotFound:
-            return default
+            return None
 
-    def getByEmail(self, email, default=None):
+    def getByEmail(self, email):
         """See IPersonSet."""
         emailaddress = getUtility(IEmailAddressSet).getByEmail(email)
         if emailaddress is None:
-            return default
+            return None
         assert emailaddress.person is not None
         return emailaddress.person
 
@@ -1768,50 +1777,6 @@ class PersonSet:
         # Since we've updated the database behind SQLObject's back,
         # flush its caches.
         flush_database_caches()
-
-
-class EmailAddress(SQLBase):
-    implements(IEmailAddress)
-
-    _table = 'EmailAddress'
-    _defaultOrder = ['email']
-
-    email = StringCol(dbName='email', notNull=True, unique=True)
-    status = EnumCol(dbName='status', schema=EmailAddressStatus, notNull=True)
-    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
-
-    @property
-    def statusname(self):
-        return self.status.title
-
-
-class EmailAddressSet:
-    implements(IEmailAddressSet)
-
-    def get(self, emailid, default=None):
-        """See IEmailAddressSet."""
-        try:
-            return EmailAddress.get(emailid)
-        except SQLObjectNotFound:
-            return default
-
-    def getByPerson(self, person):
-        return EmailAddress.selectBy(person=person, orderBy='email')
-
-    def getByEmail(self, email, default=None):
-        result = EmailAddress.selectOne(
-            "lower(email) = %s" % quote(email.strip().lower()))
-        if result is None:
-            return default
-        return result
-
-    def new(self, email, person, status=EmailAddressStatus.NEW):
-        email = email.strip()
-        if self.getByEmail(email):
-            raise EmailAddressAlreadyTaken(
-                "The email address %s is already registered." % email)
-        assert status in EmailAddressStatus.items
-        return EmailAddress(email=email, status=status, person=person)
 
 
 class SSHKey(SQLBase):
