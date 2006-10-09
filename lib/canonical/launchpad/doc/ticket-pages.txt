@@ -404,12 +404,42 @@ criteria.
     ...     print status.title
     Answered
 
-But a subclass can choose to remove the status widget so that only its
-pre-defined statuses are selected. This is done by setting the
-include_status_widget attribute to False.
+The base view computes the page heading and the message displayed when
+no results are found basedon the selected search filter:
 
-    >>> MyCustomSearchTicketsView.include_status_widget = False
+    >>> from zope.i18n import translate
     >>> search_view_harness.submit('', {})
-    >>> 'status' in search_view.widgets
-    False
+    >>> print translate(search_view_harness.view.pageheading)
+    Support requests for Ubuntu
+    >>> print translate(search_view_harness.view.empty_listing_message)
+    There are no support requests for Ubuntu with the requested statuses.
+
+    >>> MyCustomSearchTicketsView.default_filter = dict(
+    ...     status=[TicketStatus.OPEN], search_text='Firefox')
+    >>> search_view_harness.submit('', {})
+    >>> print translate(search_view_harness.view.pageheading)
+    Open support requests about "Firefox" for Ubuntu
+    >>> print translate(search_view_harness.view.empty_listing_message)
+    There are no open support requests about "Firefox" for Ubuntu.
+
+It works also with user submitted values:
+
+    >>> search_view_harness.submit('search', {
+    ...     'field.status': ['Answered'],
+    ...     'field.search_text': '',
+    ...     'field.sort': 'by relevancy'})
+    >>> print translate(search_view_harness.view.pageheading)
+    Answered support requests for Ubuntu
+    >>> print translate(search_view_harness.view.empty_listing_message)
+    There are no answered support requests for Ubuntu.
+
+    >>> search_view_harness.submit('search', {
+    ...     'field.status': ['Open', 'Answered'],
+    ...     'field.search_text': 'evolution',
+    ...     'field.sort': 'by relevancy'})
+    >>> print translate(search_view_harness.view.pageheading)
+    Support requests about "evolution" for Ubuntu
+    >>> print translate(search_view_harness.view.empty_listing_message)
+    There are no support requests about "evolution" for Ubuntu with the
+    requested statuses.
 

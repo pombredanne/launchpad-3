@@ -8,13 +8,13 @@ __all__ = [
     'ManageSupportContactView',
     'SearchTicketsView',
     'TicketTargetFacetMixin',
-    'TicketTargetSearchAnsweredTicketsView',
     'TicketTargetSearchMyTicketsView',
-    'TicketTargetSearchOpenTicketsView',
     'TicketTargetTraversalMixin',
     'TicketTargetView',
     'TicketTargetSupportMenu',
     ]
+
+from urllib import urlencode
 
 from zope.component import getUtility
 from zope.app.form import CustomWidgetFactory
@@ -25,7 +25,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IDistribution, ILaunchBag, IManageSupportContacts, IPerson,
-    ISearchTicketsForm, ITicketTarget)
+    ISearchTicketsForm, ITicketTarget, NotFoundError)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, redirection, stepthrough,
     ApplicationMenu, GeneralFormView, LaunchpadFormView, LaunchpadView, Link)
@@ -131,7 +131,6 @@ class TicketTargetView(LaunchpadView):
         """
         return list(self.context.tickets(quantity=quantity))
 
-
 class SearchTicketsView(LaunchpadFormView):
     """View that can filter the target's ticket in a batched listing.
 
@@ -149,10 +148,6 @@ class SearchTicketsView(LaunchpadFormView):
     # Will contain the parameters used by searchResults
     search_params = None
 
-    # Subclasses that use status in their base filter will usually set this
-    # to False
-    include_status_widget = True
-
     @property
     def pagetitle(self):
         """Page title."""
@@ -161,26 +156,64 @@ class SearchTicketsView(LaunchpadFormView):
     @property
     def pageheading(self):
         """Heading to display above the search results."""
-        return _('Support requests for ${context}',
-                 mapping={'context': self.context.displayname})
+        mapping = dict(
+            context=self.context.displayname, search_text=self.search_text)
+        if len(self.status_filter) == 1:
+            mapping['status'] = list(self.status_filter)[0].title
+            if self.search_text:
+                return _('${status} support requests about "${search_text}" '
+                         'for ${context}', mapping=mapping)
+            else:
+                return _('${status} support requests for ${context}',
+                         mapping=mapping)
+        else:
+            if self.search_text:
+                return _('Support requests about "${search_text}" for '
+                         '${context}', mapping=mapping)
+            else:
+                return _('Support requests for ${context}', mapping=mapping)
 
     @property
     def empty_listing_message(self):
-        """Message displayed when no search was entered and the base filter
-        doesn't contain any tickets.
-        """
-        return _('There are no active support requests in ${context}.',
-                 mapping={'context': self.context.displayname})
+        """Message displayed when the are no tickets matching the filter."""
+        mapping = dict(
+            context=self.context.displayname, search_text=self.search_text)
+        if len(self.status_filter) == 1:
+            mapping['status'] = list(self.status_filter)[0].title.lower()
+            if self.search_text:
+                return _('There are no ${status} support requests about '
+                         '"${search_text}" for ${context}.', mapping=mapping)
+            else:
+                return _('There are no ${status} support requests for '
+                         '${context}.', mapping=mapping)
+        else:
+            if self.search_text:
+                return _('There are no support requests about '
+                         '"${search_text}" for ${context} with the requested '
+                         'statuses.', mapping=mapping)
+            else:
+                return _('There are no support requests for ${context} with '
+                         'the requested statuses.', mapping=mapping)
 
     def getDefaultFilter(self):
         """Hook for subclass to provide a base search filter."""
         return {}
 
-    def setUpFields(self):
-        """See LaunchpadFormView."""
-        LaunchpadFormView.setUpFields(self)
-        if not self.include_status_widget:
-            self.form_fields = self.form_fields.omit('status')
+    @property
+    def search_text(self):
+        """User submitted search text."""
+        if self.search_params:
+            return self.search_params['search_text']
+        else:
+            return self.getDefaultFilter().get('search_text')
+
+    @property
+    def status_filter(self):
+        """Immutable set of status to filter the search with."""
+        if self.search_params:
+            return set(self.search_params['status'])
+        else:
+            return self.getDefaultFilter().get('status', set())
 
     def setUpWidgets(self):
         """See LaunchpadFormView."""
@@ -239,67 +272,31 @@ class TicketTargetSearchMyTicketsView(SearchTicketsView):
     @property
     def pageheading(self):
         """See SearchTicketsView."""
-        return _('Support requests you made for ${context}',
-                 mapping={'context': self.context.displayname})
+        if self.search_text:
+            return _('Support requests you made about "${search_text}" for '
+                     '${context}', mapping=dict(
+                        context=self.context.displayname,
+                        search_text=self.search_text))
+        else:
+            return _('Support requests you made for ${context}',
+                     mapping={'context': self.context.displayname})
 
     @property
     def empty_listing_message(self):
         """See SearchTicketsView."""
-        return _("You didn't make any support requests for ${context}.",
-                 mapping={'context': self.context.displayname})
+        if self.search_text:
+            return _("You didn't make any support requests about "
+                     "\"${search_text}\" for ${context}.", mapping=dict(
+                        context=self.context.displayname,
+                        search_text=self.search_text))
+        else:
+            return _("You didn't make any support requests for ${context}.",
+                     mapping={'context': self.context.displayname})
 
     def getDefaultFilter(self):
         """See SearchTicketsView."""
         return {'owner': self.user,
                 'status': list(TicketStatus.items)}
-
-
-class TicketTargetSearchOpenTicketsView(SearchTicketsView):
-    """View that displays and searches the open support requests in a
-    tickettarget context.
-    """
-
-    include_status_widget = False
-
-    @property
-    def pageheading(self):
-        """See SearchTicketsView."""
-        return _('Open support requests for ${context}',
-                 mapping={'context': self.context.displayname})
-
-    @property
-    def empty_listing_message(self):
-        """See SearchTicketsView."""
-        return _("There are no open support requests for ${context}.",
-                 mapping={'context': self.context.displayname})
-
-    def getDefaultFilter(self):
-        """See SearchTicketsView."""
-        return {'status': TicketStatus.OPEN}
-
-
-class TicketTargetSearchAnsweredTicketsView(SearchTicketsView):
-    """View that displays and searches the answered support requests in a
-    tickettarget context.
-    """
-
-    include_status_widget = False
-
-    @property
-    def pageheading(self):
-        """See SearchTicketsView."""
-        return _('Answered support requests for ${context}',
-                 mapping={'context': self.context.displayname})
-
-    @property
-    def empty_listing_message(self):
-        """See SearchTicketsView."""
-        return _("There are no answered support requests for ${context}.",
-                 mapping={'context': self.context.displayname})
-
-    def getDefaultFilter(self):
-        """See SearchTicketsView."""
-        return {'status': TicketStatus.ANSWERED}
 
 
 class ManageSupportContactView(GeneralFormView):
@@ -366,7 +363,7 @@ class TicketTargetFacetMixin:
     """Mixin for tickettarget facet definition."""
 
     def support(self):
-        target = '+opentickets'
+        target = '+tickets'
         text = 'Support'
         summary = (
             'Technical support requests for %s' % self.context.displayname)
@@ -393,20 +390,22 @@ class TicketTargetSupportMenu(ApplicationMenu):
 
     usedfor = ITicketTarget
     facet = 'support'
-    links = ['all', 'open', 'answered', 'myrequests', 'new',
+    links = ['open', 'answered', 'myrequests', 'new',
              'support_contact']
 
-    def all(self):
-        text = 'All'
-        return Link('+tickets', text, icon='ticket')
+    def makeSearchLink(self, statuses):
+        return "+tickets?" + urlencode(
+            {'field.status': statuses, 'field.sort': 'by relevancy',
+             'field.search_text': '', 'field.actions.search': 'Search',
+             'field.status': statuses}, doseq=True)
 
     def open(self):
         text = 'Open'
-        return Link('+opentickets', text, icon='ticket')
+        return Link(self.makeSearchLink('Open'), text, icon='ticket')
 
     def answered(self):
         text = 'Answered'
-        return Link('+answeredtickets', text, icon='ticket')
+        return Link(self.makeSearchLink('Answered'), text, icon='ticket')
 
     def myrequests(self):
         text = 'My Requests'

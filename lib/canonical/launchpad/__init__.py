@@ -12,4 +12,3 @@ warnings.filterwarnings(
 # their own MessageFactory
 from zope.i18nmessageid import MessageFactory
 _ = MessageFactory("launchpad")
-

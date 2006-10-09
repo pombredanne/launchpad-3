@@ -10,7 +10,7 @@ facet and finally, use the 'Request support' action:
     >>> browser.open('http://launchpad.dev/distros/ubuntu')
     >>> browser.getLink('Support').click()
     >>> print browser.title
-    Open support requests for Ubuntu
+    Support requests for Ubuntu
 
 Making a new support requests requires logging in:
 

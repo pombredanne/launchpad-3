@@ -23,12 +23,12 @@ somebody had a similar problem.
 
 He discovers that there are no tickets on the Kubuntu support page:
 
-    >>> browser.title
-    'Open support requests for Kubuntu'
+    >>> print browser.title
+    Support requests for Kubuntu
 
     >>> from BeautifulSoup import BeautifulSoup
     >>> print find_main_content(browser.contents).first('p').renderContents()
-    There are no open support requests for Kubuntu.
+    There are no support requests for Kubuntu with the requested statuses.
 
 
 Browsing Support Requests
@@ -132,10 +132,11 @@ enters his search key and hit the 'Search' button.
 
 Unfortunately, the search doesn't return any similar requests:
 
-    >>> browser.title
-    'Support requests for Ubuntu'
+    >>> print browser.title
+    Support requests about "firefox is slow" for Ubuntu
     >>> print find_main_content(browser.contents).first('p').renderContents()
-    No results for search <strong>firefox is slow</strong>.
+    There are no support requests about "firefox is slow" for Ubuntu with the
+    requested statuses.
 
 Joe observes under the search widget that there are checkboxes to select
 the ticket status to search. He notices that only 'Open' and
@@ -258,7 +259,7 @@ enters 'Java' as a keyword and hits the search button.
     >>> browser.getControl('Search').click()
 
     >>> print find_main_content(browser.contents).first('p').renderContents()
-    No results for search <strong>Java</strong>.
+    There are no answered support requests about "Java" for Ubuntu.
 
 My Requests
 ~~~~~~~~~~~

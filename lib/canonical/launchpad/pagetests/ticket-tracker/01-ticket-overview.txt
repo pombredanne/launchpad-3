@@ -27,14 +27,14 @@ Users can request support by going to the 'Support' facet.
   >>> support_link_label = re.compile('^Support$')
   >>> supportLink = browser.getLink(support_link_label)
   >>> supportLink.url
-  '.../products/firefox/+opentickets'
+  '.../products/firefox/+tickets'
   >>> supportLink.click()
 
 That page shows all the currently open support requests for the product.
 
   >>> soup = BeautifulSoup(browser.contents)
   >>> print soup.first('h1').renderContents()
-  Open support requests for Mozilla Firefox
+  Support requests for Mozilla Firefox
   >>> browser.getLink('Firefox loses focus and gets stuck').url
   '.../products/firefox/+ticket/4'
 
@@ -45,12 +45,10 @@ There is also a 'Request Support' link to open new ticket.
 
 There are links to some common listing of support requests:
 
-  >>> browser.getLink('All').url
-  '.../products/firefox/+tickets'
   >>> browser.getLink('Open').url
-  '.../products/firefox/+opentickets'
+  '.../products/firefox/+tickets?...'
   >>> browser.getLink('Answered').url
-  '.../products/firefox/+answeredtickets'
+  '.../products/firefox/+tickets?...'
   >>> browser.getLink('My Requests').url
   '.../products/firefox/+mytickets'
 
@@ -71,7 +69,7 @@ Distributions also have the 'Support' link and a section showing the
 
   >>> browser.open('http://launchpad.dev/distros/ubuntu')
   >>> browser.getLink('Support').url
-  '.../distros/ubuntu/+opentickets'
+  '.../distros/ubuntu/+tickets'
   >>> find_portlet(browser.contents, 'Latest Ubuntu support requests')
   <div class="portlet">
     <h2> Latest Ubuntu support requests </h2>
@@ -82,18 +80,16 @@ To request support for the distro, one must go to the 'Support' facet.
 
   >>> browser.getLink('Support').click()
   >>> print browser.title
-  Open support requests for Ubuntu
+  Support requests for Ubuntu
   >>> browser.getLink('Request Support')
   <Link...>
 
 On that facet, we will find the same common listings:
 
-  >>> browser.getLink('All').url
-  '.../distros/ubuntu/+tickets'
   >>> browser.getLink('Open').url
-  '.../distros/ubuntu/+opentickets'
+  '.../distros/ubuntu/+tickets?...'
   >>> browser.getLink('Answered').url
-  '.../distros/ubuntu/+answeredtickets'
+  '.../distros/ubuntu/+tickets?...'
   >>> browser.getLink('My Requests').url
   '.../distros/ubuntu/+mytickets'
 
@@ -116,21 +112,19 @@ the Support facet.
 
   >>> browser.open('http://launchpad.dev/distros/ubuntu/hoary/+source/evolution')
   >>> browser.getLink('Support').url
-  '.../distros/ubuntu/hoary/+source/evolution/+opentickets'
+  '.../distros/ubuntu/hoary/+source/evolution/+tickets'
   >>> browser.getLink('Support').click()
   >>> print browser.title
-  Open support requests for Hoary evolution...
+  Support requests for Hoary evolution...
   >>> browser.getLink('Request Support').url
   '.../distros/ubuntu/hoary/+source/evolution/+addticket'
 
 As are the common listings:
 
-  >>> browser.getLink('All').url
-  '.../distros/ubuntu/hoary/+source/evolution/+tickets'
   >>> browser.getLink('Open').url
-  '.../distros/ubuntu/hoary/+source/evolution/+opentickets'
+  '.../distros/ubuntu/hoary/+source/evolution/+tickets?...'
   >>> browser.getLink('Answered').url
-  '.../distros/ubuntu/hoary/+source/evolution/+answeredtickets'
+  '.../distros/ubuntu/hoary/+source/evolution/+tickets?...'
   >>> browser.getLink('My Requests').url
   '.../distros/ubuntu/hoary/+source/evolution/+mytickets'
 
@@ -139,18 +133,16 @@ page:
 
   >>> browser.open('http://launchpad.dev/distros/ubuntu/+source/mozilla-firefox')
   >>> browser.getLink('Support').url
-  '.../distros/ubuntu/+source/mozilla-firefox/+opentickets'
+  '.../distros/ubuntu/+source/mozilla-firefox/+tickets'
   >>> browser.getLink('Support').click()
   >>> print browser.title
-  Open support requests for mozilla-firefox in ubuntu
+  Support requests for mozilla-firefox in ubuntu
   >>> browser.getLink('Request Support').url
   '.../distros/ubuntu/+source/mozilla-firefox/+addticket'
-  >>> browser.getLink('All').url
-  '.../distros/ubuntu/+source/mozilla-firefox/+tickets'
   >>> browser.getLink('Open').url
-  '.../distros/ubuntu/+source/mozilla-firefox/+opentickets'
+  '.../distros/ubuntu/+source/mozilla-firefox/+tickets?...'
   >>> browser.getLink('Answered').url
-  '.../distros/ubuntu/+source/mozilla-firefox/+answeredtickets'
+  '.../distros/ubuntu/+source/mozilla-firefox/+tickets?...'
   >>> browser.getLink('My Requests').url
   '.../distros/ubuntu/+source/mozilla-firefox/+mytickets'
 

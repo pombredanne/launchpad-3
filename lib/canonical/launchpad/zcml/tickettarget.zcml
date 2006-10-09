@@ -15,18 +15,6 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.ITicketTarget"
-    class="canonical.launchpad.browser.TicketTargetSearchOpenTicketsView"
-    name="+opentickets"
-    permission="zope.Public" />
-
-  <browser:page
-    for="canonical.launchpad.interfaces.ITicketTarget"
-    class="canonical.launchpad.browser.TicketTargetSearchAnsweredTicketsView"
-    name="+answeredtickets"
-    permission="zope.Public" />
-
-  <browser:page
-    for="canonical.launchpad.interfaces.ITicketTarget"
     class="canonical.launchpad.browser.TicketTargetSearchMyTicketsView"
     name="+mytickets"
     permission="launchpad.AnyPerson" />

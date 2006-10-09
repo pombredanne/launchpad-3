@@ -46,16 +46,8 @@
     </form>
   </div>
 
-  <tal:no-results condition="not: tickets/batch"
-                  define="search_text view/search_params/search_text|nothing">
-    <p tal:condition="search_text"
-       i18n:translate="">
-      No results for search
-      <strong i18n:name="search_text"
-        tal:content="search_text">Search Text</strong>.
-    </p>
-    <p tal:condition="not: search_text"
-       i18n:translate=""
+  <tal:no-results condition="not: tickets/batch">
+    <p i18n:translate=""
        tal:content="view/empty_listing_message">
       No support requests.
     </p>
