@@ -10,7 +10,7 @@ import operator
 
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    IBazaarApplication, IProductSet, IProductSeriesSet)
+    IBazaarApplication, IProductSeriesSet)
 from canonical.lp.dbschema import ImportStatus
 from canonical.launchpad.webapp import (
     Navigation, stepto, enabled_with_permission, ApplicationMenu, Link)

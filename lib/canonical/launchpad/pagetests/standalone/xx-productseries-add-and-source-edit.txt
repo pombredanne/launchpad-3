@@ -15,7 +15,8 @@ Open the "Upstream Source Import" page for a series.
 Currently, no revision details are selected.  We can submit the form
 as is, which will leave us with no revision control system selected:
 
-  >>> browser.getControl('No revision control system, or Bazaar').click()
+  >>> browser.getControl('No revision control system, or Bazaar').selected
+  True
   >>> browser.getControl('Update RCS Details').click()
   >>> print browser.url
   http://launchpad.dev/products/firefox/trunk
@@ -75,6 +76,18 @@ Now we test if we can edit again changing the RCS to Subversion:
   ...
 
 
+After changing to over to Subversion, the CVS details are unset in the
+form:
+
+  >>> browser.open('http://launchpad.dev/products/firefox/trunk/+source')
+  >>> browser.getControl('Repository root').value
+  ''
+  >>> browser.getControl('Module').value
+  ''
+  >>> browser.getControl('Branch name').value
+  ''
+
+
 Test if the RCS details validator is working properly by adding the same
 svnrepository to another ProductSeries
 
@@ -88,3 +101,18 @@ svnrepository to another ProductSeries
   <...
   ...Subversion repository details already in use by another product...
 
+
+If we set the series back to no upstream details, the subversion
+details are blanked:
+
+  >>> browser.open('http://launchpad.dev/products/firefox/trunk/+source')
+  >>> browser.getControl('No revision control system, or Bazaar').click()
+  >>> browser.getControl('Update RCS Details').click()
+  >>> print browser.url
+  http://launchpad.dev/products/firefox/trunk
+
+  >>> browser.open('http://launchpad.dev/products/firefox/trunk/+source')
+  >>> browser.getControl('No revision control system, or Bazaar').selected
+  True
+  >>> browser.getControl('Repository', index=1).value
+  ''

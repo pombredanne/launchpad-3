@@ -64,7 +64,7 @@ name already in use and a branch for a product other than Firefox:
   >>> browser.getControl('Release URL pattern').value = 'file:///etc'
   >>> browser.getControl('Change').click()
 
-We'll get a nice error message for the two problems:
+We'll get a nice error message for the three problems:
 
   >>> for tag in find_tags_by_class(browser.contents, 'error'):
   ...     print tag

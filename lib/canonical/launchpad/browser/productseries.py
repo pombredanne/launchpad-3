@@ -22,7 +22,7 @@ import re
 from BeautifulSoup import BeautifulSoup
 
 from zope.component import getUtility
-from zope.app.form.browser import TextAreaWidget, RadioWidget
+from zope.app.form.browser import TextAreaWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.formlib import form
 from zope.publisher.browser import FileUpload
@@ -45,6 +45,7 @@ from canonical.launchpad.webapp import (
     LaunchpadEditFormView, action, custom_widget
     )
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 from canonical.launchpad import _
@@ -433,11 +434,22 @@ def validate_cvs_root(cvsroot, cvsmodule):
 
 
 class ProductSeriesSourceView(LaunchpadEditFormView):
+    """View for editing upstream RCS details for the product series.
+
+    This form is protected by the launchpad.EditSource permission,
+    which basically allows anyone to edit the details until the import
+    has been certified (at which point only vcs-imports team members
+    can edit it).
+
+    In addition, users with launchpad.Admin (i.e. vcs-imports team
+    members or administrators) permission are provided with a few
+    extra buttons to certify the import or reset failed test imports.
+    """
     schema = IProductSeries
     field_names = ['rcstype', 'user_branch', 'cvsroot', 'cvsmodule',
                    'cvsbranch', 'svnrepository']
 
-    custom_widget('rcstype', RadioWidget)
+    custom_widget('rcstype', LaunchpadRadioWidget)
     custom_widget('cvsroot', StrippedTextWidget, displayWidth=50)
     custom_widget('cvsmodule', StrippedTextWidget, displayWidth=20)
     custom_widget('cvsbranch', StrippedTextWidget, displayWidth=20)
@@ -461,7 +473,7 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
 
     def validate(self, data):
         rcstype = data.get('rcstype')
-        if rcstype in data:
+        if 'rcstype' in data:
             # Make sure fields for unselected revision control systems
             # are blanked out:
             if rcstype != RevisionControlSystems.CVS:
@@ -505,10 +517,12 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
 
         if self.resettoautotest_action.submitted():
             if rcstype is None:
-                self.addError('Can not rerun import without RCS details.')
+                self.addError('Can not rerun import without CVS or '
+                              'Subversion details.')
         elif self.certify_action.submitted():
-            if data.get('rcstype') is None:
-                self.addError('Can not certify import without RCS details.')
+            if rcstype is None:
+                self.addError('Can not certify import without CVS or '
+                              'Subversion details.')
             if self.context.syncCertified():
                 self.addError('Import has already been approved.')
 

@@ -16,11 +16,20 @@ expected value.
   <p>The current import status is: <b>Testing</b>. </p>
   ...
 
-Since we are a VCS imports tema member, there is an extra action
+Since we are a VCS imports team member, there is an extra action
 button to allow us to approve imports.
 
   >>> browser.getControl('Approve import for production and publication')
   <SubmitControl ...>
+
+This button does not appear for normal users:
+
+  >>> user_browser.open('http://launchpad.dev/products/a52dec/trunk/+source')
+  >>> user_browser.getControl('Approve import for production and publication')
+  Traceback (most recent call last):
+    ...
+  LookupError: label 'Approve import for production and publication'
+
 
 If we remove the RCS details, we will get an error when trying to
 certify the import:
@@ -33,7 +42,7 @@ certify the import:
   >>> for tag in find_tags_by_class(browser.contents, 'error'):
   ...     print tag
   <p class="error message">There is 1 error.</p>
-  <p class="error message">Can not certify import without RCS details.</p>
+  <p class="error message">Can not certify import without CVS or Subversion details.</p>
 
 
 If we have correct details, we can approve the build for production:
