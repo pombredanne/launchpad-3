@@ -14,8 +14,8 @@ distro.
     >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(user_browser.contents)
     >>> portlet = soup.first('div', id='portlet-support-contacts')
-    >>> portlet.first('h4')
-    <h4>Support contacts for Ubuntu:</h4>
+    >>> portlet.first('h2')
+    <h2>Support contacts for Ubuntu</h2>
     >>> portlet.first('p')
     <p>
       <i>There are no support contacts.</i>

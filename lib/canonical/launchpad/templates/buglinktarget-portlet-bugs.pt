@@ -2,7 +2,7 @@
      tal:define="links view/buglinks"
      tal:condition="links" >
 
-    <h4>Related bugs:</h4>
+    <h2>Related bugs</h2>
 
     <div class="portletBody portletContent">
 

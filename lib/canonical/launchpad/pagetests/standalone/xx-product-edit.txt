@@ -39,9 +39,9 @@ Now we try to edit with a project that exists.
 
 Now we test if we edited it successfully. 
 
-  >>> print find_portlet(browser.contents, 'The GNOME Project:')
+  >>> print find_portlet(browser.contents, 'The GNOME Project')
   <div class="portlet">
-  ...<h4>The GNOME Project:</h4>
+  ...<h2>The GNOME Project</h2>
   ...
   ...Products:...
   ...Mozilla Firefox...
