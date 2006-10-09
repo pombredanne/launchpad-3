@@ -2964,6 +2964,7 @@ INSERT INTO personlanguage (id, person, "language") VALUES (2, 13, 68);
 INSERT INTO personlanguage (id, person, "language") VALUES (3, 14, 196);
 INSERT INTO personlanguage (id, person, "language") VALUES (4, 14, 449);
 INSERT INTO personlanguage (id, person, "language") VALUES (5, 14, 479);
+INSERT INTO personlanguage (id, person, "language") VALUES (6, 29, 521);
 
 
 ALTER TABLE personlanguage ENABLE TRIGGER ALL;

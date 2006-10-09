@@ -124,6 +124,9 @@ class TicketAddView(LaunchpadFormView):
 
     _MAX_SIMILAR_TICKETS = 10
 
+    warn_about_unsupported_language = False
+    choosen_language = None
+
     # Do not autofocus the title widget
     initial_focus_widget = None
 
@@ -139,14 +142,22 @@ class TicketAddView(LaunchpadFormView):
 
     def validate(self, data):
         """Validate hook."""
+        self.warn_about_unsupported_language = False
         if 'title' not in data:
             self.setFieldError(
                 'title',_('You must enter a summary of your problem.'))
         if self.widgets.get('description'):
             if 'description' not in data:
                 self.setFieldError(
-                    'description', _('You must provide details about your '
-                                     'problem.'))
+                    'description',
+                    _('You must provide details about your problem.'))
+        self.choosen_language = data['language']
+        if (self.choosen_language not in self.context.getSupportedLanguages()
+            and 'warned_about_unsupported_language' not in self.request.form):
+            # The language choosen by the user is not spoken by any of this
+            # context's support contacts and we haven't yet warned the user
+            # about this fact. Let's do it now.
+            self.warn_about_unsupported_language = True
 
     @action(_('Continue'))
     def continue_action(self, action, data):
@@ -181,6 +192,11 @@ class TicketAddView(LaunchpadFormView):
     # which is fixed in 3.3.0b1 and 3.2.1
     @action(_('Add'), failure=handleAddError)
     def add_action(self, action, data):
+        if self.warn_about_unsupported_language:
+            # Warn the user that the language is not supported.
+            self.searchResults = []
+            return self.add_template()
+
         ticket = self.context.newTicket(
             self.user, data['title'], data['description'], data['language'])
 
