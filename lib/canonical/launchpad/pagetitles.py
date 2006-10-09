@@ -195,9 +195,9 @@ bugtask_index = BugTaskPageTitle()
 
 bugtask_requestfix = LaunchbagBugID('Bug #%d - Request a fix')
 
-bugtask_requestfix_upstream = bugtask_requestfix
+bugtask_choose_affected_product = bugtask_requestfix
 
-bugtask_upstreamtask = bugtask_requestfix
+bugtask_requestfix_upstream = bugtask_requestfix
 
 bugtask_view = BugTaskPageTitle()
 

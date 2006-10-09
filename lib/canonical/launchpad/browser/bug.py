@@ -382,7 +382,8 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
         except InputErrors:
             product_error = True
         else:
-            if self.continue_action.submitted():
+            if (self.continue_action.submitted() or
+                self.confirm_action.submitted()):
                 product_error = self.getWidgetError('product')
             else:
                 product_error = not self.validateProduct(product)

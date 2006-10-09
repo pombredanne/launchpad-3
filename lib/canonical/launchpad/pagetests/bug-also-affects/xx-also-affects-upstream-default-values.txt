@@ -1,11 +1,11 @@
 When indicating that a bug affects upstream, the product field is
-pre-populated with initial values if a packaging link is found.
+automatically chosen if a packaging link is found.
 
     >>> user_browser.open(
     ...  'http://launchpad.dev/distros/ubuntu/+source/mozilla-firefox/+bug/8')
     >>> user_browser.getLink('Upstream').click()
-    >>> user_browser.getControl('Product').value
-    'firefox'
+    >>> user_browser.url
+    'http://launchpad.dev/distros/ubuntu/+source/mozilla-firefox/+bug/8/+add-affected-product?field.product=firefox'
 
 If the source package has no upstream link. like thunderbird in Ubuntu,
 then the product widget will have no initial value.
@@ -22,3 +22,12 @@ then the product widget will have no initial value.
     >>> user_browser.getLink('Upstream').click()
     >>> user_browser.getControl('Product').value
     ''
+
+A notification will is shown, prompting the user to add packaging
+information.
+
+    >>> for notification in find_tags_by_class(user_browser.contents, 'message'):
+    ...     print notification.renderContents()
+    There is no packaging information for thunderbird (Ubuntu)...
+
+XXX: follow the link
