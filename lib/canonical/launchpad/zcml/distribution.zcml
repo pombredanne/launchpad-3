@@ -73,6 +73,14 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IDistribution"
+        name="+cdmirrors-rss"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.DistributionReleaseMirrorsRSSView"
+        attribute="__call__"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IDistribution"
         facet="overview"
         class="canonical.launchpad.browser.DistributionDisabledMirrorsView"
         permission="zope.Public"

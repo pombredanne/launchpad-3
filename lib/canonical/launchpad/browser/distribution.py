@@ -15,17 +15,20 @@ __all__ = [
     'DistributionBugContactEditView',
     'DistributionArchiveMirrorsView',
     'DistributionReleaseMirrorsView',
+    'DistributionReleaseMirrorsRSSView',
     'DistributionDisabledMirrorsView',
     'DistributionUnofficialMirrorsView',
     'DistributionLaunchpadUsageEditView',
     ]
 
+from datetime import datetime
 import operator
 
 from zope.component import getUtility
 from zope.app.form.browser.add import AddView
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
@@ -519,6 +522,20 @@ class DistributionReleaseMirrorsView(DistributionMirrorsView):
 
     def getMirrorsGroupedByCountry(self):
         return self._groupMirrorsByCountry(self.context.release_mirrors)
+
+
+class DistributionReleaseMirrorsRSSView:
+    """The RSS feed for release mirrors."""
+
+    now = None
+    template = ViewPageTemplateFile(
+        '../templates/distribution-mirrors-rss.pt')
+
+    def __call__(self):
+        self.request.response.setHeader('content-type', 'text/xml')
+        self.now = datetime.utcnow()
+        unicodedata = self.template()
+        return unicodedata.encode('utf-8')
 
 
 class DistributionMirrorsAdminView(DistributionMirrorsView):
