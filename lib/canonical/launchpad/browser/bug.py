@@ -17,7 +17,7 @@ __all__ = [
     'BugURL',
     'BugMarkAsDuplicateView',
     'BugSecrecyEditView',
-    'UpstreamBugTaskAddView',
+    'ChooseAffectedProductView',
     ]
 
 import cgi
@@ -106,7 +106,7 @@ class BugContextMenu(ContextMenu):
 
     def addupstream(self):
         text = 'Also Affects Upstream'
-        return Link('+upstreamtask', text, icon='add')
+        return Link('+choose-affected-product', text, icon='add')
 
     def adddistro(self):
         text = 'Also Affects Distribution'
@@ -284,7 +284,7 @@ class BugAlsoReportInBaseView:
             return True
 
 
-class UpstreamBugTaskAddView(LaunchpadFormView, BugAlsoReportInBaseView):
+class ChooseAffectedProductView(LaunchpadFormView, BugAlsoReportInBaseView):
 
     schema = IUpstreamBugTask
     field_names = ['product']
@@ -327,16 +327,16 @@ class UpstreamBugTaskAddView(LaunchpadFormView, BugAlsoReportInBaseView):
                     pass
                 else:
                     self.request.response.redirect(
-                        "+upstreamtask-2?field.product=%s" % urllib.quote(
+                        "+add-affected-product?field.product=%s" % urllib.quote(
                             upstream.name))
 
     def validate(self, data):
         if data.get('product'):
             self.validateProduct(data['product'])
 
-    @action('Continue', name='continue')
+    @action(u'Continue', name='continue')
     def continue_action(self, action, data):
-        self.next_url = '%s/+upstreamtask-2?field.product=%s' % (
+        self.next_url = '%s/+add-affected-product?field.product=%s' % (
             canonical_url(self.context), urllib.quote(data['product'].name))
 
 
@@ -389,10 +389,10 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
         if product_error:
             product_name = self.request.form.get('field.product', '')
             self.request.response.redirect(
-                "%s/+upstreamtask?field.product=%s" % (
+                "%s/+choose-affected-product?field.product=%s" % (
                     canonical_url(self.context),
                     urllib.quote(product_name)))
-            return
+            return u''
         #XXX: Make sure this is tested.
         #XXX: 
         action = self.continue_action

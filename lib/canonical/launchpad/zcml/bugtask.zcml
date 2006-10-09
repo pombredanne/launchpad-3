@@ -263,14 +263,14 @@
         name="+index" />
 
     <browser:page
-        name="+upstreamtask"
+        name="+choose-affected-product"
         for="canonical.launchpad.interfaces.IBugTask"
-        class="canonical.launchpad.browser.bug.UpstreamBugTaskAddView"
+        class="canonical.launchpad.browser.bug.ChooseAffectedProductView"
         permission="launchpad.AnyPerson"
-        template="../templates/bugtask-upstreamtask.pt" />
+        template="../templates/bugtask-choose-affected-product.pt" />
 
     <browser:page
-        name="+upstreamtask-2"
+        name="+add-affected-product"
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.bug.BugAlsoReportInView"
         permission="launchpad.AnyPerson"
