@@ -133,6 +133,26 @@ why the product wasn't chosen automatically.
     ...     print notification.message
     There is no packaging information for thunderbird (Ubuntu)...
 
+Sometimes the distribution won't have any release, though. In that
+case, we won't prompt the user to add a link, since he can't actually
+add one.
+
+    >>> gentoo = getUtility(IDistributionSet).getByName('gentoo')
+    >>> gentoo.currentrelease is None
+    True
+    >>> gentoo_thunderbird = gentoo.getSourcePackage('thunderbird')
+    >>> thunderbird_bug = gentoo_thunderbird.createBug(create_params)
+    >>> gentoo_thunderbird_task = thunderbird_bug.bugtasks[0]
+
+    >>> add_task_view = get_and_setup_view(
+    ...     gentoo_thunderbird_task, '+choose-affected-product', form={})
+    >>> add_task_view.initialize()
+    >>> add_task_view.request.response.getHeader('Location') is None
+    True
+
+    >>> len(add_task_view.request.response.notifications)
+    0
+
 Let's take a look at the page that add the task, +add-affected-product.
 In order to show that all the events get fired off, let's create an
 event listener and register it:
