@@ -68,11 +68,12 @@ class PageStoryTestCase(unittest.TestCase):
     layer = PageTestLayer
 
     def __init__(self, name, storysuite):
-        """Create a PageTest story for storydir.
+        """Create a PageTest story from the given suite.
 
-        storydir should be an package relative file path.
-        package is the python package the page test is found under, it
-        defaults to the caller's package.
+        name should be an identifier for the story, such as the
+        directory containing the tests.
+        storysuite is a test suite containing the tests to be run as a
+        story.
         """
         # we do not run the super __init__ because we are not using any of
         # the base classes functionality, and we'd just have to give it a
@@ -146,7 +147,7 @@ def PageTestSuite(storydir, package=None):
         layer=PageTestLayer, setUp=setUpGlobs,
         *[os.path.join(storydir, filename)
           for filename in numberedfilenames])
-    suite.addTest(PageStoryTestCase(storydir, storysuite))
+    suite.addTest(PageStoryTestCase(abs_storydir, storysuite))
 
     return suite
 
