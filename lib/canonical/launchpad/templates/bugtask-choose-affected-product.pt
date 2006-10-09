@@ -28,12 +28,6 @@
         tal:content="view/label"
         metal:fill-slot="heading">Heading from ZCML label="xxx"</h1>
 
-    <div metal:fill-slot="extra_info" class="documentDescription">
-      Please the introductory paragraph here. It will be displayed in
-      bold text below the form title. It should be a single paragraph
-      giving an overview of what is being added.
-    </div>
-
     <div class="row" metal:fill-slot="extra_top" tal:replace="nothing">
       <div>Extra top</div>
       <div class="field"><input type="text" style="width:100%" /></div>
