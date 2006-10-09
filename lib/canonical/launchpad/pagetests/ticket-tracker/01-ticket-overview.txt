@@ -27,14 +27,14 @@ Users can request support by going to the 'Support' facet.
   >>> support_link_label = re.compile('^Support$')
   >>> supportLink = browser.getLink(support_link_label)
   >>> supportLink.url
-  '.../products/firefox/+tickets'
+  '.../products/firefox/+opentickets'
   >>> supportLink.click()
 
-That page shows all the current support requests for the product.
+That page shows all the currently open support requests for the product.
 
-  >>> soup =BeautifulSoup(browser.contents)
+  >>> soup = BeautifulSoup(browser.contents)
   >>> print soup.first('h1').renderContents()
-  Support requests for Mozilla Firefox
+  Open support requests for Mozilla Firefox
   >>> browser.getLink('Firefox loses focus and gets stuck').url
   '.../products/firefox/+ticket/4'
 
@@ -45,6 +45,8 @@ There is also a 'Request Support' link to open new ticket.
 
 There are links to some common listing of support requests:
 
+  >>> browser.getLink('All').url
+  '.../products/firefox/+tickets'
   >>> browser.getLink('Open').url
   '.../products/firefox/+opentickets'
   >>> browser.getLink('Answered').url
@@ -58,9 +60,8 @@ page.
   >>> browser.getLink('Problem showing the SVG demo on W3C site').click()
   >>> browser.title
   'Mozilla Firefox support request #2:...'
-  >>> soup = BeautifulSoup(browser.contents)
-  >>> soup('h1')
-  [<h1>Problem showing the SVG demo on W3C site</h1>]
+  >>> print BeautifulSoup(browser.contents).first('h1').renderContents()
+  Problem showing the SVG demo on W3C site
 
 Distributions
 -------------
@@ -70,24 +71,25 @@ Distributions also have the 'Support' link and a section showing the
 
   >>> browser.open('http://launchpad.dev/distros/ubuntu')
   >>> browser.getLink('Support').url
-  '.../distros/ubuntu/+tickets'
-  >>> soup = BeautifulSoup(browser.contents)
-  >>> soup('h2')
-  [<h2>
-  Latest Ubuntu
-  support requests
-  </h2>...]
+  '.../distros/ubuntu/+opentickets'
+  >>> find_portlet(browser.contents, 'Latest Ubuntu support requests')
+  <div class="portlet">
+    <h2> Latest Ubuntu support requests </h2>
+    ...
+  </div>
 
 To request support for the distro, one must go to the 'Support' facet.
 
   >>> browser.getLink('Support').click()
-  >>> browser.title
-  'Support requests for Ubuntu'
+  >>> print browser.title
+  Open support requests for Ubuntu
   >>> browser.getLink('Request Support')
   <Link...>
 
 On that facet, we will find the same common listings:
 
+  >>> browser.getLink('All').url
+  '.../distros/ubuntu/+tickets'
   >>> browser.getLink('Open').url
   '.../distros/ubuntu/+opentickets'
   >>> browser.getLink('Answered').url
@@ -114,15 +116,17 @@ the Support facet.
 
   >>> browser.open('http://launchpad.dev/distros/ubuntu/hoary/+source/evolution')
   >>> browser.getLink('Support').url
-  '.../distros/ubuntu/hoary/+source/evolution/+tickets'
+  '.../distros/ubuntu/hoary/+source/evolution/+opentickets'
   >>> browser.getLink('Support').click()
-  >>> browser.title
-  'Support requests for Hoary evolution...'
+  >>> print browser.title
+  Open support requests for Hoary evolution...
   >>> browser.getLink('Request Support').url
   '.../distros/ubuntu/hoary/+source/evolution/+addticket'
 
 As are the common listings:
 
+  >>> browser.getLink('All').url
+  '.../distros/ubuntu/hoary/+source/evolution/+tickets'
   >>> browser.getLink('Open').url
   '.../distros/ubuntu/hoary/+source/evolution/+opentickets'
   >>> browser.getLink('Answered').url
@@ -135,12 +139,14 @@ page:
 
   >>> browser.open('http://launchpad.dev/distros/ubuntu/+source/mozilla-firefox')
   >>> browser.getLink('Support').url
-  '.../distros/ubuntu/+source/mozilla-firefox/+tickets'
+  '.../distros/ubuntu/+source/mozilla-firefox/+opentickets'
   >>> browser.getLink('Support').click()
-  >>> browser.title
-  'Support requests for mozilla-firefox in ubuntu'
+  >>> print browser.title
+  Open support requests for mozilla-firefox in ubuntu
   >>> browser.getLink('Request Support').url
   '.../distros/ubuntu/+source/mozilla-firefox/+addticket'
+  >>> browser.getLink('All').url
+  '.../distros/ubuntu/+source/mozilla-firefox/+tickets'
   >>> browser.getLink('Open').url
   '.../distros/ubuntu/+source/mozilla-firefox/+opentickets'
   >>> browser.getLink('Answered').url
@@ -155,12 +161,11 @@ On the page about a person, there is a porlet showing the latest ticket
 opened by that person.
 
   >>> browser.open('http://launchpad.dev/people/name16')
-  >>> soup = BeautifulSoup(browser.contents)
-  >>> soup('h2')
-  [...<h2>
-  Latest Foo Bar
-  support requests
-  </h2>...]
+  >>> find_portlet(browser.contents, 'Latest Foo Bar support requests')
+  <div class="portlet">
+    <h2> Latest Foo Bar support requests </h2>
+    ...
+  </div>
   >>> browser.getLink('Slow system').url
   '.../distros/ubuntu/+ticket/7'
   >>> browser.getLink('Firefox loses focus').url
@@ -174,9 +179,8 @@ involving that person.
   >>> browser.getLink('Support').click()
   >>> browser.title
   'Support requests involving Foo Bar'
-  >>> soup = BeautifulSoup(browser.contents)
-  >>> soup('h1')
-  [<h1>Support requests involving Foo Bar</h1>]
+  >>> print BeautifulSoup(browser.contents).first('h1').renderContents()
+  Support requests involving Foo Bar
   >>> browser.getLink('Slow system').url
   '.../distros/ubuntu/+ticket/7'
   >>> browser.getLink('Firefox loses focus').url

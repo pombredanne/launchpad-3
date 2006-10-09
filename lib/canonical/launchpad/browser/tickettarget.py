@@ -239,13 +239,13 @@ class TicketTargetSearchMyTicketsView(SearchTicketsView):
     @property
     def pageheading(self):
         """See SearchTicketsView."""
-        return _('Support requests you made in ${context}',
+        return _('Support requests you made for ${context}',
                  mapping={'context': self.context.displayname})
 
     @property
     def empty_listing_message(self):
         """See SearchTicketsView."""
-        return _("You didn't make any support requests in ${context}.",
+        return _("You didn't make any support requests for ${context}.",
                  mapping={'context': self.context.displayname})
 
     def getDefaultFilter(self):
@@ -264,13 +264,13 @@ class TicketTargetSearchOpenTicketsView(SearchTicketsView):
     @property
     def pageheading(self):
         """See SearchTicketsView."""
-        return _('Open support requests in ${context}',
+        return _('Open support requests for ${context}',
                  mapping={'context': self.context.displayname})
 
     @property
     def empty_listing_message(self):
         """See SearchTicketsView."""
-        return _("There are no open support requests in ${context}.",
+        return _("There are no open support requests for ${context}.",
                  mapping={'context': self.context.displayname})
 
     def getDefaultFilter(self):
@@ -288,13 +288,13 @@ class TicketTargetSearchAnsweredTicketsView(SearchTicketsView):
     @property
     def pageheading(self):
         """See SearchTicketsView."""
-        return _('Answered support requests in ${context}',
+        return _('Answered support requests for ${context}',
                  mapping={'context': self.context.displayname})
 
     @property
     def empty_listing_message(self):
         """See SearchTicketsView."""
-        return _("There are no answered support requests in ${context}.",
+        return _("There are no answered support requests for ${context}.",
                  mapping={'context': self.context.displayname})
 
     def getDefaultFilter(self):
@@ -366,7 +366,7 @@ class TicketTargetFacetMixin:
     """Mixin for tickettarget facet definition."""
 
     def support(self):
-        target = '+tickets'
+        target = '+opentickets'
         text = 'Support'
         summary = (
             'Technical support requests for %s' % self.context.displayname)
@@ -393,9 +393,14 @@ class TicketTargetSupportMenu(ApplicationMenu):
 
     usedfor = ITicketTarget
     facet = 'support'
-    links = ['opened', 'answered', 'myrequests', 'new', 'support_contact']
+    links = ['all', 'open', 'answered', 'myrequests', 'new',
+             'support_contact']
 
-    def opened(self):
+    def all(self):
+        text = 'All'
+        return Link('+tickets', text, icon='ticket')
+
+    def open(self):
         text = 'Open'
         return Link('+opentickets', text, icon='ticket')
 

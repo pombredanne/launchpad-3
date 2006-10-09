@@ -24,12 +24,11 @@ somebody had a similar problem.
 He discovers that there are no tickets on the Kubuntu support page:
 
     >>> browser.title
-    'Support requests for Kubuntu'
+    'Open support requests for Kubuntu'
 
     >>> from BeautifulSoup import BeautifulSoup
-    >>> soup = BeautifulSoup(browser.contents)
     >>> print find_main_content(browser.contents).first('p').renderContents()
-    There are no active support requests in Kubuntu.
+    There are no open support requests for Kubuntu.
 
 
 Browsing Support Requests
@@ -215,7 +214,7 @@ recent requests on Mozilla Firefox.
     >>> browser.open('http://launchpad.dev/products/firefox/+tickets')
     >>> browser.getLink('Open').click()
     >>> print browser.title
-    Open support requests in Mozilla Firefox
+    Open support requests for Mozilla Firefox
     >>> tickets = find_tag_by_id(browser.contents, 'ticket-listing')
     >>> for ticket in tickets.fetch('td', 'ticket'):
     ...     print ticket.first('a').renderContents()
@@ -246,7 +245,7 @@ similar problems.
     >>> browser.open('http://launchpad.dev/distros/ubuntu/+tickets')
     >>> browser.getLink('Answered').click()
     >>> print browser.title
-    Answered support requests in Ubuntu
+    Answered support requests for Ubuntu
     >>> tickets = find_tag_by_id(browser.contents, 'ticket-listing')
     >>> for ticket in tickets.fetch('td', 'ticket'):
     ...     print ticket.first('a').renderContents()
@@ -283,7 +282,7 @@ He needs to login to access that page:
     ...     '+tickets')
     >>> user_browser.getLink('My Requests').click()
     >>> print user_browser.title
-    Support requests you made in mozilla-firefox in ubuntu
+    Support requests you made for mozilla-firefox in ubuntu
     >>> tickets = find_tag_by_id(user_browser.contents, 'ticket-listing')
     >>> for ticket in tickets.fetch('td', 'ticket'):
     ...     print ticket.first('a').renderContents()
