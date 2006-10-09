@@ -327,8 +327,9 @@ class ChooseAffectedProductView(LaunchpadFormView, BugAlsoReportInBaseView):
                     pass
                 else:
                     self.request.response.redirect(
-                        "+add-affected-product?field.product=%s" % urllib.quote(
-                            upstream.name))
+                        "%s/+add-affected-product?field.product=%s" % (
+                            canonical_url(self.context),
+                            urllib.quote(upstream.name)))
 
     def validate(self, data):
         if data.get('product'):

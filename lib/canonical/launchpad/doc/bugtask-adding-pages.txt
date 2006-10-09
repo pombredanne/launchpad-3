@@ -86,8 +86,52 @@ If the validation fails, an error will be displayed.
     >>> add_task_view.getWidgetError('product')
     u'A fix for this bug has already been requested for Mozilla Firefox'
 
-XXX: add tests for packaging links.
 
+When adding a product from an upstream task, we always have to choose
+the product manually, since it's hard to guess which product that is
+most likely to get added. Let's take a look how it works for packages,
+which can have packaging links that helps us choose the product.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     CreateBugParams, IDistributionSet)
+    >>> owner = getUtility(ILaunchBag).user
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> ubuntu_firefox = ubuntu.getSourcePackage('mozilla-firefox')
+    >>> create_params = CreateBugParams(
+    ...     owner, "Upstream bug", comment="An upstream bug.")
+    >>> firefox_bug = ubuntu_firefox.createBug(create_params)
+    >>> ubuntu_firefox_task = firefox_bug.bugtasks[0]
+
+
+If we go to +choose-affected-product from the newly created bug task,
+we immediately get directed to +add-affected-product with the correct
+upstream selected.
+
+    >>> add_task_view = get_and_setup_view(
+    ...     ubuntu_firefox_task, '+choose-affected-product', form={})
+    >>> add_task_view.initialize()
+    >>> add_task_view.request.response.getHeader('Location')
+    'http://.../+add-affected-product?field.product=firefox'
+
+If some package doesn't have a packaging link, a product will have to
+be chosen manually, and a notification will be displayed, explaining
+why the product wasn't chosen automatically.
+
+    >>> ubuntu_thunderbird = ubuntu.getSourcePackage('thunderbird')
+    >>> thunderbird_bug = ubuntu_thunderbird.createBug(create_params)
+    >>> ubuntu_thunderbird_task = thunderbird_bug.bugtasks[0]
+
+    >>> add_task_view = get_and_setup_view(
+    ...     ubuntu_thunderbird_task, '+choose-affected-product', form={})
+    >>> add_task_view.initialize()
+    >>> add_task_view.request.response.getHeader('Location') is None
+    True
+
+    >>> len(add_task_view.request.response.notifications)
+    1
+    >>> for notification in add_task_view.request.response.notifications:
+    ...     print notification.message
+    There is no packaging information for thunderbird (Ubuntu)...
 
 Let's take a look at the page that add the task, +add-affected-product.
 In order to show that all the events get fired off, let's create an
