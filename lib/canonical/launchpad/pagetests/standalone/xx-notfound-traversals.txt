@@ -285,6 +285,10 @@ The bug filing pages.
 >>> check("/distros/ubuntu/+filebug", auth=True)
 >>> check("/distros/ubuntu/+source/mozilla-firefox/+filebug", auth=True)
 
+>>> check("/products/firefox/+filebug-advanced", auth=True)
+>>> check("/distros/ubuntu/+filebug-advanced", auth=True)
+>>> check("/distros/ubuntu/+source/mozilla-firefox/+filebug-advanced", auth=True)
+
 Note that you should not be able to directly file a bug on a
 distrorelease or sourcepackage; an IBugTask reported against a
 distrorelease or sourcepackage is *targeted* to be fixed in that

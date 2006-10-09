@@ -2,7 +2,8 @@ When filing a private security bug upstream, with no upstream bug
 contact, the maintainer will be subscribed to the bug instead.
 
     >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
-    >>> browser.open("http://localhost:9000/products/firefox/+filebug")
+    >>> browser.open(
+    ...     "http://localhost:9000/products/firefox/+filebug-advanced")
 
     >>> print browser.contents
     <!DOCTYPE...
@@ -67,7 +68,8 @@ subscribed instead.
     >>> browser.getControl("Security Contact").value = "sabdfl"
     >>> browser.getControl("Change").click()
 
-    >>> browser.open("http://localhost:9000/products/firefox/+filebug")
+    >>> browser.open(
+    ...     "http://localhost:9000/products/firefox/+filebug-advanced")
 
     >>> print browser.contents
     <!DOCTYPE...

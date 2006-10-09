@@ -22,12 +22,16 @@
 
   <tal:uses_malone tal:condition="view/contextUsesMalone">
 
+  <p class="error message" tal:condition="view/errors"
+    >Please fix the problems below and try again.</p>
+    
   <form action="."
         tal:attributes="action request/URL"
         method="post"
         enctype="multipart/form-data">
 
   <div tal:condition="view/widgets/packagename|nothing"
+       tal:attributes="class view/getPackageNameFieldCSSClass"
        style="margin-top: 1em">
     <label tal:attributes="for view/widgets/packagename/name">
       In what package did you find this bug?
@@ -49,6 +53,11 @@
         <span tal:content="structure view/widgets/packagename" />
       </li>
     </ul>
+    <div
+      tal:condition="view/widget_errors/packagename|nothing"
+      class="message"
+      tal:content="view/widget_errors/packagename"
+    >An error on package name.</div>
   </div>
 
   <div style="margin-top: 1em">
@@ -98,13 +107,14 @@
 
   </tal:uses_malone>
 
-  <tal:not_uses_malone tal:condition="not: view/contextUsesMalone">
+  <tal:not_uses_malone tal:condition="not: view/contextUsesMalone"
+                       tal:define="product_or_distro view/getProductOrDistroFromContext">
     <p class="error message">
-      <span tal:replace="context/displayname">Alsa Utils</span> does not use Malone as its bug tracker.
+      <span tal:replace="product_or_distro/displayname">Alsa Utils</span> does not use Malone as its bug tracker.
     </p>
 
     <p>
-      To report a bug about <span tal:replace="context/displayname">Alsa Utils</span>,
+      To report a bug about <span tal:replace="product_or_distro/displayname">Alsa Utils</span>,
       please use its official bug tracker.
     </p>
   </tal:not_uses_malone>

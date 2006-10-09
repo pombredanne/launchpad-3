@@ -35,6 +35,14 @@ from canonical.launchpad.webapp.generalform import GeneralFormView
 class FileBugViewBase(LaunchpadFormView):
     """Base class for views related to filing a bug."""
 
+    @property
+    def initial_values(self):
+        """Give packagename a default value, if applicable."""
+        if not IDistributionSourcePackage.providedBy(self.context):
+            return {}
+
+        return {'packagename': self.context.name}
+        
     def getProductOrDistroFromContext(self):
         """Return the IProduct or IDistribution for this context."""
         context = self.context
@@ -49,13 +57,41 @@ class FileBugViewBase(LaunchpadFormView):
 
             return context.distribution
 
-    @property
-    def initial_values(self):
-        """Give packagename a default value, if applicable."""
-        if not IDistributionSourcePackage.providedBy(self.context):
-            return {}
+    def getPackageNameFieldCSSClass(self):
+        """Return the CSS class for the packagename field."""
+        if self.widget_errors.get("packagename"):
+            return 'error'
+        else:
+            return ''
 
-        return {'packagename': self.context.name}
+    def validate(self, data):
+        """Make sure the package name, if provided, exists in the distro."""
+        self.packagename_error = ""
+
+        # We have to poke at the packagename value directly in the
+        # request, because if validation failed while getting the
+        # widget's data, it won't appear in the data dict.
+        form = self.request.form
+        if form.get("packagename_option") == "choose":
+            packagename = form.get("field.packagename")
+            if packagename:
+                if IDistribution.providedBy(self.context):
+                    distribution = self.context
+                else:
+                    assert IDistributionSourcePackage.providedBy(self.context)
+                    distribution = self.context.distribution
+
+                try:
+                    distribution.guessPackageNames(packagename)
+                except NotFoundError:
+                    packagename_error = (
+                        '"%s" does not exist in %s. Please choose a different '
+                        'package. If you\'re unsure, please select '
+                        '"I don\'t know"' % (
+                            packagename, distribution.displayname))
+                    self.setFieldError("packagename", packagename_error)
+            else:
+                self.setFieldError("packagename", "Please enter a package name")
 
     def setUpWidgets(self):
         """Customize the onKeyPress event of the package name chooser."""
@@ -74,11 +110,19 @@ class FileBugViewBase(LaunchpadFormView):
         return self.getProductOrDistroFromContext().official_malone
 
     def shouldSelectPackageName(self):
-        """Should the choose-a-package radio button be selected?"""
-        return bool(self.initial_values.get("packagename"))
+        """Should the radio button to select a package be selected?"""
+        # XXX, Brad Bollenbach, 2006-07-13: We also call _renderedValueSet() in
+        # case there is a default value in the widget, i.e., a value that was
+        # set outside the request. See https://launchpad.net/bugs/52912.
+        return (
+            self.request.form.get("field.packagename") or
+            self.initial_values.get("packagename"))
+
+    def handleSubmitBugFailure(self, action, data, errors):
+        return self.showFileBugForm()
 
     @action("Submit Bug Report", name="submit_bug",
-            failure="showFileBugForm")
+            failure=handleSubmitBugFailure)
     def submit_bug_action(self, action, data):
         """Add a bug to this IBugTarget."""
         title = data.get("title")
@@ -155,7 +199,7 @@ class FileBugViewBase(LaunchpadFormView):
                 'disclose</a> this bug.')
 
         self.request.response.redirect(canonical_url(bug.bugtasks[0]))
-
+        
     def showFileBugForm(self):
         """Override this method in base classes to show the filebug form."""
         raise NotImplementedError

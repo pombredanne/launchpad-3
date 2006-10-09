@@ -31,9 +31,10 @@ comment, of the bug report.
     >>> from zope.component import getView, getUtility
     >>> from canonical.launchpad.interfaces import (
     ...     IBugTaskSet, IBugSet, IDistributionSet, BugTaskSearchParams,
-    ...     IProductSet, ILaunchBag)
+    ...     IProductSet, ILaunchBag, IOpenLaunchBag)
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
+    >>> launchbag = getUtility(IOpenLaunchBag)
     >>> login("foo.bar@canonical.com")
 
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
@@ -42,12 +43,16 @@ comment, of the bug report.
     ...     'field.comment': 'a bug in a bin pkg',
     ...     'packagename_option': 'choose',
     ...     'field.packagename': 'linux-2.6.12',
-    ...     'FORM_SUBMIT': 'Submit Bug Report'})
+    ...     'field.actions.submit_bug': 'Submit Bug Report'})
 
     >>> ubuntu_filebug = getView(ubuntu, "+filebug", request)
+    >>> launchbag.clear()
+    >>> launchbag.add(ubuntu)
 
-    >>> ubuntu_filebug.process_form()
+    >>> ubuntu_filebug.initialize()
     SQLObjectCreatedEvent: <Bug at ...>
+    
+    >>> launchbag.clear()
 
     >>> current_user = getUtility(ILaunchBag).user
     >>> search_params = BugTaskSearchParams(
@@ -77,27 +82,35 @@ the bugtask.
     >>> request = LaunchpadTestRequest(form={
     ...     'field.title': 'a firefox bug',
     ...     'field.comment': 'a test bug',
-    ...     'FORM_SUBMIT': 'Submit Bug Report'})
+    ...     'field.actions.submit_bug': 'Submit Bug Report'})
 
     >>> firefox_filebug = getView(firefox, "+filebug", request)
 
-    >>> firefox_filebug.process_form()
+    >>> firefox_filebug.initialize()
     SQLObjectCreatedEvent: <Bug at ...>
 
 3. Filing a bug on a distribution source package.
+
+You can also access the +filebug page from a sourcepackage.
 
     >>> ubuntu_firefox = ubuntu.getSourcePackage("mozilla-firefox")
 
     >>> request = LaunchpadTestRequest(form={
     ...     'field.title': 'a firefox bug',
     ...     'field.comment': 'a test bug',
-    ...     'FORM_SUBMIT': 'Submit Bug Report'})
+    ...     'packagename_option': 'choose',
+    ...     'field.packagename': 'mozilla-firefox',
+    ...     'field.actions.submit_bug': 'Submit Bug Report'})
 
     >>> ubuntu_firefox_filebug = getView(
     ...     ubuntu_firefox, "+filebug", request)
 
-    >>> ubuntu_firefox_filebug.process_form()
+    >>> launchbag.add(ubuntu)
+
+    >>> ubuntu_firefox_filebug.initialize()
     SQLObjectCreatedEvent: <Bug at ...>
+
+    >>> launchbag.clear()
 
 Adding Comments
 ---------------
@@ -294,8 +307,6 @@ duplicate link remains in the current context.
     ...     bug_five_in_firefox, "+portlet-duplicates", request)
 
     >>> bug_six = bugset.get(6)
-
-    >>> from canonical.launchpad.interfaces import IOpenLaunchBag
 
     >>> getUtility(IOpenLaunchBag).add(bug_five_in_firefox)
 
