@@ -22,7 +22,7 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     ISourcePackage, IHasBuildRecords, ITicketTarget,
-    TICKET_STATUS_DEFAULT_SEARCH)
+    TICKET_STATUS_DEFAULT_SEARCH, get_supported_languages)
 from canonical.launchpad.components.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.bug import get_bug_tags_open_count
@@ -389,6 +389,10 @@ class SourcePackage(BugTargetBase):
             orderBy='-datecreated',
             limit=quantity)
         return ret
+
+    def getSupportedLanguages(self):
+        """See ITicketTarget."""
+        return get_supported_languages(self)
 
     def newTicket(self, owner, title, description, language, datecreated=None):
         """See ITicketTarget."""

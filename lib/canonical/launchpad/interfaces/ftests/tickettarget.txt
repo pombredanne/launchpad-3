@@ -13,7 +13,8 @@ associated with it at the start of the test.)
     to a registered user.)
     >>> login('no-priv@canonical.com')
     >>> from zope.interface.verify import verifyObject
-    >>> from canonical.launchpad.interfaces import ITicketTarget
+    >>> from canonical.launchpad.interfaces import ITicketTarget, ILanguageSet
+    >>> english = getUtility(ILanguageSet)['en']
 
     >>> verifyObject(ITicketTarget, target)
     True
@@ -39,7 +40,7 @@ which defaults to UTC_NOW.
     >>> now = datetime.now(UTC)
 
     >>> ticket = target.newTicket(sample_person, 'New ticket',
-    ...     'Ticket description', datecreated=now)
+    ...     'Ticket description', english, datecreated=now)
     >>> print ticket.title
     New ticket
     >>> print ticket.description
@@ -62,7 +63,7 @@ Anonymous users cannot use newTicket():
 
     >>> login(ANONYMOUS)
     >>> ticket = target.newTicket(sample_person, 'This will fail',
-    ...     'Failed?')
+    ...     'Failed?', english)
     Traceback (most recent call last):
       ...
     Unauthorized...
@@ -98,7 +99,7 @@ new tickets.
     ...     description = ('Support request description%d.\n'
     ...         'This request index is %d.') % (num, num)
     ...     tickets.append(target.newTicket(sample_person,
-    ...         'Ticket title%d' % num, description,
+    ...         'Ticket title%d' % num, description, english,
     ...         datecreated=now+timedelta(seconds=num+1)))
 
 For more variety, we will set the status of the last to REJECTED and the
@@ -117,7 +118,7 @@ And create another one that will also have the word 'new' in its
 description.
 
     >>> ticket = target.newTicket(sample_person, 'Another ticket',
-    ...     'Another new ticket that is actually very new.',
+    ...     'Another new ticket that is actually very new.', english,
     ...     datecreated=now+timedelta(hours=1))
     >>> login(ANONYMOUS)
 
@@ -304,3 +305,40 @@ Only registered users can remove a support contact:
     Traceback (most recent call last):
       ...
     Unauthorized...
+
+The supported languages for a given TicketTarget are given by
+getSupportedLanguages(). The supported languages of a ticket target include
+English plus all languages spoken by at least one of its support contacts
+(with the exception of all English variations).
+
+    >>> [lang.code for lang in target.getSupportedLanguages()]
+    [u'en']
+
+Now we'll add some support contacts which speak different languages.
+
+    >>> login('daf@canonical.com')
+    >>> daf = getUtility(IPersonSet).getByName('daf')
+    >>> target.addSupportContact(daf)
+    True
+
+    >>> login('carlos@canonical.com')
+    >>> carlos = getUtility(IPersonSet).getByName('carlos')
+    >>> target.addSupportContact(carlos)
+    True
+
+    >>> [lang.code for lang in carlos.languages]
+    [u'ca', u'es']
+
+Note that daf has en_GB as one of his preferred languages...
+
+    >>> [lang.code for lang in daf.languages]
+    [u'en_GB', u'ja', u'cy']
+
+... but en_GB is not included in the target's supported languages, because we
+ignore all english variants.
+
+    >>> import operator
+    >>> [lang.code for lang in sorted(target.getSupportedLanguages(),
+    ...                               key=operator.attrgetter('code'))]
+    [u'ca', u'cy', u'en', u'es', u'ja']
+

@@ -401,6 +401,16 @@ confuse people by providing multiple English options) plus English.
     ...               for lang in user.languages if lang.code != 'en_GB']
     True
 
+When you pass an existing ticket to TicketLanguageVocabularyFactory, the
+language of that ticket will always be included in the vocabulary, even
+if it's not a visible language.
+
+    >>> afar = getUtility(ILanguageSet)['aa_DJ']
+    >>> ticket_three.language = afar
+    >>> vocab = TicketLanguageVocabularyFactory()(ticket_three)
+    >>> afar in vocab
+    True
+
     Restore the function we had to monkey patch.
     >>> publisher.get_current_browser_request = get_current_browser_request
 

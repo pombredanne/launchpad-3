@@ -55,7 +55,7 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.interfaces import (
     IBuildSet, IDistribution, IDistributionSet, IHasBuildRecords,
     ILaunchpadCelebrities, ISourcePackageName, ITicketTarget, NotFoundError,
-    TICKET_STATUS_DEFAULT_SEARCH)
+    TICKET_STATUS_DEFAULT_SEARCH, get_supported_languages)
 
 from sourcerer.deb.version import Version
 
@@ -443,6 +443,10 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
             orderBy='-Ticket.datecreated',
             prejoins=['distribution', 'owner', 'sourcepackagename'],
             limit=quantity)
+
+    def getSupportedLanguages(self):
+        """See ITicketTarget."""
+        return get_supported_languages(self)
 
     def newTicket(self, owner, title, description, language, datecreated=None):
         """See ITicketTarget."""

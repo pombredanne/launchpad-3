@@ -39,7 +39,8 @@ from canonical.launchpad.database.ticket import Ticket, TicketSet
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner,
-    ITicketTarget, NotFoundError, TICKET_STATUS_DEFAULT_SEARCH)
+    ITicketTarget, NotFoundError, TICKET_STATUS_DEFAULT_SEARCH,
+    get_supported_languages)
 
 
 class Product(SQLBase, BugTargetBase, KarmaContextMixin):
@@ -234,6 +235,10 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
             orderBy='-Ticket.datecreated',
             prejoins=['product', 'owner'],
             limit=quantity)
+
+    def getSupportedLanguages(self):
+        """See ITicketTarget."""
+        return get_supported_languages(self)
 
     def newTicket(self, owner, title, description, language, datecreated=None):
         """See ITicketTarget."""

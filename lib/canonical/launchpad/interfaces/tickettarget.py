@@ -9,12 +9,15 @@ __all__ = [
     'ITicketTarget',
     'IManageSupportContacts',
     'TICKET_STATUS_DEFAULT_SEARCH',
+    'get_supported_languages',
     ]
 
+from zope.component import getUtility
 from zope.interface import Interface
 from zope.schema import Bool, Choice, List
 
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.language import ILanguageSet
 from canonical.lp.dbschema import TicketStatus
 
 
@@ -35,6 +38,20 @@ class IHasTickets(Interface):
 
 
 TICKET_STATUS_DEFAULT_SEARCH = (TicketStatus.OPEN, TicketStatus.ANSWERED)
+
+
+def get_supported_languages(ticket_target):
+    assert ITicketTarget.providedBy(ticket_target)
+    langs = set()
+    for contact in ticket_target.support_contacts:
+        for lang in contact.languages:
+            # Ignore english and all its variants since we assume english is
+            # supported (and thus we'll include it later) and we don't want to
+            # confuse people by displayng a bunch of entries named English.
+            if not lang.code.startswith('en'):
+                langs.add(lang)
+    langs.add(getUtility(ILanguageSet)['en'])
+    return langs
 
 
 class ITicketTarget(IHasTickets):
@@ -110,6 +127,14 @@ class ITicketTarget(IHasTickets):
 
         Returns True if the person was removed, False if he isn't a
         support contact.
+        """
+
+    def getSupportedLanguages():
+        """Return the set of languages spoken by at least one of this object's
+        support contacts.
+
+        A support contact is considered to speak a given language if that
+        language is listed as one of his preferred languages.
         """
 
     support_contacts = List(

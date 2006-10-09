@@ -17,7 +17,8 @@ from canonical.lp.dbschema import PackagePublishingStatus
 
 from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, ITicketTarget, DuplicateBugContactError,
-    DeleteBugContactError, TICKET_STATUS_DEFAULT_SEARCH)
+    DeleteBugContactError, TICKET_STATUS_DEFAULT_SEARCH,
+    get_supported_languages)
 from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.bug import BugSet, get_bug_tags_open_count
@@ -267,6 +268,10 @@ class DistributionSourcePackage(BugTargetBase):
                             self.sourcepackagename.id),
             orderBy='-datecreated',
             limit=quantity)
+
+    def getSupportedLanguages(self):
+        """See ITicketTarget."""
+        return get_supported_languages(self)
 
     def newTicket(self, owner, title, description, language, datecreated=None):
         """See ITicketTarget."""
