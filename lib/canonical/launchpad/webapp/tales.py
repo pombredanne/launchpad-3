@@ -152,7 +152,7 @@ class EnumValueAPI:
             except KeyError:
                 raise TraversalError(
                     'The %s dbschema does not have a value %s.' %
-                    (schema.__name__, name))
+                    (self.item.schema_name, name))
             return False
 
 
