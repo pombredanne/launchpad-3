@@ -27,8 +27,6 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.formlib import form
 from zope.publisher.browser import FileUpload
 
-from CVS.protocol import CVSRoot
-
 from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
 
 from canonical.launchpad.helpers import (
@@ -417,22 +415,6 @@ class ProductSeriesAppointDriverView(SQLObjectEditView):
         self.request.response.redirect(canonical_url(self.context))
 
 
-def validate_cvs_root(cvsroot, cvsmodule):
-    try:
-        root = CVSRoot(cvsroot + '/' + cvsmodule)
-    except ValueError:
-        return False
-    valid_module = re.compile('^[a-zA-Z][a-zA-Z0-9_/.+-]*$')
-    if not valid_module.match(cvsmodule):
-        return False
-    # 'CVS' is illegal as a module name
-    if cvsmodule == 'CVS':
-        return False
-    if root.method == 'local' or root.hostname.count('.') == 0:
-        return False
-    return True
-
-
 class ProductSeriesSourceView(LaunchpadEditFormView):
     """View for editing upstream RCS details for the product series.
 
@@ -487,13 +469,17 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
             cvsroot = data.get('cvsroot')
             cvsmodule = data.get('cvsmodule')
             cvsbranch = data.get('cvsbranch')
-            if not (cvsroot and cvsmodule and
-                    validate_cvs_root(cvsroot, cvsmodule)):
+            # Make sure there is an error set for these fields if they
+            # are unset.
+            if not (cvsroot or self.getWidgetError('cvsroot')):
                 self.setFieldError('cvsroot',
-                                   'Your CVS root and module are invalid.')
-            if not cvsbranch:
+                                   'Please enter a CVS root.')
+            if not (cvsmodule or self.getWidgetError('cvsmodule')):
+                self.setFieldError('cvsmodule',
+                                   'Please enter a CVS module.')
+            if not (cvsbranch or self.getWidgetError('cvsbranch')):
                 self.setFieldError('cvsbranch',
-                                   'Your CVS branch name is invalid.')
+                                   'Please enter a CVS branch.')
             if cvsroot and cvsmodule and cvsbranch:
                 series = getUtility(IProductSeriesSet).getByCVSDetails(
                     cvsroot, cvsmodule, cvsbranch)
@@ -503,7 +489,7 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
 
         elif rcstype == RevisionControlSystems.SVN:
             svnrepository = data.get('svnrepository')
-            if not svnrepository:
+            if not (svnrepository or self.getWidgetError('svnrepository')):
                 self.setFieldError('svnrepository',
                                    'Please give valid Subversion server '
                                    'details.')

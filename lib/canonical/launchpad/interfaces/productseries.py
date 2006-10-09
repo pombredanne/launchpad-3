@@ -15,6 +15,8 @@ import re
 from zope.schema import  Choice, Datetime, Int, Object, Text, TextLine
 from zope.interface import Interface, Attribute
 
+from CVS.protocol import CVSRoot, CvsRootError
+
 from canonical.launchpad.fields import ContentNameField
 from canonical.launchpad.interfaces import (
     IBranch, IBugTarget, ISpecificationGoal, IHasOwner, IHasDrivers,
@@ -40,6 +42,27 @@ class ProductSeriesNameField(ContentNameField):
             return self.context.getSeries(name)
 
 
+def validate_cvs_root(cvsroot):
+    try:
+        root = CVSRoot(cvsroot)
+    except CvsRootError, e:
+        raise LaunchpadValidationError(str(e))
+    if root.method == 'local':
+        raise LaunchpadValidationError('Local CVS roots are not allowed.')
+    if root.hostname.count('.') == 0:
+        raise LaunchpadValidationError(
+            'Please use a fully qualified host name.')
+    return True
+
+def validate_cvs_module(cvsmodule):
+    valid_module = re.compile('^[a-zA-Z][a-zA-Z0-9_/.+-]*$')
+    if not valid_module.match(cvsmodule):
+        raise LaunchpadValidationError(
+            'The CVS module contains illegal characters.')
+    if cvsmodule == 'CVS':
+        raise LaunchpadValidationError('A CVS module can not be called "CVS".')
+    return True
+    
 def validate_cvs_branch(branch):
     if branch and re.match('^[a-zA-Z][a-zA-Z0-9_-]*$', branch):
         return True
@@ -57,7 +80,7 @@ def validate_release_glob(value):
     if validate_url(value, ["http", "https", "ftp"]):
         return True
     else:
-        raise LaunchpadValidationError('Invalid release URL pattern')
+        raise LaunchpadValidationError('Invalid release URL pattern.')
 
 
 class IProductSeries(IHasDrivers, IHasOwner, ISpecificationGoal):
@@ -193,9 +216,11 @@ class IProductSeries(IHasDrivers, IHasOwner, ISpecificationGoal):
         "the upstream branch of this series. Can be CVS, SVN, BK or "
         "Arch."))
     cvsroot = TextLine(title=_("Repository root"), required=False,
+        constraint=validate_cvs_root,
         description=_('Example: :pserver:anonymous@anoncvs.gnome.org:'
                       '/cvs/gnome'))
-    cvsmodule = TextLine(title=_("Module"), required=False)
+    cvsmodule = TextLine(title=_("Module"), required=False,
+        constraint=validate_cvs_module)
     cvstarfileurl = Text(title=_("A URL where a tarball of the CVS "
         "repository can be found. This can sometimes be faster than "
         "trying to query the server for commit-by-commit data."))
