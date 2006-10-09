@@ -26,7 +26,7 @@ def package_name(filename):
 def f_touch(*parts):
     """Touch the file named by the arguments concatenated as a path."""
     fname = os.path.join(*parts)
-    open(fname, "w").close()
+    open(fname, "a").close()
 
 
 def safe_mkdir(path):
