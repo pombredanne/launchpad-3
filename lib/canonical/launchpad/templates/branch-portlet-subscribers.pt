@@ -1,5 +1,5 @@
 <div class="portlet">
-  <h4>Subscribers to <span tal:replace="context/title">Thunderbird Mainline</span>:</h4>
+  <h2>Subscribers to <span tal:replace="context/title">Thunderbird Mainline</span></h2>
 
   <div class="portletBody portletContent">
 

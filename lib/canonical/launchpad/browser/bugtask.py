@@ -13,6 +13,7 @@ __all__ = [
     'BugTaskEditView',
     'BugTaskPortletView',
     'BugTaskStatusView',
+    'BugTaskListingView',
     'BugListingPortletView',
     'BugTaskSearchListingView',
     'BugTargetView',
@@ -49,14 +50,14 @@ from canonical.launchpad.webapp import (
     canonical_url, GetitemNavigation, Navigation, stepthrough,
     redirection, LaunchpadView)
 from canonical.launchpad.interfaces import (
-    BugDistroReleaseTargetDetails, BugTaskSearchParams, IBugAttachmentSet,
-    IBugExternalRefSet, IBugSet, IBugTask, IBugTaskSet, IBugTaskSearch,
-    IBugWatchSet, IDistribution, IDistributionSourcePackage,
-    IDistroBugTask, IDistroRelease, IDistroReleaseBugTask,
-    IDistroReleaseSet, ILaunchBag, INullBugTask, IPerson,
+    BugDistroReleaseTargetDetails, BugTaskSearchParams,
+    IBugAttachmentSet, IBugExternalRefSet, IBugSet, IBugTask,
+    IBugTaskSet, IBugTaskSearch, IBugWatchSet, IDistribution,
+    IDistributionSourcePackage, IDistroBugTask, IDistroRelease,
+    IDistroReleaseBugTask, ILaunchBag, INullBugTask, IPerson,
     IPersonBugTaskSearch, IProduct, IProject, ISourcePackage,
-    ISourcePackageNameSet, IUpstreamBugTask, NotFoundError,
-    RESOLVED_BUGTASK_STATUSES, UnexpectedFormData,
+    IUpstreamBugTask, NotFoundError, RESOLVED_BUGTASK_STATUSES,
+    UnexpectedFormData, ISourcePackageNameSet, IDistroReleaseSet,
     UNRESOLVED_BUGTASK_STATUSES, valid_distrotask, valid_upstreamtask)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
@@ -277,6 +278,7 @@ class BugTaskView(LaunchpadView):
 
     def initialize(self):
         """Set up the needed widgets."""
+        bug = self.context.bug
         # See render() for how this flag is used.
         self._redirecting_to_bug_list = False
 
@@ -284,7 +286,7 @@ class BugTaskView(LaunchpadView):
             return
 
         # Set up widgets in order to handle subscription requests.
-        if self.context.bug.isSubscribed(self.user):
+        if (bug.isSubscribed(self.user) or bug.isSubscribedToDupes(self.user)):
             subscription_terms = [
                 SimpleTerm(
                     self.user, self.user.name, 'Unsubscribe me from this bug')]
@@ -293,7 +295,7 @@ class BugTaskView(LaunchpadView):
                 SimpleTerm(
                     self.user, self.user.name, 'Subscribe me to this bug')]
         for team in self.user.teams_participated_in:
-            if self.context.bug.isSubscribed(team):
+            if (bug.isSubscribed(team) or bug.isSubscribedToDupes(team)):
                 subscription_terms.append(
                     SimpleTerm(
                         team, team.name,
@@ -310,8 +312,26 @@ class BugTaskView(LaunchpadView):
         self.handleSubscriptionRequest()
 
     def userIsSubscribed(self):
-        """Return whether the user is subscribed to the bug or not."""
-        return self.context.bug.isSubscribed(self.user)
+        """Is the user subscribed to this bug?"""
+        return (
+            self.context.bug.isSubscribed(self.user) or
+            self.context.bug.isSubscribedToDupes(self.user))
+
+    def shouldShowUnsubscribeFromDupesWarning(self):
+        """Should we warn the user about unsubscribing and duplicates?
+
+        The warning should tell the user that, when unsubscribing, they
+        will also be unsubscribed from dupes of this bug.
+        """
+        if self.userIsSubscribed():
+            return True
+
+        bug = self.context.bug
+        for team in self.user.teams_participated_in:
+            if bug.isSubscribed(team) or bug.isSubscribedToDupes(team):
+                return True
+
+        return False
 
     def render(self):
         # Prevent normal rendering when redirecting to the bug list
@@ -363,22 +383,21 @@ class BugTaskView(LaunchpadView):
             self._handleUnsubscribeOtherUser(user)
 
     def _handleUnsubscribeCurrentUser(self):
-        # Handle unsubscribing the current user, which requires
-        # special-casing when the bug is private.
+        # Handle unsubscribing the current user, which requires special-casing
+        # when the bug is private. The user must be unsubscribed from all dupes
+        # too, or they would keep getting mail about this bug!
+
+        # ** Important ** We call unsubscribeFromDupes() before
+        # unsubscribe(), because if the bug is private, the current user
+        # will be prevented from calling methods on the main bug after
+        # they unsubscribe from it!
+        unsubed_dupes = self.context.bug.unsubscribeFromDupes(self.user)
         self.context.bug.unsubscribe(self.user)
 
-        if helpers.check_permission("launchpad.View", self.context.bug):
-            # The user still has permission to see this bug, so no
-            # special-casing needed.
-            self.notices.append("You have been unsubscribed from this bug.")
-        else:
-            # Add a notification message rather than appending to
-            # .notices, because this message has to cross a redirect.
-            self.request.response.addNotification((
-                "You have been unsubscribed from bug %d. You no "
-                "longer have access to this private bug.") %
-                self.context.bug.id)
+        self.request.response.addNotification(
+            self._getUnsubscribeNotification(self.user, unsubed_dupes))
 
+        if not helpers.check_permission("launchpad.View", self.context.bug):
             # Redirect the user to the bug listing, because they can no
             # longer see a private bug from which they've unsubscribed.
             self.request.response.redirect(
@@ -390,10 +409,73 @@ class BugTaskView(LaunchpadView):
         assert user != self.user, (
             "Expected a user other than the currently logged-in user.")
 
+        # We'll also unsubscribe the other user from dupes of this bug,
+        # otherwise they'll keep getting this bug's mail.
         self.context.bug.unsubscribe(user)
-        self.notices.append(
-            "%s has been unsubscribed from this bug." %
-            cgi.escape(user.displayname))
+        unsubed_dupes = self.context.bug.unsubscribeFromDupes(user)
+        self.request.response.addNotification(
+            self._getUnsubscribeNotification(user, unsubed_dupes))
+
+    def _getUnsubscribeNotification(self, user, unsubed_dupes):
+        """Construct and return the unsubscribe-from-bug feedback message.
+
+        :user: The IPerson or ITeam that was unsubscribed from the bug.
+        :unsubed_dupes: The list of IBugs that are dupes from which the
+                        user was unsubscribed.
+        """
+        current_bug = self.context.bug
+        current_user = self.user
+        unsubed_dupes_msg_fragment = self._getUnsubscribedDupesMsgFragment(
+            unsubed_dupes)
+
+        if user == current_user:
+            # Consider that the current user may have been "locked out"
+            # of a bug if they unsubscribed themselves from a private
+            # bug!
+            if helpers.check_permission("launchpad.View", current_bug):
+                # The user still has permission to see this bug, so no
+                # special-casing needed.
+                return (
+                    "You have been unsubscribed from this bug%s." %
+                    unsubed_dupes_msg_fragment)
+            else:
+                return (
+                    "You have been unsubscribed from bug %d%s. You no "
+                    "longer have access to this private bug.") % (
+                        current_bug.id, unsubed_dupes_msg_fragment)
+        else:
+            return "%s has been unsubscribed from this bug%s." % (
+                cgi.escape(user.displayname), unsubed_dupes_msg_fragment)
+
+    def _getUnsubscribedDupesMsgFragment(self, unsubed_dupes):
+        """Return the duplicates fragment of the unsubscription notification.
+
+        This piece lists the duplicates from which the user was
+        unsubscribed.
+        """
+        if not unsubed_dupes:
+            return ""
+
+        dupe_links = []
+        for unsubed_dupe in unsubed_dupes:
+            dupe_links.append(
+                '<a href="%s" title="%s">#%d</a>' % (
+                canonical_url(unsubed_dupe), unsubed_dupe.title,
+                unsubed_dupe.id))
+        dupe_links_string = ", ".join(dupe_links)
+
+        num_dupes = len(unsubed_dupes)
+        if num_dupes > 1:
+            plural_suffix = "s"
+        else:
+            plural_suffix = ""
+
+        return (
+            " and %(num_dupes)d duplicate%(plural_suffix)s "
+            "(%(dupe_links_string)s)") % ({
+                'num_dupes': num_dupes,
+                'plural_suffix': plural_suffix,
+                'dupe_links_string': dupe_links_string})
 
     def reportBugInContext(self):
         form = self.request.form
@@ -667,6 +749,8 @@ class BugTaskEditView(GeneralFormView):
             editable_field_names = list(self.fieldNames)
             editable_field_names.remove('bugwatch')
 
+            # XXX, Brad Bollenbach, 2006-09-29: Permission checking
+            # doesn't belong here! See https://launchpad.net/bugs/63000
             if not self.userCanEditMilestone():
                 editable_field_names.remove("milestone")
 
@@ -960,6 +1044,65 @@ class BugTaskStatusView(LaunchpadView):
         setUpWidgets(self, IBugTask, IDisplayWidget, names=field_names)
 
 
+class BugTaskListingView(LaunchpadView):
+    """A view designed for displaying bug tasks in lists."""
+    # Note that this right now is only used in tests and to render
+    # status in the CVEReportView. It may be a candidate for refactoring
+    # or removal.
+    @property
+    def status(self):
+        """Return an HTML representation of the bugtask status and assignee."""
+        bugtask = self.context
+
+        if INullBugTask.providedBy(bugtask):
+            return u"Not reported in %s" % bugtask.targetname
+
+        assignee = bugtask.assignee
+        status = bugtask.status
+        status_title = status.title.capitalize()
+
+        if not assignee:
+            return status_title + ' (unassigned)'
+
+        assignee_html = (
+            '<img alt="" src="/@@/user" /> '
+            '<a href="/people/%s/+assignedbugs">%s</a>' % (
+                urllib.quote(assignee.name),
+                cgi.escape(assignee.browsername)))
+
+        if status in (dbschema.BugTaskStatus.REJECTED,
+                      dbschema.BugTaskStatus.FIXCOMMITTED):
+            return '%s by %s' % (status_title, assignee_html)
+        else:
+            return '%s, assigned to %s' % (status_title, assignee_html)
+
+    @property
+    def status_elsewhere(self):
+        """Return human-readable representation of the status of this bug
+        in other contexts for which it's reported.
+        """
+        bugtask = self.context
+        related_tasks = bugtask.related_tasks
+        if not related_tasks:
+            return "not filed elsewhere"
+
+        fixes_found = len(
+            [task for task in related_tasks
+             if task.status in (BugTaskStatus.FIXCOMMITTED,
+                                BugTaskStatus.FIXRELEASED)])
+        if fixes_found:
+            return "fixed in %d of %d places" % (
+                fixes_found, len(bugtask.bug.bugtasks))
+        elif len(related_tasks) == 1:
+            return "filed in 1 other place"
+        else:
+            return "filed in %d other places" % len(related_tasks)
+
+    def render(self):
+        """Make rendering this template-less view not crash."""
+        return u""
+
+
 class BugListingPortletView(LaunchpadView):
     """Portlet containing all available bug listings."""
     def getOpenBugsURL(self):
@@ -1107,9 +1250,7 @@ class BugTaskSearchListingView(LaunchpadView):
     owner_error = ""
     assignee_error = ""
 
-    def __init__(self, context, request):
-        LaunchpadView.__init__(self, context, request)
-
+    def initialize(self):
         if self._personContext():
             self.schema = IPersonBugTaskSearch
         else:
@@ -1134,6 +1275,7 @@ class BugTaskSearchListingView(LaunchpadView):
         self.tag_widget = CustomWidgetFactory(BugTagsWidget)
         setUpWidgets(self, self.schema, IInputWidget)
         self.validateVocabulariesAdvancedForm()
+        self.validate_search_params()
 
     @property
     def columns_to_show(self):
@@ -1177,6 +1319,12 @@ class BugTaskSearchListingView(LaunchpadView):
                     "Unexpected value for field '%s'. Perhaps your bookmarks "
                     "are out of date or you changed the URL by hand?" % field_name)
 
+
+        try:
+            getWidgetsData(self, schema=self.schema, names=['tag'])
+        except WidgetsError:
+            self.form_has_errors = True
+
         orderby = get_sortorder_from_request(self.request)
         bugset = getUtility(IBugTaskSet)
         for orderby_col in orderby:
@@ -1199,8 +1347,6 @@ class BugTaskSearchListingView(LaunchpadView):
         search criteria taken from the request. Params in :extra_params: take
         precedence over request params.
         """
-        self.validate_search_params()
-
         widget_names = [
                 "searchtext", "status", "assignee", "importance",
                 "owner", "omit_dupes", "has_patch",

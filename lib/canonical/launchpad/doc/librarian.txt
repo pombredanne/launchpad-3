@@ -35,11 +35,14 @@ it is no longer referenced in the database.
 >>> alias.expires is None
 True
 
-We can retrieve the LibraryFileAlias we just created using its ID.
+We can retrieve the LibraryFileAlias we just created using its ID or sha1.
 
 >>> org_alias_id = alias.id
 >>> alias = lfas[org_alias_id]
 >>> alias.id == org_alias_id
+True
+
+>>> org_alias_id in [a.id for a in lfas.findBySHA1(alias.content.sha1)]
 True
 
 We can get its URL too

@@ -17,7 +17,7 @@ from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces import (
     IHasOwner, IHasDrivers, IBugTarget, ISpecificationTarget,
-    IHasSecurityContact, ITicketTarget, PillarNameField)
+    IHasSecurityContact, PillarNameField)
 from canonical.launchpad.validators.name import name_validator
 
 
@@ -154,14 +154,6 @@ class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
         "about the state of packages in the distribution, we should "
         "interpret that query in the context of the currentrelease.")
 
-    open_cve_bugtasks = Attribute(
-        "Any bugtasks on this distribution that are for bugs with "
-        "CVE references, and are still open.")
-
-    resolved_cve_bugtasks = Attribute(
-        "Any bugtasks on this distribution that are for bugs with "
-        "CVE references, and are resolved.")
-
     full_functionality = Attribute(
         "Whether or not we enable the full functionality of Launchpad for "
         "this distribution. Currently only Ubuntu and some derivatives "
@@ -199,10 +191,10 @@ class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
         if it's not found.
         """
 
-    def newMirror(owner, speed, country, content, pulse_type, displayname=None,
+    def newMirror(owner, speed, country, content, displayname=None,
                   description=None, http_base_url=None, ftp_base_url=None,
-                  rsync_base_url=None, file_list=None, pulse_source=None,
-                  official_candidate=False, enabled=False):
+                  rsync_base_url=None, enabled=False,
+                  official_candidate=False):
         """Create a new DistributionMirror for this distribution."""
 
     def getMilestone(name):

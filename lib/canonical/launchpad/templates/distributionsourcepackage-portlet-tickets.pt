@@ -1,6 +1,6 @@
 <div class="portlet" tal:condition="view/latest_tickets">
 
-  <h4>Recent support requests:</h4>
+  <h2>Recent support requests</h2>
 
   <div class="portletBody portletContent">
 
