@@ -389,12 +389,13 @@ class QueueAction:
         return from_address, recipient_addresses
 
 
-class QueueActionHelp:
+class QueueActionHelp(QueueAction):
     """Present provided actions summary"""
     def __init__(self, **kargs):
         self.kargs = kargs
         self.kargs['no_mail'] = True
         self.actions = kargs['terms']
+        self.display = kargs['display']
 
     def initialize(self):
         """Mock initialization """
@@ -402,13 +403,27 @@ class QueueActionHelp:
 
     def run (self):
         """Present the actions description summary"""
-        # present summary for specific or all commands
+        # present summary for specific or all actions
         if not self.actions:
             actions_help = queue_actions.items()
+            not_available_actions = []
         else:
-            actions_help = [(k, v) for k, v in queue_actions.items()
-                            if k in self.actions]
-        # extract summary from docstring of specified commands
+            actions_help = [
+                (action, provider)
+                for action, provider in queue_actions.items()
+                if action in self.actions
+                ]
+            not_available_actions = [
+                action for action in self.actions
+                if action not in queue_actions.keys()
+                ]
+        # present not available requested action if any.
+        if not_available_actions:
+            self.display(
+                "Not available action(s): %s" %
+                ", ".join(not_available_actions))
+
+        # extract summary from docstring of specified available actions
         for action, wrapper in actions_help:
             if action is 'help':
                 continue
@@ -466,6 +481,10 @@ class QueueActionFetch(QueueAction):
         for queue_item in self.items:
             self.display("Constructing %s" % queue_item.changesfile.filename)
             changes_file_alias = queue_item.changesfile
+            # do not overwrite files on disk (bug # 62976)
+            if os.path.exists(queue_item.changesfile.filename):
+                raise CommandRunnerError("%s already present on disk"
+                                         % queue_item.changesfile.filename)
             changes_file_alias.open()
             changes_file = open(queue_item.changesfile.filename, "w")
             changes_file.write(changes_file_alias.read())
@@ -487,6 +506,10 @@ class QueueActionFetch(QueueAction):
 
             for libfile in file_list:
                 self.display("Constructing %s" % libfile.filename)
+                # do not overwrite files on disk (bug # 62976)
+                if os.path.exists(libfile.filename):
+                    raise CommandRunnerError("%s already present on disk"
+                                             % libfile.filename)
                 libfile.open()
                 out_file = open(libfile.filename, "w")
                 for chunk in filechunks(libfile):
@@ -517,6 +540,7 @@ class QueueActionReject(QueueAction):
                 self.display('** %s could not be rejected due %s'
                              % (queue_item.displayname, info))
             else:
+                queue_item.syncUpdate()
                 summary = []
                 for queue_source in queue_item.sources:
                     # XXX: dsilvers: 20060203: This needs to be able to
@@ -586,6 +610,7 @@ class QueueActionAccept(QueueAction):
                 self.display('** %s could not be accepted due %s'
                              % (queue_item.displayname, info))
             else:
+                queue_item.syncUpdate()
                 summary = []
                 for queue_source in queue_item.sources:
                     # XXX: dsilvers: 20060203: This needs to be able to
