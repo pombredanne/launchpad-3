@@ -262,7 +262,7 @@ class FileBugGuidedView(FileBugViewBase):
     # page of the process.
     _FILEBUG_STEPS = [
         ("search", "Describe the bug in brief"),
-        ("check_for_similar", "See if it's already been reported"),
+        ("check_for_similar", "Search for similar bugs"),
         ("filebug", "Describe the bug in more detail")]
 
     current_step = "search"
@@ -280,7 +280,7 @@ class FileBugGuidedView(FileBugViewBase):
 
             return ['title', 'comment', 'packagename']
 
-    @action("See if it's already been reported",
+    @action("Search for similar bugs",
             name="search", validator="validate_search")
     def search_action(self, action, data):
         """Search for similar bug reports."""

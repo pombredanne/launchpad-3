@@ -8,7 +8,7 @@ bugs.
     >>> user_browser.open("http://launchpad.dev/products/firefox/+filebug")
     
     >>> user_browser.getControl(name="field.title").value = "svg"
-    >>> user_browser.getControl("See if it's already been reported").click()
+    >>> user_browser.getControl("Search for similar bugs").click()
     
 The form is self-posting, so the user is still at +filebug. This makes
 it difficult to bypass the search-for-dupes bit.
