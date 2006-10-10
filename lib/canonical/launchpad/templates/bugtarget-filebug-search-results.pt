@@ -37,14 +37,15 @@
     </tal:filebug-step>
   </ol>
 
-<div tal:define="similar_bugs view/getSimilarBugs">
+<div tal:define="similar_bugs view/getSimilarBugs;
+                 most_common_bugs view/getMostCommonBugs">
 
 <tal:similar-bugs condition="similar_bugs">
   <p>
   <strong>Your bug may already have been reported.</strong> Please have a look through the list of bugs below to see if one of them describes the bug you were going to report. If you find a matching bug, you may wish to subscribe to it.
   </p>
 
-  <table class="listing">
+  <table class="listing" id="similar-bugs">
     <thead>
       <tr><th colspan="2">Summary</th></tr>
     </thead>
@@ -69,11 +70,10 @@
   <p><em>No bugs matching "<span tal:content="view/getSearchText">foobar</span>" were found.</em></p>
 </tal:no-similar-bugs>
 
-<tal:most-common-bugs define="most_common_bugs view/getMostCommonBugs"
-                      condition="most_common_bugs">
+<tal:most-common-bugs condition="most_common_bugs">
   <h2>Common Bugs</h2>
 
-  <table class="listing">
+  <table class="listing" id="most-common-bugs">
     <thead>
       <tr><th colspan="2">Summary</th></tr>
     </thead>
@@ -102,7 +102,10 @@
   <input type="hidden" name="field.title"
          tal:attributes="value request/field.title" />
   <div class="actions">
-    <input tal:replace="structure view/actions/field.actions.no_dupe_found/render" />
+    <input tal:condition="python:similar_bugs or most_common_bugs"
+           tal:replace="structure view/actions/field.actions.no_dupe_found/render" />
+    <input tal:condition="python:not (similar_bugs or most_common_bugs)"
+           tal:replace="structure view/actions/field.actions.continue/render" />
   </div>
 </form>
 </div>

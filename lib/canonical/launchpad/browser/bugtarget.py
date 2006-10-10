@@ -323,15 +323,21 @@ class FileBugGuidedView(FileBugViewBase):
         # Return an empty list of errors to satisfy the validation API,
         # and say "we've handled the validation and found no errors."
         return ()
+        
+    def validate_no_dupe_found(self, action, data):
+        return ()
 
-    @action("I don't see my bug in this list",
-            name="no_dupe_found", validator="validate_no_dupe_found")
+    @action("I don't see my bug in this list", name="no_dupe_found",
+            validator="validate_no_dupe_found")
     def no_dupe_found_action(self, action, data):
         """Show the simple bug form."""
         return self.showFileBugForm()
-
-    def validate_no_dupe_found(self, action, data):
-        return ()
+        
+    @action("Continue", name="continue",
+            validator="validate_no_dupe_found")
+    def continue_action(self, action, data):
+        """The same action as no-dupe-found, with a different label."""
+        return self.showFileBugForm()
 
     def showFileBugForm(self):
         self.current_step = "filebug"
