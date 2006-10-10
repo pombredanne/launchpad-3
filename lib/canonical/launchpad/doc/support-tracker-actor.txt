@@ -146,7 +146,7 @@ the person is subscribed to:
     ...         participation=TicketParticipation.SUBSCRIBER, status=None):
     ...     print ticket.title
     Slow system
-    Firefox is slow and consumes too much RAM   Rejected
+    Firefox is slow and consumes too much RAM
 
 TicketParticipation.OWNER selects the tickets that the person created:
 
@@ -155,7 +155,7 @@ TicketParticipation.OWNER selects the tickets that the person created:
     ...     print ticket.title
     Slow system
     Firefox loses focus and gets stuck
-    Firefox is slow and consumes too much RAM   Rejected
+    Firefox is slow and consumes too much RAM
 
 TicketParticipation.ANSWERER selects the tickets for which the person
 was marked as the answerer:
@@ -164,7 +164,7 @@ was marked as the answerer:
     ...         participation=TicketParticipation.ANSWERER, status=None):
     ...     print ticket.title
     mailto: problem in webpage
-    Firefox is slow and consumes too much RAM   Rejected
+    Firefox is slow and consumes too much RAM
 
 TicketParticipation.ASSIGNEE selects that tickets which are assigned to
 the person:
@@ -184,7 +184,7 @@ will be selected:
     mailto: problem in webpage
     Slow system
     Firefox loses focus and gets stuck
-    Firefox is slow and consumes too much RAM   Rejected
+    Firefox is slow and consumes too much RAM
 
 Combination
 ~~~~~~~~~~~
