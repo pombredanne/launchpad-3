@@ -8,6 +8,7 @@ __all__ = [
     'ManageSupportContactView',
     'SearchTicketsView',
     'TicketTargetFacetMixin',
+    'TicketTargetLatestTicketsView',
     'TicketTargetSearchMyTicketsView',
     'TicketTargetTraversalMixin',
     'TicketTargetView',
@@ -123,6 +124,10 @@ class TicketTargetView(LaunchpadView):
             category['tickets'].append(ticket)
         categories = categories.values()
         return sorted(categories, key=lambda a: a['status'].value)
+
+
+class TicketTargetLatestTicketsView:
+    """View used to display the latest support requests on a ticket target."""
 
     @cachedproperty
     def getLatestTickets(self, quantity=5):
