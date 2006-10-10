@@ -6,6 +6,8 @@ provide an RSS feed with information about all official release mirrors.
     >>> browser.open('http://launchpad.dev/distros/ubuntu/+cdmirrors-rss')
     >>> browser.url
     'http://launchpad.dev/distros/ubuntu/+cdmirrors-rss'
+    >>> print browser.headers['content-type']
+    text/xml;charset=utf-8
 
     >>> print browser.contents
     <?xml version="1.0" encoding="utf-8"?>

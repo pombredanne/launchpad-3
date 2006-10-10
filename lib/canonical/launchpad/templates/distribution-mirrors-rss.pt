@@ -7,7 +7,7 @@
     <description>Status of Ubuntu CD Mirrors</description>
 
     <lastBuildDate tal:content="view/now/fmt:rfc822utcdatetime">
-      Tue, 10 Jun 2003 09:41:01 GMT
+      Tue, 10 Jun 2003 09:41:01 -0000
     </lastBuildDate>
 
     <item tal:repeat="mirror context/release_mirrors">
@@ -33,7 +33,7 @@
 
       <pubDate tal:condition="mirror/last_probe_record"
                tal:content="mirror/last_probe_record/date_created/fmt:rfc822utcdatetime">
-        Tue, 10 Jun 2003 09:41:01 GMT
+        Tue, 10 Jun 2003 09:41:01 -0000
       </pubDate>
 
       <guid tal:content="mirror/base_url">http://mirror.com/root</guid>

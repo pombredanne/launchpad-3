@@ -154,6 +154,8 @@ do with 'None/fmt:foo'.
     ''
     >>> test_tales('foo/fmt:datetime', foo=None)
     ''
+    >>> test_tales('foo/fmt:rfc822utcdatetime', foo=None)
+    ''
     >>> test_tales('foo/fmt:pagetitle', foo=None)
     ''
     >>> test_tales('foo/fmt:text-to-html', foo=None)

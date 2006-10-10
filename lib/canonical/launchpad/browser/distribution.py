@@ -28,7 +28,6 @@ from zope.component import getUtility
 from zope.app.form.browser.add import AddView
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
@@ -524,18 +523,17 @@ class DistributionReleaseMirrorsView(DistributionMirrorsView):
         return self._groupMirrorsByCountry(self.context.release_mirrors)
 
 
-class DistributionReleaseMirrorsRSSView:
+class DistributionReleaseMirrorsRSSView(LaunchpadView):
     """The RSS feed for release mirrors."""
 
-    now = None
-    template = ViewPageTemplateFile(
-        '../templates/distribution-mirrors-rss.pt')
-
-    def __call__(self):
-        self.request.response.setHeader('content-type', 'text/xml')
+    def initialize(self):
         self.now = datetime.utcnow()
-        unicodedata = self.template()
-        return unicodedata.encode('utf-8')
+
+    def render(self):
+        self.request.response.setHeader(
+            'content-type', 'text/xml;charset=utf-8')
+        body = LaunchpadView.render(self)
+        return body.encode('utf-8')
 
 
 class DistributionMirrorsAdminView(DistributionMirrorsView):
