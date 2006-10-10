@@ -263,14 +263,6 @@ class IPerson(IHasSpecifications):
         "feedback, sorted newest first.")
     subscribed_specs = Attribute(
         "Specifications this person has subscribed to, sorted newest first.")
-    tickets = Attribute(
-        "Any support requests related to this person. They might be created, "
-        "or assigned, or answered by, or subscribed to by this person.")
-    assigned_tickets = Attribute("Tickets assigned to this person.")
-    created_tickets = Attribute("Tickets created by this person.")
-    answered_tickets = Attribute("Tickets answered by this person.")
-    subscribed_tickets = Attribute(
-        "Tickets to which this person subscribes.")
     teamowner = Choice(title=_('Team Owner'), required=False, readonly=False,
                        vocabulary='ValidTeamOwner')
     teamownerID = Int(title=_("The Team Owner's ID or None"), required=False,
@@ -279,7 +271,7 @@ class IPerson(IHasSpecifications):
                            readonly=False)
 
     preferredemail = TextLine(
-        title=_("Preferred Email Address"), 
+        title=_("Preferred Email Address"),
         description=_("The preferred email address for this person. The one "
                       "we'll use to communicate with them."),
         readonly=True)
@@ -397,7 +389,7 @@ class IPerson(IHasSpecifications):
         """Return all requests made by this person that were sent to the
         shipping company already.
 
-        This only includes requests for CDs of 
+        This only includes requests for CDs of
         ShipItConstants.current_distrorelease.
         """
 
@@ -423,7 +415,7 @@ class IPerson(IHasSpecifications):
         """
 
     def latestUploadedButNotMaintainedPackages():
-        """Return SourcePackageReleases created by this person but 
+        """Return SourcePackageReleases created by this person but
         not maintained by him.
 
         This method will only include the latest source package release

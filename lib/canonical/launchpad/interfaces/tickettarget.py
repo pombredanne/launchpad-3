@@ -19,13 +19,10 @@ from canonical.lp.dbschema import TicketStatus
 
 
 class IHasTickets(Interface):
-    """An object that has tickets attached to it.
-
-    Thus far, this is true of people, distros, products.
-    """
+    """An object that has tickets attached to it."""
 
     def tickets(quantity=None):
-        """Support tickets for this source package, sorted newest first.
+        """Support tickets related to this object, sorted newest first.
 
         :quantity: An integer.
 
@@ -64,7 +61,7 @@ class ITicketTarget(IHasTickets):
         """
 
     def searchTickets(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-                      sort=None):
+                      owner=None, sort=None):
         """Search the object's tickets.
 
         :search_text: A string that is matched against the ticket
@@ -74,9 +71,12 @@ class ITicketTarget(IHasTickets):
         :status: A sequence of TicketStatus Items. If None or an empty
         sequence, the status is not included as a filter criteria.
 
+        :owner: The IPerson that created the ticket.
+
         :sort:  An attribute of TicketSort. If None, a default value is used.
         When there is a search_text value, the default is to sort by RELEVANCY,
         otherwise results are sorted NEWEST_FIRST.
+
         """
 
     def findSimilarTickets(title):

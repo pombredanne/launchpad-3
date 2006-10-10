@@ -89,6 +89,7 @@ __all__ = (
 'SprintSpecificationStatus',
 'SSHKeyType',
 'TextDirection',
+'TicketParticipation',
 'TicketPriority',
 'TicketSort',
 'TicketStatus',
@@ -1652,6 +1653,49 @@ class SprintSpecificationStatus(DBSchema):
         This spec has been submitted for consideration by the meeting
         organisers. It has not yet been accepted or declined for the
         agenda.
+        """)
+
+
+class TicketParticipation(DBSchema):
+    """The different ways a person can be involved in a ticket.
+
+    This enumeration is part of the ITicketActpr.searchTickets() API. The
+    titles are formatted for nice display in browser code.
+
+    XXX flacoste 2006/10/09 This has nothing to do with database code and
+    is really part of the ITicketActor definitions. We should find a way
+    to define enumerations in interface code and generate easily,
+    when required, the database implementation code.
+    """
+
+    OWNER = Item(10, """
+        Owner
+
+        The person created the ticket.
+        """)
+
+    SUBSCRIBER = Item(15, """
+        Subscriber
+
+        The person subscribed the the ticket.
+        """)
+
+    ASSIGNEE = Item(20, """
+        Assignee
+
+        The person is assigned to the ticket.
+        """)
+
+    COMMENTER = Item(25, """
+        Commenter
+
+        The person commented on the ticket.
+        """)
+
+    ANSWERER = Item(30, """
+        Answerer
+
+        The person answered the ticket.
         """)
 
 
@@ -3481,7 +3525,7 @@ class PersonCreationRationale(DBSchema):
 
     POFILEIMPORT = Item(4, """
         This person was mentioned in a POFile imported into Rosetta.
-        
+
         When importing POFiles into Rosetta, we need to give credit for the
         translations on that POFile to its last translator, which may not
         exist in Launchpad, so we'd need to create it.

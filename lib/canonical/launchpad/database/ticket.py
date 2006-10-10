@@ -32,7 +32,8 @@ from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import check_permission
 
 from canonical.lp.dbschema import (
-    EnumCol, TicketSort, TicketStatus, TicketPriority, Item)
+    EnumCol, Item, TicketSort, TicketStatus, TicketParticipation,
+    TicketPriority)
 
 
 class Ticket(SQLBase, BugLinkTargetMixin):
@@ -349,21 +350,66 @@ class TicketSet:
             if sourcepackagename:
                 prejoins.append('sourcepackagename')
 
-        if search_text is not None:
-            constraints.append('Ticket.fti @@ ftq(%s)' % quote(search_text))
-
-        if status is None:
-            status = []
-        elif isinstance(status, Item):
-            status = [status]
-        if len(status):
-            constraints.append(
-                'Ticket.status IN (%s)' % ', '.join(sqlvalues(*status)))
-
         if owner:
             assert IPerson.providedBy(owner), (
                 "expected IPerson, got %r" % owner)
             constraints.append('Ticket.owner = %d' % owner.id)
+
+        return TicketSet._commonSearch(
+            constraints, prejoins, search_text, status, sort)
+
+    @staticmethod
+    def searchByPerson(
+        person, search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
+        participation=None, sort=None):
+        """Implementation for ITicketActor.searchTickets()."""
+
+        if participation is None:
+            participation = TicketParticipation.items
+        elif isinstance(participation, Item):
+            participation = [participation]
+
+        participations_filter = []
+        for participation_type in participation:
+            participations_filter.append(
+                TicketSet.queryByParticipationType[participation_type] % {
+                    'personId': person.id})
+
+        constraints = ['Ticket.id IN (%s)' %
+                       '\nUNION '.join(participations_filter)]
+        prejoins = ['product', 'distribution', 'sourcepackagename']
+
+        return TicketSet._commonSearch(
+            constraints, prejoins, search_text, status, sort)
+
+    queryByParticipationType = {
+        TicketParticipation.ANSWERER:
+            "SELECT id FROM Ticket WHERE answerer = %(personId)d",
+        TicketParticipation.SUBSCRIBER:
+            "SELECT ticket FROM TicketSubscription "
+            "WHERE person = %(personId)d",
+        TicketParticipation.OWNER:
+            "SELECT id FROM Ticket WHERE owner = %(personId)d",
+        TicketParticipation.COMMENTER:
+            "SELECT ticket FROM TicketMessage "
+            "JOIN Message ON (message = Message.id) "
+            "WHERE owner = %(personId)d",
+        TicketParticipation.ASSIGNEE:
+            "SELECT id FROM Ticket WHERE assignee = %(personId)d"}
+
+    @staticmethod
+    def _commonSearch(constraints, prejoins, search_text, status, sort):
+        """Implement search for the criteria common to search and
+        searchByPerson.
+        """
+        if search_text is not None:
+            constraints.append('Ticket.fti @@ ftq(%s)' % quote(search_text))
+
+        if isinstance(status, Item):
+            status = [status]
+        if status:
+            constraints.append(
+                'Ticket.status IN (%s)' % ', '.join(sqlvalues(*status)))
 
         orderBy = TicketSet._orderByFromTicketSort(search_text, sort)
 

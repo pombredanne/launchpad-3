@@ -1,0 +1,44 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:lp="http://launchpad.canonical.com"
+  xmlns:i18n="http://namespaces.zope.org/i18n"
+  i18n_domain="launchpad">
+
+<facet facet="support">
+
+  <browser:page
+      for="canonical.launchpad.interfaces.IPerson"
+      class="canonical.launchpad.browser.TicketTargetView"
+      name="+portlet-latesttickets"
+      permission="zope.Public"
+      template="../templates/tickettarget-portlet-latesttickets.pt" />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.TicketTargetView"
+    permission="zope.Public"
+    facet="support"
+    >
+    <!-- there is trickery here, in the view class, which detects the view
+    name and then gives the template a different set of tickets to work
+    with.-->
+    <browser:page
+        name="+tickets"
+        template="../templates/tickettarget-tickets.pt" />
+    <browser:page
+        name="+createdtickets"
+        template="../templates/tickettarget-tickets.pt" />
+    <browser:page
+        name="+assignedtickets"
+        template="../templates/tickettarget-tickets.pt" />
+    <browser:page
+        name="+answeredtickets"
+        template="../templates/tickettarget-tickets.pt" />
+    <browser:page
+        name="+subscribedtickets"
+        template="../templates/tickettarget-tickets.pt" />
+  </browser:pages>
+</facet>
+
+</configure>

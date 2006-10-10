@@ -111,6 +111,7 @@
     <include file="sprintattendance.zcml" />
     <include file="sprintspecification.zcml" />
     <include file="ticket.zcml" />
+    <include file="ticketactor.zcml" />
     <include file="ticket-events.zcml" />
     <include file="ticketreopening.zcml" />
     <include file="ticketsubscription.zcml" />

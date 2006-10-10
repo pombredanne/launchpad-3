@@ -131,6 +131,7 @@ class TicketTargetView(LaunchpadView):
         """
         return list(self.context.tickets(quantity=quantity))
 
+
 class SearchTicketsView(LaunchpadFormView):
     """View that can filter the target's ticket in a batched listing.
 
