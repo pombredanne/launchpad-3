@@ -56,7 +56,8 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         assert os.stat(fullpath)
         text = file(fullpath).read()
         assert text
-        assert text == file("%s/%s" % (self._sampledir, filename)).read()
+        self.assertEqual(
+            text, file("%s/%s" % (self._sampledir, filename)).read())
 
     def _addMockFile(self, component, sourcename, leafname):
         """Add a mock file in Librarian.
@@ -153,7 +154,7 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         bin = [self._getFakePubBinary(
             "foo", "foo", "main", "foo.deb", "misc", "hoary-test",
             PackagePublishingPriority.EXTRA, "i386")]
-        fa.createEmptyPocketRequests()
+        fa.createEmptyPocketRequests(fullpublish=True)
         fa.publishOverrides(src, bin)
         src = [self._getFakePubSourceFile(
             "foo", "main", "foo.dsc", "misc", "hoary-test")]
@@ -193,10 +194,10 @@ class TestFTouch(unittest.TestCase):
         self.assertTrue(os.path.exists("%s/file_to_touch" % self.test_folder))
 
     def testExistingFile(self):
-        """Test f_touch does not destroy an existing file."""
+        """Test f_touch truncates existing files."""
         from canonical.archivepublisher.ftparchive import f_touch
 
-        f = open("%s/file_to_leave_alone" % self.test_folder, "w")
+        f = open("%s/file_to_truncate" % self.test_folder, "w")
         test_contents = "I'm some test contents"
         f.write(test_contents)
         f.close()
@@ -207,7 +208,7 @@ class TestFTouch(unittest.TestCase):
         contents = f.read()
         f.close()
         
-        self.assertEqual(test_contents, contents)
+        self.assertEqual("", contents)
         
 
 def test_suite():
