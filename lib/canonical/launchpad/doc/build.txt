@@ -83,7 +83,7 @@ Build record has no history and is NEEDSBUILD:
   True
 
 
-Initialize all the required arguments to create a binary package for a
+Initialise all the required arguments to create a binary package for a
 given build record entry.
 
   >>> from canonical.launchpad.interfaces import IBinaryPackageNameSet
@@ -127,7 +127,7 @@ Invoke createBinaryPackageRelease with all required arguments.
   True
 
 
-Commit previous transaction, data we want to preserv:
+Commit previous transaction, data we want to preserve:
 XXX: flush_database_updates() shouldn't be needed. This seems to be
 Bug 3989 -- StuarBishop 20060713
 
@@ -232,7 +232,7 @@ Check the result content:
   [u'i386 build of pmount 0.1-1 in ubuntu hoary RELEASE', u'i386 build
   of pmount 0.1-1 in ubuntu hoary RELEASE']
 
-Using optional 'name' filter (mathing with SQL LIKE %||filter||%)
+Using optional 'name' filter (matching with SQL LIKE %||filter||%)
 
   >>> bs.getBuildsByArchIds(arch_ids,
   ...     status=BuildStatus.FULLYBUILT,
