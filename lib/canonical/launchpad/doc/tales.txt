@@ -227,3 +227,16 @@ It is possible for dbschemas to have a 'None' value.  This is a bit awkward,
 because when the value is None, we can't do any checking whether a new value
 is from the correct schema.  In any case, this case is not currently handled.
 
+The enumvalue tales expression is designed to work with security
+wrapped dbschema items too:
+
+    >>> from zope.security.proxy import ProxyFactory
+    >>> wrapped_deb = ProxyFactory(BinaryPackageFormat.DEB)
+    >>> test_tales('deb/enumvalue:DEB', deb=wrapped_deb)
+    True
+    >>> test_tales('deb/enumvalue:UDEB', deb=wrapped_deb)
+    False
+    >>> test_tales('deb/enumvalue:CHEESEFISH', deb=wrapped_deb)
+    Traceback (most recent call last):
+    ...
+    TraversalError: 'The BinaryPackageFormat dbschema does not have a value CHEESEFISH.'
