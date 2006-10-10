@@ -82,12 +82,15 @@ class IDistributionMirror(Interface):
         title=_('Description'), required=False, readonly=False)
     http_base_url = DistroHttpUrlField(
         title=_('HTTP URL'), required=False, readonly=False,
+        description=_('e.g.: http://archive.ubuntu.com/ubuntu/'),
         constraint=valid_http_url)
     ftp_base_url = DistroFtpUrlField(
         title=_('FTP URL'), required=False, readonly=False,
+        description=_('e.g.: ftp://archive.ubuntu.com/ubuntu/'),
         constraint=valid_ftp_url)
     rsync_base_url = DistroRsyncUrlField(
         title=_('Rsync URL'), required=False, readonly=False,
+        description=_('e.g.: rsync://archive.ubuntu.com/ubuntu/'),
         constraint=valid_rsync_url)
     enabled = Bool(
         title=_('Probe this mirror for its content periodically'),
