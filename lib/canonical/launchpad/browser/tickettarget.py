@@ -25,7 +25,7 @@ from zope.app.pagetemplate import ViewPageTemplateFile
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IDistribution, ILaunchBag, IManageSupportContacts, IPerson,
+    IDistribution, IManageSupportContacts, IPerson,
     ISearchTicketsForm, ITicketTarget, NotFoundError)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, redirection, stepthrough,
@@ -317,7 +317,7 @@ class ManageSupportContactView(GeneralFormView):
 
     @property
     def initial_values(self):
-        user = getUtility(ILaunchBag).user
+        user = self.user
         support_contacts = self.context.support_contacts
         user_teams = [
             membership.team for membership in user.myactivememberships]
@@ -326,12 +326,13 @@ class ManageSupportContactView(GeneralFormView):
             'want_to_be_support_contact': user in support_contacts,
             'support_contact_teams': list(support_contact_teams)
             }
+
     def _setUpWidgets(self):
         if not self.user:
             return
         self.support_contact_teams_widget = CustomWidgetFactory(
             LabeledMultiCheckBoxWidget)
-        GeneralFormView._setUpWidgets(self, context=getUtility(ILaunchBag).user)
+        GeneralFormView._setUpWidgets(self, context=self.user)
 
     def process(self, want_to_be_support_contact, support_contact_teams=None):
         if support_contact_teams is None:
