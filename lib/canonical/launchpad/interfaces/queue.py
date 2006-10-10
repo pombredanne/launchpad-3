@@ -223,7 +223,16 @@ class IDistroReleaseQueueSource(Interface):
 
 
 class IDistroReleaseQueueCustom(Interface):
-    """A Queue item's related custom format files (for uploader/queue)"""
+    """Stores anything else than source and binaries that needs publication.
+
+    It is essentially a map between DistroRelease/Pocket/LibrarianFileAlias.
+
+    The LibrarianFileAlias usually is a TGZ containing an specific format.
+    Currently we support:
+     [Debian-Installer, Rosetta-Translation, Dist-Upgrader, DDTP-Tarball]
+
+    Each one has an processor which is invoked by the publish method.
+    """
 
     id = Int(
             title=_("ID"), required=True, readonly=True,
@@ -278,6 +287,16 @@ class IDistroReleaseQueueCustom(Interface):
         """Publish this custom item as a raw dist-upgrader tarball.
 
         This will write the dist-upgrader tarball out to the right part of
+        the archive.
+
+        If a logger is provided, information pertaining to the publishing
+        process will be logged to it.
+        """
+
+    def publish_DDTP_TARBALL(logger=None):
+        """Publish this custom item as a raw ddtp-tarball.
+
+        This will write the ddtp-tarball out to the right part of
         the archive.
 
         If a logger is provided, information pertaining to the publishing
