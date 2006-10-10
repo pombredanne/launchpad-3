@@ -18,26 +18,16 @@ The mirror content checker failed to locate any files that a
 log file[1] of the content check should give you more detailed
 information of what failed.
 
-To allow this mirror to be checked again, you should:
+If this was a temporary failure and has already now corrected, the mirror
+will appear on the mirror listings right after the next content check.
+
+If if you are sure this mirror is up and running, this notification may
+have been caused by Launchpad not having the correct details on how to
+reach this mirror, so you may want to:
 
 * Verify the details registered in Launchpad for this mirror.
 
 * Ensure the path to the mirror contents is correct.
-
-If this was a temporary failure and has been now corrected, you can
-enable content checking again at:
-
-    %(mirror_url)s/+edit
-
-Mirrors which do not have content checking enabled are not included in
-the official mirror listings of %(distro)s, although they still are
-official mirrors and will show up on these listings once content checking
-is enabled.
-
-Please note that the Launchpad mirror content checker has not yet been
-officially launched.  Not being listed as official within Launchpad does
-not mean your mirror is not official until the beta testing period has
-completed.
 
 If all the details are correct and the mirror is reachable, this report
 may be due to a problem with the mirror checker.  If you believe this to
