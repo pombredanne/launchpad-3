@@ -256,11 +256,6 @@
     />
 
   <vocabulary
-    name="Schema"
-    factory="canonical.launchpad.vocabularies.SchemaVocabulary"
-    />
-
-  <vocabulary
     name="ShipItFlavour"
     factory="canonical.launchpad.vocabularies.ShipItFlavourVocabulary"
     />
