@@ -407,7 +407,7 @@ class BugAlsoReportInView(LaunchpadFormView):
                 # Assign attributes, so that the action handler can
                 # access the extracted bugtracker and bug.
                 self.extracted_bugtracker, self.extracted_bug = (
-                    bugwatch_set.extractBugTrackerAndBug( bug_url))
+                    bugwatch_set.extractBugTrackerAndBug(bug_url))
             except NoBugTrackerFound, error:
                 # XXX: The user should be able to press a button here in
                 #      order to register the tracker.
