@@ -662,13 +662,6 @@ INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_p
 ALTER TABLE branch ENABLE TRIGGER ALL;
 
 
-ALTER TABLE branchlabel DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE branchlabel ENABLE TRIGGER ALL;
-
-
 ALTER TABLE branchmessage DISABLE TRIGGER ALL;
 
 
@@ -799,13 +792,6 @@ ALTER TABLE bugexternalref DISABLE TRIGGER ALL;
 
 
 ALTER TABLE bugexternalref ENABLE TRIGGER ALL;
-
-
-ALTER TABLE buglabel DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE buglabel ENABLE TRIGGER ALL;
 
 
 ALTER TABLE bugmessage DISABLE TRIGGER ALL;
@@ -1854,14 +1840,6 @@ INSERT INTO karmatotalcache (id, person, karma_total) VALUES (59, 16, 113);
 
 
 ALTER TABLE karmatotalcache ENABLE TRIGGER ALL;
-
-
-ALTER TABLE label DISABLE TRIGGER ALL;
-
-INSERT INTO label (id, "schema", name, title, description) VALUES (1, 1, 'blah', 'blah', 'blah');
-
-
-ALTER TABLE label ENABLE TRIGGER ALL;
 
 
 ALTER TABLE "language" DISABLE TRIGGER ALL;
@@ -2948,13 +2926,6 @@ ALTER TABLE personalsourcepackagepublication DISABLE TRIGGER ALL;
 
 
 ALTER TABLE personalsourcepackagepublication ENABLE TRIGGER ALL;
-
-
-ALTER TABLE personlabel DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE personlabel ENABLE TRIGGER ALL;
 
 
 ALTER TABLE personlanguage DISABLE TRIGGER ALL;
@@ -7925,13 +7896,6 @@ ALTER TABLE productcvsmodule DISABLE TRIGGER ALL;
 ALTER TABLE productcvsmodule ENABLE TRIGGER ALL;
 
 
-ALTER TABLE productlabel DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE productlabel ENABLE TRIGGER ALL;
-
-
 ALTER TABLE productrelease DISABLE TRIGGER ALL;
 
 INSERT INTO productrelease (id, datereleased, version, codename, description, changelog, "owner", summary, productseries, manifest, datecreated) VALUES (1, '2004-06-28 00:00:00', '1.0.0', 'First Stable Release', '', '', 12, 'After four years of work the Mozilla project makes its first public stable release. Mozilla 1.0.0 is a major milestone in open source history.', 2, 4, '2005-06-06 08:59:51.930201');
@@ -8308,22 +8272,6 @@ INSERT INTO revisionparent (id, "sequence", revision, parent_id) VALUES (10, 1, 
 
 
 ALTER TABLE revisionparent ENABLE TRIGGER ALL;
-
-
-ALTER TABLE "schema" DISABLE TRIGGER ALL;
-
-INSERT INTO "schema" (id, name, title, description, "owner", extensible) VALUES (1, 'mark', 'TITLE', 'description', 1, true);
-INSERT INTO "schema" (id, name, title, description, "owner", extensible) VALUES (2, 'schema', 'SCHEMA', 'description', 1, true);
-INSERT INTO "schema" (id, name, title, description, "owner", extensible) VALUES (3, 'trema', 'XCHEMA', 'description', 1, true);
-INSERT INTO "schema" (id, name, title, description, "owner", extensible) VALUES (4, 'enema', 'ENHEMA', 'description', 1, true);
-
-
-ALTER TABLE "schema" ENABLE TRIGGER ALL;
-
-
-
-
-
 
 
 ALTER TABLE section DISABLE TRIGGER ALL;
@@ -9278,20 +9226,6 @@ INSERT INTO ticketsubscription (id, ticket, person) VALUES (6, 11, 12);
 
 
 ALTER TABLE ticketsubscription ENABLE TRIGGER ALL;
-
-
-ALTER TABLE translationeffort DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE translationeffort ENABLE TRIGGER ALL;
-
-
-ALTER TABLE translationeffortpotemplate DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE translationeffortpotemplate ENABLE TRIGGER ALL;
 
 
 ALTER TABLE translationgroup DISABLE TRIGGER ALL;
