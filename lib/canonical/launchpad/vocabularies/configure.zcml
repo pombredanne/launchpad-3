@@ -256,6 +256,11 @@
     />
 
   <vocabulary
+    name="RevisionControlSystems"
+    factory="canonical.launchpad.vocabularies.RevisionControlSystemsVocabulary"
+    />
+
+  <vocabulary
     name="ShipItFlavour"
     factory="canonical.launchpad.vocabularies.ShipItFlavourVocabulary"
     />

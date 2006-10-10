@@ -197,7 +197,6 @@ COMMENT ON COLUMN Product.reviewed IS 'Whether or not someone at Canonical has r
 COMMENT ON COLUMN Product.active IS 'Whether or not this product should be considered active.';
 COMMENT ON COLUMN Product.translationgroup IS 'The TranslationGroup that is responsible for translations for this product. Note that the Product may be part of a Project which also has a TranslationGroup, in which case the translators from both the product and project translation group have permission to edit the translations of this product.';
 COMMENT ON COLUMN Product.translationpermission IS 'The level of openness of this product\'s translation process. The enum lists different approaches to translation, from the very open (anybody can edit any translation in any language) to the completely closed (only designated translators can make any changes at all).';
-COMMENT ON COLUMN Product.releaseroot IS 'The URL to the directory which holds upstream releases for this product. This allows us to monitor the upstream site and detect new upstream release tarballs.  This URL is used when the associated ProductSeries does not have a URL to use. It is also used to find files outside of any registered series.';
 COMMENT ON COLUMN Product.calendar IS 'The calendar associated with this product.';
 COMMENT ON COLUMN Product.official_rosetta IS 'Whether or not this product upstream uses Rosetta for its official translation team and coordination. This is a useful indicator in terms of whether translations in Rosetta for this upstream will quickly move upstream.';
 COMMENT ON COLUMN Product.official_malone IS 'Whether or not this product upstream uses Malone for an official bug tracker. This is useful to help indicate whether or not people are likely to pick up on bugs registered in Malone.';
@@ -247,12 +246,9 @@ COMMENT ON COLUMN ProductSeries.svnrepository IS 'The URL of the SVN branch
 where the upstream productseries code can be found. This single URL is the
 equivalent of the cvsroot, cvsmodule and cvsbranch for CVS. Only used if
 rcstype is SVN.';
-COMMENT ON COLUMN ProductSeries.releaseroot IS 'The URL to the directory
-which holds upstream releases for this productseries. This allows us to
-monitor the upstream site and detect new upstream release tarballs.';
 COMMENT ON COLUMN ProductSeries.releasefileglob IS 'A fileglob that lets us
-see which files in the releaseroot directory are potentially new upstream
-tarball releases. For example: linux-*.*.*.gz.';
+see which URLs are potentially new upstream tarball releases. For example:
+http://ftp.gnu.org/gnu/libtool/libtool-1.5.*.gz.';
 COMMENT ON COLUMN ProductSeries.releaseverstyle IS 'An enum giving the style
 of this product series release version numbering system.  The options are
 documented in dbschema.UpstreamReleaseVersionStyle.  Most applications use
