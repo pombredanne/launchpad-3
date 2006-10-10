@@ -8,8 +8,8 @@
 <facet facet="support">
 
   <browser:page
-      for="canonical.launchpad.interfaces.IPerson"
-      class="canonical.launchpad.browser.TicketTargetView"
+      for="canonical.launchpad.interfaces.ITicketActor"
+      class="canonical.launchpad.browser.TicketActorLatestTicketsView"
       name="+portlet-latesttickets"
       permission="zope.Public"
       template="../templates/tickettarget-portlet-latesttickets.pt" />
@@ -39,6 +39,11 @@
         name="+subscribedtickets"
         template="../templates/tickettarget-tickets.pt" />
   </browser:pages>
+
+  <browser:menus
+    module="canonical.launchpad.browser.ticketactor"
+    classes="TicketActorSupportMenu" />
+
 </facet>
 
 </configure>

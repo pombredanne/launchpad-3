@@ -11,7 +11,6 @@ __all__ = [
     'PersonBranchesMenu',
     'PersonBugsMenu',
     'PersonSpecsMenu',
-    'PersonSupportMenu',
     'PersonOverviewMenu',
     'TeamOverviewMenu',
     'BaseListView',
@@ -59,6 +58,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
+from canonical.launchpad.browser.ticketactor import TicketActorFacetMixin
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
@@ -202,7 +202,7 @@ class PeopleContextMenu(ContextMenu):
         return Link('+adminrequestmerge', text, icon='edit')
 
 
-class PersonFacets(StandardLaunchpadFacets):
+class PersonFacets(TicketActorFacetMixin, StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IPerson."""
 
     usedfor = IPerson
@@ -220,13 +220,6 @@ class PersonFacets(StandardLaunchpadFacets):
         summary = (
             'Bug reports that %s is involved with' % self.context.browsername)
         return Link('+assignedbugs', text, summary)
-
-    def support(self):
-        text = 'Support'
-        summary = (
-            'Support requests that %s is involved with' %
-            self.context.browsername)
-        return Link('+tickets', text, summary)
 
     def specifications(self):
         text = 'Features'
@@ -373,29 +366,6 @@ class PersonSpecsMenu(ApplicationMenu):
         text = 'Roadmap'
         summary = 'Show recommended sequence of feature implementation'
         return Link('+roadmap', text, summary, icon='info')
-
-
-class PersonSupportMenu(ApplicationMenu):
-
-    usedfor = IPerson
-    facet = 'support'
-    links = ['created', 'assigned', 'answered', 'subscribed']
-
-    def created(self):
-        text = 'Requests Made'
-        return Link('+createdtickets', text, icon='ticket')
-
-    def assigned(self):
-        text = 'Requests Assigned'
-        return Link('+assignedtickets', text, icon='ticket')
-
-    def answered(self):
-        text = 'Requests Answered'
-        return Link('+answeredtickets', text, icon='ticket')
-
-    def subscribed(self):
-        text = 'Requests Subscribed'
-        return Link('+subscribedtickets', text, icon='ticket')
 
 
 class CommonMenuLinks:
@@ -1939,7 +1909,7 @@ class AdminRequestPeopleMergeView(LaunchpadView):
     """The view for the page where an admin can merge two accounts."""
 
     def initialize(self):
-        self.errormessages = [] 
+        self.errormessages = []
         self.shouldShowConfirmationPage = False
         setUpWidgets(self, IAdminRequestPeopleMerge, IInputWidget)
 
@@ -1955,11 +1925,11 @@ class AdminRequestPeopleMergeView(LaunchpadView):
 
             if self.dupe_account == self.target_account:
                 self.errormessages.append(_(
-                    "You can't merge %s into itself." 
+                    "You can't merge %s into itself."
                     % self.dupe_account.name))
                 return
 
-            emailset = getUtility(IEmailAddressSet) 
+            emailset = getUtility(IEmailAddressSet)
             self.emails = emailset.getByPerson(self.dupe_account)
             # display dupe_account email addresses and confirmation page
             self.shouldShowConfirmationPage = True
@@ -1975,10 +1945,10 @@ class AdminRequestPeopleMergeView(LaunchpadView):
         try:
             account = widget.getInputValue()
         except WidgetInputError:
-            self.errormessages.append(_("You must choose an account.")) 
+            self.errormessages.append(_("You must choose an account."))
             return
         except ConversionError:
-            self.errormessages.append(_("%s is an invalid account." % name)) 
+            self.errormessages.append(_("%s is an invalid account." % name))
             return
         return account
 
@@ -1990,7 +1960,7 @@ class AdminRequestPeopleMergeView(LaunchpadView):
         target_name = self.request.form.get('target_name')
 
         self.dupe_account = personset.getByName(dupe_name)
-        self.target_account = personset.getByName(target_name) 
+        self.target_account = personset.getByName(target_name)
 
         emails = emailset.getByPerson(self.dupe_account)
         if emails:
