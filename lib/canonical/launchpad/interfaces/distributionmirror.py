@@ -103,8 +103,8 @@ class IDistributionMirror(Interface):
         description=_(
             'Choose Release if this mirror contains CD images of any of the '
             'various releases of this distribution, or choose Archive if this '
-            'mirror contains packages for this distributin and is meant to be '
-            'used in conjunction with apt.'),
+            'mirror contains packages for this distribution and is meant to '
+            'be used in conjunction with apt.'),
         vocabulary='MirrorContent')
     official_candidate = Bool(
         title=_('Apply to be an official mirror of this distribution'),
