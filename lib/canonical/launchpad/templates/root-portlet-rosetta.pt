@@ -1,5 +1,5 @@
   <div class="portlet">
-    <h4>Translating applications:</h4>
+    <h2>Translating applications</h2>
 
     <div class="portletBody portletContent" i18n:translate="rosetta-blurb">
       <p>

@@ -833,14 +833,14 @@ class CommandRunner:
 
         # check action availability,
         try:
-            queue_action = queue_actions[action]
+            queue_action_class = queue_actions[action]
         except KeyError:
             raise CommandRunnerError('Unknown Action: %s' % action)
 
         # perform the required action on queue.
         try:
             # be sure to send every args via kargs
-            queue_action_class = queue_action(
+            queue_action  = queue_action_class(
                 distribution_name=self.distribution_name,
                 suite_name=self.suite_name,
                 announcelist=self.announcelist,
@@ -849,9 +849,9 @@ class CommandRunner:
                 display=self.display,
                 terms=arguments,
                 exact_match=exact_match)
-            queue_action_class.initialize()
-            queue_action_class.run()
+            queue_action.initialize()
+            queue_action.run()
         except QueueActionError, info:
             raise CommandRunnerError(info)
 
-        return queue_action_class
+        return queue_action

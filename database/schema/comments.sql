@@ -197,7 +197,6 @@ COMMENT ON COLUMN Product.reviewed IS 'Whether or not someone at Canonical has r
 COMMENT ON COLUMN Product.active IS 'Whether or not this product should be considered active.';
 COMMENT ON COLUMN Product.translationgroup IS 'The TranslationGroup that is responsible for translations for this product. Note that the Product may be part of a Project which also has a TranslationGroup, in which case the translators from both the product and project translation group have permission to edit the translations of this product.';
 COMMENT ON COLUMN Product.translationpermission IS 'The level of openness of this product\'s translation process. The enum lists different approaches to translation, from the very open (anybody can edit any translation in any language) to the completely closed (only designated translators can make any changes at all).';
-COMMENT ON COLUMN Product.releaseroot IS 'The URL to the directory which holds upstream releases for this product. This allows us to monitor the upstream site and detect new upstream release tarballs.  This URL is used when the associated ProductSeries does not have a URL to use. It is also used to find files outside of any registered series.';
 COMMENT ON COLUMN Product.calendar IS 'The calendar associated with this product.';
 COMMENT ON COLUMN Product.official_rosetta IS 'Whether or not this product upstream uses Rosetta for its official translation team and coordination. This is a useful indicator in terms of whether translations in Rosetta for this upstream will quickly move upstream.';
 COMMENT ON COLUMN Product.official_malone IS 'Whether or not this product upstream uses Malone for an official bug tracker. This is useful to help indicate whether or not people are likely to pick up on bugs registered in Malone.';
@@ -206,11 +205,6 @@ COMMENT ON COLUMN Product.security_contact IS 'The person or team who handles se
 COMMENT ON COLUMN Product.driver IS 'This is a driver for the overall product. This driver will be able to approve nominations of bugs and specs to any series in the product, including backporting to old stable series. You want the smallest group of "overall drivers" here, because you can add specific drivers to each series individually.';
 /*COMMENT ON COLUMN Product.bugtracker IS 'The external bug tracker that is used to track bugs primarily for this product, if it\'s different from the project bug tracker.'; */
 COMMENT ON COLUMN Product.development_focus IS 'The product series that is the current focus of development.';
-
-/* ProductLabel */
-
-COMMENT ON TABLE ProductLabel IS 'The Product label table. We have not yet clearly defined the nature of product labels, so please do not refer to this table yet. If you have a need for tags or labels on Products, please contact Mark.';
-
 
 -- ProductRelease
 
@@ -252,12 +246,9 @@ COMMENT ON COLUMN ProductSeries.svnrepository IS 'The URL of the SVN branch
 where the upstream productseries code can be found. This single URL is the
 equivalent of the cvsroot, cvsmodule and cvsbranch for CVS. Only used if
 rcstype is SVN.';
-COMMENT ON COLUMN ProductSeries.releaseroot IS 'The URL to the directory
-which holds upstream releases for this productseries. This allows us to
-monitor the upstream site and detect new upstream release tarballs.';
 COMMENT ON COLUMN ProductSeries.releasefileglob IS 'A fileglob that lets us
-see which files in the releaseroot directory are potentially new upstream
-tarball releases. For example: linux-*.*.*.gz.';
+see which URLs are potentially new upstream tarball releases. For example:
+http://ftp.gnu.org/gnu/libtool/libtool-1.5.*.gz.';
 COMMENT ON COLUMN ProductSeries.releaseverstyle IS 'An enum giving the style
 of this product series release version numbering system.  The options are
 documented in dbschema.UpstreamReleaseVersionStyle.  Most applications use
@@ -664,8 +655,8 @@ COMMENT ON COLUMN DistroArchRelease.official IS 'Whether or not this architectur
 COMMENT ON COLUMN DistroArchRelease.package_count IS 'A cache of the number of binary packages published in this distro arch release. The count only includes packages published in the release pocket.';
 
 -- LauncpadDatabaseRevision
-COMMENT ON TABLE LaunchpadDatabaseRevision IS 'This table has a single row which specifies the most recently applied patch number.';
-COMMENT ON COLUMN LaunchpadDatabaseRevision.major IS 'Major number. This is incremented every update to production.';
+COMMENT ON TABLE LaunchpadDatabaseRevision IS 'This table contains a list of the database patches that have been successfully applied to this database.';
+COMMENT ON COLUMN LaunchpadDatabaseRevision.major IS 'Major number. This is the version of the baseline schema the patch was made agains.';
 COMMENT ON COLUMN LaunchpadDatabaseRevision.minor IS 'Minor number. Patches made during development each increment the minor number.';
 COMMENT ON COLUMN LaunchpadDatabaseRevision.patch IS 'The patch number will hopefully always be ''0'', as it exists to support emergency patches made to the production server. eg. If production is running ''4.0.0'' and needs to have a patch applied ASAP, we would create a ''4.0.1'' patch and roll it out. We then may need to refactor all the existing ''4.x.0'' patches.';
 
@@ -1290,12 +1281,9 @@ COMMENT ON COLUMN DistributionMirror.owner IS 'The owner of the mirror.';
 COMMENT ON COLUMN DistributionMirror.speed IS 'The speed of the mirror\'s Internet link.';
 COMMENT ON COLUMN DistributionMirror.country IS 'The country where the mirror is located.';
 COMMENT ON COLUMN DistributionMirror.content IS 'The content that is mirrored.';
-COMMENT ON COLUMN DistributionMirror.file_list IS 'A file containing the list of files the mirror contains. Used only in case the mirror\'s pulse_type is PULL';
 COMMENT ON COLUMN DistributionMirror.official_candidate IS 'Is the mirror a candidate for becoming an official mirror?';
 COMMENT ON COLUMN DistributionMirror.official_approved IS 'Is the mirror approved as one of the official ones?';
 COMMENT ON COLUMN DistributionMirror.enabled IS 'Is this mirror enabled?';
-COMMENT ON COLUMN DistributionMirror.pulse_type IS 'The method we should use to check if the mirror is up to date.';
-COMMENT ON COLUMN DistributionMirror.pulse_source IS 'A URL that we will use to check if the mirror is up to date, when the pulse_type is PULL.';
 
 -- MirrorDistroArchRelease
 COMMENT ON TABLE MirrorDistroArchRelease IS 'The mirror of the packages of a given Distro Arch Release.';
