@@ -10,7 +10,7 @@ import operator
 
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    IProductSeriesSourceSet, IBazaarApplication, IProductSet)
+    IProductSeriesSourceSet, IBazaarApplication, IProductSet, TooManyItems)
 from canonical.lp.dbschema import ImportStatus
 from canonical.launchpad.webapp import (
     Navigation, stepto, enabled_with_permission, ApplicationMenu, Link)
@@ -46,6 +46,8 @@ class BazaarApplicationView:
     def branches(self):
         """List of all branches in the system."""
         branches = self.context.all
+        if branches.count() > 10000:
+            raise TooManyItems
         return sorted(branches, key=operator.attrgetter('sort_key'))
 
     def import_count(self):
