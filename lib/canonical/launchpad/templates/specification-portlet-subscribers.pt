@@ -1,7 +1,6 @@
 <tal:subs define="subscriptions context/subscriptions">
   <div tal:condition="subscriptions" class="portlet">
     <h2>Subscribers</h2>
-
       <tal:comment replace="nothing">
         This is messy, but the portlet has to convey both subscribers and
         whether or not they are essential. Also, in the case where a person
