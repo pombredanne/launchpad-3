@@ -1,6 +1,6 @@
 <div class="portlet">
 
-    <h4>Also reported in:</h4>
+    <h2>Also reported in</h2>
 
     <div class="portletBody"
          tal:define="other_occurrences view/alsoReportedIn;">

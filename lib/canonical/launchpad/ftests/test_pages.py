@@ -7,6 +7,7 @@ __metaclass__ = type
 
 import doctest
 import os
+import re
 import unittest
 
 from BeautifulSoup import BeautifulSoup
@@ -14,12 +15,15 @@ from BeautifulSoup import BeautifulSoup
 from canonical.functional import PageTestDocFileSuite, SpecialOutputChecker
 from canonical.testing import PageTestLayer
 
+
 here = os.path.dirname(os.path.realpath(__file__))
+
 
 def find_tag_by_id(content, id):
     """Find and return the tags with the given ID"""
     soup = BeautifulSoup(content)
     return soup.find(attrs={'id': id})
+
 
 def find_tags_by_class(content, class_):
     """Find and return the tags matching the given class(s)"""
@@ -31,13 +35,20 @@ def find_tags_by_class(content, class_):
     soup = BeautifulSoup(content)
     return soup.findAll(attrs={'class': class_matcher})
 
+
 def find_portlet(content, name):
-    """Find and return the portlet with the given title"""
+    """Find and return the portlet with the given title. Sequences of
+    whitespace are considered equivalent to one space, and beginning and
+    ending whitespace is also ignored.
+    """
+    whitespace_re = re.compile('\s+')
+    name = whitespace_re.sub(' ', name.strip())
     for portlet in find_tags_by_class(content, 'portlet'):
-        portlet_title = portlet.find('h4').renderContents()
-        if name == portlet_title.strip():
+        portlet_title = portlet.find('h2').renderContents()
+        if name == whitespace_re.sub(' ', portlet_title.strip()):
             return portlet
     return None
+
 
 def find_main_content(content):
     """Find and return the main content area of the page"""
@@ -46,6 +57,7 @@ def find_main_content(content):
     if tag:
         return tag
     return soup.find(attrs={'id': 'content'})
+
 
 def setUpGlobs(test):
     test.globs['find_tag_by_id'] = find_tag_by_id
@@ -56,7 +68,7 @@ def setUpGlobs(test):
 
 class PageStoryTestCase(unittest.TestCase):
     """A test case that represents a pagetest story
-    
+
     This is achieved by holding a testsuite for the story, and
     delegating responsiblity for most methods to it.
     We want this to be a TestCase instance and not a TestSuite
@@ -100,7 +112,7 @@ class PageStoryTestCase(unittest.TestCase):
         numberedfilenames = sorted(numberedfilenames)
         unnumberedfilenames = sorted(unnumberedfilenames)
         test_scripts = unnumberedfilenames + numberedfilenames
-    
+
         checker = SpecialOutputChecker()
         for leaf_filename in test_scripts:
             filename = os.path.join(storydir, leaf_filename)

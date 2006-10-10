@@ -19,10 +19,12 @@ from zope.event import notify
 from zope.formlib import form
 from zope.formlib.form import action, Widgets
 from zope.app.form import CustomWidgetFactory
+from zope.app.form.interfaces import IInputWidget
 
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.launchpad.event import SQLObjectModifiedEvent
+from canonical.launchpad.event import (
+    SQLObjectToBeModifiedEvent, SQLObjectModifiedEvent)
 
 # marker to represent "focus the first widget in the form"
 _first_widget_marker = object()
@@ -147,14 +149,25 @@ class LaunchpadFormView(LaunchpadView):
         self.errors.append(message)
 
     def _validate(self, action, data):
-        # Remove all the widgets that are not required and don't have
-        # any input. This is to prevent FormError from being raised when
-        # widgets are conditionally hidden on the page.
-        widgets = Widgets(
-            [(input, widget)
-             for input, widget in self.widgets.__iter_input_and_widget__()
-             if not input or widget.required or widget.hasInput()],
-            len(self.prefix)+1)
+        # XXXX 2006-09-26 jamesh
+
+        # If a form field is disabled, then no data will be sent back.
+        # getWidgetsData() raises an exception when this occurs, even
+        # if the field is not marked as required.
+        #
+        # To work around this, we pass a subset of widgets to
+        # getWidgetsData().  Reported as:
+        #     http://www.zope.org/Collectors/Zope3-dev/717
+        widgets = []
+        for input, widget in self.widgets.__iter_input_and_widget__():
+            if (input and IInputWidget.providedBy(widget) and
+                not widget.hasInput()):
+                if widget.context.required:
+                    self.setFieldError(widget.context.__name__,
+                                       'Required field is missing')
+            else:
+                widgets.append((input, widget))
+        widgets = form.Widgets(widgets, len(self.prefix)+1)
         for error in form.getWidgetsData(widgets, self.prefix, data):
             self.errors.append(error)
         for error in form.checkInvariants(self.form_fields, data):
@@ -244,6 +257,9 @@ class LaunchpadEditFormView(LaunchpadFormView):
         """
         context_before_modification = Snapshot(
             self.context, providing=providedBy(self.context))
+
+        notify(SQLObjectToBeModifiedEvent(self.context, data))
+
         if form.applyChanges(self.context, self.form_fields, data):
             field_names = [form_field.__name__
                            for form_field in self.form_fields]

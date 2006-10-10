@@ -1,7 +1,7 @@
 <div class="portlet">
 
-  <h4>"<span tal:replace="context/name">apache2</span>" source package in
-  <span tal:replace="context/distribution/name">ubuntu</span>:</h4>
+  <h2>"<span tal:replace="context/name">apache2</span>" source package in
+  <span tal:replace="context/distribution/name">ubuntu</span></h2>
 
   <div class="portletBody portletContent"
        tal:define="cr context/currentrelease">

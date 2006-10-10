@@ -146,13 +146,13 @@ class EnumValueAPI:
             return True
         else:
             # Check whether this was an allowed value for this dbschema.
-            schema = self.item.schema
+            schema_items = self.item.schema_items
             try:
-                schema.items[name]
+                schema_items[name]
             except KeyError:
                 raise TraversalError(
                     'The %s dbschema does not have a value %s.' %
-                    (schema.__name__, name))
+                    (self.item.schema_name, name))
             return False
 
 

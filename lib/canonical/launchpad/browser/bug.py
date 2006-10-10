@@ -5,7 +5,7 @@ __metaclass__ = type
 __all__ = [
     'BugSetNavigation',
     'BugView',
-    'BugSetView',
+    'MaloneView',
     'BugEditView',
     'BugRelatedObjectEditView',
     'BugAlsoReportInView',
@@ -24,7 +24,6 @@ import cgi
 import operator
 import urllib
 
-from zope.app.form.interfaces import WidgetsError
 from zope.app.form.browser import TextWidget
 from zope.app.form.interfaces import InputErrors, WidgetsError
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
@@ -33,21 +32,19 @@ from zope.event import notify
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.webapp import (
-    action, canonical_url, ContextMenu, LaunchpadFormView, LaunchpadView,
-    Link, Navigation, structured)
 from canonical.launchpad.interfaces import (
     IAddBugTaskForm, IBug, IBugSet, IBugTaskSet, IBugWatchSet,
     ICanonicalUrlData, IDistributionSourcePackage, IDistroBugTask,
     IDistroReleaseBugTask, ILaunchBag, IUpstreamBugTask,
-    NoBugTrackerFound, NotFoundError, UnexpectedFormData,
+    NoBugTrackerFound, NotFoundError, UnrecognizedBugTrackerURL,
     valid_distrotask, valid_upstreamtask)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import check_permission
-from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
-    action, custom_widget, GeneralFormView, LaunchpadEditFormView, stepthrough)
+    custom_widget, action, canonical_url, ContextMenu,
+    LaunchpadFormView, LaunchpadView,LaunchpadEditFormView, stepthrough,
+    Link, Navigation, structured)
 from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
@@ -175,6 +172,31 @@ class BugContextMenu(ContextMenu):
             IDistroReleaseBugTask.providedBy(self.context))
         text = 'Backport Fix to Releases'
         return Link('+backport', text, icon='bug', enabled=enabled)
+
+
+
+class MaloneView(LaunchpadView):
+    """The default view for /malone.
+
+    Essentially, this exists only to allow forms to post IDs here and be
+    redirected to the right place.
+    """
+    # Test: standalone/xx-slash-malone-slash-bugs.txt
+    error_message = None
+    def initialize(self):
+        bug_id = self.request.form.get("id")
+        if not bug_id:
+            return
+        if bug_id.startswith("#"):
+            # Be nice to users and chop off leading hashes
+            bug_id = bug_id[1:]
+        try:
+            bug = getUtility(IBugSet).getByNameOrID(bug_id)
+        except NotFoundError:
+            self.error_message = "Bug %r is not registered." % bug_id
+        else:
+            return self.request.response.redirect(canonical_url(bug))
+
 
 
 class BugView:
@@ -464,8 +486,10 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
         bug_url = data.get('bug_url')
         if bug_url and target.official_malone:
             self.addError(
-                "%s uses Malone as its bug tracker, and it can't at the"
-                " same time be linked to a remote bug." % cgi.escape(
+                "Bug watches can not be added for %s, as it uses Malone"
+                " as its official bug tracker. Alternatives are to add a"
+                " watch for another product, or a comment containing a"
+                " URL to the related bug report." % cgi.escape(
                     target.displayname))
 
         if target.official_malone:
@@ -474,11 +498,14 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
             return
 
         if bug_url is not None:
-            # An URL was entered instead of the bug id, try to find out
-            # which bug and bug tracker it's referring to.
+            # Try to find out which bug and bug tracker the URL is
+            # referring to.
             bugwatch_set = getUtility(IBugWatchSet)
             try:
-                remote_data = bugwatch_set.extractBugTrackerAndBug(bug_url)
+                # Assign attributes, so that the action handler can
+                # access the extracted bugtracker and bug.
+                self.extracted_bugtracker, self.extracted_bug = (
+                    bugwatch_set.extractBugTrackerAndBug(bug_url))
             except NoBugTrackerFound, error:
                 # XXX: The user should be able to press a button here in
                 #      order to register the tracker.
@@ -486,20 +513,15 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
                 self.setFieldError(
                     'bug_url',
                     "The bug tracker at %s isn't registered in Launchpad."
-                    ' You have to'
+                    ' You need to'
                     ' <a href="/malone/bugtrackers/+newbugtracker">register'
                     ' it</a> before you can link any bugs to it.' % (
                         cgi.escape(error.base_url)))
-            else:
-                if remote_data is None:
-                    self.setFieldError(
-                        'bug_url',
-                        "Launchpad doesn't know what kind of bug tracker"
-                        ' this URL is pointing at.')
-                else:
-                    # Assign attributes, so that the action handler can
-                    # access the extracted bugtracker and bug.
-                    self.extracted_bugtracker, self.extracted_bug = remote_data
+            except UnrecognizedBugTrackerURL:
+                self.setFieldError(
+                    'bug_url',
+                    "Launchpad doesn't know what kind of bug tracker"
+                    ' this URL is pointing at.')
 
         if len(self.errors) > 0:
             # The checks below should be made only if the form doesn't
@@ -608,20 +630,6 @@ class BugSubscriberPortletView(LaunchpadView):
         return [subscriber
                 for subscriber in bug.getIndirectSubscribers()
                 if not bug.isSubscribedToDupes(subscriber)]
-
-
-class BugSetView:
-    """The default view for /malone/bugs.
-
-    Essentially, this exists only to allow forms to post IDs here and be
-    redirected to the right place.
-    """
-
-    def redirectToBug(self):
-        bug_id = self.request.form.get("id")
-        if bug_id:
-            return self.request.response.redirect(bug_id)
-        return self.request.response.redirect("/malone")
 
 
 class BugEditViewBase(LaunchpadEditFormView):
