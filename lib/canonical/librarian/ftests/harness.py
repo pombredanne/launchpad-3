@@ -63,9 +63,7 @@ class LibrarianTestSetup(TacTestSetup):
 
     def clear(self):
         """Clear all files from the Librarian"""
-        # Make this smarter if our tests create huge numbers of files
-        if os.path.isdir(os.path.join(self.root, '00')):
-            shutil.rmtree(os.path.join(self.root, '00'))
+        cleanupLibrarianFiles()
 
     @property
     def root(self):
@@ -99,9 +97,9 @@ def fillLibrarianFile(fileid, content='Fake Content'):
     libfile.write(content)
     libfile.close()
 
-def removeLibrarianFile(fileid):
-    """Remove a pre-filled sampledata librarian file from disk."""
-    filepath = os.path.join(
-        config.librarian.server.root, _relFileLocation(fileid))
-    if os.path.exists(filepath):
-        os.remove(filepath)
+def cleanupLibrarianFiles():
+    """Remove all librarian files present in disk."""
+    # Make this smarter if our tests create huge numbers of files
+    root = config.librarian.server.root
+    if os.path.isdir(os.path.join(root, '00')):
+        shutil.rmtree(os.path.join(root, '00'))

@@ -27,9 +27,9 @@ An upload can contain a combination of content types, organized by:
 Each of those instances points back to a DistroReleaseQueue entry
 (parent) and to its type target:
 
- * DRQS -> SPR,
+ * DRQS -> SourcePackageRelease (SPR),
  * DRQB -> Build,
- * DRQC -> LFA.
+ * DRQC -> LibraryFileAlias (LFA).
 
 The combination is assured by the upload policy used (see
 nascentupload.txt), some of them allow source + binaries, other only

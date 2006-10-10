@@ -16,14 +16,14 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.scripts.queue import (
     CommandRunner, CommandRunnerError, name_queue_map)
 from canonical.librarian.ftests.harness import (
-    fillLibrarianFile, removeLibrarianFile)
+    fillLibrarianFile, cleanupLibrarianFiles)
 from canonical.lp.dbschema import (
     PackagePublishingStatus, PackagePublishingPocket,
     DistroReleaseQueueStatus)
 from canonical.testing import LaunchpadZopelessLayer
 
 
-class TestQueueBase:
+class TestQueueBase(TestCase):
     """Base methods for queue tool test classes."""
 
     def _test_display(self, text):
@@ -49,7 +49,7 @@ class TestQueueBase:
         return runner.execute(argument.split())
 
 
-class TestQueueTool(TestQueueBase, TestCase):
+class TestQueueTool(TestQueueBase):
     layer = LaunchpadZopelessLayer
     dbuser = config.uploadqueue.dbuser
 
@@ -59,7 +59,7 @@ class TestQueueTool(TestQueueBase, TestCase):
 
     def tearDown(self):
         """Remove test contents from disk."""
-        removeLibrarianFile(1)
+        cleanupLibrarianFiles()
 
     def testBrokenAction(self):
         """Check if an unknown action raises CommandRunnerError."""
@@ -201,19 +201,29 @@ class TestQueueTool(TestQueueBase, TestCase):
         Sampledata provides a duplication of cnews_1.0 in breezy-autotest
         UNAPPROVED queue.
 
-        1 Failed to accept both, only the oldest get accepted
-        2 Failed to re-accept the remaining item
-        3 Failed to re-accept the remaing item even when former is DONE
-        4 Successfully rejection of the remaining item
+        Step 1:  executing 'accept cnews in unapproved queue' with duplicate
+        cnews items in the UNAPPROVED queue, results in the oldest being
+        accepted and the newer one remaining UNAPPROVED (and displaying
+        an error about it to the user).
+
+        Step 2: executing 'accept cnews in unapproved queue' with duplicate
+        cnews items in the UNAPPROVED and ACCEPTED queues has no effect on
+        the queues, and again displays an error to the user.
+
+        Step 3: executing 'accept cnews in unapproved queue' with duplicate
+        cnews items in the UNAPPROVED and DONE queues behaves the same as 2.
+
+        Step 4: the remaining duplicated cnews item in UNAPPROVED queue can
+        only be rejected.
         """
         breezy_autotest = getUtility(
             IDistributionSet)['ubuntu']['breezy-autotest']
 
-        # 'cnews' upload duplication in UNAPPROVED
+        # certify we have a 'cnews' upload duplication in UNAPPROVED
         self.assertQueueLength(
             2, breezy_autotest, DistroReleaseQueueStatus.UNAPPROVED, "cnews")
 
-        # try to accept both
+        # Step 1: try to accept both
         queue_action = self.execute_command(
             'accept cnews', queue_name='unapproved',
             suite_name='breezy-autotest')
@@ -230,7 +240,7 @@ class TestQueueTool(TestQueueBase, TestCase):
         self.assertQueueLength(
             1, breezy_autotest, DistroReleaseQueueStatus.UNAPPROVED, "cnews")
 
-        # try to accept the remaining item in UNAPPROVED.
+        # Step 2: try to accept the remaining item in UNAPPROVED.
         queue_action = self.execute_command(
             'accept cnews', queue_name='unapproved',
             suite_name='breezy-autotest')
@@ -250,7 +260,7 @@ class TestQueueTool(TestQueueBase, TestCase):
         self.assertQueueLength(
             1, breezy_autotest, DistroReleaseQueueStatus.DONE, "cnews")
 
-        # try to accept the remaining item in UNAPPROVED with the
+        # Step 3: try to accept the remaining item in UNAPPROVED with the
         # duplication already in DONE
         queue_action = self.execute_command(
             'accept cnews', queue_name='unapproved',
@@ -263,7 +273,7 @@ class TestQueueTool(TestQueueBase, TestCase):
         self.assertQueueLength(
             1, breezy_autotest, DistroReleaseQueueStatus.UNAPPROVED, "cnews")
 
-        # The only possible destiny for the remaining item it REJECT
+        # Step 4: The only possible destiny for the remaining item it REJECT
         queue_action = self.execute_command(
             'reject cnews', queue_name='unapproved',
             suite_name='breezy-autotest')
@@ -273,7 +283,7 @@ class TestQueueTool(TestQueueBase, TestCase):
             1, breezy_autotest, DistroReleaseQueueStatus.REJECTED, "cnews")
 
 
-class TestQueueToolInJail(TestQueueBase, TestCase):
+class TestQueueToolInJail(TestQueueBase):
     layer = LaunchpadZopelessLayer
     dbuser = config.uploadqueue.dbuser
 
@@ -281,10 +291,10 @@ class TestQueueToolInJail(TestQueueBase, TestCase):
         """Create contents in disk for librarian sampledata.
 
         Setup and chdir into a temp directory, a jail, where we can
-        control de file creation properly
+        control the file creation properly
         """
-        fillLibrarianFile(1)
-        fillLibrarianFile(52)
+        fillLibrarianFile(1, content='One')
+        fillLibrarianFile(52, content='Fifty-Two')
         self._home = os.path.abspath('')
         self._jail = tempfile.mkdtemp()
         os.chdir(self._jail)
@@ -295,9 +305,8 @@ class TestQueueToolInJail(TestQueueBase, TestCase):
         chdir back to the previous path (home) and remove the temp
         directory used as jail.
         """
-        removeLibrarianFile(1)
-        removeLibrarianFile(52)
         os.chdir(self._home)
+        cleanupLibrarianFiles()
         shutil.rmtree(self._jail)
 
     def _listfiles(self):
@@ -318,9 +327,15 @@ class TestQueueToolInJail(TestQueueBase, TestCase):
         self.assertEqual(
             ['mozilla-firefox_0.9_i386.changes'], self._listfiles())
 
+        # acquire last modification time
+        mtime = os.stat(self._listfiles()[0]).st_mtime
+
         # fetch will raise and not overwrite the file in disk
         self.assertRaises(
             CommandRunnerError, self.execute_command, 'fetch 1')
+
+        # check if the file wasn't modified (mtime continues the same)
+        self.assertEqual(mtime, os.stat(self._listfiles()[0]).st_mtime)
 
     def testFetchActionByNameDoNotOverwriteFilesystem(self):
         """Same as testFetchActionByIDDoNotOverwriteFilesystem
