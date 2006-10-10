@@ -10,8 +10,7 @@ from zope.component import getUtility
 from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.interfaces import (
     IAuthorization, IHasOwner, IPerson, ITeam, ISprintSpecification,
-    IDistribution, ITeamMembership, IProductSeriesSource, IProductSet,
-    IProductSeriesSourceAdmin, IMilestone, IBug, ITranslator,
+    IDistribution, ITeamMembership, IProductSet, IMilestone, IBug, ITranslator,
     IProduct, IProductSeries, IPOTemplate, IPOFile, IPOTemplateName,
     IPOTemplateNameSet, ISourcePackage, ILaunchpadCelebrities, IDistroRelease,
     IBugTracker, IBugAttachment, IPoll, IPollSubset, IPollOption,
@@ -189,9 +188,9 @@ class EditSpecificationSubscription(AuthorizationBase):
                 user.inTeam(self.obj.specification.approver) or
                 user.inTeam(admins))
 
-class AdminSeriesSourceByVCSImports(AuthorizationBase):
+class AdminSeriesByVCSImports(AuthorizationBase):
     permission = 'launchpad.Admin'
-    usedfor = IProductSeriesSourceAdmin
+    usedfor = IProductSeries
 
     def checkAuthenticated(self, user):
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
@@ -251,7 +250,7 @@ class AdminShippingRequestSetByShipItAdmins(AdminShippingRequestByShipItAdmins):
 
 class EditSeriesSourceByVCSImports(AuthorizationBase):
     permission = 'launchpad.EditSource'
-    usedfor = IProductSeriesSource
+    usedfor = IProductSeries
 
     def checkAuthenticated(self, user):
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports

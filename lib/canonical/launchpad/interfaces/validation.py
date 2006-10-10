@@ -17,7 +17,6 @@ __all__ = [
     'valid_hackergotchi',
     'valid_unregistered_email',
     'validate_distribution_mirror_schema',
-    'valid_distributionmirror_file_list',
     'validate_shipit_recipientdisplayname',
     'validate_shipit_phone',
     'validate_shipit_city',
@@ -38,7 +37,6 @@ from textwrap import dedent
 from StringIO import StringIO
 
 from zope.component import getUtility
-from zope.app.content_types import guess_content_type
 from zope.app.form.interfaces import WidgetsError
 
 from canonical.launchpad import _
@@ -376,14 +374,6 @@ def valid_unregistered_email(email):
         raise LaunchpadValidationError(_(dedent("""
             %s isn't a valid email address.""" % email)))
 
-def valid_distributionmirror_file_list(file_list=None):
-    if file_list is not None:
-        content_type, dummy = guess_content_type(body=file_list)
-        if content_type != 'text/plain':
-            raise LaunchpadValidationError(
-                "The given file is not in plain text format.")
-    return True
-
 def validate_distribution_mirror_schema(form_values):
     """Perform schema validation according to IDistributionMirror constraints.
 
@@ -395,11 +385,10 @@ def validate_distribution_mirror_schema(form_values):
                   values suplied by the user.
     """
     errors = []
-    if not (form_values['http_base_url'] or form_values['ftp_base_url']
-            or form_values['rsync_base_url']):
+    if not (form_values['http_base_url'] or form_values['ftp_base_url']):
         errors.append(LaunchpadValidationError(_(
-            "All mirrors require at least one URL (HTTP, FTP or "
-            "Rsync) to be specified.")))
+            "All mirrors require at least an HTTP or FTP URL to be "
+            "specified.")))
 
     if errors:
         raise WidgetsError(errors)

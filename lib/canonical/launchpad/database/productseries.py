@@ -5,12 +5,10 @@ __metaclass__ = type
 __all__ = [
     'ProductSeries',
     'ProductSeriesSet',
-    'ProductSeriesSourceSet',
     ]
 
 
 import datetime
-import sets
 from warnings import warn
 
 from zope.interface import implements
@@ -19,8 +17,9 @@ from sqlobject import (
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.sqlbase import (
+    SQLBase, quote, sqlvalues)
 from canonical.launchpad.components.bugtarget import BugTargetBase
-
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtask import BugTaskSet
@@ -28,12 +27,8 @@ from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.specification import Specification
-from canonical.database.sqlbase import (
-    SQLBase, quote, sqlvalues)
-
 from canonical.launchpad.interfaces import (
-    IProductSeries, IProductSeriesSet, IProductSeriesSource,
-    IProductSeriesSourceAdmin, IProductSeriesSourceSet, NotFoundError)
+    IProductSeries, IProductSeriesSet,IProductSeriesSourceAdmin, NotFoundError)
 
 from canonical.lp.dbschema import (
     EnumCol, ImportStatus, PackagingType, RevisionControlSystems,
@@ -53,7 +48,7 @@ class ProductSeriesSet:
 
 class ProductSeries(SQLBase, BugTargetBase):
     """A series of product releases."""
-    implements(IProductSeries, IProductSeriesSource, IProductSeriesSourceAdmin)
+    implements(IProductSeries, IProductSeriesSourceAdmin)
     _table = 'ProductSeries'
 
     product = ForeignKey(dbName='product', foreignKey='Product', notNull=True)
@@ -80,9 +75,6 @@ class ProductSeries(SQLBase, BugTargetBase):
     # where are the tarballs released from this branch placed?
     cvstarfileurl = StringCol(default=None)
     svnrepository = StringCol(default=None)
-    # XXX bkrepository is in the data model but not here
-    #   -- matsubara, 2005-10-06
-    releaseroot = StringCol(default=None)
     releasefileglob = StringCol(default=None)
     releaseverstyle = StringCol(default=None)
     # key dates on the road to import happiness
@@ -415,12 +407,6 @@ class ProductSeriesSet:
         except SQLObjectNotFound:
             return default
 
-
-# XXX matsubara, 2005-11-30: This class should be merged with ProductSeriesSet
-# https://launchpad.net/products/launchpad-bazaar/+bug/5247
-class ProductSeriesSourceSet:
-    """See IProductSeriesSourceSet"""
-    implements(IProductSeriesSourceSet)
     def search(self, ready=None, text=None, forimport=None, importstatus=None,
                start=None, length=None):
         query, clauseTables = self._querystr(
@@ -446,7 +432,7 @@ class ProductSeriesSourceSet:
                          import status.
         """
         queries = []
-        clauseTables = sets.Set()
+        clauseTables = set()
         # deal with the cases which require project and product
         if ( ready is not None ) or text:
             if text:
@@ -481,7 +467,7 @@ class ProductSeriesSourceSet:
         return query, clauseTables
 
     def getByCVSDetails(self, cvsroot, cvsmodule, cvsbranch, default=None):
-        """See IProductSeriesSourceSet."""
+        """See IProductSeriesSet."""
         result = ProductSeries.selectOneBy(
             cvsroot=cvsroot, cvsmodule=cvsmodule, cvsbranch=cvsbranch)
         if result is None:
@@ -489,8 +475,9 @@ class ProductSeriesSourceSet:
         return result
 
     def getBySVNDetails(self, svnrepository, default=None):
-        """See IProductSeriesSourceSet."""
+        """See IProductSeriesSet."""
         result = ProductSeries.selectOneBy(svnrepository=svnrepository)
         if result is None:
             return default
         return result
+

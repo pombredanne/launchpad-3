@@ -6,6 +6,8 @@ __metaclass__ = type
 __all__ = ['TranslationGroupNavigation',
            'TranslationGroupSetNavigation',
            'TranslationGroupView',
+           'TranslationGroupSetContextMenu',
+           'TranslationGroupContextMenu',
            'TranslationGroupAddTranslatorView',
            'TranslationGroupSetAddView']
 
@@ -16,6 +18,7 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
 from zope.component import getUtility
 
+from canonical.launchpad.browser.launchpad import RosettaContextMenu
 from canonical.launchpad.interfaces import (
     ITranslationGroup, ITranslationGroupSet, ILanguageSet,
     IPersonSet, ILaunchBag, NotFoundError
@@ -31,6 +34,14 @@ class TranslationGroupNavigation(GetitemNavigation):
 class TranslationGroupSetNavigation(GetitemNavigation):
 
     usedfor = ITranslationGroupSet
+
+
+class TranslationGroupSetContextMenu(RosettaContextMenu):
+    usedfor = ITranslationGroupSet
+
+
+class TranslationGroupContextMenu(RosettaContextMenu):
+    usedfor = ITranslationGroup
 
 
 class TranslationGroupView:

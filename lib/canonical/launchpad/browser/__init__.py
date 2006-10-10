@@ -11,6 +11,7 @@ from canonical.launchpad.browser.binarypackagerelease import *
 from canonical.launchpad.browser.bounty import *
 from canonical.launchpad.browser.bountysubscription import *
 from canonical.launchpad.browser.branch import *
+from canonical.launchpad.browser.branchref import *
 from canonical.launchpad.browser.branchtarget import *
 from canonical.launchpad.browser.bug import *
 from canonical.launchpad.browser.buglinktarget import *
