@@ -1,9 +1,8 @@
-<div
-  tal:define="fbreqs context/feedbackrequests"
-  tal:condition="fbreqs"
-  class="portlet"
->
-  <h2>Feedback requests</h2>
+<tal:fbreqs define="fbreqs context/feedbackrequests">
+  <div tal:condition="fbreqs" class="portlet">
+    <h2>Feedback requests</h2>
+
+    <div class="portletBody portletContent">
 
       <ul class="info">
         <li tal:repeat="fbreq fbreqs">
@@ -17,5 +16,6 @@
           <i>No feedback requests outstanding.</i>
         </li>
       </ul>
-
-</div>
+    </div>
+  </div>
+</tal:fbreqs>

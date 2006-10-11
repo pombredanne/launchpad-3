@@ -79,7 +79,7 @@ to it.
 
   >>> browser.open('http://launchpad.dev/products/firefox/+ticket/2')
   >>> browser.contents
-  '...<h4>Related bugs:</h4>...'
+  '...<h2>Related bugs</h2>...'
   >>> browser.getLink('Create Bug Report')
   Traceback (most recent call last):
     ..

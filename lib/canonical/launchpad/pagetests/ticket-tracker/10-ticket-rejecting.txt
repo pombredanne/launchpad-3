@@ -46,7 +46,7 @@ should see the "Show History" action item.
     True
     >>> 'Open' in creator.contents
     True
-    >>> 'This request was reopened:' in creator.contents
+    >>> 'This request was reopened' in creator.contents
     True
 
 The +history page should be visible for this ticket.
