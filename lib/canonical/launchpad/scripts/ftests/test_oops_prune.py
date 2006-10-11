@@ -80,7 +80,7 @@ class TestOopsPrune(unittest.TestCase):
         cur.execute("""
             UPDATE Ticket SET
                 title='OOPS - 1TicketTitle666 bar',
-                description='OOPS-1TicketDescription666',
+                description='http://foo.com OOPS-1TicketDescription666',
                 whiteboard='OOPS-1TicketWhiteboard666'
             """)
         self.failUnlessEqual(
