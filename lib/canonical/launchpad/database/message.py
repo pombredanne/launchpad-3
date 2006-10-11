@@ -20,7 +20,7 @@ import pytz
 from canonical.encoding import guess as ensure_unicode
 from canonical.launchpad.helpers import get_filename_from_message_id
 from canonical.launchpad.interfaces import (
-    IMessage, IMessageSet, IMessageChunk, IPersonSet, ILibraryFileAliasSet, 
+    IMessage, IMessageSet, IMessageChunk, IPersonSet, ILibraryFileAliasSet,
     UnknownSender, InvalidEmailMessage, NotFoundError)
 
 from canonical.lp.dbschema import PersonCreationRationale

@@ -3,6 +3,9 @@
 
 __metaclass__ = type
 
+import os
+import shutil
+import tempfile
 from unittest import TestCase, TestLoader
 
 from zope.component import getUtility
@@ -14,16 +17,15 @@ from canonical.launchpad.mail import stub
 from canonical.launchpad.scripts.queue import (
     CommandRunner, CommandRunnerError, name_queue_map)
 from canonical.librarian.ftests.harness import (
-    fillLibrarianFile, removeLibrarianFile)
+    fillLibrarianFile, cleanupLibrarianFiles)
 from canonical.lp.dbschema import (
     PackagePublishingStatus, PackagePublishingPocket,
     DistroReleaseQueueStatus, DistributionReleaseStatus)
 from canonical.testing import LaunchpadZopelessLayer
 
 
-class TestQueueTool(TestCase):
-    layer = LaunchpadZopelessLayer
-    dbuser = config.uploadqueue.dbuser
+class TestQueueBase(TestCase):
+    """Base methods for queue tool test classes."""
 
     def _test_display(self, text):
         """Store output from queue tool for inspection."""
@@ -47,10 +49,56 @@ class TestQueueTool(TestCase):
 
         return runner.execute(argument.split())
 
+
+class TestQueueTool(TestQueueBase):
+    layer = LaunchpadZopelessLayer
+    dbuser = config.uploadqueue.dbuser
+
+    def setUp(self):
+        """Create contents in disk for librarian sampledata."""
+        fillLibrarianFile(1)
+
+    def tearDown(self):
+        """Remove test contents from disk."""
+        cleanupLibrarianFiles()
+
     def testBrokenAction(self):
         """Check if an unknown action raises CommandRunnerError."""
         self.assertRaises(
             CommandRunnerError, self.execute_command, 'foo')
+
+    def testHelpAction(self):
+        """Check if help is working properly.
+
+        Without arguments 'help' should return the docstring summary of
+        all available actions.
+
+        Optionally we can pass arguments corresponding to the specific
+        actions we want to see the help, not available actions will be
+        reported.
+        """
+        queue_action = self.execute_command('help')
+        self.assertEqual(
+            ['Running: "help"',
+             '\tinfo : Present the Queue item including its contents. ',
+             '\taccept : Accept the contents of a queue item. ',
+             '\treport : Present a report about the size of available queues ',
+             '\treject : Reject the contents of a queue item. ',
+             '\toverride : Override information in a queue item content. ',
+             '\tfetch : Fetch the contents of a queue item. '],
+            self.test_output)
+
+        queue_action = self.execute_command('help fetch')
+        self.assertEqual(
+            ['Running: "help fetch"',
+             '\tfetch : Fetch the contents of a queue item. '],
+            self.test_output)
+
+        queue_action = self.execute_command('help foo')
+        self.assertEqual(
+            ['Running: "help foo"',
+             'Not available action(s): foo'],
+            self.test_output)
 
     def testInfoAction(self):
         """Check INFO queue action without arguments present all items."""
@@ -152,7 +200,7 @@ class TestQueueTool(TestCase):
     def testQueueSupportForSuiteNames(self):
         """Queue tool supports suite names properly.
 
-        No UNAPROVED items are present for pocket RELEASE), but there is
+        Two UNAPPROVED items are present for pocket RELEASE and only
         one for pocket UPDATES in breezy-autotest.
         Bug #59280
         """
@@ -160,7 +208,7 @@ class TestQueueTool(TestCase):
             'info', queue_name='unapproved',
             suite_name='breezy-autotest')
 
-        self.assertEqual(0, queue_action.items_size)
+        self.assertEqual(2, queue_action.items_size)
         self.assertEqual(PackagePublishingPocket.RELEASE, queue_action.pocket)
 
         queue_action = self.execute_command(
@@ -209,6 +257,167 @@ class TestQueueTool(TestCase):
         self.assertEqual([queue_action.default_recipient], to_addrs)
 
         removeLibrarianFile(1)
+
+    def assertQueueLength(self, expected_length, distro_release, status, name):
+        self.assertEqual(
+            expected_length,
+            distro_release.getQueueItems(status=status, name=name).count())
+
+    def testAcceptanceWorkflowForDuplications(self):
+        """Check how queue tool behaves dealing with duplicated entries.
+
+        Sampledata provides a duplication of cnews_1.0 in breezy-autotest
+        UNAPPROVED queue.
+
+        Step 1:  executing 'accept cnews in unapproved queue' with duplicate
+        cnews items in the UNAPPROVED queue, results in the oldest being
+        accepted and the newer one remaining UNAPPROVED (and displaying
+        an error about it to the user).
+
+        Step 2: executing 'accept cnews in unapproved queue' with duplicate
+        cnews items in the UNAPPROVED and ACCEPTED queues has no effect on
+        the queues, and again displays an error to the user.
+
+        Step 3: executing 'accept cnews in unapproved queue' with duplicate
+        cnews items in the UNAPPROVED and DONE queues behaves the same as 2.
+
+        Step 4: the remaining duplicated cnews item in UNAPPROVED queue can
+        only be rejected.
+        """
+        breezy_autotest = getUtility(
+            IDistributionSet)['ubuntu']['breezy-autotest']
+
+        # certify we have a 'cnews' upload duplication in UNAPPROVED
+        self.assertQueueLength(
+            2, breezy_autotest, DistroReleaseQueueStatus.UNAPPROVED, "cnews")
+
+        # Step 1: try to accept both
+        queue_action = self.execute_command(
+            'accept cnews', queue_name='unapproved',
+            suite_name='breezy-autotest')
+
+        # the first is in accepted.
+        self.assertQueueLength(
+            1, breezy_autotest, DistroReleaseQueueStatus.ACCEPTED, "cnews")
+
+        # the last can't be accepted and remains in UNAPPROVED
+        self.assertTrue(
+            ('** cnews could not be accepted due This '
+             'sourcepackagerelease is already accepted in breezy-autotest.')
+            in self.test_output)
+        self.assertQueueLength(
+            1, breezy_autotest, DistroReleaseQueueStatus.UNAPPROVED, "cnews")
+
+        # Step 2: try to accept the remaining item in UNAPPROVED.
+        queue_action = self.execute_command(
+            'accept cnews', queue_name='unapproved',
+            suite_name='breezy-autotest')
+        self.assertTrue(
+            ('** cnews could not be accepted due This '
+             'sourcepackagerelease is already accepted in breezy-autotest.')
+            in self.test_output)
+        self.assertQueueLength(
+            1, breezy_autotest, DistroReleaseQueueStatus.UNAPPROVED, "cnews")
+
+        # simulate a publication of the accepted item, now it is in DONE
+        accepted_item = breezy_autotest.getQueueItems(
+            status=DistroReleaseQueueStatus.ACCEPTED, name="cnews")[0]
+
+        accepted_item.setDone()
+        accepted_item.syncUpdate()
+        self.assertQueueLength(
+            1, breezy_autotest, DistroReleaseQueueStatus.DONE, "cnews")
+
+        # Step 3: try to accept the remaining item in UNAPPROVED with the
+        # duplication already in DONE
+        queue_action = self.execute_command(
+            'accept cnews', queue_name='unapproved',
+            suite_name='breezy-autotest')
+        # it failed and te item remains in UNAPPROVED
+        self.assertTrue(
+            ('** cnews could not be accepted due This '
+             'sourcepackagerelease is already accepted in breezy-autotest.')
+            in self.test_output)
+        self.assertQueueLength(
+            1, breezy_autotest, DistroReleaseQueueStatus.UNAPPROVED, "cnews")
+
+        # Step 4: The only possible destiny for the remaining item it REJECT
+        queue_action = self.execute_command(
+            'reject cnews', queue_name='unapproved',
+            suite_name='breezy-autotest')
+        self.assertQueueLength(
+            0, breezy_autotest, DistroReleaseQueueStatus.UNAPPROVED, "cnews")
+        self.assertQueueLength(
+            1, breezy_autotest, DistroReleaseQueueStatus.REJECTED, "cnews")
+
+
+class TestQueueToolInJail(TestQueueBase):
+    layer = LaunchpadZopelessLayer
+    dbuser = config.uploadqueue.dbuser
+
+    def setUp(self):
+        """Create contents in disk for librarian sampledata.
+
+        Setup and chdir into a temp directory, a jail, where we can
+        control the file creation properly
+        """
+        fillLibrarianFile(1, content='One')
+        fillLibrarianFile(52, content='Fifty-Two')
+        self._home = os.path.abspath('')
+        self._jail = tempfile.mkdtemp()
+        os.chdir(self._jail)
+
+    def tearDown(self):
+        """Remove test contents from disk.
+
+        chdir back to the previous path (home) and remove the temp
+        directory used as jail.
+        """
+        os.chdir(self._home)
+        cleanupLibrarianFiles()
+        shutil.rmtree(self._jail)
+
+    def _listfiles(self):
+        """Return a list of files present in jail."""
+        return os.listdir(self._jail)
+
+    def testFetchActionByIDDoNotOverwriteFilesystem(self):
+        """Check if queue fetch action doesn't overwrite files.
+
+        Since we allow existence of duplications in NEW and UNAPPROVED
+        queues, we are able to fetch files from queue items and they'd
+        get overwritten causing obscure problems.
+
+        Instead of overwrite a file in the working directory queue will
+        fail, raising a CommandRunnerError.
+        """
+        queue_action = self.execute_command('fetch 1')
+        self.assertEqual(
+            ['mozilla-firefox_0.9_i386.changes'], self._listfiles())
+
+        # acquire last modification time
+        mtime = os.stat(self._listfiles()[0]).st_mtime
+
+        # fetch will raise and not overwrite the file in disk
+        self.assertRaises(
+            CommandRunnerError, self.execute_command, 'fetch 1')
+
+        # check if the file wasn't modified (mtime continues the same)
+        self.assertEqual(mtime, os.stat(self._listfiles()[0]).st_mtime)
+
+    def testFetchActionByNameDoNotOverwriteFilesystem(self):
+        """Same as testFetchActionByIDDoNotOverwriteFilesystem
+
+        The sampledata provides duplicated 'cnews' entries, filesystem
+        conflict will happen inside the same batch,
+
+        Queue will fetch the oldest and raise.
+        """
+        self.assertRaises(
+            CommandRunnerError, self.execute_command, 'fetch cnews',
+            queue_name='unapproved', suite_name='breezy-autotest')
+
+        self.assertEqual(['netapplet-1.0.0.tar.gz'], self._listfiles())
 
 
 def test_suite():
