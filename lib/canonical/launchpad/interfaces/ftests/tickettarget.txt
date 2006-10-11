@@ -91,7 +91,7 @@ Creating some additional tickets
 
 For the following methods, we will require some more tickets. Create five
 new tickets. Odd tickets will be owned by foo_bar and even tickets will be
-owner by sample_person.
+owned by sample_person.
 
     >>> login('no-priv@canonical.com')
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')

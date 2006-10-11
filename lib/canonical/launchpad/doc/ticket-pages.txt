@@ -301,11 +301,11 @@ SearchTicketsView
 -----------------
 
 This view is used as a base class to search for tickets. It is intended
-to be easily customizable to offer more specialised report, while
+to be easily customizable to offer more specific reports, while
 keeping those searchable.
 
-    (Define a subclass of the view to demonstrate the customizability
-    of the base view.)
+    (Define a subclass to demonstrate the customizability of the base
+    view.)
     >>> from canonical.launchpad.browser import SearchTicketsView
     >>> class MyCustomSearchTicketsView(SearchTicketsView):
     ...
@@ -363,8 +363,8 @@ can tweak the search and filter the results:
     ...     print ticket.title, ticket.status.title
     mailto: problem in webpage  Answered
 
-Specialized views can provide a default filter by returning the
-default search parameters to use in the getDefaultFilter() method:
+Specific views can provide a default filter by returning the default
+search parameters to use in the getDefaultFilter() method:
 
     >>> from canonical.lp.dbschema import TicketStatus
     >>> MyCustomSearchTicketsView.default_filter = {
@@ -405,7 +405,7 @@ criteria.
     Answered
 
 The base view computes the page heading and the message displayed when
-no results are found basedon the selected search filter:
+no results are found based on the selected search filter:
 
     >>> from zope.i18n import translate
     >>> search_view_harness.submit('', {})

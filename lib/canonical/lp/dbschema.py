@@ -1671,8 +1671,7 @@ class SprintSpecificationStatus(DBSchema):
 class TicketParticipation(DBSchema):
     """The different ways a person can be involved in a ticket.
 
-    This enumeration is part of the ITicketActpr.searchTickets() API. The
-    titles are formatted for nice display in browser code.
+    This enumeration is part of the ITicketActor.searchTickets() API.
 
     XXX flacoste 2006/10/09 This has nothing to do with database code and
     is really part of the ITicketActor definitions. We should find a way
@@ -1689,7 +1688,7 @@ class TicketParticipation(DBSchema):
     SUBSCRIBER = Item(15, """
         Subscriber
 
-        The person subscribed the the ticket.
+        The person subscribed to the ticket.
         """)
 
     ASSIGNEE = Item(20, """
