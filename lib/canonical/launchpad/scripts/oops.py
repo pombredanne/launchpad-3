@@ -31,7 +31,8 @@ def referenced_oops():
     # happy.
     posix_oops_match = r"~* '\\moops\\s*-?\\s*\\d*[a-z]+\\d+'"
     query = """
-        SELECT DISTINCT subject FROM Message WHERE subject %(posix_oops_match)s
+        SELECT DISTINCT subject FROM Message
+        WHERE subject %(posix_oops_match)s AND subject IS NOT NULL
         UNION ALL
         SELECT content FROM MessageChunk WHERE content %(posix_oops_match)s
         UNION ALL
@@ -42,7 +43,7 @@ def referenced_oops():
         SELECT statusexplanation FROM BugTask
         WHERE statusexplanation %(posix_oops_match)s
         UNION ALL
-        SELECT title || ' ' || description || ' ' || whiteboard
+        SELECT title || ' ' || description || ' ' || COALESCE(whiteboard,'')
         FROM Ticket WHERE title %(posix_oops_match)s
             OR description %(posix_oops_match)s
             OR whiteboard %(posix_oops_match)s

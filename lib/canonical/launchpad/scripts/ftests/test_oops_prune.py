@@ -82,6 +82,16 @@ class TestOopsPrune(unittest.TestCase):
                 title='OOPS - 1TicketTitle666 bar',
                 description='http://foo.com OOPS-1TicketDescription666',
                 whiteboard='OOPS-1TicketWhiteboard666'
+                WHERE id=1
+            """)
+        # Add a ticket entry with a NULL whiteboard to ensure the SQL query
+        # copes.
+        cur.execute("""
+            UPDATE Ticket SET
+                title='OOPS - 1TicketTitle666 bar',
+                description='http://foo.com OOPS-1TicketDescription666',
+                whiteboard=NULL
+                WHERE id=2
             """)
         self.failUnlessEqual(
                 set([
