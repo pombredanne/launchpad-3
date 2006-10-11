@@ -26,7 +26,7 @@ from canonical.lp.dbschema import TicketParticipation
 
 class TicketActorLatestTicketsView(LaunchpadView):
     """View used by the porlet displaying the latest requests made by
-    a user.
+    a person.
     """
 
     @cachedproperty
@@ -152,7 +152,7 @@ class TicketActorSearchCreatedTicketsView(SearchTicketsView):
 
 
 class TicketActorSearchSubscribedTicketsView(SearchTicketsView):
-    """View used to search and display tickets susbcribed to by an
+    """View used to search and display tickets subscribed to by an
     ITicketActor.
     """
 

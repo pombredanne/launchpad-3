@@ -5,7 +5,6 @@ __metaclass__ = type
 __all__ = [
     'DistributionSourcePackageFacets',
     'DistributionSourcePackageNavigation',
-    'DistributionSourcePackageView'
     ]
 
 from zope.component import getUtility
@@ -57,16 +56,6 @@ class DistributionSourcePackageNavigation(GetitemNavigation,
 
     def breadcrumb(self):
         return self.context.sourcepackagename.name
-
-
-class DistributionSourcePackageView:
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def latest_tickets(self):
-        return self.context.tickets(quantity=5)
 
 
 class DistributionSourcePackageBugContactsView:

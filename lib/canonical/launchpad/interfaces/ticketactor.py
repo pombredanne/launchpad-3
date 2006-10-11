@@ -10,9 +10,9 @@ __all__ = [
 
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.tickettarget import (
-    IHasTickets, TICKET_STATUS_DEFAULT_SEARCH)
+    TICKET_STATUS_DEFAULT_SEARCH)
 
-class ITicketActor(IHasTickets, IPerson):
+class ITicketActor(IPerson):
     """An IPerson participating in the support tracker."""
 
     def searchTickets(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,

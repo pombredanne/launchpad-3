@@ -41,7 +41,7 @@ class TicketTargetLatestTicketsView:
         """Return <quantity> latest tickets created for this target. This
         is used by the +portlet-latesttickets view.
         """
-        return list(self.context.tickets(quantity=quantity))
+        return self.context.searchTickets()[:quantity]
 
 
 class SearchTicketsView(LaunchpadFormView):

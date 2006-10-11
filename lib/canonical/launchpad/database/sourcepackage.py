@@ -378,17 +378,6 @@ class SourcePackage(BugTargetBase):
         flush_database_updates()
 
     # ticket related interfaces
-    def tickets(self, quantity=None):
-        """See ITicketTarget."""
-        ret = Ticket.select("""
-            distribution = %s AND
-            sourcepackagename = %s
-            """ % sqlvalues(self.distribution.id,
-                            self.sourcepackagename.id),
-            orderBy='-datecreated',
-            limit=quantity)
-        return ret
-
     def newTicket(self, owner, title, description, datecreated=None):
         """See ITicketTarget."""
         return TicketSet.new(

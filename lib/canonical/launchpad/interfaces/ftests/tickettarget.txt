@@ -128,34 +128,6 @@ description.
     >>> login(ANONYMOUS)
 
 
-tickets()
----------
-
-The tickets() method returns the tickets created on the target. They are
-sorted from most recent to least recent.
-
-    >>> for t in target.tickets():
-    ...     print t.title
-    Another ticket
-    Ticket title4
-    Ticket title3
-    Ticket title2
-    Ticket title1
-    Ticket title0
-    New ticket
-
-You can retrieve the X most recent tickets, by passing the wanted
-quantity as parameter:
-
-    >>> for t in target.tickets(5):
-    ...     print t.title
-    Another ticket
-    Ticket title4
-    Ticket title3
-    Ticket title2
-    Ticket title1
-
-
 searchTickets()
 ---------------
 

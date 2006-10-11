@@ -225,15 +225,6 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
         bug_params.setBugTarget(product=self)
         return BugSet().createBug(bug_params)
 
-    def tickets(self, quantity=None):
-        """See ITicketTarget."""
-        return Ticket.select("""
-            Ticket.product = %s
-            """ % sqlvalues(self.id),
-            orderBy='-Ticket.datecreated',
-            prejoins=['product', 'owner'],
-            limit=quantity)
-
     def newTicket(self, owner, title, description, datecreated=None):
         """See ITicketTarget."""
         return TicketSet.new(title=title, description=description,

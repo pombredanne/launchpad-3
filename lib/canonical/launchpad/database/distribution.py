@@ -432,15 +432,6 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         """See ISpecificationTarget."""
         return Specification.selectOneBy(distribution=self, name=name)
 
-    def tickets(self, quantity=None):
-        """See ITicketTarget."""
-        return Ticket.select("""
-            Ticket.distribution = %s
-            """ % sqlvalues(self.id),
-            orderBy='-Ticket.datecreated',
-            prejoins=['distribution', 'owner', 'sourcepackagename'],
-            limit=quantity)
-
     def newTicket(self, owner, title, description, datecreated=None):
         """See ITicketTarget."""
         return TicketSet.new(

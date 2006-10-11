@@ -21,7 +21,7 @@
           permission="launchpad.Edit"
           set_schema="canonical.launchpad.interfaces.IPerson" />
       <!-- ITicketActor -->
-      <allow attributes="tickets searchTickets" />
+      <allow attributes="searchTickets" />
   </content>
 
   <browser:defaultView

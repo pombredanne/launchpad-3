@@ -258,16 +258,6 @@ class DistributionSourcePackage(BugTargetBase):
         return result
 
     # ticket related interfaces
-    def tickets(self, quantity=None):
-        """See ITicketTarget."""
-        return Ticket.select("""
-            distribution=%s AND
-            sourcepackagename=%s
-            """ % sqlvalues(self.distribution.id,
-                            self.sourcepackagename.id),
-            orderBy='-datecreated',
-            limit=quantity)
-
     def newTicket(self, owner, title, description, datecreated=None):
         """See ITicketTarget."""
         return TicketSet.new(

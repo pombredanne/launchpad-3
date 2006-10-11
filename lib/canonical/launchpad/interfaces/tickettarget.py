@@ -5,7 +5,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'IHasTickets',
     'ITicketTarget',
     'IManageSupportContacts',
     'TICKET_STATUS_DEFAULT_SEARCH',
@@ -18,23 +17,10 @@ from canonical.launchpad import _
 from canonical.lp.dbschema import TicketStatus
 
 
-class IHasTickets(Interface):
-    """An object that has tickets attached to it."""
-
-    def tickets(quantity=None):
-        """Support tickets related to this object, sorted newest first.
-
-        :quantity: An integer.
-
-        If needed, you can limit the number of tickets returned by passing a
-        number to the "quantity" parameter.
-        """
-
-
 TICKET_STATUS_DEFAULT_SEARCH = (TicketStatus.OPEN, TicketStatus.ANSWERED)
 
 
-class ITicketTarget(IHasTickets):
+class ITicketTarget(Interface):
     """An object that can have a new ticket created for  it."""
 
     def newTicket(owner, title, description, datecreated=None):

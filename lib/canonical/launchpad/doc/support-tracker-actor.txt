@@ -13,53 +13,18 @@ interface.
     >>> verifyObject(ITicketActor, foo_bar)
     True
 
-
-tickets()
----------
-
-The ITicketActor defines a tickets() method which returns all the
-tickets in which the person is involved. This includes tickets which the
-person created, is assigned to, is subscribed to, commented on, or
-answered. The tickets are ordered by their creation date from most
-recent to least recent.
-
-    >>> for ticket in foo_bar.tickets():
-    ...     print ticket.title, ticket.status.title
-    Continue playing after shutdown             Open
-    Play DVDs in Totem                          Open
-    mailto: problem in webpage                  Answered
-    Installation of Java Runtime Environment
-        for Mozilla                             Open
-    Slow system                                 Open
-    Newly installed plug-in doesn't seem to be
-        used                                    Open
-    Firefox loses focus and gets stuck          Open
-    Firefox is slow and consumes too much RAM   Rejected
-
-The number of tickets returned can be limited by passing the number of
-tickets wanted to the method:
-
-    >>> for ticket in foo_bar.tickets(4):
-    ...     print ticket.title, ticket.status.title
-    Continue playing after shutdown             Open
-    Play DVDs in Totem                          Open
-    mailto: problem in webpage                  Answered
-    Installation of Java Runtime Environment
-        for Mozilla                             Open
-
-
-searchTickets()
----------------
-
-The other method defined is searchTickets() which can return a subset of
-the tickets. The available criteria are status, search_text and
-participation type.
+The ITicketActor defines a searchTickets() method which can be used to
+select all or a subset of the support requests in which the person is
+involved. This includes tickets which the person created, is assigned to,
+is subscribed to, commented on, or answered.
+Various subsets can be selected by using the following criteria status,
+search_text and participation type.
 
 search_text
 ~~~~~~~~~~~
 
-The search_text parameter will limit the tickets to those mathching
-matching the query using the regular full text algorithm.
+The search_text parameter will limit the tickets to those matching
+the query using the regular full text algorithm.
 
     >>> for ticket in foo_bar.searchTickets(search_text='firefox'):
     ...     print ticket.title, ticket.status.title
@@ -71,7 +36,7 @@ matching the query using the regular full text algorithm.
 Sort Order
 ~~~~~~~~~~
 
-When using the search_text criteria, the default is to sort the result
+When using the search_text criteria, the default is to sort the results
 by relevancy. One can use the sort parameter to change that. It takes
 one of the constant defined in the TicketSort enumeration.
 
@@ -124,7 +89,7 @@ participation
 
 By default, any types of relationship to a ticket is considered by
 searchTickets. This can customized through the participation parameter.
-It takes one or a list of constants from the TicketParticipation enum.
+It takes one or a list of constants from the TicketParticipation enumeration.
 
 To select only tickets on which the person commented, the
 TicketParticipation.COMMENTER is used:
