@@ -4,7 +4,11 @@
 
   <class class="canonical.lp.dbschema.Item">
       <allow attributes="name title value description schema
-                         sortkey __sqlrepr__" />
+                         schema_items schema_name sortkey __sqlrepr__" />
+  </class>
+
+  <class class="canonical.lp.dbschema.OrderedMapping">
+      <allow attributes="__getitem__ __iter__" />
   </class>
 
   <browser:pages for="*" permission="zope.Public" >

@@ -131,7 +131,8 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
     def disabled_mirrors(self):
         """See canonical.launchpad.interfaces.IDistribution."""
         return DistributionMirror.selectBy(
-            distribution=self, enabled=False)
+            distribution=self, official_approved=True,
+            official_candidate=True, enabled=False)
 
     @property
     def unofficial_mirrors(self):
