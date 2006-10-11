@@ -731,6 +731,8 @@ shipit_adminrequest = 'ShipIt admin request'
 
 shipit_index = 'ShipIt'
 
+shipit_index_new = 'ShipIt'
+
 shipit_exports = 'ShipIt exports'
 
 shipit_forbidden = 'Forbidden'
