@@ -63,11 +63,12 @@ def main():
         log.debug("Unpublishing death row.")
         death_row.reap(options.dry_run)
 
-        log.debug("Committing")
         if options.dry_run:
-            txn.commit()
-        else:
+            log.debug("Dry run mode; rolling back.")
             txn.abort()
+        else:
+            log.debug("Committing")
+            txn.commit()
     except:
         log.exception("Bad muju while doing death-row unpublish")
         txn.abort()
