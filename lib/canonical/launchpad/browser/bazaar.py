@@ -47,7 +47,7 @@ class BazaarApplicationView:
     def branches(self):
         """List of all branches in the system."""
         branches = self.context.all
-        ensure_not_too_many_items(branches)
+        ensure_not_too_many_items(branches, 10000)
         return sorted(branches, key=operator.attrgetter('sort_key'))
 
     def import_count(self):
