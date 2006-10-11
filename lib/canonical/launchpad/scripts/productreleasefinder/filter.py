@@ -11,6 +11,7 @@ __all__ = [
     ]
 
 import fnmatch
+import itertools
 import os
 import re
 import urlparse
@@ -41,7 +42,7 @@ class Filter:
         for pattern in self.filters:
             if pattern.match(url):
                 self.log.info("%s matches %s glob (%s)",
-                              url, pattern.key, pattern.glob)
+                              url, pattern.key, pattern.urlglob)
                 return pattern.key
         else:
             self.log.debug("No matches")
@@ -53,7 +54,7 @@ class Filter:
         for pattern in self.filters:
             if pattern.containedBy(url):
                 self.log.info("%s could contain matches for %s glob (%s)",
-                              url, pattern.key, pattern.glob)
+                              url, pattern.key, pattern.urlglob)
                 return True
         else:
             return False
@@ -66,14 +67,18 @@ class FilterPattern:
     instance.
     """
 
-    def __init__(self, key, base_url, glob):
+    def __init__(self, key, urlglob):
         self.key = key
-        self.base_url = base_url
-        self.glob = glob
+        self.urlglob = urlglob
 
+        parts = self.urlglob.split('/')
+        # construct a base URL by taking components up til the first
+        # one containing a glob pattern:
+        self.base_url = '/'.join(itertools.takewhile(
+            lambda part: '*' not in part and '?' not in part, parts))
         if not self.base_url.endswith('/'):
             self.base_url += '/'
-        parts = (self.base_url + self.glob).split('/')
+
         self.patterns = [re.compile(fnmatch.translate(part)) for part in parts]
 
     def match(self, url):
