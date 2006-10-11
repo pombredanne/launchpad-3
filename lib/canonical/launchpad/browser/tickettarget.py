@@ -11,13 +11,11 @@ __all__ = [
     'TicketTargetLatestTicketsView',
     'TicketTargetSearchMyTicketsView',
     'TicketTargetTraversalMixin',
-    'TicketTargetView',
     'TicketTargetSupportMenu',
     ]
 
 from urllib import urlencode
 
-from zope.component import getUtility
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import DropdownWidget
 from zope.app.pagetemplate import ViewPageTemplateFile
@@ -25,105 +23,14 @@ from zope.app.pagetemplate import ViewPageTemplateFile
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IDistribution, IManageSupportContacts, IPerson,
-    ISearchTicketsForm, ITicketTarget, NotFoundError)
+    IDistribution, IManageSupportContacts, ISearchTicketsForm, ITicketTarget,
+    NotFoundError)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, redirection, stepthrough,
-    ApplicationMenu, GeneralFormView, LaunchpadFormView, LaunchpadView, Link)
+    ApplicationMenu, GeneralFormView, LaunchpadFormView, Link)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import TicketStatus
 from canonical.widgets.itemswidget import LabeledMultiCheckBoxWidget
-
-
-class TicketTargetView(LaunchpadView):
-
-    def initialize(self):
-        mapping = {'name': self.context.displayname}
-        if IPerson.providedBy(self.context):
-            self.title = _('Support requests involving $name', mapping=mapping)
-        else:
-            self.title = _('Support requests for $name', mapping=mapping)
-
-    @cachedproperty
-    def tickets(self):
-        # Cache this and avoid having to regenerate it for each template
-        # and view test of the query results.
-        return list(self.context.tickets())
-
-    def categories(self):
-        """This organises the tickets related to this target by
-        "category", where a category corresponds to a particular ticket
-        status. It also determines the order of those categories, and the
-        order of the tickets inside each category. This is used for the
-        +tickets view.
-
-        It is also used in IPerson, which is not an ITicketTarget but
-        which does have a IPerson.tickets(). In this case, it will also
-        detect which set of tickets you want to see. The options are:
-
-         - all tickets (self.context.tickets())
-         - created by this person (self.context.created_tickets)
-         - assigned to this person (self.context.assigned_tickets)
-         - subscribed by this person (self.context.subscriber_tickets)
-
-        """
-        if not IPerson.providedBy(self.context):
-            tickets = self.tickets
-        else:
-            # for a person, we need to figure out which set of tickets to be
-            # showing.
-
-            # XXX sabdfl 07/09/05 we need to discuss this in UBZ
-            # SteveA says:
-            # First, a collection of ideas for discussion:
-            #   the request actually has just the information needed for this,
-            #   but in a private variable request._traversed_names -- a list
-            #   of the names traversed.  So it would be better to check the
-            #   last element of that list to get the name.
-            #   Otherwise, perhaps view classes should know what name they are
-            #   registered for in zcml.
-            #   Otherwise, we can use some trivial subclasses of
-            #   TicketTargetView that each have a getTickets() method.  In
-            #   zcml, the appropriate subclass is registered.  This decouples
-            #   the name traversed to from the intent of what tickets should
-            #   be shown.
-            # Now, the best solution, moving forwards:
-            #   Either wait for the Zope 3 improvement I'm on the hook to
-            #   land that makes templates called "template" in view classes,
-            #   or include it manually like Zope 3 will do in the future.
-            #   Then, have different methods as entry-points for the different
-            #   pages.
-            #     self.created_tickets
-            #     self.assigned_tickets
-            #     self.answered_tickets
-            #     self.subscribed_tickets
-            #     self.tickets  # everything else.
-            #   Hook these up in zcml
-            #   using the class and attribute style of registing pages.
-            url = self.request.getURL()
-            if '+createdtickets' in url:
-                tickets = self.context.created_tickets
-            elif '+assignedtickets' in url:
-                tickets = self.context.assigned_tickets
-            elif '+answeredtickets' in url:
-                tickets = self.context.answered_tickets
-            elif '+subscribedtickets' in url:
-                tickets = self.context.subscribed_tickets
-            else:
-                tickets = self.tickets
-
-        categories = {}
-        for ticket in tickets:
-            if categories.has_key(ticket.status):
-                category = categories[ticket.status]
-            else:
-                category = {}
-                category['status'] = ticket.status
-                category['tickets'] = []
-                categories[ticket.status] = category
-            category['tickets'].append(ticket)
-        categories = categories.values()
-        return sorted(categories, key=lambda a: a['status'].value)
 
 
 class TicketTargetLatestTicketsView:
@@ -150,6 +57,9 @@ class SearchTicketsView(LaunchpadFormView):
     custom_widget('sort', DropdownWidget, cssClass='inlined-widget')
 
     template = ViewPageTemplateFile('../templates/ticket-listing.pt')
+
+    # Set to true to display a column showing the ticket's target
+    displayTargetColumn = False
 
     # Will contain the parameters used by searchResults
     search_params = None
@@ -250,7 +160,7 @@ class SearchTicketsView(LaunchpadFormView):
         return BatchNavigator(
             self.context.searchTickets(**self.search_params), self.request)
 
-    def displaySourcePackage(self):
+    def displaySourcePackageColumn(self):
         """We display the source package column only on distribution."""
         return IDistribution.providedBy(self.context)
 
@@ -268,6 +178,19 @@ class SearchTicketsView(LaunchpadFormView):
                 ticket.sourcepackagename)
             return '<a href="%s/+tickets">%s</a>' % (
                 canonical_url(sourcepackage), ticket.sourcepackagename.name)
+
+    def formatTarget(self, ticket):
+        """Return an hyperlink to the ticket's target. When there is a
+        sourcepackagename associated to the ticket link to that source
+        package tickets.
+        """
+        if ticket.sourcepackagename:
+            target = ticket.distribution.getSourcePackage(ticket.sourcepackagename)
+        else:
+            target = ticket.target
+
+        return '<a href="%s/+tickets">%s</a>' % (
+                canonical_url(target), target.displayname)
 
 
 class TicketTargetSearchMyTicketsView(SearchTicketsView):

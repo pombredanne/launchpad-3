@@ -14,31 +14,41 @@
       permission="zope.Public"
       template="../templates/tickettarget-portlet-latesttickets.pt" />
 
-  <browser:pages
+  <browser:page
     for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.TicketTargetView"
-    permission="zope.Public"
-    facet="support"
-    >
-    <!-- there is trickery here, in the view class, which detects the view
-    name and then gives the template a different set of tickets to work
-    with.-->
-    <browser:page
-        name="+tickets"
-        template="../templates/tickettarget-tickets.pt" />
-    <browser:page
-        name="+createdtickets"
-        template="../templates/tickettarget-tickets.pt" />
-    <browser:page
-        name="+assignedtickets"
-        template="../templates/tickettarget-tickets.pt" />
-    <browser:page
-        name="+answeredtickets"
-        template="../templates/tickettarget-tickets.pt" />
-    <browser:page
-        name="+subscribedtickets"
-        template="../templates/tickettarget-tickets.pt" />
-  </browser:pages>
+    class="canonical.launchpad.browser.TicketActorSearchTicketsView"
+    name="+tickets"
+    permission="zope.Public" />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.TicketActorSearchAnsweredTicketsView"
+    name="+answeredtickets"
+    permission="zope.Public" />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.TicketActorSearchAssignedTicketsView"
+    name="+assignedtickets"
+    permission="zope.Public" />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.TicketActorSearchCommentedTicketsView"
+    name="+commentedtickets"
+    permission="zope.Public" />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.TicketActorSearchCreatedTicketsView"
+    name="+createdtickets"
+    permission="zope.Public" />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.TicketActorSearchSubscribedTicketsView"
+    name="+subscribedtickets"
+    permission="zope.Public" />
 
   <browser:menus
     module="canonical.launchpad.browser.ticketactor"
