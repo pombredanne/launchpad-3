@@ -886,9 +886,10 @@ class DistroRelease(SQLBase, BugTargetBase):
 
         # restrict result to a given pocket
         if pocket is not None:
-            default_clauses.append(
-                    "distroreleasequeue.pocket = %s" % sqlvalues(pocket))
-
+            if not isinstance(pocket, list):
+                pocket = [pocket]
+            default_clauses.append("""
+            distroreleasequeue.pocket IN %s""" % sqlvalues(pocket))
 
         # XXX cprov 20060606: We may reorganise this code, creating
         # some new methods provided by IDistroReleaseQueueSet, as:
@@ -899,8 +900,11 @@ class DistroRelease(SQLBase, BugTargetBase):
                 " AND ".join(default_clauses),
                 orderBy=['-id'])
 
+        if not isinstance(status, list):
+            status = [status]
+
         default_clauses.append("""
-        distroreleasequeue.status = %s""" % sqlvalues(status))
+        distroreleasequeue.status IN %s""" % sqlvalues(status))
 
         if not name:
             assert not version and not exact_match

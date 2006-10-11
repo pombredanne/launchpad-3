@@ -7,6 +7,7 @@ __metaclass__ = type
 
 import os
 import shutil
+from tempfile import mkdtemp
 import unittest
 
 from zope.component import getUtility
@@ -55,7 +56,8 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         assert os.stat(fullpath)
         text = file(fullpath).read()
         assert text
-        assert text == file("%s/%s" % (self._sampledir, filename)).read()
+        self.assertEqual(
+            text, file("%s/%s" % (self._sampledir, filename)).read())
 
     def _addMockFile(self, component, sourcename, leafname):
         """Add a mock file in Librarian.
@@ -152,7 +154,7 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         bin = [self._getFakePubBinary(
             "foo", "foo", "main", "foo.deb", "misc", "hoary-test",
             PackagePublishingPriority.EXTRA, "i386")]
-        fa.createEmptyPocketRequests()
+        fa.createEmptyPocketRequests(fullpublish=True)
         fa.publishOverrides(src, bin)
         src = [self._getFakePubSourceFile(
             "foo", "main", "foo.dsc", "misc", "hoary-test")]
@@ -173,6 +175,41 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         apt_conf = fa.generateConfig()
         assert len(file(apt_conf).readlines()) == 23
         assert fa.runApt(apt_conf) == 0
+
+
+class TestFTouch(unittest.TestCase):
+    """Tests for f_touch function."""
+
+    def setUp(self):
+        self.test_folder = mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.test_folder)
+
+    def testNewFile(self):
+        """Test f_touch correctly creates a new file."""
+        from canonical.archivepublisher.ftparchive import f_touch
+
+        f_touch(self.test_folder, "file_to_touch")
+        self.assertTrue(os.path.exists("%s/file_to_touch" % self.test_folder))
+
+    def testExistingFile(self):
+        """Test f_touch truncates existing files."""
+        from canonical.archivepublisher.ftparchive import f_touch
+
+        f = open("%s/file_to_truncate" % self.test_folder, "w")
+        test_contents = "I'm some test contents"
+        f.write(test_contents)
+        f.close()
+        
+        f_touch(self.test_folder, "file_to_leave_alone")
+        
+        f = open("%s/file_to_leave_alone" % self.test_folder, "r")
+        contents = f.read()
+        f.close()
+        
+        self.assertEqual("", contents)
+        
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

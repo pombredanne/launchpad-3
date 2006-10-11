@@ -515,7 +515,6 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     >>> [(mirror.name, mirror.speed.title, mirror.country.name) 
     ...  for mirror in ubuntu.disabled_mirrors]
     [(u'archive-404-mirror', '2 Mbps', u'British Indian Ocean Territory'),
-     (u'foo.bar.com-archive', '2 Mbps', u'Brazil'),
      (u'unreachable-mirror', '512 Kbps', u'British Indian Ocean Territory')]
 
 
