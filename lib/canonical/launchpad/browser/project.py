@@ -18,7 +18,6 @@ __all__ = [
 from urllib import quote as urlquote
 
 from zope.component import getUtility
-from zope.app.form.browser.add import AddView
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser import TextWidget
@@ -27,7 +26,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IPerson, IProject, IProjectSet, IProductSet, ICalendarOwner)
+    ICalendarOwner, IPerson, IProduct, IProductSet, IProject, IProjectSet)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
@@ -262,24 +261,30 @@ class ProjectEditView(LaunchpadEditFormView):
             return canonical_url(getUtility(IProjectSet))
 
 
-class ProjectAddProductView(AddView):
+class ProjectAddProductView(LaunchpadFormView):
 
-    __used_for__ = IProject
+    schema = IProduct
+    field_names = ['name', 'displayname', 'title', 'summary', 'description',
+                   'homepageurl', 'sourceforgeproject', 'freshmeatproject',
+                   'wikiurl', 'screenshotsurl', 'downloadurl',
+                   'programminglang']
+    custom_widget('homepageurl', TextWidget, displayWidth=30)
+    custom_widget('screenshoturl', TextWidget, displayWidth=30)
+    custom_widget('wikiurl', TextWidget, displayWidth=30)
+    custom_widget('downloadurl', TextWidget, displayWidth=30)
 
-    def __init__(self, context, request):
-        self.request = request
-        self.context = context
-        AddView.__init__(self, context, request)
+    label = "Register a product in this project"
+    product = None
 
-    def createAndAdd(self, data):
+    @action(_('Add'), name='add')
+    def add_action(self, action, data):
         # add the owner information for the product
-        owner = IPerson(self.request.principal, None)
-        if not owner:
+        if not self.user:
             raise Unauthorized(
                 "Need to have an authenticated user in order to create a bug"
                 " on a product")
         # create the product
-        product = getUtility(IProductSet).createProduct(
+        self.product = getUtility(IProductSet).createProduct(
             name=data['name'],
             title=data['title'],
             summary=data['summary'],
@@ -289,18 +294,17 @@ class ProjectAddProductView(AddView):
             downloadurl=data['downloadurl'],
             screenshotsurl=data['screenshotsurl'],
             wikiurl=data['wikiurl'],
-            programminglang=data['programminglang'],
             freshmeatproject=data['freshmeatproject'],
             sourceforgeproject=data['sourceforgeproject'],
+            programminglang=data['programminglang'],
             project=self.context,
-            owner=owner)
-        notify(ObjectCreatedEvent(product))
-        return product
+            owner=self.user)
+        notify(ObjectCreatedEvent(self.product))
 
-    def nextURL(self):
-        # Always redirect to the project's page
-        return '.'
- 
+    @property
+    def next_url(self):
+        assert self.product is not None, 'No product has been created'
+        return canonical_url(self.product)
 
 
 class ProjectSetView(object):
