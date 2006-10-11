@@ -1,4 +1,5 @@
-When adding a bug watch, you have to enter the URL of the remote bug.
+When adding a bug watch together with a new bugtask, you have to enter
+the URL of the remote bug.
 
     >>> user_browser.open(
     ...   'http://launchpad.dev/products/firefox/+bug/4/+upstreamtask')
