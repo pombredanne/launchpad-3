@@ -91,7 +91,7 @@ class SearchTicketsView(LaunchpadFormView):
 
     @property
     def empty_listing_message(self):
-        """Message displayed when the are no tickets matching the filter."""
+        """Message displayed when there is no tickets matching the filter."""
         mapping = dict(
             context=self.context.displayname, search_text=self.search_text)
         if len(self.status_filter) == 1:
@@ -117,7 +117,7 @@ class SearchTicketsView(LaunchpadFormView):
 
     @property
     def search_text(self):
-        """User submitted search text."""
+        """Search text used by the filter."""
         if self.search_params:
             return self.search_params['search_text']
         else:
@@ -125,7 +125,7 @@ class SearchTicketsView(LaunchpadFormView):
 
     @property
     def status_filter(self):
-        """Immutable set of status to filter the search with."""
+        """Set of statuses to filter the search with."""
         if self.search_params:
             return set(self.search_params['status'])
         else:
@@ -185,7 +185,8 @@ class SearchTicketsView(LaunchpadFormView):
         package tickets.
         """
         if ticket.sourcepackagename:
-            target = ticket.distribution.getSourcePackage(ticket.sourcepackagename)
+            target = ticket.distribution.getSourcePackage(
+                ticket.sourcepackagename)
         else:
             target = ticket.target
 
