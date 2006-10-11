@@ -48,6 +48,8 @@ a nice error message.
   <div class="error message">Please select at least one pofile or the PO template.</div>
 
 If we POST the page with valid data, it should add the request to the queue.
+Note that when we choose 'Everything', one request for the PO template is
+added to the export queue and individual requests are added for the PO files.
 
   >>> browser.getControl('Everything').selected = True
   >>> browser.getControl('Format:').value = ['PO']
@@ -60,7 +62,9 @@ If we POST the page with valid data, it should add the request to the queue.
   ...     print tag
   <div class="informational message">Your request has been received. Expect to receive an email shortly.</div>
 
-We can also request only the PO Template.
+We can also request only the PO Template. By doing this we're basically adding
+a duplicate request for the PO template to the export queue.
+This is a no-op: (See bug https://launchpad.net/products/rosetta/+bug/1558)
 
   >>> browser.getLink('Download Translations').click()
   >>> browser.getControl('Selected files:').selected = True

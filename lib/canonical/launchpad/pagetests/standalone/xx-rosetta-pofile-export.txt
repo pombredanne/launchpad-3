@@ -103,3 +103,19 @@ evolution yet; it will be created at the moment the export is requested.
   ...     browser.contents, 'Translation file details:')
   >>> translation_portlet.firstText('Creator:').findNext('a').string
   u'Carlos Perell\xf3 Mar\xedn'
+
+Request the same pofile again won't crash. (See bug
+https://launchpad.net/products/rosetta/+bug/1558).
+
+  >>> browser.getLink('Download').click()
+
+  >>> browser.getControl('Format').value = ['PO']
+  >>> browser.getControl('Confirm Export').click()
+
+  >>> browser.url
+  'http://launchpad.dev/products/evolution/trunk/+pots/evolution-2.2/sv'
+
+  >>> for tag in find_tags_by_class(browser.contents, 'informational'):
+  ...     tag.renderContents()
+  'Your request has been received. Expect to receive an email shortly.'
+  ...
