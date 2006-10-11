@@ -57,11 +57,10 @@ def referenced_oops():
             'PostgreSQL regexp matched content that Python regexp ' \
             'did not (%r)' % (content,)
         for match in FormattersAPI._re_linkify.finditer(content):
-            group_dict = match.groupdict()
-            assert group_dict.has_key('oops'), \
+            assert match.group('oops') is not None, \
                 'PostgreSQL regexp matched content that Python regexp ' \
                 'did not (%r)' % (content,)
-            code_string = group_dict['oopscode']
+            code_string = match.group('oopscode')
             referenced_codes.add(code_string.upper())
 
     return referenced_codes
@@ -70,14 +69,14 @@ def referenced_oops():
 def path_to_oopsid(path):
     '''Extract the OOPS id from a path to an OOPS file'''
     date_str = os.path.basename(os.path.dirname(path))
-    match = re.search('^(\d+)-(\d+)-(\d+)$', date_str)
+    match = re.search('^(\d\d\d\d)-(\d\d+)-(\d\d+)$', date_str)
     year, month, day = (int(bit) for bit in match.groups())
-    oops_id = path.split('.')[-1]
+    oops_id = path.split('.')[1]
     day = (datetime(year, month, day, tzinfo=utc) - errorlog.epoch).days + 1
     return '%d%s' % (day, oops_id)
 
 
-def unwanted_oops_files(root_path, days):
+def unwanted_oops_files(root_path, days, log=None):
     '''Generate a list of OOPS files that are older than 'days' and are
        not referenced in the Launchpad database.
     '''
@@ -87,6 +86,8 @@ def unwanted_oops_files(root_path, days):
         oopsid = path_to_oopsid(oops_path)
         if oopsid.upper() not in wanted_oops:
             yield oops_path
+        elif log is not None:
+            log.debug("%s (%s) is wanted" % (oops_path, oopsid))
 
 
 def old_oops_files(root_path, days):
@@ -117,7 +118,9 @@ def old_oops_files(root_path, days):
 
         # Yield out OOPS filenames
         for filename in filenames:
-            if re.search(r'(?i)^\d+\.[a-z]+\d+$', filename) is not None:
+            if re.search(
+                    r'^\d+\.[a-zA-Z]+\d+(?:\.gz|\.bz2)?$', filename
+                    ) is not None:
                 yield os.path.join(dirpath, filename)
 
 def prune_empty_oops_directories(root_path):

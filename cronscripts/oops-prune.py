@@ -19,6 +19,10 @@ from canonical.lp import initZopeless, AUTOCOMMIT_ISOLATION
 
 def main():
     parser = OptionParser("Usage: %prog [OOPS_DIR ...]")
+    parser.add_option(
+            '-n', '--dry-run', default=False, action='store_true',
+            dest="dry_run", help="Do a test run. No files are removed."
+            )
     logger_options(parser)
     options, args = parser.parse_args()
 
@@ -37,9 +41,10 @@ def main():
 
     ztm = initZopeless(dbuser='oopsprune', isolation=AUTOCOMMIT_ISOLATION)
     for oops_directory in oops_directories:
-        for oops_path in unwanted_oops_files(oops_directory, 90):
+        for oops_path in unwanted_oops_files(oops_directory, 90, log):
             log.info("Removing %s", oops_path)
-            os.unlink(oops_path)
+            if not options.dry_run:
+                os.unlink(oops_path)
 
     prune_empty_oops_directories(oops_directory)
 

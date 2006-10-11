@@ -44,7 +44,7 @@ class TestOopsPrune(unittest.TestCase):
                     )
             os.mkdir(date_dir)
             # Note - one of these is lowercase to demonstrate case handling
-            for oops_id in ['A666','A1234', 'A5678', 'a666']:
+            for oops_id in ['A666','A1234.gz', 'A5678.bz2', 'a666']:
                 oops_filename = os.path.join(date_dir, '000.%s' % oops_id)
                 open(oops_filename, 'w').write('Fnord')
 
@@ -179,6 +179,39 @@ class TestOopsPrune(unittest.TestCase):
                 os.path.isdir(os.path.join(self.oops_dir, '2006-01-03')),
                 'Script failed to remove 2006-01-03 directory'
                 )
+
+
+    def test_script_dryrun(self):
+        unwanted = unwanted_oops_files(self.oops_dir, 90)
+        # Commit so our script can see changes made by the setUp method
+        LaunchpadZopelessLayer.commit()
+
+        # Count how many OOPS reports there currently are
+        orig_count = 0
+        for dirpath, dirnames, filenames in os.walk(self.oops_dir):
+            for filename in filenames:
+                if re.search(r'^\d+\.\d+[a-zA-Z]\d+(?:\.gz|\.bz2)?$', filename):
+                    orig_count += 1
+
+        # Run the script, which should make no changes with the --dry-run
+        # option.
+        process = Popen([
+                sys.executable,
+                os.path.join(config.root, 'cronscripts', 'oops-prune.py'),
+                '-q', '--dry-run', self.oops_dir,
+                ], stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+        (out, err) = process.communicate()
+        self.failUnlessEqual(out, '')
+
+        # Check out OOPS directory to ensure that no OOPS reports have
+        # been removed.
+        new_count = 0
+        for dirpath, dirnames, filenames in os.walk(self.oops_dir):
+            for filename in filenames:
+                if re.search(r'^\d+\.\d+[a-zA-Z]\d+(?:\.gz|\.bz2)?$', filename):
+                    new_count += 1
+
+        self.failUnlessEqual(orig_count, new_count)
 
     def test_prune_empty_oops_directories(self):
         # And a directory empty of OOPS reports
