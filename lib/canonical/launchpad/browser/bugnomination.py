@@ -148,8 +148,12 @@ class BugNominationEditView(LaunchpadView):
 
         if approve_nomination:
             self.context.approve(self.user)
+            self.request.response.addNotification(
+                "Approved nomination for %s" % self.context.target.bugtargetname)
         elif decline_nomination:
             self.context.decline(self.user)
+            self.request.response.addNotification(
+                "Declined nomination for %s" % self.context.target.bugtargetname)
 
         self.request.response.redirect(
             canonical_url(getUtility(ILaunchBag).bugtask))
