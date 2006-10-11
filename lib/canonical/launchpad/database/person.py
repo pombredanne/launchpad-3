@@ -372,10 +372,6 @@ class Person(SQLBase):
         return results
 
     # ITicketActor implementation
-    def tickets(self, quantity=None):
-        # See ITicketActor
-        return self.searchTickets(status=None)[:quantity]
-
     def searchTickets(self, **kwargs):
         # See ITicketActor
         return TicketSet.searchByPerson(person=self, **kwargs)
