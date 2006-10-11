@@ -3,7 +3,7 @@ Hello!
 Thank you for registering at Launchpad. To complete your registration,
 please follow the instructions here:
 
-   %(appurl)s/token/%(longstring)s
+   %(token_url)s
 
 Launchpad is a suite of applications for open source developers,
 including easy Web-based translation and bug management. We'll be

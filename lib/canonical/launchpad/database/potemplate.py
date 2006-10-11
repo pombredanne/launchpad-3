@@ -780,7 +780,8 @@ class POTemplateSet:
         return helpers.shortlist(POTemplate.select(
             'POTemplate.potemplatename = POTemplateName.id AND'
             ' POTemplateName.name = %s' % sqlvalues(name),
-            clauseTables=['POTemplateName']))
+            clauseTables=['POTemplateName'],
+            orderBy=['POTemplateName.name', 'POTemplate.id']))
 
     def getAllOrderByDateLastUpdated(self):
         """See IPOTemplateSet."""

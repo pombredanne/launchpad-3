@@ -34,6 +34,7 @@ from canonical.launchpad.interfaces import (
     ICountry, IPOTemplateSet, ILaunchpadCelebrities,
     ISourcePackageNameSet, validate_url, IProductSeries,
     ITranslationImportQueue, IProductSeriesSourceSet, NotFoundError)
+from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.webapp import (
@@ -52,6 +53,13 @@ class ProductSeriesNavigation(Navigation):
 
     def breadcrumb(self):
         return 'Series ' + self.context.name
+
+    @stepto('.bzr')
+    def dotbzr(self):
+        if self.context.series_branch:
+            return BranchRef(self.context.series_branch)
+        else:
+            return None
 
     @stepto('+pots')
     def pots(self):

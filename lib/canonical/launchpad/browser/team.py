@@ -10,14 +10,11 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
 from zope.component import getUtility
 
-from canonical.config import config
 from canonical.lp.dbschema import LoginTokenType, TeamMembershipStatus
 from canonical.database.sqlbase import flush_database_updates
 
-from canonical.launchpad.mail import format_address
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.interfaces import (
     IPersonSet, ILaunchBag, IEmailAddressSet, ILoginTokenSet,
@@ -37,6 +34,17 @@ class TeamEditView(SQLObjectEditView):
         make their canonical_url to change too.
         """
         self.request.response.redirect(canonical_url(self.context))
+
+
+def _sendEmailValidationRequest(email, team):
+    """Send a validation message to the given email."""
+    login = getUtility(ILaunchBag).login
+    token = getUtility(ILoginTokenSet).new(
+        team, login, email, LoginTokenType.VALIDATETEAMEMAIL)
+
+    user = getUtility(ILaunchBag).user
+    token.sendTeamEmailAddressValidationEmail(user)
+
 
 class TeamEmailView:
     """A View to edit a team's contact email address."""
@@ -122,8 +130,7 @@ class TeamEmailView:
 
     def _sendEmailValidationRequest(self, email):
         """Send a validation message to <email> and update self.feedback."""
-        appurl = self.request.getApplicationURL()
-        sendEmailValidationRequest(self.team, email, appurl)
+        _sendEmailValidationRequest(email, self.team)
         self.feedback = (
             "An email message was sent to '%s'. Follow the "
             "instructions in that message to confirm the new "
@@ -156,39 +163,10 @@ class TeamAddView(AddView):
 
         email = data.get('contactemail')
         if email is not None:
-            appurl = self.request.getApplicationURL()
-            sendEmailValidationRequest(team, email, appurl)
+            self._sendEmailValidationRequest(email, team)
 
         self._nextURL = canonical_url(team)
         return team
-
-
-def sendEmailValidationRequest(team, email, appurl):
-    """Send a validation message to <email>, so it can be registered to <team>.
-
-    We create the necessary LoginToken entry and then send the message to
-    <email>, with <team> as the requester. The user which actually made the
-    request in behalf of the team is also shown on the message.
-    """
-    template = open(
-        'lib/canonical/launchpad/emailtemplates/validate-teamemail.txt').read()
-
-    fromaddress = format_address(
-        "Launchpad Email Validator", config.noreply_from_address)
-    subject = "Launchpad: Validate your team's contact email address"
-    login = getUtility(ILaunchBag).login
-    user = getUtility(ILaunchBag).user
-    token = getUtility(ILoginTokenSet).new(
-                team, login, email, LoginTokenType.VALIDATETEAMEMAIL)
-
-    replacements = {'longstring': token.token,
-                    'team': token.requester.browsername,
-                    'requester': '%s (%s)' % (user.browsername, user.name),
-                    'toaddress': token.email,
-                    'appurl': appurl,
-                    'admin_email': config.admin_address}
-    message = template % replacements
-    simple_sendmail(fromaddress, str(token.email), subject, message)
 
 
 class TeamMembersView:

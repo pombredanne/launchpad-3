@@ -88,6 +88,13 @@
         template="../templates/logintoken-mergepeople.pt"
         lp:url="token/$token/+accountmerge" />
 
+    <browser:page
+        for="canonical.launchpad.interfaces.ILoginToken"
+        name="+claimprofile"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.ClaimProfileView"
+        template="../templates/logintoken-claimprofile.pt" />
+
     <browser:generalform
         name="+newaccount"
         label="Complete your registration"
