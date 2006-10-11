@@ -12,8 +12,9 @@ __all__ = [
 import operator
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.interfaces import IPerson, IProduct, TooManyItems
+from canonical.launchpad.interfaces import IPerson, IProduct
 from canonical.launchpad.webapp import LaunchpadView
+from canonical.launchpad.webapp.batching import ensure_not_too_many_items
 
 # XXX This stuff was initially cargo-culted from ITicketTarget, some of it
 # could be factored out. See bug 4011. -- David Allouche 2005-09-09
@@ -21,17 +22,19 @@ from canonical.launchpad.webapp import LaunchpadView
 
 class BranchTargetView(LaunchpadView):
 
+    # Currently 500 branches is causing a timeout in the rendering of
+    # the page template, and since we don't want it taking too long,
+    # we are going to limit it here to 250 until we add paging.
+    #    -- Tim Penhey 2006-10-10
+    detailed_branch_limit = 250
+
     @cachedproperty
     def branches(self):
         """All branches related to this target, sorted for display."""
         # A cache to avoid repulling data from the database, which can be
         # particularly expensive
         branches = self.context.branches
-        # A rather large arbitrary number chosen for now as it doesn't
-        # get anywhere near timing out but we need some number defined anyway.
-        #    -- Tim Penhey 2006-10-10
-        if branches.count() > 10000:
-            raise TooManyItems
+        ensure_not_too_many_items(branches)
         return sorted(branches, key=operator.attrgetter('sort_key'))
 
     def context_relationship(self):
@@ -88,12 +91,8 @@ class BranchTargetView(LaunchpadView):
                 branches = self.context.subscribed_branches
             else:
                 branches = self.context.branches
-        # Currently 500 branches is causing a timeout in the rendering of
-        # the page template, and since we don't want it taking too long,
-        # we are going to limit it here to 250 until we add paging.
-        #    -- Tim Penhey 2006-10-10
-        if branches.count() > 250:
-            raise TooManyItems
+
+        ensure_not_too_many_items(branches, self.detailed_branch_limit)
         for branch in branches:
             if categories.has_key(branch.lifecycle_status):
                 category = categories[branch.lifecycle_status]
