@@ -443,3 +443,8 @@ It works also with user submitted values:
     There are no support requests about "evolution" for Ubuntu with the
     requested statuses.
 
+Cleanup
+-------
+
+    (Restore original batch size.)
+    >>> config.launchpad.default_batch_size = original_default_batch_size
