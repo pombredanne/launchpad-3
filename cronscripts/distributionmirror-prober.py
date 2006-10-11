@@ -25,7 +25,7 @@ from canonical.launchpad.interfaces import (
     IDistributionMirrorSet, ILibraryFileAliasSet)
 from canonical.launchpad.scripts.distributionmirror_prober import (
     ProberFactory, MirrorProberCallbacks, MirrorCDImageProberCallbacks,
-    RedirectAwareProberFactory)
+    RedirectAwareProberFactory, get_expected_cdimage_paths)
 
 
 # Keep this number smaller than 1024 if running on python-2.3.4, as there's a
@@ -58,7 +58,7 @@ def probe_archive_mirror(mirror, logfile, unchecked_mirrors, logger):
     sources_paths = mirror.getExpectedSourcesPaths()
     all_paths = itertools.chain(packages_paths, sources_paths)
     for release, pocket, component, path in all_paths:
-        url = "%s/%s" % (mirror.http_base_url, path)
+        url = "%s/%s" % (mirror.base_url, path)
         callbacks = MirrorProberCallbacks(
             mirror, release, pocket, component, url, logfile)
         unchecked_mirrors.append(url)
@@ -78,12 +78,12 @@ def probe_release_mirror(mirror, logfile, unchecked_mirrors, logger):
     """Probe a release or release mirror for its contents.
     
     This is done by checking the list of files for each flavour and release
-    returned by mirror.getExpectedCDImagePaths(). If a mirror contains all
+    returned by get_expected_cdimage_paths(). If a mirror contains all
     files for a given release and flavour, then we consider that mirror is
     actually mirroring that release and flavour.
     """
     try:
-        cdimage_paths = mirror.getExpectedCDImagePaths()
+        cdimage_paths = get_expected_cdimage_paths()
     except UnableToFetchCDImageFileList, e:
         logger.error(e)
         return
@@ -96,7 +96,7 @@ def probe_release_mirror(mirror, logfile, unchecked_mirrors, logger):
         unchecked_mirrors.append(mirror_key)
         deferredList = []
         for path in paths:
-            url = '%s/%s' % (mirror.http_base_url, path)
+            url = '%s/%s' % (mirror.base_url, path)
             # Use a RedirectAwareProberFactory because CD mirrors are allowed
             # to redirect, and we need to cope with that.
             prober = RedirectAwareProberFactory(url)
@@ -137,11 +137,10 @@ def parse_options(args):
 def _sanity_check_mirror(mirror, logger):
     """Check that the given mirror is official and has an http_base_url."""
     assert mirror.isOfficial(), 'Non-official mirrors should not be probed'
-    if mirror.http_base_url is None:
+    if mirror.base_url is None:
         logger.warning(
-            "Mirror '%s' of distribution '%s' doesn't have an http base "
-            "URL, we can't probe it."
-            % (mirror.name, mirror.distribution.name))
+            "Mirror '%s' of distribution '%s' doesn't have a base URL; "
+            "we can't probe it." % (mirror.name, mirror.distribution.name))
         return False
     return True
 
@@ -197,7 +196,7 @@ def main(argv):
         # back in the old times, so now we need to do this small hack here.
         # Guilherme Salgado, 2006-05-26
         if not mirror.distribution.full_functionality:
-            logger_obj.warning(
+            logger_obj.info(
                 "Mirror '%s' of distribution '%s' can't be probed --we only "
                 "probe Ubuntu mirrors." 
                 % (mirror.name, mirror.distribution.name))
@@ -219,23 +218,32 @@ def main(argv):
     # mirrors appear to have no content mirrored, and, if so, mark them as
     # disabled and notify their owners.
     disabled_mirrors_count = 0
+    reenabled_mirrors_count = 0
     ztm.begin()
-    expected_iso_images_count = None
+    expected_iso_images_count = len(get_expected_cdimage_paths())
     for mirror in probed_mirrors:
         _create_probe_record(mirror, logfiles[mirror.id])
-        if (mirror.content == MirrorContent.RELEASE
-            and expected_iso_images_count is None):
-            expected_iso_images_count = len(mirror.getExpectedCDImagePaths())
         if mirror.shouldDisable(expected_iso_images_count):
-            disabled_mirrors_count += 1
+            if mirror.enabled:
+                disabled_mirrors_count += 1
             mirror.disableAndNotifyOwner()
+        else:
+            # Ensure the mirror is enabled, so that it shows up on public
+            # mirror listings.
+            if not mirror.enabled:
+                mirror.enabled = True
+                reenabled_mirrors_count += 1
 
     ztm.commit()
 
-    if disabled_mirrors_count:
+    if disabled_mirrors_count > 0:
         logger_obj.info(
-            'Disabled %d mirrors because no content was found on them.'
+            'Disabled %d mirror(s) that were previously enabled.'
             % disabled_mirrors_count)
+    if reenabled_mirrors_count > 0:
+        logger_obj.info(
+            'Enabled %d mirror(s) that were previously disabled.'
+            % reenabled_mirrors_count)
     logger_obj.info('Done.')
     return 0
 

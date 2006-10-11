@@ -42,7 +42,6 @@ __all__ = [
     'ProductSeriesVocabulary',
     'ProductVocabulary',
     'ProjectVocabulary',
-    'SchemaVocabulary',
     'SourcePackageNameVocabulary',
     'SpecificationVocabulary',
     'SpecificationDependenciesVocabulary',
@@ -1289,8 +1288,3 @@ class ProcessorFamilyVocabulary(NamedSQLObjectVocabulary):
         return SimpleTerm(obj, obj.name, obj.title)
 
 
-class SchemaVocabulary(NamedSQLObjectHugeVocabulary):
-    """See NamedSQLObjectVocabulary."""
-
-    displayname = 'Select a Schema'
-    _table = Schema

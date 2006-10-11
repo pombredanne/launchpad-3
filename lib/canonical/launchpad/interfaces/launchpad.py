@@ -39,10 +39,13 @@ __all__ = [
 
 
 class TooManyItems(Exception):
-    """If a page is displaying a many to one relationship and isn't supporting
+    """Better to raise an early exception than time out.
+
+    If a page is displaying a many to one relationship and isn't supporting
     paging at this stage, then this exception is to be raised if there are
     too many items to process within are reasonable time.  Too many is some
-    arbitrary number that is likely to be different on a case to case basis."""
+    arbitrary number that is likely to be different on a case to case basis.
+    """
     
 class NotFoundError(KeyError):
     """Launchpad object not found."""
