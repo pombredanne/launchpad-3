@@ -102,7 +102,7 @@ class BugWatchSet(BugSetBase):
 
     implements(IBugWatchSet)
     table = BugWatch
-    url_pattern = re.compile(r'(\bhttps?://.+/.*?)\.?\s')
+    url_pattern = re.compile(r'(\bhttps?://.+/\S*)\.?\b')
 
     def __init__(self, bug=None):
         BugSetBase.__init__(self, bug)

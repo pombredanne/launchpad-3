@@ -662,13 +662,6 @@ INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_p
 ALTER TABLE branch ENABLE TRIGGER ALL;
 
 
-ALTER TABLE branchlabel DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE branchlabel ENABLE TRIGGER ALL;
-
-
 ALTER TABLE branchmessage DISABLE TRIGGER ALL;
 
 
@@ -799,13 +792,6 @@ ALTER TABLE bugexternalref DISABLE TRIGGER ALL;
 
 
 ALTER TABLE bugexternalref ENABLE TRIGGER ALL;
-
-
-ALTER TABLE buglabel DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE buglabel ENABLE TRIGGER ALL;
 
 
 ALTER TABLE bugmessage DISABLE TRIGGER ALL;
@@ -1563,6 +1549,8 @@ INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) 
 INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (5, 1, 10, 20, 1);
 INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (6, 0, 10, 0, 1);
 INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (7, 0, 10, 0, 1);
+INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (8, 1, 10, 0, 1);
+INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (9, 1, 10, 0, 1);
 
 
 ALTER TABLE distroreleasequeue ENABLE TRIGGER ALL;
@@ -1591,6 +1579,8 @@ ALTER TABLE distroreleasequeuesource DISABLE TRIGGER ALL;
 
 INSERT INTO distroreleasequeuesource (id, distroreleasequeue, sourcepackagerelease) VALUES (1, 3, 17);
 INSERT INTO distroreleasequeuesource (id, distroreleasequeue, sourcepackagerelease) VALUES (2, 4, 25);
+INSERT INTO distroreleasequeuesource (id, distroreleasequeue, sourcepackagerelease) VALUES (3, 8, 30);
+INSERT INTO distroreleasequeuesource (id, distroreleasequeue, sourcepackagerelease) VALUES (4, 9, 31);
 
 
 ALTER TABLE distroreleasequeuesource ENABLE TRIGGER ALL;
@@ -1854,14 +1844,6 @@ INSERT INTO karmatotalcache (id, person, karma_total) VALUES (59, 16, 113);
 
 
 ALTER TABLE karmatotalcache ENABLE TRIGGER ALL;
-
-
-ALTER TABLE label DISABLE TRIGGER ALL;
-
-INSERT INTO label (id, "schema", name, title, description) VALUES (1, 1, 'blah', 'blah', 'blah');
-
-
-ALTER TABLE label ENABLE TRIGGER ALL;
 
 
 ALTER TABLE "language" DISABLE TRIGGER ALL;
@@ -2948,13 +2930,6 @@ ALTER TABLE personalsourcepackagepublication DISABLE TRIGGER ALL;
 
 
 ALTER TABLE personalsourcepackagepublication ENABLE TRIGGER ALL;
-
-
-ALTER TABLE personlabel DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE personlabel ENABLE TRIGGER ALL;
 
 
 ALTER TABLE personlanguage DISABLE TRIGGER ALL;
@@ -7925,13 +7900,6 @@ ALTER TABLE productcvsmodule DISABLE TRIGGER ALL;
 ALTER TABLE productcvsmodule ENABLE TRIGGER ALL;
 
 
-ALTER TABLE productlabel DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE productlabel ENABLE TRIGGER ALL;
-
-
 ALTER TABLE productrelease DISABLE TRIGGER ALL;
 
 INSERT INTO productrelease (id, datereleased, version, codename, description, changelog, "owner", summary, productseries, manifest, datecreated) VALUES (1, '2004-06-28 00:00:00', '1.0.0', 'First Stable Release', '', '', 12, 'After four years of work the Mozilla project makes its first public stable release. Mozilla 1.0.0 is a major milestone in open source history.', 2, 4, '2005-06-06 08:59:51.930201');
@@ -8310,22 +8278,6 @@ INSERT INTO revisionparent (id, "sequence", revision, parent_id) VALUES (10, 1, 
 ALTER TABLE revisionparent ENABLE TRIGGER ALL;
 
 
-ALTER TABLE "schema" DISABLE TRIGGER ALL;
-
-INSERT INTO "schema" (id, name, title, description, "owner", extensible) VALUES (1, 'mark', 'TITLE', 'description', 1, true);
-INSERT INTO "schema" (id, name, title, description, "owner", extensible) VALUES (2, 'schema', 'SCHEMA', 'description', 1, true);
-INSERT INTO "schema" (id, name, title, description, "owner", extensible) VALUES (3, 'trema', 'XCHEMA', 'description', 1, true);
-INSERT INTO "schema" (id, name, title, description, "owner", extensible) VALUES (4, 'enema', 'ENHEMA', 'description', 1, true);
-
-
-ALTER TABLE "schema" ENABLE TRIGGER ALL;
-
-
-
-
-
-
-
 ALTER TABLE section DISABLE TRIGGER ALL;
 
 INSERT INTO section (id, name) VALUES (1, 'base');
@@ -8618,6 +8570,8 @@ INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, d
  -- Sample Person <test@canonical.com> Tue, 10 Feb 2006 10:10:08 +0300', NULL, NULL, 'powerpc i386', NULL, 1, NULL, 16, 21, 3, 1);
 INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (28, 1, '2.6.15.3', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'any', NULL, 1, NULL, 16, 22, 3, 1);
 INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (29, 1, '0.00', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, NULL, 16, 17, 3, 1);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (30, 1, '1.0', '2006-09-28 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, NULL, 16, 20, 10, 1);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (31, 1, '1.0', '2006-09-28 18:19:01', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, NULL, 16, 20, 10, 1);
 
 
 ALTER TABLE sourcepackagerelease ENABLE TRIGGER ALL;
@@ -9278,20 +9232,6 @@ INSERT INTO ticketsubscription (id, ticket, person) VALUES (6, 11, 12);
 
 
 ALTER TABLE ticketsubscription ENABLE TRIGGER ALL;
-
-
-ALTER TABLE translationeffort DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE translationeffort ENABLE TRIGGER ALL;
-
-
-ALTER TABLE translationeffortpotemplate DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE translationeffortpotemplate ENABLE TRIGGER ALL;
 
 
 ALTER TABLE translationgroup DISABLE TRIGGER ALL;
