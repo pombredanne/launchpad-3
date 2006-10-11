@@ -665,6 +665,8 @@ productseries_translations_upload = 'Request new translations upload'
 
 productseries_ubuntupkg = 'Ubuntu source package'
 
+project_add = 'Register a project with Launchpad'
+
 project_index = ContextTitle('%s in Launchpad')
 
 project_branches = ContextTitle('Bazaar branches for %s')

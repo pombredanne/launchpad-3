@@ -21,6 +21,7 @@ from zope.component import getUtility
 from zope.app.form.browser.add import AddView
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
+from zope.app.form.browser import TextWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.security.interfaces import Unauthorized
 
@@ -31,9 +32,10 @@ from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.webapp import (
-    action, ApplicationMenu, canonical_url, ContextMenu,
-    enabled_with_permission, GetitemNavigation, LaunchpadEditFormView, Link,
-    Navigation, StandardLaunchpadFacets, structured)
+    action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
+    enabled_with_permission, GetitemNavigation, LaunchpadFormView,
+    LaunchpadEditFormView, Link, Navigation, StandardLaunchpadFacets,
+    structured)
 
 
 class ProjectNavigation(Navigation, CalendarTraversalMixin):
@@ -340,33 +342,32 @@ class ProjectSetView(object):
         return self.results
 
 
-class ProjectAddView(AddView):
+class ProjectAddView(LaunchpadFormView):
 
-    _nextURL = '.'
+    schema = IProject
+    field_names = ['name', 'displayname', 'title', 'summary',
+                   'description', 'homepageurl']
+    custom_widget('homepageurl', TextWidget, displayWidth=30)
+    label = _('Register a project with Launchpad')
+    project = None
 
-    def createAndAdd(self, data):
-        """
-        Create the new Project instance if a form with details
-        was submitted.
-        """
-        owner = IPerson(self.request.principal)
-        self.name = data['name'].lower()
-
-        # Now create a new project in the db
-        project = getUtility(IProjectSet).new(
-            name=self.name,
+    @action(_('Add'), name='add')
+    def add_action(self, action, data):
+        """Create the new Project from the form details."""
+        self.project = getUtility(IProjectSet).new(
+            name=data['name'].lower(),
             displayname=data['displayname'],
             title=data['title'],
             homepageurl=data['homepageurl'],
             summary=data['summary'],
             description=data['description'],
-            owner=owner)
-        notify(ObjectCreatedEvent(project))
-        self._nextURL = canonical_url(project)
-        return project
+            owner=self.user)
+        notify(ObjectCreatedEvent(self.project))
 
-    def nextURL(self):
-        return self._nextURL
+    @property
+    def next_url(self):
+        assert self.project is not None, 'No project has been created'
+        return canonical_url(self.project)
 
 
 class ProjectRdfView(object):
