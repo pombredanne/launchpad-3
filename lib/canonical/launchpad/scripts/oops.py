@@ -53,15 +53,15 @@ def referenced_oops():
     cur = cursor()
     cur.execute(query)
     for content in (row[0] for row in cur.fetchall()):
-        assert FormattersAPI._re_linkify.search(content) is not None, \
+        found = False
+        for match in FormattersAPI._re_linkify.finditer(content):
+            if match.group('oops') is not None:
+                code_string = match.group('oopscode')
+                referenced_codes.add(code_string.upper())
+                found = True
+        assert found, \
             'PostgreSQL regexp matched content that Python regexp ' \
             'did not (%r)' % (content,)
-        for match in FormattersAPI._re_linkify.finditer(content):
-            assert match.group('oops') is not None, \
-                'PostgreSQL regexp matched content that Python regexp ' \
-                'did not (%r)' % (content,)
-            code_string = match.group('oopscode')
-            referenced_codes.add(code_string.upper())
 
     return referenced_codes
 
