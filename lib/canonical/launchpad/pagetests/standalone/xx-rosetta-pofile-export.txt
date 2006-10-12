@@ -76,7 +76,7 @@ ownership of the newly created pofile is set to Rosetta Admins.
   ...     'http://launchpad.dev/products/evolution'
   ...     '/trunk/+pots/evolution-2.2/cy')
   >>> translation_portlet = find_portlet(
-  ...     browser.contents, 'Translation file details:')
+  ...     browser.contents, 'Translation file details')
   >>> translation_portlet.firstText('Creator:').findNext('a').string
   u'Rosetta Administrators'
 
@@ -100,7 +100,7 @@ evolution yet; it will be created at the moment the export is requested.
   ...
 
   >>> translation_portlet = find_portlet(
-  ...     browser.contents, 'Translation file details:')
+  ...     browser.contents, 'Translation file details')
   >>> translation_portlet.firstText('Creator:').findNext('a').string
   u'Carlos Perell\xf3 Mar\xedn'
 
