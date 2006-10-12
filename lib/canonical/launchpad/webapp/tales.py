@@ -26,7 +26,7 @@ from zope.security.proxy import isinstance as zope_isinstance
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     IPerson, ILaunchBag, IFacetMenu, IApplicationMenu, IContextMenu,
-    NoCanonicalUrl, IBugSet, NotFoundError
+    NoCanonicalUrl, IBugSet, NotFoundError, IBug
     )
 import canonical.launchpad.pagetitles
 from canonical.lp import dbschema
@@ -991,14 +991,19 @@ class GotoStructuralObject:
     Returns None when there is no structural object.
     """
 
-    def __init__(self, context):
-        self.context = context
+    def __init__(self, context_dict):
+        self.context = context_dict['context']
+        self.view = context_dict['view']
 
     @property
     def structuralobject(self):
+        if IBug.providedBy(self.context):
+            use_context = self.view.current_bugtask
+        else:
+            use_context = self.context
         # The structural object is the nearest object with a facet menu.
         try:
-            facetmenu = nearest_menu(self.context, IFacetMenu)
+            facetmenu = nearest_menu(use_context, IFacetMenu)
         except NoCanonicalUrl:
             return None
         return facetmenu.context

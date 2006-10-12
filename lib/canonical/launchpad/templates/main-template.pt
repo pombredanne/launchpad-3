@@ -48,7 +48,7 @@
     <!-- id="menu" should be id="locationbar" -->
     <tal:maintenance replace="structure context/@@+maintenancemessage" />
     <div id="structuralobject"
-        tal:define="structuralobject context/lp:structuralobject">
+        tal:define="structuralobject CONTEXTS/lp:structuralobject">
       <tal:if condition="structuralobject">
       <tal:structuralobject
           replace="structure structuralobject/@@+structural-heading" />
