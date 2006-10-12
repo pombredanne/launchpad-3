@@ -16,11 +16,13 @@ __all__ = [
     'DistributionBugContactEditView',
     'DistributionArchiveMirrorsView',
     'DistributionReleaseMirrorsView',
+    'DistributionReleaseMirrorsRSSView',
     'DistributionDisabledMirrorsView',
     'DistributionUnofficialMirrorsView',
     'DistributionLaunchpadUsageEditView',
     ]
 
+from datetime import datetime
 import operator
 
 from zope.component import getUtility
@@ -543,6 +545,19 @@ class DistributionReleaseMirrorsView(DistributionMirrorsView):
 
     def getMirrorsGroupedByCountry(self):
         return self._groupMirrorsByCountry(self.context.release_mirrors)
+
+
+class DistributionReleaseMirrorsRSSView(LaunchpadView):
+    """The RSS feed for release mirrors."""
+
+    def initialize(self):
+        self.now = datetime.utcnow()
+
+    def render(self):
+        self.request.response.setHeader(
+            'content-type', 'text/xml;charset=utf-8')
+        body = LaunchpadView.render(self)
+        return body.encode('utf-8')
 
 
 class DistributionMirrorsAdminView(DistributionMirrorsView):

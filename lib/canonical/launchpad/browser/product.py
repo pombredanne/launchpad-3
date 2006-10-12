@@ -61,6 +61,7 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, stepto, stepthrough, structured)
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.widgets.product import ProductBugTrackerWidget
+from canonical.widgets.textwidgets import StrippedTextWidget
 
 
 class ProductNavigation(
@@ -571,8 +572,9 @@ class ProductAddSeriesView(LaunchpadFormView):
     """A form to add new product release series"""
 
     schema = IProductSeries
-    field_names = ['name', 'summary', 'user_branch']
+    field_names = ['name', 'summary', 'user_branch', 'releasefileglob']
     custom_widget('summary', TextAreaWidget, height=7, width=62)
+    custom_widget('releasefileglob', StrippedTextWidget, displayWidth=40)
 
     series = None
 
