@@ -49,7 +49,7 @@
     <tal:maintenance replace="structure context/@@+maintenancemessage" />
     <div id="structuralobject">
       <img alt="" src="/@@/nyet-heading" />
-      <div class="secondary"><h2>structural object secondary</h2></div>
+      <div class="secondary">structural object secondary</div>
       <div class="primary">structural object primary</div>
       <div id="structuralobjectchildren">
         <span class="primary">structural object children row 1</span>
