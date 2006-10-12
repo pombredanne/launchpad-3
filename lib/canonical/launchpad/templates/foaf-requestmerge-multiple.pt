@@ -36,7 +36,7 @@
         <tr tal:repeat="email view/dupeemails">
           <td>
             <input type="checkbox" name="selected" checked
-                   tal:attributes="value email/id" />
+                   tal:attributes="value email/email" />
           </td>
           <td tal:content="email/email">
           </td>

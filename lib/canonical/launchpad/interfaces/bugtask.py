@@ -123,12 +123,6 @@ class IBugTask(IHasDateCreated, IHasBug):
                          readonly=True)
     related_tasks = Attribute("IBugTasks related to this one, namely other "
                               "IBugTasks on the same IBug.")
-    statusdisplayhtml = Attribute(
-        "A HTML representation of the status. This field produces "
-        "its value from the status, assignee and milestone values.")
-    statuselsewhere = Attribute(
-        "A human-readable representation of the status of this IBugTask's bug "
-        "in the other contexts in which it's reported.")
     # This property does various database queries. It is a property so a
     # "snapshot" of its value will be taken when a bugtask is modified, which
     # allows us to compare it to the current value and see if there are any new
@@ -393,7 +387,6 @@ class BugTaskSearchParams:
     project = None
     distribution = None
     distrorelease = None
-    productseries = None
     def __init__(self, user, bug=None, searchtext=None, status=None,
                  importance=None, milestone=None,
                  assignee=None, sourcepackagename=None, owner=None,
@@ -401,7 +394,7 @@ class BugTaskSearchParams:
                  orderby=None, omit_dupes=False, subscriber=None,
                  component=None, pending_bugwatch_elsewhere=False,
                  only_resolved_upstream=False, has_no_upstream_bugtask=False,
-                 tag=None):
+                 tag=None, has_cve=False):
         self.bug = bug
         self.searchtext = searchtext
         self.status = status
@@ -421,6 +414,7 @@ class BugTaskSearchParams:
         self.only_resolved_upstream = only_resolved_upstream
         self.has_no_upstream_bugtask = has_no_upstream_bugtask
         self.tag = tag
+        self.has_cve = has_cve
 
         self._has_context = False
 
@@ -446,12 +440,6 @@ class BugTaskSearchParams:
         """Set the distrorelease context on which to filter the search."""
         assert not self._has_context
         self.distrorelease = distrorelease
-        self._has_context = True
-
-    def setProductSeries(self, productseries):
-        """Set the productseries context on which to filter the search."""
-        assert not self._has_context
-        self.productseries = productseries
         self._has_context = True
 
     def setSourcePackage(self, sourcepackage):
@@ -547,15 +535,7 @@ class IAddBugTaskForm(Interface):
     product = IUpstreamBugTask['product']
     distribution = IDistroBugTask['distribution']
     sourcepackagename = IDistroBugTask['sourcepackagename']
-    link_to_bugwatch = Bool(
-        title=_('Link to a bug in another bug tracker:'),
-        required=False)
-    bugtracker = Choice(
-        title=_('Remote Bug Tracker'), required=False, vocabulary='BugTracker',
-        description=_("The bug tracker in which the remote bug is found. "
-            "Choose from the list. You can register additional bug trackers "
-            "from the Malone home page."))
-    remotebug = StrippedTextLine(
-        title=_('Remote Bug'), required=False, description=_(
-            "The bug number of this bug in the remote bug tracker."))
+    bug_url = StrippedTextLine(
+        title=_('URL'), required=False,
+        description=_("The URL of this bug in the remote bug tracker."))
 

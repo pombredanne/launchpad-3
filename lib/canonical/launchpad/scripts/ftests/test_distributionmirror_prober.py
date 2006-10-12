@@ -196,10 +196,10 @@ class TestRedirectAwareProberFactoryAndProtocol(TestCase):
         prober.redirect('http://localhost:11375/valid-mirror')
         self.failIf(prober.connectCalled)
 
-    def test_noconnection_is_made_when_url_scheme_is_not_http(self):
+    def test_noconnection_is_made_when_url_scheme_is_not_http_or_ftp(self):
         prober = self._createFactoryAndStubConnectAndTimeoutCall()
         prober.failed = lambda error: None
-        prober.redirect('ftp://localhost/valid-mirror')
+        prober.redirect('ssh://localhost/valid-mirror')
         self.failIf(prober.connectCalled)
 
     def test_connection_is_made_on_successful_redirect(self):

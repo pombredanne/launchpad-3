@@ -22,6 +22,11 @@
         for="canonical.launchpad.interfaces.ITranslationGroup"
         name="+index" />
 
+    <browser:menus
+        module="canonical.launchpad.browser"
+        classes="TranslationGroupSetContextMenu TranslationGroupContextMenu"
+        />
+
     <browser:url
         for="canonical.launchpad.interfaces.ITranslationGroup"
         path_expression="name"

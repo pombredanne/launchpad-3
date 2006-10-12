@@ -308,15 +308,6 @@ class POFileTranslateView(POFileView):
             self, IPOFileAlternativeLanguage, IInputWidget,
             names=['alternative_language'], initial=initial_value)
 
-        if not self.context.canEditTranslations(self.user):
-            # The user is not an official translator, we should show a
-            # warning.
-            self.request.response.addWarningNotification(
-                "You are not an official translator for this file. You can"
-                " still make suggestions, and your translations will be"
-                " stored and reviewed for acceptance later by the designated"
-                " translators.")
-
         if not self.has_plural_form_information:
             # Cannot translate this IPOFile without the plural form
             # information. Show the info to add it to our system.
@@ -405,6 +396,11 @@ This only needs to be done once per language. Thanks for helping Rosetta.
     @property
     def completeness(self):
         return '%.0f%%' % self.context.translatedPercentage()
+
+    @property
+    def user_is_official_translator(self):
+        """Determine whether the current user is an official translator."""
+        return self.context.canEditTranslations(self.user)
 
     def process_form(self):
         """Check whether the form was submitted and calls the right callback.

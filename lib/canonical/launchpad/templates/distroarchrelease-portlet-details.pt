@@ -1,7 +1,7 @@
 <div class="portlet">
 
-    <h4>Details for <span tal:replace="context/displayname">warty
-    i386</span>:</h4>
+    <h2>Details for <span tal:replace="context/displayname">warty
+    i386</span></h2>
 
     <div class="portletBody">
         <div class="portletContent">

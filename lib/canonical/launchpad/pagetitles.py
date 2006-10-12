@@ -278,11 +278,11 @@ default_editform = 'Default "Edit" Page'
 
 distributionmirror_edit = ContextTitle('Edit mirror %s')
 
-distributionmirror_mark_official = ContextTitle('Mark mirror %s as official')
-
 distributionmirror_index = ContextTitle('Mirror %s')
 
-distributionmirror_uploadfilelist = ContextTitle('Upload File List for %s')
+distributionmirror_mark_official = ContextTitle('Mark mirror %s as official')
+
+distributionmirror_prober_logs = ContextTitle('%s mirror prober logs')
 
 distribution_allpackages = ContextTitle('All packages in %s')
 
@@ -436,6 +436,8 @@ launchpad_librarianfailure = "Sorry, you can't do this right now"
 
 # launchpad_widget_macros doesn't need a title.
 
+logintoken_claimprofile = 'Claim Launchpad profile'
+
 logintoken_index = 'Launchpad: redirect to the logintoken page'
 
 logintoken_mergepeople = 'Merge Launchpad accounts'
@@ -508,6 +510,8 @@ def person_bugs(context, view):
     return view.getSearchPageHeading()
 
 person_changepassword = 'Change your password'
+
+person_claim = 'Claim account'
 
 person_codesofconduct = ContextDisplayName(smartquote("%s's code of conduct signatures"))
 
@@ -625,6 +629,8 @@ product_branches = ContextDisplayName(
 
 product_distros = ContextDisplayName('%s packages: Comparison of distributions')
 
+product_cvereport = ContextTitle('CVE reports for %s')
+
 product_edit = ContextTitle('%s in Launchpad')
 
 product_index = ContextTitle('%s in Launchpad')
@@ -652,8 +658,6 @@ productseries_index = ContextTitle('Overview of %s')
 productseries_packaging = ContextDisplayName('Packaging of %s in distributions')
 
 productseries_source = 'Import product series'
-
-productseries_sourceadmin = 'Add source import'
 
 productseries_translations = ContextTitle('Translation templates for %s')
 
@@ -754,8 +758,6 @@ signedcodeofconduct_acknowledge = 'Acknowledge code of conduct signature'
 signedcodeofconduct_activate = ContextDisplayName('Activating %s')
 
 signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
-
-sourcepackage_index = ContextTitle('%s')
 
 sourcepackage_bugs = ContextDisplayName('Bugs in %s')
 

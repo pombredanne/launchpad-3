@@ -267,11 +267,6 @@ class IProduct(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
         "that applies to translations in this product, based on the "
         "permissions that apply to the product as well as its project.")
 
-    # XXX: shouldn't this be validated with valid_webref?
-    #   -- kiko, 2005-10-11
-    releaseroot = Text(title=_("The URL of the root directory for the product "
-        "used when the series doesn't supply one."))
-
     def getLatestBranches(quantity=5):
         """Latest <quantity> branches registered for this product."""
 

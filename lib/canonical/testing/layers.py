@@ -27,7 +27,6 @@ import time
 from urllib import urlopen
 
 import psycopg
-from sqlos.interfaces import IConnectionName
 import transaction
 from zope.component import getUtility
 from zope.component.interfaces import ComponentLookupError
@@ -540,6 +539,21 @@ class LaunchpadZopelessLayer(
             raise LayerInvariantError(
                 "Failed to uninstall ZopelessTransactionManager"
                 )
+
+    @classmethod
+    def commit(cls):
+        from canonical.launchpad.ftests.harness import (
+                LaunchpadZopelessTestSetup
+                )
+        LaunchpadZopelessTestSetup.txn.commit()
+
+    @classmethod
+    def abort(cls):
+        from canonical.launchpad.ftests.harness import (
+                LaunchpadZopelessTestSetup
+                )
+        LaunchpadZopelessTestSetup.txn.abort()
+
 
 
 class PageTestLayer(LaunchpadFunctionalLayer):
