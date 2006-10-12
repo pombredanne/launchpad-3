@@ -28,8 +28,8 @@ class BranchTargetView(LaunchpadView):
         # A cache to avoid repulling data from the database, which can be
         # particularly expensive
         branches = self.context.branches
-        ensure_not_too_many_items(branches, 10000)
-        return sorted(branches, key=operator.attrgetter('sort_key'))
+        items = ensure_not_too_many_items(branches, 10000)
+        return sorted(items, key=operator.attrgetter('sort_key'))
 
     def context_relationship(self):
         """The relationship text used for display.
@@ -88,10 +88,9 @@ class BranchTargetView(LaunchpadView):
 
         # Currently 500 branches is causing a timeout in the rendering of
         # the page template, and since we don't want it taking too long,
-        # we are going to limit it here to 250 until we add paging.
+        # we are going to limit it here to 250 until we add batching.
         #    -- Tim Penhey 2006-10-10
-        ensure_not_too_many_items(branches, 250)
-        for branch in branches:
+        for branch in ensure_not_too_many_items(branches, 250):
             if categories.has_key(branch.lifecycle_status):
                 category = categories[branch.lifecycle_status]
             else:
