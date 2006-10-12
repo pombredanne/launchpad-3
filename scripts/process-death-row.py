@@ -16,7 +16,7 @@ from canonical.archivepublisher.config import Config, LucilleConfigError
 from canonical.archivepublisher.deathrow import DeathRow
 
 
-def getDeathRow(distroname, log):
+def getDeathRow(distroname, log, pool_root_override):
     distro = Distribution.byName(distroname)
 
     log.debug("Grab Lucille config.")
@@ -26,9 +26,14 @@ def getDeathRow(distroname, log):
         log.error(info)
         raise
 
+    if pool_root_override is not None:
+        pool_root = pool_root_override
+    else:
+        pool_root = pubconf.poolroot
+
     log.debug("Preparing on-disk pool representation.")
     dp = DiskPool(Poolifier(POOL_DEBIAN),
-                  pubconf.poolroot, logging.getLogger("DiskPool"))
+                  pool_root, logging.getLogger("DiskPool"))
     # Set the diskpool's log level to INFO to suppress debug output
     dp.logger.setLevel(20)
     dp.scan()
@@ -46,6 +51,8 @@ def main():
     parser.add_option("-d", "--distribution",
                       dest="distribution", metavar="DISTRO",
                       help="Specified the distribution name.")
+    parser.add_option("-p", "--pool-root", metavar="PATH",
+                      help="Override the path to the pool folder")
 
     logger_options(parser)
     (options, args) = parser.parse_args()
@@ -57,7 +64,7 @@ def main():
     execute_zcml_for_scripts()
 
     distroname = options.distribution
-    death_row = getDeathRow(distroname, log)
+    death_row = getDeathRow(distroname, log, options.pool_root)
     try:
         # Unpublish death row
         log.debug("Unpublishing death row.")
