@@ -442,22 +442,13 @@ ul.app>li.current {
   width: 22%;
 }
 
-.sitemap, ul.facets {
+ul.facets {
   background-color: #dee7ec;
   border: 1px solid #8cacbb;
   color: #999999;
   font-size: smaller;
   margin: 0 0 1em 0;
-}
-.sitemap li {
-  display: block;
-  padding: 0.25em 1em;
-}
-.sitemap :link, .sitemap :visited {
-  text-decoration: none;
-}
-/* The following paddings/margins aren't yet robust when zoomed. */
-ul.facets {
+  /* The following paddings/margins aren't yet robust when zoomed. */
   padding: 0.25em 0 0.25em 0;
 }
 ul.facets :link, ul.facets :visited {
@@ -467,6 +458,10 @@ ul.facets>li {
   list-style-position: inside;
   margin: 0.25em 1em;
   padding-left: 0.5em;
+}
+ul.facets li.current {
+  background-color: #f4f5f8;
+  color: inherit;
 }
 ul.facets>li ul {
   list-style-position: outside;
