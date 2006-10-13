@@ -12,7 +12,8 @@ Key details:
 %(uids)s
 
 Please go here to finish adding the key to your Launchpad account:
-%(appurl)s/token/%(longstring)s
+
+    %(token_url)s
 
 Thanks,
 

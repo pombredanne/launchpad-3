@@ -13,6 +13,7 @@ from xml.dom import minidom
 from zope.interface import implements
 
 from canonical.config import config
+from canonical import encoding
 from canonical.database.constants import UTC_NOW
 from canonical.lp.dbschema import BugTrackerType, BugTaskStatus
 from canonical.launchpad.scripts import log, debbugs
@@ -109,24 +110,25 @@ class ExternalBugTracker:
                 bug_watches_by_remote_bug[remote_bug] = []
             bug_watches_by_remote_bug[remote_bug].append(bug_watch)
 
-        bug_ids_to_update = set(bug_watches_by_remote_bug.keys())
+        bug_ids_to_update = bug_watches_by_remote_bug.keys()
         self._initializeRemoteBugDB(bug_ids_to_update)
-        for bug_id in bug_ids_to_update:
-            try:
 
+        for bug_id, bug_watches in bug_watches_by_remote_bug.items():
+            local_ids = ", ".join(str(watch.bug.id) for watch in bug_watches)
+            try:
                 try:
                     new_remote_status = self._getRemoteStatus(bug_id)
                 except InvalidBugId, error:
-                    log.warn(
-                        "Invalid bug id %r on %s" % (bug_id, self.baseurl))
+                    log.warn("Invalid bug %r on %s (local bugs: %s)" %
+                             (bug_id, self.baseurl, local_ids))
                     new_remote_status = UNKNOWN_REMOTE_STATUS
                 except BugNotFound:
-                    log.warn(
-                        "Didn't find bug %r on %s" % (bug_id, self.baseurl))
+                    log.warn("Didn't find bug %r on %s (local bugs: %s)" %
+                             (bug_id, self.baseurl, local_ids))
                     new_remote_status = UNKNOWN_REMOTE_STATUS
                 new_malone_status = self.convertRemoteStatus(new_remote_status)
 
-                for bug_watch in bug_watches_by_remote_bug[bug_id]:
+                for bug_watch in bug_watches:
                     bug_watch.lastchecked = UTC_NOW
                     bug_watch.updateStatus(new_remote_status, new_malone_status)
 
@@ -136,10 +138,9 @@ class ExternalBugTracker:
             except:
                 # If something unexpected goes wrong, we shouldn't break the
                 # updating of the other bugs.
-                log.error(
-                    "An exception was raised when updating #%s on %s" % (
-                        bug_id, bug_tracker_url),
-                exc_info=True)
+                log.error("Failure updating bug %r on %s (local bugs: %s)" %
+                            (bug_id, bug_tracker_url, local_ids),
+                          exc_info=True)
 
 
 class Bugzilla(ExternalBugTracker):
@@ -179,10 +180,19 @@ class Bugzilla(ExternalBugTracker):
         page_contents = url.read()
         return page_contents
 
+    def _parseDOMString(self, contents):
+        """Return a minidom instance representing the XML contents supplied"""
+        # Some Bugzilla sites will return pages with content that has
+        # broken encoding. It's unfortunate but we need to guess the
+        # encoding that page is in, and then encode() it into the utf-8
+        # that minidom requires.
+        contents = encoding.guess(contents).encode("utf-8")
+        return minidom.parseString(contents)
+
     def _probe_version(self):
         version_xml = self._getPage('xml.cgi?id=1')
         try:
-            document = minidom.parseString(version_xml)
+            document = self._parseDOMString(version_xml)
         except xml.parsers.expat.ExpatError, e:
             raise BugTrackerConnectError(self.baseurl, "Failed to parse output "
                                          "when probing for version: %s" % e)
@@ -249,7 +259,19 @@ class Bugzilla(ExternalBugTracker):
         """See ExternalBugTracker."""
         if self.version is None:
             self.version = self._probe_version()
-        if self.version < '2.16':
+
+        try:
+            # Ignore plusses in the version.
+            version = self.version.replace("+", "")
+            # We need to convert the version to a tuple of integers if
+            # we are to compare it correctly.
+            version = tuple(int(x) for x in version.split("."))
+        except ValueError:
+            log.error('Failed to parse version %r for %s' %
+                      (self.version, self.baseurl))
+            return False
+
+        if version < (2, 16):
             raise UnsupportedBugTrackerVersion(
                 "Unsupported version %r for %s" % (self.version, self.baseurl))
 
@@ -257,15 +279,14 @@ class Bugzilla(ExternalBugTracker):
                 'bug_id_type' : 'include',
                 'bug_id'      : ','.join(bug_ids),
                 }
-        if self.version < '2.17.1':
+        if version < (2, 17, 1):
             data.update({'format' : 'rdf'})
-            status_tag = "bz:status"
         else:
             data.update({'ctype'  : 'rdf'})
-            status_tag = "bz:bug_status"
+
         buglist_xml = self._postPage('buglist.cgi', data)
         try:
-            document = minidom.parseString(buglist_xml)
+            document = self._parseDOMString(buglist_xml)
         except xml.parsers.expat.ExpatError, e:
             log.error('Failed to parse XML description for %s bugs %s: %s' %
                       (self.baseurl, bug_ids, e))
@@ -281,19 +302,27 @@ class Bugzilla(ExternalBugTracker):
                 "id node should contain a non-empty text string.")
             bug_id = str(bug_id_node.childNodes[0].data)
 
-            status_nodes = bug_node.getElementsByTagName(status_tag)
-            assert len(status_nodes) == 1, "Should be only one status node."
+            # Older versions of bugzilla used bz:status; this was later
+            # changed to bz:bug_status. For robustness, and because
+            # there is no risk of reading wrong data here, we try both:
+            status_nodes = bug_node.getElementsByTagName("bz:bug_status")
+            if not status_nodes:
+                status_nodes = bug_node.getElementsByTagName("bz:status")
+            assert len(status_nodes) == 1, ("Couldn't find a status "
+                                            "node for bug %s." % bug_id)
             bug_status_node = status_nodes[0]
             assert len(bug_status_node.childNodes) == 1, (
-                "status node should contain a non-empty text string.")
+                "status node for bug %s should contain a non-empty "
+                "text string." % bug_id)
             status = bug_status_node.childNodes[0].data
 
             resolution_nodes = bug_node.getElementsByTagName('bz:resolution')
             assert len(resolution_nodes) <= 1, (
-                "Only one resolution node is allowed.")
+                "Should be only one resolution node for bug %s." % bug_id)
             if resolution_nodes:
                 assert len(resolution_nodes[0].childNodes) <= 1, (
-                    "Resolution should contain a, possible empty, string.")
+                    "Resolution for bug %s should just contain "
+                    "a string." % bug_id)
                 if resolution_nodes[0].childNodes:
                     resolution = resolution_nodes[0].childNodes[0].data
                     status += ' %s' % resolution
@@ -333,6 +362,21 @@ class DebBugs(ExternalBugTracker):
             self.db_location = config.malone.debbugs_db_location
         else:
             self.db_location = db_location
+
+        if not os.path.exists(os.path.join(self.db_location, 'db-h')):
+            log.error("There's no debbugs db at %s" % self.db_location)
+            self.debbugs_db = None
+            return
+
+        # The debbugs database is split in two parts: a current
+        # database, which is kept under the 'db-h' directory, and the
+        # archived database, which is kept under 'archive'. The archived
+        # database is used as a fallback, as you can see in _getRemoteStatus
+        self.debbugs_db = debbugs.Database(self.db_location, self.debbugs_pl)
+        if os.path.exists(os.path.join(self.db_location, 'archive')):
+            self.debbugs_db_archive = debbugs.Database(self.db_location,
+                                                       self.debbugs_pl,
+                                                       subdir="archive")
 
     @property
     def baseurl(self):
@@ -379,17 +423,7 @@ class DebBugs(ExternalBugTracker):
 
         return malone_status
 
-    def _initializeRemoteBugDB(self, bug_ids):
-        """See ExternalBugTracker."""
-        if not os.path.exists(os.path.join(self.db_location, 'db-h')):
-            log.error("There's no debbugs db at %s" % self.db_location)
-            self.debbugs_db = None
-        else:
-            self.debbugs_db = debbugs.Database(
-                self.db_location, self.debbugs_pl)
-
-    def _getRemoteStatus(self, bug_id):
-        """See ExternalBugTracker."""
+    def _findBug(self, bug_id):
         if self.debbugs_db is None:
             raise BugNotFound(bug_id)
         if not bug_id.isdigit():
@@ -398,7 +432,18 @@ class DebBugs(ExternalBugTracker):
         try:
             debian_bug = self.debbugs_db[int(bug_id)]
         except KeyError:
-            raise BugNotFound(bug_id)
+            # If we couldn't find it in the main database, there's
+            # always the archive.
+            try:
+                debian_bug = self.debbugs_db_archive[int(bug_id)]
+            except KeyError:
+                raise BugNotFound(bug_id)
+
+        return debian_bug
+
+    def _getRemoteStatus(self, bug_id):
+        """See ExternalBugTracker."""
+        debian_bug = self._findBug(bug_id)
         if not debian_bug.severity:
             # 'normal' is the default severity in debbugs.
             severity = 'normal'
@@ -407,3 +452,4 @@ class DebBugs(ExternalBugTracker):
         new_remote_status = ' '.join(
             [debian_bug.status, severity] + debian_bug.tags)
         return new_remote_status
+

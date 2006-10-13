@@ -62,6 +62,7 @@ class ILaunchpadCelebrities(Interface):
     vcs_imports = Attribute("The 'vcs-imports' team.")
     bazaar_expert = Attribute("The Bazaar Experts team.")
     debbugs = Attribute("The Debian Bug Tracker")
+    sourceforge_tracker = Attribute("The SourceForge Bug Tracker")
     shipit_admin = Attribute("The ShipIt Administrators.")
     launchpad_developers = Attribute("The Launchpad development team.")
     ubuntu_bugzilla = Attribute("The Ubuntu Bugzilla.")
@@ -317,12 +318,10 @@ class IAging(Interface):
         Values returned are things like '2 minutes', '3 hours', '1 month', etc.
         """
 
-
 class IHasDateCreated(Interface):
     """Something created on a certain date."""
 
     datecreated = Attribute("The date on which I was created.")
-
 
 class ILaunchBag(Interface):
     site = Attribute('The application object, or None')

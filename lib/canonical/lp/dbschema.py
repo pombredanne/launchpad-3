@@ -35,7 +35,6 @@ __all__ = (
 'BranchLifecycleStatus',
 'BranchReviewStatus',
 'BugBranchStatus',
-'BugNominationStatus',
 'BugTaskStatus',
 'BugAttachmentType',
 'BugTrackerType',
@@ -62,6 +61,7 @@ __all__ = (
 'PackagePublishingStatus',
 'PackagePublishingPocket',
 'PackagingType',
+'PersonCreationRationale',
 'PollAlgorithm',
 'PollSecrecy',
 'ProjectRelationship',
@@ -103,15 +103,17 @@ __all__ = (
 'UpstreamReleaseVersionStyle',
 )
 
-from canonical.database.constants import DEFAULT
-
-from zope.interface.advice import addClassAdvisor
 import sys
 import warnings
+
+from zope.interface.advice import addClassAdvisor
+from zope.security.proxy import isinstance as zope_isinstance
 
 from sqlobject.col import SOCol, Col
 from sqlobject.include import validators
 import sqlobject.constraints as consts
+
+from canonical.database.constants import DEFAULT
 
 
 class SODBSchemaEnumCol(SOCol):
@@ -147,6 +149,10 @@ class DBSchemaValidator(validators.Validator):
         >>> validator = DBSchemaValidator(schema=BugTaskStatus)
         >>> validator.fromPython(BugTaskStatus.FIXCOMMITTED, None)
         25
+        >>> validator.fromPython(tuple(), None)
+        Traceback (most recent call last):
+        ...
+        TypeError: Not a DBSchema Item: ()
         >>> validator.fromPython(ImportTestStatus.NEW, None)
         Traceback (most recent call last):
         ...
@@ -156,15 +162,13 @@ class DBSchemaValidator(validators.Validator):
         """
         if value is None:
             return None
+        if value is DEFAULT:
+            return value
         if isinstance(value, int):
             raise TypeError(
                 'Need to set a dbschema Enum column to a dbschema Item,'
                 ' not an int')
-        # Allow this to work in the presence of security proxies.
-        ##if not isinstance(value, Item):
-        if value is DEFAULT:
-            return value
-        if value.__class__ != Item:
+        if not zope_isinstance(value, Item):
             # We use repr(value) because if it's a tuple (yes, it has been
             # seen in some cases) then the interpolation would swallow that
             # fact, confusing poor programmers like Daniel.
@@ -330,9 +334,7 @@ class Item:
             warnings.warn('comparison of DBSchema Item to an int: %r' % self,
                 stacklevel=stacklevel)
             return False
-        # Cannot use isinstance, because 'other' might be security proxied.
-        ##elif isinstance(other, Item):
-        elif other.__class__ == Item:
+        elif zope_isinstance(other, Item):
             return self.value == other.value and self.schema == other.schema
         else:
             return False
@@ -354,6 +356,18 @@ class Item:
 
     def __hash__(self):
         return self.value
+
+    # These properties are provided as a way to get at the other
+    # schema items and name from a security wrapped Item instance when
+    # there are no security declarations for the DBSchema class.  They
+    # are used by the enumvalue TALES expression.
+    @property
+    def schema_items(self):
+        return self.schema.items
+
+    @property
+    def schema_name(self):
+        return self.schema.__name__
 
 # TODO: make a metaclass for dbschemas that looks for ALLCAPS attributes
 #       and makes the introspectible.
@@ -703,6 +717,7 @@ class PackagingType(DBSchema):
         relationship with the libneon product.
         """)
 
+
 ##XXX: (gpg+dbschema) cprov 20041004
 ## the data structure should be rearranged to support 4 field
 ## needed: keynumber(1,16,17,20), keyalias(R,g,D,G), title and description
@@ -903,6 +918,7 @@ class EmailAddressStatus(DBSchema):
         The email address was validated and is the person's choice for
         receiving notifications from Launchpad.
         """)
+
 
 class TeamMembershipStatus(DBSchema):
     """TeamMembership Status
@@ -1731,8 +1747,6 @@ class TicketSort(DBSchema):
     """)
 
 
-
-
 class TicketStatus(DBSchema):
     """The current status of a Support Request
 
@@ -1913,6 +1927,7 @@ class TranslationPriority(DBSchema):
         A low priority POTemplate should only show up if a comprehensive
         search or complete listing is requested by the user.  """)
 
+
 class TranslationPermission(DBSchema):
     """Translation Permission System
 
@@ -1950,6 +1965,7 @@ class TranslationPermission(DBSchema):
         language. People who are not designated translators can still make
         suggestions for new translations, but those suggestions need to be
         reviewed before being accepted by the designated translator.""")
+
 
 class DistroReleaseQueueStatus(DBSchema):
     """Distro Release Queue Status
@@ -2003,6 +2019,7 @@ class DistroReleaseQueueStatus(DBSchema):
         DistroRelease it was targetting. As for the 'done' state, this state
         is present to allow logging tools to record the rejection and then
         clean up any subsequently unnecessary records.  """)
+
 
 # If you change this (add items, change the meaning, whatever) search for
 # the token ##CUSTOMFORMAT## e.g. database/queue.py or nascentupload.py and
@@ -2096,6 +2113,7 @@ class PackagePublishingStatus(DBSchema):
         and thus will not be considered in most queries about source
         packages in distroreleases. """)
 
+
 class PackagePublishingPriority(DBSchema):
     """Package Publishing Priority
 
@@ -2143,6 +2161,7 @@ class PackagePublishingPriority(DBSchema):
         other priority levels; or packages which are only useful to people
         who have very specialised needs.
         """)
+
 
 class PackagePublishingPocket(DBSchema):
     """Package Publishing Pocket
@@ -2193,6 +2212,7 @@ class PackagePublishingPocket(DBSchema):
 
         Backported packages.
         """)
+
 
 class SourcePackageRelationships(DBSchema):
     """Source Package Relationships
@@ -2554,34 +2574,6 @@ class BranchReviewStatus(DBSchema):
         """)
 
 
-class BugNominationStatus(DBSchema):
-    """Bug Nomination Status
-
-    The status of the decision to fix a bug in a specific release.
-    """
-
-    PROPOSED = Item(10, """
-        Proposed
-
-        This nomination hasn't yet been reviewed, or is still under
-        review.
-        """)
-
-    APPROVED = Item(20, """
-        Approved
-
-        The release management team has approved fixing the bug for this
-        release.
-        """)
-
-    DECLINED = Item(30, """
-        Declined
-
-        The release management team has declined fixing the bug for this
-        release.
-        """)
-
-
 class BugTaskStatus(DBSchema):
     """Bug Task Status
 
@@ -2806,30 +2798,6 @@ class RevisionControlSystems(DBSchema):
         in the CVS design.
         """)
 
-    ARCH = Item(3, """
-        The Arch Revision Control System
-
-        An open source revision control system that combines truly
-        distributed branching with advanced merge algorithms. This
-        removes the scalability problems of centralised revision
-        control.
-        """)
-
-    PACKAGE = Item(4, """
-        Package
-
-        DEPRECATED DO NOT USE
-        """)
-
-
-    BITKEEPER = Item(5, """
-        Bitkeeper
-
-        A commercial revision control system that, like Arch, uses
-        distributed branches to allow for faster distributed
-        development.
-        """)
-
 
 class RosettaTranslationOrigin(DBSchema):
     """Rosetta Translation Origin
@@ -2977,6 +2945,13 @@ class LoginTokenType(DBSchema):
 
         A user has submitted a new sign-only GPG key to his account and it
         needs to be validated.
+        """)
+
+    PROFILECLAIM = Item(8, """
+        Claim an unvalidated Launchpad profile
+
+        A user has found an unvalidated profile in Launchpad and is trying
+        to claim it.
         """)
 
 
@@ -3206,7 +3181,7 @@ class MirrorStatus(DBSchema):
         """)
 
     UNKNOWN = Item(8, """
-        Unknown
+        Unknown freshness
 
         We couldn't determine when this mirror's content was last updated.
         """)
@@ -3300,6 +3275,7 @@ class RosettaFileFormat(DBSchema):
 
         The .qm format as used by programs using the QT toolkit.
         """)
+
 
 class TranslationValidationStatus(DBSchema):
     """Translation Validation Status
@@ -3457,4 +3433,90 @@ class TextDirection(DBSchema):
         Right to Left
 
         Text is normally written from left to right in this language.
+        """)
+
+
+class PersonCreationRationale(DBSchema):
+    """The rationale for the creation of a given person.
+
+    Launchpad automatically creates user accounts under certain
+    circumstances. The owners of these accounts may discover Launchpad
+    at a later date and wonder why Launchpad knows about them, so we
+    need to make it clear why a certain account was automatically created.
+    """
+
+    UNKNOWN = Item(1, """
+        Unknown
+
+        The reason for the creation of this person is unknown.
+        """)
+
+    BUGIMPORT = Item(2, """
+        Existing user in another bugtracker from which we imported bugs.
+
+        A bugzilla import or sf.net import, for instance. The bugtracker from
+        which we were importing should be described in
+        Person.creation_comment.
+        """)
+
+    SOURCEPACKAGEIMPORT = Item(3, """
+        This person was mentioned in a source package we imported.
+
+        When gina imports source packages, it has to create Person entries for
+        the email addresses that are listed as maintainer and/or uploader of
+        the package, in case they don't exist in Launchpad.
+        """)
+
+    POFILEIMPORT = Item(4, """
+        This person was mentioned in a POFile imported into Rosetta.
+        
+        When importing POFiles into Rosetta, we need to give credit for the
+        translations on that POFile to its last translator, which may not
+        exist in Launchpad, so we'd need to create it.
+        """)
+
+    KEYRINGTRUSTANALYZER = Item(5, """
+        Created by the keyring trust analyzer.
+
+        The keyring trust analyzer is responsible for scanning GPG keys
+        belonging to the strongly connected set and assign all email addresses
+        registered on those keys to the people representing their owners in
+        Launchpad. If any of these people doesn't exist, it creates them.
+        """)
+
+    FROMEMAILMESSAGE = Item(6, """
+        Created when parsing an email message.
+
+        Sometimes we parse email messages and want to associate them with the
+        sender, which may not have a Launchpad account. In that case we need
+        to create a Person entry to associate with the email.
+        """)
+
+    SOURCEPACKAGEUPLOAD = Item(7, """
+        This person was mentioned in a source package uploaded.
+
+        Some uploaded packages may be uploaded with a maintainer that is not
+        registered in Launchpad, and in these cases, soyuz may decide to
+        create the new Person instead of complaining.
+        """)
+
+    OWNER_CREATED_LAUNCHPAD = Item(8, """
+        Created by the owner himself, coming from Launchpad.
+
+        Somebody was navigating through Launchpad and at some point decided to
+        create an account.
+        """)
+
+    OWNER_CREATED_SHIPIT = Item(9, """
+        Created by the owner himself, coming from Shipit.
+
+        Somebody went to one of the shipit sites to request Ubuntu CDs and was
+        directed to Launchpad to create an account.
+        """)
+
+    OWNER_CREATED_UBUNTU_WIKI = Item(10, """
+        Created by the owner himself, coming from the Ubuntu wiki.
+
+        Somebody went to the Ubuntu wiki and was directed to Launchpad to
+        create an account.
         """)

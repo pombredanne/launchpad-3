@@ -76,7 +76,8 @@ Next, we need to grab some values to provide for importance and status.
     True
 
   ii. Distro Release -- a bug that has to be fixed in a specific distro
-  release. These tasks are used for release management and backporting.
+  release. This primary use case for distro release bug tasks is for backporting
+  fixes (e.g. for security bugs or bugs causing critical data loss.)
 
     >>> warty = distoreleaseset.get(1)
     >>> distro_release_task = bugtaskset.createTask(
@@ -88,6 +89,17 @@ Next, we need to grab some values to provide for importance and status.
     >>> from canonical.launchpad.interfaces import IDistroReleaseBugTask
     >>> IDistroReleaseBugTask.providedBy(distro_release_task)
     True
+
+You cannot open a distro release task on the current release, because it doesn't
+make sense to "backport a fix" to the current release:
+
+    >>> hoary = distoreleaseset.get(3)
+    >>> distro_release_task = bugtaskset.createTask(
+    ...     bug=bug_one, distrorelease=hoary, owner=sabdfl,
+    ...     status=STATUS_UNCONFIRMED, importance=IMPORTANCE_MEDIUM)
+    Traceback (most recent call last):
+      ...
+    AssertionError: Bugtasks cannot be opened on the current release.
 
 XXX: Brad Bollenbach, 2005-02-24: See the bottom of this file for a chunk of
 test documentation that is missing from here, due to problems with resetting
@@ -341,29 +353,26 @@ affect upstream, i.e., bugs that don't have an IUpstreamBugTask.
 
     >>> test_helper.tearDownBugsElsewhereTests()
 
+The search filter can also return bugs that are related to CVE reports:
+
+    >>> params = BugTaskSearchParams(
+    ...     has_cve=True, orderby='id', user=None)
+    >>> tasks_with_cves = ubuntu.searchTasks(params)
+    >>> for bugtask in tasks_with_cves:
+    ...     print bugtask.bug.id, bugtask.targetname
+    1 mozilla-firefox (Ubuntu)
+    1 Ubuntu
+    1 evolution (Ubuntu)
+    2 Ubuntu
+
 Bug Task Targets
 ----------------
 
 The "target" of an IBugTask is one of the following things:
 
-  * an upstream product
+ * an upstream product
 
     >>> upstream_task.target == evolution
-    True
-
-  * a product series
-
-    >>> from canonical.launchpad.interfaces import IProductSeriesBugTask
-
-    >>> firefox = productset['firefox']
-    >>> firefox_1_0 = firefox.getSeries("1.0")
-
-    >>> productseries_task = bugtaskset.createTask(
-    ...     owner=sabdfl, bug=bug_one, productseries=firefox_1_0)
-    >>> IProductSeriesBugTask.providedBy(productseries_task)
-    True
-
-    >>> productseries_task.target == firefox_1_0
     True
 
   * a distribution
@@ -528,10 +537,6 @@ like these, use the NullBugTask object.
     >>> actual_related_task_ids.sort()
     >>> expected_related_task_ids == actual_related_task_ids
     True
-    >>> null_bugtask.statusdisplayhtml
-    u'Not reported in netapplet (upstream)'
-    >>> null_bugtask.statuselsewhere
-    'fixed in 2 of 8 places'
 
 The astute reader will have noticed that NullBugTask automatically
 "marked" itself as providing the correct IBugTask interface. Let's see
@@ -655,6 +660,7 @@ No Privileges Person can't see the private bug, because he's not a subscriber:
 
     >>> login("no-priv@canonical.com")
     >>> no_priv = personset.getByName("no-priv")
+    >>> firefox = productset['firefox']
     >>> params = BugTaskSearchParams(
     ...     status=any(STATUS_UNCONFIRMED, STATUS_CONFIRMED), user=no_priv)
     >>> firefox_bugtasks = firefox.searchTasks(params)
@@ -747,7 +753,6 @@ Let's just make sure that the tasks on bug_one sort correctly.
     ...     print task.targetname
     evolution (upstream)
     firefox (upstream)
-    firefox 1.0 (upstream)
     Ubuntu
     evolution (Ubuntu)
     mozilla-firefox (Ubuntu)
@@ -816,23 +821,42 @@ Of course, it's also computed and set when a bugtask is created.
     >>> bugtaskset.get(upstream_task_id).targetname
     u'thunderbird-ng (upstream)'
 
-Target Uses Malone
-------------------
+Remote BugTasks
+---------------
 
-Bug tasks have a flag, target_uses_malone, that says whether the bugtask
-target uses Malone as its official bugtracker.
+If a bug task's target isn't using Malone officially, we say that it's a remote
+bug task. Such bug tasks let the status and importance be UNKNOWN.
 
-    >>> for bugtask in bug_one.bugtasks:
-    ...     print "%-30s %s" % (bugtask.targetname, bugtask.target_uses_malone)
-    evolution (upstream)           True
-    firefox (upstream)             True
-    firefox 1.0 (upstream)         True
-    thunderbird-ng (upstream)      False
-    Ubuntu                         True
-    evolution (Ubuntu)             True
-    mozilla-firefox (Ubuntu)       True
-    Ubuntu Warty                   True
-    mozilla-firefox (Debian)       False
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> evolution_task = bug_one.bugtasks[0]
+    >>> evolution_task.target.name
+    u'evolution'
+    >>> evolution_task.target_uses_malone
+    True
+
+    >>> thunderbird_task = bug_one.bugtasks[2]
+    >>> thunderbird_task.target.name
+    u'thunderbird-ng'
+    >>> thunderbird_task.target_uses_malone
+    False
+
+    >>> ubuntu_task = bug_one.bugtasks[3]
+    >>> ubuntu_task.target.name
+    u'ubuntu'
+    >>> ubuntu_task.target_uses_malone
+    True
+
+    >>> ubuntu_mozilla_task = bug_one.bugtasks[5]
+    >>> ubuntu_mozilla_task.targetname
+    u'mozilla-firefox (Ubuntu)'
+    >>> ubuntu_mozilla_task.target_uses_malone
+    True
+
+    >>> debian_mozilla_task = bug_one.bugtasks[7]
+    >>> debian_mozilla_task.targetname
+    u'mozilla-firefox (Debian)'
+    >>> debian_mozilla_task.target_uses_malone
+    False
 
 Handling IntegrityError and ProgrammingError
 --------------------------------------------

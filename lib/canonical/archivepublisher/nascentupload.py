@@ -37,9 +37,9 @@ from canonical.archivepublisher.utils import (
 from canonical.librarian.utils import copy_and_close, filechunks
 
 from canonical.lp.dbschema import (
-    SourcePackageUrgency, PackagePublishingPriority,
-    DistroReleaseQueueCustomFormat, BinaryPackageFormat,
-    BuildStatus, DistroReleaseQueueStatus, PackagePublishingPocket)
+    SourcePackageUrgency, PackagePublishingPriority, PersonCreationRationale,
+    DistroReleaseQueueCustomFormat, BinaryPackageFormat, BuildStatus,
+    DistroReleaseQueueStatus, PackagePublishingPocket)
 
 from canonical.launchpad.interfaces import (
     IGPGHandler, GPGVerificationError, IGPGKeySet, IPersonSet,
@@ -651,7 +651,19 @@ class NascentUpload:
             raise UploadError(str(e))
 
         if self.policy.create_people:
-            person = getUtility(IPersonSet).ensurePerson(email, name)
+            package = self.changes['source']
+            # XXX: The distrorelease property may raise an UploadError in case
+            # there's no distrorelease with a name equal to
+            # self.changes['distribution'] or even a raw Exception in some
+            # tests, but we don't want the upload to fail at this point nor
+            # catch the exception here, so we'll hardcode the distro here for
+            # now and leave the rationale without a specific release.
+            # -- Guilherme Salgado, 2006-10-03
+            release = 'Ubuntu'
+            person = getUtility(IPersonSet).ensurePerson(
+                email, name, PersonCreationRationale.SOURCEPACKAGEUPLOAD,
+                comment=('when the %s package was uploaded to %s'
+                         % (package, release)))
         else:
             person = getUtility(IPersonSet).getByEmail(email)
 
@@ -1419,8 +1431,8 @@ class NascentUpload:
                     except SystemError, e:
                         # If we can't find a data.tar.gz,
                         # look for data.tar.bz2 instead.
-                        if not re.match(r"Cannot f[ui]nd chunk data.tar.gz$",
-                                        str(e)):
+                        if not re.search(r"Cannot f[ui]nd chunk data.tar.gz$",
+                                         str(e)):
                             raise
                         deb_file.seek(0)
                         apt_inst.debExtract(deb_file,tar_checker.callback,
@@ -1960,8 +1972,8 @@ class NascentUpload:
                 build.buildstate = BuildStatus.FULLYBUILT
             else:
                 # No luck. Make one.
-                build = spr.createBuild(dar, status=BuildStatus.FULLYBUILT,
-                                        pocket=self.pocket)
+                build = spr.createBuild(
+                    dar, self.pocket, status=BuildStatus.FULLYBUILT)
                 self.logger.debug("Build %s created" % build.id)
             self.policy.build = build
         else:
@@ -1974,9 +1986,7 @@ class NascentUpload:
                 build.pocket != self.pocket):
                 raise UploadError("Attempt to upload binaries specifying "
                                   "build %s, where they don't fit" % build_id)
-                
             self.policy.build = build
-            
             self.logger.debug("Build %s found" % self.policy.build.id)
 
         return self.policy.build

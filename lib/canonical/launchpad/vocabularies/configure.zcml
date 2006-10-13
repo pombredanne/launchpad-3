@@ -51,11 +51,6 @@
     />
 
   <vocabulary
-    name="BugNominationStatus"
-    factory="canonical.launchpad.vocabularies.BugNominationStatusVocabulary"
-    />
-
-  <vocabulary
     name="BugRef"
     factory="canonical.launchpad.vocabularies.BugRefVocabulary"
     />
@@ -261,8 +256,8 @@
     />
 
   <vocabulary
-    name="Schema"
-    factory="canonical.launchpad.vocabularies.SchemaVocabulary"
+    name="RevisionControlSystems"
+    factory="canonical.launchpad.vocabularies.RevisionControlSystemsVocabulary"
     />
 
   <vocabulary

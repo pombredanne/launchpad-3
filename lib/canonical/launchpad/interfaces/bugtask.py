@@ -14,7 +14,6 @@ __all__ = [
     'IUpstreamBugTask',
     'IDistroBugTask',
     'IDistroReleaseBugTask',
-    'IProductSeriesBugTask',
     'ISelectResultsSlicable',
     'IBugTaskSet',
     'BugTaskSearchParams',
@@ -59,8 +58,6 @@ class IBugTask(IHasDateCreated, IHasBug):
     id = Int(title=_("Bug Task #"))
     bug = Int(title=_("Bug #"))
     product = Choice(title=_('Product'), required=False, vocabulary='Product')
-    productseries = Choice(
-        title=_('Product Series'), required=False, vocabulary='ProductSeries')
     sourcepackagename = Choice(
         title=_("Package"), required=False,
         vocabulary='SourcePackageName')
@@ -126,12 +123,6 @@ class IBugTask(IHasDateCreated, IHasBug):
                          readonly=True)
     related_tasks = Attribute("IBugTasks related to this one, namely other "
                               "IBugTasks on the same IBug.")
-    statusdisplayhtml = Attribute(
-        "A HTML representation of the status. This field produces "
-        "its value from the status, assignee and milestone values.")
-    statuselsewhere = Attribute(
-        "A human-readable representation of the status of this IBugTask's bug "
-        "in the other contexts in which it's reported.")
     # This property does various database queries. It is a property so a
     # "snapshot" of its value will be taken when a bugtask is modified, which
     # allows us to compare it to the current value and see if there are any new
@@ -318,15 +309,13 @@ class IBugTaskDelta(Interface):
     statusexplanation = Attribute("The new value of the status notes.")
 
 
-# XXX, Brad Bollenbach, 2006-08-03: This interface should be
-# renamed. See https://launchpad.net/bugs/55089 .
 class IUpstreamBugTask(IBugTask):
-    """A bug needing fixing in a product."""
+    """A description of a bug needing fixing in a particular product."""
     product = Choice(title=_('Product'), required=True, vocabulary='Product')
 
 
 class IDistroBugTask(IBugTask):
-    """A bug needing fixing in a distribution, possibly a specific package."""
+    """A description of a bug needing fixing in a particular package."""
     sourcepackagename = Choice(
         title=_("Source Package Name"), required=False,
         description=_("The source package in which the bug occurs. "
@@ -337,20 +326,13 @@ class IDistroBugTask(IBugTask):
 
 
 class IDistroReleaseBugTask(IBugTask):
-    """A bug needing fixing in a distrorealease, possibly a specific package."""
+    """A description of a bug needing fixing in a particular realease."""
     sourcepackagename = Choice(
         title=_("Source Package Name"), required=True,
         vocabulary='SourcePackageName')
     distrorelease = Choice(
         title=_("Distribution Release"), required=True,
         vocabulary='DistroRelease')
-
-
-class IProductSeriesBugTask(IBugTask):
-    """A bug needing fixing a productseries."""
-    productseries = Choice(
-        title=_("Product Series"), required=True,
-        vocabulary='ProductSeries')
 
 
 # XXX: Brad Bollenbach, 2005-02-03: This interface should be removed
@@ -405,7 +387,6 @@ class BugTaskSearchParams:
     project = None
     distribution = None
     distrorelease = None
-    productseries = None
     def __init__(self, user, bug=None, searchtext=None, status=None,
                  importance=None, milestone=None,
                  assignee=None, sourcepackagename=None, owner=None,
@@ -413,7 +394,7 @@ class BugTaskSearchParams:
                  orderby=None, omit_dupes=False, subscriber=None,
                  component=None, pending_bugwatch_elsewhere=False,
                  only_resolved_upstream=False, has_no_upstream_bugtask=False,
-                 tag=None):
+                 tag=None, has_cve=False):
         self.bug = bug
         self.searchtext = searchtext
         self.status = status
@@ -433,6 +414,7 @@ class BugTaskSearchParams:
         self.only_resolved_upstream = only_resolved_upstream
         self.has_no_upstream_bugtask = has_no_upstream_bugtask
         self.tag = tag
+        self.has_cve = has_cve
 
         self._has_context = False
 
@@ -458,12 +440,6 @@ class BugTaskSearchParams:
         """Set the distrorelease context on which to filter the search."""
         assert not self._has_context
         self.distrorelease = distrorelease
-        self._has_context = True
-
-    def setProductSeries(self, productseries):
-        """Set the productseries context on which to filter the search."""
-        assert not self._has_context
-        self.productseries = productseries
         self._has_context = True
 
     def setSourcePackage(self, sourcepackage):
@@ -502,8 +478,8 @@ class IBugTaskSet(Interface):
         the BugTaskSearchParams argument supplied.
         """
 
-    def createTask(bug, product=None, productseries=None, distribution=None,
-                   distrorelease=None, sourcepackagename=None, status=None,
+    def createTask(bug, product=None, distribution=None, distrorelease=None,
+                   sourcepackagename=None, status=None,
                    importance=None, assignee=None, owner=None, milestone=None):
         """Create a bug task on a bug and return it.
 
@@ -559,15 +535,7 @@ class IAddBugTaskForm(Interface):
     product = IUpstreamBugTask['product']
     distribution = IDistroBugTask['distribution']
     sourcepackagename = IDistroBugTask['sourcepackagename']
-    link_to_bugwatch = Bool(
-        title=_('Link to a bug in another bug tracker:'),
-        required=False)
-    bugtracker = Choice(
-        title=_('Remote Bug Tracker'), required=False, vocabulary='BugTracker',
-        description=_("The bug tracker in which the remote bug is found. "
-            "Choose from the list. You can register additional bug trackers "
-            "from the Malone home page."))
-    remotebug = StrippedTextLine(
-        title=_('Remote Bug'), required=False, description=_(
-            "The bug number of this bug in the remote bug tracker."))
+    bug_url = StrippedTextLine(
+        title=_('URL'), required=False,
+        description=_("The URL of this bug in the remote bug tracker."))
 

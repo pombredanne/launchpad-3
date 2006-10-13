@@ -40,9 +40,8 @@ class BugTracker(SQLBase):
     baseurl = StringCol(notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     contactdetails = StringCol(notNull=False)
-    projects = SQLRelatedJoin('Project', intermediateTable='ProjectBugTracker',
-        joinColumn='bugtracker', otherColumn='project',
-        orderBy='name')
+    projects = SQLMultipleJoin(
+        'Project', joinColumn='bugtracker', orderBy='name')
     watches = SQLMultipleJoin('BugWatch', joinColumn='bugtracker',
                               orderBy='-datecreated', prejoins=['bug'])
 
@@ -113,7 +112,16 @@ class BugTrackerSet:
         return '%s:%s' % (schema, rest)
 
     def queryByBaseURL(self, baseurl):
-        return BugTracker.selectOneBy(baseurl=baseurl)
+        bugtracker = BugTracker.selectOneBy(baseurl=baseurl)
+        if bugtracker is not None:
+            return bugtracker
+        # Sometimes the base URL ends with /, sometimes not; let's make
+        # sure we check both alternatives.
+        if baseurl.endswith('/'):
+            alternative_url = baseurl[:-1]
+        else:
+            alternative_url = baseurl + '/'
+        return BugTracker.selectOneBy(baseurl=alternative_url)
 
     def search(self):
         """See canonical.launchpad.interfaces.IBugTrackerSet."""

@@ -112,11 +112,11 @@ class LaunchBag:
 
     @property
     def product(self):
-        return getattr(self._store, "product", None)
+        return self._store.product
 
     @property
     def distribution(self):
-        return getattr(self._store, "distribution", None)
+        return self._store.distribution
 
     @property
     def distrorelease(self):

@@ -15,9 +15,9 @@ The product page displays the latest support requests in a portlet.
   >>> browser.open('http://launchpad.dev/products/firefox')
   >>> from BeautifulSoup import BeautifulSoup
   >>> soup = BeautifulSoup(browser.contents)
-  >>> soup('h4')
+  >>> soup('h2')
   [...Latest Mozilla Firefox
-  support requests:...]
+  support requests...]
   >>> browser.getLink(url='/firefox/+ticket/4').text
   'Firefox loses focus ...'
   >>> browser.getLink(url='/firefox/+ticket/2').text
@@ -70,11 +70,11 @@ Distributions also have the 'Support' link and a section showing the
   >>> browser.getLink('Support').url
   '.../distros/ubuntu/+tickets'
   >>> soup = BeautifulSoup(browser.contents)
-  >>> soup('h4')
-  [<h4>
+  >>> soup('h2')
+  [<h2>
   Latest Ubuntu
-  support requests:
-  </h4>...]
+  support requests
+  </h2>...]
 
 To request support for the distro, one must go to the 'Support' facet.
 
@@ -132,11 +132,11 @@ opened by that person.
 
   >>> browser.open('http://launchpad.dev/people/name16')
   >>> soup = BeautifulSoup(browser.contents)
-  >>> soup('h4')
-  [...<h4>
+  >>> soup('h2')
+  [...<h2>
   Latest Foo Bar
-  support requests:
-  </h4>...]
+  support requests
+  </h2>...]
   >>> browser.getLink('Slow system').url
   '.../distros/ubuntu/+ticket/7'
   >>> browser.getLink('Firefox loses focus').url

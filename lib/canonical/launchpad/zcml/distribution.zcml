@@ -73,6 +73,14 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IDistribution"
+        name="+cdmirrors-rss"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.DistributionReleaseMirrorsRSSView"
+        template="../templates/distribution-mirrors-rss.pt"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IDistribution"
         facet="overview"
         class="canonical.launchpad.browser.DistributionDisabledMirrorsView"
         permission="zope.Public"
@@ -135,12 +143,6 @@
             lp:url="/distros/$Distribution.name/+members"
             />
         <browser:page
-            name="+cve"
-            facet="bugs"
-            template="../templates/distribution-cvereport.pt"
-            lp:url="/distros/$Distribution.name/+cve"
-            />
-        <browser:page
             name="+translations"
             facet="translations"
             template="../templates/distribution-translations.pt"
@@ -168,6 +170,14 @@
         lp:url="/distros/$Distribution.name/+allpackages"
         />
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IDistribution"
+        class="canonical.launchpad.browser.CVEReportView"
+        permission="zope.Public"
+        name="+cve"
+        facet="bugs"
+        template="../templates/distribution-cvereport.pt" />
+
     <browser:pages
         for="canonical.launchpad.interfaces.IDistribution"
         permission="zope.Public" >
@@ -193,8 +203,7 @@
             lp:url="/distros/$Distribution.name/+portlet-bounties" />
         <browser:page
             name="+portlet-aboutcve"
-            template="../templates/distribution-portlet-aboutcve.pt"
-            lp:url="/distros/$Distribution.name/+portlet-aboutcve" />
+            template="../templates/portlet-aboutcve.pt" />
     </browser:pages>
 
     <browser:pages
@@ -258,15 +267,12 @@
         template="../templates/distribution-edit.pt"
         lp:url="/distros/$Distribution.name/+edit" />
 
-    <browser:editform
+    <browser:page
         name="+launchpad"
         for="canonical.launchpad.interfaces.IDistribution"
-        class="canonical.launchpad.browser.DistributionEditView"
-        schema="canonical.launchpad.interfaces.IDistribution"
+        class="canonical.launchpad.browser.DistributionLaunchpadUsageEditView"
         facet="overview"
-        fields="official_rosetta official_malone"
         permission="launchpad.Edit"
-        label="Describe Launchpad usage"
         template="../templates/object-launchpadusage.pt"
         />
 

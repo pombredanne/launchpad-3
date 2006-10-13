@@ -109,7 +109,11 @@ class POTemplate(SQLBase, RosettaStats):
 
     def __getitem__(self, key):
         """See IPOTemplate."""
-        return self.getPOTMsgSetByMsgIDText(key, onlyCurrent=True)
+        potmsgset = self.getPOTMsgSetByMsgIDText(key, only_current=True)
+        if potmsgset is None:
+            raise NotFoundError(key)
+        else:
+            return potmsgset
 
     # properties
     @property
@@ -247,26 +251,22 @@ class POTemplate(SQLBase, RosettaStats):
                 sourcepackagename=self.sourcepackagename)
         raise AssertionError('Unknown POTemplate translation target')
 
-    def getPOTMsgSetByMsgIDText(self, key, onlyCurrent=False):
+    def getPOTMsgSetByMsgIDText(self, key, only_current=False):
         """See IPOTemplate."""
         query = 'potemplate = %s' % sqlvalues(self.id)
-        if onlyCurrent:
+        if only_current:
             query += ' AND sequence > 0'
 
         # Find a message ID with the given text.
         try:
             pomsgid = POMsgID.byMsgid(key)
         except SQLObjectNotFound:
-            raise NotFoundError(key)
+            return None
 
         # Find a message set with the given message ID.
 
-        result = POTMsgSet.selectOne(query +
+        return POTMsgSet.selectOne(query +
             (' AND primemsgid = %s' % sqlvalues(pomsgid.id)))
-
-        if result is None:
-            raise NotFoundError(key)
-        return result
 
     def getPOTMsgSetBySequence(self, sequence):
         """See IPOTemplate."""
@@ -780,7 +780,8 @@ class POTemplateSet:
         return helpers.shortlist(POTemplate.select(
             'POTemplate.potemplatename = POTemplateName.id AND'
             ' POTemplateName.name = %s' % sqlvalues(name),
-            clauseTables=['POTemplateName']))
+            clauseTables=['POTemplateName'],
+            orderBy=['POTemplateName.name', 'POTemplate.id']))
 
     def getAllOrderByDateLastUpdated(self):
         """See IPOTemplateSet."""

@@ -13,6 +13,8 @@ import unittest
 import shutil
 import subprocess
 
+from bzrlib.urlutils import local_path_to_url
+
 from canonical.config import config
 from canonical.launchpad.scripts.importd.sourcetransport import (
     ImportdSourceTransport)
@@ -26,7 +28,8 @@ class TestImportdSourceTransport(ImportdSourceTransportTestCase):
     """Simple unit tests for ImportdSourceTransport."""
 
     def makeTransport(self, local_source, remote_dir):
-        return ImportdSourceTransport(self.logger, local_source, remote_dir)
+        return ImportdSourceTransport(self.logger, local_source,
+                                      local_path_to_url(remote_dir))
 
     def testLocalSourceNormalisation(self):
         # The ImportdSourceTransport constructor strips trailing path

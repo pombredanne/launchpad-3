@@ -7,13 +7,15 @@ __metaclass__ = type
 __all__ = [
     'IProduct',
     'IProductSet',
+    'IProductLaunchpadUsageForm',
     ]
 
 from zope.schema import Bool, Choice, Int, Text, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Description, Summary, Title
+from canonical.launchpad.fields import (
+    Description, ProductBugTracker, Summary, Title)
 from canonical.launchpad.interfaces import (
     IHasOwner, IHasDrivers, IBugTarget, ISpecificationTarget,
     IHasSecurityContact, IKarmaContext, PillarNameField)
@@ -190,6 +192,20 @@ class IProduct(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
     reviewed = Bool(title=_('Reviewed'), description=_("""Whether or not
         this product has been reviewed."""))
 
+    def getExternalBugTracker():
+        """Return the external bug tracker used by this bug tracker.
+
+        If the product uses Malone, return None.
+        If the product doesn't have a bug tracker specified, return the
+        project bug tracker instead.
+        """
+
+    bugtracker = Choice(title=_('Bug Tracker'), required=False,
+        vocabulary='BugTracker',
+        description=_(
+            "The external bug tracker this product uses, if it's different"
+            " from its Project's bug tracker."))
+
     official_malone = Bool(title=_('Uses Malone Officially'),
         required=True, description=_('Check this box to indicate that '
         'this application officially uses Malone for bug tracking '
@@ -250,11 +266,6 @@ class IProduct(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
     aggregatetranslationpermission = Attribute("The translation permission "
         "that applies to translations in this product, based on the "
         "permissions that apply to the product as well as its project.")
-
-    # XXX: shouldn't this be validated with valid_webref?
-    #   -- kiko, 2005-10-11
-    releaseroot = Text(title=_("The URL of the root directory for the product "
-        "used when the series doesn't supply one."))
 
     def getLatestBranches(quantity=5):
         """Latest <quantity> branches registered for this product."""
@@ -365,3 +376,12 @@ class IProductSet(Interface):
         """return a count of the number of products in the Launchpad that
         are both active and reviewed."""
 
+
+class IProductLaunchpadUsageForm(Interface):
+    """Form for indicating whether Rosetta or Malone is used."""
+
+    official_rosetta = IProduct['official_rosetta']
+    bugtracker = ProductBugTracker(
+        title=_('Bug Tracker'),
+        description=_('Where are bugs primarily tracked?'),
+        vocabulary="BugTracker")
