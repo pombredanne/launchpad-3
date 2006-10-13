@@ -1078,7 +1078,6 @@ class DistroRelease(SQLBase, BugTargetBase):
             parent_arch = self.parentrelease[arch.architecturetag]
             self._copy_binary_publishing_records(cur, arch, parent_arch)
         self._copy_lucille_config(cur)
-        self._copy_active_translations(cur)
 
         # Finally, flush the caches because we've altered stuff behind the
         # back of sqlobject.
