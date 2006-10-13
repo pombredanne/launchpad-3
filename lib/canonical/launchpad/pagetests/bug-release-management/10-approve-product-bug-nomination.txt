@@ -18,17 +18,17 @@ The approve/decline links and buttons aren't visible to unprivileged users.
     Traceback (most recent call last):
       ...
     LinkNotFoundError
-    
+
     >>> no_priv_browser.getControl("Approve")
     Traceback (most recent call last):
       ...
     LookupError: ...
-    
+
     >>> no_priv_browser.getControl("Decline")
     Traceback (most recent call last):
       ...
     LookupError: ...
-    
+
 But an admin can see them.
 
     >>> admin_browser.open("http://launchpad.dev/bugs/1")

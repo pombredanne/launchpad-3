@@ -1662,3 +1662,10 @@ class BugTaskTableRowView(LaunchpadView):
             assert (
                 "Expected IDistroReleaseBugTask or IProductSeriesBugTask. "
                 "Got: %r" % bugtask)
+
+    def canEditBugTask(self):
+        """Can the current bugtask be edited?"""
+        # Conjoined series and release tasks cannot be directly edited.
+        return (
+            helpers.check_permission("launchpad.Edit", self.context) and
+            not self.context.conjoined_master)

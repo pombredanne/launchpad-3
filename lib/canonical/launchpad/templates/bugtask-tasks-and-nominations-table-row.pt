@@ -1,4 +1,4 @@
-<tal:bugtask define="shouldExpand view/user;
+<tal:bugtask define="can_edit_bugtask view/canEditBugTask;
                      indent_task view/shouldIndentTask;
                      tasklink view/taskLink;
                      form_row_id string:task${context/id}">
@@ -7,22 +7,28 @@
         tal:condition="indent_task"
         tal:define="release_targetname view/getReleaseTargetName">
       <img src="/@@/milestone" />
+      <span tal:condition="context/conjoined_master"
+            tal:content="release_targetname">
+        Edgy
+      </span>
+      <tal:not-conjoined-task condition="not: context/conjoined_master">
       <a
-        tal:condition="shouldExpand"
+        tal:condition="can_edit_bugtask"
         tal:attributes="
             href tasklink;
             onclick string:return toggleFormVisibility(document.getElementById('${form_row_id}'))"
         tal:content="release_targetname"
       />
       <a
-        tal:condition="not:shouldExpand"
+        tal:condition="not:can_edit_bugtask"
         tal:attributes="href tasklink"
         tal:content="release_targetname"
       />
+      </tal:not-conjoined-task>
     </td>
     <td style="margin: 0; padding: 0" tal:condition="not:indent_task">
       <a
-        tal:condition="shouldExpand"
+        tal:condition="can_edit_bugtask"
         tal:attributes="
             href tasklink;
             onclick string:return toggleFormVisibility(document.getElementById('${form_row_id}'))"
@@ -30,13 +36,22 @@
         style="display: block; padding: 3px"
       />
       <a
-        tal:condition="not:shouldExpand"
+        tal:condition="not:can_edit_bugtask"
         tal:attributes="href tasklink"
         tal:content="context/targetname"
         style="display: block; padding: 3px"
       />
     </td>
 
+    <tal:conjoined-task condition="context/conjoined_master">
+    <td colspan="3" style="vertical-align: middle">
+      <span class="discreet lesser" style="font-size: 100%">
+        Status tracked above
+      </span>
+    </td>
+    </tal:conjoined-task>
+
+    <tal:not-conjoined-task condition="not:context/conjoined_master">
     <td tal:attributes="class string:status${context/status/name}"
         tal:content="context/status/title">
        $BugTask.status
@@ -81,10 +96,11 @@
         </tal:no_assignee>
       </tal:has_no_watch>
     </td>
+    </tal:not-conjoined-task>
   </tr>
   <tr
     tal:attributes="id form_row_id"
-    tal:condition="shouldExpand"
+    tal:condition="can_edit_bugtask"
     style="display: none"
   >
    <td colspan="5" tal:content="structure context/@@+edit-form" />
