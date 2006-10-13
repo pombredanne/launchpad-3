@@ -13,18 +13,26 @@ __all__ = [
     ]
 
 import transaction
-from zope.interface import providedBy
+from zope.interface import classImplements, providedBy
 from zope.interface.advice import addClassAdvisor
 from zope.event import notify
 from zope.formlib import form
 from zope.formlib.form import action
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.interfaces import IInputWidget
+from zope.app.form.browser import CheckBoxWidget, TextAreaWidget
 
+from canonical.launchpad.webapp.interfaces import (
+    ISingleLineWidgetLayout, IMultiLineWidgetLayout, ICheckBoxWidgetLayout)
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.event import (
     SQLObjectToBeModifiedEvent, SQLObjectModifiedEvent)
+
+
+classImplements(CheckBoxWidget, ICheckBoxWidgetLayout)
+classImplements(TextAreaWidget, IMultiLineWidgetLayout)
+
 
 # marker to represent "focus the first widget in the form"
 _first_widget_marker = object()
@@ -242,6 +250,19 @@ class LaunchpadFormView(LaunchpadView):
                     "setFocusByName('%s');\n"
                     "// -->" % widget.name)
 
+    def isSingleLineLayout(self, name):
+        widget = self.widgets[name]
+        return not (IMultiLineWidgetLayout.providedBy(widget) or
+                    ICheckBoxWidgetLayout.providedBy(widget))
+
+    def isMultiLineLayout(self, name):
+        widget = self.widgets[name]
+        return IMultiLineWidgetLayout.providedBy(widget)
+
+    def isCheckBoxLayout(self, name):
+        widget = self.widgets[name]
+        return ICheckBoxWidgetLayout.providedBy(widget)
+
 
 class LaunchpadEditFormView(LaunchpadFormView):
 
@@ -286,13 +307,3 @@ class custom_widget:
             cls.custom_widgets = dict(cls.custom_widgets)
         cls.custom_widgets[self.field_name] = self.widget
         return cls
-
-
-# XXX: 20060809 jamesh
-# this is an evil hack to allow us to share the widget macros between
-# the new and old form base classes.
-def getWidgetError(view, widget):
-    if hasattr(view, 'getWidgetError'):
-        return view.getWidgetError(widget.context.__name__)
-    else:
-        return widget.error()

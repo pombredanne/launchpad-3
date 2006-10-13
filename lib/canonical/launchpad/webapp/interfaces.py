@@ -269,3 +269,14 @@ class ITableBatchNavigator(IBatchNavigator):
         "A dict keyed by column name. If the value is True, that column will "
         "be shown in the list, otherwise it won't.")
 
+
+# LaunchpadFormView widget layout
+
+class ISingleLineWidgetLayout(Interface):
+    """A widget that is displayed in a single table row next to its label."""
+
+class IMultiLineWidgetLayout(Interface):
+    """A widget that is displayed on its own table row below its label."""
+
+class ICheckBoxWidgetLayout(Interface):
+    """A widget that is displayed like a check box with label to the right."""

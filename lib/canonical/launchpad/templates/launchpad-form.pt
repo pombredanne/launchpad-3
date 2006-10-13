@@ -53,7 +53,7 @@
         </div>
 
         <metal:widgets metal:define-slot="widgets">
-        <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows" />
+          <div metal:use-macro="context/@@launchpad_form/widget_rows" />
         </metal:widgets>
 
         <script type="text/javascript"
@@ -87,4 +87,82 @@
   </body>
 
 </html>
+
+
+<metal:macro define-macro="widget_rows">
+  <table class="form">
+    <tal:block define="widgets widgets|view/widgets"
+               repeat="widget widgets">
+
+<metal:macro define-macro="widget_row"
+             tal:define="field_name widget/context/__name__;
+                         error python:view.getWidgetError(field_name);
+                         error_class python:error and 'error' or None">
+  <tr tal:condition="python: view.isSingleLineLayout(field_name)">
+    <th><label tal:attributes="for widget/name"
+               tal:content="string:${widget/label}:">
+      Label</label></th>
+    <td tal:attributes="class error_class">
+      <!--
+      <span tal:condition="widget/required"
+            class="fieldRequired"
+            title="Required">(Required)</span>
+      -->
+      <div tal:content="structure widget">
+        <input type="text" style="width: 100%" />
+      </div>
+      <div class="message" tal:condition="error"
+           tal:content="structure error">Error message</div>
+      <p class="formHelp"
+         tal:condition="widget/hint"
+         tal:content="widget/hint">Some Help Text
+      </p>
+    </td>
+  </tr>
+  <tal:block condition="python: view.isMultiLineLayout(field_name)">
+    <tr>
+      <th colspan="2" style="text-align: left"><label
+          tal:attributes="for widget/name"
+          tal:content="string:${widget/label}:">
+        Label</label></th>
+    </tr>
+    <tr>
+      <td colspan="2" tal:attributes="class error_class">
+        <!--
+        <span tal:condition="widget/required"
+              class="fieldRequired"
+              title="Required">(Required)</span>
+        -->
+        <div tal:content="structure widget">
+          <input type="text" style="width: 100%" />
+        </div>
+        <div class="message" tal:condition="error"
+             tal:content="structure error">Error message</div>
+        <p class="formHelp"
+           tal:condition="widget/hint"
+           tal:content="widget/hint">Some Help Text
+        </p>
+      </td>
+    </tr>
+  </tal:block>
+  <tr tal:condition="python: view.isCheckBoxLayout(field_name)">
+    <th></th>
+    <td tal:attributes="class error_class">
+      <label tal:attributes="for widget/name">
+        <input type="checkbox" tal:replace="structure widget" />
+        <span tal:replace="widget/label">Label</span>
+      </label>
+      <div class="message" tal:condition="error"
+           tal:content="structure error">Error message</div>
+      <p class="formHelp"
+         tal:condition="widget/hint"
+         tal:content="widget/hint">Some Help Text
+      </p>
+    </td>
+  </tr>
+</metal:macro>
+
+    </tal:block>
+  </table>
+</metal:macro>
 
