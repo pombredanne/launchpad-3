@@ -5,7 +5,8 @@ __all__ = [
     'BugTask',
     'BugTaskSet',
     'bugtask_sort_key',
-    'get_bug_privacy_filter']
+    'get_bug_privacy_filter',
+    'get_conjoined_bugtask']
 
 import urllib
 import cgi
@@ -84,6 +85,27 @@ def bugtask_sort_key(bugtask):
         distrorelease_name, sourcepackage_name)
 
 
+def get_conjoined_bugtask(bugtask):
+    """Return the conjoined bugtask for a generic bugtask.
+    
+    The 'conjoined' task is always the task targeted to the current
+    distrorelease or productseries.
+    """
+    if IDistroBugTask.providedBy(bugtask):
+        current_release = bugtask.distribution.currentrelease
+        for bt in bugtask.bug.bugtasks:
+            if (bt.distrorelease == current_release and
+                bt.sourcepackagename == bugtask.sourcepackagename):
+                return bt
+    elif IUpstreamBugTask.providedBy(bugtask):
+        devel_focus = bugtask.product.development_focus
+        for bt in bugtask.bug.bugtasks:
+            if bt.productseries == devel_focus:
+                return bt
+
+    return None
+
+
 class BugTask(SQLBase, BugTaskMixin):
     implements(IBugTask)
     _table = "BugTask"
@@ -147,6 +169,37 @@ class BugTask(SQLBase, BugTaskMixin):
         now = datetime.datetime.now(UTC)
 
         return now - self.datecreated
+        
+    # Conjoined bugtask synching methods
+    def _set_status(self, value):
+        self._setValueAndUpdateConjoinedBugTask("status", value)
+        
+    def _set_assignee(self, value):
+        self._setValueAndUpdateConjoinedBugTask("assignee", value)
+        
+    def _set_importance(self, value):
+        self._setValueAndUpdateConjoinedBugTask("importance", value)
+        
+    def _set_milestone(self, value):
+        self._setValueAndUpdateConjoinedBugTask("milestone", value)
+        
+    def _set_sourcepackagename(self, value):
+        self._setValueAndUpdateConjoinedBugTask("sourcepackagename", value)
+        
+    def _setValueAndUpdateConjoinedBugTask(self, colname, value):
+        # The conjoined task is updated before the generic one because,
+        # for distro tasks, get_conjoined_bugtask does a comparison
+        # on sourcepackagename, and the sourcepackagenames will not
+        # match if the generic bugtask is altered before the conjoined
+        # one!
+        conjoined_bugtask = get_conjoined_bugtask(self)
+        if conjoined_bugtask:
+            conjoined_attrsetter = getattr(
+                conjoined_bugtask, "_SO_set_%s" % colname)
+            conjoined_attrsetter(value)
+        
+        attrsetter = getattr(self, "_SO_set_%s" % colname)
+        attrsetter(value)
 
     def _init(self, *args, **kw):
         """Marks the task when it's created or fetched from the database."""
