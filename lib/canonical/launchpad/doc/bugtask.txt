@@ -484,7 +484,7 @@ We can edit the task:
 
     >>> distro_task.transitionToStatus(STATUS_FIXRELEASED)
     >>> distro_release_task.transitionToAssignee(sample_person)
-    
+
 Conjoined Bug Tasks
 -------------------
 
@@ -499,8 +499,13 @@ IProduct.developmentfocus. The following attributes are synched:
     * importance
     * milestone
     * sourcepackagename
-    
-Let's open a new bug to see how it works.
+    * date_confirmed
+    * date_inprogress
+    * date_assigned
+    * date_closed
+
+We'll open a bug on just the distribution, and also a bug on a specific
+package.
 
     >>> params = CreateBugParams(
     ...     owner=launchbag.user,
@@ -508,49 +513,110 @@ Let's open a new bug to see how it works.
     ...     comment="test bug description")
     >>> ubuntu_netapplet = ubuntu.getSourcePackage("netapplet")
     >>> ubuntu_netapplet_bug = ubuntu_netapplet.createBug(params)
-    >>> generic_distro_task = ubuntu_netapplet_bug.bugtasks[0]
+    >>> generic_netapplet_task = ubuntu_netapplet_bug.bugtasks[0]
 
-First, we'll target the bug for the current Ubuntu release, Hoary.
+    >>> ubuntu_bug = ubuntu.createBug(params)
+    >>> generic_ubuntu_task = ubuntu_bug.bugtasks[0]
+
+First, we'll target the bug for the current Ubuntu release, Hoary. Note
+that the synched attributes are copied when the release- and
+series-specific tasks are created. We'll set non-default attribute
+values for each generic task to demonstrate.
 
     >>> print ubuntu.currentrelease.name
     hoary
-    
-    >>> current_release_task = bugtaskset.createTask(
+
+    >>> ubuntu_edgy_milestone = ubuntu.currentrelease.newMilestone("knot1")
+
+    >>> generic_netapplet_task.transitionToStatus(BugTaskStatus.INPROGRESS)
+    >>> generic_netapplet_task.transitionToAssignee(sample_person)
+    >>> generic_netapplet_task.milestone = ubuntu_edgy_milestone
+    >>> generic_netapplet_task.importance = BugTaskImportance.CRITICAL
+
+    >>> current_release_ubuntu_task = bugtaskset.createTask(
+    ...     bug=ubuntu_bug, owner=launchbag.user,
+    ...     distrorelease=ubuntu.currentrelease)
+
+    >>> current_release_netapplet_task = bugtaskset.createTask(
     ...     bug=ubuntu_netapplet_bug, owner=launchbag.user,
     ...     distrorelease=ubuntu.currentrelease,
     ...     sourcepackagename=ubuntu_netapplet.sourcepackagename)
 
+(The attributes were synched with the generic task.)
+
+    >>> print current_release_netapplet_task.status.title
+    In Progress
+    >>> print current_release_netapplet_task.assignee.displayname
+    Sample Person
+    >>> print current_release_netapplet_task.milestone.name
+    knot1
+    >>> print current_release_netapplet_task.importance.title
+    Critical
+
+    >>> current_release_netapplet_task.date_assigned == (
+    ...     generic_netapplet_task.date_assigned)
+    True
+
+    >>> current_release_netapplet_task.date_confirmed == (
+    ...     generic_netapplet_task.date_confirmed)
+    True
+
+    >>> current_release_netapplet_task.date_inprogress == (
+    ...     generic_netapplet_task.date_inprogress)
+    True
+
+    >>> current_release_netapplet_task.date_closed == (
+    ...     generic_netapplet_task.date_closed)
+    True
+
 We'll also add some product and productseries tasks.
 
     >>> alsa_utils = productset['alsa-utils']
+
     >>> print alsa_utils.development_focus.name
     trunk
 
-    >>> generic_product_task = bugtaskset.createTask(
+    >>> generic_alsa_utils_task = bugtaskset.createTask(
     ...     bug=ubuntu_netapplet_bug, owner=launchbag.user,
     ...     product=alsa_utils)
 
-    >>> devel_focus_task = bugtaskset.createTask(
+    >>> devel_focus_alsa_utils_task = bugtaskset.createTask(
     ...     bug=ubuntu_netapplet_bug, owner=launchbag.user,
     ...     productseries=alsa_utils.getSeries("trunk"))
-    
-By definition, the conjoined task is the release- or series-specific
-task. We can retrieve this task using the get_conjoined_bugtask function.
 
-    >>> from canonical.launchpad.database.bugtask import get_conjoined_bugtask
-    
-    >>> get_conjoined_bugtask(generic_distro_task) == current_release_task
-    True
-    
-    >>> get_conjoined_bugtask(generic_product_task) == devel_focus_task
-    True
-    
-The release- and series-specific tasks never have conjoined tasks.
+A conjoined bugtask involves a master and slave in the conjoined
+relationship. The master is the generic product or distribution task;
+the slave is the release- or series-specific task. These tasks are
+accessed through the conjoined_master and conjoined_slave properties.
 
-    >>> get_conjoined_bugtask(current_release_task) is None
+    >>> generic_netapplet_task.conjoined_slave == (
+    ...     current_release_netapplet_task)
     True
-    
-    >>> get_conjoined_bugtask(devel_focus_task) is None
+    >>> generic_netapplet_task.conjoined_master is None
+    True
+
+    >>> generic_ubuntu_task.conjoined_slave == (
+    ...     current_release_ubuntu_task)
+    True
+    >>> generic_ubuntu_task.conjoined_master is None
+    True
+
+    >>> generic_alsa_utils_task.conjoined_slave == (
+    ...     devel_focus_alsa_utils_task)
+    True
+    >>> generic_alsa_utils_task.conjoined_master is None
+    True
+
+    >>> current_release_netapplet_task.conjoined_slave is None
+    True
+    >>> current_release_netapplet_task.conjoined_master == (
+    ...     generic_netapplet_task)
+    True
+
+    >>> devel_focus_alsa_utils_task.conjoined_slave is None
+    True
+    >>> devel_focus_alsa_utils_task.conjoined_master == (
+    ...     generic_alsa_utils_task)
     True
 
 Now the attributes are kept in sync. Here are examples of each:
@@ -562,80 +628,115 @@ require extra privileges.)
 
 1. Status
 
-    >>> print generic_distro_task.status.title
-    Unconfirmed
-    >>> print current_release_task.status.title
-    Unconfirmed
-    
-    >>> generic_distro_task.transitionToStatus(BugTaskStatus.CONFIRMED)
-    
-    >>> print generic_distro_task.status.title
-    Confirmed
-    >>> print current_release_task.status.title
-    Confirmed
+    >>> print generic_netapplet_task.status.title
+    In Progress
+    >>> print current_release_netapplet_task.status.title
+    In Progress
+    >>> generic_netapplet_task.date_closed is None
+    True
+    >>> current_release_netapplet_task.date_closed is None
+    True
+
+    >>> generic_netapplet_task.transitionToStatus(BugTaskStatus.FIXRELEASED)
+
+    >>> print generic_netapplet_task.status.title
+    Fix Released
+    >>> print current_release_netapplet_task.status.title
+    Fix Released
+
+    >>> generic_netapplet_task.date_closed
+    datetime.datetime...
+    >>> generic_netapplet_task.date_closed == (
+    ...     current_release_netapplet_task.date_closed)
+    True
 
 2. Assignee
 
     >>> no_priv = personset.getByName("no-priv")
 
-    >>> generic_product_task.assignee is None
+    >>> generic_alsa_utils_task.assignee is None
     True
-    >>> devel_focus_task.assignee is None
+    >>> devel_focus_alsa_utils_task.assignee is None
+    True
+    >>> generic_alsa_utils_task.date_assigned is None
+    True
+    >>> devel_focus_alsa_utils_task.date_assigned is None
     True
 
-    >>> generic_product_task.transitionToAssignee(no_priv)
+    >>> generic_alsa_utils_task.transitionToAssignee(no_priv)
 
-    >>> print generic_product_task.assignee.displayname
+    >>> print generic_alsa_utils_task.assignee.displayname
     No Privileges Person
-    >>> print devel_focus_task.assignee.displayname
+    >>> print devel_focus_alsa_utils_task.assignee.displayname
     No Privileges Person
-    
+
+    >>> generic_alsa_utils_task.date_assigned
+    datetime.datetime...
+    >>> generic_alsa_utils_task.date_assigned == (
+    ...     devel_focus_alsa_utils_task.date_assigned)
+    True
+
 3. Importance
 
-    >>> print generic_distro_task.importance.title
-    Undecided
-    >>> print current_release_task.importance.title
-    Undecided
-    
-    >>> generic_distro_task.importance = BugTaskImportance.MEDIUM
-    
-    >>> print generic_distro_task.importance.title
+    >>> print generic_netapplet_task.importance.title
+    Critical
+    >>> print current_release_netapplet_task.importance.title
+    Critical
+
+    >>> generic_netapplet_task.importance = BugTaskImportance.MEDIUM
+
+    >>> print generic_netapplet_task.importance.title
     Medium
-    >>> print current_release_task.importance.title
+    >>> print current_release_netapplet_task.importance.title
     Medium
 
 4. Milestone
 
     >>> test_milestone = alsa_utils.development_focus.newMilestone("test")
-    
-    >>> generic_product_task.milestone is None
+
+    >>> generic_alsa_utils_task.milestone is None
     True
-    >>> devel_focus_task.milestone is None
+    >>> devel_focus_alsa_utils_task.milestone is None
     True
-    
-    >>> generic_product_task.milestone = test_milestone
-    
-    >>> print generic_product_task.milestone.name
+
+    >>> generic_alsa_utils_task.milestone = test_milestone
+
+    >>> print generic_alsa_utils_task.milestone.name
     test
-    >>> print devel_focus_task.milestone.name
+    >>> print devel_focus_alsa_utils_task.milestone.name
     test
 
 5. Source package name
 
     >>> ubuntu_pmount = ubuntu.getSourcePackage("pmount")
 
-    >>> print generic_distro_task.sourcepackagename.name
+    >>> print generic_netapplet_task.sourcepackagename.name
     netapplet
-    >>> print current_release_task.sourcepackagename.name
+    >>> print current_release_netapplet_task.sourcepackagename.name
     netapplet
-    
-    >>> generic_distro_task.sourcepackagename = (
+
+    >>> generic_netapplet_task.sourcepackagename = (
     ...     ubuntu_pmount.sourcepackagename)
-    
-    >>> print generic_distro_task.sourcepackagename.name
+
+    >>> print generic_netapplet_task.sourcepackagename.name
     pmount
-    >>> print current_release_task.sourcepackagename.name
+    >>> print current_release_netapplet_task.sourcepackagename.name
     pmount
+
+The current release and development focus tasks are not directly
+editable.
+
+    >>> current_release_netapplet_task.transitionToStatus(
+    ...     BugTaskStatus.REJECTED)
+    Traceback (most recent call last):
+      ...
+    ConjoinedBugTaskEditError: ...
+
+    >>> devel_focus_alsa_utils_task.transitionToAssignee(
+    ...     launchbag.user)
+    Traceback (most recent call last):
+      ...
+    ConjoinedBugTaskEditError: ...
 
 Null Bug Tasks
 --------------

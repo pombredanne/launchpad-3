@@ -5,8 +5,7 @@ __all__ = [
     'BugTask',
     'BugTaskSet',
     'bugtask_sort_key',
-    'get_bug_privacy_filter',
-    'get_conjoined_bugtask']
+    'get_bug_privacy_filter']
 
 import urllib
 import cgi
@@ -31,7 +30,8 @@ from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IBugTask, IBugTaskSet, IUpstreamBugTask,
     IDistroBugTask, IDistroReleaseBugTask, IProductSeriesBugTask, NotFoundError,
     ILaunchpadCelebrities, ISourcePackage, IDistributionSourcePackage,
-    UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
+    UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES,
+    ConjoinedBugTaskEditError)
 
 
 debbugsseveritymap = {None:        dbschema.BugTaskImportance.UNDECIDED,
@@ -85,32 +85,15 @@ def bugtask_sort_key(bugtask):
         distrorelease_name, sourcepackage_name)
 
 
-def get_conjoined_bugtask(bugtask):
-    """Return the conjoined bugtask for a generic bugtask.
-    
-    The 'conjoined' task is always the task targeted to the current
-    distrorelease or productseries.
-    """
-    if IDistroBugTask.providedBy(bugtask):
-        current_release = bugtask.distribution.currentrelease
-        for bt in bugtask.bug.bugtasks:
-            if (bt.distrorelease == current_release and
-                bt.sourcepackagename == bugtask.sourcepackagename):
-                return bt
-    elif IUpstreamBugTask.providedBy(bugtask):
-        devel_focus = bugtask.product.development_focus
-        for bt in bugtask.bug.bugtasks:
-            if bt.productseries == devel_focus:
-                return bt
-
-    return None
-
-
 class BugTask(SQLBase, BugTaskMixin):
     implements(IBugTask)
     _table = "BugTask"
     _defaultOrder = ['distribution', 'product', 'productseries',
                      'distrorelease', 'milestone', 'sourcepackagename']
+    _CONJOINED_ATTRIBUTES = (
+        "status", "importance", "assignee", "milestone",
+        "date_assigned", "date_confirmed", "date_inprogress",
+        "date_closed")
 
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     product = ForeignKey(
@@ -169,37 +152,111 @@ class BugTask(SQLBase, BugTaskMixin):
         now = datetime.datetime.now(UTC)
 
         return now - self.datecreated
-        
-    # Conjoined bugtask synching methods
+
+    @property
+    def conjoined_master(self):
+        """See IBugTask."""
+        if not self._isConjoinedBugTask():
+            return None
+
+        if IDistroReleaseBugTask.providedBy(self):
+            distribution = self.distrorelease.distribution
+            sourcepackagename = self.sourcepackagename
+            for bt in self.bug.bugtasks:
+                if (bt.distribution == distribution and
+                    bt.sourcepackagename == self.sourcepackagename):
+                    return bt
+        elif IProductSeriesBugTask.providedBy(self):
+            product = self.productseries.product
+            for bt in self.bug.bugtasks:
+                if bt.product == product:
+                    return bt
+
+    @property
+    def conjoined_slave(self):
+        """See IBugTask."""
+        if IDistroBugTask.providedBy(self):
+            current_release = self.distribution.currentrelease
+            for bt in self.bug.bugtasks:
+                if (bt.distrorelease == current_release and
+                    bt.sourcepackagename == self.sourcepackagename):
+                    return bt
+        elif IUpstreamBugTask.providedBy(self):
+            devel_focus = self.product.development_focus
+            for bt in self.bug.bugtasks:
+                if bt.productseries == devel_focus:
+                    return bt
+
+        return None
+
+    # Conjoined bugtask synching methods. We override these methods
+    # individually, to avoid cycle problems if we were to override
+    # _SO_setValue instead.
     def _set_status(self, value):
         self._setValueAndUpdateConjoinedBugTask("status", value)
-        
+
     def _set_assignee(self, value):
         self._setValueAndUpdateConjoinedBugTask("assignee", value)
-        
+
     def _set_importance(self, value):
         self._setValueAndUpdateConjoinedBugTask("importance", value)
-        
+
     def _set_milestone(self, value):
         self._setValueAndUpdateConjoinedBugTask("milestone", value)
-        
+
     def _set_sourcepackagename(self, value):
         self._setValueAndUpdateConjoinedBugTask("sourcepackagename", value)
-        
+
+    def _set_date_assigned(self, value):
+        self._setValueAndUpdateConjoinedBugTask("date_assigned", value)
+
+    def _set_date_confirmed(self, value):
+        self._setValueAndUpdateConjoinedBugTask("date_confirmed", value)
+
+    def _set_date_inprogress(self, value):
+        self._setValueAndUpdateConjoinedBugTask("date_inprogress", value)
+
+    def _set_date_closed(self, value):
+        self._setValueAndUpdateConjoinedBugTask("date_closed", value)
+
     def _setValueAndUpdateConjoinedBugTask(self, colname, value):
+        if self._isConjoinedBugTask():
+            raise ConjoinedBugTaskEditError(
+                "This task cannot be edited directly.")
         # The conjoined task is updated before the generic one because,
-        # for distro tasks, get_conjoined_bugtask does a comparison
-        # on sourcepackagename, and the sourcepackagenames will not
-        # match if the generic bugtask is altered before the conjoined
-        # one!
-        conjoined_bugtask = get_conjoined_bugtask(self)
+        # for distro tasks, conjoined_slave does a comparison on
+        # sourcepackagename, and the sourcepackagenames will not match
+        # if the generic bugtask is altered before the conjoined one!
+        conjoined_bugtask = self.conjoined_slave
         if conjoined_bugtask:
             conjoined_attrsetter = getattr(
                 conjoined_bugtask, "_SO_set_%s" % colname)
             conjoined_attrsetter(value)
-        
+
         attrsetter = getattr(self, "_SO_set_%s" % colname)
         attrsetter(value)
+
+    def _isConjoinedBugTask(self):
+        if IProductSeriesBugTask.providedBy(self):
+            devel_focus = self.productseries.product.development_focus
+            return self.productseries == devel_focus
+        elif IDistroReleaseBugTask.providedBy(self):
+            currentrelease = self.distrorelease.distribution.currentrelease
+            return self.distrorelease == currentrelease
+        else:
+            return False
+
+    def _syncToConjoinedMaster(self):
+        """Ensure the conjoined slave is synched to its master."""
+        conjoined_master = self.conjoined_master
+
+        for synched_attr in self._CONJOINED_ATTRIBUTES:
+            master_attr_value = getattr(conjoined_master, synched_attr)
+            # Bypass our checks that prevent setting attributes on
+            # conjoined slaves by calling the underlying sqlobject
+            # setter methods directly.
+            attrsetter = getattr(self, "_SO_set_%s" % synched_attr)
+            attrsetter(master_attr_value)
 
     def _init(self, *args, **kw):
         """Marks the task when it's created or fetched from the database."""
@@ -240,9 +297,10 @@ class BugTask(SQLBase, BugTaskMixin):
         return bool(root_target.official_malone)
 
     def _SO_setValue(self, name, value, fromPython, toPython):
-        # We need to overwrite this method to make sure whenever we change a
-        # single attribute of a BugTask the targetnamecache column is updated.
         SQLBase._SO_setValue(self, name, value, fromPython, toPython)
+
+        # The bug target may have just changed, so update the
+        # targetnamecache.
         if name != 'targetnamecache':
             self.updateTargetNameCache()
 
@@ -677,7 +735,7 @@ class BugTaskSet:
                         AND RelatedBugTask.id != BugTask.id
                         AND ((
                             RelatedBugTask.bugwatch IS NOT NULL AND
-                            RelatedBugTask.status %s) 
+                            RelatedBugTask.status %s)
                             OR (
                             RelatedBugTask.product IS NOT NULL AND
                             RelatedBugTask.bugwatch IS NULL AND
@@ -748,6 +806,9 @@ class BugTaskSet:
             owner=owner,
             milestone=milestone)
 
+        if bugtask.conjoined_master:
+            bugtask._syncToConjoinedMaster()
+
         return bugtask
 
     def maintainedBugTasks(self, person, minimportance=None,
@@ -803,7 +864,7 @@ class BugTaskSet:
             "Bug.datecreated",
             "Bug.date_last_updated"])
         # Bug ID is unique within bugs on a product or source package.
-        if (params.product or 
+        if (params.product or
             (params.distribution and params.sourcepackagename) or
             (params.distrorelease and params.sourcepackagename)):
             in_unique_context = True

@@ -5,6 +5,8 @@
 __metaclass__ = type
 
 __all__ = [
+    'BugTaskSearchParams',
+    'ConjoinedBugTaskEditError',
     'IBugTask',
     'INullBugTask',
     'IBugTaskSearch',
@@ -17,9 +19,8 @@ __all__ = [
     'IProductSeriesBugTask',
     'ISelectResultsSlicable',
     'IBugTaskSet',
-    'BugTaskSearchParams',
-    'UNRESOLVED_BUGTASK_STATUSES',
-    'RESOLVED_BUGTASK_STATUSES']
+    'RESOLVED_BUGTASK_STATUSES',
+    'UNRESOLVED_BUGTASK_STATUSES']
 
 from zope.interface import Interface, Attribute
 from zope.schema import (
@@ -51,6 +52,10 @@ UNRESOLVED_BUGTASK_STATUSES = (
 RESOLVED_BUGTASK_STATUSES = (
     dbschema.BugTaskStatus.FIXRELEASED,
     dbschema.BugTaskStatus.REJECTED)
+
+
+class ConjoinedBugTaskEditError(Exception):
+    """An error raised when trying to modify a conjoined bugtask."""
 
 
 class IBugTask(IHasDateCreated, IHasBug):
@@ -135,6 +140,11 @@ class IBugTask(IHasDateCreated, IHasBug):
     bug_subscribers = Field(
         title=_("A list of IPersons subscribed to the bug, whether directly or "
         "indirectly."), readonly=True)
+
+    conjoined_master = Attribute(
+        "The generic bugtask in a conjoined relationship")
+    conjoined_slave = Attribute(
+        "The series- or release-specific bugtask in a conjoined relationship")
 
     def setImportanceFromDebbugs(severity):
         """Set the Malone BugTask importance on the basis of a debbugs
