@@ -646,61 +646,58 @@ a:hover.button {
   margin: 0px 20px 20px 10px;
   width: 62%;
 }
-#options_info_open,
-#options_info_closed {
+#help_panel {
+  visibility: hidden; /* global.js reveals it if JavaScript is available */
+}
+#help_panel.open,
+#help_panel.closed {
   position: absolute;
   float: left;
   top: 47px;
   left: 0px;
   width: 350px;
 }
-#options_info_closed {
+#help_panel.closed {
   left: -318px !important;
 }
-.optinf1 {
+.help1 {
   width: 350px;
   background-color: #FFFFFF;
-  background-image: url(options_info_bg.gif);
+  background-image: url(help_bg.gif);
   background-repeat: repeat-y;
   background-position: top right;
 }
-.optinf2 {
+.help2 {
   float: left;
   width: 286px;
   padding: 16px;
 }
-#options_info_open .bottom,
-#options_info_closed .bottom {
+#help_panel.open .bottom,
+#help_panel.closed .bottom {
   clear: both;
   width: 350px;
   height: 14px;
   position: relative;
   top: -2px;
   background-color: transparent;
-  background-image: url(options_info_bottom_bg.gif);
+  background-image: url(help_bottom_bg.gif);
   background-repeat: no-repeat;
   background-position: bottom right;
 }
-#options_info_open a.open-close,
-#options_info_closed a.open-close,
-#options_info.open a.open-close,
-#options_info.closed a.open-close,
-a.open,
-a.closed {
+#help_panel.open a.open-close, #help_panel.closed a.open-close,
+a.open, a.closed {
   float: left;
   display: block;
   width: 28px;
   height: 120px;
-  background-image: url(options_info_ttl_open.gif);
+  background-image: url(help_ttl_open.gif);
   background-repeat: no-repeat;
   background-position: top left;
   text-indent: -9999px;
   overflow: hidden;
 }
-#options_info_closed a.open-close,
-#options_info.closed a.open-close,
-a.closed {
-  background-image: url(options_info_ttl_closed.gif);
+#help_panel.closed a.open-close, a.closed {
+  background-image: url(help_ttl_closed.gif);
 }
 /* tab-overview */
 #mainarea.tab-overview div.x {

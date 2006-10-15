@@ -8,6 +8,7 @@
     <!-- Launchpad JS code -->
   	<meta name="author" content="Aidan Williams - almostborn.com/portfolio" />
     <script type="text/javascript" src="/@@/launchpad.js"></script>
+    <script type="text/javascript" src="/+icing/global.js"></script>
     <script type="text/javascript" src="/@@/sorttable.js"></script>
     <style type="text/css">
       @import url("/@@/dynarch/skin-aqua.css");
@@ -22,8 +23,14 @@
     <link rel="shortcut icon" href="/@@/launchpad" />
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>
-  <body onload="DynarchMenu.setup('menu', {electric: true});" id="document">
-
+  <body
+    onload="
+      DynarchMenu.setup('menu', {electric: true});
+      sortables_init();
+      initHelpPanel();
+    "
+    id="document"
+  >
     <div id="globalheader">
       <div class="launchpad">
         <img
@@ -166,10 +173,10 @@
 	      </div>
 	    </div>
 	  </div>
-	  <div id="options_info_closed">
-	    <div class="optinf1">
-	      <div class="optinf2">
-	        <p>Help goes here.</p>
+	  <div id="help_panel" class="closed">
+	    <div class="help1">
+	      <div class="help2">
+	        <p>Sorry, help isn&rsquo;t available for this page.</p>
 	      </div>
 	      <a href="#" class="open-close">Help</a>
 	      <br class="clear" />
