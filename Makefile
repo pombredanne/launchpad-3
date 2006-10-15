@@ -125,8 +125,7 @@ start: inplace stop
 # so killing them after is a race condition.
 stop: build
 	@ LPCONFIG=${LPCONFIG} ${PYTHON} \
-	    utilities/killservice.py librarian trebuchet \
-                                     buildsequencer launchpad
+	    utilities/killservice.py librarian buildsequencer launchpad
 
 harness:
 	PYTHONPATH=lib python -i lib/canonical/database/harness.py

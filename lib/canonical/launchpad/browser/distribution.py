@@ -16,11 +16,13 @@ __all__ = [
     'DistributionBugContactEditView',
     'DistributionArchiveMirrorsView',
     'DistributionReleaseMirrorsView',
+    'DistributionReleaseMirrorsRSSView',
     'DistributionDisabledMirrorsView',
     'DistributionUnofficialMirrorsView',
     'DistributionLaunchpadUsageEditView',
     ]
 
+from datetime import datetime
 import operator
 
 from zope.component import getUtility
@@ -488,16 +490,20 @@ class DistributionBugContactEditView(SQLObjectEditView):
     def changed(self):
         """Redirect to the distribution page."""
         distribution = self.context
-        contact_email = None
+        contact_display_value = None
 
         if distribution.bugcontact:
-            contact_email = distribution.bugcontact.preferredemail.email
+            if distribution.bugcontact.preferredemail:
+                contact_display_value = (
+                    distribution.bugcontact.preferredemail.email)
+            else:
+                contact_display_value = distribution.bugcontact.displayname
 
-        if contact_email:
-            # The bug contact was set to a new person or team.
+        # The bug contact was set to a new person or team.
+        if contact_display_value:
             self.request.response.addNotification(
                 "Successfully changed the distribution bug contact to %s" %
-                contact_email)
+                contact_display_value)
         else:
             # The bug contact was set to noone.
             self.request.response.addNotification(
@@ -539,6 +545,19 @@ class DistributionReleaseMirrorsView(DistributionMirrorsView):
 
     def getMirrorsGroupedByCountry(self):
         return self._groupMirrorsByCountry(self.context.release_mirrors)
+
+
+class DistributionReleaseMirrorsRSSView(LaunchpadView):
+    """The RSS feed for release mirrors."""
+
+    def initialize(self):
+        self.now = datetime.utcnow()
+
+    def render(self):
+        self.request.response.setHeader(
+            'content-type', 'text/xml;charset=utf-8')
+        body = LaunchpadView.render(self)
+        return body.encode('utf-8')
 
 
 class DistributionMirrorsAdminView(DistributionMirrorsView):
