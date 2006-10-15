@@ -43,8 +43,6 @@ class MilestoneNavigation(Navigation):
 
 class MilestoneFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IMilestone."""
-    # XXX 20061004 mpt: A Milestone is not a structural object. It should
-    # inherit all navigation from its product or distro release.
 
     usedfor = IMilestone
 
