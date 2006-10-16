@@ -540,6 +540,21 @@ class LaunchpadZopelessLayer(
                 "Failed to uninstall ZopelessTransactionManager"
                 )
 
+    @classmethod
+    def commit(cls):
+        from canonical.launchpad.ftests.harness import (
+                LaunchpadZopelessTestSetup
+                )
+        LaunchpadZopelessTestSetup.txn.commit()
+
+    @classmethod
+    def abort(cls):
+        from canonical.launchpad.ftests.harness import (
+                LaunchpadZopelessTestSetup
+                )
+        LaunchpadZopelessTestSetup.txn.abort()
+
+
 
 class PageTestLayer(LaunchpadFunctionalLayer):
     """Environment for page tests.
