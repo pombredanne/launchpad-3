@@ -66,7 +66,7 @@ have been properly selected.
   ...     """
   ...     soup = BeautifulSoup(rosetta_pref_page)
   ...     lang_portlet = soup.fetchText(
-  ...         'Your %s languages:' % portlet)[0].parent.parent
+  ...         'Your %s languages' % portlet)[0].parent.parent
   ...     for lang in lang_portlet('li', {'class': 'languages'}):
   ...         print lang.string
 

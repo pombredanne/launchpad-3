@@ -13,12 +13,14 @@ from canonical.launchpad.interfaces import (
         )
 from canonical.launchpad.components.poparser import POParser
 from canonical.launchpad.helpers import TranslationConstants
+from canonical.lp.dbschema import PersonCreationRationale
+
 
 class OldPOImported(Exception):
     """Raised when an older PO file is imported."""
 
 
-def getLastTranslator(parser):
+def getLastTranslator(parser, pofile):
     """Return the person that appears as Last-Translator in a parsed PO file.
 
     If the person is unknown in launchpad, the account will be created.
@@ -49,9 +51,15 @@ def getLastTranslator(parser):
         person = personset.getByEmail(email)
 
         if person is None:
+            comment = None
+            if pofile is not None:
+                comment = ('when importing the %s translation of %s'
+                           % (pofile.language.displayname,
+                              pofile.potemplate.displayname))
             # We create a new user without a password.
             person, dummy = personset.createPersonAndEmail(
-                                email, displayname=name)
+                email, PersonCreationRationale.POFILEIMPORT,
+                displayname=name, comment=comment)
 
         return person
 
@@ -95,12 +103,11 @@ def import_po(pofile_or_potemplate, file, importer, published=True):
             # Update the header
             pofile.updateHeader(parser.header)
             # Get last translator.
-            last_translator = getLastTranslator(parser)
+            last_translator = getLastTranslator(parser, pofile)
             if last_translator is None:
                 # We were not able to guess it from the .po file, so we take
                 # the importer as the last translator.
                 last_translator = importer
-            is_editor = pofile.canEditTranslations(importer)
     elif IPOTemplate.providedBy(pofile_or_potemplate):
         pofile = None
         potemplate = pofile_or_potemplate
@@ -233,6 +240,10 @@ def import_po(pofile_or_potemplate, file, importer, published=True):
                 # We don't have anything to import.
                 continue
 
+            # Use the importer (rosetta-admins) rights to make sure the
+            # imported translations are actually accepted instead of being 
+            # just suggestions.
+            is_editor = pofile.canEditTranslations(importer)
             try:
                 pomsgset.updateTranslationSet(last_translator,
                                               translations,

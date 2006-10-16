@@ -1,5 +1,5 @@
 <div id="ticket-subscribers" class="portlet">
-  <h4>Subscribers to request #<span tal:replace="context/id">4</span>:</h4>
+  <h2>Subscribers to request #<span tal:replace="context/id">4</span></h2>
 
   <div class="portletBody portletContent"
        tal:define="subscribers  context/getDirectSubscribers;

@@ -1,6 +1,6 @@
 <div class="portlet">
-  <h4><span tal:replace="context/language/englishname">Spanish</span>
-  translators:</h4>
+  <h2><span tal:replace="context/language/englishname">Spanish</span>
+  translators</h2>
 
   <div class="portletBody portletContent">
 

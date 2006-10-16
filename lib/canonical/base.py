@@ -7,7 +7,7 @@ license.
 __all__ = ['base']
 
 import string
-abc = string.digits + string.letters
+abc = string.digits + string.ascii_letters
 
 def base(number, radix):
     """Inverse function to int(str,radix) and long(str,radix)

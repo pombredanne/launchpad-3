@@ -9,42 +9,30 @@
 
     <h1>PO file export</h1>
 
-      <tal:thing content="view/processForm" />
+    <form action="" method="post">
+        <div class="field">
+            <label>
+            Format:
+                <select name="format">
+                    <option
+                        tal:repeat="format view/formats"
+                        tal:content="format/title"
+                        tal:attributes="value format/value">PO format</option>
+                </select>
+            </label>
+        </div>
+        <p>
+          Once you complete this form, the file will be exported,
+          and you will be notified by e-mail to
+          <code
+            tal:content="view/user/preferredemail/email"
+          >user@domain</code>.
+        </p>
 
-      <tal:block condition="view/formProcessed">
-          <p>
-          Your request has been received. Expect to receive an email shortly.
-          </p>
-      </tal:block>
-
-      <tal:block condition="not: view/formProcessed">
-
-          <form action="" method="POST">
-              <div class="field">
-                  <label>
-                  Format:
-                      <select name="format">
-                          <option
-                              tal:repeat="format view/formats"
-                              tal:content="format/title"
-                              tal:attributes="value format/value">PO format</option>
-                      </select>
-                  </label>
-              </div>
-              <p>
-                Once you complete this form, the file will be exported,
-                and you will be notified by e-mail to
-                <code
-                  tal:content="view/user/preferredemail/email"
-                >user@domain</code>.
-              </p>
-
-              <div class="formControls">
-                  <input type="submit" value="Confirm Export" />
-              </div>
-          </form>
-
-      </tal:block>
+        <div class="formControls">
+            <input type="submit" value="Confirm Export" />
+        </div>
+    </form>
 
 </div>
 
