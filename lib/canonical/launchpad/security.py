@@ -144,13 +144,11 @@ class DriverSpecification(AuthorizationBase):
             check_permission("launchpad.Driver", self.obj.goal))
 
 
-# XXX matsubara: Is this ok? We have two different security adapters with the
-# same docstring. They're doing the same check but from different contexts.
 class EditSprintSpecification(AuthorizationBase):
     """The sprint owner or driver can say what makes it onto the agenda for
     the sprint.
     """
-    permission = 'launchpad.Edit'
+    permission = 'launchpad.Driver'
     usedfor = ISprintSpecification
 
     def checkAuthenticated(self, user):
@@ -160,7 +158,7 @@ class EditSprintSpecification(AuthorizationBase):
                 user.inTeam(admins))
 
 
-class SetTopicsSprint(AuthorizationBase):
+class DriveSprint(AuthorizationBase):
     """The sprint owner or driver can say what makes it onto the agenda for
     the sprint.
     """
