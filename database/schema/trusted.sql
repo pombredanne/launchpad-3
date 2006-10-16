@@ -585,7 +585,8 @@ $$
     for row in plpy.execute(SD["select_plan"]):
         regexp_id = row["id"]
         regexp_txt = row["regexp"]
-        if compiled.get(regexp_id) != regexp_txt:
+        if (compiled.get(regexp_id) is None
+            or compiled[regexp_id][0] != regexp_txt):
             regexp = re.compile(
                 regexp_txt, re.IGNORECASE | re.UNICODE | re.VERBOSE
                 )
