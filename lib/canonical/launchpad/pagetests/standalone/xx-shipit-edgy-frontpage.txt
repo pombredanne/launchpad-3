@@ -14,6 +14,24 @@ front page, which allows people to login and is now registered at /login.
     >>> browser.url
     'http://shipit.ubuntu.dev/login'
 
+    >>> print browser.contents
+    <...
+    ...<label for="email">E-mail address:</label>...
+    ...<input type="text" name="loginpage_email"...
+    ...
+
+This is done as a temporary redirect, to avoid bookmarks being automatically
+updated and other things alike.
+    
+    >>> print http(r"""
+    ... GET / HTTP/1.1
+    ... Host: shipit.ubuntu.dev
+    ... """)
+    HTTP/1.1 303 See Other
+    ...
+    Location: login
+
+
 If switch_to_edgy is set to True, then we'll render the new front page.
 
     >>> config.shipit.switch_to_edgy = True
