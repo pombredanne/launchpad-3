@@ -163,7 +163,8 @@ But you can't use Mark's name, of course. ;)
     >>> field.validate(u'sabdfl')
     Traceback (most recent call last):
       ...
-    LaunchpadValidationError: ...sabdfl is already in use by another person/team...
+    LaunchpadValidationError: ...sabdfl is already in use by another
+    person or team...
 
 
 Searching
