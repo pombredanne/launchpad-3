@@ -271,8 +271,8 @@ class Dominator(object):
                 if considered_binaries.count() > 0:
                     # There is at least one non-removed binary to consider
 
-                    # XXX malcc: Want to change to running scripts at info
-                    # level, but for now just shut up this particularly
+                    # XXX malcc 20061017: Want to change to running scripts
+                    # at info level, but for now just shut up this particularly
                     # noisy debug statement. See bug 57488.
                     #self.debug("%s/%s (source) has at least %d non-removed "
                     #           "binaries as yet" % (
