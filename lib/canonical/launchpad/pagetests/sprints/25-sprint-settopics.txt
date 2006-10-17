@@ -66,3 +66,9 @@ Any member of the Ubuntu-Team can now approve items to the UDS Guacamole agenda.
 
   >>> cprov_browser.title
   'Review topics proposed for discussion at Ubuntu DevSummit Guacamole'
+
+  >>> cprov_browser.getControl('CD Media Integrity Check').selected = True
+  >>> cprov_browser.getControl('Accept').click()
+
+  >>> cprov_browser.url
+  'http://features.launchpad.dev/sprints/uds-guacamole/+specs'
