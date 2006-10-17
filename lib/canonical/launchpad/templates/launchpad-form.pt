@@ -102,14 +102,11 @@
     <th><label tal:attributes="for widget/name"
                tal:content="string:${widget/label}:">
       Label</label></th>
-    <td tal:attributes="class error_class">
-      <!--
-      <span tal:condition="widget/required"
-            class="fieldRequired"
-            title="Required">(Required)</span>
-      -->
-      <div tal:content="structure widget">
-        <input type="text" style="width: 100%" />
+    <td tal:attributes="class error_class" width="100%">
+      <div>
+        <input tal:replace="structure widget" />
+        <span tal:condition="not:widget/required"
+              class="fieldRequired">(Optional)</span>
       </div>
       <div class="message" tal:condition="error"
            tal:content="structure error">Error message</div>
@@ -123,16 +120,13 @@
     <tr>
       <th colspan="2" style="text-align: left"><label
           tal:attributes="for widget/name"
-          tal:content="string:${widget/label}:">
-        Label</label></th>
+          tal:content="string:${widget/label}:">Label:</label>
+        <span tal:condition="not:widget/required"
+              class="fieldRequired">(Optional)</span>
+      </th>
     </tr>
     <tr>
       <td colspan="2" tal:attributes="class error_class">
-        <!--
-        <span tal:condition="widget/required"
-              class="fieldRequired"
-              title="Required">(Required)</span>
-        -->
         <div tal:content="structure widget">
           <input type="text" style="width: 100%" />
         </div>
@@ -147,7 +141,7 @@
   </tal:block>
   <tr tal:condition="python: view.isCheckBoxLayout(field_name)">
     <th></th>
-    <td tal:attributes="class error_class">
+    <td tal:attributes="class error_class" width="100%">
       <label tal:attributes="for widget/name">
         <input type="checkbox" tal:replace="structure widget" />
         <span tal:replace="widget/label">Label</span>
