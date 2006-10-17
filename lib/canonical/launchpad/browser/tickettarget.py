@@ -72,47 +72,53 @@ class SearchTicketsView(LaunchpadFormView):
     @property
     def pageheading(self):
         """Heading to display above the search results."""
-        mapping = dict(
-            context=self.context.displayname, search_text=self.search_text)
+        replacements = dict(
+            context=self.context.displayname,
+            search_text=self.search_text)
+        # When there is only one status selected, we use a more precise title.
         if len(self.status_filter) == 1:
-            mapping['status'] = list(self.status_filter)[0].title
+            replacements['status'] = list(self.status_filter)[0].title
             if self.search_text:
                 return _('${status} support requests about "${search_text}" '
-                         'for ${context}', mapping=mapping)
+                         'for ${context}', mapping=replacements)
             else:
                 return _('${status} support requests for ${context}',
-                         mapping=mapping)
+                         mapping=replacements)
         else:
             if self.search_text:
                 return _('Support requests about "${search_text}" for '
-                         '${context}', mapping=mapping)
+                         '${context}', mapping=replacements)
             else:
-                return _('Support requests for ${context}', mapping=mapping)
+                return _('Support requests for ${context}',
+                         mapping=replacements)
 
     @property
     def empty_listing_message(self):
         """Message displayed when there is no tickets matching the filter."""
-        mapping = dict(
-            context=self.context.displayname, search_text=self.search_text)
+        replacements = dict(
+            context=self.context.displayname,
+            search_text=self.search_text)
+        # When there is only one status selected, we use a more precise title.
         if len(self.status_filter) == 1:
-            mapping['status'] = list(self.status_filter)[0].title.lower()
+            replacements['status'] = list(self.status_filter)[0].title.lower()
             if self.search_text:
                 return _('There are no ${status} support requests about '
-                         '"${search_text}" for ${context}.', mapping=mapping)
+                         '"${search_text}" for ${context}.',
+                         mapping=replacements)
             else:
                 return _('There are no ${status} support requests for '
-                         '${context}.', mapping=mapping)
+                         '${context}.', mapping=replacements)
         else:
             if self.search_text:
                 return _('There are no support requests about '
                          '"${search_text}" for ${context} with the requested '
-                         'statuses.', mapping=mapping)
+                         'statuses.', mapping=replacements)
             else:
                 return _('There are no support requests for ${context} with '
-                         'the requested statuses.', mapping=mapping)
+                         'the requested statuses.', mapping=replacements)
 
     def getDefaultFilter(self):
-        """Hook for subclass to provide a base search filter."""
+        """Hook for subclass to provide a default search filter."""
         return {}
 
     @property
@@ -148,13 +154,13 @@ class SearchTicketsView(LaunchpadFormView):
         Saves the user submitted search parameters in an instance
         attribute.
         """
-        self.search_params = self.getDefaultFilter()
+        self.search_params = dict(self.getDefaultFilter())
         self.search_params.update(**data)
 
     def searchResults(self):
         """Return the tickets corresponding to the search."""
         if self.search_params is None:
-            # Search button wasn't clicked
+            # Search button wasn't clicked.
             self.search_params = self.getDefaultFilter()
 
         return BatchNavigator(
@@ -180,9 +186,10 @@ class SearchTicketsView(LaunchpadFormView):
                 canonical_url(sourcepackage), ticket.sourcepackagename.name)
 
     def formatTarget(self, ticket):
-        """Return an hyperlink to the ticket's target. When there is a
-        sourcepackagename associated to the ticket link to that source
-        package tickets.
+        """Return an hyperlink to the ticket's target.
+
+        When there is a sourcepackagename associated to the ticket, link to
+        that source package tickets instead of the ticket target.
         """
         if ticket.sourcepackagename:
             target = ticket.distribution.getSourcePackage(
@@ -195,7 +202,9 @@ class SearchTicketsView(LaunchpadFormView):
 
 
 class TicketTargetSearchMyTicketsView(SearchTicketsView):
-    """View that displays and searches the support requests made by the logged
+    """SearchTicketsView specialization for the 'My Tickets' report.
+
+    It displays and searches the support requests made by the logged
     in user in a tickettarget context.
     """
 
@@ -216,7 +225,7 @@ class TicketTargetSearchMyTicketsView(SearchTicketsView):
         """See SearchTicketsView."""
         if self.search_text:
             return _("You didn't make any support requests about "
-                     "\"${search_text}\" for ${context}.", mapping=dict(
+                     '"${search_text}" for ${context}.', mapping=dict(
                         context=self.context.displayname,
                         search_text=self.search_text))
         else:
@@ -226,7 +235,7 @@ class TicketTargetSearchMyTicketsView(SearchTicketsView):
     def getDefaultFilter(self):
         """See SearchTicketsView."""
         return {'owner': self.user,
-                'status': list(TicketStatus.items)}
+                'status': set(TicketStatus.items)}
 
 
 class ManageSupportContactView(GeneralFormView):
@@ -294,11 +303,9 @@ class TicketTargetFacetMixin:
     """Mixin for tickettarget facet definition."""
 
     def support(self):
-        target = '+tickets'
-        text = 'Support'
         summary = (
             'Technical support requests for %s' % self.context.displayname)
-        return Link(target, text, summary)
+        return Link('+tickets', 'Support', summary)
 
 
 class TicketTargetTraversalMixin:
@@ -326,8 +333,10 @@ class TicketTargetSupportMenu(ApplicationMenu):
 
     def makeSearchLink(self, statuses):
         return "+tickets?" + urlencode(
-            {'field.status': statuses, 'field.sort': 'by relevancy',
-             'field.search_text': '', 'field.actions.search': 'Search',
+            {'field.status': statuses,
+             'field.sort': 'by relevancy',
+             'field.search_text': '',
+             'field.actions.search': 'Search',
              'field.status': statuses}, doseq=True)
 
     def open(self):
