@@ -1668,15 +1668,12 @@ class SprintSpecificationStatus(DBSchema):
         """)
 
 
+# Enumeration covered by bug 66633:
+#   Need way to define enumerations outside of dbschema
 class TicketParticipation(DBSchema):
     """The different ways a person can be involved in a ticket.
 
     This enumeration is part of the ITicketActor.searchTickets() API.
-
-    XXX flacoste 2006/10/09 This has nothing to do with database code and
-    is really part of the ITicketActor definitions. We should find a way
-    to define enumerations in interface code and generate easily,
-    when required, the database implementation code.
     """
 
     OWNER = Item(10, """
