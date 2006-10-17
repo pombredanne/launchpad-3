@@ -256,8 +256,8 @@
     />
 
   <vocabulary
-    name="Schema"
-    factory="canonical.launchpad.vocabularies.SchemaVocabulary"
+    name="RevisionControlSystems"
+    factory="canonical.launchpad.vocabularies.RevisionControlSystemsVocabulary"
     />
 
   <vocabulary

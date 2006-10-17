@@ -112,7 +112,16 @@ class BugTrackerSet:
         return '%s:%s' % (schema, rest)
 
     def queryByBaseURL(self, baseurl):
-        return BugTracker.selectOneBy(baseurl=baseurl)
+        bugtracker = BugTracker.selectOneBy(baseurl=baseurl)
+        if bugtracker is not None:
+            return bugtracker
+        # Sometimes the base URL ends with /, sometimes not; let's make
+        # sure we check both alternatives.
+        if baseurl.endswith('/'):
+            alternative_url = baseurl[:-1]
+        else:
+            alternative_url = baseurl + '/'
+        return BugTracker.selectOneBy(baseurl=alternative_url)
 
     def search(self):
         """See canonical.launchpad.interfaces.IBugTrackerSet."""

@@ -1,9 +1,7 @@
 <metal:page define-macro="master"
             extend-macro="context/@@+shipit-macros/meta-master">
-<metal:block define-slot="top_slot" />
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"
-    tal:attributes="lang default_language|default;
-                    xml:lang default_language|default;">
+
+  <metal:block define-slot="top_slot" />
   <head>
 
     <metal:extra-head fill-slot="extra-head">
@@ -63,5 +61,4 @@
 
   </body>
 
-</html>
 </metal:page>
