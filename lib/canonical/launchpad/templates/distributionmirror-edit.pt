@@ -25,8 +25,7 @@
 
     <div metal:use-macro="context/@@launchpad_editform/editform">
       <div metal:fill-slot="extra_top" class="documentDescription">
-        All mirrors require at least one URL (HTTP, FTP, or Rsync) to be
-        specified.
+        All mirrors require at least an HTTP or FTP URL to be specified.
       </div>
     </div>
 

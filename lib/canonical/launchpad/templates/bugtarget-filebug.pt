@@ -86,7 +86,7 @@
       <input class="hiddenType" id="field.security_related.used"
              name="field.security_related.used" type="hidden" value="" />
       <input class="checkboxType" id="field.security_related"
-             name="field.security_related" type="checkbox" tabindex=3
+             name="field.security_related" type="checkbox"
              onClick="selectPrivacyForSecurityBugs(this)" />
     </span>
     <label tal:attributes="for view/security_related_widget/name">

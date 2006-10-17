@@ -20,15 +20,22 @@
 
 <div metal:fill-slot="main">
 
+  <p tal:condition="view/error_message"
+     tal:content="view/error_message" class="error message"
+    >Error message.</p>
+
   <ul>
 
         <li>
-          <form method="GET" action="bugs" name="goto">
-            Jump to bug report: <input type="text" name="id" size="5" tabindex="1" />
+          <form method="GET" action="" name="goto">
+            Jump to bug report: <input type="text" name="id" size="5" />
             <noscript>
               <input type="submit" name="jump_to_bug" value="Go">
             </noscript>
           </form>
+          <script type="text/javascript"><!--
+            setFocusByName('id');
+          // --></script>
         </li>
 
         <li>

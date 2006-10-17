@@ -102,7 +102,7 @@ class SprintSpecificationsMenu(ApplicationMenu):
         summary = 'Show topics that were not accepted for discussion'
         return Link('+specs?acceptance=declined', text, summary, icon='info')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.Driver')
     def settopics(self):
         text = 'Set Topics'
         summary = 'Approve or defer topics for discussion'
