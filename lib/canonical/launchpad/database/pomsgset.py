@@ -24,8 +24,6 @@ def _get_pluralforms(pomsgset):
     if pomsgset.potmsgset.getPOMsgIDs().count() > 1:
         if pomsgset.pofile.language.pluralforms is not None:
             entries = pomsgset.pofile.language.pluralforms
-        elif pomsgset.pofile.pluralforms is not None:
-            entries = pomsgset.pofile.pluralforms
         else:
             # Don't know anything about plural forms for this
             # language, fallback to the most common case, 2

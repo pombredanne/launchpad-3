@@ -240,7 +240,7 @@ class OutputMsgSet:
             # If there are fewer translations than the PO file's header
             # specifies, add blank ones.
 
-            while len(self.msgstrs) < self.pofile.header.nplurals:
+            while len(self.msgstrs) < self.pofile.language.pluralforms:
                 self.msgstrs.append('')
         else:
             msgidPlural = None
