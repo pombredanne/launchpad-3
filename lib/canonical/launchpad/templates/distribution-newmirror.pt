@@ -21,7 +21,7 @@
     <div metal:use-macro="context/@@launchpad_generalform/generalform">
       <div metal:fill-slot="extra_info">
         Once your mirror is reviewed by the distribution's mirror
-        administrator it will be automatically probed every day so that we
+        administrator it will be automatically probed occasionally so that we
         can track the content mirrored and have an estimate of the mirror's
         &#8220;freshness&#8221;.
       </div>

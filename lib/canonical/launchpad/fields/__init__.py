@@ -4,6 +4,7 @@ from zope.schema import Choice, Field, Int, Text, TextLine, Password
 from zope.schema.interfaces import IPassword, IText, ITextLine, IField, IInt
 from zope.interface import implements, Attribute
 
+from canonical.database.sqlbase import cursor
 from canonical.launchpad import _
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name
@@ -215,6 +216,33 @@ class ContentNameField(UniqueField):
     def _getByAttribute(self, name):
         """Return the content object with the given name."""
         return self._getByName(name)
+
+
+class BlacklistableContentNameField(ContentNameField):
+    """ContentNameField that also need to check against the NameBlacklist
+       table in case the name has been blacklisted.
+    """
+    def _validate(self, input):
+        """As per UniqueField._validate, except a LaunchpadValidationError
+           is also raised if the name has been blacklisted.
+        """
+        super(BlacklistableContentNameField, self)._validate(input)
+
+        _marker = object()
+        if (self._content_iface.providedBy(self.context) and 
+            input == getattr(self.context, self.attribute, _marker)):
+            # The attribute wasn't changed.
+            return
+
+        name = input.encode('UTF-8')
+        cur = cursor()
+        cur.execute("SELECT is_blacklisted_name(%(name)s)", vars())
+        blacklisted = cur.fetchone()[0]
+        if blacklisted:
+            raise LaunchpadValidationError(
+                    "The name '%(input)s' has been blocked by the "
+                    "Launchpad administrators" % vars()
+                    )
 
 
 class ShipItRecipientDisplayname(TextLine):

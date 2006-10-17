@@ -2042,7 +2042,7 @@ class RequestPeopleMergeMultipleEmailsView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.formProcessed = False
+        self.form_processed = False
         self.dupe = None
         self.notified_addresses = []
 
@@ -2062,7 +2062,7 @@ class RequestPeopleMergeMultipleEmailsView:
         if self.request.method != "POST":
             return
 
-        self.formProcessed = True
+        self.form_processed = True
         user = getUtility(ILaunchBag).user
         login = getUtility(ILaunchBag).login
         logintokenset = getUtility(ILoginTokenSet)

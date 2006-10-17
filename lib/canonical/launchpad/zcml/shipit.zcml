@@ -115,11 +115,18 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IShipItApplication"
-        class="canonical.launchpad.browser.ShipItLoginView"
+        class="canonical.launchpad.browser.ShipitFrontPageView"
         permission="zope.Public"
         name="+index"
+        template="../templates/shipit-index-new.pt" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IShipItApplication"
+        class="canonical.launchpad.browser.ShipItLoginView"
+        permission="zope.Public"
+        name="login"
         template="../templates/shipit-index.pt"
-        lp:url="/shipit/+index" />
+        lp:url="/shipit/login" />
 
     <browser:page
         for="canonical.launchpad.interfaces.IShipItApplication"
