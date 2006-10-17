@@ -12,47 +12,49 @@
       class="canonical.launchpad.browser.TicketActorLatestTicketsView"
       name="+portlet-latesttickets"
       permission="zope.Public"
-      template="../templates/tickettarget-portlet-latesttickets.pt" />
-
+      template="../templates/tickettarget-portlet-latesttickets.pt"
+      />
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.TicketActorSearchTicketsView"
     name="+tickets"
-    permission="zope.Public" />
-
+    permission="zope.Public"
+    />
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.TicketActorSearchAnsweredTicketsView"
     name="+answeredtickets"
-    permission="zope.Public" />
-
+    permission="zope.Public"
+    />
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.TicketActorSearchAssignedTicketsView"
     name="+assignedtickets"
-    permission="zope.Public" />
-
+    permission="zope.Public"
+    />
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.TicketActorSearchCommentedTicketsView"
     name="+commentedtickets"
-    permission="zope.Public" />
-
+    permission="zope.Public"
+    />
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.TicketActorSearchCreatedTicketsView"
     name="+createdtickets"
-    permission="zope.Public" />
-
+    permission="zope.Public"
+    />
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.TicketActorSearchSubscribedTicketsView"
     name="+subscribedtickets"
-    permission="zope.Public" />
+    permission="zope.Public"
+    />
 
   <browser:menus
     module="canonical.launchpad.browser.ticketactor"
-    classes="TicketActorSupportMenu" />
+    classes="TicketActorSupportMenu"
+    />
 
 </facet>
 
