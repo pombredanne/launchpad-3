@@ -82,10 +82,10 @@ class PageStoryTestCase(unittest.TestCase):
     def __init__(self, name, storysuite):
         """Create a PageTest story from the given suite.
 
-        name should be an identifier for the story, such as the
-        directory containing the tests.
-        storysuite is a test suite containing the tests to be run as a
-        story.
+        :param name: an identifier for the story, such as the directory
+            containing the tests.
+        :param storysuite: a test suite containing the tests to be run
+            as a story.
         """
         # we do not run the super __init__ because we are not using any of
         # the base classes functionality, and we'd just have to give it a
@@ -125,6 +125,15 @@ class PageStoryTestCase(unittest.TestCase):
 
 
 def PageTestSuite(storydir, package=None):
+    """Create a suite of page tests for files found in storydir.
+
+    :param storydir: the directory containing the page tests.
+    :param package: the package to resolve storydir relative to.  Defaults
+        to the caller's package.
+
+    The unnumbered page tests will be added to the suite individually,
+    while the numbered tests will be run together as a story.
+    """
     # we need to normalise the package name here, because it
     # involves checking the parent stack frame.  Otherwise the
     # files would be looked up relative to this module.
