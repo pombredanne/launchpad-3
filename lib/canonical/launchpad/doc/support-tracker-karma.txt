@@ -37,7 +37,7 @@ Setup an event listener to help ensure karma is assigned when it should.
     >>> karma_helper = KarmaAssignedEventListener(show_person=True)
     >>> karma_helper.register_listener()
 
-Define a generator that always give a date higher than the precendent
+Define a generator that always give a date higher than the previous one
 to order our messages.
 
     >>> from datetime import datetime, timedelta
