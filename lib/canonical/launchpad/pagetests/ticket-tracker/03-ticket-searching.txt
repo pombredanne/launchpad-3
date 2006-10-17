@@ -405,11 +405,11 @@ Commented
 ~~~~~~~~~
 
 The report available under the 'Commented' link displays all the
-requests commented by the person.
+requests commented on by the person.
 
     >>> browser.getLink('Commented').click()
     >>> print browser.title
-    Support requests commented by Foo Bar
+    Support requests commented on by Foo Bar
     >>> tickets = find_tag_by_id(browser.contents, 'ticket-listing')
     >>> for ticket in tickets.fetch('td', 'ticket'):
     ...     print ticket.first('a').renderContents()
@@ -442,7 +442,7 @@ visiting the 'Subscribed' link in the support facet.
 
     >>> browser.getLink('Subscribed').click()
     >>> print browser.title
-    Support requests Foo Bar subscribed to
+    Support requests Foo Bar is subscribed to
     >>> tickets = find_tag_by_id(browser.contents, 'ticket-listing')
     >>> for ticket in tickets.fetch('td', 'ticket'):
     ...     print ticket.first('a').renderContents()

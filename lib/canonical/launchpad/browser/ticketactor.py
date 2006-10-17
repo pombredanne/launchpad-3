@@ -117,13 +117,13 @@ class TicketActorSearchCommentedTicketsView(SearchTicketsView):
     @property
     def pageheading(self):
         """See SearchTicketsView."""
-        return _('Support requests commented by $name ',
+        return _('Support requests commented on by $name ',
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
         """See SearchTicketsView."""
-        return _('No support requests commented by $name found with the '
+        return _('No support requests commented on by $name found with the '
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
 
@@ -165,7 +165,7 @@ class TicketActorSearchSubscribedTicketsView(SearchTicketsView):
     @property
     def pageheading(self):
         """See SearchTicketsView."""
-        return _('Support requests $name subscribed to',
+        return _('Support requests $name is subscribed to',
                  mapping=dict(name=self.context.displayname))
 
     @property
