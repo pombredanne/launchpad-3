@@ -135,8 +135,7 @@ class LoginToken(SQLBase):
 
         headers = {'Reply-To': self.requester.preferredemail.email}
         fromaddress = format_address("Launchpad", config.noreply_from_address)
-        # XXX: Find a better subject!
-        subject = "Finish your Launchpad registration"
+        subject = "Launchpad profile"
         simple_sendmail(
             fromaddress, str(self.email), subject, message, headers=headers)
 
