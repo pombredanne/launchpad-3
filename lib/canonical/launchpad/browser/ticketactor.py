@@ -194,26 +194,24 @@ class TicketActorSupportMenu(ApplicationMenu):
     links = ['answered', 'assigned', 'created', 'commented', 'subscribed']
 
     def answered(self):
-        return Link('+answeredtickets', 'Answered',
-            summary='Support requests answered by %s' % (
-                self.context.displayname), icon='ticket')
+        summary = 'Support requests answered by %s' % self.context.displayname
+        return Link('+answeredtickets', 'Answered', summary, icon='ticket')
 
     def assigned(self):
-        return Link('+assignedtickets', 'Assigned',
-            summary='Support requests assigned to %s' % (
-                self.context.displayname), icon='ticket')
+        summary = 'Support requests assigned to %s' % self.context.displayname
+        return Link('+assignedtickets', 'Assigned', summary, icon='ticket')
 
     def created(self):
-        return Link('+createdtickets', 'Created',
-            summary='Support requests created by %s' % (
-                 self.context.displayname), icon='ticket')
+        summary = 'Support requests created by %s' % self.context.displayname
+        return Link('+createdtickets', 'Created', summary, icon='ticket')
 
     def commented(self):
-        return Link('+commentedtickets', 'Commented',
-            summary='Support requests commented on by %s' % (
-                self.context.displayname), icon='ticket')
+        summary = 'Support requests commented on by %s' % (
+            self.context.displayname)
+        return Link('+commentedtickets', 'Commented', summary, icon='ticket')
 
     def subscribed(self):
-        return Link('+subscribedtickets', 'Subscribed',
-            summary='Support requests subscribed to by %s' % (
-                self.context.displayname), icon='ticket')
+        text = 'Subscribed'
+        summary = 'Support requests subscribed to by %s' % (
+                self.context.displayname)
+        return Link('+subscribedtickets', text, summary, icon='ticket')
