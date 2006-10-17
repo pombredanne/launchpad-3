@@ -6,8 +6,7 @@ support tracker. Currently, all IPerson also provides the ITicketActor
 interface.
 
     >>> from zope.interface.verify import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, ITicketActor)
+    >>> from canonical.launchpad.interfaces import IPersonSet, ITicketActor
     >>> personset = getUtility(IPersonSet)
     >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
     >>> verifyObject(ITicketActor, foo_bar)
@@ -28,10 +27,9 @@ the query using the regular full text algorithm.
 
     >>> for ticket in foo_bar.searchTickets(search_text='firefox'):
     ...     print ticket.title, ticket.status.title
-    Firefox loses focus and gets stuck          Open
-    mailto: problem in webpage                  Answered
-    Newly installed plug-in doesn't seem to be
-        used                                    Open
+    Firefox loses focus and gets stuck              Open
+    mailto: problem in webpage                      Answered
+    Newly installed plug-in doesn't seem to be used Open
 
 Sort Order
 ~~~~~~~~~~
@@ -44,25 +42,22 @@ one of the constant defined in the TicketSort enumeration.
     >>> for ticket in foo_bar.searchTickets(
     ...         search_text='firefox', sort=TicketSort.NEWEST_FIRST):
     ...     print ticket.title, ticket.status.title
-    mailto: problem in webpage                  Answered
-    Newly installed plug-in doesn't seem to be
-        used                                    Open
-    Firefox loses focus and gets stuck          Open
+    mailto: problem in webpage                      Answered
+    Newly installed plug-in doesn't seem to be used Open
+    Firefox loses focus and gets stuck              Open
 
 When no text search is done, the default sort order is
 TicketSort.NEWEST_FIRST.
 
     >>> for ticket in foo_bar.searchTickets():
     ...     print ticket.title, ticket.status.title
-    Continue playing after shutdown             Open
-    Play DVDs in Totem                          Open
-    mailto: problem in webpage                  Answered
-    Installation of Java Runtime Environment
-        for Mozilla                             Open
-    Slow system                                 Open
-    Newly installed plug-in doesn't seem to be
-        used                                    Open
-    Firefox loses focus and gets stuck          Open
+    Continue playing after shutdown                         Open
+    Play DVDs in Totem                                      Open
+    mailto: problem in webpage                              Answered
+    Installation of Java Runtime Environment for Mozilla    Open
+    Slow system                                             Open
+    Newly installed plug-in doesn't seem to be used         Open
+    Firefox loses focus and gets stuck                      Open
 
 status
 ------
@@ -79,7 +74,7 @@ control the list of statuses to select:
 The status parameter can also take a list of statuses.
 
     >>> for ticket in foo_bar.searchTickets(
-    ...         status=[TicketStatus.ANSWERED,TicketStatus.REJECTED]):
+    ...         status=[TicketStatus.ANSWERED, TicketStatus.REJECTED]):
     ...     print ticket.title, ticket.status.title
     mailto: problem in webpage                  Answered
     Firefox is slow and consumes too much RAM   Rejected
