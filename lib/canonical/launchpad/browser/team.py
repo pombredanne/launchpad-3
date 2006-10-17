@@ -163,7 +163,11 @@ class TeamAddView(AddView):
 
         email = data.get('contactemail')
         if email is not None:
-            self._sendEmailValidationRequest(email, team)
+            _sendEmailValidationRequest(email, team)
+            self.request.response.addNotification(
+                "An email message was sent to '%s'. Follow the "
+                "instructions in that message to confirm the new "
+                "contact address for this team." % email)
 
         self._nextURL = canonical_url(team)
         return team

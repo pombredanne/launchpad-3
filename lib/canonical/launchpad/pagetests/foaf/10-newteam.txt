@@ -66,3 +66,16 @@ We also check if the given email address is syntactically valid.
   ...
   testcanonical.com isn't a valid email address...
   ...
+
+Now we enter a valid email address that's not registered in Launchpad.
+
+  >>> browser.getControl('Contact Email Address').value = 'team-foo@bar.com'
+  >>> browser.getControl('Add').click()
+
+  >>> browser.url
+  'http://launchpad.dev/people/newtestteam'
+
+  >>> for tag in find_tags_by_class(browser.contents, 'informational message'):
+  ...     tag.renderContents()
+  "An email message was sent to 'team-foo@bar.com'. Follow the instructions in
+  that message to confirm the new contact address for this team."
