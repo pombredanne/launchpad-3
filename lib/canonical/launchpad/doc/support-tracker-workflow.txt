@@ -42,6 +42,7 @@ the Ubuntu Team that owns the distribution.
 
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, IPersonSet)
+
     >>> personset = getUtility(IPersonSet)
     >>> sample_person = personset.getByEmail('test@canonical.com')
     >>> no_priv = personset.getByEmail('no-priv@canonical.com')
@@ -51,6 +52,10 @@ the Ubuntu Team that owns the distribution.
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> ubuntu.addSupportContact(sample_person)
     True
+
+    (Sanity check: the admin isn't in the team owning the distribution.)
+    >>> stub.inTeam(ubuntu.owner)
+    False
 
 A ticket starts its lifecycle in the Open state.
 
