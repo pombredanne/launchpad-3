@@ -275,11 +275,17 @@ class ITableBatchNavigator(IBatchNavigator):
 
 # LaunchpadFormView widget layout
 
+class IAlwaysSubmittedWidget(Interface):
+    """A widget that is always submitted (such as a checkbox or radio
+    button group).  It doesn't make sense to show a 'Required' or
+    'Optional' marker for such widgets.
+    """
+
 class ISingleLineWidgetLayout(Interface):
     """A widget that is displayed in a single table row next to its label."""
 
 class IMultiLineWidgetLayout(Interface):
     """A widget that is displayed on its own table row below its label."""
 
-class ICheckBoxWidgetLayout(Interface):
+class ICheckBoxWidgetLayout(IAlwaysSubmittedWidget):
     """A widget that is displayed like a check box with label to the right."""

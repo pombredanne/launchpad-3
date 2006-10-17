@@ -95,9 +95,10 @@
                repeat="widget widgets">
 
 <metal:macro define-macro="widget_row"
-             tal:define="field_name widget/context/__name__;
-                         error python:view.getWidgetError(field_name);
-                         error_class python:error and 'error' or None">
+    tal:define="field_name widget/context/__name__;
+                error python:view.getWidgetError(field_name);
+                error_class python:error and 'error' or None;
+                show_optional python:view.showOptionalMarker(field_name)">
   <tr tal:condition="python: view.isSingleLineLayout(field_name)">
     <th><label tal:attributes="for widget/name"
                tal:content="string:${widget/label}:">
@@ -105,7 +106,7 @@
     <td tal:attributes="class error_class" width="100%">
       <div>
         <input tal:replace="structure widget" />
-        <span tal:condition="not:widget/required"
+        <span tal:condition="show_optional"
               class="fieldRequired">(Optional)</span>
       </div>
       <div class="message" tal:condition="error"
@@ -121,7 +122,7 @@
       <th colspan="2" style="text-align: left"><label
           tal:attributes="for widget/name"
           tal:content="string:${widget/label}:">Label:</label>
-        <span tal:condition="not:widget/required"
+        <span tal:condition="show_optional"
               class="fieldRequired">(Optional)</span>
       </th>
     </tr>

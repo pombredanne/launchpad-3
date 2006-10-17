@@ -20,10 +20,12 @@ from zope.formlib import form
 from zope.formlib.form import action
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.interfaces import IInputWidget
-from zope.app.form.browser import CheckBoxWidget, TextAreaWidget
+from zope.app.form.browser import (
+    CheckBoxWidget, DropdownWidget, RadioWidget, TextAreaWidget)
 
 from canonical.launchpad.webapp.interfaces import (
-    ISingleLineWidgetLayout, IMultiLineWidgetLayout, ICheckBoxWidgetLayout)
+    ISingleLineWidgetLayout, IMultiLineWidgetLayout, ICheckBoxWidgetLayout,
+    IAlwaysSubmittedWidget)
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.event import (
@@ -31,6 +33,8 @@ from canonical.launchpad.event import (
 
 
 classImplements(CheckBoxWidget, ICheckBoxWidgetLayout)
+classImplements(DropdownWidget, IAlwaysSubmittedWidget)
+classImplements(RadioWidget, IAlwaysSubmittedWidget)
 classImplements(TextAreaWidget, IMultiLineWidgetLayout)
 
 
@@ -250,18 +254,23 @@ class LaunchpadFormView(LaunchpadView):
                     "setFocusByName('%s');\n"
                     "// -->" % widget.name)
 
-    def isSingleLineLayout(self, name):
-        widget = self.widgets[name]
+    def isSingleLineLayout(self, field_name):
+        widget = self.widgets[field_name]
         return not (IMultiLineWidgetLayout.providedBy(widget) or
                     ICheckBoxWidgetLayout.providedBy(widget))
 
-    def isMultiLineLayout(self, name):
-        widget = self.widgets[name]
+    def isMultiLineLayout(self, field_name):
+        widget = self.widgets[field_name]
         return IMultiLineWidgetLayout.providedBy(widget)
 
-    def isCheckBoxLayout(self, name):
-        widget = self.widgets[name]
+    def isCheckBoxLayout(self, field_name):
+        widget = self.widgets[field_name]
         return ICheckBoxWidgetLayout.providedBy(widget)
+
+    def showOptionalMarker(self, field_name):
+        widget = self.widgets[field_name]
+        return not (widget.required or
+                    IAlwaysSubmittedWidget.providedBy(widget))
 
 
 class LaunchpadEditFormView(LaunchpadFormView):
