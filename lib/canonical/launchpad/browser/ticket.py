@@ -315,6 +315,9 @@ class TicketWorkflowView(LaunchpadFormView):
     """
     schema = ITicketAddMessageForm
 
+    # Do not autofocus the message widget.
+    initial_focus_widget = None
+
     def validate(self, data):
         """When the action is confirm, find and validate the message
         that was selected. When another action is used, only make sure
