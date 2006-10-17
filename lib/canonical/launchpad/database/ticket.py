@@ -8,6 +8,7 @@ from email.Utils import make_msgid
 
 from zope.event import notify
 from zope.interface import implements
+from zope.security.proxy import isinstance as zope_isinstance
 
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLRelatedJoin, SQLObjectNotFound)
@@ -315,11 +316,11 @@ class TicketSet:
 
         constraints = []
         if product:
-            constraints.append('Ticket.product = %d' % product.id)
+            constraints.append('Ticket.product = %s' % product.id)
         elif distribution:
-            constraints.append('Ticket.distribution = %d' % distribution.id)
+            constraints.append('Ticket.distribution = %s' % distribution.id)
             if sourcepackagename:
-                constraints.append('Ticket.sourcepackagename = %d' % sourcepackagename.id)
+                constraints.append('Ticket.sourcepackagename = %s' % sourcepackagename.id)
 
         return constraints
 
@@ -353,7 +354,7 @@ class TicketSet:
         if owner:
             assert IPerson.providedBy(owner), (
                 "expected IPerson, got %r" % owner)
-            constraints.append('Ticket.owner = %d' % owner.id)
+            constraints.append('Ticket.owner = %s' % owner.id)
 
         return TicketSet._commonSearch(
             constraints, prejoins, search_text, status, sort)
@@ -366,7 +367,7 @@ class TicketSet:
 
         if participation is None:
             participation = TicketParticipation.items
-        elif isinstance(participation, Item):
+        elif zope_isinstance(participation, Item):
             participation = [participation]
 
         participations_filter = []
@@ -384,18 +385,18 @@ class TicketSet:
 
     queryByParticipationType = {
         TicketParticipation.ANSWERER:
-            "SELECT id FROM Ticket WHERE answerer = %(personId)d",
+            "SELECT id FROM Ticket WHERE answerer = %(personId)s",
         TicketParticipation.SUBSCRIBER:
             "SELECT ticket FROM TicketSubscription "
-            "WHERE person = %(personId)d",
+            "WHERE person = %(personId)s",
         TicketParticipation.OWNER:
-            "SELECT id FROM Ticket WHERE owner = %(personId)d",
+            "SELECT id FROM Ticket WHERE owner = %(personId)s",
         TicketParticipation.COMMENTER:
             "SELECT ticket FROM TicketMessage "
             "JOIN Message ON (message = Message.id) "
-            "WHERE owner = %(personId)d",
+            "WHERE owner = %(personId)s",
         TicketParticipation.ASSIGNEE:
-            "SELECT id FROM Ticket WHERE assignee = %(personId)d"}
+            "SELECT id FROM Ticket WHERE assignee = %(personId)s"}
 
     @staticmethod
     def _commonSearch(constraints, prejoins, search_text, status, sort):
@@ -405,7 +406,7 @@ class TicketSet:
         if search_text is not None:
             constraints.append('Ticket.fti @@ ftq(%s)' % quote(search_text))
 
-        if isinstance(status, Item):
+        if zope_isinstance(status, Item):
             status = [status]
         if status:
             constraints.append(
