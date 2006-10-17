@@ -32,8 +32,7 @@ from warnings import warn
 import zope.security.interfaces
 from zope.component import getUtility
 from zope.event import notify
-from zope.app.form.browser import TextAreaWidget
-from zope.app.form.browser.add import AddView
+from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.formlib import form
@@ -653,65 +652,71 @@ class ProductSetView(LaunchpadView):
         return self.results
 
 
-class ProductAddView(AddView):
+class ProductAddView(LaunchpadFormView):
 
-    __used_for__ = IProduct
+    schema = IProduct
+    field_names = ['name', 'owner', 'displayname', 'title', 'summary',
+                   'description', 'project', 'homepageurl',
+                   'sourceforgeproject', 'freshmeatproject', 'wikiurl',
+                   'screenshotsurl', 'downloadurl', 'programminglang',
+                   'reviewed']
+    custom_widget('homepageurl', TextWidget, displayWidth=30)
+    custom_widget('screenshoturl', TextWidget, displayWidth=30)
+    custom_widget('wikiurl', TextWidget, displayWidth=30)
+    custom_widget('downloadurl', TextWidget, displayWidth=30)
 
-    def __init__(self, context, request):
-        fields = ["name", "displayname", "title", "summary", "description",
-                  "project", "homepageurl", "sourceforgeproject",
-                  "freshmeatproject", "wikiurl", "screenshotsurl",
-                  "downloadurl", "programminglang"]
-        owner = IPerson(request.principal, None)
-        if self.isVCSImport(owner):
-            # vcs-imports members get it easy and are able to change this
-            # stuff during the edit process; this saves time wasted on
-            # getting to product/+admin.
-            fields.insert(1, "owner")
-            fields.append("reviewed")
-        self.fieldNames = fields
-        self.context = context
-        self.request = request
-        self._nextURL = '.'
-        AddView.__init__(self, context, request)
+    label = "Register an upstream open source product"
+    product = None
 
-    def isVCSImport(self, owner):
-        if owner is None:
+    def isVCSImport(self):
+        if self.user is None:
             return False
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-        return owner.inTeam(vcs_imports)
+        return self.user.inTeam(vcs_imports)
 
-    def createAndAdd(self, data):
-        # add the owner information for the product
-        owner = IPerson(self.request.principal, None)
-        if owner is None:
+    def setUpFields(self):
+        LaunchpadFormView.setUpFields(self)
+        if not self.isVCSImport():
+            # vcs-imports members get it easy and are able to change
+            # the owner and reviewed status during the edit process;
+            # this saves time wasted on getting to product/+admin.
+            # The fields are not displayed for other people though.
+            self.form_fields = self.form_fields.omit('owner', 'reviewed')
+
+    @action(_('Add'), name='add')
+    def add_action(self, action, data):
+        if self.user is None:
             raise zope.security.interfaces.Unauthorized(
                 "Need an authenticated Launchpad owner")
-        if self.isVCSImport(owner):
-            owner = data["owner"]
-            reviewed = data["reviewed"]
-        else:
+        if not self.isVCSImport():
             # Zope makes sure these are never set, since they are not in
-            # self.fieldNames
+            # self.form_fields
             assert "owner" not in data
             assert "reviewed" not in data
-            reviewed = False
-        productset = getUtility(IProductSet)
-        product = productset.createProduct(owner=owner,
-            reviewed=reviewed, name=data.get("name"),
-            displayname=data.get("displayname"), title=data.get("title"),
-            summary=data.get("summary"), description=data.get("description"),
-            project=data.get("project"), homepageurl=data.get("homepageurl"),
-            screenshotsurl=data.get("screenshotsurl"),
-            wikiurl=data.get("wikiurl"), downloadurl=data.get("downloadurl"),
-            freshmeatproject=data.get("freshmeatproject"),
-            sourceforgeproject=data.get("sourceforgeproject"))
-        notify(ObjectCreatedEvent(product))
-        self._nextURL = data['name']
-        return product
+            data['owner'] = self.user
+            data['reviewed'] = False
+        self.product = getUtility(IProductSet).createProduct(
+            name=data['name'],
+            title=data['title'],
+            summary=data['summary'],
+            description=data['description'],
+            displayname=data['displayname'],
+            homepageurl=data['homepageurl'],
+            downloadurl=data['downloadurl'],
+            screenshotsurl=data['screenshotsurl'],
+            wikiurl=data['wikiurl'],
+            freshmeatproject=data['freshmeatproject'],
+            sourceforgeproject=data['sourceforgeproject'],
+            programminglang=data['programminglang'],
+            project=data['project'],
+            owner=data['owner'],
+            reviewed=data['reviewed'])
+        notify(ObjectCreatedEvent(self.product))
 
-    def nextURL(self):
-        return self._nextURL
+    @property
+    def next_url(self):
+        assert self.product is not None, 'No product has been created'
+        return canonical_url(self.product)
 
 
 class ProductBugContactEditView(SQLObjectEditView):
