@@ -381,6 +381,8 @@ foaf_adminrequestmerge = 'Merge Launchpad accounts'
 
 foaf_mergerequest_sent = 'Merge request sent'
 
+foaf_newperson = 'Create a new Launchpad profile'
+
 foaf_newteam = 'Register a new team in Launchpad'
 
 foaf_requestmerge_multiple = 'Merge Launchpad accounts'

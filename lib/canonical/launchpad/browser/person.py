@@ -43,6 +43,7 @@ __all__ = [
     'ObjectReassignmentView',
     'TeamReassignmentView',
     'RedirectToAssignedBugsView',
+    'PersonAddView',
     ]
 
 import cgi
@@ -50,6 +51,7 @@ import urllib
 from StringIO import StringIO
 
 from zope.event import notify
+from zope.app.form.browser import TextAreaWidget
 from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
 from zope.app.content_types import guess_content_type
@@ -62,13 +64,13 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
-    TeamSubscriptionPolicy, SpecificationFilter)
+    TeamSubscriptionPolicy, SpecificationFilter, PersonCreationRationale)
 
 from canonical.widgets import PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
-    ISSHKeySet, IPersonSet, IEmailAddressSet, IWikiNameSet,
+    ISSHKeySet, IPersonSet, IEmailAddressSet, IWikiNameSet, INewPerson,
     IJabberIDSet, IIrcIDSet, ILaunchBag, ILoginTokenSet, IPasswordEncryptor,
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, UBUNTU_WIKI_URL,
     ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
@@ -640,6 +642,34 @@ class FOAFSearchView:
             results = getUtility(IPersonSet).find(name)
 
         return BatchNavigator(results, self.request)
+
+
+class PersonAddView(LaunchpadFormView):
+    """The page where users can create new Launchpad profiles."""
+
+    label = "Create a new Launchpad profile"
+    schema = INewPerson
+    _next_url = None
+    custom_widget('creation_comment', TextAreaWidget, height=5, width=60)
+
+    @action(_("Create Profile"), name="create")
+    def create_action(self, action, data):
+        emailaddress = data['emailaddress']
+        displayname = data['displayname']
+        creation_comment = data['creation_comment']
+        person = getUtility(IPersonSet).ensurePerson(
+            emailaddress, displayname, PersonCreationRationale.USER_CREATED,
+            creation_comment, registrant=self.user)
+        self._next_url = canonical_url(person)
+        logintokenset = getUtility(ILoginTokenSet)
+        token = logintokenset.new(
+            requester=self.user, requesteremail=self.user.preferredemail.email,
+            email=emailaddress, tokentype=LoginTokenType.NEWPROFILE)
+        token.sendProfileCreatedEmail(person, creation_comment)
+
+    @property
+    def next_url(self):
+        return self._next_url
 
 
 class PersonClaimView(LaunchpadFormView):

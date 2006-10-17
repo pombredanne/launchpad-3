@@ -562,6 +562,13 @@
       classes="PersonSetNavigation"
       />
 
+  <browser:page
+      name="+newperson"
+      for="canonical.launchpad.interfaces.IPersonSet"
+      class="canonical.launchpad.browser.PersonAddView"
+      permission="launchpad.AnyPerson"
+      template="../templates/foaf-newperson.pt" />
+
   <browser:addform
       name="+newteam"
       for="canonical.launchpad.interfaces.IPersonSet"

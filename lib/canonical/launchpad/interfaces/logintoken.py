@@ -103,6 +103,12 @@ class ILoginToken(Interface):
         him to finish the Launchpad registration process.
         """
 
+    def sendProfileCreatedEmail(profile, comment):
+        """Send an email message to this token's email address explaining that
+        another user has created a launchpad profile for him and providing
+        a link where he can finish the registration process.
+        """
+
     def sendMergeRequestEmail():
         """Send an email to self.email (the dupe account's email address)
         with the URL of a page to finish the merge of Launchpad accounts.

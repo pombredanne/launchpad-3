@@ -2954,6 +2954,15 @@ class LoginTokenType(DBSchema):
         to claim it.
         """)
 
+    NEWPROFILE = Item(9, """
+        A user created a new Launchpad profile for another person.
+
+        Any Launchpad user can create new "placeholder" profiles to represent
+        people who don't use Launchpad. The person that a given profile
+        represents has to first use the token to finish the registration
+        process in order to be able to login with that profile.
+        """)
+
 
 class BuildStatus(DBSchema):
     """Build status type
@@ -3520,3 +3529,11 @@ class PersonCreationRationale(DBSchema):
         Somebody went to the Ubuntu wiki and was directed to Launchpad to
         create an account.
         """)
+
+    USER_CREATED = Item(11, """
+        Created by a user to represent a person which does not uses Launchpad.
+
+        A user wanted to reference a person which is not a Launchpad user, so
+        he created this "placeholder" profile.
+        """)
+
