@@ -44,8 +44,13 @@ class TicketJanitor:
             getUtility(ILaunchpadCelebrities).support_tracker_janitor)
 
     def expireTickets(self):
-        """Expire all tickets in the OPEN or NEEDSINFO without activity
-        in the last X days.
+        """Expire old tickets.
+
+        All tickets in the OPEN or NEEDSINFO state without activity
+        in the last X days are expired.
+
+        This method will login as the support_tracker_janitor celebrity and
+        logout after the expiration is done.
         """
         self.log.info(
             'Expiring OPEN and NEEDSINFO tickets without activity for the '
