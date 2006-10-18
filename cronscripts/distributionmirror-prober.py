@@ -196,7 +196,7 @@ def main(argv):
         # back in the old times, so now we need to do this small hack here.
         # Guilherme Salgado, 2006-05-26
         if not mirror.distribution.full_functionality:
-            logger_obj.warning(
+            logger_obj.info(
                 "Mirror '%s' of distribution '%s' can't be probed --we only "
                 "probe Ubuntu mirrors." 
                 % (mirror.name, mirror.distribution.name))
