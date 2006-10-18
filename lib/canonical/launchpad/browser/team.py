@@ -36,7 +36,7 @@ class TeamEditView(SQLObjectEditView):
         self.request.response.redirect(canonical_url(self.context))
 
 
-def _sendEmailValidationRequest(email, team):
+def generateTokenAndValidationEmail(email, team):
     """Send a validation message to the given email."""
     login = getUtility(ILaunchBag).login
     token = getUtility(ILoginTokenSet).new(
@@ -130,7 +130,7 @@ class TeamEmailView:
 
     def _sendEmailValidationRequest(self, email):
         """Send a validation message to <email> and update self.feedback."""
-        _sendEmailValidationRequest(email, self.team)
+        generateTokenAndValidationEmail(email, self.team)
         self.feedback = (
             "An email message was sent to '%s'. Follow the "
             "instructions in that message to confirm the new "
@@ -163,7 +163,11 @@ class TeamAddView(AddView):
 
         email = data.get('contactemail')
         if email is not None:
-            self._sendEmailValidationRequest(email, team)
+            generateTokenAndValidationEmail(email, team)
+            self.request.response.addNotification(
+                "An email message was sent to '%s'. Follow the "
+                "instructions in that message to confirm the new "
+                "contact address for this team." % email)
 
         self._nextURL = canonical_url(team)
         return team
