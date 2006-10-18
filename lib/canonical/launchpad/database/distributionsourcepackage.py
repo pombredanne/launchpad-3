@@ -17,7 +17,7 @@ from canonical.lp.dbschema import PackagePublishingStatus
 
 from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, ITicketTarget, DuplicateBugContactError,
-    DeleteBugContactError)
+    DeleteBugContactError, TICKET_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.bug import BugSet, get_bug_tags_open_count
@@ -280,11 +280,14 @@ class DistributionSourcePackage(BugTargetBase):
             return None
         return ticket
 
-    def searchTickets(self, **kwargs):
+    def searchTickets(self, search_text=None,
+                      status=TICKET_STATUS_DEFAULT_SEARCH, owner=None,
+                      sort=None):
         """See ITicketTarget."""
-        return TicketSet.search(distribution=self.distribution,
-                                sourcepackagename=self.sourcepackagename,
-                                **kwargs)
+        return TicketSet.search(
+            distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename, search_text=search_text,
+            status=status, owner=owner, sort=sort)
 
     def findSimilarTickets(self, title):
         """See ITicketTarget."""

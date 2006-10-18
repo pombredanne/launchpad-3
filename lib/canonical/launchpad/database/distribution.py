@@ -54,7 +54,8 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.interfaces import (
     IBuildSet, IDistribution, IDistributionSet, IHasBuildRecords,
-    ILaunchpadCelebrities, ISourcePackageName, ITicketTarget, NotFoundError)
+    ILaunchpadCelebrities, ISourcePackageName, ITicketTarget, NotFoundError,
+    TICKET_STATUS_DEFAULT_SEARCH)
 
 from sourcerer.deb.version import Version
 
@@ -450,9 +451,12 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
             return None
         return ticket
 
-    def searchTickets(self, **kwargs):
+    def searchTickets(self, search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
+                      owner=None, sort=None):
         """See ITicketTarget."""
-        return TicketSet.search(distribution=self, **kwargs)
+        return TicketSet.search(
+            distribution=self, search_text=search_text, status=status,
+            owner=owner, sort=sort)
 
     def findSimilarTickets(self, title):
         """See ITicketTarget."""
