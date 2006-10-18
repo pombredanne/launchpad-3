@@ -304,8 +304,8 @@ This view is used as a base class to search for tickets. It is intended
 to be easily customizable to offer more specific reports, while
 keeping those searchable.
 
-    (Define a subclass to demonstrate the customizability of the base
-    view.)
+    # Define a subclass to demonstrate the customizability of the base
+    # view.
     >>> from canonical.launchpad.browser import SearchTicketsView
     >>> class MyCustomSearchTicketsView(SearchTicketsView):
     ...
@@ -314,7 +314,7 @@ keeping those searchable.
     ...     def getDefaultFilter(self):
     ...         return dict(**self.default_filter)
 
-    (Set up a harness for easier testing.)
+    # Set up a harness for easier testing.
     >>> from canonical.launchpad.ftests import LaunchpadFormHarness
     >>> search_view_harness = LaunchpadFormHarness(
     ...     ubuntu, MyCustomSearchTicketsView)
@@ -335,7 +335,7 @@ It also includes a widget to select the sort order.
 The tickets matching the search are available by using the
 searchResults() method. The returned results are batched.
 
-    (We want 5 items per page for these tests.)
+    # We want 5 items per page for these tests.
     >>> from canonical.config import config
     >>> original_default_batch_size = config.launchpad.default_batch_size
     >>> config.launchpad.default_batch_size = 5
@@ -446,5 +446,5 @@ It works also with user submitted values:
 Cleanup
 -------
 
-    (Restore original batch size.)
+    # Restore original batch size.
     >>> config.launchpad.default_batch_size = original_default_batch_size
