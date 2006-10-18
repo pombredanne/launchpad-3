@@ -31,7 +31,8 @@ def referenced_oops():
     # happy.
     posix_oops_match = r"~* '\\moops\\s*-?\\s*\\d*[a-z]+\\d+'"
     query = """
-        SELECT DISTINCT subject FROM Message WHERE subject %(posix_oops_match)s
+        SELECT DISTINCT subject FROM Message
+        WHERE subject %(posix_oops_match)s AND subject IS NOT NULL
         UNION ALL
         SELECT content FROM MessageChunk WHERE content %(posix_oops_match)s
         UNION ALL
@@ -42,7 +43,7 @@ def referenced_oops():
         SELECT statusexplanation FROM BugTask
         WHERE statusexplanation %(posix_oops_match)s
         UNION ALL
-        SELECT title || ' ' || description || ' ' || whiteboard
+        SELECT title || ' ' || description || ' ' || COALESCE(whiteboard,'')
         FROM Ticket WHERE title %(posix_oops_match)s
             OR description %(posix_oops_match)s
             OR whiteboard %(posix_oops_match)s
@@ -71,7 +72,7 @@ def path_to_oopsid(path):
     date_str = os.path.basename(os.path.dirname(path))
     match = re.search('^(\d\d\d\d)-(\d\d+)-(\d\d+)$', date_str)
     year, month, day = (int(bit) for bit in match.groups())
-    oops_id = path.split('.')[1]
+    oops_id = os.path.basename(path).split('.')[1]
     day = (datetime(year, month, day, tzinfo=utc) - errorlog.epoch).days + 1
     return '%d%s' % (day, oops_id)
 

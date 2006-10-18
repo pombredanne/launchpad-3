@@ -73,6 +73,10 @@ class PlacelessAuthUtility:
                     password = credentials.getPassword()
                     if principal.validate(password):
                         request.setPrincipal(principal)
+                        # We send a LoggedInEvent here, when the
+                        # cookie auth below sends a PrincipalIdentified,
+                        # as the login form is never visited for BasicAuth.
+                        # This we treat each request as a seperate login/logout
                         notify(BasicAuthLoggedInEvent(
                             request, login, principal
                             ))
@@ -98,7 +102,11 @@ class PlacelessAuthUtility:
                 return None
             elif getUtility(IPersonSet).get(principal.id).is_valid_person:
                 request.setPrincipal(principal)
-                notify(CookieAuthPrincipalIdentifiedEvent(principal, request))
+                login = authdata['login']
+                assert login, 'login is %s!' % repr(login_name)
+                notify(CookieAuthPrincipalIdentifiedEvent(
+                    principal, request, login
+                    ))
                 return principal
             else:
                 return None

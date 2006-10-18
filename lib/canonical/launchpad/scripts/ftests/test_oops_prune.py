@@ -31,7 +31,10 @@ class TestOopsPrune(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        self.oops_dir = tempfile.mkdtemp()
+        # The dots in the directory name are here because we had a bug
+        # where this situation would break due to using split('.') on the
+        # whole path rather than the path's basename.
+        self.oops_dir = tempfile.mkdtemp('.directory.with.dots')
 
         # Create some fake OOPS files
         self.today = datetime.now(tz=UTC)
@@ -82,6 +85,16 @@ class TestOopsPrune(unittest.TestCase):
                 title='OOPS - 1TicketTitle666 bar',
                 description='http://foo.com OOPS-1TicketDescription666',
                 whiteboard='OOPS-1TicketWhiteboard666'
+                WHERE id=1
+            """)
+        # Add a ticket entry with a NULL whiteboard to ensure the SQL query
+        # copes.
+        cur.execute("""
+            UPDATE Ticket SET
+                title='OOPS - 1TicketTitle666 bar',
+                description='http://foo.com OOPS-1TicketDescription666',
+                whiteboard=NULL
+                WHERE id=2
             """)
         self.failUnlessEqual(
                 set([

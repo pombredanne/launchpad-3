@@ -136,6 +136,7 @@ class SpecificationContextMenu(ContextMenu):
                 'Unknown target on specification "%s".' % self.context.name)
         return Link(link, text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def status(self):
         text = 'Change status'
         return Link('+status', text, icon='edit')
