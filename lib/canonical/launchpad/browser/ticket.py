@@ -484,6 +484,8 @@ class TicketMessageDisplayView(LaunchpadView):
         LaunchpadView.__init__(self, context, request)
         self.ticket = context.ticket
 
+    display_confirm_button = True
+
     @cachedproperty
     def isBestAnswer(self):
         """Return True when this message is marked as solving the ticket."""
@@ -500,9 +502,15 @@ class TicketMessageDisplayView(LaunchpadView):
 
     def canConfirmAnswer(self):
         """Return True if the user can confirm this answer."""
-        return (self.user == self.ticket.owner and
+        return (self.display_confirm_button and
+                self.user == self.ticket.owner and
                 self.ticket.can_confirm_answer and
                 self.context.action == TicketAction.ANSWER)
+
+    def renderWithoutConfirmButton(self):
+        """Display the message without any confirm button."""
+        self.display_confirm_button = False
+        return self()
 
 
 class TicketContextMenu(ContextMenu):

@@ -151,7 +151,8 @@
     for="canonical.launchpad.interfaces.ITicketMessage"
     class="canonical.launchpad.browser.TicketMessageDisplayView"
     permission="zope.Public"
-    template="../templates/ticketmessage-display.pt" />
+    template="../templates/ticketmessage-display.pt"
+    />
 
   <!-- TicketSet -->
   <content class="canonical.launchpad.database.TicketSet">

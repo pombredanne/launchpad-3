@@ -31,23 +31,11 @@
         can enter comments along your confirmation.
       </p>
 
-      <div class="boardComment">
-        <input type="hidden" name="answer_id" value=""
-               tal:attributes="value answer/id" />
-        <div class="boardCommentDetails">
-          <a href="#"
-             tal:attributes="href answer/owner/fmt:url"
-             tal:content="answer/owner/browsername">
-            $Person.browsername</a>
-          <span tal:replace="answer/datecreated/fmt:datetime">Thursday
-            13:21</span>
-        </div>
+      <input type="hidden" name="answer_id" value=""
+        tal:attributes="value answer/id" />
 
-        <div class="boardCommentBody"
-             tal:content="structure answer/text_contents/fmt:text-to-html">
-          Message text.
-        </div>
-      </div>
+      <div class="boardComment"
+           tal:replace="structure answer/@@+display/renderWithoutConfirmButton" />
     </div>
 
     <div class="actions" metal:fill-slot="buttons">
