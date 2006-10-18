@@ -29,7 +29,7 @@
                         attachments tickets specifications followup_subject
                         isSubscribed messages notificationRecipientAddresses
                         hasBranch security_related tags getMessageChunks
-                        isSubscribedToDupes" />
+                        isSubscribedToDupes getBugWatch" />
         <require
             permission="launchpad.Edit"
             attributes="addChangeNotification addCommentNotification addWatch

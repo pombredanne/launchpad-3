@@ -447,6 +447,20 @@ class Bug(SQLBase):
                      "MessageChunk.sequence"])
         return chunks
 
+    def getBugWatch(self, bugtracker, remote_bug):
+        """See IBug."""
+        for bug_watch in self.watches:
+            #XXX: This matching is a bit fragile, since
+            #     bugwatch.remotebug is a user editable text string.
+            #     We should improve the matching so that for example
+            #     '#42' matches '42' and so on.
+            #     -- Bjorn Tillenius, 2006-10-11
+            if (bug_watch.bugtracker == bugtracker and
+                bug_watch.remotebug == remote_bug):
+                return bug_watch
+        # No matching bug watch was found.
+        return None
+
     def _getTags(self):
         """Get the tags as a sorted list of strings."""
         tags = [
