@@ -25,9 +25,17 @@ Only tickets in the OPEN or NEEDSINFO state are subject to expiration.
     ...     TicketStatus.OPEN.value, TicketStatus.NEEDSINFO.value)).count()
     9
 
-    (We need to massage sample data a little. By default, all 9 open
-     tickets available in sample data would be expired, so do a
-     little activity on some of these.)
+    (By default, all open and needs info ticket should expire. Make sure
+    that no new tickets were recently added and will make this test fails
+    in the future.)
+    >>> Ticket.select(
+    ...     "datelastresponse >= current_timestamp - interval '15 days' OR "
+    ...    "datelastquery >= current_timestamp - interval '15 days'").count()
+    0
+
+    (We need to massage sample data a little. Since all expiration
+    candidates in sample data would expire, do a little activity on
+    some of these.)
 
     >>> from datetime import datetime, timedelta
     >>> from pytz import UTC
