@@ -22,21 +22,22 @@ from canonical.launchpad import _
 
 
 class ITicketAddMessageForm(Interface):
-    """Schema for adding a message to a ticket. This usually includes
-    a status change as well.
+    """Form schema for adding a message to a ticket.
+
+    This will usually includes a status change as well.
     """
 
     message = Text(title=_('Message'), required=False)
 
 
 class ITicketChangeStatusForm(Interface):
-    """Schema for changing the status of a ticket."""
+    """Form schema for changing the status of a ticket."""
 
     status = Choice(
-        title=_('Status:'), description=_('Select the new ticket status.'),
+        title=_('Status'), description=_('Select the new ticket status.'),
         vocabulary='TicketStatus', required=True)
 
     message = Text(
-        title=_('Message:'),
+        title=_('Message'),
         description=_('Enter an explanation for the status change'),
         required=True)
