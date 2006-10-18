@@ -713,12 +713,9 @@ class Person(SQLBase):
         #      -- SteveAlexander, 2005-04-23
         assert tm is not None
 
-        now = datetime.now(pytz.timezone('UTC'))
-        if expires is not None and expires <= now:
-            status = TeamMembershipStatus.EXPIRED
-            # XXX: This is a workaround while 
-            # https://launchpad.net/products/launchpad/+bug/30649 isn't fixed.
-            expires = now
+        if expires is not None:
+            now = datetime.now(pytz.timezone('UTC'))
+            assert expires > now, expires
 
         tm.setStatus(status, reviewer, comment)
         tm.dateexpires = expires

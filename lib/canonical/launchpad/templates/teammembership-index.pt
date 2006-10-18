@@ -109,8 +109,8 @@
           <tr>
             <th />
             <td>
-              <input type="submit" value="Change" name="editactive" />
-              <input type="submit" value="Deactivate" name="editactive" />
+              <input type="submit" value="Change" id="change-submit" name="editactive" />
+              <input type="submit" value="Deactivate" id="deactivate-submit" name="editactive" />
             </td>
           </tr>
         </table>
