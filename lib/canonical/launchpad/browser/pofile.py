@@ -22,14 +22,16 @@ from zope.publisher.browser import FileUpload
 
 from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad.interfaces import (
-    IPOFile, IPOExportRequestSet, ILaunchBag, ITranslationImportQueue,
-    UnexpectedFormData, NotFoundError)
+    IPOFile, IPOExportRequestSet, ITranslationImportQueue, 
+    UnexpectedFormData, NotFoundError, IPOFileAlternativeLanguage)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ApplicationMenu, Link, canonical_url,
     LaunchpadView, Navigation)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.browser.pomsgset import BaseTranslationView
 
+
+from canonical.launchpad import _
 
 class CustomDropdownWidget(DropdownWidget):
     def _div(self, cssClass, contents, **kw):
@@ -144,8 +146,30 @@ class POFileAppMenus(ApplicationMenu):
         return Link('../', text, icon='languages')
 
 
-class BaseExportView:
+class BaseExportView(LaunchpadView):
     """Base class for PO export views."""
+
+    def initialize(self):
+        self.request_set = getUtility(IPOExportRequestSet)
+        self.processForm()
+
+    def processForm(self):
+        """Override in subclass."""
+        raise NotImplementedError
+
+    def nextURL(self):
+        self.request.response.addInfoNotification(_(
+            "Your request has been received. Expect to receive an email "
+            "shortly."))
+        self.request.response.redirect(canonical_url(self.context))
+
+    def validateFileFormat(self, format_name):
+        try:
+            return RosettaFileFormat.items[format_name]
+        except KeyError:
+            self.request.response.addErrorNotification(_(
+                'Please select a valid format for download.'))
+            return
 
     def formats(self):
         """Return a list of formats available for translation exports."""
@@ -469,24 +493,15 @@ class POFileTranslateView(BaseTranslationView):
 
 
 class POExportView(BaseExportView):
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.user = getUtility(ILaunchBag).user
-        self.formProcessed = False
 
     def processForm(self):
         if self.request.method != 'POST':
             return
 
-        format_name = self.request.form.get('format')
-        try:
-            format = RosettaFileFormat.items[format_name]
-        except KeyError:
-            raise RuntimeError("Unsupported format")
+        format = self.validateFileFormat(self.request.form.get('format'))
+        if not format:
+            return
 
-        request_set = getUtility(IPOExportRequestSet)
-        request_set.addRequest(
+        self.request_set.addRequest(
             self.user, pofiles=[self.context], format=format)
-        self.formProcessed = True
-
+        self.nextURL()

@@ -127,13 +127,14 @@ class DistroReleaseQueue(SQLBase):
 
         for source in self.sources:
             # If two queue items have the same (name, version) pair,
-            # then there is an inconsistency.  Check the accepted
+            # then there is an inconsistency.  Check the accepted & done
             # queue items for each distro release for such duplicates
             # and raise an exception if any are found.
-            # See bug #31038 for details.
+            # See bug #31038 & #62976 for details.
             for distrorelease in self.distrorelease.distribution:
                 if distrorelease.getQueueItems(
-                    status=DistroReleaseQueueStatus.ACCEPTED,
+                    status=[DistroReleaseQueueStatus.ACCEPTED,
+                            DistroReleaseQueueStatus.DONE],
                     name=source.sourcepackagerelease.name,
                     version=source.sourcepackagerelease.version,
                     exact_match=True).count() > 0:
