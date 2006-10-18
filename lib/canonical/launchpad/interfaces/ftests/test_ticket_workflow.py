@@ -68,21 +68,21 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
             self.modified_event_listener.unregister()
 
     def setUpEventListeners(self):
-        # Install a listener for the test.
+        """Install a listener for events emitted during the test."""
         self.collected_events = []
         if hasattr(self, 'modified_event_listener'):
             # Event listeners is already registered.
             return
         self.modified_event_listener = TestEventListener(
-            ITicket, ISQLObjectModifiedEvent, self.collect_events)
+            ITicket, ISQLObjectModifiedEvent, self.collectEvent)
         self.created_event_listener = TestEventListener(
-            ITicketMessage, ISQLObjectCreatedEvent, self.collect_events)
+            ITicketMessage, ISQLObjectCreatedEvent, self.collectEvent)
 
-    def collect_events(self, object, event):
+    def collectEvent(self, object, event):
         """Collect events"""
         self.collected_events.append(event)
 
-    def now_plus(self, n_hours):
+    def nowPlus(self, n_hours):
         """Return a DateTime a number of hours in the future."""
         return self.now + timedelta(hours=n_hours)
 
@@ -137,7 +137,7 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
         message = self.ticket.requestInfo(
             self.answerer,
             "The previous answer is bad. What is the problem again?",
-            datecreated=self.now_plus(3))
+            datecreated=self.nowPlus(3))
         self.checkTransitionMessage(
             message, expected_owner=self.answerer,
             expected_action=TicketAction.REQUESTINFO,
@@ -149,8 +149,7 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
         """Test that the ticket owner cannot use requestInfo."""
         self.assertRaises(
             AssertionError, self.ticket.requestInfo,
-                self.owner, 'Why should I care?',
-                datecreated=self.now_plus(1))
+                self.owner, 'Why should I care?', datecreated=self.nowPlus(1))
 
     def test_requestInfoFromInvalidStates(self):
         """Test that requestInfo cannot be called when the ticket status is
@@ -158,7 +157,7 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
         """
         self._testInvalidTransition(
             ['OPEN', 'NEEDSINFO', 'ANSWERED'], self.ticket.requestInfo,
-            self.answerer, "What's up?", datecreated=self.now_plus(3))
+            self.answerer, "What's up?", datecreated=self.nowPlus(3))
 
     def test_can_give_info(self):
         """Test the can_give_info attribute in all the possible states."""
@@ -170,7 +169,7 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
         """
         self._testInvalidTransition(
             ['OPEN', 'NEEDSINFO'], self.ticket.giveInfo,
-            "That's that.", datecreated=self.now_plus(1))
+            "That's that.", datecreated=self.nowPlus(1))
 
     def test_giveInfo(self):
         """Test that giveInfo() can be called when the ticket status is
@@ -198,8 +197,7 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
         """
         self._testInvalidTransition(
             ['OPEN', 'NEEDSINFO', 'ANSWERED'], self.ticket.giveAnswer,
-            self.answerer, "The answer is this.",
-            datecreated=self.now_plus(1))
+            self.answerer, "The answer is this.", datecreated=self.nowPlus(1))
 
     def test_giveAnswer(self):
         """Test that giveAnswer can be called when the ticket status is
@@ -239,7 +237,7 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
             transition_method=self.ticket.giveAnswer,
             transition_method_args=(
                 self.owner, "I found the solution.",),
-            transition_method_kwargs={'datecreated': self.now_plus(3)},
+            transition_method_kwargs={'datecreated': self.nowPlus(3)},
             edited_fields=['status', 'messages', 'dateanswered', 'answerer',
                            'answer', 'datelastquery'])
 
@@ -253,32 +251,36 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
         # Once one answer was given, it becomes possible in some states.
         self.ticket.setStatus(self.admin, TicketStatus.OPEN, 'Status change')
         self.ticket.giveAnswer(
-            self.answerer, 'Do something about it.', self.now_plus(1))
+            self.answerer, 'Do something about it.', self.nowPlus(1))
         self._testTransitionGuard(
             'can_confirm_answer', ['OPEN', 'NEEDSINFO', 'ANSWERED'])
 
     def test_confirmAnswerFromInvalidStates(self):
-        """Test that confirmAnswer cannot be called when the ticket has
-        no message with action ANSWER, or when it has one but it is not in the
-        OPEN, NEEDSINFO or ANSWERED state.
+        """Test calling confirmAnswer from invalid states.
+
+        confirmAnswer() cannot be called when the ticket has no message with
+        action ANSWER, or when it has one but it is not in the OPEN,
+        NEEDSINFO, or ANSWERED state.
         """
         self._testInvalidTransition([], self.ticket.confirmAnswer,
-            "That answer worked!.", datecreated=self.now_plus(1))
+            "That answer worked!.", datecreated=self.nowPlus(1))
 
         self.ticket.setStatus(self.admin, TicketStatus.OPEN, 'Status change')
         answer_message = self.ticket.giveAnswer(
-            self.answerer, 'Do something about it.', self.now_plus(1))
+            self.answerer, 'Do something about it.', self.nowPlus(1))
         self._testInvalidTransition(['OPEN', 'NEEDSINFO', 'ANSWERED'],
             self.ticket.confirmAnswer, "That answer worked!.",
-            answer=answer_message, datecreated=self.now_plus(1))
+            answer=answer_message, datecreated=self.nowPlus(1))
 
     def test_confirmAnswer(self):
-        """Test that confirmAnswer can be called when the ticket status
+        """Test confirmAnswer().
+
+        Test that confirmAnswer() can be called when the ticket status
         is one of OPEN, NEEDSINFO, ANSWERED and that it has at least one
         ANSWER message and check that it returns a valid ITicketMessage.
         """
         answer_message = self.ticket.giveAnswer(
-            self.answerer, "Get a grip!", datecreated=self.now_plus(1))
+            self.answerer, "Get a grip!", datecreated=self.nowPlus(1))
 
         def checkAnswerMessage(message):
             # Check the attributes that are set when an answer is confirmed.
@@ -296,7 +298,7 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
             transition_method=self.ticket.confirmAnswer,
             transition_method_args=("That was very useful.",),
             transition_method_kwargs={'answer': answer_message,
-                                      'datecreated' : self.now_plus(2)},
+                                      'datecreated' : self.nowPlus(2)},
             edited_fields=['status', 'messages', 'dateanswered', 'answerer',
                            'answer', 'datelastquery'])
 
@@ -326,7 +328,7 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
         """
         self._testInvalidTransition(
             ['ANSWERED', 'EXPIRED', 'SOLVED'], self.ticket.reopen,
-            "I still have a problem.", datecreated=self.now_plus(1))
+            "I still have a problem.", datecreated=self.nowPlus(1))
 
     def test_reopen(self):
         """Test that reopen() can be called when the ticket is in the
@@ -351,16 +353,15 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
         self.setUpEventListeners()
         # Mark the ticket as solved by the user.
         self.ticket.giveAnswer(
-            self.owner, 'I solved my own problem',
-            datecreated=self.now_plus(0))
+            self.owner, 'I solved my own problem.',
+            datecreated=self.nowPlus(0))
         self.assertEquals(self.ticket.status, TicketStatus.SOLVED)
 
         # Clear previous events.
         self.collected_events = []
 
         message = self.ticket.reopen(
-            "My solution doesn't work.",
-            datecreated=self.now_plus(1))
+            "My solution doesn't work.", datecreated=self.nowPlus(1))
         self.checkTransitionMessage(
             message, expected_owner=self.owner,
             expected_action=TicketAction.REOPEN,
@@ -376,7 +377,7 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
         """
         self._testInvalidTransition(
             ['OPEN', 'NEEDSINFO'], self.ticket.expireTicket,
-            self.answerer, "Too late.", datecreated=self.now_plus(1))
+            self.answerer, "Too late.", datecreated=self.nowPlus(1))
 
     def test_expireTicket(self):
         """Test that expireTicket() can be called when the ticket status is
@@ -402,7 +403,7 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
         self.ubuntu.addSupportContact(self.answerer)
         self._testInvalidTransition(
             valid_statuses, self.ticket.reject,
-            self.answerer, "This is lame.", datecreated=self.now_plus(1))
+            self.answerer, "This is lame.", datecreated=self.nowPlus(1))
 
     def test_reject(self):
         """Test that expireTicket() can be called when the ticket status is
@@ -446,7 +447,9 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
                         "setStatus() to same status should raise an error")
 
     def _testTransitionGuard(self, guard_name, statuses_expected_true):
-        """Helper that verifies that the Ticket guard_name attribute
+        """Helper for transition guard tests.
+
+        Helper that verifies that the Ticket guard_name attribute
         is True when the ticket status is one listed in statuses_expected_true
         and False otherwise.
         """
@@ -465,9 +468,11 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
                             transition_method_args=(),
                             transition_method_kwargs=None,
                             edited_fields=None):
-        """Helper that verifies that transition_method can be called when
+        """Helper for testing valid state transitions.
+
+        Helper that verifies that transition_method can be called when
         the ticket status is one listed in statuses. It will validate the
-        returned message using checkTransitionMessage. The transition_method
+        returned message using checkTransitionMessage(). The transition_method
         is called with the transition_method_args as positional parameters
         and transition_method_kwargs as keyword parameters.
 
@@ -486,7 +491,7 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
         if transition_method_kwargs is None:
             transition_method_kwargs = {}
         if 'datecreated' not in transition_method_kwargs:
-            transition_method_kwargs['datecreated'] = self.now_plus(0)
+            transition_method_kwargs['datecreated'] = self.nowPlus(0)
         for status in statuses:
             if status != self.ticket.status:
                 self.ticket.setStatus(self.admin, status, 'Status change')
@@ -505,7 +510,9 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
                     expected_status=expected_status)
                 if extra_message_check:
                     extra_message_check(message)
-            except AssertionError, e:
+            except AssertionError:
+                # We capture and re-raise the error here to display a nice
+                # message explaining in which state the transition failed.
                 raise AssertionError(
                     "Failure in validating message when status=%s:\n%s" % (
                         status.name, traceback.format_exc(1)))
@@ -515,7 +522,9 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
 
     def _testInvalidTransition(self, valid_statuses, transition_method,
                                *args, **kwargs):
-        """Helper that verifies that transition_method method cannot be
+        """Helper for testing invalid transitions.
+
+        Helper that verifies that transition_method method cannot be
         called when the ticket status is different than the ones in
         valid_statuses.
 
@@ -569,7 +578,8 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
 
         Check that an ISQLObjectCreatedEvent event was sent when the message
         was created and that an ISQLObjectModifiedEvent was also sent.
-        The event object and edited_fields attribute are checked."""
+        The event object and edited_fields attribute are checked.
+        """
         def failure_msg(msg):
             return "From status %s: %s" % (status_name, msg)
         self.failUnless(
