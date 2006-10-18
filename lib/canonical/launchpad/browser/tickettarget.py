@@ -163,6 +163,10 @@ class SearchTicketsView(LaunchpadFormView):
             # Search button wasn't clicked.
             self.search_params = self.getDefaultFilter()
 
+        # The search parameters used is defined by the union of the fields
+        # present in ISearchTicketsForm (search_text, status, sort) and the
+        # ones defined in getDefaultFilter() which varies based on the
+        # concrete view class.
         return BatchNavigator(
             self.context.searchTickets(**self.search_params), self.request)
 
