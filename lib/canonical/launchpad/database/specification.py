@@ -23,6 +23,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
 from canonical.launchpad.database.specificationdependency import (
     SpecificationDependency)
+from canonical.launchpad.database.specificationbranch import (
+    SpecificationBranch)
 from canonical.launchpad.database.specificationbug import (
     SpecificationBug)
 from canonical.launchpad.database.specificationfeedback import (
@@ -122,6 +124,12 @@ class Specification(SQLBase, BugLinkTargetMixin):
     bugs = SQLRelatedJoin('Bug',
         joinColumn='specification', otherColumn='bug',
         intermediateTable='SpecificationBug', orderBy='id')
+    branch_links = SQLMultipleJoin('SpecificationBranch',
+        joinColumn='specification',
+        orderBy='id')
+    branches = SQLRelatedJoin('Branch',
+        joinColumn='specification', otherColumn='branch',
+        intermediateTable='SpecificationBranch', orderBy='id')
     spec_dependency_links = SQLMultipleJoin('SpecificationDependency',
         joinColumn='specification', orderBy='id')
 
@@ -548,6 +556,22 @@ class Specification(SQLBase, BugLinkTargetMixin):
         self._find_all_blocked(blocked)
         return sorted(blocked, key=lambda s: (s.status, s.priority, s.title))
 
+    # branches
+    def addBranch(self, branch, summary=None):
+        for link in self.branch_links:
+            if link.branch.id == branch.id:
+                return link
+        return SpecificationBranch(specification=self,
+                                   branch=branch,
+                                   summary=summary)
+
+    def removeBranch(self, branch):
+        deleted = False
+        for link in self.branch_links:
+            if link.branch.id == branch.id:
+                SpecificationBranch.delete(link.id)
+                deleted = True
+        return deleted
 
 class SpecificationSet:
     """The set of feature specifications."""

@@ -6,7 +6,7 @@ __metaclass__ = type
 
 __all__ = ["SpecificationBranch"]
 
-from sqlobject import ForeignKey
+from sqlobject import ForeignKey, StringCol
 
 from zope.interface import implements
 
@@ -24,3 +24,4 @@ class SpecificationBranch(SQLBase):
     specification = ForeignKey(dbName="specification",
                                foreignKey="Specification", notNull=True)
     branch = ForeignKey(dbName="branch", foreignKey="Branch", notNull=True)
+    summary = StringCol(dbName="summary", notNull=False, default=None)

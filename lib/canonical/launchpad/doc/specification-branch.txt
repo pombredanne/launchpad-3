@@ -1,0 +1,84 @@
+Secifications and Branches
+==========================
+
+Branches can now be linked to Specifications in a similar way to how they are
+linked to bugs.
+
+Firstly lets create a new specification to which we'll connect the branches
+
+
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> productset = getUtility(IProductSet)
+    >>> upstream_firefox = productset.get(4)
+    >>> from canonical.launchpad.database import Person
+    >>> from canonical.lp.dbschema import SpecificationStatus
+    >>> from canonical.launchpad.interfaces import ISpecificationSet
+    >>> specset = getUtility(ISpecificationSet)
+    >>> sabdfl = Person.byName('sabdfl')
+    >>> newspec = specset.new('firefox-magic', 'Magic Firefox', 'http://www.silly.me/SpecName', 'Firefox should guess where I want to go and preload the page', SpecificationStatus.APPROVED, sabdfl, product=upstream_firefox)
+    >>> print newspec.name
+    firefox-magic
+
+Initially there will be no branches associated.
+
+    >>> len(list(newspec.branches))
+    0
+    >>> len(list(newspec.branch_links))
+    0
+
+
+Now associate a branch with the specification
+
+    >>> from canonical.launchpad.interfaces import IBranchSet
+    >>> branchset = getUtility(IBranchSet)
+    >>> branch = branchset.get(10)
+    >>> newspec.addBranch(branch)
+    <SpecificationBranch at ...>
+    >>> len(list(newspec.branches))
+    1
+    >>> newspec.branches[0].id
+    10
+    >>> len(list(newspec.branch_links))
+    1
+    >>> sb = newspec.branch_links[0]
+    >>> sb.summary
+    >>> sb.__dict__
+    >>> sb
+
+
+
+
+
+You cannot associate the same branch to the same spec more than once
+
+    >>> newspec.addBranch(branch)
+    <SpecificationBranch at ...>
+    >>> len(list(newspec.branches))
+    1
+    
+
+You can however link branches that are not necessarily associated with the
+product of the specification
+
+    >>> thunderbird_branch = branchset.get(8)
+    >>> newspec.addBranch(thunderbird_branch, 'tweak thunderbird')
+    <SpecificationBranch at ...>
+    >>> len(list(newspec.branches))
+    2
+    >>> len(list(newspec.branch_links))
+    2
+    >>> newspec.branch_links[1].summary
+    'tweak thunderbird'
+
+Links aren't permanent, and can be removed
+
+    >>> newspec.removeBranch(thunderbird_branch)
+    True
+    >>> len(list(newspec.branches))
+    1
+    >>> newspec.branches[0].id
+    10
+    >>> len(list(newspec.branch_links))
+    1
+
+

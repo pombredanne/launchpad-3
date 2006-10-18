@@ -7,12 +7,11 @@ __metaclass__ = type
 __all__ = ["ISpecificationBranch"]
 
 from zope.interface import Interface
-from zope.schema import Int, Choice
+from zope.schema import Choice, Int, Text
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IHasDateCreated, non_duplicate_branch)
-from canonical.lp.dbschema import SpecificationBranchStatus
 
 
 class ISpecificationBranch(IHasDateCreated):
@@ -22,3 +21,4 @@ class ISpecificationBranch(IHasDateCreated):
     specification = Int(title=_("Specification"))
     branch = Choice(
         title=_("Branch"), vocabulary="Branch")
+    summary = Text(title=_("Summary"), required=False)

@@ -204,10 +204,13 @@ class ISpecification(IHasOwner):
         "All the dependencies, including dependencies of dependencies.")
     all_blocked = Attribute(
         "All specs blocked on this, and those blocked on the blocked ones.")
-
-
+    # XXX: following two lines look like a previous merge mistake
+    # which is the description that is really wanted?
     all_deps = Attribute("All dependencies, recursively")
     all_blocked = Attribute("All specs blocked on this, recursively.")
+    branch_links = Attribute('The entries that link the branches to the spec')
+    branches = Attribute('Branches associated with this spec.  '
+                         'Normally for implementation purposes.')
 
     # emergent properties
     is_complete = Attribute('Is True if this spec is already completely '
@@ -317,6 +320,12 @@ class ISpecification(IHasOwner):
     def removeDependency(specification):
         """Remove any dependency of this spec on the spec provided."""
 
+    # branches
+    def addBranch(branch, summary=None):
+        """Creates a association with the branch"""
+
+    def removeBranch(branch):
+        """Removes the association with the branch"""
 
 # Interfaces for containers
 class ISpecificationSet(IHasSpecifications):

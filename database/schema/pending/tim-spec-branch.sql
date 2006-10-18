@@ -2,7 +2,8 @@ CREATE TABLE specificationbranch (
     id serial NOT NULL,
     datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
     specification integer NOT NULL,
-    branch integer NOT NULL
+    branch integer NOT NULL,
+    summary text NULL
 );
 
 ALTER TABLE ONLY specificationbranch
