@@ -93,6 +93,20 @@
     </tbody>
   </table>
 
-</div>
-</body>
+    </div>
+    <div metal:fill-slot="help">
+      <p>
+        Read more <a href="+about">about Malone</a>, the collaborative bug
+        tracker for the open source world, and how you can share information
+        about bugs in distributions and upstream.
+      </p>
+      <ul class="info">
+        <li>
+        	<a href="https://help.launchpad.net/UsingMaloneEmail">
+        		Using Malone by e-mail
+          </a>
+        </li>
+      </ul>
+    </div>
+  </body>
 </html>
