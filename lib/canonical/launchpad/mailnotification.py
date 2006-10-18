@@ -1098,6 +1098,18 @@ class TicketModifiedDefaultNotification(TicketNotification):
 class TicketModifiedOwnerNotification(TicketModifiedDefaultNotification):
     """Notification sent to the owner when his ticket is modified."""
 
+    # These actions will be done by the owner, so use the second person.
+    action_header_template = dict(
+        TicketModifiedDefaultNotification.action_header_template)
+    action_header_template.update({
+        TicketAction.CONFIRM:
+            'You confirmed that the request is solved:',
+        TicketAction.GIVEINFO:
+            'You gave more information on the request:',
+        TicketAction.REOPEN:
+            'You are still having a problem:',
+        })
+
     body_template = 'ticket-modified-owner-notification.txt'
 
     body_template_by_action = {

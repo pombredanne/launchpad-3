@@ -349,7 +349,7 @@ Notification received by the owner:
     <BLANKLINE>
         Status: Expired => Open
     <BLANKLINE>
-    Sample Person is still having a problem:
+    You are still having a problem:
     I really need some help. I tried googling a bit but didn't find anything
     useful.
     <BLANKLINE>
@@ -450,7 +450,7 @@ Notification received by the owner:
     <BLANKLINE>
         Status: Answered => Solved
     <BLANKLINE>
-    Sample Person confirmed that the request is solved:
+    You confirmed that the request is solved:
     I've installed BootX and the installer CD is now booting. Thanks!
     <BLANKLINE>
 
