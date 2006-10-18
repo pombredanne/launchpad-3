@@ -233,7 +233,7 @@ class TeamMembershipEditView:
         day = int(self.request.form.get('day'))
 
         if 0 in (year, month, day):
-            raise ValueError('incomplete date provided.')
+            raise ValueError('incomplete date provided')
 
         expires = datetime.datetime(year, month, day,
                                     tzinfo=pytz.timezone('UTC'))
