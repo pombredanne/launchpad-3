@@ -43,20 +43,20 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
     def setUp(self):
         self.now = datetime.now(UTC)
 
-        # Workflow methods are available only to logged in user
+        # Workflow methods are available only to logged in user.
         login('no-priv@canonical.com')
 
-        # Set up actors
+        # Set up actors.
         personset = getUtility(IPersonSet)
-        # User who submits request
+        # User who submits request.
         self.owner = personset.getByEmail('no-priv@canonical.com')
-        # User who answers request
+        # User who answers request.
         self.answerer = personset.getByEmail('test@canonical.com')
 
-        # Admin user which can change ticket status
+        # Admin user which can change ticket status.
         self.admin = personset.getByEmail('foo.bar@canonical.com')
 
-        # Simple ubuntu ticket
+        # Simple ubuntu ticket.
         self.ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         self.ticket = self.ubuntu.newTicket(
             self.owner, 'Help!', 'I need help with Ubuntu',
@@ -68,10 +68,10 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
             self.modified_event_listener.unregister()
 
     def setUpEventListeners(self):
-        # Install a listener for the test
+        # Install a listener for the test.
         self.collected_events = []
         if hasattr(self, 'modified_event_listener'):
-            # Event listeners already registered
+            # Event listeners is already registered.
             return
         self.modified_event_listener = TestEventListener(
             ITicket, ISQLObjectModifiedEvent, self.collect_events)
@@ -118,7 +118,7 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
         and ANSWERED state and that it returns a valid ITicketMessage.
         """
         # Do no check the edited_fields attribute since it varies depending
-        # on the departure state
+        # on the departure state.
         self._testValidTransition(
             [TicketStatus.OPEN, TicketStatus.NEEDSINFO],
             expected_owner=self.answerer,
@@ -177,7 +177,7 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
         OPEN or NEEDSINFO and that it returns a valid ITicketMessage.
         """
         # Do not check the edited_fields attributes since it
-        # changes based on departure state
+        # changes based on departure state.
         self._testValidTransition(
             [TicketStatus.OPEN, TicketStatus.NEEDSINFO],
             expected_owner=self.owner,
@@ -207,7 +207,7 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
         valid ITicketMessage.
         """
         # Do not check the edited_fields attributes since it
-        # changes based on departure state
+        # changes based on departure state.
         self._testValidTransition(
             [TicketStatus.OPEN, TicketStatus.NEEDSINFO,
              TicketStatus.ANSWERED],
@@ -220,7 +220,7 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
             edited_fields=None)
 
         # When the owner gives the answer, the ticket moves straight to
-        # SOLVED
+        # SOLVED.
         def checkAnswerMessage(message):
             """Check additional attributes set when the owner gives the
             answers.
@@ -247,10 +247,10 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
         """Test the can_confirm_answer attribute in all the possible states.
         """
         # When the ticket didn't receive an answer, it should always be
-        # false
+        # false.
         self._testTransitionGuard('can_confirm_answer', [])
 
-        # Once one answer was given, it becomes possible in some states
+        # Once one answer was given, it becomes possible in some states.
         self.ticket.setStatus(self.admin, TicketStatus.OPEN, 'Status change')
         self.ticket.giveAnswer(
             self.answerer, 'Do something about it.', self.now_plus(1))
@@ -355,7 +355,7 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
             datecreated=self.now_plus(0))
         self.assertEquals(self.ticket.status, TicketStatus.SOLVED)
 
-        # Clear previous events
+        # Clear previous events.
         self.collected_events = []
 
         message = self.ticket.reopen(
@@ -398,7 +398,7 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
         """
         valid_statuses = [status.name for status in TicketStatus.items
                           if status.name != 'INVALID']
-        # Reject user must be a support contact, (or admin, or product owner)
+        # Reject user must be a support contact, (or admin, or product owner).
         self.ubuntu.addSupportContact(self.answerer)
         self._testInvalidTransition(
             valid_statuses, self.ticket.reject,
@@ -408,7 +408,7 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
         """Test that expireTicket() can be called when the ticket status is
         OPEN or NEEDSINFO and that it returns a valid ITicketMessage.
         """
-        # Reject user must be a support contact, (or admin, or product owner)
+        # Reject user must be a support contact, (or admin, or product owner).
         self.ubuntu.addSupportContact(self.answerer)
         valid_statuses = [status for status in TicketStatus.items
                           if status.name != 'INVALID']
@@ -493,7 +493,7 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
 
             self.collected_events = []
 
-            # Ensure ordering of the message
+            # Ensure ordering of the message.
             transition_method_kwargs['datecreated'] = (
                 transition_method_kwargs['datecreated'] + timedelta(hours=1))
             message = transition_method(*transition_method_args,
