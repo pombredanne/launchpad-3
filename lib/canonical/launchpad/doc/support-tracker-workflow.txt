@@ -418,6 +418,7 @@ Changing the ticket status
 
 It is not possible to change the status attribute directly:
 
+    >>> login('foo.bar@canonical.com')
     >>> ticket = ubuntu.newTicket(**new_ticket_args)
     >>> ticket.status = TicketStatus.INVALID
     Traceback (most recent call last):
