@@ -1,8 +1,19 @@
-Any logged in user can propose a spec to be discussed in a sprint.
+Any logged in user can propose specs to be discussed in a sprint.
 
   >>> user_browser.open(
   ...     'http://features.launchpad.dev/distros/ubuntu/'
   ...     '+spec/media-integrity-check/+linksprint')
+  >>> user_browser.getControl('Sprint').value = ['uds-guacamole']
+  >>> user_browser.getControl('Add').click()
+
+  >>> spec_portlet = find_portlet(
+  ...     user_browser.contents, 'Specification details')
+  >>> spec_portlet.find(text='Sprints:').findNext('a').string
+  u'uds-guacamole'
+
+  >>> user_browser.open(
+  ...     'http://features.launchpad.dev/distros/kubuntu/'
+  ...     '+spec/kde-desktopfile-langpacks/+linksprint')
   >>> user_browser.getControl('Sprint').value = ['uds-guacamole']
   >>> user_browser.getControl('Add').click()
 
@@ -50,7 +61,8 @@ First choose a driver for the UDS Guacamole sprint.
   >>> meeting_portlet.find(text='Driver:').findNext('a').string
   u'Ubuntu Team'
 
-Any member of the Ubuntu-Team can now approve items to the UDS Guacamole agenda.
+Any member of the Ubuntu-Team can now approve and/or decline items to the UDS 
+Guacamole agenda.
 
   >>> from zope.testbrowser.testing import Browser
   >>> cprov_browser = Browser()
@@ -69,6 +81,10 @@ Any member of the Ubuntu-Team can now approve items to the UDS Guacamole agenda.
 
   >>> cprov_browser.getControl('CD Media Integrity Check').selected = True
   >>> cprov_browser.getControl('Accept').click()
+
+  >>> cprov_browser.getControl(
+  ...     'KDE Desktop File Language Packs').selected = True
+  >>> cprov_browser.getControl('Decline').click()
 
   >>> cprov_browser.url
   'http://features.launchpad.dev/sprints/uds-guacamole/+specs'
