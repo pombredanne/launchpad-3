@@ -294,6 +294,7 @@ class POFileTranslateView(BaseTranslationView):
 
     def _submitTranslations(self):
         """See BaseTranslationView._submitTranslations."""
+        import pdb; pdb.set_trace()
         for key in self.request.form:
             match = re.match('msgset_(\d+)$', key)
             if not match:

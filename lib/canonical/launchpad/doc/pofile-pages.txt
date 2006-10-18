@@ -116,16 +116,6 @@ Test that the associated msgid is the one we want.
     >>> pomsgset_view.msgid
     u'evolution addressbook'
 
-How many lines does it have.
-
-    >>> pomsgset_view.max_lines_count
-    1
-
-And as it has only one line, it's not a multi line message set.
-
-    >>> pomsgset_view.is_multi_line
-    False
-
 It does not have a plural msgid.
 
     >>> pomsgset_view.msgid_plural is None
@@ -138,25 +128,8 @@ And thus, it only has one translation.
 
 Which is the one we wanted.
 
-    >>> pomsgset_view.getTranslation(0)
+    >>> pomsgset_view.getActiveTranslation(0)
     u'libreta de direcciones de Evolution'
-
-Now, we are going to test the tab index generator to be sure the TAB key
-will work as expected when navigating over the translation form.
-
-    >>> request = LaunchpadTestRequest(form={'show': 'all' })
-    >>> pofile_view = getView(pofile_es, '+translate', request)
-    >>> pofile_view.initialize()
-
-First time we call it, first position.
-
-    >>> pofile_view.tabindex.next()
-    1
-
-Next time we call it, it's increased.
-
-    >>> pofile_view.tabindex.next()
-    2
 
 It's time to check the submission of translations and the IPOFile statistics
 update.
@@ -179,8 +152,10 @@ Now we do the submit
     ...     'start': '10',
     ...     'show': 'untranslated',
     ...     'msgset_130': None,
-    ...     'msgset_130_es_translation_0': 'Foo',
+    ...     'msgset_130_es_translation_0_new_checkbox': True,
+    ...     'msgset_130_es_translation_0_new': 'Foo',
     ...     'msgset_138': None,
+    ...     'msgset_138_es_translation_0_new_checkbox': True,
     ...     'msgset_138_es_translation_0': 'Bar',
     ...     'submit_translations': 'Save &amp; Continue'})
     >>> request.method = 'POST'
@@ -224,7 +199,8 @@ their sequence is 0.
     ...     'start': '0',
     ...     'show': 'untranslated',
     ...     'msgset_161': None,
-    ...     'msgset_161_es_translation_0': 'Foo',
+    ...     'msgset_161_es_translation_0_new_checkbox': True,
+    ...     'msgset_161_es_translation_0_new': 'Foo',
     ...     'submit_translations': 'Save &amp; Continue'})
     >>> request.method = 'POST'
     >>> pofile_view = getView(pofile_es, '+translate', request)
@@ -356,7 +332,3 @@ POMsgSet.
     True
 
 And that's all, folks!
-
-    >>> fail
-    True
-

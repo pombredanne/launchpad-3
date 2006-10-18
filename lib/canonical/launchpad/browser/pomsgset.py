@@ -408,7 +408,11 @@ class BaseTranslationView(LaunchpadView):
         if self.request.method == 'POST' and self.user is not None:
             if self.request.form.get("submit_translations"):
                 # Check if this is really the form we are listening for..
-                if self._submitTranslations():
+                successful_submit = self._submitTranslations()
+                # XXX: isn't this a hell of a performance issue, hitting this
+                # same table for every submit? -- kiko, 2006-09-27
+                self.pofile.updateStatistics()
+                if successful_submit:
                     # .. and if no errors occurred, adios. Otherwise, we
                     # need to set up the subviews for error display and
                     # correction.
@@ -463,6 +467,9 @@ class BaseTranslationView(LaunchpadView):
 
         Return a string with an error if one occurs, otherwise None.
         """
+        if pomsgset.potmsgset.id == 138:
+            import pdb; pdb.set_trace()
+            pass
         self._extractFormPostedTranslations(pomsgset)
         translations = self.form_posted_translations.get(pomsgset, None)
         if not translations:
@@ -751,10 +758,6 @@ class BaseTranslationView(LaunchpadView):
 
     def _redirectToNextPage(self):
         """After a successful submission, redirect to the next batch page."""
-        # XXX: isn't this a hell of a performance issue, hitting this
-        # same table for every submit? -- kiko, 2006-09-27
-        self.pofile.updateStatistics()
-
         next_url = self.batchnav.nextBatchURL()
         if next_url is None or next_url == '':
             # We are already at the end of the batch, forward to the
