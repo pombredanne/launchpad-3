@@ -197,8 +197,6 @@
           If this is okay, select a membership expiration date if necessary
           before choosing <samp>Approve</samp>.
         </p>
-        <p class="error message" tal:condition="view/errormessage"
-           tal:content="view/errormessage" />
 
         <form action="" method="POST" name="editproposed">
           <table>
