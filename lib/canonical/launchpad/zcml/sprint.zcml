@@ -138,7 +138,7 @@
     name="+settopics"
     facet="specifications"
     class="canonical.launchpad.browser.sprint.SprintTopicSetView"
-    permission="launchpad.Edit"
+    permission="launchpad.Driver"
     template="../templates/sprint-settopics.pt"
     />
 
