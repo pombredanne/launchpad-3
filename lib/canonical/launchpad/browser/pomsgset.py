@@ -794,18 +794,16 @@ class POMsgSetView(LaunchpadView):
         def prune_dict(main, pruners):
             """Build dict from main pruning keys present in any of pruners.
 
+            Pruners should be a list of iterables.
+
             Return a dict with all items in main whose keys do not occur
             in any of pruners. main is a dict, pruners is a list of dicts.
             """
-            pruners_merged = {}
+            pruners_merged = set()
             for pruner in pruners:
-                pruners_merged.update(pruner)
-            out = {}
-            for key, value in main.items():
-                if key in pruners_merged:
-                    continue
-                out[key] = value
-            return out
+                pruners_merged = pruners_merged.union(pruner)
+            return dict((k, v) for (k, v) in main.iteritems()
+                        if k not in pruners_merged)
 
         wiki = self.context.getWikiSubmissions(index)
         wiki_translations = build_dict(wiki)
@@ -816,9 +814,8 @@ class POMsgSetView(LaunchpadView):
         non_editor = self.context.getSuggestedSubmissions(index)
         non_editor_translations = build_dict(non_editor)
 
-        # Use bogus dictionary to keep consistent with other
-        # translations; it's only used for pruning.
-        active_translations = {self.translations[index]: None}
+        # Use a set for pruning
+        active_translations = set([self.translations[index]])
 
         wiki_translations_clean = prune_dict(wiki_translations,
            [current_translations, non_editor_translations, active_translations])
