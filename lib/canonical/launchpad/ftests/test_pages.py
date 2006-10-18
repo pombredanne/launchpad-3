@@ -124,6 +124,10 @@ class PageStoryTestCase(unittest.TestCase):
         self._suite.debug()
 
 
+# This function name doesn't follow our standard naming conventions,
+# but does follow the convention of the other doctest related *Suite()
+# functions.
+
 def PageTestSuite(storydir, package=None):
     """Create a suite of page tests for files found in storydir.
 
