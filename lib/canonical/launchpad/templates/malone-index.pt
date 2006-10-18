@@ -28,11 +28,14 @@
 
         <li>
           <form method="GET" action="" name="goto">
-            Jump to bug report: <input type="text" name="id" size="5" tabindex="1" />
+            Jump to bug report: <input type="text" name="id" size="5" />
             <noscript>
               <input type="submit" name="jump_to_bug" value="Go">
             </noscript>
           </form>
+          <script type="text/javascript"><!--
+            setFocusByName('id');
+          // --></script>
         </li>
 
         <li>
@@ -67,7 +70,7 @@
       <form method="GET" action="products">
         <input type="hidden" name="malone" value="1">
         <input type="hidden" name="exact_name" value="1">
-        Jump to product: <input type="text" name="text" size="20" tabindex="1">
+        Jump to product: <input type="text" name="text" size="20">
         <noscript>
           <input type="submit" name="jump_to_product" value="Go">
         </noscript>
