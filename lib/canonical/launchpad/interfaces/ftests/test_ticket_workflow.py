@@ -24,7 +24,8 @@ from zope.security.interfaces import Unauthorized
 from canonical.launchpad.event.interfaces import (
     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IPersonSet, ITicket, ITicketMessage)
+    IDistributionSet, IPersonSet, InvalidTicketStateError, ITicket,
+    ITicketMessage)
 from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.launchpad.ftests.event import TestEventListener
 from canonical.lp.dbschema import TicketAction, TicketStatus
@@ -444,16 +445,10 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
 
     def testDisallowNoOpSetStatus(self):
         """Test that calling setStatus to change to the same status
-        raises an AssertionError.
+        raises an InvalidTicketStateError.
         """
-        exceptionRaised = False
-        try:
-            self.ticket.setStatus(
+        self.assertRaises(InvalidTicketStateError, self.ticket.setStatus,
                 self.admin, TicketStatus.OPEN, 'Status Change')
-        except AssertionError:
-            exceptionRaised = True
-        self.failUnless(exceptionRaised,
-                        "setStatus() to same status should raise an error")
 
     def _testTransitionGuard(self, guard_name, statuses_expected_true):
         """Helper for transition guard tests.
@@ -548,7 +543,7 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
                 if status != self.ticket.status:
                     self.ticket.setStatus(self.admin, status, 'Status change')
                 transition_method(*args, **kwargs)
-            except AssertionError:
+            except InvalidTicketStateError:
                 exceptionRaised = True
             self.failUnless(exceptionRaised,
                             "%s() when status = %s should raise an error" % (

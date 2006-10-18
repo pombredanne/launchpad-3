@@ -16,8 +16,8 @@ from sqlobject import (
 from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.launchpad.interfaces import (
-    IBugLinkTarget, ILaunchpadCelebrities, IMessage, ITicket, ITicketSet,
-    TICKET_STATUS_DEFAULT_SEARCH)
+    IBugLinkTarget, InvalidTicketStateError, ILaunchpadCelebrities, IMessage,
+    ITicket, ITicketSet, TICKET_STATUS_DEFAULT_SEARCH)
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -151,7 +151,9 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         if not self._isTargetOwnerOrAdmin(user):
             raise Unauthorized, (
                 "Only target owner or admins can change a ticket status.")
-        assert new_status != self.status
+        if new_status == self.status:
+            raise InvalidTicketStateError(
+                "New status is same as the old one.")
 
         self.answerer = None
         self.answer = None
@@ -179,7 +181,8 @@ class Ticket(SQLBase, BugLinkTargetMixin):
     def requestInfo(self, user, question, datecreated=None):
         """See ITicket."""
         assert user != self.owner, "Owner cannot use requestInfo()."
-        assert self.can_request_info, (
+        if not self.can_request_info:
+            raise InvalidTicketStateError(
             "Ticket status != OPEN, NEEDSINFO, or ANSWERED")
         if self.status == TicketStatus.ANSWERED:
             new_status = self.status
@@ -197,7 +200,9 @@ class Ticket(SQLBase, BugLinkTargetMixin):
     @notify_modified()
     def giveInfo(self, reply, datecreated=None):
         """See ITicket."""
-        assert self.can_give_info, "Ticket status != OPEN or NEEDSINFO"
+        if not self.can_give_info:
+            raise InvalidTicketStateError(
+                "Ticket status != OPEN or NEEDSINFO")
         return self._newMessage(
             self.owner, reply, datecreated=datecreated,
             action=TicketAction.GIVEINFO, new_status=TicketStatus.OPEN)
@@ -211,7 +216,8 @@ class Ticket(SQLBase, BugLinkTargetMixin):
     @notify_modified()
     def giveAnswer(self, user, answer, datecreated=None):
         """See ITicket."""
-        assert self.can_give_answer, (
+        if not self.can_give_answer:
+            raise InvalidTicketStateError(
             "Ticket status != OPEN, NEEDSINFO or ANSWERED")
         if self.owner == user:
             new_status = TicketStatus.SOLVED
@@ -249,8 +255,9 @@ class Ticket(SQLBase, BugLinkTargetMixin):
     @notify_modified()
     def confirmAnswer(self, comment, answer=None, datecreated=None):
         """See ITicket."""
-        assert self.can_confirm_answer, (
-            "There is no answer that can be confirmed")
+        if not self.can_confirm_answer:
+            raise InvalidTicketStateError(
+                "There is no answer that can be confirmed")
         if answer:
             assert answer in self.messages
             assert answer.owner != self.owner, (
@@ -290,8 +297,8 @@ class Ticket(SQLBase, BugLinkTargetMixin):
             raise Unauthorized, (
             "Only support contacts, target owner or admins can reject a "
             "request")
-        assert self.status != TicketStatus.INVALID, (
-            "Ticket is already rejected.")
+        if self.status == TicketStatus.INVALID:
+            raise InvalidTicketStateError("Ticket is already rejected.")
         msg = self._newMessage(
             user, comment, datecreated=datecreated,
             action=TicketAction.REJECT, new_status=TicketStatus.INVALID)
@@ -303,8 +310,9 @@ class Ticket(SQLBase, BugLinkTargetMixin):
     @notify_modified()
     def expireTicket(self, user, comment, datecreated=None):
         """See ITicket."""
-        assert self.status in [TicketStatus.OPEN, TicketStatus.NEEDSINFO], (
-            "Ticket status != OPEN or NEEDSINFO")
+        if self.status not in [TicketStatus.OPEN, TicketStatus.NEEDSINFO]:
+            raise InvalidTicketStateError(
+                "Ticket status != OPEN or NEEDSINFO")
         return self._newMessage(
             user, comment, datecreated=datecreated,
             action=TicketAction.EXPIRE, new_status=TicketStatus.EXPIRED)
@@ -318,8 +326,9 @@ class Ticket(SQLBase, BugLinkTargetMixin):
     @notify_modified()
     def reopen(self, comment, datecreated=None):
         """See ITicket."""
-        assert self.can_reopen, (
-            "Ticket status != ANSWERED, EXPIRED or SOLVED.")
+        if not self.can_reopen:
+            raise InvalidTicketStateError(
+                "Ticket status != ANSWERED, EXPIRED or SOLVED.")
         msg = self._newMessage(
             self.owner, comment, datecreated=datecreated,
             action=TicketAction.REOPEN, new_status=TicketStatus.OPEN)

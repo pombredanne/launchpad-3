@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'InvalidTicketStateError',
     'ITicket',
     'ITicketSet',
     ]
@@ -19,6 +20,13 @@ from canonical.launchpad.interfaces.ticketmessage import ITicketMessage
 from canonical.lp.dbschema import TicketStatus, TicketPriority
 
 from canonical.launchpad import _
+
+class InvalidTicketStateError(Exception):
+    """Error raised when the ticket is in an invalid state.
+
+    Error raised when a workflow action cannot be executed because the
+    ticket is in an invalid state.
+    """
 
 class ITicket(IHasOwner):
     """A single support request, or trouble ticket."""
@@ -109,8 +117,8 @@ class ITicket(IHasOwner):
         Only the ticket target owner or admin can change the status using
         this method.
 
-        It is an error to call this method with new_status equals to the
-        current ticket status.
+        An InvalidTicketStateError is raised when this method is called
+        with new_status equals to the current ticket status.
 
         Return the created ITicketMessage.
 
@@ -137,7 +145,7 @@ class ITicket(IHasOwner):
 
         The user requesting more information cannot be the ticket's owner.
         This workflow method should only be called when the ticket status is
-        OPEN or NEEDSINFO.
+        OPEN or NEEDSINFO. An InvalidTicketStateError is raised otherwise.
 
         It can also be called when the ticket is in the ANSWERED state, but
         in that case, the status will stay unchanged.
@@ -164,7 +172,8 @@ class ITicket(IHasOwner):
         message creation time.
 
         This method should only be called on behalf of the ticket owner when
-        the ticket is in the OPEN or NEEDSINFO state.
+        the ticket is in the OPEN or NEEDSINFO state. An
+        InvalidTicketStateError is raised otherwise.
 
         Return the created ITicketMessage.
 
@@ -194,7 +203,8 @@ class ITicket(IHasOwner):
         dateanswered attributes are updated to the message creation date.
 
         This workflow method should only be called when the ticket status is
-        one of OPEN, ANSWERED or NEEDSINFO.
+        one of OPEN, ANSWERED or NEEDSINFO. An InvalidTicketStateError is
+        raised otherwise.
 
         Return the created ITicketMessage.
 
@@ -221,7 +231,8 @@ class ITicket(IHasOwner):
 
         This workflow method should only be called on behalf of the ticket
         owner, when the ticket status is ANSWERED, or when the status is
-        OPEN or NEEDSINFO but an answer was already provided.
+        OPEN or NEEDSINFO but an answer was already provided. An
+        InvalidTicketStateError is raised otherwise.
 
         Return the created ITicketMessage.
 
@@ -272,7 +283,8 @@ class ITicket(IHasOwner):
         message creation date.
 
         This workflow method should only be called when the ticket status is
-        one of OPEN or NEEDSINFO.
+        one of OPEN or NEEDSINFO. An InvalidTicketStateError is raised
+        otherwise.
 
         Return the created ITicketMessage.
 
@@ -302,7 +314,7 @@ class ITicket(IHasOwner):
 
         This workflow method should only be called on behalf of the ticket
         owner, when the ticket status is in one of ANSWERED, EXPIRED or
-        SOLVED.
+        SOLVED. An InvalidTicketStateError is raised otherwise.
 
         Return the created ITicketMessage.
 
