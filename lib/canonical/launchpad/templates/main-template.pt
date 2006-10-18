@@ -63,9 +63,10 @@
               <metal:main define-slot="main" tal:condition="nothing">
                 <p>Main content area.</p>
               </metal:main>
-              <p metal:define-slot="help" tal:condition="nothing">
-                Sorry, help isn&rsquo;t available for this page.
-              </p>
+              <tal:help condition="nothing">
+                <p metal:define-slot="help">
+                  Sorry, help isn&rsquo;t available for this page.
+                </p>
               </tal:help>
             </div>
           </div>
