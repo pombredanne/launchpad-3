@@ -235,7 +235,7 @@ class TestQueueTool(TestQueueBase):
 
         # ensure breezy-autotest is set
         self.assertEqual(
-            u'autotest_changes@ubutu.com', breezy_autotest.changeslist)
+            u'autotest_changes@ubuntu.com', breezy_autotest.changeslist)
 
         # create contents for the respective changesfile in librarian.
         fillLibrarianFile(1)
@@ -255,8 +255,6 @@ class TestQueueTool(TestQueueBase):
         # announcelist.
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
         self.assertEqual([queue_action.default_recipient], to_addrs)
-
-        removeLibrarianFile(1)
 
     def assertQueueLength(self, expected_length, distro_release, status, name):
         self.assertEqual(
