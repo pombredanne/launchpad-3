@@ -114,7 +114,7 @@
 </tr>
 <tal:language-code
   define="language_code context/pofile/language/code">
-  <tal:plural-forms repeat="index view/pluralform_indexes">
+  <tal:plural-forms repeat="index view/pluralform_indices">
     <tr class="secondary">
       <th colspan="3">
         <label class="language-code">
@@ -134,11 +134,11 @@
         <input
           style="width: 100%;"
           type="text"
+          tabindex="1"
           tal:condition="not:view/is_multi_line"
           tal:attributes="
             name string:msgset_${context/potmsgset/id}_${language_code}_translation_${index};
             value python:view.getTranslation(index);
-            tabindex view/tabindex/next;
             lang context/pofile/language/dashedcode;
             dir context/pofile/language/abbreviated_text_dir;
             " />
@@ -156,10 +156,10 @@
             </tal:comment>
             <textarea
               style="width: 100%;"
+              tabindex="1"
               tal:attributes="
                 name string:msgset_${context/potmsgset/id}_${language_code}_translation_${index};
                 rows view/max_lines_count;
-                tabindex view/tabindex/next;
                 lang context/pofile/language/dashedcode;
                 dir context/pofile/language/abbreviated_text_dir;
                 ">
@@ -177,10 +177,10 @@
             </tal:comment>
             <textarea
               style="width: 100%;"
+              tabindex="1"
               tal:attributes="
                 name string:msgset_${context/potmsgset/id}_${language_code}_translation_${index};
                 rows view/max_lines_count;
-                tabindex view/tabindex/next;
                 lang context/pofile/language/dashedcode;
                 dir context/pofile/language/abbreviated_text_dir;
                 "></textarea>
@@ -218,11 +218,11 @@
         <label class="fuzzy-checkbox">
           <input
             type="checkbox"
+            tabindex="1"
             value="fuzzy"
             tal:attributes="
               checked view/is_fuzzy;
               name string:msgset_${context/potmsgset/id}_${language_code}_needsreview;
-              tabindex view/tabindex/next
               " />
           <tal:block condition="not:view/is_plural">
             Someone should review this translation

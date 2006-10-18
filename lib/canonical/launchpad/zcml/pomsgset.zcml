@@ -44,7 +44,6 @@
     <browser:page
         for="canonical.launchpad.interfaces.IPOMsgSet"
         class="canonical.launchpad.browser.POMsgSetIndexView"
-        facet="translations"
         permission="zope.Public"
         name="+index"
         attribute="__call__"
@@ -52,7 +51,6 @@
 
     <browser:page
         name="+translate"
-        facet="translations"
         for="canonical.launchpad.interfaces.IPOMsgSet"
         permission="launchpad.AnyPerson"
         template="../templates/pomsgset-translate.pt"
@@ -61,7 +59,6 @@
 
     <browser:page
         name="+translate-one"
-        facet="translations"
         for="canonical.launchpad.interfaces.IPOMsgSet"
         permission="launchpad.AnyPerson"
         template="../templates/pomsgset-translate-one.pt"
@@ -70,7 +67,6 @@
 
     <browser:page
         name="+translate-one-zoomed"
-        facet="translations"
         for="canonical.launchpad.interfaces.IPOMsgSet"
         permission="launchpad.AnyPerson"
         template="../templates/pomsgset-translate-one.pt"

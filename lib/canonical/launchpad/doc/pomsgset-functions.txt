@@ -97,27 +97,27 @@ msgid_html
 
 First, do no harm.
 
-    >>> msgid_html(u'foo bar', [], 'XXXA')
+    >>> msgid_html(u'foo bar', [], '<sp>')
     u'foo bar'
 
 Test replacement of leading and trailing spaces.
 
-    >>> msgid_html(u' foo bar', [], 'XXXA')
-    u'XXXAfoo bar'
-    >>> msgid_html(u'foo bar ', [], 'XXXA')
-    u'foo barXXXA'
-    >>> msgid_html(u'  foo bar  ', [], 'XXXA')
-    u'XXXAXXXAfoo barXXXAXXXA'
+    >>> msgid_html(u' foo bar', [], '<sp>')
+    u'<sp>foo bar'
+    >>> msgid_html(u'foo bar ', [], '<sp>')
+    u'foo bar<sp>'
+    >>> msgid_html(u'  foo bar  ', [], '<sp>')
+    u'<sp><sp>foo bar<sp><sp>'
 
 Test replacement of newlines.
 
-    >>> msgid_html(u'foo\nbar', [], newline='YYYA')
-    u'fooYYYAbar'
+    >>> msgid_html(u'foo\nbar', [], newline='<cr>')
+    u'foo<cr>bar'
 
 And both together.
 
-    >>> msgid_html(u'foo \nbar', [], 'XXXA', 'YYYA')
-    u'fooXXXAYYYAbar'
+    >>> msgid_html(u'foo \nbar', [], '<sp>', '<cr>')
+    u'foo<sp><cr>bar'
 
 Test treatment of tabs.
 

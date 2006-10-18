@@ -98,7 +98,7 @@ It does not have a plural msgid.
 
 And thus, it only has one translation.
 
-    >>> subview.pluralform_indexes
+    >>> subview.pluralform_indices
     [0]
 
 Which is the one we wanted.

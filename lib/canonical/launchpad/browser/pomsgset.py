@@ -341,7 +341,7 @@ class BaseTranslationView(LaunchpadView):
     Child classes must define:
         - self.pofile
         - _buildBatchNavigator()
-        - _initializeSubViews()
+        - _initializeMsgSetViews()
         - _submitTranslations()
     """
 
@@ -350,24 +350,8 @@ class BaseTranslationView(LaunchpadView):
     # over just two or three.
     MAX_PLURAL_FORMS = 100
 
-    class TabIndex:
-        """Holds a counter which can be globally incremented.
-
-        This is shared between main and subviews to ensure tabindex is
-        incremented sequentially and sanely.
-        """
-        def __init__(self):
-            self.index = 0
-
-        def next(self):
-            self.index += 1
-            return self.index
-
     def initialize(self):
         assert self.pofile, "Child class must define self.pofile"
-
-        self.redirecting = False
-        self.tabindex = self.TabIndex()
 
         # These two dictionaries hold translation data parsed from the
         # form submission. They exist mainly because of the need to
@@ -382,7 +366,8 @@ class BaseTranslationView(LaunchpadView):
 
         if not self.has_plural_form_information:
             # This POFile needs administrator setup.
-            # XXX: this should refer people to +addticket, right? -- kiko
+            # XXX: this should refer people to +addticket, right? 
+            #   -- kiko, 2006-10-18
             self.request.response.addErrorNotification("""
             <p>
             Rosetta can&#8217;t handle the plural items in this file, because it
@@ -426,7 +411,7 @@ class BaseTranslationView(LaunchpadView):
         # Slave view initialization depends on _submitTranslations being
         # called, because the form data needs to be passed in to it --
         # again, because of error handling.
-        self._initializeSubViews()
+        self._initializeMsgSetViews()
 
     #
     # API Hooks
@@ -436,7 +421,7 @@ class BaseTranslationView(LaunchpadView):
         """Construct a BatchNavigator of POTMsgSets and return it."""
         raise NotImplementedError
 
-    def _initializeSubViews(self):
+    def _initializeMsgSetViews(self):
         """Construct subviews as necessary."""
         raise NotImplementedError
 
@@ -496,7 +481,7 @@ class BaseTranslationView(LaunchpadView):
             is_fuzzy = self.form_posted_needsreview[pomsgset]
         else:
             is_fuzzy = pomsgset.isfuzzy
-        pomsgset_view.prepare(translations, is_fuzzy, error, self.tabindex,
+        pomsgset_view.prepare(translations, is_fuzzy, error,
                               self.second_lang_code)
 
     #
@@ -629,7 +614,6 @@ class BaseTranslationView(LaunchpadView):
             new_url = str(self.request.URL)
             if self.request.get('QUERY_STRING'):
                 new_url += '?%s' % self.request.get('QUERY_STRING')
-        self.redirecting = True
 
         parameters = self._buildRedirectParams()
         params_str = '&'.join(
@@ -659,17 +643,6 @@ class BaseTranslationView(LaunchpadView):
             next_url = ''
         self._redirect(next_url)
 
-    #
-    # LaunchpadView API
-    #
-
-    def render(self):
-        """No need to output HTML if we are just redirecting."""
-        if self.redirecting:
-            return u''
-        else:
-            return LaunchpadView.render(self)
-
 
 class POMsgSetPageView(BaseTranslationView):
     """A view for the page that renders a single translation.
@@ -697,8 +670,8 @@ class POMsgSetPageView(BaseTranslationView):
         return POTMsgSetBatchNavigator(self.pofile.potemplate.getPOTMsgSets(),
                                        self.request, size=1)
 
-    def _initializeSubViews(self):
-        """See BaseTranslationView._initializeSubViews."""
+    def _initializeMsgSetViews(self):
+        """See BaseTranslationView._initializeMsgSetViews."""
         self.pomsgset_view = zapi.queryMultiAdapter(
             (self.context, self.request), name="+translate-one-zoomed")
         self._prepareView(self.pomsgset_view, self.context, self.error)
@@ -731,9 +704,9 @@ class POMsgSetView(LaunchpadView):
     # self.second_lang_potmsgset
     # self.msgids
     # self.suggestion_blocks
-    # self.pluralform_indexes
+    # self.pluralform_indices
 
-    def prepare(self, translations, is_fuzzy, error, tabindex, second_lang_code):
+    def prepare(self, translations, is_fuzzy, error, second_lang_code):
         """Primes the view with information that is gathered by a parent view.
 
         translations is a dictionary indexed by plural form index;
@@ -741,14 +714,11 @@ class POMsgSetView(LaunchpadView):
         overlaid with form-submitted translations. is_fuzzy is a flag
         tht is similarly constructed.
 
-        tabindex is a TabIndex object.
-
         second_lang_code is the result of submiting field.alternative_value.
         """
         self.translations = translations
         self.error = error
         self.is_fuzzy = is_fuzzy
-        self.tabindex = tabindex
 
         # Set up alternative language variables. XXX: This could be made
         # much simpler if we built suggestions externally in the parent
@@ -789,8 +759,8 @@ class POMsgSetView(LaunchpadView):
         # allows us later to just iterate over them in the view code
         # using a generic template.
         self.suggestion_blocks = {}
-        self.pluralform_indexes = range(len(self.translations))
-        for index in self.pluralform_indexes:
+        self.pluralform_indices = range(len(self.translations))
+        for index in self.pluralform_indices:
             non_editor, elsewhere, wiki, alt_lang_suggestions = \
                 self._buildAllSuggestions(index)
             self.suggestion_blocks[index] = \
@@ -897,7 +867,7 @@ class POMsgSetView(LaunchpadView):
         exists, it will have a None value. If the potmsgset is not a plural
         form one, we only have one entry.
         """
-        if index in self.pluralform_indexes:
+        if index in self.pluralform_indices:
             translation = self.translations[index]
             # We store newlines as '\n', '\r' or '\r\n', depending on the
             # msgid but forms should have them as '\r\n' so we need to change
@@ -1010,7 +980,7 @@ class POMsgSetView(LaunchpadView):
     def zoom_url(self):
         """Return the URL where we should from the zoom icon."""
         # XXX: preserve second_lang_code and other form parameters? -- kiko
-        return '/'.join([canonical_url(self.context), '+translate'])
+        return canonical_url(self.context) + '/+translate'
 
     @property
     def zoom_alt(self):
@@ -1036,8 +1006,8 @@ class POMsgSetZoomedView(POMsgSetView):
         # We are viewing this class directly from an IPOMsgSet, we should
         # point to the parent batch of messages.
         # XXX: preserve second_lang_code and other form parameters? -- kiko
-        pofile_batch_url = '+translate?start=%d' % (self.sequence - 1)
-        return '/'.join([canonical_url(self.context.pofile), pofile_batch_url])
+        batch_url = '/+translate?start=%d' % (self.sequence - 1)
+        return canonical_url(self.context.pofile) + batch_url
 
     @property
     def zoom_alt(self):
@@ -1055,7 +1025,7 @@ class POMsgSetZoomedView(POMsgSetView):
 # Pseudo-content class
 #
 
-class POMsgSetSuggestions(LaunchpadView):
+class POMsgSetSuggestions:
     """See IPOMsgSetSuggestions."""
     implements(IPOMsgSetSuggestions)
     def __init__(self, title, submissions, is_multi_line, max_entries):

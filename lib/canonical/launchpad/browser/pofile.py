@@ -286,8 +286,8 @@ class POFileTranslateView(BaseTranslationView):
         return BatchNavigator(self._getSelectedPOTMsgSets(),
                               self.request, size=self.DEFAULT_SIZE)
 
-    def _initializeSubViews(self):
-        """See BaseTranslationView._initializeSubViews."""
+    def _initializeMsgSetViews(self):
+        """See BaseTranslationView._initializeMsgSetViews."""
         self.pomsgset_views = []
         for potmsgset in self.batchnav.currentBatch():
             self.pomsgset_views.append(self._buildPOMsgSetView(potmsgset))
