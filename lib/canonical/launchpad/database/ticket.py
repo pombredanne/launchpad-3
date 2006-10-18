@@ -286,7 +286,8 @@ class Ticket(SQLBase, BugLinkTargetMixin):
     @notify_modified()
     def reject(self, user, comment, datecreated=None):
         """See ITicket."""
-        assert self.canReject(user), (
+        if not self.canReject(user):
+            raise Unauthorized, (
             "Only support contacts, target owner or admins can reject a "
             "request")
         assert self.status != TicketStatus.INVALID, (
