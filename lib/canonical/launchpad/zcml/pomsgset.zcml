@@ -58,22 +58,6 @@
         />
 
     <browser:page
-        name="+translate-one"
-        for="canonical.launchpad.interfaces.IPOMsgSet"
-        permission="launchpad.AnyPerson"
-        template="../templates/pomsgset-translate-one.pt"
-        class="canonical.launchpad.browser.POMsgSetView"
-        />
-
-    <browser:page
-        name="+translate-one-zoomed"
-        for="canonical.launchpad.interfaces.IPOMsgSet"
-        permission="launchpad.AnyPerson"
-        template="../templates/pomsgset-translate-one.pt"
-        class="canonical.launchpad.browser.POMsgSetZoomedView"
-        />
-
-    <browser:page
         name="+display"
         for="canonical.launchpad.interfaces.IPOMsgSetSuggestions"
         permission="launchpad.AnyPerson"

@@ -22,8 +22,8 @@ from zope.app.form import CustomWidgetFactory
 from zope.app.form.utility import setUpWidgets
 from zope.app.form.browser import DropdownWidget
 from zope.app.form.interfaces import IInputWidget
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
-from zope.app import zapi
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
@@ -440,7 +440,7 @@ class BaseTranslationView(LaunchpadView):
         raise NotImplementedError
 
     #
-    # Helper methods that should be used for POMsgSetView.prepare() and
+    # Helper methods that should be used for POMsgSetView.__init__() and
     # _submitTranslations().
     #
 
@@ -468,8 +468,8 @@ class BaseTranslationView(LaunchpadView):
         else:
             return None
 
-    def _prepareView(self, pomsgset_view, pomsgset, error):
-        """Prepare data for display in a subview; calls POMsgSetView.prepare."""
+    def _prepareView(self, view_class, pomsgset, error):
+        """Collect data and build a POMsgSetView for display."""
         # XXX: it would be nice if we could easily check if
         # this is being called in the right order, after
         # _storeTranslations(). -- kiko, 2006-09-27
@@ -481,8 +481,8 @@ class BaseTranslationView(LaunchpadView):
             is_fuzzy = self.form_posted_needsreview[pomsgset]
         else:
             is_fuzzy = pomsgset.isfuzzy
-        pomsgset_view.prepare(translations, is_fuzzy, error,
-                              self.second_lang_code)
+        return view_class(pomsgset, self.request, translations,
+                          is_fuzzy, error, self.second_lang_code)
 
     #
     # Internals
@@ -650,15 +650,16 @@ class POMsgSetPageView(BaseTranslationView):
     See BaseTranslationView for details on how this works."""
     __used_for__ = IPOMsgSet
 
-    # Holds the subview for this page.
-    pomsgset_view = None
     def initialize(self):
         self.pofile = self.context.pofile
+
         # Since we are only displaying a single message, we only hold on
         # to one error for it. The variable is set to the failing
         # POMsgSet (a device of BaseTranslationView._storeTranslations)
-        # in _submitTranslations.
+        # via _submitTranslations.
         self.error = None
+        self.pomsgset_view = None
+
         BaseTranslationView.initialize(self)
 
     #
@@ -672,9 +673,8 @@ class POMsgSetPageView(BaseTranslationView):
 
     def _initializeMsgSetViews(self):
         """See BaseTranslationView._initializeMsgSetViews."""
-        self.pomsgset_view = zapi.queryMultiAdapter(
-            (self.context, self.request), name="+translate-one-zoomed")
-        self._prepareView(self.pomsgset_view, self.context, self.error)
+        self.pomsgset_view = self._prepareView(POMsgSetZoomedView,
+                                               self.context, self.error)
 
     def _submitTranslations(self):
         """See BaseTranslationView._submitTranslations."""
@@ -698,15 +698,21 @@ class POMsgSetView(LaunchpadView):
     """
     __used_for__ = IPOMsgSet
 
-    # self.translations
-    # self.error
-    # self.sec_lang
-    # self.second_lang_potmsgset
-    # self.msgids
-    # self.suggestion_blocks
-    # self.pluralform_indices
+    # Instead of registering in ZCML, we indicate the template here and
+    # avoid the adapter lookup when constructing these subviews.
+    template = ViewPageTemplateFile('../templates/pomsgset-translate-one.pt')
 
-    def prepare(self, translations, is_fuzzy, error, second_lang_code):
+    # Relevant instance variables:
+    #   self.translations
+    #   self.error
+    #   self.sec_lang
+    #   self.second_lang_potmsgset
+    #   self.msgids
+    #   self.suggestion_blocks
+    #   self.pluralform_indices
+
+    def __init__(self, pomsgset, request, translations, is_fuzzy, error,
+                 second_lang_code):
         """Primes the view with information that is gathered by a parent view.
 
         translations is a dictionary indexed by plural form index;
@@ -716,6 +722,8 @@ class POMsgSetView(LaunchpadView):
 
         second_lang_code is the result of submiting field.alternative_value.
         """
+        self.context = pomsgset
+        self.request = request
         self.translations = translations
         self.error = error
         self.is_fuzzy = is_fuzzy
@@ -740,7 +748,7 @@ class POMsgSetView(LaunchpadView):
         # XXX: the heart of the optimization problem here is that
         # _buildAllSuggestions() is very expensive. We need to move to
         # building suggestions and active texts in one fell swoop in the
-        # parent view, and then supplying them all via prepare(). This
+        # parent view, and then supplying them all via __init__(). This
         # would cut the number of (expensive) queries per-page by an
         # order of 30. -- kiko, 2006-09-27
 

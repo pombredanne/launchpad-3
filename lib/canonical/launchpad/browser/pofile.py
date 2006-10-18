@@ -17,7 +17,6 @@ __all__ = [
 import re
 from zope.app.form.browser import DropdownWidget
 from zope.component import getUtility
-from zope.app import zapi
 from zope.publisher.browser import FileUpload
 
 from canonical.lp.dbschema import RosettaFileFormat
@@ -28,7 +27,8 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ApplicationMenu, Link, canonical_url,
     LaunchpadView, Navigation)
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.browser.pomsgset import BaseTranslationView
+from canonical.launchpad.browser.pomsgset import (
+    BaseTranslationView, POMsgSetView)
 
 
 from canonical.launchpad import _
@@ -290,6 +290,7 @@ class POFileTranslateView(BaseTranslationView):
 
     def initialize(self):
         self.pofile = self.context
+
         # The handling of errors is slightly tricky here. Because this
         # form displays multiple POMsgSetViews, we need to track the
         # various errors individually. This dictionary is keyed on
@@ -297,6 +298,7 @@ class POFileTranslateView(BaseTranslationView):
         # useful for doing display of only widgets with errors when we
         # do that.
         self.errors = {}
+        self.pomsgset_views = []
 
         self._initializeShowOption()
         BaseTranslationView.initialize(self)
@@ -312,7 +314,6 @@ class POFileTranslateView(BaseTranslationView):
 
     def _initializeMsgSetViews(self):
         """See BaseTranslationView._initializeMsgSetViews."""
-        self.pomsgset_views = []
         for potmsgset in self.batchnav.currentBatch():
             self.pomsgset_views.append(self._buildPOMsgSetView(potmsgset))
 
@@ -388,12 +389,8 @@ class POFileTranslateView(BaseTranslationView):
         pomsgset = potmsgset.getPOMsgSet(language.code, variant)
         if pomsgset is None:
             pomsgset = potmsgset.getDummyPOMsgSet(language.code, variant)
-
-        pomsgset_view = zapi.queryMultiAdapter(
-            (pomsgset, self.request), name="+translate-one")
-        self._prepareView(pomsgset_view, pomsgset,
-                          self.errors.get(pomsgset.potmsgset))
-        return pomsgset_view
+        return self._prepareView(POMsgSetView, pomsgset,
+                                 self.errors.get(pomsgset.potmsgset))
 
     def _initializeShowOption(self):
         # Get any value given by the user
