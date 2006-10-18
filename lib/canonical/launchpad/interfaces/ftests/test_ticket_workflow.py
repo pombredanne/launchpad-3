@@ -241,31 +241,40 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
             edited_fields=['status', 'messages', 'dateanswered', 'answerer',
                            'answer', 'datelastquery'])
 
-    def test_can_confirm_answer(self):
-        """Test the can_confirm_answer attribute in all the possible states.
+    def test_can_confirm_answer_without_answer(self):
+        """Test the can_confirm_answer attribute when no answer was posted.
+
+        When the ticket didn't receive an answer, it should always be
+        false.
         """
-        # When the ticket didn't receive an answer, it should always be
-        # false.
         self._testTransitionGuard('can_confirm_answer', [])
 
-        # Once one answer was given, it becomes possible in some states.
-        self.ticket.setStatus(self.admin, TicketStatus.OPEN, 'Status change')
+    def test_can_confirm_answer_with_answer(self):
+        """Test that can_confirm_answer when there is an answer present.
+
+        Once one answer was given, it becomes possible in some states.
+        """
         self.ticket.giveAnswer(
             self.answerer, 'Do something about it.', self.nowPlus(1))
         self._testTransitionGuard(
             'can_confirm_answer', ['OPEN', 'NEEDSINFO', 'ANSWERED'])
 
-    def test_confirmAnswerFromInvalidStates(self):
+    def test_confirmAnswerFromInvalidStates_without_answer(self):
         """Test calling confirmAnswer from invalid states.
 
         confirmAnswer() cannot be called when the ticket has no message with
-        action ANSWER, or when it has one but it is not in the OPEN,
-        NEEDSINFO, or ANSWERED state.
+        action ANSWER.
         """
         self._testInvalidTransition([], self.ticket.confirmAnswer,
             "That answer worked!.", datecreated=self.nowPlus(1))
 
-        self.ticket.setStatus(self.admin, TicketStatus.OPEN, 'Status change')
+    def test_confirmAnswerFromInvalidStates_with_answer(self):
+        """ Test calling confirmAnswer from invalid states with an answer.
+
+        When the ticket has a message with action ANSWER, confirmAnswer()
+        can only be called when it is in the OPEN, NEEDSINFO, or ANSWERED
+        state.
+        """
         answer_message = self.ticket.giveAnswer(
             self.answerer, 'Do something about it.', self.nowPlus(1))
         self._testInvalidTransition(['OPEN', 'NEEDSINFO', 'ANSWERED'],
