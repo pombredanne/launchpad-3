@@ -30,7 +30,8 @@ class FakeSQLObjectClass:
 class TestPOFile:
     """Pretend to be a pofile for testing purposes."""
 
-    def __init__(self):
+    def __init__(
+        self, language_code='es', pluralforms=2, pluralexpression='n != 1'):
         mock_email = FakeSQLObjectClass(
             email='kk@pleasure-dome.com')
         mock_person = FakeSQLObjectClass(
@@ -41,6 +42,17 @@ class TestPOFile:
             person=mock_person,
             datecreated = datetime.fromtimestamp(
                 1000000000, pytz.timezone('UTC')))
+        self.language = FakeSQLObjectClass(
+            code=language_code,
+            pluralforms=pluralforms,
+            pluralexpression=pluralexpression)
+
+pofile_cy = TestPOFile(language_code='cy', pluralforms=4,
+    pluralexpression='n==1 ? 0 : n==2 ? 1 : (n != 8 || n != 11) ? 2 : 3')
+pofile_es = TestPOFile(language_code='es', pluralforms=2,
+    pluralexpression='n != 1')
+pofile_ja = TestPOFile(
+    language_code='ja', pluralforms=1, pluralexpression='0')
 
 
 class TestRow:
@@ -60,7 +72,6 @@ class TestRow:
             'sourcecomment': '',
             'filereferences': '',
             'activesubmission': 65,
-            'popluralforms': 2,
         }
         self.columns.update(kw)
 
@@ -125,12 +136,12 @@ class BasicExportTest(ExportTest):
 
     def runTest(self):
         prototype1 = TestRow(
-            potemplate=TestPOTemplate(), pofile=TestPOFile(),
+            potemplate=TestPOTemplate(), pofile=pofile_es,
             language='es')
 
         prototype2 = TestRow(
             potemplate=TestPOTemplate(has_plural_message=True),
-            pofile=TestPOFile(),
+            pofile=pofile_cy,
             language='cy',
             poheader=(prototype1.poheader +
                 'Plural-Forms: nplurals=2; plural=(n!=1)\n'))
@@ -196,7 +207,8 @@ class BasicExportTest(ExportTest):
             'msgid ""',
             'msgstr ""',
             '"Content-Type: text/plain; charset=UTF-8\\n"',
-            '"Plural-Forms: nplurals=2; plural=(n!=1)\\n"',
+            '"Plural-Forms: nplurals=4; plural=(n==1 ? 0 : n==2 ? 1 : (n != 8 || n != 11) "',
+            '"? 2 : 3)\\n"',
             '"Last-Translator: Kubla Kahn <kk@pleasure-dome.com>\\n"',
             '"PO-Revision-Date: 2001-09-09 01:46+0000\\n"',
             '',
@@ -204,6 +216,8 @@ class BasicExportTest(ExportTest):
             'msgid_plural "foos"',
             'msgstr[0] "cy-FOO1"',
             'msgstr[1] "cy-FOO2"',
+            'msgstr[2] ""',
+            'msgstr[3] ""',
             '',
             '#, fuzzy',
             'msgid "zig"',
@@ -239,7 +253,7 @@ class EncodingExportTest(ExportTest):
         prototype1 = TestRow(language='ja', potsequence=1, posequence=1,
             msgidpluralform=0, translationpluralform=0, msgid="Japanese",
             translation=nihongo_unicode, potemplate=TestPOTemplate(),
-            pofile=TestPOFile())
+            pofile=pofile_ja)
 
         rows = [
             prototype1.clone(potemplate=TestPOTemplate(),
@@ -299,7 +313,7 @@ class BrokenEncodingExportTest(ExportTest):
         prototype1 = TestRow(language='es', potsequence=1, posequence=1,
             msgidpluralform=0, translationpluralform=0, msgid="a",
             translation=u'\u00e1', potemplate=TestPOTemplate(),
-            pofile=TestPOFile())
+            pofile=pofile_es)
 
         rows = [
             prototype1.clone(potemplate=TestPOTemplate(),
@@ -337,12 +351,10 @@ class IncompletePluralMessageTest(ExportTest):
     def runTest(self):
         prototype = TestRow(
             potemplate=TestPOTemplate(has_plural_message=True),
-            pofile=TestPOFile(),
+            pofile=pofile_es,
             language='es',
-            popluralforms=3,
             poheader=(
-                'Content-Type: text/plain; charset=UTF-8\n'
-                'Plural-Forms: nplurals=3; plural=(n==0)?0:(n==1)?1:2\n'))
+                'Content-Type: text/plain; charset=UTF-8\n'))
 
         rows = [
             prototype.clone(potsequence=1, posequence=1, msgidpluralform=0,
@@ -351,24 +363,20 @@ class IncompletePluralMessageTest(ExportTest):
             prototype.clone(potsequence=1, posequence=1, msgidpluralform=1,
                 translationpluralform=0, msgid="%d dead horses",
                 translation="no tengo caballos muertos"),
-            prototype.clone(potsequence=1, posequence=1, msgidpluralform=0,
-                translationpluralform=2, msgid="1 dead horse",
-                translation="%d caballos muertos"),
             ]
 
         expected_pofiles = [[
             'msgid ""',
             'msgstr ""',
             '"Content-Type: text/plain; charset=UTF-8\\n"',
-            '"Plural-Forms: nplurals=3; plural=(n==0)?0:(n==1)?1:2\\n"',
             '"Last-Translator: Kubla Kahn <kk@pleasure-dome.com>\\n"',
             '"PO-Revision-Date: 2001-09-09 01:46+0000\\n"',
+            '"Plural-Forms: nplurals=2; plural=(n != 1)\\n"',
             '',
             'msgid "1 dead horse"',
             'msgid_plural "%d dead horses"',
             'msgstr[0] "ning\xc3\xban caballo muerto"',
-            'msgstr[1] ""',
-            'msgstr[2] "%d caballos muertos"'
+            'msgstr[1] ""'
         ]]
 
         self.test_export(rows, expected_pofiles)
@@ -379,7 +387,7 @@ class InactiveTranslationTest(ExportTest):
     def runTest(self):
         prototype = TestRow(
             potemplate=TestPOTemplate(),
-            pofile=TestPOFile(),
+            pofile=pofile_es,
             language='es',
             msgidpluralform=0,
             translationpluralform=0)
@@ -430,7 +438,7 @@ class HeaderUpdateTest(ExportTest):
             translation='bar',
             msgidpluralform=0,
             translationpluralform=0,
-            pofile=TestPOFile(),
+            pofile=pofile_es,
             poheader=(
                 'Project-Id-Version: foo\n'
                 'Content-Type: text/plain; charset=UTF-8\n'
@@ -462,7 +470,7 @@ class DomainHeaderUpdateTest(ExportTest):
     def runTest(self):
         test_row = TestRow(
             potemplate=TestPOTemplate(),
-            pofile=TestPOFile(),
+            pofile=pofile_es,
             potsequence=1,
             posequence=1,
             language='es',
