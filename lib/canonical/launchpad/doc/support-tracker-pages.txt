@@ -210,6 +210,8 @@ Adding a comment doesn't change the status:
     ...         "correctly. Thanks."})
     >>> workflow_harness.redirectionTarget()
     '.../+ticket/2'
+    >>> print firefox_ticket.status.name
+    SOLVED
 
 And the other user can only comment on the ticket:
 
