@@ -608,7 +608,7 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
                 created_event.user.displayname, message.owner.displayname)))
 
         self.failUnless(
-            len(self.collected_events) >= 2,
+            len(self.collected_events) == 2,
             failure_msg('failed to trigger an ISQLObjectModifiedEvent'))
         modified_event = self.collected_events[1]
         self.failUnless(
