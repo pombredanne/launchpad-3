@@ -1,23 +1,16 @@
-Support Tracker Actors
-======================
+Person and the Support Tracker
+==============================
 
-The ITicketActor interface is used by IPerson interacting with the
-support tracker. Currently, all IPerson also provides the ITicketActor
-interface.
+IPerson defines a searchTickets() method which can be used to
+select all or a subset of the support requests in which the person is
+involved. This includes tickets which the person created, is assigned
+to, is subscribed to, commented on, or answered. Various subsets can
+be selected by using the following criteria status, search_text and
+participation type.
 
-    >>> from zope.interface.verify import verifyObject
-    >>> from canonical.launchpad.interfaces import IPersonSet, ITicketActor
+    >>> from canonical.launchpad.interfaces import IPersonSet
     >>> personset = getUtility(IPersonSet)
     >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
-    >>> verifyObject(ITicketActor, foo_bar)
-    True
-
-The ITicketActor defines a searchTickets() method which can be used to
-select all or a subset of the support requests in which the person is
-involved. This includes tickets which the person created, is assigned to,
-is subscribed to, commented on, or answered.
-Various subsets can be selected by using the following criteria status,
-search_text and participation type.
 
 search_text
 ~~~~~~~~~~~

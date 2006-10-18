@@ -32,8 +32,7 @@ from canonical.launchpad.interfaces import (
     IIrcIDSet, ISSHKeySet, IJabberIDSet, IWikiNameSet, IGPGKeySet,
     ISSHKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner,
     IBugTaskSet, UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
-    ILaunchpadStatisticSet, ShipItConstants, ILaunchpadCelebrities,
-    ITicketActor)
+    ILaunchpadStatisticSet, ShipItConstants, ILaunchpadCelebrities)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -79,7 +78,7 @@ class ValidPersonOrTeamCache(SQLBase):
 class Person(SQLBase):
     """A Person."""
 
-    implements(IPerson, ICalendarOwner, ITicketActor)
+    implements(IPerson, ICalendarOwner)
 
     sortingColumns = SQLConstant("person_sort_key(Person.displayname, Person.name)")
     _defaultOrder = sortingColumns

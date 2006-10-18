@@ -29,6 +29,8 @@ from canonical.launchpad.fields import (
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
+from canonical.launchpad.interfaces.tickettarget import (
+    TICKET_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.validation import (
     valid_emblem, valid_hackergotchi, valid_unregistered_email)
 
@@ -551,6 +553,27 @@ class IPerson(IHasSpecifications):
         :language: An object providing ILanguage.
 
         If the given language is not present, nothing  will happen.
+        """
+
+    def searchTickets(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
+                      participation=None, sort=None):
+        """Search the person's tickets.
+
+        :search_text: A string that is matched against the ticket
+        title and description. If None, the search_text is not included as
+        a filter criteria.
+
+        :status: A sequence of TicketStatus Items. If None or an empty
+        sequence, the status is not included as a filter criteria.
+
+        :participation: A list of TicketParticipation that defines the set
+        of relationship to tickets that will be searched. If None or an empty
+        sequence, all relationships are considered.
+
+        :sort:  An attribute of TicketSort. If None, a default value is used.
+        When there is a search_text value, the default is to sort by RELEVANCY,
+        otherwise results are sorted NEWEST_FIRST.
+
         """
 
 

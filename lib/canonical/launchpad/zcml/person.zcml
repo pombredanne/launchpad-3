@@ -20,8 +20,6 @@
       <require
           permission="launchpad.Edit"
           set_schema="canonical.launchpad.interfaces.IPerson" />
-      <!-- ITicketActor -->
-      <allow attributes="searchTickets" />
   </content>
 
   <browser:defaultView
@@ -639,6 +637,57 @@
         name="+portlet-about"
         template="../templates/people-portlet-about.pt" />
   </browser:pages>
+</facet>
+
+<facet facet="support">
+  <browser:page
+      for="canonical.launchpad.interfaces.IPerson"
+      class="canonical.launchpad.browser.PersonLatestTicketsView"
+      name="+portlet-latesttickets"
+      permission="zope.Public"
+      template="../templates/tickettarget-portlet-latesttickets.pt"
+      />
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonSearchTicketsView"
+    name="+tickets"
+    permission="zope.Public"
+    />
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.SearchAnsweredTicketsView"
+    name="+answeredtickets"
+    permission="zope.Public"
+    />
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.SearchAssignedTicketsView"
+    name="+assignedtickets"
+    permission="zope.Public"
+    />
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.SearchCommentedTicketsView"
+    name="+commentedtickets"
+    permission="zope.Public"
+    />
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.SearchCreatedTicketsView"
+    name="+createdtickets"
+    permission="zope.Public"
+    />
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.SearchSubscribedTicketsView"
+    name="+subscribedtickets"
+    permission="zope.Public"
+    />
+
+  <browser:menus
+    module="canonical.launchpad.browser"
+    classes="PersonSupportMenu"
+    />
 </facet>
 
 <adapter for="canonical.launchpad.webapp.interfaces.ILaunchpadPrincipal"
