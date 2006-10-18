@@ -343,15 +343,14 @@ class Bug(SQLBase):
 
     def addWatch(self, bugtracker, remotebug, owner):
         """See IBug."""
-        # run through the existing watches and try to find an existing watch
-        # that matches... and return that
-        for watch in self.watches:
-            if (watch.bugtracker == bugtracker and
-                watch.remotebug == remotebug):
-                return watch
-        # ok, we need a new one
-        return BugWatch(bug=self, bugtracker=bugtracker,
-            remotebug=remotebug, owner=owner)
+        # We shouldn't add duplicate bug watches.
+        bug_watch = self.getBugWatch(bugtracker, remotebug)
+        if bug_watch is not None:
+            return bug_watch
+        else:
+            return BugWatch(
+                bug=self, bugtracker=bugtracker,
+                remotebug=remotebug, owner=owner)
 
     def addAttachment(self, owner, file_, description, comment, filename,
                       is_patch=False):
