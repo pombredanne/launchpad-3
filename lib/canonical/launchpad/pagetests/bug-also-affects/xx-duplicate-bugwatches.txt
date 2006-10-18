@@ -1,6 +1,6 @@
-When adding bug watches, existing bug watches are re-used if they
-existing. For example, let's start with adding a Debian bug watch to
-bug #8.
+When adding bug watches, existing bug watches are re-used if there
+already is one pointing to the same remote bug. For example, let's start
+with adding a Debian bug watch to bug #8.
 
     >>> debian_bug = 'http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=42'
     >>> user_browser.open(

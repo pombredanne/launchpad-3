@@ -487,9 +487,8 @@ class BugAlsoReportInView(LaunchpadFormView):
             # Make sure that we don't add duplicate bug watches.
             bug_watch = taskadded.bug.getBugWatch(bugtracker, remotebug)
             if bug_watch is None:
-                bug_watch = getUtility(IBugWatchSet).createBugWatch(
-                    bug=taskadded.bug, owner=self.user, bugtracker=bugtracker,
-                    remotebug=remotebug)
+                bug_watch = taskadded.bug.addWatch(
+                    bugtracker, remotebug, self.user)
                 notify(SQLObjectCreatedEvent(bug_watch))
             if not target.official_malone:
                 taskadded.bugwatch = bug_watch
