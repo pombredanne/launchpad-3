@@ -3,7 +3,8 @@
 
 PYTHON_VERSION=2.4
 PYTHON=python${PYTHON_VERSION}
-PYTHONPATH:=$(shell pwd)/lib:${PYTHONPATH}
+#PYTHONPATH:=$(shell pwd)/lib:${PYTHONPATH}
+PYTHONPATH:=${PYTHONPATH}
 
 TESTFLAGS=-p -v
 TESTOPTS=
@@ -43,6 +44,15 @@ check_merge: check_not_a_ui_merge build check importdcheck hctcheck
 	# database.
 	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
+
+check_edge_merge: check_no_dbupdates check_merge
+	# Allow the merge if there are no database updates, including
+	# database patches or datamigration scripts (which should live
+	# in database/schema/pending. Used for maintaining the
+	# edge.lauchpad.net branch.
+
+check_no_dbupdates:
+	[ `bzr status | grep database/schema/ | wc -l` -eq 0 ]
 
 hctcheck: build
 	env PYTHONPATH=$(PYTHONPATH) \
