@@ -45,8 +45,8 @@ pocketsuffix = {
 class IPublishing(Interface):
     """Ability to publish associated publishing records."""
 
-    def publish(diskpool, log, careful=False):
-        """Publish associated publish records.
+    def publish(diskpool, log, pocket=None, careful=False):
+        """Publish associated publishing records.
 
         IDistroRelease -> ISourcePackagePublishing
         IDistroArchRelease -> IBinaryPackagePublishing
@@ -55,6 +55,11 @@ class IPublishing(Interface):
         'careful' argument would cause the 'republication' of all published
         records if True (system will DTRT checking hash of all
         published files.)
+
+        If pocket is given only publish records targeted for it.
+
+        If the distroreleases is already released, it automatically refuses
+        to publish records to RELEASE pocket.
         """
 
 class IArchivePublisher(Interface):

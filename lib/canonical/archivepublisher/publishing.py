@@ -62,14 +62,16 @@ class Publisher(object):
     the processing of each DistroRelease and DistroArchRelease in question
     """
 
-    def __init__(self, log, config, diskpool, distribution, library=None):
+    def __init__(self, log, config, diskpool, distribution,
+                 allowed_suites=None, library=None):
         """Initialise a publisher. Publishers need the pool root dir
         and a DiskPool object.
         """
         self.log = log
-
         self._config = config
         self.distro = distribution
+        self.allowed_suites = allowed_suites
+
         if not os.path.isdir(config.poolroot):
             raise ValueError("Root %s is not a directory or does "
                              "not exist" % config.poolroot)
@@ -96,12 +98,24 @@ class Publisher(object):
         Asks each DistroRelease to publish itself, which causes
         publishing records to be updated, and files to be placed on disk
         where necessary.
+        If self.allowed_suites is set, restrict the publication procedure
+        to them.
         """
         self.log.debug("* Step A: Publishing packages")
+
         for distrorelease in self.distro:
-            more_dirt = distrorelease.publish(self._diskpool, self.log,
-                                              is_careful=force_publishing)
-            self.dirty_pockets.update(more_dirt)
+            for pocket, suffix in pocketsuffix.items():
+                if (self.allowed_suites and not (distrorelease.name, pocket) in
+                    self.allowed_suites):
+                    self.log.debug(
+                        "* Skipping %s/%s" % (distrorelease.name, pocket.name))
+                    continue
+
+                more_dirt = distrorelease.publish(
+                    self._diskpool, self.log,is_careful=force_publishing,
+                    pocket=pocket)
+
+                self.dirty_pockets.update(more_dirt)
 
     def B_dominate(self, force_domination):
         """Second step in publishing: domination."""

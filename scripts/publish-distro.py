@@ -1,25 +1,24 @@
 #!/usr/bin/python
 
-import logging
-import gc
-
 import _pythonpath
 
+import logging
+import gc
 from optparse import OptionParser
 
-from canonical.lp import initZopeless
-from canonical.database.sqlbase import (
-    flush_database_updates,
-    clear_current_connection_cache)
+from zope.component import getUtility
 
-from canonical.archivepublisher.diskpool import DiskPool, Poolifier, POOL_DEBIAN
 from canonical.archivepublisher.config import Config, LucilleConfigError
+from canonical.archivepublisher.diskpool import (
+    DiskPool, Poolifier, POOL_DEBIAN)
 from canonical.archivepublisher.publishing import Publisher
-
-from canonical.launchpad.database import Distribution
-from canonical.launchpad.scripts import (execute_zcml_for_scripts,
-                                         logger, logger_options)
-
+from canonical.database.sqlbase import (
+    flush_database_updates, clear_current_connection_cache)
+from canonical.launchpad.interfaces import (
+    NotFoundError, IDistributionSet)
+from canonical.launchpad.scripts import (
+    execute_zcml_for_scripts, logger, logger_options)
+from canonical.lp import initZopeless
 
 def parse_options():
     parser = OptionParser()
@@ -45,6 +44,10 @@ def parse_options():
                       dest="distribution", metavar="DISTRO", default="ubuntu",
                       help="The distribution to publish.")
 
+    parser.add_option("-s", "--suite",
+                      dest="suite", metavar="SUITE", default=None,
+                      help="The suite to publish.")
+
     parser.add_option("-R", "--distsroot",
                       dest="distsroot", metavar="SUFFIX", default=None,
                       help="Override the dists path for generation")
@@ -54,7 +57,23 @@ def parse_options():
 
 def getPublisher(options, log):
     log.debug("Finding distribution object.")
-    distro = Distribution.selectOneBy(name=options.distribution)
+
+    try:
+        distro = getUtility(IDistributionSet)[options.distribution]
+    except NotFoundError, info:
+        log.error(info)
+        raise
+
+    allowed_suites = set()
+    if options.suite is not None:
+        # XXX cprov 20061018: extend this for multiple suites publication.
+        try:
+            distrorelease, pocket = distro.getDistroReleaseAndPocket(
+                options.suite)
+        except NotFoundError, info:
+            log.error(info)
+            raise
+        allowed_suites.add((distrorelease.name, pocket))
 
     log.debug("Finding configuration.")
     try:
@@ -80,7 +99,7 @@ def getPublisher(options, log):
     dp.scan()
 
     log.debug("Preparing publisher.")
-    return Publisher(log, pubconf, dp, distro)
+    return Publisher(log, pubconf, dp, distro, allowed_suites)
 
 
 def main():
@@ -118,7 +137,9 @@ def main():
 
     log.debug("Initialising zopeless.")
 
-    txn = initZopeless(dbuser='lucille') # Change this when we fix up db security
+    # Change this when we fix up db security
+    txn = initZopeless(dbuser='lucille')
+
     execute_zcml_for_scripts()
 
     publisher = getPublisher(options, log)
