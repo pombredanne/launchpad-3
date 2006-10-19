@@ -8,6 +8,9 @@
     <!-- ISpecificationBranch -->
     <content class="canonical.launchpad.database.SpecificationBranch">
       <allow interface="canonical.launchpad.interfaces.ISpecificationBranch" />
+      <require
+          permission="launchpad.AnyPerson"
+          set_attributes="summary" />
     </content>
 
     <browser:url
@@ -18,7 +21,7 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.ISpecificationBranch"
         name="+status" />
-
+<!--
     <browser:generalform
         name="+status"
         for="canonical.launchpad.interfaces.ISpecificationBranch"
@@ -26,5 +29,5 @@
         class="canonical.launchpad.browser.specificationbranch.SpecificationBranchView"
         label="Edit specification branch status"
         permission="launchpad.View"
-        template="../templates/specificationbranch-status.pt" />
+        template="../templates/specificationbranch-status.pt" /> -->
 </configure>

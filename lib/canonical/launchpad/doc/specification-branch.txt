@@ -42,11 +42,6 @@ Now associate a branch with the specification
     1
     >>> sb = newspec.branch_links[0]
     >>> sb.summary
-    >>> sb.__dict__
-    >>> sb
-
-
-
 
 
 You cannot associate the same branch to the same spec more than once
@@ -68,7 +63,7 @@ product of the specification
     >>> len(list(newspec.branch_links))
     2
     >>> newspec.branch_links[1].summary
-    'tweak thunderbird'
+    u'tweak thunderbird'
 
 Links aren't permanent, and can be removed
 
@@ -82,3 +77,17 @@ Links aren't permanent, and can be removed
     1
 
 
+The summary on the branch links can be updated after creation, although you
+have to be logged in in order to change the summary.
+
+    >>> sb = newspec.branch_links[0]
+    >>> sb.summary = 'Implementing the feature here'
+    Traceback (most recent call last):
+      ...
+    Unauthorized: (... 'launchpad.AnyPerson')
+    >>> login('test@canonical.com')
+    >>> sb.summary = 'Implementing the feature here'
+    >>> sb.summary
+    u'Implementing the feature here'
+
+    
