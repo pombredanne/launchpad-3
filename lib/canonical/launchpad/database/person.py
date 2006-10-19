@@ -36,6 +36,7 @@ from canonical.launchpad.interfaces import (
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
+from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.karma import KarmaTotalCache
 from canonical.launchpad.database.logintoken import LoginToken
@@ -53,8 +54,7 @@ from canonical.launchpad.database.specificationsubscription import (
     SpecificationSubscription)
 from canonical.launchpad.database.teammembership import (
     TeamMembership, TeamParticipation, TeamMembershipSet)
-
-from canonical.launchpad.database.branch import Branch
+from canonical.launchpad.database.ticket import TicketSet
 
 from canonical.lp.dbschema import (
     EnumCol, SSHKeyType, EmailAddressStatus, TeamSubscriptionPolicy,
@@ -68,7 +68,7 @@ from canonical.cachedproperty import cachedproperty
 
 class ValidPersonOrTeamCache(SQLBase):
     """Flags if a Person or Team is active and usable in Launchpad.
-    
+
     This is readonly, as the underlying table is maintained using
     database triggers.
     """
@@ -136,9 +136,9 @@ class Person(SQLBase):
         orderBy='id')
     reviewerBounties = SQLMultipleJoin('Bounty', joinColumn='reviewer',
         orderBy='id')
-    # XXX: matsubara 2006-03-06: Is this really needed? There's no attribute 
-    # 'claimant' in the Bounty database class or interface, but the column 
-    # exists in the database. 
+    # XXX: matsubara 2006-03-06: Is this really needed? There's no attribute
+    # 'claimant' in the Bounty database class or interface, but the column
+    # exists in the database.
     # https://launchpad.net/products/launchpad/+bug/33935
     claimedBounties = MultipleJoin('Bounty', joinColumn='claimant',
         orderBy='id')
@@ -156,16 +156,6 @@ class Person(SQLBase):
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
     timezone = StringCol(dbName='timezone', default='UTC')
-
-    answered_tickets = SQLMultipleJoin('Ticket', joinColumn='answerer',
-        orderBy='-datecreated')
-    assigned_tickets = SQLMultipleJoin('Ticket', joinColumn='assignee',
-        orderBy='-datecreated')
-    created_tickets = SQLMultipleJoin('Ticket', joinColumn='owner',
-        orderBy='-datecreated')
-    subscribed_tickets = SQLRelatedJoin('Ticket', joinColumn='person',
-        otherColumn='ticket', intermediateTable='TicketSubscription',
-        orderBy='-datecreated')
 
     def _init(self, *args, **kw):
         """Marks the person as a team when created or fetched from database."""
@@ -275,9 +265,9 @@ class Person(SQLBase):
                 completeness = True
         if completeness is False:
             filter.append(SpecificationFilter.INCOMPLETE)
-        
+
         # defaults for acceptance: in this case we have nothing to do
-        # because specs are not accepted/declined against a person 
+        # because specs are not accepted/declined against a person
 
         # defaults for informationalness: we don't have to do anything
         # because the default if nothing is said is ANY
@@ -340,7 +330,7 @@ class Person(SQLBase):
                          (SELECT Product.id FROM Product
                           WHERE Product.active IS FALSE))
                 """
-        
+
         base = base % {'my_id': self.id}
 
         query = base
@@ -380,13 +370,10 @@ class Person(SQLBase):
             limit=quantity, prejoins=['assignee', 'approver', 'drafter'])
         return results
 
-    def tickets(self, quantity=None):
-        ret = self.created_tickets
-        ret = ret.union(self.answered_tickets)
-        ret = ret.union(self.assigned_tickets)
-        ret = ret.union(self.subscribed_tickets)
-        ret = ret.orderBy("-datecreated")
-        return ret[:quantity]
+    # ITicketActor implementation
+    def searchTickets(self, **kwargs):
+        # See ITicketActor
+        return TicketSet.searchByPerson(person=self, **kwargs)
 
     @property
     def branches(self):
@@ -690,7 +677,7 @@ class Person(SQLBase):
         if person.isTeam():
             assert not self.hasParticipationEntryFor(person), (
                 "Team '%s' is a member of '%s'. As a consequence, '%s' can't "
-                "be added as a member of '%s'" 
+                "be added as a member of '%s'"
                 % (self.name, person.name, person.name, self.name))
 
         if person in self.activemembers:
@@ -716,7 +703,7 @@ class Person(SQLBase):
         now = datetime.now(pytz.timezone('UTC'))
         if expires is not None and expires <= now:
             status = TeamMembershipStatus.EXPIRED
-            # XXX: This is a workaround while 
+            # XXX: This is a workaround while
             # https://launchpad.net/products/launchpad/+bug/30649 isn't fixed.
             expires = now
 
@@ -755,7 +742,7 @@ class Person(SQLBase):
         """See IPerson."""
         return self.browsername
 
-    @property 
+    @property
     def allmembers(self):
         """See IPerson."""
         query = ('Person.id = TeamParticipation.person AND '
@@ -828,7 +815,7 @@ class Person(SQLBase):
     def myactivememberships(self):
         """See IPerson."""
         return TeamMembership.select("""
-            TeamMembership.person = %s AND status in %s AND 
+            TeamMembership.person = %s AND status in %s AND
             Person.id = TeamMembership.team
             """ % sqlvalues(self.id, [TeamMembershipStatus.APPROVED,
                                       TeamMembershipStatus.ADMIN]),
@@ -1047,7 +1034,7 @@ class Person(SQLBase):
                        sourcepackagerelease.id
                   FROM sourcepackagerelease
                  WHERE %s
-              ORDER BY uploaddistrorelease, sourcepackagename, 
+              ORDER BY uploaddistrorelease, sourcepackagename,
                        dateuploaded DESC
               )
               """ % extra
@@ -1224,10 +1211,10 @@ class PersonSet:
             orderBy = SQLConstant("person_sort_key(displayname, name)")
         text = text.lower()
         # Teams may not have email addresses, so we need to either use a LEFT
-        # OUTER JOIN or do a UNION between two queries. Using a UNION makes 
+        # OUTER JOIN or do a UNION between two queries. Using a UNION makes
         # it a lot faster than with a LEFT OUTER JOIN.
         email_query = """
-            EmailAddress.person = Person.id AND 
+            EmailAddress.person = Person.id AND
             lower(EmailAddress.email) LIKE %s || '%%'
             """ % quote_like(text)
         results = Person.select(email_query, clauseTables=['EmailAddress'])
@@ -1249,7 +1236,7 @@ class PersonSet:
             # ORed.
             email_query = ("%s AND lower(EmailAddress.email) LIKE %s || '%%'"
                            % (base_query, quote_like(text)))
-            name_query = ('%s AND Person.fti @@ ftq(%s)' 
+            name_query = ('%s AND Person.fti @@ ftq(%s)'
                           % (base_query, quote(text)))
             results = Person.select(email_query, clauseTables=clauseTables)
             results = results.union(
@@ -1266,16 +1253,16 @@ class PersonSet:
             orderBy = SQLConstant("person_sort_key(displayname, name)")
         text = text.lower()
         # Teams may not have email addresses, so we need to either use a LEFT
-        # OUTER JOIN or do a UNION between two queries. Using a UNION makes 
+        # OUTER JOIN or do a UNION between two queries. Using a UNION makes
         # it a lot faster than with a LEFT OUTER JOIN.
         email_query = """
-            Person.teamowner IS NOT NULL AND 
-            EmailAddress.person = Person.id AND 
+            Person.teamowner IS NOT NULL AND
+            EmailAddress.person = Person.id AND
             lower(EmailAddress.email) LIKE %s || '%%'
             """ % quote_like(text)
         results = Person.select(email_query, clauseTables=['EmailAddress'])
         name_query = """
-             Person.teamowner IS NOT NULL AND 
+             Person.teamowner IS NOT NULL AND
              Person.fti @@ ftq(%s)
             """ % quote(text)
         return results.union(Person.select(name_query), orderBy=orderBy)
@@ -1486,7 +1473,7 @@ class PersonSet:
             WHERE person=%(from_id)d AND bounty NOT IN
                 (
                 SELECT bounty
-                FROM BountySubscription 
+                FROM BountySubscription
                 WHERE person = %(to_id)d
                 )
             ''' % vars())
@@ -1532,7 +1519,7 @@ class PersonSet:
             WHERE person=%(from_id)d AND ticket NOT IN
                 (
                 SELECT ticket
-                FROM TicketSubscription 
+                FROM TicketSubscription
                 WHERE person = %(to_id)d
                 )
             ''' % vars())
@@ -1551,7 +1538,7 @@ class PersonSet:
 
         # Update the SpecificationFeedback entries that will not conflict
         # and trash the rest.
-        
+
         # First we handle the reviewer.
         cur.execute('''
             UPDATE SpecificationFeedback
@@ -1608,7 +1595,7 @@ class PersonSet:
             WHERE attendee=%(from_id)d AND sprint NOT IN
                 (
                 SELECT sprint
-                FROM SprintAttendance 
+                FROM SprintAttendance
                 WHERE attendee = %(to_id)d
                 )
             ''' % vars())
@@ -1714,7 +1701,7 @@ class PersonSet:
         approved = TeamMembershipStatus.APPROVED
         admin = TeamMembershipStatus.ADMIN
         cur.execute('SELECT team, status FROM TeamMembership WHERE person = %s '
-                    'AND status IN (%s,%s)' 
+                    'AND status IN (%s,%s)'
                     % sqlvalues(from_person.id, approved, admin))
         for team_id, status in cur.fetchall():
             cur.execute('SELECT status FROM TeamMembership WHERE person = %s '

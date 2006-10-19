@@ -13,13 +13,14 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     IDistributionSet, IPackageUploadSet)
+from canonical.launchpad.mail import stub
 from canonical.launchpad.scripts.queue import (
     CommandRunner, CommandRunnerError, name_queue_map)
 from canonical.librarian.ftests.harness import (
     fillLibrarianFile, cleanupLibrarianFiles)
 from canonical.lp.dbschema import (
     PackagePublishingStatus, PackagePublishingPocket,
-    PackageUploadStatus)
+    PackageUploadStatus, DistributionReleaseStatus)
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -216,6 +217,44 @@ class TestQueueTool(TestQueueBase):
 
         self.assertEqual(1, queue_action.items_size)
         self.assertEqual(PackagePublishingPocket.UPDATES, queue_action.pocket)
+
+    def testQueueDoesNotAnnounceBackports(self):
+        """Check if BACKPORTS acceptance are not announced publicly.
+
+        Queue tool normally announce acceptance in the specified changeslist
+        for the distrorelease in question, however BACKPORTS announce doesn't
+        fit very well in that list, they cause unwanted noise.
+
+        Further details in bug #59443
+        """
+        # make breezy-autotest CURRENT in order to accept upload
+        # to BACKPORTS
+        breezy_autotest = getUtility(
+            IDistributionSet)['ubuntu']['breezy-autotest']
+        breezy_autotest.releasestatus = DistributionReleaseStatus.CURRENT
+
+        # ensure breezy-autotest is set
+        self.assertEqual(
+            u'autotest_changes@ubuntu.com', breezy_autotest.changeslist)
+
+        # create contents for the respective changesfile in librarian.
+        fillLibrarianFile(1)
+
+        # accept the sampledata item
+        queue_action = self.execute_command(
+            'accept', queue_name='unapproved',
+            suite_name='breezy-autotest-backports', no_mail=False)
+
+        # only one item considered
+        self.assertEqual(1, queue_action.items_size)
+
+        # One email was sent
+        self.assertEqual(1, len(stub.test_emails))
+
+        # sent to the default recipient only, not the breezy-autotest
+        # announcelist.
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        self.assertEqual([queue_action.default_recipient], to_addrs)
 
     def assertQueueLength(self, expected_length, distro_release, status, name):
         self.assertEqual(

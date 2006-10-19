@@ -1494,7 +1494,7 @@ INSERT INTO distrorelease (id, distribution, name, title, description, version, 
 Ubuntu Hoary for the Andalucian marketplace.', 'Guada2005', NULL, 0, NULL, NULL, 0, 0, NULL, '2006-10-16 18:31:43.488598');
 INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created) VALUES (10, 1, 'breezy-autotest', 'Breezy Badger Autotest', 'Autotest version of Breezy', '6.6.6', 1, '2005-12-01 10:00:00', 3, 1, '[publishing]
 components = main restricted universe multiverse
-', 'Autosync uploader test', 'Breezy Badger Autotest', NULL, 0, 8, 'autotest_changes@ubutu.com', 0, 0, NULL, '2006-10-16 18:31:43.489468');
+', 'Autosync uploader test', 'Breezy Badger Autotest', NULL, 0, 8, 'autotest_changes@ubuntu.com', 0, 0, NULL, '2006-10-16 18:31:43.489468');
 INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created) VALUES (11, 8, 'breezy-autotest', 'Breezy Badger Autotest', 'Autotest version of Breezy', '6.6.6', 1, '2006-01-08 10:00:00', 1, 1, '[publishing]
 components = main restricted universe multiverse
 ', 'Autosync uploader test', 'Breezy Badger Autotest', NULL, 0, NULL, NULL, 0, 0, NULL, '2006-10-16 18:31:43.490333');
@@ -2811,6 +2811,7 @@ INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_
 INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, archive) VALUES (7, 0, 10, 0, 1, '2006-10-16 18:31:43.525832', 1);
 INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, archive) VALUES (8, 1, 10, 0, 1, '2006-10-16 18:31:43.526197', 1);
 INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, archive) VALUES (9, 1, 10, 0, 1, '2006-10-16 18:31:43.526624', 1);
+INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, archive) VALUES (10, 1, 10, 40, 1, '2006-10-16 18:31:43.526624', 1);
 
 
 ALTER TABLE packageupload ENABLE TRIGGER ALL;
@@ -2830,6 +2831,7 @@ ALTER TABLE packageuploadcustom DISABLE TRIGGER ALL;
 INSERT INTO packageuploadcustom (id, packageupload, customformat, libraryfilealias, date_created) VALUES (1, 5, 1, 1, '2006-10-16 18:31:43.532702');
 INSERT INTO packageuploadcustom (id, packageupload, customformat, libraryfilealias, date_created) VALUES (2, 6, 2, 1, '2006-10-16 18:31:43.533511');
 INSERT INTO packageuploadcustom (id, packageupload, customformat, libraryfilealias, date_created) VALUES (3, 7, 3, 1, '2006-10-16 18:31:43.533853');
+INSERT INTO packageuploadcustom (id, packageupload, customformat, libraryfilealias, date_created) VALUES (4, 10, 3, 1, '2006-10-16 18:31:43.533853');
 
 
 ALTER TABLE packageuploadcustom ENABLE TRIGGER ALL;
