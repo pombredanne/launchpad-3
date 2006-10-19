@@ -133,7 +133,9 @@ class BugContextMenu(ContextMenu):
         return Link('+addsubscriber', text, icon='add')
 
     def nominate(self):
-        if check_permission("launchpad.Driver", self.context.target):
+        launchbag = getUtility(ILaunchBag)
+        target = launchbag.product or launchbag.distribution
+        if check_permission("launchpad.Driver", target):
             text = "Target to Release"
         else:
             text = 'Nominate for Release'
