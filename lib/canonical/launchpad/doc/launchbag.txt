@@ -25,10 +25,6 @@ First, we'll set up various imports and stub objects.
 ...     principal = principal
 ...     interaction = None
 
->>> session = {'launchpad.authenticateduser':
-...     {'login': 'cookie@example.com', 'personid': 23}
-...     }
-
 >>> class Response(object):
 ...     def getCookie(self, name):
 ...         return None
@@ -39,20 +35,8 @@ First, we'll set up various imports and stub objects.
 ...     cookies = {}
 ...     def setPrincipal(self, principal):
 ...         pass
-...     def __conform__(self, protocol):
-...         if protocol is ISession:
-...             return session
 
 >>> request = Request()
-
-Before we start, let's clear the launchbag.
-
-XXX: The test machinery should be ensuring that the launchbag is cleared
-     between test runs.  In which case, we would not need to clear the
-     launchbag.
-     -- Steve Alexander, Wed Jan  5 15:14:44 UTC 2005
-
->>> getUtility(IOpenLaunchBag).clear()
 
 There have been no logins, so launchbag.login will be None.
 
@@ -80,9 +64,10 @@ Login should be set back to None on a logout.
 None
 
 Let's do a cookie auth principal identification.  In this case, the login
-will be cookie@example.com, as given in the session dict above.
+will be cookie@example.com.
 
->>> event = CookieAuthPrincipalIdentifiedEvent(principal, request)
+>>> event = CookieAuthPrincipalIdentifiedEvent(
+...     principal, request, 'cookie@example.com')
 >>> notify(event)
 >>> print launchbag.login
 cookie@example.com

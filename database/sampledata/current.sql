@@ -513,15 +513,6 @@ SET search_path = public, pg_catalog;
 
 
 
-
-
-
-
-
-
-
-
-
 ALTER TABLE archconfig DISABLE TRIGGER ALL;
 
 
@@ -632,41 +623,34 @@ ALTER TABLE bountysubscription ENABLE TRIGGER ALL;
 
 ALTER TABLE branch DISABLE TRIGGER ALL;
 
-INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id) VALUES (1, 'Mozilla Firefox Mainline', 'text', 12, 4, 12, 'main', NULL, false, NULL, NULL, false, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--MAIN--0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id) VALUES (2, 'Mozilla Thunderbird Mainline', 'Bazaar import of the Mozilla Thunderbird CVS mainline.', 11, 8, 1, 'main', NULL, false, NULL, NULL, false, 'http://bazaar.example.com/thunderbird@arch.ubuntu.com/thunderbird--MAIN--0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2006-04-08 01:40:15.816029', 1, false, NULL, 4, NULL, NULL, NULL, NULL);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id) VALUES (3, 'Python Twisted Trunk', 'Bazaar import of the Twisted SVN trunk.', 7, NULL, 3, 'trunk', NULL, false, NULL, NULL, false, 'http://bazaar.example.com/twisted@arch.ubuntu.com/twisted--trunk--0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id) VALUES (4, 'Bugzila Mainline', 'text', 3, NULL, NULL, 'main', NULL, false, NULL, NULL, false, 'http://bazaar.example.com/bugzilla@arch.ubuntu.com/bugzila--MAIN--0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id) VALUES (5, 'Arch Devel', 'text', 8, NULL, NULL, 'devel-1.0', NULL, false, NULL, NULL, false, 'http://bazaar.example.com/arch@arch.ubuntu.com/arch--devel--1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2006-04-08 22:20:14.973705', 9, false, NULL, NULL, 'I do not like Arch, so I am pretending it failed to mirror.', NULL, NULL, NULL);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id) VALUES (6, 'Kiwi2 Mainline', 'text', 9, NULL, NULL, 'main', NULL, false, NULL, NULL, false, 'http://bazaar.example.com/kiwi2@arch.ubuntu.com/kiwi2--MAIN--0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id) VALUES (7, 'Plone Trunk', 'text', 10, NULL, NULL, 'trunk', NULL, false, NULL, NULL, false, 'http://bazaar.example.com/plone@arch.ubuntu.com/plone--trunk--0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id) VALUES (8, 'Evolution 2.0', 'text', 13, 5, NULL, '2.0', NULL, false, NULL, NULL, false, 'http://bazaar.example.com/gnome@arch.ubuntu.com/gnome--evolution--2.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id) VALUES (9, 'Iso-codes 0.35', 'text', 13, 7, NULL, '0.35', NULL, false, NULL, NULL, false, 'http://bazaar.example.com/iso-codes@arch.ubuntu.com/iso-codes--iso-codes--0.35', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id) VALUES (10, 'Mozilla Firefox 0.9.2', 'text', 1, 4, NULL, 'release-0.9.2', NULL, false, NULL, NULL, false, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--release--0.9.2', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, 1, NULL, NULL, NULL, NULL);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id) VALUES (11, 'Mozilla Firefox 0.9.1', 'text', 1, 4, NULL, 'release--0.9.1', NULL, false, NULL, NULL, false, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--release--0.9.1', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, 2, NULL, NULL, NULL, NULL);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id) VALUES (12, 'Mozilla Firefox 0.9', 'text', 1, 4, NULL, 'release-0.9', NULL, false, NULL, NULL, false, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--release--0.9', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, 3, NULL, NULL, NULL, NULL);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id) VALUES (13, 'Mozilla Firefox 0.8', 'text', 1, 4, NULL, 'release-0.8', NULL, false, NULL, NULL, false, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--release--0.8', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id) VALUES (14, NULL, NULL, 24, 5, NULL, 'main', NULL, false, NULL, NULL, false, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id) VALUES (15, 'GNOME Terminal Mainline', 'Main branch of development for GNOME Terminal. Stable branches are based on that one.', 12, 6, NULL, 'main', NULL, false, 'http://example.com/gnome-terminal', NULL, false, 'http://example.com/gnome-terminal/main', NULL, 30, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id) VALUES (16, 'GNOME Terminal 2.6 Releases', 'Release branch of GNOME Terminal for the GNOME 2.6 environment.', 12, 6, NULL, '2.6', NULL, false, 'http://example.com/gnome-terminal/', NULL, false, 'http://example.com/gnome-terminal/2.6', NULL, 50, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id) VALUES (17, 'GNOME Terminal 2.4 Releases', 'Obsolete branch for GNOME 2.4 releases of GNOME Terminal.', 12, 6, NULL, '2.4', NULL, false, NULL, NULL, false, 'http://example.com/gnome-terminal/2.4', NULL, 80, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id) VALUES (18, 'Klingon support in GNOME Terminal', 'Experimental feature branch for developping and testing Klingon support in GNOME Terminal.', 12, 6, 12, 'klingon', NULL, false, 'http://trekkies.example.com/k12n', NULL, false, 'http://trekkies.example.com/gnome-terminal/klingon', NULL, 10, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id) VALUES (19, 'Slowing GNOME Terminal scrolling', 'Feature branch for slowing down the scrolling of text in GNOME Terminal.', 12, 6, 12, 'slowness', NULL, false, NULL, NULL, false, 'http://users.example.com/gnome-terminal/slowness', NULL, 70, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id) VALUES (20, 'Ubuntu Junk Code', 'Sample junk branch.', 12, NULL, 17, 'junk.dev', NULL, false, NULL, NULL, false, 'http://localhost:8000/a', NULL, 10, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id) VALUES (21, 'Junk Code Contributions', 'Contribute code to the junk branch.', 12, NULL, 12, 'junk.contrib', NULL, false, NULL, NULL, false, 'http://localhost:8000/b', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id) VALUES (22, 'Python twisted feature', 'Feature branch for twisted.', 7, NULL, 4, 'feature', NULL, false, NULL, NULL, false, 'http://not.launchpad.server.com/a-branch', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2005-03-09 15:45:00', 0, false, 'http://bazaar.launchpad.net/~user/+junk/feature', NULL, NULL, NULL, NULL, NULL);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id) VALUES (23, 'Another Python twisted feature', 'Another Feature branch for twisted.', 7, NULL, 4, 'feature2', NULL, false, NULL, NULL, false, 'http://whynot.launchpad.server.com/another-branch', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, 'http://bazaar.launchpad.net/~user/+junk/feature2', NULL, NULL, NULL, NULL, NULL);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id) VALUES (24, 'Launchpad support for Gnome Terminal', 'Add Launchpad support to Gnome Terminal', 57, 6, 57, 'launchpad', NULL, false, NULL, NULL, false, 'http://users.example.com/gnome-terminal/launchpad', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id) VALUES (25, NULL, NULL, 12, 6, NULL, 'pushed', NULL, false, NULL, NULL, false, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created) VALUES (1, 'Mozilla Firefox Mainline', 'text', 12, 4, 12, 'main', NULL, false, NULL, NULL, false, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--MAIN--0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL, '2006-10-16 18:31:42.98217');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created) VALUES (2, 'Mozilla Thunderbird Mainline', 'Bazaar import of the Mozilla Thunderbird CVS mainline.', 11, 8, 1, 'main', NULL, false, NULL, NULL, false, 'http://bazaar.example.com/thunderbird@arch.ubuntu.com/thunderbird--MAIN--0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2006-04-08 01:40:15.816029', 1, false, NULL, 4, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.042944');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created) VALUES (3, 'Python Twisted Trunk', 'Bazaar import of the Twisted SVN trunk.', 7, NULL, 3, 'trunk', NULL, false, NULL, NULL, false, 'http://bazaar.example.com/twisted@arch.ubuntu.com/twisted--trunk--0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.04419');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created) VALUES (4, 'Bugzila Mainline', 'text', 3, NULL, NULL, 'main', NULL, false, NULL, NULL, false, 'http://bazaar.example.com/bugzilla@arch.ubuntu.com/bugzila--MAIN--0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.045278');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created) VALUES (5, 'Arch Devel', 'text', 8, NULL, NULL, 'devel-1.0', NULL, false, NULL, NULL, false, 'http://bazaar.example.com/arch@arch.ubuntu.com/arch--devel--1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2006-04-08 22:20:14.973705', 9, false, NULL, NULL, 'I do not like Arch, so I am pretending it failed to mirror.', NULL, NULL, NULL, '2006-10-16 18:31:43.046996');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created) VALUES (6, 'Kiwi2 Mainline', 'text', 9, NULL, NULL, 'main', NULL, false, NULL, NULL, false, 'http://bazaar.example.com/kiwi2@arch.ubuntu.com/kiwi2--MAIN--0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.048164');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created) VALUES (7, 'Plone Trunk', 'text', 10, NULL, NULL, 'trunk', NULL, false, NULL, NULL, false, 'http://bazaar.example.com/plone@arch.ubuntu.com/plone--trunk--0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.049222');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created) VALUES (8, 'Evolution 2.0', 'text', 13, 5, NULL, '2.0', NULL, false, NULL, NULL, false, 'http://bazaar.example.com/gnome@arch.ubuntu.com/gnome--evolution--2.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.050317');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created) VALUES (9, 'Iso-codes 0.35', 'text', 13, 7, NULL, '0.35', NULL, false, NULL, NULL, false, 'http://bazaar.example.com/iso-codes@arch.ubuntu.com/iso-codes--iso-codes--0.35', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.051395');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created) VALUES (10, 'Mozilla Firefox 0.9.2', 'text', 1, 4, NULL, 'release-0.9.2', NULL, false, NULL, NULL, false, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--release--0.9.2', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, 1, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.052449');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created) VALUES (11, 'Mozilla Firefox 0.9.1', 'text', 1, 4, NULL, 'release--0.9.1', NULL, false, NULL, NULL, false, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--release--0.9.1', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, 2, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.053511');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created) VALUES (12, 'Mozilla Firefox 0.9', 'text', 1, 4, NULL, 'release-0.9', NULL, false, NULL, NULL, false, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--release--0.9', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, 3, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.054581');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created) VALUES (13, 'Mozilla Firefox 0.8', 'text', 1, 4, NULL, 'release-0.8', NULL, false, NULL, NULL, false, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--release--0.8', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.055661');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created) VALUES (14, NULL, NULL, 24, 5, NULL, 'main', NULL, false, NULL, NULL, false, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.056714');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created) VALUES (15, 'GNOME Terminal Mainline', 'Main branch of development for GNOME Terminal. Stable branches are based on that one.', 12, 6, NULL, 'main', NULL, false, 'http://example.com/gnome-terminal', NULL, false, 'http://example.com/gnome-terminal/main', NULL, 30, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.057682');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created) VALUES (16, 'GNOME Terminal 2.6 Releases', 'Release branch of GNOME Terminal for the GNOME 2.6 environment.', 12, 6, NULL, '2.6', NULL, false, 'http://example.com/gnome-terminal/', NULL, false, 'http://example.com/gnome-terminal/2.6', NULL, 50, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.058953');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created) VALUES (17, 'GNOME Terminal 2.4 Releases', 'Obsolete branch for GNOME 2.4 releases of GNOME Terminal.', 12, 6, NULL, '2.4', NULL, false, NULL, NULL, false, 'http://example.com/gnome-terminal/2.4', NULL, 80, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.060078');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created) VALUES (18, 'Klingon support in GNOME Terminal', 'Experimental feature branch for developping and testing Klingon support in GNOME Terminal.', 12, 6, 12, 'klingon', NULL, false, 'http://trekkies.example.com/k12n', NULL, false, 'http://trekkies.example.com/gnome-terminal/klingon', NULL, 10, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.061162');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created) VALUES (19, 'Slowing GNOME Terminal scrolling', 'Feature branch for slowing down the scrolling of text in GNOME Terminal.', 12, 6, 12, 'slowness', NULL, false, NULL, NULL, false, 'http://users.example.com/gnome-terminal/slowness', NULL, 70, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.062427');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created) VALUES (20, 'Ubuntu Junk Code', 'Sample junk branch.', 12, NULL, 17, 'junk.dev', NULL, false, NULL, NULL, false, 'http://localhost:8000/a', NULL, 10, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.06351');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created) VALUES (21, 'Junk Code Contributions', 'Contribute code to the junk branch.', 12, NULL, 12, 'junk.contrib', NULL, false, NULL, NULL, false, 'http://localhost:8000/b', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.064578');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created) VALUES (22, 'Python twisted feature', 'Feature branch for twisted.', 7, NULL, 4, 'feature', NULL, false, NULL, NULL, false, 'http://not.launchpad.server.com/a-branch', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2005-03-09 15:45:00', 0, false, 'http://bazaar.launchpad.net/~user/+junk/feature', NULL, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.065642');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created) VALUES (23, 'Another Python twisted feature', 'Another Feature branch for twisted.', 7, NULL, 4, 'feature2', NULL, false, NULL, NULL, false, 'http://whynot.launchpad.server.com/another-branch', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, 'http://bazaar.launchpad.net/~user/+junk/feature2', NULL, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.066804');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created) VALUES (24, 'Launchpad support for Gnome Terminal', 'Add Launchpad support to Gnome Terminal', 57, 6, 57, 'launchpad', NULL, false, NULL, NULL, false, 'http://users.example.com/gnome-terminal/launchpad', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.067922');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created) VALUES (25, NULL, NULL, 12, 6, NULL, 'pushed', NULL, false, NULL, NULL, false, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.06897');
 
 
 ALTER TABLE branch ENABLE TRIGGER ALL;
-
-
-ALTER TABLE branchlabel DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE branchlabel ENABLE TRIGGER ALL;
 
 
 ALTER TABLE branchmessage DISABLE TRIGGER ALL;
@@ -685,8 +669,8 @@ ALTER TABLE branchrelationship ENABLE TRIGGER ALL;
 
 ALTER TABLE branchsubscription DISABLE TRIGGER ALL;
 
-INSERT INTO branchsubscription (id, person, branch) VALUES (1, 12, 20);
-INSERT INTO branchsubscription (id, person, branch) VALUES (2, 12, 24);
+INSERT INTO branchsubscription (id, person, branch, date_created) VALUES (1, 12, 20, '2006-10-16 18:31:43.079375');
+INSERT INTO branchsubscription (id, person, branch, date_created) VALUES (2, 12, 24, '2006-10-16 18:31:43.080236');
 
 
 ALTER TABLE branchsubscription ENABLE TRIGGER ALL;
@@ -787,8 +771,8 @@ ALTER TABLE bugbranch ENABLE TRIGGER ALL;
 
 ALTER TABLE bugcve DISABLE TRIGGER ALL;
 
-INSERT INTO bugcve (id, bug, cve) VALUES (1, 1, 1);
-INSERT INTO bugcve (id, bug, cve) VALUES (2, 2, 2);
+INSERT INTO bugcve (id, bug, cve, date_created) VALUES (1, 1, 1, '2006-10-16 18:31:43.127783');
+INSERT INTO bugcve (id, bug, cve, date_created) VALUES (2, 2, 2, '2006-10-16 18:31:43.128996');
 
 
 ALTER TABLE bugcve ENABLE TRIGGER ALL;
@@ -799,13 +783,6 @@ ALTER TABLE bugexternalref DISABLE TRIGGER ALL;
 
 
 ALTER TABLE bugexternalref ENABLE TRIGGER ALL;
-
-
-ALTER TABLE buglabel DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE buglabel ENABLE TRIGGER ALL;
 
 
 ALTER TABLE bugmessage DISABLE TRIGGER ALL;
@@ -866,15 +843,15 @@ ALTER TABLE bugrelationship ENABLE TRIGGER ALL;
 
 ALTER TABLE bugsubscription DISABLE TRIGGER ALL;
 
-INSERT INTO bugsubscription (id, person, bug) VALUES (1, 11, 1);
-INSERT INTO bugsubscription (id, person, bug) VALUES (4, 12, 1);
-INSERT INTO bugsubscription (id, person, bug) VALUES (5, 11, 2);
-INSERT INTO bugsubscription (id, person, bug) VALUES (6, 16, 7);
-INSERT INTO bugsubscription (id, person, bug) VALUES (7, 12, 8);
-INSERT INTO bugsubscription (id, person, bug) VALUES (8, 12, 4);
-INSERT INTO bugsubscription (id, person, bug) VALUES (9, 16, 9);
-INSERT INTO bugsubscription (id, person, bug) VALUES (10, 12, 9);
-INSERT INTO bugsubscription (id, person, bug) VALUES (11, 16, 10);
+INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (1, 11, 1, '2006-10-16 18:31:43.154816');
+INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (4, 12, 1, '2006-10-16 18:31:43.156104');
+INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (5, 11, 2, '2006-10-16 18:31:43.156485');
+INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (6, 16, 7, '2006-10-16 18:31:43.156824');
+INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (7, 12, 8, '2006-10-16 18:31:43.157159');
+INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (8, 12, 4, '2006-10-16 18:31:43.157495');
+INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (9, 16, 9, '2006-10-16 18:31:43.15783');
+INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (10, 12, 9, '2006-10-16 18:31:43.158165');
+INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (11, 16, 10, '2006-10-16 18:31:43.158628');
 
 
 ALTER TABLE bugsubscription ENABLE TRIGGER ALL;
@@ -923,11 +900,11 @@ ALTER TABLE bugtask ENABLE TRIGGER ALL;
 
 ALTER TABLE bugtracker DISABLE TRIGGER ALL;
 
-INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails) VALUES (1, 1, 'mozilla.org', 'The Mozilla.org Bug Tracker', 'The Mozilla.org bug tracker is the grand-daddy of bugzillas. This is where Bugzilla was conceived, born and raised. This bugzilla instance covers all Mozilla products such as Firefox, Thunderbird and Bugzilla itself.', 'https://bugzilla.mozilla.org/', 12, 'Carrier pigeon only');
-INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails) VALUES (2, 1, 'gnome-bugzilla', 'GnomeGBug GTracker', 'This is the Gnome Bugzilla bug tracking system. It covers all the applications in the Gnome Desktop and Gnome Fifth Toe.', 'http://bugzilla.gnome.org/bugs', 16, 'Jeff Waugh, in his pants.');
-INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails) VALUES (3, 2, 'debbugs', 'Debian Bug tracker', 'Bug tracker for debian project.', 'http://bugs.debian.org', 1, NULL);
-INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails) VALUES (4, 1, 'ubuntu-bugzilla', 'The Ubuntu.com bugzilla', 'The Ubuntu.com bugzilla tracks bugs in all products Ubuntu supports, in the Canonical.com hosted websites and in Bazaar and the Arch supermirror', 'http://bugzilla.ubuntu.com/bugs/', 1, NULL);
-INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails) VALUES (5, 5, 'sf', 'SourceForge.net Tracker', 'SourceForge.net is an Open Source software development web site, hosting more than 100,000 projects.  This is the tracker used by most of those projects.', 'http://sourceforge.net/', 60, NULL);
+INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created) VALUES (1, 1, 'mozilla.org', 'The Mozilla.org Bug Tracker', 'The Mozilla.org bug tracker is the grand-daddy of bugzillas. This is where Bugzilla was conceived, born and raised. This bugzilla instance covers all Mozilla products such as Firefox, Thunderbird and Bugzilla itself.', 'https://bugzilla.mozilla.org/', 12, 'Carrier pigeon only', '2006-10-16 18:31:43.195685');
+INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created) VALUES (2, 1, 'gnome-bugzilla', 'GnomeGBug GTracker', 'This is the Gnome Bugzilla bug tracking system. It covers all the applications in the Gnome Desktop and Gnome Fifth Toe.', 'http://bugzilla.gnome.org/bugs', 16, 'Jeff Waugh, in his pants.', '2006-10-16 18:31:43.197325');
+INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created) VALUES (3, 2, 'debbugs', 'Debian Bug tracker', 'Bug tracker for debian project.', 'http://bugs.debian.org', 1, NULL, '2006-10-16 18:31:43.197881');
+INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created) VALUES (4, 1, 'ubuntu-bugzilla', 'The Ubuntu.com bugzilla', 'The Ubuntu.com bugzilla tracks bugs in all products Ubuntu supports, in the Canonical.com hosted websites and in Bazaar and the Arch supermirror', 'http://bugzilla.ubuntu.com/bugs/', 1, NULL, '2006-10-16 18:31:43.198413');
+INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created) VALUES (5, 5, 'sf', 'SourceForge.net Tracker', 'SourceForge.net is an Open Source software development web site, hosting more than 100,000 projects.  This is the tracker used by most of those projects.', 'http://sourceforge.net/', 60, NULL, '2006-10-16 18:31:43.19892');
 
 
 ALTER TABLE bugtracker ENABLE TRIGGER ALL;
@@ -974,7 +951,7 @@ ALTER TABLE build ENABLE TRIGGER ALL;
 
 ALTER TABLE builder DISABLE TRIGGER ALL;
 
-INSERT INTO builder (id, processor, name, title, description, "owner", speedindex, builderok, failnotes, "trusted", url, manual) VALUES (1, 1, 'bob', 'Bob The Builder', 'The default build-slave', 61, NULL, false, NULL, false, 'http://localhost:8221/', false);
+INSERT INTO builder (id, processor, name, title, description, "owner", speedindex, builderok, failnotes, "trusted", url, manual, date_created) VALUES (1, 1, 'bob', 'Bob The Builder', 'The default build-slave', 61, NULL, false, NULL, false, 'http://localhost:8221/', false, '2006-10-16 18:31:43.226724');
 
 
 ALTER TABLE builder ENABLE TRIGGER ALL;
@@ -991,9 +968,9 @@ ALTER TABLE buildqueue ENABLE TRIGGER ALL;
 
 ALTER TABLE calendar DISABLE TRIGGER ALL;
 
-INSERT INTO calendar (id, title, revision) VALUES (1, 'Sample Person''s Calendar', 0);
-INSERT INTO calendar (id, title, revision) VALUES (2, 'Foo Bar''s Calendar', 0);
-INSERT INTO calendar (id, title, revision) VALUES (3, 'Ubuntu Project Calendar', 0);
+INSERT INTO calendar (id, title, revision, date_created) VALUES (1, 'Sample Person''s Calendar', 0, '2006-10-16 18:31:43.235083');
+INSERT INTO calendar (id, title, revision, date_created) VALUES (2, 'Foo Bar''s Calendar', 0, '2006-10-16 18:31:43.236024');
+INSERT INTO calendar (id, title, revision, date_created) VALUES (3, 'Ubuntu Project Calendar', 0, '2006-10-16 18:31:43.236377');
 
 
 ALTER TABLE calendar ENABLE TRIGGER ALL;
@@ -1001,11 +978,11 @@ ALTER TABLE calendar ENABLE TRIGGER ALL;
 
 ALTER TABLE calendarevent DISABLE TRIGGER ALL;
 
-INSERT INTO calendarevent (id, uid, calendar, dtstart, duration, title, description, "location") VALUES (1, 'sample-id-1@launchpad.example.org', 1, '2005-01-03 08:00:00', '01:00:00', 'Event 1', 'Desc 1', 'Location');
-INSERT INTO calendarevent (id, uid, calendar, dtstart, duration, title, description, "location") VALUES (2, 'sample-id-2@launchpad.example.org', 1, '2005-01-03 10:00:00', '01:00:00', 'Event 2', 'Desc 2', 'Location');
-INSERT INTO calendarevent (id, uid, calendar, dtstart, duration, title, description, "location") VALUES (3, 'sample-id-3@launchpad.example.org', 1, '2005-01-04 08:00:00', '01:00:00', 'Event 1', 'Desc 1', 'Location');
-INSERT INTO calendarevent (id, uid, calendar, dtstart, duration, title, description, "location") VALUES (4, 'sample-id-4@launchpad.example.org', 2, '2005-01-04 08:00:00', '01:00:00', 'Foo Bar 1', 'Desc 1', 'Location');
-INSERT INTO calendarevent (id, uid, calendar, dtstart, duration, title, description, "location") VALUES (5, 'sample-id-5@launchpad.example.org', 3, '2004-12-06 08:00:00', '11 days 08:30:00', 'The Mataro Sessions', 'The Ubuntu conference in Mataro', 'Mataro, Spain');
+INSERT INTO calendarevent (id, uid, calendar, dtstart, duration, title, description, "location", date_created) VALUES (1, 'sample-id-1@launchpad.example.org', 1, '2005-01-03 08:00:00', '01:00:00', 'Event 1', 'Desc 1', 'Location', '2006-10-16 18:31:43.239035');
+INSERT INTO calendarevent (id, uid, calendar, dtstart, duration, title, description, "location", date_created) VALUES (2, 'sample-id-2@launchpad.example.org', 1, '2005-01-03 10:00:00', '01:00:00', 'Event 2', 'Desc 2', 'Location', '2006-10-16 18:31:43.240352');
+INSERT INTO calendarevent (id, uid, calendar, dtstart, duration, title, description, "location", date_created) VALUES (3, 'sample-id-3@launchpad.example.org', 1, '2005-01-04 08:00:00', '01:00:00', 'Event 1', 'Desc 1', 'Location', '2006-10-16 18:31:43.240824');
+INSERT INTO calendarevent (id, uid, calendar, dtstart, duration, title, description, "location", date_created) VALUES (4, 'sample-id-4@launchpad.example.org', 2, '2005-01-04 08:00:00', '01:00:00', 'Foo Bar 1', 'Desc 1', 'Location', '2006-10-16 18:31:43.241234');
+INSERT INTO calendarevent (id, uid, calendar, dtstart, duration, title, description, "location", date_created) VALUES (5, 'sample-id-5@launchpad.example.org', 3, '2004-12-06 08:00:00', '11 days 08:30:00', 'The Mataro Sessions', 'The Ubuntu conference in Mataro', 'Mataro, Spain', '2006-10-16 18:31:43.241649');
 
 
 ALTER TABLE calendarevent ENABLE TRIGGER ALL;
@@ -1013,11 +990,11 @@ ALTER TABLE calendarevent ENABLE TRIGGER ALL;
 
 ALTER TABLE calendarsubscription DISABLE TRIGGER ALL;
 
-INSERT INTO calendarsubscription (id, subject, "object", colour) VALUES (1, 1, 1, '#c0d0ff');
-INSERT INTO calendarsubscription (id, subject, "object", colour) VALUES (2, 1, 2, '#c0ffc8');
-INSERT INTO calendarsubscription (id, subject, "object", colour) VALUES (3, 1, 3, '#faffd2');
-INSERT INTO calendarsubscription (id, subject, "object", colour) VALUES (4, 2, 2, '#c0ffc8');
-INSERT INTO calendarsubscription (id, subject, "object", colour) VALUES (5, 2, 1, '#c0d0ff');
+INSERT INTO calendarsubscription (id, subject, "object", colour, date_created) VALUES (1, 1, 1, '#c0d0ff', '2006-10-16 18:31:43.243923');
+INSERT INTO calendarsubscription (id, subject, "object", colour, date_created) VALUES (2, 1, 2, '#c0ffc8', '2006-10-16 18:31:43.245031');
+INSERT INTO calendarsubscription (id, subject, "object", colour, date_created) VALUES (3, 1, 3, '#faffd2', '2006-10-16 18:31:43.245392');
+INSERT INTO calendarsubscription (id, subject, "object", colour, date_created) VALUES (4, 2, 2, '#c0ffc8', '2006-10-16 18:31:43.245749');
+INSERT INTO calendarsubscription (id, subject, "object", colour, date_created) VALUES (5, 2, 1, '#c0d0ff', '2006-10-16 18:31:43.246094');
 
 
 ALTER TABLE calendarsubscription ENABLE TRIGGER ALL;
@@ -1036,18 +1013,18 @@ ALTER TABLE component ENABLE TRIGGER ALL;
 
 ALTER TABLE componentselection DISABLE TRIGGER ALL;
 
-INSERT INTO componentselection (id, distrorelease, component) VALUES (1, 3, 1);
-INSERT INTO componentselection (id, distrorelease, component) VALUES (2, 10, 1);
-INSERT INTO componentselection (id, distrorelease, component) VALUES (3, 10, 2);
-INSERT INTO componentselection (id, distrorelease, component) VALUES (4, 10, 3);
-INSERT INTO componentselection (id, distrorelease, component) VALUES (5, 10, 4);
-INSERT INTO componentselection (id, distrorelease, component) VALUES (6, 11, 1);
-INSERT INTO componentselection (id, distrorelease, component) VALUES (7, 11, 2);
-INSERT INTO componentselection (id, distrorelease, component) VALUES (8, 11, 3);
-INSERT INTO componentselection (id, distrorelease, component) VALUES (9, 11, 4);
-INSERT INTO componentselection (id, distrorelease, component) VALUES (10, 3, 2);
-INSERT INTO componentselection (id, distrorelease, component) VALUES (11, 1, 1);
-INSERT INTO componentselection (id, distrorelease, component) VALUES (12, 1, 3);
+INSERT INTO componentselection (id, distrorelease, component, date_created) VALUES (1, 3, 1, '2006-10-16 18:31:43.257508');
+INSERT INTO componentselection (id, distrorelease, component, date_created) VALUES (2, 10, 1, '2006-10-16 18:31:43.258691');
+INSERT INTO componentselection (id, distrorelease, component, date_created) VALUES (3, 10, 2, '2006-10-16 18:31:43.25904');
+INSERT INTO componentselection (id, distrorelease, component, date_created) VALUES (4, 10, 3, '2006-10-16 18:31:43.259373');
+INSERT INTO componentselection (id, distrorelease, component, date_created) VALUES (5, 10, 4, '2006-10-16 18:31:43.259704');
+INSERT INTO componentselection (id, distrorelease, component, date_created) VALUES (6, 11, 1, '2006-10-16 18:31:43.260036');
+INSERT INTO componentselection (id, distrorelease, component, date_created) VALUES (7, 11, 2, '2006-10-16 18:31:43.260392');
+INSERT INTO componentselection (id, distrorelease, component, date_created) VALUES (8, 11, 3, '2006-10-16 18:31:43.260723');
+INSERT INTO componentselection (id, distrorelease, component, date_created) VALUES (9, 11, 4, '2006-10-16 18:31:43.261054');
+INSERT INTO componentselection (id, distrorelease, component, date_created) VALUES (10, 3, 2, '2006-10-16 18:31:43.261385');
+INSERT INTO componentselection (id, distrorelease, component, date_created) VALUES (11, 1, 1, '2006-10-16 18:31:43.261717');
+INSERT INTO componentselection (id, distrorelease, component, date_created) VALUES (12, 1, 3, '2006-10-16 18:31:43.262049');
 
 
 ALTER TABLE componentselection ENABLE TRIGGER ALL;
@@ -1333,44 +1310,44 @@ ALTER TABLE cve ENABLE TRIGGER ALL;
 
 ALTER TABLE cvereference DISABLE TRIGGER ALL;
 
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (1, 1, 'NAI', 'Known problem #234234', 'http://nai.com/testing/foobar/');
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (2, 1, 'XP', 'Maximum chicken', 'http://xpalidocious.com/bugs/1234');
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (3, 1, 'TD', 'Oops-o-matic', 'http://bodacious.com/issue883');
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (4, 2, 'FCW', 'Wanda', 'http://wigglet.net/trac/3452');
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (5, 2, 'MSKB', '23445', NULL);
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (6, 2, 'MSKB', '12345 Known problem with Windows XP and Mac OSX. Do not use. Ubuntu rocks.', NULL);
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (7, 3, 'BUGTRAQ', '20050825 Astaro Security Linux 6.0 - HTTP CONNECT Access Localhost Weakness', 'http://marc.theaimsgroup.com/?l=bugtraq&m=112501186602731&w=2');
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (8, 3, 'XF', 'astaro-proxy-information-disclosure(22024)', 'http://xforce.iss.net/xforce/xfdb/22024');
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (9, 4, 'BUGTRAQ', '20050825 Astaro Security Linux 6.0 - HTTP CONNECT Access Localhost Weakness', 'http://marc.theaimsgroup.com/?l=bugtraq&m=112501186602731&w=2');
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (10, 5, 'BUGTRAQ', '20050826 AWstats Path Disclosure Vulnerability', 'http://marc.theaimsgroup.com/?l=bugtraq&m=112510261425888&w=2');
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (11, 6, 'BUGTRAQ', '20050826 Simple PHP Blog File Upload and User Credentials Exposure Vulnerabilities', 'http://marc.theaimsgroup.com/?l=bugtraq&m=112511159821143&w=2');
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (12, 6, 'BID', '14667', 'http://www.securityfocus.com/bid/14667');
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (13, 6, 'SECUNIA', '16598', 'http://secunia.com/advisories/16598/');
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (14, 6, 'XF', 'simple-php-uploadimgcgi-file-upload(22012)', 'http://xforce.iss.net/xforce/xfdb/22012');
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (15, 7, 'BUGTRAQ', '20050826 Multiple PHP Images Galleries EXIF Metadata XSS Vulnerabilities', 'http://marc.theaimsgroup.com/?l=bugtraq&m=112511025414488&w=2');
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (16, 7, 'CONFIRM', 'http://sourceforge.net/project/shownotes.php?release_id=352576', 'http://sourceforge.net/project/shownotes.php?release_id=352576');
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (17, 7, 'BID', '14668', 'http://www.securityfocus.com/bid/14668');
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (18, 7, 'SECTRACK', '1014800', 'http://securitytracker.com/id?1014800');
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (19, 7, 'SECUNIA', '16594', 'http://secunia.com/advisories/16594/');
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (20, 7, 'XF', 'photopost-exif-xss(22020)', 'http://xforce.iss.net/xforce/xfdb/22020');
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (21, 8, 'BUGTRAQ', '20050826 Multiple PHP Images Galleries EXIF Metadata XSS Vulnerabilities', 'http://marc.theaimsgroup.com/?l=bugtraq&m=112511025414488&w=2');
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (22, 8, 'MISC', 'http://cedri.cc/advisories/EXIF_XSS.txt', 'http://cedri.cc/advisories/EXIF_XSS.txt');
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (23, 8, 'BID', '14669', 'http://www.securityfocus.com/bid/14669');
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (24, 8, 'SECUNIA', '16595', 'http://secunia.com/advisories/16595/');
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (25, 8, 'SECTRACK', '1014801', 'http://securitytracker.com/id?1014801');
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (26, 8, 'XF', 'photopost-exif-xss(22020)', 'http://xforce.iss.net/xforce/xfdb/22020');
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (27, 9, 'BUGTRAQ', '20050826 Multiple PHP Images Galleries EXIF Metadata XSS Vulnerabilities', 'http://marc.theaimsgroup.com/?l=bugtraq&m=112511025414488&w=2');
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (28, 9, 'MISC', 'http://cedri.cc/advisories/EXIF_XSS.txt', 'http://cedri.cc/advisories/EXIF_XSS.txt');
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (29, 9, 'BID', '14670', 'http://www.securityfocus.com/bid/14670');
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (30, 9, 'SECTRACK', '1014802', 'http://securitytracker.com/id?1014802');
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (31, 9, 'SECUNIA', '16596', 'http://secunia.com/advisories/16596/');
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (32, 9, 'XF', 'photopost-exif-xss(22020)', 'http://xforce.iss.net/xforce/xfdb/22020');
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (33, 10, 'BUGTRAQ', '20050826 Multiple PHP Images Galleries EXIF Metadata XSS Vulnerabilities', 'http://marc.theaimsgroup.com/?l=bugtraq&m=112511025414488&w=2');
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (34, 10, 'MISC', 'http://cedri.cc/advisories/EXIF_XSS.txt', 'http://cedri.cc/advisories/EXIF_XSS.txt');
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (35, 10, 'BID', '14671', 'http://www.securityfocus.com/bid/14671');
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (36, 10, 'SECTRACK', '1014803', 'http://securitytracker.com/id?1014803');
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (37, 10, 'SECUNIA', '16597', 'http://secunia.com/advisories/16597/');
-INSERT INTO cvereference (id, cve, source, content, url) VALUES (38, 10, 'XF', 'photopost-exif-xss(22020)', 'http://xforce.iss.net/xforce/xfdb/22020');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (1, 1, 'NAI', 'Known problem #234234', 'http://nai.com/testing/foobar/', '2006-10-16 18:31:43.386902');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (2, 1, 'XP', 'Maximum chicken', 'http://xpalidocious.com/bugs/1234', '2006-10-16 18:31:43.387961');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (3, 1, 'TD', 'Oops-o-matic', 'http://bodacious.com/issue883', '2006-10-16 18:31:43.388328');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (4, 2, 'FCW', 'Wanda', 'http://wigglet.net/trac/3452', '2006-10-16 18:31:43.388683');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (5, 2, 'MSKB', '23445', NULL, '2006-10-16 18:31:43.389033');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (6, 2, 'MSKB', '12345 Known problem with Windows XP and Mac OSX. Do not use. Ubuntu rocks.', NULL, '2006-10-16 18:31:43.389388');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (7, 3, 'BUGTRAQ', '20050825 Astaro Security Linux 6.0 - HTTP CONNECT Access Localhost Weakness', 'http://marc.theaimsgroup.com/?l=bugtraq&m=112501186602731&w=2', '2006-10-16 18:31:43.389749');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (8, 3, 'XF', 'astaro-proxy-information-disclosure(22024)', 'http://xforce.iss.net/xforce/xfdb/22024', '2006-10-16 18:31:43.390111');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (9, 4, 'BUGTRAQ', '20050825 Astaro Security Linux 6.0 - HTTP CONNECT Access Localhost Weakness', 'http://marc.theaimsgroup.com/?l=bugtraq&m=112501186602731&w=2', '2006-10-16 18:31:43.390508');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (10, 5, 'BUGTRAQ', '20050826 AWstats Path Disclosure Vulnerability', 'http://marc.theaimsgroup.com/?l=bugtraq&m=112510261425888&w=2', '2006-10-16 18:31:43.390873');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (11, 6, 'BUGTRAQ', '20050826 Simple PHP Blog File Upload and User Credentials Exposure Vulnerabilities', 'http://marc.theaimsgroup.com/?l=bugtraq&m=112511159821143&w=2', '2006-10-16 18:31:43.391236');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (12, 6, 'BID', '14667', 'http://www.securityfocus.com/bid/14667', '2006-10-16 18:31:43.391597');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (13, 6, 'SECUNIA', '16598', 'http://secunia.com/advisories/16598/', '2006-10-16 18:31:43.391961');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (14, 6, 'XF', 'simple-php-uploadimgcgi-file-upload(22012)', 'http://xforce.iss.net/xforce/xfdb/22012', '2006-10-16 18:31:43.392317');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (15, 7, 'BUGTRAQ', '20050826 Multiple PHP Images Galleries EXIF Metadata XSS Vulnerabilities', 'http://marc.theaimsgroup.com/?l=bugtraq&m=112511025414488&w=2', '2006-10-16 18:31:43.392698');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (16, 7, 'CONFIRM', 'http://sourceforge.net/project/shownotes.php?release_id=352576', 'http://sourceforge.net/project/shownotes.php?release_id=352576', '2006-10-16 18:31:43.393062');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (17, 7, 'BID', '14668', 'http://www.securityfocus.com/bid/14668', '2006-10-16 18:31:43.393422');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (18, 7, 'SECTRACK', '1014800', 'http://securitytracker.com/id?1014800', '2006-10-16 18:31:43.393776');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (19, 7, 'SECUNIA', '16594', 'http://secunia.com/advisories/16594/', '2006-10-16 18:31:43.39413');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (20, 7, 'XF', 'photopost-exif-xss(22020)', 'http://xforce.iss.net/xforce/xfdb/22020', '2006-10-16 18:31:43.394927');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (21, 8, 'BUGTRAQ', '20050826 Multiple PHP Images Galleries EXIF Metadata XSS Vulnerabilities', 'http://marc.theaimsgroup.com/?l=bugtraq&m=112511025414488&w=2', '2006-10-16 18:31:43.395292');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (22, 8, 'MISC', 'http://cedri.cc/advisories/EXIF_XSS.txt', 'http://cedri.cc/advisories/EXIF_XSS.txt', '2006-10-16 18:31:43.395655');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (23, 8, 'BID', '14669', 'http://www.securityfocus.com/bid/14669', '2006-10-16 18:31:43.396011');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (24, 8, 'SECUNIA', '16595', 'http://secunia.com/advisories/16595/', '2006-10-16 18:31:43.396366');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (25, 8, 'SECTRACK', '1014801', 'http://securitytracker.com/id?1014801', '2006-10-16 18:31:43.39672');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (26, 8, 'XF', 'photopost-exif-xss(22020)', 'http://xforce.iss.net/xforce/xfdb/22020', '2006-10-16 18:31:43.397075');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (27, 9, 'BUGTRAQ', '20050826 Multiple PHP Images Galleries EXIF Metadata XSS Vulnerabilities', 'http://marc.theaimsgroup.com/?l=bugtraq&m=112511025414488&w=2', '2006-10-16 18:31:43.397434');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (28, 9, 'MISC', 'http://cedri.cc/advisories/EXIF_XSS.txt', 'http://cedri.cc/advisories/EXIF_XSS.txt', '2006-10-16 18:31:43.397796');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (29, 9, 'BID', '14670', 'http://www.securityfocus.com/bid/14670', '2006-10-16 18:31:43.398152');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (30, 9, 'SECTRACK', '1014802', 'http://securitytracker.com/id?1014802', '2006-10-16 18:31:43.398618');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (31, 9, 'SECUNIA', '16596', 'http://secunia.com/advisories/16596/', '2006-10-16 18:31:43.398973');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (32, 9, 'XF', 'photopost-exif-xss(22020)', 'http://xforce.iss.net/xforce/xfdb/22020', '2006-10-16 18:31:43.39935');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (33, 10, 'BUGTRAQ', '20050826 Multiple PHP Images Galleries EXIF Metadata XSS Vulnerabilities', 'http://marc.theaimsgroup.com/?l=bugtraq&m=112511025414488&w=2', '2006-10-16 18:31:43.39971');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (34, 10, 'MISC', 'http://cedri.cc/advisories/EXIF_XSS.txt', 'http://cedri.cc/advisories/EXIF_XSS.txt', '2006-10-16 18:31:43.400095');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (35, 10, 'BID', '14671', 'http://www.securityfocus.com/bid/14671', '2006-10-16 18:31:43.400452');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (36, 10, 'SECTRACK', '1014803', 'http://securitytracker.com/id?1014803', '2006-10-16 18:31:43.400807');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (37, 10, 'SECUNIA', '16597', 'http://secunia.com/advisories/16597/', '2006-10-16 18:31:43.401162');
+INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (38, 10, 'XF', 'photopost-exif-xss(22020)', 'http://xforce.iss.net/xforce/xfdb/22020', '2006-10-16 18:31:43.401526');
 
 
 ALTER TABLE cvereference ENABLE TRIGGER ALL;
@@ -1387,7 +1364,7 @@ ALTER TABLE developmentmanifest ENABLE TRIGGER ALL;
 
 ALTER TABLE distribution DISABLE TRIGGER ALL;
 
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender) VALUES (1, 'ubuntu', 'Ubuntu Linux', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 'ubuntulinux.org', 17, '[publishing]
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created) VALUES (1, 'ubuntu', 'Ubuntu Linux', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 'ubuntulinux.org', 17, '[publishing]
 pendingremovalduration=5
 root=/var/tmp/archive
 archiveroot=/var/tmp/archive/ubuntu
@@ -1396,21 +1373,21 @@ distsroot=/var/tmp/archive/ubuntu/dists
 overrideroot=/var/tmp/archive/ubuntu-overrides
 cacheroot=/var/tmp/archive/ubuntu-cache
 miscroot=/var/tmp/archive/ubuntu-misc
-', 'Ubuntu', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 17, NULL, 1, NULL, true, true, NULL, NULL, 3, 59, NULL, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender) VALUES (2, 'redhat', 'Redhat Advanced Server', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 'redhat.com', 1, NULL, 'Red Hat', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 1, NULL, 1, NULL, false, false, NULL, 8, NULL, 1, NULL, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender) VALUES (3, 'debian', 'Debian GNU/Linux', 'Debian GNU/Linux is
+', 'Ubuntu', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 17, NULL, 1, NULL, true, true, NULL, NULL, 3, 59, NULL, NULL, '2006-10-16 18:31:43.415195');
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created) VALUES (2, 'redhat', 'Redhat Advanced Server', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 'redhat.com', 1, NULL, 'Red Hat', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 1, NULL, 1, NULL, false, false, NULL, 8, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.417928');
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created) VALUES (3, 'debian', 'Debian GNU/Linux', 'Debian GNU/Linux is
 a non commercial distribution of a GNU/Linux Operating System for many
 platforms.', 'debian.org', 1, NULL, 'Debian', 'Debian GNU/Linux is
 a non commercial distribution of a GNU/Linux Operating System for many
-platforms.', 1, NULL, 1, NULL, false, false, NULL, NULL, NULL, 1, NULL, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender) VALUES (4, 'gentoo', 'The Gentoo Linux', 'Gentoo is a very
+platforms.', 1, NULL, 1, NULL, false, false, NULL, NULL, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.418942');
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created) VALUES (4, 'gentoo', 'The Gentoo Linux', 'Gentoo is a very
 customizeable GNU/Linux Distribution that is designed to let you build every
-single package yourself, with your own preferences.', 'gentoo.org', 1, NULL, 'Gentoo', 'Gentoo is a very customizeable GNU/Linux Distribution that is designed to let you build every single package yourself, with your own preferences.', 1, NULL, 1, NULL, true, false, NULL, NULL, NULL, 1, NULL, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender) VALUES (5, 'kubuntu', 'Kubuntu - Free KDE-based Linux', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
+single package yourself, with your own preferences.', 'gentoo.org', 1, NULL, 'Gentoo', 'Gentoo is a very customizeable GNU/Linux Distribution that is designed to let you build every single package yourself, with your own preferences.', 1, NULL, 1, NULL, true, false, NULL, NULL, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.41974');
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created) VALUES (5, 'kubuntu', 'Kubuntu - Free KDE-based Linux', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
 Environment as its default desktop after install.', 'kubuntu.org', 1, NULL, 'Kubuntu', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
-Environment as its default desktop after install.', 1, NULL, 1, NULL, false, false, NULL, 8, NULL, 1, NULL, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender) VALUES (7, 'guadalinex', 'GuadaLinex: Linux for Andalucia', 'GuadaLinex is based on Ubuntu and adds full support for applications specific to the local environment in Andalucia.', 'guadalinex.es', 4, NULL, 'GuadaLinex', 'The GuadaLinex team produces a high quality linux for the Andalucian marketplace.', 32, NULL, 1, NULL, false, false, NULL, NULL, NULL, 4, NULL, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender) VALUES (8, 'ubuntutest', 'Ubuntu Test', 'Ubuntu Test', 'ubuntulinux.org', 17, '[publishing]
+Environment as its default desktop after install.', 1, NULL, 1, NULL, false, false, NULL, 8, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.420551');
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created) VALUES (7, 'guadalinex', 'GuadaLinex: Linux for Andalucia', 'GuadaLinex is based on Ubuntu and adds full support for applications specific to the local environment in Andalucia.', 'guadalinex.es', 4, NULL, 'GuadaLinex', 'The GuadaLinex team produces a high quality linux for the Andalucian marketplace.', 32, NULL, 1, NULL, false, false, NULL, NULL, NULL, 4, NULL, NULL, '2006-10-16 18:31:43.421329');
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created) VALUES (8, 'ubuntutest', 'Ubuntu Test', 'Ubuntu Test', 'ubuntulinux.org', 17, '[publishing]
 pendingremovalduration=5
 root=/var/tmp/archive
 archiveroot=/var/tmp/archive/ubuntutest
@@ -1419,7 +1396,7 @@ distsroot=/var/tmp/archive/ubuntutest/dists
 overrideroot=/var/tmp/archive/ubuntutest-overrides
 cacheroot=/var/tmp/archive/ubuntutest-cache
 miscroot=/var/tmp/archive/ubuntutest-misc
-', 'ubuntutest', 'Ubuntu Test summary', 17, NULL, 1, NULL, false, false, NULL, NULL, NULL, 17, NULL, NULL);
+', 'ubuntutest', 'Ubuntu Test summary', 17, NULL, 1, NULL, false, false, NULL, NULL, NULL, 17, NULL, NULL, '2006-10-16 18:31:43.422162');
 
 
 ALTER TABLE distribution ENABLE TRIGGER ALL;
@@ -1427,7 +1404,7 @@ ALTER TABLE distribution ENABLE TRIGGER ALL;
 
 ALTER TABLE distributionbounty DISABLE TRIGGER ALL;
 
-INSERT INTO distributionbounty (id, bounty, distribution) VALUES (1, 1, 1);
+INSERT INTO distributionbounty (id, bounty, distribution, date_created) VALUES (1, 1, 1, '2006-10-16 18:31:43.430161');
 
 
 ALTER TABLE distributionbounty ENABLE TRIGGER ALL;
@@ -1435,13 +1412,13 @@ ALTER TABLE distributionbounty ENABLE TRIGGER ALL;
 
 ALTER TABLE distributionmirror DISABLE TRIGGER ALL;
 
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, file_list, official_candidate, official_approved, enabled, pulse_type, pulse_source) VALUES (1, 1, 'archive-mirror', 'http://localhost:11375/valid-mirror', NULL, NULL, NULL, NULL, 1, 1, 1, 1, NULL, true, true, true, 2, NULL);
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, file_list, official_candidate, official_approved, enabled, pulse_type, pulse_source) VALUES (2, 1, 'invalid-mirror', 'http://localhost:11375/invalid-mirror', NULL, NULL, NULL, NULL, 16, 5, 32, 2, NULL, true, false, true, 2, NULL);
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, file_list, official_candidate, official_approved, enabled, pulse_type, pulse_source) VALUES (3, 1, 'unreachable-mirror', 'http://localhost:11375/timeout', NULL, NULL, NULL, NULL, 16, 3, 32, 2, NULL, true, true, true, 2, NULL);
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, file_list, official_candidate, official_approved, enabled, pulse_type, pulse_source) VALUES (4, 1, 'archive-404-mirror', 'http://localhost:11375/archive-mirror/', NULL, NULL, NULL, NULL, 16, 5, 32, 1, NULL, true, true, true, 2, NULL);
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, file_list, official_candidate, official_approved, enabled, pulse_type, pulse_source) VALUES (5, 1, 'releases-mirror', 'http://localhost:11375/valid-mirror/releases', NULL, NULL, NULL, NULL, 16, 5, 32, 2, NULL, true, true, true, 2, NULL);
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, file_list, official_candidate, official_approved, enabled, pulse_type, pulse_source) VALUES (6, 1, 'releases-mirror2', 'http://localhost:11375/valid-mirror/releases2/', NULL, NULL, NULL, NULL, 16, 5, 82, 2, NULL, true, true, true, 2, NULL);
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, file_list, official_candidate, official_approved, enabled, pulse_type, pulse_source) VALUES (7, 1, 'archive-mirror2', 'http://localhost:11375/valid-mirror2/', NULL, NULL, NULL, NULL, 1, 1, 9, 1, NULL, true, true, true, 2, NULL);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created) VALUES (1, 1, 'archive-mirror', 'http://localhost:11375/valid-mirror', NULL, NULL, NULL, NULL, 1, 1, 1, 1, true, true, true, '2006-10-16 18:31:43.434567');
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created) VALUES (2, 1, 'invalid-mirror', 'http://localhost:11375/invalid-mirror', NULL, NULL, NULL, NULL, 16, 5, 32, 2, true, false, true, '2006-10-16 18:31:43.436833');
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created) VALUES (3, 1, 'unreachable-mirror', 'http://localhost:11375/timeout', NULL, NULL, NULL, NULL, 16, 3, 32, 2, true, true, true, '2006-10-16 18:31:43.437635');
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created) VALUES (4, 1, 'archive-404-mirror', 'http://localhost:11375/archive-mirror/', NULL, NULL, NULL, NULL, 16, 5, 32, 1, true, true, true, '2006-10-16 18:31:43.438573');
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created) VALUES (5, 1, 'releases-mirror', 'http://localhost:11375/valid-mirror/releases', NULL, NULL, NULL, NULL, 16, 5, 32, 2, true, true, true, '2006-10-16 18:31:43.439336');
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created) VALUES (6, 1, 'releases-mirror2', 'http://localhost:11375/valid-mirror/releases2/', NULL, NULL, NULL, NULL, 16, 5, 82, 2, true, true, true, '2006-10-16 18:31:43.440079');
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created) VALUES (7, 1, 'archive-mirror2', 'http://localhost:11375/valid-mirror2/', NULL, NULL, NULL, NULL, 1, 1, 9, 1, true, true, true, '2006-10-16 18:31:43.440832');
 
 
 ALTER TABLE distributionmirror ENABLE TRIGGER ALL;
@@ -1465,14 +1442,14 @@ ALTER TABLE distributionsourcepackagecache ENABLE TRIGGER ALL;
 
 ALTER TABLE distroarchrelease DISABLE TRIGGER ALL;
 
-INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (1, 1, 1, 'i386', 1, true, 1);
-INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (6, 3, 1, 'i386', 1, true, 1);
-INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (7, 6, 1, 'i386', 1, true, 0);
-INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (8, 10, 1, 'i386', 1, true, 0);
-INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (9, 13, 1, 'i386', 1, true, 0);
-INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (10, 13, 3, 'amd64', 1, true, 0);
-INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (11, 3, 4, 'hppa', 1, false, 0);
-INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (12, 1, 4, 'hppa', 1, false, 0);
+INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count, date_created) VALUES (1, 1, 1, 'i386', 1, true, 1, '2006-10-16 18:31:43.454475');
+INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count, date_created) VALUES (6, 3, 1, 'i386', 1, true, 1, '2006-10-16 18:31:43.456532');
+INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count, date_created) VALUES (7, 6, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457028');
+INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count, date_created) VALUES (8, 10, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457484');
+INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count, date_created) VALUES (9, 13, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457938');
+INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count, date_created) VALUES (10, 13, 3, 'amd64', 1, true, 0, '2006-10-16 18:31:43.458434');
+INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count, date_created) VALUES (11, 3, 4, 'hppa', 1, false, 0, '2006-10-16 18:31:43.458892');
+INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count, date_created) VALUES (12, 1, 4, 'hppa', 1, false, 0, '2006-10-16 18:31:43.459349');
 
 
 ALTER TABLE distroarchrelease ENABLE TRIGGER ALL;
@@ -1480,10 +1457,10 @@ ALTER TABLE distroarchrelease ENABLE TRIGGER ALL;
 
 ALTER TABLE distrocomponentuploader DISABLE TRIGGER ALL;
 
-INSERT INTO distrocomponentuploader (id, distribution, component, uploader) VALUES (1, 1, 1, 17);
-INSERT INTO distrocomponentuploader (id, distribution, component, uploader) VALUES (3, 1, 2, 17);
-INSERT INTO distrocomponentuploader (id, distribution, component, uploader) VALUES (4, 1, 3, 17);
-INSERT INTO distrocomponentuploader (id, distribution, component, uploader) VALUES (5, 8, 1, 17);
+INSERT INTO distrocomponentuploader (id, distribution, component, uploader, date_created) VALUES (1, 1, 1, 17, '2006-10-16 18:31:43.463125');
+INSERT INTO distrocomponentuploader (id, distribution, component, uploader, date_created) VALUES (3, 1, 2, 17, '2006-10-16 18:31:43.46438');
+INSERT INTO distrocomponentuploader (id, distribution, component, uploader, date_created) VALUES (4, 1, 3, 17, '2006-10-16 18:31:43.464753');
+INSERT INTO distrocomponentuploader (id, distribution, component, uploader, date_created) VALUES (5, 8, 1, 17, '2006-10-16 18:31:43.465111');
 
 
 ALTER TABLE distrocomponentuploader ENABLE TRIGGER ALL;
@@ -1491,26 +1468,26 @@ ALTER TABLE distrocomponentuploader ENABLE TRIGGER ALL;
 
 ALTER TABLE distrorelease DISABLE TRIGGER ALL;
 
-INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver) VALUES (1, 1, 'warty', 'The Warty Warthog Release', 'Warty was the first stable release of Ubuntu. Key feature goals included releasing on time, with the latest version of the Gnome Desktop Environment, and the creation of all the infrastructure required to manage Ubuntu itself. Warty includes excellent support for Python, with most of the widely used Python libraries installed by default.', '4.10', 4, '2004-08-20 00:00:00', NULL, 17, NULL, 'Warty is the first release of Ubuntu, with a planned release date of October 2004.', 'Warty', NULL, 0, 1, NULL, 1, 3, NULL);
-INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver) VALUES (2, 2, 'six', 'Six Six Six', 'some text to describe the whole 666 release of RH', '6.0.1', 4, '2004-03-21 00:00:00', NULL, 8, NULL, 'some text to describe the whole 666 release of RH', 'Six', NULL, 0, NULL, NULL, 0, 0, NULL);
-INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver) VALUES (3, 1, 'hoary', 'The Hoary Hedgehog Release', 'Hoary is the second release of Ubuntu. Key feature goals include the integration of Hoary with the Launchpad for bugs and translation information, as well as Gnome 2.10 and the X.org window system.', '5.04', 2, '2004-08-25 00:00:00', 1, 1, NULL, 'Hoary is the second released of Ubuntu, with release planned for April 2005.', 'Hoary', NULL, 94, 6, NULL, 1, 4, NULL);
-INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver) VALUES (4, 2, '7.0', 'Seven', 'The release that we would not expect', '7.0.1', 3, '2004-04-01 00:00:00', 2, 7, NULL, 'The release that we would not expect', '7.0', NULL, 0, NULL, NULL, 0, 0, NULL);
-INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver) VALUES (5, 1, 'grumpy', 'The Grumpy Groundhog Release', 'Grumpy, the third release of Ubuntu Linux, is not yet in active development. This information is purely a placeholder.', '5.10', 1, '2004-08-29 00:00:00', 1, 1, NULL, 'Grumpy is the third release of Ubuntu, planned for October 2005.', 'Grumpy', NULL, 0, NULL, NULL, 0, 0, NULL);
-INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver) VALUES (6, 3, 'woody', 'WOODY', 'WOODY is the current stable verison of Debian GNU/Linux', '3.0', 4, '2003-01-01 00:00:00', NULL, 2, NULL, 'WOODY is the current stable verison of Debian GNU/Linux', 'Woody', NULL, 0, NULL, NULL, 0, 0, NULL);
-INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver) VALUES (7, 3, 'sarge', 'Sarge', 'Sarge is the FROZEN unstable version of Debian GNU/Linux.', '3.1', 3, '2004-09-29 00:00:00', 6, 5, NULL, 'Sarge is the FROZEN unstable version of Debian GNU/Linux.', 'Sarge', NULL, 0, NULL, NULL, 0, 0, 6);
-INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver) VALUES (8, 3, 'sid', 'Sid', 'Sid is the CRAZY unstable version of Debian GNU/Linux.', '3.2', 1, '2004-12-29 00:00:00', 6, 6, NULL, 'Sid is the CRAZY unstable version of Debian GNU/Linux.', 'Sid', NULL, 0, NULL, NULL, 0, 1, NULL);
-INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver) VALUES (9, 7, '2k5', 'Guada 2005', 'This release places extra emphasis on usability and installability. The installer is adapted from Ubuntu to assume your country, language, keyboard and time zone preference, thus ensuring that installs ask the minimum number of questions possible.', '2005', 2, NULL, 3, 4, NULL, 'Guada 2005 is a rapid-install version of
-Ubuntu Hoary for the Andalucian marketplace.', 'Guada2005', NULL, 0, NULL, NULL, 0, 0, NULL);
-INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver) VALUES (10, 1, 'breezy-autotest', 'Breezy Badger Autotest', 'Autotest version of Breezy', '6.6.6', 1, '2005-12-01 10:00:00', 3, 1, '[publishing]
+INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created) VALUES (1, 1, 'warty', 'The Warty Warthog Release', 'Warty was the first stable release of Ubuntu. Key feature goals included releasing on time, with the latest version of the Gnome Desktop Environment, and the creation of all the infrastructure required to manage Ubuntu itself. Warty includes excellent support for Python, with most of the widely used Python libraries installed by default.', '4.10', 4, '2004-08-20 00:00:00', NULL, 17, NULL, 'Warty is the first release of Ubuntu, with a planned release date of October 2004.', 'Warty', NULL, 0, 1, NULL, 1, 3, NULL, '2006-10-16 18:31:43.475428');
+INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created) VALUES (2, 2, 'six', 'Six Six Six', 'some text to describe the whole 666 release of RH', '6.0.1', 4, '2004-03-21 00:00:00', NULL, 8, NULL, 'some text to describe the whole 666 release of RH', 'Six', NULL, 0, NULL, NULL, 0, 0, NULL, '2006-10-16 18:31:43.482603');
+INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created) VALUES (3, 1, 'hoary', 'The Hoary Hedgehog Release', 'Hoary is the second release of Ubuntu. Key feature goals include the integration of Hoary with the Launchpad for bugs and translation information, as well as Gnome 2.10 and the X.org window system.', '5.04', 2, '2004-08-25 00:00:00', 1, 1, NULL, 'Hoary is the second released of Ubuntu, with release planned for April 2005.', 'Hoary', NULL, 94, 6, NULL, 1, 4, NULL, '2006-10-16 18:31:43.483559');
+INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created) VALUES (4, 2, '7.0', 'Seven', 'The release that we would not expect', '7.0.1', 3, '2004-04-01 00:00:00', 2, 7, NULL, 'The release that we would not expect', '7.0', NULL, 0, NULL, NULL, 0, 0, NULL, '2006-10-16 18:31:43.484426');
+INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created) VALUES (5, 1, 'grumpy', 'The Grumpy Groundhog Release', 'Grumpy, the third release of Ubuntu Linux, is not yet in active development. This information is purely a placeholder.', '5.10', 1, '2004-08-29 00:00:00', 1, 1, NULL, 'Grumpy is the third release of Ubuntu, planned for October 2005.', 'Grumpy', NULL, 0, NULL, NULL, 0, 0, NULL, '2006-10-16 18:31:43.485233');
+INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created) VALUES (6, 3, 'woody', 'WOODY', 'WOODY is the current stable verison of Debian GNU/Linux', '3.0', 4, '2003-01-01 00:00:00', NULL, 2, NULL, 'WOODY is the current stable verison of Debian GNU/Linux', 'Woody', NULL, 0, NULL, NULL, 0, 0, NULL, '2006-10-16 18:31:43.486054');
+INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created) VALUES (7, 3, 'sarge', 'Sarge', 'Sarge is the FROZEN unstable version of Debian GNU/Linux.', '3.1', 3, '2004-09-29 00:00:00', 6, 5, NULL, 'Sarge is the FROZEN unstable version of Debian GNU/Linux.', 'Sarge', NULL, 0, NULL, NULL, 0, 0, 6, '2006-10-16 18:31:43.486972');
+INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created) VALUES (8, 3, 'sid', 'Sid', 'Sid is the CRAZY unstable version of Debian GNU/Linux.', '3.2', 1, '2004-12-29 00:00:00', 6, 6, NULL, 'Sid is the CRAZY unstable version of Debian GNU/Linux.', 'Sid', NULL, 0, NULL, NULL, 0, 1, NULL, '2006-10-16 18:31:43.487779');
+INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created) VALUES (9, 7, '2k5', 'Guada 2005', 'This release places extra emphasis on usability and installability. The installer is adapted from Ubuntu to assume your country, language, keyboard and time zone preference, thus ensuring that installs ask the minimum number of questions possible.', '2005', 2, NULL, 3, 4, NULL, 'Guada 2005 is a rapid-install version of
+Ubuntu Hoary for the Andalucian marketplace.', 'Guada2005', NULL, 0, NULL, NULL, 0, 0, NULL, '2006-10-16 18:31:43.488598');
+INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created) VALUES (10, 1, 'breezy-autotest', 'Breezy Badger Autotest', 'Autotest version of Breezy', '6.6.6', 1, '2005-12-01 10:00:00', 3, 1, '[publishing]
 components = main restricted universe multiverse
-', 'Autosync uploader test', 'Breezy Badger Autotest', NULL, 0, 8, 'autotest_changes@ubutu.com', 0, 0, NULL);
-INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver) VALUES (11, 8, 'breezy-autotest', 'Breezy Badger Autotest', 'Autotest version of Breezy', '6.6.6', 1, '2006-01-08 10:00:00', 1, 1, '[publishing]
+', 'Autosync uploader test', 'Breezy Badger Autotest', NULL, 0, 8, 'autotest_changes@ubuntu.com', 0, 0, NULL, '2006-10-16 18:31:43.489468');
+INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created) VALUES (11, 8, 'breezy-autotest', 'Breezy Badger Autotest', 'Autotest version of Breezy', '6.6.6', 1, '2006-01-08 10:00:00', 1, 1, '[publishing]
 components = main restricted universe multiverse
-', 'Autosync uploader test', 'Breezy Badger Autotest', NULL, 0, NULL, NULL, 0, 0, NULL);
-INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver) VALUES (12, 5, 'krunch', 'The Krunchy Kangaroo', 'The archive split allows us to use different kernel settings for Kubuntu, as well as make other pervasive low-level fixes, and release on our own schedule.', '8.06', 1, NULL, 3, 1, NULL, 'This is the first experimental release of Kubuntu that uses a separate archive from the main Ubuntu release.', 'Krunch', NULL, 0, NULL, NULL, 0, 0, 33);
-INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver) VALUES (13, 8, 'hoary-test', 'Mock Hoary', 'nothing special', '9.9.9', 1, '2006-06-13 10:00:00', 1, 1, '[publishing]
+', 'Autosync uploader test', 'Breezy Badger Autotest', NULL, 0, NULL, NULL, 0, 0, NULL, '2006-10-16 18:31:43.490333');
+INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created) VALUES (12, 5, 'krunch', 'The Krunchy Kangaroo', 'The archive split allows us to use different kernel settings for Kubuntu, as well as make other pervasive low-level fixes, and release on our own schedule.', '8.06', 1, NULL, 3, 1, NULL, 'This is the first experimental release of Kubuntu that uses a separate archive from the main Ubuntu release.', 'Krunch', NULL, 0, NULL, NULL, 0, 0, 33, '2006-10-16 18:31:43.491929');
+INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created) VALUES (13, 8, 'hoary-test', 'Mock Hoary', 'nothing special', '9.9.9', 1, '2006-06-13 10:00:00', 1, 1, '[publishing]
 components = main restricted universe multiverse
-', 'summmmmmmary', 'Hoary Mock', NULL, 0, NULL, NULL, 0, 0, NULL);
+', 'summmmmmmary', 'Hoary Mock', NULL, 0, NULL, NULL, 0, 0, NULL, '2006-10-16 18:31:43.492845');
 
 
 ALTER TABLE distrorelease ENABLE TRIGGER ALL;
@@ -1556,22 +1533,24 @@ ALTER TABLE distroreleasepackagecache ENABLE TRIGGER ALL;
 
 ALTER TABLE distroreleasequeue DISABLE TRIGGER ALL;
 
-INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (1, 0, 10, 0, 52);
-INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (2, 0, 10, 0, 1);
-INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (3, 0, 10, 0, 1);
-INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (4, 0, 10, 0, 1);
-INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (5, 1, 10, 20, 1);
-INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (6, 0, 10, 0, 1);
-INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (7, 0, 10, 0, 1);
-
+INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile, date_created) VALUES (1, 0, 10, 0, 52, '2006-10-16 18:31:43.522813');
+INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile, date_created) VALUES (2, 0, 10, 0, 1, '2006-10-16 18:31:43.523987');
+INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile, date_created) VALUES (3, 0, 10, 0, 1, '2006-10-16 18:31:43.524367');
+INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile, date_created) VALUES (4, 0, 10, 0, 1, '2006-10-16 18:31:43.524734');
+INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile, date_created) VALUES (5, 1, 10, 20, 1, '2006-10-16 18:31:43.5251');
+INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile, date_created) VALUES (6, 0, 10, 0, 1, '2006-10-16 18:31:43.525466');
+INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile, date_created) VALUES (7, 0, 10, 0, 1, '2006-10-16 18:31:43.525832');
+INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile, date_created) VALUES (8, 1, 10, 0, 1, '2006-10-16 18:31:43.526197');
+INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile, date_created) VALUES (9, 1, 10, 0, 1, '2006-10-16 18:31:43.526624');
+INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile, date_created) VALUES (10, 1, 10, 40, 1, '2006-10-16 18:31:43.526624');
 
 ALTER TABLE distroreleasequeue ENABLE TRIGGER ALL;
 
 
 ALTER TABLE distroreleasequeuebuild DISABLE TRIGGER ALL;
 
-INSERT INTO distroreleasequeuebuild (id, distroreleasequeue, build) VALUES (1, 1, 18);
-INSERT INTO distroreleasequeuebuild (id, distroreleasequeue, build) VALUES (2, 2, 19);
+INSERT INTO distroreleasequeuebuild (id, distroreleasequeue, build, date_created) VALUES (1, 1, 18, '2006-10-16 18:31:43.529327');
+INSERT INTO distroreleasequeuebuild (id, distroreleasequeue, build, date_created) VALUES (2, 2, 19, '2006-10-16 18:31:43.530599');
 
 
 ALTER TABLE distroreleasequeuebuild ENABLE TRIGGER ALL;
@@ -1579,9 +1558,10 @@ ALTER TABLE distroreleasequeuebuild ENABLE TRIGGER ALL;
 
 ALTER TABLE distroreleasequeuecustom DISABLE TRIGGER ALL;
 
-INSERT INTO distroreleasequeuecustom (id, distroreleasequeue, customformat, libraryfilealias) VALUES (1, 5, 1, 1);
-INSERT INTO distroreleasequeuecustom (id, distroreleasequeue, customformat, libraryfilealias) VALUES (2, 6, 2, 1);
-INSERT INTO distroreleasequeuecustom (id, distroreleasequeue, customformat, libraryfilealias) VALUES (3, 7, 3, 1);
+INSERT INTO distroreleasequeuecustom (id, distroreleasequeue, customformat, libraryfilealias, date_created) VALUES (1, 5, 1, 1, '2006-10-16 18:31:43.532702');
+INSERT INTO distroreleasequeuecustom (id, distroreleasequeue, customformat, libraryfilealias, date_created) VALUES (2, 6, 2, 1, '2006-10-16 18:31:43.533511');
+INSERT INTO distroreleasequeuecustom (id, distroreleasequeue, customformat, libraryfilealias, date_created) VALUES (3, 7, 3, 1, '2006-10-16 18:31:43.533853');
+INSERT INTO distroreleasequeuecustom (id, distroreleasequeue, customformat, libraryfilealias, date_created) VALUES (4, 10, 3, 1, '2006-10-16 18:31:43.533853');
 
 
 ALTER TABLE distroreleasequeuecustom ENABLE TRIGGER ALL;
@@ -1589,8 +1569,10 @@ ALTER TABLE distroreleasequeuecustom ENABLE TRIGGER ALL;
 
 ALTER TABLE distroreleasequeuesource DISABLE TRIGGER ALL;
 
-INSERT INTO distroreleasequeuesource (id, distroreleasequeue, sourcepackagerelease) VALUES (1, 3, 17);
-INSERT INTO distroreleasequeuesource (id, distroreleasequeue, sourcepackagerelease) VALUES (2, 4, 25);
+INSERT INTO distroreleasequeuesource (id, distroreleasequeue, sourcepackagerelease, date_created) VALUES (1, 3, 17, '2006-10-16 18:31:43.536296');
+INSERT INTO distroreleasequeuesource (id, distroreleasequeue, sourcepackagerelease, date_created) VALUES (2, 4, 25, '2006-10-16 18:31:43.537586');
+INSERT INTO distroreleasequeuesource (id, distroreleasequeue, sourcepackagerelease, date_created) VALUES (3, 8, 30, '2006-10-16 18:31:43.53795');
+INSERT INTO distroreleasequeuesource (id, distroreleasequeue, sourcepackagerelease, date_created) VALUES (4, 9, 31, '2006-10-16 18:31:43.538319');
 
 
 ALTER TABLE distroreleasequeuesource ENABLE TRIGGER ALL;
@@ -1598,64 +1580,64 @@ ALTER TABLE distroreleasequeuesource ENABLE TRIGGER ALL;
 
 ALTER TABLE emailaddress DISABLE TRIGGER ALL;
 
-INSERT INTO emailaddress (id, email, person, status) VALUES (1, 'mark@hbd.com', 1, 4);
-INSERT INTO emailaddress (id, email, person, status) VALUES (2, 'robertc@robertcollins.net', 2, 4);
-INSERT INTO emailaddress (id, email, person, status) VALUES (3, 'carlos@canonical.com', 13, 4);
-INSERT INTO emailaddress (id, email, person, status) VALUES (4, 'daf@canonical.com', 14, 4);
-INSERT INTO emailaddress (id, email, person, status) VALUES (6, 'foo.bar@canonical.com', 16, 4);
-INSERT INTO emailaddress (id, email, person, status) VALUES (7, 'steve.alexander@ubuntulinux.com', 11, 1);
-INSERT INTO emailaddress (id, email, person, status) VALUES (8, 'colin.watson@ubuntulinux.com', 4, 1);
-INSERT INTO emailaddress (id, email, person, status) VALUES (9, 'scott.james.remnant@ubuntulinux.com', 5, 1);
-INSERT INTO emailaddress (id, email, person, status) VALUES (10, 'andrew.bennetts@ubuntulinux.com', 7, 4);
-INSERT INTO emailaddress (id, email, person, status) VALUES (11, 'james.blackwell@ubuntulinux.com', 8, 4);
-INSERT INTO emailaddress (id, email, person, status) VALUES (12, 'christian.reis@ubuntulinux.com', 9, 1);
-INSERT INTO emailaddress (id, email, person, status) VALUES (13, 'jeff.waugh@ubuntulinux.com', 6, 4);
-INSERT INTO emailaddress (id, email, person, status) VALUES (14, 'dave.miller@ubuntulinux.com', 3, 1);
-INSERT INTO emailaddress (id, email, person, status) VALUES (15, 'justdave@bugzilla.org', 3, 1);
-INSERT INTO emailaddress (id, email, person, status) VALUES (16, 'test@canonical.com', 12, 4);
-INSERT INTO emailaddress (id, email, person, status) VALUES (17, 'testtest@canonical.com', 12, 1);
-INSERT INTO emailaddress (id, email, person, status) VALUES (18, 'testtesttest@canonical.com', 12, 3);
-INSERT INTO emailaddress (id, email, person, status) VALUES (19, 'testing@canonical.com', 12, 2);
-INSERT INTO emailaddress (id, email, person, status) VALUES (20, 'stuart.bishop@canonical.com', 22, 4);
-INSERT INTO emailaddress (id, email, person, status) VALUES (21, 'david.allouche@canonical.com', 23, 4);
-INSERT INTO emailaddress (id, email, person, status) VALUES (22, 'david@canonical.com', 23, 2);
-INSERT INTO emailaddress (id, email, person, status) VALUES (23, 'daniel.debonzi@canonical.com', 27, 4);
-INSERT INTO emailaddress (id, email, person, status) VALUES (24, 'celso.providelo@canonical.com', 28, 4);
-INSERT INTO emailaddress (id, email, person, status) VALUES (25, 'guilherme.salgado@canonical.com', 29, 4);
-INSERT INTO emailaddress (id, email, person, status) VALUES (26, 'edgar@monteparadiso.hr', 33, 1);
-INSERT INTO emailaddress (id, email, person, status) VALUES (27, 'jvprat@wanadoo.es', 34, 1);
-INSERT INTO emailaddress (id, email, person, status) VALUES (28, 'sigurd-ubuntu@brogar.org', 35, 1);
-INSERT INTO emailaddress (id, email, person, status) VALUES (29, 'skacel@svtech.cz', 36, 1);
-INSERT INTO emailaddress (id, email, person, status) VALUES (30, 'danner@mixmail.com', 37, 1);
-INSERT INTO emailaddress (id, email, person, status) VALUES (31, 'martin.pitt@canonical.com', 38, 1);
-INSERT INTO emailaddress (id, email, person, status) VALUES (32, 'nsv@fr.st', 39, 1);
-INSERT INTO emailaddress (id, email, person, status) VALUES (33, 'callipeo@libero.it', 40, 1);
-INSERT INTO emailaddress (id, email, person, status) VALUES (34, 'jorge.gonzalez.gonzalez@hispalinux.es', 41, 1);
-INSERT INTO emailaddress (id, email, person, status) VALUES (35, 'barbier@linuxfr.org', 42, 1);
-INSERT INTO emailaddress (id, email, person, status) VALUES (36, 'andrelop@debian.org', 43, 1);
-INSERT INTO emailaddress (id, email, person, status) VALUES (37, 'valyag@dat.etsit.upm.es', 44, 1);
-INSERT INTO emailaddress (id, email, person, status) VALUES (38, 'luk.claes@ugent.be', 45, 1);
-INSERT INTO emailaddress (id, email, person, status) VALUES (39, 'kurem@debian.cz', 46, 4);
-INSERT INTO emailaddress (id, email, person, status) VALUES (40, 'morten@wtf.dk', 47, 1);
-INSERT INTO emailaddress (id, email, person, status) VALUES (41, 'mpo@iki.fi', 48, 1);
-INSERT INTO emailaddress (id, email, person, status) VALUES (42, 'kebil@kaunas.init.lt', 49, 1);
-INSERT INTO emailaddress (id, email, person, status) VALUES (43, 'tsukimi@quaqua.net', 50, 4);
-INSERT INTO emailaddress (id, email, person, status) VALUES (44, 'kreutzm@itp.uni-hannover.de', 51, 4);
-INSERT INTO emailaddress (id, email, person, status) VALUES (45, 'support@ubuntu.com', 17, 4);
-INSERT INTO emailaddress (id, email, person, status) VALUES (46, 'no-priv@canonical.com', 52, 4);
-INSERT INTO emailaddress (id, email, person, status) VALUES (47, 'stuart@stuartbishop.net', 22, 2);
-INSERT INTO emailaddress (id, email, person, status) VALUES (48, 'zen@shangri-la.dropbear.id.au', 22, 3);
-INSERT INTO emailaddress (id, email, person, status) VALUES (49, 'stub@fastmail.fm', 22, 1);
-INSERT INTO emailaddress (id, email, person, status) VALUES (50, 'marilize@hbd.com', 55, 4);
-INSERT INTO emailaddress (id, email, person, status) VALUES (51, 'jordi@ubuntu.com', 56, 4);
-INSERT INTO emailaddress (id, email, person, status) VALUES (52, 'daniel.silverstone@canonical.com', 26, 4);
-INSERT INTO emailaddress (id, email, person, status) VALUES (53, 'bugzilla-importer@launchpad.net', 58, 4);
-INSERT INTO emailaddress (id, email, person, status) VALUES (54, 'rosetta@launchpad.net', 30, 4);
-INSERT INTO emailaddress (id, email, person, status) VALUES (55, 'salgado@ubuntu.com', 29, 1);
-INSERT INTO emailaddress (id, email, person, status) VALUES (56, 'cprov@ubuntu.com', 28, 2);
-INSERT INTO emailaddress (id, email, person, status) VALUES (57, 'bugwatch@bugs.launchpad.net', 62, 1);
-INSERT INTO emailaddress (id, email, person, status) VALUES (58, 'karl@canonical.com', 63, 4);
-INSERT INTO emailaddress (id, email, person, status) VALUES (59, 'limi@plone.org', 10, 1);
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (1, 'mark@hbd.com', 1, 4, '2006-10-16 18:31:43.540582');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (2, 'robertc@robertcollins.net', 2, 4, '2006-10-16 18:31:43.542552');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (3, 'carlos@canonical.com', 13, 4, '2006-10-16 18:31:43.542954');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (4, 'daf@canonical.com', 14, 4, '2006-10-16 18:31:43.543302');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (6, 'foo.bar@canonical.com', 16, 4, '2006-10-16 18:31:43.543649');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (7, 'steve.alexander@ubuntulinux.com', 11, 1, '2006-10-16 18:31:43.543996');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (8, 'colin.watson@ubuntulinux.com', 4, 1, '2006-10-16 18:31:43.544344');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (9, 'scott.james.remnant@ubuntulinux.com', 5, 1, '2006-10-16 18:31:43.544693');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (10, 'andrew.bennetts@ubuntulinux.com', 7, 4, '2006-10-16 18:31:43.54507');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (11, 'james.blackwell@ubuntulinux.com', 8, 4, '2006-10-16 18:31:43.54542');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (12, 'christian.reis@ubuntulinux.com', 9, 1, '2006-10-16 18:31:43.54577');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (13, 'jeff.waugh@ubuntulinux.com', 6, 4, '2006-10-16 18:31:43.54612');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (14, 'dave.miller@ubuntulinux.com', 3, 1, '2006-10-16 18:31:43.546658');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (15, 'justdave@bugzilla.org', 3, 1, '2006-10-16 18:31:43.547068');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (16, 'test@canonical.com', 12, 4, '2006-10-16 18:31:43.547451');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (17, 'testtest@canonical.com', 12, 1, '2006-10-16 18:31:43.547829');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (18, 'testtesttest@canonical.com', 12, 3, '2006-10-16 18:31:43.54821');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (19, 'testing@canonical.com', 12, 2, '2006-10-16 18:31:43.548591');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (20, 'stuart.bishop@canonical.com', 22, 4, '2006-10-16 18:31:43.548972');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (21, 'david.allouche@canonical.com', 23, 4, '2006-10-16 18:31:43.549353');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (22, 'david@canonical.com', 23, 2, '2006-10-16 18:31:43.549732');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (23, 'daniel.debonzi@canonical.com', 27, 4, '2006-10-16 18:31:43.550113');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (24, 'celso.providelo@canonical.com', 28, 4, '2006-10-16 18:31:43.608939');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (25, 'guilherme.salgado@canonical.com', 29, 4, '2006-10-16 18:31:43.609431');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (26, 'edgar@monteparadiso.hr', 33, 1, '2006-10-16 18:31:43.609819');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (27, 'jvprat@wanadoo.es', 34, 1, '2006-10-16 18:31:43.610202');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (28, 'sigurd-ubuntu@brogar.org', 35, 1, '2006-10-16 18:31:43.6147');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (29, 'skacel@svtech.cz', 36, 1, '2006-10-16 18:31:43.615107');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (30, 'danner@mixmail.com', 37, 1, '2006-10-16 18:31:43.61549');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (31, 'martin.pitt@canonical.com', 38, 1, '2006-10-16 18:31:43.615874');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (32, 'nsv@fr.st', 39, 1, '2006-10-16 18:31:43.616257');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (33, 'callipeo@libero.it', 40, 1, '2006-10-16 18:31:43.616673');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (34, 'jorge.gonzalez.gonzalez@hispalinux.es', 41, 1, '2006-10-16 18:31:43.617057');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (35, 'barbier@linuxfr.org', 42, 1, '2006-10-16 18:31:43.617465');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (36, 'andrelop@debian.org', 43, 1, '2006-10-16 18:31:43.61785');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (37, 'valyag@dat.etsit.upm.es', 44, 1, '2006-10-16 18:31:43.618232');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (38, 'luk.claes@ugent.be', 45, 1, '2006-10-16 18:31:43.618658');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (39, 'kurem@debian.cz', 46, 4, '2006-10-16 18:31:43.619039');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (40, 'morten@wtf.dk', 47, 1, '2006-10-16 18:31:43.619421');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (41, 'mpo@iki.fi', 48, 1, '2006-10-16 18:31:43.619815');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (42, 'kebil@kaunas.init.lt', 49, 1, '2006-10-16 18:31:43.620196');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (43, 'tsukimi@quaqua.net', 50, 4, '2006-10-16 18:31:43.620578');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (44, 'kreutzm@itp.uni-hannover.de', 51, 4, '2006-10-16 18:31:43.620959');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (45, 'support@ubuntu.com', 17, 4, '2006-10-16 18:31:43.621341');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (46, 'no-priv@canonical.com', 52, 4, '2006-10-16 18:31:43.621725');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (47, 'stuart@stuartbishop.net', 22, 2, '2006-10-16 18:31:43.622107');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (48, 'zen@shangri-la.dropbear.id.au', 22, 3, '2006-10-16 18:31:43.6241');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (49, 'stub@fastmail.fm', 22, 1, '2006-10-16 18:31:43.6245');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (50, 'marilize@hbd.com', 55, 4, '2006-10-16 18:31:43.624885');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (51, 'jordi@ubuntu.com', 56, 4, '2006-10-16 18:31:43.625266');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (52, 'daniel.silverstone@canonical.com', 26, 4, '2006-10-16 18:31:43.625647');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (53, 'bugzilla-importer@launchpad.net', 58, 4, '2006-10-16 18:31:43.62603');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (54, 'rosetta@launchpad.net', 30, 4, '2006-10-16 18:31:43.626521');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (55, 'salgado@ubuntu.com', 29, 1, '2006-10-16 18:31:43.626932');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (56, 'cprov@ubuntu.com', 28, 2, '2006-10-16 18:31:43.627318');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (57, 'bugwatch@bugs.launchpad.net', 62, 1, '2006-10-16 18:31:43.62774');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (58, 'karl@canonical.com', 63, 4, '2006-10-16 18:31:43.628123');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (59, 'limi@plone.org', 10, 1, '2006-10-16 18:31:43.628504');
 
 
 ALTER TABLE emailaddress ENABLE TRIGGER ALL;
@@ -1668,7 +1650,7 @@ ALTER TABLE emailaddress ENABLE TRIGGER ALL;
 
 ALTER TABLE gpgkey DISABLE TRIGGER ALL;
 
-INSERT INTO gpgkey (id, "owner", keyid, fingerprint, active, algorithm, keysize, can_encrypt) VALUES (1, 16, '12345678', 'ABCDEF0123456789ABCDDCBA0000111112345678', true, 17, 1024, true);
+INSERT INTO gpgkey (id, "owner", keyid, fingerprint, active, algorithm, keysize, can_encrypt, date_created) VALUES (1, 16, '12345678', 'ABCDEF0123456789ABCDDCBA0000111112345678', true, 17, 1024, true, '2006-10-16 18:31:43.631499');
 
 
 ALTER TABLE gpgkey ENABLE TRIGGER ALL;
@@ -1854,14 +1836,6 @@ INSERT INTO karmatotalcache (id, person, karma_total) VALUES (59, 16, 113);
 
 
 ALTER TABLE karmatotalcache ENABLE TRIGGER ALL;
-
-
-ALTER TABLE label DISABLE TRIGGER ALL;
-
-INSERT INTO label (id, "schema", name, title, description) VALUES (1, 1, 'blah', 'blah', 'blah');
-
-
-ALTER TABLE label ENABLE TRIGGER ALL;
 
 
 ALTER TABLE "language" DISABLE TRIGGER ALL;
@@ -2561,7 +2535,7 @@ ALTER TABLE libraryfilecontent ENABLE TRIGGER ALL;
 
 ALTER TABLE license DISABLE TRIGGER ALL;
 
-INSERT INTO license (id, legalese) VALUES (1, 'GPL-2');
+INSERT INTO license (id, legalese, date_created) VALUES (1, 'GPL-2', '2006-10-16 18:31:44.02652');
 
 
 ALTER TABLE license ENABLE TRIGGER ALL;
@@ -2763,8 +2737,8 @@ ALTER TABLE messagechunk ENABLE TRIGGER ALL;
 
 ALTER TABLE milestone DISABLE TRIGGER ALL;
 
-INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distrorelease) VALUES (1, 4, '1.0', NULL, NULL, true, NULL, NULL);
-INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distrorelease) VALUES (2, NULL, '3.1', 3, NULL, true, NULL, NULL);
+INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distrorelease, date_created) VALUES (1, 4, '1.0', NULL, NULL, true, NULL, NULL, '2006-10-16 18:31:44.293448');
+INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distrorelease, date_created) VALUES (2, NULL, '3.1', 3, NULL, true, NULL, NULL, '2006-10-16 18:31:44.29574');
 
 
 ALTER TABLE milestone ENABLE TRIGGER ALL;
@@ -2779,10 +2753,10 @@ ALTER TABLE mirror ENABLE TRIGGER ALL;
 
 ALTER TABLE mirrorcdimagedistrorelease DISABLE TRIGGER ALL;
 
-INSERT INTO mirrorcdimagedistrorelease (id, distribution_mirror, distrorelease, flavour) VALUES (1, 6, 1, 'ubuntu');
-INSERT INTO mirrorcdimagedistrorelease (id, distribution_mirror, distrorelease, flavour) VALUES (2, 6, 1, 'kubuntu');
-INSERT INTO mirrorcdimagedistrorelease (id, distribution_mirror, distrorelease, flavour) VALUES (3, 6, 3, 'ubuntu');
-INSERT INTO mirrorcdimagedistrorelease (id, distribution_mirror, distrorelease, flavour) VALUES (4, 6, 3, 'edubuntu');
+INSERT INTO mirrorcdimagedistrorelease (id, distribution_mirror, distrorelease, flavour, date_created) VALUES (1, 6, 1, 'ubuntu', '2006-10-16 18:31:44.303183');
+INSERT INTO mirrorcdimagedistrorelease (id, distribution_mirror, distrorelease, flavour, date_created) VALUES (2, 6, 1, 'kubuntu', '2006-10-16 18:31:44.304323');
+INSERT INTO mirrorcdimagedistrorelease (id, distribution_mirror, distrorelease, flavour, date_created) VALUES (3, 6, 3, 'ubuntu', '2006-10-16 18:31:44.304693');
+INSERT INTO mirrorcdimagedistrorelease (id, distribution_mirror, distrorelease, flavour, date_created) VALUES (4, 6, 3, 'edubuntu', '2006-10-16 18:31:44.305046');
 
 
 ALTER TABLE mirrorcdimagedistrorelease ENABLE TRIGGER ALL;
@@ -2797,10 +2771,10 @@ ALTER TABLE mirrorcontent ENABLE TRIGGER ALL;
 
 ALTER TABLE mirrordistroarchrelease DISABLE TRIGGER ALL;
 
-INSERT INTO mirrordistroarchrelease (id, distribution_mirror, distro_arch_release, status, pocket, component) VALUES (1, 7, 1, 2, 10, 1);
-INSERT INTO mirrordistroarchrelease (id, distribution_mirror, distro_arch_release, status, pocket, component) VALUES (2, 7, 1, 2, 10, 2);
-INSERT INTO mirrordistroarchrelease (id, distribution_mirror, distro_arch_release, status, pocket, component) VALUES (3, 7, 1, 3, 10, 3);
-INSERT INTO mirrordistroarchrelease (id, distribution_mirror, distro_arch_release, status, pocket, component) VALUES (4, 7, 6, 2, 10, 1);
+INSERT INTO mirrordistroarchrelease (id, distribution_mirror, distro_arch_release, status, pocket, component, date_created) VALUES (1, 7, 1, 2, 10, 1, '2006-10-16 18:31:44.309753');
+INSERT INTO mirrordistroarchrelease (id, distribution_mirror, distro_arch_release, status, pocket, component, date_created) VALUES (2, 7, 1, 2, 10, 2, '2006-10-16 18:31:44.31093');
+INSERT INTO mirrordistroarchrelease (id, distribution_mirror, distro_arch_release, status, pocket, component, date_created) VALUES (3, 7, 1, 3, 10, 3, '2006-10-16 18:31:44.311317');
+INSERT INTO mirrordistroarchrelease (id, distribution_mirror, distro_arch_release, status, pocket, component, date_created) VALUES (4, 7, 6, 2, 10, 1, '2006-10-16 18:31:44.311687');
 
 
 ALTER TABLE mirrordistroarchrelease ENABLE TRIGGER ALL;
@@ -2808,11 +2782,11 @@ ALTER TABLE mirrordistroarchrelease ENABLE TRIGGER ALL;
 
 ALTER TABLE mirrordistroreleasesource DISABLE TRIGGER ALL;
 
-INSERT INTO mirrordistroreleasesource (id, distribution_mirror, distrorelease, status, pocket, component) VALUES (1, 7, 1, 1, 10, 1);
-INSERT INTO mirrordistroreleasesource (id, distribution_mirror, distrorelease, status, pocket, component) VALUES (2, 7, 3, 1, 10, 1);
-INSERT INTO mirrordistroreleasesource (id, distribution_mirror, distrorelease, status, pocket, component) VALUES (3, 7, 1, 4, 20, 1);
-INSERT INTO mirrordistroreleasesource (id, distribution_mirror, distrorelease, status, pocket, component) VALUES (4, 7, 3, 1, 20, 1);
-INSERT INTO mirrordistroreleasesource (id, distribution_mirror, distrorelease, status, pocket, component) VALUES (5, 7, 1, 2, 10, 2);
+INSERT INTO mirrordistroreleasesource (id, distribution_mirror, distrorelease, status, pocket, component, date_created) VALUES (1, 7, 1, 1, 10, 1, '2006-10-16 18:31:44.314175');
+INSERT INTO mirrordistroreleasesource (id, distribution_mirror, distrorelease, status, pocket, component, date_created) VALUES (2, 7, 3, 1, 10, 1, '2006-10-16 18:31:44.315297');
+INSERT INTO mirrordistroreleasesource (id, distribution_mirror, distrorelease, status, pocket, component, date_created) VALUES (3, 7, 1, 4, 20, 1, '2006-10-16 18:31:44.315707');
+INSERT INTO mirrordistroreleasesource (id, distribution_mirror, distrorelease, status, pocket, component, date_created) VALUES (4, 7, 3, 1, 20, 1, '2006-10-16 18:31:44.316079');
+INSERT INTO mirrordistroreleasesource (id, distribution_mirror, distrorelease, status, pocket, component, date_created) VALUES (5, 7, 1, 2, 10, 2, '2006-10-16 18:31:44.316449');
 
 
 ALTER TABLE mirrordistroreleasesource ENABLE TRIGGER ALL;
@@ -2834,10 +2808,19 @@ ALTER TABLE mirrorsourcecontent DISABLE TRIGGER ALL;
 ALTER TABLE mirrorsourcecontent ENABLE TRIGGER ALL;
 
 
+ALTER TABLE nameblacklist DISABLE TRIGGER ALL;
+
+INSERT INTO nameblacklist (id, regexp, "comment") VALUES (1, 'blacklist', 'For testing purposes');
+INSERT INTO nameblacklist (id, regexp, "comment") VALUES (2, '^admin', NULL);
+
+
+ALTER TABLE nameblacklist ENABLE TRIGGER ALL;
+
+
 ALTER TABLE packagebugcontact DISABLE TRIGGER ALL;
 
-INSERT INTO packagebugcontact (id, distribution, sourcepackagename, bugcontact) VALUES (1, 1, 1, 16);
-INSERT INTO packagebugcontact (id, distribution, sourcepackagename, bugcontact) VALUES (2, 1, 14, 16);
+INSERT INTO packagebugcontact (id, distribution, sourcepackagename, bugcontact, date_created) VALUES (1, 1, 1, 16, '2006-10-16 18:31:44.328897');
+INSERT INTO packagebugcontact (id, distribution, sourcepackagename, bugcontact, date_created) VALUES (2, 1, 14, 16, '2006-10-16 18:31:44.330261');
 
 
 ALTER TABLE packagebugcontact ENABLE TRIGGER ALL;
@@ -2852,15 +2835,15 @@ ALTER TABLE packageselection ENABLE TRIGGER ALL;
 
 ALTER TABLE packaging DISABLE TRIGGER ALL;
 
-INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner") VALUES (1, 1, 1, 3, 2, '2005-07-05 14:20:26.577312', NULL);
-INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner") VALUES (1, 10, 19, 1, 8, '2005-09-15 11:55:38.640138', NULL);
-INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner") VALUES (1, 11, 19, 8, 8, '2005-09-15 11:55:48.109778', NULL);
-INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner") VALUES (1, 2, 9, 3, 3, '2005-07-05 14:20:26.577312', NULL);
-INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner") VALUES (1, 3, 10, 1, 5, '2005-07-05 14:20:26.577312', NULL);
-INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner") VALUES (1, 4, 9, 1, 3, '2005-07-05 14:20:26.577312', NULL);
-INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner") VALUES (1, 6, 10, 3, 5, '2005-07-05 14:20:26.577312', NULL);
-INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner") VALUES (1, 7, 15, 1, 6, '2005-07-05 14:20:26.577312', NULL);
-INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner") VALUES (1, 9, 1, 1, 1, '2005-07-05 14:20:26.577312', NULL);
+INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner", date_created) VALUES (1, 1, 1, 3, 2, '2005-07-05 14:20:26.577312', NULL, '2006-10-16 18:31:44.336247');
+INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner", date_created) VALUES (1, 10, 19, 1, 8, '2005-09-15 11:55:38.640138', NULL, '2006-10-16 18:31:44.337965');
+INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner", date_created) VALUES (1, 11, 19, 8, 8, '2005-09-15 11:55:48.109778', NULL, '2006-10-16 18:31:44.338488');
+INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner", date_created) VALUES (1, 2, 9, 3, 3, '2005-07-05 14:20:26.577312', NULL, '2006-10-16 18:31:44.338912');
+INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner", date_created) VALUES (1, 3, 10, 1, 5, '2005-07-05 14:20:26.577312', NULL, '2006-10-16 18:31:44.339361');
+INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner", date_created) VALUES (1, 4, 9, 1, 3, '2005-07-05 14:20:26.577312', NULL, '2006-10-16 18:31:44.339782');
+INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner", date_created) VALUES (1, 6, 10, 3, 5, '2005-07-05 14:20:26.577312', NULL, '2006-10-16 18:31:44.340203');
+INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner", date_created) VALUES (1, 7, 15, 1, 6, '2005-07-05 14:20:26.577312', NULL, '2006-10-16 18:31:44.340624');
+INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner", date_created) VALUES (1, 9, 1, 1, 1, '2005-07-05 14:20:26.577312', NULL, '2006-10-16 18:31:44.341055');
 
 
 ALTER TABLE packaging ENABLE TRIGGER ALL;
@@ -2950,19 +2933,12 @@ ALTER TABLE personalsourcepackagepublication DISABLE TRIGGER ALL;
 ALTER TABLE personalsourcepackagepublication ENABLE TRIGGER ALL;
 
 
-ALTER TABLE personlabel DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE personlabel ENABLE TRIGGER ALL;
-
-
 ALTER TABLE personlanguage DISABLE TRIGGER ALL;
 
-INSERT INTO personlanguage (id, person, "language") VALUES (1, 13, 387);
-INSERT INTO personlanguage (id, person, "language") VALUES (2, 13, 68);
-INSERT INTO personlanguage (id, person, "language") VALUES (3, 14, 196);
-INSERT INTO personlanguage (id, person, "language") VALUES (4, 14, 449);
+INSERT INTO personlanguage (id, person, "language", date_created) VALUES (1, 13, 387, '2006-10-16 18:31:44.536264');
+INSERT INTO personlanguage (id, person, "language", date_created) VALUES (2, 13, 68, '2006-10-16 18:31:44.537511');
+INSERT INTO personlanguage (id, person, "language", date_created) VALUES (3, 14, 196, '2006-10-16 18:31:44.537872');
+INSERT INTO personlanguage (id, person, "language", date_created) VALUES (4, 14, 449, '2006-10-16 18:31:44.538238');
 
 
 ALTER TABLE personlanguage ENABLE TRIGGER ALL;
@@ -3562,11 +3538,11 @@ ALTER TABLE pofile ENABLE TRIGGER ALL;
 
 ALTER TABLE poll DISABLE TRIGGER ALL;
 
-INSERT INTO poll (id, team, name, title, dateopens, datecloses, proposition, "type", allowspoilt, secrecy) VALUES (1, 17, 'director-2004', '2004 Director''s Elections', '2004-01-01 00:00:00', '2004-01-15 00:00:00', 'Who''s going to be the next director?', 2, true, 3);
-INSERT INTO poll (id, team, name, title, dateopens, datecloses, proposition, "type", allowspoilt, secrecy) VALUES (2, 17, 'leader-2004', '2004 Leader''s Elections', '2004-01-01 00:00:00', '2004-01-15 00:00:00', 'Who''s going to be the next leader?', 1, true, 3);
-INSERT INTO poll (id, team, name, title, dateopens, datecloses, proposition, "type", allowspoilt, secrecy) VALUES (3, 17, 'never-closes', 'A random poll that never closes', '2004-01-01 00:00:00', '2104-01-15 00:00:00', 'Whatever proposition.', 1, true, 3);
-INSERT INTO poll (id, team, name, title, dateopens, datecloses, proposition, "type", allowspoilt, secrecy) VALUES (4, 17, 'never-closes2', 'A second random poll that never closes', '2004-01-01 00:00:00', '2104-01-15 00:00:00', 'Whatever proposition.', 2, true, 3);
-INSERT INTO poll (id, team, name, title, dateopens, datecloses, proposition, "type", allowspoilt, secrecy) VALUES (5, 17, 'never-closes3', 'A third random poll that never closes', '2004-01-01 00:00:00', '2104-01-15 00:00:00', 'Whatever proposition.', 2, true, 1);
+INSERT INTO poll (id, team, name, title, dateopens, datecloses, proposition, "type", allowspoilt, secrecy, date_created) VALUES (1, 17, 'director-2004', '2004 Director''s Elections', '2004-01-01 00:00:00', '2004-01-15 00:00:00', 'Who''s going to be the next director?', 2, true, 3, '2006-10-16 18:31:44.605729');
+INSERT INTO poll (id, team, name, title, dateopens, datecloses, proposition, "type", allowspoilt, secrecy, date_created) VALUES (2, 17, 'leader-2004', '2004 Leader''s Elections', '2004-01-01 00:00:00', '2004-01-15 00:00:00', 'Who''s going to be the next leader?', 1, true, 3, '2006-10-16 18:31:44.614277');
+INSERT INTO poll (id, team, name, title, dateopens, datecloses, proposition, "type", allowspoilt, secrecy, date_created) VALUES (3, 17, 'never-closes', 'A random poll that never closes', '2004-01-01 00:00:00', '2104-01-15 00:00:00', 'Whatever proposition.', 1, true, 3, '2006-10-16 18:31:44.615511');
+INSERT INTO poll (id, team, name, title, dateopens, datecloses, proposition, "type", allowspoilt, secrecy, date_created) VALUES (4, 17, 'never-closes2', 'A second random poll that never closes', '2004-01-01 00:00:00', '2104-01-15 00:00:00', 'Whatever proposition.', 2, true, 3, '2006-10-16 18:31:44.616371');
+INSERT INTO poll (id, team, name, title, dateopens, datecloses, proposition, "type", allowspoilt, secrecy, date_created) VALUES (5, 17, 'never-closes3', 'A third random poll that never closes', '2004-01-01 00:00:00', '2104-01-15 00:00:00', 'Whatever proposition.', 2, true, 1, '2006-10-16 18:31:44.617218');
 
 
 ALTER TABLE poll ENABLE TRIGGER ALL;
@@ -3574,25 +3550,25 @@ ALTER TABLE poll ENABLE TRIGGER ALL;
 
 ALTER TABLE polloption DISABLE TRIGGER ALL;
 
-INSERT INTO polloption (id, poll, name, title, active) VALUES (1, 1, 'A', 'A', true);
-INSERT INTO polloption (id, poll, name, title, active) VALUES (2, 1, 'B', 'B', true);
-INSERT INTO polloption (id, poll, name, title, active) VALUES (3, 1, 'C', 'C', true);
-INSERT INTO polloption (id, poll, name, title, active) VALUES (4, 1, 'D', 'D', true);
-INSERT INTO polloption (id, poll, name, title, active) VALUES (5, 2, 'William Big-Middle-Name Graham', 'Will Graham', true);
-INSERT INTO polloption (id, poll, name, title, active) VALUES (6, 2, 'Jack Crawford', 'Jack Crawford', true);
-INSERT INTO polloption (id, poll, name, title, active) VALUES (7, 2, 'Francis Dolarhyde', 'Francis Dolarhyde', true);
-INSERT INTO polloption (id, poll, name, title, active) VALUES (8, 3, 'A', 'A', true);
-INSERT INTO polloption (id, poll, name, title, active) VALUES (9, 3, 'B', 'B', true);
-INSERT INTO polloption (id, poll, name, title, active) VALUES (10, 3, 'C', 'C', true);
-INSERT INTO polloption (id, poll, name, title, active) VALUES (11, 3, 'D', 'D', true);
-INSERT INTO polloption (id, poll, name, title, active) VALUES (12, 4, 'Option 1', 'Option 1', true);
-INSERT INTO polloption (id, poll, name, title, active) VALUES (13, 4, 'Option 2', 'Option 2', true);
-INSERT INTO polloption (id, poll, name, title, active) VALUES (14, 4, 'Option 3', 'Option 3', true);
-INSERT INTO polloption (id, poll, name, title, active) VALUES (15, 4, 'Option 4', 'Option 4', true);
-INSERT INTO polloption (id, poll, name, title, active) VALUES (16, 5, 'Option 1', 'Option 1', true);
-INSERT INTO polloption (id, poll, name, title, active) VALUES (17, 5, 'Option 2', 'Option 2', true);
-INSERT INTO polloption (id, poll, name, title, active) VALUES (18, 5, 'Option 3', 'Option 3', true);
-INSERT INTO polloption (id, poll, name, title, active) VALUES (19, 5, 'Option 4', 'Option 4', true);
+INSERT INTO polloption (id, poll, name, title, active, date_created) VALUES (1, 1, 'A', 'A', true, '2006-10-16 18:31:44.620851');
+INSERT INTO polloption (id, poll, name, title, active, date_created) VALUES (2, 1, 'B', 'B', true, '2006-10-16 18:31:44.622948');
+INSERT INTO polloption (id, poll, name, title, active, date_created) VALUES (3, 1, 'C', 'C', true, '2006-10-16 18:31:44.623427');
+INSERT INTO polloption (id, poll, name, title, active, date_created) VALUES (4, 1, 'D', 'D', true, '2006-10-16 18:31:44.623816');
+INSERT INTO polloption (id, poll, name, title, active, date_created) VALUES (5, 2, 'William Big-Middle-Name Graham', 'Will Graham', true, '2006-10-16 18:31:44.624204');
+INSERT INTO polloption (id, poll, name, title, active, date_created) VALUES (6, 2, 'Jack Crawford', 'Jack Crawford', true, '2006-10-16 18:31:44.624595');
+INSERT INTO polloption (id, poll, name, title, active, date_created) VALUES (7, 2, 'Francis Dolarhyde', 'Francis Dolarhyde', true, '2006-10-16 18:31:44.624986');
+INSERT INTO polloption (id, poll, name, title, active, date_created) VALUES (8, 3, 'A', 'A', true, '2006-10-16 18:31:44.625374');
+INSERT INTO polloption (id, poll, name, title, active, date_created) VALUES (9, 3, 'B', 'B', true, '2006-10-16 18:31:44.62576');
+INSERT INTO polloption (id, poll, name, title, active, date_created) VALUES (10, 3, 'C', 'C', true, '2006-10-16 18:31:44.626146');
+INSERT INTO polloption (id, poll, name, title, active, date_created) VALUES (11, 3, 'D', 'D', true, '2006-10-16 18:31:44.626573');
+INSERT INTO polloption (id, poll, name, title, active, date_created) VALUES (12, 4, 'Option 1', 'Option 1', true, '2006-10-16 18:31:44.626962');
+INSERT INTO polloption (id, poll, name, title, active, date_created) VALUES (13, 4, 'Option 2', 'Option 2', true, '2006-10-16 18:31:44.62735');
+INSERT INTO polloption (id, poll, name, title, active, date_created) VALUES (14, 4, 'Option 3', 'Option 3', true, '2006-10-16 18:31:44.627738');
+INSERT INTO polloption (id, poll, name, title, active, date_created) VALUES (15, 4, 'Option 4', 'Option 4', true, '2006-10-16 18:31:44.628126');
+INSERT INTO polloption (id, poll, name, title, active, date_created) VALUES (16, 5, 'Option 1', 'Option 1', true, '2006-10-16 18:31:44.628515');
+INSERT INTO polloption (id, poll, name, title, active, date_created) VALUES (17, 5, 'Option 2', 'Option 2', true, '2006-10-16 18:31:44.628904');
+INSERT INTO polloption (id, poll, name, title, active, date_created) VALUES (18, 5, 'Option 3', 'Option 3', true, '2006-10-16 18:31:44.629293');
+INSERT INTO polloption (id, poll, name, title, active, date_created) VALUES (19, 5, 'Option 4', 'Option 4', true, '2006-10-16 18:31:44.629683');
 
 
 ALTER TABLE polloption ENABLE TRIGGER ALL;
@@ -7875,28 +7851,28 @@ ALTER TABLE processorfamily ENABLE TRIGGER ALL;
 
 ALTER TABLE product DISABLE TRIGGER ALL;
 
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus) VALUES (1, 1, 17, 'ubuntu-product', 'Ubuntu', 'Ubuntu', 'An easy-to-install version of Linux that has a complete set of desktop applications ready to use immediately after installation.', 'Ubuntu is a desktop Linux that you can give your girlfriend to install. Works out of the box with recent Gnome desktop applications configured to make you productive immediately. Ubuntu is updated every six months, comes with security updates for peace of mind, and is available everywhere absolutely free of charge.', '2004-09-24 20:58:00.655518', 'http://www.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''box'':45 ''set'':18C ''six'':61 ''use'':24C ''come'':63 ''easi'':8C ''free'':76 ''give'':36 ''make'':53 ''mind'':70 ''peac'':68 ''work'':41 ''avail'':73 ''charg'':78 ''everi'':60 ''gnome'':48 ''linux'':13C,32 ''month'':62 ''readi'':22C ''secur'':65 ''updat'':59,66 ''applic'':21C,50 ''immedi'':25C,56 ''instal'':10C,27C,40 ''recent'':47 ''ubuntu'':2A,4A,5B,28,57 ''absolut'':75 ''complet'':17C ''desktop'':20C,31,49 ''product'':3A,55 ''version'':11C ''configur'':51 ''everywher'':74 ''girlfriend'':38 ''easy-to-instal'':7C ''ubuntu-product'':1A', false, NULL, 1, NULL, NULL, false, false, NULL, NULL, NULL, NULL, 16);
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus) VALUES (2, 2, 2, 'unassigned', 'unassigned syncs', 'unassigned syncs', 'syncs still not assigned to a real product', 'unassigned syncs, will not be processed, to be moved to real projects ASAP.', '2004-09-24 20:58:00.674409', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, false, '''asap'':26 ''move'':22 ''real'':12C,24 ''sync'':3A,5B,6C,15 ''still'':7C ''assign'':9C ''process'':19 ''product'':13C ''project'':25 ''unassign'':1A,2A,4B,14', false, NULL, 1, NULL, NULL, false, false, NULL, NULL, NULL, NULL, 17);
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus) VALUES (3, 3, 2, 'arch-mirrors', 'Arch mirrors', 'Arch archive mirrors', 'Arch Archive Mirroring project.', 'Arch archive full-archive mirror tasks', '2004-09-24 20:58:00.691047', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''arch'':2A,4A,6B,9C,13 ''full'':16 ''task'':19 ''archiv'':7B,10C,14,17 ''mirror'':3A,5A,8B,11C,18 ''project'':12C ''full-arch'':15 ''arch-mirror'':1A', false, NULL, 1, NULL, NULL, false, false, NULL, NULL, NULL, NULL, 15);
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus) VALUES (4, 4, 12, 'firefox', 'Mozilla Firefox', 'Mozilla Firefox', 'The Mozilla Firefox web browser', 'The Mozilla Firefox web browser', '2004-09-24 20:58:02.185708', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''web'':9C,14 ''browser'':10C,15 ''firefox'':1A,3A,5B,8C,13 ''mozilla'':2A,4B,7C,12', false, 1, 100, NULL, NULL, false, true, NULL, NULL, NULL, NULL, 1);
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus) VALUES (5, 5, 12, 'evolution', 'Evolution', 'The Evolution Groupware Application', 'Evolution is an email client, addressbook and calendar application that is very well integrated with the Gnome desktop. Evolution is the standard mail client in the Ubuntu distribution, and supports all current mail system standards.', 'Recently, Evolution has seen significant work to make it interoperable with the proprietary Microsoft Exchange Server protocols and formats, allowing organisations to replace Outlook on Windows with Evolution and Linux.
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus) VALUES (1, 1, 17, 'ubuntu-product', 'Ubuntu', 'Ubuntu', 'An easy-to-install version of Linux that has a complete set of desktop applications ready to use immediately after installation.', 'Ubuntu is a desktop Linux that you can give your girlfriend to install. Works out of the box with recent Gnome desktop applications configured to make you productive immediately. Ubuntu is updated every six months, comes with security updates for peace of mind, and is available everywhere absolutely free of charge.', '2004-09-24 20:58:00.655518', 'http://www.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''box'':45 ''set'':18C ''six'':61 ''use'':24C ''come'':63 ''easi'':8C ''free'':76 ''give'':36 ''make'':53 ''mind'':70 ''peac'':68 ''work'':41 ''avail'':73 ''charg'':78 ''everi'':60 ''gnome'':48 ''linux'':13C,32 ''month'':62 ''readi'':22C ''secur'':65 ''updat'':59,66 ''applic'':21C,50 ''immedi'':25C,56 ''instal'':10C,27C,40 ''recent'':47 ''ubuntu'':2A,4A,5B,28,57 ''absolut'':75 ''complet'':17C ''desktop'':20C,31,49 ''product'':3A,55 ''version'':11C ''configur'':51 ''everywher'':74 ''girlfriend'':38 ''easy-to-instal'':7C ''ubuntu-product'':1A', false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 16);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus) VALUES (2, 2, 2, 'unassigned', 'unassigned syncs', 'unassigned syncs', 'syncs still not assigned to a real product', 'unassigned syncs, will not be processed, to be moved to real projects ASAP.', '2004-09-24 20:58:00.674409', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, false, '''asap'':26 ''move'':22 ''real'':12C,24 ''sync'':3A,5B,6C,15 ''still'':7C ''assign'':9C ''process'':19 ''product'':13C ''project'':25 ''unassign'':1A,2A,4B,14', false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 17);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus) VALUES (3, 3, 2, 'arch-mirrors', 'Arch mirrors', 'Arch archive mirrors', 'Arch Archive Mirroring project.', 'Arch archive full-archive mirror tasks', '2004-09-24 20:58:00.691047', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''arch'':2A,4A,6B,9C,13 ''full'':16 ''task'':19 ''archiv'':7B,10C,14,17 ''mirror'':3A,5A,8B,11C,18 ''project'':12C ''full-arch'':15 ''arch-mirror'':1A', false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 15);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus) VALUES (4, 4, 12, 'firefox', 'Mozilla Firefox', 'Mozilla Firefox', 'The Mozilla Firefox web browser', 'The Mozilla Firefox web browser', '2004-09-24 20:58:02.185708', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''web'':9C,14 ''browser'':10C,15 ''firefox'':1A,3A,5B,8C,13 ''mozilla'':2A,4B,7C,12', false, 1, 100, NULL, false, true, NULL, NULL, NULL, NULL, 1);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus) VALUES (5, 5, 12, 'evolution', 'Evolution', 'The Evolution Groupware Application', 'Evolution is an email client, addressbook and calendar application that is very well integrated with the Gnome desktop. Evolution is the standard mail client in the Ubuntu distribution, and supports all current mail system standards.', 'Recently, Evolution has seen significant work to make it interoperable with the proprietary Microsoft Exchange Server protocols and formats, allowing organisations to replace Outlook on Windows with Evolution and Linux.
 
-The current stable release series of Evolution is 2.0.', '2004-09-24 20:58:02.240163', 'http://www.gnome.org/evolution/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''2.0'':80 ''mail'':29C,39C ''make'':49 ''seen'':45 ''seri'':76 ''well'':19C ''work'':47 ''allow'':61 ''email'':10C ''gnome'':23C ''linux'':71 ''stabl'':74 ''applic'':6B,15C ''client'':11C,30C ''evolut'':1A,2A,4B,7C,25C,43,69,78 ''format'':60 ''integr'':20C ''recent'':42 ''releas'':75 ''replac'':64 ''server'':57 ''system'':40C ''ubuntu'':33C ''window'':67 ''current'':38C,73 ''desktop'':24C ''exchang'':56 ''organis'':62 ''outlook'':65 ''support'':36C ''calendar'':14C ''groupwar'':5B ''protocol'':58 ''signific'':46 ''standard'':28C,41C ''distribut'':34C ''interoper'':51 ''microsoft'':55 ''addressbook'':12C ''proprietari'':54', false, 1, 100, NULL, NULL, false, true, NULL, NULL, NULL, NULL, 3);
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus) VALUES (6, 5, 12, 'gnome-terminal', 'GNOME Terminal', 'The GNOME Terminal Emulator', 'Gnome Terminal is a simple terminal application for your Gnome desktop. It allows quick access to console applications, supports all console types, and has many useful features such as tabbed consoles (many consoles in a single window with quick switching between them).', 'The Gnome Terminal application fully supports Gnome 2 and is a standard part of the Gnome Desktop.', '2004-09-24 20:58:02.256678', 'http://www.gnome.org/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''2'':57 ''tab'':39C ''use'':35C ''emul'':9B ''mani'':34C,41C ''part'':62 ''type'':31C ''allow'':22C ''fulli'':54 ''gnome'':2A,4A,7B,10C,19C,51,56,65 ''quick'':23C,48C ''simpl'':14C ''singl'':45C ''access'':24C ''applic'':16C,27C,53 ''consol'':26C,30C,40C,42C ''featur'':36C ''switch'':49C ''termin'':3A,5A,8B,11C,15C,52 ''window'':46C ''desktop'':20C,66 ''support'':28C,55 ''standard'':61 ''gnome-termin'':1A', false, NULL, 1, NULL, NULL, false, false, NULL, NULL, NULL, NULL, 14);
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus) VALUES (7, 6, 12, 'iso-codes', 'iso-codes', 'The iso-codes', 'foo', 'bar', '2004-09-24 20:58:02.258743', 'http://www.novell.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''bar'':12 ''foo'':11C ''iso'':2A,5A,9B ''code'':3A,6A,10B ''iso-cod'':1A,4A,8B', false, NULL, 1, NULL, NULL, false, false, NULL, NULL, NULL, NULL, 13);
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus) VALUES (8, 4, 12, 'thunderbird', 'Mozilla Thunderbird', 'Mozilla Thunderbird', 'The Mozilla Thunderbird email client', 'The Mozilla Thunderbird email client', '2004-09-24 20:58:04.478988', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''email'':9C,14 ''client'':10C,15 ''mozilla'':2A,4B,7C,12 ''thunderbird'':1A,3A,5B,8C,13', false, NULL, 1, NULL, NULL, false, false, NULL, NULL, NULL, NULL, 4);
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus) VALUES (9, 5, 16, 'applets', 'Gnome Applets', 'The Gnome Panel Applets', 'The Gnome Panel Applets are a collection of standard widgets that can be installed on your desktop Panel. These icons act as launchers for applications, or indicators of the status of your machine. For example, panel applets exist to show you your battery status or wifi network signal strength.', 'This is the collection of Panel Applets that is part of the default Gnome release. Additional Panel Applets are available from third parties. A complete set of Panel Applets is included in the Ubuntu OS, for example.
+The current stable release series of Evolution is 2.0.', '2004-09-24 20:58:02.240163', 'http://www.gnome.org/evolution/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''2.0'':80 ''mail'':29C,39C ''make'':49 ''seen'':45 ''seri'':76 ''well'':19C ''work'':47 ''allow'':61 ''email'':10C ''gnome'':23C ''linux'':71 ''stabl'':74 ''applic'':6B,15C ''client'':11C,30C ''evolut'':1A,2A,4B,7C,25C,43,69,78 ''format'':60 ''integr'':20C ''recent'':42 ''releas'':75 ''replac'':64 ''server'':57 ''system'':40C ''ubuntu'':33C ''window'':67 ''current'':38C,73 ''desktop'':24C ''exchang'':56 ''organis'':62 ''outlook'':65 ''support'':36C ''calendar'':14C ''groupwar'':5B ''protocol'':58 ''signific'':46 ''standard'':28C,41C ''distribut'':34C ''interoper'':51 ''microsoft'':55 ''addressbook'':12C ''proprietari'':54', false, 1, 100, NULL, false, true, NULL, NULL, NULL, NULL, 3);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus) VALUES (6, 5, 12, 'gnome-terminal', 'GNOME Terminal', 'The GNOME Terminal Emulator', 'Gnome Terminal is a simple terminal application for your Gnome desktop. It allows quick access to console applications, supports all console types, and has many useful features such as tabbed consoles (many consoles in a single window with quick switching between them).', 'The Gnome Terminal application fully supports Gnome 2 and is a standard part of the Gnome Desktop.', '2004-09-24 20:58:02.256678', 'http://www.gnome.org/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''2'':57 ''tab'':39C ''use'':35C ''emul'':9B ''mani'':34C,41C ''part'':62 ''type'':31C ''allow'':22C ''fulli'':54 ''gnome'':2A,4A,7B,10C,19C,51,56,65 ''quick'':23C,48C ''simpl'':14C ''singl'':45C ''access'':24C ''applic'':16C,27C,53 ''consol'':26C,30C,40C,42C ''featur'':36C ''switch'':49C ''termin'':3A,5A,8B,11C,15C,52 ''window'':46C ''desktop'':20C,66 ''support'':28C,55 ''standard'':61 ''gnome-termin'':1A', false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 14);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus) VALUES (7, 6, 12, 'iso-codes', 'iso-codes', 'The iso-codes', 'foo', 'bar', '2004-09-24 20:58:02.258743', 'http://www.novell.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''bar'':12 ''foo'':11C ''iso'':2A,5A,9B ''code'':3A,6A,10B ''iso-cod'':1A,4A,8B', false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 13);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus) VALUES (8, 4, 12, 'thunderbird', 'Mozilla Thunderbird', 'Mozilla Thunderbird', 'The Mozilla Thunderbird email client', 'The Mozilla Thunderbird email client', '2004-09-24 20:58:04.478988', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''email'':9C,14 ''client'':10C,15 ''mozilla'':2A,4B,7C,12 ''thunderbird'':1A,3A,5B,8C,13', false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 4);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus) VALUES (9, 5, 16, 'applets', 'Gnome Applets', 'The Gnome Panel Applets', 'The Gnome Panel Applets are a collection of standard widgets that can be installed on your desktop Panel. These icons act as launchers for applications, or indicators of the status of your machine. For example, panel applets exist to show you your battery status or wifi network signal strength.', 'This is the collection of Panel Applets that is part of the default Gnome release. Additional Panel Applets are available from third parties. A complete set of Panel Applets is included in the Ubuntu OS, for example.
 
-The Gnome Panel team includes Abel Kascinsky, Frederick Wurst and Andreas Andropovitch Axelsson.', '2004-10-03 16:46:09.113721', 'http://www.gnome.org/panel/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''os'':91 ''act'':28C ''set'':82 ''abel'':99 ''icon'':27C ''part'':66 ''show'':47C ''team'':97 ''wifi'':53C ''addit'':72 ''avail'':76 ''exist'':45C ''gnome'':2A,5B,9C,70,95 ''indic'':34C ''panel'':6B,10C,25C,43C,62,73,84,96 ''parti'':79 ''third'':78 ''wurst'':102 ''andrea'':104 ''applet'':1A,3A,7B,11C,44C,63,74,85 ''applic'':32C ''exampl'':42C,93 ''includ'':87,98 ''instal'':21C ''machin'':40C ''releas'':71 ''signal'':55C ''status'':37C,51C ''ubuntu'':90 ''widget'':17C ''batteri'':50C ''collect'':14C,60 ''complet'':81 ''default'':69 ''desktop'':24C ''network'':54C ''axelsson'':106 ''launcher'':30C ''standard'':16C ''strength'':56C ''frederick'':101 ''kascinski'':100 ''andropovitch'':105', false, NULL, 1, NULL, NULL, false, false, NULL, NULL, NULL, NULL, 12);
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus) VALUES (10, NULL, 2, 'python-gnome2-dev', 'python gnome2 dev', 'python gnome2 dev', 'Python bindings for the GNOME desktop environment', 'Python bindings for the GNOME desktop environment', '2004-09-24 20:58:00.674409', 'http://www.daa.com.au/~james/software/pygtk/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, false, '''dev'':4A,7A,10B ''bind'':12C,19 ''gnome'':15C,22 ''gnome2'':3A,6A,9B ''python'':2A,5A,8B,11C,18 ''desktop'':16C,23 ''environ'':17C,24 ''python-gnome2-dev'':1A', false, NULL, 1, NULL, NULL, false, false, NULL, NULL, NULL, NULL, 18);
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus) VALUES (11, 5, 12, 'netapplet', 'NetApplet', 'Network Applet', 'The Novell Network Applet', 'Displays current network status and allows network switching', '2005-03-10 16:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''allow'':14 ''novel'':6C ''applet'':4B,8C ''status'':12 ''switch'':16 ''current'':10 ''display'':9 ''network'':3B,7C,11,15 ''netapplet'':1A,2A', false, NULL, 1, NULL, NULL, false, false, NULL, NULL, NULL, NULL, 5);
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus) VALUES (12, NULL, 16, 'a52dec', 'a52dec', 'Liba52 Test Decoder', 'a52dec is a test program for liba52.', 'This tool decodes ATSC A/52 streams, and also includes a demultiplexer for mpeg-1 and mpeg-2 program streams. The liba52 source code is always distributed in the a52dec package, to make sure it easier for people to test it.', '2005-04-14 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''1'':27 ''2'':31 ''a/52'':17 ''also'':20 ''atsc'':16 ''code'':37 ''make'':46 ''mpeg'':26,30 ''sure'':47 ''test'':4B,9C,53 ''tool'':14 ''alway'':39 ''decod'':5B,15 ''peopl'':51 ''sourc'':36 ''a52dec'':1A,2A,6C,43 ''easier'':49 ''includ'':21 ''liba52'':3B,12C,35 ''mpeg-1'':25 ''mpeg-2'':29 ''packag'':44 ''stream'':18,33 ''program'':10C,32 ''distribut'':40 ''demultiplex'':23', false, NULL, 1, NULL, NULL, false, false, NULL, NULL, NULL, NULL, 6);
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus) VALUES (13, 5, 16, 'gnomebaker', 'gnomebaker', 'Gnome Baker', 'Gnome Baker is a CD burning application', 'Gnome Baker burns CDs like there''s no tomorrow', '2005-08-26 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''cd'':9C ''cds'':15 ''burn'':10C,14 ''like'':16 ''baker'':4B,6C,13 ''gnome'':3B,5C,12 ''applic'':11C ''gnomebak'':1A,2A ''tomorrow'':20', false, NULL, 1, NULL, NULL, false, false, NULL, NULL, NULL, NULL, 11);
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus) VALUES (14, NULL, 12, 'bazaar', 'Bazaar', 'Bazaar', 'Bazaar is a distributed revision control system', 'Bazaar is all about source control and double-dashes.', '2005-08-26 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''dash'':20 ''doubl'':19 ''revis'':8C ''sourc'':15 ''bazaar'':1A,2A,3B,4C,11 ''system'':10C ''control'':9C,16 ''distribut'':7C ''double-dash'':18', false, NULL, 1, NULL, NULL, false, false, NULL, NULL, NULL, NULL, 10);
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus) VALUES (15, NULL, 1, 'alsa-utils', 'alsa-utils', 'ALSA utilities', 'Utilities for configurating and using the Advanced Linux Sound Architecture', '', '2005-09-15 09:05:11.472752', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, true, '''use'':13C ''alsa'':2A,5A,7B ''util'':3A,6A,8B,9C ''linux'':16C ''sound'':17C ''advanc'':15C ''configur'':11C ''alsa-util'':1A,4A ''architectur'':18C', false, NULL, 1, NULL, NULL, false, false, NULL, NULL, NULL, NULL, 8);
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus) VALUES (16, NULL, 12, 'landscape', 'The Landscape Project', 'The Landscape Project', 'Landscape is a system being developed by Canonical to allow remote management of systems using a web interface.', 'Landscape is a system being developed by Canonical to allow remote management of systems using a web interface. The scope of the project isn''t limited, and will grow up as new features are planned.
+The Gnome Panel team includes Abel Kascinsky, Frederick Wurst and Andreas Andropovitch Axelsson.', '2004-10-03 16:46:09.113721', 'http://www.gnome.org/panel/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''os'':91 ''act'':28C ''set'':82 ''abel'':99 ''icon'':27C ''part'':66 ''show'':47C ''team'':97 ''wifi'':53C ''addit'':72 ''avail'':76 ''exist'':45C ''gnome'':2A,5B,9C,70,95 ''indic'':34C ''panel'':6B,10C,25C,43C,62,73,84,96 ''parti'':79 ''third'':78 ''wurst'':102 ''andrea'':104 ''applet'':1A,3A,7B,11C,44C,63,74,85 ''applic'':32C ''exampl'':42C,93 ''includ'':87,98 ''instal'':21C ''machin'':40C ''releas'':71 ''signal'':55C ''status'':37C,51C ''ubuntu'':90 ''widget'':17C ''batteri'':50C ''collect'':14C,60 ''complet'':81 ''default'':69 ''desktop'':24C ''network'':54C ''axelsson'':106 ''launcher'':30C ''standard'':16C ''strength'':56C ''frederick'':101 ''kascinski'':100 ''andropovitch'':105', false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 12);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus) VALUES (10, NULL, 2, 'python-gnome2-dev', 'python gnome2 dev', 'python gnome2 dev', 'Python bindings for the GNOME desktop environment', 'Python bindings for the GNOME desktop environment', '2004-09-24 20:58:00.674409', 'http://www.daa.com.au/~james/software/pygtk/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, false, '''dev'':4A,7A,10B ''bind'':12C,19 ''gnome'':15C,22 ''gnome2'':3A,6A,9B ''python'':2A,5A,8B,11C,18 ''desktop'':16C,23 ''environ'':17C,24 ''python-gnome2-dev'':1A', false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 18);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus) VALUES (11, 5, 12, 'netapplet', 'NetApplet', 'Network Applet', 'The Novell Network Applet', 'Displays current network status and allows network switching', '2005-03-10 16:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''allow'':14 ''novel'':6C ''applet'':4B,8C ''status'':12 ''switch'':16 ''current'':10 ''display'':9 ''network'':3B,7C,11,15 ''netapplet'':1A,2A', false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 5);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus) VALUES (12, NULL, 16, 'a52dec', 'a52dec', 'Liba52 Test Decoder', 'a52dec is a test program for liba52.', 'This tool decodes ATSC A/52 streams, and also includes a demultiplexer for mpeg-1 and mpeg-2 program streams. The liba52 source code is always distributed in the a52dec package, to make sure it easier for people to test it.', '2005-04-14 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''1'':27 ''2'':31 ''a/52'':17 ''also'':20 ''atsc'':16 ''code'':37 ''make'':46 ''mpeg'':26,30 ''sure'':47 ''test'':4B,9C,53 ''tool'':14 ''alway'':39 ''decod'':5B,15 ''peopl'':51 ''sourc'':36 ''a52dec'':1A,2A,6C,43 ''easier'':49 ''includ'':21 ''liba52'':3B,12C,35 ''mpeg-1'':25 ''mpeg-2'':29 ''packag'':44 ''stream'':18,33 ''program'':10C,32 ''distribut'':40 ''demultiplex'':23', false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 6);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus) VALUES (13, 5, 16, 'gnomebaker', 'gnomebaker', 'Gnome Baker', 'Gnome Baker is a CD burning application', 'Gnome Baker burns CDs like there''s no tomorrow', '2005-08-26 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''cd'':9C ''cds'':15 ''burn'':10C,14 ''like'':16 ''baker'':4B,6C,13 ''gnome'':3B,5C,12 ''applic'':11C ''gnomebak'':1A,2A ''tomorrow'':20', false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 11);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus) VALUES (14, NULL, 12, 'bazaar', 'Bazaar', 'Bazaar', 'Bazaar is a distributed revision control system', 'Bazaar is all about source control and double-dashes.', '2005-08-26 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''dash'':20 ''doubl'':19 ''revis'':8C ''sourc'':15 ''bazaar'':1A,2A,3B,4C,11 ''system'':10C ''control'':9C,16 ''distribut'':7C ''double-dash'':18', false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 10);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus) VALUES (15, NULL, 1, 'alsa-utils', 'alsa-utils', 'ALSA utilities', 'Utilities for configurating and using the Advanced Linux Sound Architecture', '', '2005-09-15 09:05:11.472752', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, true, '''use'':13C ''alsa'':2A,5A,7B ''util'':3A,6A,8B,9C ''linux'':16C ''sound'':17C ''advanc'':15C ''configur'':11C ''alsa-util'':1A,4A ''architectur'':18C', false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 8);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus) VALUES (16, NULL, 12, 'landscape', 'The Landscape Project', 'The Landscape Project', 'Landscape is a system being developed by Canonical to allow remote management of systems using a web interface.', 'Landscape is a system being developed by Canonical to allow remote management of systems using a web interface. The scope of the project isn''t limited, and will grow up as new features are planned.
 
-The Landscape system consists of two major parts: a client daemon which delivers information to the server and acts on server-provided requests; and a web server responsible for handling communication with clients and the user interface itself.', '2006-07-11 19:59:17.311451', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''act'':79 ''isn'':49 ''new'':57 ''two'':66 ''use'':22C,40 ''web'':24C,42,87 ''grow'':54 ''part'':68 ''plan'':60 ''user'':97 ''allow'':17C,35 ''canon'':15C,33 ''deliv'':73 ''handl'':91 ''limit'':51 ''major'':67 ''manag'':19C,37 ''remot'':18C,36 ''scope'':45 ''client'':70,94 ''daemon'':71 ''featur'':58 ''inform'':74 ''provid'':83 ''server'':77,82,88 ''system'':11C,21C,29,39,63 ''consist'':64 ''develop'':13C,31 ''project'':4A,7B,48 ''request'':84 ''respons'':89 ''communic'':92 ''interfac'':25C,43,98 ''landscap'':1A,3A,6B,8C,26,62 ''server-provid'':81', false, NULL, 1, NULL, NULL, false, true, 64, NULL, NULL, NULL, 9);
+The Landscape system consists of two major parts: a client daemon which delivers information to the server and acts on server-provided requests; and a web server responsible for handling communication with clients and the user interface itself.', '2006-07-11 19:59:17.311451', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''act'':79 ''isn'':49 ''new'':57 ''two'':66 ''use'':22C,40 ''web'':24C,42,87 ''grow'':54 ''part'':68 ''plan'':60 ''user'':97 ''allow'':17C,35 ''canon'':15C,33 ''deliv'':73 ''handl'':91 ''limit'':51 ''major'':67 ''manag'':19C,37 ''remot'':18C,36 ''scope'':45 ''client'':70,94 ''daemon'':71 ''featur'':58 ''inform'':74 ''provid'':83 ''server'':77,82,88 ''system'':11C,21C,29,39,63 ''consist'':64 ''develop'':13C,31 ''project'':4A,7B,48 ''request'':84 ''respons'':89 ''communic'':92 ''interfac'':25C,43,98 ''landscap'':1A,3A,6B,8C,26,62 ''server-provid'':81', false, NULL, 1, NULL, false, true, 64, NULL, NULL, NULL, 9);
 
 
 ALTER TABLE product ENABLE TRIGGER ALL;
@@ -7904,8 +7880,8 @@ ALTER TABLE product ENABLE TRIGGER ALL;
 
 ALTER TABLE productbounty DISABLE TRIGGER ALL;
 
-INSERT INTO productbounty (id, bounty, product) VALUES (1, 1, 4);
-INSERT INTO productbounty (id, bounty, product) VALUES (2, 4, 5);
+INSERT INTO productbounty (id, bounty, product, date_created) VALUES (1, 1, 4, '2006-10-16 18:31:52.323331');
+INSERT INTO productbounty (id, bounty, product, date_created) VALUES (2, 4, 5, '2006-10-16 18:31:52.325019');
 
 
 ALTER TABLE productbounty ENABLE TRIGGER ALL;
@@ -7923,13 +7899,6 @@ ALTER TABLE productcvsmodule DISABLE TRIGGER ALL;
 
 
 ALTER TABLE productcvsmodule ENABLE TRIGGER ALL;
-
-
-ALTER TABLE productlabel DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE productlabel ENABLE TRIGGER ALL;
 
 
 ALTER TABLE productrelease DISABLE TRIGGER ALL;
@@ -8115,34 +8084,34 @@ ALTER TABLE productreleasefile ENABLE TRIGGER ALL;
 
 ALTER TABLE productseries DISABLE TRIGGER ALL;
 
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releaseroot, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (1, 4, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.895136', NULL, 12, NULL);
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releaseroot, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (2, 4, '1.0', 'The 1.0 branch of the Mozilla web browser. Currently, this is the stable branch of Mozilla, and all stable releases are made off this branch.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.898385', NULL, 12, NULL);
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releaseroot, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (3, 5, 'trunk', 'The primary "trunk" of development for this product. This series
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (1, 4, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.895136', NULL, 12, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (2, 4, '1.0', 'The 1.0 branch of the Mozilla web browser. Currently, this is the stable branch of Mozilla, and all stable releases are made off this branch.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.898385', NULL, 12, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (3, 5, 'trunk', 'The primary "trunk" of development for this product. This series
 was automatically created and represents the idea of a primary trunk
 of software development without "stable branches". For most
 products, releases in this series will be "milestone" or "test"
 releases, and there should be other series for the stable releases
-of the product.', 14, 5, NULL, NULL, 1, ':pserver:anonymous@anoncvs.gnome.org:/cvs/gnome', 'evolution', 'MAIN', '', NULL, '', '', NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.914873', NULL, 12, NULL);
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releaseroot, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (4, 8, 'trunk', 'The primary "trunk" of development for this product. This series
+of the product.', 14, 5, NULL, NULL, 1, ':pserver:anonymous@anoncvs.gnome.org:/cvs/gnome', 'evolution', 'MAIN', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.914873', NULL, 12, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (4, 8, 'trunk', 'The primary "trunk" of development for this product. This series
 was automatically created and represents the idea of a primary trunk
 of software development without "stable branches". For most
 products, releases in this series will be "milestone" or "test"
 releases, and there should be other series for the stable releases
-of the product.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.91214', NULL, 12, NULL);
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releaseroot, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (5, 11, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.899819', NULL, 12, NULL);
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releaseroot, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (6, 12, 'trunk', 'The primary upstream development branch, from which all releases are made.', NULL, 2, NULL, NULL, 1, ':pserver:anonymous@cvs.sourceforge.net:/cvsroot/liba52', 'a52dec', 'MAIN', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.913564', NULL, 16, NULL);
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releaseroot, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (7, 12, 'failedbranch', 'A branch where auto test has failed.', NULL, 3, NULL, NULL, 1, ':pserver:anonymous@cvs.sourceforge.net:/cvsroot/liba52', 'a52dec', 'AUTOTESTFAILED', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.913564', NULL, 16, NULL);
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releaseroot, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (8, 15, 'trunk', 'The mainline for alsa-utils', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-09-15 09:10:03.531637', NULL, 1, NULL);
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releaseroot, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (9, 16, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-07-11 19:59:17.311451', NULL, 12, NULL);
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releaseroot, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (10, 14, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-11 06:16:00.934312', NULL, 12, NULL);
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releaseroot, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (11, 13, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-11 06:16:00.934312', NULL, 16, NULL);
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releaseroot, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (12, 9, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-11 06:16:00.934312', NULL, 16, NULL);
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releaseroot, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (13, 7, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-11 06:16:00.934312', NULL, 12, NULL);
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releaseroot, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (14, 6, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-11 06:16:00.934312', NULL, 12, NULL);
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releaseroot, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (15, 3, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-11 06:16:00.934312', NULL, 2, NULL);
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releaseroot, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (16, 1, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-11 06:16:00.934312', NULL, 17, NULL);
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releaseroot, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (17, 2, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-14 07:56:10.631636', NULL, 2, NULL);
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releaseroot, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (18, 10, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-14 07:56:10.631636', NULL, 2, NULL);
+of the product.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.91214', NULL, 12, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (5, 11, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.899819', NULL, 12, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (6, 12, 'trunk', 'The primary upstream development branch, from which all releases are made.', NULL, 2, NULL, NULL, 1, ':pserver:anonymous@cvs.sourceforge.net:/cvsroot/liba52', 'a52dec', 'MAIN', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.913564', NULL, 16, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (7, 12, 'failedbranch', 'A branch where auto test has failed.', NULL, 3, NULL, NULL, 1, ':pserver:anonymous@cvs.sourceforge.net:/cvsroot/liba52', 'a52dec', 'AUTOTESTFAILED', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.913564', NULL, 16, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (8, 15, 'trunk', 'The mainline for alsa-utils', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-09-15 09:10:03.531637', NULL, 1, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (9, 16, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-07-11 19:59:17.311451', NULL, 12, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (10, 14, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-11 06:16:00.934312', NULL, 12, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (11, 13, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-11 06:16:00.934312', NULL, 16, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (12, 9, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-11 06:16:00.934312', NULL, 16, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (13, 7, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-11 06:16:00.934312', NULL, 12, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (14, 6, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-11 06:16:00.934312', NULL, 12, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (15, 3, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-11 06:16:00.934312', NULL, 2, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (16, 1, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-11 06:16:00.934312', NULL, 17, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (17, 2, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-14 07:56:10.631636', NULL, 2, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (18, 10, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-14 07:56:10.631636', NULL, 2, NULL);
 
 
 ALTER TABLE productseries ENABLE TRIGGER ALL;
@@ -8184,7 +8153,7 @@ ALTER TABLE project ENABLE TRIGGER ALL;
 
 ALTER TABLE projectbounty DISABLE TRIGGER ALL;
 
-INSERT INTO projectbounty (id, bounty, project) VALUES (1, 1, 4);
+INSERT INTO projectbounty (id, bounty, project, date_created) VALUES (1, 1, 4, '2006-10-16 18:31:52.432002');
 
 
 ALTER TABLE projectbounty ENABLE TRIGGER ALL;
@@ -8310,17 +8279,6 @@ INSERT INTO revisionparent (id, "sequence", revision, parent_id) VALUES (10, 1, 
 ALTER TABLE revisionparent ENABLE TRIGGER ALL;
 
 
-ALTER TABLE "schema" DISABLE TRIGGER ALL;
-
-INSERT INTO "schema" (id, name, title, description, "owner", extensible) VALUES (1, 'mark', 'TITLE', 'description', 1, true);
-INSERT INTO "schema" (id, name, title, description, "owner", extensible) VALUES (2, 'schema', 'SCHEMA', 'description', 1, true);
-INSERT INTO "schema" (id, name, title, description, "owner", extensible) VALUES (3, 'trema', 'XCHEMA', 'description', 1, true);
-INSERT INTO "schema" (id, name, title, description, "owner", extensible) VALUES (4, 'enema', 'ENHEMA', 'description', 1, true);
-
-
-ALTER TABLE "schema" ENABLE TRIGGER ALL;
-
-
 
 
 
@@ -8370,86 +8328,86 @@ ALTER TABLE section ENABLE TRIGGER ALL;
 
 ALTER TABLE sectionselection DISABLE TRIGGER ALL;
 
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (1, 3, 3);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (2, 10, 4);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (3, 10, 1);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (4, 10, 5);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (5, 10, 6);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (6, 10, 7);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (7, 10, 8);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (8, 10, 3);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (9, 10, 9);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (10, 10, 10);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (11, 10, 11);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (12, 10, 12);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (13, 10, 13);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (14, 10, 14);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (15, 10, 15);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (16, 10, 16);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (17, 10, 17);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (18, 10, 18);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (19, 10, 19);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (20, 10, 20);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (21, 10, 21);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (22, 10, 22);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (23, 10, 22);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (24, 10, 23);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (25, 10, 24);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (26, 10, 25);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (27, 10, 26);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (28, 10, 27);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (29, 10, 28);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (30, 10, 30);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (31, 10, 2);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (32, 10, 31);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (33, 10, 29);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (34, 10, 32);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (35, 10, 33);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (36, 10, 34);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (37, 10, 35);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (38, 11, 4);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (39, 11, 1);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (40, 11, 5);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (41, 11, 6);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (42, 11, 7);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (43, 11, 8);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (44, 11, 3);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (45, 11, 9);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (46, 11, 10);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (47, 11, 11);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (48, 11, 12);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (49, 11, 13);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (50, 11, 14);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (51, 11, 15);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (52, 11, 16);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (53, 11, 17);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (54, 11, 18);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (55, 11, 19);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (56, 11, 20);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (57, 11, 21);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (58, 11, 22);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (59, 11, 22);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (60, 11, 23);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (61, 11, 24);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (62, 11, 25);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (63, 11, 26);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (64, 11, 27);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (65, 11, 28);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (66, 11, 30);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (67, 11, 2);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (68, 11, 31);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (69, 11, 29);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (70, 11, 32);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (71, 11, 33);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (72, 11, 34);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (73, 11, 35);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (74, 3, 1);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (75, 3, 2);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (76, 3, 4);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (77, 1, 1);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (78, 1, 2);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (79, 1, 3);
-INSERT INTO sectionselection (id, distrorelease, section) VALUES (80, 1, 4);
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (1, 3, 3, '2006-10-16 18:31:52.554214');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (2, 10, 4, '2006-10-16 18:31:52.556171');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (3, 10, 1, '2006-10-16 18:31:52.55668');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (4, 10, 5, '2006-10-16 18:31:52.557165');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (5, 10, 6, '2006-10-16 18:31:52.557648');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (6, 10, 7, '2006-10-16 18:31:52.55813');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (7, 10, 8, '2006-10-16 18:31:52.558612');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (8, 10, 3, '2006-10-16 18:31:52.55928');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (9, 10, 9, '2006-10-16 18:31:52.559767');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (10, 10, 10, '2006-10-16 18:31:52.560249');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (11, 10, 11, '2006-10-16 18:31:52.560731');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (12, 10, 12, '2006-10-16 18:31:52.561213');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (13, 10, 13, '2006-10-16 18:31:52.561746');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (14, 10, 14, '2006-10-16 18:31:52.562229');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (15, 10, 15, '2006-10-16 18:31:52.562711');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (16, 10, 16, '2006-10-16 18:31:52.563298');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (17, 10, 17, '2006-10-16 18:31:52.563865');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (18, 10, 18, '2006-10-16 18:31:52.564348');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (19, 10, 19, '2006-10-16 18:31:52.564828');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (20, 10, 20, '2006-10-16 18:31:52.565309');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (21, 10, 21, '2006-10-16 18:31:52.565791');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (22, 10, 22, '2006-10-16 18:31:52.566272');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (23, 10, 22, '2006-10-16 18:31:52.566754');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (24, 10, 23, '2006-10-16 18:31:52.56725');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (25, 10, 24, '2006-10-16 18:31:52.567731');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (26, 10, 25, '2006-10-16 18:31:52.568213');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (27, 10, 26, '2006-10-16 18:31:52.568694');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (28, 10, 27, '2006-10-16 18:31:52.569242');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (29, 10, 28, '2006-10-16 18:31:52.569724');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (30, 10, 30, '2006-10-16 18:31:52.570205');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (31, 10, 2, '2006-10-16 18:31:52.570686');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (32, 10, 31, '2006-10-16 18:31:52.57132');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (33, 10, 29, '2006-10-16 18:31:52.571803');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (34, 10, 32, '2006-10-16 18:31:52.572283');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (35, 10, 33, '2006-10-16 18:31:52.572764');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (36, 10, 34, '2006-10-16 18:31:52.573246');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (37, 10, 35, '2006-10-16 18:31:52.573795');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (38, 11, 4, '2006-10-16 18:31:52.574347');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (39, 11, 1, '2006-10-16 18:31:52.574976');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (40, 11, 5, '2006-10-16 18:31:52.575462');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (41, 11, 6, '2006-10-16 18:31:52.575944');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (42, 11, 7, '2006-10-16 18:31:52.576425');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (43, 11, 8, '2006-10-16 18:31:52.576906');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (44, 11, 3, '2006-10-16 18:31:52.577387');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (45, 11, 9, '2006-10-16 18:31:52.577868');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (46, 11, 10, '2006-10-16 18:31:52.578349');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (47, 11, 11, '2006-10-16 18:31:52.57883');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (48, 11, 12, '2006-10-16 18:31:52.579504');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (49, 11, 13, '2006-10-16 18:31:52.579986');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (50, 11, 14, '2006-10-16 18:31:52.580466');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (51, 11, 15, '2006-10-16 18:31:52.580946');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (52, 11, 16, '2006-10-16 18:31:52.581452');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (53, 11, 17, '2006-10-16 18:31:52.581933');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (54, 11, 18, '2006-10-16 18:31:52.582414');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (55, 11, 19, '2006-10-16 18:31:52.583019');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (56, 11, 20, '2006-10-16 18:31:52.583507');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (57, 11, 21, '2006-10-16 18:31:52.583987');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (58, 11, 22, '2006-10-16 18:31:52.584468');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (59, 11, 22, '2006-10-16 18:31:52.584949');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (60, 11, 23, '2006-10-16 18:31:52.585429');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (61, 11, 24, '2006-10-16 18:31:52.585909');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (62, 11, 25, '2006-10-16 18:31:52.58639');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (63, 11, 26, '2006-10-16 18:31:52.586983');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (64, 11, 27, '2006-10-16 18:31:52.587471');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (65, 11, 28, '2006-10-16 18:31:52.587965');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (66, 11, 30, '2006-10-16 18:31:52.588478');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (67, 11, 2, '2006-10-16 18:31:52.588959');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (68, 11, 31, '2006-10-16 18:31:52.589439');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (69, 11, 29, '2006-10-16 18:31:52.589921');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (70, 11, 32, '2006-10-16 18:31:52.590401');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (71, 11, 33, '2006-10-16 18:31:52.590991');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (72, 11, 34, '2006-10-16 18:31:52.591477');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (73, 11, 35, '2006-10-16 18:31:52.591958');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (74, 3, 1, '2006-10-16 18:31:52.592438');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (75, 3, 2, '2006-10-16 18:31:52.592918');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (76, 3, 4, '2006-10-16 18:31:52.593398');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (77, 1, 1, '2006-10-16 18:31:52.593877');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (78, 1, 2, '2006-10-16 18:31:52.594357');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (79, 1, 3, '2006-10-16 18:31:52.594837');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (80, 1, 4, '2006-10-16 18:31:52.595418');
 
 
 ALTER TABLE sectionselection ENABLE TRIGGER ALL;
@@ -8618,6 +8576,8 @@ INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, d
  -- Sample Person <test@canonical.com> Tue, 10 Feb 2006 10:10:08 +0300', NULL, NULL, 'powerpc i386', NULL, 1, NULL, 16, 21, 3, 1);
 INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (28, 1, '2.6.15.3', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'any', NULL, 1, NULL, 16, 22, 3, 1);
 INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (29, 1, '0.00', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, NULL, 16, 17, 3, 1);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (30, 1, '1.0', '2006-09-28 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, NULL, 16, 20, 10, 1);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (31, 1, '1.0', '2006-09-28 18:19:01', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, NULL, 16, 20, 10, 1);
 
 
 ALTER TABLE sourcepackagerelease ENABLE TRIGGER ALL;
@@ -8672,8 +8632,8 @@ ALTER TABLE specificationbug ENABLE TRIGGER ALL;
 
 ALTER TABLE specificationdependency DISABLE TRIGGER ALL;
 
-INSERT INTO specificationdependency (id, specification, dependency) VALUES (1, 4, 3);
-INSERT INTO specificationdependency (id, specification, dependency) VALUES (2, 2, 4);
+INSERT INTO specificationdependency (id, specification, dependency, date_created) VALUES (1, 4, 3, '2006-10-16 18:31:52.855436');
+INSERT INTO specificationdependency (id, specification, dependency, date_created) VALUES (2, 2, 4, '2006-10-16 18:31:52.857737');
 
 
 ALTER TABLE specificationdependency ENABLE TRIGGER ALL;
@@ -8681,12 +8641,12 @@ ALTER TABLE specificationdependency ENABLE TRIGGER ALL;
 
 ALTER TABLE specificationfeedback DISABLE TRIGGER ALL;
 
-INSERT INTO specificationfeedback (id, specification, reviewer, requester, queuemsg) VALUES (1, 3, 13, 16, 'Please make sure this reflects your implementation plan.');
-INSERT INTO specificationfeedback (id, specification, reviewer, requester, queuemsg) VALUES (2, 4, 16, 1, 'Please confirm this meets your requirements.');
-INSERT INTO specificationfeedback (id, specification, reviewer, requester, queuemsg) VALUES (4, 6, 13, 1, 'sckj hsdkjhskdhdhsdkjf hsdf');
-INSERT INTO specificationfeedback (id, specification, reviewer, requester, queuemsg) VALUES (5, 6, 1, 12, 'sfdjgdlfjgdlfjgdf glkdjf gldkfj glkdfj glkdjf');
-INSERT INTO specificationfeedback (id, specification, reviewer, requester, queuemsg) VALUES (8, 3, 1, 1, 'foo bar baz xfhds fksd hfskdf slkd fksdhf sdkjhfksdf sdkfjh skdjfhsdkj fskjdhfj.d kjsdhfkjhds fs kjshdfkj.');
-INSERT INTO specificationfeedback (id, specification, reviewer, requester, queuemsg) VALUES (9, 3, 1, 12, 'sdfjlksd jflsjdflskjd flksjd fksdjf lskjd flksdfslds lskjflkdss slkd slkfj sljdls kjds flslkdjfls.');
+INSERT INTO specificationfeedback (id, specification, reviewer, requester, queuemsg, date_created) VALUES (1, 3, 13, 16, 'Please make sure this reflects your implementation plan.', '2006-10-16 18:31:52.861885');
+INSERT INTO specificationfeedback (id, specification, reviewer, requester, queuemsg, date_created) VALUES (2, 4, 16, 1, 'Please confirm this meets your requirements.', '2006-10-16 18:31:52.864486');
+INSERT INTO specificationfeedback (id, specification, reviewer, requester, queuemsg, date_created) VALUES (4, 6, 13, 1, 'sckj hsdkjhskdhdhsdkjf hsdf', '2006-10-16 18:31:52.865147');
+INSERT INTO specificationfeedback (id, specification, reviewer, requester, queuemsg, date_created) VALUES (5, 6, 1, 12, 'sfdjgdlfjgdlfjgdf glkdjf gldkfj glkdfj glkdjf', '2006-10-16 18:31:52.865733');
+INSERT INTO specificationfeedback (id, specification, reviewer, requester, queuemsg, date_created) VALUES (8, 3, 1, 1, 'foo bar baz xfhds fksd hfskdf slkd fksdhf sdkjhfksdf sdkfjh skdjfhsdkj fskjdhfj.d kjsdhfkjhds fs kjshdfkj.', '2006-10-16 18:31:52.866321');
+INSERT INTO specificationfeedback (id, specification, reviewer, requester, queuemsg, date_created) VALUES (9, 3, 1, 12, 'sdfjlksd jflsjdflskjd flksjd fksdjf lskjd flksdfslds lskjflkdss slkd slkfj sljdls kjds flslkdjfls.', '2006-10-16 18:31:52.866953');
 
 
 ALTER TABLE specificationfeedback ENABLE TRIGGER ALL;
@@ -8694,11 +8654,11 @@ ALTER TABLE specificationfeedback ENABLE TRIGGER ALL;
 
 ALTER TABLE specificationsubscription DISABLE TRIGGER ALL;
 
-INSERT INTO specificationsubscription (id, specification, person, essential) VALUES (1, 3, 16, false);
-INSERT INTO specificationsubscription (id, specification, person, essential) VALUES (2, 3, 2, true);
-INSERT INTO specificationsubscription (id, specification, person, essential) VALUES (3, 3, 7, true);
-INSERT INTO specificationsubscription (id, specification, person, essential) VALUES (4, 3, 22, false);
-INSERT INTO specificationsubscription (id, specification, person, essential) VALUES (5, 3, 14, false);
+INSERT INTO specificationsubscription (id, specification, person, essential, date_created) VALUES (1, 3, 16, false, '2006-10-16 18:31:52.870628');
+INSERT INTO specificationsubscription (id, specification, person, essential, date_created) VALUES (2, 3, 2, true, '2006-10-16 18:31:52.873399');
+INSERT INTO specificationsubscription (id, specification, person, essential, date_created) VALUES (3, 3, 7, true, '2006-10-16 18:31:52.874');
+INSERT INTO specificationsubscription (id, specification, person, essential, date_created) VALUES (4, 3, 22, false, '2006-10-16 18:31:52.874568');
+INSERT INTO specificationsubscription (id, specification, person, essential, date_created) VALUES (5, 3, 14, false, '2006-10-16 18:31:52.875255');
 
 
 ALTER TABLE specificationsubscription ENABLE TRIGGER ALL;
@@ -9017,7 +8977,7 @@ ALTER TABLE sprintspecification ENABLE TRIGGER ALL;
 
 ALTER TABLE sshkey DISABLE TRIGGER ALL;
 
-INSERT INTO sshkey (id, person, keytype, keytext, "comment") VALUES (1, 12, 2, 'AAAAB3NzaC1kc3MAAAEBAPfhCA15ZaT08brwVXwpJjcZT6QFIipzF1sGy57HY7QPi/W+uljr1VcCHzWdlSmda7YpTCTx0NFYYQIccQRGX6zYL8v1w9FSRCAnxxUJmqEhsUDFYFdVTa9uLCrs3MSbmh7wwFPdRrGrO6X5x7T4dMZQwykSZrOVdpLcCHRgrMZslLomIAjERn6OAQNiGFz7B2tEi/3Soqd52bGJwOtGymRiAXkPSLbH7KfzSCe34ytdh6BD+4SrgSoa+TL3VDV70QAdlOFXD42ZHl3Sc0Tde4LbZeYq2Uf84DOATLZBbOYpRSqTLkM9XngpnvCRVb6dxEQfgODDw783tEuPpySLj2EAAAAVANpUVgivDjt9gFibN/AXfYy1meeBAAABAB6FtnMywmWZg2lr2I3nDfE5U5QbGUQB/ZEP98ZkSkhOcF29VlnGOxyb2/VZbVTLa/btlPF82L4An/c8VKtKZnel7LnAlMoArdgzQNXGVQQVtnaWwM26ydgDzkSSIes3elNZgsfnPRBvaF0ol9Tqju0rNGKjnr3ZOX/NX+42bxpjRnxYj1h56yP2jKKeGfjorI6JK1YfqBAiTxzaDMzSpknnrbztaKJoh7IFqMMOp9ANSFh7H106pEaCv3ebCTJZprtWqNKjb2zum7OQPRz3upA0qx22ocTokjv4itXJ6yj/BvGu9qdOIQFXuB2rsFtLZtS8ATueOly0GzyeiZBx/AEAAAEBAO8jRYjL7tAYnVlO1p6UzPOicAuGCFWfNbBEDRAXoSgLNdj451jStw+eUc9ZVz7tG/XRVZsiavtFHb2cbrcfX1YOd69xi0m+IY6mo3yKt3irQRokDtt376sHoUdHgj2ozySZJgG8IJndtoS+VQQy6NdClA3fNFb96bF865eNaRYoHJO9ZI84lkWQL++MLzIuyFfCs1hSlapyyuHC8kFmF7AQdrVZvbohSbnWs+w53nIW8nAA7z21wAukvE1Pl6AQyG0e7U1sYS8Pc8dtmzJvdtVZWBl02/gqQJ7f06mFvnsN45rR1Uyxnrwl6rbFwqabZDlyD5Ac6Icbvz9SG1gBOiI=', 'andrew@trogdor');
+INSERT INTO sshkey (id, person, keytype, keytext, "comment", date_created) VALUES (1, 12, 2, 'AAAAB3NzaC1kc3MAAAEBAPfhCA15ZaT08brwVXwpJjcZT6QFIipzF1sGy57HY7QPi/W+uljr1VcCHzWdlSmda7YpTCTx0NFYYQIccQRGX6zYL8v1w9FSRCAnxxUJmqEhsUDFYFdVTa9uLCrs3MSbmh7wwFPdRrGrO6X5x7T4dMZQwykSZrOVdpLcCHRgrMZslLomIAjERn6OAQNiGFz7B2tEi/3Soqd52bGJwOtGymRiAXkPSLbH7KfzSCe34ytdh6BD+4SrgSoa+TL3VDV70QAdlOFXD42ZHl3Sc0Tde4LbZeYq2Uf84DOATLZBbOYpRSqTLkM9XngpnvCRVb6dxEQfgODDw783tEuPpySLj2EAAAAVANpUVgivDjt9gFibN/AXfYy1meeBAAABAB6FtnMywmWZg2lr2I3nDfE5U5QbGUQB/ZEP98ZkSkhOcF29VlnGOxyb2/VZbVTLa/btlPF82L4An/c8VKtKZnel7LnAlMoArdgzQNXGVQQVtnaWwM26ydgDzkSSIes3elNZgsfnPRBvaF0ol9Tqju0rNGKjnr3ZOX/NX+42bxpjRnxYj1h56yP2jKKeGfjorI6JK1YfqBAiTxzaDMzSpknnrbztaKJoh7IFqMMOp9ANSFh7H106pEaCv3ebCTJZprtWqNKjb2zum7OQPRz3upA0qx22ocTokjv4itXJ6yj/BvGu9qdOIQFXuB2rsFtLZtS8ATueOly0GzyeiZBx/AEAAAEBAO8jRYjL7tAYnVlO1p6UzPOicAuGCFWfNbBEDRAXoSgLNdj451jStw+eUc9ZVz7tG/XRVZsiavtFHb2cbrcfX1YOd69xi0m+IY6mo3yKt3irQRokDtt376sHoUdHgj2ozySZJgG8IJndtoS+VQQy6NdClA3fNFb96bF865eNaRYoHJO9ZI84lkWQL++MLzIuyFfCs1hSlapyyuHC8kFmF7AQdrVZvbohSbnWs+w53nIW8nAA7z21wAukvE1Pl6AQyG0e7U1sYS8Pc8dtmzJvdtVZWBl02/gqQJ7f06mFvnsN45rR1Uyxnrwl6rbFwqabZDlyD5Ac6Icbvz9SG1gBOiI=', 'andrew@trogdor', '2006-10-16 18:31:53.030784');
 
 
 ALTER TABLE sshkey ENABLE TRIGGER ALL;
@@ -9269,29 +9229,15 @@ ALTER TABLE ticketreopening ENABLE TRIGGER ALL;
 
 ALTER TABLE ticketsubscription DISABLE TRIGGER ALL;
 
-INSERT INTO ticketsubscription (id, ticket, person) VALUES (1, 7, 16);
-INSERT INTO ticketsubscription (id, ticket, person) VALUES (2, 3, 16);
-INSERT INTO ticketsubscription (id, ticket, person) VALUES (3, 8, 12);
-INSERT INTO ticketsubscription (id, ticket, person) VALUES (4, 9, 12);
-INSERT INTO ticketsubscription (id, ticket, person) VALUES (5, 10, 12);
-INSERT INTO ticketsubscription (id, ticket, person) VALUES (6, 11, 12);
+INSERT INTO ticketsubscription (id, ticket, person, date_created) VALUES (1, 7, 16, '2006-10-16 18:31:53.201104');
+INSERT INTO ticketsubscription (id, ticket, person, date_created) VALUES (2, 3, 16, '2006-10-16 18:31:53.202983');
+INSERT INTO ticketsubscription (id, ticket, person, date_created) VALUES (3, 8, 12, '2006-10-16 18:31:53.203527');
+INSERT INTO ticketsubscription (id, ticket, person, date_created) VALUES (4, 9, 12, '2006-10-16 18:31:53.204048');
+INSERT INTO ticketsubscription (id, ticket, person, date_created) VALUES (5, 10, 12, '2006-10-16 18:31:53.204568');
+INSERT INTO ticketsubscription (id, ticket, person, date_created) VALUES (6, 11, 12, '2006-10-16 18:31:53.205087');
 
 
 ALTER TABLE ticketsubscription ENABLE TRIGGER ALL;
-
-
-ALTER TABLE translationeffort DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE translationeffort ENABLE TRIGGER ALL;
-
-
-ALTER TABLE translationeffortpotemplate DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE translationeffortpotemplate ENABLE TRIGGER ALL;
 
 
 ALTER TABLE translationgroup DISABLE TRIGGER ALL;
