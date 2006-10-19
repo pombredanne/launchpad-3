@@ -340,7 +340,7 @@ ShipItConstants.current_distrorelease.
   >>> for line in csv_file.readlines():
   ...     line.strip()
   '"Country","Total Shipped Ubuntu","Total Shipped Kubuntu","Total Shipped Edubuntu","Total Shipped","Shipped Ubuntu x86 CDs","Shipped Ubuntu AMD64 CDs","Shipped Ubuntu PPC CDs","Shipped Kubuntu x86 CDs","Shipped Kubuntu AMD64 CDs","Shipped Kubuntu PPC CDs","Shipped Edubuntu x86 CDs","Shipped Edubuntu AMD64 CDs","Shipped Edubuntu PPC CDs","Normal-prio shipments","High-prio shipments","Average request size","Percentage of requested CDs that were approved","Percentage of total shipped CDs","Continent"'
-  '"Antarctica","50","50","50","150","50","0","0","50","0","0","50","0", "0","1","0","150","100.00%","59.52%","Antarctica"'
+  '"Antarctica","50","50","50","150","50","0","0","50","0","0","50","0","0","1","0","150","100.00%","59.52%","Antarctica"'
   '"Bermuda","10","0","0","10","8","1","1","0","0","0","0","0","0","1","0","10","100.00%","3.97%","North America"'
   '"British Indian Ocean Territory","25","11","5","41","9","6","10","6","5","0","5","0","0","3","1","10","100.00%","16.27%","Asia"'
   '"Burkina Faso","10","0","0","10","10","0","0","0","0","0","0","0","0","1","0","10","100.00%","3.97%","Africa"'
