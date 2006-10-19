@@ -7,6 +7,7 @@ __all__ = ['TicketReopening',
 
 from zope.event import notify
 from zope.interface import implements
+from zope.security.proxy import ProxyFactory
 
 from sqlobject import ForeignKey
 
@@ -44,14 +45,13 @@ def create_ticketreopening(ticket, event):
     if ticket.status != TicketStatus.OPEN:
         return
 
-    # Only create a TicketReopening if the ticket
-    # had previsouly an answer
+    # Only create a TicketReopening if the ticket had previsouly an answer.
     old_ticket = event.object_before_modification
     if old_ticket.answerer is None:
         return
     assert ticket.answerer is None, "Open ticket shouldn't have an answerer."
 
-    # The last message should be the cause of the reopening
+    # The last message should be the cause of the reopening.
     reopen_msg = ticket.messages[-1]
     assert [reopen_msg] == (
         list(set(ticket.messages).difference(old_ticket.messages))), (
@@ -62,5 +62,7 @@ def create_ticketreopening(ticket, event):
             datecreated=reopen_msg.datecreated, answerer=old_ticket.answerer,
             dateanswered=old_ticket.dateanswered,
             priorstate=old_ticket.status)
+
+    reopening = ProxyFactory(reopening)
     notify(SQLObjectCreatedEvent(reopening, user=reopen_msg.owner))
 
