@@ -50,7 +50,6 @@
       <li><a href="#"><em>Bar</em></a></li>
       <li><a href="#"><em>Hum</em></a></li>
     </ul>
-<<<<<<< TREE
     <div id="logincontrol" tal:content="structure context/@@login_status" />
     <ul id="menu" tal:content="structure context/@@+breadcrumbs" />
     <!-- id="menu" should be id="locationbar" -->
@@ -177,7 +176,7 @@
 	  <div id="help_panel" class="closed">
 	    <div class="help1">
 	      <div class="help2">
-	        <p metal:fill-slot="help">
+	        <p metal:define-slot="help">
 	          Sorry, help isn&rsquo;t available for this page.
 	        </p>
 	      </div>
