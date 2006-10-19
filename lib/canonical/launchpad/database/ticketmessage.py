@@ -15,10 +15,11 @@ from sqlobject import ForeignKey
 from canonical.launchpad import _
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.database.message import Message, MessageChunk
-from canonical.launchpad.interfaces import ITicketMessage, IMessage
+from canonical.launchpad.interfaces import IMessage, ITicketMessage
 
 from canonical.lp import decorates
 from canonical.lp.dbschema import EnumCol, TicketAction, TicketStatus
+
 
 class TicketMessage(SQLBase):
     """A table linking tickets and messages."""
