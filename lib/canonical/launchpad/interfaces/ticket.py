@@ -81,7 +81,7 @@ class ITicket(IHasOwner):
     dateanswered = Datetime(title=_("Date Answered"), required=False,
         description=_(
             "The date on which the ticket owner confirmed that the ticket is "
-            "Answered."))
+            "Solved."))
     product = Choice(title=_('Upstream Product'), required=False,
         vocabulary='Product', description=_('Select the upstream product '
         'with which you need support.'))
