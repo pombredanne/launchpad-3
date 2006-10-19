@@ -38,6 +38,8 @@ order after the helpers.
 __metaclass__ = type
 
 from zope.component import getUtility
+
+from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import smartquote
 
@@ -143,8 +145,8 @@ def bug_extref_edit(context, view):
 
 bug_mark_as_duplicate = ContextId('Bug #%d - Mark as duplicate')
 
-bug_nominate_for_release = LaunchbagBugID(
-    'Bug #%d - Nominate for fixing in a release')
+def bug_nominate_for_release(context, view):
+    return view.label
 
 bug_removecve = LaunchbagBugID("Bug #%d - Remove CVE reference")
 

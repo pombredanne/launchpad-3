@@ -27,20 +27,22 @@
       </tal:not-conjoined-task>
     </td>
     <td style="margin: 0; padding: 0" tal:condition="not:indent_task">
-      <a
-        tal:condition="can_edit_bugtask"
-        tal:attributes="
-            href tasklink;
-            onclick string:return toggleFormVisibility(document.getElementById('${form_row_id}'))"
-        tal:content="context/targetname"
-        style="display: block; padding: 3px"
-      />
-      <a
-        tal:condition="not:can_edit_bugtask"
-        tal:attributes="href tasklink"
-        tal:content="context/targetname"
-        style="display: block; padding: 3px"
-      />
+      <span style="display: block; padding: 3px">
+        <img src="/@@/package-source" tal:condition="view/shouldShowPackageIcon" />
+        <img src="/@@/product" tal:condition="view/shouldShowProductIcon" />
+        <a
+          tal:condition="can_edit_bugtask"
+          tal:attributes="
+              href tasklink;
+              onclick string:return toggleFormVisibility(document.getElementById('${form_row_id}'))"
+          tal:content="context/targetname"
+        />
+        <a
+          tal:condition="not:can_edit_bugtask"
+          tal:attributes="href tasklink"
+          tal:content="context/targetname"
+        />
+      </span>
     </td>
 
     <tal:conjoined-task condition="context/conjoined_master">

@@ -1669,3 +1669,17 @@ class BugTaskTableRowView(LaunchpadView):
         return (
             helpers.check_permission("launchpad.Edit", self.context) and
             not self.context.conjoined_master)
+            
+    def shouldShowPackageIcon(self):
+        """Should we show the package icon?
+        
+        The package icon should be shown only for generic distribution
+        bugtasks that have a sourcepackagename.
+        """
+        return (
+            IDistroBugTask.providedBy(self.context) and
+            self.context.sourcepackagename)
+        
+    def shouldShowProductIcon(self):
+        """Should we show the product icon?"""
+        return IUpstreamBugTask.providedBy(self.context)

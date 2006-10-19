@@ -2582,7 +2582,7 @@ class BugNominationStatus(DBSchema):
     """
 
     PROPOSED = Item(10, """
-        Proposed
+        Nominated
 
         This nomination hasn't yet been reviewed, or is still under
         review.

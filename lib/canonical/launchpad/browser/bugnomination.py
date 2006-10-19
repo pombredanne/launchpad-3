@@ -32,17 +32,49 @@ from canonical.launchpad.webapp import (
 from canonical.widgets.itemswidget import LabeledMultiCheckBoxWidget
 
 class BugNominationView(LaunchpadFormView):
-    label = "Nominate this bug for a release"
     schema = IBugNominationForm
     initial_focus_widget = None
     custom_widget('nominatable_releases', LabeledMultiCheckBoxWidget)
 
     def __init__(self, context, request):
-        # Adapt the context to an IBug, because we don't need anything
-        # task-specific on the nomination page.
         LaunchpadFormView.__init__(self, IBug(context), request)
+        
+    @property
+    def label(self):
+        """Return a nomination or targeting label.
+        
+        The label returned depends on the user's privileges.
+        """
+        if self.userIsReleaseManager():
+            return "Target bug #%d to releases" % self.context.id
+        else:
+            return "Nominate bug #%d for releases" % self.context.id
+    
+    def userIsReleaseManager(self):
+        """Does the current user have release management privileges?"""
+        current_bugtask = getUtility(ILaunchBag).bugtask
+        return helpers.check_permission(
+            "launchpad.Driver", current_bugtask.target)
+    
+    def userCanChangeDriver(self):
+        """Can the current user set the release management team?"""
+        return helpers.check_permission(
+            "launchpad.Edit", self.getReleaseContext())
 
-    @action(_("Submit Nominations"), name="submit")
+    def getReleaseManager(self):
+        """Return the IPerson or ITeam that does release management."""
+        # Ignoring the "drivers" attribute for now, which includes the
+        # project-wide driver for upstreams because I'm guessing it's
+        # hardly used, and would make displaying release managers a
+        # little harder.
+        return self.getReleaseContext().driver
+
+    def getReleaseContext(self):
+        """Get the distribution or product for release management."""
+        launchbag = getUtility(ILaunchBag)
+        return launchbag.product or launchbag.distribution
+
+    @action(_("Submit"), name="submit")
     def nominate(self, action, data):
         """Nominate distro releases or product series for this bug."""
         releases = data["nominatable_releases"]

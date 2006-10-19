@@ -29,6 +29,7 @@ from zope.event import notify
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
+from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.interfaces import (
     IAddBugTaskForm, IBug, ILaunchBag, IBugSet, IBugTaskSet,
     IBugWatchSet, IDistributionSourcePackage, IDistroBugTask,
@@ -132,7 +133,11 @@ class BugContextMenu(ContextMenu):
         return Link('+addsubscriber', text, icon='add')
 
     def nominate(self):
-        text = 'Nominate for release'
+        if check_permission("launchpad.Driver", self.context.target):
+            text = "Target to Release"
+        else:
+            text = 'Nominate for Release'
+
         return Link('+nominate', text, icon='milestone')
 
     def addcomment(self):
