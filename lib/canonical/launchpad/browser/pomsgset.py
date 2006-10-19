@@ -722,8 +722,8 @@ class POMsgSetView(LaunchpadView):
 
         second_lang_code is the result of submiting field.alternative_value.
         """
-        self.context = pomsgset
-        self.request = request
+        LaunchpadView.__init__(pomsgset, request)
+
         self.translations = translations
         self.error = error
         self.is_fuzzy = is_fuzzy
@@ -822,7 +822,9 @@ class POMsgSetView(LaunchpadView):
         non_editor = self.context.getSuggestedSubmissions(index)
         non_editor_translations = build_dict(non_editor)
 
-        # Use a set for pruning
+        # Use a set for pruning; this is a bit inconsistent with the
+        # other pruners which are dicts, but prune_dict copes well with
+        # it.
         active_translations = set([self.translations[index]])
 
         wiki_translations_clean = prune_dict(wiki_translations,
