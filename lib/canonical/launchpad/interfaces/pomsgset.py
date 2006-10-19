@@ -5,7 +5,10 @@ from zope.schema import Bool
 
 __metaclass__ = type
 
-__all__ = ['IPOMsgSet']
+__all__ = [
+    'IPOMsgSet',
+    'IPOMsgSetSuggestions',
+]
 
 class IPOMsgSet(Interface):
 
@@ -130,3 +133,18 @@ class IPOMsgSet(Interface):
 
         The new values will reflect current status of this entry.
         """
+
+
+class IPOMsgSetSuggestions(Interface):
+    """Holds data of a specific kind of POSubmission for a POMsgSet's
+    plural form.
+
+    When displaying POMsgSets in POMsgSetView we display different types
+    of suggestions: non-reviewer translations, translations that occur in
+    other contexts, and translations in alternate languages. See
+    POMsgSetView._buildSuggestions for details.
+    """
+    title = Attribute("The name displayed next to the suggestion, "
+                      "indicating where it came from.")
+    submissions = Attribute("An iterable of POSubmission objects")
+
