@@ -19,11 +19,12 @@ __all__ = [
     'TicketWorkflowView',
     ]
 
-from zope.app.form.browser import TextWidget, TextAreaWidget
+from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.event import notify
 from zope.formlib import form
 from zope.interface import providedBy
+import zope.security
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
@@ -37,7 +38,7 @@ from canonical.launchpad.webapp import (
     GeneralFormView, LaunchpadView, action, LaunchpadFormView,
     LaunchpadEditFormView, custom_widget)
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.lp.dbschema import TicketStatus, TicketAction
+from canonical.lp.dbschema import TicketAction, TicketStatus
 
 class TicketSetNavigation(Navigation):
 
@@ -175,11 +176,11 @@ class TicketChangeStatusView(LaunchpadFormView):
     """View for changing a ticket status."""
     schema = ITicketChangeStatusForm
 
-    def validate(self,data):
+    def validate(self, data):
         if data.get('status') == self.context.status:
             self.setFieldError(
                 'status', _("You didn't change the status."))
-        if 'message' not in data:
+        if not data.get('message'):
             self.setFieldError(
                 'message', _('You must provide an explanation message.'))
 
@@ -193,7 +194,6 @@ class TicketChangeStatusView(LaunchpadFormView):
         self.request.response.addNotification(
             _('Request status updated.'))
         self.request.response.redirect(canonical_url(self.context))
-        return ''
 
 
 class TicketEditView(LaunchpadEditFormView):
@@ -218,11 +218,11 @@ class TicketEditView(LaunchpadEditFormView):
         if self.context.distribution is None:
             self.form_fields = self.form_fields.omit("sourcepackagename")
 
-        fields_with_permission = []
+        editable_fields = []
         for field in self.form_fields:
-            if form.canWrite(self.context, field):
-                fields_with_permission.append(field.__name__)
-        self.form_fields = self.form_fields.select(*fields_with_permission)
+            if zope.security.canWrite(self.context, field.__name__):
+                editable_fields.append(field.__name__)
+        self.form_fields = self.form_fields.select(*editable_fields)
 
     @action(u"Continue", name="change")
     def change_action(self, action, data):
@@ -286,7 +286,7 @@ class TicketRejectView(LaunchpadFormView):
     schema = ITicketChangeStatusForm
     field_names = ['message']
 
-    def validate(self,data):
+    def validate(self, data):
         if 'message' not in data:
             self.setFieldError(
                 'message', _('You must provide an explanation message.'))
@@ -319,7 +319,9 @@ class TicketWorkflowView(LaunchpadFormView):
     initial_focus_widget = None
 
     def validate(self, data):
-        """When the action is confirm, find and validate the message
+        """Form validatation hook.
+
+        When the action is confirm, find and validate the message
         that was selected. When another action is used, only make sure
         that a message was provided.
         """
@@ -337,9 +339,10 @@ class TicketWorkflowView(LaunchpadFormView):
         return False
 
     def canAddComment(self, action):
-        """Return if the comment action should be displayed.
+        """Return whether the comment action should be displayed.
 
-        Comments can be added when the ticket is solved or invalid
+        Comments (message without a status change) can be added when the
+        ticket is solved or invalid
         """
         return (self.user is not None and
                 self.context.status in [
@@ -352,7 +355,7 @@ class TicketWorkflowView(LaunchpadFormView):
         self.next_url = canonical_url(self.context)
 
     def canAddAnswer(self, action):
-        """Return if the answer action should be displayed."""
+        """Return whether the answer action should be displayed."""
         return (self.user is not None and
                 self.user != self.context.owner and
                 self.context.can_give_answer)
@@ -364,7 +367,7 @@ class TicketWorkflowView(LaunchpadFormView):
         self.next_url = canonical_url(self.context)
 
     def canSelfAnswer(self, action):
-        """Return if the selfanswer action should be displayed."""
+        """Return whether the selfanswer action should be displayed."""
         return (self.user == self.context.owner and
                 self.context.can_give_answer)
 
@@ -389,7 +392,7 @@ class TicketWorkflowView(LaunchpadFormView):
         self.next_url = canonical_url(self.context)
 
     def canGiveInfo(self, action):
-        """Return if the giveinfo action should be displayed."""
+        """Return whether the giveinfo action should be displayed."""
         return (self.user == self.context.owner and
                 self.context.can_give_info)
 
@@ -406,17 +409,20 @@ class TicketWorkflowView(LaunchpadFormView):
         # No widget is used for the answer, we are using hidden fields
         # in the template for that. So, if the answer is missing, it's
         # either a programming error or an invalid handcrafted URL
-        msgid = int(self.request.form.get('answer_id', -1))
-        if msgid == -1:
-            raise UnexpectedFormData('answer_id is missing')
+        msgid = self.request.form.get('answer_id')
+        try:
+            msgid = int(msgid)
+        except ValueError:
+            raise UnexpectedFormData('invalid answer_id: %s' % msgid)
+
         for message in self.context.messages:
             if msgid == message.id:
                 data['answer'] = message
                 return
-        raise UnexpectedFormData('invalid answer id: %s' % msgid)
+        raise UnexpectedFormData("unknown answer: %s" % msgid)
 
     def canConfirm(self, action):
-        """Return if the confirm action should be displayed."""
+        """Return whether the confirm action should be displayed."""
         return (self.user == self.context.owner and
                 self.context.can_confirm_answer)
 
@@ -432,7 +438,7 @@ class TicketWorkflowView(LaunchpadFormView):
         self.next_url = canonical_url(self.context)
 
     def canReopen(self, action):
-        """Return if the reopen action should be displayed."""
+        """Return whether the reopen action should be displayed."""
         return (self.user == self.context.owner and
                 self.context.can_reopen)
 
@@ -458,10 +464,7 @@ class TicketConfirmAnswerView(TicketWorkflowView):
             self.request.response.redirect(canonical_url(self.context))
             return
 
-        # Check that the ticket is in a state where a confirmation
-        # is possible.
-        if (not self.confirm_action.submitted() and
-            not self.context.can_confirm_answer):
+        if not self.context.can_confirm_answer:
             self.request.response.addErrorNotification(_(
                 "The support request is not in a state where you can confirm "
                 "an answer."))
