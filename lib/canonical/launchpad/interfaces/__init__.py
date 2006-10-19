@@ -131,7 +131,6 @@ from canonical.launchpad.interfaces.ssh import *
 from canonical.launchpad.interfaces.supportcontact import *
 from canonical.launchpad.interfaces.teammembership import *
 from canonical.launchpad.interfaces.ticket import *
-from canonical.launchpad.interfaces.ticketbrowser import *
 from canonical.launchpad.interfaces.ticketbug import *
 from canonical.launchpad.interfaces.ticketmessage import *
 from canonical.launchpad.interfaces.ticketreopening import *

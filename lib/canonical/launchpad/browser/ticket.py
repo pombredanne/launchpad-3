@@ -30,8 +30,8 @@ from canonical.launchpad import _
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.interfaces import (
-    ITicket, ITicketAddMessageForm, ITicketChangeStatusForm, ITicketSet,
-    CreateBugParams, UnexpectedFormData)
+    CreateBugParams, ITicket, ITicketAddMessageForm, ITicketChangeStatusForm,
+    ITicketSet,  UnexpectedFormData)
 from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
     GeneralFormView, LaunchpadView, action, LaunchpadFormView,

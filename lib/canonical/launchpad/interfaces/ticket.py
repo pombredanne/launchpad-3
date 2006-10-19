@@ -7,6 +7,8 @@ __metaclass__ = type
 __all__ = [
     'InvalidTicketStateError',
     'ITicket',
+    'ITicketAddMessageForm',
+    'ITicketChangeStatusForm',
     'ITicketSet',
     ]
 
@@ -380,3 +382,26 @@ class ITicketSet(Interface):
         Return :default: if no such ticket exists.
         """
 
+# These schemas are only used by browser/ticket.py and should really live
+# there. See Bug #66950.
+
+class ITicketAddMessageForm(Interface):
+    """Form schema for adding a message to a ticket.
+
+    This will usually includes a status change as well.
+    """
+
+    message = Text(title=_('Message'), required=False)
+
+
+class ITicketChangeStatusForm(Interface):
+    """Form schema for changing the status of a ticket."""
+
+    status = Choice(
+        title=_('Status'), description=_('Select the new ticket status.'),
+        vocabulary='TicketStatus', required=True)
+
+    message = Text(
+        title=_('Message'),
+        description=_('Enter an explanation for the status change'),
+        required=True)
