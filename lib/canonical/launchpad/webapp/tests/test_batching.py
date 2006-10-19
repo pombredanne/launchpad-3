@@ -1,4 +1,4 @@
-# Copyright Canonical Limited, 2005, all rights reserved.
+# Copyright 2006 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
