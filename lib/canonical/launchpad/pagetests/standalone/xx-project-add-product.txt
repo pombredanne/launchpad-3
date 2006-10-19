@@ -28,7 +28,7 @@ back to the project page:
 
   >>> user_browser.getControl('Add').click()
   >>> print user_browser.url
-  http://launchpad.dev/projects/gnome/
+  http://launchpad.dev/products/eog
 
 
 Now let's get the page for that product to make sure it's there.  It

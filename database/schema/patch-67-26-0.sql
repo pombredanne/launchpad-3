@@ -1,7 +1,5 @@
 SET client_min_messages=ERROR;
 
-BEGIN; -- XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-
 /* Add a load of date_created columns to various objects in the db.
    We create fake entries for existing rows - all timestamps before
    2006 are fake.

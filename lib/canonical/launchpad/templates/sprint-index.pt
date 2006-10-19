@@ -50,8 +50,10 @@
     <tal:proposed define="proposed view/proposed_count"
                   condition="proposed">
       There are <span tal:replace="proposed">7</span>
-      specifications <a href="+settopics">proposed</a> which the organisers
-      will review.
+      specifications 
+      <a tal:omit-tag="not: context/required:launchpad.Driver" href="+settopics">
+        proposed
+      </a> which the organisers will review.
     </tal:proposed>
     You can view the <a href="+specs">full current agenda here</a>.
   </p>

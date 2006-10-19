@@ -25,7 +25,7 @@ from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    ContentNameField, PasswordField, StrippedTextLine)
+    BlacklistableContentNameField, PasswordField, StrippedTextLine)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
@@ -38,9 +38,9 @@ from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, TeamMembershipStatus, PersonCreationRationale)
 
 
-class PersonNameField(ContentNameField):
+class PersonNameField(BlacklistableContentNameField):
 
-    errormessage = _("%s is already in use by another person/team.")
+    errormessage = _("%s is already in use by another person or team.")
 
     @property
     def _content_iface(self):

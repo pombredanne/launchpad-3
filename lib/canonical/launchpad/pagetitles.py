@@ -665,6 +665,8 @@ productseries_translations_upload = 'Request new translations upload'
 
 productseries_ubuntupkg = 'Ubuntu source package'
 
+project_add = 'Register a project with Launchpad'
+
 project_index = ContextTitle('%s in Launchpad')
 
 project_branches = ContextTitle('Bazaar branches for %s')
@@ -728,6 +730,8 @@ securitycontact_edit = ContextDisplayName("Edit %s security contact")
 shipit_adminrequest = 'ShipIt admin request'
 
 shipit_index = 'ShipIt'
+
+shipit_index_new = 'ShipIt'
 
 shipit_exports = 'ShipIt exports'
 
