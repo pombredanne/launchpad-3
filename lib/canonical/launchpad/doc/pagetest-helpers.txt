@@ -127,6 +127,14 @@ function can find a portlet by its title and return it:
   ...         Contents of portlet 3
   ...       </div>
   ...     </div>
+  ...     <div class="portlet">
+  ...       <h2> Portlet
+  ...           with title broken
+  ...           on multiple lines </h2>
+  ...       <div class="portletBody portletContent">
+  ...         Contents of the portlet.
+  ...       </div>
+  ...     </div>
   ...     <div id="region-content">
   ...       Main content area
   ...     </div>
@@ -145,6 +153,15 @@ function can find a portlet by its title and return it:
       Contents of portlet 2
     </div>
   </div>
+
+When looking for a portlet to match, any two sequences of whitespace are
+considered equivalent. Whitespace at the beginning or end of the title
+is also ignored.
+
+  >>> print find_portlet(
+  ...     content, 'Portlet with  title broken on multiple lines  ')
+    <div class="portlet">
+      <h2> Portlet with title...
 
 If the portlet doesn't exist, then None is returned:
 

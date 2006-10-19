@@ -247,7 +247,7 @@ previous example.)
   ...     stevea_browser.contents, 'informational message'):
   ...   print tag.renderContents()
   You have been unsubscribed from this bug and 2 duplicates (<a...#1</a>, <a...#2</a>)...
-  This bug has been reported 3 times
+  This bug has 2 duplicates
 
 (Let's undupe bug #1 from bug #3, since it's unneeded for the examples
 that follow.)
@@ -296,7 +296,7 @@ up in the indirect subscriptions.
   ...     foobar_browser.contents, 'informational message'):
   ...   print tag.renderContents()
   Ubuntu Team has been unsubscribed from this bug and 1 duplicate (<a...#2</a>)...
-  This bug has been reported 2 times
+  This bug has 1 duplicate
 
 (ubuntu-team is no longer an indirect subscriber.)
 
