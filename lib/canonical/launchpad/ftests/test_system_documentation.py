@@ -95,6 +95,9 @@ def importdTearDown(test):
 
 def supportTrackerSetUp(test):
     setGlobs(test)
+    # The Zopeless environment usually runs using the PermissivePolicy
+    # but the process-mail.py script in which the tested code runs
+    # use the regular web policy.
     test.old_security_policy = getSecurityPolicy()
     setSecurityPolicy(LaunchpadSecurityPolicy)
 
