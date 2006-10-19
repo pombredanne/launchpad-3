@@ -45,17 +45,17 @@ def main():
 
     (options, args) = parser.parse_args()
 
-    log = logger(options, "initialiase")
+    log = logger(options, "initialise")
 
     if len(args) != 1:
         log.error("Need to be given exactly one non-option argument. "
-                  "Namely the distrorelease to initialiase.")
+                  "Namely the distrorelease to initialise.")
         return 1
 
     distrorelease_name = args[0]
 
     log.debug("Acquiring lock")
-    lock = GlobalLock('/var/lock/launchpad-initialiase.lock')
+    lock = GlobalLock('/var/lock/launchpad-initialise.lock')
     lock.acquire(blocking=True)
 
     log.debug("Initialising connection.")
@@ -71,7 +71,7 @@ def main():
         log.error(info)
         return 1
 
-    # XXX cprov 20060526: these two extra function must be
+    # XXX cprov 20060526: these two extra functions must be
     # integrated in IDistroRelease.initialiseFromParent workflow.
     log.debug('Check empty mutable queues in parentrelease')
     check_queue(distrorelease)

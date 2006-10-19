@@ -1,16 +1,18 @@
 <div class="portlet" id="bug-tags">
 
-  <h4>Tags:</h4>
+  <h2>Tags</h2>
 
   <div class="portletBody portletContent">
 
-    <ul class="bugs">
+    <ul>
 
       <li tal:repeat="bug_tag_info view/getUsedBugTagsWithURLs">
         <a tal:content="bug_tag_info/tag"
            tal:attributes=" href bug_tag_info/url">
           crash
-        </a>
+        </a> <tal:count tal:replace="string:(${bug_tag_info/count})">
+             (20)
+             </tal:count>
       </li>
 
     </ul>

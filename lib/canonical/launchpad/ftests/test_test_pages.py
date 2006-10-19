@@ -7,9 +7,8 @@ import unittest
 import shutil
 import tempfile
 
-from canonical.functional import PageTestLayer
-from canonical.launchpad.ftests.test_pages import PageTest
-
+from canonical.testing import PageTestLayer
+from canonical.launchpad.ftests.test_pages import PageTestSuite
 
 class TestMakeStoryTest(unittest.TestCase):
     layer = PageTestLayer
@@ -31,34 +30,29 @@ class TestMakeStoryTest(unittest.TestCase):
         test_filename = os.path.join(self.tempdir, '20-bar.txt')
         test_file = open(test_filename, 'wt')
         test_file.close()
-        story = PageTest(self.tempdir, package='canonical.launchpad.ftests')
-        self.failIf(isinstance(story, unittest.TestSuite))
-        self.failUnless(isinstance(story, unittest.TestCase))
-        result = unittest.TestResult()
-        story.run(result)
-        # the current implementaiton puts a stub start and end test
-        # in the test suite, bracketing the story files.
-        self.assertEqual(4, result.testsRun)
-        self.assertEqual([], result.failures)
-        self.assertEqual([], result.errors)
-
-    def test_file_construction_and_trivial_running(self):
-        test_filename = os.path.join(self.tempdir, 'foo.txt')
+        test_filename = os.path.join(self.tempdir, 'xx-bar.txt')
         test_file = open(test_filename, 'wt')
         test_file.close()
-        story = PageTest(test_filename, package='canonical.launchpad.ftests')
+        # The test directory is looked up relative to the calling
+        # module's path.
+        suite = PageTestSuite(os.path.basename(self.tempdir))
+        self.failUnless(isinstance(suite, unittest.TestSuite))
+        [bar_test, story] = list(suite)
+
+        # The unnumbered file appears as an independent test.
+        self.assertEqual(os.path.basename(bar_test.id()), 'xx-bar_txt')
+
+        # The two numbered tests become a story, which appears as a
+        # single test case rather than a test suite.
         self.failIf(isinstance(story, unittest.TestSuite))
         self.failUnless(isinstance(story, unittest.TestCase))
         result = unittest.TestResult()
         story.run(result)
-        # the current implementaiton puts a stub start and end test
-        # in the test suite, bracketing the story files.
-        self.assertEqual(3, result.testsRun)
+        self.assertEqual(2, result.testsRun)
         self.assertEqual([], result.failures)
         self.assertEqual([], result.errors)
 
 
 def test_suite():
     suite = unittest.TestLoader().loadTestsFromName(__name__)
-    suite.layer = PageTestLayer
     return suite

@@ -14,11 +14,10 @@ from zope.schema import Choice, Datetime, Int, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.validation import valid_cve_sequence
-from canonical.launchpad.interfaces.buglink import IBugLinkTarget
 from canonical.lp.dbschema import CveStatus
 
 
-class ICve(IBugLinkTarget):
+class ICve(Interface):
     """A single CVE database entry."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -26,7 +25,7 @@ class ICve(IBugLinkTarget):
         title=_('CVE Sequence Number'),
         description=_('Should take the form XXXX-XXXX, all digits.'),
         required=True, readonly=False, constraint=valid_cve_sequence)
-    status = Choice(title=_('Current CVE State'), 
+    status = Choice(title=_('Current CVE State'),
         default=CveStatus.CANDIDATE, description=_("Whether or not the "
         "vulnerability has been reviewed and assigned a full CVE number, "
         "or is still considered a Candidate, or is deprecated."),
@@ -98,5 +97,12 @@ class ICveSet(Interface):
         This will create any CVE's that it does not already know about. It
         returns a list of all the CVE's that it saw mentioned in the
         message.
+        """
+
+    def getBugCvesForBugTasks(bugtasks):
+        """Return BugCve objects that correspond to the supplied bugtasks.
+
+        Returns an iterable of BugCve objects for bugs related to the
+        supplied sequence of bugtasks.
         """
 

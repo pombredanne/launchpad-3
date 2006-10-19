@@ -1,8 +1,8 @@
 <div class="portlet">
 
-  <h4><span tal:replace="context/language/englishname">French</span>
+  <h2><span tal:replace="context/language/englishname">French</span>
       statistics in <span
-      tal:replace="context/distrorelease/displayname">Hoary</span>:</h4>
+      tal:replace="context/distrorelease/displayname">Hoary</span></h2>
 
   <div class="portletBody portletContent">
 

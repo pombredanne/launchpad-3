@@ -1,24 +1,24 @@
 <div class="portlet">
 
-  <h4><span tal:replace="context/displayname">Ubuntu
-      </span> distribution details:</h4>
+  <h2><span tal:replace="context/displayname">Ubuntu
+      </span> distribution details</h2>
 
   <div class="portletBody portletContent">
 
     <b>Registrant:</b><br />
-    <img alt="" src="/@@/user.gif" />
+    <img alt="" src="/@@/user" />
     <a tal:attributes="href context/owner/fmt:url"
        tal:content="context/owner/browsername">owner name</a> <br />
 
     <b>Members:</b><br />
-    <img alt="" src="/@@/user.gif" />
+    <img alt="" src="/@@/user" />
     <a tal:attributes="href string:${context/fmt:url}/+members"
        tal:content="context/members/browsername">members name</a><br /> 
 
     <b>Bug contact:</b><br />
     <span tal:condition="context/bugcontact">
-      <img alt="" src="/@@/user.gif" />
-      <a tal:attributes="href string:${context/fmt:url}/+bugcontact"
+      <img alt="" src="/@@/user" />
+      <a tal:attributes="href context/bugcontact/fmt:url"
          tal:content="context/bugcontact/browsername">foo bar</a>
     </span>
     <span tal:condition="not:context/bugcontact">
@@ -28,8 +28,8 @@
 
     <b>Security contact:</b><br />
     <span tal:condition="context/security_contact">
-      <img alt="" src="/@@/user.gif" />
-      <a tal:attributes="href string:${context/fmt:url}/+securitycontact"
+      <img alt="" src="/@@/user" />
+      <a tal:attributes="href context/security_contact/fmt:url"
          tal:content="context/security_contact/browsername">sample person</a>
     </span>
     <span tal:condition="not:context/security_contact">
@@ -40,14 +40,14 @@
     <b>Driver:</b><br />
     <i tal:condition="not:context/driver">Not yet assigned</i>
     <tal:has_driver condition="context/driver">
-      <img alt="" src="/@@/user.gif" />
+      <img alt="" src="/@@/user" />
       <a tal:content="context/driver/browsername"
          tal:attributes="href context/driver/fmt:url">Carlos Perello</a>
     </tal:has_driver>
     <br />
 
     <b>Translation group:</b><br />
-    <img alt="" src="/@@/languages.gif" />
+    <img alt="" src="/@@/languages" />
     <tal:block condition="context/translationgroup">
     <a tal:attributes="href context/translationgroup/fmt:url"
        tal:content="context/translationgroup/title"

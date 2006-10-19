@@ -11,23 +11,21 @@ represents all the people who are /effective members/ of the team.
 
 First of all, create some teams:
 
->>> import pytz
->>> from datetime import datetime, timedelta
->>> from canonical.launchpad.database import Person
->>> from canonical.lp.dbschema import (
-...     TeamSubscriptionPolicy, TeamMembershipStatus)
->>> from canonical.database.sqlbase import flush_database_updates
+    >>> import pytz
+    >>> from datetime import datetime, timedelta
+    >>> from canonical.launchpad.database import Person
+    >>> from canonical.lp.dbschema import (
+    ...     TeamSubscriptionPolicy, TeamMembershipStatus)
 
->>> o = TeamSubscriptionPolicy.OPEN
->>> m = TeamSubscriptionPolicy.MODERATED
+    >>> o = TeamSubscriptionPolicy.OPEN
+    >>> m = TeamSubscriptionPolicy.MODERATED
 
->>> p = Person.byName('name16')
->>> t1 = Person(subscriptionpolicy=o, name='t1', displayname='t1', teamowner=p)
->>> t2 = Person(subscriptionpolicy=o, name='t2', displayname='t2', teamowner=p)
->>> t3 = Person(subscriptionpolicy=m, name='t3', displayname='t3', teamowner=p)
->>> t4 = Person(subscriptionpolicy=o, name='t4', displayname='t4', teamowner=p)
->>> t5 = Person(subscriptionpolicy=o, name='t5', displayname='t5', teamowner=p)
-
+    >>> p = Person.byName('name16')
+    >>> t1 = Person(subscriptionpolicy=o, name='t1', displayname='t1', teamowner=p)
+    >>> t2 = Person(subscriptionpolicy=o, name='t2', displayname='t2', teamowner=p)
+    >>> t3 = Person(subscriptionpolicy=m, name='t3', displayname='t3', teamowner=p)
+    >>> t4 = Person(subscriptionpolicy=o, name='t4', displayname='t4', teamowner=p)
+    >>> t5 = Person(subscriptionpolicy=o, name='t5', displayname='t5', teamowner=p)
 
 One of your users want to join the t3 and t4 teams.
 
@@ -47,7 +45,6 @@ But these are MODERATED teams, somebody has to approve 'name16' as a member:
     >>> t3.setMembershipStatus(p, TeamMembershipStatus.APPROVED)
     >>> [m.displayname for m in t3.allmembers]
     [u'Foo Bar']
-
 
 Now we add t3 as a member of t2. But t3 is a team, and because teams take no
 actions, it can't actually "join" t2. Instead, an administrator of t2 have 
@@ -189,7 +186,6 @@ The expired memberships are flagged by a cronscript that runs daily. This
 script simply flags all active memberships which reached their expiry date as
 expired.
 
-    >>> import transaction
     >>> from canonical.launchpad.database import TeamMembershipSet, Person
     >>> from canonical.launchpad.ftests import login
     >>> login('foo.bar@canonical.com')
@@ -220,8 +216,12 @@ The cronscript will not change this membership, because it's not active.
     >>> sp_on_ubuntu_translators.dateexpires = one_day_ago
 
 Now we commit the changes and run the cronscript.
+XXX: flush_database_updates() shouldn't be needed. This seems to be
+Bug 3989 -- StuarBishop 20060713
 
+    >>> flush_database_updates()
     >>> transaction.commit()
+
     >>> import subprocess
     >>> process = subprocess.Popen(
     ...     'cronscripts/flag-expired-memberships.py -q', shell=True,
@@ -254,15 +254,50 @@ while the one that was inactive hasn't changed.
     'Deactivated'
 
 
+Querying team memberships
+-------------------------
+
+You can check a person's direct memberships by using myactivememberships:
+
+    >>> salgado = Person.byName('salgado')
+    >>> [(membership.team.name,
+    ...  membership.status.title) for membership in salgado.myactivememberships]
+    [(u'admins', 'Administrator'),
+     (u't3', 'Approved')]
+
+And you can check which direct memberships a team has by using activememberships:
+
+    >>> [(membership.person.name, membership.status.title)
+    ...     for membership in t3.activememberships]
+    [(u'salgado', 'Approved')]
+
+A team has a number of other methods that return what people are members
+of it, all based on Person._getMembersByStatus:
+
+    >>> [(membership.person.name, membership.status.title)
+    ...     for membership in t3.declinedmembers]
+    []
+
+(which is the same as saying
+
+    >>> [(membership.person.name, membership.status.title)
+    ...     for membership in t3._getMembersByStatus(TeamMembershipStatus.DECLINED)]
+    []
+
+except shorter)
+
 Querying a person for team participation
-========================================
+----------------------------------------
+
+Team membership is direct; team participation is indirect, people being
+participants of teams by virtue of being members of other teams which are in
+turn members of these teams.
 
 We can ask a person what teams they participate in. The
 teams_participated_in attribute works recusively, listing all teams the
 person is an active member of as well as teams those teams are an active
 member of.
 
-    >>> salgado = Person.byName('salgado')
     >>> print '\n'.join(team.name for team in salgado.teams_participated_in)
     admins
     t1
@@ -271,8 +306,8 @@ member of.
     t4
 
     >>> t2.setMembershipStatus(t3, TeamMembershipStatus.DEACTIVATED)
-    >>> transaction.commit()
     >>> flush_database_updates()
+    >>> transaction.commit()
     >>> print '\n'.join(team.name for team in salgado.teams_participated_in)
     admins
     t3
@@ -304,6 +339,7 @@ and team admins.
 
     >>> stub.test_emails = []
     >>> membership.setStatus(TeamMembershipStatus.DECLINED, reviewer=sabdfl)
+    >>> flush_database_updates()
     >>> transaction.commit()
 
     >>> test_emails = list(stub.test_emails)
@@ -312,7 +348,7 @@ and team admins.
     2
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print to_addr
-    ['jeff.waugh@ubuntulinux.com', 'mark@hbd.com', 'foo.bar@canonical.com']
+    ['foo.bar@canonical.com', 'jeff.waugh@ubuntulinux.com', 'mark@hbd.com']
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print to_addr
     ['andrew.bennetts@ubuntulinux.com']
@@ -324,20 +360,21 @@ this case we'll send notifications only to the team admins.
     >>> stub.test_emails = []
     >>> membership.person.join(ubuntu_team)
     True
-    >>> appurl = 'http://localhost:8086/'
-    >>> notify(JoinTeamRequestEvent(membership.person, membership.team, appurl))
+    >>> notify(JoinTeamRequestEvent(membership.person, membership.team))
+    >>> flush_database_updates()
     >>> transaction.commit()
     >>> len(stub.test_emails)
     1
     >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
     >>> print to_addr
-    ['jeff.waugh@ubuntulinux.com', 'mark@hbd.com', 'foo.bar@canonical.com']
+    ['foo.bar@canonical.com', 'jeff.waugh@ubuntulinux.com', 'mark@hbd.com']
 
 Approving a proposed member should generate notifications for both the member
 and team admins.
     
     >>> stub.test_emails = []
     >>> membership.setStatus(TeamMembershipStatus.APPROVED, reviewer=sabdfl)
+    >>> flush_database_updates()
     >>> transaction.commit()
     >>> test_emails = list(stub.test_emails)
     >>> test_emails.sort(by_to_addrs)
@@ -345,7 +382,7 @@ and team admins.
     2
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print to_addr
-    ['jeff.waugh@ubuntulinux.com', 'mark@hbd.com', 'foo.bar@canonical.com']
+    ['foo.bar@canonical.com', 'jeff.waugh@ubuntulinux.com', 'mark@hbd.com']
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print to_addr
     ['andrew.bennetts@ubuntulinux.com']
@@ -354,6 +391,7 @@ The same for deactivating a membership.
 
     >>> stub.test_emails = []
     >>> membership.setStatus(TeamMembershipStatus.DEACTIVATED, reviewer=sabdfl)
+    >>> flush_database_updates()
     >>> transaction.commit()
     >>> test_emails = list(stub.test_emails)
     >>> test_emails.sort(by_to_addrs)
@@ -361,7 +399,7 @@ The same for deactivating a membership.
     2
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print to_addr
-    ['jeff.waugh@ubuntulinux.com', 'mark@hbd.com', 'foo.bar@canonical.com']
+    ['foo.bar@canonical.com', 'jeff.waugh@ubuntulinux.com', 'mark@hbd.com']
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print to_addr
     ['andrew.bennetts@ubuntulinux.com']

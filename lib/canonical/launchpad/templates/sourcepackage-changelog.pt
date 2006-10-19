@@ -9,7 +9,7 @@
   <div class="portlet">
     <h4>What&#8217;s this all about? </h4>
     <div class="portletBody portletContent">      
-      <img src="/@@/info_icon.gif" />
+      <img src="/@@/info" />
       The change log is uploaded by the package maintainer when a new
       package release is made. It should document all the latest information
       we have for this release of the package.

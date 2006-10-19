@@ -15,7 +15,7 @@
     <!-- Launchpad style sheet -->
     <style type="text/css"
         media="screen">@import url(/@@/launchpad.css);</style>
-    <link rel="shortcut icon" href="/@@/launchpad_favicon.png" />
+    <link rel="shortcut icon" href="/@@/launchpad" />
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>
   <body onload="DynarchMenu.setup('menu', {electric: true});" id="document">
@@ -63,6 +63,11 @@
               <metal:main define-slot="main" tal:condition="nothing">
                 <p>Main content area.</p>
               </metal:main>
+              <tal:help condition="nothing">
+                <p metal:define-slot="help">
+                  Sorry, help isn&rsquo;t available for this page.
+                </p>
+              </tal:help>
             </div>
           </div>
         <!-- start of right (by default at least) column -->

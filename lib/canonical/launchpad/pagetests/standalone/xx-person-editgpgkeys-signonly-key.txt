@@ -1,3 +1,6 @@
+XXX: This test should be merged into gpg-coc/11-handle-special-keys.txt.
+-- Guilherme Salgado, 2006-08-25
+
 This pagetest describes the workflow used to validate sign only gpg keys.
 The reference spec associated with this pagetest is available on the Launchpad
 wiki:
@@ -24,7 +27,7 @@ Claim a sign-only OpenPGP key:
 
   >>> from BeautifulSoup import BeautifulSoup
   >>> soup = BeautifulSoup(user_browser.contents)
-  >>> for tag in soup('p', 'error message'):
+  >>> for tag in soup('p', 'informational message'):
   ...     print tag.renderContents()
    A message has been sent to ...test@canonical.com... To confirm the
    key ...1024D/17B05A8F... is yours, follow the link inside.
@@ -194,19 +197,19 @@ Mark the key as inactive.
   >>> user_browser.getControl('Deactivate Key').click()
 
   >>> soup = BeautifulSoup(user_browser.contents)
-  >>> for tag in soup('p', 'error message'):
+  >>> for tag in soup('p', 'informational message'):
   ...     print tag.renderContents()
-  Key(s):...1024D/17B05A8F...deactivated
+  Deactivated key(s): 1024D/17B05A8F
 
 Ask for a re-validation of the key.
 
-  >>> user_browser.getControl(name="REVALIDATE_GPGKEY").value = ['2']
-  >>> user_browser.getControl('Revalidate Key').click()
+  >>> user_browser.getControl(name="REACTIVATE_GPGKEY").value = ['2']
+  >>> user_browser.getControl('Reactivate Key').click()
 
   >>> soup = BeautifulSoup(user_browser.contents)
-  >>> for tag in soup('p', 'error message'):
+  >>> for tag in soup('p', 'informational message'):
   ...     print tag.renderContents()
-  Key(s):...1024D/17B05A8F...revalidation email sent to test@canonical.com.
+  An email was sent to test@canonical.com with instructions to reactivate...
 
 Open the page again and check that the key is still displayed, pending
 revalidation.

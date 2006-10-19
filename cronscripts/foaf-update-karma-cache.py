@@ -16,7 +16,6 @@ from canonical.database.sqlbase import connect
 
 _default_lock_file = '/var/lock/launchpad-karma-update.lock'
 
-
 def update_karma_cache():
     """Update the KarmaCache table for all valid Launchpad users.
 
@@ -89,6 +88,12 @@ def update_karma_cache():
         log.info('Scaling %s by a factor of %0.4f' % (
             categories[category], scaling[category]
             ))
+        max_scaling = config.karmacacheupdater.max_scaling
+        if scaling[category] > max_scaling:
+            scaling[category] = max_scaling
+            log.info('Reducing %s scaling to %d to avoid spikes' % (
+                categories[category], max_scaling
+                ))
 
     # Note that we don't need to commit each iteration because we are running
     # in autocommit mode.
@@ -176,6 +181,7 @@ if __name__ == '__main__':
     (options, arguments) = parser.parse_args()
     if arguments:
         parser.error("Unhandled arguments %s" % repr(arguments))
+
     execute_zcml_for_scripts()
 
     log = logger(options, 'karmacache')

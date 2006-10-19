@@ -4,17 +4,40 @@ The upload processing queue (DistroReleaseQueue and friends) is where
 uploads go after they have been checked by process-upload.py and
 before they get published by publish-distro.py.
 
+DistroReleaseQueue system stores syntactically corrects (see
+nascentupload.txt) uploads driven by a submitted changesfile.
+
+One DistroReleaseQueue ~ One upload ~ One changesfile.
+
+An upload can contain a combination of content types, organized by:
+
+ * Source (DistroReleaseQueueSource, DRQS):
+   a SourcePackageRelease ([tar.gz +] diff)
+
+ * Build (DistroReleaseQueueBuild, DRQB):
+   a Build result, one or more BinaryPackageReleases resulted from a
+   successfully build (deb).
+
+ * Custom (DistroReleaseQueueCustom, DRQC):
+   a special file which will be processed in a specific way to publish
+   its contents in the archive  (tar.gz). Currently we support
+   translations, installer and  upgrader (see
+   distroreleasequeue-{translation, dist-upgrader}).
+
+Each of those instances points back to a DistroReleaseQueue entry
+(parent) and to its type target:
+
+ * DRQS -> SourcePackageRelease (SPR),
+ * DRQB -> Build,
+ * DRQC -> LibraryFileAlias (LFA).
+
+The combination is assured by the upload policy used (see
+nascentupload.txt), some of them allow source + binaries, other only
+binaries + custom, other only source.
+
 First up, we need to actually process an upload to get it into the
-queue. To do this we set up a librarian, prepare an OpenPGP key, and then
-run the upload handler.
+queue. To do this we prepare an OpenPGP key, and then run the upload handler.
 
-  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().setUp()
-
-  >>> from canonical.launchpad.interfaces import IGPGKeySet
-  >>> from canonical.lp.dbschema import GPGKeyAlgorithm
-  >>> discarded_key = getUtility(IGPGKeySet).new(26, '20687895',
-  ...     '961F4EB829D7D304A77477822BC8401620687895', 1024, GPGKeyAlgorithm.D)
   >>> from canonical.launchpad.ftests import import_public_test_keys
   >>> import_public_test_keys()
 
@@ -60,11 +83,9 @@ Now the upload is in the queue, it'll likely be there as NEW because that's
 what we expect the ed upload to produce. Let's find the queue item and
 convert it to an ACCEPTED item.
 
-  >>> from zope.component import getUtility
   >>> from canonical.launchpad.interfaces import (
   ...      IDistributionSet, QueueInconsistentStateError)
   >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
-  >>> from canonical.database.sqlbase import flush_database_updates
 
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = ubuntu['hoary']
@@ -101,9 +122,10 @@ Make the modification real in the DB (XXX cprov 20051209: see bug #3889)
 
 Confirm we can now find ed published in hoary.
 
-  >>> from canonical.launchpad.database import SourcePackagePublishing
-  >>> for release in SourcePackagePublishing.selectBy(
-  ...     distroreleaseID=hoary.id):
+  >>> from canonical.launchpad.database import SourcePackagePublishingHistory
+  >>> from canonical.lp.dbschema import PackagePublishingStatus
+  >>> for release in SourcePackagePublishingHistory.selectBy(
+  ...     distrorelease=hoary, status=PackagePublishingStatus.PENDING):
   ...     if release.sourcepackagerelease.sourcepackagename.name == "ed":
   ...         print release.sourcepackagerelease.version
   0.2-20
@@ -133,6 +155,11 @@ Iterating over IDistroReleaseQueues via iDistroReleaseQueueSet:
   4
   5
   6
+  7
+  8
+  9
+  10
+  11
 
 Retrieving an IDistroReleaseQueue by its id:
 
@@ -145,7 +172,7 @@ Retrieving an IDistroReleaseQueue by its id:
 Counter, optionally by status (informally named "queue") and or distrorelease:
 
   >>> qset.count()
-  6
+  11
 
   >>> qset.count(DistroReleaseQueueStatus.ACCEPTED)
   1
@@ -161,7 +188,7 @@ Retrieve some data from DB to play more with counter.
   >>> breezy_autotest = distro['breezy-autotest']
 
   >>> qset.count(distrorelease=breezy_autotest)
-  5
+  10
 
   >>> qset.count(status=DistroReleaseQueueStatus.ACCEPTED,
   ...            distrorelease=breezy_autotest)
@@ -178,38 +205,48 @@ Check the behaviour of @cachedproperty  attributes:
   >>> qitem.datecreated
   datetime.datetime(...)
 
-  >>> qitem.changesfilename
+  >>> qitem.changesfile.filename
   u'mozilla-firefox_0.9_i386.changes'
 
-  >>> qitem.sourcepackagename.name
+  >>> qitem.sourcepackagerelease.name
   u'mozilla-firefox'
 
   >>> qitem.displayname
-  u'mozilla-firefox (i386)'
+  u'mozilla-firefox'
 
-  >>> qitem.sourceversion
+  >>> qitem.displayversion
   u'0.9'
+
+  >>> qitem.displayarchs
+  u'i386'
 
   >>> qitem.sourcepackagerelease
   <SourcePackageRelease at ...>
 
 
-Let's check the behaviour of 'name' attributes in a custom upload:
+Let's check the behaviour of @cachedproperty attributes in a custom upload:
 
   >>> custom_item = qset.get(5)
 
-It fails by trying to access 'sourcepackagename' in a custom upload:
+  >>> custom_item.datecreated
+  datetime.datetime(...)
 
-  >>> custom_item.sourcepackagename
-  Traceback (most recent call last):
-    ...
-  AssertionError
-
-But the more generic attribute 'displayname' still working and return
-the librarian filename in question.
+  >>> custom_item.changesfile.filename
+  u'netapplet-1.0.0.tar.gz'
 
   >>> custom_item.displayname
   u'netapplet-1.0.0.tar.gz'
+
+  >>> custom_item.displayversion
+  '-'
+
+  >>> custom_item.displayarchs
+  'raw-translations'
+
+  >>> custom_item.sourcepackagerelease
+  Traceback (most recent call last):
+  ...
+  AssertionError
 
 Explore the queue features of a DistroRelease instance, let's check
 some usages of IHasQueueItems.getQueueItems, which returns a list
@@ -218,12 +255,14 @@ of IDistroReleaseQueue entries.
   >>> new_items = breezy_autotest.getQueueItems(
   ...    DistroReleaseQueueStatus.NEW)
   >>> new_items.count()
-  4
+  6
 
 Invetigate the queue entries type:
 
   >>> for n in new_items:
   ...     n.builds.count(), n.sources.count()
+  (0, 0)
+  (0, 0)
   (0, 1)
   (0, 1)
   (1, 0)
@@ -302,7 +341,7 @@ custom upload in UNAPPROVED queue.
   >>> items = breezy_autotest.getQueueItems(
   ...      DistroReleaseQueueStatus.UNAPPROVED)
   >>> items.count()
-  1
+  4
 
 We can't retrieve it with a 'what' substring:
 
@@ -316,7 +355,7 @@ But it works with the right substring 'net' from 'netapplet.tar.gz'
   >>> items = breezy_autotest.getQueueItems(
   ...      DistroReleaseQueueStatus.UNAPPROVED, name='net')
   >>> items.count()
-  1
+  2
 
 
 Also check the optional argument pocket:
@@ -325,11 +364,19 @@ Also check the optional argument pocket:
 
   >>> breezy_autotest.getQueueItems(
   ...      pocket=PackagePublishingPocket.RELEASE).count()
-  4
+  8
 
   >>> breezy_autotest.getQueueItems(
   ...      pocket=PackagePublishingPocket.UPDATES).count()
   1
+
+Ensure list of pockets is also valid:
+
+  >>> breezy_autotest.getQueueItems(
+  ...      pocket=[PackagePublishingPocket.UPDATES,
+  ...              PackagePublishingPocket.RELEASE]).count()
+  9
+
 
 Check if association of status and pocket arguments works well:
 
@@ -343,7 +390,13 @@ Check if association of status and pocket arguments works well:
   ...      pocket=PackagePublishingPocket.UPDATES).count()
   0
 
-Check State Machine over DistroReleaseQueueBuilds:
+  >>> breezy_autotest.getQueueItems(
+  ...      [DistroReleaseQueueStatus.NEW, DistroReleaseQueueStatus.UNAPPROVED],
+  ...      pocket=PackagePublishingPocket.UPDATES).count()
+  1
+
+
+Check State Machine over DistroReleaseQueue:
 
 Performing full acceptance:
 
@@ -352,9 +405,11 @@ Performing full acceptance:
   ...      try:
   ...          item.setAccepted()
   ...      except QueueInconsistentStateError, e:
-  ...          print item.sourcepackagename.name, e
+  ...          print item.displayname, e
   ...      else:
-  ...          print item.sourcepackagename.name, 'ACCEPTED'
+  ...          print item.displayname, 'ACCEPTED'
+  netapplet-1.0.0.tar.gz ACCEPTED
+  netapplet-1.0.0.tar.gz ACCEPTED
   alsa-utils ACCEPTED
   netapplet ACCEPTED
   pmount ACCEPTED
@@ -374,10 +429,12 @@ Check if the state machine methods raise when trying to set the same state:
   ...          print item.displayname, e
   ...      else:
   ...          print item.displayname, 'BOGUS'
+  netapplet-1.0.0.tar.gz Queue item already new
+  netapplet-1.0.0.tar.gz Queue item already new
   alsa-utils Queue item already new
   netapplet Queue item already new
-  pmount (i386) Queue item already new
-  mozilla-firefox (i386) Queue item already new
+  pmount Queue item already new
+  mozilla-firefox Queue item already new
 
 Check several available state machine methods on a NEW queue item
 (except setAccepted, it's already covered by other tests, check if they
@@ -410,10 +467,75 @@ XXX cprov 20060118: remove proxy magic is required for BPR instances.
   >>> try:
   ...     item.setAccepted()
   ... except QueueInconsistentStateError, e:
-  ...     print item.sourcepackagename.name, e
+  ...     print item.displayname, e
   ... else:
-  ...     print item.sourcepackagename.name, 'ACCEPTED'
+  ...     print item.displayname, 'ACCEPTED'
   mozilla-firefox Component "hell" is not allowed in breezy-autotest
+
+
+Check how we treat source upload duplications in UNAPPROVED queue (NEW
+has a similar behaviour):
+
+  >>> dups = breezy_autotest.getQueueItems(
+  ...     DistroReleaseQueueStatus.UNAPPROVED, name='cnews')
+  >>> dups.count()
+  2
+  >>> dup_one, dup_two = list(dups)
+
+  >>> dup_one.displayname, dup_one.displayversion
+  (u'cnews', u'1.0')
+  >>> dup_two.displayname, dup_two.displayversion
+  (u'cnews', u'1.0')
+
+The upload admin can not accept both since we check unique
+(name, version) accross distribution:
+
+  >>> dup_one.setAccepted()
+  >>> dup_one.status == DistroReleaseQueueStatus.ACCEPTED
+  True
+
+The database modification needs to be realised in the DB, otherwise
+the look up code won't be able to identify any duplications:
+
+  >>> dup_one.syncUpdate()
+
+As expected the second item acceptance will fail and the item will
+remain in the original queue
+
+  >>> dup_two.setAccepted()
+  Traceback (most recent call last):
+  ...
+  QueueInconsistentStateError: This sourcepackagerelease is already accepted in breezy-autotest.
+
+  >>> dup_two.status.name
+  'UNAPPROVED'
+
+The only available action will be rejection:
+
+  >>> dup_two.setRejected()
+  >>> dup_one.syncUpdate()
+  >>> dup_two.status.name
+  'REJECTED'
+
+Move the second item back to its original queue to perform the same
+test after the former accepted item was published (DONE queue)
+
+  >>> dup_two.setUnapproved()
+  >>> dup_two.syncUpdate()
+  >>> dup_two.status.name
+  'UNAPPROVED'
+
+  >>> dup_one.setDone()
+  >>> dup_one.status == DistroReleaseQueueStatus.DONE
+  True
+  >>> dup_one.syncUpdate()
+
+The protection code should also identify dups with items in DONE queue
+
+  >>> dup_two.setAccepted()
+  Traceback (most recent call last):
+  ...
+  QueueInconsistentStateError: This sourcepackagerelease is already accepted in breezy-autotest.
 
 
 Check forbidden approval of not selected Section:
@@ -436,9 +558,9 @@ Try to perform single acceptance of pmount with not allowed section:
   >>> try:
   ...     item.setAccepted()
   ... except QueueInconsistentStateError, e:
-  ...     print item.sourcepackagename.name, e
+  ...     print item.displayname, e
   ... else:
-  ...     print item.sourcepackagename.name, 'ACCEPTED'
+  ...     print item.displayname, 'ACCEPTED'
   pmount Section "heaven" is not allowed in breezy-autotest
 
 
@@ -508,9 +630,7 @@ Construct a new upload for universe/misc and a lot of errors ;)
 It aims to check if at least we are parsing and comparing sections
 properly (see nascentupload.py 818)
 
-Finally, stop librarian and abort the whole damned mess
-
-  >>> LibrarianTestSetup().tearDown()
+Finally abort the whole damned mess
 
   >>> import transaction
   >>> transaction.abort()
@@ -545,7 +665,7 @@ in both of them:
   >>> login('test@canonical.com')
 
   >>> pub_qitem.displayname
-  u'mozilla-firefox (i386)'
+  u'mozilla-firefox'
 
   >>> priv_qitem.displayname
   Traceback (most recent call last):
@@ -569,7 +689,7 @@ launchpad.Edit on a distroreleasequeue record.
   >>> login('foo.bar@canonical.com')
 
   >>> pub_qitem.displayname
-  u'mozilla-firefox (i386)'
+  u'mozilla-firefox'
 
   >>> priv_qitem.displayname
   u'netapplet-1.0.0.tar.gz'

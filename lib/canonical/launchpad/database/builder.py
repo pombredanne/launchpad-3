@@ -92,7 +92,7 @@ class Builder(SQLBase):
     @property
     def currentjob(self):
         """See IBuilder"""
-        return BuildQueue.selectOneBy(builderID=self.id)
+        return BuildQueue.selectOneBy(builder=self)
 
     @property
     def slave(self):
@@ -172,6 +172,7 @@ class BuilderSet(object):
 class BuildQueue(SQLBase):
     implements(IBuildQueue)
     _table = "BuildQueue"
+    _defaultOrder = "id"
 
     build = ForeignKey(dbName='build', foreignKey='Build', notNull=True)
     builder = ForeignKey(dbName='builder', foreignKey='Builder', default=None)
@@ -280,6 +281,8 @@ class BuildQueueSet(object):
 
     def calculateCandidates(self, archreleases, state):
         """See IBuildQueueSet."""
+        if not archreleases:
+            return None
         clauses = ["build.distroarchrelease=%d" % d.id for d in archreleases]
         clause = " OR ".join(clauses)
 

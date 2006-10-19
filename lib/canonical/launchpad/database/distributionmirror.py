@@ -8,7 +8,6 @@ __all__ = ['DistributionMirror', 'MirrorDistroArchRelease',
            'DistributionMirrorSet', 'MirrorCDImageDistroRelease']
 
 from datetime import datetime, timedelta, MINYEAR
-import urllib2
 import pytz
 
 from zope.interface import implements
@@ -16,28 +15,27 @@ from zope.interface import implements
 from sqlobject import ForeignKey, StringCol, BoolCol
 
 from canonical.config import config
-from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 
-from canonical.archivepublisher.publishing import pocketsuffix
-from canonical.archivepublisher.pool import Poolifier
+from canonical.archivepublisher.diskpool import Poolifier
 from canonical.lp.dbschema import (
-    MirrorSpeed, MirrorContent, MirrorPulseType, MirrorStatus,
-    PackagePublishingPocket, EnumCol, PackagePublishingStatus,
-    SourcePackageFileType, BinaryPackageFileType)
+    MirrorSpeed, MirrorContent, MirrorStatus, PackagePublishingPocket,
+    EnumCol, PackagePublishingStatus, SourcePackageFileType,
+    BinaryPackageFileType)
+
 from canonical.launchpad.interfaces import (
     IDistributionMirror, IMirrorDistroReleaseSource, IMirrorDistroArchRelease,
-    IMirrorProbeRecord, IDistributionMirrorSet, PROBE_INTERVAL,
-    IDistroRelease, IDistroArchRelease, IMirrorCDImageDistroRelease,
-    UnableToFetchCDImageFileList)
+    IMirrorProbeRecord, IDistributionMirrorSet, PROBE_INTERVAL, pocketsuffix,
+    IDistroRelease, IDistroArchRelease, IMirrorCDImageDistroRelease)
 from canonical.launchpad.database.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory, SecureBinaryPackagePublishingHistory)
-from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.webapp import urlappend
+from canonical.launchpad.helpers import (
+    get_email_template, contactEmailAddresses)
+from canonical.launchpad.webapp import urlappend, canonical_url
 from canonical.launchpad.mail import simple_sendmail, format_address
 
 
@@ -46,7 +44,7 @@ class DistributionMirror(SQLBase):
 
     implements(IDistributionMirror)
     _table = 'DistributionMirror'
-    _defaultOrder = 'id'
+    _defaultOrder = ('-speed', 'name', 'id')
 
     owner = ForeignKey(
         dbName='owner', foreignKey='Person', notNull=True)
@@ -64,26 +62,28 @@ class DistributionMirror(SQLBase):
         notNull=False, default=None, unique=True)
     rsync_base_url = StringCol(
         notNull=False, default=None, unique=True)
-    pulse_source = StringCol(
-        notNull=False, default=None)
     enabled = BoolCol(
         notNull=True, default=False)
-    file_list = ForeignKey(
-        dbName='file_list', foreignKey='LibraryFileAlias')
     speed = EnumCol(
         notNull=True, schema=MirrorSpeed)
     country = ForeignKey(
         dbName='country', foreignKey='Country', notNull=True)
     content = EnumCol(
         notNull=True, schema=MirrorContent)
-    pulse_type = EnumCol(
-        notNull=True, schema=MirrorPulseType, default=MirrorPulseType.PUSH)
     official_candidate = BoolCol(
         notNull=True, default=False)
     official_approved = BoolCol(
         notNull=True, default=False)
 
-    @cachedproperty
+    @property
+    def base_url(self):
+        """See IDistributionMirror"""
+        if self.http_base_url is not None:
+            return self.http_base_url
+        else:
+            return self.ftp_base_url
+
+    @property
     def last_probe_record(self):
         """See IDistributionMirror"""
         return MirrorProbeRecord.selectFirst(
@@ -91,21 +91,82 @@ class DistributionMirror(SQLBase):
             orderBy='-date_created')
 
     @property
+    def all_probe_records(self):
+        """See IDistributionMirror"""
+        return MirrorProbeRecord.selectBy(
+            distribution_mirror=self, orderBy='-date_created')
+
+    @property
     def title(self):
         """See IDistributionMirror"""
         if self.displayname:
             return self.displayname
         else:
-            return self.name
+            return self.name.capitalize()
 
+    @property
+    def has_ftp_or_rsync_base_url(self):
+        """See IDistributionMirror"""
+        return self.ftp_base_url is not None or self.rsync_base_url is not None
+
+    def getOverallStatus(self):
+        """See IDistributionMirror"""
+        # XXX: We shouldn't be using MirrorStatus to represent the overall
+        # status of a mirror, but for now it'll do the job and we'll use the
+        # UNKNOWN status to represent a mirror without any content (which may
+        # mean the mirror was never verified or it was verified and no content
+        # was found).
+        # -- Guilherme Salgado, 2006-08-16
+        if self.content == MirrorContent.RELEASE:
+            if self.cdimage_releases:
+                return MirrorStatus.UP
+            else:
+                return MirrorStatus.UNKNOWN
+        elif self.content == MirrorContent.ARCHIVE:
+            # Return the worst (i.e. highest valued) mirror status out of all
+            # mirrors (binary and source) for this distribution mirror.
+            query = ("distribution_mirror = %s AND status != %s" 
+                     % sqlvalues(self, MirrorStatus.UNKNOWN))
+            arch_mirror = MirrorDistroArchRelease.selectFirst(
+                query, orderBy='-status')
+            source_mirror = MirrorDistroReleaseSource.selectFirst(
+                query, orderBy='-status')
+            if arch_mirror is None and source_mirror is None:
+                # No content.
+                return MirrorStatus.UNKNOWN
+            elif arch_mirror is not None and source_mirror is None:
+                return arch_mirror.status
+            elif source_mirror is not None and arch_mirror is None:
+                return source_mirror.status
+            else:
+                # Arch and Source Release mirror
+                if source_mirror.status > arch_mirror.status:
+                    return source_mirror.status
+                else:
+                    return arch_mirror.status
+        else:
+            raise AssertionError(
+                'DistributionMirror.content is not ARCHIVE nor RELEASE: %r'
+                % self.content)
+ 
     def isOfficial(self):
         """See IDistributionMirror"""
         return self.official_candidate and self.official_approved
 
-    def hasContent(self):
+    def shouldDisable(self, expected_file_count=None):
         """See IDistributionMirror"""
-        return bool(self.source_releases or self.arch_releases or
-                    self.cdimage_releases)
+        if self.content == MirrorContent.RELEASE:
+            if expected_file_count is None:
+                raise AssertionError(
+                    'For release mirrors we need to know the '
+                    'expected_file_count in order to tell if it should '
+                    'be disabled or not.')
+            if expected_file_count > self.cdimage_releases.count():
+                return True
+        else:
+            if not (self.source_releases or self.arch_releases):
+                return True
+        return False
 
     def disableAndNotifyOwner(self):
         """See IDistributionMirror"""
@@ -115,13 +176,20 @@ class DistributionMirror(SQLBase):
             "Launchpad Mirror Prober", config.noreply_from_address)
 
         replacements = {'distro': self.distribution.title,
-                        'mirror_name': self.name}
+                        'mirror_name': self.name,
+                        'mirror_url': canonical_url(self),
+                        'logfile_url': self.last_probe_record.log_file.url}
         message = template % replacements
 
-        subject = "Launchpad: Your distribution mirror seems to be unreachable"
+        subject = "Launchpad: Notification of failure from the mirror prober"
         to_address = format_address(
             self.owner.displayname, self.owner.preferredemail.email)
         simple_sendmail(fromaddress, to_address, subject, message)
+        # Send also a notification to the distribution's mirror admin.
+        subject = "Launchpad: Distribution mirror seems to be unreachable"
+        mirror_admin_address = contactEmailAddresses(
+            self.distribution.mirror_admin)
+        simple_sendmail(fromaddress, mirror_admin_address, subject, message)
 
     def newProbeRecord(self, log_file):
         """See IDistributionMirror"""
@@ -131,9 +199,8 @@ class DistributionMirror(SQLBase):
                                       component):
         """See IDistributionMirror"""
         mirror = MirrorDistroArchRelease.selectOneBy(
-            distribution_mirrorID=self.id,
-            distro_arch_releaseID=distro_arch_release.id,
-            pocket=pocket, componentID=component.id)
+            distribution_mirror=self, distro_arch_release=distro_arch_release,
+            pocket=pocket, component=component)
         if mirror is not None:
             mirror.destroySelf()
 
@@ -142,40 +209,40 @@ class DistributionMirror(SQLBase):
         """See IDistributionMirror"""
         assert IDistroArchRelease.providedBy(distro_arch_release)
         mirror = MirrorDistroArchRelease.selectOneBy(
-            distribution_mirrorID=self.id,
-            distro_arch_releaseID=distro_arch_release.id,
-            pocket=pocket, componentID=component.id)
+            distribution_mirror=self,
+            distro_arch_release=distro_arch_release, pocket=pocket,
+            component=component)
         if mirror is None:
             mirror = MirrorDistroArchRelease(
                 pocket=pocket, distribution_mirror=self,
                 distro_arch_release=distro_arch_release,
-                componentID=component.id)
+                component=component)
         return mirror
 
     def ensureMirrorDistroReleaseSource(self, distrorelease, pocket, component):
         """See IDistributionMirror"""
         assert IDistroRelease.providedBy(distrorelease)
         mirror = MirrorDistroReleaseSource.selectOneBy(
-            distribution_mirrorID=self.id, distroreleaseID=distrorelease.id,
-            pocket=pocket, componentID=component.id)
+            distribution_mirror=self, distrorelease=distrorelease,
+            pocket=pocket, component=component)
         if mirror is None:
             mirror = MirrorDistroReleaseSource(
                 distribution_mirror=self, distrorelease=distrorelease,
-                pocket=pocket, componentID=component.id)
+                pocket=pocket, component=component)
         return mirror
 
     def deleteMirrorDistroReleaseSource(self, distrorelease, pocket, component):
         """See IDistributionMirror"""
         mirror = MirrorDistroReleaseSource.selectOneBy(
-            distribution_mirrorID=self.id, distroreleaseID=distrorelease.id,
-            pocket=pocket, componentID=component.id)
+            distribution_mirror=self, distrorelease=distrorelease,
+            pocket=pocket, component=component)
         if mirror is not None:
             mirror.destroySelf()
 
     def ensureMirrorCDImageRelease(self, distrorelease, flavour):
         """See IDistributionMirror"""
         mirror = MirrorCDImageDistroRelease.selectOneBy(
-            distribution_mirrorID=self.id, distroreleaseID=distrorelease.id,
+            distribution_mirror=self, distrorelease=distrorelease,
             flavour=flavour)
         if mirror is None:
             mirror = MirrorCDImageDistroRelease(
@@ -186,7 +253,7 @@ class DistributionMirror(SQLBase):
     def deleteMirrorCDImageRelease(self, distrorelease, flavour):
         """See IDistributionMirror"""
         mirror = MirrorCDImageDistroRelease.selectOneBy(
-            distribution_mirrorID=self.id, distroreleaseID=distrorelease.id,
+            distribution_mirror=self, distrorelease=distrorelease,
             flavour=flavour)
         if mirror is not None:
             mirror.destroySelf()
@@ -195,12 +262,12 @@ class DistributionMirror(SQLBase):
     def cdimage_releases(self):
         """See IDistributionMirror"""
         return MirrorCDImageDistroRelease.selectBy(
-            distribution_mirrorID=self.id)
+            distribution_mirror=self)
 
     @property
     def source_releases(self):
         """See IDistributionMirror"""
-        return MirrorDistroReleaseSource.selectBy(distribution_mirrorID=self.id)
+        return MirrorDistroReleaseSource.selectBy(distribution_mirror=self)
 
     def getSummarizedMirroredSourceReleases(self):
         """See IDistributionMirror"""
@@ -223,7 +290,7 @@ class DistributionMirror(SQLBase):
     @property
     def arch_releases(self):
         """See IDistributionMirror"""
-        return MirrorDistroArchRelease.selectBy(distribution_mirrorID=self.id)
+        return MirrorDistroArchRelease.selectBy(distribution_mirror=self)
 
     def getSummarizedMirroredArchReleases(self):
         """See IDistributionMirror"""
@@ -243,29 +310,6 @@ class DistributionMirror(SQLBase):
             """ % sqlvalues(distribution=self.distribution, mirrorid=self)
         return MirrorDistroArchRelease.select(query)
 
-    def _getCDImageFileList(self):
-        url = config.distributionmirrorprober.releases_file_list_url
-        try:
-            return urllib2.urlopen(url)
-        except urllib2.URLError, e:
-            raise UnableToFetchCDImageFileList(
-                'Unable to fetch %s: %s' % (url, e))
-
-    def getExpectedCDImagePaths(self):
-        """See IDistributionMirror"""
-        d = {}
-        for line in self._getCDImageFileList().readlines():
-            flavour, releasename, path, size = line.split('\t')
-            paths = d.setdefault((flavour, releasename), [])
-            paths.append(path)
-
-        paths = []
-        for key, value in d.items():
-            flavour, releasename = key
-            release = self.distribution.getRelease(releasename)
-            paths.append((release, flavour, value))
-        return paths
-
     def getExpectedPackagesPaths(self):
         """See IDistributionMirror"""
         paths = []
@@ -273,6 +317,12 @@ class DistributionMirror(SQLBase):
             for pocket, suffix in pocketsuffix.items():
                 for component in release.components:
                     for arch_release in release.architectures:
+                        # XXX: This hack is a cheap attempt to try and avoid
+                        # https://launchpad.net/bugs/54791 from biting us.
+                        # -- Guilherme Salgado, 2006-08-01
+                        if arch_release.architecturetag in ('hppa', 'ia64'):
+                            continue
+
                         path = ('dists/%s%s/%s/binary-%s/Packages.gz'
                                 % (release.name, suffix, component.name,
                                    arch_release.architecturetag))
@@ -307,8 +357,7 @@ class DistributionMirrorSet:
             FROM distributionmirror 
             LEFT OUTER JOIN mirrorproberecord
                 ON mirrorproberecord.distribution_mirror = distributionmirror.id
-            WHERE distributionmirror.enabled IS TRUE
-                AND distributionmirror.content = %s
+            WHERE distributionmirror.content = %s
                 AND distributionmirror.official_candidate IS TRUE
                 AND distributionmirror.official_approved IS TRUE
             GROUP BY distributionmirror.id
@@ -378,7 +427,7 @@ class _MirrorReleaseMixIn:
         """
         raise NotImplementedError
 
-    def getLatestPublishingEntry(time_interval):
+    def getLatestPublishingEntry(self, time_interval):
         """Return the publishing entry with the most recent datepublished.
 
         Time interval must be a tuple of the form (start, end), and only
@@ -520,7 +569,7 @@ class MirrorDistroArchRelease(SQLBase, _MirrorReleaseMixIn):
         base_url = self.distribution_mirror.http_base_url
         path = Poolifier().poolify(bpr.sourcepackagename, self.component.name)
         file = BinaryPackageFile.selectOneBy(
-            binarypackagereleaseID=bpr.id, filetype=BinaryPackageFileType.DEB)
+            binarypackagerelease=bpr, filetype=BinaryPackageFileType.DEB)
         full_path = 'pool/%s/%s' % (path, file.libraryfile.filename)
         return urlappend(base_url, full_path)
 
@@ -572,7 +621,7 @@ class MirrorDistroReleaseSource(SQLBase, _MirrorReleaseMixIn):
         sourcename = spr.name
         path = Poolifier().poolify(sourcename, self.component.name)
         file = SourcePackageReleaseFile.selectOneBy(
-            sourcepackagereleaseID=spr.id, filetype=SourcePackageFileType.DSC)
+            sourcepackagerelease=spr, filetype=SourcePackageFileType.DSC)
         full_path = 'pool/%s/%s' % (path, file.libraryfile.filename)
         return urlappend(base_url, full_path)
 
@@ -588,6 +637,6 @@ class MirrorProbeRecord(SQLBase):
         dbName='distribution_mirror', foreignKey='DistributionMirror',
         notNull=True)
     log_file = ForeignKey(
-        dbName='log_file', foreignKey='LibraryFileAlias', default=None)
+        dbName='log_file', foreignKey='LibraryFileAlias', notNull=True)
     date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 

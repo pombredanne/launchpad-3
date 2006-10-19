@@ -3,18 +3,24 @@
 __metaclass__ = type
 __all__ = ['Specification', 'SpecificationSet']
 
-
 from zope.interface import implements
 
 from sqlobject import (
     ForeignKey, IntCol, StringCol, SQLMultipleJoin, SQLRelatedJoin, BoolCol)
 
 from canonical.launchpad.interfaces import (
-    ISpecification, ISpecificationSet)
+    IBugLinkTarget,
+    IDistroRelease,
+    IProductSeries,
+    ISpecification,
+    ISpecificationSet,
+    )
 
 from canonical.database.sqlbase import SQLBase, quote
-from canonical.database.constants import DEFAULT
+from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+
+from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
 from canonical.launchpad.database.specificationdependency import (
     SpecificationDependency)
 from canonical.launchpad.database.specificationbug import (
@@ -26,22 +32,24 @@ from canonical.launchpad.database.specificationsubscription import (
 from canonical.launchpad.database.sprintspecification import (
     SprintSpecification)
 from canonical.launchpad.database.sprint import Sprint
+
 from canonical.launchpad.helpers import (
-    contactEmailAddresses, check_permission, shortlist)
+    contactEmailAddresses, shortlist)
 
 from canonical.launchpad.components.specification import SpecificationDelta
 
 from canonical.lp.dbschema import (
     EnumCol, SpecificationDelivery,
     SpecificationFilter, SpecificationGoalStatus,
+    SpecificationLifecycleStatus,
     SpecificationPriority, SpecificationStatus,
     )
 
 
-class Specification(SQLBase):
+class Specification(SQLBase, BugLinkTargetMixin):
     """See ISpecification."""
 
-    implements(ISpecification)
+    implements(ISpecification, IBugLinkTarget)
 
     _defaultOrder = ['-priority', 'status', 'name', 'id']
 
@@ -50,7 +58,7 @@ class Specification(SQLBase):
     title = StringCol(notNull=True)
     summary = StringCol(notNull=True)
     status = EnumCol(schema=SpecificationStatus, notNull=True,
-        default=SpecificationStatus.BRAINDUMP)
+        default=SpecificationStatus.NEW)
     priority = EnumCol(schema=SpecificationPriority, notNull=True,
         default=SpecificationPriority.UNDEFINED)
     assignee = ForeignKey(dbName='assignee', notNull=False,
@@ -71,11 +79,16 @@ class Specification(SQLBase):
         foreignKey='DistroRelease', notNull=False, default=None)
     goalstatus = EnumCol(schema=SpecificationGoalStatus, notNull=True,
         default=SpecificationGoalStatus.PROPOSED)
+    goal_proposer = ForeignKey(dbName='goal_proposer', notNull=False,
+        foreignKey='Person', default=None)
+    date_goal_proposed = UtcDateTimeCol(notNull=False, default=None)
+    goal_decider = ForeignKey(dbName='goal_decider', notNull=False,
+        foreignKey='Person', default=None)
+    date_goal_decided = UtcDateTimeCol(notNull=False, default=None)
     milestone = ForeignKey(dbName='milestone',
         foreignKey='Milestone', notNull=False, default=None)
     specurl = StringCol(notNull=True)
     whiteboard = StringCol(notNull=False, default=None)
-    needs_discussion = BoolCol(notNull=True, default=True)
     direction_approved = BoolCol(notNull=True, default=False)
     informational = BoolCol(notNull=True, default=False)
     man_days = IntCol(notNull=False, default=None)
@@ -83,6 +96,12 @@ class Specification(SQLBase):
         default=SpecificationDelivery.UNKNOWN)
     superseded_by = ForeignKey(dbName='superseded_by',
         foreignKey='Specification', notNull=False, default=None)
+    completer = ForeignKey(dbName='completer', notNull=False,
+        foreignKey='Person', default=None)
+    date_completed = UtcDateTimeCol(notNull=False, default=None)
+    starter = ForeignKey(dbName='starter', notNull=False,
+        foreignKey='Person', default=None)
+    date_started = UtcDateTimeCol(notNull=False, default=None)
 
     # useful joins
     subscriptions = SQLMultipleJoin('SpecificationSubscription',
@@ -98,7 +117,7 @@ class Specification(SQLBase):
     sprints = SQLRelatedJoin('Sprint', orderBy='name',
         joinColumn='specification', otherColumn='sprint',
         intermediateTable='SprintSpecification')
-    buglinks = SQLMultipleJoin('SpecificationBug', joinColumn='specification',
+    bug_links = SQLMultipleJoin('SpecificationBug', joinColumn='specification',
         orderBy='id')
     bugs = SQLRelatedJoin('Bug',
         joinColumn='specification', otherColumn='bug',
@@ -133,9 +152,21 @@ class Specification(SQLBase):
         elif distribution:
             assert distribution.getSpecification(self.name) is None
 
+        # if we are not changing anything, then return
+        if self.product == product and self.distribution == distribution:
+            return
+
+        # we must lose any goal we have set and approved/declined because we
+        # are moving to a different product that will have different
+        # policies and drivers
         self.productseries = None
         self.distrorelease = None
+        self.goalstatus = SpecificationGoalStatus.PROPOSED
+        self.goal_proposer = None
+        self.date_goal_proposed = None
         self.milestone = None
+
+        # set the new values
         self.product = product
         self.distribution = distribution
         self.priority = SpecificationPriority.UNDEFINED
@@ -147,6 +178,49 @@ class Specification(SQLBase):
         if self.productseries:
             return self.productseries
         return self.distrorelease
+
+    def proposeGoal(self, goal, proposer):
+        """See ISpecification."""
+        if goal is None:
+            # we are clearing goals
+            self.productseries = None
+            self.distrorelease = None
+        elif IProductSeries.providedBy(goal):
+            # set the product series as a goal
+            self.productseries = goal
+            self.goal_proposer = proposer
+            self.date_goal_proposed = UTC_NOW
+            # and make sure there is no leftover distrorelease goal
+            self.distrorelease = None
+        elif IDistroRelease.providedBy(goal):
+            # set the distrorelease goal
+            self.distrorelease = goal
+            self.goal_proposer = proposer
+            self.date_goal_proposed = UTC_NOW
+            # and make sure there is no leftover distrorelease goal
+            self.productseries = None
+        else:
+            raise AssertionError, 'Inappropriate goal.'
+        # record who made the proposal, and when
+        self.goal_proposer = proposer
+        self.date_goal_proposed = UTC_NOW
+        # and of course set the goal status to PROPOSED
+        self.goalstatus = SpecificationGoalStatus.PROPOSED
+        # the goal should now also not have a decider
+        self.goal_decider = None
+        self.date_goal_decided = None
+
+    def acceptBy(self, decider):
+        """See ISpecification."""
+        self.goalstatus = SpecificationGoalStatus.ACCEPTED
+        self.goal_decider = decider
+        self.date_goal_decided = UTC_NOW
+
+    def declineBy(self, decider):
+        """See ISpecification."""
+        self.goalstatus = SpecificationGoalStatus.DECLINED
+        self.goal_decider = decider
+        self.date_goal_decided = UTC_NOW
 
     def getSprintSpecification(self, sprintname):
         """See ISpecification."""
@@ -186,21 +260,28 @@ class Specification(SQLBase):
     # one thing they often have to filter for is completeness. We maintain
     # this single canonical query string here so that it does not have to be
     # cargo culted into Product, Distribution, ProductSeries etc
+
+    # Also note that there is a constraint in the database which ensures
+    # that date_completed is set if the spec is complete, and that db
+    # constraint parrots this definition exactly.
+
+    # NB NB NB if you change this definition PLEASE update the db constraint
+    # Specification.specification_completion_recorded_chk !!!
     completeness_clause =  """
-                Specification.delivery = %d 
+                Specification.delivery = %d
                 """ % SpecificationDelivery.IMPLEMENTED.value + """
-            OR 
-                Specification.status IN ( %d, %d ) 
+            OR
+                Specification.status IN ( %d, %d )
                 """ % (SpecificationStatus.OBSOLETE.value,
                        SpecificationStatus.SUPERSEDED.value) + """
-            OR 
-               (Specification.informational IS TRUE AND 
+            OR
+               (Specification.informational IS TRUE AND
                 Specification.status = %d)
                 """ % SpecificationStatus.APPROVED.value
 
     @property
     def is_complete(self):
-        """See ISpecification. This should be a code implementation of the
+        """See ISpecification. This is a code implementation of the
         SQL in self.completeness. Just for completeness.
         """
         return (self.status in [
@@ -210,6 +291,66 @@ class Specification(SQLBase):
                 or self.delivery == SpecificationDelivery.IMPLEMENTED
                 or (self.informational is True and
                     self.status == SpecificationStatus.APPROVED))
+
+    # NB NB If you change this definition, please update the equivalent
+    # DB constraint Specification.specification_start_recorded_chk
+    # We choose to define "started" as the set of delivery states NOT
+    # in the values we select. Another option would be to say "anything less
+    # than a threshold" and to comment the dbschema that "anything not
+    # started should be less than the threshold". We'll see how maintainable
+    # this is.
+    started_clause =  """
+                Specification.delivery NOT IN ( %d, %d, %d )
+                """ % ( SpecificationDelivery.UNKNOWN.value,
+                        SpecificationDelivery.NOTSTARTED.value,
+                        SpecificationDelivery.DEFERRED.value ) + """
+            OR
+               (Specification.informational IS TRUE AND
+                Specification.status = %d)
+                """ % SpecificationStatus.APPROVED.value
+
+    @property
+    def is_started(self):
+        """See ISpecification. This is a code implementation of the
+        SQL in self.started_clause
+        """
+        return (self.delivery not in [
+                    SpecificationDelivery.UNKNOWN,
+                    SpecificationDelivery.NOTSTARTED,
+                    SpecificationDelivery.DEFERRED,
+                    ]
+                or (self.informational is True and
+                    self.status == SpecificationStatus.APPROVED))
+
+
+    def updateLifecycleStatus(self, user):
+        """See ISpecification."""
+        newstatus = None
+        if self.is_started:
+            if self.starter is None:
+                newstatus = SpecificationLifecycleStatus.STARTED
+                self.date_started = UTC_NOW
+                self.starter = user
+        else:
+            if self.starter is not None:
+                newstatus = SpecificationLifecycleStatus.NOTSTARTED
+                self.date_started = None
+                self.starter = None
+        if self.is_complete:
+            if self.completer is None:
+                newstatus = SpecificationLifecycleStatus.COMPLETE
+                self.date_completed = UTC_NOW
+                self.completer = user
+        else:
+            if self.completer is not None:
+                self.date_completed = None
+                self.completer = None
+                if self.is_started:
+                    newstatus = SpecificationLifecycleStatus.STARTED
+                else:
+                    newstatus = SpecificationLifecycleStatus.NOTSTARTED
+
+        return newstatus
 
     @property
     def is_blocked(self):
@@ -271,14 +412,30 @@ class Specification(SQLBase):
             return None
 
     # subscriptions
-    def subscribe(self, person):
+    def subscription(self, person):
         """See ISpecification."""
-        # first see if a relevant subscription exists, and if so, return it
         for sub in self.subscriptions:
             if sub.person.id == person.id:
                 return sub
+        return None
+
+    def getSubscriptionByName(self, name):
+        """See ISpecification."""
+        for sub in self.subscriptions:
+            if sub.person.name == name:
+                return sub
+        return None
+
+    def subscribe(self, person, essential):
+        """See ISpecification."""
+        # first see if a relevant subscription exists, and if so, return it
+        sub = self.subscription(person)
+        if sub is not None:
+            sub.essential = essential
+            return sub
         # since no previous subscription existed, create and return a new one
-        return SpecificationSubscription(specification=self, person=person)
+        return SpecificationSubscription(specification=self,
+            person=person, essential=essential)
 
     def unsubscribe(self, person):
         """See ISpecification."""
@@ -314,35 +471,28 @@ class Specification(SQLBase):
                 SpecificationFeedback.delete(fbreq.id)
                 return
 
-    # linking to bugs
-    def linkBug(self, bug_number):
-        """See ISpecification."""
-        for buglink in self.buglinks:
-            if buglink.bug.id == bug_number:
-                return buglink
-        return SpecificationBug(specification=self, bug=bug_number)
+    # Template methods for BugLinkTargetMixin
+    buglinkClass = SpecificationBug
 
-    def unLinkBug(self, bug_number):
-        """See ISpecification."""
-        # see if a relevant bug link exists, and if so, delete it
-        for buglink in self.buglinks:
-            if buglink.bug.id == bug_number:
-                SpecificationBug.delete(buglink.id)
-                return buglink
+    def createBugLink(self, bug):
+        """See BugLinkTargetMixin."""
+        return SpecificationBug(specification=self, bug=bug)
 
     # sprint linking
     def linkSprint(self, sprint, user):
         """See ISpecification."""
         for sprint_link in self.sprint_links:
-            if sprint_link.sprint.id == sprint.id:
+            # sprints have unique names
+            if sprint_link.sprint.name == sprint.name:
                 return sprint_link
         return SprintSpecification(specification=self,
-            sprint=sprint, nominator=user)
+            sprint=sprint, registrant=user)
 
     def unlinkSprint(self, sprint):
         """See ISpecification."""
         for sprint_link in self.sprint_links:
-            if sprint_link.sprint.id == sprint.id:
+            # sprints have unique names
+            if sprint_link.sprint.name == sprint.name:
                 SprintSpecification.delete(sprint_link.id)
                 return sprint_link
 
@@ -436,7 +586,7 @@ class SpecificationSet:
                 completeness = True
         if completeness is False:
             filter.append(SpecificationFilter.INCOMPLETE)
-        
+
         # defaults for acceptance: in this case we have nothing to do
         # because specs are not accepted/declined against a distro
 
@@ -455,7 +605,13 @@ class SpecificationSet:
         #  - completeness.
         #  - informational.
         #
-        base = '1=1 '
+
+        # filter out specs on inactive products
+        base = """(Specification.product IS NULL OR
+                   Specification.product NOT IN
+                    (SELECT Product.id FROM Product
+                     WHERE Product.active IS FALSE))
+                """
         query = base
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
@@ -496,7 +652,7 @@ class SpecificationSet:
         """See ISpecificationSet."""
         specification = Specification.selectOneBy(specurl=url)
         if specification is None:
-            return None 
+            return None
         return specification
 
     @property

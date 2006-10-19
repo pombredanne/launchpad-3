@@ -59,13 +59,15 @@ dependency.
   Location: http://.../products/firefox/+spec/canvas
 
 But we don't want to keep that, so we will remove it as a dependency. First
-we make sure we can see the link to remove a dependency.
+we make sure we can see the link to remove a dependency. We need to be
+authenticated.
 
   >>> print http(r"""
   ... GET /products/firefox/+spec/canvas HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  ...Remove Dependency...
+  ...Remove dependency...
 
 Now, we make sure we can load the page. It should show two potential
 dependencies we could remove. The extension manager one, and "e4x".
@@ -107,18 +109,6 @@ expect to be redirected to the spec home page.
   ...
   Location: http://.../products/firefox/+spec/canvas
 
-Now, let's look at the "e4x" spec. We know that it blocks the "canvas" spec
-from the previous test. Also, we should see that it has a dependency of its
-own, on the "svg-support" spec.
-
-  >>> anon_browser.open('http://launchpad.dev/products/firefox/+spec/e4x')
-  >>> print '----'; print anon_browser.contents
-  ----
-  ...Depends:...
-  ...+spec/svg-support...
-  ...Blocks:...
-  ...+spec/canvas...
-
 We know that no specs depend on "canvas", but "canvas" depends on "e4x"
 and "e4x" depends on "svg-support". So the big picture is that "canvas"
 needs to have both "e4x" and "svg-support" implemented before it can be
@@ -142,18 +132,21 @@ mapped out, we should be able to see a project plan for Mozilla Firefox.
   >>> anon_browser.open('http://launchpad.dev/products/firefox/+roadmap')
 
 We have some nice tools to display the dependency tree as a client side
-image and map:
+image and map.
+
+With some versions of graphviz, the <area> for the current spec (canvas) does
+not have a URL.  In other versions, there is no <area> for the current spec at
+all.  To accomodate both these cases, that part of the output is elided.
 
   >>> anon_browser.open('http://launchpad.dev/products/firefox/+spec/canvas/+deptreeimgtag')
+  >>> import re
   >>> print anon_browser.contents
   <img src="deptree.png" usemap="#deptree" />
-  <map id="deptree" name="deptree">
+  <map id="deptree" name="deptree"...
   <area shape="rect"
-  href="http://blueprint.launchpad.dev/products/firefox/+spec/canvas" title="Support &lt;canvas&gt; Objects" alt="" coords="..." />
+  href="http://features.launchpad.dev/products/firefox/+spec/e4x" title="Support E4X in EcmaScript" alt="" coords="..." />
   <area shape="rect"
-  href="http://blueprint.launchpad.dev/products/firefox/+spec/e4x" title="Support E4X in EcmaScript" alt="" coords="..." />
-  <area shape="rect"
-  href="http://blueprint.launchpad.dev/products/firefox/+spec/svg&#45;support" title="Support Native SVG Objects" alt="" coords="..." />
+  href="http://features.launchpad.dev/products/firefox/+spec/svg&#45;support" title="Support Native SVG Objects" alt="" coords="..." />
   </map>
 
 

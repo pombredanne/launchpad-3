@@ -115,11 +115,18 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IShipItApplication"
-        class="canonical.launchpad.browser.ShipItLoginView"
+        class="canonical.launchpad.browser.ShipitFrontPageView"
         permission="zope.Public"
         name="+index"
+        template="../templates/shipit-index-new.pt" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IShipItApplication"
+        class="canonical.launchpad.browser.ShipItLoginView"
+        permission="zope.Public"
+        name="login"
         template="../templates/shipit-index.pt"
-        lp:url="/shipit/+index" />
+        lp:url="/shipit/login" />
 
     <browser:page
         for="canonical.launchpad.interfaces.IShipItApplication"
@@ -216,7 +223,9 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.IShippingRequest"
-        urldata="canonical.launchpad.browser.ShippingRequestURL" />
+        path_expression="string:requests/${id}"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        rootsite="shipit" />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IShippingRequest"
@@ -299,7 +308,9 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.IStandardShipItRequest"
-        urldata="canonical.launchpad.browser.StandardShipItRequestURL" />
+        path_expression="string:standardoptions/${id}"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        rootsite="shipit" />
 
     <browser:editform
         name="+index"

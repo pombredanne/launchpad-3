@@ -16,7 +16,6 @@ __all__ = [
     'valid_hackergotchi',
     'valid_unregistered_email',
     'validate_distribution_mirror_schema',
-    'valid_distributionmirror_file_list',
     'validate_shipit_recipientdisplayname',
     'validate_shipit_phone',
     'validate_shipit_city',
@@ -37,7 +36,6 @@ from textwrap import dedent
 from StringIO import StringIO
 
 from zope.component import getUtility
-from zope.app.content_types import guess_content_type
 from zope.app.form.interfaces import WidgetsError
 
 from canonical.launchpad import _
@@ -360,14 +358,6 @@ def valid_unregistered_email(email):
         raise LaunchpadValidationError(_(dedent("""
             %s isn't a valid email address.""" % email)))
 
-def valid_distributionmirror_file_list(file_list=None):
-    if file_list is not None:
-        content_type, dummy = guess_content_type(body=file_list)
-        if content_type != 'text/plain':
-            raise LaunchpadValidationError(
-                "The given file is not in plain text format.")
-    return True
-
 def validate_distribution_mirror_schema(form_values):
     """Perform schema validation according to IDistributionMirror constraints.
 
@@ -379,11 +369,10 @@ def validate_distribution_mirror_schema(form_values):
                   values suplied by the user.
     """
     errors = []
-    if not (form_values['http_base_url'] or form_values['ftp_base_url']
-            or form_values['rsync_base_url']):
+    if not (form_values['http_base_url'] or form_values['ftp_base_url']):
         errors.append(LaunchpadValidationError(_(
-            "All mirrors require at least one URL (HTTP, FTP or "
-            "Rsync) to be specified.")))
+            "All mirrors require at least an HTTP or FTP URL to be "
+            "specified.")))
 
     if errors:
         raise WidgetsError(errors)
@@ -600,7 +589,7 @@ def valid_password(password):
         return True
 
 
-def validate_date_interval(start_date, end_date):
+def validate_date_interval(start_date, end_date, error_msg=None):
     """Check if start_date precedes end_date.
 
     >>> from datetime import datetime
@@ -612,11 +601,16 @@ def validate_date_interval(start_date, end_date):
     ...
     WidgetsError: LaunchpadValidationError: This event can't start after it
     ends.
+    >>> validate_date_interval(end, start, error_msg="A custom error msg")
+    Traceback (most recent call last):
+    ...
+    WidgetsError: LaunchpadValidationError: A custom error msg
 
     """
+    if error_msg is None:
+        error_msg = _("This event can't start after it ends.")
     errors = []
     if start_date >= end_date:
-        errors.append(LaunchpadValidationError(_(
-            "This event can't start after it ends.")))
+        errors.append(LaunchpadValidationError(error_msg))
     if errors:
         raise WidgetsError(errors)

@@ -34,13 +34,14 @@ from canonical.launchpad.interfaces import (
     IProjectSet, ILoginTokenSet, IKarmaActionSet, IPOTemplateNameSet,
     IBazaarApplication, ICodeOfConductSet, IRegistryApplication,
     ISpecificationSet, ISprintSet, ITicketSet, IBuilderSet, IBountySet,
-    ILaunchpadCelebrities, IBugSet, IBugTrackerSet, ICveSet)
+    ILaunchpadCelebrities, IBugSet, IBugTrackerSet, ICveSet,
+    ITranslationImportQueue, ITranslationGroupSet)
 from canonical.launchpad.layers import (
     setFirstLayer, ShipItEdUbuntuLayer, ShipItKUbuntuLayer, ShipItUbuntuLayer)
 from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView, Navigation,
-    stepto)
+    stepto, canonical_url)
 
 # XXX SteveAlexander, 2005-09-22, this is imported here because there is no
 #     general timedelta to duration format adapter available.  This should
@@ -166,7 +167,7 @@ class Breadcrumbs(LaunchpadView):
             L.append(
                 '<li class="last">'
                 '<a href="%s">'
-                '<img src="/@@/launchpad.png" alt="" /> %s'
+                '<img src="/@@/launchpad" alt="" /> %s'
                 '</a>'
                 '%s'
                 '</li>'
@@ -177,7 +178,7 @@ class Breadcrumbs(LaunchpadView):
             L.append(
                 '<li>'
                 '<a href="%s">'
-                '<img src="/@@/launchpad.png" alt="" /> %s'
+                '<img src="/@@/launchpad" alt="" /> %s'
                 '</a>'
                 '%s'
                 '</li>'
@@ -251,8 +252,8 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
 
     usedfor = ILaunchpadRoot
 
-    enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
-                   'translations', 'branches', 'calendar']
+    enable_only = ['overview', 'bugs', 'support', 'specifications',
+                   'translations', 'branches']
 
     def overview(self):
         target = ''
@@ -276,8 +277,8 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
         return Link(target, text, summary)
 
     def specifications(self):
-        target = 'specs'
-        text = 'Specifications'
+        target = ''
+        text = 'Features'
         summary = 'Launchpad feature specification tracker.'
         return Link(target, text, summary)
 
@@ -289,7 +290,7 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
 
     def branches(self):
         target = 'bazaar'
-        text = 'Branches'
+        text = 'Code'
         summary = 'The Code Bazaar'
         return Link(target, text, summary)
 
@@ -310,29 +311,31 @@ class MaloneContextMenu(ContextMenu):
 
 class RosettaContextMenu(ContextMenu):
     usedfor = IRosettaApplication
-    links = ['about', 'preferences', 'imports']
-
-    def upload(self):
-        target = '+upload'
-        text = 'Upload'
-        return Link(target, text)
-
-    def download(self):
-        target = '+export'
-        text = 'Download'
-        return Link(target, text)
+    links = ['about', 'preferences', 'import_queue', 'translation_groups']
 
     def about(self):
         text = 'About Rosetta'
-        return Link('+about', text)
+        rosetta_application = getUtility(IRosettaApplication)
+        url = '/'.join([canonical_url(rosetta_application), '+about'])
+        return Link(url, text)
 
     def preferences(self):
-        text = 'Preferences'
-        return Link('prefs', text)
+        text = 'Translation preferences'
+        rosetta_application = getUtility(IRosettaApplication)
+        url = '/'.join([canonical_url(rosetta_application), 'prefs'])
+        return Link(url, text)
 
-    def imports(self):
+    def import_queue(self):
         text = 'Import queue'
-        return Link('imports', text)
+        import_queue = getUtility(ITranslationImportQueue)
+        url = canonical_url(import_queue)
+        return Link(url, text)
+
+    def translation_groups(self):
+        text = 'Translation groups'
+        translation_group_set = getUtility(ITranslationGroupSet)
+        url = canonical_url(translation_group_set)
+        return Link(url, text)
 
 
 class LoginStatus:
@@ -448,21 +451,6 @@ class LaunchpadRootNavigation(Navigation):
     def calendar(self):
         # XXX permission=launchpad.AnyPerson
         return MergedCalendar()
-
-    @stepto('shipit-ubuntu')
-    def shipit_ubuntu(self):
-        setFirstLayer(self.request, ShipItUbuntuLayer)
-        return getUtility(IShipItApplication)
-
-    @stepto('shipit-kubuntu')
-    def shipit_kubuntu(self):
-        setFirstLayer(self.request, ShipItKUbuntuLayer)
-        return getUtility(IShipItApplication)
-
-    @stepto('shipit-edubuntu')
-    def shipit_edubuntu(self):
-        setFirstLayer(self.request, ShipItEdUbuntuLayer)
-        return getUtility(IShipItApplication)
 
 
 class SoftTimeoutView(LaunchpadView):

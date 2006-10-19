@@ -16,9 +16,7 @@ syntax should look familiar.
 The IDistributionSet utility is accessed in the usual fashion:
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IPersonSet, ICountrySet, IDistroReleaseSet,
-    ...     IDistroArchReleaseSet)
+    >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> from canonical.lp.dbschema import (
     ...     PackagePublishingPocket, MirrorSpeed, MirrorContent,
     ...     MirrorPulseType)
@@ -82,12 +80,16 @@ You can list development distroreleases:
     ...     print devdist.name
     hoary
 
-Retrieving packages by name, returns a tuple of
-Source/BinaryPackageName instancefound within this distribution:
+Guessing package names
+======================
+
+IDistribution allows us to retrieve packages by name, returning a tuple
+of Source/BinaryPackageName instances published within this
+distribution:
 
     >>> from canonical.launchpad.interfaces import (
     ...     ISourcePackageName, IBinaryPackageName)
-    >>> source_name, bin_name = ubuntu.getPackageNames('pmount')
+    >>> source_name, bin_name = ubuntu.guessPackageNames('pmount')
     >>> ISourcePackageName.providedBy(source_name)
     True
     >>> IBinaryPackageName.providedBy(bin_name)
@@ -97,35 +99,59 @@ Source/BinaryPackageName instancefound within this distribution:
 
 Prevents wrong usage by and assertion error:
 
-    >>> name_tuple = ubuntu.getPackageNames(ubuntu)
+    >>> name_tuple = ubuntu.guessPackageNames(ubuntu)
     Traceback (most recent call last):
     ...
     AssertionError: Expected string. Got: <Distribution ...>
 
 Raises NotFoundError for following conditions:
 
-    >>> name_tuple = ubuntu.getPackageNames('@#$')
+    >>> name_tuple = ubuntu.guessPackageNames('@#$')
     Traceback (most recent call last):
     ...
     NotFoundError: 'Invalid package name: @#$'
 
-    >>> name_tuple = ubuntu.getPackageNames('zeca')
+    >>> name_tuple = ubuntu.guessPackageNames('zeca')
     Traceback (most recent call last):
     ...
     NotFoundError: 'Unknown package: zeca'
 
-    >>> name_tuple = ubuntu.getPackageNames('1234')
+    >>> name_tuple = ubuntu.guessPackageNames('1234')
     Traceback (most recent call last):
     ...
     NotFoundError: 'Unknown package: 1234'
 
 It also raises NotFoundError on distributions with no releases:
 
-    >>> source_name, bin_name = gentoo.getPackageNames('pmount')
+    >>> source_name, bin_name = gentoo.guessPackageNames('pmount')
     Traceback (most recent call last):
     ...
-    NotFoundError: "Distribution has no releases; 'pmount' was never published in it"
+    NotFoundError: u"Gentoo has no releases; 'pmount' was never published in it"
 
+Even if we add a release to Gentoo, no packages have ever been published
+in it, and therefore guessPackageNames will still fail:
+
+    >>> from canonical.launchpad.interfaces import IDistroReleaseSet
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> distroreleaseset = getUtility(IDistroReleaseSet)
+    >>> gentoo_two = distroreleaseset.new(gentoo, 'gentoo-two', 'Gentoo Two',
+    ...                                   'Gentoo Two Dot Oh', 'Gentoo 2', 'G2',
+    ...                                   '2.0', None, gentoo.owner)
+    >>> source_name, bin_name = gentoo.guessPackageNames('pmount')
+    Traceback (most recent call last):
+    ...
+    NotFoundError: u'Package pmount not published in Gentoo'
+
+It also works if we look for a package name which is the name of both
+binary and source packages but for which only the source is published:
+
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> debian = getUtility(ILaunchpadCelebrities).debian
+    >>> source_name, bin_name = debian.guessPackageNames('alsa-utils')
+    >>> print bin_name
+    None
+    >>> source_name.name
+    u'alsa-utils'
 
 Distribution Sorting
 ====================
@@ -163,26 +189,6 @@ and even on substrings:
     >>> packages = ubuntu.searchSourcePackages("nux-sour")
     >>> print len(packages)
     1
-
-
-CVE BugTasks on a Distribution
-------------------------------
-
-A distribution should know what CVE-related bug tasks exist on it, and what
-state they are in. We should be able to find open, and closed, bugtasks,
-using this API. Based on the sample data we know the following about Ubuntu:
-
-    >>> tasks = ubuntu.open_cve_bugtasks
-    >>> for task in tasks:
-    ...     print task.id
-    17
-    26
-
-There should be NO resolved CVE tasks:
-
-    >>> tasks = ubuntu.resolved_cve_bugtasks
-    >>> print len(tasks)
-    0
 
 
 Finding distroreleases and pockets from distribution names
@@ -240,7 +246,8 @@ uploader record is in fact a DistroComponentUploader record which
 tells us what component is uploadable to by what person or group of
 people.
 
-   >>> for dcu in ubuntu.uploaders:
+   >>> for dcu in sorted(ubuntu.uploaders,
+   ...                   key=lambda dcu: dcu.component.name):
    ...     assert dcu.distribution == ubuntu
    ...     print dcu.component.name
    ...     print dcu.uploader.displayname
@@ -274,7 +281,6 @@ Launchpad Usage
 A distribution can specify if it uses Malone or Rosetta officially.
 Ubuntu uses both Malone and Rosetta:
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> ubuntu.official_malone
     True
@@ -283,7 +289,6 @@ Ubuntu uses both Malone and Rosetta:
 
 While Debian uses neither:
 
-    >>> debian = getUtility(ILaunchpadCelebrities).debian
     >>> debian.official_malone
     False
     >>> debian.official_rosetta
@@ -375,13 +380,13 @@ We can get only valid specs (those that are not obsolete or superseded):
 
  >>> from canonical.lp.dbschema import SpecificationStatus
  >>> from canonical.launchpad.ftests import login
- >>> from canonical.database.sqlbase import flush_database_updates
  >>> login('mark@hbd.com')
  >>> for spec in kubuntu.specifications():
  ...     if spec.name in ['cluster-installation', 'revu']:
  ...         spec.status = SpecificationStatus.OBSOLETE
  ...     if spec.name in ['krunch-desktop-plan']:
  ...         spec.status = SpecificationStatus.SUPERSEDED
+ ...     shim = spec.updateLifecycleStatus(spec.owner)
  >>> flush_database_updates()
  >>> for spec in kubuntu.valid_specifications:
  ...     print spec.name

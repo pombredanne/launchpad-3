@@ -2,12 +2,8 @@ import psycopg
 import sys
 import logging
 import os.path
-import string
-from datetime import datetime
-import pickle
 
 from twisted.internet import reactor
-from twisted.spread import pb
 from twisted.python import log
 
 from buildbot.process.base import BasicBuildFactory
@@ -18,9 +14,10 @@ from buildbot.status.event import Event
 
 from importd.Job import CopyJob
 
-from canonical.lp import initZopeless
-from canonical.launchpad.database import Product, ProductSeries
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad.database import ProductSeries
+from canonical.lp import initZopeless
 
 from canonical.lp.dbschema import ImportStatus
 
@@ -90,7 +87,7 @@ def tryToAbortTransaction():
         pass
 
 
-def jobsFromDB(slave_home, archive_mirror_dir, autotest):
+def jobsFromDB(slave_home, archive_mirror_dir, autotest, push_prefix=None):
     if autotest:
         importstatus = [ImportStatus.TESTING,
                         ImportStatus.TESTFAILED,
@@ -103,28 +100,40 @@ def jobsFromDB(slave_home, archive_mirror_dir, autotest):
                   ', '.join([str(status.value) for status in importstatus]))
         getTxnManager().begin()
         jobseries = ProductSeries.select(clause)
-        jobs = list(jobsFromSeries(jobseries, slave_home, archive_mirror_dir))
+        jobs = list(jobsFromSeries(
+            jobseries=jobseries,
+            slave_home = slave_home,
+            archive_mirror_dir=archive_mirror_dir,
+            push_prefix = push_prefix))
         getTxnManager().abort()
     except:
         tryToAbortTransaction()
         raise
     return jobs
 
-def jobsFromSeries(jobseries, slave_home, archive_mirror_dir):
+def jobsFromSeries(jobseries, slave_home, archive_mirror_dir, push_prefix):
     for series in jobseries:
         job = CopyJob()
         job.from_series(series)
         job.slave_home = slave_home
         job.archive_mirror_dir = archive_mirror_dir
+        job.push_prefix = push_prefix
         yield job
 
 def jobsBuilders(jobs, slavenames, importd_path, push_prefix,
-                 blacklist_path='/dev/null', autotest=False):
+                 source_repo, blacklist_path='/dev/null',
+                 autotest=False):
     builders = []
     for job in jobs:
+
+        # XXX: Transitional. This line allows getting the push_prefix from the
+        # job even if we do not upgrade the bostmaster right now to give
+        # push_prefix to jobsFromDB. -- David Allouche 2006-07-25
+        job.push_prefix = push_prefix
+
         factory = ImportDShellBuildFactory(
             job, job.slave_home, importd_path, push_prefix,
-            blacklist_path, autotest)
+            blacklist_path, source_repo, autotest)
         builders.append({
             'name': job.name, 
             'slavename': slavenames[hash(job.name) % len(slavenames)],
@@ -296,11 +305,16 @@ class ImportDBuildFactory(ConfigurableBuildFactory):
         if self.job.TYPE == "import":
             self.addImportDStep('nukeTargets')
             self.addImportDStep('runJob')
+            if not self.autotest:
+                self.addSourceTransportStep('importd-put-source.py')
+                self.addImportDStep('mirrorTarget')
         elif self.job.TYPE == 'sync':
+            if not self.autotest:
+                self.addSourceTransportStep('importd-get-source.py')
             self.addImportDStep('runJob')
             if not self.autotest:
+                self.addSourceTransportStep('importd-put-source.py')
                 self.addImportDStep('mirrorTarget')
-                self.addBaz2bzrStep()
 
     def addImportDStep(self, method):
         raise NotImplementedError
@@ -316,13 +330,14 @@ class ImportDBuildFactory(ConfigurableBuildFactory):
 class ImportDShellBuildFactory(ImportDBuildFactory):
 
     def __init__(self, job, jobfile, importd_path, push_prefix,
-                 blacklist_path, autotest):
+                 blacklist_path, source_repo, autotest):
         if importd_path is None:
             importd_path = os.path.dirname(__file__)
         self.runner_path = os.path.join(importd_path, 'CommandLineRunner.py')
         self.baz2bzr_path = os.path.join(importd_path, 'baz2bzr.py')
         self.push_prefix = push_prefix
         self.blacklist_path = blacklist_path
+        self.source_repo = source_repo
         ImportDBuildFactory.__init__(self, job, jobfile, autotest)
 
     def addSteps(self):
@@ -351,6 +366,19 @@ class ImportDShellBuildFactory(ImportDBuildFactory):
                         str(self.job.seriesID), self.blacklist_path,
                         self.push_prefix],}))
 
+    def addSourceTransportStep(self, script):
+        workdir = self.job.getWorkingDir(self.jobfile, create=False)
+        script_path = os.path.join(config.root, 'scripts', script)
+        source_name = {'cvs': 'cvsworking',
+                       'svn': 'svnworking'}[self.job.RCS.lower()]
+        local_source = os.path.join(workdir, source_name)
+        remote_dir = self.source_repo.rstrip('/') + '/%08x' % self.job.seriesID
+        self.steps.append((SourceTransportShellCommand, {
+            'workdir': workdir,
+            'command': [sys.executable, script_path,
+                        local_source, remote_dir],}))
+
+
 class ImportDShellCommand(ShellCommand):
 
     # Failure on a step prevents running any subsequent step. For example, if
@@ -373,8 +401,21 @@ class Baz2bzrShellCommand(ShellCommand):
         return ['baz2bzr', self.command[3]]
 
 
+class SourceTransportShellCommand(ShellCommand):
+
+    # Failure on a step prevents running any subsequent step. For example, if
+    # upstream CVS moves files by altering the repository, we do not want to
+    # mirror any revision before applying a fix by hand.
+    haltOnFailure = 1
+
+    def words(self):
+        command = os.path.basename(self.command[1])
+        return [{'importd-get-source.py': 'get-source',
+                 'importd-put-source.py': 'put-source'}.get(command, command)]
+
+
 from buildbot.status.event import Logfile
-from buildbot.process.step import FAILURE,WARNINGS,SUCCESS,SKIPPED
+from buildbot.process.step import FAILURE, WARNINGS, SUCCESS
 
 class JobBuildStep(BuildStep):
     """ I serialise a job to a jobfile"""
@@ -468,7 +509,7 @@ class MakeJobFileStep(JobBuildStep):
         what = "job file %s" % (self.jobfile)
         log.msg(what)
         args = {'job': self.job,
-                'method': 'toFile',
+                'method': 'prepare',
                 'args': [os.path.join(self.workdir, self.jobfile)],
                 'dir': self.workdir
         }

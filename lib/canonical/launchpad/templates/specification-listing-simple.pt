@@ -22,11 +22,14 @@
                class string:specpriority${context/priority/name}"><span 
         tal:content="context/priority/title">High</span>
         Priority</span>]
-      <span tal:replace="context/summary/fmt:shorten/600">summary</span>
+      [<span tal:attributes="
+               class string:specstatus${context/status/name}">Definition
+          <span tal:content="context/status/title">New</span></span>]
       <tal:block condition="context/specurl">
         <img src="/@@/link" />&nbsp;<a
              tal:attributes="href context/specurl">Specification</a>
       </tal:block>
+      <span tal:replace="context/summary/fmt:shorten/600">summary</span>
     </td>
   </tr>
 </table>

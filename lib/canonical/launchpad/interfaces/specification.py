@@ -67,8 +67,8 @@ class ISpecification(IHasOwner):
 
     name = SpecNameField(
         title=_('Name'), required=True, description=_(
-            "May contain letters, numbers, and dashes only, because it is "
-            "used in the specification url. "
+            "May contain lower-case letters, numbers, and dashes. "
+            "It will be used in the specification url. "
             "Examples: mozilla-type-ahead-find, postgres-smart-serial."),
         constraint=name_validator)
     title = Title(
@@ -86,7 +86,7 @@ class ISpecification(IHasOwner):
             "This will also be displayed in most feature listings."))
     status = Choice(
         title=_('Definition Status'), vocabulary='SpecificationStatus',
-        default=SpecificationStatus.BRAINDUMP, description=_(
+        default=SpecificationStatus.NEW, description=_(
             "The current status of the process to define the "
             "feature and get approval for the implementation plan."))
     priority = Choice(
@@ -122,6 +122,8 @@ class ISpecification(IHasOwner):
         description=_(
             "Choose a release in which you would like to deliver "
             "this feature. Selecting '(no value)' will clear the goal."))
+
+    # nomination to a series for release management
     goal = Attribute(
         "The product series or distro release for which this feature "
         "is a goal.")
@@ -130,15 +132,18 @@ class ISpecification(IHasOwner):
         default=SpecificationGoalStatus.PROPOSED, description=_(
             "Whether or not the drivers have accepted this feature as "
             "a goal for the targeted release or series."))
+    goal_proposer = Attribute("The person who nominated the spec for "
+        "this series.")
+    date_goal_proposed = Attribute("The date of the nomination.")
+    goal_decider = Attribute("The person who approved or declined "
+        "the spec a a goal.")
+    date_goal_decided = Attribute("The date the spec was approved "
+        "or declined as a goal.")
 
     whiteboard = Text(title=_('Status Whiteboard'), required=False,
         description=_(
             "Any notes on the status of this spec you would like to make. "
             "Your changes will override the current text."))
-    needs_discussion = Bool(title=_('Needs further discussion?'),
-        required=False, description=_("Check this to indicate that the "
-        "specification needs further group discussion as well as drafting"
-        "."), default=True)
     direction_approved = Bool(title=_('Basic direction approved?'),
         required=False, default=False, description=_("Check this to "
         "indicate that the drafter and assignee have satisfied the "
@@ -164,7 +169,19 @@ class ISpecification(IHasOwner):
         required=False, default=False, description=_('Check this box if '
         'this specification is purely documentation or overview and does '
         'not actually involve any implementation.'))
-    
+
+    # lifecycle
+    starter = Attribute('The person who first set the state of the '
+        'spec to the values that we consider mark it as started.')
+    date_started = Attribute('The date when this spec was marked '
+        'started.')
+    completer = Attribute('The person who finally set the state of the '
+        'spec to the values that we consider mark it as complete.')
+    date_completed = Attribute('The date when this spec was marked '
+        'complete. Note that complete also includes "obsolete" and '
+        'superseded. Essentially, it is the state where no more work '
+        'will be done on the feature.')
+
     # other attributes
     product = Choice(title=_('Product'), required=False,
         vocabulary='Product')
@@ -181,7 +198,6 @@ class ISpecification(IHasOwner):
     sprints = Attribute('The sprints at which this spec is discussed.')
     sprint_links = Attribute('The entries that link this spec to sprints.')
     feedbackrequests = Attribute('The set of feedback requests queued.')
-    bugs = Field(title=_('Bugs related to this spec'), readonly=True)
     dependencies = Attribute('Specs on which this spec depends.')
     blocked_specs = Attribute('Specs for which this spec is a dependency.')
     all_deps = Attribute(
@@ -196,7 +212,7 @@ class ISpecification(IHasOwner):
     # emergent properties
     is_complete = Attribute('Is True if this spec is already completely '
         'implemented. Note that it is True for informational specs, since '
-        'they describe general funcitonality rather than specific '
+        'they describe general functionality rather than specific '
         'code to be written. It is also true of obsolete and superseded '
         'specs, since there is no longer any need to schedule work for '
         'them.')
@@ -204,11 +220,10 @@ class ISpecification(IHasOwner):
         'be done. Is in fact always the opposite of is_complete.')
     is_blocked = Attribute('Is True if this spec depends on another spec '
         'which is still incomplete.')
-
-    has_release_goal = Attribute('Is true if this specification has been '
-        'proposed as a goal for a specific distro release or product '
-        'series and the drivers of that release/series have accepted '
-        'the goal.')
+    is_started = Attribute('Is True if the spec is in a state which '
+        'we consider to be "started". This looks at the delivery '
+        'attribute, and also considers informational specs to be '
+        'started when they are approved.')
 
     def retarget(product=None, distribution=None):
         """Retarget the spec to a new product or distribution. One of
@@ -226,6 +241,36 @@ class ISpecification(IHasOwner):
     def notificationRecipientAddresses():
         """Return the list of email addresses that receive notifications."""
 
+    # goal management
+    def proposeGoal(goal, proposer):
+        """Propose this spec for a series or distrorelease."""
+
+    def acceptBy(decider):
+        """Mark the spec as being accepted for its current series goal."""
+
+    def declineBy(decider):
+        """Mark the spec as being declined as a goal for the proposed series."""
+
+    has_release_goal = Attribute('Is true if this specification has been '
+        'proposed as a goal for a specific distro release or product '
+        'series and the drivers of that release/series have accepted '
+        'the goal.')
+
+    # lifecycle management
+    def updateLifecycleStatus(user):
+        """Mark the specification as started, and/or complete, if appropriate.
+
+        This will verify that the state of the specification is in fact
+        "complete" (there is a completeness test in
+        Specification.is_complete) and then record the completer and the
+        date_completed. If the spec is not completed, then it ensures that
+        nothing is recorded about its completion.
+
+        It returns a SpecificationLifecycleStatus dbschema showing the
+        overall state of the specification IF the state has changed.
+
+        """
+
     # event-related methods
     def getDelta(old_spec, user):
         """Return a dictionary of things that changed between this spec and
@@ -236,30 +281,27 @@ class ISpecification(IHasOwner):
         """
 
     # subscription-related methods
+    def subscription(person):
+        """Return the subscription for this person to this spec, or None."""
+
     def subscribe(person):
         """Subscribe this person to the feature specification."""
-        
+
     def unsubscribe(person):
         """Remove the person's subscription to this spec."""
+
+    def getSubscriptionByName(name):
+        """Return a subscription based on the person's name, or None."""
 
     # queue-related methods
     def queue(provider, requester, queuemsg=None):
         """Put this specification into the feedback queue of the given person,
         with an optional message."""
-        
+
     def unqueue(provider, requester):
         """Remove the feedback request by the requester for this spec, from
         the provider's feedback queue.
         """
-
-    # bug linking
-    def linkBug(bug_number):
-        """Link this spec to the given bug number, returning the
-        SpecificationBug linker.
-        """
-
-    def unLinkBug(bug_number):
-        """Remove any link to this bug number, and return None."""
 
     # sprints
     def linkSprint(sprint, user):

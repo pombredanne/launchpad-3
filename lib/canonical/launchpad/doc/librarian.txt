@@ -35,11 +35,14 @@ it is no longer referenced in the database.
 >>> alias.expires is None
 True
 
-We can retrieve the LibraryFileAlias we just created using its ID.
+We can retrieve the LibraryFileAlias we just created using its ID or sha1.
 
 >>> org_alias_id = alias.id
 >>> alias = lfas[org_alias_id]
 >>> alias.id == org_alias_id
+True
+
+>>> org_alias_id in [a.id for a in lfas.findBySHA1(alias.content.sha1)]
 True
 
 We can get its URL too
@@ -47,6 +50,13 @@ We can get its URL too
 >>> import re
 >>> re.search(
 ...     r'^http://localhost:58000/\d+/text.txt$', alias.url
+...     ) is not None
+True
+
+Librarian also serves the same file thru https.
+
+>>> re.search(
+...     r'^https://localhost:58000/\d+/text.txt$', alias.secure_url
 ...     ) is not None
 True
 

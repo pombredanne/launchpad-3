@@ -158,9 +158,9 @@
     <li tal:repeat="pastorder user/pastShipItRequests">
       <span tal:replace="pastorder/getTotalCDs" /> CDs requested in
       <span tal:replace="pastorder/daterequested/fmt:date" />.
-      <span tal:condition="pastorder/cancelled">This request was
+      <span tal:condition="pastorder/isCancelled">This request was
         cancelled, so no CDs were shipped.</span>
-      <tal:notcancelled tal:condition="not: pastorder/cancelled">
+      <tal:notcancelled tal:condition="not: pastorder/isCancelled">
         <tal:shipped condition="pastorder/shipment">
           <span tal:replace="pastorder/getTotalApprovedCDs" />
           CDs approved and sent to the shipping company in
@@ -180,7 +180,9 @@
 
 <metal:meta-master define-macro="meta-master">
 <metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
-
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"
+    tal:attributes="lang default_language|default;
+                    xml:lang default_language|default;">
 <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
     <!-- Launchpad style sheet -->
@@ -212,7 +214,7 @@
 
             <tal:block condition="not: request/lp:person">
               Not logged in &#8212;
-              <a href="/">
+              <a href="/login">
                 Log In / Register
               </a>
             </tal:block>
@@ -238,4 +240,5 @@
     <metal:footer define-slot="footer" />
 
 </body>
+</html>
 </metal:meta-master>

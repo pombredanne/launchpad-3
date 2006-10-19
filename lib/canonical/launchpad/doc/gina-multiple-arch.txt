@@ -85,11 +85,6 @@ Let's set up the filesystem:
     >>> path = os.path.join(os.getcwd(), relative_path)
     >>> os.symlink(path, '/tmp/gina_test_archive')
 
-Get the librarian going:
-
-    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-    >>> LibrarianTestSetup().setUp()
-
 Run gina without a powerpc processor for the powerpc family:
 
     >>> gina_proc = [sys.executable, 'scripts/gina.py', '-q',
@@ -243,7 +238,6 @@ Check that we publishing bdftopcf into the correct distroarchrelease:
     libgadu-dev 1:1.5-4ubuntu1.2
     libgadu3 1:1.5-4ubuntu1.2
 
-Be proper and clean up after ourselves and stop Librarian.
+Be proper and clean up after ourselves.
 
     >>> os.remove('/tmp/gina_test_archive')
-    >>> LibrarianTestSetup().tearDown()

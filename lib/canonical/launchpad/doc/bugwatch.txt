@@ -100,31 +100,55 @@ To create a bugwatch, use IBugWatchSet.createBugWatch:
     True
 
 
-Creating a SF.net Bugtracker
-----------------------------
-
-    >>> from canonical.lp.dbschema import BugTrackerType
-    >>> sf = ("http://sourceforge.net/tracker/?atid=737291"
-    ...       "&group_id=136955&func=browse")
-    >>> bugtrackerset.ensureBugTracker(sf, sample_person,
-    ...     BugTrackerType.SOURCEFORGE, "GNUTelephony BTS", "My summary",
-    ...     "My contact details", "gnutelephony-bugs")
-    <BugTracker at 0x...>
-    >>> gtb = bugtrackerset['gnutelephony-bugs']
-
 Creating SF.net Bug Watches
 ---------------------------
 
-The URLifier for these bug watches deals with SF.net's horrible URLs.
+SourceForge.net bug watch URLs are generated using the
+"/support/tracker.php" script, which will redirect to the URL with the
+group_id and aid arguments filled in:
 
+    >>> sftracker = bugtrackerset['sf']
     >>> sample_person = getUtility(IPersonSet).get(12)
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bugwatch = getUtility(IBugWatchSet).createBugWatch(
-    ...     bug=bug_one, owner=sample_person, bugtracker=gtb,
+    ...     bug=bug_one, owner=sample_person, bugtracker=sftracker,
     ...     remotebug='1337833')
     >>> bugwatch.url
-    'http://sourceforge.net/tracker/?aid=1337833&group_id=136955&atid=737291&func=detail'
+    u'http://sourceforge.net/support/tracker.php?aid=1337833'
 
+Extracting Bug Watches From Text
+--------------------------------
+
+When you have a text, for example a bug comment, it can be useful to
+extract all the possible bug watches from that text. To make this
+easier you can use IBugWatchSet.fromText().
+
+    >>> text = """
+    ...     A Bugzilla URL:
+    ...         http://some.bugzilla/show_bug.cgi?id=42
+    ...     A Debbugs URL:
+    ...         http://some.debbugs/cgi-bin/bugreport.cgi?bug=42
+    ...     A Roundup URL:
+    ...         http://some.roundup/issue42
+    ...     A Trac URL:
+    ...         http://some.trac/ticket/42
+    ...     A SourceForge URL:
+    ...         http://some.sf/tracker/index.php?func=detail&aid=1568562&group_id=84122&atid=42
+    ...     An unrecognised URL:
+    ...         http://some.host/some/path
+    ... """
+    >>> bug_watches = getUtility(IBugWatchSet).fromText(
+    ...     text, bug_one, sample_person)
+    >>> bugs_and_types = [
+    ...     (bug_watch.bugtracker.bugtrackertype, bug_watch.remotebug)
+    ...     for bug_watch in bug_watches]
+    >>> for bugtracker_type, remotebug in sorted(bugs_and_types):
+    ...     print "%s: %s" % (bugtracker_type.name, remotebug)
+    BUGZILLA: 42
+    DEBBUGS: 42
+    ROUNDUP: 42
+    TRAC: 42
+    SOURCEFORGE: 42
 
 Syncing the Status with Linked Bugtasks
 ---------------------------------------
@@ -136,6 +160,8 @@ Updater and get a bug watch and a bugtask to test with.
     >>> login('bugwatch@bugs.launchpad.net')
     >>> bug_watch_updater = getUtility(ILaunchBag).user
     >>> bug_three = getUtility(IBugSet).get(3)
+    >>> print len(bug_three.bugtasks)
+    3
     >>> debian_task = bug_three.bugtasks[0]
     >>> print debian_task.targetname
     mozilla-firefox (Debian)
@@ -219,3 +245,4 @@ Finally, let's make sure that bug notifications were added:
            Status: Unconfirmed => Confirmed
 
     >>> event_listener.unregister()
+

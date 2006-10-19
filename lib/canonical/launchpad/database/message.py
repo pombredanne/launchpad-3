@@ -20,9 +20,10 @@ import pytz
 from canonical.encoding import guess as ensure_unicode
 from canonical.launchpad.helpers import get_filename_from_message_id
 from canonical.launchpad.interfaces import (
-    IMessage, IMessageSet, IMessageChunk, IPersonSet, ILibraryFileAliasSet, 
+    IMessage, IMessageSet, IMessageChunk, IPersonSet, ILibraryFileAliasSet,
     UnknownSender, InvalidEmailMessage, NotFoundError)
 
+from canonical.lp.dbschema import PersonCreationRationale
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -129,6 +130,9 @@ class MessageSet:
 
     def _decode_header(self, header):
         """Decode an encoded header possibly containing Unicode."""
+        # Unfold the header before decoding it.
+        header = ''.join(header.splitlines())
+
         bits = email.Header.decode_header(header)
         return unicode(email.Header.make_header(bits))
 
@@ -226,7 +230,14 @@ class MessageSet:
                 # autocreate a person
                 sendername = ensure_unicode(from_addrs[0][0].strip())
                 senderemail = from_addrs[0][1].lower().strip()
-                owner = person_set.ensurePerson(senderemail, sendername)
+                # XXX: It's hard to define what rationale to use here, and to
+                # make things worst, it's almost impossible to provide a
+                # meaningful comment having only the email message.
+                # (https://launchpad.net/bugs/62344)
+                # -- Guilherme Salgado, 2006-08-31
+                owner = person_set.ensurePerson(
+                    senderemail, sendername,
+                    PersonCreationRationale.FROMEMAILMESSAGE)
                 if owner is None:
                     raise UnknownSender(senderemail)
 
@@ -261,9 +272,9 @@ class MessageSet:
             datecreated = UTC_NOW
 
         # DOIT
-        message = Message(subject=subject, ownerID=owner.id,
+        message = Message(subject=subject, owner=owner,
             rfc822msgid=rfc822msgid, parent=parent,
-            rawID=raw_email_message.id, datecreated=datecreated,
+            raw=raw_email_message, datecreated=datecreated,
             distribution=distribution)
 
         sequence = 1
@@ -291,7 +302,7 @@ class MessageSet:
         #         if preamble[-1] == '\n':
         #             preamble = preamble[:-1]
         #         MessageChunk(
-        #             messageID=message.id, sequence=sequence, content=preamble
+        #             message=message, sequence=sequence, content=preamble
         #             )
         #         sequence += 1
 
@@ -313,7 +324,7 @@ class MessageSet:
                     content = content.decode(charset, 'replace')
                 if content.strip():
                     MessageChunk(
-                        messageID=message.id, sequence=sequence,
+                        message=message, sequence=sequence,
                         content=content
                         )
                     sequence += 1
@@ -329,10 +340,7 @@ class MessageSet:
                         file=cStringIO(content),
                         contentType=part['content-type']
                         )
-                    MessageChunk(
-                        messageID=message.id, sequence=sequence,
-                        blobID=blob.id
-                        )
+                    MessageChunk(message=message, sequence=sequence, blob=blob)
                     sequence += 1
 
         # Don't store the epilogue
@@ -345,7 +353,7 @@ class MessageSet:
         #         if epilogue[-1] == '\n':
         #             epilogue = epilogue[:-1]
         #         MessageChunk(
-        #             messageID=message.id, sequence=sequence, content=epilogue
+        #             message=message, sequence=sequence, content=epilogue
         #             )
         return message
 

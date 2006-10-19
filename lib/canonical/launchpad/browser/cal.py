@@ -1,5 +1,7 @@
 # Copyright 2005 Canonical Ltd
 
+# XXX 20060914 mpt: All Calendar pages should return HTTP 410 Gone.
+
 __metaclass__ = type
 
 __all__ = [
@@ -27,6 +29,7 @@ __all__ = [
 
 import re
 import calendar
+import operator
 from datetime import datetime, date, timedelta
 
 import pytz
@@ -311,7 +314,7 @@ class CalendarView:
 
         events = self.context.expand(now, now + timedelta(days=14))
         self.events = shortlist(events)
-        self.events.sort(key=lambda x: x.dtstart)
+        self.events.sort(key=operator.attrgetter('dtstart'))
 
 
 class CalendarContextMenu(ContextMenu):

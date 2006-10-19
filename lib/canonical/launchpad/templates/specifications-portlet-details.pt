@@ -1,10 +1,10 @@
 <div class="portlet">
 
-  <h4>Release planning with Blueprint:</h4>
+  <h2>Release planning with Blueprint</h2>
 
   <div class="portletBody portletContent">
 
-    <img src="/@@/info_icon.gif" />
+    <img src="/@@/info" />
     Launchpad allows you to track the planned features for your project or
     distribution. It tracks the dependencies between features and will use
     those to create a recommended project plan for you. You can assign

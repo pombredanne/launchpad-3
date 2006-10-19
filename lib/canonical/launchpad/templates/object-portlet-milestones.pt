@@ -1,6 +1,6 @@
 <div class="portlet" tal:condition="context/milestones">
-  <h4><span tal:replace="context/displayname"
-           >Ubuntu</span> milestones:</h4>
+  <h2><span tal:replace="context/displayname"
+           >Ubuntu</span> milestones</h2>
 
   <div class="portletBody portletContent">
 
