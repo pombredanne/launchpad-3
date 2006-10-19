@@ -14,11 +14,25 @@ Now we are going to add a bug tracker. First, can we see the form?
   >>> user_browser.title
   'Register an external bug tracker'
 
+
+Supported external bug tracker types include Bugzilla, Debbugs,
+Roundup, SourceForge and Trac.  We don't provide all of these as
+options to the user.  We don't provide Debbugs because the status
+synchronisation script requires manual set up of a bug archive mirror,
+and SourceForge because there is only one instance (SourceForge.net).
+
+  >>> for control in user_browser.getControl('Bug Tracker Type').controls:
+  ...     print control.optionValue
+  Bugzilla
+  Roundup
+  Trac
+
+
 We're not allowed to enter a name with uppercase characters, if we do so, we
 get a nice error message.
 
   >>> user_browser.getControl('Name').value = 'TestTTrac'
-  >>> user_browser.getControl('Bug Tracker Type').value = ['Trac']
+  >>> user_browser.getControl('Bug Tracker Type').getControl('Trac').click()
   >>> user_browser.getControl('Title').value = 'Test Trac Tracker'
   >>> user_browser.getControl('Summary').value = 'This is a test TRAC tracker.'
   >>> url = 'http://trac.testing.org/tickets'
@@ -69,7 +83,7 @@ a nice error message.
   >>> user_browser.open('http://launchpad.dev/malone/bugtrackers/+newbugtracker')
  
   >>> user_browser.getControl('Name').value = 'testtrac'
-  >>> user_browser.getControl('Bug Tracker Type').value = ['Trac']
+  >>> user_browser.getControl('Bug Tracker Type').getControl('Trac').click()
   >>> user_browser.getControl('Title').value = 'Test Trac Tracker'
   >>> user_browser.getControl('Summary').value = 'This is a test TRAC tracker.'
   >>> url = 'http://trac.testing.org/tickets'
@@ -93,7 +107,7 @@ And lets see if we can edit the newly added bugtracker.
   'Change details for \xe2\x80\x9cTest Trac Tracker\xe2\x80\x9d bug tracker'
 
   >>> user_browser.getControl('Title').value = 'A test Bugzilla Tracker'
-  >>> user_browser.getControl('Bug Tracker Type').value = ['Bugzilla']
+  >>> user_browser.getControl('Bug Tracker Type').getControl('Bugzilla').click()
   >>> user_browser.getControl(
   ...     'Summary').value = 'This is used to be a test TRAC bug tracker.'
   >>> user_browser.getControl('Change').click()

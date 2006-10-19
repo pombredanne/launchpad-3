@@ -262,37 +262,45 @@ ol {
     display: none;
 }
 
-.portlet {
+#portal-column-one .portlet, #portal-column-two .portlet,
+#layout2col-portlets .portlet {
   border: none;
   font-size: smaller;
   margin-bottom: 1em;
   padding: 0;
   background-color: #f4f5f8; /* changed by sabdfl, 2005-10-22 */
 }
-.portlet h4 { /* the base portlet heading */
+#portal-column-one .portlet h2, #portal-column-two .portlet h2,
+#layout2col-portlets .portlet h2 {
+  /* the base portlet heading */
   background-color: #dee7ec;
   border: 1px solid #8cacbb;
   font-weight: normal;
-  margin-top: 0;
+  margin: 0;
   padding: 0em 0.3em 0em 0.75em;
   display: block;
   font-size: 1em;
 }
-.portlet h5, .portlet h6 {
+#portal-column-one .portlet h5, #portal-column-two .portlet h6,
+#layout2col-portlets .portlet h5 {
   color: black;
 }
-.portlet h5 {
+#portal-column-one .portlet h5, #portal-column-two h5,
+#layout2col-portlets .portlet h5 {
   font-weight: bold;
 }
-.portlet h6 {
+#portal-column-one .portlet h6, #portal-column-two h6,
+#layout2col-portlets .portlet h6 {
   font-variant: italic;
 }
-.portletBody {
+#portal-column-one .portletBody, #portal-column-two .portletBody,
+#layout2col-portlets .portletBody {
   position: relative;
   top: -1px;
   border: 1px solid #8cacbb;
 }
-.portletContent {
+#portal-column-one .portletContent, #portal-column-two .portletContent,
+#layout2col-portlets .portletContent {
   padding: 0.75em;
 }
 
@@ -431,22 +439,13 @@ ul.app>li.current {
   width: 22%;
 }
 
-.sitemap, ul.facets {
+ul.facets {
   background-color: #dee7ec;
   border: 1px solid #8cacbb;
   color: #999999;
   font-size: smaller;
   margin: 0 0 1em 0;
-}
-.sitemap li {
-  display: block;
-  padding: 0.25em 1em;
-}
-.sitemap :link, .sitemap :visited {
-  text-decoration: none;
-}
-/* The following paddings/margins aren't yet robust when zoomed. */
-ul.facets {
+  /* The following paddings/margins aren't yet robust when zoomed. */
   padding: 0.25em 0 0.25em 0;
 }
 ul.facets :link, ul.facets :visited {
@@ -456,6 +455,10 @@ ul.facets>li {
   list-style-position: inside;
   margin: 0.25em 1em;
   padding-left: 0.5em;
+}
+ul.facets li.current {
+  background-color: #f4f5f8;
+  color: inherit;
 }
 ul.facets>li ul {
   list-style-position: outside;

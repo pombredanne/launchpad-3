@@ -2,11 +2,8 @@
 
 # TODO:
 #  - exercise a bit more of the authUser interface
-#  - test createUser (which really requires being able to rollback the changes
-#    it makes)
 
 import unittest
-import os, sys, time, popen2
 import xmlrpclib
 
 from twisted.application import strports
@@ -54,58 +51,40 @@ class XMLRPCv1TestCase(LaunchpadTestCase):
         emptyDict = self.server.authUser('invalid@email', '')
         self.assertEqual({}, emptyDict)
 
-        # Create a user. 
-        self.server.createUser(
-                'nobody@example.com',
-                SSHADigestEncryptor().encrypt('testpw'),
-                'Display Name', []
-                )
-
         # Authenticate a user. This requires two queries - one to retrieve
         # the salt, the other to do the actual auth. This way the auth
         # server never has to see encrypted passwords (probably a pointless
         # security optimization, since the easiest way to attach the auth
         # server would be to have already taken over an application server)
-        r1 = self.server.getUser('nobody@example.com')
+        r1 = self.server.getUser('test@canonical.com')
 
         loginId = r1['id']
         salt = r1['salt'].decode('base64')
         r2 = self.server.authUser(
-                loginId, SSHADigestEncryptor().encrypt('testpw', salt)
+                loginId, SSHADigestEncryptor().encrypt('test', salt)
                 )
-        self.failUnlessEqual(r2['displayname'], 'Display Name')
-        self.failUnlessEqual(r2['emailaddresses'], ['nobody@example.com'])
+        self.failUnlessEqual(r2['displayname'], 'Sample Person')
+        self.failUnless('test@canonical.com' in r2['emailaddresses'])
 
     def test_authUser2(self):
-        # Just like test_authUser, but passes extra email addresses into
-        # createUser like Plone currently is (?)
-
         # Check that the failure case (no such user or bad passwd) returns {}
         emptyDict = self.server.authUser('invalid@email', '')
         self.assertEqual({}, emptyDict)
 
-        # Create a user. 
-        self.server.createUser(
-                'nobody@example.com',
-                SSHADigestEncryptor().encrypt('testpw'),
-                'Display Name', ['nobody@example.com',]
-                )
-
         # Authenticate a user. This requires two queries - one to retrieve
         # the salt, the other to do the actual auth. This way the auth
         # server never has to see encrypted passwords (probably a pointless
         # security optimization, since the easiest way to attach the auth
         # server would be to have already taken over an application server)
-        r1 = self.server.getUser('nobody@example.com')
+        r1 = self.server.getUser('test@canonical.com')
 
         loginId = r1['id']
         salt = r1['salt'].decode('base64')
         r2 = self.server.authUser(
-                loginId, SSHADigestEncryptor().encrypt('testpw', salt)
+                loginId, SSHADigestEncryptor().encrypt('test', salt)
                 )
-        self.failUnlessEqual(r2['displayname'], 'Display Name')
-        self.failUnlessEqual(r2['emailaddresses'], ['nobody@example.com'])
-
+        self.failUnlessEqual(r2['displayname'], 'Sample Person')
+        self.failUnless('test@canonical.com' in r2['emailaddresses'])
 
     def test_getSSHKeys(self):
         # Unknown users have no SSH keys, of course.
@@ -153,18 +132,9 @@ class XMLRPCv2TestCase(LaunchpadTestCase):
         emptyDict = self.server.authUser('invalid@email', '')
         self.assertEqual({}, emptyDict)
 
-        # Create a user. Note we have to pass in their email address twice
-        # (for historical reasons - should refactor one day)
-        self.server.createUser(
-                'nobody@example.com', # Used to generate the Person.name
-                'testpw',
-                'Display Name',
-                ['nobody@example.com',] # The email addresses stored
-                )
-
-        result = self.server.authUser('nobody@example.com', 'testpw')
-        self.failUnlessEqual(result['displayname'], 'Display Name')
-        self.failUnlessEqual(result['emailaddresses'], ['nobody@example.com'])
+        result = self.server.authUser('test@canonical.com', 'test')
+        self.failUnlessEqual(result['displayname'], 'Sample Person')
+        self.failUnless('test@canonical.com' in result['emailaddresses'])
 
     def test_getBranchesForUser(self):
         # XXX: justs check that it doesn't error, should also check the result.

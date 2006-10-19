@@ -41,6 +41,11 @@
             attributes="setStatusFromDebbugs setImportanceFromDebbugs
                         updateTargetNameCache transitionToStatus
                         transitionToAssignee" />
+
+        <!-- XXX, Brad Bollenbach, 2006-09-29: The permission checking for
+        milestone and importance is further restricted in the browser view code
+        (BugTaskEditView). This is bad. See https://launchpad.net/bugs/63000 .
+        -->
         <require
             permission="launchpad.Edit"
             set_attributes="product sourcepackagename distribution
@@ -142,7 +147,7 @@
     <browser:page
         for="canonical.launchpad.interfaces.IBugTask"
         name="+portlet-subscribers"
-        class="canonical.launchpad.browser.BugView"
+        class="canonical.launchpad.browser.BugSubscriberPortletView"
         template="../templates/bug-portlet-subscribers.pt"
         permission="zope.Public" />
 
