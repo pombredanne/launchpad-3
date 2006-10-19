@@ -286,9 +286,17 @@ class BuildQueueSet(object):
         clauses = ["build.distroarchrelease=%d" % d.id for d in archreleases]
         clause = " OR ".join(clauses)
 
-        return BuildQueue.select("buildqueue.build = build.id AND "
-                                 "build.buildstate = %d AND "
-                                 "buildqueue.builder IS NULL AND (%s)"
-                                 % (state.value, clause),
-                                 clauseTables=['Build'])
+        return BuildQueue.select("""
+            buildqueue.build = build.id AND
+            build.buildstate = %d AND
+            build.distroarchrelease = distroarchrelease.id AND
+            distroarchrelease.distrorelease = distrorelease.id AND
+            distrorelease.distribution = distribution.id AND
+            build.archive = distribution.main_archive AND
+            buildqueue.builder IS NULL AND (%s)
+            """ % (state.value, clause),
+                clauseTables=['Build',
+                              'DistroArchRelease',
+                              'DistroRelease',
+                              'Distribution'])
 

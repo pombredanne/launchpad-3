@@ -68,6 +68,8 @@ class SourcePackageRelease(SQLBase):
         default=SourcePackageFormat.DPKG, notNull=True)
     uploaddistrorelease = ForeignKey(foreignKey='DistroRelease',
         dbName='uploaddistrorelease')
+    uploadarchive = ForeignKey(foreignKey='Archive', dbName='uploadarchive',
+        notNull=True)
 
     builds = SQLMultipleJoin('Build', joinColumn='sourcepackagerelease',
                              orderBy=['-datecreated'])
@@ -146,6 +148,10 @@ class SourcePackageRelease(SQLBase):
             # imports us, so avoid circular import
             from canonical.launchpad.database.sourcepackage import \
                  SourcePackage
+            # Skip PPA publishings
+            if (publishing.distrorelease.main_archive.id !=
+                publishing.archive.id):
+                continue
             sp = SourcePackage(self.sourcepackagename,
                                publishing.distrorelease)
             sp_series = sp.productseries
@@ -233,11 +239,12 @@ class SourcePackageRelease(SQLBase):
             BinaryPackagePublishingHistory.distroarchrelease =
                DistroArchRelease.id AND
             DistroArchRelease.distrorelease = %d AND
+            BinaryPackagePublishingHistory.archive = %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                BinaryPackageRelease.id AND
             BinaryPackageRelease.build = Build.id AND
             Build.sourcepackagerelease = %d
-            """ % (distroRelease.id, self.id),
+            """ % (distroRelease, distroRelease.main_archive, self),
             clauseTables=clauseTables))
 
         return archReleases
@@ -277,7 +284,8 @@ class SourcePackageRelease(SQLBase):
                      processor=processor,
                      buildstate=status,
                      datecreated=datecreated,
-                     pocket=pocket)
+                     pocket=pocket,
+                     archive=distroarchrelease.main_archive)
 
     def getBuildByArch(self, distroarchrelease):
         """See ISourcePackageRelease."""
@@ -287,8 +295,11 @@ class SourcePackageRelease(SQLBase):
         BinaryPackageRelease.id =
             BinaryPackagePublishingHistory.binarypackagerelease AND
         BinaryPackagePublishingHistory.distroarchrelease = %s AND
+        BinaryPackagePublishingHistory.archive = %s AND
         Build.sourcepackagerelease = %s
-        """  % sqlvalues(distroarchrelease.id, self.id)
+        """  % sqlvalues(distroarchrelease,
+                         distroarchrelease.main_archive,
+                         self)
 
         tables = ['BinaryPackageRelease', 'BinaryPackagePublishingHistory']
 
@@ -304,6 +315,7 @@ class SourcePackageRelease(SQLBase):
         if build is None:
             build = Build.selectOneBy(
                 distroarchrelease=distroarchrelease,
+                archive=distroarchrelease.main_archive,
                 sourcepackagerelease=self)
 
         return build

@@ -90,6 +90,13 @@ class BinaryPackageRelease(SQLBase):
         The distrorelease information comes from the SourcepackageRelease
         and the publishing system.
         """
+        # XXX malcc 2006-10-03: This is crack, each DistroRelease does
+        # *not* compile all of its Packages. The callsite for this method
+        # (binarypackagerelease-portlet-latestversions) needs reviewing,
+        # to determine what it actually wants to fetch. For now, I'm just
+        # modifying this to be archive-aware, which will keep the current
+        # crackful behaviour.
+        
         # Daniel Debonzi: To get the lastest versions of a BinaryPackage
         # Im suposing that one BinaryPackage is build for only one
         # DistroRelease (Each DistroRelease compile all its Packages). 
@@ -108,9 +115,11 @@ class BinaryPackageRelease(SQLBase):
             BinaryPackageName.id AND
         BinaryPackageName.id = %s AND
         BinaryPackagePublishingHistory.distroarchrelease = %s AND
+        BinaryPackagePublishingHistory.archive = %s AND
         BinaryPackagePublishingHistory.status = %s
-        """ % sqlvalues(self.binarypackagename.id,
-                        self.build.distroarchrelease.id,
+        """ % sqlvalues(self.binarypackagename,
+                        self.build.distroarchrelease,
+                        self.build.distroarchrelease.main_archive,
                         dbschema.PackagePublishingStatus.SUPERSEDED)
 
         return shortlist(BinaryPackageRelease.select(
@@ -146,6 +155,7 @@ class BinaryPackageRelease(SQLBase):
             status=status,
             pocket=pocket,
             embargo=embargo,
+            archive=distroarchrelease.main_archive
             )
 
     def override(self, component=None, section=None, priority=None):
@@ -162,13 +172,13 @@ class BinaryPackageReleaseSet:
     """A Set of BinaryPackageReleases."""
     implements(IBinaryPackageReleaseSet)
 
-    def findByNameInDistroRelease(self, distroreleaseID, pattern, archtag=None,
+    def findByNameInDistroRelease(self, distrorelease, pattern, archtag=None,
                                   fti=False):
         """Returns a set of binarypackagereleases that matchs pattern inside a
         distrorelease.
         """
         pattern = pattern.replace('%', '%%')
-        query, clauseTables = self._buildBaseQuery(distroreleaseID)
+        query, clauseTables = self._buildBaseQuery(distrorelease)
         queries = [query]
 
         match_query = ("BinaryPackageName.name LIKE lower('%%' || %s || '%%')"
@@ -187,10 +197,10 @@ class BinaryPackageReleaseSet:
         return BinaryPackageRelease.select(query, clauseTables=clauseTables,
                                            orderBy='BinaryPackageName.name')
 
-    def getByNameInDistroRelease(self, distroreleaseID, name=None,
+    def getByNameInDistroRelease(self, distrorelease, name=None,
                                  version=None, archtag=None, orderBy=None):
         """Get a BinaryPackageRelease in a DistroRelease by its name."""
-        query, clauseTables = self._buildBaseQuery(distroreleaseID)
+        query, clauseTables = self._buildBaseQuery(distrorelease)
         queries = [query]
 
         if name:
@@ -215,17 +225,19 @@ class BinaryPackageReleaseSet:
                                            clauseTables=clauseTables,
                                            orderBy=orderBy)
 
-    def _buildBaseQuery(self, distroreleaseID):
+    def _buildBaseQuery(self, distrorelease):
         query = """
         BinaryPackagePublishingHistory.binarypackagerelease =
            BinaryPackageRelease.id AND
         BinaryPackagePublishingHistory.distroarchrelease =
            DistroArchRelease.id AND
-        DistroArchRelease.distrorelease = %d AND
+        BinaryPackagePublishingHistory.archive = %s AND
+        DistroArchRelease.distrorelease = %s AND
         BinaryPackageRelease.binarypackagename =
            BinaryPackageName.id AND
         BinaryPackagePublishingHistory.status != %s
-        """ % (distroreleaseID, dbschema.PackagePublishingStatus.REMOVED)
+        """ % sqlvalues(distrorelease.main_archive, distrorelease,
+                        dbschema.PackagePublishingStatus.REMOVED)
 
         clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchRelease',
                         'BinaryPackageRelease', 'BinaryPackageName']

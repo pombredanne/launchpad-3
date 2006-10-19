@@ -82,12 +82,13 @@ class DistributionSourcePackage(BugTargetBase):
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackageRelease.version = %s
-            """ % sqlvalues(self.distribution, self.sourcepackagename,
-                            version),
+            """ % sqlvalues(self.distribution, self.distribution.main_archive,
+                            self.sourcepackagename, version),
             orderBy='-datecreated',
             prejoinClauseTables=['SourcePackageRelease'],
             clauseTables=['DistroRelease', 'SourcePackageRelease'])
@@ -109,8 +110,10 @@ class DistributionSourcePackage(BugTargetBase):
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.status != %s
             """ % sqlvalues(self.sourcepackagename, self.distribution,
+                            self.distribution.main_archive,
                             PackagePublishingStatus.REMOVED),
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
             orderBy=[SQLConstant(order_const),
@@ -216,13 +219,15 @@ class DistributionSourcePackage(BugTargetBase):
     def _getPublishingHistoryQuery(self, status=None):
         query = """
             DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s
-            """ % sqlvalues(self.distribution.id,
-                            self.sourcepackagename.id)
+            """ % sqlvalues(self.distribution,
+                            self.distribution.main_archive,
+                            self.sourcepackagename)
 
         if status is not None:
             query += ("AND SourcePackagePublishingHistory.status = %s"
@@ -240,10 +245,13 @@ class DistributionSourcePackage(BugTargetBase):
         ret = SourcePackagePublishingHistory.select("""
             sourcepackagepublishinghistory.distrorelease = distrorelease.id AND
             distrorelease.distribution = %s AND
+            sourcepackagepublishinghistory.archive = %s AND
             sourcepackagepublishinghistory.sourcepackagerelease =
                 sourcepackagerelease.id AND
             sourcepackagerelease.sourcepackagename = %s
-            """ % sqlvalues(self.distribution.id, self.sourcepackagename.id),
+            """ % sqlvalues(self.distribution,
+                            self.distribution.main_archive,
+                            self.sourcepackagename),
             orderBy='-datecreated',
             clauseTables=['distrorelease', 'sourcepackagerelease'])
         result = []
@@ -258,16 +266,6 @@ class DistributionSourcePackage(BugTargetBase):
         return result
 
     # ticket related interfaces
-    def tickets(self, quantity=None):
-        """See ITicketTarget."""
-        return Ticket.select("""
-            distribution=%s AND
-            sourcepackagename=%s
-            """ % sqlvalues(self.distribution.id,
-                            self.sourcepackagename.id),
-            orderBy='-datecreated',
-            limit=quantity)
-
     def newTicket(self, owner, title, description, datecreated=None):
         """See ITicketTarget."""
         return TicketSet.new(
@@ -291,11 +289,13 @@ class DistributionSourcePackage(BugTargetBase):
         return ticket
 
     def searchTickets(self, search_text=None,
-                      status=TICKET_STATUS_DEFAULT_SEARCH, sort=None):
+                      status=TICKET_STATUS_DEFAULT_SEARCH, owner=None,
+                      sort=None):
         """See ITicketTarget."""
-        return TicketSet.search(search_text=search_text, status=status,
-                                sort=sort, distribution=self.distribution,
-                                sourcepackagename=self.sourcepackagename)
+        return TicketSet.search(
+            distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename, search_text=search_text,
+            status=status, owner=owner, sort=sort)
 
     def findSimilarTickets(self, title):
         """See ITicketTarget."""

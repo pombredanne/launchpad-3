@@ -113,6 +113,9 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
                                             joinColumn="distribution",
                                             orderBy="name",
                                             prejoins=['sourcepackagename'])
+    main_archive = ForeignKey(dbName='main_archive',
+        foreignKey='Archive', notNull=True)
+
 
     @property
     def archive_mirrors(self):
@@ -433,15 +436,6 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         """See ISpecificationTarget."""
         return Specification.selectOneBy(distribution=self, name=name)
 
-    def tickets(self, quantity=None):
-        """See ITicketTarget."""
-        return Ticket.select("""
-            Ticket.distribution = %s
-            """ % sqlvalues(self.id),
-            orderBy='-Ticket.datecreated',
-            prejoins=['distribution', 'owner', 'sourcepackagename'],
-            limit=quantity)
-
     def newTicket(self, owner, title, description, datecreated=None):
         """See ITicketTarget."""
         return TicketSet.new(
@@ -460,11 +454,12 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
             return None
         return ticket
 
-    def searchTickets(self, search_text=None,
-                      status=TICKET_STATUS_DEFAULT_SEARCH, sort=None):
+    def searchTickets(self, search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
+                      owner=None, sort=None):
         """See ITicketTarget."""
-        return TicketSet.search(search_text=search_text, status=status,
-                                sort=sort, distribution=self)
+        return TicketSet.search(
+            distribution=self, search_text=search_text, status=status,
+            owner=owner, sort=sort)
 
     def findSimilarTickets(self, title):
         """See ITicketTarget."""
@@ -568,12 +563,14 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackagePublishingHistory.status != %s AND
             SourcePackageRelease.sourcepackagename =
                 SourcePackageName.id
-            """ % sqlvalues(self.id, PackagePublishingStatus.REMOVED),
+            """ % sqlvalues(self, self.main_archive,
+                            PackagePublishingStatus.REMOVED),
             distinct=True,
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease',
                 'SourcePackageRelease']))
@@ -591,12 +588,14 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackagePublishingHistory.status != %s AND
             SourcePackageRelease.sourcepackagename =
                 SourcePackageName.id
-            """ % sqlvalues(self.id, PackagePublishingStatus.REMOVED),
+            """ % sqlvalues(self, self.main_archive,
+                            PackagePublishingStatus.REMOVED),
             distinct=True,
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease',
                 'SourcePackageRelease']))
@@ -621,9 +620,10 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
                 SourcePackagePublishingHistory.sourcepackagerelease AND
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.status != %s AND
             DistroRelease.distribution = %s
-            """ % sqlvalues(sourcepackagename.id, self.id,
+            """ % sqlvalues(sourcepackagename, self, self.main_archive,
                             PackagePublishingStatus.REMOVED),
             orderBy='id',
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
@@ -747,11 +747,12 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackagePublishingHistory.status = %s
-            ''' % sqlvalues(self, sourcepackagename,
+            ''' % sqlvalues(self, self.main_archive, sourcepackagename,
                             PackagePublishingStatus.PUBLISHED),
             clauseTables=['SourcePackageRelease', 'DistroRelease'],
             distinct=True,
@@ -809,7 +810,7 @@ class DistributionSet:
             return None
 
     def new(self, name, displayname, title, description, summary, domainname,
-            members, owner):
+            members, owner, main_archive):
         return Distribution(
             name=name,
             displayname=displayname,
@@ -819,6 +820,7 @@ class DistributionSet:
             domainname=domainname,
             members=members,
             mirror_admin=owner,
-            owner=owner)
+            owner=owner,
+            main_archive=main_archive)
 
 

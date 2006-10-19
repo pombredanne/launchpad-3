@@ -77,6 +77,9 @@ class ISourcePackageRelease(Interface):
     current_publishings = Attribute("A list of the current places where "
         "this source package is published, in the form of a list of "
         "DistroReleaseSourcePackageReleases.")
+    uploadarchive = Attribute("The archive for which this package "
+         "was first uploaded in Launchpad")
+
 
     def branches():
         """Return the list of branches in a source package release"""

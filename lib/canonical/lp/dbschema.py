@@ -89,6 +89,7 @@ __all__ = (
 'SprintSpecificationStatus',
 'SSHKeyType',
 'TextDirection',
+'TicketParticipation',
 'TicketPriority',
 'TicketSort',
 'TicketStatus',
@@ -97,8 +98,8 @@ __all__ = (
 'TranslationPriority',
 'TranslationPermission',
 'TranslationValidationStatus',
-'DistroReleaseQueueStatus',
-'DistroReleaseQueueCustomFormat',
+'PackageUploadStatus',
+'PackageUploadCustomFormat',
 'UpstreamFileType',
 'UpstreamReleaseVersionStyle',
 )
@@ -1667,6 +1668,45 @@ class SprintSpecificationStatus(DBSchema):
         """)
 
 
+# Enumeration covered by bug 66633:
+#   Need way to define enumerations outside of dbschema
+class TicketParticipation(DBSchema):
+    """The different ways a person can be involved in a ticket.
+
+    This enumeration is part of the ITicketActor.searchTickets() API.
+    """
+
+    OWNER = Item(10, """
+        Owner
+
+        The person created the ticket.
+        """)
+
+    SUBSCRIBER = Item(15, """
+        Subscriber
+
+        The person subscribed to the ticket.
+        """)
+
+    ASSIGNEE = Item(20, """
+        Assignee
+
+        The person is assigned to the ticket.
+        """)
+
+    COMMENTER = Item(25, """
+        Commenter
+
+        The person commented on the ticket.
+        """)
+
+    ANSWERER = Item(30, """
+        Answerer
+
+        The person answered the ticket.
+        """)
+
+
 class TicketPriority(DBSchema):
     """The Priority with a Support Request must be handled.
 
@@ -1967,11 +2007,11 @@ class TranslationPermission(DBSchema):
         reviewed before being accepted by the designated translator.""")
 
 
-class DistroReleaseQueueStatus(DBSchema):
+class PackageUploadStatus(DBSchema):
     """Distro Release Queue Status
 
     An upload has various stages it must pass through before becoming part
-    of a DistroRelease. These are managed via the DistroReleaseQueue table
+    of a DistroRelease. These are managed via the Upload table
     and related tables and eventually (assuming a successful upload into the
     DistroRelease) the effects are published via the PackagePublishing and
     SourcePackagePublishing tables.  """
@@ -2024,7 +2064,7 @@ class DistroReleaseQueueStatus(DBSchema):
 # If you change this (add items, change the meaning, whatever) search for
 # the token ##CUSTOMFORMAT## e.g. database/queue.py or nascentupload.py and
 # update the stuff marked with it.
-class DistroReleaseQueueCustomFormat(DBSchema):
+class PackageUploadCustomFormat(DBSchema):
     """Custom formats valid for the upload queue
 
     An upload has various files potentially associated with it, from source
@@ -3469,7 +3509,7 @@ class PersonCreationRationale(DBSchema):
 
     POFILEIMPORT = Item(4, """
         This person was mentioned in a POFile imported into Rosetta.
-        
+
         When importing POFiles into Rosetta, we need to give credit for the
         translations on that POFile to its last translator, which may not
         exist in Launchpad, so we'd need to create it.

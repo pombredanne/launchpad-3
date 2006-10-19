@@ -18,10 +18,10 @@ from canonical.launchpad.interfaces import (
     IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
     IShippingRun, ISpecification, ITicket, ITranslationImportQueueEntry,
     ITranslationImportQueue, IDistributionMirror, IHasBug,
-    IBazaarApplication, IDistroReleaseQueue, IBuilderSet,
+    IBazaarApplication, IPackageUpload, IBuilderSet,
     IBuilder, IBuild, ISpecificationSubscription, IHasDrivers)
 
-from canonical.lp.dbschema import DistroReleaseQueueStatus
+from canonical.lp.dbschema import PackageUploadStatus
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -770,9 +770,9 @@ class AdminTranslationImportQueue(OnlyRosettaExpertsAndAdmins):
     usedfor = ITranslationImportQueue
 
 
-class EditDistroReleaseQueue(AdminByAdminsTeam):
+class EditPackageUpload(AdminByAdminsTeam):
     permission = 'launchpad.Edit'
-    usedfor = IDistroReleaseQueue
+    usedfor = IPackageUpload
 
     def checkAuthenticated(self, user):
         """Check user presence in admins or distrorelease upload admin team."""
@@ -781,19 +781,19 @@ class EditDistroReleaseQueue(AdminByAdminsTeam):
 
         return user.inTeam(self.obj.distrorelease.distribution.upload_admin)
 
-class ViewDistroReleaseQueue(EditDistroReleaseQueue):
+class ViewPackageUpload(EditPackageUpload):
     permission = 'launchpad.View'
-    usedfor = IDistroReleaseQueue
+    usedfor = IPackageUpload
 
     def checkAuthenticated(self, user):
         """Allow only members of the admin team to view unapproved entries.
 
         Any logged in user can view entries in other state.
         """
-        if EditDistroReleaseQueue.checkAuthenticated(self, user):
+        if EditPackageUpload.checkAuthenticated(self, user):
             return True
         # deny access to non-admin on unapproved records
-        if self.obj.status == DistroReleaseQueueStatus.UNAPPROVED:
+        if self.obj.status == PackageUploadStatus.UNAPPROVED:
             return False
 
         return True

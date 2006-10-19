@@ -33,10 +33,12 @@ from zope.security.interfaces import Unauthorized
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IPerson, IPublishedPackageSet,
-    NotFoundError, ILaunchBag)
+    NotFoundError, ILaunchBag, IArchiveSet)
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.tickettarget import (
+    TicketTargetFacetMixin, TicketTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, enabled_with_permission,
     GetitemNavigation, LaunchpadEditFormView, LaunchpadView, Link,
@@ -45,7 +47,8 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import DistributionReleaseStatus
 
 
-class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
+class DistributionNavigation(
+    GetitemNavigation, BugTargetTraversalMixin, TicketTargetTraversalMixin):
 
     usedfor = IDistribution
 
@@ -76,17 +79,6 @@ class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
     def traverse_spec(self, name):
         return self.context.getSpecification(name)
 
-    @stepthrough('+ticket')
-    def traverse_ticket(self, name):
-        # tickets should be ints
-        try:
-            ticket_id = int(name)
-        except ValueError:
-            raise NotFoundError
-        return self.context.getTicket(ticket_id)
-
-    redirection('+ticket', '+tickets')
-
 
 class DistributionSetNavigation(GetitemNavigation):
 
@@ -96,7 +88,7 @@ class DistributionSetNavigation(GetitemNavigation):
         return 'Distributions'
 
 
-class DistributionFacets(StandardLaunchpadFacets):
+class DistributionFacets(TicketTargetFacetMixin, StandardLaunchpadFacets):
 
     usedfor = IDistribution
 
@@ -107,13 +99,6 @@ class DistributionFacets(StandardLaunchpadFacets):
         target = '+specs'
         text = 'Features'
         summary = 'Feature specifications for %s' % self.context.displayname
-        return Link(target, text, summary)
-
-    def support(self):
-        target = '+tickets'
-        text = 'Support'
-        summary = (
-            'Technical support requests for %s' % self.context.displayname)
         return Link(target, text, summary)
 
 
@@ -289,27 +274,6 @@ class DistributionSpecificationsMenu(ApplicationMenu):
         return Link('+addspec', text, icon='add')
 
 
-class DistributionSupportMenu(ApplicationMenu):
-
-    usedfor = IDistribution
-    facet = 'support'
-    links = ['new', 'support_contact']
-    # XXX: MatthewPaulThomas, 2005-09-20
-    # Add 'help' once +gethelp is implemented for a distribution
-
-    def help(self):
-        text = 'Help and Support Options'
-        return Link('+gethelp', text, icon='info')
-
-    def new(self):
-        text = 'Request Support'
-        return Link('+addticket', text, icon='add')
-
-    def support_contact(self):
-        text = 'Support Contact'
-        return Link('+support-contact', text, icon='edit')
-
-
 class DistributionTranslationsMenu(ApplicationMenu):
 
     usedfor = IDistribution
@@ -444,6 +408,7 @@ class DistributionSetAddView(AddView):
             raise Unauthorized(
                 "Need an authenticated user in order to create a"
                 " distribution.")
+        archive = getUtility(IArchiveSet).new()
         distribution = getUtility(IDistributionSet).new(
             name=data['name'],
             displayname=data['displayname'],
@@ -452,7 +417,8 @@ class DistributionSetAddView(AddView):
             description=data['description'],
             domainname=data['domainname'],
             members=data['members'],
-            owner=owner)
+            owner=owner,
+            main_archive = archive)
         notify(ObjectCreatedEvent(distribution))
         self._nextURL = data['name']
         return distribution

@@ -71,7 +71,8 @@ We are going to import the pmount build.
   ...     status=PackagePublishingStatus.PUBLISHED,
   ...     datecreated=UTC_NOW,
   ...     pocket=PackagePublishingPocket.RELEASE,
-  ...     embargo=False)
+  ...     embargo=False,
+  ...     archive=dapper.main_archive)
 
 Do the upload into the system.
 
@@ -142,8 +143,8 @@ We need to commit the transaction to be able to use the librarian files.
 Do the publish. This is going to do the translation upload into the import
 queue.
 
-  >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
-  >>> queue_item = dapper.getQueueItems(status=DistroReleaseQueueStatus.NEW)[0]
+  >>> from canonical.lp.dbschema import PackageUploadStatus
+  >>> queue_item = dapper.getQueueItems(status=PackageUploadStatus.NEW)[0]
   >>> queue_item.customfiles[0].publish()
 
 And now, we have exactly the 10 entries imported by pmount.

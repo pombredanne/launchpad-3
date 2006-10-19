@@ -105,12 +105,15 @@ class DistroArchReleaseBinaryPackage:
         """See IDistroArchReleaseBinaryPackage."""
         query = """
         BinaryPackagePublishingHistory.distroarchrelease = %s AND
+        BinaryPackagePublishingHistory.archive = %s AND
         BinaryPackagePublishingHistory.binarypackagerelease =
             BinaryPackageRelease.id AND
         BinaryPackageRelease.version = %s AND
         BinaryPackageRelease.binarypackagename = %s
-        """ % sqlvalues(self.distroarchrelease.id, version,
-                        self.binarypackagename.id)
+        """ % sqlvalues(self.distroarchrelease,
+                        self.distroarchrelease.main_archive,
+                        version,
+                        self.binarypackagename)
 
         bpph = BinaryPackagePublishingHistory.selectFirst(
             query, clauseTables=['binarypackagerelease'],
@@ -128,11 +131,13 @@ class DistroArchReleaseBinaryPackage:
         """See IDistroArchReleaseBinaryPackage."""
         ret = BinaryPackageRelease.select("""
             BinaryPackagePublishingHistory.distroarchrelease = %s AND
+            BinaryPackagePublishingHistory.archive = %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename = %s
-            """ % sqlvalues(self.distroarchrelease.id,
-                            self.binarypackagename.id),
+            """ % sqlvalues(self.distroarchrelease,
+                            self.distroarchrelease.main_archive,
+                            self.binarypackagename),
             orderBy='-datecreated',
             distinct=True,
             clauseTables=['BinaryPackagePublishingHistory'])
@@ -155,9 +160,11 @@ class DistroArchReleaseBinaryPackage:
             BinaryPackageRelease.id =
                 BinaryPackagePublishingHistory.binarypackagerelease AND
             BinaryPackagePublishingHistory.distroarchrelease = %s AND
+            BinaryPackagePublishingHistory.archive = %s AND
             BinaryPackagePublishingHistory.status = %s
-            """ % sqlvalues(self.binarypackagename.id,
-                            self.distroarchrelease.id,
+            """ % sqlvalues(self.binarypackagename,
+                            self.distroarchrelease,
+                            self.distroarchrelease.main_archive,
                             PackagePublishingStatus.PUBLISHED,
                             ),
             orderBy='datecreated',
@@ -176,11 +183,13 @@ class DistroArchReleaseBinaryPackage:
         """See IDistroArchReleaseBinaryPackage."""
         return BinaryPackagePublishingHistory.select("""
             BinaryPackagePublishingHistory.distroarchrelease = %s AND
+            BinaryPackagePublishingHistory.archive = %s AND
             BinaryPackagePublishingHistory.binarypackagerelease = 
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename = %s
-            """ % sqlvalues(self.distroarchrelease.id,
-                            self.binarypackagename.id),
+            """ % sqlvalues(self.distroarchrelease,
+                            self.distroarchrelease.main_archive,
+                            self.binarypackagename),
             distinct=True,
             clauseTables=['BinaryPackageRelease'],
             orderBy='-datecreated')
@@ -190,12 +199,14 @@ class DistroArchReleaseBinaryPackage:
         """See IDistroArchReleaseBinaryPackage."""
         current = BinaryPackagePublishingHistory.selectFirst("""
             BinaryPackagePublishingHistory.distroarchrelease = %s AND
+            BinaryPackagePublishingHistory.archive = %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename = %s AND
             BinaryPackagePublishingHistory.status = %s
-            """ % sqlvalues(self.distroarchrelease.id,
-                            self.binarypackagename.id,
+            """ % sqlvalues(self.distroarchrelease,
+                            self.distroarchrelease.main_archive,
+                            self.binarypackagename,
                             PackagePublishingStatus.PUBLISHED),
             clauseTables=['BinaryPackageRelease'],
             orderBy='-datecreated')
@@ -245,6 +256,7 @@ class DistroArchReleaseBinaryPackage:
             component=new_component,
             section=new_section,
             priority=new_priority,
+            archive=current.archive
             )
 
     def supersede(self):

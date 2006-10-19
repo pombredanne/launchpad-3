@@ -100,9 +100,11 @@ class DistroReleaseSourcePackageRelease:
         """See IDistroReleaseSourcePackage."""
         return SourcePackagePublishingHistory.select("""
             distrorelease = %s AND
+            archive = %s AND
             sourcepackagerelease = %s
-            """ % sqlvalues(self.distrorelease.id,
-                            self.sourcepackagerelease.id),
+            """ % sqlvalues(self.distrorelease,
+                            self.distrorelease.main_archive,
+                            self.sourcepackagerelease),
             orderBy='-datecreated')
 
     @property
@@ -141,8 +143,11 @@ class DistroReleaseSourcePackageRelease:
         BinaryPackagePublishingHistory.binarypackagerelease=
             BinaryPackageRelease.id AND
         DistroArchRelease.distrorelease=%s AND
+        BinaryPackagePublishingHistory.archive = %s AND
         Build.sourcepackagerelease=%s
-        """ % sqlvalues(self.distrorelease.id, self.sourcepackagerelease.id)
+        """ % sqlvalues(self.distrorelease,
+                        self.distrorelease.main_archive,
+                        self.sourcepackagerelease)
 
         return BinaryPackageRelease.select(
                 query, prejoinClauseTables=['Build'],
@@ -214,10 +219,12 @@ class DistroReleaseSourcePackageRelease:
         # Retrieve current publishing info
         current = SourcePackagePublishingHistory.selectFirst("""
         distrorelease = %s AND
+        archive = %s AND
         sourcepackagerelease = %s AND
         status = %s
-        """ % sqlvalues(self.distrorelease.id,
-                        self.sourcepackagerelease.id,
+        """ % sqlvalues(self.distrorelease,
+                        self.distrorelease.main_archive,
+                        self.sourcepackagerelease,
                         PackagePublishingStatus.PUBLISHED),
             orderBy='-datecreated')
 
@@ -259,6 +266,7 @@ class DistroReleaseSourcePackageRelease:
             pocket=current.pocket,
             component=new_component,
             section=new_section,
+            archive=current.distrorelease.main_archive
         )
 
     def supersede(self):
