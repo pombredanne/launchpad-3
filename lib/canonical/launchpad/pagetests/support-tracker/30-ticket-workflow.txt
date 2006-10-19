@@ -20,20 +20,20 @@ existing ticket #2 on the Firefox product which was filed by
     >>> support_browser.addHeader(
     ...     'Authorization', 'Basic no-priv@canonical.com:test')
 
-    (Define some utitily functions to retrieve easily the last board
-    comment added and the status of the request.)
+    (Define some utility functions to retrieve easily the last comment
+    added and the status of the request.)
 
     >>> from BeautifulSoup import BeautifulSoup
     >>> def find_request_status(contents):
     ...     soup = BeautifulSoup(contents)
     ...     return soup.find('b', text='Status:').next.strip()
     ...
-    >>> def  find_last_board_comment(contents):
+    >>> def  find_last_comment(contents):
     ...     soup = BeautifulSoup(contents)
     ...     return soup.fetch('div', 'boardCommentBody')[-1]
 
-Login In
---------
+Logging In
+----------
 
 To participate in a support request, the user must be logged in.
 
@@ -60,12 +60,12 @@ question in the 'Message' field and clicks on the
     ...     "Can you provide an example of an URL displaying the problem?")
     >>> support_browser.getControl('Add Information Request').click()
 
-The message was added to the request board and the status of the ticket
+The message was added to the request and the status of the ticket
 was changed to 'Needs information':
 
     >>> print find_request_status(support_browser.contents)
     Needs information
-    >>> print find_last_board_comment(
+    >>> print find_last_comment(
     ...     support_browser.contents).renderContents()
     <p>Can you provide an example of an URL displaying the problem?</p>
 
@@ -93,11 +93,11 @@ so by entering the reply in the 'Message' box and clicking on the
     >>> owner_browser.getControl("I'm Providing More Information").click()
 
 Once the owner replied with the, hopefully, requested information, the
-status is changed to Open and his answer appended to the request board.
+status is changed to Open and his answer appended to the request.
 
     >>> print find_request_status(owner_browser.contents)
     Open
-    >>> print find_last_board_comment(owner_browser.contents).renderContents()
+    >>> print find_last_comment(owner_browser.contents).renderContents()
     <p>The following SVG doesn't display properly:<br />
     <a...>http://www.w3.org/2001/08/rdfweb/rdfweb-chaals-and-dan.svg</a></p>
 
@@ -116,11 +116,11 @@ and clicking the 'Add Answer' button.
     >>> support_browser.getControl('Add Answer').click()
 
 This moves the the support request to the Answered state and adds the
-answer to the request board:
+answer to the request:
 
     >>> print find_request_status(support_browser.contents)
     Answered
-    >>> print find_last_board_comment(
+    >>> print find_last_comment(
     ...     support_browser.contents).renderContents()
     <p>New version of the firefox package are available with SVG support
     enabled. You can use apt-get or adept to upgrade.</p>
@@ -138,8 +138,8 @@ When the owner comes back on the request page, he will now see a new
     <input type="submit" name="field.actions.confirm"
      value="This Solved my Problem" />
 
-(Not altough we have three comments on the board, that's the only one
-that has this button. Only answers have this button.)
+(Not altough we have three comments on the support request, that's the
+only one that has this button. Only answers have this button.)
 
 Clicking that button will confirm that the answer solved the problem.
 
@@ -156,9 +156,9 @@ This changes the status of the request to 'Solved' and mark
     No Privileges Person
 
 Since no message can be provided when that button is clicked. A default
-confirmation message was appended to the board:
+confirmation message was appended to the request:
 
-    >>> print find_last_board_comment(owner_browser.contents).renderContents()
+    >>> print find_last_comment(owner_browser.contents).renderContents()
     <p>User confirmed that the request is solved.</p>
 
 The confirmed answer is also highlighted.
@@ -182,12 +182,12 @@ clicks the 'Add Comment' button.
     ...     "The example now displays correctly. Thanks.")
     >>> owner_browser.getControl('Add Comment').click()
 
-This appends the comment to the request board and it doesn't change the
+This appends the comment to the request and it doesn't change the
 status:
 
     >>> print find_request_status(owner_browser.contents)
     Solved
-    >>> print find_last_board_comment(owner_browser.contents).renderContents()
+    >>> print find_last_comment(owner_browser.contents).renderContents()
     <p>The example now displays correctly. Thanks.</p>
 
 Reopening
@@ -205,12 +205,12 @@ by entering a new message and clicking the
     ...     "correctly.")
     >>> owner_browser.getControl("I'm Still Having This Problem").click()
 
-This appends the new information to the request board and changes the
-request status to 'Open'.
+This appends the new information to the request and changes the request
+status to 'Open'.
 
     >>> print find_request_status(owner_browser.contents)
     Open
-    >>> print find_last_board_comment(owner_browser.contents).renderContents()
+    >>> print find_last_comment(owner_browser.contents).renderContents()
     <p>Actually, there are still SVGs that do not display correctly.
     For example, the following<br />
     <a...>http://people.w3.org/maxf/ChessGML/immortal.svg</a> doesn't
@@ -251,8 +251,7 @@ to enter his answer in the 'Message' box and click the
     ...     "available in Firefox 2.0.")
     >>> owner_browser.getControl("I Solved my Problem").click()
 
-This sets the request to 'Solved' and appends the message to the request
-board.
+This appends the message to the request and sets its status to 'Solved'.
 
     >>> print find_request_status(owner_browser.contents)
     Solved
@@ -318,7 +317,9 @@ displayed:
     ...     'answer_id=%s' % (answer_message.id))
 
 If a cropped URL or forged URL is used, an UnexpectedFormData error will
-be displayed:
+be displayed. In the following example, the answer_id parameter refers
+to an answer not part of that support request, it mimics a badly
+handcrafted URL:
 
     >>> owner_browser.open(
     ...     'http://launchpad.dev/products/firefox/+ticket/6/+confirm?'
@@ -352,11 +353,12 @@ button. He can enter an optional message along his confirmation.
     ...     "Thanks! This indeed solved the problem.")
     >>> owner_browser.getControl('This Solved my Problem').click()
 
-This adds his comment to the board and mark the support request Solved.
+This adds his comment to the request and mark the support request
+'Solved.'
 
     >>> print find_request_status(owner_browser.contents)
     Solved
-    >>> print find_last_board_comment(owner_browser.contents).renderContents()
+    >>> print find_last_comment(owner_browser.contents).renderContents()
     <p>Thanks! This indeed solved the problem.</p>
 
 History
