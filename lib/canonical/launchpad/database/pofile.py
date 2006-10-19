@@ -35,7 +35,7 @@ from canonical.launchpad import helpers
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.interfaces import (
     IPersonSet, IPOFileSet, IPOFile, IPOTemplateExporter,
-    ILibraryFileAliasSet, ILaunchpadCelebrities,
+    ILibraryFileAliasSet, ILaunchpadCelebrities, IPOFileTranslator,
     ZeroLengthPOExportError, NotFoundError)
 
 from canonical.launchpad.database.pomsgid import POMsgID
@@ -1027,6 +1027,7 @@ class POFileSet:
 
 class POFileTranslator(SQLBase):
     """See IPOFileTranslator."""
+    implements(IPOFileTranslator)
     pofile = ForeignKey(foreignKey='POFile', dbName='pofile', notNull=True)
     person = ForeignKey(foreignKey='Person', dbName='person', notNull=True)
     latest_posubmission = ForeignKey(foreignKey='POSubmission',

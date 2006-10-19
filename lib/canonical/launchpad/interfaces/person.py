@@ -318,11 +318,12 @@ class IPerson(IHasSpecifications):
                 "into another and is still valid")
                 )
 
-    translation_history = Attribute("The set of POFileTranslator objects "
-        "that represent work done by this translator.")
+    translation_history = Attribute(
+        "The set of POFileTranslator objects that represent work done "
+        "by this translator.")
 
-    translation_groups = Attribute("The set of TranslationGroup objects "
-        "this person is a member of.")
+    translation_groups = Attribute(
+        "The set of TranslationGroup objects this person is a member of.")
 
     # title is required for the Launchpad Page Layout main template
     title = Attribute('Person Page Title')
@@ -625,12 +626,10 @@ class IPersonSet(Interface):
         """
 
     def getPOFileContributors(pofile):
-        """Return all Persons that have contributed to the specified POFile."""
+        """Return people that have contributed to the specified POFile."""
 
     def getPOFileContributorsByDistroRelease(self, distrorelease, language):
-        """Return Persons that contributed translations to this Language 
-           in this DistroRelease.
-        """
+        """Return people who translated strings in distroRelease to language."""
 
     def getAllPersons(orderBy=None):
         """Return all Persons, ignoring the merged ones.

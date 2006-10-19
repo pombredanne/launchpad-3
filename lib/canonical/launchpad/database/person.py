@@ -874,34 +874,16 @@ class Person(SQLBase):
     @property
     def translation_history(self):
         """See IPerson."""
-        history = POFileTranslator.select("POFileTranslator.person = %s" % sqlvalues(self),
-                                            orderBy="date_last_touched")
-        history = history.prejoin(["pofile", "pofile.potemplate",
-                                  "latest_posubmission",
-                                  "latest_posubmission.pomsgset.potmsgset.primemsgid_",
-                                  "latest_posubmission.potranslation"])
-        # XXX: See bug 60320. Because of a template reference to
-        # pofile.potemplate.displayname, it would be ideal to also
-        # prejoin:
-        #   potemplate.potemplatename
-        #   potemplate.productseries
-        #   potemplate.productseries.product
-        #   potemplate.distrorelease
-        #   potemplate.distrorelease.distribution
-        #   potemplate.sourcepackagename
-        # However, a list this long may be actually suggesting that
-        # displayname be cached in a table field; particularly given the
-        # fact that it won't be altered very often. At any rate, the
-        # code below works around this by caching all the templates in
-        # one shot. The list() ensures that we materialize the query
-        # before passing it on to avoid reissuing it; the template code
-        # only hits this callsite once and iterates over all the results
-        # anyway.
-        #   -- kiko, 2006-03-17
-        history = list(history)
-        ids = set(record.pofile.potemplate.id for record in history)
-        if ids:
-            list(POTemplateSet().getByIDs(ids))
+        # Note that we can't use selectBy here because of the prejoins.
+        history = POFileTranslator.select(
+            "POFileTranslator.person = %d" % self.id,
+            prejoins=[
+                "pofile", 
+                "pofile.potemplate",
+                "latest_posubmission",
+                "latest_posubmission.pomsgset.potmsgset.primemsgid_",
+                "latest_posubmission.potranslation"],
+            orderBy="-date_last_touched")
         return history
 
     @property
@@ -1314,8 +1296,11 @@ class PersonSet:
             POFileTranslator.pofile = %s""" % quote(pofile),
             clauseTables=["POFileTranslator"],
             distinct=True,
-            # Can't use Person.sortingColumns because this is a distinct
-            # query.
+            # XXX: we can't use Person.sortingColumns because this is a
+            # distinct query. To use it we'd need to add the sorting
+            # function to the column results and then ignore it -- just
+            # like selectAlso does, ironically.
+            #   -- kiko, 2006-10-19
             orderBy=["Person.displayname", "Person.name"])
         return contributors
 
@@ -1330,7 +1315,8 @@ class PersonSet:
                 % sqlvalues(language, distrorelease),
             clauseTables=["POFileTranslator", "POFile", "POTemplate"],
             distinct=True,
-            # See comment in getPOFileContributors.
+            # See comment in getPOFileContributors about how we can't
+            # use Person.sortingColumns.
             orderBy=["Person.displayname", "Person.name"])
         return contributors
 

@@ -130,9 +130,8 @@ class DistroReleaseLanguage(SQLBase, RosettaStats):
         self.rosettacount = rosetta
 
         personset = getUtility(IPersonSet)
-        dr = self.distrorelease
-        lang = self.language
-        contributors = personset.getPOFileContributorsByDistroRelease(dr, lang)
+        contributors = personset.getPOFileContributorsByDistroRelease(
+            self.distrorelease, self.language)
         self.contributorcount = contributors.count()
 
         self.dateupdated = UTC_NOW
