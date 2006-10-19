@@ -6,10 +6,11 @@ If the product series has no associated branch then the
 revision control portlet should show 'None given'
 
   >>> user_browser.open('http://launchpad.dev/products/firefox/trunk')
-  >>> user_browser.contents
-  '<!DOCTYPE...
-  ...Revision control details...
-  ...<i>None given</i>...'
+  >>> print find_portlet(user_browser.contents, 'Revision control details')
+  <div class="portlet">
+  ...<i>None given</i>...
+  </div>
+
   
 == Add association ==
 
@@ -25,8 +26,7 @@ Should now be back at the main series page
  
   >>> user_browser.url
   'http://launchpad.dev/products/firefox/trunk'
-  >>> user_browser.contents
-  '<!DOCTYPE...
-  ...Revision control details...
-  ...<a href="http://launchpad.dev/people/name12/+branch/firefox/main">Mozilla Firefox Mainline</a>...'
-
+  >>> print find_portlet(user_browser.contents, 'Revision control details')
+  <div class="portlet">
+  ...<a href="http://launchpad.dev/people/name12/+branch/firefox/main">Mozilla Firefox Mainline</a>...
+  </div>
