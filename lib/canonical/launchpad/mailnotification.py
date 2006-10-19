@@ -968,7 +968,7 @@ class TicketAddedNotification(TicketNotification):
 class TicketModifiedDefaultNotification(TicketNotification):
     """Base implementation of a notification when a ticket is modified."""
 
-    # Email template used to render the body
+    # Email template used to render the body.
     body_template = "ticket_modified.txt"
 
     def initialize(self):
@@ -1039,19 +1039,21 @@ class TicketModifiedDefaultNotification(TicketNotification):
     def getBody(self):
         """See TicketNotification."""
         body = self.metadata_changes_text
+        replacements = dict(
+            ticket_id=self.ticket.id,
+            target_name=self.ticket.target.displayname,
+            ticket_url=canonical_url(self.ticket))
+
         if self.new_message:
             if body:
                 body += '\n\n'
             body += self.getNewMessageText()
             new_message_id = self.new_message.id
-        else:
-            new_message_id = None
-        return get_email_template(self.body_template) % {
-            'ticket_id': self.ticket.id,
-            'target_name': self.ticket.target.displayname,
-            'ticket_url': canonical_url(self.ticket),
-            'body': body,
-            'new_message_id': new_message_id}
+            replacements['new_message_id'] = new_message_id
+
+        replacements['body'] = body
+
+        return get_email_template(self.body_template) % replacements
 
     def getRecipients(self):
         """The default notification goes to all ticket susbcribers except
@@ -1060,7 +1062,7 @@ class TicketModifiedDefaultNotification(TicketNotification):
         return [person for person in self.ticket.getSubscribers()
                 if person != self.ticket.owner]
 
-    # Header template used when anew message is added to the ticket
+    # Header template used when a new message is added to the ticket.
     action_header_template = {
         TicketAction.REQUESTINFO:
             '%(person)s requested for more information:',
