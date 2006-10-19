@@ -110,3 +110,10 @@ class LibraryFileAliasSet(object):
         """See ILibraryFileAliasSet.__getitem__"""
         return LibraryFileAlias.get(key)
 
+    def findBySHA1(self, sha1):
+        """See ILibraryFileAliasSet."""
+        return LibraryFileAlias.select("""
+            content = LibraryFileContent.id
+            AND LibraryFileContent.sha1 = '%s'
+            """ % sha1, clauseTables=['LibraryFileContent'])
+

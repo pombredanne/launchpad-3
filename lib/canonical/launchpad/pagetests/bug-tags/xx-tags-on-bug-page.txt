@@ -19,6 +19,20 @@ Let's follow the link and specify some tags:
     >>> tags.value
     ''
 
+If we enter an invalid tag name, we'll get an error.
+
+    >>> tags.value = "!!invalid!! foo"
+    >>> user_browser.getControl('Change').click()
+
+    >>> for tag in find_tags_by_class(user_browser.contents, 'message'):
+    ...     print tag.renderContents()
+    There is 1 error.
+    '!!invalid!!' isn't a valid tag name. Only alphanumeric characters
+    may be used.
+
+Let's specify two valid tags.
+
+    >>> tags = user_browser.getControl('Tags')
     >>> tags.value = "bar foo"
     >>> user_browser.getControl('Change').click()
 

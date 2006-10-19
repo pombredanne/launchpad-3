@@ -203,8 +203,7 @@ class POFile(SQLBase, RosettaStats):
     exporttime = UtcDateTimeCol(dbName='exporttime',
                                 notNull=False,
                                 default=None)
-    datecreated = UtcDateTimeCol(notNull=True,
-        default=UTC_NOW)
+    datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
     latestsubmission = ForeignKey(foreignKey='POSubmission',
         dbName='latestsubmission', notNull=False, default=None)
