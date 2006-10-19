@@ -536,7 +536,6 @@ INSERT INTO archive (id) VALUES (4);
 INSERT INTO archive (id) VALUES (5);
 INSERT INTO archive (id) VALUES (7);
 INSERT INTO archive (id) VALUES (8);
-INSERT INTO archive (id) VALUES (9);
 
 
 ALTER TABLE archive ENABLE TRIGGER ALL;
@@ -959,12 +958,6 @@ INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, da
 INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (18, '2004-09-27 11:57:13', 1, 8, 1, '2004-09-27 11:57:13', '00:02:01', 1, 1, 14, 0, NULL, 1);
 INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (19, '2005-03-24 00:00:00', 1, 8, 1, '2005-03-25 00:00:01', '00:01:20', 1, 1, 20, 0, NULL, 1);
 INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (20, '2006-07-25 00:00:00', 1, 1, 0, NULL, NULL, NULL, NULL, 29, 0, NULL, 1);
-INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (21, '2006-10-04 11:08:29.972903', 1, 6, 0, NULL, NULL, NULL, NULL, 15, 0, NULL, 9);
-INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (22, '2006-10-04 11:08:29.98558', 3, 11, 0, NULL, NULL, NULL, NULL, 16, 0, NULL, 9);
-INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (23, '2006-10-04 11:08:29.992965', 1, 6, 0, NULL, NULL, NULL, NULL, 16, 0, NULL, 9);
-INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (24, '2006-10-04 11:08:30.009791', 1, 6, 0, NULL, NULL, NULL, NULL, 26, 0, NULL, 9);
-INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (25, '2006-10-04 11:08:30.02489', 3, 11, 0, NULL, NULL, NULL, NULL, 28, 0, NULL, 9);
-INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (26, '2006-10-04 11:08:30.032089', 1, 6, 0, NULL, NULL, NULL, NULL, 28, 0, NULL, 9);
 
 
 ALTER TABLE build ENABLE TRIGGER ALL;
@@ -982,6 +975,7 @@ ALTER TABLE buildqueue DISABLE TRIGGER ALL;
 
 INSERT INTO buildqueue (id, build, builder, logtail, created, buildstart, lastscore, manual) VALUES (1, 8, 1, 'Dummy sampledata entry, not processing', '2005-06-15 09:14:12.820778', '2005-06-15 09:20:12.820778', 1, false);
 INSERT INTO buildqueue (id, build, builder, logtail, created, buildstart, lastscore, manual) VALUES (2, 11, NULL, NULL, '2005-06-15 10:14:12.820778', NULL, 10, false);
+
 
 ALTER TABLE buildqueue ENABLE TRIGGER ALL;
 
@@ -1384,11 +1378,7 @@ ALTER TABLE developmentmanifest ENABLE TRIGGER ALL;
 
 ALTER TABLE distribution DISABLE TRIGGER ALL;
 
-<<<<<<< TREE
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, main_archive) VALUES (1, 'ubuntu', 'Ubuntu Linux', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 'ubuntulinux.org', 17, '[publishing]
-=======
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created) VALUES (1, 'ubuntu', 'Ubuntu Linux', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 'ubuntulinux.org', 17, '[publishing]
->>>>>>> MERGE-SOURCE
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, main_archive) VALUES (1, 'ubuntu', 'Ubuntu Linux', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 'ubuntulinux.org', 17, '[publishing]
 pendingremovalduration=5
 root=/var/tmp/archive
 archiveroot=/var/tmp/archive/ubuntu
@@ -1397,43 +1387,21 @@ distsroot=/var/tmp/archive/ubuntu/dists
 overrideroot=/var/tmp/archive/ubuntu-overrides
 cacheroot=/var/tmp/archive/ubuntu-cache
 miscroot=/var/tmp/archive/ubuntu-misc
-<<<<<<< TREE
-', 'Ubuntu', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 17, NULL, 1, NULL, true, true, NULL, NULL, 3, 59, NULL, NULL, 1);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, main_archive) VALUES (2, 'redhat', 'Redhat Advanced Server', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 'redhat.com', 1, NULL, 'Red Hat', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 1, NULL, 1, NULL, false, false, NULL, 8, NULL, 1, NULL, NULL, 2);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, main_archive) VALUES (3, 'debian', 'Debian GNU/Linux', 'Debian GNU/Linux is
-=======
-', 'Ubuntu', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 17, NULL, 1, NULL, true, true, NULL, NULL, 3, 59, NULL, NULL, '2006-10-16 18:31:43.415195');
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created) VALUES (2, 'redhat', 'Redhat Advanced Server', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 'redhat.com', 1, NULL, 'Red Hat', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 1, NULL, 1, NULL, false, false, NULL, 8, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.417928');
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created) VALUES (3, 'debian', 'Debian GNU/Linux', 'Debian GNU/Linux is
->>>>>>> MERGE-SOURCE
+', 'Ubuntu', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 17, NULL, 1, NULL, true, true, NULL, NULL, 3, 59, NULL, NULL, '2006-10-16 18:31:43.415195', 1);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, main_archive) VALUES (2, 'redhat', 'Redhat Advanced Server', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 'redhat.com', 1, NULL, 'Red Hat', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 1, NULL, 1, NULL, false, false, NULL, 8, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.417928', 2);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, main_archive) VALUES (3, 'debian', 'Debian GNU/Linux', 'Debian GNU/Linux is
 a non commercial distribution of a GNU/Linux Operating System for many
 platforms.', 'debian.org', 1, NULL, 'Debian', 'Debian GNU/Linux is
 a non commercial distribution of a GNU/Linux Operating System for many
-<<<<<<< TREE
-platforms.', 1, NULL, 1, NULL, false, false, NULL, NULL, NULL, 1, NULL, NULL, 3);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, main_archive) VALUES (4, 'gentoo', 'The Gentoo Linux', 'Gentoo is a very
-=======
-platforms.', 1, NULL, 1, NULL, false, false, NULL, NULL, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.418942');
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created) VALUES (4, 'gentoo', 'The Gentoo Linux', 'Gentoo is a very
->>>>>>> MERGE-SOURCE
+platforms.', 1, NULL, 1, NULL, false, false, NULL, NULL, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.418942', 3);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, main_archive) VALUES (4, 'gentoo', 'The Gentoo Linux', 'Gentoo is a very
 customizeable GNU/Linux Distribution that is designed to let you build every
-<<<<<<< TREE
-single package yourself, with your own preferences.', 'gentoo.org', 1, NULL, 'Gentoo', 'Gentoo is a very customizeable GNU/Linux Distribution that is designed to let you build every single package yourself, with your own preferences.', 1, NULL, 1, NULL, true, false, NULL, NULL, NULL, 1, NULL, NULL, 4);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, main_archive) VALUES (5, 'kubuntu', 'Kubuntu - Free KDE-based Linux', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
-=======
-single package yourself, with your own preferences.', 'gentoo.org', 1, NULL, 'Gentoo', 'Gentoo is a very customizeable GNU/Linux Distribution that is designed to let you build every single package yourself, with your own preferences.', 1, NULL, 1, NULL, true, false, NULL, NULL, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.41974');
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created) VALUES (5, 'kubuntu', 'Kubuntu - Free KDE-based Linux', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
->>>>>>> MERGE-SOURCE
+single package yourself, with your own preferences.', 'gentoo.org', 1, NULL, 'Gentoo', 'Gentoo is a very customizeable GNU/Linux Distribution that is designed to let you build every single package yourself, with your own preferences.', 1, NULL, 1, NULL, true, false, NULL, NULL, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.41974', 4);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, main_archive) VALUES (5, 'kubuntu', 'Kubuntu - Free KDE-based Linux', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
 Environment as its default desktop after install.', 'kubuntu.org', 1, NULL, 'Kubuntu', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
-<<<<<<< TREE
-Environment as its default desktop after install.', 1, NULL, 1, NULL, false, false, NULL, 8, NULL, 1, NULL, NULL, 5);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, main_archive) VALUES (7, 'guadalinex', 'GuadaLinex: Linux for Andalucia', 'GuadaLinex is based on Ubuntu and adds full support for applications specific to the local environment in Andalucia.', 'guadalinex.es', 4, NULL, 'GuadaLinex', 'The GuadaLinex team produces a high quality linux for the Andalucian marketplace.', 32, NULL, 1, NULL, false, false, NULL, NULL, NULL, 4, NULL, NULL, 7);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, main_archive) VALUES (8, 'ubuntutest', 'Ubuntu Test', 'Ubuntu Test', 'ubuntulinux.org', 17, '[publishing]
-=======
-Environment as its default desktop after install.', 1, NULL, 1, NULL, false, false, NULL, 8, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.420551');
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created) VALUES (7, 'guadalinex', 'GuadaLinex: Linux for Andalucia', 'GuadaLinex is based on Ubuntu and adds full support for applications specific to the local environment in Andalucia.', 'guadalinex.es', 4, NULL, 'GuadaLinex', 'The GuadaLinex team produces a high quality linux for the Andalucian marketplace.', 32, NULL, 1, NULL, false, false, NULL, NULL, NULL, 4, NULL, NULL, '2006-10-16 18:31:43.421329');
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created) VALUES (8, 'ubuntutest', 'Ubuntu Test', 'Ubuntu Test', 'ubuntulinux.org', 17, '[publishing]
->>>>>>> MERGE-SOURCE
+Environment as its default desktop after install.', 1, NULL, 1, NULL, false, false, NULL, 8, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.420551', 5);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, main_archive) VALUES (7, 'guadalinex', 'GuadaLinex: Linux for Andalucia', 'GuadaLinex is based on Ubuntu and adds full support for applications specific to the local environment in Andalucia.', 'guadalinex.es', 4, NULL, 'GuadaLinex', 'The GuadaLinex team produces a high quality linux for the Andalucian marketplace.', 32, NULL, 1, NULL, false, false, NULL, NULL, NULL, 4, NULL, NULL, '2006-10-16 18:31:43.421329', 7);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, main_archive) VALUES (8, 'ubuntutest', 'Ubuntu Test', 'Ubuntu Test', 'ubuntulinux.org', 17, '[publishing]
 pendingremovalduration=5
 root=/var/tmp/archive
 archiveroot=/var/tmp/archive/ubuntutest
@@ -1442,11 +1410,7 @@ distsroot=/var/tmp/archive/ubuntutest/dists
 overrideroot=/var/tmp/archive/ubuntutest-overrides
 cacheroot=/var/tmp/archive/ubuntutest-cache
 miscroot=/var/tmp/archive/ubuntutest-misc
-<<<<<<< TREE
-', 'ubuntutest', 'Ubuntu Test summary', 17, NULL, 1, NULL, false, false, NULL, NULL, NULL, 17, NULL, NULL, 8);
-=======
-', 'ubuntutest', 'Ubuntu Test summary', 17, NULL, 1, NULL, false, false, NULL, NULL, NULL, 17, NULL, NULL, '2006-10-16 18:31:43.422162');
->>>>>>> MERGE-SOURCE
+', 'ubuntutest', 'Ubuntu Test summary', 17, NULL, 1, NULL, false, false, NULL, NULL, NULL, 17, NULL, NULL, '2006-10-16 18:31:43.422162', 8);
 
 
 ALTER TABLE distribution ENABLE TRIGGER ALL;
@@ -1579,55 +1543,6 @@ INSERT INTO distroreleasepackagecache (id, distrorelease, binarypackagename, nam
 
 
 ALTER TABLE distroreleasepackagecache ENABLE TRIGGER ALL;
-<<<<<<< TREE
-=======
-
-
-ALTER TABLE distroreleasequeue DISABLE TRIGGER ALL;
-
-INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile, date_created) VALUES (1, 0, 10, 0, 52, '2006-10-16 18:31:43.522813');
-INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile, date_created) VALUES (2, 0, 10, 0, 1, '2006-10-16 18:31:43.523987');
-INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile, date_created) VALUES (3, 0, 10, 0, 1, '2006-10-16 18:31:43.524367');
-INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile, date_created) VALUES (4, 0, 10, 0, 1, '2006-10-16 18:31:43.524734');
-INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile, date_created) VALUES (5, 1, 10, 20, 1, '2006-10-16 18:31:43.5251');
-INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile, date_created) VALUES (6, 0, 10, 0, 1, '2006-10-16 18:31:43.525466');
-INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile, date_created) VALUES (7, 0, 10, 0, 1, '2006-10-16 18:31:43.525832');
-INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile, date_created) VALUES (8, 1, 10, 0, 1, '2006-10-16 18:31:43.526197');
-INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile, date_created) VALUES (9, 1, 10, 0, 1, '2006-10-16 18:31:43.526624');
-
-
-ALTER TABLE distroreleasequeue ENABLE TRIGGER ALL;
-
-
-ALTER TABLE distroreleasequeuebuild DISABLE TRIGGER ALL;
-
-INSERT INTO distroreleasequeuebuild (id, distroreleasequeue, build, date_created) VALUES (1, 1, 18, '2006-10-16 18:31:43.529327');
-INSERT INTO distroreleasequeuebuild (id, distroreleasequeue, build, date_created) VALUES (2, 2, 19, '2006-10-16 18:31:43.530599');
-
-
-ALTER TABLE distroreleasequeuebuild ENABLE TRIGGER ALL;
-
-
-ALTER TABLE distroreleasequeuecustom DISABLE TRIGGER ALL;
-
-INSERT INTO distroreleasequeuecustom (id, distroreleasequeue, customformat, libraryfilealias, date_created) VALUES (1, 5, 1, 1, '2006-10-16 18:31:43.532702');
-INSERT INTO distroreleasequeuecustom (id, distroreleasequeue, customformat, libraryfilealias, date_created) VALUES (2, 6, 2, 1, '2006-10-16 18:31:43.533511');
-INSERT INTO distroreleasequeuecustom (id, distroreleasequeue, customformat, libraryfilealias, date_created) VALUES (3, 7, 3, 1, '2006-10-16 18:31:43.533853');
-
-
-ALTER TABLE distroreleasequeuecustom ENABLE TRIGGER ALL;
-
-
-ALTER TABLE distroreleasequeuesource DISABLE TRIGGER ALL;
-
-INSERT INTO distroreleasequeuesource (id, distroreleasequeue, sourcepackagerelease, date_created) VALUES (1, 3, 17, '2006-10-16 18:31:43.536296');
-INSERT INTO distroreleasequeuesource (id, distroreleasequeue, sourcepackagerelease, date_created) VALUES (2, 4, 25, '2006-10-16 18:31:43.537586');
-INSERT INTO distroreleasequeuesource (id, distroreleasequeue, sourcepackagerelease, date_created) VALUES (3, 8, 30, '2006-10-16 18:31:43.53795');
-INSERT INTO distroreleasequeuesource (id, distroreleasequeue, sourcepackagerelease, date_created) VALUES (4, 9, 31, '2006-10-16 18:31:43.538319');
-
-
-ALTER TABLE distroreleasequeuesource ENABLE TRIGGER ALL;
->>>>>>> MERGE-SOURCE
 
 
 ALTER TABLE emailaddress DISABLE TRIGGER ALL;
@@ -2887,13 +2802,15 @@ ALTER TABLE packageselection ENABLE TRIGGER ALL;
 
 ALTER TABLE packageupload DISABLE TRIGGER ALL;
 
-INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, archive) VALUES (1, 0, 10, 0, 52, 1);
-INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, archive) VALUES (2, 0, 10, 0, 1, 1);
-INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, archive) VALUES (3, 0, 10, 0, 1, 1);
-INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, archive) VALUES (4, 0, 10, 0, 1, 1);
-INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, archive) VALUES (5, 1, 10, 20, 1, 1);
-INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, archive) VALUES (6, 0, 10, 0, 1, 1);
-INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, archive) VALUES (7, 0, 10, 0, 1, 1);
+INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, archive) VALUES (1, 0, 10, 0, 52, '2006-10-16 18:31:43.522813', 1);
+INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, archive) VALUES (2, 0, 10, 0, 1, '2006-10-16 18:31:43.523987', 1);
+INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, archive) VALUES (3, 0, 10, 0, 1, '2006-10-16 18:31:43.524367', 1);
+INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, archive) VALUES (4, 0, 10, 0, 1, '2006-10-16 18:31:43.524734', 1);
+INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, archive) VALUES (5, 1, 10, 20, 1, '2006-10-16 18:31:43.5251', 1);
+INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, archive) VALUES (6, 0, 10, 0, 1, '2006-10-16 18:31:43.525466', 1);
+INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, archive) VALUES (7, 0, 10, 0, 1, '2006-10-16 18:31:43.525832', 1);
+INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, archive) VALUES (8, 1, 10, 0, 1, '2006-10-16 18:31:43.526197', 1);
+INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, archive) VALUES (9, 1, 10, 0, 1, '2006-10-16 18:31:43.526624', 1);
 
 
 ALTER TABLE packageupload ENABLE TRIGGER ALL;
@@ -2901,8 +2818,8 @@ ALTER TABLE packageupload ENABLE TRIGGER ALL;
 
 ALTER TABLE packageuploadbuild DISABLE TRIGGER ALL;
 
-INSERT INTO packageuploadbuild (id, packageupload, build) VALUES (1, 1, 18);
-INSERT INTO packageuploadbuild (id, packageupload, build) VALUES (2, 2, 19);
+INSERT INTO packageuploadbuild (id, packageupload, build, date_created) VALUES (1, 1, 18, '2006-10-16 18:31:43.529327');
+INSERT INTO packageuploadbuild (id, packageupload, build, date_created) VALUES (2, 2, 19, '2006-10-16 18:31:43.530599');
 
 
 ALTER TABLE packageuploadbuild ENABLE TRIGGER ALL;
@@ -2910,9 +2827,9 @@ ALTER TABLE packageuploadbuild ENABLE TRIGGER ALL;
 
 ALTER TABLE packageuploadcustom DISABLE TRIGGER ALL;
 
-INSERT INTO packageuploadcustom (id, packageupload, customformat, libraryfilealias) VALUES (1, 5, 1, 1);
-INSERT INTO packageuploadcustom (id, packageupload, customformat, libraryfilealias) VALUES (2, 6, 2, 1);
-INSERT INTO packageuploadcustom (id, packageupload, customformat, libraryfilealias) VALUES (3, 7, 3, 1);
+INSERT INTO packageuploadcustom (id, packageupload, customformat, libraryfilealias, date_created) VALUES (1, 5, 1, 1, '2006-10-16 18:31:43.532702');
+INSERT INTO packageuploadcustom (id, packageupload, customformat, libraryfilealias, date_created) VALUES (2, 6, 2, 1, '2006-10-16 18:31:43.533511');
+INSERT INTO packageuploadcustom (id, packageupload, customformat, libraryfilealias, date_created) VALUES (3, 7, 3, 1, '2006-10-16 18:31:43.533853');
 
 
 ALTER TABLE packageuploadcustom ENABLE TRIGGER ALL;
@@ -2920,8 +2837,10 @@ ALTER TABLE packageuploadcustom ENABLE TRIGGER ALL;
 
 ALTER TABLE packageuploadsource DISABLE TRIGGER ALL;
 
-INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease) VALUES (1, 3, 17);
-INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease) VALUES (2, 4, 25);
+INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_created) VALUES (1, 3, 17, '2006-10-16 18:31:43.536296');
+INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_created) VALUES (2, 4, 25, '2006-10-16 18:31:43.537586');
+INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_created) VALUES (3, 8, 30, '2006-10-16 18:31:43.53795');
+INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_created) VALUES (4, 9, 31, '2006-10-16 18:31:43.538319');
 
 
 ALTER TABLE packageuploadsource ENABLE TRIGGER ALL;
@@ -3015,7 +2934,6 @@ ALTER TABLE person ENABLE TRIGGER ALL;
 
 ALTER TABLE personalpackagearchive DISABLE TRIGGER ALL;
 
-INSERT INTO personalpackagearchive (id, person, archive) VALUES (1, 1, 9);
 
 
 ALTER TABLE personalpackagearchive ENABLE TRIGGER ALL;
@@ -8516,19 +8434,6 @@ INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, dist
 INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (20, 17, 1, 2, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-20 00:01:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 1);
 INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (21, 18, 11, 2, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-20 00:00:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 1);
 INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (22, 20, 8, 7, 1, 1, 40, '2006-09-13 00:00:00', '2006-09-13 00:00:01', NULL, NULL, NULL, '2006-09-13 00:00:02', '2006-09-13 00:00:03', 0, false, NULL, 1);
-INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (23, 12, 1, 2, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-18 00:00:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 9);
-INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (24, 15, 6, 3, 1, 3, 40, '2005-05-05 00:00:00', NULL, '2006-01-25 00:00:00', 7, NULL, NULL, NULL, 0, false, NULL, 9);
-INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (25, 15, 6, 2, 3, 3, 40, '2006-01-25 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 9);
-INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (26, 15, 1, 3, 3, 3, 40, '2006-01-26 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 9);
-INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (27, 15, 7, 3, 3, 3, 40, '2006-01-26 00:00:00', NULL, '2006-01-28 00:00:00', NULL, NULL, NULL, NULL, 0, false, NULL, 9);
-INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (28, 12, 7, 2, 3, 3, 40, '2006-01-26 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 9);
-INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (29, 15, 1, 2, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-24 00:01:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 9);
-INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (30, 16, 1, 2, 1, 1, 10, '2005-07-06 00:00:00', '2005-08-20 00:00:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 9);
-INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (31, 17, 1, 7, 1, 1, 10, '2005-08-07 00:00:00', '2005-08-22 00:00:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 9);
-INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (32, 18, 1, 2, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-20 00:00:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 9);
-INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (33, 17, 1, 2, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-20 00:01:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 9);
-INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (34, 18, 11, 2, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-20 00:00:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 9);
-INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (35, 20, 8, 7, 1, 1, 40, '2006-09-13 00:00:00', '2006-09-13 00:00:01', NULL, NULL, NULL, '2006-09-13 00:00:02', '2006-09-13 00:00:03', 0, false, NULL, 9);
 
 
 ALTER TABLE securebinarypackagepublishinghistory ENABLE TRIGGER ALL;
@@ -8554,24 +8459,6 @@ INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, dist
 INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (19, 28, 1, 1, 1, 3, '2006-02-15 12:19:00.05741', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 1);
 INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (20, 25, 1, 1, 1, 3, '2006-02-15 12:19:00.05741', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 1);
 INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (21, 24, 11, 7, 1, 3, '2006-09-14 11:44:00.10654', '2006-09-14 11:44:00', '2006-09-14 11:44:01', 25, '2006-09-14 11:45:00', '2006-09-14 11:45:00', '2006-09-15 11:45:00', 0, false, NULL, 8);
-INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (22, 14, 10, 2, 1, 2, '2004-09-27 11:57:13', '2004-09-27 11:57:13', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 9);
-INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (23, 15, 10, 2, 1, 3, '2004-09-27 11:57:13', '2004-09-27 11:57:13', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 9);
-INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (24, 17, 10, 2, 1, 1, '2004-03-14 18:00:00', '2004-03-14 18:00:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 9);
-INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (25, 16, 10, 2, 1, 2, '2004-03-10 16:30:00', '2004-03-10 16:30:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 9);
-INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (26, 20, 10, 3, 1, 1, '2005-04-18 17:34:15.308434', '2005-04-18 17:34:15.308434', '2005-08-24 17:01:15.308434', 21, NULL, NULL, NULL, 0, false, NULL, 9);
-INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (27, 21, 10, 2, 1, 3, '2005-08-24 17:01:15.308434', '2005-08-24 17:01:15.308434', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 9);
-INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (28, 23, 10, 2, 1, 1, '2005-09-15 11:42:02.870714', '2005-09-15 11:42:02.870714', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 9);
-INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (29, 24, 10, 2, 1, 2, '2005-09-15 11:42:21.070926', '2005-09-15 11:42:21.070926', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 9);
-INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (30, 25, 10, 2, 1, 1, '2005-09-15 11:43:00.05741', '2005-09-15 11:43:00.05741', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 9);
-INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (31, 26, 10, 2, 3, 1, '2005-12-22 18:19:00.05741', '2005-12-22 18:20:00.05741', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 9);
-INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (32, 24, 10, 7, 1, 3, '2005-09-15 11:44:00.10654', '2005-09-15 11:44:00.10654', '2005-09-15 11:44:00.10654', 25, '2005-09-15 11:44:00.10654', '2005-09-15 11:44:00.10654', '2005-09-15 11:44:00.10654', 0, false, NULL, 9);
-INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (33, 24, 10, 2, 1, 1, '2005-09-16 11:42:02.870714', '2005-09-16 11:42:02.870714', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 9);
-INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (34, 27, 10, 2, 1, 1, '2005-02-10 12:19:00.05741', '2005-02-10 12:20:00.05741', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 9);
-INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (35, 28, 10, 2, 1, 1, '2005-02-10 12:19:00.05741', '2005-02-10 12:20:00.05741', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 9);
-INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (36, 14, 10, 1, 1, 3, '2006-02-13 12:19:00.05741', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 9);
-INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (37, 28, 10, 1, 1, 3, '2006-02-15 12:19:00.05741', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 9);
-INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (38, 25, 10, 1, 1, 3, '2006-02-15 12:19:00.05741', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 9);
-INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (39, 24, 10, 7, 1, 3, '2006-09-14 11:44:00.10654', '2006-09-14 11:44:00', '2006-09-14 11:44:01', 25, '2006-09-14 11:45:00', '2006-09-14 11:45:00', '2006-09-15 11:45:00', 0, false, NULL, 9);
 
 
 ALTER TABLE securesourcepackagepublishinghistory ENABLE TRIGGER ALL;
@@ -8692,17 +8579,11 @@ INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, d
 
  * Placeholder
 
-<<<<<<< TREE
  -- Sample Person <test@canonical.com> Tue, 10 Feb 2006 10:10:08 +0300', NULL, NULL, 'powerpc i386', NULL, 1, NULL, 16, 21, 3, 1, 1);
 INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format, uploadarchive) VALUES (28, 1, '2.6.15.3', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'any', NULL, 1, NULL, 16, 22, 3, 1, 1);
 INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format, uploadarchive) VALUES (29, 1, '0.00', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, NULL, 16, 17, 3, 1, 1);
-=======
- -- Sample Person <test@canonical.com> Tue, 10 Feb 2006 10:10:08 +0300', NULL, NULL, 'powerpc i386', NULL, 1, NULL, 16, 21, 3, 1);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (28, 1, '2.6.15.3', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'any', NULL, 1, NULL, 16, 22, 3, 1);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (29, 1, '0.00', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, NULL, 16, 17, 3, 1);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (30, 1, '1.0', '2006-09-28 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, NULL, 16, 20, 10, 1);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (31, 1, '1.0', '2006-09-28 18:19:01', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, NULL, 16, 20, 10, 1);
->>>>>>> MERGE-SOURCE
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format, uploadarchive) VALUES (30, 1, '1.0', '2006-09-28 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, NULL, 16, 20, 10, 1, 1);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format, uploadarchive) VALUES (31, 1, '1.0', '2006-09-28 18:19:01', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, NULL, 16, 20, 10, 1, 1);
 
 
 ALTER TABLE sourcepackagerelease ENABLE TRIGGER ALL;
