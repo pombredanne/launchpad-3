@@ -3,8 +3,7 @@
 
 PYTHON_VERSION=2.4
 PYTHON=python${PYTHON_VERSION}
-#PYTHONPATH:=$(shell pwd)/lib:${PYTHONPATH}
-PYTHONPATH:=${PYTHONPATH}
+PYTHONPATH:=$(shell pwd)/lib:${PYTHONPATH}
 
 TESTFLAGS=-p -v
 TESTOPTS=
@@ -52,7 +51,7 @@ check_edge_merge: check_no_dbupdates check_merge
 	# edge.lauchpad.net branch.
 
 check_no_dbupdates:
-	[ `bzr status | grep database/schema/ | wc -l` -eq 0 ]
+	[ `PYTHONPATH= bzr status | grep database/schema/ | wc -l` -eq 0 ]
 
 hctcheck: build
 	env PYTHONPATH=$(PYTHONPATH) \
