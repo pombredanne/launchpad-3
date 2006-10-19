@@ -6,6 +6,8 @@
 #
 
 set -x
+set -e
+set -u
 
 # main archive path (target)
 ARCHIVE='/srv/launchpad.net/ubuntu-archive'
