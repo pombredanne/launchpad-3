@@ -97,10 +97,9 @@ possibilities for the user.
     be the ticket owner and Sample Person who will play the role of
     support contact. Foo Bar is used to change the status of the
     ticket.)
-    >>> from canonical.launchpad.interfaces import IDistributionSet
-    >>> login('no-priv@canonical.com')
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, IPersonSet)
+    >>> login('no-priv@canonical.com')
     >>> personset = getUtility(IPersonSet)
     >>> sample_person = personset.getByEmail('test@canonical.com')
     >>> no_priv = personset.getByEmail('no-priv@canonical.com')
@@ -188,12 +187,12 @@ the email is reopening the request with more information.
     >>> print message.action.title
     Reopen
 
-From that state, the other possibilities for the owner email would be
-that it was confirming that the provided answer work. We minimize the
+From the Open state, the other possibilities for the owner email would
+be that it was confirming that the provided answer work. We minimize the
 chance of this happening by adding an explanation message in the footer
 of the notification containing the answer. The other possibility is that
-the user sent a message to explain that he solved his problem. This is
-still not probable.
+the user sent a message to explain that he solved his problem. We do
+support this use case yet.
 
 From the Expired state:
 
@@ -211,7 +210,7 @@ From the Expired state:
     >>> print message.action.title
     Reopen
 
-From this state, the other possibility is the less probable message
+From the Expired state, the other possibility is the less probable message
 explaining that the owner solved his problem. Again, to minimize
 confusion, the outoing notification contain a footer explaining what will
 happen if one reply to the message.
@@ -258,7 +257,9 @@ And from the Invalid:
     >>> print message.action.title
     Comment
 
-That is the only possibility on an Invalid request.
+That is the only possibility on an Invalid request. From the 'Invalid'
+state, there is no normal transition. The only possibility is that an
+admin comes to change the status of the request.
 
 Message From Another User
 -------------------------
