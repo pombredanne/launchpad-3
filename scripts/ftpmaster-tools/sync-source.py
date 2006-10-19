@@ -40,7 +40,9 @@ from canonical.launchpad.scripts import (execute_zcml_for_scripts,
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.database.publishing import SourcePackageFilePublishing
 from canonical.librarian.client import LibrarianClient
-from canonical.launchpad.interfaces import IDistributionSet
+from canonical.launchpad.interfaces import (IDistributionSet,
+                                            ILibraryFileAliasSet,
+                                            IPersonSet)
 from canonical.lp import (dbschema, initZopeless)
 
 from contrib.glock import GlobalLock
@@ -57,6 +59,7 @@ re_bug_numbers = re.compile(r"\#?\s?(\d+)")
 
 Blacklisted = None
 Library = None
+LibraryFileAliasSet = None
 Lock = None
 Log = None
 Options = None
@@ -572,68 +575,6 @@ origins = {
 
 whoami = "Ubuntu Archive Auto-Sync <katie@jackass.ubuntu.com>"
 
-uid_mappings = {
-    "auto": whoami,
-    "minghua": "Ming Hua <minghua@rice.edu>",
-    "lucas": "Lucas Nussbaum <lucas@ubuntu.com>",
-    "laserjock": "Jordan Mantha <mantha@chem.unr.edu>",
-    "zakame": "Zak B Elep <zakame@ubuntu.com>",
-    "lifeless": "Robert Collins <robert.collins@ubuntu.com>",
-    "rimbert": "Michael Rimbert <rimbert@purdue.edu>",
-    "salty": "Fabio Marzocca <thesaltydog@gmail.com>",
-    "dredg": "Niall Sheridan <niall@evil.ie>",
-    "potyra": "Stefan Potyra <daemon@poleboy.de>",
-    "wasabi": "Jerry Haltom <wasabi@larvalstage.net>",
-    "iwj": "Ian Jackson <iwj@ubuntu.com>",
-    "kobold": "Fabio Tranchitella <kobold@ubuntu.com>",
-    "jordi": "Jordi Mallach <jordi@ubuntu.com>",
-    "bmonty": "Benjamin Montgomery <bmontgom@montynet.org>",
-    "pef": "Loic Pefferkorn <loic@dev.erodia.net>",
-    "bd": "Barry deFreese <bddebian@comcast.net>",
-    "ivoks": "Ante Karamatiæ <ivoks@grad.hr>",
-    "jbailey": "Jeff Bailey <jbailey@ubuntu.com>",
-    "lathiat": "Trent Lloyd <lathiat@ubuntu.com>",
-    "nafallo": "Christian BjÃ¤levik <nafallo@magicalforest.se>",
-    "riddell": "Jonathan Riddell <jonathan.riddell@ubuntu.com>",
-    "corey": "Corey Burger <corey.burger@gmail.com>",
-    "droge": "Sebastian DrÃ¶ge <slomo@ubuntu.com>",
-    "mjg59": "Matthew Garrett <mjg59@srcf.ucam.org>",
-    "mbreit": "Moritz Breit <mail@mobr.de>",
-    "sh": "Stephan Hermann <sh@sourcecode.de>",
-    "herve": "Hervé Cauwelier <hcauwelier@oursours.net>",
-    "chmj": "Charles Majola <charles@ubuntu.com>",
-    "siretart": "Reinhard Tartler <siretart@tauware.de>",
-    "daniels": "Daniel Stone <daniel.stone@ubuntu.com>",
-    "fabbione": "Fabio Massimo Di Nitto <fabbione@ubuntu.com>",
-    "infinity": "Adam Conrad <adconrad@0c3.net>",
-    "azeem": "Michael Banck <mbanck@debian.org>",
-    "dag": "Dagfinn Ilmari Mannsaker <ilmari@ilmari.org>",
-    "adam": "Adam Israel <adam@battleaxe.net>",
-    "diamond": "Stephen Shirley <diamond@nonado.net>",
-    "reinhard": "Reinhard Tartler <siretart@tauware.de>", 
-    "crimsun": "Daniel T Chen <crimsun@fungus.sh.nu>",
-    "jani": "Jani Monoses <jani@ubuntu.com>",
-    "keybuk": "Scott James Remnant <scott@ubuntu.com>",
-    "mvo": "Michael Vogt <michael.vogt@ubuntu.com>",
-    "thibaut": "Thibaut Varene <varenet@debian.org>",
-    "ajmitch": "Andrew Mitchell <ajmitch@gnu.org>",
-    "amu": "Andreas Mueller <amu@ubuntu.com>",
-    "jdub": "Jeff Waugh <jeff.waugh@ubuntu.com>",
-    "thom": "Thom May <thom@ubuntu.com>",
-    "tseng": "Brandon Hale <brandon@smarterits.com>",
-    "smurfix": "Matthias Urlichs <smurf@debian.org>",
-    "dholbach": "Daniel Holbach <dh@mailempfang.de>",
-    "kamion": "Colin Watson <cjwatson@ubuntu.com>",
-    "tollef": "Tollef Fog Heen <tfheen@canonical.com>",
-    "ogra": "Oliver Grawert <oliver.grawert@ubuntu.com>",
-    "treenaks": "Martijn van de Streek <martijn@foodfight.org>",
-    "pitti": "Martin Pitt <martin.pitt@ubuntu.com>",
-    "seb128": "Sebastien Bacher <seb128@ubuntu.com>",
-    "mdz": "Matt Zimmerman <mdz@ubuntu.com>",
-    "doko": "Matthias Klose <doko@ubuntu.com>",
-    "lamont": "LaMont Jones <lamont@ubuntu.com>",
-    }
-
 ################################################################################
 
 def md5sum_file(filename):
@@ -947,7 +888,9 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
 
     # XXX Soyuz wants an unsigned changes
     #sign_changes(changes, dsc)
-    output_filename = "%s_%s_source.changes" % (dsc["source"], upstr_version)
+    output_filename = "%s_%s_source.changes" % (dsc["source"],
+                                                dak_utils.re_no_epoch.sub('', dsc["version"]))
+
     filehandle = open(output_filename, 'w')
     # XXX The additional '\n' is to work around a bug in parsing
     #     unsigned changes with our forked copy of parse_changes
@@ -1111,16 +1054,38 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
             if not filename.endswith("orig.tar.gz"):
                 dak_utils.fubar("%s (from %s) is in the DB but isn't an orig.tar.gz.  Help?" % (filename, pkg))
             if len(spfp_l) != 1:
-                # check if multiple library file alias point to the same
-                # content, this case is harmless, although nasty.
-                library_content_set = set(
-                    [spfp.libraryfilealias.content.id for spfp in spfp_l])
-                # Only dismiss if the contents diverge.
-                if len(library_content_set) > 1:
-                    dak_utils.fubar(
-                        "%s (from %s) returns multiple IDs for orig.tar.gz."
-                        "Help?" % (filename, pkg))
-
+                # XXX If I could distinct on libraryfilealias, I'd do
+                #     that, but I don't know how
+                xx_d = {}
+                for i in spfp_l:
+                    xx_d[i.libraryfilealias] = ""
+                # XXX: see LP #38227.  Check the sha1sum + size, to
+                #      really find different orig.tar.gz's
+                if len(xx_d.keys()) > 1:
+                    sha1 = None
+                    filesize = None
+                    broken = False
+                    for i in spfp_l:
+                        l = LibraryFileAliasSet[i.libraryfilealias]
+                        if sha1 is None:
+                            sha1 = l.content.sha1
+                        if filesize is None:
+                            filesize = l.content.filesize
+                        if sha1 != l.content.sha1 or filesize != l.content.filesize:
+                            broken = True
+                            break
+                    if broken:
+                        # We've found really differing duplicates - dump
+                        # some debug info and give up.
+                        for i in spfp_l:
+                            print "*****"
+                            print "[%s]: %s" % (i.libraryfilealias, i.libraryfilealiasfilename)
+                            l = LibraryFileAliasSet[i.libraryfilealias]
+                            print "sha1 & size: %s %s" % (l.content.sha1, l.content.filesize)
+                            print "distrorelease: %s, component: %s, source: %s, status: %s" \
+                                  % (i.distroreleasename, i.componentname, i.sourcepackagename,
+                                     i.publishingstatus)
+                        dak_utils.fubar("%s (from %s) returns multiple IDs for orig.tar.gz.  Help?" % (filename, pkg))
             spfp = spfp_l[0]
             have_orig_tar_gz = filename
             print "  - <%s: already in distro - downloading from librarian>" % (filename)
@@ -1323,17 +1288,6 @@ def options_setup():
     if not Options.all and not arguments:
         dak_utils.fubar("Need -a/--all or at least one package name as an argument.")
         
-    if not Options.requestor:
-        if Options.action and not Options.all:
-            dak_utils.fubar("Need -a/--all or an argument for -b/--requested-by.")
-        else:
-            Options.requestor = whoami
-    else:
-        if not uid_mappings.has_key(Options.requestor):
-            dak_utils.fubar("Unknown uid '%s', please update uid_mappings dictionary." 
-                        % (Options.requestor))
-        Options.requestor = uid_mappings[Options.requestor]
-
     return arguments
 
 ################################################################################
@@ -1355,10 +1309,26 @@ def objectize_options():
                                Options.tosuite.name))
         Options.incomponent = valid_components[Options.incomponent]
 
+    # Fix up Options.requestor
+    if not Options.requestor:
+        if Options.action and not Options.all:
+            dak_utils.fubar("Need -a/--all or an argument for -b/--requested-by.")
+        else:
+            Options.requestor = whoami
+    else:
+        PersonSet = getUtility(IPersonSet)
+        person = PersonSet.getByName(Options.requestor)
+        if not person:
+            dak_utils.fubar("Unknown LaunchPad user id '%s'."
+                            % (Options.requestor))
+        Options.requestor = "%s <%s>" % (person.displayname,
+                                         person.preferredemail.email)
+        Options.requestor = str(Options.requestor)
+
 ########################################
 
 def init():
-    global Blacklisted, Library, Lock, Log
+    global Blacklisted, Library, LibraryFileAliasSet, Lock, Log
 
     apt_pkg.init()
 
@@ -1376,6 +1346,7 @@ def init():
     execute_zcml_for_scripts()
 
     Library = LibrarianClient()
+    LibraryFileAliasSet = getUtility(ILibraryFileAliasSet)
 
     objectize_options()
 
