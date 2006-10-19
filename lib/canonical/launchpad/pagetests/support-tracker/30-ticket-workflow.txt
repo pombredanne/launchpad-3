@@ -308,13 +308,28 @@ displayed:
     >>> login('foo.bar@canonical.com')
     >>> from canonical.launchpad.interfaces import ITicketSet, ILaunchBag
     >>> ticket_6 = getUtility(ITicketSet).get(6)
+
+    # The owner isn't subscribed to that request, so subscribe him.
+    >>> ticket_6.subscribe(ticket_6.owner)
+    <TicketSubscription...>
     >>> foo_bar = getUtility(ILaunchBag).user
     >>> answer_message = ticket_6.giveAnswer(
     ...     foo_bar, 'Restarting Firefox should load the new plug-in.')
+
+    # Send out notification emails
+    >>> import transaction
+    >>> transaction.commit()
     >>> logout()
-    >>> confirm_url = (
-    ... 'http://launchpad.dev/products/firefox/+ticket/6/+confirm?'
-    ...     'answer_id=%s' % (answer_message.id))
+
+    # Get the confirmation URL from the notification
+    >>> import email
+    >>> import re
+    >>> from canonical.launchpad.mail import stub
+    >>> notification = email.message_from_string(stub.test_emails[-1][2])
+    >>> urls = re.findall('(http:[^\s]+)+', notification.get_payload())
+    >>> confirm_url = urls[-2].decode('quoted-printable')
+    >>> print confirm_url
+    http://launchpad.dev/products/firefox/+ticket/6/+confirm?answer_id=...
 
 If a cropped URL or forged URL is used, an UnexpectedFormData error will
 be displayed. In the following example, the answer_id parameter refers
@@ -343,7 +358,8 @@ confirming.
 
     >>> owner_browser.open(confirm_url)
     >>> soup = BeautifulSoup(owner_browser.contents)
-    >>> print soup.first('div', 'boardCommentBody').renderContents()
+    >>> for comment in  soup.fetch('div', 'boardCommentBody'):
+    ...     print comment.renderContents()
     <p>Restarting Firefox should load the new plug-in.</p>
 
 To confirm the answer, he needs to click the 'This Solved my Problem'
