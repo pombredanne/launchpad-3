@@ -141,23 +141,6 @@ Which is the one we wanted.
     >>> pomsgset_view.getTranslation(0)
     u'libreta de direcciones de Evolution'
 
-Now, we are going to test the tab index generator to be sure the TAB key
-will work as expected when navigating over the translation form.
-
-    >>> request = LaunchpadTestRequest(form={'show': 'all' })
-    >>> pofile_view = getView(pofile_es, '+translate', request)
-    >>> pofile_view.initialize()
-
-First time we call it, first position.
-
-    >>> pofile_view.tabindex.next()
-    1
-
-Next time we call it, it's increased.
-
-    >>> pofile_view.tabindex.next()
-    2
-
 It's time to check the submission of translations and the IPOFile statistics
 update.
 

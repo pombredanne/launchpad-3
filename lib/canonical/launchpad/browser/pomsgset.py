@@ -722,7 +722,7 @@ class POMsgSetView(LaunchpadView):
 
         second_lang_code is the result of submiting field.alternative_value.
         """
-        LaunchpadView.__init__(pomsgset, request)
+        LaunchpadView.__init__(self, pomsgset, request)
 
         self.translations = translations
         self.error = error
