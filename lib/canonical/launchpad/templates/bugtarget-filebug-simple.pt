@@ -53,6 +53,8 @@
 
   <div tal:condition="view/widgets/packagename|nothing"
        style="margin-top: 1em">
+    <div tal:attributes="class python:view.widget_errors['packagename'] and 'error' or ''"
+         tal:define="name_radio_selected view/shouldSelectPackageName">
     <label tal:attributes="for view/widgets/packagename/name">
       In what package did you find this bug?
     </label>
@@ -73,6 +75,12 @@
         <span tal:content="structure view/widgets/packagename" />
       </li>
     </ul>
+    <div
+      tal:condition="view/widget_errors/packagename"
+      class="message"
+      tal:content="view/widget_errors/packagename"
+    >An error on package name.</div>
+    </div>
   </div>
 
   <div style="margin-top: 1em">

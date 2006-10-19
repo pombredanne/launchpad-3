@@ -23,7 +23,7 @@
       attributes="addBugContact removeBugContact subscribe createBug " />
 
     <!-- ITicketTarget -->
-    <allow attributes="tickets getTicket searchTickets findSimilarTickets
+    <allow attributes="getTicket searchTickets findSimilarTickets
               support_contacts" />
     <require permission="launchpad.AnyPerson"
       attributes="newTicket addSupportContact removeSupportContact" />
@@ -48,12 +48,10 @@
     module="canonical.launchpad.browser.distributionsourcepackage"
     classes="DistributionSourcePackageFacets
              DistributionSourcePackageOverviewMenu
-             DistributionSourcePackageBugsMenu
-             DistributionSourcePackageSupportMenu" />
+             DistributionSourcePackageBugsMenu " />
 
   <browser:pages
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"
-    class="canonical.launchpad.browser.DistributionSourcePackageView"
     permission="zope.Public">
     <browser:page
       name="+index"
@@ -73,10 +71,6 @@
     <browser:page
       name="+portlet-releases"
       template="../templates/distributionsourcepackage-portlet-releases.pt"
-      />
-    <browser:page
-      name="+portlet-tickets"
-      template="../templates/distributionsourcepackage-portlet-tickets.pt"
       />
   </browser:pages>
 

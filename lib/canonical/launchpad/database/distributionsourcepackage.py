@@ -258,16 +258,6 @@ class DistributionSourcePackage(BugTargetBase):
         return result
 
     # ticket related interfaces
-    def tickets(self, quantity=None):
-        """See ITicketTarget."""
-        return Ticket.select("""
-            distribution=%s AND
-            sourcepackagename=%s
-            """ % sqlvalues(self.distribution.id,
-                            self.sourcepackagename.id),
-            orderBy='-datecreated',
-            limit=quantity)
-
     def newTicket(self, owner, title, description, datecreated=None):
         """See ITicketTarget."""
         return TicketSet.new(
@@ -291,11 +281,13 @@ class DistributionSourcePackage(BugTargetBase):
         return ticket
 
     def searchTickets(self, search_text=None,
-                      status=TICKET_STATUS_DEFAULT_SEARCH, sort=None):
+                      status=TICKET_STATUS_DEFAULT_SEARCH, owner=None,
+                      sort=None):
         """See ITicketTarget."""
-        return TicketSet.search(search_text=search_text, status=status,
-                                sort=sort, distribution=self.distribution,
-                                sourcepackagename=self.sourcepackagename)
+        return TicketSet.search(
+            distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename, search_text=search_text,
+            status=status, owner=owner, sort=sort)
 
     def findSimilarTickets(self, title):
         """See ITicketTarget."""

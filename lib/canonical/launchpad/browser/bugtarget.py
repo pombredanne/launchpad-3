@@ -34,7 +34,7 @@ from canonical.launchpad.webapp.generalform import GeneralFormView
 
 class FileBugViewBase(LaunchpadFormView):
     """Base class for views related to filing a bug."""
-
+    
     @property
     def initial_values(self):
         """Give packagename a default value, if applicable."""
@@ -66,8 +66,6 @@ class FileBugViewBase(LaunchpadFormView):
 
     def validate(self, data):
         """Make sure the package name, if provided, exists in the distro."""
-        self.packagename_error = ""
-
         # We have to poke at the packagename value directly in the
         # request, because if validation failed while getting the
         # widget's data, it won't appear in the data dict.

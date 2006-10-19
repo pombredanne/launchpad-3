@@ -28,7 +28,6 @@
         enctype="multipart/form-data"
         accept-charset="UTF-8">
 
-
     <ol>
       <tal:filebug-step repeat="step view/getSteps">
         <li tal:condition="step/selected"

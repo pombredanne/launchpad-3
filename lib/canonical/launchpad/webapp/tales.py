@@ -8,9 +8,11 @@ __metaclass__ = type
 
 import bisect
 import cgi
-import re
-import os.path
+from email.Utils import formatdate
 import math
+import os.path
+import re
+import rfc822
 
 from zope.interface import Interface, Attribute, implements
 from zope.component import getUtility, queryAdapter
@@ -268,6 +270,7 @@ class NoneFormatter:
         'date',
         'time',
         'datetime',
+        'rfc822utcdatetime',
         'exactduration',
         'approximateduration',
         'pagetitle',
@@ -430,6 +433,10 @@ class DateTimeFormatterAPI:
 
     def datetime(self):
         return "%s %s" % (self.date(), self.time())
+
+    def rfc822utcdatetime(self):
+        return formatdate(
+            rfc822.mktime_tz(self._datetime.utctimetuple() + (0,)))
 
 
 class DurationFormatterAPI:

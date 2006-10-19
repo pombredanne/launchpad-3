@@ -8,7 +8,7 @@ __all__ = [
     'ShipItUnauthorizedView', 'StandardShipItRequestsView',
     'ShipItExportsView', 'ShipItNavigation', 'ShipItReportsView',
     'ShippingRequestAdminView', 'StandardShipItRequestSetNavigation',
-    'ShippingRequestSetNavigation']
+    'ShippingRequestSetNavigation', 'ShipitFrontPageView']
 
 
 from zope.event import notify
@@ -58,6 +58,14 @@ class ShipItUnauthorizedView(SystemErrorView):
         return self.forbidden_page()
 
 
+class ShipitFrontPageView(LaunchpadView):
+
+    def initialize(self):
+        if not config.shipit.switch_to_edgy:
+            self.request.response.redirect('login')
+        self.flavour = _get_flavour_from_layer(self.request)
+
+
 # XXX: The LoginOrRegister class is not really designed to be reused. That
 # class must either be fixed to allow proper reuse or we should write a new
 # class which doesn't reuses LoginOrRegister here. -- GuilhermeSalgado
@@ -89,22 +97,15 @@ class ShipItLoginView(LoginOrRegister):
             self._redirect()
 
     def _redirect(self):
-        """Redirect the logged in user to the request page.
-
-        If the logged in user is a ShipIt administrator, then he's redirected
-        to the 'requests' page, where all requests are shown.
-        """
+        """Redirect the logged in user to the request page."""
         user = getUtility(ILaunchBag).user
         assert user is not None
-        if user.inTeam(getUtility(ILaunchpadCelebrities).shipit_admin):
-            self.request.response.redirect('requests')
+        current_order = user.currentShipItRequest()
+        if (current_order and
+            current_order.containsCustomQuantitiesOfFlavour(self.flavour)):
+            self.request.response.redirect('specialrequest')
         else:
-            current_order = user.currentShipItRequest()
-            if (current_order and
-                current_order.containsCustomQuantitiesOfFlavour(self.flavour)):
-                self.request.response.redirect('specialrequest')
-            else:
-                self.request.response.redirect('myrequest')
+            self.request.response.redirect('myrequest')
 
 
 def _get_flavour_from_layer(request):

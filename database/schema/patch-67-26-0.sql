@@ -1,7 +1,5 @@
 SET client_min_messages=ERROR;
 
-BEGIN; -- XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-
 /* Add a load of date_created columns to various objects in the db.
    We create fake entries for existing rows - all timestamps before
    2006 are fake.
@@ -12,7 +10,7 @@ ALTER TABLE Branch
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE Branch
     SET date_created='2006-01-01'::timestamp without time zone -
-        (((SELECT max(id) FROM Branch)+id) || ' seconds')::interval
+        (((SELECT max(id) FROM Branch)-id+1) || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE Branch ALTER COLUMN date_created
     SET NOT NULL;
@@ -24,7 +22,7 @@ ALTER TABLE BranchSubscription
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE BranchSubscription
     SET date_created='2006-01-01'::timestamp without time zone -
-        (((SELECT max(id) FROM BranchSubscription)+id) || ' seconds')::interval
+        (((SELECT max(id) FROM BranchSubscription)-id+1) || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE BranchSubscription ALTER COLUMN date_created
     SET NOT NULL;
@@ -36,7 +34,7 @@ ALTER TABLE BugCve
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE BugCve
     SET date_created='2006-01-01'::timestamp without time zone -
-        (((SELECT max(id) FROM BugCve)+id) || ' seconds')::interval
+        (((SELECT max(id) FROM BugCve)-id+1) || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE BugCve ALTER COLUMN date_created
     SET NOT NULL;
@@ -48,7 +46,7 @@ ALTER TABLE BugSubscription
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE BugSubscription
     SET date_created='2006-01-01'::timestamp without time zone -
-        (((SELECT max(id) FROM BugSubscription)+id) || ' seconds')::interval
+        (((SELECT max(id) FROM BugSubscription)-id+1) || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE BugSubscription ALTER COLUMN date_created
     SET NOT NULL;
@@ -60,7 +58,7 @@ ALTER TABLE BugTracker
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE BugTracker
     SET date_created='2006-01-01'::timestamp without time zone -
-        (((SELECT max(id) FROM BugTracker)+id) || ' seconds')::interval
+        (((SELECT max(id) FROM BugTracker)-id+1) || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE BugTracker ALTER COLUMN date_created
     SET NOT NULL;
@@ -72,7 +70,7 @@ ALTER TABLE Builder
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE Builder
     SET date_created='2006-01-01'::timestamp without time zone -
-        (((SELECT max(id) FROM Builder)+id) || ' seconds')::interval
+        (((SELECT max(id) FROM Builder)-id+1) || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE Builder ALTER COLUMN date_created
     SET NOT NULL;
@@ -84,7 +82,7 @@ ALTER TABLE Calendar
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE Calendar
     SET date_created='2006-01-01'::timestamp without time zone -
-        (((SELECT max(id) FROM Calendar)+id) || ' seconds')::interval
+        (((SELECT max(id) FROM Calendar)-id+1) || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE Calendar ALTER COLUMN date_created
     SET NOT NULL;
@@ -96,7 +94,7 @@ ALTER TABLE CalendarEvent
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE CalendarEvent
     SET date_created='2006-01-01'::timestamp without time zone -
-        (((SELECT max(id) FROM CalendarEvent)+id) || ' seconds')::interval
+        (((SELECT max(id) FROM CalendarEvent)-id+1) || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE CalendarEvent ALTER COLUMN date_created
     SET NOT NULL;
@@ -108,7 +106,7 @@ ALTER TABLE CalendarSubscription
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE CalendarSubscription
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM CalendarSubscription)+id)
+        - (((SELECT max(id) FROM CalendarSubscription)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE CalendarSubscription ALTER COLUMN date_created
@@ -121,7 +119,7 @@ ALTER TABLE ComponentSelection
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE ComponentSelection
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM ComponentSelection)+id)
+        - (((SELECT max(id) FROM ComponentSelection)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE ComponentSelection ALTER COLUMN date_created
@@ -134,7 +132,7 @@ ALTER TABLE CveReference
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE CveReference
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM CveReference)+id)
+        - (((SELECT max(id) FROM CveReference)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE CveReference ALTER COLUMN date_created
@@ -147,7 +145,7 @@ ALTER TABLE Distribution
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE Distribution
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM Distribution)+id)
+        - (((SELECT max(id) FROM Distribution)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE Distribution ALTER COLUMN date_created
@@ -160,7 +158,7 @@ ALTER TABLE DistributionBounty
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE DistributionBounty
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM DistributionBounty)+id)
+        - (((SELECT max(id) FROM DistributionBounty)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE DistributionBounty ALTER COLUMN date_created
@@ -173,7 +171,7 @@ ALTER TABLE DistributionMirror
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE DistributionMirror
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM DistributionMirror)+id)
+        - (((SELECT max(id) FROM DistributionMirror)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE DistributionMirror ALTER COLUMN date_created
@@ -195,7 +193,7 @@ ALTER TABLE DistroArchRelease
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE DistroArchRelease
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM DistroArchRelease)+id)
+        - (((SELECT max(id) FROM DistroArchRelease)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE DistroArchRelease ALTER COLUMN date_created
@@ -208,7 +206,7 @@ ALTER TABLE DistroComponentUploader
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE DistroComponentUploader
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM DistroComponentUploader)+id)
+        - (((SELECT max(id) FROM DistroComponentUploader)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE DistroComponentUploader ALTER COLUMN date_created
@@ -221,7 +219,7 @@ ALTER TABLE Distrorelease
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE Distrorelease
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM Distrorelease)+id)
+        - (((SELECT max(id) FROM Distrorelease)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE Distrorelease ALTER COLUMN date_created
@@ -234,7 +232,7 @@ ALTER TABLE DistroreleaseQueue
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE DistroreleaseQueue
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM DistroreleaseQueue)+id)
+        - (((SELECT max(id) FROM DistroreleaseQueue)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE DistroreleaseQueue ALTER COLUMN date_created
@@ -247,7 +245,7 @@ ALTER TABLE DistroreleaseQueueBuild
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE DistroreleaseQueueBuild
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM DistroreleaseQueueBuild)+id)
+        - (((SELECT max(id) FROM DistroreleaseQueueBuild)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE DistroreleaseQueueBuild ALTER COLUMN date_created
@@ -260,7 +258,7 @@ ALTER TABLE DistroreleaseQueueCustom
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE DistroreleaseQueueCustom
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM DistroreleaseQueueCustom)+id)
+        - (((SELECT max(id) FROM DistroreleaseQueueCustom)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE DistroreleaseQueueCustom ALTER COLUMN date_created
@@ -273,7 +271,7 @@ ALTER TABLE DistroreleaseQueueSource
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE DistroreleaseQueueSource
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM DistroreleaseQueueSource)+id)
+        - (((SELECT max(id) FROM DistroreleaseQueueSource)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE DistroreleaseQueueSource ALTER COLUMN date_created
@@ -286,7 +284,7 @@ ALTER TABLE GpgKey
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE GpgKey
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM GpgKey)+id)
+        - (((SELECT max(id) FROM GpgKey)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE GpgKey ALTER COLUMN date_created
@@ -299,7 +297,7 @@ ALTER TABLE License
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE License
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM License)+id)
+        - (((SELECT max(id) FROM License)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE License ALTER COLUMN date_created
@@ -312,7 +310,7 @@ ALTER TABLE Milestone
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE Milestone
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM Milestone)+id)
+        - (((SELECT max(id) FROM Milestone)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE Milestone ALTER COLUMN date_created
@@ -325,7 +323,7 @@ ALTER TABLE Mirror
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE Mirror
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM Mirror)+id)
+        - (((SELECT max(id) FROM Mirror)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE Mirror ALTER COLUMN date_created
@@ -338,7 +336,7 @@ ALTER TABLE MirrorCdImageDistroRelease
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE MirrorCdImageDistroRelease
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM MirrorCdImageDistroRelease)+id)
+        - (((SELECT max(id) FROM MirrorCdImageDistroRelease)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE MirrorCdImageDistroRelease ALTER COLUMN date_created
@@ -351,7 +349,7 @@ ALTER TABLE MirrorContent
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE MirrorContent
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM MirrorContent)+id)
+        - (((SELECT max(id) FROM MirrorContent)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE MirrorContent ALTER COLUMN date_created
@@ -364,7 +362,7 @@ ALTER TABLE MirrorDistroArchRelease
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE MirrorDistroArchRelease
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM MirrorDistroArchRelease)+id)
+        - (((SELECT max(id) FROM MirrorDistroArchRelease)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE MirrorDistroArchRelease ALTER COLUMN date_created
@@ -377,7 +375,7 @@ ALTER TABLE MirrorDistroReleaseSource
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE MirrorDistroReleaseSource
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM MirrorDistroReleaseSource)+id)
+        - (((SELECT max(id) FROM MirrorDistroReleaseSource)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE MirrorDistroReleaseSource ALTER COLUMN date_created
@@ -390,7 +388,7 @@ ALTER TABLE MirrorSourceContent
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE MirrorSourceContent
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM MirrorSourceContent)+id)
+        - (((SELECT max(id) FROM MirrorSourceContent)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE MirrorSourceContent ALTER COLUMN date_created
@@ -403,7 +401,7 @@ ALTER TABLE PackageBugContact
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE PackageBugContact
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM PackageBugContact)+id)
+        - (((SELECT max(id) FROM PackageBugContact)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE PackageBugContact ALTER COLUMN date_created
@@ -416,7 +414,7 @@ ALTER TABLE PackageSelection
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE PackageSelection
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM PackageSelection)+id)
+        - (((SELECT max(id) FROM PackageSelection)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE PackageSelection ALTER COLUMN date_created
@@ -429,7 +427,7 @@ ALTER TABLE Packaging
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE Packaging
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM Packaging)+id)
+        - (((SELECT max(id) FROM Packaging)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE Packaging ALTER COLUMN date_created
@@ -442,7 +440,7 @@ ALTER TABLE EmailAddress
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE EmailAddress
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM EmailAddress)+id)
+        - (((SELECT max(id) FROM EmailAddress)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE EmailAddress ALTER COLUMN date_created
@@ -455,7 +453,7 @@ ALTER TABLE PersonalPackageArchive
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE PersonalPackageArchive
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM PersonalPackageArchive)+id)
+        - (((SELECT max(id) FROM PersonalPackageArchive)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE PersonalPackageArchive ALTER COLUMN date_created
@@ -468,7 +466,7 @@ ALTER TABLE PersonalSourcePackagePublication
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE PersonalSourcePackagePublication
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM PersonalSourcePackagePublication)+id)
+        - (((SELECT max(id) FROM PersonalSourcePackagePublication)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE PersonalSourcePackagePublication ALTER COLUMN date_created
@@ -481,7 +479,7 @@ ALTER TABLE PersonLanguage
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE PersonLanguage
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM PersonLanguage)+id)
+        - (((SELECT max(id) FROM PersonLanguage)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE PersonLanguage ALTER COLUMN date_created
@@ -494,7 +492,7 @@ ALTER TABLE PocketChroot
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE PocketChroot
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM PocketChroot)+id)
+        - (((SELECT max(id) FROM PocketChroot)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE PocketChroot ALTER COLUMN date_created
@@ -507,7 +505,7 @@ ALTER TABLE POExportRequest
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE POExportRequest
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM POExportRequest)+id)
+        - (((SELECT max(id) FROM POExportRequest)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE POExportRequest ALTER COLUMN date_created
@@ -520,7 +518,7 @@ ALTER TABLE Poll
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE Poll
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM Poll)+id)
+        - (((SELECT max(id) FROM Poll)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE Poll ALTER COLUMN date_created
@@ -533,7 +531,7 @@ ALTER TABLE PollOption
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE PollOption
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM PollOption)+id)
+        - (((SELECT max(id) FROM PollOption)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE PollOption ALTER COLUMN date_created
@@ -546,7 +544,7 @@ ALTER TABLE POSubscription
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE POSubscription
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM POSubscription)+id)
+        - (((SELECT max(id) FROM POSubscription)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE POSubscription ALTER COLUMN date_created
@@ -559,7 +557,7 @@ ALTER TABLE ProductBounty
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE ProductBounty
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM ProductBounty)+id)
+        - (((SELECT max(id) FROM ProductBounty)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE ProductBounty ALTER COLUMN date_created
@@ -572,7 +570,7 @@ ALTER TABLE ProductBranchRelationship
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE ProductBranchRelationship
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM ProductBranchRelationship)+id)
+        - (((SELECT max(id) FROM ProductBranchRelationship)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE ProductBranchRelationship ALTER COLUMN date_created
@@ -585,7 +583,7 @@ ALTER TABLE ProductCvsModule
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE ProductCvsModule
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM ProductCvsModule)+id)
+        - (((SELECT max(id) FROM ProductCvsModule)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE ProductCvsModule ALTER COLUMN date_created
@@ -598,7 +596,7 @@ ALTER TABLE ProductSvnModule
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE ProductSvnModule
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM ProductSvnModule)+id)
+        - (((SELECT max(id) FROM ProductSvnModule)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE ProductSvnModule ALTER COLUMN date_created
@@ -611,7 +609,7 @@ ALTER TABLE ProjectBounty
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE ProjectBounty
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM ProjectBounty)+id)
+        - (((SELECT max(id) FROM ProjectBounty)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE ProjectBounty ALTER COLUMN date_created
@@ -624,7 +622,7 @@ ALTER TABLE PushMirrorAccess
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE PushMirrorAccess
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM PushMirrorAccess)+id)
+        - (((SELECT max(id) FROM PushMirrorAccess)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE PushMirrorAccess ALTER COLUMN date_created
@@ -637,7 +635,7 @@ ALTER TABLE SectionSelection
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE SectionSelection
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM SectionSelection)+id)
+        - (((SELECT max(id) FROM SectionSelection)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE SectionSelection ALTER COLUMN date_created
@@ -650,7 +648,7 @@ ALTER TABLE ShockAndAwe
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE ShockAndAwe
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM ShockAndAwe)+id)
+        - (((SELECT max(id) FROM ShockAndAwe)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE ShockAndAwe ALTER COLUMN date_created
@@ -663,7 +661,7 @@ ALTER TABLE SpecificationDependency
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE SpecificationDependency
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM SpecificationDependency)+id)
+        - (((SELECT max(id) FROM SpecificationDependency)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE SpecificationDependency ALTER COLUMN date_created
@@ -676,7 +674,7 @@ ALTER TABLE SpecificationFeedback
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE SpecificationFeedback
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM SpecificationFeedback)+id)
+        - (((SELECT max(id) FROM SpecificationFeedback)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE SpecificationFeedback ALTER COLUMN date_created
@@ -689,7 +687,7 @@ ALTER TABLE SpecificationSubscription
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE SpecificationSubscription
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM SpecificationSubscription)+id)
+        - (((SELECT max(id) FROM SpecificationSubscription)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE SpecificationSubscription ALTER COLUMN date_created
@@ -702,7 +700,7 @@ ALTER TABLE SprintAttendance
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE SprintAttendance
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM SprintAttendance)+id)
+        - (((SELECT max(id) FROM SprintAttendance)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE SprintAttendance ALTER COLUMN date_created
@@ -715,7 +713,7 @@ ALTER TABLE SshKey
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE SshKey
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM SshKey)+id)
+        - (((SELECT max(id) FROM SshKey)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE SshKey ALTER COLUMN date_created
@@ -728,7 +726,7 @@ ALTER TABLE SupportContact
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE SupportContact
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM SupportContact)+id)
+        - (((SELECT max(id) FROM SupportContact)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE SupportContact ALTER COLUMN date_created
@@ -741,7 +739,7 @@ ALTER TABLE TicketBug
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE TicketBug
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM TicketBug)+id)
+        - (((SELECT max(id) FROM TicketBug)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE TicketBug ALTER COLUMN date_created
@@ -754,7 +752,7 @@ ALTER TABLE TicketSubscription
     ADD COLUMN date_created TIMESTAMP WITHOUT TIME ZONE;
 UPDATE TicketSubscription
     SET date_created='2006-01-01'::timestamp without time zone
-        - (((SELECT max(id) FROM TicketSubscription)+id)
+        - (((SELECT max(id) FROM TicketSubscription)-id+1)
             || ' seconds')::interval
     WHERE date_created IS NULL;
 ALTER TABLE TicketSubscription ALTER COLUMN date_created

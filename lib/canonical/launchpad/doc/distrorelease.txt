@@ -241,66 +241,6 @@ again" type set of assertions.
    1
    >>> len(humpy_i386.getReleasedPackages('pmount'))
    1
-   >>> len(hoary.potemplates)
-   5
-   >>> len(humpy.potemplates)
-   5
-
-Check one by one and compare the exported text. We define a function because
-we will need it later for other tests.
-
-   >>> def compare_translations(orig_distrorelease, dest_distrorelease):
-   ...
-   ...     from difflib import unified_diff
-   ...
-   ...     orig_templates = sorted(
-   ...         orig_distrorelease.potemplates,
-   ...         key=lambda x: x.potemplatename.name)
-   ...     dest_templates = sorted(
-   ...         dest_distrorelease.potemplates,
-   ...         key=lambda x: x.potemplatename.name)
-   ...
-   ...     output_text = u''
-   ...     for i in range(len(orig_templates)):
-   ...         old_template = orig_templates[i]
-   ...         new_template = dest_templates[i]
-   ...         if old_template.priority != new_template.priority:
-   ...             output_text += u'Priority of %s is different from %s\n' % (
-   ...                 old_template.title, new_template.title)
-   ...         output = '\n'.join(list(unified_diff(
-   ...             old_template.export().split('\n'),
-   ...             new_template.export().split('\n'))))
-   ...         output = output.decode('UTF-8')
-   ...         if len(output) > 0:
-   ...             output_text += (
-   ...                 u'%s is different than its parent %s:\n%s' % (
-   ...                     new_template.title, old_template.title, output))
-   ...             return output_text
-   ...         for old_pofile in old_template.pofiles:
-   ...             new_pofile = new_template.getPOFileByLang(
-   ...                 old_pofile.language.code, old_pofile.variant)
-   ...             old_pofile_content = old_pofile.uncachedExport(
-   ...                     included_obsolete=False,
-   ...                     force_utf8=True).split('\n')
-   ...             new_pofile_content = new_pofile.uncachedExport(
-   ...                     included_obsolete=False,
-   ...                     force_utf8=True).split('\n')
-   ...             output = '\n'.join(list(unified_diff(
-   ...                 old_pofile_content, new_pofile_content)))
-   ...             output = output.decode('UTF-8')
-   ...             if len(output) > 0:
-   ...                 output_text += (
-   ...                     u'%s is different than its parent %s:\n%s' % (
-   ...                         new_pofile.title, old_pofile.title, output))
-   ...                 return output_text
-   ...     return output_text
-
-Let's compare what we have in our parent distro release and the new one just
-created. We should get no differences at all.
-
-   >>> compare_translations(hoary, humpy) == u''
-   True
-
 
 Check if the attributes of an DRSPR instance for the just initialised
 distrorelease are sane. A DRSPR instance should filter attributes of
@@ -490,8 +430,69 @@ DistroRelease Translations migration
 
 We have several ways to copy translations between distro releases.
 
-The main one is to clone what we have in its parent distribution, like we did
-before in this test when we created 'humpy' distribution.
+The main one is to clone what we have in its parent distribution:
+
+   >>> humpy.copyMissingTranslationsFromParent()
+
+   >>> len(hoary.potemplates)
+   5
+   >>> len(humpy.potemplates)
+   5
+
+Check one by one and compare the exported text. We define a function because
+we will need it later for other tests.
+
+   >>> def compare_translations(orig_distrorelease, dest_distrorelease):
+   ...
+   ...     from difflib import unified_diff
+   ...
+   ...     orig_templates = sorted(
+   ...         orig_distrorelease.potemplates,
+   ...         key=lambda x: x.potemplatename.name)
+   ...     dest_templates = sorted(
+   ...         dest_distrorelease.potemplates,
+   ...         key=lambda x: x.potemplatename.name)
+   ...
+   ...     output_text = u''
+   ...     for i in range(len(orig_templates)):
+   ...         old_template = orig_templates[i]
+   ...         new_template = dest_templates[i]
+   ...         if old_template.priority != new_template.priority:
+   ...             output_text += u'Priority of %s is different from %s\n' % (
+   ...                 old_template.title, new_template.title)
+   ...         output = '\n'.join(list(unified_diff(
+   ...             old_template.export().split('\n'),
+   ...             new_template.export().split('\n'))))
+   ...         output = output.decode('UTF-8')
+   ...         if len(output) > 0:
+   ...             output_text += (
+   ...                 u'%s is different than its parent %s:\n%s' % (
+   ...                     new_template.title, old_template.title, output))
+   ...             return output_text
+   ...         for old_pofile in old_template.pofiles:
+   ...             new_pofile = new_template.getPOFileByLang(
+   ...                 old_pofile.language.code, old_pofile.variant)
+   ...             old_pofile_content = old_pofile.uncachedExport(
+   ...                     included_obsolete=False,
+   ...                     force_utf8=True).split('\n')
+   ...             new_pofile_content = new_pofile.uncachedExport(
+   ...                     included_obsolete=False,
+   ...                     force_utf8=True).split('\n')
+   ...             output = '\n'.join(list(unified_diff(
+   ...                 old_pofile_content, new_pofile_content)))
+   ...             output = output.decode('UTF-8')
+   ...             if len(output) > 0:
+   ...                 output_text += (
+   ...                     u'%s is different than its parent %s:\n%s' % (
+   ...                         new_pofile.title, old_pofile.title, output))
+   ...                 return output_text
+   ...     return output_text
+
+Let's compare what we have in our parent distro release and the new one just
+created. We should get no differences at all.
+
+   >>> compare_translations(hoary, humpy) == u''
+   True
 
 Now, we are going to test how to migrate updates from Hoary to Humpy. To do
 this test, we will add some new translations to Hoary, migrate them to Humpy
