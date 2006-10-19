@@ -191,9 +191,10 @@ TicketAction2KarmaAction = {
 def ticket_comment_added(ticketmessage, event):
     """Assign karma to the user which added <ticketmessage>."""
     ticket = ticketmessage.ticket
-    action = TicketAction2KarmaAction.get(ticketmessage.action)
-    if action:
-        _assignKarmaUsingTicketContext(ticketmessage.owner, ticket, action)
+    karma_action = TicketAction2KarmaAction.get(ticketmessage.action)
+    if karma_action:
+        _assignKarmaUsingTicketContext(
+            ticketmessage.owner, ticket, karma_action)
 
 
 def ticket_bug_added(ticketbug, event):
