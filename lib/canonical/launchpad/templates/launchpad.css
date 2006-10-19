@@ -1147,9 +1147,6 @@ dl.faq ol {
 #menuroot li li:hover {
   background: #8cacbb;
 }
-#menuroot li ul {
-  border: 1px solid red;
-}
 #menuroot li li {
   margin: 0;
   padding: 0;
@@ -1158,8 +1155,8 @@ dl.faq ol {
 }
 #menuroot li li a {
   display: block;
-  width: 100%;
-  padding: 0 0 0 6px !important;
+  width: auto;
+  padding: 0 6px !important;
 }
 #menuroot li li a:hover {
   background: #8cacbb;
