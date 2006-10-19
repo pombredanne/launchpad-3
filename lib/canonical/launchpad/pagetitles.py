@@ -661,13 +661,13 @@ productseries_packaging = ContextDisplayName('Packaging of %s in distributions')
 
 productseries_source = 'Import product series'
 
-productseries_sourceadmin = 'Add source import'
-
 productseries_translations = ContextTitle('Translation templates for %s')
 
 productseries_translations_upload = 'Request new translations upload'
 
 productseries_ubuntupkg = 'Ubuntu source package'
+
+project_add = 'Register a project with Launchpad'
 
 project_index = ContextTitle('%s in Launchpad')
 
@@ -732,6 +732,8 @@ securitycontact_edit = ContextDisplayName("Edit %s security contact")
 shipit_adminrequest = 'ShipIt admin request'
 
 shipit_index = 'ShipIt'
+
+shipit_index_new = 'ShipIt'
 
 shipit_exports = 'ShipIt exports'
 
