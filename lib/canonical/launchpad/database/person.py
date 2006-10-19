@@ -1697,8 +1697,8 @@ class PersonSet:
             if len(uniques) > 0 and (src_tab, src_col) not in skip:
                 raise NotImplementedError(
                         '%s.%s reference to %s.%s is in a UNIQUE index '
-                        'but has not been handled.' % (
-                            src_tab, src_col, ref_tab, ref_col,
+                        'but has not been handled' % (
+                            src_tab, src_col, ref_tab, ref_col
                             )
                         )
 
