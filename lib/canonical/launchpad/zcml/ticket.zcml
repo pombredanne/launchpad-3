@@ -25,9 +25,7 @@
         attributes="requestInfo giveInfo giveAnswer confirmAnswer reject
                     expireTicket reopen setStatus addComment
                     subscribe unsubscribe"
-        set_attributes="id title description owner
-                        answerer answer datecreated datedue datelastquery
-                        datelastresponse dateanswered product distribution
+        set_attributes="title description datedue product distribution
                         sourcepackagename " />
     <require
         permission="launchpad.Admin"

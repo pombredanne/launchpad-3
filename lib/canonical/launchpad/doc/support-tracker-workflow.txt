@@ -455,10 +455,16 @@ datelastquery attributes:
 If an answer was present on the ticket, the status change also clears
 the answer and dateanswered attributes.
 
-    >>> ticket.dateanswered = status_change_message.datecreated
-    >>> ticket.answer = status_change_message
+    >>> msg = ticket.setStatus(stub, TicketStatus.OPEN, 'Status change.')
+    >>> answer_message = ticket.giveAnswer(sample_person, 'Install BootX.')
+    >>> msg = ticket.confirmAnswer('This worked.', answer=answer_message)
+    >>> ticket.dateanswered is not None
+    True
+    >>> ticket.answer == answer_message
+    True
     >>> status_change_message = ticket.setStatus(
-    ...     stub, TicketStatus.OPEN, 'Reopen the request')
+    ...     stub, TicketStatus.OPEN, 'Reopen the request',
+    ...     datecreated=now_plus_one_hour)
 
     >>> ticket.dateanswered is None
     True
@@ -480,6 +486,7 @@ There is an addComment() method that can be use to add a message to the
 ticket without changing its status.
 
     >>> old_status = ticket.status
+    >>> old_datelastresponse = ticket.datelastresponse
     >>> comment = ticket.addComment(
     ...     no_priv, 'This is a comment.',
     ...     datecreated=now_plus_two_hours)
@@ -492,7 +499,7 @@ ticket without changing its status.
 This method does not update the datelastresponse and datelastquery
 attributes.
 
-    >>> ticket.datelastresponse is None
+    >>> ticket.datelastresponse == old_datelastresponse
     True
     >>> ticket.datelastquery == old_datelastquery
     True
@@ -519,13 +526,13 @@ the message they create and a SQLObjectModifiedEvent for the ticket.
 
 Changing the status triggers the event:
 
-    >>> msg = ticket.setStatus(stub, TicketStatus.EXPIRED, 'Set to open')
+    >>> msg = ticket.setStatus(stub, TicketStatus.EXPIRED, 'Status change.')
     Received SQLObjectCreatedEvent on TicketMessage
     Received SQLObjectModifiedEvent on Ticket
 
 Example of a workflow method that triggers the events:
 
-    >>> msg =ticket.reject(stub, 'Close this ticket.')
+    >>> msg = ticket.reject(stub, 'Close this ticket.')
     Received SQLObjectCreatedEvent on TicketMessage
     Received SQLObjectModifiedEvent on Ticket
 
