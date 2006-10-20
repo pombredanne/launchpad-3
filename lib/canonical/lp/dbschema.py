@@ -89,6 +89,7 @@ __all__ = (
 'SprintSpecificationStatus',
 'SSHKeyType',
 'TextDirection',
+'TicketParticipation',
 'TicketPriority',
 'TicketSort',
 'TicketStatus',
@@ -356,6 +357,18 @@ class Item:
 
     def __hash__(self):
         return self.value
+
+    # These properties are provided as a way to get at the other
+    # schema items and name from a security wrapped Item instance when
+    # there are no security declarations for the DBSchema class.  They
+    # are used by the enumvalue TALES expression.
+    @property
+    def schema_items(self):
+        return self.schema.items
+
+    @property
+    def schema_name(self):
+        return self.schema.__name__
 
 # TODO: make a metaclass for dbschemas that looks for ALLCAPS attributes
 #       and makes the introspectible.
@@ -1655,6 +1668,45 @@ class SprintSpecificationStatus(DBSchema):
         """)
 
 
+# Enumeration covered by bug 66633:
+#   Need way to define enumerations outside of dbschema
+class TicketParticipation(DBSchema):
+    """The different ways a person can be involved in a ticket.
+
+    This enumeration is part of the ITicketActor.searchTickets() API.
+    """
+
+    OWNER = Item(10, """
+        Owner
+
+        The person created the ticket.
+        """)
+
+    SUBSCRIBER = Item(15, """
+        Subscriber
+
+        The person subscribed to the ticket.
+        """)
+
+    ASSIGNEE = Item(20, """
+        Assignee
+
+        The person is assigned to the ticket.
+        """)
+
+    COMMENTER = Item(25, """
+        Commenter
+
+        The person commented on the ticket.
+        """)
+
+    ANSWERER = Item(30, """
+        Answerer
+
+        The person answered the ticket.
+        """)
+
+
 class TicketPriority(DBSchema):
     """The Priority with a Support Request must be handled.
 
@@ -2817,30 +2869,6 @@ class RevisionControlSystems(DBSchema):
         in the CVS design.
         """)
 
-    ARCH = Item(3, """
-        The Arch Revision Control System
-
-        An open source revision control system that combines truly
-        distributed branching with advanced merge algorithms. This
-        removes the scalability problems of centralised revision
-        control.
-        """)
-
-    PACKAGE = Item(4, """
-        Package
-
-        DEPRECATED DO NOT USE
-        """)
-
-
-    BITKEEPER = Item(5, """
-        Bitkeeper
-
-        A commercial revision control system that, like Arch, uses
-        distributed branches to allow for faster distributed
-        development.
-        """)
-
 
 class RosettaTranslationOrigin(DBSchema):
     """Rosetta Translation Origin
@@ -3512,7 +3540,7 @@ class PersonCreationRationale(DBSchema):
 
     POFILEIMPORT = Item(4, """
         This person was mentioned in a POFile imported into Rosetta.
-        
+
         When importing POFiles into Rosetta, we need to give credit for the
         translations on that POFile to its last translator, which may not
         exist in Launchpad, so we'd need to create it.

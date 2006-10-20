@@ -379,17 +379,6 @@ class SourcePackage(BugTargetBase):
         flush_database_updates()
 
     # ticket related interfaces
-    def tickets(self, quantity=None):
-        """See ITicketTarget."""
-        ret = Ticket.select("""
-            distribution = %s AND
-            sourcepackagename = %s
-            """ % sqlvalues(self.distribution.id,
-                            self.sourcepackagename.id),
-            orderBy='-datecreated',
-            limit=quantity)
-        return ret
-
     def getSupportedLanguages(self):
         """See ITicketTarget."""
         return get_supported_languages(self)
@@ -415,14 +404,14 @@ class SourcePackage(BugTargetBase):
             return None
         return ticket
 
-    def searchTickets(
-            self, search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-            sort=None, languages=None):
+    def searchTickets(self, search_text=None,
+                      status=TICKET_STATUS_DEFAULT_SEARCH, owner=None,
+                      sort=None, languages=None):
         """See ITicketTarget."""
         return TicketSet.search(
-            search_text=search_text, status=status, languages=languages,
-            sort=sort, distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename)
+            distribution=self.distribution, languages=None,
+            sourcepackagename=self.sourcepackagename, search_text=search_text,
+            status=status, owner=owner, sort=sort)
 
     def findSimilarTickets(self, title):
         """See ITicketTarget."""

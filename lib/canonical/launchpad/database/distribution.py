@@ -50,7 +50,7 @@ from canonical.launchpad.webapp.url import urlparse
 from canonical.lp.dbschema import (
     EnumCol, BugTaskStatus, DistributionReleaseStatus, MirrorContent,
     TranslationPermission, SpecificationSort, SpecificationFilter,
-    SpecificationStatus, MirrorPulseType, PackagePublishingStatus)
+    SpecificationStatus, PackagePublishingStatus)
 
 from canonical.launchpad.interfaces import (
     IBuildSet, IDistribution, IDistributionSet, IHasBuildRecords,
@@ -132,7 +132,8 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
     def disabled_mirrors(self):
         """See canonical.launchpad.interfaces.IDistribution."""
         return DistributionMirror.selectBy(
-            distribution=self, enabled=False)
+            distribution=self, official_approved=True,
+            official_candidate=True, enabled=False)
 
     @property
     def unofficial_mirrors(self):
@@ -207,9 +208,8 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         return DistributionMirror.selectOneBy(distribution=self, name=name)
 
     def newMirror(self, owner, speed, country, content, displayname=None,
-                  pulse_type=MirrorPulseType.PUSH, description=None,
-                  http_base_url=None, ftp_base_url=None, pulse_source=None,
-                  rsync_base_url=None, file_list=None, official_candidate=False,
+                  description=None, http_base_url=None, ftp_base_url=None,
+                  rsync_base_url=None, official_candidate=False,
                   enabled=False):
         """See IDistribution."""
         # NB this functionality is only available to distributions that have
@@ -232,12 +232,10 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
 
         return DistributionMirror(
             distribution=self, owner=owner, name=name, speed=speed,
-            country=country, content=content, pulse_type=pulse_type,
-            displayname=displayname, description=description,
-            http_base_url=http_base_url, ftp_base_url=ftp_base_url,
-            rsync_base_url=rsync_base_url, file_list=file_list,
-            official_candidate=official_candidate, enabled=enabled,
-            pulse_source=pulse_source)
+            country=country, content=content, displayname=displayname,
+            description=description, http_base_url=http_base_url,
+            ftp_base_url=ftp_base_url, rsync_base_url=rsync_base_url,
+            official_candidate=official_candidate, enabled=enabled)
 
     def createBug(self, bug_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
@@ -435,15 +433,6 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         """See ISpecificationTarget."""
         return Specification.selectOneBy(distribution=self, name=name)
 
-    def tickets(self, quantity=None):
-        """See ITicketTarget."""
-        return Ticket.select("""
-            Ticket.distribution = %s
-            """ % sqlvalues(self.id),
-            orderBy='-Ticket.datecreated',
-            prejoins=['distribution', 'owner', 'sourcepackagename'],
-            limit=quantity)
-
     def getSupportedLanguages(self):
         """See ITicketTarget."""
         return get_supported_languages(self)
@@ -468,11 +457,11 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
 
     def searchTickets(
             self, search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-            sort=None, languages=None):
+            owner=None, sort=None, languages=None):
         """See ITicketTarget."""
         return TicketSet.search(
-            search_text=search_text, status=status, sort=sort,
-            distribution=self, languages=languages)
+            distribution=self, search_text=search_text, status=status,
+            owner=owner, languages=languages, sort=sort)
 
     def findSimilarTickets(self, title):
         """See ITicketTarget."""

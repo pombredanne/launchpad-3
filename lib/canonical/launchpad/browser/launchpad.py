@@ -36,8 +36,6 @@ from canonical.launchpad.interfaces import (
     ISpecificationSet, ISprintSet, ITicketSet, IBuilderSet, IBountySet,
     ILaunchpadCelebrities, IBugSet, IBugTrackerSet, ICveSet,
     ITranslationImportQueue, ITranslationGroupSet)
-from canonical.launchpad.layers import (
-    setFirstLayer, ShipItEdUbuntuLayer, ShipItKUbuntuLayer, ShipItUbuntuLayer)
 from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView, Navigation,
@@ -115,36 +113,6 @@ class MenuBox(LaunchpadView):
 class Breadcrumbs(LaunchpadView):
     """Page fragment to display the breadcrumbs text."""
 
-    sitemaptext = ("""
-    <ul id="launchPad" style="display: none">
-          <li id="p1">
-          <a href="/products">
-          Products
-          </a>
-          </li>
-          <li>
-          <a href="/distros">
-          Distributions
-          </a>
-          </li>
-          <li>
-          <a href="/people">
-          People
-          </a>
-          </li>
-          <li>
-          <a href="/projects">
-          Projects
-          </a>
-          </li>
-          <li>
-          <a href="/sprints">
-          Meetings
-          </a>
-          </li>
-    </ul>
-       """)
-
     def render(self):
         """Render the breadcrumbs text.
 
@@ -165,38 +133,46 @@ class Breadcrumbs(LaunchpadView):
 
         if not crumbs:
             L.append(
-                '<li class="last">'
+                '<li lpm:mid="root" class="item">'
                 '<a href="%s">'
                 '<img src="/@@/launchpad" alt="" /> %s'
                 '</a>'
-                '%s'
                 '</li>'
                 % (firsturl,
-                   cgi.escape(firsttext),
-                   self.sitemaptext))
+                   cgi.escape(firsttext)))
         else:
             L.append(
-                '<li>'
+                '<li lpm:mid="root" class="item">'
                 '<a href="%s">'
                 '<img src="/@@/launchpad" alt="" /> %s'
                 '</a>'
-                '%s'
                 '</li>'
                 % (firsturl,
-                   cgi.escape(firsttext),
-                   self.sitemaptext))
+                   cgi.escape(firsttext)))
 
-            lastcrumb = crumbs.pop()
+            #lastcrumb = crumbs.pop()
 
             for crumb in crumbs:
-                L.append('<li><a href="%s">%s</a></li>'
+                # XXX: SteveAlexander, 2006-06-09, this is putting the
+                #      full URL in as the lpm:mid.  We want just the path
+                #      here instead.
+                ##L.append('<li class="item" lpm:mid="%s/+menudata">'
+                ##         '<a href="%s">%s</a>'
+                ##         '</li>'
+                ##         % (crumb.url, crumb.url, cgi.escape(crumb.text)))
+
+                # Disable these menus for now.  To be re-enabled on the ui 1.0
+                # branch.
+                L.append('<li class="item">'
+                         '<a href="%s">%s</a>'
+                         '</li>'
                          % (crumb.url, cgi.escape(crumb.text)))
 
-            L.append(
-                '<li class="last">'
-                '<a href="%s">%s</a>'
-                '</li>'
-                % (lastcrumb.url, cgi.escape(lastcrumb.text)))
+            #L.append(
+            #    '<li class="item">'
+            #    '<a href="%s">%s</a>'
+            #    '</li>'
+            #    % (lastcrumb.url, cgi.escape(lastcrumb.text)))
         return u'\n'.join(L)
 
 

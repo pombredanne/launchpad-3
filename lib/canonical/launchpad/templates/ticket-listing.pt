@@ -25,9 +25,7 @@
 </metal:css>
 
 <metal:heading fill-slot="pageheading">
-  <h1 i18n:translate="">Support requests for
-    <span i18n:name="tickettarget" tal:replace="context/displayname">Ubuntu</span>
-  </h1>
+  <h1 i18n:translate="" tal:content="view/pageheading">Support Requests</h1>
 </metal:heading>
 
 <div metal:fill-slot="main"
@@ -41,7 +39,8 @@
 
       <input tal:replace="structure view/search_action/render" />
 
-      <tal:status define="widget nocall:view/widgets/status">
+      <tal:status define="widget nocall:view/widgets/status|nothing"
+                  condition="nocall: widget">
         <metal:widget use-macro="widget/@@launchpad_widget_macros/launchpad_widget_row" />
       </tal:status>
 
@@ -54,35 +53,10 @@
   </div>
   <br />
 
-  <tal:no-results
-    condition="not: tickets/batch"
-    define="search_text view/search_params/search_text|nothing;
-            languages view/search_params/languages|nothing">
-    <p tal:condition="search_text"
-       i18n:translate="">
-      No results for search
-        <strong i18n:name="search_text"
-                tal:content="search_text">Search Text</strong>.
-    </p>
-    <p tal:condition="not: search_text"
-       i18n:translate="">
-      No active support requests
-      <strong tal:condition="languages">
-        in
-        <tal:block repeat="language languages">
-          <tal:block condition="not: repeat/language/end">
-            <span tal:condition="not: repeat/language/start">,</span>
-          </tal:block>
-          <tal:block condition="repeat/language/end">
-            <span tal:condition="repeat/language/index">or</span>
-          </tal:block>
-          <span tal:replace="language/englishname">Portuguese</span>
-        </tal:block>
-      </strong>
-      
-      for
-      <span i18n:name="tickettarget"
-            tal:replace="context/displayname">Ubuntu 5.04</span>.
+  <tal:no-results condition="not: tickets/batch">
+    <p i18n:translate=""
+       tal:content="view/empty_listing_message">
+      No support requests.
     </p>
   </tal:no-results>
 
@@ -94,7 +68,9 @@
           <th colspan="3" i18n:translate="">Summary</th>
           <th i18n:translate="">Created</th>
           <th i18n:translate="">Submitter</th>
-          <th tal:condition="view/displaySourcePackage"
+          <th tal:condition="view/displayTargetColumn"
+              i18n:translate="">In</th>
+          <th tal:condition="view/displaySourcePackageColumn"
               i18n:translate="">Source Package</th>
           <th i18n:translate="">Status</th>
         </tr>
@@ -122,7 +98,11 @@
                tal:content="ticket/owner/browsername"
               >Foo Bar</a>
           </td>
-          <td tal:condition="view/displaySourcePackage"
+          <td class="ticket-target"
+              tal:condition="view/displayTargetColumn"
+              tal:content="structure python:view.formatTarget(ticket)"
+              >Firefox</td>
+          <td tal:condition="view/displaySourcePackageColumn"
               tal:content="structure python:view.formatSourcePackageName(ticket)"
               >mozilla-firefox</td>
           <td class="ticketstatus"
