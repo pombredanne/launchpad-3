@@ -32,7 +32,7 @@
             set_attributes="name active reviewed autoupdate"
         />
         <!-- ITicketTarget -->
-        <allow attributes="tickets getTicket searchTickets findSimilarTickets
+        <allow attributes="getTicket searchTickets findSimilarTickets
               support_contacts" />
         <require permission="launchpad.AnyPerson"
             attributes="newTicket addSupportContact removeSupportContact" />
@@ -56,7 +56,7 @@
         module="canonical.launchpad.browser"
         classes="
             ProductFacets ProductOverviewMenu ProductBountiesMenu
-            ProductBranchesMenu ProductSupportMenu ProductSpecificationsMenu
+            ProductBranchesMenu ProductSpecificationsMenu
             ProductTranslationsMenu ProductBugsMenu ProductSetContextMenu
             "
             />
@@ -403,6 +403,22 @@
         for="canonical.launchpad.interfaces.IProductSet"
         path_expression="string:products"
         parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IProductSet"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.product.ProductSetDynMenu"
+        attribute="__call__"
+        name="+menudata"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IProduct"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.product.ProductDynMenu"
+        attribute="__call__"
+        name="+menudata"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSet"

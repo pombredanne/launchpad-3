@@ -18,6 +18,28 @@ the URL of the remote bug.
     </a>
     ...
 
+It's possible to supply an HTTPS URL, even though the bug tracker's
+base URL is HTTP.
+
+    >>> user_browser.open(
+    ...   'http://launchpad.dev/products/firefox/+bug/4/+upstreamtask')
+    >>> user_browser.getControl('Product').value = 'netapplet'
+    >>> user_browser.getControl('URL').value = (
+    ...     u'https://bugzilla.gnome.org/bugs/show_bug.cgi?id=84')
+    >>> user_browser.getControl('Continue').click()
+    >>> user_browser.url
+    'http://launchpad.dev/products/netapplet/+bug/4'
+
+The URL was automatically converted to HTTP.
+
+    >>> print find_portlet(user_browser.contents, 'Remote bug watches')
+    <div class="portlet">
+    ...
+    <a href="http://bugzilla.gnome.org/bugs/show_bug.cgi?id=84">
+          gnome-bugzilla #84
+    </a>
+    ...
+
 
 If the URL can't be recognised (i.e., we don't even know what bug
 tracker type it is), an error message is displayed.
