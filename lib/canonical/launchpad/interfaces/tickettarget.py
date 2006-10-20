@@ -5,7 +5,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'IHasTickets',
     'ITicketTarget',
     'IManageSupportContacts',
     'TICKET_STATUS_DEFAULT_SEARCH',
@@ -18,26 +17,10 @@ from canonical.launchpad import _
 from canonical.lp.dbschema import TicketStatus
 
 
-class IHasTickets(Interface):
-    """An object that has tickets attached to it.
-
-    Thus far, this is true of people, distros, products.
-    """
-
-    def tickets(quantity=None):
-        """Support tickets for this source package, sorted newest first.
-
-        :quantity: An integer.
-
-        If needed, you can limit the number of tickets returned by passing a
-        number to the "quantity" parameter.
-        """
-
-
 TICKET_STATUS_DEFAULT_SEARCH = (TicketStatus.OPEN, TicketStatus.ANSWERED)
 
 
-class ITicketTarget(IHasTickets):
+class ITicketTarget(Interface):
     """An object that can have a new ticket created for  it."""
 
     def newTicket(owner, title, description, datecreated=None):
@@ -64,7 +47,7 @@ class ITicketTarget(IHasTickets):
         """
 
     def searchTickets(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-                      sort=None):
+                      owner=None, sort=None):
         """Search the object's tickets.
 
         :search_text: A string that is matched against the ticket
@@ -74,9 +57,12 @@ class ITicketTarget(IHasTickets):
         :status: A sequence of TicketStatus Items. If None or an empty
         sequence, the status is not included as a filter criteria.
 
+        :owner: The IPerson that created the ticket.
+
         :sort:  An attribute of TicketSort. If None, a default value is used.
         When there is a search_text value, the default is to sort by RELEVANCY,
         otherwise results are sorted NEWEST_FIRST.
+
         """
 
     def findSimilarTickets(title):
