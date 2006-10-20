@@ -33,7 +33,7 @@
               <metal:block define-slot="pageheading">
               </metal:block>
             </div>
-            <div id="region-content">
+            <div id="maincontent">
               <tal:block
                 define="notifications request/notifications"
                 condition="notifications"

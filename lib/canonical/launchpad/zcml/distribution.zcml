@@ -19,7 +19,7 @@
                             mirror_admin"
             />
         <!-- ITicketTarget -->
-        <allow attributes="tickets getTicket searchTickets findSimilarTickets
+        <allow attributes="getTicket searchTickets findSimilarTickets
               support_contacts" />
         <require permission="launchpad.AnyPerson"
             attributes="newTicket addSupportContact removeSupportContact" />
@@ -453,8 +453,8 @@
         module="canonical.launchpad.browser.distribution"
         classes="
             DistributionFacets DistributionOverviewMenu DistributionBugsMenu
-            DistributionSupportMenu DistributionBountiesMenu
-            DistributionSpecificationsMenu DistributionTranslationsMenu
+            DistributionBountiesMenu DistributionSpecificationsMenu
+            DistributionTranslationsMenu
             "
             />
 

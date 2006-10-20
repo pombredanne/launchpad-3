@@ -5,10 +5,10 @@ inside textareas.
   >>> browser.open('http://localhost/distros/ubuntu/hoary/+source/pmount/+pots/pmount/hr/+translate')
   >>> print browser.contents
   <!DOCTYPE html PUBLIC...
-              <textarea style="width: 100%;" lang="hr"
-                        rows="12"
+              <textarea style="width: 100%;" tabindex="1"
+                        lang="hr" rows="12"
                         name="msgset_67_hr_translation_0"
-                        dir="ltr" tabindex="1">
+                        dir="ltr">
   Upotreba:
   <BLANKLINE>
   %s [opcije] &lt;uređaj&gt; [&lt;etiketa&gt;]

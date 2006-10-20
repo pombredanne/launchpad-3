@@ -6,8 +6,9 @@
   <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
     <!-- Launchpad JS code -->
-  	<meta name="author" content="Aidan Williams - almostborn.com/portfolio" />
+    <meta name="author" content="Aidan Williams - almostborn.com/portfolio" />
     <script type="text/javascript" src="/@@/launchpad.js"></script>
+    <script type="text/javascript" src="/+icing/global.js"></script>
     <script type="text/javascript" src="/@@/sorttable.js"></script>
     <style type="text/css">
       @import url("/@@/dynarch/skin-aqua.css");
@@ -22,8 +23,14 @@
     <link rel="shortcut icon" href="/@@/launchpad" />
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>
-  <body onload="DynarchMenu.setup('menu', {electric: true});" id="document">
-
+  <body
+    onload="
+      DynarchMenu.setup('menu', {electric: true});
+      sortables_init();
+      initHelpPanel();
+    "
+    id="document"
+  >
     <div id="globalheader">
       <div class="launchpad">
         <img
@@ -145,7 +152,6 @@
                       ><metal:notifications
                           use-macro="context/@@+main-template-macros/notifications" />
                       </tal:notifications>
-                      <metal:block define-slot="data" />
                       <metal:block define-slot="main" />
                     </div>
                     <div id="left_nav">
@@ -168,23 +174,25 @@
                       <metal:portlets define-slot="portlets_one" />
                     </div>
                   </div>
-	              </div>
-	            </div>
-	          </div>
-	        </div>
-	      </div>
-	    </div>
-	  </div>
-	  <div id="options_info_closed">
-	    <div class="optinf1">
-	      <div class="optinf2">
-	        <p>Help goes here.</p>
-	      </div>
-	      <a href="#" class="open-close">Help</a>
-	      <br class="clear" />
-	    </div>
-	    <div class="bottom">&nbsp;</div>
-	  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="help_panel" class="closed">
+      <div class="help1">
+        <div class="help2">
+          <p metal:define-slot="help">
+            Sorry, help isn&rsquo;t available for this page.
+          </p>
+        </div>
+        <a href="#" class="open-close">Help</a>
+        <br class="clear" />
+      </div>
+      <div class="bottom">&nbsp;</div>
+    </div>
     <div id="globalfooter">
       <div id="applications">
         <a href="/malone">Malone</a> |
@@ -207,5 +215,5 @@
 </metal:page>
 <!-- 1-0 inprogress
 
-CSS for tabs and portlets needs fixing. "Actions" shows when it shouldn't.
+CSS needs fixing to follow the proper markup.
 -->

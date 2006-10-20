@@ -21,7 +21,9 @@ __all__ = [
 import cgi
 import errno
 import urllib
+import os
 import os.path
+import re
 import time
 from datetime import timedelta, datetime
 
@@ -32,6 +34,8 @@ from zope.security.interfaces import Unauthorized
 from zope.app.content_types import guess_content_type
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces import NotFound
+
+from BeautifulSoup import BeautifulStoneSoup, Comment
 
 import canonical.launchpad.layers
 from canonical.config import config
@@ -488,8 +492,6 @@ class SoftTimeoutView(LaunchpadView):
             'Soft timeout threshold is set to %s ms. This page took'
             ' %s ms to render.' % (soft_timeout, time_to_generate_page))
 
-import os
-import re
 
 class ObjectForTemplate:
 
@@ -497,8 +499,6 @@ class ObjectForTemplate:
         for name, value in kw.items():
             setattr(self, name, value)
 
-
-from BeautifulSoup import BeautifulStoneSoup, Comment
 
 class OneZeroTemplateStatus(LaunchpadView):
     """A list showing how ready each template is for one-zero."""
@@ -573,6 +573,8 @@ class OneZeroTemplateStatus(LaunchpadView):
             output_category.append(self.PageStatus(filename=filename, status=status, comment=xmlcomment))
 
         self.excluded_from_run = sorted(excluded)
+
+
 
 
 
