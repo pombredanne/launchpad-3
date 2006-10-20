@@ -136,6 +136,9 @@ class TestPool(unittest.TestCase):
         self.assertFalse(foo.checkExists("main"))
         self.assertTrue(foo.checkIsFile("universe"))
 
+        # Fail for PQM. I'm so evil.
+        self.assertFalse(True)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

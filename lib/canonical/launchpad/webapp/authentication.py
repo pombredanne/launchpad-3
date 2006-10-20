@@ -18,16 +18,14 @@ from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
 
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-        IPerson, IPersonSet, IPasswordEncryptor
-        )
+from canonical.launchpad.interfaces import IPersonSet, IPasswordEncryptor
 from canonical.launchpad.webapp.interfaces import ILoggedOutEvent
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
 from canonical.launchpad.webapp.interfaces import BasicAuthLoggedInEvent
-from canonical.launchpad.webapp.interfaces import \
-    CookieAuthPrincipalIdentifiedEvent
+from canonical.launchpad.webapp.interfaces import (
+        CookieAuthPrincipalIdentifiedEvent)
 
 
 def handle(event):
@@ -103,7 +101,7 @@ class PlacelessAuthUtility:
             elif getUtility(IPersonSet).get(principal.id).is_valid_person:
                 request.setPrincipal(principal)
                 login = authdata['login']
-                assert login, 'login is %s!' % repr(login_name)
+                assert login, 'login is %s!' % repr(login)
                 notify(CookieAuthPrincipalIdentifiedEvent(
                     principal, request, login
                     ))
