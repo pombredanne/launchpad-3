@@ -7,7 +7,6 @@ import cgi, urllib
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.launchpad.interfaces import TooManyItems
 from canonical.launchpad.webapp.z3batching.batch import _Batch
 from canonical.launchpad.webapp.interfaces import (
     IBatchNavigator, ITableBatchNavigator,
@@ -177,3 +176,4 @@ class TableBatchNavigator(BatchNavigator):
         if columns_to_show:
             for column_to_show in columns_to_show:
                 self.show_column[column_to_show] = True
+
