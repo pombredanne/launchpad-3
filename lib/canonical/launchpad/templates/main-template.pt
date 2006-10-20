@@ -26,9 +26,7 @@
                     'menupreload',
                     [],
                     '2em', 16, true);" id="document">
-    <div id="menucontainer">
-      <ul id="menuroot" class="menuroot">
-        <tal:hierarchy content="structure context/@@+breadcrumbs" />
+
     <div id="globalheader">
       <div class="launchpad">
         <img
@@ -42,14 +40,17 @@
         <li><a href="/" title="Home">Home</a></li>
       </ul>
     </div>
+
+
     <ul id="locationbar">
       <li><strong>Your location:</strong> <a href="/"><em>Home</em></a></li>
-      <li><a href="#"><em>Foo</em></a></li>
-      <li><a href="#"><em>Bar</em></a></li>
-      <li><a href="#"><em>Hum</em></a></li>
+    <div id="menucontainer">
+      <ul id="menuroot" class="menuroot">
+        <tal:hierarchy content="structure context/@@+breadcrumbs" />
+    </div>
     </ul>
+
     <div id="logincontrol" tal:content="structure context/@@login_status" />
-    <ul id="menu" tal:content="structure context/@@+breadcrumbs" />
     <!-- id="menu" should be id="locationbar" -->
     <tal:maintenance replace="structure context/@@+maintenancemessage" />
     <div id="structuralobject"
@@ -214,7 +215,6 @@
         <li class="item"><a href="/people">People</a></li>
         <li class="item"><a href="/projects">Projects</a></li>
         <li class="item"><a href="/sprints">Meetings</a></li>
-    </div>
     </div>
   </body>
 </html>
