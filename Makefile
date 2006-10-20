@@ -44,12 +44,6 @@ check_merge: check_not_a_ui_merge build check importdcheck hctcheck
 	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
-<<<<<<< TREE
-check_merge_ui: build
-	env PYTHONPATH=$(PYTHONPATH) \
-	${PYTHON} -t ./test_on_merge.py -vvf canonical.launchpad.ftests.test_pages
-
-=======
 check_edge_merge: check_no_dbupdates check_merge
 	# Allow the merge if there are no database updates, including
 	# database patches or datamigration scripts (which should live
@@ -59,7 +53,6 @@ check_edge_merge: check_no_dbupdates check_merge
 check_no_dbupdates:
 	[ `PYTHONPATH= bzr status | grep database/schema/ | wc -l` -eq 0 ]
 
->>>>>>> MERGE-SOURCE
 hctcheck: build
 	env PYTHONPATH=$(PYTHONPATH) \
 	    ${PYTHON} -t ./test_on_merge.py -vv \

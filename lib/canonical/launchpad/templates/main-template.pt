@@ -6,7 +6,7 @@
   <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
     <!-- Launchpad JS code -->
-  	<meta name="author" content="Aidan Williams - almostborn.com/portfolio" />
+    <meta name="author" content="Aidan Williams - almostborn.com/portfolio" />
     <script type="text/javascript" src="/@@/launchpad.js"></script>
     <script type="text/javascript" src="/+icing/global.js"></script>
     <script type="text/javascript" src="/@@/sorttable.js"></script>
@@ -166,25 +166,25 @@
                       <div metal:define-slot="portlets_one" />
                     </ul>
                   </div>
-	              </div>
-	            </div>
-	          </div>
-	        </div>
-	      </div>
-	    </div>
-	  </div>
-	  <div id="help_panel" class="closed">
-	    <div class="help1">
-	      <div class="help2">
-	        <p metal:define-slot="help">
-	          Sorry, help isn&rsquo;t available for this page.
-	        </p>
-	      </div>
-	      <a href="#" class="open-close">Help</a>
-	      <br class="clear" />
-	    </div>
-	    <div class="bottom">&nbsp;</div>
-	  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="help_panel" class="closed">
+      <div class="help1">
+        <div class="help2">
+          <p metal:define-slot="help">
+            Sorry, help isn&rsquo;t available for this page.
+          </p>
+        </div>
+        <a href="#" class="open-close">Help</a>
+        <br class="clear" />
+      </div>
+      <div class="bottom">&nbsp;</div>
+    </div>
     <div id="globalfooter">
       <a href="/malone">Malone</a> &ndash;
       <a href="/specs">Blueprint</a> &ndash;
