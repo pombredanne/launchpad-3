@@ -54,7 +54,7 @@ of "last".
     >>> request.addCrumb('http://localhost/people', 'People')
     >>> render_breadcrumbs()
     <li lpm:mid="root" class="item"><a href="/"><img src="/@@/launchpad" alt="" /> Launchpad</a></li>
-    <li class="item" lpm:mid="http://localhost/people/+menudata"><a href="http://localhost/people">People</a></li>
+    <li class="item"><a href="http://localhost/people">People</a></li>
 
 
 When we add another breadcrumb, it appears as a top level <li> after the
@@ -64,6 +64,6 @@ class of "last".
     >>> request.addCrumb('http://localhost/people/someone', 'Someone')
     >>> render_breadcrumbs()
     <li lpm:mid="root" class="item"><a href="/"><img src="/@@/launchpad" alt="" /> Launchpad</a></li>
-    <li class="item" lpm:mid="http://localhost/people/+menudata"><a href="http://localhost/people">People</a></li>
-    <li class="item" lpm:mid="http://localhost/people/someone/+menudata"><a href="http://localhost/people/someone">Someone</a></li>
+    <li class="item"><a href="http://localhost/people">People</a></li>
+    <li class="item"><a href="http://localhost/people/someone">Someone</a></li>
 
