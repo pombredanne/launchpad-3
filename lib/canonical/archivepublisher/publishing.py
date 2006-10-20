@@ -145,11 +145,6 @@ class Publisher(object):
 
                 self._writeDistroRelease(distrorelease, pocket)
 
-    def E_sanitiseLinks(self):
-        """Ensure links in the pool are sane."""
-        self.log.debug("* Step E: Sanitising links in the pool.")
-        self._diskpool.sanitiseLinks(HARDCODED_COMPONENT_ORDER)
-
     def isDirty(self, distrorelease, pocket):
         """True if a publication has happened in this release and pocket."""
         if not (distrorelease.name, pocket) in self.dirty_pockets:

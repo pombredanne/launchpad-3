@@ -129,7 +129,6 @@ def main():
                    options.careful or options.careful_apt)
     try_and_commit("doing release files", publisher.D_writeReleaseFiles,
                    options.careful)
-    try_and_commit("santising links", publisher.E_sanitiseLinks)
 
     log.debug("Ciao")
 
