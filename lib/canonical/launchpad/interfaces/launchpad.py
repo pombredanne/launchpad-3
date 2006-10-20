@@ -16,7 +16,7 @@ from persistent import IPersistent
 from canonical.launchpad import _
 
 __all__ = [
-    'TooManyItems', 'NotFoundError', 'NameNotAvailable', 'UnexpectedFormData',
+    'NotFoundError', 'NameNotAvailable', 'UnexpectedFormData',
     'ILaunchpadRoot', 'ILaunchpadApplication',
     'IMaloneApplication', 'IRosettaApplication', 'IRegistryApplication',
     'IBazaarApplication', 'IPasswordEncryptor', 'IReadZODBAnnotation',
@@ -37,15 +37,6 @@ __all__ = [
     'IBasicLaunchpadRequest', 'IHasSecurityContact',
     ]
 
-
-class TooManyItems(Exception):
-    """Better to raise an early exception than time out.
-
-    If a page is displaying a many to one relationship and isn't supporting
-    batching at this stage, then this exception is to be raised if there are
-    too many items to process within a reasonable time.  'Too many' is some
-    arbitrary number that is likely to be different on a case to case basis.
-    """
     
 class NotFoundError(KeyError):
     """Launchpad object not found."""

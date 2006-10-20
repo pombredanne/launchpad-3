@@ -12,9 +12,9 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     IBazaarApplication, IProductSeriesSet)
 from canonical.lp.dbschema import ImportStatus
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp import (
     Navigation, stepto, enabled_with_permission, ApplicationMenu, Link)
-from canonical.launchpad.webapp.batching import ensure_not_too_many_items
 import canonical.launchpad.layers
 
 
@@ -47,7 +47,7 @@ class BazaarApplicationView:
     def branches(self):
         """List of all branches in the system."""
         branches = self.context.all
-        items = ensure_not_too_many_items(branches, 10000)
+        items = shortlist(branches, 8000, hardlimit=10000)
         return sorted(items, key=operator.attrgetter('sort_key'))
 
     def import_count(self):

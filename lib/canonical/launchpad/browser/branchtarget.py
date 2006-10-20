@@ -12,9 +12,9 @@ __all__ = [
 import operator
 
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import IPerson, IProduct
 from canonical.launchpad.webapp import LaunchpadView
-from canonical.launchpad.webapp.batching import ensure_not_too_many_items
 
 # XXX This stuff was initially cargo-culted from ITicketTarget, some of it
 # could be factored out. See bug 4011. -- David Allouche 2005-09-09
@@ -28,7 +28,7 @@ class BranchTargetView(LaunchpadView):
         # A cache to avoid repulling data from the database, which can be
         # particularly expensive
         branches = self.context.branches
-        items = ensure_not_too_many_items(branches, 10000)
+        items = shortlist(branches, 8000, hardlimit=10000)
         return sorted(items, key=operator.attrgetter('sort_key'))
 
     def context_relationship(self):
@@ -90,7 +90,7 @@ class BranchTargetView(LaunchpadView):
         # the page template, and since we don't want it taking too long,
         # we are going to limit it here to 250 until we add batching.
         #    -- Tim Penhey 2006-10-10
-        for branch in ensure_not_too_many_items(branches, 250):
+        for branch in shortlist(branches, 200, hardlimit=250):
             if categories.has_key(branch.lifecycle_status):
                 category = categories[branch.lifecycle_status]
             else:

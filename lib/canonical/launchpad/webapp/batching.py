@@ -177,25 +177,3 @@ class TableBatchNavigator(BatchNavigator):
         if columns_to_show:
             for column_to_show in columns_to_show:
                 self.show_column[column_to_show] = True
-
-
-def ensure_not_too_many_items(select_results, max_count):
-    """Better to raise an exception than time out
-
-    >>> ensure_not_too_many_items(range(3), 3)
-    [0, 1, 2]
-    >>> ensure_not_too_many_items(range(4), 3)
-    Traceback (most recent call last):
-    ...
-    TooManyItems
-    
-    """
-    result = []
-    count = 0
-    for item in select_results:
-        count += 1
-        if count > max_count:
-            raise TooManyItems  
-        result.append(item)
-    return result
-
