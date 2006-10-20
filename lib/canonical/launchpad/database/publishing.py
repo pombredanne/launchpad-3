@@ -23,8 +23,7 @@ from canonical.launchpad.interfaces import (
     ISecureSourcePackagePublishingHistory, IBinaryPackagePublishingHistory,
     ISecureBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
     IArchivePublisher, IArchiveFilePublisher, IArchiveSafePublisher,
-    AlreadyInPool, NeedsSymlinkInPool, PoolFileOverwriteError)
-from canonical.librarian.utils import copy_and_close
+    PoolFileOverwriteError)
 from canonical.lp.dbschema import (
     EnumCol, PackagePublishingPriority, PackagePublishingStatus,
     PackagePublishingPocket)
@@ -43,33 +42,24 @@ class ArchiveFilePublisherBase:
         filename = self.libraryfilealiasfilename.encode('utf-8')
         filealias = self.libraryfilealias
         sha1 = filealias.content.sha1
+        path = diskpool.pathFor(component, source, filename)
 
         try:
-            diskpool.checkBeforeAdd(component, source, filename, sha1)
+            action = diskpool.addFile(
+                component, source, filename, sha1, filealias)
+            if action == diskpool.results.FILE_ADDED:
+                log.debug("Added %s from library" % path)
+            elif action == diskpool.results.SYMLINK_ADDED:
+                log.debug("%s created as a symlink." % path)
+            elif action == diskpool.results.NONE:
+                log.debug(
+                    "%s is already in pool with the same content." % path)
         except PoolFileOverwriteError, info:
             log.error("System is trying to overwrite %s (%s), "
                       "skipping publishing record. (%s)"
                       % (diskpool.pathFor(component, source, filename),
                          self.libraryfilealias.id, info))
             raise info
-        # We don't benefit in very concrete terms by having the exceptions
-        # NeedsSymlinkInPool and AlreadyInPool be separate, but they
-        # communicate more clearly what is the state of the archive when
-        # processing this publication record, and can be used to debug or
-        # log more explicitly when necessary..
-        except NeedsSymlinkInPool, info:
-            diskpool.makeSymlink(component, source, filename)
-
-        except AlreadyInPool, info:
-            log.debug("%s is already in pool with the same content." %
-                       diskpool.pathFor(component, source, filename))
-
-        else:
-            pool_file = diskpool.openForAdd(component, source, filename)
-            filealias.open()
-            copy_and_close(filealias, pool_file)
-            log.debug("Added %s from library" %
-                       diskpool.pathFor(component, source, filename))
 
 
 class SourcePackageFilePublishing(SQLBase, ArchiveFilePublisherBase):

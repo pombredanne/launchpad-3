@@ -17,9 +17,7 @@ __all__ = [
     'IArchivePublisher',
     'IArchiveFilePublisher',
     'IArchiveSafePublisher',
-    'AlreadyInPool',
     'NotInPool',
-    'NeedsSymlinkInPool',
     'PoolFileOverwriteError',
     'pocketsuffix'
     ]
@@ -94,26 +92,6 @@ class IArchiveSafePublisher(Interface):
         published field when they were checked via 'careful'
         publishing.
         """
-
-
-class AlreadyInPool(Exception):
-    """File is already in the pool with the same content.
-
-    No further action from the publisher engine is required, not an error
-    at all.
-    The file present in pool was verified and has the same content and is
-    in the desired location.
-    """
-
-
-class NeedsSymlinkInPool(Exception):
-    """Symbolic link is required to publish the file in pool.
-
-    File is already present in pool with the same content, but
-    in other location (different component, most of the cases)
-    Callsite must explicitly call diskpool.makeSymlink(..) method
-    in order to publish the file in the new location.
-    """
 
 
 class NotInPool(Exception):

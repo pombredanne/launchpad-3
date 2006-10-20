@@ -35,7 +35,6 @@ def getDeathRow(distroname, log, pool_root_override):
     dp = DiskPool(pool_root, logging.getLogger("DiskPool"))
     # Set the diskpool's log level to INFO to suppress debug output
     dp.logger.setLevel(20)
-    dp.scan()
 
     log.debug("Preparing death row.")
     return DeathRow(distro, dp, log)

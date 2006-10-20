@@ -7,9 +7,10 @@ import tempfile
 import random
 
 from canonical.archivepublisher import HARDCODED_COMPONENT_ORDER
-from canonical.librarian.utils import sha1_from_path
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
-    AlreadyInPool, NotInPool, NeedsSymlinkInPool, PoolFileOverwriteError)
+    NotInPool, PoolFileOverwriteError)
+from canonical.librarian.utils import copy_and_close, sha1_from_path
 
 
 def poolify(source, component):
@@ -48,6 +49,18 @@ def relative_symlink(src_path, dst_path):
         forward_elems = src_path_elems[len(common_prefix):]
         src_path = path_sep.join(backward_elems + forward_elems)
     os.symlink(src_path, dst_path)
+
+
+class FileAddActionEnum:
+    """Possible actions taken when adding a file.
+
+    FILE_ADDED: we added the actual file to the disk
+    SYMLINK_ADDED: we created a symlink to another copy of the same file
+    NONE: no action was necessary or taken.
+    """
+    FILE_ADDED = "file_added"
+    SYMLINK_ADDED = "symlink_added"
+    NONE = "none"
 
 
 class _diskpool_atomicfile:
@@ -98,26 +111,10 @@ class DiskPoolEntry:
         self.source = source
         self.filename = filename
         self.logger = logger
-        self._reset()
 
-    def _reset(self):
-        """Reset internal values representing state on the disk."""
         self.file_component = ''
         self.symlink_components = set()
-        self.sha1 = None
 
-    def debug(self, *args, **kwargs):
-        self.logger.debug(*args, **kwargs)
-        
-    def pathFor(self, component):
-        """Return the path for this file in the given component."""
-        return os.path.join(self.rootpath,
-                            poolify(self.source, component),
-                            self.filename)
-        
-    def scan(self):
-        """Scan the disk for instances of this file."""
-        self._reset()
         for component in HARDCODED_COMPONENT_ORDER:
             path = self.pathFor(component)
             if os.path.islink(path):
@@ -128,108 +125,86 @@ class DiskPoolEntry:
         if self.symlink_components:
             assert self.file_component
 
-    def makeSymlink(self, component):
-        """Make a symlink to this file in the given component.
+    def debug(self, *args, **kwargs):
+        self.logger.debug(*args, **kwargs)
+        
+    def pathFor(self, component):
+        """Return the path for this file in the given component."""
+        return os.path.join(self.rootpath,
+                            poolify(self.source, component),
+                            self.filename)
 
-        Don't call this method unless the file already exists in another
-        component.
+    def preferredComponent(self, add=None, remove=None):
+        """Return the appropriate component for the real file.
 
+        If add_component is passed, add it to the list before calculating.
+        If remove_component is passed, remove it before calculating.
+        Thus, we can calcuate which component should contain the main file
+        after the addition or removal we are working on.
         """
-        targetpath = self.pathFor(component)
-        assert not os.path.exists(targetpath)
-        assert self.file_component
+        components = set()
+        if self.file_component:
+            components.add(self.file_component)
+        components = components.union(self.symlink_components)
+        if add is not None:
+            components.add(add)
+        if remove is not None:
+            components.remove(remove)
 
-        sourcepath = self.pathFor(self.file_component)
-
-        self.debug("Making symlink from %s to %s" %
-                   (targetpath, sourcepath))
-
-        dirpath = os.path.dirname(targetpath)
-        if not os.path.exists(dirpath):
-            os.makedirs(dirpath)
-
-        relative_symlink(sourcepath, targetpath)
-        self.symlink_components.add(component)
-
-    @property
+        for component in HARDCODED_COMPONENT_ORDER:
+            if component in components:
+                return component
+        
+    @cachedproperty
     def file_hash(self):
-        """Return the SHA1 sum of this file, and cache it."""
-        if not self.sha1:
-            targetpath = self.pathFor(self.file_component)
-            self.sha1 = sha1_from_path(targetpath)
-        return self.sha1
+        """Return the SHA1 sum of this file."""
+        targetpath = self.pathFor(self.file_component)
+        return sha1_from_path(targetpath)
 
-    def checkBeforeAdd(self, component, current_sha1):
-        """Performs checks before adding a file in the archive.
-
-        Raises AlreadyInPool if the proposed file is already in the archive
-        with the same content and the same location.
-
-        Raises NeedSymlinkInPool when the proposed file is already present
-        in some other path in the archive and has the same content.The
-        symlink must be performed in callsite
-
-        Raises PoolFileOverwrite if the proposed file is already present
-        somewhere in the archive with a different content. This is a serious
-        archive corruption and must be analysed ad hoc.
-
-        Returns None for unknown/new files, which could be straight added into
-        the archive.
-        """
-        # create directory component if necessary (and component is allowed).
-        path = os.path.dirname(self.pathFor(component))
+    def addFile(self, component, sha1, contents):
+        """See DiskPool.addFile."""
+        targetpath = self.pathFor(component)
+        path = os.path.dirname(targetpath)
         if not os.path.exists(path):
             assert component in HARDCODED_COMPONENT_ORDER
             os.makedirs(path)
 
-        if not self.file_component:
-            # Early return means the file is new and can be added.
-            return None
+        if self.file_component:
+            # There's something on disk. Check hash.
+            if sha1 != self.file_hash:
+                raise PoolFileOverwriteError(
+                    '%s != %s' % (sha1, self.file_hash))
 
-        if current_sha1 != self.file_hash:
-            # we already have the same filename and their sha1sum differ.
-            # raise error.
-            # When the sha1sums differ at this point, a serious inconsistency
-            # has been detected. This can happen, for instance, when we
-            # allow people to upload two packages with the same version
-            # number but different diff or original tarballs.
-            # This situation will arise only if one of the upstream checks
-            # fails to catch this sort of broken semantics.
-            raise PoolFileOverwriteError(
-                '%s != %s' % (current_sha1, self.file_hash))
+            if (component == self.file_component
+                or component in self.symlink_components):
+                # The file is already here
+                return FileAddActionEnum.NONE
+            else:
+                # The file is present in a different component, make a symlink.
+                relative_symlink(self.pathFor(self.file_component), targetpath)
+                self.symlink_components.add(component)
+                # Then fix to ensure the right component is linked.
+                self._sanitiseLinks()
 
-        if (component != self.file_component
-            and component not in self.symlink_components):
-            # file is present in a different component
-            raise NeedsSymlinkInPool()
+                return FileAddActionEnum.SYMLINK_ADDED
 
-        # the file is already present in the archive, in the right path and
-        # has the correct content, no add is requires and the archive is safe
-        raise AlreadyInPool()
-
-    def openForAdd(self, component):
-        """Open this file for adding in the pool, making dirs as needed."""
-        # XXX: The division between openForAdd and checkBeforeAdd is done
-        # mainly to avoid requiring the pool to know about the librarian,
-        # since it would need to open, copy and close the library file
-        # internally (probably as part of a checkAndOpenIfNecessary-style
-        # method). This may not be the best separation and this could be
-        # revisited in the future.
-        #   -- kiko, 2006-06-09
+        # If we get to here, we want to write the file.
         self.debug("Making new file in %s for %s/%s" %
                    (component, self.source, self.filename))
 
-        targetpath = self.pathFor(component)
-
         assert not os.path.exists(targetpath)
 
-        # This means we have never published this source package
-        # name in this component before.
+        # Make the necessary directories, if they're not there already.
         if not os.path.exists(os.path.dirname(targetpath)):
             os.makedirs(os.path.dirname(targetpath))
 
+        # Write the file.
+        file_to_write = _diskpool_atomicfile(
+            targetpath, "wb", rootpath=self.rootpath)
+        contents.open()
+        copy_and_close(contents, file_to_write)
         self.file_component = component
-        return _diskpool_atomicfile(targetpath, "wb", rootpath=self.rootpath)
+        return FileAddActionEnum.FILE_ADDED
 
     def removeFile(self, component):
         """Remove a file from a given component; return bytes freed.
@@ -267,10 +242,8 @@ class DiskPoolEntry:
             # The target for removal is the real file, and there are symlinks
             # pointing to it. In order to avoid breakage, we need to first
             # shuffle the symlinks, so that the one we want to delete will
-            # just be one of the links, and becomes safe. It doesn't matter
-            # which of the current links becomes the real file here, we'll
-            # tidy up later in sanitiseLinks.
-            targetcomponent = iter(self.symlink_components).next()
+            # just be one of the links, and becomes safe.
+            targetcomponent = self.preferredComponent(remove=component)
             self._shufflesymlinks(targetcomponent)
 
         return self._reallyRemove(component)
@@ -350,7 +323,7 @@ class DiskPoolEntry:
                 pass
             relative_symlink(targetpath, newpath)
 
-    def shuffleSymlinks(self, preferredcomponents):
+    def _sanitiseLinks(self):
         """Ensure the real file is in the most preferred component.
 
         If this file is in more than one component, ensure the real
@@ -363,22 +336,15 @@ class DiskPoolEntry:
         symlinks where they should have working files.
         
         """
-        if not self.symlink_components:
-            return
-        
-        for comp in preferredcomponents:
-            if comp == self.file_component:
-                # Most preferred component is already the file
-                break
-            if comp in self.symlink_components:
-                # Most preferred component is a symlink; shuffle
-                self._shufflesymlinks(comp)
-                break
+        component = self.preferredComponent()
+        if not self.file_component == component:
+            self._shufflesymlinks(component)
 
 
 class DiskPool:
     """Scan a pool on the filesystem and record information about it."""
-
+    results = FileAddActionEnum
+    
     def __init__(self, rootpath, logger):
         self.rootpath = rootpath
         if not rootpath.endswith("/"):
@@ -389,51 +355,74 @@ class DiskPool:
     def debug(self, *args, **kwargs):
         self.logger.debug(*args, **kwargs)
 
-    def getEntry(self, source, file):
-        """Return the entry for source and file, creating if necessary."""
-        entry = self.entries.get((source, file), None)
-        if entry is None:
-            entry = DiskPoolEntry(self.rootpath, source, file, self.logger)
-            entry.scan()
-            self.entries[(source, file)] = entry
-        return entry
+    def _getEntry(self, sourcename, file):
+        """Return a new DiskPoolEntry for the given sourcename and file."""
+        return DiskPoolEntry(self.rootpath, sourcename, file, self.logger)
 
     def pathFor(self, comp, source, file=None):
+        """Return the path for the given pool folder or file.
+
+        If file is none, the path to the folder containing all packages
+        for the given component and source package name will be returned.
+
+        If file is specified, the path to the specific package file will
+        be returned.
+        """
         path = os.path.join(
             self.rootpath, poolify(source, comp))
         if file:
             return os.path.join(path, file)
         return path
 
-    def scan(self):
-        pass
-    
-    def makeSymlink(self, component, sourcename, filename):
-        return self.getEntry(sourcename, filename).makeSymlink(component)
- 
-    def getAndCacheFileHash(self, component, sourcename, filename):
-        return self.getEntry(sourcename, filename).file_hash
-    
-    def checkBeforeAdd(self, component, sourcename, filename, current_sha1):
-        entry = self.getEntry(sourcename, filename)
-        return entry.checkBeforeAdd(component, current_sha1)
+    def addFile(self, component, sourcename, filename, sha1, contents):
+        """Add a file with the given contents to the pool.
 
-    def openForAdd(self, component, sourcename, filename):
-        entry = self.getEntry(sourcename, filename)
-        return entry.openForAdd(component)
-    
+        Component, sourcename and filename are used to calculate the
+        on-disk location.
+
+        sha1 is used to compare with the existing file's checksum, if
+        a file already exists for any component.
+
+        contents is a file-like object containing the contents we want
+        to write.
+
+        There are four possible outcomes:
+        - If the file doesn't exist in the pool for any component, it will
+        be written from the given contents and results.ADDED_FILE will be
+        returned.
+
+        - If the file already exists in the pool, in this or any other
+        component, the checksum of the file on disk will be calculated and
+        compared with the checksum provided. If they fail to match,
+        PoolFileOverwriteError will be raised.
+        
+        - If the file already exists but not in this component, and the
+        checksum test above passes, a symlink will be added, and
+        results.SYMLINK_ADDED will be returned. Also, the symlinks will be
+        checked and sanitised, to ensure the real copy of the file is in the
+        most preferred component, according to HARDCODED_COMPONENT_ORDER.
+
+        - If the file already exists and is already in this component,
+        either as a file or a symlink, and the checksum check passes,
+        results.NONE will be returned and nothing will be done.
+        """
+        entry = self._getEntry(sourcename, filename)
+        return entry.addFile(component, sha1, contents)
+        
     def removeFile(self, component, sourcename, filename):
-        entry = self.getEntry(sourcename, filename)
+        """Remove the specified file from the pool.
+
+        There are three possible outcomes:
+        - If the specified file does not exist, NotInPool will be raised.
+
+        - If the specified file exists and is a symlink, or is the only
+        copy of the file in the pool, it will simply be deleted, and its
+        size will be returned.
+
+        - If the specified file is a real file and there are symlinks
+        referencing it, the symlink in the next most preferred component
+        will be deleted, and the file will be moved to replace it. The
+        size of the deleted symlink will be returned.
+        """
+        entry = self._getEntry(sourcename, filename)
         return entry.removeFile(component)
-
-    def _reallyRemove(self, component, sourcename, filename):
-        entry = self.getEntry(sourcename, filename)
-        return entry._reallyRemove(component)
-
-    def _shufflesymlinks(self, filename, targetcomponent):
-        entry = self.getEntry(None, filename)
-        return entry._shufflesymlinks(targetcomponent)
-
-    def sanitiseLinks(self, preferredcomponents):
-        for entry in self.entries.values():
-            entry.shuffleSymlinks(preferredcomponents)

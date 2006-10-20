@@ -139,7 +139,6 @@ class TestNativePublishing(LaunchpadZopelessTestCase):
         foo_dsc.write('Hello world')
         foo_dsc.close()
 
-        self.disk_pool.scan()
         pub_source = self.getPubSource(
             "foo", "main", "foo.dsc", filecontent="Something")
         pub_source.publish(self.disk_pool, self.logger)

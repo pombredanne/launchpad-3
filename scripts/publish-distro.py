@@ -76,7 +76,6 @@ def getPublisher(options, log):
     dp = DiskPool(pubconf.poolroot, logging.getLogger("DiskPool"))
     # Set the diskpool's log level to INFO to suppress debug output
     dp.logger.setLevel(20)
-    dp.scan()
 
     log.debug("Preparing publisher.")
     return Publisher(log, pubconf, dp, distro)
