@@ -53,7 +53,7 @@ def find_portlet(content, name):
 def find_main_content(content):
     """Find and return the main content area of the page"""
     soup = BeautifulSoup(content)
-    tag = soup.find(attrs={'id': 'region-content'})
+    tag = soup.find(attrs={'id': 'maincontent'})
     if tag:
         return tag
     return soup.find(attrs={'id': 'content'})
