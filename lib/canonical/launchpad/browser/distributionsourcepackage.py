@@ -6,8 +6,9 @@ __all__ = [
     'DistributionSourcePackageNavigation',
     'DistributionSourcePackageSOP',
     'DistributionSourcePackageFacets',
-    'DistributionSourcePackageView'
     'DistributionSourcePackageNavigation',
+    'DistributionSourcePackageOverviewMenu',
+    'DistributionSourcePackageBugContactsView'
     ]
 
 from zope.component import getUtility

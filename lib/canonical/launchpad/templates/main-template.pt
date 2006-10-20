@@ -1,4 +1,4 @@
-<metal:page define-macro="master"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<metal:page define-macro="master"><metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
 <metal:block define-slot="top_slot" />
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"
     tal:attributes="lang default_language|default;
@@ -6,14 +6,12 @@
   <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
     <!-- Launchpad JS code -->
-    <meta name="author" content="Aidan Williams - almostborn.com/portfolio" />
     <script type="text/javascript" src="/@@/launchpad.js"></script>
     <script type="text/javascript" src="/+icing/global.js"></script>
     <script type="text/javascript" src="/@@/sorttable.js"></script>
-    <style type="text/css">
-      @import url("/@@/dynarch/skin-aqua.css");
-    </style>
-    <script type="text/javascript" src="/@@/dynarch/hmenu.js"></script>
+    <script type="text/javascript" src="/@@/MochiKit/MochiKit.js"></script>
+    <script type="text/javascript" src="/@@/SignalWrapper.js"></script>
+    <script type="text/javascript" src="/@@/lpmenu.js"></script>
     <!-- Launchpad style sheet -->
     <style
       type="text/css"
@@ -23,14 +21,14 @@
     <link rel="shortcut icon" href="/@@/launchpad" />
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>
-  <body
-    onload="
-      DynarchMenu.setup('menu', {electric: true});
-      sortables_init();
-      initHelpPanel();
-    "
-    id="document"
-  >
+  <body onload="lpmenu.initialize(['menuroot'], 
+                    '/',
+                    'menupreload',
+                    [],
+                    '2em', 16, true);" id="document">
+    <div id="menucontainer">
+      <ul id="menuroot" class="menuroot">
+        <tal:hierarchy content="structure context/@@+breadcrumbs" />
     <div id="globalheader">
       <div class="launchpad">
         <img
@@ -209,6 +207,14 @@
         <a href="/feedback">Help&nbsp;us&nbsp;improve</a> |
         <a href="/faq">FAQ</a>
       </div>
+    <div id="menupreload">
+      <ul class="menu" lpm:mid="root" lpm:midbase="/$$/+menudata">
+        <li class="item"><a href="/products">Products</a></li>
+        <li class="item"><a href="/distros">Distributions</a></li>
+        <li class="item"><a href="/people">People</a></li>
+        <li class="item"><a href="/projects">Projects</a></li>
+        <li class="item"><a href="/sprints">Meetings</a></li>
+    </div>
     </div>
   </body>
 </html>
