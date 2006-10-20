@@ -294,7 +294,7 @@ shipped, by running the shipit-exports cronscript.
   >>> run.requests[0].highpriority
   False
 
-Since we're now allowing shipit admins to make requests of Edgy CDs, we need
+Since we're now allowing shipit admins to make requests for Edgy CDs, we need
 to have a separate export containing only Edgy requests. Similarly, these
 Edgy requests won't be included in the default export.
 

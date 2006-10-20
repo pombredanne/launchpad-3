@@ -89,6 +89,8 @@ class ShippingRequest(SQLBase):
         """See IShippingRequest"""
         requested_cds = self.getAllRequestedCDs()
         assert requested_cds.count() > 0
+        # We know that a request cannot contain CDs of more than one distro
+        # release, so it's safe to get the first element here.
         return requested_cds[0].distrorelease
 
     @property
@@ -435,9 +437,9 @@ class ShippingRequestSet:
                   AND status = %(status)s
                   %(priorityfilter)s
             ORDER BY id
-            """ % {'priorityfilter': priorityfilter,
-                   'status': ShippingRequestStatus.APPROVED,
-                   'distrorelease': distrorelease}
+            """ % sqlvalues(priorityfilter=priorityfilter,
+                            status=ShippingRequestStatus.APPROVED,
+                            distrorelease=distrorelease)
 
         cur = cursor()
         cur.execute(query)
@@ -842,10 +844,7 @@ class RequestedCDs(SQLBase):
     request = ForeignKey(
         dbName='request', foreignKey='ShippingRequest', notNull=True)
 
-    # XXX: I think it may be a good idea to remove the default value here.
-    distrorelease = EnumCol(
-        schema=ShipItDistroRelease, notNull=True,
-        default=ShipItConstants.current_distrorelease)
+    distrorelease = EnumCol(schema=ShipItDistroRelease, notNull=True)
     architecture = EnumCol(schema=ShipItArchitecture, notNull=True)
     flavour = EnumCol(schema=ShipItFlavour, notNull=True)
 
