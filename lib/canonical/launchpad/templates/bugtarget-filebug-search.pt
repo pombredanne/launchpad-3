@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template/master"
+      metal:use-macro="context/@@main_template_2col/master"
       i18n:domain="malone"
 >
 <body>
@@ -8,10 +8,6 @@
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-latestbugs" />
 </metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
   <h3 tal:content="context/title">Foo Series: main</h3>
@@ -28,21 +24,9 @@
         enctype="multipart/form-data"
         accept-charset="UTF-8">
 
-    <ol>
-      <tal:filebug-step repeat="step view/getSteps">
-        <li tal:condition="step/selected"
-            tal:content="step/title"
-            style="font-weight: bold">
-            A selected step
-        </li>
-        <li tal:condition="not:step/selected"
-            tal:content="step/title"
-            class="discreet"
-            style="font-size: 100%">
-            An unselected step
-        </li>
-      </tal:filebug-step>
-    </ol>
+    <div tal:condition="view/shouldShowSteps" style="float: right">
+      <div metal:use-macro="context/@@+filebug-steps/steps" />
+    </div>
 
     <div style="margin-top: 1em"
          tal:define="error python:view.getWidgetError('title')">

@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     "BugTargetBugListingView",
     "BugTargetBugTagsView",
+    "FileBugViewBase",
     "FileBugAdvancedView",
     "FileBugGuidedView",
     "FileBugInPackageView"
@@ -34,7 +35,7 @@ from canonical.launchpad.webapp.generalform import GeneralFormView
 
 class FileBugViewBase(LaunchpadFormView):
     """Base class for views related to filing a bug."""
-    
+
     @property
     def initial_values(self):
         """Give packagename a default value, if applicable."""
@@ -42,7 +43,7 @@ class FileBugViewBase(LaunchpadFormView):
             return {}
 
         return {'packagename': self.context.name}
-        
+
     def getProductOrDistroFromContext(self):
         """Return the IProduct or IDistribution for this context."""
         context = self.context
@@ -197,7 +198,7 @@ class FileBugViewBase(LaunchpadFormView):
                 'disclose</a> this bug.')
 
         self.request.response.redirect(canonical_url(bug.bugtasks[0]))
-        
+
     def showFileBugForm(self):
         """Override this method in base classes to show the filebug form."""
         raise NotImplementedError
@@ -278,12 +279,22 @@ class FileBugGuidedView(FileBugViewBase):
 
             return ['title', 'comment', 'packagename']
 
-    @action("Search for similar bugs",
-            name="search", validator="validate_search")
+    @action("Continue", name="search", validator="validate_search")
     def search_action(self, action, data):
         """Search for similar bug reports."""
-        self.current_step = "check_for_similar"
-        return self._DISPLAY_DUPES()
+        self.similar_bugs = self.getSimilarBugs()
+        self.most_common_bugs = self.getMostCommonBugs()
+
+        # Jump straight to the bug filing page if there are no
+        # similar or duplicate bugs.
+        if self.similar_bugs or self.most_common_bugs:
+            self.current_step = "check_for_similar"
+            return self._DISPLAY_DUPES()
+        else:
+            self.current_step = "filebug"
+            self.request.response.addNotification(
+                'No bugs matching "%s" were found' % self.getSearchText())
+            return self.showFileBugForm()
 
     def getSteps(self):
         steps = []
@@ -306,6 +317,11 @@ class FileBugGuidedView(FileBugViewBase):
 
         return matching_bugs
 
+    def getMostCommonBugs(self):
+        """Return a list of the most duplicated bugs."""
+        return self.context.getMostCommonBugs(
+            self.user, limit=self._MATCHING_BUGS_LIMIT)
+
     def getSearchText(self):
         """Return the search string entered by the user."""
         return self.widgets['title'].getInputValue()
@@ -321,16 +337,16 @@ class FileBugGuidedView(FileBugViewBase):
         # Return an empty list of errors to satisfy the validation API,
         # and say "we've handled the validation and found no errors."
         return ()
-        
+
     def validate_no_dupe_found(self, action, data):
         return ()
 
-    @action("I don't see my bug in this list", name="no_dupe_found",
+    @action("Continue", name="no_dupe_found",
             validator="validate_no_dupe_found")
     def no_dupe_found_action(self, action, data):
         """Show the simple bug form."""
         return self.showFileBugForm()
-        
+
     @action("Continue", name="continue",
             validator="validate_no_dupe_found")
     def continue_action(self, action, data):
@@ -340,11 +356,6 @@ class FileBugGuidedView(FileBugViewBase):
     def showFileBugForm(self):
         self.current_step = "filebug"
         return self._FILEBUG_FORM()
-
-    def getMostCommonBugs(self):
-        """Return a list of the most duplicated bugs."""
-        return self.context.getMostCommonBugs(
-            self.user, limit=self._MATCHING_BUGS_LIMIT)
 
 
 class FileBugInPackageView(FileBugViewBase):

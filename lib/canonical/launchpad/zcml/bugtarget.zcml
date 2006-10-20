@@ -67,4 +67,10 @@
        permission="zope.Public"
        template="../templates/bugtarget-macros-search.pt" />
 
+  <browser:page
+       for="canonical.launchpad.interfaces.IBugTarget"
+       name="+filebug-steps"
+       template="../templates/bugtarget-filebug-steps.pt"
+       permission="launchpad.AnyPerson" />
+
 </configure>

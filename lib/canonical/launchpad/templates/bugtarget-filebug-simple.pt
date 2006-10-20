@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template/master"
+      metal:use-macro="context/@@main_template_2col/master"
       i18n:domain="malone"
 >
 <body>
@@ -8,10 +8,6 @@
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-latestbugs|nothing" />
 </metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details|nothing" />
-</metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
   <h3 tal:condition="context/title|nothing"
@@ -23,21 +19,9 @@
 
   <tal:uses_malone tal:condition="view/contextUsesMalone">
 
-  <ol tal:condition="view/shouldShowSteps">
-    <tal:filebug-step repeat="step view/getSteps">
-      <li tal:condition="step/selected"
-          tal:content="step/title"
-          style="font-weight: bold">
-          A selected step
-      </li>
-      <li tal:condition="not:step/selected"
-          tal:content="step/title"
-          class="discreet"
-          style="font-size: 100%">
-          An unselected step
-      </li>
-    </tal:filebug-step>
-  </ol>
+  <div tal:condition="view/shouldShowSteps" style="float: right;">
+    <div metal:use-macro="context/@@+filebug-steps/steps" />
+  </div>
 
   <form action="."
         tal:attributes="action request/URL"
@@ -53,7 +37,7 @@
 
   <div tal:condition="view/widgets/packagename|nothing"
        style="margin-top: 1em">
-    <div tal:attributes="class python:view.widget_errors['packagename'] and 'error' or ''"
+    <div tal:attributes="class python:view.widget_errors.get('packagename') and 'error' or ''"
          tal:define="name_radio_selected view/shouldSelectPackageName">
     <label tal:attributes="for view/widgets/packagename/name">
       In what package did you find this bug?
@@ -76,7 +60,7 @@
       </li>
     </ul>
     <div
-      tal:condition="view/widget_errors/packagename"
+      tal:condition="view/widget_errors/packagename|nothing"
       class="message"
       tal:content="view/widget_errors/packagename"
     >An error on package name.</div>
