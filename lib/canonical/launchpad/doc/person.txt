@@ -29,7 +29,7 @@ Access to people (Persons or Teams) is done through the IPersonSet
 utility:
 
 You can create a new person using the createPersonAndEmail method of
-IPersonSet. All you need for that is a valid email address. You can also 
+IPersonSet. All you need for that is a valid email address. You can also
 hide the user email addresses.
 
 Some of our scripts may create Person entries, and in these cases they must
@@ -67,8 +67,8 @@ the person should look like this:
     u'when the ed package was imported into Ubuntu Breezy'
 
 
-In case of failure of creating a new person or email the method returns 
-(None, None). Let's demonstrate this trying to create a person with 
+In case of failure of creating a new person or email the method returns
+(None, None). Let's demonstrate this trying to create a person with
 an invalid email.
 
     >>> p2, invalid_email = personset.createPersonAndEmail(
@@ -79,7 +79,7 @@ an invalid email.
 And now with the same name of a existing account
 
     >>> p3, invalid_email = personset.createPersonAndEmail(
-    ...     'randomemail@randomhost.com', PersonCreationRationale.UNKNOWN, 
+    ...     'randomemail@randomhost.com', PersonCreationRationale.UNKNOWN,
     ...     name='name12')
     >>> p3, invalid_email
     (None, None)
@@ -363,30 +363,6 @@ Reset firefox so we don't mess up later tests.
 
     >>> firefox.active = True
     >>> flush_database_updates()
-
-
-Ticket API
-----------
-
-It's easy to find out what tickets a person is related to:
-
-    >>> name12 = personset.getByName('name16')
-    >>> [(t.title, t.status.title) for t in name12.tickets()]
-    [(u'mailto: problem in webpage', 'Answered'),
-     (u'Slow system', 'Open'),
-     (u'Firefox loses focus and gets stuck', 'Open'),
-     (u'Firefox is slow and consumes too much RAM', 'Rejected')]
-
-    >>> [(t.title, t.status.title) for t in name12.answered_tickets]
-    [(u'mailto: problem in webpage', 'Answered'),
-     (u'Firefox is slow and consumes too much RAM', 'Rejected')]
-
-    >>> [(t.title, t.status.title) for t in name12.assigned_tickets]
-    []
-
-    >>> [(t.title, t.status.title) for t in name12.subscribed_tickets]
-    [(u'Slow system', 'Open'),
-     (u'Firefox is slow and consumes too much RAM', 'Rejected')]
 
 Ubunteros
 ---------
