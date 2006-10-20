@@ -13,58 +13,25 @@ from tempfile import mkdtemp
 import unittest
 
 from canonical.archivepublisher.tests.util import FakeLogger
+from canonical.archivepublisher.diskpool import DiskPool, poolify
 
-
-class TestPoolifier(unittest.TestCase):
-
-    def testImport(self):
-        """Poolifier should be importable"""
-        from canonical.archivepublisher.diskpool import Poolifier
-
-    def testInstatiate(self):
-        """Poolifier should be instantiatable"""
-        from canonical.archivepublisher.diskpool import Poolifier
-        p = Poolifier()
-
-    def testBadStyle(self):
-        """Poolifier should not instantiate on bad style"""
-        from canonical.archivepublisher.diskpool import Poolifier
-        bad_style = object()
-        self.assertRaises(ValueError, Poolifier, bad_style)
+class TestPoolification(unittest.TestCase):
 
     def testPoolificationOkay(self):
-        """Poolifier.poolify should poolify properly"""
-        from canonical.archivepublisher.diskpool import Poolifier
-        p = Poolifier()
+        """poolify should poolify properly"""
         cases = (
             ( "foo", "main", "main/f/foo" ),
             ( "foo", "universe", "universe/f/foo" ),
             ( "libfoo", "main", "main/libf/libfoo" )
             )
         for case in cases:
-            self.assertEqual( case[2], p.poolify(case[0], case[1]) )
-
-    def testPoolificationWithNoComponent(self):
-        """Poolifier.poolify should raise with no component"""
-        from canonical.archivepublisher.diskpool import Poolifier
-        p = Poolifier()
-        self.assertRaises(ValueError, p.poolify, "foo")
-
-    def testPoolificationWorksAfterComponent(self):
-        """Poolifier.poolify should work after a component"""
-        from canonical.archivepublisher.diskpool import Poolifier
-        p = Poolifier()
-        p.component("main")
-        self.assertEqual( p.poolify("foo"), "main/f/foo" )
-        self.assertEqual( p.poolify("foo","bar"), "bar/f/foo" )
+            self.assertEqual( case[2], poolify(case[0], case[1]) )
 
 
 class TestPool(unittest.TestCase):
     def setUp(self):
-        from canonical.archivepublisher.diskpool import Poolifier, DiskPool
         self.pool_path = mkdtemp()
-        self.poolifier = Poolifier()
-        self.pool = DiskPool(self.poolifier, self.pool_path, FakeLogger())
+        self.pool = DiskPool(self.pool_path, FakeLogger())
         self.pool.scan()
 
         # Add a file in main, and one in universe
@@ -86,9 +53,27 @@ class TestPool(unittest.TestCase):
 
     def pathFor(self, component, sourcename, filename):
         """Return the full filesystem path for the file in the pool."""
-        pool_name = self.poolifier.poolify(sourcename, component)
+        pool_name = poolify(sourcename, component)
         return os.path.join(self.pool_path, pool_name, filename)
 
+    def testPoolEntryData(self):
+        """After setup, the pool entries should have the right data."""
+        def check_data(pool):
+            foo = pool.getEntry("foo", "foo-1.0.deb")
+            bar = pool.getEntry("bar", "bar-1.0.deb")
+            self.assertEqual(foo.file_component, "main")
+            self.assertEqual(bar.file_component, "universe")
+            self.assertEqual(foo.symlink_components, set(["universe"]))
+            self.assertEqual(bar.symlink_components, set(["main"]))
+
+        # First we check the data we've got while adding files is right
+        check_data(self.pool)
+
+        # Then we throw away the pool, and check it scans out the right
+        # data again by looking at the files
+        pool = DiskPool(self.pool_path, FakeLogger())
+        check_data(pool)
+        
     def testSanitiseLinks(self):
         """canonical.archivepublisher.DiskPool.sanitiseLinks should work."""
         # Sanitise the links.

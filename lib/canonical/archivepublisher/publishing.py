@@ -9,16 +9,12 @@ from datetime import datetime
 
 from canonical.archivepublisher.domination import Dominator
 from canonical.archivepublisher.ftparchive import FTPArchiveHandler
+from canonical.launchpad.interfaces import pocketsuffix
 from canonical.librarian.client import LibrarianClient
 from canonical.lp.dbschema import PackagePublishingPocket
-
-from canonical.launchpad.interfaces import pocketsuffix
+from canonical.archivepublisher import HARDCODED_COMPONENT_ORDER
 
 suffixpocket = dict((v, k) for (k, v) in pocketsuffix.items())
-# XXX: if people actually start seriously using ComponentSelections this
-# will need to be revisited. For instance, adding new components will
-# break places which use this list. -- kiko, 2006-08-23
-HARDCODED_COMPONENT_ORDER = ['main', 'restricted', 'universe', 'multiverse']
 
 DISTRORELEASE_STANZA = """Origin: %s
 Label: %s

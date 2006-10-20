@@ -11,8 +11,7 @@ from zope.component import getUtility
 from canonical.database.constants import UTC_NOW
 
 from canonical.archivepublisher.config import Config
-from canonical.archivepublisher.diskpool import (
-    DiskPool, Poolifier)
+from canonical.archivepublisher.diskpool import DiskPool
 from canonical.archivepublisher.tests.util import FakeLogger
 
 from canonical.launchpad.ftests.harness import (
@@ -48,7 +47,7 @@ class TestNativePublishing(LaunchpadZopelessTestCase):
 
         self.pool_dir = self.config.poolroot
         self.logger = FakeLogger()
-        self.disk_pool = DiskPool(Poolifier(), self.pool_dir, self.logger)
+        self.disk_pool = DiskPool(self.pool_dir, self.logger)
 
     def addMockFile(self, filename, content):
         """Add a mock file in Librarian.

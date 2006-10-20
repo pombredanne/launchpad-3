@@ -11,8 +11,7 @@ import unittest
 from zope.component import getUtility
 
 from canonical.archivepublisher.config import Config
-from canonical.archivepublisher.diskpool import (
-    DiskPool, Poolifier)
+from canonical.archivepublisher.diskpool import DiskPool
 from canonical.archivepublisher.tests.util import FakeLogger
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.interfaces import IDistributionSet
@@ -34,7 +33,7 @@ class TestPublisher(LaunchpadZopelessTestCase):
         self._overdir = self._config.overrideroot
         self._listdir = self._config.overrideroot
         self._logger = FakeLogger()
-        self._dp = DiskPool(Poolifier(), self._pooldir, self._logger)
+        self._dp = DiskPool(self._pooldir, self._logger)
 
     # Tear down blows the pool dir away...
     def tearDown(self):
