@@ -67,22 +67,21 @@ The list of direct bug subscribers is accessed via
 IBug.getDirectSubscribers().
 
     >>> import operator
-    >>> def print_names(subscribers):
-    ...     namegetter = operator.attrgetter("name")
-    ...     for subscriber in sorted(subscribers, key=namegetter):
-    ...         print subscriber.name
+    >>> def print_displayname(subscribers):
+    ...     for subscriber in subscribers:
+    ...         print subscriber.displayname
 
-    >>> print_names(linux_source_bug.getDirectSubscribers())
-    name16
+    >>> print_displayname(linux_source_bug.getDirectSubscribers())
+    Foo Bar
 
     >>> sabdfl = personset.getByName("sabdfl")
 
     >>> linux_source_bug.subscribe(sabdfl)
     <BugSubscription ...>
 
-    >>> print_names(linux_source_bug.getDirectSubscribers())
-    name16
-    sabdfl
+    >>> print_displayname(linux_source_bug.getDirectSubscribers())
+    Foo Bar
+    Mark Shuttleworth
 
 The list of indirect subscribers is accessed via
 IBug.getIndirectSubscribers().
@@ -107,9 +106,9 @@ optimization to snapshot this list only on IBugTask, because we don't
 need it for changes made only to IBug.
 
     >>> task = linux_source_bug.bugtasks[0]
-    >>> print_names(task.bug_subscribers)
-    name16
-    sabdfl
+    >>> print_displayname(task.bug_subscribers)
+    Foo Bar
+    Mark Shuttleworth
 
 Here are some examples of the three types of indirect subscribers:
 
@@ -119,14 +118,14 @@ Here are some examples of the three types of indirect subscribers:
 
     >>> linux_source_bug.bugtasks[0].transitionToAssignee(sample_person)
 
-    >>> print_names(linux_source_bug.getIndirectSubscribers())
-    name12
+    >>> print_displayname(linux_source_bug.getIndirectSubscribers())
+    Sample Person
     
     >>> linux_source_bug.getSubscribersFromDuplicates()
     []
 
-    >>> print_names(linux_source_bug.getAlsoNotifiedSubscribers())
-    name12
+    >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers())
+    Sample Person
 
 2. Bug contacts
 
@@ -134,32 +133,32 @@ Here are some examples of the three types of indirect subscribers:
 
     >>> linux_source.addBugContact(mr_no_privs)
 
-    >>> print_names(bc.bugcontact for bc in linux_source.bugcontacts)
-    no-priv
+    >>> print_displayname(bc.bugcontact for bc in linux_source.bugcontacts)
+    No Privileges Person
 
-    >>> print_names(linux_source_bug.getIndirectSubscribers())
-    name12
-    no-priv
+    >>> print_displayname(linux_source_bug.getIndirectSubscribers())
+    No Privileges Person
+    Sample Person
     
     >>> linux_source_bug.getSubscribersFromDuplicates()
     []
-    >>> print_names(linux_source_bug.getAlsoNotifiedSubscribers())
-    name12
-    no-priv
+    >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers())
+    No Privileges Person
+    Sample Person
 
     >>> ubuntu_team = personset.getByName("ubuntu-team")
 
     >>> linux_source.distribution.bugcontact = ubuntu_team
 
-    >>> print_names(linux_source_bug.getIndirectSubscribers())
-    name12
-    no-priv
-    ubuntu-team
+    >>> print_displayname(linux_source_bug.getIndirectSubscribers())
+    No Privileges Person
+    Sample Person
+    Ubuntu Team
     
-    >>> print_names(linux_source_bug.getAlsoNotifiedSubscribers())
-    name12
-    no-priv
-    ubuntu-team    
+    >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers())
+    No Privileges Person
+    Sample Person
+    Ubuntu Team
 
 (Adding a product bugtask to demonstrate that the upstream bug contact
 is also an indirect subscriber.)
@@ -175,48 +174,48 @@ is also an indirect subscriber.)
     >>> lifeless = personset.getByName("lifeless")
     >>> firefox.bugcontact = lifeless
 
-    >>> print_names(linux_source_bug.getIndirectSubscribers())
-    lifeless
-    name12
-    no-priv
-    ubuntu-team
+    >>> print_displayname(linux_source_bug.getIndirectSubscribers())
+    No Privileges Person
+    Robert Collins
+    Sample Person
+    Ubuntu Team
     
-    >>> print_names(linux_source_bug.getAlsoNotifiedSubscribers())
-    lifeless
-    name12
-    no-priv
-    ubuntu-team
+    >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers())
+    No Privileges Person
+    Robert Collins
+    Sample Person
+    Ubuntu Team
 
 If there were no upstream product bug contact, the product owner would
 be used instead.
 
     >>> firefox.bugcontact = None
 
-    >>> print_names(linux_source_bug.getIndirectSubscribers())
-    name12
-    no-priv
-    ubuntu-team
+    >>> print_displayname(linux_source_bug.getIndirectSubscribers())
+    No Privileges Person
+    Sample Person
+    Ubuntu Team
     
-    >>> print_names(linux_source_bug.getAlsoNotifiedSubscribers())
-    name12
-    no-priv
-    ubuntu-team
+    >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers())
+    No Privileges Person
+    Sample Person
+    Ubuntu Team
 
     >>> previous_owner = firefox.owner
 
     >>> firefox.owner = lifeless
 
-    >>> print_names(linux_source_bug.getIndirectSubscribers())
-    lifeless
-    name12
-    no-priv
-    ubuntu-team
+    >>> print_displayname(linux_source_bug.getIndirectSubscribers())
+    No Privileges Person
+    Robert Collins
+    Sample Person
+    Ubuntu Team
     
-    >>> print_names(linux_source_bug.getAlsoNotifiedSubscribers())
-    lifeless
-    name12
-    no-priv
-    ubuntu-team    
+    >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers())
+    No Privileges Person
+    Robert Collins
+    Sample Person
+    Ubuntu Team
 
     >>> firefox.owner = previous_owner
     >>> firefox.bugcontact = lifeless
@@ -230,8 +229,8 @@ be used instead.
     ...     comment="test", owner=keybuk)
     >>> linux_source_bug_dupe = linux_source.createBug(params)
 
-    >>> print_names(linux_source_bug_dupe.getDirectSubscribers())
-    keybuk
+    >>> print_displayname(linux_source_bug_dupe.getDirectSubscribers())
+    Scott James Remnant
 
 Indirect subscribers of duplicates are *not* subscribed to dupe
 targets. For example, assigning stub to the dupe bug will demonstrate
@@ -241,23 +240,23 @@ subscribed to the dupe target.
     >>> linux_source_bug_dupe.bugtasks[0].transitionToAssignee(
     ...     personset.getByName("stub"))
 
-    >>> print_names(linux_source_bug_dupe.getIndirectSubscribers())
-    no-priv
-    stub
-    ubuntu-team
+    >>> print_displayname(linux_source_bug_dupe.getIndirectSubscribers())
+    No Privileges Person
+    Stuart Bishop
+    Ubuntu Team
     
     >>> linux_source_bug_dupe.duplicateof = linux_source_bug
     >>> linux_source_bug_dupe.syncUpdate()
 
-    >>> print_names(linux_source_bug.getIndirectSubscribers())
-    keybuk
-    lifeless
-    name12
-    no-priv
-    ubuntu-team
+    >>> print_displayname(linux_source_bug.getIndirectSubscribers())
+    No Privileges Person
+    Robert Collins
+    Sample Person
+    Scott James Remnant
+    Ubuntu Team
     
-    >>> print_names(linux_source_bug.getSubscribersFromDuplicates())
-    keybuk
+    >>> print_displayname(linux_source_bug.getSubscribersFromDuplicates())
+    Scott James Remnant
 
 When a bug is marked private, all its indirect subscribers become direct
 subscribers.
@@ -269,9 +268,9 @@ subscribers.
     >>> from canonical.launchpad.webapp.snapshot import Snapshot
     >>> from canonical.launchpad.interfaces import IBug
 
-    >>> print_names(linux_source_bug.getDirectSubscribers())
-    name16
-    sabdfl
+    >>> print_displayname(linux_source_bug.getDirectSubscribers())
+    Foo Bar
+    Mark Shuttleworth
 
     >>> notify(
     ...     SQLObjectToBeModifiedEvent(linux_source_bug, {"private": True}))
@@ -283,14 +282,14 @@ subscribers.
     ...     SQLObjectModifiedEvent(
     ...         linux_source_bug, bug_before_modification, ["private"]))
 
-    >>> print_names(linux_source_bug.getDirectSubscribers())
-    keybuk
-    lifeless
-    name12
-    name16
-    no-priv
-    sabdfl
-    ubuntu-team
+    >>> print_displayname(linux_source_bug.getDirectSubscribers())
+    Foo Bar
+    Mark Shuttleworth
+    No Privileges Person
+    Robert Collins
+    Sample Person
+    Scott James Remnant
+    Ubuntu Team
 
 A private bug never has indirect subscribers. Since all our indirect
 subscribers have been made into direct subscribers, let's add another
@@ -313,20 +312,20 @@ indirect_subscribers will include only martin-pitt.
     >>> linux_source_bug.private = False
     >>> linux_source_bug.syncUpdate()
 
-    >>> print_names(linux_source_bug.getDirectSubscribers())
-    keybuk
-    lifeless
-    name12
-    name16
-    no-priv
-    sabdfl
-    ubuntu-team
+    >>> print_displayname(linux_source_bug.getDirectSubscribers())
+    Foo Bar
+    Mark Shuttleworth
+    No Privileges Person
+    Robert Collins
+    Sample Person
+    Scott James Remnant
+    Ubuntu Team
 
-    >>> print_names(linux_source_bug.getIndirectSubscribers())
-    martin-pitt
+    >>> print_displayname(linux_source_bug.getIndirectSubscribers())
+    Martin Pitt
     
-    >>> print_names(linux_source_bug.getAlsoNotifiedSubscribers())
-    martin-pitt
+    >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers())
+    Martin Pitt
 
 To get the entire list of email addresses that should receive a
 notification email on a bug, call

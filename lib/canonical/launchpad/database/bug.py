@@ -37,6 +37,7 @@ from canonical.launchpad.database.bugtask import (
     BugTask, BugTaskSet, bugtask_sort_key, get_bug_privacy_filter)
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugsubscription import BugSubscription
+from canonical.launchpad.database.person import Person
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent)
 from canonical.launchpad.webapp.snapshot import Snapshot
@@ -240,33 +241,41 @@ class Bug(SQLBase):
 
     def getDirectSubscribers(self):
         """See canonical.launchpad.interfaces.IBug."""
-        return [sub.person for sub in self.subscriptions]
+        return list(
+            Person.select("""
+                Person.id = BugSubscription.person AND
+                BugSubscription.bug = %d""" % self.id,
+                orderBy="displayname", clauseTables=["BugSubscription"]))
 
     def getIndirectSubscribers(self):
         """See canonical.launchpad.interfaces.IBug."""
-        return (
+        # "Also notified" and duplicate subscribers are mutually
+        # exclusive, so return both lists.
+        indirect_subscribers = (
             self.getAlsoNotifiedSubscribers() +
             self.getSubscribersFromDuplicates())
+        
+        return sorted(
+            indirect_subscribers, key=operator.attrgetter("displayname"))
 
     def getSubscribersFromDuplicates(self):
         """See IBug."""
         if self.private:
             return []
 
-        subscriptions = BugSubscription.select("""
-            BugSubscription.bug = Bug.id AND
-            Bug.duplicateof = %d""" % self.id,
-            clauseTables=["Bug"])
-        
         dupe_subscribers = set(
-            subscription.person for subscription in subscriptions)
+            Person.select("""
+                Person.id = BugSubscription.person AND
+                BugSubscription.bug = Bug.id AND
+                Bug.duplicateof = %d""" % self.id,
+                clauseTables=["Bug", "BugSubscription"]))
             
         # Direct and "also notified" subscribers take precedence over
         # subscribers from dupes
         dupe_subscribers -= set(self.getDirectSubscribers())
         dupe_subscribers -= set(self.getAlsoNotifiedSubscribers())
-        
-        return list(dupe_subscribers)
+
+        return sorted(dupe_subscribers, key=operator.attrgetter("displayname"))
         
     def getAlsoNotifiedSubscribers(self):
         """See IBug."""
@@ -309,7 +318,7 @@ class Bug(SQLBase):
         direct_subscribers = set(self.getDirectSubscribers())
         return sorted(
             (also_notified_subscribers - direct_subscribers),
-            key=operator.attrgetter('id'))
+            key=operator.attrgetter('displayname'))
 
     def notificationRecipientAddresses(self):
         """See canonical.launchpad.interfaces.IBug."""
