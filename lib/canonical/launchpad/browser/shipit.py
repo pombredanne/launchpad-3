@@ -942,10 +942,16 @@ class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
         'addressline2', 'province', 'postcode', 'organization']
 
     def __init__(self, context, request):
-        order_id = request.form.get('order')
-        if order_id is not None and order_id.isdigit():
-            self.current_order = getUtility(IShippingRequestSet).get(
-                int(order_id))
+        release = request.form.get('release')
+        if release is not None and release.lower() == 'edgy':
+            self.release = ShipItDistroRelease.EDGY
+        else:
+            self.release = ShipItConstants.current_distrorelease
+            # We only allow changing requests of the current release.
+            order_id = request.form.get('order')
+            if order_id is not None and order_id.isdigit():
+                self.current_order = getUtility(IShippingRequestSet).get(
+                    int(order_id))
         GeneralFormView.__init__(self, context, request)
 
     @property
@@ -1007,7 +1013,7 @@ class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
             # This is a newly created request, and because it's created by a
             # shipit admin we set both approved and requested quantities and
             # approve it.
-            current_order.setQuantities(quantities)
+            current_order.setQuantities(quantities, distrorelease=self.release)
             current_order.approve()
         else:
             for name in self.shipping_details_fields:
