@@ -28,8 +28,7 @@ from urllib import urlopen
 
 import psycopg
 import transaction
-from zope.app import zapi
-from zope.component import getUtility
+from zope.component import getUtility, getGlobalSiteManager
 from zope.component.interfaces import ComponentLookupError
 from zope.security.management import getSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
@@ -513,7 +512,7 @@ class LaunchpadZopelessLayer(
     def setUp(cls):
         # Make a TestMailBox available
         # This is registered via ZCML in the LaunchpadFunctionalLayer
-        zapi.getGlobalSiteManager().provideUtility(IMailBox, TestMailBox())
+        getGlobalSiteManager().provideUtility(IMailBox, TestMailBox())
 
     @classmethod
     def tearDown(cls):
