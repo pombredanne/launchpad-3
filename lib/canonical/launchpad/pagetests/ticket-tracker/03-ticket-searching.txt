@@ -101,7 +101,7 @@ greyed out:
       ..
     LinkNotFoundError...
 
-When he passes the mouse over the ticket rowk, the beginning of the
+When he passes the mouse over the ticket's row, the beginning of the
 description appears in a small pop-up:
 
     >>> import re
