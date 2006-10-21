@@ -428,6 +428,9 @@ class ShippingRequestSet:
             # Nothing to filter, return all unshipped requests.
             priorityfilter = ''
 
+        replacements = sqlvalues(distrorelease=distrorelease,
+                                 status=ShippingRequestStatus.APPROVED)
+        replacements.update({'priorityfilter': priorityfilter})
         query = """
             SELECT DISTINCT ShippingRequest.id
             FROM ShippingRequest, RequestedCDs
@@ -437,9 +440,7 @@ class ShippingRequestSet:
                   AND status = %(status)s
                   %(priorityfilter)s
             ORDER BY id
-            """ % sqlvalues(priorityfilter=priorityfilter,
-                            status=ShippingRequestStatus.APPROVED,
-                            distrorelease=distrorelease)
+            """ % replacements
 
         cur = cursor()
         cur.execute(query)
