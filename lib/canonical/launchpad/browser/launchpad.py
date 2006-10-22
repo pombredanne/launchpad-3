@@ -21,7 +21,9 @@ __all__ = [
 import cgi
 import errno
 import urllib
+import os
 import os.path
+import re
 import time
 from datetime import timedelta, datetime
 
@@ -32,6 +34,8 @@ from zope.security.interfaces import Unauthorized
 from zope.app.content_types import guess_content_type
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces import NotFound
+
+from BeautifulSoup import BeautifulStoneSoup, Comment
 
 import canonical.launchpad.layers
 from canonical.config import config
@@ -124,36 +128,6 @@ class MenuBox(LaunchpadView):
 class Breadcrumbs(LaunchpadView):
     """Page fragment to display the breadcrumbs text."""
 
-    sitemaptext = ("""
-    <ul id="launchPad" style="display: none">
-          <li id="p1">
-          <a href="/products">
-          Products
-          </a>
-          </li>
-          <li>
-          <a href="/distros">
-          Distributions
-          </a>
-          </li>
-          <li>
-          <a href="/people">
-          People
-          </a>
-          </li>
-          <li>
-          <a href="/projects">
-          Projects
-          </a>
-          </li>
-          <li>
-          <a href="/sprints">
-          Meetings
-          </a>
-          </li>
-    </ul>
-       """)
-
     def render(self):
         """Render the breadcrumbs text.
 
@@ -174,38 +148,46 @@ class Breadcrumbs(LaunchpadView):
 
         if not crumbs:
             L.append(
-                '<li class="last">'
+                '<li lpm:mid="root" class="item">'
                 '<a href="%s">'
                 '<img src="/@@/launchpad" alt="" /> %s'
                 '</a>'
-                '%s'
                 '</li>'
                 % (firsturl,
-                   cgi.escape(firsttext),
-                   self.sitemaptext))
+                   cgi.escape(firsttext)))
         else:
             L.append(
-                '<li>'
+                '<li lpm:mid="root" class="item">'
                 '<a href="%s">'
                 '<img src="/@@/launchpad" alt="" /> %s'
                 '</a>'
-                '%s'
                 '</li>'
                 % (firsturl,
-                   cgi.escape(firsttext),
-                   self.sitemaptext))
+                   cgi.escape(firsttext)))
 
-            lastcrumb = crumbs.pop()
+            #lastcrumb = crumbs.pop()
 
             for crumb in crumbs:
-                L.append('<li><a href="%s">%s</a></li>'
+                # XXX: SteveAlexander, 2006-06-09, this is putting the
+                #      full URL in as the lpm:mid.  We want just the path
+                #      here instead.
+                ##L.append('<li class="item" lpm:mid="%s/+menudata">'
+                ##         '<a href="%s">%s</a>'
+                ##         '</li>'
+                ##         % (crumb.url, crumb.url, cgi.escape(crumb.text)))
+
+                # Disable these menus for now.  To be re-enabled on the ui 1.0
+                # branch.
+                L.append('<li class="item">'
+                         '<a href="%s">%s</a>'
+                         '</li>'
                          % (crumb.url, cgi.escape(crumb.text)))
 
-            L.append(
-                '<li class="last">'
-                '<a href="%s">%s</a>'
-                '</li>'
-                % (lastcrumb.url, cgi.escape(lastcrumb.text)))
+            #L.append(
+            #    '<li class="item">'
+            #    '<a href="%s">%s</a>'
+            #    '</li>'
+            #    % (lastcrumb.url, cgi.escape(lastcrumb.text)))
         return u'\n'.join(L)
 
 
@@ -488,8 +470,6 @@ class SoftTimeoutView(LaunchpadView):
             'Soft timeout threshold is set to %s ms. This page took'
             ' %s ms to render.' % (soft_timeout, time_to_generate_page))
 
-import os
-import re
 
 class ObjectForTemplate:
 
@@ -497,8 +477,6 @@ class ObjectForTemplate:
         for name, value in kw.items():
             setattr(self, name, value)
 
-
-from BeautifulSoup import BeautifulStoneSoup, Comment
 
 class OneZeroTemplateStatus(LaunchpadView):
     """A list showing how ready each template is for one-zero."""
@@ -573,6 +551,8 @@ class OneZeroTemplateStatus(LaunchpadView):
             output_category.append(self.PageStatus(filename=filename, status=status, comment=xmlcomment))
 
         self.excluded_from_run = sorted(excluded)
+
+
 
 
 

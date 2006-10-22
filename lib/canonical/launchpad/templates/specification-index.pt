@@ -21,7 +21,23 @@
       <!-- 1-0 inprogress Needs "Related Questions" portlet -->
     </metal:portlets>
 
-    <table metal:fill-slot="data" class="summary">
+
+<div metal:fill-slot="main">
+
+  <p tal:repeat="notice view/notices" tal:content="notice"
+     class="informational message">
+    notice goes here
+  </p>
+
+  <p tal:condition="context/superseded_by" class="warning message">
+    This specification has been superseded. See the newer specification
+    "<b><a tal:content="context/superseded_by/title"
+           tal:attributes="href context/superseded_by/fmt:url">new spec
+    title</a></b>" for updated plans.
+  </p>
+
+
+    <table class="summary">
       <tbody>
         <tr>
           <th>Priority:</th>
@@ -109,11 +125,11 @@
                   tal:content="sprint_link/sprint/name"
                 />
                 (<a
-                  tal:condition="sprint_link/required:launchpad.Edit"
+                  tal:condition="sprint_link/required:launchpad.Driver"
                   tal:content="sprint_link/status/title"
                   tal:attributes="href string:${sprint_link/fmt:url}"
                 >Approved</a><span
-                  tal:condition="not: sprint_link/required:launchpad.Edit"
+                  tal:condition="not: sprint_link/required:launchpad.Driver"
                   tal:replace="sprint_link/status/title"
                 >Proposed</span>)
               </li>
@@ -122,21 +138,6 @@
         </tr>
       </tbody>
     </table>
-
-<div metal:fill-slot="main">
-
-  <p tal:repeat="notice view/notices" tal:content="notice"
-     class="informational message">
-    notice goes here
-  </p>
-
-  <p tal:condition="context/superseded_by" class="warning message">
-    This specification has been superseded. See the newer specification
-    "<b><a tal:content="context/superseded_by/title"
-           tal:attributes="href context/superseded_by/fmt:url">new spec
-    title</a></b>" for updated plans.
-  </p>
-
     <tal:desc replace="structure context/summary/fmt:text-to-html">
       The spec summary will go here.
     </tal:desc>
