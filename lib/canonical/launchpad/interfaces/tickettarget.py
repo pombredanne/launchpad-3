@@ -1,4 +1,4 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2006 Canonical Ltd.  All rights reserved.
 
 """Interfaces for things which have Tickets."""
 
@@ -7,14 +7,17 @@ __metaclass__ = type
 __all__ = [
     'ITicketTarget',
     'IManageSupportContacts',
+    'ISearchTicketsForm',
     'TICKET_STATUS_DEFAULT_SEARCH',
     ]
 
+import sets
+
 from zope.interface import Interface
-from zope.schema import Bool, Choice, List
+from zope.schema import Bool, Choice, List, Set, TextLine
 
 from canonical.launchpad import _
-from canonical.lp.dbschema import TicketStatus
+from canonical.lp.dbschema import TicketSort, TicketStatus
 
 
 TICKET_STATUS_DEFAULT_SEARCH = (TicketStatus.OPEN, TicketStatus.ANSWERED)
@@ -101,6 +104,8 @@ class ITicketTarget(Interface):
         value_type=Choice(vocabulary="ValidPersonOrTeam"))
 
 
+# These schemas are only used by browser/tickettarget.py and should really
+# live there. See Bug #66950.
 class IManageSupportContacts(Interface):
     """Schema for managing support contacts."""
 
@@ -111,3 +116,17 @@ class IManageSupportContacts(Interface):
         title=_("Team support contacts"),
         value_type=Choice(vocabulary="PersonActiveMembership"),
         required=False)
+
+
+class ISearchTicketsForm(Interface):
+    """Schema for the search ticket form."""
+
+    search_text = TextLine(title=_('Search text:'), required=False)
+
+    sort = Choice(title=_('Sort order:'), required=True,
+                  vocabulary='TicketSort',
+                  default=TicketSort.RELEVANCY)
+
+    status = Set(title=_('Status:'), required=False,
+                 value_type=Choice(vocabulary='TicketStatus'),
+                 default=sets.Set(TICKET_STATUS_DEFAULT_SEARCH))
