@@ -997,6 +997,7 @@ class GotoStructuralObject:
 
     @property
     def structuralobject(self):
+        #import pdb; pdb.set_trace()
         if IBug.providedBy(self.context):
             use_context = self.view.current_bugtask
         else:

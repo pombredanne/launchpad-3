@@ -69,6 +69,7 @@ class CveLinkView(GeneralFormView):
 
     def __init__(self, context, request):
         self._nextURL = canonical_url(context)
+        self.current_bugtask = context
         context = IBug(context)
         GeneralFormView.__init__(self, context, request)
 
@@ -86,6 +87,7 @@ class CveUnlinkView(GeneralFormView):
 
     def __init__(self, context, request):
         self._nextURL = canonical_url(context)
+        self.current_bugtask = context
         context = IBug(context)
         GeneralFormView.__init__(self, context, request)
 

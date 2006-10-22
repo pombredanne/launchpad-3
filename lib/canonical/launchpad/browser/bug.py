@@ -200,6 +200,7 @@ class BugView:
     """View class for presenting information about an IBug."""
 
     def __init__(self, context, request):
+        self.current_bugtask = context
         self.context = IBug(context)
         self.request = request
         self.user = getUtility(ILaunchBag).user
