@@ -5,6 +5,7 @@ __metaclass__ = type
 __all__ = [
     'DistributionNavigation',
     'DistributionSetNavigation',
+    'DistributionSOP',
     'DistributionFacets',
     'DistributionSpecificationsMenu',
     'DistributionView',
@@ -15,11 +16,13 @@ __all__ = [
     'DistributionBugContactEditView',
     'DistributionArchiveMirrorsView',
     'DistributionReleaseMirrorsView',
+    'DistributionReleaseMirrorsRSSView',
     'DistributionDisabledMirrorsView',
     'DistributionUnofficialMirrorsView',
     'DistributionLaunchpadUsageEditView',
     ]
 
+from datetime import datetime
 import operator
 
 from zope.component import getUtility
@@ -35,6 +38,9 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
+from canonical.launchpad.browser.tickettarget import (
+    TicketTargetFacetMixin, TicketTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, enabled_with_permission,
     GetitemNavigation, LaunchpadEditFormView, LaunchpadView, Link,
@@ -43,7 +49,8 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import DistributionReleaseStatus
 
 
-class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
+class DistributionNavigation(
+    GetitemNavigation, BugTargetTraversalMixin, TicketTargetTraversalMixin):
 
     usedfor = IDistribution
 
@@ -74,17 +81,6 @@ class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
     def traverse_spec(self, name):
         return self.context.getSpecification(name)
 
-    @stepthrough('+ticket')
-    def traverse_ticket(self, name):
-        # tickets should be ints
-        try:
-            ticket_id = int(name)
-        except ValueError:
-            raise NotFoundError
-        return self.context.getTicket(ticket_id)
-
-    redirection('+ticket', '+tickets')
-
 
 class DistributionSetNavigation(GetitemNavigation):
 
@@ -94,7 +90,29 @@ class DistributionSetNavigation(GetitemNavigation):
         return 'Distributions'
 
 
-class DistributionFacets(StandardLaunchpadFacets):
+class DistributionSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        return self.context.title
+
+    def listChildren(self, num):
+        # XXX mpt 20061004: list architectures, alphabetically
+        return []
+
+    def countChildren(self):
+        return 0
+
+    def listAltChildren(self, num):
+        return None
+
+    def countAltChildren(self):
+        raise NotImplementedError
+
+
+class DistributionFacets(TicketTargetFacetMixin, StandardLaunchpadFacets):
 
     usedfor = IDistribution
 
@@ -105,13 +123,6 @@ class DistributionFacets(StandardLaunchpadFacets):
         target = '+specs'
         text = 'Features'
         summary = 'Feature specifications for %s' % self.context.displayname
-        return Link(target, text, summary)
-
-    def support(self):
-        target = '+tickets'
-        text = 'Support'
-        summary = (
-            'Technical support requests for %s' % self.context.displayname)
         return Link(target, text, summary)
 
 
@@ -285,27 +296,6 @@ class DistributionSpecificationsMenu(ApplicationMenu):
     def new(self):
         text = 'New Specification'
         return Link('+addspec', text, icon='add')
-
-
-class DistributionSupportMenu(ApplicationMenu):
-
-    usedfor = IDistribution
-    facet = 'support'
-    links = ['new', 'support_contact']
-    # XXX: MatthewPaulThomas, 2005-09-20
-    # Add 'help' once +gethelp is implemented for a distribution
-
-    def help(self):
-        text = 'Help and Support Options'
-        return Link('+gethelp', text, icon='info')
-
-    def new(self):
-        text = 'Request Support'
-        return Link('+addticket', text, icon='add')
-
-    def support_contact(self):
-        text = 'Support Contact'
-        return Link('+support-contact', text, icon='edit')
 
 
 class DistributionTranslationsMenu(ApplicationMenu):
@@ -519,6 +509,19 @@ class DistributionReleaseMirrorsView(DistributionMirrorsView):
 
     def getMirrorsGroupedByCountry(self):
         return self._groupMirrorsByCountry(self.context.release_mirrors)
+
+
+class DistributionReleaseMirrorsRSSView(LaunchpadView):
+    """The RSS feed for release mirrors."""
+
+    def initialize(self):
+        self.now = datetime.utcnow()
+
+    def render(self):
+        self.request.response.setHeader(
+            'content-type', 'text/xml;charset=utf-8')
+        body = LaunchpadView.render(self)
+        return body.encode('utf-8')
 
 
 class DistributionMirrorsAdminView(DistributionMirrorsView):

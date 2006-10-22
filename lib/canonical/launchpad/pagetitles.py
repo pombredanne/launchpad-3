@@ -661,13 +661,13 @@ productseries_packaging = ContextDisplayName('Packaging of %s in distributions')
 
 productseries_source = 'Import product series'
 
-productseries_sourceadmin = 'Add source import'
-
 productseries_translations = ContextTitle('Translation templates for %s')
 
 productseries_translations_upload = 'Request new translations upload'
 
 productseries_ubuntupkg = 'Ubuntu source package'
+
+project_add = 'Register a project with Launchpad'
 
 project_index = ContextTitle('%s in Launchpad')
 
@@ -732,6 +732,8 @@ securitycontact_edit = ContextDisplayName("Edit %s security contact")
 shipit_adminrequest = 'ShipIt admin request'
 
 shipit_index = 'ShipIt'
+
+shipit_index_new = 'ShipIt'
 
 shipit_exports = 'ShipIt exports'
 
@@ -922,9 +924,6 @@ ticket_reopen = ContextId('Reopen request #%s')
 
 ticket_subscription = ContextId('Subscription to request #%s')
 
-def tickettarget_tickets(context, view):
-    return view.title
-
 standardshipitrequests_index = 'Standard ShipIt options'
 
 standardshipitrequest_new = 'Create a new standard option'
@@ -965,7 +964,8 @@ template_index = '%EXAMPLE TITLE'
 
 template_new = 'EXAMPLE NEW TITLE'
 
-ticket_listing = ContextDisplayName("Support requests for %s")
+def ticket_listing(context, view):
+    return view.pagetitle
 
 tickettarget_manage_supportcontacts = ContextTitle("Support contact for %s")
 

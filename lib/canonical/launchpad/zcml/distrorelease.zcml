@@ -33,6 +33,13 @@
     <allow interface="canonical.launchpad.interfaces.IDistroReleaseSet" />
   </securedutility>
 
+  <adapter
+    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    factory="canonical.launchpad.browser.DistroReleaseSOP"
+    permission="zope.Public"
+    />
+
   <browser:navigation
     module="canonical.launchpad.browser"
     classes="DistroReleaseNavigation"

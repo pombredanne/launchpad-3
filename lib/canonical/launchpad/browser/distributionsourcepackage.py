@@ -3,9 +3,12 @@
 __metaclass__ = type
 
 __all__ = [
+    'DistributionSourcePackageNavigation',
+    'DistributionSourcePackageSOP',
     'DistributionSourcePackageFacets',
     'DistributionSourcePackageNavigation',
-    'DistributionSourcePackageView'
+    'DistributionSourcePackageOverviewMenu',
+    'DistributionSourcePackageBugContactsView'
     ]
 
 from zope.component import getUtility
@@ -14,20 +17,40 @@ from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, ILaunchBag, DuplicateBugContactError,
     DeleteBugContactError, IPersonSet)
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
+from canonical.launchpad.browser.tickettarget import TicketTargetFacetMixin
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu,
     GetitemNavigation, canonical_url, redirection)
 
 
-class DistributionSourcePackageFacets(StandardLaunchpadFacets):
+class DistributionSourcePackageSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return self.context.distribution.title + ' source package:'
+
+    def getMainHeading(self):
+        return self.context.name
+
+    def listChildren(self, num):
+        # XXX mpt 20061004: package releases, most recent first
+        return []
+
+    def countChildren(self):
+        return 0
+
+    def listAltChildren(self, num):
+        return None
+
+    def countAltChildren(self):
+        raise NotImplementedError
+
+
+class DistributionSourcePackageFacets(TicketTargetFacetMixin,
+                                      StandardLaunchpadFacets):
 
     usedfor = IDistributionSourcePackage
     enable_only = ['overview', 'bugs', 'support']
-
-    def support(self):
-        link = StandardLaunchpadFacets.support(self)
-        link.enabled = True
-        return link
 
 
 class DistributionSourcePackageOverviewMenu(ApplicationMenu):
@@ -60,30 +83,6 @@ class DistributionSourcePackageNavigation(GetitemNavigation,
 
     def breadcrumb(self):
         return self.context.sourcepackagename.name
-
-
-class DistributionSourcePackageSupportMenu(ApplicationMenu):
-
-    usedfor = IDistributionSourcePackage
-    facet = 'support'
-    links = ['addticket', 'support_contact']
-
-    def addticket(self):
-        return Link('+addticket', 'Request Support', icon='add')
-
-    def support_contact(self):
-        text = 'Support Contact'
-        return Link('+support-contact', text, icon='edit')
-
-
-class DistributionSourcePackageView:
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def latest_tickets(self):
-        return self.context.tickets(quantity=5)
 
 
 class DistributionSourcePackageBugContactsView:

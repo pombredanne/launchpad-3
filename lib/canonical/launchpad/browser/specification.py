@@ -122,6 +122,7 @@ class SpecificationContextMenu(ContextMenu):
                 'Unknown target on specification "%s".' % self.context.name)
         return Link(link, text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def status(self):
         text = 'Change status'
         return Link('+status', text, icon='edit')
@@ -583,7 +584,7 @@ class SpecificationSprintAddView(SQLObjectAddView):
     def create(self, sprint):
         user = getUtility(ILaunchBag).user
         sprint_link = self.context.linkSprint(sprint, user)
-        if check_permission('launchpad.Edit', sprint_link):
+        if check_permission('launchpad.Driver', sprint):
             sprint_link.acceptBy(user)
         return sprint_link
 

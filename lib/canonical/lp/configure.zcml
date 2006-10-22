@@ -4,7 +4,11 @@
 
   <class class="canonical.lp.dbschema.Item">
       <allow attributes="name title value description schema
-                         sortkey __sqlrepr__" />
+                         schema_items schema_name sortkey __sqlrepr__" />
+  </class>
+
+  <class class="canonical.lp.dbschema.OrderedMapping">
+      <allow attributes="__getitem__ __iter__" />
   </class>
 
   <browser:pages for="*" permission="zope.Public" >
@@ -16,9 +20,10 @@
           name="main_template"
           template="../launchpad/templates/main-template.pt"
           />
+      <!--  XXX mpt 20061004: main_template_2col is deprecated. -->
       <browser:page
           name="main_template_2col"
-          template="../launchpad/templates/main-template-2col.pt"
+          template="../launchpad/templates/main-template.pt"
           />
   </browser:pages>
 

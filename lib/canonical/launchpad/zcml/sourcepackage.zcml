@@ -10,7 +10,7 @@
         <allow interface="canonical.launchpad.interfaces.ISourcePackage" />
         <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
         <!-- ITicketTarget -->
-        <allow attributes="tickets getTicket searchTickets findSimilarTickets
+        <allow attributes="getTicket searchTickets findSimilarTickets
               support_contacts" />
         <require permission="launchpad.AnyPerson"
             attributes="newTicket addSupportContact removeSupportContact" />
@@ -29,6 +29,13 @@
     <browser:navigation
         module="canonical.launchpad.browser"
         classes="SourcePackageNavigation"
+        />
+
+    <adapter
+        provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+        for="canonical.launchpad.interfaces.ISourcePackage"
+        factory="canonical.launchpad.browser.SourcePackageSOP"
+        permission="zope.Public"
         />
 
     <browser:url

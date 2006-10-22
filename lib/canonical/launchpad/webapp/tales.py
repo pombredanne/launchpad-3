@@ -8,9 +8,11 @@ __metaclass__ = type
 
 import bisect
 import cgi
-import re
-import os.path
+from email.Utils import formatdate
 import math
+import os.path
+import re
+import rfc822
 
 from zope.interface import Interface, Attribute, implements
 from zope.component import getUtility, queryAdapter
@@ -24,8 +26,8 @@ from zope.security.proxy import isinstance as zope_isinstance
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     IPerson, ILaunchBag, IFacetMenu, IApplicationMenu, IContextMenu,
-    NoCanonicalUrl, IBugSet, NotFoundError
-    )
+    NoCanonicalUrl, IBugSet, NotFoundError, IBug, IBugAttachment,
+    IBugExternalRef)
 import canonical.launchpad.pagetitles
 from canonical.lp import dbschema
 from canonical.launchpad.webapp import canonical_url, nearest_menu
@@ -146,13 +148,13 @@ class EnumValueAPI:
             return True
         else:
             # Check whether this was an allowed value for this dbschema.
-            schema = self.item.schema
+            schema_items = self.item.schema_items
             try:
-                schema.items[name]
+                schema_items[name]
             except KeyError:
                 raise TraversalError(
                     'The %s dbschema does not have a value %s.' %
-                    (schema.__name__, name))
+                    (self.item.schema_name, name))
             return False
 
 
@@ -268,6 +270,7 @@ class NoneFormatter:
         'date',
         'time',
         'datetime',
+        'rfc822utcdatetime',
         'exactduration',
         'approximateduration',
         'pagetitle',
@@ -430,6 +433,10 @@ class DateTimeFormatterAPI:
 
     def datetime(self):
         return "%s %s" % (self.date(), self.time())
+
+    def rfc822utcdatetime(self):
+        return formatdate(
+            rfc822.mktime_tz(self._datetime.utctimetuple() + (0,)))
 
 
 class DurationFormatterAPI:
@@ -977,3 +984,28 @@ class PermissionRequiredQuery:
                     "required:permission")
         return check_permission(name, self.context)
 
+
+class GotoStructuralObject:
+    """lp:structuralobject
+
+    Returns None when there is no structural object.
+    """
+
+    def __init__(self, context_dict):
+        self.context = context_dict['context']
+        self.view = context_dict['view']
+
+    @property
+    def structuralobject(self):
+        if (IBug.providedBy(self.context) or
+            IBugAttachment.providedBy(self.context) or
+            IBugExternalRef.providedBy(self.context)):
+            use_context = self.view.current_bugtask
+        else:
+            use_context = self.context
+        # The structural object is the nearest object with a facet menu.
+        try:
+            facetmenu = nearest_menu(use_context, IFacetMenu)
+        except NoCanonicalUrl:
+            return None
+        return facetmenu.context

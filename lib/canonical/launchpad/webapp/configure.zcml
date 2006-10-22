@@ -121,15 +121,17 @@
         name="fmt"
         />
 
-    <!-- The next directive should be registered for 'int' only.
-        However, there's a bug in adapter registration that stops
-        this working.  To be fixed in ZopeX3 RSN.
-        XXX: SteveAlexander, 2005-05-21.
-        -->
     <adapter
-        for="*"
+        for="int"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.DBSchemaAPI"
+        name="lp"
+        />
+
+    <adapter
+        for="dict"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.GotoStructuralObject"
         name="lp"
         />
 
