@@ -297,6 +297,11 @@ hr, #globalheader label {
   font-weight: bold;
   color: #FFFFFF;
 }
+ul#menuroot {
+  display: inline;
+  float: left;
+  margin: 0;
+}
 #locationbar li {
   display: inline;
 }
@@ -312,12 +317,12 @@ hr, #globalheader label {
   background-position: -1000px 0px;
   color: #000000;
 }
-  #locationbar li a:hover {
+#locationbar li a:hover {
   background-position: 0px 0px;
   text-decoration: none;
   color: #000000;
 }
-#locationbar li em {
+#locationbar li em { /* should be changed to not need em */
   font-style: normal;
   float: left;
   display: block;
@@ -329,14 +334,14 @@ hr, #globalheader label {
   cursor: hand;
   cursor: pointer;
 }
-#locationbar li strong {
+#locationbar strong {
   float: left;
   display: block;
   background-image: url(locationbar_a_bg.gif);
   background-repeat: no-repeat;
   background-position: -1100px 0px;
-  padding: 6px 16px 10px 10px !important;
-  padding: 5px 16px 10px 10px;
+  padding: 6px 0 10px 10px !important;
+  padding: 5px 0 10px 10px;
 }
 #logincontrol {
   position: absolute;

@@ -17,16 +17,18 @@
       type="text/css"
       media="screen"
     >@import url(/+icing/style.css);</style>
-    <link type="text/css" media="print" href="/+icing/print.css">
+    <link type="text/css" media="print" href="/+icing/print.css" />
     <link rel="shortcut icon" href="/@@/launchpad" />
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>
-  <body onload="lpmenu.initialize(['menuroot'], 
-                    '/',
-                    'menupreload',
-                    [],
-                    '2em', 16, true);" id="document">
-
+  <body
+    onload="
+      lpmenu.initialize(['menuroot'], '/', 'menupreload', [], '2em', 16, true);
+      sortables_init();
+      initHelpPanel();
+    "
+    id="document"
+  >
     <div id="globalheader">
       <div class="launchpad">
         <img
@@ -42,13 +44,24 @@
     </div>
 
 
-    <ul id="locationbar">
-      <li><strong>Your location:</strong> <a href="/"><em>Home</em></a></li>
-    <div id="menucontainer">
+    <div id="locationbar">
+      <strong>Your location:</strong>
+      <ul id="menuroot">
+        <li><a href="/"><em>Foo</em></a></li>
+        <li><a href="/">Bar</a></li> <!-- this should look the same -->
+        <li><a href="/"><em>Hum</em></a></li>
+      </ul>
+    </div>
+
+    <tal:nothing condition="nothing">
+    <div id="locationbar">
+      <strong>Your location:</strong>
       <ul id="menuroot" class="menuroot">
         <tal:hierarchy content="structure context/@@+breadcrumbs" />
+      </ul>
     </div>
-    </ul>
+    </tal:nothing>
+
 
     <div id="logincontrol" tal:content="structure context/@@login_status" />
     <!-- id="menu" should be id="locationbar" -->
@@ -63,7 +76,7 @@
         No structural object!
       </tal:if>
     </div>
-    <form id="globalsearch" action="/search" method="GET">
+    <form id="globalsearch" action="/search" method="get">
       <div>
         <input
           type="text"
