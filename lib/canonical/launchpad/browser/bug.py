@@ -611,11 +611,11 @@ class BugRelatedObjectEditView(SQLObjectEditView):
     etc.
     """
     def __init__(self, context, request):
-        self.current_bugtask = getUtility(ILaunchBag).bugtask
         SQLObjectEditView.__init__(self, context, request)
         # Store the current bug in an attribute of the view, so that
         # ZPT rendering code can access it.
         self.bug = getUtility(ILaunchBag).bug
+        self.current_bugtask = getUtility(ILaunchBag).bugtask
 
     def changed(self):
         """Redirect to the bug page."""
