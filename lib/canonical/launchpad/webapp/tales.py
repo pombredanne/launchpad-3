@@ -26,7 +26,7 @@ from zope.security.proxy import isinstance as zope_isinstance
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     IPerson, ILaunchBag, IFacetMenu, IApplicationMenu, IContextMenu,
-    NoCanonicalUrl, IBugSet, NotFoundError, IBug
+    NoCanonicalUrl, IBugSet, NotFoundError, IBug, IBugAttachment
     )
 import canonical.launchpad.pagetitles
 from canonical.lp import dbschema
@@ -997,8 +997,7 @@ class GotoStructuralObject:
 
     @property
     def structuralobject(self):
-        #import pdb; pdb.set_trace()
-        if IBug.providedBy(self.context):
+        if IBug.providedBy(self.context) or IBugAttachment.providedBy(self.context):
             use_context = self.view.current_bugtask
         else:
             use_context = self.context
