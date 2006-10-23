@@ -78,6 +78,13 @@ thead th, tr.thead th {
   display: block;
 }
 
+/* make <wbr> work with Opera */
+wbr:after {
+  content: "\00200B"
+}
+
+
+
 /* === Global Launchpad design: === */
 
 .debug {
