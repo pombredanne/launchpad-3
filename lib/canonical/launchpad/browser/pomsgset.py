@@ -437,7 +437,7 @@ class BaseTranslationView(LaunchpadView):
         raise NotImplementedError
 
     #
-    # Helper methods that should be used for POMsgSetView.prepare() and
+    # Helper methods that should be used for POMsgSetView.__init__() and
     # _submitTranslations().
     #
 
@@ -544,7 +544,7 @@ class BaseTranslationView(LaunchpadView):
         self.form_copied_translations[pomsgset] = dict_with_copies
 
     def _prepareView(self, view_class, pomsgset, error):
-        """Prepare data for display in a subview; calls POMsgSetView.prepare."""
+        """Collect data and build a POMsgSetView for display."""
         # XXX: it would be nice if we could easily check if
         # this is being called in the right order, after
         # _storeTranslations(). -- kiko, 2006-09-27
@@ -720,8 +720,6 @@ class BaseTranslationView(LaunchpadView):
             if self.request.get('QUERY_STRING'):
                 new_url += '?%s' % self.request.get('QUERY_STRING')
 
-        self.redirecting = True
-
         parameters = self._buildRedirectParams()
         params_str = '&'.join(
             ['%s=%s' % (key, value) for key, value in parameters.items()])
@@ -736,6 +734,9 @@ class BaseTranslationView(LaunchpadView):
 
     def _redirectToNextPage(self):
         """After a successful submission, redirect to the next batch page."""
+        # XXX: isn't this a hell of a performance issue, hitting this
+        # same table for every submit? -- kiko, 2006-09-27
+        self.pofile.updateStatistics()
         next_url = self.batchnav.nextBatchURL()
         if next_url is None or next_url == '':
             # We are already at the end of the batch, forward to the
