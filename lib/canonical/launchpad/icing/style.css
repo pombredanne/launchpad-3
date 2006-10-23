@@ -365,7 +365,7 @@ ul#applicationchooser li a:hover {
 ul#applicationchooser li a#applicationchooser_selected {
   background-position: -200px 0px;
 }
-#left_nav {
+#portlets {
   float: left;
   width: 200px;
   overflow: hidden;
@@ -374,11 +374,11 @@ ul#applicationchooser li a#applicationchooser_selected {
   list-style: none;
   font-size: 11px;
 }
-#left_nav .portlet {
+#portlets .portlet {
   clear: both;
   float: left;
 }
-#left_nav .portlet h2 {
+#portlets .portlet h2 {
   float: left;
   display: block;
   width: 180px;
@@ -393,7 +393,7 @@ ul#applicationchooser li a#applicationchooser_selected {
   color: #FFFFFF;
   font-weight: bold;
 }
-#left_nav .portlet h2:hover {
+#portlets .portlet h2:hover {
   background-color: #A3A3A3;
   text-decoration: none;
 }
@@ -407,7 +407,7 @@ ul#applicationchooser li a#applicationchooser_selected {
   list-style: none;
   background-color: #EBEBEB;
 }
-#left_nav .portlet ul li {
+#portlets .portlet ul li {
   clear: both;
   float: left;
 }
@@ -432,31 +432,31 @@ ul#applicationchooser li a#applicationchooser_selected {
 #actions li.active a:hover {
   background-color: #AFDB1F;
 }
-#left_nav li.active ul,
-#left_nav li.active ul li a,
-#left_nav li.active ul li a:hover {
+#portlets li.active ul,
+#portlets li.active ul li a,
+#portlets li.active ul li a:hover {
   background-color: #EBF6C7;
 }
-#portlets {
+#xxxportlets {
   float: left;
   width: 200px;
   overflow: hidden;
   margin: 0px 16px 0px 16px;
 }
 #portlets .portlet {
-  float: left;
-  width: 200px;
+  xxxfloat: left;
+  xxxwidth: 200px;
   overflow: hidden;
   margin: 0;
-  padding: 0;
+  xxxpadding: 0;
   list-style: none;
   font-size: 11px;
 }
 #portlets .portlet,
 #portlets .portlet h2,
 #portlets .portlet li {
-  clear: both;
-  float: left;
+  xxxclear: both;
+  xxxfloat: left;
   font-size: 11px !important;
 }
 #portlets .portlet h2 {
@@ -479,7 +479,7 @@ ul#applicationchooser li a#applicationchooser_selected {
   background-color: #8F8F8F;
   background-image: url(leftnav_bg.gif);
   background-repeat: no-repeat;
-   background-position: left top;
+  background-position: left top;
   overflow: hidden;
   padding: 2px 10px 0px 10px;
   margin: 0px 0px 1px 0px;
@@ -527,7 +527,6 @@ ul#applicationchooser li a#applicationchooser_selected {
   background-color: #EBEBEB;
   padding: 3px 12px 3px 8px !important;
   color: #717171;
-  font-weight: bold;
 }
 #portlets .portlet.active h2 a {
   background-color: #9BC11B;
@@ -707,7 +706,8 @@ ul#applicationchooser li a#applicationchooser_selected {
   background-repeat: no-repeat;
   background-position: top right;
 }
-#mainarea #maincontent {
+
+#xxxmainarea #maincontent {
   float: right;
   margin: 0px 20px 20px 10px;
   width: 62%;
@@ -783,20 +783,20 @@ a.open, a.closed {
   background-position: -200px 0px !important;
 }
 #mainarea.tab-overview #portlets .portlet.active h2 a,
-#mainarea.tab-overview div#left_nav div.portlet.active a {
+#mainarea.tab-overview div#portlets div.portlet.active a {
   background-color: #F0CB00;
 }
 #mainarea.tab-overview #portlets .portlet.active h2 a:hover,
-#mainarea.tab-overview div#left_nav div.portlet.active a:hover {
+#mainarea.tab-overview div#portlets div.portlet.active a:hover {
   background-color: #FFE40F;
 }
 #mainarea.tab-overview #portlets .portlet.active div,
 #mainarea.tab-overview #portlets .portlet.active ul,
 #mainarea.tab-overview #portlets .portlet.active ul li a,
 #mainarea.tab-overview #portlets .portlet.active ul li a:hover,
-#mainarea.tab-overview div#left_nav div.portlet.active ul,
-#mainarea.tab-overview div#left_nav div.portlet.active ul li a,
-#mainarea.tab-overview div#left_nav div.portlet.active ul li a:hover {
+#mainarea.tab-overview div#portlets div.portlet.active ul,
+#mainarea.tab-overview div#portlets div.portlet.active ul li a,
+#mainarea.tab-overview div#portlets div.portlet.active ul li a:hover {
   background-color: #FEFCF0;
 }
 /* tab-code */
@@ -817,20 +817,20 @@ a.open, a.closed {
   background-position: -200px 0px !important;
 }
 #mainarea.tab-code #portlets .portlet.active h2 a,
-#mainarea.tab-code div#left_nav div.portlet.active a {
+#mainarea.tab-code div#portlets div.portlet.active a {
   background-color: #CE4227;
 }
 #mainarea.tab-code #portlets .portlet.active h2 a:hover,
-#mainarea.tab-code div#left_nav div.portlet.active a:hover {
+#mainarea.tab-code div#portlets div.portlet.active a:hover {
   background-color: #E2563B;
 }
 #mainarea.tab-code #portlets .portlet.active div,
 #mainarea.tab-code #portlets .portlet.active ul,
 #mainarea.tab-code #portlets .portlet.active ul li a,
 #mainarea.tab-code #portlets .portlet.active ul li a:hover,
-#mainarea.tab-code div#left_nav div.portlet.active ul,
-#mainarea.tab-code div#left_nav div.portlet.active ul li a,
-#mainarea.tab-code div#left_nav div.portlet.active ul li a:hover {
+#mainarea.tab-code div#portlets div.portlet.active ul,
+#mainarea.tab-code div#portlets div.portlet.active ul li a,
+#mainarea.tab-code div#portlets div.portlet.active ul li a:hover {
   background-color: #FCF4F2;
 }
 /* tab-bugs */
@@ -851,20 +851,20 @@ a.open, a.closed {
   background-position: -200px 0px !important;
 }
 #mainarea.tab-bugs #portlets .portlet.active h2 a,
-#mainarea.tab-bugs div#left_nav div.portlet.active a {
+#mainarea.tab-bugs div#portlets div.portlet.active a {
   background-color: #F0CB00;
 }
 #mainarea.tab-bugs #portlets .portlet.active h2 a:hover,
-#mainarea.tab-bugs div#left_nav div.portlet.active a:hover {
+#mainarea.tab-bugs div#portlets div.portlet.active a:hover {
   background-color: #FFE40F;
 }
 #mainarea.tab-bugs #portlets .portlet.active div,
 #mainarea.tab-bugs #portlets .portlet.active ul,
 #mainarea.tab-bugs #portlets .portlet.active ul li a,
 #mainarea.tab-bugs #portlets .portlet.active ul li a:hover,
-#mainarea.tab-bugs div#left_nav div.portlet.active ul,
-#mainarea.tab-bugs div#left_nav div.portlet.active ul li a,
-#mainarea.tab-bugs div#left_nav div.portlet.active ul li a:hover {
+#mainarea.tab-bugs div#portlets div.portlet.active ul,
+#mainarea.tab-bugs div#portlets div.portlet.active ul li a,
+#mainarea.tab-bugs div#portlets div.portlet.active ul li a:hover {
   background-color: #FEFCF0;
 }
 /* tab-features */
@@ -885,20 +885,20 @@ a.open, a.closed {
   background-position: -200px 0px !important;
 }
 #mainarea.tab-features #portlets .portlet.active h2 a,
-#mainarea.tab-features div#left_nav div.portlet.active a {
+#mainarea.tab-features div#portlets div.portlet.active a {
   background-color: #3F3CCC;
 }
 #mainarea.tab-features #portlets .portlet.active h2 a:hover,
-#mainarea.tab-features div#left_nav div.portlet.active a:hover {
+#mainarea.tab-features div#portlets div.portlet.active a:hover {
   background-color: #5350E0;
 }
 #mainarea.tab-features #portlets .portlet.active div,
 #mainarea.tab-features #portlets .portlet.active ul,
 #mainarea.tab-features #portlets .portlet.active ul li a,
 #mainarea.tab-features #portlets .portlet.active ul li a:hover,
-#mainarea.tab-features div#left_nav div.portlet.active ul,
-#mainarea.tab-features div#left_nav div.portlet.active ul li a,
-#mainarea.tab-features div#left_nav div.portlet.active ul li a:hover {
+#mainarea.tab-features div#portlets div.portlet.active ul,
+#mainarea.tab-features div#portlets div.portlet.active ul li a,
+#mainarea.tab-features div#portlets div.portlet.active ul li a:hover {
   background-color: #F4F4FC;
 }
 /* tab-translations */
@@ -919,20 +919,20 @@ a.open, a.closed {
   background-position: -200px 0px !important;
 }
 #mainarea.tab-translations #portlets .portlet.active h2 a,
-#mainarea.tab-translations div#left_nav div.portlet.active a {
+#mainarea.tab-translations div#portlets div.portlet.active a {
   background-color: #159CC8;
 }
 #mainarea.tab-translations #portlets .portlet.active h2 a:hover,
-#mainarea.tab-translations div#left_nav div.portlet.active a:hover {
+#mainarea.tab-translations div#portlets div.portlet.active a:hover {
   background-color: #29B0DC;
 }
 #mainarea.tab-translations #portlets .portlet.active div,
 #mainarea.tab-translations #portlets .portlet.active ul,
 #mainarea.tab-translations #portlets .portlet.active ul li a,
 #mainarea.tab-translations #portlets .portlet.active ul li a:hover,
-#mainarea.tab-translations div#left_nav div.portlet.active ul,
-#mainarea.tab-translations div#left_nav div.portlet.active ul li a,
-#mainarea.tab-translations div#left_nav div.portlet.active ul li a:hover {
+#mainarea.tab-translations div#portlets div.portlet.active ul,
+#mainarea.tab-translations div#portlets div.portlet.active ul li a,
+#mainarea.tab-translations div#portlets div.portlet.active ul li a:hover {
   background-color: #F1F9FC;
 }
 /* tab-support */
@@ -953,19 +953,46 @@ a.open, a.closed {
   background-position: -200px 0px !important;
 }
 #mainarea.tab-support #portlets .portlet.active h2 a,
-#mainarea.tab-support div#left_nav div.portlet.active a {
+#mainarea.tab-support div#portlets div.portlet.active a {
   background-color: #F0CB00;
 }
 #mainarea.tab-support #portlets .portlet.active h2 a:hover,
-#mainarea.tab-support div#left_nav div.portlet.active a:hover {
+#mainarea.tab-support div#portlets div.portlet.active a:hover {
   background-color: #FFE40F;
 }
 #mainarea.tab-support #portlets .portlet.active div,
 #mainarea.tab-support #portlets .portlet.active ul,
 #mainarea.tab-support #portlets .portlet.active ul li a,
 #mainarea.tab-support #portlets .portlet.active ul li a:hover,
-#mainarea.tab-support div#left_nav div.portlet.active ul,
-#mainarea.tab-support div#left_nav div.portlet.active ul li a,
-#mainarea.tab-support div#left_nav div.portlet.active ul li a:hover {
+#mainarea.tab-support div#portlets div.portlet.active ul,
+#mainarea.tab-support div#portlets div.portlet.active ul li a,
+#mainarea.tab-support div#portlets div.portlet.active ul li a:hover {
   background-color: #FEFCF0;
+}
+
+/* Matthew's code for laying out the columns: */
+body {
+  min-width: 480px;
+}
+#container {
+  padding-left: 240px;
+}
+#maincontent, #portlets {
+  float: left;
+  position: relative;
+}
+#maincontent {
+  width: 100%;
+}
+#portlets {
+  width: 240px;
+  margin: 0 0 20px -100%;
+  padding: 0 20px;
+  right: 240px;
+}
+* html #portlets { /* Works around Internet Explorer bug */
+  left: 0;
+}
+#portlets .portlet {
+  width: 200px;
 }

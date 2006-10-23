@@ -142,6 +142,9 @@
                       </tal:facet>
                     </ul>
                     <br class="clear" />
+
+                    <div id="container">
+
                     <div id="maincontent">
                       <div id="immediateobjectheading">
                         <div class="secondary">
@@ -166,7 +169,7 @@
                       </tal:notifications>
                       <metal:block define-slot="main" />
                     </div>
-                    <div id="left_nav">
+                    <div id="portlets">
                       <tal:actionsmenu
                         tal:condition="python: '+login' not in request.getURL()"
                       >
@@ -185,6 +188,9 @@
                       <metal:portlets define-slot="portlets_two" />
                       <metal:portlets define-slot="portlets_one" />
                     </div>
+
+                    </div>
+
                   </div>
                 </div>
               </div>
