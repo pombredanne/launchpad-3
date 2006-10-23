@@ -4,24 +4,21 @@
       i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">    
-      <h1 tal:content="context/title">Project name</h1>
-    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-latestspecs" />
 </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-details" />
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
 
-    <div class="documentDescription" tal:content="context/summary">
+      <h1 tal:content="context/title">Mozilla</h1>
+      <img alt="" class="mugshot" src="/@@/nyet-mugshot"
+      />
+
+      <div tal:content="context/summary">
         This is the project Summary, which should be a single paragraph
         summarising the project's purpose.
-    </div>
+      </div>
 
     <div tal:content="structure context/description/fmt:text-to-html">
     This is the Project Description,
@@ -36,7 +33,24 @@
     products such as APR.
     </div>
 
-    <h2>Products</h2>
+      <ul tal:condition="context/homepageurl">
+        <li>
+          <a tal:attributes="href context/homepageurl">
+            Visit the <tal:name replace="context/title" /> home page
+          </a>
+        </li>
+      </ul>
+      <ul class="buttons">
+        <li class="reportbug"><a href="+filebug">Report a bug</a></li>
+        <li class="requestsupport"><a href="+addticket">Request support</a></li>
+        <li class="helptranslate"><a href="+translations">Help translate</a></li>
+      </ul>
+      <div
+        class="right"
+        tal:content="structure context/@@+portlet-details"
+      />
+      <div class="left">
+        <h2>Products</h2>
 
     <div tal:condition="context/products">
       <p>The following products are registered for 
@@ -68,6 +82,21 @@
         <img alt="" src="/@@/add" /><a href="+newproduct">Register another
         product</a> for this project.
     </p>
+
+      </div>
+      <div class="left">
+        <h2>Top contributors</h2>
+      </div>
+      <div class="right">
+        <h2>Latest bugs</h2>
+      </div>
+      <div class="right">
+        <h2>Latest proposed features</h2>
+      </div>
+
+
+
+
 
 </div>
 
