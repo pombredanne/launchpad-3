@@ -79,18 +79,18 @@ def test_re_substitute():
     control over the non-matched text.  The re_substitute() function
     lets us do that.
 
-    >>> import re
-    >>> from canonical.launchpad.webapp.tales import re_substitute
+      >>> import re
+      >>> from canonical.launchpad.webapp.tales import re_substitute
 
-    >>> def match_func(match):
-    ...     return '[%s]' % match.group()
-    >>> def nomatch_func(text):
-    ...     return '{%s}' % text
+      >>> def match_func(match):
+      ...     return '[%s]' % match.group()
+      >>> def nomatch_func(text):
+      ...     return '{%s}' % text
 
-    >>> pat = re.compile('a{2,6}')
-    >>> print re_substitute(pat, match_func, nomatch_func,
-    ...                     'aaaabbbbaaaaaaa aaaaaaaab')
-    [aaaa]{bbbb}[aaaaaa]{a }[aaaaaa][aa]{b}
+      >>> pat = re.compile('a{2,6}')
+      >>> print re_substitute(pat, match_func, nomatch_func,
+      ...                     'bbaaaabbbbaaaaaaa aaaaaaaab')
+      {bb}[aaaa]{bbbb}[aaaaaa]{a }[aaaaaa][aa]{b}
     """
 
 def test_add_word_breaks():
