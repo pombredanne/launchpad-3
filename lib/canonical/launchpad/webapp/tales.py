@@ -762,7 +762,7 @@ def add_word_breaks(word):
 
 break_text_pat = re.compile(r'''
   (?P<tag>
-    <[^>]>
+    <[^>]*>
   ) |
   (?P<longword>
     \b[^\s<>]{20,}
