@@ -136,6 +136,9 @@ def test_break_long_words():
 
       >>> print break_long_words('12345678901234567890 1234567890.1234567890')
       123456789012345<wbr></wbr>67890 1234567890.<wbr></wbr>1234567890
+
+      >>> print break_long_words('1234567890&abcdefghi;123')
+      1234567890&abcdefghi;123
     """
 
 def test_suite():

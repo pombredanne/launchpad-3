@@ -765,7 +765,7 @@ break_text_pat = re.compile(r'''
     <[^>]*>
   ) |
   (?P<longword>
-    \b[^\s<>]{20,}
+    (?<![^\s<>])(?:[^\s<>&]|&[^;]*;){20,}
   )
 ''', re.VERBOSE)
 
