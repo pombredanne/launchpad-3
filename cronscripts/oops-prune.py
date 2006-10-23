@@ -11,11 +11,14 @@ import os
 import sys
 
 from canonical.config import config
+from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.launchpad.scripts.logger import logger_options, logger
 from canonical.launchpad.scripts.oops import (
         unwanted_oops_files, prune_empty_oops_directories
         )
 from canonical.lp import initZopeless, AUTOCOMMIT_ISOLATION
+
+default_lock_filename = '/var/lock/oops-prune.lock'
 
 def main():
     parser = OptionParser("Usage: %prog [OOPS_DIR ...]")
@@ -39,16 +42,28 @@ def main():
 
     log = logger(options, 'oops-prune')
 
-    ztm = initZopeless(dbuser='oopsprune', isolation=AUTOCOMMIT_ISOLATION)
-    for oops_directory in oops_directories:
-        for oops_path in unwanted_oops_files(oops_directory, 90, log):
-            log.info("Removing %s", oops_path)
-            if not options.dry_run:
-                os.unlink(oops_path)
+    # Create a lock file so we don't have two daemons running at the same time.
+    lockfile = LockFile(default_lock_filename, logger=log)
+    try:
+        lockfile.acquire()
+    except OSError:
+        log.info("lockfile %s already exists, exiting", default_lock_filename)
+        return 1
 
-    prune_empty_oops_directories(oops_directory)
+    try:
+        ztm = initZopeless(dbuser='oopsprune', isolation=AUTOCOMMIT_ISOLATION)
+        for oops_directory in oops_directories:
+            for oops_path in unwanted_oops_files(oops_directory, 90, log):
+                log.info("Removing %s", oops_path)
+                if not options.dry_run:
+                    os.unlink(oops_path)
 
-    return 0
+        prune_empty_oops_directories(oops_directory)
+
+        return 0
+    finally:
+        lockfile.release()
+
 
 if __name__ == '__main__':
     sys.exit(main())

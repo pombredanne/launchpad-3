@@ -1480,7 +1480,7 @@ INSERT INTO distrorelease (id, distribution, name, title, description, version, 
 Ubuntu Hoary for the Andalucian marketplace.', 'Guada2005', NULL, 0, NULL, NULL, 0, 0, NULL, '2006-10-16 18:31:43.488598');
 INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created) VALUES (10, 1, 'breezy-autotest', 'Breezy Badger Autotest', 'Autotest version of Breezy', '6.6.6', 1, '2005-12-01 10:00:00', 3, 1, '[publishing]
 components = main restricted universe multiverse
-', 'Autosync uploader test', 'Breezy Badger Autotest', NULL, 0, 8, 'autotest_changes@ubutu.com', 0, 0, NULL, '2006-10-16 18:31:43.489468');
+', 'Autosync uploader test', 'Breezy Badger Autotest', NULL, 0, 8, 'autotest_changes@ubuntu.com', 0, 0, NULL, '2006-10-16 18:31:43.489468');
 INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created) VALUES (11, 8, 'breezy-autotest', 'Breezy Badger Autotest', 'Autotest version of Breezy', '6.6.6', 1, '2006-01-08 10:00:00', 1, 1, '[publishing]
 components = main restricted universe multiverse
 ', 'Autosync uploader test', 'Breezy Badger Autotest', NULL, 0, NULL, NULL, 0, 0, NULL, '2006-10-16 18:31:43.490333');
@@ -1542,7 +1542,7 @@ INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile, 
 INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile, date_created) VALUES (7, 0, 10, 0, 1, '2006-10-16 18:31:43.525832');
 INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile, date_created) VALUES (8, 1, 10, 0, 1, '2006-10-16 18:31:43.526197');
 INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile, date_created) VALUES (9, 1, 10, 0, 1, '2006-10-16 18:31:43.526624');
-
+INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile, date_created) VALUES (10, 1, 10, 40, 1, '2006-10-16 18:31:43.526624');
 
 ALTER TABLE distroreleasequeue ENABLE TRIGGER ALL;
 
@@ -1561,6 +1561,7 @@ ALTER TABLE distroreleasequeuecustom DISABLE TRIGGER ALL;
 INSERT INTO distroreleasequeuecustom (id, distroreleasequeue, customformat, libraryfilealias, date_created) VALUES (1, 5, 1, 1, '2006-10-16 18:31:43.532702');
 INSERT INTO distroreleasequeuecustom (id, distroreleasequeue, customformat, libraryfilealias, date_created) VALUES (2, 6, 2, 1, '2006-10-16 18:31:43.533511');
 INSERT INTO distroreleasequeuecustom (id, distroreleasequeue, customformat, libraryfilealias, date_created) VALUES (3, 7, 3, 1, '2006-10-16 18:31:43.533853');
+INSERT INTO distroreleasequeuecustom (id, distroreleasequeue, customformat, libraryfilealias, date_created) VALUES (4, 10, 3, 1, '2006-10-16 18:31:43.533853');
 
 
 ALTER TABLE distroreleasequeuecustom ENABLE TRIGGER ALL;
@@ -8197,6 +8198,12 @@ INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, archite
 INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (145, 17, 8, 2, 2, 1, 8);
 INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (146, 17, 2, 2, 2, 2, 2);
 INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (154, 18, 1, 3, 2, 1, 1);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (155, 19, 50, 1, 3, 1, 50);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (156, 19, 0, 1, 3, 2, 0);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (157, 19, 0, 1, 3, 3, 0);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (158, 19, 50, 2, 3, 1, 50);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (159, 19, 0, 2, 3, 2, 0);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (160, 19, 50, 3, 3, 1, 50);
 
 
 ALTER TABLE requestedcds ENABLE TRIGGER ALL;
@@ -8502,6 +8509,7 @@ INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, datereque
 Organization', 'whatever', 'not mandatory', 32, '04277', '+55 16 3374-2027', '''jordi'':1A ''mallach'':2A', NULL, 1);
 INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (17, 8, 55, NULL, '2006-03-19 18:38:24.526648', NULL, NULL, true, 'James Blackwell', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 2, '999432423', '+55 16 3374-2027', '''jame'':1A ''blackwel'':2A', 3, 4);
 INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (18, 23, 55, NULL, '2006-03-01 18:38:24.526648', NULL, NULL, false, 'David Allouche', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 75, '999432423', '+55 16 3374-2027', '''david'':1A ''allouch'':2A', 4, 4);
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (19, 54, NULL, NULL, '2006-10-17 20:53:11.714301', NULL, NULL, false, 'Marilize Coetzee', 'Somewhere around here', NULL, NULL, 'fdas fd as fa', NULL, 9, '43243242', '432432', '''maril'':1A ''coetze'':2A', NULL, 1);
 
 
 ALTER TABLE shippingrequest ENABLE TRIGGER ALL;
