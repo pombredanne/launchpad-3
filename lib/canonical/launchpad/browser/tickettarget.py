@@ -136,6 +136,8 @@ class SearchTicketsView(LaunchpadFormView):
                 return _('Support requests for ${context}',
                          mapping=replacements)
 
+    # XXX: Must add the languages to these messages.
+    # -- Guilherme Salgado, 2006-10-20
     @property
     def empty_listing_message(self):
         """Message displayed when there is no tickets matching the filter."""
@@ -278,6 +280,8 @@ class TicketTargetSearchMyTicketsView(SearchTicketsView):
             return _('Support requests you made for ${context}',
                      mapping={'context': self.context.displayname})
 
+    # XXX: Must add the languages to these messages.
+    # -- Guilherme Salgado, 2006-10-20
     @property
     def empty_listing_message(self):
         """See SearchTicketsView."""
