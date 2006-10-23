@@ -3,11 +3,16 @@
 
   <div class="portletBody">
     <div class="portletContent">
-      <b>Revision control system:</b><br />
-      <span tal:condition="context/rcstype"
-      tal:replace="context/rcstype/title">CVS</span>
-      <i tal:condition="not:context/rcstype">None given</i>
-      <br />
+      <div tal:condition="not:context/rcstype">
+        <tal:block define="branch context/series_branch" condition="branch">
+          <b>Bazaar Branch:</b><br />
+          <img alt="" src="/@@/branch" />
+          <a tal:attributes="href branch/fmt:url" tal:content="branch/displayname">
+            branch name
+          </a>
+        </tal:block>
+        <i tal:condition="not:context/series_branch">None given</i>
+      </div>
       <tal:block condition="context/rcstype">
         <tal:block condition="context/rcstype/enumvalue:CVS">
           <b>CVS root:</b><br />

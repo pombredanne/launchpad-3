@@ -3490,6 +3490,12 @@ class ShipItDistroRelease(DBSchema):
         The Dapper Drake lont-term-support release.
         """)
 
+    EDGY = Item(3, """
+        6.10 (Edgy Eft)
+
+        The Edgy Eft release.
+        """)
+
 
 class TextDirection(DBSchema):
     """The base text direction for a language."""

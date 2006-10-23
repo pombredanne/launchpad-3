@@ -238,7 +238,7 @@ class TicketMakeBugView(GeneralFormView):
             # we can't make a bug when we have linked bugs
             self.request.response.addErrorNotification(
                 _('You cannot create a bug report from a support request'
-                    'that already has bugs linked to it.'))
+                  'that already has bugs linked to it.'))
             self.request.response.redirect(canonical_url(ticket))
             return
 
@@ -273,7 +273,7 @@ class TicketMakeBugView(GeneralFormView):
             ticket, unmodifed_ticket, ['bugs'])
         notify(bug_added_event)
         self.request.response.addNotification(
-            _('Thank you! Bug #%d created.') % bug.id)
+            _('Thank you! Bug #$bugid created.', mapping={'bugid': bug.id}))
         self._nextURL = canonical_url(bug)
 
     def submitted(self):

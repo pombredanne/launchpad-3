@@ -44,12 +44,13 @@ support page and goes there to check.
 He sees a listing of the current tickets posted on Ubuntu:
 
     >>> soup = BeautifulSoup(browser.contents)
-    >>> soup('td', 'ticket')
-    [...
-      <a href=".../ubuntu/+ticket/11">Continue playing after shutdown</a>
-    ...
-      <a href=".../ubuntu/+ticket/10">Play DVDs in Totem</a>
-    ...]
+    >>> for ticket in soup.fetch('td', 'ticket'):
+    ...     print ticket.first('a').renderContents()
+    Continue playing after shutdown
+    Play DVDs in Totem
+    mailto: problem in webpage
+    Installation of Java Runtime Environment for Mozilla
+    Slow system
 
 None of the listed ticket titles quite match his problem. He sees that
 there is another page of tickets, so he goes to the next page of
@@ -59,10 +60,9 @@ results. There, he finds only one other ticket:
     >>> browser.title
     'Support requests for Ubuntu'
     >>> soup = BeautifulSoup(browser.contents)
-    >>> soup('td', 'ticket')
-    [<td class="ticket">
-      <a href=".../ubuntu/+ticket/5">Installation failed</a>
-     </td>]
+    >>> for ticket in soup.fetch('td', 'ticket'):
+    ...     print ticket.first('a').renderContents()
+    Installation failed
 
 This is the last results page, so the next and last links are greyed
 out.
@@ -100,6 +100,24 @@ greyed out:
     Traceback (most recent call last):
       ..
     LinkNotFoundError...
+
+When he passes the mouse over the ticket's row, the beginning of the
+description appears in a small pop-up:
+
+    >>> import re
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> ticket_link = soup.first('a', text=re.compile('Play DVDs'))
+    >>> print ticket_link.findParent('tr')['title']
+    How do you play DVDs in Totem..........?
+
+    >>> ticket_link = soup.first('a', text=re.compile('mailto:'))
+    >>> print ticket_link.findParent('tr')['title']
+    I am not able to open my email client if i click on a mailto: link in a
+    webpage in Firefox 1.5.0.4 (ubuntu dapper).
+    <BLANKLINE>
+    Earlier I could do this but since balsa was installed and then uninstalled,
+    things have not been the same. balsa used to start when a mailto: link was
+    clicked on a webpage. balsa i...
 
 He clicks on the ticket title to obtain the ticket page where the
 details of the ticket are available.
@@ -150,10 +168,9 @@ the ticket status to search. He notices that only 'Open' and
 This time, the search returns one item.
 
     >>> soup = BeautifulSoup(browser.contents)
-    >>> soup('td', 'ticket')
-    [<td class="ticket">
-      <a href=".../ubuntu/+ticket/3">Firefox is slow and consumes too much RAM</a>
-     </td>]
+    >>> for ticket in soup.fetch('td', 'ticket'):
+    ...     print ticket.first('a').renderContents()
+    Firefox is slow and consumes too much RAM
 
 He clicks on the link to read the ticket description.
 

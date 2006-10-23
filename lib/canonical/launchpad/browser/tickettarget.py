@@ -333,30 +333,32 @@ class ManageSupportContactView(GeneralFormView):
         if support_contact_teams is None:
             support_contact_teams = []
         response = self.request.response
+        replacements = {'context': self.context.displayname}
         if want_to_be_support_contact:
             if self.context.addSupportContact(self.user):
                 response.addNotification(
-                    'You have been added as a support contact for %s' % (
-                        self.context.displayname))
+                    _('You have been added as a support contact for '
+                      '$context.', mapping=replacements))
         else:
             if self.context.removeSupportContact(self.user):
                 response.addNotification(
-                    'You have been removed as a support contact for %s' % (
-                        self.context.displayname))
+                    _('You have been removed as a support contact for '
+                      '$context.', mapping=replacements))
 
         user_teams = [
             membership.team for membership in self.user.myactivememberships]
         for team in user_teams:
+            replacements['teamname'] = team.displayname
             if team in support_contact_teams:
                 if self.context.addSupportContact(team):
                     response.addNotification(
-                        '%s has been added as a support contact for %s' % (
-                            team.displayname, self.context.displayname))
+                        _('$teamname has been added as a support contact '
+                          'for $context.', mapping=replacements))
             else:
                 if self.context.removeSupportContact(team):
                     response.addNotification(
-                        '%s has been removed as a support contact for %s' % (
-                            team.displayname, self.context.displayname))
+                        _('$teamname has been removed as a support contact '
+                          'for $context.', mapping=replacements))
 
         self._nextURL = canonical_url(self.context) + '/+tickets'
 
