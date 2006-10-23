@@ -16,6 +16,7 @@ class BugSubscriptionAddView(SQLObjectAddView):
         # Get the absolute URL of the IBugTask context before magic
         # IBug adaptation.
         self._next_url = canonical_url(context)
+        self.current_bugtask = context
         context = IBug(context)
         self.context = context
         self.request = request
