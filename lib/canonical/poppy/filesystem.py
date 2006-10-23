@@ -164,7 +164,7 @@ class UploadFileSystem:
     def rmdir(self, path):
         """Remove a directory.
 
-        Not Implemented - see upload.txt.
+        Remove a target path recursively.
         """
         path = self._sanitize(path)
         full_path = self._full(path)
