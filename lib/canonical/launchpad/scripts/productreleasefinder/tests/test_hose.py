@@ -1,6 +1,11 @@
 """Tests for canonical.launchpad.scripts.productreleasefinder.hose."""
 
+import os
+import shutil
+import tempfile
 import unittest
+
+from canonical.testing import reset_logging
 from hct.scaffold import Scaffold
 
 
@@ -41,7 +46,7 @@ class Hose_Filter(unittest.TestCase):
         from canonical.launchpad.scripts.productreleasefinder.hose import Hose
         from canonical.launchpad.scripts.productreleasefinder.filter import (
             FilterPattern)
-        pattern = FilterPattern("foo", "http:", "e*")
+        pattern = FilterPattern("foo", "http:e*")
         h = Hose([pattern])
         self.assertEquals(len(h.filter.filters), 1)
         self.assertEquals(h.filter.filters[0], pattern)
@@ -59,7 +64,7 @@ class Hose_Urls(Scaffold):
         from canonical.launchpad.scripts.productreleasefinder.hose import Hose
         from canonical.launchpad.scripts.productreleasefinder.filter import (
             FilterPattern)
-        pattern = FilterPattern("foo", "http://archive.ubuntu.com/", "e*")
+        pattern = FilterPattern("foo", "http://archive.ubuntu.com/e*")
         h = self.wrapped(Hose, [pattern])
         self.assertEquals(h.called_args["reduceWork"][0][0],
                           ["http://archive.ubuntu.com/"])
@@ -98,6 +103,70 @@ class Hose_ReduceWork(unittest.TestCase):
                                         "http://localhost/wibble/",
                                         "file:///usr/"]),
                           ["http://localhost/", "file:///usr/"])
+
+
+class Hose_LimitWalk(unittest.TestCase):
+
+    def setUp(self):
+        self.release_root = tempfile.mkdtemp()
+        self.release_url = 'file://' + self.release_root
+
+    def tearDown(self):
+        shutil.rmtree(self.release_root, ignore_errors=True)
+        reset_logging()
+
+    def testHoseLimitsWalk(self):
+        # Test that the hose limits the directory walk to places that
+        # could contain a match.
+        
+        # Set up the releases tree:
+        for directory in ['bar',
+                          'foo',
+                          'foo/1.0',
+                          'foo/1.0/source',
+                          'foo/1.0/x64',
+                          'foo/1.5',
+                          'foo/1.5/source',
+                          'foo/2.0',
+                          'foo/2.0/source']:
+            os.mkdir(os.path.join(self.release_root, directory))
+        for releasefile in ['foo/1.0/foo-1.0.tar.gz',
+                            'foo/1.0/source/foo-1.0.tar.gz',
+                            'foo/1.0/source/foo-2.0.tar.gz',
+                            'foo/1.0/x64/foo-1.0.tar.gz',
+                            'foo/1.5/source/foo-1.5.tar.gz',
+                            'foo/2.0/source/foo-2.0.tar.gz']:
+            fp = open(os.path.join(self.release_root, releasefile), 'wb')
+            fp.write('data')
+            fp.close()
+
+        # Run the hose over the test data
+        from canonical.launchpad.scripts.productreleasefinder.hose import Hose
+        from canonical.launchpad.scripts.productreleasefinder.filter import (
+            FilterPattern)
+        pattern = FilterPattern("key", self.release_url + 
+                                "/foo/1.*/source/foo-1.*.tar.gz")
+        hose = Hose([pattern])
+
+        prefix_len = len(self.release_url)
+        matched = []
+        unmatched = []
+        for key, url in hose:
+            if key is None:
+                unmatched.append(url[prefix_len:])
+            else:
+                matched.append(url[prefix_len:])
+
+        # Make sure that the correct releases got found.
+        self.assertEqual(sorted(matched),
+                         ['/foo/1.0/source/foo-1.0.tar.gz',
+                          '/foo/1.5/source/foo-1.5.tar.gz'])
+
+        # The only unmatched files that get checked exist in
+        # directories that are parents of potential matches.
+        self.assertEqual(sorted(unmatched),
+                         ['/foo/1.0/foo-1.0.tar.gz',
+                          '/foo/1.0/source/foo-2.0.tar.gz'])
 
 
 def test_suite():

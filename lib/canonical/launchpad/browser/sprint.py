@@ -50,7 +50,7 @@ class SprintFacets(StandardLaunchpadFacets):
     enable_only = ['overview', 'specifications']
 
     def specifications(self):
-        text = 'Specifications'
+        text = 'Features'
         summary = 'Topics for discussion at %s' % self.context.title
         return Link('+specs', text, summary)
 
@@ -102,7 +102,7 @@ class SprintSpecificationsMenu(ApplicationMenu):
         summary = 'Show topics that were not accepted for discussion'
         return Link('+specs?acceptance=declined', text, summary, icon='info')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.Driver')
     def settopics(self):
         text = 'Set Topics'
         summary = 'Approve or defer topics for discussion'
@@ -244,8 +244,6 @@ class SprintTopicSetView(HasSpecificationsView, LaunchpadView):
     It is unusual because we want to display multiple objects with
     checkboxes, then process the selected items, which is not the usual
     add/edit metaphor."""
-    # XXX: SteveAlexander, 2006-03-06, this class and its
-    #      associated templates are not tested.
 
     def initialize(self):
         self.status_message = None
@@ -304,7 +302,7 @@ class SprintTopicSetView(HasSpecificationsView, LaunchpadView):
             action_fn = self.context.acceptSpecificationLinks
         else:
             action_fn = self.context.declineSpecificationLinks
-        leftover = action_fn(selected_specs)
+        leftover = action_fn(selected_specs, self.user)
 
         # Status message like: "Accepted 27 specification(s)."
         self.status_message = '%s %d specification(s).' % (

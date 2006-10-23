@@ -55,7 +55,6 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.database.distroarchrelease import DistroArchRelease
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.language import Language
-from canonical.launchpad.database.cve import CveSet
 from canonical.launchpad.database.distroreleaselanguage import (
     DistroReleaseLanguage, DummyDistroReleaseLanguage)
 from canonical.launchpad.database.sourcepackage import SourcePackage
@@ -200,7 +199,6 @@ class DistroRelease(SQLBase, BugTargetBase):
         """See IDistroRelease."""
         # frozen/released states
         released_states = [
-            DistributionReleaseStatus.FROZEN,
             DistributionReleaseStatus.SUPPORTED,
             DistributionReleaseStatus.CURRENT
             ]
@@ -430,16 +428,6 @@ class DistroRelease(SQLBase, BugTargetBase):
     def getSpecification(self, name):
         """See ISpecificationTarget."""
         return self.distribution.getSpecification(name)
-
-    @cachedproperty
-    def open_cve_bugtasks(self):
-        """See IDistribution."""
-        return list(CveSet().getOpenBugTasks(distrorelease=self))
-
-    @cachedproperty
-    def resolved_cve_bugtasks(self):
-        """See IDistribution."""
-        return list(CveSet().getResolvedBugTasks(distrorelease=self))
 
     def getDistroReleaseLanguage(self, language):
         """See IDistroRelease."""
@@ -898,9 +886,10 @@ class DistroRelease(SQLBase, BugTargetBase):
 
         # restrict result to a given pocket
         if pocket is not None:
-            default_clauses.append(
-                    "distroreleasequeue.pocket = %s" % sqlvalues(pocket))
-
+            if not isinstance(pocket, list):
+                pocket = [pocket]
+            default_clauses.append("""
+            distroreleasequeue.pocket IN %s""" % sqlvalues(pocket))
 
         # XXX cprov 20060606: We may reorganise this code, creating
         # some new methods provided by IDistroReleaseQueueSet, as:
@@ -911,8 +900,11 @@ class DistroRelease(SQLBase, BugTargetBase):
                 " AND ".join(default_clauses),
                 orderBy=['-id'])
 
+        if not isinstance(status, list):
+            status = [status]
+
         default_clauses.append("""
-        distroreleasequeue.status = %s""" % sqlvalues(status))
+        distroreleasequeue.status IN %s""" % sqlvalues(status))
 
         if not name:
             assert not version and not exact_match
@@ -1079,7 +1071,6 @@ class DistroRelease(SQLBase, BugTargetBase):
             parent_arch = self.parentrelease[arch.architecturetag]
             self._copy_binary_publishing_records(cur, arch, parent_arch)
         self._copy_lucille_config(cur)
-        self._copy_active_translations(cur)
 
         # Finally, flush the caches because we've altered stuff behind the
         # back of sqlobject.
@@ -1786,7 +1777,6 @@ class DistroReleaseSet:
                     DistributionReleaseStatus.CURRENT,
                     DistributionReleaseStatus.SUPPORTED)
             else:
-                # FROZEN is considered closed now
                 # The query is filtered on unreleased releases.
                 where_clause += "releasestatus in (%s, %s, %s)" % sqlvalues(
                     DistributionReleaseStatus.EXPERIMENTAL,

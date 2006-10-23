@@ -27,13 +27,14 @@ from zope.component import getUtility
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
+from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     IBranch, IBranchSet, IBugSet)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
-    LaunchpadView, Navigation, stepthrough, LaunchpadFormView,
+    LaunchpadView, Navigation, stepto, stepthrough, LaunchpadFormView,
     LaunchpadEditFormView, action, custom_widget)
 from canonical.widgets import ContextWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
@@ -55,6 +56,10 @@ class BranchNavigation(Navigation):
         for bug_branch in bug.bug_branches:
             if bug_branch.branch == self.context:
                 return bug_branch
+
+    @stepto(".bzr")
+    def dotbzr(self):
+        return BranchRef(self.context)
 
 
 class BranchContextMenu(ContextMenu):

@@ -8,8 +8,11 @@ __metaclass__ = type
 
 import bisect
 import cgi
-import re
+from email.Utils import formatdate
+import math
 import os.path
+import re
+import rfc822
 
 from zope.interface import Interface, Attribute, implements
 from zope.component import getUtility, queryAdapter
@@ -145,13 +148,13 @@ class EnumValueAPI:
             return True
         else:
             # Check whether this was an allowed value for this dbschema.
-            schema = self.item.schema
+            schema_items = self.item.schema_items
             try:
-                schema.items[name]
+                schema_items[name]
             except KeyError:
                 raise TraversalError(
                     'The %s dbschema does not have a value %s.' %
-                    (schema.__name__, name))
+                    (self.item.schema_name, name))
             return False
 
 
@@ -267,6 +270,7 @@ class NoneFormatter:
         'date',
         'time',
         'datetime',
+        'rfc822utcdatetime',
         'exactduration',
         'approximateduration',
         'pagetitle',
@@ -353,6 +357,61 @@ class MilestoneFormatterAPI(ObjectFormatterAPI):
         return '<img alt="" src="/@@/milestone" />'
 
 
+class BuildFormatterAPI(ObjectFormatterAPI):
+    """Adapter for IBuild objects to a formatted string.
+
+    Used for fmt:icon.
+    """
+    def icon(self):
+        """Return the appropriate <img> tag for the build icon."""
+        image_template = '<img alt="%s" title="%s" src="%s" />'
+
+        icon_map = {
+            dbschema.BuildStatus.NEEDSBUILD: "/@@/build-needed",
+            dbschema.BuildStatus.FULLYBUILT: "/@@/build-success",
+            dbschema.BuildStatus.FAILEDTOBUILD: "/@@/build-failure",
+            dbschema.BuildStatus.MANUALDEPWAIT: "/@@/build-depwait",
+            dbschema.BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
+            # XXX cprov 20060321: proper icons
+            dbschema.BuildStatus.SUPERSEDED: "/@@/topic",
+            dbschema.BuildStatus.BUILDING: "/@@/progress",
+            }
+
+        alt = '[%s]' % self._context.buildstate.name
+        title = self._context.buildstate.name
+        source = icon_map[self._context.buildstate]
+
+        return image_template % (alt, title, source)
+
+
+class NumberFormatterAPI:
+    """Adapter for converting numbers to formatted strings."""
+
+    def __init__(self, number):
+        assert not float(number) < 0, "Expected a non-negative number."
+        self._number = number
+
+    def bytes(self):
+        """Render number as byte contractions according to IEC60027-2."""
+        # See http://en.wikipedia.org/wiki/Binary_prefixes#Specific_units_of_IEC_60027-2_A.2
+        # Note that there is a zope.app.size.byteDisplay() function, but
+        # it really limited and doesn't work well enough for us here.
+        n = int(self._number)
+        if n == 1:
+            # Handle the singular case.
+            return "1 byte"
+        if n == 0:
+            # To avoid math.log(0, X) blowing up.
+            return "0 bytes"
+        suffixes = ["KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"]
+        exponent = int(math.log(n, 1024))
+        exponent = min(len(suffixes), exponent)
+        if exponent < 1:
+            # If this is less than 1 KiB, no need for rounding.
+            return "%s bytes" % n
+        return "%.1f %s" % (n / 1024.0 ** exponent, suffixes[exponent - 1])
+
+
 class DateTimeFormatterAPI:
     """Adapter from datetime objects to a formatted string."""
 
@@ -374,6 +433,10 @@ class DateTimeFormatterAPI:
 
     def datetime(self):
         return "%s %s" % (self.date(), self.time())
+
+    def rfc822utcdatetime(self):
+        return formatdate(
+            rfc822.mktime_tz(self._datetime.utctimetuple() + (0,)))
 
 
 class DurationFormatterAPI:

@@ -50,20 +50,11 @@ class ProductReleaseFinder:
             filters = []
 
             for series in product.serieslist:
-                if series.releasefileglob:
-                    releasefileglob = series.releasefileglob
-                else:
-                    continue
-
-                if series.releaseroot:
-                    releaseroot = series.releaseroot
-                elif product.releaseroot:
-                    releaseroot = product.releaseroot
-                else:
+                if not series.releasefileglob:
                     continue
 
                 filters.append(FilterPattern(series.name,
-                                             releaseroot, releasefileglob))
+                                             series.releasefileglob))
 
             if not len(filters):
                 continue
@@ -84,6 +75,8 @@ class ProductReleaseFinder:
             if series_name is not None:
                 try:
                     self.handleRelease(product_name, series_name, url)
+                except (KeyboardInterrupt, SystemExit):
+                    raise
                 except:
                     self.log.exception("Could not successfully process "
                                        "URL %s for %s/%s",
@@ -114,7 +107,7 @@ class ProductReleaseFinder:
     def addReleaseTarball(self, product_name, series_name, release_name,
                           filename, size, file, content_type):
         """Create a ProductRelease (if needed), and attach tarball"""
-        # get the series
+        # Get the series.
         self.ztm.begin()
         try:
             product = getUtility(IProductSet).getByName(product_name)
@@ -128,7 +121,7 @@ class ProductReleaseFinder:
                 self.log.info("Created new release %s for %s/%s",
                               release_name, product_name, series_name)
 
-            # if we already have a code tarball, stop here
+            # If we already have a code tarball, stop here.
             for fileinfo in release.files:
                 if fileinfo.filetype == UpstreamFileType.CODETARBALL:
                     self.log.debug("%s/%s/%s already has a code tarball",
@@ -155,6 +148,12 @@ class ProductReleaseFinder:
         self.log.debug("Filename portion is %s", filename)
 
         version = path.split_version(path.name(filename))[1]
+
+        # Tarballs pulled from a Debian-style archive often have
+        # ".orig" appended to the version number.  We don't want this.
+        if version.endswith('.orig'):
+            version = version[:-len('.orig')]
+        
         self.log.debug("Version is %s", version)
         if version is None:
             self.log.error("Unable to parse version from %s", url)

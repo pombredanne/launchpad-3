@@ -27,15 +27,16 @@ import time
 from urllib import urlopen
 
 import psycopg
-from sqlos.interfaces import IConnectionName
 import transaction
 from zope.component import getUtility
 from zope.component.interfaces import ComponentLookupError
+from zope.security.management import getSecurityPolicy
+from zope.security.simplepolicies import PermissiveSecurityPolicy
 
 from canonical.config import config
 from canonical.database.sqlbase import ZopelessTransactionManager
 from canonical.launchpad.interfaces import IOpenLaunchBag
-from canonical.launchpad.ftests import logout, is_logged_in
+from canonical.launchpad.ftests import ANONYMOUS, login, logout, is_logged_in
 import canonical.launchpad.mail.stub
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.lp import initZopeless
@@ -58,7 +59,7 @@ class LayerInvariantError(LayerError):
 class LayerIsolationError(LayerError):
     """Test isolation has been broken, probably by the test we just ran.
 
-    This generally indicates a test has screwed up by not resetting 
+    This generally indicates a test has screwed up by not resetting
     something correctly to the default state.
 
     The test suite should abort as further test failures may well
@@ -140,7 +141,7 @@ class BaseLayer:
                 "Component architecture should not be loaded by tests. "
                 "This should only be loaded by the Layer."
                 )
-        
+
         # Detect a test that installed the Zopeless database adapter
         # but failed to unregister it. This could be done automatically,
         # but it is better for the tear down to be explicit.
@@ -221,8 +222,6 @@ class LibrarianLayer(BaseLayer):
 
         We do this by altering the configuration so the Librarian client
         looks for the Librarian server on the wrong port.
-
-        XXX: Untested -- StuartBishop 20060713
         """
         cls._hidden = True
         config.librarian.upload_port = 58091
@@ -230,10 +229,8 @@ class LibrarianLayer(BaseLayer):
     @classmethod
     def reveal(cls):
         """Reveal a hidden Librarian.
-        
-        This just involves restoring the config to the original value.
 
-        XXX: Untested -- StuartBishop 20060713
+        This just involves restoring the config to the original value.
         """
         cls._hidden = False
         config.librarian.upload_port = cls._orig_librarian_port
@@ -343,7 +340,7 @@ class SQLOSLayer(BaseLayer):
 
 class LaunchpadLayer(DatabaseLayer, LibrarianLayer):
     """Provides access to the Launchpad database and daemons.
-    
+
     We need to ensure that the database setup runs before the daemon
     setup, or the database setup will fail because the daemons are
     already connected to the database.
@@ -446,6 +443,17 @@ class ZopelessLayer(LaunchpadLayer):
             raise LayerInvariantError(
                 "Component architecture not loaded or totally screwed"
                 )
+        # This should not happen here, it should be caught by the
+        # testTearDown() method. If it does, something very nasty
+        # happened.
+        if getSecurityPolicy() != PermissiveSecurityPolicy:
+            raise LayerInvariantError(
+                "Previous test removed the PermissiveSecurityPolicy.")
+
+        # execute_zcml_for_scripts() sets up an interaction for the
+        # anonymous user. A previous script may have changed or removed
+        # the interaction, so set it up again
+        login(ANONYMOUS)
 
     @classmethod
     def testTearDown(cls):
@@ -455,6 +463,13 @@ class ZopelessLayer(LaunchpadLayer):
             raise LayerInvariantError(
                 "Component architecture not loaded or totally screwed"
                 )
+        # Make sure that a test that changed the security policy, reset it
+        # back to its default value.
+        if getSecurityPolicy() != PermissiveSecurityPolicy:
+            raise LayerInvariantError(
+                "This test removed the PermissiveSecurityPolicy and didn't "
+                "restore it.")
+        logout()
 
 
 class LaunchpadFunctionalLayer(
@@ -476,7 +491,7 @@ class LaunchpadFunctionalLayer(
     @classmethod
     def testTearDown(cls):
         getUtility(IOpenLaunchBag).clear()
-        
+
         # If tests forget to logout, we can do it for them.
         if is_logged_in():
             logout()
@@ -520,6 +535,21 @@ class LaunchpadZopelessLayer(
             raise LayerInvariantError(
                 "Failed to uninstall ZopelessTransactionManager"
                 )
+
+    @classmethod
+    def commit(cls):
+        from canonical.launchpad.ftests.harness import (
+                LaunchpadZopelessTestSetup
+                )
+        LaunchpadZopelessTestSetup.txn.commit()
+
+    @classmethod
+    def abort(cls):
+        from canonical.launchpad.ftests.harness import (
+                LaunchpadZopelessTestSetup
+                )
+        LaunchpadZopelessTestSetup.txn.abort()
+
 
 
 class PageTestLayer(LaunchpadFunctionalLayer):
