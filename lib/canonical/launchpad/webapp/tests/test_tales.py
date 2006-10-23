@@ -89,8 +89,8 @@ def test_re_substitute():
 
     >>> pat = re.compile('a{2,6}')
     >>> print re_substitute(pat, match_func, nomatch_func,
-    ...                     'aaaabbbbaaaaaaa aaaaaaaa')
-    [aaaa]{bbbb}[aaaaaa]{a }[aaaaaa][aa]
+    ...                     'aaaabbbbaaaaaaa aaaaaaaab')
+    [aaaa]{bbbb}[aaaaaa]{a }[aaaaaa][aa]{b}
     """
 
 def test_add_word_breaks():
