@@ -1,3 +1,4 @@
+<<<<<<< TREE
 <tr class="translation">
   <td>
     <a tal:attributes="href view/zoom_url"><img tal:attributes="
@@ -118,7 +119,7 @@
 </tr>
 <tal:language-code
   define="language_code context/pofile/language/code">
-  <tal:plural-forms repeat="plural_index view/pluralform_indexes">
+  <tal:plural-forms repeat="plural_index view/pluralform_indices">
     <tr class="secondary">
       <th colspan="3">
         <label class="language-code">Current
@@ -164,6 +165,7 @@
         </td>
       </tr>
     </tal:active>
+<<<<<<< TREE
     <tal:suggestion_block define="suggestion_block python:view.suggestion_blocks[plural_index]">
       <tal:suggestions repeat="suggestions suggestion_block">
         <div tal:replace="structure suggestions/@@+display" />

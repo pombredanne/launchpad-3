@@ -44,7 +44,6 @@
     <browser:page
         for="canonical.launchpad.interfaces.IPOMsgSet"
         class="canonical.launchpad.browser.POMsgSetIndexView"
-        facet="translations"
         permission="zope.Public"
         name="+index"
         attribute="__call__"
@@ -57,15 +56,6 @@
         permission="launchpad.AnyPerson"
         template="../templates/pomsgset-translate.pt"
         class="canonical.launchpad.browser.POMsgSetPageView"
-        />
-
-    <browser:page
-        name="+translate-one"
-        facet="translations"
-        for="canonical.launchpad.interfaces.IPOMsgSet"
-        permission="launchpad.AnyPerson"
-        template="../templates/pomsgset-translate-one.pt"
-        class="canonical.launchpad.browser.POMsgSetView"
         />
 
     <browser:page

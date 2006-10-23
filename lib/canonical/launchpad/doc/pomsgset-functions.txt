@@ -97,27 +97,27 @@ msgid_html
 
 First, do no harm.
 
-    >>> msgid_html(u'foo bar', [], 'XXXA')
+    >>> msgid_html(u'foo bar', [], '<sp>')
     u'foo bar'
 
 Test replacement of leading and trailing spaces.
 
-    >>> msgid_html(u' foo bar', [], 'XXXA')
-    u'XXXAfoo bar'
-    >>> msgid_html(u'foo bar ', [], 'XXXA')
-    u'foo barXXXA'
-    >>> msgid_html(u'  foo bar  ', [], 'XXXA')
-    u'XXXAXXXAfoo barXXXAXXXA'
+    >>> msgid_html(u' foo bar', [], '<sp>')
+    u'<sp>foo bar'
+    >>> msgid_html(u'foo bar ', [], '<sp>')
+    u'foo bar<sp>'
+    >>> msgid_html(u'  foo bar  ', [], '<sp>')
+    u'<sp><sp>foo bar<sp><sp>'
 
 Test replacement of newlines.
 
-    >>> msgid_html(u'foo\nbar', [], newline='YYYA')
-    u'fooYYYAbar'
+    >>> msgid_html(u'foo\nbar', [], newline='<cr>')
+    u'foo<cr>bar'
 
 And both together.
 
-    >>> msgid_html(u'foo \nbar', [], 'XXXA', 'YYYA')
-    u'fooXXXAYYYAbar'
+    >>> msgid_html(u'foo \nbar', [], '<sp>', '<cr>')
+    u'foo<sp><cr>bar'
 
 Test treatment of tabs.
 
@@ -155,30 +155,3 @@ convert_newlines_to_web_form
     u'foo\r\nbar'
     >>> convert_newlines_to_web_form(u'foo\rbar')
     u'foo\r\nbar'
-
-
-count_lines
------------
-
-    >>> from canonical.launchpad.browser.pomsgset import count_lines
-    >>> count_lines("foo")
-    1
-    >>> count_lines("123456789a123456789a123456789a1234566789a123456789a")
-    2
-    >>> count_lines("123456789a123456789a123456789a1234566789a123456789")
-    1
-    >>> count_lines("a\nb")
-    2
-    >>> count_lines("a\nb\n")
-    3
-    >>> count_lines("a\nb\nc")
-    3
-    >>> count_lines("123456789a123456789a123456789a\n1234566789a123456789a")
-    2
-    >>> count_lines("123456789a123456789a123456789a123456789a123456789a1\n1234566789a123456789a123456789a")
-    3
-    >>> count_lines("123456789a123456789a123456789a123456789a123456789a123456789a\n1234566789a123456789a123456789a")
-    3
-    >>> count_lines("foo bar\n")
-    2
-

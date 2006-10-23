@@ -9,7 +9,7 @@ from email.Utils import parseaddr
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-        IPOTemplate, IPOFile, IPersonSet, NotFoundError, TranslationConstants
+        IPOTemplate, IPOFile, IPersonSet, TranslationConstants
         )
 from canonical.launchpad.components.poparser import POParser
 from canonical.lp.dbschema import PersonCreationRationale

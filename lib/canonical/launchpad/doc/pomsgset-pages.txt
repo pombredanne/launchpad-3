@@ -98,7 +98,7 @@ It does not have a plural msgid.
 
 And thus, it only has one translation.
 
-    >>> subview.pluralform_indexes
+    >>> subview.pluralform_indices
     [0]
 
 Which is the one we wanted.
@@ -169,23 +169,6 @@ And msgid_has_leading_or_trailing_space() determines ... well, you can guess.
     True
 
 The test system should reset this msgid to its original value for other tests.
-
-
-Tab index generation
---------------------
-
-Now, we are going to test the tab index generator to be sure the TAB key
-will work as expected when navigating over the translation form.
-
-First time we call it, first position.
-
-    >>> subview.tabindex.next()
-    1
-
-Next time we call it, it's increased.
-
-    >>> subview.tabindex.next()
-    2
 
 
 Submitting translations

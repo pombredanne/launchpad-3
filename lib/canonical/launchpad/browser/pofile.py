@@ -17,19 +17,18 @@ __all__ = [
 import re
 from zope.app.form.browser import DropdownWidget
 from zope.component import getUtility
-from zope.app import zapi
 from zope.publisher.browser import FileUpload
 
 from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad.interfaces import (
-    IPOFile, IPOExportRequestSet, ITranslationImportQueue, 
-    UnexpectedFormData, NotFoundError, IPOFileAlternativeLanguage)
+    IPOFile, IPOExportRequestSet, ITranslationImportQueue,
+    UnexpectedFormData, NotFoundError)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ApplicationMenu, Link, canonical_url,
     LaunchpadView, Navigation)
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.browser.pomsgset import BaseTranslationView
-
+from canonical.launchpad.browser.pomsgset import (
+    BaseTranslationView, POMsgSetView)
 
 from canonical.launchpad import _
 
@@ -290,6 +289,7 @@ class POFileTranslateView(BaseTranslationView):
 
     def initialize(self):
         self.pofile = self.context
+
         # The handling of errors is slightly tricky here. Because this
         # form displays multiple POMsgSetViews, we need to track the
         # various errors individually. This dictionary is keyed on
@@ -297,6 +297,7 @@ class POFileTranslateView(BaseTranslationView):
         # useful for doing display of only widgets with errors when we
         # do that.
         self.errors = {}
+        self.pomsgset_views = []
 
         self._initializeShowOption()
         BaseTranslationView.initialize(self)
@@ -310,15 +311,13 @@ class POFileTranslateView(BaseTranslationView):
         return BatchNavigator(self._getSelectedPOTMsgSets(),
                               self.request, size=self.DEFAULT_SIZE)
 
-    def _initializeSubViews(self):
-        """See BaseTranslationView._initializeSubViews."""
-        self.pomsgset_views = []
+    def _initializeMsgSetViews(self):
+        """See BaseTranslationView._initializeMsgSetViews."""
         for potmsgset in self.batchnav.currentBatch():
             self.pomsgset_views.append(self._buildPOMsgSetView(potmsgset))
 
     def _submitTranslations(self):
         """See BaseTranslationView._submitTranslations."""
-        import pdb; pdb.set_trace()
         for key in self.request.form:
             match = re.match('msgset_(\d+)$', key)
             if not match:
@@ -429,12 +428,8 @@ class POFileTranslateView(BaseTranslationView):
         pomsgset = potmsgset.getPOMsgSet(language.code, variant)
         if pomsgset is None:
             pomsgset = potmsgset.getDummyPOMsgSet(language.code, variant)
-
-        pomsgset_view = zapi.queryMultiAdapter(
-            (pomsgset, self.request), name="+translate-one")
-        self._prepareView(pomsgset_view, pomsgset,
-                          self.errors.get(pomsgset.potmsgset))
-        return pomsgset_view
+        return self._prepareView(POMsgSetView, pomsgset,
+                                 self.errors.get(pomsgset.potmsgset))
 
     def _initializeShowOption(self):
         # Get any value given by the user
@@ -505,3 +500,4 @@ class POExportView(BaseExportView):
         self.request_set.addRequest(
             self.user, pofiles=[self.context], format=format)
         self.nextURL()
+

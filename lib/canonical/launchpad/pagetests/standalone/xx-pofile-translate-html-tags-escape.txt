@@ -7,7 +7,7 @@ inside textareas.
   <!DOCTYPE html PUBLIC...
               <textarea ... lang="hr"
                         name="msgset_67_hr_translation_0"
-                        dir="ltr" tabindex="1">
+                        dir="ltr">
   Upotreba:
   <BLANKLINE>
   %s [opcije] &lt;uređaj&gt; [&lt;etiketa&gt;]
