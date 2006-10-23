@@ -6,15 +6,15 @@
   i18n:domain="launchpad"
 >
   <body>
-    <metal:iohs fill-slot="immediateobjectheadingsecondary">
+    <metal:cahs fill-slot="contentareaheadingsecondary">
       <a
         tal:attributes="href context/fmt:url"
         tal:content="context/title"
       >Specification title</a>
-    </metal:iohs>
-    <metal:iohp fill-slot="immediateobjectheadingprimary">
+    </metal:cahs>
+    <metal:cahp fill-slot="contentareaheadingprimary">
       Subscribe someone else
-    </metal:iohp>
+    </metal:cahp>
 
 <div metal:fill-slot="main">
 

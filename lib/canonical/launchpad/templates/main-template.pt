@@ -146,14 +146,14 @@
                     <div id="container">
 
                     <div id="maincontent">
-                      <div id="immediateobjectheading">
+                      <div id="contentareaheading">
                         <div class="secondary">
-                          <metal:block define-slot="immediateobjectheadingsecondary"
-                          >immediateobjectheading secondary</metal:block>
+                          <metal:block define-slot="contentareaheadingsecondary"
+                          >contentareaheading secondary</metal:block>
                         </div>
                         <div class="primary">
-                          <metal:block define-slot="immediateobjectheadingprimary"
-                          >immediateobjectheading primary</metal:block>
+                          <metal:block define-slot="contentareaheadingprimary"
+                          >contentareaheading primary</metal:block>
                         </div>
                       </div>
 

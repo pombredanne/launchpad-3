@@ -81,7 +81,7 @@ html, body {
   padding: 0;
 }
 #globalheader, #logincontrol, #locationbar, #structuralobject,
-#structuralobjectchildren, #globalsearch, #immediateobjectheading, #portlets,
+#structuralobjectchildren, #globalsearch, #contentareaheading, #portlets,
 #globalfooter {
   font-family: "Trebuchet MS", sans-serif;
 }
