@@ -480,6 +480,7 @@ class OneZeroTemplateStatus(LaunchpadView):
         filename = None
         status = None
         comment = ''
+        helptext = ''
 
     valid_status_values = set(['new', 'todo', 'inprogress', 'done'])
 
@@ -535,12 +536,18 @@ class OneZeroTemplateStatus(LaunchpadView):
             xmlcomment = cgi.escape(comment)
             xmlcomment = xmlcomment.replace('\n', '<br />')
 
-            output_category.append(self.PageStatus(filename=filename, status=status, comment=xmlcomment))
+            helptextsoup = soup.find(attrs={'metal:fill-slot':'help'})
+            if helptextsoup:
+                helptext = ''.join(unicode(t) for t in helptextsoup.findAll(recursive=False))
+            else:
+                helptext = ''
+            output_category.append(self.PageStatus(
+                filename=filename,
+                status=status,
+                comment=xmlcomment,
+                helptext=helptext))
 
         self.excluded_from_run = sorted(excluded)
-
-
-
 
 
 here = os.path.dirname(os.path.realpath(__file__))
