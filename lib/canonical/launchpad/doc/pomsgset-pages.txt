@@ -81,16 +81,6 @@ item.
     >>> subview.context.potmsgset.sequence == 1
     True
 
-How many lines does the message have.
-
-    >>> subview.max_lines_count
-    1
-
-And as it has only one line, it's not a multi line message set.
-
-    >>> subview.is_multi_line
-    False
-
 It does not have a plural msgid.
 
     >>> subview.msgid_plural is None
@@ -103,7 +93,7 @@ And thus, it only has one translation.
 
 Which is the one we wanted.
 
-    >>> subview.getTranslation(0)
+    >>> subview.getActiveTranslation(0)
     u'libreta de direcciones de Evolution'
 
 
