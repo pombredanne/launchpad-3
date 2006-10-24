@@ -420,6 +420,8 @@ class TicketWorkflowView(LaunchpadFormView):
         msgid = self.request.form.get('answer_id')
         try:
             msgid = int(msgid)
+        except TypeError:
+            raise UnexpectedFormData('missing answer_id')
         except ValueError:
             raise UnexpectedFormData('invalid answer_id: %s' % msgid)
 
