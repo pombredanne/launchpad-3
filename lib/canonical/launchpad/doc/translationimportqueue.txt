@@ -43,14 +43,14 @@ Attach the file to the product series, without associate it with any potemplate.
 
 This entry has no information about the IPOFile where it should be attached to:
 
-    >>> entry.import_into == None
+    >>> entry.import_into is None
     True
 
 And the guessing algorithm will not be able to guess anything as there is no
 IPOFiles on the same path and we have two IPOTemplates on the same path where
 this IPOFile is located ('po/')
 
-    >>> entry.getGuessedPOFile() == None
+    >>> entry.getGuessedPOFile() is None
     True
 
 Now let's try the same against the evolution sourcepackage that only has an
@@ -66,13 +66,13 @@ IPOTemplate.
 
 This entry has no information about the IPOFile where it should be attached to:
 
-    >>> entry.import_into == None
+    >>> entry.import_into is None
     True
 
 And the guessing algorithm is able to give us an IPOFile where it should be
 imported.
 
-    >>> entry.getGuessedPOFile() == None
+    >>> entry.getGuessedPOFile() is None
     False
 
     >>> entry.getGuessedPOFile().title
@@ -153,15 +153,16 @@ First, we import a new .pot file.
     ...      distrorelease=hoary_distrorelease,
     ...      sourcepackagename=evolution_sourcepackagename)
 
-Reset any pofile/potemplate information we have for the po_sr_entry.
-
-    >>> po_sr_entry.potemplate = None
-
 Change the pofile.path value to prevent that we find it by path in next test.
 
     >>> pofile = po_sr_entry.getGuessedPOFile()
     >>> if pofile is not None:
     ...     pofile.path = u'po/sr-old.po'
+
+Reset any pofile/potemplate information we have for the po_sr_entry.
+
+    >>> po_sr_entry.potemplate = None
+    >>> po_sr_entry.pofile = None
 
 XXX: CarlosPerelloMarin 20060331 If flush_database_updates is removed from
 here we don't see the pofile.path change and the internal code path that we
