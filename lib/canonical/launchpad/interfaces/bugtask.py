@@ -515,6 +515,9 @@ class IBugTaskSet(Interface):
         If the bug is public, bug contacts will be automatically
         subscribed.
 
+        If the bug as any release nominations for a supplied
+        distribution, release tasks will be created for accepted ones.
+
         Exactly one of product, distribution or distrorelease must be provided.
         """
 

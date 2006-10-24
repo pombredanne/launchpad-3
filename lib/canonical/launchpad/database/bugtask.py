@@ -793,18 +793,30 @@ class BugTaskSet:
         assert (product or productseries or distribution or distrorelease), (
             'Got no bugtask target')
 
-        bugtask = BugTask(
+        non_target_create_params = dict(
             bug=bug,
-            product=product,
-            productseries=productseries,
-            distribution=distribution,
-            distrorelease=distrorelease,
-            sourcepackagename=sourcepackagename,
             status=status,
             importance=importance,
             assignee=assignee,
             owner=owner,
             milestone=milestone)
+        bugtask = BugTask(
+            product=product,
+            productseries=productseries,
+            distribution=distribution,
+            distrorelease=distrorelease,
+            sourcepackagename=sourcepackagename,
+            **non_target_create_params)
+
+        if distribution:
+            accepted_nominations = [
+                nomination for nomination in bug.getNominations(distribution)
+                if nomination.isApproved()]
+            for nomination in accepted_nominations:
+                accepted_release_task = BugTask(
+                    distrorelease=nomination.distrorelease, 
+                    sourcepackagename=sourcepackagename,
+                    **non_target_create_params)
 
         if bugtask.conjoined_master:
             bugtask._syncToConjoinedMaster()

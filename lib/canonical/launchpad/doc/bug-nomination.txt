@@ -327,6 +327,51 @@ created.
     >>> ubuntu_breezy_autotest_nomination.date_decided
     datetime...
 
+Automatic targeting of new source packages
+------------------------------------------
+
+If a another distribution task is added, and nomination for that
+distribution's releases already exists, the nominations will be valid
+for the new task as well, and bugtasks will be created for all accepted
+ones.
+
+The nominations are per distrorelease, they are not source package
+specific, so they are automatically valid for new bugtasks. What's
+important are the accepted nominations. Bug one has an accepted
+nomination for Grumpy:
+
+    >>> accepted_nominations = [
+    ...     nomination for nomination in bug_one.getNominations(ubuntu)
+    ...     if nomination.isApproved()]
+    >>> for nomination in accepted_nominations:
+    ...     print nomination.distrorelease.displayname
+    Grumpy
+
+So if we create a new bugtask on evolution (Ubuntu), a task for
+evolution (Ubuntu Grumpy) will be created automatically.
+
+    >>> ubuntu_evolution = ubuntu.getSourcePackage('evolution')
+    >>> getUtility(IBugTaskSet).createTask(
+    ...     bug=bug_one, owner=no_privs,
+    ...     distribution=ubuntu,
+    ...     sourcepackagename=ubuntu_evolution.sourcepackagename)
+    <BugTask at ...>
+
+    >>> tasks = sorted(
+    ...     bug_one.bugtasks, key=by_bugtargetname)
+
+    >>> for task in tasks:
+    ...     print task.target.bugtargetname
+    evolution (Ubuntu Grumpy)
+    evolution (Ubuntu)
+    firefox (upstream)
+    firefox trunk (upstream)
+    mozilla-firefox (Debian)
+    mozilla-firefox (Ubuntu Grumpy)
+    mozilla-firefox (Ubuntu)
+    thunderbird (Ubuntu Grumpy)
+    thunderbird (Ubuntu)
+
 Bug Nomination Set
 ------------------
 
