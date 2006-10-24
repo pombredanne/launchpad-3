@@ -5,6 +5,7 @@
 >
   <body>
     <metal:portlets fill-slot="portlets">
+      <tal:portlet tal:replace="structure context/@@+portlet-lifecycle" />
     </metal:portlets>
     <div metal:fill-slot="main">
       <h1 tal:content="context/title">Mozilla</h1>

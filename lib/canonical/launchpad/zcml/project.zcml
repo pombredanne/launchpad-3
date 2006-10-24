@@ -96,7 +96,12 @@
             name="+portlet-details"
             facet="overview"
             template="../templates/project-portlet-details.pt"
-            lp:url="Rosetta/projects/$Project.name/+portlet-details" />
+            lp:url="/projects/$Project.name/+portlet-details" />
+       <browser:page
+            name="+portlet-lifecycle"
+            facet="overview"
+            template="../templates/project-portlet-lifecycle.pt"
+            lp:url="/projects/$Project.name/+portlet-lifecycle" />
     </browser:pages>
 
     <browser:page

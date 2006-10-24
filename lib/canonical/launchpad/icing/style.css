@@ -381,7 +381,6 @@ ul#applicationchooser li a#applicationchooser_selected {
   float: left;
 }
 #portlets .portlet h2 {
-  float: left;
   display: block;
   width: 180px;
   height: 17px;
@@ -398,6 +397,11 @@ ul#applicationchooser li a#applicationchooser_selected {
 #portlets .portlet h2:hover {
   background-color: #A3A3A3;
   text-decoration: none;
+}
+#portlets .portlet .body {
+  background-color: #ebebeb;
+  padding: 0.5em;
+  width: 100%;
 }
 #actions ul {
   clear: both;
