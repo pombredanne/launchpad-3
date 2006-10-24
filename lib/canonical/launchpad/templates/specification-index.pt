@@ -4,11 +4,11 @@
   i18n:domain="launchpad"
 >
   <body>
-    <metal:iohs fill-slot="immediateobjectheadingsecondary"
-    >Feature specification</metal:iohs>
-    <metal:iohp fill-slot="immediateobjectheadingprimary">
+    <metal:cahs fill-slot="contentareaheadingsecondary"
+    >Feature specification</metal:cahs>
+    <metal:cahp fill-slot="contentareaheadingprimary">
       <tal:iohp replace="context/title">Specification title</tal:iohp>
-    </metal:iohp>
+    </metal:cahp>
 
     <metal:portlets fill-slot="portlets">
       <div tal:replace="structure context/@@+portlet-lifecycle" />
