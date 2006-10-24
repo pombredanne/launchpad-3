@@ -1668,7 +1668,7 @@ class PersonSet:
             ''' % vars())
         skip.append(('translationimportqueueentry', 'importer'))
 
-        # Just give all PPAs to the new person
+        # Update PersonalPackageArchives.
         cur.execute('''
             UPDATE PersonalPackageArchive
             SET person = %(to_id)d
