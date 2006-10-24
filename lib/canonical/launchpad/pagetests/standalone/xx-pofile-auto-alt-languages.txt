@@ -12,7 +12,7 @@ should have the Spanish language selected as its alternate, by default.
   >>> browser.url
   'http://localhost/products/evolution/trunk/+pots/evolution-2.2/es_MX/+translate'
 
-  >>> browser.getControl(name='field.alternative_language').value
+  >>> browser.getControl(name='field.alternative_language', index=0).value
   ['es']
 
 There are some exceptions. pt_BR is quite independent of pt, so we should
@@ -22,15 +22,17 @@ not show pt by default for pt_BR translators:
   >>> browser.url
   'http://localhost/products/evolution/trunk/+pots/evolution-2.2/pt_BR/+translate'
 
-  >>> browser.getControl(name='field.alternative_language').value
+  >>> browser.getControl(name='field.alternative_language', index=0).value
   ['']
 
-Of course, we also would not show an alternate language for something like
+And of course, we also would not show an alternate language for something like
 French!
 
   >>> browser.open('http://localhost/products/evolution/trunk/+pots/evolution-2.2/fr/+translate')
   >>> browser.url
   'http://localhost/products/evolution/trunk/+pots/evolution-2.2/fr/+translate'
 
-  >>> browser.getControl(name='field.alternative_language').value
+  >>> browser.getControl(name='field.alternative_language', index=0).value
   ['']
+
+
