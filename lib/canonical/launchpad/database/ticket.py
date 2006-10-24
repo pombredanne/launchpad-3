@@ -8,13 +8,15 @@ from email.Utils import make_msgid
 
 from zope.event import notify
 from zope.interface import implements
+from zope.security.proxy import isinstance as zope_isinstance
 
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLRelatedJoin, SQLObjectNotFound)
 from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.launchpad.interfaces import (
-    IBugLinkTarget, ITicket, ITicketSet, TICKET_STATUS_DEFAULT_SEARCH)
+    IBugLinkTarget, IPerson, ITicket, ITicketSet,
+    TICKET_STATUS_DEFAULT_SEARCH)
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -31,7 +33,8 @@ from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import check_permission
 
 from canonical.lp.dbschema import (
-    EnumCol, TicketSort, TicketStatus, TicketPriority, Item)
+    EnumCol, Item, TicketSort, TicketStatus, TicketParticipation,
+    TicketPriority)
 
 
 class Ticket(SQLBase, BugLinkTargetMixin):
@@ -313,17 +316,17 @@ class TicketSet:
 
         constraints = []
         if product:
-            constraints.append('Ticket.product = %d' % product.id)
+            constraints.append('Ticket.product = %s' % product.id)
         elif distribution:
-            constraints.append('Ticket.distribution = %d' % distribution.id)
+            constraints.append('Ticket.distribution = %s' % distribution.id)
             if sourcepackagename:
-                constraints.append('Ticket.sourcepackagename = %d' % sourcepackagename.id)
+                constraints.append('Ticket.sourcepackagename = %s' % sourcepackagename.id)
 
         return constraints
 
     @staticmethod
     def findSimilar(title, product=None, distribution=None,
-                     sourcepackagename=None):
+                    sourcepackagename=None):
         """Common implementation for ITicketTarget.findSimilarTickets()."""
         constraints = TicketSet._contextConstraints(
             product, distribution, sourcepackagename)
@@ -334,8 +337,8 @@ class TicketSet:
 
     @staticmethod
     def search(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-               sort=None,
-               product=None, distribution=None, sourcepackagename=None):
+               sort=None, owner=None, product=None, distribution=None,
+               sourcepackagename=None):
         """Common implementation for ITicketTarget.searchTickets()."""
         constraints = TicketSet._contextConstraints(
             product, distribution, sourcepackagename)
@@ -348,14 +351,64 @@ class TicketSet:
             if sourcepackagename:
                 prejoins.append('sourcepackagename')
 
+        if owner:
+            assert IPerson.providedBy(owner), (
+                "expected IPerson, got %r" % owner)
+            constraints.append('Ticket.owner = %s' % owner.id)
+
+        return TicketSet._commonSearch(
+            constraints, prejoins, search_text, status, sort)
+
+    @staticmethod
+    def searchByPerson(
+        person, search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
+        participation=None, sort=None):
+        """Implementation for ITicketActor.searchTickets()."""
+
+        if participation is None:
+            participation = TicketParticipation.items
+        elif zope_isinstance(participation, Item):
+            participation = [participation]
+
+        participations_filter = []
+        for participation_type in participation:
+            participations_filter.append(
+                TicketSet.queryByParticipationType[participation_type] % {
+                    'personId': person.id})
+
+        constraints = ['Ticket.id IN (%s)' %
+                       '\nUNION '.join(participations_filter)]
+        prejoins = ['product', 'distribution', 'sourcepackagename']
+
+        return TicketSet._commonSearch(
+            constraints, prejoins, search_text, status, sort)
+
+    queryByParticipationType = {
+        TicketParticipation.ANSWERER:
+            "SELECT id FROM Ticket WHERE answerer = %(personId)s",
+        TicketParticipation.SUBSCRIBER:
+            "SELECT ticket FROM TicketSubscription "
+            "WHERE person = %(personId)s",
+        TicketParticipation.OWNER:
+            "SELECT id FROM Ticket WHERE owner = %(personId)s",
+        TicketParticipation.COMMENTER:
+            "SELECT ticket FROM TicketMessage "
+            "JOIN Message ON (message = Message.id) "
+            "WHERE owner = %(personId)s",
+        TicketParticipation.ASSIGNEE:
+            "SELECT id FROM Ticket WHERE assignee = %(personId)s"}
+
+    @staticmethod
+    def _commonSearch(constraints, prejoins, search_text, status, sort):
+        """Implement search for the criteria common to search and
+        searchByPerson.
+        """
         if search_text is not None:
             constraints.append('Ticket.fti @@ ftq(%s)' % quote(search_text))
 
-        if status is None:
-            status = []
-        elif isinstance(status, Item):
+        if zope_isinstance(status, Item):
             status = [status]
-        if len(status):
+        if status:
             constraints.append(
                 'Ticket.status IN (%s)' % ', '.join(sqlvalues(*status)))
 

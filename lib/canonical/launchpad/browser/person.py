@@ -11,7 +11,6 @@ __all__ = [
     'PersonBranchesMenu',
     'PersonBugsMenu',
     'PersonSpecsMenu',
-    'PersonSupportMenu',
     'PersonOverviewMenu',
     'TeamOverviewMenu',
     'BaseListView',
@@ -19,6 +18,7 @@ __all__ = [
     'TeamListView',
     'UbunteroListView',
     'FOAFSearchView',
+    'PersonClaimView',
     'PersonSpecWorkLoadView',
     'PersonSpecFeedbackView',
     'PersonChangePasswordView',
@@ -42,11 +42,18 @@ __all__ = [
     'ObjectReassignmentView',
     'TeamReassignmentView',
     'RedirectToAssignedBugsView',
+    'PersonLatestTicketsView',
+    'PersonSearchTicketsView',
+    'PersonSupportMenu',
+    'SearchAnsweredTicketsView',
+    'SearchAssignedTicketsView',
+    'SearchCommentedTicketsView',
+    'SearchCreatedTicketsView',
+    'SearchSubscribedTicketsView',
     ]
 
 import cgi
 import urllib
-import sets
 from StringIO import StringIO
 
 from zope.event import notify
@@ -58,12 +65,11 @@ from zope.app.form.interfaces import (
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 
-from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
-    TeamSubscriptionPolicy, SpecificationFilter)
+    TeamSubscriptionPolicy, SpecificationFilter, TicketParticipation)
 
 from canonical.widgets import PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
@@ -75,13 +81,15 @@ from canonical.launchpad.interfaces import (
     ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
     IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet, IPollSet,
     IAdminRequestPeopleMerge, NotFoundError, UNRESOLVED_BUGTASK_STATUSES,
-    IPersonChangePassword, GPGKeyNotFoundError, UnexpectedFormData)
+    IPersonChangePassword, GPGKeyNotFoundError, UnexpectedFormData,
+    IPersonClaim)
 
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
+from canonical.launchpad.browser.tickettarget import SearchTicketsView
 
 from canonical.launchpad.helpers import obfuscateEmail, convertToHtmlCode
 
@@ -95,7 +103,6 @@ from canonical.launchpad.webapp import (
     enabled_with_permission, Navigation, stepto, stepthrough, smartquote,
     GeneralFormView, LaunchpadFormView, action, custom_widget)
 
-from canonical.launchpad.mail.sendmail import simple_sendmail, format_address
 from canonical.launchpad.event.team import JoinTeamRequestEvent
 
 from canonical.launchpad import _
@@ -222,13 +229,6 @@ class PersonFacets(StandardLaunchpadFacets):
             'Bug reports that %s is involved with' % self.context.browsername)
         return Link('+assignedbugs', text, summary)
 
-    def support(self):
-        text = 'Support'
-        summary = (
-            'Support requests that %s is involved with' %
-            self.context.browsername)
-        return Link('+tickets', text, summary)
-
     def specifications(self):
         text = 'Features'
         summary = (
@@ -248,6 +248,13 @@ class PersonFacets(StandardLaunchpadFacets):
         summary = ('Bazaar Branches and revisions registered and authored '
                    'by %s' % self.context.browsername)
         return Link('+branches', text, summary)
+
+    def support(self):
+        text = 'Support'
+        summary = (
+            'Support requests that %s is involved with' %
+            self.context.browsername)
+        return Link('+tickets', text, summary)
 
     def translations(self):
         target = '+translations'
@@ -376,29 +383,6 @@ class PersonSpecsMenu(ApplicationMenu):
         return Link('+roadmap', text, summary, icon='info')
 
 
-class PersonSupportMenu(ApplicationMenu):
-
-    usedfor = IPerson
-    facet = 'support'
-    links = ['created', 'assigned', 'answered', 'subscribed']
-
-    def created(self):
-        text = 'Requests Made'
-        return Link('+createdtickets', text, icon='ticket')
-
-    def assigned(self):
-        text = 'Requests Assigned'
-        return Link('+assignedtickets', text, icon='ticket')
-
-    def answered(self):
-        text = 'Requests Answered'
-        return Link('+answeredtickets', text, icon='ticket')
-
-    def subscribed(self):
-        text = 'Requests Subscribed'
-        return Link('+subscribedtickets', text, icon='ticket')
-
-
 class CommonMenuLinks:
 
     @enabled_with_permission('launchpad.Edit')
@@ -502,6 +486,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+review'
         text = 'Administer'
         return Link(target, text, icon='edit')
+
 
 class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
@@ -640,6 +625,71 @@ class FOAFSearchView:
             results = getUtility(IPersonSet).find(name)
 
         return BatchNavigator(results, self.request)
+
+
+class PersonClaimView(LaunchpadFormView):
+    """The page where a user can claim an unvalidated profile."""
+
+    schema = IPersonClaim
+
+    def validate(self, data):
+        emailaddress = data.get('emailaddress')
+        if emailaddress is None:
+            self.setFieldError(
+                'emailaddress', 'Please enter the email address')
+            return
+
+        email = getUtility(IEmailAddressSet).getByEmail(emailaddress)
+        error = ""
+        if email is None:
+            # Email not registered in launchpad, ask the user to try another
+            # one.
+            error = ("We couldn't find this email address. Please try another "
+                     "one that could possibly be associated with this profile. "
+                     "Note that this profile's name (%s) was generated based "
+                     "on the email address it's associated with."
+                     % self.context.name)
+        elif email.person != self.context:
+            if email.person.is_valid_person:
+                error = ("This email address is associated with yet another "
+                         "Launchpad profile, which you seem to have used at "
+                         "some point. If that's the case, you can "
+                         '<a href="/people/+requestmerge?field.dupeaccount=%s">'
+                         "combine this profile with the other one</a> (you'll "
+                         "have to log in with the other profile first, "
+                         "though). If that's not the case, please try with a "
+                         "different email address."
+                         % self.context.name)
+            else:
+                # There seems to be another unvalidated profile for you!
+                error = ("Although this email address is not associated with "
+                         "this profile, it's associated with yet another one. "
+                         'You can <a href="%s/+claim">claim that other '
+                         'profile</a> and then later '
+                         '<a href="/people/+requestmerge">combine</a> both of '
+                         'them into a single one.'
+                         % canonical_url(email.person))
+        else:
+            # Yay! You got the right email this time.
+            pass
+        if error:
+            self.setFieldError('emailaddress', error)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    @action(_("E-mail Me"), name="confirm")
+    def confirm_action(self, action, data):
+        email = data['emailaddress']
+        token = getUtility(ILoginTokenSet).new(
+            requester=None, requesteremail=None, email=email,
+            tokentype=LoginTokenType.PROFILECLAIM)
+        token.sendClaimProfileEmail()
+        self.request.response.addInfoNotification(_(
+            "An email message was sent to '%(email)s'. Follow the "
+            "instructions in that message to finish claiming this "
+            "profile."), email=email)
 
 
 class PersonRdfView:
@@ -1325,7 +1375,7 @@ class PersonView(LaunchpadView):
             self.error_message = 'Invalid public key'
             return
 
-        getUtility(ISSHKeySet).new(self.user.id, keytype, keytext, comment)
+        getUtility(ISSHKeySet).new(self.user, keytype, keytext, comment)
         self.info_message = 'SSH public key added.'
 
     def remove_ssh(self):
@@ -1333,7 +1383,7 @@ class PersonView(LaunchpadView):
         if not key_id:
             raise UnexpectedFormData('SSH Key was not defined')
 
-        sshkey = getUtility(ISSHKeySet).get(key_id)
+        sshkey = getUtility(ISSHKeySet).getByID(key_id)
         if sshkey is None:
             self.error_message = "Cannot remove a key that doesn't exist"
             return
@@ -1522,8 +1572,7 @@ class PersonGPGView(LaunchpadView):
                                   tokentype,
                                   fingerprint=key.fingerprint)
 
-        appurl = self.request.getApplicationURL()
-        token.sendGPGValidationRequest(appurl, key)
+        token.sendGPGValidationRequest(key)
 
 
 class PersonChangePasswordView(LaunchpadFormView):
@@ -1606,8 +1655,7 @@ class TeamJoinView(PersonView):
 
         if self.request.form.get('join') and self.userCanRequestToJoin():
             user.join(self.context)
-            appurl = self.request.getApplicationURL()
-            notify(JoinTeamRequestEvent(user, self.context, appurl))
+            notify(JoinTeamRequestEvent(user, self.context))
             if (self.context.subscriptionpolicy ==
                 TeamSubscriptionPolicy.MODERATED):
                 self.request.response.addInfoNotification(
@@ -1868,9 +1916,7 @@ class RequestPeopleMergeView(AddView):
         #      problems with merge people tests.  2006-03-07
         import canonical.database.sqlbase
         canonical.database.sqlbase.flush_database_updates()
-        dupename = dupeaccount.name
-        sendMergeRequestEmail(
-            token, dupename, self.request.getApplicationURL())
+        token.sendMergeRequestEmail()
         self._nextURL = './+mergerequest-sent?dupe=%d' % dupeaccount.id
 
 
@@ -1878,7 +1924,7 @@ class AdminRequestPeopleMergeView(LaunchpadView):
     """The view for the page where an admin can merge two accounts."""
 
     def initialize(self):
-        self.errormessages = [] 
+        self.errormessages = []
         self.shouldShowConfirmationPage = False
         setUpWidgets(self, IAdminRequestPeopleMerge, IInputWidget)
 
@@ -1894,11 +1940,11 @@ class AdminRequestPeopleMergeView(LaunchpadView):
 
             if self.dupe_account == self.target_account:
                 self.errormessages.append(_(
-                    "You can't merge %s into itself." 
+                    "You can't merge %s into itself."
                     % self.dupe_account.name))
                 return
 
-            emailset = getUtility(IEmailAddressSet) 
+            emailset = getUtility(IEmailAddressSet)
             self.emails = emailset.getByPerson(self.dupe_account)
             # display dupe_account email addresses and confirmation page
             self.shouldShowConfirmationPage = True
@@ -1914,10 +1960,10 @@ class AdminRequestPeopleMergeView(LaunchpadView):
         try:
             account = widget.getInputValue()
         except WidgetInputError:
-            self.errormessages.append(_("You must choose an account.")) 
+            self.errormessages.append(_("You must choose an account."))
             return
         except ConversionError:
-            self.errormessages.append(_("%s is an invalid account." % name)) 
+            self.errormessages.append(_("%s is an invalid account." % name))
             return
         return account
 
@@ -1929,7 +1975,7 @@ class AdminRequestPeopleMergeView(LaunchpadView):
         target_name = self.request.form.get('target_name')
 
         self.dupe_account = personset.getByName(dupe_name)
-        self.target_account = personset.getByName(target_name) 
+        self.target_account = personset.getByName(target_name)
 
         emails = emailset.getByPerson(self.dupe_account)
         if emails:
@@ -1981,7 +2027,7 @@ class RequestPeopleMergeMultipleEmailsView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.formProcessed = False
+        self.form_processed = False
         self.dupe = None
         self.notified_addresses = []
 
@@ -2001,47 +2047,27 @@ class RequestPeopleMergeMultipleEmailsView:
         if self.request.method != "POST":
             return
 
-        self.formProcessed = True
+        self.form_processed = True
         user = getUtility(ILaunchBag).user
         login = getUtility(ILaunchBag).login
         logintokenset = getUtility(ILoginTokenSet)
 
-        ids = self.request.form.get("selected")
-        if ids is not None:
+        emails = self.request.form.get("selected")
+        if emails is not None:
             # We can have multiple email adressess selected, and in this case
-            # ids will be a list. Otherwise ids will be str or int and we need
+            # emails will be a list. Otherwise it will be a string and we need
             # to make a list with that value to use in the for loop.
-            if not isinstance(ids, list):
-                ids = [ids]
+            if not isinstance(emails, list):
+                emails = [emails]
 
-            emailset = getUtility(IEmailAddressSet)
-            for id in ids:
-                email = emailset.get(id)
-                assert email in self.dupeemails
-                token = logintokenset.new(user, login, email.email,
-                                          LoginTokenType.ACCOUNTMERGE)
-                dupename = self.dupe.name
-                url = self.request.getApplicationURL()
-                sendMergeRequestEmail(token, dupename, url)
-                self.notified_addresses.append(email.email)
-
-
-def sendMergeRequestEmail(token, dupename, appurl):
-    template = open(
-        'lib/canonical/launchpad/emailtemplates/request-merge.txt').read()
-    fromaddress = format_address(
-        "Launchpad Account Merge", config.noreply_from_address)
-
-    replacements = {'longstring': token.token,
-                    'dupename': dupename,
-                    'requester': token.requester.name,
-                    'requesteremail': token.requesteremail,
-                    'toaddress': token.email,
-                    'appurl': appurl}
-    message = template % replacements
-
-    subject = "Launchpad: Merge of Accounts Requested"
-    simple_sendmail(fromaddress, str(token.email), subject, message)
+            for email in emails:
+                emailaddress = emailaddrset.getByEmail(email)
+                assert emailaddress in self.dupeemails
+                token = logintokenset.new(
+                    user, login, emailaddress.email,
+                    LoginTokenType.ACCOUNTMERGE)
+                token.sendMergeRequestEmail()
+                self.notified_addresses.append(emailaddress.email)
 
 
 class ObjectReassignmentView:
@@ -2203,3 +2229,179 @@ class TeamReassignmentView(ObjectReassignmentView):
         if oldOwner not in team.inactivemembers:
             team.setMembershipStatus(oldOwner, TeamMembershipStatus.ADMIN)
 
+
+class PersonLatestTicketsView(LaunchpadView):
+    """View used by the porlet displaying the latest requests made by
+    a person.
+    """
+
+    @cachedproperty
+    def getLatestTickets(self, quantity=5):
+        """Return <quantity> latest tickets created for this target. """
+        return self.context.searchTickets(
+            participation=TicketParticipation.OWNER)[:quantity]
+
+
+class PersonSearchTicketsView(SearchTicketsView):
+    """View used to search and display tickets in which an IPerson is
+    involved.
+    """
+
+    displayTargetColumn = True
+
+    @property
+    def pageheading(self):
+        """See SearchTicketsView."""
+        return _('Support requests involving $name',
+                 mapping=dict(name=self.context.displayname))
+
+    @property
+    def empty_listing_message(self):
+        """See SearchTicketsView."""
+        return _('No support requests involving $name found with the '
+                 'requested statuses.',
+                 mapping=dict(name=self.context.displayname))
+
+
+class SearchAnsweredTicketsView(SearchTicketsView):
+    """View used to search and display tickets answered by an IPerson."""
+
+    displayTargetColumn = True
+
+    def getDefaultFilter(self):
+        """See SearchTicketsView."""
+        return dict(participation=TicketParticipation.ANSWERER)
+
+    @property
+    def pageheading(self):
+        """See SearchTicketsView."""
+        return _('Support requests answered by $name',
+                 mapping=dict(name=self.context.displayname))
+
+    @property
+    def empty_listing_message(self):
+        """See SearchTicketsView."""
+        return _('No support requests answered by $name found with the '
+                 'requested statuses.',
+                 mapping=dict(name=self.context.displayname))
+
+
+class SearchAssignedTicketsView(SearchTicketsView):
+    """View used to search and display tickets assigned to an IPerson."""
+
+    displayTargetColumn = True
+
+    def getDefaultFilter(self):
+        """See SearchTicketsView."""
+        return dict(participation=TicketParticipation.ASSIGNEE)
+
+    @property
+    def pageheading(self):
+        """See SearchTicketsView."""
+        return _('Support requests assigned to $name',
+                 mapping=dict(name=self.context.displayname))
+
+    @property
+    def empty_listing_message(self):
+        """See SearchTicketsView."""
+        return _('No support requests assigned to $name found with the '
+                 'requested statuses.',
+                 mapping=dict(name=self.context.displayname))
+
+
+class SearchCommentedTicketsView(SearchTicketsView):
+    """View used to search and display tickets commented on by an IPerson."""
+
+    displayTargetColumn = True
+
+    def getDefaultFilter(self):
+        """See SearchTicketsView."""
+        return dict(participation=TicketParticipation.COMMENTER)
+
+    @property
+    def pageheading(self):
+        """See SearchTicketsView."""
+        return _('Support requests commented on by $name ',
+                 mapping=dict(name=self.context.displayname))
+
+    @property
+    def empty_listing_message(self):
+        """See SearchTicketsView."""
+        return _('No support requests commented on by $name found with the '
+                 'requested statuses.',
+                 mapping=dict(name=self.context.displayname))
+
+
+class SearchCreatedTicketsView(SearchTicketsView):
+    """View used to search and display tickets created by an IPerson."""
+
+    displayTargetColumn = True
+
+    def getDefaultFilter(self):
+        """See SearchTicketsView."""
+        return dict(participation=TicketParticipation.OWNER)
+
+    @property
+    def pageheading(self):
+        """See SearchTicketsView."""
+        return _('Support requests created by $name',
+                 mapping=dict(name=self.context.displayname))
+
+    @property
+    def empty_listing_message(self):
+        """See SearchTicketsView."""
+        return _('No support requests created by $name found with the '
+                 'requested statuses.',
+                 mapping=dict(name=self.context.displayname))
+
+
+class SearchSubscribedTicketsView(SearchTicketsView):
+    """View used to search and display tickets subscribed to by an IPerson."""
+
+    displayTargetColumn = True
+
+    def getDefaultFilter(self):
+        """See SearchTicketsView."""
+        return dict(participation=TicketParticipation.SUBSCRIBER)
+
+    @property
+    def pageheading(self):
+        """See SearchTicketsView."""
+        return _('Support requests $name is subscribed to',
+                 mapping=dict(name=self.context.displayname))
+
+    @property
+    def empty_listing_message(self):
+        """See SearchTicketsView."""
+        return _('No support requests subscribed to by $name found with the '
+                 'requested statuses.',
+                 mapping=dict(name=self.context.displayname))
+
+class PersonSupportMenu(ApplicationMenu):
+
+    usedfor = IPerson
+    facet = 'support'
+    links = ['answered', 'assigned', 'created', 'commented', 'subscribed']
+
+    def answered(self):
+        summary = 'Support requests answered by %s' % self.context.displayname
+        return Link('+answeredtickets', 'Answered', summary, icon='ticket')
+
+    def assigned(self):
+        summary = 'Support requests assigned to %s' % self.context.displayname
+        return Link('+assignedtickets', 'Assigned', summary, icon='ticket')
+
+    def created(self):
+        summary = 'Support requests created by %s' % self.context.displayname
+        return Link('+createdtickets', 'Created', summary, icon='ticket')
+
+    def commented(self):
+        summary = 'Support requests commented on by %s' % (
+            self.context.displayname)
+        return Link('+commentedtickets', 'Commented', summary, icon='ticket')
+
+    def subscribed(self):
+        text = 'Subscribed'
+        summary = 'Support requests subscribed to by %s' % (
+                self.context.displayname)
+        return Link('+subscribedtickets', text, summary, icon='ticket')

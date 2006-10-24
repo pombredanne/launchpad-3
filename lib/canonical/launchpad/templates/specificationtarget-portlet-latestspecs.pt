@@ -1,7 +1,7 @@
 <tal:defspecs define="specs view/getLatestSpecifications">
   <div tal:condition="specs" class="portlet">
 
-    <h4>Latest specifications:</h4>
+    <h2>Latest specifications</h2>
 
     <div class="portletBody portletContent">
 

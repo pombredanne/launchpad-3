@@ -8,6 +8,7 @@ __all__ = [
     'TranslationImportQueueEntryNavigation',
     'TranslationImportQueueEntryURL',
     'TranslationImportQueueEntryView',
+    'TranslationImportQueueEntryContextMenu',
     'TranslationImportQueueContextMenu',
     'TranslationImportQueueNavigation',
     'TranslationImportQueueView',
@@ -22,13 +23,14 @@ from zope.app.form.browser.widget import renderElement
 
 from canonical.launchpad import helpers
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad.browser.launchpad import RosettaContextMenu
 from canonical.launchpad.interfaces import (
     ITranslationImportQueueEntry, IEditTranslationImportQueueEntry,
     ITranslationImportQueue, ICanonicalUrlData, IPOTemplateSet,
     ILanguageSet, NotFoundError, UnexpectedFormData)
 from canonical.launchpad.webapp import (
-    GetitemNavigation, LaunchpadView, ContextMenu, Link, canonical_url,
-    LaunchpadFormView, action)
+    GetitemNavigation, LaunchpadView, canonical_url, LaunchpadFormView, action
+    )
 from canonical.launchpad.webapp.batching import BatchNavigator
 
 from canonical.lp.dbschema import RosettaImportStatus
@@ -235,17 +237,15 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
 
 
 class TranslationImportQueueNavigation(GetitemNavigation):
-
     usedfor = ITranslationImportQueue
 
 
-class TranslationImportQueueContextMenu(ContextMenu):
+class TranslationImportQueueContextMenu(RosettaContextMenu):
     usedfor = ITranslationImportQueue
-    links = ['overview']
 
-    def overview(self):
-        text = 'Import queue'
-        return Link('', text)
+
+class TranslationImportQueueEntryContextMenu(RosettaContextMenu):
+    usedfor = ITranslationImportQueueEntry
 
 
 class TranslationImportQueueView(LaunchpadView):

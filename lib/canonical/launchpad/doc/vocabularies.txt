@@ -566,8 +566,10 @@ o PersonAccountToMergeVocabulary - all non-merged people. This vocabulary
     []
 
     A person with a single and unvalidated email address can be merged.
+    >>> from canonical.lp.dbschema import PersonCreationRationale
     >>> fooperson, email = getUtility(IPersonSet).createPersonAndEmail(
-    ...     'foobaz@bar.com', name='foobaz', displayname='foo baz')
+    ...     'foobaz@bar.com', PersonCreationRationale.UNKNOWN,
+    ...     name='foobaz', displayname='foo baz')
     >>> fooperson in vocab
     True
 
@@ -713,17 +715,6 @@ o Processor - all processors type available in Launchpad.
 
     >>> [processor.name for processor in vocab.search('386')]
     [u'386']
-
-o SchemaVocabulary - launchpad Schema Vocabulary..
-
-    >>> vocabulary = vocabulary_registry.get(None,"Schema")
-    >>> vocabulary.displayname
-    'Select a Schema'
-
-    >>> list(vocabulary.search(None))
-    []
-    >>> [schema.name for schema in vocabulary.search("m")]
-    [u'enema', u'mark', u'schema', u'trema']
 
 o BugWatchVocabulary - all bug watches associated with a bugtask's bug
 

@@ -199,10 +199,15 @@ def send_process_error_notification(to_address, subject, error_msg,
 def notify_errors_list(message, file_alias_url):
     """Sends an error to the Launchpad errors list."""
     template = get_email_template('notify-unhandled-email.txt')
+    # We add the error message in as a header too (X-Launchpad-Unhandled-Email)
+    # so we can create filters in the Launchpad-Error-Reports Mailman
+    # mailing list.
     simple_sendmail(
         get_bugmail_error_address(), [config.launchpad.errors_address],
         'Unhandled Email: %s' % file_alias_url,
-        template % {'url': file_alias_url, 'error_msg': message})
+        template % {'url': file_alias_url, 'error_msg': message},
+        headers={'X-Launchpad-Unhandled-Email': message}
+        )
 
 
 def generate_bug_add_email(bug):
@@ -552,25 +557,6 @@ def send_bug_notification(bug, user, subject, contents, to_addrs=None,
             body=body, headers=headers)
 
 
-def add_bug_duplicate_notification(duplicate_bug, user):
-    """Add a notification that a bug was marked a dup of a bug.
-
-    An email will be sent the duplicate_bug.duplicateOf's subscribers
-    telling them which bug has been marked as a dup of their bug.
-    duplicate_bug is an IBug whose .duplicateof is not
-    None.
-    """
-    bug = duplicate_bug.duplicateof
-    if bug is None:
-        return
-    subject = u"[Bug %d] %s" % (bug.id, bug.title)
-
-    body = u"** Bug %d has been marked a duplicate of this bug" % (
-        duplicate_bug.id,)
-
-    bug.addChangeNotification(body, person=user)
-
-
 def get_cc_list(bug):
     """Return the list of people that are CC'd on this bug.
 
@@ -682,13 +668,6 @@ def notify_bug_modified(modified_bug, event):
     assert bug_delta is not None
 
     add_bug_change_notifications(bug_delta)
-
-    if bug_delta.duplicateof is not None:
-        # This bug was marked as a duplicate, so notify the dup
-        # target subscribers of this as well.
-        add_bug_duplicate_notification(
-            duplicate_bug=bug_delta.bug,
-            user=event.user)
 
 
 def add_bug_change_notifications(bug_delta):

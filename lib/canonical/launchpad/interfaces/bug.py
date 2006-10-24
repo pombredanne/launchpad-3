@@ -189,6 +189,9 @@ class IBug(IMessageTarget):
     def unsubscribe(person):
         """Remove this person's subscription to this bug."""
 
+    def unsubscribeFromDupes(person):
+        """Remove this person's subscription from all dupes of this bug."""
+
     def isSubscribed(person):
         """Is person subscribed to this bug?
 
@@ -196,6 +199,13 @@ class IBug(IMessageTarget):
         (no matter what the type of subscription), otherwise False.
 
         If person is None, the return value is always False.
+        """
+
+    def isSubscribedToDupes(person):
+        """Is person directly subscribed to dupes of this bug?
+
+        Returns True if the user is directly subscribed to at least one
+        duplicate of this bug, otherwise False.
         """
 
     def getDirectSubscribers():
@@ -211,6 +221,16 @@ class IBug(IMessageTarget):
         BugSubscription table. This includes bug contacts, subscribers from
         dupes, etc.
         """
+
+    def getAlsoNotifiedSubscribers():
+        """A list of IPersons in the "Also notified" subscriber list.
+
+        This includes bug contacts and assignees, but not subscribers
+        from duplicates.
+        """
+
+    def getSubscribersFromDuplicates():
+        """A list of IPersons subscribed from dupes of this bug."""
 
     def notificationRecipientAddresses():
         """Return the list of email addresses that recieve notifications.

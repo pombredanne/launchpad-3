@@ -5,6 +5,7 @@
     xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
 
+<facet facet="translations">
     <!-- TranslationImportQueue -->
     <content class="canonical.launchpad.database.TranslationImportQueueEntry">
         <allow
@@ -26,8 +27,9 @@
         name="+index" />
 
     <browser:menus
-        module="canonical.launchpad.browser"
-        classes="TranslationImportQueueContextMenu"
+        module="canonical.launchpad.browser.translationimportqueue"
+        classes="TranslationImportQueueContextMenu
+                 TranslationImportQueueEntryContextMenu"
         />
 
     <browser:url
@@ -46,7 +48,7 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.ITranslationImportQueueEntry"
-        facet="overview"
+        facet="translations"
         permission="zope.Public">
         <!-- TranslationImportQueueEntry Portlets -->
         <browser:page
@@ -87,4 +89,5 @@
             lp:url="/rosetta/imports/+index" />
     </browser:pages>
 
+</facet>
 </configure>

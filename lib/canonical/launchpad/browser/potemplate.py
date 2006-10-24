@@ -17,12 +17,10 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.browser import FileUpload
 
-from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
-    IPOTemplate, IPOTemplateSet, IPOExportRequestSet,
-    ICanonicalUrlData, ILaunchBag, IPOFileSet, IPOTemplateSubset,
-    ITranslationImportQueue)
+    IPOTemplate, IPOTemplateSet, ICanonicalUrlData, ILaunchBag, IPOFileSet, 
+    IPOTemplateSubset, ITranslationImportQueue)
 from canonical.launchpad.browser.pofile import (
     POFileView, BaseExportView, POFileAppMenus)
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -310,12 +308,6 @@ class POTemplateAdminView(POTemplateEditView):
 
 
 class POTemplateExportView(BaseExportView):
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.user = getUtility(ILaunchBag).user
-        self.formProcessed = False
-        self.errorMessage = None
 
     def processForm(self):
         """Process a form submission requesting a translation export."""
@@ -343,25 +335,27 @@ class POTemplateExportView(BaseExportView):
                 if pofile is not None:
                     pofiles.append(pofile)
         else:
-            self.errorMessage = (
+            self.request.response.addErrorNotification(
                 'Please choose whether you would like all files or only some '
                 'of them.')
             return
 
-        format_name = self.request.form.get('format')
-        try:
-            format = RosettaFileFormat.items[format_name]
-        except KeyError:
-            self.errorMessage = 'Please select a valid format for download.'
+        format = self.validateFileFormat(self.request.form.get('format'))
+        if not format:
             return
 
-        request_set = getUtility(IPOExportRequestSet)
         if export_potemplate:
-            request_set.addRequest(self.user, self.context, pofiles, format)
+            self.request_set.addRequest(
+                self.user, self.context, pofiles, format)
+        elif pofiles:
+            self.request_set.addRequest(self.user, None, pofiles, format)
         else:
-            request_set.addRequest(self.user, None, pofiles, format)
+            self.request.response.addErrorNotification(
+                'Please select at least one pofile or the PO template.')
+            return
 
-        self.formProcessed = True
+        self.nextURL()
+
 
     def pofiles(self):
         """Return a list of PO files available for export."""

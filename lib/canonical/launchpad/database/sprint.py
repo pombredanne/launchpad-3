@@ -207,11 +207,11 @@ class Sprint(SQLBase):
         assert (speclink.sprint.id == self.id)
         return speclink
 
-    def acceptSpecificationLinks(self, idlist):
-        """See ISprintSpecification."""
+    def acceptSpecificationLinks(self, idlist, decider):
+        """See ISprint."""
         for sprintspec in idlist:
             speclink = self.getSpecificationLink(sprintspec)
-            speclink.status = SprintSpecificationStatus.ACCEPTED
+            speclink.acceptBy(decider)
 
         # we need to flush all the changes we have made to disk, then try
         # the query again to see if we have any specs remaining in this
@@ -221,11 +221,11 @@ class Sprint(SQLBase):
         return self.specifications(
                         filter=[SpecificationFilter.PROPOSED]).count()
 
-    def declineSpecificationLinks(self, idlist):
-        """See ISprintSpecification."""
+    def declineSpecificationLinks(self, idlist, decider):
+        """See ISprint."""
         for sprintspec in idlist:
             speclink = self.getSpecificationLink(sprintspec)
-            speclink.status = SprintSpecificationStatus.DECLINED
+            speclink.declineBy(decider)
 
         # we need to flush all the changes we have made to disk, then try
         # the query again to see if we have any specs remaining in this
