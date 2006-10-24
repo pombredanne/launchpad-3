@@ -232,6 +232,7 @@ an extra footer.
     No Privileges Person requested for more information:
     What is your Mac model?
     <BLANKLINE>
+    --
     To answer this request for more information, you can either reply to
     this email or enter your reply at the following page:
     http://.../distros/ubuntu/+ticket/...
@@ -303,6 +304,7 @@ Notification received by the owner:
     No Privileges Person expired the request:
     Expired because of no recent activity.
     <BLANKLINE>
+    --
     If you're still having this problem, you can reopen your request either
     by replying to this email or by going to the following page and
     entering more information about your problem:
@@ -407,6 +409,7 @@ Notification received by the owner:
     Consult https://help.ubuntu.com/community/Installation/OldWorldMacs for
     all the details.
     <BLANKLINE>
+    --
     If this answers your request, please go to the following page to let us
     know that it is solved:
     http://.../distros/ubuntu/+ticket/.../+confirm?answer_id=...
@@ -527,6 +530,7 @@ Notification received by the owner:
     Foo Bar rejected the request:
     Yeah! It will be awfully slow.
     <BLANKLINE>
+    --
     If you think that this rejection was a mistake, you can post a comment
     explaining your point of view either by replying to this email or at
     the following page:
