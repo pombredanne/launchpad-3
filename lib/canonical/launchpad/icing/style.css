@@ -982,6 +982,7 @@ body {
 }
 #container {
   padding-left: 240px;
+  padding-right: 20px;
 }
 #maincontent, #portlets {
   float: left;
@@ -989,6 +990,7 @@ body {
 }
 #maincontent {
   width: 100%;
+  padding: 0 0 20px 0;
 }
 #portlets {
   width: 240px;
