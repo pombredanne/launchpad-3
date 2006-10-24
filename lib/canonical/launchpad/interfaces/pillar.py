@@ -11,7 +11,7 @@ from zope.component import getUtility
 from zope.interface import Interface
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import ContentNameField
+from canonical.launchpad.fields import BlacklistableContentNameField
 from canonical.launchpad.interfaces import NotFoundError
 
 
@@ -26,7 +26,7 @@ class IPillarSet(Interface):
         """Get a pillar by its name."""
 
 
-class PillarNameField(ContentNameField):
+class PillarNameField(BlacklistableContentNameField):
 
     errormessage = _(
             "%s is already in use by another product, project or distribution"

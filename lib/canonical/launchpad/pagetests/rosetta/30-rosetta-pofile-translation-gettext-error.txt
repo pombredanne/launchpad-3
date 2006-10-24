@@ -42,8 +42,8 @@ Check that the previous submit was not saved.
 
 
                           <input type="text"
-      name="msgset_150_es_translation_1" tabindex="2" />
+      name="msgset_150_es_translation_1" tabindex="1" />
   ...
                               <input type="checkbox"
-      value="fuzzy" name="msgset_150_es_needsreview" tabindex="3" />
+      value="fuzzy" name="msgset_150_es_needsreview" tabindex="1" />
   ...

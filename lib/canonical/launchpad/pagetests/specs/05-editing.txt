@@ -94,3 +94,18 @@ Any logged in user can edit a specification whiteboard.
 
   >>> 'XXX by Sample Person' in user_browser.contents
   True
+
+Regular users can't access the change status page.
+
+  >>> user_browser.getLink('Change status')
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError
+
+  >>> user_browser.open(
+  ...     'http://features.launchpad.dev/distros/kubuntu/'
+  ...     '+spec/krunch-desktop-plan/+status')
+  Traceback (most recent call last):
+  ...
+  Unauthorized:...
+
