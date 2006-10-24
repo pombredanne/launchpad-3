@@ -52,7 +52,7 @@ def main(argv):
         execute_zcml_for_scripts()
 
         janitor = TicketJanitor(log=log)
-        janitor.expireTickets()
+        janitor.expireTickets(ztm)
 
         ztm.commit()
 

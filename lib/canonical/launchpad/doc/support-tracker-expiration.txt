@@ -134,6 +134,6 @@ Support Tracker Janitor celebrity:
 
     >>> print expiration_message.text_contents
     This support request was expired because it remained in the
-    Needs information state without activity for the last 15 days.
+    'Needs information' state without activity for the last 15 days.
 
 

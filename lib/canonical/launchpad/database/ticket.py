@@ -460,6 +460,19 @@ class TicketSet:
         """See ITicketSet."""
         return Ticket.select(orderBy='-datecreated')[:10]
 
+    def findExpiredTickets(self, days_before_expiration):
+        """See ITicketSet."""
+        return Ticket.select(
+            """status IN (%s, %s)
+                    AND (datelastresponse IS NULL
+                         OR datelastresponse < (
+                            current_timestamp -interval '%s days'))
+                    AND
+                    datelastquery  < (current_timestamp - interval '%s days')
+            """ % sqlvalues(
+                TicketStatus.OPEN, TicketStatus.NEEDSINFO,
+                days_before_expiration, days_before_expiration))
+
     @staticmethod
     def new(title=None, description=None, owner=None,
             product=None, distribution=None, sourcepackagename=None,

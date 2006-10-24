@@ -382,6 +382,14 @@ class ITicketSet(Interface):
         Return :default: if no such ticket exists.
         """
 
+    def findExpiredTickets(days_before_expiration):
+        """Return the tickets that are expired.
+
+        This should return all the tickets in the Open or Needs information
+        state that didn't receive any new comments in the last
+        <days_before_expiration> days.
+        """
+
 # These schemas are only used by browser/ticket.py and should really live
 # there. See Bug #66950.
 
