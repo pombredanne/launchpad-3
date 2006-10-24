@@ -346,12 +346,16 @@ def valid_unregistered_email(email):
     """Check that the given email is valid and that isn't registered to
     another user."""
 
+    from canonical.launchpad.webapp import canonical_url
     from canonical.launchpad.interfaces import IEmailAddressSet
     if valid_email(email):
         emailset = getUtility(IEmailAddressSet)
-        if emailset.getByEmail(email) is not None:
+        emailaddress = emailset.getByEmail(email)
+        if emailaddress is not None:
+            owner = emailaddress.person
             raise LaunchpadValidationError(_(dedent("""
-                %s is already taken.""" % email)))
+                %s is already taken by <a href="%s">%s</a>."""
+                % (email, canonical_url(owner), owner.browsername))))
         else:
             return True
     else:

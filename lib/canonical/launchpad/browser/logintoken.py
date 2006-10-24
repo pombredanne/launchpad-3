@@ -575,9 +575,12 @@ class NewAccountView(BaseLoginTokenView, GeneralFormView):
         if self.context.redirection_url:
             return self.context.redirection_url
         elif self.user is not None:
+            # User is logged in, redirect to his home page.
             return canonical_url(self.user)
-        elif self.person is not None:
-            return canonical_url(self.person)
+        elif self.created_person is not None:
+            # User is not logged in, redirect to the created person's home
+            # page.
+            return canonical_url(self.created_person)
         else:
             return None
 
@@ -626,7 +629,7 @@ class NewAccountView(BaseLoginTokenView, GeneralFormView):
             person, email = self._createPersonAndEmail(
                 displayname, hide_email_addresses, password)
 
-        self.person = person
+        self.created_person = person
         person.validateAndEnsurePreferredEmail(email)
         self.context.consume()
         self.logInPersonByEmail(email.email)

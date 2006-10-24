@@ -36,7 +36,7 @@ is not allowed.
     >>> for tag in find_tags_by_class(user_browser.contents, 'message'):
     ...     print tag.renderContents()
     There is 1 error.
-    test@canonical.com is already taken.
+    test@canonical.com is already taken by <a...Sample Person...
 
 When all fields are filled correctly, the new profile is created.
 

@@ -77,7 +77,7 @@ class INewPerson(Interface):
         constraint=valid_unregistered_email)
     displayname = StrippedTextLine(title=_('Display name'), required=True)
     creation_comment = Text(
-        title=_('Creation comment'), required=True,
+        title=_('Creation reason'), required=True,
         description=_("The reason why you're creating this profile."))
 
 

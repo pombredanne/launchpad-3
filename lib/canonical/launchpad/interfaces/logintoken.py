@@ -104,7 +104,9 @@ class ILoginToken(Interface):
         """
 
     def sendProfileCreatedEmail(profile, comment):
-        """Send an email message to this token's email address explaining that
+        """Notify the profile's email owner that a new profile was created.
+
+        Send an email message to this token's email address explaining that
         another user has created a launchpad profile for him and providing
         a link where he can finish the registration process.
         """

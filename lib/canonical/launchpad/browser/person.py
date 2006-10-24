@@ -649,7 +649,6 @@ class PersonAddView(LaunchpadFormView):
 
     label = "Create a new Launchpad profile"
     schema = INewPerson
-    _next_url = None
     custom_widget('creation_comment', TextAreaWidget, height=5, width=60)
 
     @action(_("Create Profile"), name="create")
@@ -660,16 +659,12 @@ class PersonAddView(LaunchpadFormView):
         person = getUtility(IPersonSet).ensurePerson(
             emailaddress, displayname, PersonCreationRationale.USER_CREATED,
             creation_comment, registrant=self.user)
-        self._next_url = canonical_url(person)
+        self.next_url = canonical_url(person)
         logintokenset = getUtility(ILoginTokenSet)
         token = logintokenset.new(
             requester=self.user, requesteremail=self.user.preferredemail.email,
             email=emailaddress, tokentype=LoginTokenType.NEWPROFILE)
         token.sendProfileCreatedEmail(person, creation_comment)
-
-    @property
-    def next_url(self):
-        return self._next_url
 
 
 class PersonClaimView(LaunchpadFormView):
