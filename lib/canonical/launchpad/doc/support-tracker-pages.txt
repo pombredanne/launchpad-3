@@ -119,14 +119,17 @@ request for more information.
     >>> getAvailableActionNames(workflow_harness.view)
     ['answer', 'requestinfo']
 
-When the other user requests for more information, the ticket status
-is changed to NEEDSINFO and the user is redirected back to the ticket
-page.
+When the other user requests for more information, a confirmation is
+displayed, the ticket status is changed to NEEDSINFO and the user is
+redirected back to the ticket page.
 
     >>> workflow_harness.submit(
     ...     'requestinfo', {
     ...         'field.message': 'Can you provide an example of an URL'
     ...             'displaying the problem?'})
+    >>> for notification in workflow_harness.request.response.notifications:
+    ...     print notification.message
+    Thanks for your information request.
     >>> print firefox_ticket.status.name
     NEEDSINFO
     >>> workflow_harness.redirectionTarget()
@@ -152,6 +155,9 @@ to the OPEN state.
     ...     'giveinfo', {
     ...         'field.message': "The following SVG doesn't display properly:"
     ...             "\nhttp://www.w3.org/2001/08/rdfweb/rdfweb-chaals-and-dan.svg"})
+    >>> for notification in workflow_harness.request.response.notifications:
+    ...     print notification.message
+    Thanks for adding more information to your request.
     >>> print firefox_ticket.status.name
     OPEN
     >>> workflow_harness.redirectionTarget()
@@ -165,6 +171,9 @@ The other user can come back and gives an answer:
     ...         'field.message': "New version of the firefox package are "
     ...             "available with SVG support enabled. Using apt-get or "
     ...             "adept you should be able to upgrade."})
+    >>> for notification in workflow_harness.request.response.notifications:
+    ...     print notification.message
+    Thanks for your answer.
     >>> print firefox_ticket.status.name
     ANSWERED
     >>> workflow_harness.redirectionTarget()
@@ -186,6 +195,9 @@ enter a confirmation message at that stage.
     >>> workflow_harness.submit(
     ...     'confirm', {'answer_id': firefox_ticket.messages[-1].id,
     ...                 'field.message': ''})
+    >>> for notification in workflow_harness.request.response.notifications:
+    ...     print notification.message
+    Thanks for your feedback.
     >>> print firefox_ticket.status.name
     SOLVED
     >>> workflow_harness.redirectionTarget()
@@ -208,6 +220,9 @@ Adding a comment doesn't change the status:
     ...     'comment', {
     ...         'field.message': "The example now displays "
     ...         "correctly. Thanks."})
+    >>> for notification in workflow_harness.request.response.notifications:
+    ...     print notification.message
+    Thanks for your comment.
     >>> workflow_harness.redirectionTarget()
     '.../+ticket/2'
     >>> print firefox_ticket.status.name
@@ -230,6 +245,9 @@ If the ticket owner reopens the request, its status is changed back to
     ...         "that do not display correctly. For example, the following "
     ...         "http://people.w3.org/maxf/ChessGML/immortal.svg doesn't "
     ...         "display correctly."})
+    >>> for notification in workflow_harness.request.response.notifications:
+    ...     print notification.message
+    Your request was reopened.
     >>> print firefox_ticket.status.name
     OPEN
     >>> workflow_harness.redirectionTarget()
@@ -242,6 +260,9 @@ the SOLVED state.
     ...     'selfanswer', {
     ...         'field.message': "OK, this example requires some "
     ...         "SVG features that will only be available in Firefox 2.0."})
+    >>> for notification in workflow_harness.request.response.notifications:
+    ...     print notification.message
+    Thanks for sharing your solution.
     >>> print firefox_ticket.status.name
     SOLVED
     >>> workflow_harness.redirectionTarget()

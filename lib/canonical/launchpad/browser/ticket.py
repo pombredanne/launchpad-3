@@ -352,6 +352,7 @@ class TicketWorkflowView(LaunchpadFormView):
     def comment_action(self, action, data):
         """Add a comment to a resolved ticket."""
         self.context.addComment(self.user, data['message'])
+        self.request.response.addNotification(_('Thanks for your comment.'))
         self.next_url = canonical_url(self.context)
 
     def canAddAnswer(self, action):
@@ -364,6 +365,7 @@ class TicketWorkflowView(LaunchpadFormView):
     def answer_action(self, action, data):
         """Add an answer to the ticket."""
         self.context.giveAnswer(self.user, data['message'])
+        self.request.response.addNotification(_('Thanks for your answer.'))
         self.next_url = canonical_url(self.context)
 
     def canSelfAnswer(self, action):
@@ -375,7 +377,9 @@ class TicketWorkflowView(LaunchpadFormView):
             condition=canSelfAnswer)
     def selfanswer_action(self, action, data):
         """Action called when the owner provides the solution to his problem."""
-        self.answer_action.success(data)
+        self.context.giveAnswer(self.user, data['message'])
+        self.request.response.addNotification(
+            _('Thanks for sharing your solution.'))
         self.next_url = canonical_url(self.context)
 
     def canRequestInfo(self, action):
@@ -389,6 +393,8 @@ class TicketWorkflowView(LaunchpadFormView):
     def requestinfo_action(self, action, data):
         """Add a request for more information to the ticket."""
         self.context.requestInfo(self.user, data['message'])
+        self.request.response.addNotification(
+            _('Thanks for your information request.'))
         self.next_url = canonical_url(self.context)
 
     def canGiveInfo(self, action):
@@ -401,6 +407,8 @@ class TicketWorkflowView(LaunchpadFormView):
     def giveinfo_action(self, action, data):
         """Give additional informatin on the request."""
         self.context.giveInfo(data['message'])
+        self.request.response.addNotification(
+            _('Thanks for adding more information to your request.'))
         self.next_url = canonical_url(self.context)
 
     def validateConfirmAnswer(self, data):
@@ -435,6 +443,7 @@ class TicketWorkflowView(LaunchpadFormView):
         if not data['message']:
             data['message'] = 'User confirmed that the request is solved.'
         self.context.confirmAnswer(data['message'], answer=data['answer'])
+        self.request.response.addNotification(_('Thanks for your feedback.'))
         self.next_url = canonical_url(self.context)
 
     def canReopen(self, action):
@@ -448,6 +457,7 @@ class TicketWorkflowView(LaunchpadFormView):
         """State that the problem is still occuring and provide new
         information about it."""
         self.context.reopen(data['message'])
+        self.request.response.addNotification(_('Your request was reopened.'))
         self.next_url = canonical_url(self.context)
 
 
