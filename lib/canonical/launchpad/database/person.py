@@ -156,6 +156,9 @@ class Person(SQLBase):
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
     timezone = StringCol(dbName='timezone', default='UTC')
+    personal_package_archives = SQLMultipleJoin(
+        'PersonalPackageArchive', joinColumn='person',
+        orderBy='-id', prejoins=['archive'])
 
     def _init(self, *args, **kw):
         """Marks the person as a team when created or fetched from database."""

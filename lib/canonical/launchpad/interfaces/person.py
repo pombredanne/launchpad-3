@@ -335,6 +335,9 @@ class IPerson(IHasSpecifications):
     browsername = Attribute(
         'Return a textual name suitable for display in a browser.')
 
+    personal_package_archives = Attribute(
+        "The personal package archives owned by this person.")
+
     def getBugContactPackages():
         """Return a list of packages for which this person is a bug contact.
 
