@@ -32,11 +32,10 @@ from canonical.lp.dbschema import TicketAction, TicketStatus
 from canonical.testing.layers import LaunchpadFunctionalLayer
 
 
-class SupportTrackerWorkflowTestCase(unittest.TestCase):
-    """Test the ITicket workflow methods.
+class BaseSupportTrackerWorkflowTestCase(unittest.TestCase):
+    """Base class for test cases related to the support tracker workflow.
 
-    This ensure that all possible transitions work correctly and
-    that all invalid transitions are reported.
+    It provides the common fixture and test helper methods.
     """
 
     layer = LaunchpadFunctionalLayer
@@ -86,369 +85,6 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
     def nowPlus(self, n_hours):
         """Return a DateTime a number of hours in the future."""
         return self.now + timedelta(hours=n_hours)
-
-    def testWorkflowMethodsPermission(self):
-        """Verify the workflow methods permission.
-
-        Only a logged in user can access the workflow methods.
-        """
-        workflow_methods = (
-            'requestInfo', 'giveInfo', 'giveAnswer', 'confirmAnswer',
-            'expireTicket', 'reject')
-        login(ANONYMOUS)
-        for method in workflow_methods:
-            try:
-                getattr(self.ticket, method)
-                self.fail(
-                    "Method %s should not be accessible by the anonymous "
-                    "user." % method)
-            except Unauthorized:
-                pass
-
-        login('no-priv@canonical.com')
-        for method in workflow_methods:
-            self.failUnless(getattr(self.ticket, method))
-
-    def test_can_request_info(self):
-        """Test the can_request_info attribute in all the possible states."""
-        self._testTransitionGuard(
-            'can_request_info', ['OPEN', 'NEEDSINFO', 'ANSWERED'])
-
-    def test_requestInfo(self):
-        """Test that requestInfo() can be called in the OPEN, NEEDSINFO,
-        and ANSWERED state and that it returns a valid ITicketMessage.
-        """
-        # Do no check the edited_fields attribute since it varies depending
-        # on the departure state.
-        self._testValidTransition(
-            [TicketStatus.OPEN, TicketStatus.NEEDSINFO],
-            expected_owner=self.answerer,
-            expected_action=TicketAction.REQUESTINFO,
-            expected_status=TicketStatus.NEEDSINFO,
-            transition_method=self.ticket.requestInfo,
-            transition_method_args=(
-                self.answerer, "What's your problem?"),
-            edited_fields=None)
-
-        # Even if the ticket is answered, a user can request more
-        # information, but that leave the ticket in the ANSWERED state.
-        self.ticket.setStatus(
-            self.admin, TicketStatus.ANSWERED, 'Status change')
-        self.collected_events = []
-        message = self.ticket.requestInfo(
-            self.answerer,
-            "The previous answer is bad. What is the problem again?",
-            datecreated=self.nowPlus(3))
-        self.checkTransitionMessage(
-            message, expected_owner=self.answerer,
-            expected_action=TicketAction.REQUESTINFO,
-            expected_status=TicketStatus.ANSWERED)
-        self.checkTransitionEvents(
-            message, ['messages', 'datelastresponse'], TicketStatus.OPEN.title)
-
-    def test_requestInfoFromOwnerIsInvalid(self):
-        """Test that the ticket owner cannot use requestInfo."""
-        self.assertRaises(
-            AssertionError, self.ticket.requestInfo,
-                self.owner, 'Why should I care?', datecreated=self.nowPlus(1))
-
-    def test_requestInfoFromInvalidStates(self):
-        """Test that requestInfo cannot be called when the ticket status is
-        not OPEN, NEEDSINFO, or ANSWERED.
-        """
-        self._testInvalidTransition(
-            ['OPEN', 'NEEDSINFO', 'ANSWERED'], self.ticket.requestInfo,
-            self.answerer, "What's up?", datecreated=self.nowPlus(3))
-
-    def test_can_give_info(self):
-        """Test the can_give_info attribute in all the possible states."""
-        self._testTransitionGuard('can_give_info', ['OPEN', 'NEEDSINFO'])
-
-    def test_giveInfoFromInvalidStates(self):
-        """Test that giveInfo cannot be called when the ticket status is
-        not OPEN or NEEDSINFO.
-        """
-        self._testInvalidTransition(
-            ['OPEN', 'NEEDSINFO'], self.ticket.giveInfo,
-            "That's that.", datecreated=self.nowPlus(1))
-
-    def test_giveInfo(self):
-        """Test that giveInfo() can be called when the ticket status is
-        OPEN or NEEDSINFO and that it returns a valid ITicketMessage.
-        """
-        # Do not check the edited_fields attributes since it
-        # changes based on departure state.
-        self._testValidTransition(
-            [TicketStatus.OPEN, TicketStatus.NEEDSINFO],
-            expected_owner=self.owner,
-            expected_action=TicketAction.GIVEINFO,
-            expected_status=TicketStatus.OPEN,
-            transition_method=self.ticket.giveInfo,
-            transition_method_args=("That's that.",),
-            edited_fields=None)
-
-    def test_can_give_answer(self):
-        """Test the can_give_answer attribute in all the possible states."""
-        self._testTransitionGuard(
-            'can_give_answer', ['OPEN', 'NEEDSINFO', 'ANSWERED'])
-
-    def test_giveAnswerFromInvalidStates(self):
-        """Test that giveAnswer cannot be called when the ticket status is
-        not OPEN, NEEDSINFO, or ANSWERED.
-        """
-        self._testInvalidTransition(
-            ['OPEN', 'NEEDSINFO', 'ANSWERED'], self.ticket.giveAnswer,
-            self.answerer, "The answer is this.", datecreated=self.nowPlus(1))
-
-    def test_giveAnswer(self):
-        """Test that giveAnswer can be called when the ticket status is
-        one of OPEN, NEEDSINFO or ANSWERED and check that it returns a
-        valid ITicketMessage.
-        """
-        # Do not check the edited_fields attributes since it
-        # changes based on departure state.
-        self._testValidTransition(
-            [TicketStatus.OPEN, TicketStatus.NEEDSINFO,
-             TicketStatus.ANSWERED],
-            expected_owner=self.answerer,
-            expected_action=TicketAction.ANSWER,
-            expected_status=TicketStatus.ANSWERED,
-            transition_method=self.ticket.giveAnswer,
-            transition_method_args=(
-                self.answerer, "It looks like a real problem.",),
-            edited_fields=None)
-
-        # When the owner gives the answer, the ticket moves straight to
-        # SOLVED.
-        def checkAnswerMessage(message):
-            """Check additional attributes set when the owner gives the
-            answers.
-            """
-            self.assertEquals(message, self.ticket.answer)
-            self.assertEquals(self.owner, self.ticket.answerer)
-            self.assertEquals(message.datecreated, self.ticket.dateanswered)
-
-        self._testValidTransition(
-            [TicketStatus.OPEN, TicketStatus.NEEDSINFO,
-             TicketStatus.ANSWERED],
-            expected_owner=self.owner,
-            expected_action=TicketAction.CONFIRM,
-            expected_status=TicketStatus.SOLVED,
-            extra_message_check=checkAnswerMessage,
-            transition_method=self.ticket.giveAnswer,
-            transition_method_args=(
-                self.owner, "I found the solution.",),
-            transition_method_kwargs={'datecreated': self.nowPlus(3)},
-            edited_fields=['status', 'messages', 'dateanswered', 'answerer',
-                           'answer', 'datelastquery'])
-
-    def test_can_confirm_answer_without_answer(self):
-        """Test the can_confirm_answer attribute when no answer was posted.
-
-        When the ticket didn't receive an answer, it should always be
-        false.
-        """
-        self._testTransitionGuard('can_confirm_answer', [])
-
-    def test_can_confirm_answer_with_answer(self):
-        """Test that can_confirm_answer when there is an answer present.
-
-        Once one answer was given, it becomes possible in some states.
-        """
-        self.ticket.giveAnswer(
-            self.answerer, 'Do something about it.', self.nowPlus(1))
-        self._testTransitionGuard(
-            'can_confirm_answer', ['OPEN', 'NEEDSINFO', 'ANSWERED'])
-
-    def test_confirmAnswerFromInvalidStates_without_answer(self):
-        """Test calling confirmAnswer from invalid states.
-
-        confirmAnswer() cannot be called when the ticket has no message with
-        action ANSWER.
-        """
-        self._testInvalidTransition([], self.ticket.confirmAnswer,
-            "That answer worked!.", datecreated=self.nowPlus(1))
-
-    def test_confirmAnswerFromInvalidStates_with_answer(self):
-        """ Test calling confirmAnswer from invalid states with an answer.
-
-        When the ticket has a message with action ANSWER, confirmAnswer()
-        can only be called when it is in the OPEN, NEEDSINFO, or ANSWERED
-        state.
-        """
-        answer_message = self.ticket.giveAnswer(
-            self.answerer, 'Do something about it.', self.nowPlus(1))
-        self._testInvalidTransition(['OPEN', 'NEEDSINFO', 'ANSWERED'],
-            self.ticket.confirmAnswer, "That answer worked!.",
-            answer=answer_message, datecreated=self.nowPlus(1))
-
-    def test_confirmAnswer(self):
-        """Test confirmAnswer().
-
-        Test that confirmAnswer() can be called when the ticket status
-        is one of OPEN, NEEDSINFO, ANSWERED and that it has at least one
-        ANSWER message and check that it returns a valid ITicketMessage.
-        """
-        answer_message = self.ticket.giveAnswer(
-            self.answerer, "Get a grip!", datecreated=self.nowPlus(1))
-
-        def checkAnswerMessage(message):
-            # Check the attributes that are set when an answer is confirmed.
-            self.assertEquals(answer_message, self.ticket.answer)
-            self.assertEquals(self.answerer, self.ticket.answerer)
-            self.assertEquals(message.datecreated, self.ticket.dateanswered)
-
-        self._testValidTransition(
-            [TicketStatus.OPEN, TicketStatus.NEEDSINFO,
-             TicketStatus.ANSWERED],
-            expected_owner=self.owner,
-            expected_action=TicketAction.CONFIRM,
-            expected_status=TicketStatus.SOLVED,
-            extra_message_check=checkAnswerMessage,
-            transition_method=self.ticket.confirmAnswer,
-            transition_method_args=("That was very useful.",),
-            transition_method_kwargs={'answer': answer_message,
-                                      'datecreated' : self.nowPlus(2)},
-            edited_fields=['status', 'messages', 'dateanswered', 'answerer',
-                           'answer', 'datelastquery'])
-
-    def testCannotConfirmAnAnswerFromAnotherTicket(self):
-        """Test that you can't confirm an answer not from the same ticket."""
-        ticket1_answer = self.ticket.giveAnswer(
-            self.answerer, 'Really, just do it!')
-        ticket2 = self.ubuntu.newTicket(self.owner, 'Help 2', 'Help me!')
-        ticket2_answer = ticket2.giveAnswer(self.answerer, 'Do that!')
-        answerRefused = False
-        try:
-            ticket2.confirmAnswer('That worked!', answer=ticket1_answer)
-        except AssertionError:
-            answerRefused = True
-        self.failUnless(
-            answerRefused, 'confirmAnswer accepted a message from a different'
-            'ticket')
-
-    def test_can_reopen(self):
-        """Test the can_reopen attribute in all the possible states."""
-        self._testTransitionGuard(
-            'can_reopen', ['ANSWERED', 'EXPIRED', 'SOLVED'])
-
-    def test_reopenFromInvalidStates(self):
-        """Test that reopen cannot be called when the ticket status is
-        not one of OPEN, NEEDSINFO, or ANSWERED.
-        """
-        self._testInvalidTransition(
-            ['ANSWERED', 'EXPIRED', 'SOLVED'], self.ticket.reopen,
-            "I still have a problem.", datecreated=self.nowPlus(1))
-
-    def test_reopen(self):
-        """Test that reopen() can be called when the ticket is in the
-        ANSWERED and EXPIRED state and that it returns a valid
-        ITicketMessage.
-        """
-        self._testValidTransition(
-            [TicketStatus.ANSWERED, TicketStatus.EXPIRED],
-            expected_owner=self.owner,
-            expected_action=TicketAction.REOPEN,
-            expected_status=TicketStatus.OPEN,
-            transition_method=self.ticket.reopen,
-            transition_method_args=('I still have this problem.',),
-            edited_fields=['status', 'messages', 'datelastquery'])
-
-    def test_reopenFromSOLVED(self):
-        """Test that reopen() can be called when the ticket is in the
-        SOLVED state and that it returns an appropriate ITicketMessage.
-        This transition should also clear the dateanswered, answered and
-        answerer attributes.
-        """
-        self.setUpEventListeners()
-        # Mark the ticket as solved by the user.
-        self.ticket.giveAnswer(
-            self.owner, 'I solved my own problem.',
-            datecreated=self.nowPlus(0))
-        self.assertEquals(self.ticket.status, TicketStatus.SOLVED)
-
-        # Clear previous events.
-        self.collected_events = []
-
-        message = self.ticket.reopen(
-            "My solution doesn't work.", datecreated=self.nowPlus(1))
-        self.checkTransitionMessage(
-            message, expected_owner=self.owner,
-            expected_action=TicketAction.REOPEN,
-            expected_status=TicketStatus.OPEN)
-        self.checkTransitionEvents(
-            message, ['status', 'messages', 'answerer', 'answer',
-                      'dateanswered', 'datelastquery'],
-            TicketStatus.OPEN.title)
-
-    def test_expireTicketFromInvalidStates(self):
-        """Test that expireTicket cannot be called when the ticket status is
-        not one of OPEN or NEEDSINFO.
-        """
-        self._testInvalidTransition(
-            ['OPEN', 'NEEDSINFO'], self.ticket.expireTicket,
-            self.answerer, "Too late.", datecreated=self.nowPlus(1))
-
-    def test_expireTicket(self):
-        """Test that expireTicket() can be called when the ticket status is
-        OPEN or NEEDSINFO and that it returns a valid ITicketMessage.
-        """
-        self._testValidTransition(
-            [TicketStatus.OPEN, TicketStatus.NEEDSINFO],
-            expected_owner=self.answerer,
-            expected_action=TicketAction.EXPIRE,
-            expected_status=TicketStatus.EXPIRED,
-            transition_method=self.ticket.expireTicket,
-            transition_method_args=(
-                self.answerer, 'This ticket is expired.'),
-            edited_fields=['status', 'messages', 'datelastresponse'])
-
-    def test_rejectFromInvalidStates(self):
-        """Test that expireTicket cannot be called when the ticket status is
-        not one of OPEN or NEEDSINFO.
-        """
-        valid_statuses = [status.name for status in TicketStatus.items
-                          if status.name != 'INVALID']
-        # Reject user must be a support contact, (or admin, or product owner).
-        self.ubuntu.addSupportContact(self.answerer)
-        self._testInvalidTransition(
-            valid_statuses, self.ticket.reject,
-            self.answerer, "This is lame.", datecreated=self.nowPlus(1))
-
-    def test_reject(self):
-        """Test that expireTicket() can be called when the ticket status is
-        OPEN or NEEDSINFO and that it returns a valid ITicketMessage.
-        """
-        # Reject user must be a support contact, (or admin, or product owner).
-        self.ubuntu.addSupportContact(self.answerer)
-        valid_statuses = [status for status in TicketStatus.items
-                          if status.name != 'INVALID']
-
-        def checkRejectMessageIsAnAnswer(message):
-            # Check that the rejection message was considered answering
-            # the ticket.
-            self.assertEquals(message, self.ticket.answer)
-            self.assertEquals(self.answerer, self.ticket.answerer)
-            self.assertEquals(message.datecreated, self.ticket.dateanswered)
-
-        self._testValidTransition(
-            valid_statuses,
-            expected_owner=self.answerer,
-            expected_action=TicketAction.REJECT,
-            expected_status=TicketStatus.INVALID,
-            extra_message_check=checkRejectMessageIsAnAnswer,
-            transition_method=self.ticket.reject,
-            transition_method_args=(
-                self.answerer, 'This is lame.'),
-            edited_fields=['status', 'messages', 'answerer', 'dateanswered',
-                           'answer', 'datelastresponse'])
-
-    def testDisallowNoOpSetStatus(self):
-        """Test that calling setStatus to change to the same status
-        raises an InvalidTicketStateError.
-        """
-        self.assertRaises(InvalidTicketStateError, self.ticket.setStatus,
-                self.admin, TicketStatus.OPEN, 'Status Change')
 
     def _testTransitionGuard(self, guard_name, statuses_expected_true):
         """Helper for transition guard tests.
@@ -624,8 +260,405 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
                     set(modified_event.edited_fields), set(edited_fields))))
 
 
+class MiscSupportTrackerWorkflowTestCase(BaseSupportTrackerWorkflowTestCase):
+    """Various other test cases for the support tracker workflow."""
+
+    def testWorkflowMethodsPermission(self):
+        """Verify the workflow methods permission.
+
+        Only a logged in user can access the workflow methods.
+        """
+        workflow_methods = (
+            'requestInfo', 'giveInfo', 'giveAnswer', 'confirmAnswer',
+            'expireTicket', 'reject')
+        login(ANONYMOUS)
+        for method in workflow_methods:
+            try:
+                getattr(self.ticket, method)
+                self.fail(
+                    "Method %s should not be accessible by the anonymous "
+                    "user." % method)
+            except Unauthorized:
+                pass
+
+        login('no-priv@canonical.com')
+        for method in workflow_methods:
+            self.failUnless(getattr(self.ticket, method))
+
+    def testDisallowNoOpSetStatus(self):
+        """Test that calling setStatus to change to the same status
+        raises an InvalidTicketStateError.
+        """
+        self.assertRaises(InvalidTicketStateError, self.ticket.setStatus,
+                self.admin, TicketStatus.OPEN, 'Status Change')
+
+
+class RequestInfoTestCase(BaseSupportTrackerWorkflowTestCase):
+    """Test cases for the requestInfo() workflow action method."""
+
+    def test_can_request_info(self):
+        """Test the can_request_info attribute in all the possible states."""
+        self._testTransitionGuard(
+            'can_request_info', ['OPEN', 'NEEDSINFO', 'ANSWERED'])
+
+    def test_requestInfo(self):
+        """Test that requestInfo() can be called in the OPEN, NEEDSINFO,
+        and ANSWERED state and that it returns a valid ITicketMessage.
+        """
+        # Do no check the edited_fields attribute since it varies depending
+        # on the departure state.
+        self._testValidTransition(
+            [TicketStatus.OPEN, TicketStatus.NEEDSINFO],
+            expected_owner=self.answerer,
+            expected_action=TicketAction.REQUESTINFO,
+            expected_status=TicketStatus.NEEDSINFO,
+            transition_method=self.ticket.requestInfo,
+            transition_method_args=(
+                self.answerer, "What's your problem?"),
+            edited_fields=None)
+
+        # Even if the ticket is answered, a user can request more
+        # information, but that leave the ticket in the ANSWERED state.
+        self.ticket.setStatus(
+            self.admin, TicketStatus.ANSWERED, 'Status change')
+        self.collected_events = []
+        message = self.ticket.requestInfo(
+            self.answerer,
+            "The previous answer is bad. What is the problem again?",
+            datecreated=self.nowPlus(3))
+        self.checkTransitionMessage(
+            message, expected_owner=self.answerer,
+            expected_action=TicketAction.REQUESTINFO,
+            expected_status=TicketStatus.ANSWERED)
+        self.checkTransitionEvents(
+            message, ['messages', 'datelastresponse'], TicketStatus.OPEN.title)
+
+    def test_requestInfoFromOwnerIsInvalid(self):
+        """Test that the ticket owner cannot use requestInfo."""
+        self.assertRaises(
+            AssertionError, self.ticket.requestInfo,
+                self.owner, 'Why should I care?', datecreated=self.nowPlus(1))
+
+    def test_requestInfoFromInvalidStates(self):
+        """Test that requestInfo cannot be called when the ticket status is
+        not OPEN, NEEDSINFO, or ANSWERED.
+        """
+        self._testInvalidTransition(
+            ['OPEN', 'NEEDSINFO', 'ANSWERED'], self.ticket.requestInfo,
+            self.answerer, "What's up?", datecreated=self.nowPlus(3))
+
+
+class GiveInfoTestCase(BaseSupportTrackerWorkflowTestCase):
+    """Test cases for the giveInfo() workflow action method."""
+
+    def test_can_give_info(self):
+        """Test the can_give_info attribute in all the possible states."""
+        self._testTransitionGuard('can_give_info', ['OPEN', 'NEEDSINFO'])
+
+    def test_giveInfoFromInvalidStates(self):
+        """Test that giveInfo cannot be called when the ticket status is
+        not OPEN or NEEDSINFO.
+        """
+        self._testInvalidTransition(
+            ['OPEN', 'NEEDSINFO'], self.ticket.giveInfo,
+            "That's that.", datecreated=self.nowPlus(1))
+
+    def test_giveInfo(self):
+        """Test that giveInfo() can be called when the ticket status is
+        OPEN or NEEDSINFO and that it returns a valid ITicketMessage.
+        """
+        # Do not check the edited_fields attributes since it
+        # changes based on departure state.
+        self._testValidTransition(
+            [TicketStatus.OPEN, TicketStatus.NEEDSINFO],
+            expected_owner=self.owner,
+            expected_action=TicketAction.GIVEINFO,
+            expected_status=TicketStatus.OPEN,
+            transition_method=self.ticket.giveInfo,
+            transition_method_args=("That's that.",),
+            edited_fields=None)
+
+
+class GiveAnswerTestCase(BaseSupportTrackerWorkflowTestCase):
+    """Test cases for the giveAnswer() workflow action method."""
+
+    def test_can_give_answer(self):
+        """Test the can_give_answer attribute in all the possible states."""
+        self._testTransitionGuard(
+            'can_give_answer', ['OPEN', 'NEEDSINFO', 'ANSWERED'])
+
+    def test_giveAnswerFromInvalidStates(self):
+        """Test that giveAnswer cannot be called when the ticket status is
+        not OPEN, NEEDSINFO, or ANSWERED.
+        """
+        self._testInvalidTransition(
+            ['OPEN', 'NEEDSINFO', 'ANSWERED'], self.ticket.giveAnswer,
+            self.answerer, "The answer is this.", datecreated=self.nowPlus(1))
+
+    def test_giveAnswer(self):
+        """Test that giveAnswer can be called when the ticket status is
+        one of OPEN, NEEDSINFO or ANSWERED and check that it returns a
+        valid ITicketMessage.
+        """
+        # Do not check the edited_fields attributes since it
+        # changes based on departure state.
+        self._testValidTransition(
+            [TicketStatus.OPEN, TicketStatus.NEEDSINFO,
+             TicketStatus.ANSWERED],
+            expected_owner=self.answerer,
+            expected_action=TicketAction.ANSWER,
+            expected_status=TicketStatus.ANSWERED,
+            transition_method=self.ticket.giveAnswer,
+            transition_method_args=(
+                self.answerer, "It looks like a real problem.",),
+            edited_fields=None)
+
+        # When the owner gives the answer, the ticket moves straight to
+        # SOLVED.
+        def checkAnswerMessage(message):
+            """Check additional attributes set when the owner gives the
+            answers.
+            """
+            self.assertEquals(message, self.ticket.answer)
+            self.assertEquals(self.owner, self.ticket.answerer)
+            self.assertEquals(message.datecreated, self.ticket.dateanswered)
+
+        self._testValidTransition(
+            [TicketStatus.OPEN, TicketStatus.NEEDSINFO,
+             TicketStatus.ANSWERED],
+            expected_owner=self.owner,
+            expected_action=TicketAction.CONFIRM,
+            expected_status=TicketStatus.SOLVED,
+            extra_message_check=checkAnswerMessage,
+            transition_method=self.ticket.giveAnswer,
+            transition_method_args=(
+                self.owner, "I found the solution.",),
+            transition_method_kwargs={'datecreated': self.nowPlus(3)},
+            edited_fields=['status', 'messages', 'dateanswered', 'answerer',
+                           'answer', 'datelastquery'])
+
+
+class ConfirmAnswerTestCase(BaseSupportTrackerWorkflowTestCase):
+    """Test cases for the confirmAnswer() workflow action method."""
+
+    def test_can_confirm_answer_without_answer(self):
+        """Test the can_confirm_answer attribute when no answer was posted.
+
+        When the ticket didn't receive an answer, it should always be
+        false.
+        """
+        self._testTransitionGuard('can_confirm_answer', [])
+
+    def test_can_confirm_answer_with_answer(self):
+        """Test that can_confirm_answer when there is an answer present.
+
+        Once one answer was given, it becomes possible in some states.
+        """
+        self.ticket.giveAnswer(
+            self.answerer, 'Do something about it.', self.nowPlus(1))
+        self._testTransitionGuard(
+            'can_confirm_answer', ['OPEN', 'NEEDSINFO', 'ANSWERED'])
+
+    def test_confirmAnswerFromInvalidStates_without_answer(self):
+        """Test calling confirmAnswer from invalid states.
+
+        confirmAnswer() cannot be called when the ticket has no message with
+        action ANSWER.
+        """
+        self._testInvalidTransition([], self.ticket.confirmAnswer,
+            "That answer worked!.", datecreated=self.nowPlus(1))
+
+    def test_confirmAnswerFromInvalidStates_with_answer(self):
+        """ Test calling confirmAnswer from invalid states with an answer.
+
+        When the ticket has a message with action ANSWER, confirmAnswer()
+        can only be called when it is in the OPEN, NEEDSINFO, or ANSWERED
+        state.
+        """
+        answer_message = self.ticket.giveAnswer(
+            self.answerer, 'Do something about it.', self.nowPlus(1))
+        self._testInvalidTransition(['OPEN', 'NEEDSINFO', 'ANSWERED'],
+            self.ticket.confirmAnswer, "That answer worked!.",
+            answer=answer_message, datecreated=self.nowPlus(1))
+
+    def test_confirmAnswer(self):
+        """Test confirmAnswer().
+
+        Test that confirmAnswer() can be called when the ticket status
+        is one of OPEN, NEEDSINFO, ANSWERED and that it has at least one
+        ANSWER message and check that it returns a valid ITicketMessage.
+        """
+        answer_message = self.ticket.giveAnswer(
+            self.answerer, "Get a grip!", datecreated=self.nowPlus(1))
+
+        def checkAnswerMessage(message):
+            # Check the attributes that are set when an answer is confirmed.
+            self.assertEquals(answer_message, self.ticket.answer)
+            self.assertEquals(self.answerer, self.ticket.answerer)
+            self.assertEquals(message.datecreated, self.ticket.dateanswered)
+
+        self._testValidTransition(
+            [TicketStatus.OPEN, TicketStatus.NEEDSINFO,
+             TicketStatus.ANSWERED],
+            expected_owner=self.owner,
+            expected_action=TicketAction.CONFIRM,
+            expected_status=TicketStatus.SOLVED,
+            extra_message_check=checkAnswerMessage,
+            transition_method=self.ticket.confirmAnswer,
+            transition_method_args=("That was very useful.",),
+            transition_method_kwargs={'answer': answer_message,
+                                      'datecreated' : self.nowPlus(2)},
+            edited_fields=['status', 'messages', 'dateanswered', 'answerer',
+                           'answer', 'datelastquery'])
+
+    def testCannotConfirmAnAnswerFromAnotherTicket(self):
+        """Test that you can't confirm an answer not from the same ticket."""
+        ticket1_answer = self.ticket.giveAnswer(
+            self.answerer, 'Really, just do it!')
+        ticket2 = self.ubuntu.newTicket(self.owner, 'Help 2', 'Help me!')
+        ticket2_answer = ticket2.giveAnswer(self.answerer, 'Do that!')
+        answerRefused = False
+        try:
+            ticket2.confirmAnswer('That worked!', answer=ticket1_answer)
+        except AssertionError:
+            answerRefused = True
+        self.failUnless(
+            answerRefused, 'confirmAnswer accepted a message from a different'
+            'ticket')
+
+
+class ReopenTestCase(BaseSupportTrackerWorkflowTestCase):
+    """Test cases for the reopen() workflow action method."""
+
+    def test_can_reopen(self):
+        """Test the can_reopen attribute in all the possible states."""
+        self._testTransitionGuard(
+            'can_reopen', ['ANSWERED', 'EXPIRED', 'SOLVED'])
+
+    def test_reopenFromInvalidStates(self):
+        """Test that reopen cannot be called when the ticket status is
+        not one of OPEN, NEEDSINFO, or ANSWERED.
+        """
+        self._testInvalidTransition(
+            ['ANSWERED', 'EXPIRED', 'SOLVED'], self.ticket.reopen,
+            "I still have a problem.", datecreated=self.nowPlus(1))
+
+    def test_reopen(self):
+        """Test that reopen() can be called when the ticket is in the
+        ANSWERED and EXPIRED state and that it returns a valid
+        ITicketMessage.
+        """
+        self._testValidTransition(
+            [TicketStatus.ANSWERED, TicketStatus.EXPIRED],
+            expected_owner=self.owner,
+            expected_action=TicketAction.REOPEN,
+            expected_status=TicketStatus.OPEN,
+            transition_method=self.ticket.reopen,
+            transition_method_args=('I still have this problem.',),
+            edited_fields=['status', 'messages', 'datelastquery'])
+
+    def test_reopenFromSOLVED(self):
+        """Test that reopen() can be called when the ticket is in the
+        SOLVED state and that it returns an appropriate ITicketMessage.
+        This transition should also clear the dateanswered, answered and
+        answerer attributes.
+        """
+        self.setUpEventListeners()
+        # Mark the ticket as solved by the user.
+        self.ticket.giveAnswer(
+            self.owner, 'I solved my own problem.',
+            datecreated=self.nowPlus(0))
+        self.assertEquals(self.ticket.status, TicketStatus.SOLVED)
+
+        # Clear previous events.
+        self.collected_events = []
+
+        message = self.ticket.reopen(
+            "My solution doesn't work.", datecreated=self.nowPlus(1))
+        self.checkTransitionMessage(
+            message, expected_owner=self.owner,
+            expected_action=TicketAction.REOPEN,
+            expected_status=TicketStatus.OPEN)
+        self.checkTransitionEvents(
+            message, ['status', 'messages', 'answerer', 'answer',
+                      'dateanswered', 'datelastquery'],
+            TicketStatus.OPEN.title)
+
+
+class ExpireTicketTestCase(BaseSupportTrackerWorkflowTestCase):
+    """Test cases for the expireTicket() workflow action method."""
+
+    def test_expireTicketFromInvalidStates(self):
+        """Test that expireTicket cannot be called when the ticket status is
+        not one of OPEN or NEEDSINFO.
+        """
+        self._testInvalidTransition(
+            ['OPEN', 'NEEDSINFO'], self.ticket.expireTicket,
+            self.answerer, "Too late.", datecreated=self.nowPlus(1))
+
+    def test_expireTicket(self):
+        """Test that expireTicket() can be called when the ticket status is
+        OPEN or NEEDSINFO and that it returns a valid ITicketMessage.
+        """
+        self._testValidTransition(
+            [TicketStatus.OPEN, TicketStatus.NEEDSINFO],
+            expected_owner=self.answerer,
+            expected_action=TicketAction.EXPIRE,
+            expected_status=TicketStatus.EXPIRED,
+            transition_method=self.ticket.expireTicket,
+            transition_method_args=(
+                self.answerer, 'This ticket is expired.'),
+            edited_fields=['status', 'messages', 'datelastresponse'])
+
+
+class RejectTestCase(BaseSupportTrackerWorkflowTestCase):
+    """Test cases for the reject() workflow action method."""
+
+    def test_rejectFromInvalidStates(self):
+        """Test that expireTicket cannot be called when the ticket status is
+        not one of OPEN or NEEDSINFO.
+        """
+        valid_statuses = [status.name for status in TicketStatus.items
+                          if status.name != 'INVALID']
+        # Reject user must be a support contact, (or admin, or product owner).
+        self.ubuntu.addSupportContact(self.answerer)
+        self._testInvalidTransition(
+            valid_statuses, self.ticket.reject,
+            self.answerer, "This is lame.", datecreated=self.nowPlus(1))
+
+    def test_reject(self):
+        """Test that expireTicket() can be called when the ticket status is
+        OPEN or NEEDSINFO and that it returns a valid ITicketMessage.
+        """
+        # Reject user must be a support contact, (or admin, or product owner).
+        self.ubuntu.addSupportContact(self.answerer)
+        valid_statuses = [status for status in TicketStatus.items
+                          if status.name != 'INVALID']
+
+        def checkRejectMessageIsAnAnswer(message):
+            # Check that the rejection message was considered answering
+            # the ticket.
+            self.assertEquals(message, self.ticket.answer)
+            self.assertEquals(self.answerer, self.ticket.answerer)
+            self.assertEquals(message.datecreated, self.ticket.dateanswered)
+
+        self._testValidTransition(
+            valid_statuses,
+            expected_owner=self.answerer,
+            expected_action=TicketAction.REJECT,
+            expected_status=TicketStatus.INVALID,
+            extra_message_check=checkRejectMessageIsAnAnswer,
+            transition_method=self.ticket.reject,
+            transition_method_args=(
+                self.answerer, 'This is lame.'),
+            edited_fields=['status', 'messages', 'answerer', 'dateanswered',
+                           'answer', 'datelastresponse'])
+
+
 def test_suite():
-    return unittest.makeSuite(SupportTrackerWorkflowTestCase)
+    import canonical.launchpad.interfaces.ftests as ftests
+    return unittest.findTestCases(ftests.test_ticket_workflow)
+
 
 if __name__ == '__main__':
     unittest.main()
