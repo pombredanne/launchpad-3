@@ -91,12 +91,12 @@ class ISprint(IHasOwner, IHasSpecifications):
         multiple products and distros.
         """
 
-    def acceptSpecificationLinks(idlist):
+    def acceptSpecificationLinks(idlist, decider):
         """Accept the given sprintspec items, and return the number of
         sprintspec items that remain proposed.
         """
 
-    def declineSpecificationLinks(idlist):
+    def declineSpecificationLinks(idlist, decider):
         """Decline the given sprintspec items, and return the number of
         sprintspec items that remain proposed.
         """
