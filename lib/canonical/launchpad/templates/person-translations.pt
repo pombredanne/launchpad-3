@@ -43,6 +43,10 @@
         </tbody>
       </table>
 
+      <div class="lesser">
+        <tal:navigation content="structure view/batchnav/@@+navigation-links" />
+      </div>
+
     </tal:block>
 
     <tal:block condition="not: history">

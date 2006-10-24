@@ -22,6 +22,7 @@ from zope.app.form.interfaces import IInputWidget
 from zope.component import getUtility, getView
 from zope.publisher.browser import FileUpload
 
+from canonical.cachedproperty import cachedproperty
 from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad.interfaces import (
     IPOFile, IPOExportRequestSet, ILanguageSet, ITranslationImportQueue, 
