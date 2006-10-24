@@ -2,9 +2,8 @@
 
 __metaclass__ = type
 __all__ = [
-    'Person', 'PersonSet', 'EmailAddress', 'EmailAddressSet', 'SSHKey',
-    'SSHKeySet', 'WikiName', 'WikiNameSet', 'JabberID', 'JabberIDSet',
-    'IrcID', 'IrcIDSet']
+    'Person', 'PersonSet', 'SSHKey', 'SSHKeySet', 'WikiName', 'WikiNameSet',
+    'JabberID', 'JabberIDSet', 'IrcID', 'IrcIDSet']
 
 import itertools
 from datetime import datetime, timedelta
@@ -33,11 +32,12 @@ from canonical.launchpad.interfaces import (
     IIrcIDSet, ISSHKeySet, IJabberIDSet, IWikiNameSet, IGPGKeySet,
     ISSHKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner,
     IBugTaskSet, UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
-    EmailAddressAlreadyTaken, ILaunchpadStatisticSet, ShipItConstants,
-    ILaunchpadCelebrities)
+    ILaunchpadStatisticSet, ShipItConstants, ILaunchpadCelebrities)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
+from canonical.launchpad.database.branch import Branch
+from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.karma import KarmaTotalCache
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.pofile import POFile
@@ -54,13 +54,13 @@ from canonical.launchpad.database.specificationsubscription import (
     SpecificationSubscription)
 from canonical.launchpad.database.teammembership import (
     TeamMembership, TeamParticipation, TeamMembershipSet)
-
-from canonical.launchpad.database.branch import Branch
+from canonical.launchpad.database.ticket import TicketSet
 
 from canonical.lp.dbschema import (
     EnumCol, SSHKeyType, EmailAddressStatus, TeamSubscriptionPolicy,
     TeamMembershipStatus, LoginTokenType, SpecificationSort,
-    SpecificationFilter, SpecificationStatus, ShippingRequestStatus)
+    SpecificationFilter, SpecificationStatus, ShippingRequestStatus,
+    PersonCreationRationale)
 
 from canonical.foaf import nickname
 from canonical.cachedproperty import cachedproperty
@@ -68,7 +68,7 @@ from canonical.cachedproperty import cachedproperty
 
 class ValidPersonOrTeamCache(SQLBase):
     """Flags if a Person or Team is active and usable in Launchpad.
-    
+
     This is readonly, as the underlying table is maintained using
     database triggers.
     """
@@ -118,6 +118,8 @@ class Person(SQLBase):
     merged = ForeignKey(dbName='merged', foreignKey='Person', default=None)
 
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    creation_rationale = EnumCol(schema=PersonCreationRationale, default=None)
+    creation_comment = StringCol(default=None)
     hide_email_addresses = BoolCol(notNull=True, default=False)
 
     # SQLRelatedJoin gives us also an addLanguage and removeLanguage for free
@@ -134,9 +136,9 @@ class Person(SQLBase):
         orderBy='id')
     reviewerBounties = SQLMultipleJoin('Bounty', joinColumn='reviewer',
         orderBy='id')
-    # XXX: matsubara 2006-03-06: Is this really needed? There's no attribute 
-    # 'claimant' in the Bounty database class or interface, but the column 
-    # exists in the database. 
+    # XXX: matsubara 2006-03-06: Is this really needed? There's no attribute
+    # 'claimant' in the Bounty database class or interface, but the column
+    # exists in the database.
     # https://launchpad.net/products/launchpad/+bug/33935
     claimedBounties = MultipleJoin('Bounty', joinColumn='claimant',
         orderBy='id')
@@ -154,16 +156,6 @@ class Person(SQLBase):
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
     timezone = StringCol(dbName='timezone', default='UTC')
-
-    answered_tickets = SQLMultipleJoin('Ticket', joinColumn='answerer',
-        orderBy='-datecreated')
-    assigned_tickets = SQLMultipleJoin('Ticket', joinColumn='assignee',
-        orderBy='-datecreated')
-    created_tickets = SQLMultipleJoin('Ticket', joinColumn='owner',
-        orderBy='-datecreated')
-    subscribed_tickets = SQLRelatedJoin('Ticket', joinColumn='person',
-        otherColumn='ticket', intermediateTable='TicketSubscription',
-        orderBy='-datecreated')
 
     def _init(self, *args, **kw):
         """Marks the person as a team when created or fetched from database."""
@@ -273,9 +265,9 @@ class Person(SQLBase):
                 completeness = True
         if completeness is False:
             filter.append(SpecificationFilter.INCOMPLETE)
-        
+
         # defaults for acceptance: in this case we have nothing to do
-        # because specs are not accepted/declined against a person 
+        # because specs are not accepted/declined against a person
 
         # defaults for informationalness: we don't have to do anything
         # because the default if nothing is said is ANY
@@ -338,7 +330,7 @@ class Person(SQLBase):
                          (SELECT Product.id FROM Product
                           WHERE Product.active IS FALSE))
                 """
-        
+
         base = base % {'my_id': self.id}
 
         query = base
@@ -378,22 +370,16 @@ class Person(SQLBase):
             limit=quantity, prejoins=['assignee', 'approver', 'drafter'])
         return results
 
-    def tickets(self, quantity=None):
-        ret = self.created_tickets
-        ret = ret.union(self.answered_tickets)
-        ret = ret.union(self.assigned_tickets)
-        ret = ret.union(self.subscribed_tickets)
-        ret = ret.orderBy("-datecreated")
-        return ret[:quantity]
+    # ITicketActor implementation
+    def searchTickets(self, **kwargs):
+        # See ITicketActor
+        return TicketSet.searchByPerson(person=self, **kwargs)
 
     @property
     def branches(self):
         """See IPerson."""
-        # XXX: bug 62019 is what forces us to prejoin(None) here.
-        #   -- kiko, 2006-09-23
-        ret = self.authored_branches.prejoin(None)
-        ret = ret.union(self.registered_branches.prejoin(None))
-        ret = ret.union(self.subscribed_branches.prejoin(None))
+        ret = self.authored_branches.union(self.registered_branches)
+        ret = ret.union(self.subscribed_branches)
         return ret.orderBy('-id')
 
     @property
@@ -510,16 +496,21 @@ class Person(SQLBase):
             return cache.karma_total
 
     @property
-    def is_valid_person(self):
+    def is_valid_person_or_team(self):
         """See IPerson."""
-        if self.teamowner is not None:
-            return False
         try:
             if ValidPersonOrTeamCache.get(self.id) is not None:
                 return True
         except SQLObjectNotFound:
             pass
         return False
+
+    @property
+    def is_valid_person(self):
+        """See IPerson."""
+        if self.teamowner is not None:
+            return False
+        return self.is_valid_person_or_team
 
     def assignKarma(self, action_name, product=None, distribution=None,
                     sourcepackagename=None):
@@ -686,7 +677,7 @@ class Person(SQLBase):
         if person.isTeam():
             assert not self.hasParticipationEntryFor(person), (
                 "Team '%s' is a member of '%s'. As a consequence, '%s' can't "
-                "be added as a member of '%s'" 
+                "be added as a member of '%s'"
                 % (self.name, person.name, person.name, self.name))
 
         if person in self.activemembers:
@@ -712,7 +703,7 @@ class Person(SQLBase):
         now = datetime.now(pytz.timezone('UTC'))
         if expires is not None and expires <= now:
             status = TeamMembershipStatus.EXPIRED
-            # XXX: This is a workaround while 
+            # XXX: This is a workaround while
             # https://launchpad.net/products/launchpad/+bug/30649 isn't fixed.
             expires = now
 
@@ -751,7 +742,7 @@ class Person(SQLBase):
         """See IPerson."""
         return self.browsername
 
-    @property 
+    @property
     def allmembers(self):
         """See IPerson."""
         query = ('Person.id = TeamParticipation.person AND '
@@ -824,7 +815,7 @@ class Person(SQLBase):
     def myactivememberships(self):
         """See IPerson."""
         return TeamMembership.select("""
-            TeamMembership.person = %s AND status in %s AND 
+            TeamMembership.person = %s AND status in %s AND
             Person.id = TeamMembership.team
             """ % sqlvalues(self.id, [TeamMembershipStatus.APPROVED,
                                       TeamMembershipStatus.ADMIN]),
@@ -917,8 +908,11 @@ class Person(SQLBase):
         # comparison oddity
         assert email.person.id == self.id, 'Wrong person! %r, %r' % (
             email.person, self)
-        assert self.preferredemail != email, 'Wrong prefemail! %r, %r' % (
-            self.preferredemail, email)
+
+        # This email is already validated and is this person's preferred
+        # email, so we have nothing to do.
+        if self.preferredemail == email:
+            return
 
         if self.preferredemail is None:
             # This branch will be executed only in the first time a person
@@ -1043,7 +1037,7 @@ class Person(SQLBase):
                        sourcepackagerelease.id
                   FROM sourcepackagerelease
                  WHERE %s
-              ORDER BY uploaddistrorelease, sourcepackagename, 
+              ORDER BY uploaddistrorelease, sourcepackagename,
                        dateuploaded DESC
               )
               """ % extra
@@ -1114,9 +1108,10 @@ class PersonSet:
         team.setMembershipStatus(teamowner, TeamMembershipStatus.ADMIN)
         return team
 
-    def createPersonAndEmail(self, email, name=None, displayname=None,
-                             password=None, passwordEncrypted=False,
-                             hide_email_addresses=False):
+    def createPersonAndEmail(
+            self, email, rationale, comment=None, name=None,
+            displayname=None, password=None, passwordEncrypted=False,
+            hide_email_addresses=False):
         """See IPersonSet."""
         if name is None:
             try:
@@ -1130,48 +1125,49 @@ class PersonSet:
         if not passwordEncrypted and password is not None:
             password = getUtility(IPasswordEncryptor).encrypt(password)
 
-        displayname = displayname or name.capitalize()
-        person = self._newPerson(name, displayname, hide_email_addresses,
-                                 password=password)
+        if not displayname:
+            displayname = name.capitalize()
+        person = self._newPerson(
+            name, displayname, hide_email_addresses, rationale=rationale,
+            comment=comment, password=password)
 
         email = getUtility(IEmailAddressSet).new(email, person)
         return person, email
 
     def _newPerson(self, name, displayname, hide_email_addresses,
-                   password=None):
-        """Create a new Person with the given attributes.
+                   rationale, comment=None, password=None):
+        """Create and return a new Person with the given attributes.
 
         Also generate a wikiname for this person that's not yet used in the
         Ubuntu wiki.
         """
         assert self.getByName(name, ignore_merged=False) is None
-        person = Person(name=name, displayname=displayname,
-                        hide_email_addresses=hide_email_addresses,
-                        password=password)
+        person = Person(
+            name=name, displayname=displayname, password=password,
+            creation_rationale=rationale, creation_comment=comment,
+            hide_email_addresses=hide_email_addresses)
+
         wikinameset = getUtility(IWikiNameSet)
         wikiname = nickname.generate_wikiname(
-                    person.displayname, wikinameset.exists)
+            person.displayname, wikinameset.exists)
         wikinameset.new(person, UBUNTU_WIKI_URL, wikiname)
         return person
 
-    def ensurePerson(self, email, displayname):
+    def ensurePerson(self, email, displayname, rationale, comment=None):
         """See IPersonSet."""
         person = self.getByEmail(email)
         if person:
             return person
         person, dummy = self.createPersonAndEmail(
-                            email, displayname=displayname)
+            email, rationale, comment=comment, displayname=displayname)
         return person
 
-    def getByName(self, name, default=None, ignore_merged=True):
+    def getByName(self, name, ignore_merged=True):
         """See IPersonSet."""
         query = (Person.q.name == name)
         if ignore_merged:
             query = AND(query, Person.q.mergedID==None)
-        person = Person.selectOne(query)
-        if person is None:
-            return default
-        return person
+        return Person.selectOne(query)
 
     def updateStatistics(self, ztm):
         """See IPersonSet."""
@@ -1218,10 +1214,10 @@ class PersonSet:
             orderBy = SQLConstant("person_sort_key(displayname, name)")
         text = text.lower()
         # Teams may not have email addresses, so we need to either use a LEFT
-        # OUTER JOIN or do a UNION between two queries. Using a UNION makes 
+        # OUTER JOIN or do a UNION between two queries. Using a UNION makes
         # it a lot faster than with a LEFT OUTER JOIN.
         email_query = """
-            EmailAddress.person = Person.id AND 
+            EmailAddress.person = Person.id AND
             lower(EmailAddress.email) LIKE %s || '%%'
             """ % quote_like(text)
         results = Person.select(email_query, clauseTables=['EmailAddress'])
@@ -1243,7 +1239,7 @@ class PersonSet:
             # ORed.
             email_query = ("%s AND lower(EmailAddress.email) LIKE %s || '%%'"
                            % (base_query, quote_like(text)))
-            name_query = ('%s AND Person.fti @@ ftq(%s)' 
+            name_query = ('%s AND Person.fti @@ ftq(%s)'
                           % (base_query, quote(text)))
             results = Person.select(email_query, clauseTables=clauseTables)
             results = results.union(
@@ -1260,32 +1256,32 @@ class PersonSet:
             orderBy = SQLConstant("person_sort_key(displayname, name)")
         text = text.lower()
         # Teams may not have email addresses, so we need to either use a LEFT
-        # OUTER JOIN or do a UNION between two queries. Using a UNION makes 
+        # OUTER JOIN or do a UNION between two queries. Using a UNION makes
         # it a lot faster than with a LEFT OUTER JOIN.
         email_query = """
-            Person.teamowner IS NOT NULL AND 
-            EmailAddress.person = Person.id AND 
+            Person.teamowner IS NOT NULL AND
+            EmailAddress.person = Person.id AND
             lower(EmailAddress.email) LIKE %s || '%%'
             """ % quote_like(text)
         results = Person.select(email_query, clauseTables=['EmailAddress'])
         name_query = """
-             Person.teamowner IS NOT NULL AND 
+             Person.teamowner IS NOT NULL AND
              Person.fti @@ ftq(%s)
             """ % quote(text)
         return results.union(Person.select(name_query), orderBy=orderBy)
 
-    def get(self, personid, default=None):
+    def get(self, personid):
         """See IPersonSet."""
         try:
             return Person.get(personid)
         except SQLObjectNotFound:
-            return default
+            return None
 
-    def getByEmail(self, email, default=None):
+    def getByEmail(self, email):
         """See IPersonSet."""
         emailaddress = getUtility(IEmailAddressSet).getByEmail(email)
         if emailaddress is None:
-            return default
+            return None
         assert emailaddress.person is not None
         return emailaddress.person
 
@@ -1480,7 +1476,7 @@ class PersonSet:
             WHERE person=%(from_id)d AND bounty NOT IN
                 (
                 SELECT bounty
-                FROM BountySubscription 
+                FROM BountySubscription
                 WHERE person = %(to_id)d
                 )
             ''' % vars())
@@ -1526,7 +1522,7 @@ class PersonSet:
             WHERE person=%(from_id)d AND ticket NOT IN
                 (
                 SELECT ticket
-                FROM TicketSubscription 
+                FROM TicketSubscription
                 WHERE person = %(to_id)d
                 )
             ''' % vars())
@@ -1545,7 +1541,7 @@ class PersonSet:
 
         # Update the SpecificationFeedback entries that will not conflict
         # and trash the rest.
-        
+
         # First we handle the reviewer.
         cur.execute('''
             UPDATE SpecificationFeedback
@@ -1602,7 +1598,7 @@ class PersonSet:
             WHERE attendee=%(from_id)d AND sprint NOT IN
                 (
                 SELECT sprint
-                FROM SprintAttendance 
+                FROM SprintAttendance
                 WHERE attendee = %(to_id)d
                 )
             ''' % vars())
@@ -1700,7 +1696,7 @@ class PersonSet:
         approved = TeamMembershipStatus.APPROVED
         admin = TeamMembershipStatus.ADMIN
         cur.execute('SELECT team, status FROM TeamMembership WHERE person = %s '
-                    'AND status IN (%s,%s)' 
+                    'AND status IN (%s,%s)'
                     % sqlvalues(from_person.id, approved, admin))
         for team_id, status in cur.fetchall():
             cur.execute('SELECT status FROM TeamMembership WHERE person = %s '
@@ -1773,50 +1769,6 @@ class PersonSet:
         flush_database_caches()
 
 
-class EmailAddress(SQLBase):
-    implements(IEmailAddress)
-
-    _table = 'EmailAddress'
-    _defaultOrder = ['email']
-
-    email = StringCol(dbName='email', notNull=True, unique=True)
-    status = EnumCol(dbName='status', schema=EmailAddressStatus, notNull=True)
-    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
-
-    @property
-    def statusname(self):
-        return self.status.title
-
-
-class EmailAddressSet:
-    implements(IEmailAddressSet)
-
-    def get(self, emailid, default=None):
-        """See IEmailAddressSet."""
-        try:
-            return EmailAddress.get(emailid)
-        except SQLObjectNotFound:
-            return default
-
-    def getByPerson(self, person):
-        return EmailAddress.selectBy(person=person, orderBy='email')
-
-    def getByEmail(self, email, default=None):
-        result = EmailAddress.selectOne(
-            "lower(email) = %s" % quote(email.strip().lower()))
-        if result is None:
-            return default
-        return result
-
-    def new(self, email, person, status=EmailAddressStatus.NEW):
-        email = email.strip()
-        if self.getByEmail(email):
-            raise EmailAddressAlreadyTaken(
-                "The email address %s is already registered." % email)
-        assert status in EmailAddressStatus.items
-        return EmailAddress(email=email, status=status, person=person)
-
-
 class SSHKey(SQLBase):
     implements(ISSHKey)
 
@@ -1831,13 +1783,11 @@ class SSHKey(SQLBase):
 class SSHKeySet:
     implements(ISSHKeySet)
 
-    def new(self, personID, keytype, keytext, comment):
-        # XXX: why does this API accept a personID? That's crazy.
-        #   -- kiko, 2006-06-22
-        return SSHKey(personID=personID, keytype=keytype, keytext=keytext,
+    def new(self, person, keytype, keytext, comment):
+        return SSHKey(person=person, keytype=keytype, keytext=keytext,
                       comment=comment)
 
-    def get(self, id, default=None):
+    def getByID(self, id, default=None):
         try:
             return SSHKey.get(id)
         except SQLObjectNotFound:

@@ -27,7 +27,6 @@
           <th>Malone bug</th>
           <th>Remote bug</th>
           <th>Status</th>
-          <th class="default-revsort">Date created</th>
         </tr>
       </thead>
 
@@ -45,7 +44,6 @@
               </a>
           </td>
           <td tal:content="watch/remotestatus" />
-          <td tal:content="watch/datecreated/fmt:datetime" />
         </tr>
       </tbody>
     </table>

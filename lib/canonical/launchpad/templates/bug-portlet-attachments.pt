@@ -2,7 +2,7 @@
      tal:define="current_task view/currentBugTask;
                  url current_task/fmt:url">
 
-  <h4>Bug attachments:</h4>
+  <h2>Bug attachments</h2>
 
   <div class="portletBody">
     <div class="portletContent">
