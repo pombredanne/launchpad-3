@@ -2,6 +2,12 @@
   <table class="summary">
     <tbody>
       <tr>
+        <th>Project status:</th>
+        <td tal:condition="context/reviewed">Reviewed</td>
+        <td tal:condition="context/active">Active</td>
+        <td tal:condition="not: context/active">Disabled</td>
+      </tr>
+      <tr>
         <th>Maintainer:</th>
         <td>
           <a
@@ -26,38 +32,25 @@
         <td tal:condition="context/translationgroup">
           <a tal:attributes="
             href string:/rosetta/groups/${context/translationgroup/name}/"
-       tal:content="context/translationgroup/title"
-    >Group</a><br />
+            tal:content="context/translationgroup/title"
+          >Group</a>
         </td>
+      </tr>
+      <tr>
+        <th>Bug tracker:</th>
+        <td>
+          <a
+            tal:condition="context/bugtracker"
+            tal:content="context/bugtracker/title"
+            al:attributes="href context/bugtracker/fmt:url"
+          >tracker title</a>
+          <tal:none condition="not:context/bugtracker">None specified</tal:none>
+        </td>
+      </tr>
+      <tr>
+        <th>Translations:</th>
+        <td tal:content="context/translationpermission/title">Open</td>
       </tr>
     </tbody>
   </table>
-
-    <b>Translation Perms:</b><br />
-    <span tal:replace="context/translationpermission/title">Open</span>
-    <br />
-
-    <b>Bug Tracker:</b><br />
-    <a tal:condition="context/bugtracker"
-        tal:content="context/bugtracker/title"
-       tal:attributes="href context/bugtracker/fmt:url">tracker title</a>
-    <i tal:condition="not: context/bugtracker">None specified</i>
-    <br />
-
-    <b>Products:</b><br />
-    <span tal:repeat="prod context/products" tal:omit-tag>
-        <img alt="" src="/@@/product" />
-        <a tal:content="prod/displayname"
-           tal:attributes="href prod/fmt:url">
-           product displayname</a><br />
-    </span>
-
-    <b>Project Status:</b><br />
-    <span tal:condition="context/reviewed"
-          tal:omit-tag>Reviewed<br /></span>
-    <span tal:condition="context/active"
-          tal:omit-tag>Active<br /></span>
-    <span tal:condition="not: context/active"
-          tal:omit-tag>Disabled<br /></span>
-
 </div>
