@@ -14,6 +14,12 @@ import CVS
 import cscvs
 import SCM
 
+from canonical.launchpad.webapp.url import Url
+
+
+class ImportSafetyError(Exception):
+    """Raised when an import fails safety checks."""
+
 
 class JobStrategy:
     """I am the base strategy used to do a Job."""
@@ -85,10 +91,18 @@ class CSCVSStrategy(JobStrategy):
         self.aJob = aJob
         self.dir = dir
         self.logger = logger
+        self._checkSafety()
         target_manager = aJob.makeTargetManager()
         working_dir = self.getWorkingDir(aJob, dir)
         target_path = target_manager.createImportTarget(working_dir)
         self.runtobaz("-SC", "%s.1:" % aJob.branchfrom, target_path, logger)
+
+    def _checkSafety(self):
+        """Run safety checks to avoid putting excessive load on server.
+
+        By default do no check. Subclasses may override this. If the import is
+        deemed unsafe, this method must raise ImportSafetyError.
+        """
 
     def sync(self, aJob, dir, logger):
         """sync from a concrete type to baz"""
@@ -397,9 +411,11 @@ class CvsWorkingTree:
 
 
 class SVNStrategy(CSCVSStrategy):
+
     def getSVNDirPath(self, aJob, dir):
         """return the cvs working dir path"""
         return os.path.join(self.getWorkingDir(aJob,dir), "svnworking")
+
     def sourceDir(self):
         """get a source dir to work against"""
         if self.sourceDirectory is None:
@@ -427,3 +443,43 @@ class SVNStrategy(CSCVSStrategy):
         if self._tree is None:
             self._tree = SCM.tree(self.sourceDir())
         return self._tree
+
+    def _checkSafety(self):
+        """Run safety checks to avoid putting excessive load on server."""
+        if self._safetyIsOverridden():
+            return
+        url = self.job.repository
+        if Url(url).path.endswith('/'):
+            raise ImportSafetyError(
+                'URL ends with a slash: %s' % url)
+        if '/trunk/' in Url(url).pathslash:
+            return
+        raise ImportSafetyError(
+            'URL does not appear to be a SVN trunk: %s' % url)
+
+    def _safetyIsOverridden(self):
+        """Whether the safety check for this import has been overridden.
+
+        At the moment, that just checks that the svn url is in an hardcoded
+        while-list. Eventually, that will check for a flag set by the operator
+        in the Launchpad web UI.
+        """
+        return self.job.repository in self._svn_url_whitelist
+
+    _svn_url_whitelist = set([
+         'http://mg.pov.lt/gtimelog/svn',
+         'http://opensvn.csie.org/srb2d6',
+         'http://www.eigenheimstrasse.de/svn/josm',
+         'http://www2.cs.tum.edu/repos/cup/develop',
+         'https://svn.sourceforge.net/svnroot/aptoncd',
+         'https://svn.sourceforge.net/svnroot/comix',
+         'https://svn.sourceforge.net/svnroot/jubler/src',
+         'https://svn.sourceforge.net/svnroot/listengnome/releases/0.5.x',
+         'https://svn.sourceforge.net/svnroot/listengnome/trunk-0.5',
+         'https://svn.sourceforge.net/svnroot/scherzo',
+         'svn://elgg.net/elgg/devel',
+         'svn://mielke.cc/main/brltty',
+         'svn://svn.debian.org/gcccvs/branches/sid/gcc-defaults',
+         'svn://svn.xara.com/Trunk/XaraLX',
+         'svn://svnanon.samba.org/samba/branches/SAMBA_4_0/source/lib/talloc',
+         ])
