@@ -12,8 +12,8 @@ Several views are used to handle the various operations on a ticket.
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> firefox_ticket = firefox.getTicket(2)
 
-    (XXX flacoste 2006/09/21 The firefox_ticket doesn't have any
-    subscribers, let's subscribe the owner.)
+    (The firefox_ticket doesn't have any subscribers, let's subscribe
+    the owner.)
     >>> login('test@canonical.com')
     >>> firefox_ticket.subscribe(firefox_ticket.owner)
     <TicketSubscription...>
@@ -134,6 +134,13 @@ redirected back to the ticket page.
     NEEDSINFO
     >>> workflow_harness.redirectionTarget()
     '.../+ticket/2'
+
+Workflow actions like these will send out notifications to subscribers.
+(Complete notifications testing will be found in
+support-tracker-notifications.txt)
+
+    >>> len(pop_notifications)
+    1
 
 The available actions for that other user are still between giving an
 answer or requesting for more information:
