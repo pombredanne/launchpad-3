@@ -44,7 +44,7 @@ check_merge: check_not_a_ui_merge build check importdcheck hctcheck
 	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
-check_edge_merge: check_no_dbupdates check_merge
+check_merge_edge: check_no_dbupdates check_merge
 	# Allow the merge if there are no database updates, including
 	# database patches or datamigration scripts (which should live
 	# in database/schema/pending. Used for maintaining the

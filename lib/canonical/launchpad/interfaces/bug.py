@@ -222,6 +222,16 @@ class IBug(IMessageTarget):
         dupes, etc.
         """
 
+    def getAlsoNotifiedSubscribers():
+        """A list of IPersons in the "Also notified" subscriber list.
+
+        This includes bug contacts and assignees, but not subscribers
+        from duplicates.
+        """
+
+    def getSubscribersFromDuplicates():
+        """A list of IPersons subscribed from dupes of this bug."""
+
     def notificationRecipientAddresses():
         """Return the list of email addresses that recieve notifications.
 

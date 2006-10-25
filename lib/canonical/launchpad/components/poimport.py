@@ -9,12 +9,11 @@ from email.Utils import parseaddr
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-        IPOTemplate, IPOFile, IPersonSet, NotFoundError
+        IPOTemplate, IPOFile, IPersonSet, TranslationConstants
         )
 from canonical.launchpad.components.poparser import POParser
-from canonical.launchpad.helpers import TranslationConstants
-from canonical.lp.dbschema import PersonCreationRationale
 
+from canonical.lp.dbschema import PersonCreationRationale
 
 class OldPOImported(Exception):
     """Raised when an older PO file is imported."""

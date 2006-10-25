@@ -29,7 +29,8 @@
                         attachments tickets specifications followup_subject
                         isSubscribed messages notificationRecipientAddresses
                         hasBranch security_related tags getMessageChunks
-                        isSubscribedToDupes" />
+                        isSubscribedToDupes getSubscribersFromDuplicates
+                        getAlsoNotifiedSubscribers" />
         <require
             permission="launchpad.Edit"
             attributes="addChangeNotification addCommentNotification addWatch
@@ -127,7 +128,7 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IBug"
-        class="canonical.launchpad.browser.BugSubscriberPortletView"
+        class="canonical.launchpad.browser.BugView"
         name="+portlet-subscribers"
         template="../templates/bug-portlet-subscribers.pt"
         permission="zope.Public" />

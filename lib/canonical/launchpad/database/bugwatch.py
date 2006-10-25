@@ -247,10 +247,10 @@ class BugWatchSet(BugSetBase):
         """
         if not path.startswith('/tracker/'):
             return None
-        if not query.get('atid'):
+        if not query.get('aid'):
             return None
 
-        remote_bug = query['atid']
+        remote_bug = query['aid']
         # There's only one global SF instance registered in Launchpad.
         sf_tracker = getUtility(ILaunchpadCelebrities).sourceforge_tracker
 

@@ -4,20 +4,26 @@
 #
 #
 #
+
+set -x
+set -e
+set -u
+
 # main archive path (target)
 ARCHIVE='/srv/launchpad.net/ubuntu-archive'
-#ARCHIVE='/tmp/ubuntu-archive'
 
 # auxiliary archive where the contents will be generated (source)
 CONTENTARCHIVE='/srv/launchpad.net/ubuntu-contents'
-#CONTENTARCHIVE='/tmp/ubuntu-contents'
+
+LPPATH='/srv/launchpad.net/codelines/current'
+LPCONTENT="$LPPATH/cronscripts/publishing/gen-contents"
 
 # apt-ftparchive configuration file destination
 APTCONF="apt-contents.conf"
 CONTENTHEADER="Contents.top"
 
 # target distrorelease
-distros='dapper'
+distros='edgy'
 
 # target architectures
 archs='i386 amd64 hppa powerpc ia64 sparc'
@@ -52,9 +58,10 @@ done
 
 if test $GENERATEFILES = "yes" ; then
    echo 'Running apt in your private tree to generate new contents ...'
-   cp $CONTENTHEADER $CONTENTARCHIVE/ubuntu-misc/
-   cp $APTCONF $CONTENTARCHIVE/ubuntu-misc/
-   apt-ftparchive generate $APTCONF
+   cp -a $ARCHIVE/ubuntu-overrides $CONTENTARCHIVE/
+   cp $LPCONTENT/$CONTENTHEADER $CONTENTARCHIVE/ubuntu-misc/
+   cp $LPCONTENT/$APTCONF $CONTENTARCHIVE/ubuntu-misc/
+   apt-ftparchive generate $CONTENTARCHIVE/ubuntu-misc/$APTCONF
 else
    echo "Skipping apt-ftparchive run"
 fi

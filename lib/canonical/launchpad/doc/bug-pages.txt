@@ -31,7 +31,7 @@ comment, of the bug report.
     >>> from zope.component import getView, getUtility
     >>> from canonical.launchpad.interfaces import (
     ...     IBugTaskSet, IBugSet, IDistributionSet, BugTaskSearchParams,
-    ...     IProductSet, ILaunchBag, IOpenLaunchBag)
+    ...     IProductSet, IPersonSet, ILaunchBag, IOpenLaunchBag)
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> launchbag = getUtility(IOpenLaunchBag)
@@ -208,79 +208,6 @@ indentical to the second, we really only display one comment:
 Bug Portlets
 ============
 
-Subscribers Portlet
--------------------
-
-The subscribers portlet has three sections: direct subscribers,
-subscribers from dupes, and other indirect subscribers, like assignees
-and bug contacts.
-
-Call getSubscribersFromDupes() on the view to get a list of people that
-are subscribed to dupes of this bug, but not subscribed to the current
-bug. This is used to populate the "From duplicates" section of the
-portlet.
-
-For example, bug six is a dupe of bug five. Bug five initially has no
-subscribers from dupes.
-
-    >>> request = LaunchpadTestRequest()
-    >>> bugset = getUtility(IBugSet)
-
-    >>> bug_five = bugset.get(5)
-    >>> bug_six = bugset.get(6)
-
-    >>> bug_six.duplicateof == bug_five
-    True
-
-    >>> subscribers_portlet_view = getView(
-    ...     bug_five, "+portlet-subscribers", request)
-
-    >>> subscribers_portlet_view.getSubscribersFromDupes()
-    []
-
-Now, if we explicit subscribe carlos to bug six, bug five sees on
-subscriber from a dupe.
-
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> bug_six.subscribe(getUtility(IPersonSet).getByName("carlos"))
-    <BugSubscription...>
-
-    >>> sorted(subscriber.name
-    ...        for subscriber in
-    ...        subscribers_portlet_view.getSubscribersFromDupes())
-    [u'carlos']
-
-Call getSubscribersAlsoNotified() to get the list of remaining indirect
-bug subscribers.
-
-    >>> sorted(subscriber.name
-    ...        for subscriber in
-    ...        subscribers_portlet_view.getSubscribersAlsoNotified())
-    [u'name12', u'name16']
-
-Explicit subscriptions take precedence over implicit ones. So if Carlos
-subscribes directly to bug #5, he will no longer appear in the
-getSubscribersFromDupes() result.
-
-    >>> bug_five.subscribe(getUtility(IPersonSet).getByName("carlos"))
-    <BugSubscription...>
-
-    >>> sorted(subscriber.name
-    ...        for subscriber in
-    ...        subscribers_portlet_view.getSubscribersFromDupes())
-    []
-
-Likewise, if Sample Person subscribes directly to bug five, he will no
-longer appear in the also notified list.
-
-    >>> bug_five.subscribe(getUtility(IPersonSet).getByName("name12"))
-    <BugSubscription...>
-
-    >>> sorted(subscriber.name
-    ...        for subscriber in
-    ...        subscribers_portlet_view.getSubscribersAlsoNotified())
-    [u'name16']
-
 Duplicates Portlet
 ------------------
 
@@ -291,6 +218,7 @@ the current context, the dupe link will be to the generic
 /bugs/$bug.id redirect link.
 
     >>> bugtaskset = getUtility(IBugTaskSet)
+    >>> bugset = getUtility(IBugSet)
 
 Bug 6 is a duplicate of bug 5, and since both bugs affect Firefox, the
 duplicate link remains in the current context.
