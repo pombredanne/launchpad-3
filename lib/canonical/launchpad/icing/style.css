@@ -201,7 +201,7 @@ hr, #globalheader label {
   float: left;
   width: 45%;
 }
-#applications {
+#applications-footer {
   float: right;
   width: 45%;
 }
@@ -1004,6 +1004,9 @@ body {
 #portlets .portlet {
   width: 200px;
 }
+#singlecolumn {
+  margin: 40px 20px 20px 38px;
+}
 
 /* ====== Content area styles ====== */
 
@@ -1023,6 +1026,37 @@ h1, h2, h3, #maincontent :link { /* On Overview tab or tab-less pages */
   background: none;
   color: #90b51a; /* Darkest color from locationbar_em_bg.gif */
 }
+
+/* -- Front pages -- */
+
+#applications {
+  clear: both;
+  font-size: 1.2em;
+  margin: 2em auto;
+  padding: 1em;
+}
+#applications a {
+  display: block;
+  float: left;
+  margin: 0 auto;
+  text-align: center;
+  width: 16%;
+}
+#applications a img {
+  display: block;
+  margin: 0 auto;
+}
+#central {
+  clear: both;
+  margin: 0 auto;
+  padding: 4em 2em;
+  text-align: center;
+}
+div.bordered {
+  padding: 2em 4em;
+}
+
+/* -- Other pages -- */
 
 img.mugshot {
   float: right;
