@@ -512,6 +512,9 @@ class LaunchpadZopelessLayer(
     def setUp(cls):
         # Make a TestMailBox available
         # This is registered via ZCML in the LaunchpadFunctionalLayer
+        # XXX flacoste 2006/10/25 This should be configured from ZCML
+        # but execute_zcml_for_scripts() doesn't cannot support a different
+        # testing configuration (bug #68189).
         getGlobalSiteManager().provideUtility(IMailBox, TestMailBox())
 
     @classmethod
