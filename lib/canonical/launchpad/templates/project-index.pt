@@ -87,6 +87,9 @@
               </tal:milestone>
             </div>
           </div>
+          <ul tal:condition="context/required:launchpad.Edit">
+            <li><a href="+newproduct">Register another product</a></li>
+          </ul>
         </div>
         <div class="demo two column section">
           <h2>Top contributors</h2>

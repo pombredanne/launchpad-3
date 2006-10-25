@@ -3,7 +3,10 @@ Lastly, we should be able to set the translation group on a project. We'll
 use the Gnome project as an example. First make sure we can see the Gnome
 project page and that it has no translation group assigned.
 
-  >>> print http(r"""
+XXX 20061025 mpt: this test is disabled pending a decision from Mark on whether
+the project page should mention the project's translation group.
+
+  XXX print http(r"""
   ... GET /projects/gnome/ HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
@@ -82,7 +85,10 @@ permissions.
 And make sure these changes are now reflected in the Gnome project page in
 the relevant portlet.
 
-  >>> print http(r"""
+XXX 20061025 mpt: this test is disabled pending a decision from Mark on whether
+the project page should mention the project's translation group.
+
+  XXX print http(r"""
   ... GET /projects/gnome HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)

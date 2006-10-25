@@ -40,9 +40,13 @@
   ...
 
 
+
   Here we see the new owner: Mark Shuttleworth
 
-  >>> print http(r"""
+XXX 20061025 mpt: This test is disabled pending a decision from Mark on whether
+OneZeroProjectPage should include the project owner.
+
+  XXX print http(r"""
   ... GET /projects/mozilla/ HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... """)
