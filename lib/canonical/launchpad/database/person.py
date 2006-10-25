@@ -908,8 +908,11 @@ class Person(SQLBase):
         # comparison oddity
         assert email.person.id == self.id, 'Wrong person! %r, %r' % (
             email.person, self)
-        assert self.preferredemail != email, 'Wrong prefemail! %r, %r' % (
-            self.preferredemail, email)
+
+        # This email is already validated and is this person's preferred
+        # email, so we have nothing to do.
+        if self.preferredemail == email:
+            return
 
         if self.preferredemail is None:
             # This branch will be executed only in the first time a person
