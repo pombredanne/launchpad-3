@@ -3,8 +3,9 @@ SET client_min_messages=ERROR;
 -- Change the POExport view to stop using POFile.pluralforms field
 
 DROP VIEW POExport;
+
 CREATE OR REPLACE VIEW POExport AS
-    SELECT ((((((COALESCE((potmsgset.id)::text, 'X'::text) || '.'::text) ||
+SELECT ((((((COALESCE((potmsgset.id)::text, 'X'::text) || '.'::text) ||
     COALESCE((pomsgset.id)::text, 'X'::text)) || '.'::text) ||
     COALESCE((pomsgidsighting.id)::text, 'X'::text)) || '.'::text) ||
     COALESCE((poselection.id)::text, 'X'::text)) AS id,
@@ -40,19 +41,20 @@ CREATE OR REPLACE VIEW POExport AS
     pomsgid.msgid,
     potranslation.translation
 FROM
-    pomsgid
-        JOIN pomsgidsighting ON pomsgid.id = pomsgidsighting.pomsgid
-        JOIN potmsgset ON potmsgset.id = pomsgidsighting.potmsgset
-        JOIN potemplate ON potemplate.id = potmsgset.potemplate
-        JOIN potemplatename ON potemplatename.id = potemplate.potemplatename
-        JOIN pofile ON potemplate.id = pofile.potemplate
-        LEFT JOIN pomsgset ON
-            (potmsgset.id = pomsgset.potmsgset) AND
-            (pomsgset.pofile = pofile.id)
-        LEFT JOIN poselection ON pomsgset.id = poselection.pomsgset
-        LEFT JOIN posubmission ON posubmission.id = poselection.activesubmission
-        LEFT JOIN potranslation ON potranslation.id = posubmission.potranslation;
+    pomsgid, pomsgidsighting, potmsgset, potemplate, potemplatename, pofile,
+    pomsgset, poselection, posubmission, potranslation
+WHERE
+    pomsgid.id = pomsgidsighting.pomsgid
+    AND potmsgset.id = pomsgidsighting.potmsgset
+    AND potemplate.id = potmsgset.potemplate
+    AND potemplatename.id = potemplate.potemplatename
+    AND potemplate.id = pofile.potemplate
+    AND potmsgset.id = pomsgset.potmsgset
+    AND pomsgset.pofile = pofile.id
+    AND pomsgset.id = poselection.pomsgset
+    AND posubmission.id = poselection.activesubmission
+    AND potranslation.id = posubmission.potranslation;
 
 ALTER TABLE POFile DROP COLUMN pluralforms;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (67, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (67, 27, 0);
