@@ -24,18 +24,19 @@
         tal:content="context/title">Bar doesn't work</h1>
 
     <div metal:fill-slot="extra_info"
-         tal:define="answer view/getAnswerMessage">
+         tal:define="answer view/getAnswerMessage;
+                     answerDisplayView nocall:answer/@@+display">
 
       <p class="documentDescription">To confirm that the following answer
         solved your request, click the 'This Solved my Problem' button. You
         can enter comments along your confirmation.
       </p>
 
-      <input type="hidden" name="answer_id" value=""
-        tal:attributes="value answer/id" />
+      <input
+        tal:replace="structure answerDisplayView/renderAnswerIdFormElement" />
 
       <div class="boardComment"
-           tal:replace="structure answer/@@+display/renderWithoutConfirmButton" />
+           tal:replace="structure answerDisplayView/renderWithoutConfirmButton" />
     </div>
 
     <div class="actions" metal:fill-slot="buttons">

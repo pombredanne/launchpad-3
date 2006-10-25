@@ -24,8 +24,7 @@
     <form action=""
           method="POST"
           tal:attributes="action request/URL">
-      <input type="hidden" name="answer_id" value="id"
-              tal:attributes="value context/id" />
+      <input tal:replace="structure view/renderAnswerIdFormElement" />
       <input type="hidden" name="field.message" value="" />
       <input type="submit"
               name="field.actions.confirm"

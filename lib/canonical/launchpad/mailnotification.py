@@ -1048,8 +1048,8 @@ class TicketModifiedDefaultNotification(TicketNotification):
             if body:
                 body += '\n\n'
             body += self.getNewMessageText()
-            new_message_id = self.new_message.id
-            replacements['new_message_id'] = new_message_id
+            replacements['new_message_id'] = list(
+                self.ticket.messages).index(self.new_message)
 
         replacements['body'] = body
 

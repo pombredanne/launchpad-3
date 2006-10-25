@@ -419,17 +419,13 @@ class TicketWorkflowView(LaunchpadFormView):
         # either a programming error or an invalid handcrafted URL
         msgid = self.request.form.get('answer_id')
         try:
-            msgid = int(msgid)
+            data['answer']= self.context.messages[int(msgid)]
         except TypeError:
             raise UnexpectedFormData('missing answer_id')
         except ValueError:
             raise UnexpectedFormData('invalid answer_id: %s' % msgid)
-
-        for message in self.context.messages:
-            if msgid == message.id:
-                data['answer'] = message
-                return
-        raise UnexpectedFormData("unknown answer: %s" % msgid)
+        except IndexError:
+            raise UnexpectedFormData("unknown answer: %s" % msgid)
 
     def canConfirm(self, action):
         """Return whether the confirm action should be displayed."""
@@ -507,6 +503,11 @@ class TicketMessageDisplayView(LaunchpadView):
         return (self.context == self.ticket.answer and
                 self.context.action in [
                     TicketAction.ANSWER, TicketAction.CONFIRM])
+
+    def renderAnswerIdFormElement(self):
+        """Return the hidden form element to refer to that message."""
+        return '<input type="hidden" name="answer_id" value="%d" />' % list(
+            self.context.ticket.messages).index(self.context)
 
     def getBodyCSSClass(self):
         """Return the CSS class to use for this message's body."""

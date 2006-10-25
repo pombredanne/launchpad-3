@@ -193,7 +193,7 @@ move to the 'SOLVED' state. Note that the UI doesn't enable the user to
 enter a confirmation message at that stage.
 
     >>> workflow_harness.submit(
-    ...     'confirm', {'answer_id': firefox_ticket.messages[-1].id,
+    ...     'confirm', {'answer_id': firefox_ticket.messages.count()-1,
     ...                 'field.message': ''})
     >>> for notification in workflow_harness.request.response.notifications:
     ...     print notification.message
