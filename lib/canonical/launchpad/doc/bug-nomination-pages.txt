@@ -122,7 +122,7 @@ nominations.
     >>> ubuntu_hoary = ubuntu.getRelease("hoary")
     >>> hoary_nomination = bug_one.getNominationFor(ubuntu_hoary)
 
-A Proposed nomination shows as Proposed, including an approve/decline
+A Proposed nomination shows as "Nominated", including an approve/decline
 buttons for a user with release management privileges.
 
     >>> login("foo.bar@canonical.com")
@@ -205,7 +205,7 @@ launchpad.Driver permission on the nomination.
     ...             nomination.status.title)
     >>> print_nominations(bug_one.getNominations(ubuntu))
     Ubuntu Hoary, Declined
-    Ubuntu Warty, Proposed
+    Ubuntu Warty, Nominated
 
 (Process the nominations.)
 
@@ -217,7 +217,7 @@ bugtask has been added.
     >>> print_nominations(bug_one.getNominations(ubuntu))
     Ubuntu Grumpy, Approved
     Ubuntu Hoary, Declined
-    Ubuntu Warty, Proposed
+    Ubuntu Warty, Nominated
 
     >>> for bugtask in bug_one.bugtasks:
     ...     print bugtask.targetname

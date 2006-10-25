@@ -29,6 +29,8 @@ from canonical.launchpad.fields import (
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
+from canonical.launchpad.interfaces.tickettarget import (
+    TICKET_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.validation import (
     valid_emblem, valid_hackergotchi, valid_unregistered_email)
 
@@ -263,14 +265,6 @@ class IPerson(IHasSpecifications):
         "feedback, sorted newest first.")
     subscribed_specs = Attribute(
         "Specifications this person has subscribed to, sorted newest first.")
-    tickets = Attribute(
-        "Any support requests related to this person. They might be created, "
-        "or assigned, or answered by, or subscribed to by this person.")
-    assigned_tickets = Attribute("Tickets assigned to this person.")
-    created_tickets = Attribute("Tickets created by this person.")
-    answered_tickets = Attribute("Tickets answered by this person.")
-    subscribed_tickets = Attribute(
-        "Tickets to which this person subscribes.")
     teamowner = Choice(title=_('Team Owner'), required=False, readonly=False,
                        vocabulary='ValidTeamOwner')
     teamownerID = Int(title=_("The Team Owner's ID or None"), required=False,
@@ -279,7 +273,7 @@ class IPerson(IHasSpecifications):
                            readonly=False)
 
     preferredemail = TextLine(
-        title=_("Preferred Email Address"), 
+        title=_("Preferred Email Address"),
         description=_("The preferred email address for this person. The one "
                       "we'll use to communicate with them."),
         readonly=True)
@@ -397,7 +391,7 @@ class IPerson(IHasSpecifications):
         """Return all requests made by this person that were sent to the
         shipping company already.
 
-        This only includes requests for CDs of 
+        This only includes requests for CDs of
         ShipItConstants.current_distrorelease.
         """
 
@@ -423,7 +417,7 @@ class IPerson(IHasSpecifications):
         """
 
     def latestUploadedButNotMaintainedPackages():
-        """Return SourcePackageReleases created by this person but 
+        """Return SourcePackageReleases created by this person but
         not maintained by him.
 
         This method will only include the latest source package release
@@ -435,15 +429,13 @@ class IPerson(IHasSpecifications):
 
         If this person doesn't have a preferred email, <email> will be set as
         this person's preferred one. Otherwise it'll be set as VALIDATED and
-        this person will keep its old preferred email. This is why this method
-        can't be called with person's preferred email as argument.
+        this person will keep their old preferred email.
 
         This method is meant to be the only one to change the status of an
         email address, but as we all know the real world is far from ideal and
         we have to deal with this in one more place, which is the case when
         people explicitly want to change their preferred email address. On
-        that case, though, all we have to do is assign the new preferred email
-        to person.preferredemail.
+        that case, though, all we have to do is use person.setPreferredEmail().
         """
 
     def hasMembershipEntryFor(team):
@@ -559,6 +551,27 @@ class IPerson(IHasSpecifications):
         :language: An object providing ILanguage.
 
         If the given language is not present, nothing  will happen.
+        """
+
+    def searchTickets(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
+                      participation=None, sort=None):
+        """Search the person's tickets.
+
+        :search_text: A string that is matched against the ticket
+        title and description. If None, the search_text is not included as
+        a filter criteria.
+
+        :status: A sequence of TicketStatus Items. If None or an empty
+        sequence, the status is not included as a filter criteria.
+
+        :participation: A list of TicketParticipation that defines the set
+        of relationship to tickets that will be searched. If None or an empty
+        sequence, all relationships are considered.
+
+        :sort:  An attribute of TicketSort. If None, a default value is used.
+        When there is a search_text value, the default is to sort by RELEVANCY,
+        otherwise results are sorted NEWEST_FIRST.
+
         """
 
 

@@ -40,6 +40,7 @@ from canonical.launchpad.database.bugtask import (
     BugTask, BugTaskSet, bugtask_sort_key, get_bug_privacy_filter)
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugsubscription import BugSubscription
+from canonical.launchpad.database.person import Person
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent)
 from canonical.launchpad.webapp.snapshot import Snapshot
@@ -232,31 +233,64 @@ class Bug(SQLBase):
             return False
 
         bs = BugSubscription.selectBy(bug=self, person=person)
-        return bool(bs.count())
+        return bool(bs)
 
     def isSubscribedToDupes(self, person):
         """See canonical.launchpad.interfaces.IBug."""
-        for dupe in self.duplicates:
-            if dupe.isSubscribed(person):
-                return True
-
-        return False
+        return bool(
+            BugSubscription.select("""
+                bug IN (SELECT id FROM Bug WHERE duplicateof = %d) AND
+                person = %d""" % (self.id, person.id)))
 
     def getDirectSubscribers(self):
         """See canonical.launchpad.interfaces.IBug."""
-        return [sub.person for sub in self.subscriptions]
+        return list(
+            Person.select("""
+                Person.id = BugSubscription.person AND
+                BugSubscription.bug = %d""" % self.id,
+                orderBy="displayname", clauseTables=["BugSubscription"]))
 
     def getIndirectSubscribers(self):
         """See canonical.launchpad.interfaces.IBug."""
+        # "Also notified" and duplicate subscribers are mutually
+        # exclusive, so return both lists.
+        indirect_subscribers = (
+            self.getAlsoNotifiedSubscribers() +
+            self.getSubscribersFromDuplicates())
+        
+        return sorted(
+            indirect_subscribers, key=operator.attrgetter("displayname"))
+
+    def getSubscribersFromDuplicates(self):
+        """See IBug."""
         if self.private:
             return []
 
-        indirect_subscribers = set()
+        dupe_subscribers = set(
+            Person.select("""
+                Person.id = BugSubscription.person AND
+                BugSubscription.bug = Bug.id AND
+                Bug.duplicateof = %d""" % self.id,
+                clauseTables=["Bug", "BugSubscription"]))
+            
+        # Direct and "also notified" subscribers take precedence over
+        # subscribers from dupes
+        dupe_subscribers -= set(self.getDirectSubscribers())
+        dupe_subscribers -= set(self.getAlsoNotifiedSubscribers())
+
+        return sorted(dupe_subscribers, key=operator.attrgetter("displayname"))
+        
+    def getAlsoNotifiedSubscribers(self):
+        """See IBug."""
+        if self.private:
+            return []
+
+        also_notified_subscribers = set()
 
         for bugtask in self.bugtasks:
             # Assignees are indirect subscribers.
             if bugtask.assignee:
-                indirect_subscribers.add(bugtask.assignee)
+                also_notified_subscribers.add(bugtask.assignee)
 
             # Bug contacts are indirect subscribers.
             if (IDistroBugTask.providedBy(bugtask) or
@@ -267,12 +301,12 @@ class Bug(SQLBase):
                     distribution = bugtask.distrorelease.distribution
 
                 if distribution.bugcontact:
-                    indirect_subscribers.add(distribution.bugcontact)
+                    also_notified_subscribers.add(distribution.bugcontact)
 
                 if bugtask.sourcepackagename:
                     sourcepackage = distribution.getSourcePackage(
                         bugtask.sourcepackagename)
-                    indirect_subscribers.update(
+                    also_notified_subscribers.update(
                         pbc.bugcontact for pbc in sourcepackage.bugcontacts)
             else:
                 if IUpstreamBugTask.providedBy(bugtask):
@@ -281,23 +315,16 @@ class Bug(SQLBase):
                     assert IProductSeriesBugTask.providedBy(bugtask)
                     product = bugtask.productseries.product
                 if product.bugcontact:
-                    indirect_subscribers.add(product.bugcontact)
+                    also_notified_subscribers.add(product.bugcontact)
                 else:
-                    indirect_subscribers.add(product.owner)
-
-        # Indirectly subscribe *only* direct subscribers from dupes, so they
-        # later unsubscribe from the dupe target by unsubscribing from the
-        # duplicate(s) that caused them to be indirectly subscribed to this
-        # bug. This wouldn't be possible for indirect subscribers, because
-        # indirect subscribers cannot unsubscribe from bugs.
-        for dupe in self.duplicates:
-            indirect_subscribers.update(dupe.getDirectSubscribers())
+                    also_notified_subscribers.add(product.owner)
 
         # Direct subscriptions always take precedence over indirect
         # subscriptions.
         direct_subscribers = set(self.getDirectSubscribers())
-        return sorted(indirect_subscribers.difference(direct_subscribers),
-                      key=operator.attrgetter('id'))
+        return sorted(
+            (also_notified_subscribers - direct_subscribers),
+            key=operator.attrgetter('displayname'))
 
     def notificationRecipientAddresses(self):
         """See canonical.launchpad.interfaces.IBug."""
