@@ -28,10 +28,8 @@ def update_bug_tracker(bug_tracker, log):
                     number_of_watches, bug_tracker.baseurl))
             try:
                 remotesystem.updateBugWatches(bug_watches_to_update)
-            except externalbugtracker.BugTrackerConnectError:
+            except externalbugtracker.BugWatchUpdateError:
                 log.exception(
-                    "Got error trying to contact %s", bug_tracker.name)
-            except externalbugtracker.UnsupportedBugTrackerVersion, error:
-                log.warning(str(error))
+                    "Failed to update watches on %s", bug_tracker.name)
         else:
             log.info("No watches to update on %s" % bug_tracker.baseurl)
