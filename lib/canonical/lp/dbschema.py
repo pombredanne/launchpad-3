@@ -90,6 +90,7 @@ __all__ = (
 'SSHKeyType',
 'TextDirection',
 'TicketAction',
+'TicketParticipation',
 'TicketPriority',
 'TicketSort',
 'TicketStatus',
@@ -1665,6 +1666,45 @@ class SprintSpecificationStatus(DBSchema):
         This spec has been submitted for consideration by the meeting
         organisers. It has not yet been accepted or declined for the
         agenda.
+        """)
+
+
+# Enumeration covered by bug 66633:
+#   Need way to define enumerations outside of dbschema
+class TicketParticipation(DBSchema):
+    """The different ways a person can be involved in a ticket.
+
+    This enumeration is part of the ITicketActor.searchTickets() API.
+    """
+
+    OWNER = Item(10, """
+        Owner
+
+        The person created the ticket.
+        """)
+
+    SUBSCRIBER = Item(15, """
+        Subscriber
+
+        The person subscribed to the ticket.
+        """)
+
+    ASSIGNEE = Item(20, """
+        Assignee
+
+        The person is assigned to the ticket.
+        """)
+
+    COMMENTER = Item(25, """
+        Commenter
+
+        The person commented on the ticket.
+        """)
+
+    ANSWERER = Item(30, """
+        Answerer
+
+        The person answered the ticket.
         """)
 
 
@@ -3511,6 +3551,12 @@ class ShipItDistroRelease(DBSchema):
         The Dapper Drake lont-term-support release.
         """)
 
+    EDGY = Item(3, """
+        6.10 (Edgy Eft)
+
+        The Edgy Eft release.
+        """)
+
 
 class TextDirection(DBSchema):
     """The base text direction for a language."""
@@ -3561,7 +3607,7 @@ class PersonCreationRationale(DBSchema):
 
     POFILEIMPORT = Item(4, """
         This person was mentioned in a POFile imported into Rosetta.
-        
+
         When importing POFiles into Rosetta, we need to give credit for the
         translations on that POFile to its last translator, which may not
         exist in Launchpad, so we'd need to create it.

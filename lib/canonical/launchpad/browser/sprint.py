@@ -244,8 +244,6 @@ class SprintTopicSetView(HasSpecificationsView, LaunchpadView):
     It is unusual because we want to display multiple objects with
     checkboxes, then process the selected items, which is not the usual
     add/edit metaphor."""
-    # XXX: SteveAlexander, 2006-03-06, this class and its
-    #      associated templates are not tested.
 
     def initialize(self):
         self.status_message = None
@@ -304,7 +302,7 @@ class SprintTopicSetView(HasSpecificationsView, LaunchpadView):
             action_fn = self.context.acceptSpecificationLinks
         else:
             action_fn = self.context.declineSpecificationLinks
-        leftover = action_fn(selected_specs)
+        leftover = action_fn(selected_specs, self.user)
 
         # Status message like: "Accepted 27 specification(s)."
         self.status_message = '%s %d specification(s).' % (

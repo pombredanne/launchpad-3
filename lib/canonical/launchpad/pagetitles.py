@@ -924,9 +924,6 @@ ticket_unlinkbugs = ContextId('Remove bug links from request #%s')
 
 ticket_subscription = ContextId('Subscription to request #%s')
 
-def tickettarget_tickets(context, view):
-    return view.title
-
 standardshipitrequests_index = 'Standard ShipIt options'
 
 standardshipitrequest_new = 'Create a new standard option'
@@ -967,7 +964,8 @@ template_index = '%EXAMPLE TITLE'
 
 template_new = 'EXAMPLE NEW TITLE'
 
-ticket_listing = ContextDisplayName("Support requests for %s")
+def ticket_listing(context, view):
+    return view.pagetitle
 
 tickettarget_manage_supportcontacts = ContextTitle("Support contact for %s")
 

@@ -9,8 +9,8 @@ facet and finally, use the 'Request support' action:
 
     >>> browser.open('http://launchpad.dev/distros/ubuntu')
     >>> browser.getLink('Support').click()
-    >>> browser.title
-    'Support requests for Ubuntu'
+    >>> print browser.title
+    Support requests for Ubuntu
 
 Making a new support requests requires logging in:
 
@@ -73,6 +73,22 @@ displayed.
     ...<a...href=".../distros/ubuntu/+ticket/8"...>Installation of Java
     Runtime Environment for Mozilla</a>...
     </table>
+
+The beginning of the description appears in a small pop-up when the mouse is
+left over the ticket's title.
+
+    >>> import re
+    >>> ticket_link = soup.first('a', text=re.compile('Installation of Java'))
+    >>> print ticket_link.findParent('tr')['title']
+    <BLANKLINE>
+    When opening http://www.gotomypc.com/ with Mozilla, a java run time
+    ennvironment plugin is requested.
+    <BLANKLINE>
+    1) The plugin finder service indicates that JRE is available
+    2) next screen indicates JRE &quot;not available&quot; and requests
+    &quot;manual install&quot;
+    3) clicking on &quot;manual install&quot; open java web site.......
+
 
 Creating a New Ticket
 ---------------------
