@@ -483,7 +483,7 @@ def export_rows(rows, pofile_output, force_utf8=False):
                     # information from our database instead of use the one
                     # that we got from upstream. We check this information so
                     # we are sure it's valid.
-                    header['Plural-Forms'] = 'nplurals=%d; plural=(%s)' % (
+                    header['Plural-Forms'] = 'nplurals=%d; plural=(%s);' % (
                         row.pofile.language.pluralforms,
                         row.pofile.language.pluralexpression)
             elif 'Plural-Forms' in header:
