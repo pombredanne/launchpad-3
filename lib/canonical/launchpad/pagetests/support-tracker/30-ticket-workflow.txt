@@ -357,7 +357,7 @@ message is also shown:
     'http://.../firefox/+ticket/6'
     >>> soup = BeautifulSoup(support_browser.contents)
     >>> print soup.first('div', 'error message').renderContents()
-    Only the support request owner can confirm an answer.
+    Only the person who opened the support request can confirm an answer.
 
 On the confirmation page, the user can see the answer that he is
 confirming.

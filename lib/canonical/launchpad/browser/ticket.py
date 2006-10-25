@@ -468,7 +468,8 @@ class TicketConfirmAnswerView(TicketWorkflowView):
         # This page is only available to the owner
         if self.user != self.context.owner:
             self.request.response.addErrorNotification(_(
-                "Only the support request owner can confirm an answer."))
+                "Only the person who opened the support request can confirm "
+                "an answer."))
             self.request.response.redirect(canonical_url(self.context))
             return
 
