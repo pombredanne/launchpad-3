@@ -10,7 +10,6 @@ __all__ = [
     'ProductFacets',
     'ProductOverviewMenu',
     'ProductBugsMenu',
-    'ProductSupportMenu',
     'ProductSpecificationsMenu',
     'ProductBountiesMenu',
     'ProductBranchesMenu',
@@ -50,6 +49,8 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.productseries import get_series_branch_error
+from canonical.launchpad.browser.tickettarget import (
+    TicketTargetFacetMixin, TicketTargetTraversalMixin)
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
@@ -62,7 +63,8 @@ from canonical.widgets.textwidgets import StrippedTextWidget
 
 
 class ProductNavigation(
-    Navigation, BugTargetTraversalMixin, CalendarTraversalMixin):
+    Navigation, BugTargetTraversalMixin, CalendarTraversalMixin,
+    TicketTargetTraversalMixin):
 
     usedfor = IProduct
 
@@ -84,15 +86,6 @@ class ProductNavigation(
     def traverse_milestone(self, name):
         return self.context.getMilestone(name)
 
-    @stepthrough('+ticket')
-    def traverse_ticket(self, name):
-        # tickets should be ints
-        try:
-            ticket_id = int(name)
-        except ValueError:
-            raise NotFoundError
-        return self.context.getTicket(ticket_id)
-
     @stepthrough('+release')
     def traverse_release(self, name):
         return self.context.getRelease(name)
@@ -109,7 +102,7 @@ class ProductSetNavigation(GetitemNavigation):
         return 'Products'
 
 
-class ProductFacets(StandardLaunchpadFacets):
+class ProductFacets(TicketTargetFacetMixin, StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IProduct."""
 
     usedfor = IProduct
@@ -129,13 +122,6 @@ class ProductFacets(StandardLaunchpadFacets):
         target = '+bugs'
         text = 'Bugs'
         summary = 'Bugs reported about %s' % self.context.displayname
-        return Link(target, text, summary)
-
-    def support(self):
-        target = '+tickets'
-        text = 'Support'
-        summary = (
-            'Technical support requests for %s' % self.context.displayname)
         return Link(target, text, summary)
 
     def bounties(self):
@@ -271,21 +257,6 @@ class ProductBranchesMenu(ApplicationMenu):
         text = 'Listing View'
         summary = 'Show detailed branch listing'
         return Link('+branchlisting', text, summary, icon='branch')
-
-
-class ProductSupportMenu(ApplicationMenu):
-
-    usedfor = IProduct
-    facet = 'support'
-    links = ['new', 'support_contact']
-
-    def new(self):
-        text = 'Request Support'
-        return Link('+addticket', text, icon='add')
-
-    def support_contact(self):
-        text = 'Support Contact'
-        return Link('+support-contact', text, icon='edit')
 
 
 class ProductSpecificationsMenu(ApplicationMenu):
@@ -574,7 +545,7 @@ class ProductAddSeriesView(LaunchpadFormView):
         return canonical_url(self.series)
 
 
-class ProductRdfView(object):
+class ProductRdfView:
     """A view that sets its mime-type to application/rdf+xml"""
 
     template = ViewPageTemplateFile(
@@ -599,6 +570,49 @@ class ProductRdfView(object):
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
+
+
+class ProductDynMenu(LaunchpadView):
+
+    def render(self):
+        L = []
+        L.append('<ul class="menu"')
+        L.append('    lpm:mid="/products/%s/+menudata"' % self.context.name)
+        L.append('    lpm:midroot="/products/%s/$$/+menudata"'
+            % self.context.name)
+        L.append('>')
+
+        producturl = '/products/%s' % self.context.name
+
+        for link, name in [
+            ('+branches', 'Branches'),
+            ('+sprints', 'Meetings'),
+            ('+milestones', 'Milestones'),
+            ('+series', 'Product series')
+            ]:
+            L.append('<li class="item container" lpm:midpart="%s">' % link)
+            L.append('<a href="%s/%s">%s</a>' % (producturl, link, name))
+            L.append('</li>')
+        L.append('</ul>')
+        return u'\n'.join(L)
+
+class ProductSetDynMenu(LaunchpadView):
+
+    def render(self):
+        L = []
+        L.append('<ul class="menu"')
+        L.append('    lpm:mid="/products/+menudata"')
+        L.append('>')
+        for product in self.context:
+            # given in full because there was an error in the JS when
+            # i use midpart / midbase.
+            L.append('<li class="item container" lpm:mid="/products/%s/+menudata">' % product.name)
+            L.append('<a href="/products/%s">' % product.name)
+            L.append(product.name)
+            L.append('</a>')
+            L.append('</li>')
+        L.append('</ul>')
+        return u'\n'.join(L)
 
 
 class ProductSetView(LaunchpadView):
