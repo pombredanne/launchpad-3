@@ -240,7 +240,4 @@
   </body>
 </html>
 </metal:page>
-<!-- 1-0 inprogress
-
-CSS needs fixing to follow the proper markup.
--->
+<!-- 1-0 inprogress Help panel wrong in IE/Win; portlets wrong in IE/Mac -->
