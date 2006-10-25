@@ -142,7 +142,7 @@ class SFExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
         'http://sf.net/tracker/index.php'
         '?func=detail&aid=1568562&group_id=84122&atid=575154')
     base_url = 'http://sourceforge.net/'
-    bug_id = '575154'
+    bug_id = '1568562'
 
     def test_unregistered_tracker_url(self):
         # The SourceForge tracker is always registered, so this test
