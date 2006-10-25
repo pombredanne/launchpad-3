@@ -37,7 +37,11 @@ class TicketReopening(SQLBase):
     dateanswered = UtcDateTimeCol(notNull=False, default=None)
     priorstate = EnumCol(schema=TicketStatus, notNull=True)
 
-
+# XXX flacoste 2006/10/25 The TicketReopening is probably not that useful
+# anymore since the ticket history is nesarly completely tracked in the
+# ticket message trails. (Only missing information is the previous recorded
+# answer.) If we decide to still keep that class, this subscriber should
+# probably be moved outside of database code.
 def create_ticketreopening(ticket, event):
     """Event susbcriber that creates a TicketReopening whenever a ticket
     with an answer changes back to the OPEN state.
@@ -51,8 +55,10 @@ def create_ticketreopening(ticket, event):
         return
     assert ticket.answerer is None, "Open ticket shouldn't have an answerer."
 
-    # The last message should be the cause of the reopening.
+    # The last added message is the cause of the reopening.
     reopen_msg = ticket.messages[-1]
+
+    # Make sure that the last message is really the last added one.
     assert [reopen_msg] == (
         list(set(ticket.messages).difference(old_ticket.messages))), (
             "Reopening message isn't the last one.")

@@ -157,9 +157,12 @@ class Ticket(SQLBase, BugLinkTargetMixin):
             raise InvalidTicketStateError(
                 "New status is same as the old one.")
 
+        # If the previous state recorded an answer, clear those
+        # information as well.
         self.answerer = None
         self.answer = None
         self.dateanswered = None
+
         return self._newMessage(
             user, comment, datecreated=datecreated,
             action=TicketAction.SETSTATUS, new_status=new_status,
