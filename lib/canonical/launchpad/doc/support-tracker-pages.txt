@@ -139,7 +139,7 @@ Workflow actions like these will send out notifications to subscribers.
 (Complete notifications testing will be found in
 support-tracker-notifications.txt)
 
-    >>> len(pop_notifications)
+    >>> len(pop_notifications())
     1
 
 The available actions for that other user are still between giving an
