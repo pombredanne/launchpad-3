@@ -205,7 +205,31 @@ class BugTask(SQLBase, BugTaskMixin):
         self._setValueAndUpdateConjoinedBugTask("milestone", value)
 
     def _set_sourcepackagename(self, value):
+        old_sourcepackagename = self.sourcepackagename
         self._setValueAndUpdateConjoinedBugTask("sourcepackagename", value)
+        self._syncSourcePackages(old_sourcepackagename)
+
+    def _syncSourcePackages(self, prev_sourcepackagename):
+        """Synchronize changes to source packages with other distrotasks.
+
+        If one distroreleasetask's source package is changed, all the
+        other distroreleasetasks with the same distribution and source
+        package has to be changed, as well as the corresponding
+        distrotask.
+        """
+        if self.distrorelease is not None:
+            distribution = self.distrorelease.distribution
+        else:
+            distribution = self.distribution
+        if distribution is not None:
+            for bugtask in self.related_tasks:
+                if bugtask.distrorelease:
+                    related_distribution = bugtask.distrorelease.distribution
+                else:
+                    related_distribution = bugtask.distribution
+                if (related_distribution == distribution and
+                    bugtask.sourcepackagename == prev_sourcepackagename):
+                    bugtask.sourcepackagename = self.sourcepackagename
 
     def _set_date_assigned(self, value):
         self._setValueAndUpdateConjoinedBugTask("date_assigned", value)
@@ -816,7 +840,7 @@ class BugTaskSet:
                 if nomination.isApproved()]
             for nomination in accepted_nominations:
                 accepted_release_task = BugTask(
-                    distrorelease=nomination.distrorelease, 
+                    distrorelease=nomination.distrorelease,
                     sourcepackagename=sourcepackagename,
                     **non_target_create_params)
 
