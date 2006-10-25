@@ -37,10 +37,21 @@ class TestBugzilla(Bugzilla):
     bug_id_form_element = 'bug_id'
 
     def __init__(self, baseurl, version=None):
-        """Return a dict with bugs in the form bug_id: (status, resolution)"""
         Bugzilla.__init__(self, baseurl, version=version)
-        self.bugzilla_bugs = {3224: ('RESOLVED', 'FIXED'),
-                              328430: ('UNCONFIRMED', '')}
+        self.bugzilla_bugs = self._getBugsToTest()
+
+    def _getBugsToTest(self):
+        """Return a dict with bugs in the form bug_id: (status, resolution)"""
+        return {3224: ('RESOLVED', 'FIXED'),
+                328430: ('UNCONFIRMED', '')}
+
+    def _readBugItemFile(self):
+        """Reads in the file for an individual bug item.
+
+        This method exists really only to allow us to check that the
+        file is being used. So what?
+        """
+        return read_test_file(self.bug_item_file)
 
     def _getPage(self, page):
         """GET a page.
@@ -76,7 +87,7 @@ class TestBugzilla(Bugzilla):
                     #Unknown bugs aren't included in the resulting xml.
                     continue
                 bug_status, bug_resolution = self.bugzilla_bugs[int(bug_id)]
-                bug_item = read_test_file(self.bug_item_file) % {
+                bug_item = self._readBugItemFile() % {
                     'bug_id': bug_id,
                     'status': bug_status,
                     'resolution': bug_resolution,
@@ -89,7 +100,31 @@ class TestBugzilla(Bugzilla):
         else:
             raise AssertionError('Unknown page: %s' % page)
 
+
+class TestWeirdBugzilla(TestBugzilla):
+    """Test support for a few corner cases in Bugzilla.
+
+        - UTF8 data in the files being parsed.
+        - bz:status instead of bz:bug_status
+    """
+    bug_item_file = 'weird_non_ascii_bug_li_item.xml'
+
+    def _getBugsToTest(self):
+        return {2000: ('ASSIGNED', ''),
+                123543: ('RESOLVED', 'FIXED')}
+
+
+class TestBrokenBugzilla(TestBugzilla):
+    """Test parsing of a Bugzilla which returns broken XML."""
+    bug_item_file = 'broken_bug_li_item.xml'
+
+    def _getBugsToTest(self):
+        return {42: ('ASSIGNED', ''),
+                2000: ('RESOLVED', 'FIXED')}
+
+
 class TestIssuezilla(TestBugzilla):
+    """Test support for Issuezilla, with slightly modified XML."""
     version_file = 'issuezilla_version.xml'
     buglist_file = 'issuezilla_buglist.xml'
     bug_item_file = 'issuezilla_item.xml'
@@ -97,14 +132,13 @@ class TestIssuezilla(TestBugzilla):
     buglist_page = 'xml.cgi'
     bug_id_form_element = 'id'
 
-    def __init__(self, baseurl, version=None):
-        """Return a dict with bugs in the form bug_id: (status, resolution)"""
-        Bugzilla.__init__(self, baseurl, version=version)
-        self.bugzilla_bugs = {2000: ('RESOLVED', 'FIXED'),
-                              123543: ('ASSIGNED', '')}
+    def _getBugsToTest(self):
+        return {2000: ('RESOLVED', 'FIXED'),
+                123543: ('ASSIGNED', '')}
 
 
 class TestOldBugzilla(TestBugzilla):
+    """Test support for older Bugzilla versions."""
     version_file = 'ximian_bugzilla_version.xml'
     buglist_file = 'ximian_buglist.xml'
     bug_item_file = 'ximian_bug_item.xml'
@@ -112,23 +146,7 @@ class TestOldBugzilla(TestBugzilla):
     buglist_page = 'xml.cgi'
     bug_id_form_element = 'id'
 
-    def __init__(self, baseurl, version=None):
-        """Return a dict with bugs in the form bug_id: (status, resolution)"""
-        Bugzilla.__init__(self, baseurl, version=version)
-        self.bugzilla_bugs = {42: ('RESOLVED', 'FIXED'),
-                              123543: ('ASSIGNED', '')}
-
-# XXX: still missing tests
-# Add some utf8 to test bug 61129
-#   'non_ascii_utf8': '\xc3\xa9'
-#'status_tag': 
-#   Alternate status tag name to ensure we match both tag
-#   formats; see comment in Bugzilla._initializeRemoteBugDB
-#   for details.
-#   if status_tag:
-#       status_tag = "status"
-#   else:
-#       status_tag = "bug_status"
-# UnparseableBugData
-
+    def _getBugsToTest(self):
+        return {42: ('RESOLVED', 'FIXED'),
+                123543: ('ASSIGNED', '')}
 

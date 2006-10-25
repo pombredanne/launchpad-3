@@ -357,8 +357,8 @@ class Bugzilla(ExternalBugTracker):
             if not status_nodes:
                 # Older versions of bugzilla used bz:status; this was
                 # later changed to bz:bug_status. For robustness, and
-                # because there is no risk of reading wrong data here,
-                # just try the older format as well.
+                # because there is practically no risk of reading wrong
+                # data here, just try the older format as well.
                 status_nodes = bug_node.getElementsByTagName("bz:status")
             assert len(status_nodes) == 1, ("Couldn't find a status "
                                             "node for bug %s." % bug_id)
