@@ -432,15 +432,13 @@ class IPerson(IHasSpecifications):
 
         If this person doesn't have a preferred email, <email> will be set as
         this person's preferred one. Otherwise it'll be set as VALIDATED and
-        this person will keep its old preferred email. This is why this method
-        can't be called with person's preferred email as argument.
+        this person will keep their old preferred email.
 
         This method is meant to be the only one to change the status of an
         email address, but as we all know the real world is far from ideal and
         we have to deal with this in one more place, which is the case when
         people explicitly want to change their preferred email address. On
-        that case, though, all we have to do is assign the new preferred email
-        to person.preferredemail.
+        that case, though, all we have to do is use person.setPreferredEmail().
         """
 
     def hasMembershipEntryFor(team):
