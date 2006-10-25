@@ -144,13 +144,15 @@ This method also accepts a target argument, for further filtering.
 Nomination Status
 -----------------
 
-A nomination is created with an initial status of "Proposed".
+A nomination is created with an initial status of "Nominated".
+Internally this state is called PROPOSED, but in the UI we display it
+as "Nominated".
 
     >>> ubuntu_breezy_autotest_nomination = bug_one.addNomination(
     ...     target=ubuntu_breezy_autotest, owner=no_privs)
 
     >>> print ubuntu_breezy_autotest_nomination.status.title
-    Proposed
+    Nominated
     >>> ubuntu_breezy_autotest_nomination.isProposed()
     True
     >>> ubuntu_breezy_autotest_nomination.isApproved()
@@ -309,7 +311,7 @@ created.
     >>> ubuntu_breezy_autotest_nomination.date_decided is None
     True
     >>> print ubuntu_breezy_autotest_nomination.status.title
-    Proposed
+    Nominated
 
     >>> ubuntu_breezy_autotest_nomination.decline(no_privs)
 

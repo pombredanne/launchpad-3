@@ -34,7 +34,7 @@ have the launchpad.Driver permission.
 no-priv will, of course, see his nomination.
 
     >>> user_browser.contents
-    '...Proposed...for...Hoary...by...No Privileges Person...'
+    '...Nominated...for...Hoary...by...No Privileges Person...'
 
 But not the approve/decline link, nor any Approve or Decline buttons.
 
