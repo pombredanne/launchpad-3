@@ -43,7 +43,6 @@
       </ul>
     </div>
 
-
     <div id="locationbar">
       <strong>Your location:</strong>
       <ul id="menuroot">
@@ -62,10 +61,16 @@
     </div>
     </tal:nothing>
 
-
     <div id="logincontrol" tal:content="structure context/@@login_status" />
-    <!-- id="menu" should be id="locationbar" -->
     <tal:maintenance replace="structure context/@@+maintenancemessage" />
+    
+    <div id="singlecolumn" tal:condition="columns1|nothing">
+      <metal:heading define-slot="pageheading" />
+      <tal:XXX condition="nothing">20061025 mpt: pageheading deprecated</tal:XXX>
+      <metal:block define-slot="main" />
+    </div>
+    <tal:layout condition="not:columns1|nothing">
+
     <div id="structuralobject"
         tal:define="structuralobject CONTEXTS/lp:structuralobject">
       <tal:if condition="structuralobject">
@@ -198,6 +203,9 @@
         </div>
       </div>
     </div>
+
+    </tal:layout>
+
     <div id="help_panel" class="closed">
       <div class="help1">
         <div class="help2">
@@ -211,7 +219,7 @@
       <div class="bottom">&nbsp;</div>
     </div>
     <div id="globalfooter">
-      <div id="applications">
+      <div id="applications-footer">
         <a href="/malone">Malone</a> |
         <a href="/specs">Blueprint</a> |
         <a href="/rosetta">Rosetta</a> |
@@ -237,7 +245,4 @@
   </body>
 </html>
 </metal:page>
-<!-- 1-0 inprogress
-
-CSS needs fixing to follow the proper markup.
--->
+<!-- 1-0 inprogress Help panel wrong in IE/Win; portlets wrong in IE/Mac -->

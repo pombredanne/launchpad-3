@@ -241,5 +241,11 @@
   template="../templates/launchpad-structuralheader.pt"
   permission="zope.Public"
   />
+<browser:page
+  for="canonical.launchpad.interfaces.ILaunchpadApplication"
+  name="+applications"
+  permission="zope.Public"
+  template="../templates/app-buttons.pt"
+  />
 
 </configure>
