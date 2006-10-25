@@ -37,7 +37,7 @@ def print_subscribers(bug_page, subscriber_portlet_index):
 
 def print_bugs_table(content, table_id):
     """Print the bugs table with the given ID.
-    
+
     The table is assumed to consist of rows of bugs whose first column
     is a bug ID, and whose second column is a bug title.
     """

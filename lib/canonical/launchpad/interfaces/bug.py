@@ -353,7 +353,6 @@ class IBugAddForm(IBug):
             seeing."""))
 
 
-
 class IBugSet(Interface):
     """A set of bugs."""
 

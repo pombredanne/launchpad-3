@@ -6,16 +6,16 @@ The user fills in some keywords, and clicks a button to search existing
 bugs.
 
     >>> user_browser.open("http://launchpad.dev/products/firefox/+filebug")
-    
+
     >>> user_browser.getControl(name="field.title").value = "svg"
     >>> user_browser.getControl("Search for similar bugs").click()
-    
+
 The form is self-posting, so the user is still at +filebug. This makes
 it difficult to bypass the search-for-dupes bit.
 
     >>> print user_browser.url
     http://launchpad.dev/products/firefox/+filebug
-    
+
 After searching, the user is presented with a list of similar bugs and
 a list of most common bugs in the current context.
 
@@ -26,18 +26,18 @@ a list of most common bugs in the current context.
 
     >>> print_bugs_table(user_browser.contents, "most-common-bugs")
     5 Firefox install instructions should be complete
-    
+
 If the user doesn't see their bug already reported, they can proceed to
 file the bug.
 
     >>> user_browser.getControl("I don't see my bug in this list").click()
-    
+
     >>> print user_browser.url
     http://launchpad.dev/products/firefox/+filebug
-    
+
     >>> user_browser.getControl(name="field.title").value = "a brand new bug"
     >>> user_browser.getControl(name="field.comment").value = "test"
     >>> user_browser.getControl("Submit Bug Report").click()
-    
+
     >>> print user_browser.url
     http://launchpad.dev/products/firefox/+bug/...

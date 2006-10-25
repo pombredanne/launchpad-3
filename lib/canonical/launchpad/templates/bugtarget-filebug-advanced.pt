@@ -24,7 +24,7 @@
 
   <p class="error message" tal:condition="view/errors"
     >Please fix the problems below and try again.</p>
-    
+
   <form action="."
         tal:attributes="action request/URL"
         method="post"
