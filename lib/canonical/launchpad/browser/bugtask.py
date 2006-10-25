@@ -747,7 +747,10 @@ class BugTaskEditView(GeneralFormView):
                 # WidgetsError expects a list.
                 raise WidgetsError([
                     "You provided a change comment without changing anything."])
-        distro = bugtask.distribution
+        if bugtask.distrorelease is not None:
+            distro = bugtask.distrorelease.distribution
+        else:
+            distro = bugtask.distribution
         sourcename = bugtask.sourcepackagename
         product = bugtask.product
         if distro is not None and sourcename != data['sourcepackagename']:
