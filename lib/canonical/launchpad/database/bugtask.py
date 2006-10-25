@@ -809,6 +809,8 @@ class BugTaskSet:
             **non_target_create_params)
 
         if distribution:
+            # Create tasks for accepted nominations if this is a source
+            # package addition.
             accepted_nominations = [
                 nomination for nomination in bug.getNominations(distribution)
                 if nomination.isApproved()]
