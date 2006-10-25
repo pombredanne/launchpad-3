@@ -30,8 +30,8 @@ class FakeSQLObjectClass:
 class TestPOFile:
     """Pretend to be a pofile for testing purposes."""
 
-    def __init__(
-        self, language_code='es', pluralforms=2, pluralexpression='n != 1'):
+    def __init__(self, language_code='es', pluralforms=2,
+                 pluralexpression='n != 1'):
         mock_email = FakeSQLObjectClass(
             email='kk@pleasure-dome.com')
         mock_person = FakeSQLObjectClass(
