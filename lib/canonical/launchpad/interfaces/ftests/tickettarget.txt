@@ -107,6 +107,7 @@ fourth one to ANSWERED.
     >>> from canonical.lp.dbschema import TicketStatus
 
     (Need an admin to change to an arbitrary status)
+    >>> login('foo.bar@canonical.com')
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
     >>> message = tickets[-1].setStatus(
     ...     foo_bar, TicketStatus.INVALID, 'Status change.')
@@ -120,6 +121,7 @@ fourth one to ANSWERED.
 And create another one that will also have the word 'new' in its
 description.
 
+    >>> login('test@canonical.com')
     >>> ticket = target.newTicket(sample_person, 'Another ticket',
     ...     'Another new ticket that is actually very new.',
     ...     datecreated=now+timedelta(hours=1))

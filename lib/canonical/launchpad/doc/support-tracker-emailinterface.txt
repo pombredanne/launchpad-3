@@ -111,6 +111,13 @@ possibilities for the user.
     ...     "I've tried installing Ubuntu on a Mac. But the installer never "
     ...     "boots.", datecreated=now.next())
 
+    (Define an helper to change the ticket status easily.)
+    >>> def setTicketStatus(ticket, new_status):
+    ...     login('foo.bar@canonical.com')
+    ...     msg = ticket.setStatus(foo_bar, new_status, 'Status Change',
+    ...                            datecreated=now.next())
+    ...     login('no-priv@canonical.com')
+
 Message From the Request Owner
 ------------------------------
 
@@ -144,10 +151,7 @@ For example, from the Open state:
 And from the Needs information state:
 
     >>> from canonical.lp.dbschema import TicketStatus
-    >>> ticket.setStatus(
-    ...     foo_bar, TicketStatus.NEEDSINFO, 'Status Change',
-    ...     datecreated=now.next())
-    <TicketMessage ...>
+    >>> setTicketStatus(ticket, TicketStatus.NEEDSINFO)
 
     >>> msgid =  send_support_email(
     ...     ticket.id, 'no-priv@canonical.com', 'Re: What model?',
@@ -171,10 +175,7 @@ Answered and Expired
 When the request is in the Answered or Expired states, we assume that
 the email is reopening the request with more information.
 
-    >>> ticket.setStatus(
-    ...     foo_bar, TicketStatus.ANSWERED, 'Status Change',
-    ...     datecreated=now.next())
-    <TicketMessage ...>
+    >>> setTicketStatus(ticket, TicketStatus.ANSWERED)
 
     >>> msgid = send_support_email(
     ...     ticket.id, 'no-priv@canonical.com', 'Re: BootX',
@@ -196,10 +197,7 @@ support this use case yet.
 
 From the Expired state:
 
-    >>> ticket.setStatus(
-    ...     foo_bar, TicketStatus.EXPIRED, 'Status Change',
-    ...     datecreated=now.next())
-    <TicketMessage ...>
+    >>> setTicketStatus(ticket, TicketStatus.EXPIRED)
 
     >>> msgid =  send_support_email(
     ...     ticket.id, 'no-priv@canonical.com', 'Need Help',
@@ -221,10 +219,7 @@ Solved and Invalid
 When the support request is in the Solved or Invalid state, we interpret
 the message as a comment.
 
-    >>> ticket.setStatus(
-    ...     foo_bar, TicketStatus.SOLVED, 'Status Change',
-    ...     datecreated=now.next())
-    <TicketMessage...>
+    >>> setTicketStatus(ticket, TicketStatus.SOLVED)
 
     >>> msgid =  send_support_email(
     ...     ticket.id, 'no-priv@canonical.com', "Thanks",
@@ -242,10 +237,7 @@ assume it was a comment.
 
 And from the Invalid:
 
-    >>> ticket.setStatus(
-    ...     foo_bar, TicketStatus.INVALID, 'Status Change',
-    ...     datecreated=now.next())
-    <TicketMessage ...>
+    >>> setTicketStatus(ticket, TicketStatus.INVALID)
 
     >>> msgid =  send_support_email(
     ...     ticket.id, 'no-priv@canonical.com', 'Come on!',
@@ -272,10 +264,7 @@ confirm that the problem is solved. If it was really a request for more
 information, the user can reply and the resulting state will be fine. So
 it is the safest thing to assume.
 
-    >>> ticket.setStatus(
-    ...     foo_bar, TicketStatus.OPEN, 'Status Change',
-    ...     datecreated=now.next())
-    <TicketMessage ...>
+    >>> setTicketStatus(ticket, TicketStatus.OPEN)
 
     >>> msgid =  send_support_email(
     ...     ticket.id, 'test@canonical.com', 'BootX',
@@ -291,10 +280,7 @@ it is the safest thing to assume.
 
 Needs information example:
 
-    >>> ticket.setStatus(
-    ...     foo_bar, TicketStatus.NEEDSINFO, 'Status Change',
-    ...     datecreated=now.next())
-    <TicketMessage ...>
+    >>> setTicketStatus(ticket, TicketStatus.NEEDSINFO)
 
     >>> msgid =  send_support_email(
     ...     ticket.id, 'test@canonical.com', 'What model?',
@@ -328,10 +314,7 @@ When another user than the owner sends a message to a support request
 in the Solved, Invalid or Expired states, the only possible
 interpretation is that it is a comment.
 
-    >>> ticket.setStatus(
-    ...     foo_bar, TicketStatus.SOLVED, 'Status Change',
-    ...     datecreated=now.next())
-    <TicketMessage ...>
+    >>> setTicketStatus(ticket, TicketStatus.SOLVED)
 
     >>> msgid =  send_support_email(
     ...     ticket.id, 'test@canonical.com', 'RAM',
@@ -343,10 +326,7 @@ interpretation is that it is a comment.
     >>> print message.action.title
     Comment
 
-    >>> ticket.setStatus(
-    ...     foo_bar, TicketStatus.EXPIRED, 'Status Change',
-    ...     datecreated=now.next())
-    <TicketMessage ...>
+    >>> setTicketStatus(ticket, TicketStatus.EXPIRED)
 
     >>> msgid =  send_support_email(
     ...     ticket.id, 'test@canonical.com', 'How weird',
@@ -358,10 +338,7 @@ interpretation is that it is a comment.
     >>> print message.action.title
     Comment
 
-    >>> ticket.setStatus(
-    ...     foo_bar, TicketStatus.INVALID, 'Status Change',
-    ...     datecreated=now.next())
-    <TicketMessage ...>
+    >>> setTicketStatus(ticket, TicketStatus.INVALID)
 
     >>> msgid =  send_support_email(
     ...     ticket.id, 'test@canonical.com', 'Error?',

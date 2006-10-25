@@ -17,17 +17,14 @@ doesn't have access to that feature.
       ...
     LinkNotFoundError...
 
-Even when trying to access the page directly, he will be redirected back
-to the ticket page with a notification message:
+Even when trying to access the page directly, he will get an unauthorized
+error.
 
     >>> browser.open(
     ...     'http://launchpad.dev/products/firefox/+ticket/2/+reject')
-    >>> browser.url
-    '.../+ticket/2'
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> soup = BeautifulSoup(browser.contents)
-    >>> print soup.first('div', 'error message').renderContents()
-    Only support contacts and administrators can reject a request.
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ...
 
 To reject the request, the user clicks on the 'Reject Request' link.
 
@@ -37,6 +34,7 @@ To reject the request, the user clicks on the 'Reject Request' link.
 
 He needs to enter a message explaining the rejection:
 
+    >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(admin_browser.contents)
     >>> print soup.first('div', 'message').renderContents()
     You must provide an explanation message.

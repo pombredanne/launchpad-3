@@ -22,13 +22,17 @@
                     getDirectSubscribers getIndirectSubscribers" />
     <require
         permission="launchpad.AnyPerson"
-        attributes="requestInfo giveInfo giveAnswer confirmAnswer reject
-                    expireTicket reopen setStatus addComment
+        attributes="requestInfo giveInfo giveAnswer confirmAnswer
+                    expireTicket reopen addComment
                     subscribe unsubscribe"
         set_attributes="title description datedue product distribution
                         sourcepackagename " />
     <require
+        permission="launchpad.Moderate"
+        attributes="reject" />
+    <require
         permission="launchpad.Admin"
+        attributes="setStatus"
         set_attributes="priority assignee whiteboard" />
     <!-- IBugLinkTarget -->
     <allow attributes="bugs bug_links" />
@@ -95,7 +99,7 @@
     name="+reject"
     for="canonical.launchpad.interfaces.ITicket"
     class="canonical.launchpad.browser.TicketRejectView"
-    permission="launchpad.AnyPerson"
+    permission="launchpad.Moderate"
     template="../templates/ticket-reject.pt" />
 
   <browser:page

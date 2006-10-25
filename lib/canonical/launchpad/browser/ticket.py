@@ -299,15 +299,6 @@ class TicketRejectView(LaunchpadFormView):
         self.request.response.redirect(canonical_url(self.context))
         return ''
 
-    def initialize(self):
-        if not self.context.canReject(self.user):
-            self.request.response.addErrorNotification(
-                _('Only support contacts and administrators can reject a '
-                  'request.'))
-            self.request.response.redirect(canonical_url(self.context))
-            return
-        LaunchpadFormView.initialize(self)
-
 
 class TicketWorkflowView(LaunchpadFormView):
     """View managing the ticket workflow action, i.e. action changing

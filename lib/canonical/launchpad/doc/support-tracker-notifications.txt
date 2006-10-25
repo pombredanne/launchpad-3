@@ -540,6 +540,7 @@ Notifications for setStatus()
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     >>> from canonical.lp.dbschema import TicketStatus
+    >>> login('foo.bar@canonical.com')
     >>> message = ubuntu_ticket.setStatus(
     ...     foo_bar, TicketStatus.SOLVED, "The rejection was a mistake.")
 

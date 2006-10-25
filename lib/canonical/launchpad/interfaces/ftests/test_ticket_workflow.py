@@ -24,8 +24,8 @@ from zope.security.interfaces import Unauthorized
 from canonical.launchpad.event.interfaces import (
     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IPersonSet, InvalidTicketStateError, ITicket,
-    ITicketMessage)
+    IDistributionSet, ILaunchBag, InvalidTicketStateError, IPersonSet,
+    ITicket, ITicketMessage)
 from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.launchpad.ftests.event import TestEventListener
 from canonical.lp.dbschema import TicketAction, TicketStatus
@@ -67,6 +67,17 @@ class BaseSupportTrackerWorkflowTestCase(unittest.TestCase):
             self.created_event_listener.unregister()
             self.modified_event_listener.unregister()
 
+    def setTicketStatus(self, ticket, new_status, comment="Status change."):
+        """Utility metho to change a ticket status.
+
+        This logs in as admin, change the status and log back as
+        the previous user.
+        """
+        old_user = getUtility(ILaunchBag).user
+        login(self.admin.preferredemail.email)
+        ticket.setStatus(self.admin, new_status, comment)
+        login(old_user.preferredemail.email)
+
     def setUpEventListeners(self):
         """Install a listener for events emitted during the test."""
         self.collected_events = []
@@ -95,7 +106,7 @@ class BaseSupportTrackerWorkflowTestCase(unittest.TestCase):
         """
         for status in TicketStatus.items:
             if status != self.ticket.status:
-                self.ticket.setStatus(self.admin, status, 'Status change')
+                self.setTicketStatus(self.ticket, status)
             expected = status.name in statuses_expected_true
             allowed = getattr(self.ticket, guard_name)
             self.failUnless(
@@ -134,7 +145,7 @@ class BaseSupportTrackerWorkflowTestCase(unittest.TestCase):
             transition_method_kwargs['datecreated'] = self.nowPlus(0)
         for status in statuses:
             if status != self.ticket.status:
-                self.ticket.setStatus(self.admin, status, 'Status change')
+                self.setTicketStatus(self.ticket, status)
 
             self.collected_events = []
 
@@ -177,7 +188,7 @@ class BaseSupportTrackerWorkflowTestCase(unittest.TestCase):
             exceptionRaised = False
             try:
                 if status != self.ticket.status:
-                    self.ticket.setStatus(self.admin, status, 'Status change')
+                    self.setTicketStatus(self.ticket, status)
                 transition_method(*args, **kwargs)
             except InvalidTicketStateError:
                 exceptionRaised = True
@@ -270,7 +281,7 @@ class MiscSupportTrackerWorkflowTestCase(BaseSupportTrackerWorkflowTestCase):
         """
         workflow_methods = (
             'requestInfo', 'giveInfo', 'giveAnswer', 'confirmAnswer',
-            'expireTicket', 'reject')
+            'expireTicket')
         login(ANONYMOUS)
         for method in workflow_methods:
             try:
@@ -289,6 +300,7 @@ class MiscSupportTrackerWorkflowTestCase(BaseSupportTrackerWorkflowTestCase):
         """Test that calling setStatus to change to the same status
         raises an InvalidTicketStateError.
         """
+        login('foo.bar@canonical.com')
         self.assertRaises(InvalidTicketStateError, self.ticket.setStatus,
                 self.admin, TicketStatus.OPEN, 'Status Change')
 
@@ -319,8 +331,7 @@ class RequestInfoTestCase(BaseSupportTrackerWorkflowTestCase):
 
         # Even if the ticket is answered, a user can request more
         # information, but that leave the ticket in the ANSWERED state.
-        self.ticket.setStatus(
-            self.admin, TicketStatus.ANSWERED, 'Status change')
+        self.setTicketStatus(self.ticket, TicketStatus.ANSWERED)
         self.collected_events = []
         message = self.ticket.requestInfo(
             self.answerer,
@@ -622,6 +633,7 @@ class RejectTestCase(BaseSupportTrackerWorkflowTestCase):
                           if status.name != 'INVALID']
         # Reject user must be a support contact, (or admin, or product owner).
         self.ubuntu.addSupportContact(self.answerer)
+        login(self.answerer.preferredemail.email)
         self._testInvalidTransition(
             valid_statuses, self.ticket.reject,
             self.answerer, "This is lame.", datecreated=self.nowPlus(1))
@@ -631,6 +643,7 @@ class RejectTestCase(BaseSupportTrackerWorkflowTestCase):
         OPEN or NEEDSINFO and that it returns a valid ITicketMessage.
         """
         # Reject user must be a support contact, (or admin, or product owner).
+        login(self.answerer.preferredemail.email)
         self.ubuntu.addSupportContact(self.answerer)
         valid_statuses = [status for status in TicketStatus.items
                           if status.name != 'INVALID']
@@ -653,6 +666,26 @@ class RejectTestCase(BaseSupportTrackerWorkflowTestCase):
                 self.answerer, 'This is lame.'),
             edited_fields=['status', 'messages', 'answerer', 'dateanswered',
                            'answer', 'datelastresponse'])
+
+    def testRejectPermission(self):
+        """Test the reject() access control.
+
+        Only a support contacts and administrator can reject a ticket.
+        """
+        login(ANONYMOUS)
+        self.assertRaises(Unauthorized, getattr, self.ticket, 'reject')
+
+        login(self.owner.preferredemail.email)
+        self.assertRaises(Unauthorized, getattr, self.ticket, 'reject')
+
+        login(self.answerer.preferredemail.email)
+        self.assertRaises(Unauthorized, getattr, self.ticket, 'reject')
+
+        self.ticket.target.addSupportContact(self.answerer)
+        getattr(self.ticket, 'reject')
+
+        login(self.admin.preferredemail.email)
+        getattr(self.ticket, 'reject')
 
 
 def test_suite():

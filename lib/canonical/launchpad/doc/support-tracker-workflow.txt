@@ -363,6 +363,9 @@ request:
     >>> spam_ticket.canReject(stub)
     True
 
+    (Even if a user logged in that has the permission, the method cannot
+    be called on the behalf of a user who wouldn't have permission.)
+    >>> login('test@canonical.com')
     >>> spam_ticket.reject(
     ...     marilize, 'Use https://shipit.launchpad.net/ to order CD')
     Traceback (most recent call last):
@@ -431,6 +434,7 @@ That method takes as parameters the new status and a comment explaining
 the status change.
 
     >>> old_datelastquery = ticket.datelastquery
+    >>> login(stub.preferredemail.email)
     >>> status_change_message = ticket.setStatus(
     ...      stub, TicketStatus.INVALID, 'Changed status to INVALID',
     ...     datecreated=now_plus_one_hour)
@@ -471,8 +475,8 @@ the answer and dateanswered attributes.
     >>> ticket.answer is None
     True
 
-When the user doesn't have launchpad.Admin permission, an Unauthorized
-error is thrown:
+But when the status is changed on behalf of a user who doesn't have
+launchpad.Admin permission, an Unauthorized error is thrown:
 
     >>> ticket.setStatus(sample_person, TicketStatus.EXPIRED, 'Expire.')
     Traceback (most recent call last):
@@ -485,6 +489,7 @@ Adding Comments Without Changing the Status
 There is an addComment() method that can be use to add a message to the
 ticket without changing its status.
 
+    >>> login('no-priv@canonical.com')
     >>> old_status = ticket.status
     >>> old_datelastresponse = ticket.datelastresponse
     >>> comment = ticket.addComment(
@@ -526,6 +531,7 @@ the message they create and a SQLObjectModifiedEvent for the ticket.
 
 Changing the status triggers the event:
 
+    >>> login(stub.preferredemail.email)
     >>> msg = ticket.setStatus(stub, TicketStatus.EXPIRED, 'Status change.')
     Received SQLObjectCreatedEvent on TicketMessage
     Received SQLObjectModifiedEvent on Ticket
@@ -539,6 +545,7 @@ Example of a workflow method that triggers the events:
 Even only adding a comment without changing the status will send
 these events.
 
+    >>> login('test@canonical.com')
     >>> msg = ticket.addComment(sample_person, 'A comment')
     Received SQLObjectCreatedEvent on TicketMessage
     Received SQLObjectModifiedEvent on Ticket
@@ -609,10 +616,13 @@ prior status in the priorstate attribute:
 Another example of a reopening, would be when the ticket status is set
 back to OPEN after having been rejected.
 
+    >>> login('test@canonical.com')
     >>> ticket = ubuntu.newTicket(**new_ticket_args)
     >>> reject_message = ticket.reject(
     ...     sample_person, 'This is a frivoulous request.',
     ...     datecreated=now_plus_one_hour)
+
+    >>> login(stub.preferredemail.email)
     >>> status_change_message = ticket.setStatus(
     ...     stub, TicketStatus.OPEN, 'Disregard previous rejection. '
     ...     'Sample Person was having a bad day.',
@@ -641,6 +651,7 @@ In all the workflow methods, it is possible to pass an IMessage instead of
 a string.
 
     >>> from canonical.launchpad.interfaces import IMessageSet
+    >>> login('test@canonical.com')
     >>> messageset = getUtility(IMessageSet)
     >>> ticket = ubuntu.newTicket(**new_ticket_args)
     >>> reject_message = messageset.fromText(
@@ -656,6 +667,7 @@ a string.
 The IMessage owner must be the same than the person passed to the workflow
 method.
 
+    >>> login(stub.preferredemail.email)
     >>> ticket.setStatus(stub, TicketStatus.OPEN, reject_message)
     Traceback (most recent call last):
       ...
