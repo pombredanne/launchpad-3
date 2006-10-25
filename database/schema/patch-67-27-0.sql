@@ -41,19 +41,18 @@ SELECT ((((((COALESCE((potmsgset.id)::text, 'X'::text) || '.'::text) ||
     pomsgid.msgid,
     potranslation.translation
 FROM
-    pomsgid, pomsgidsighting, potmsgset, potemplate, potemplatename, pofile,
-    pomsgset, poselection, posubmission, potranslation
-WHERE
-    pomsgid.id = pomsgidsighting.pomsgid
-    AND potmsgset.id = pomsgidsighting.potmsgset
-    AND potemplate.id = potmsgset.potemplate
-    AND potemplatename.id = potemplate.potemplatename
-    AND potemplate.id = pofile.potemplate
-    AND potmsgset.id = pomsgset.potmsgset
-    AND pomsgset.pofile = pofile.id
-    AND pomsgset.id = poselection.pomsgset
-    AND posubmission.id = poselection.activesubmission
-    AND potranslation.id = posubmission.potranslation;
+    pomsgid
+        JOIN pomsgidsighting ON pomsgid.id = pomsgidsighting.pomsgid
+        JOIN potmsgset ON potmsgset.id = pomsgidsighting.potmsgset
+        JOIN potemplate ON potemplate.id = potmsgset.potemplate
+        JOIN potemplatename ON potemplatename.id = potemplate.potemplatename
+        JOIN pofile ON potemplate.id = pofile.potemplate
+        LEFT JOIN pomsgset ON
+            (potmsgset.id = pomsgset.potmsgset) AND
+            (pomsgset.pofile = pofile.id)
+        LEFT JOIN poselection ON pomsgset.id = poselection.pomsgset
+        LEFT JOIN posubmission ON posubmission.id = poselection.activesubmission
+        LEFT JOIN potranslation ON potranslation.id = posubmission.potranslation;
 
 ALTER TABLE POFile DROP COLUMN pluralforms;
 
