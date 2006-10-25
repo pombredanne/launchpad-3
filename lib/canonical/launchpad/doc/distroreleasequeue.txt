@@ -159,6 +159,7 @@ Iterating over IDistroReleaseQueues via iDistroReleaseQueueSet:
   8
   9
   10
+  11
 
 Retrieving an IDistroReleaseQueue by its id:
 
@@ -171,7 +172,7 @@ Retrieving an IDistroReleaseQueue by its id:
 Counter, optionally by status (informally named "queue") and or distrorelease:
 
   >>> qset.count()
-  10
+  11
 
   >>> qset.count(DistroReleaseQueueStatus.ACCEPTED)
   1
@@ -187,7 +188,7 @@ Retrieve some data from DB to play more with counter.
   >>> breezy_autotest = distro['breezy-autotest']
 
   >>> qset.count(distrorelease=breezy_autotest)
-  9
+  10
 
   >>> qset.count(status=DistroReleaseQueueStatus.ACCEPTED,
   ...            distrorelease=breezy_autotest)
@@ -340,7 +341,7 @@ custom upload in UNAPPROVED queue.
   >>> items = breezy_autotest.getQueueItems(
   ...      DistroReleaseQueueStatus.UNAPPROVED)
   >>> items.count()
-  3
+  4
 
 We can't retrieve it with a 'what' substring:
 
@@ -354,7 +355,7 @@ But it works with the right substring 'net' from 'netapplet.tar.gz'
   >>> items = breezy_autotest.getQueueItems(
   ...      DistroReleaseQueueStatus.UNAPPROVED, name='net')
   >>> items.count()
-  1
+  2
 
 
 Also check the optional argument pocket:

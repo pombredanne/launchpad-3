@@ -90,15 +90,21 @@ Creating some additional tickets
 -------------------------------
 
 For the following methods, we will require some more tickets. Create five
-new tickets.
+new tickets. Odd tickets will be owned by foo_bar and even tickets will be
+owned by sample_person.
 
     >>> login('no-priv@canonical.com')
+    >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
     >>> tickets = []
     >>> for num in range(5):
+    ...     if num % 2:
+    ...         owner = foo_bar
+    ...     else:
+    ...         owner = sample_person
     ...     description = ('Support request description%d.\n'
     ...         'This request index is %d.') % (num, num)
-    ...     tickets.append(target.newTicket(sample_person,
-    ...         'Ticket title%d' % num, description,
+    ...     tickets.append(target.newTicket(
+    ...         owner, 'Ticket title%d' % num, description,
     ...         datecreated=now+timedelta(seconds=num+1)))
 
 For more variety, we will set the status of the last to REJECTED and the
@@ -120,34 +126,6 @@ description.
     ...     'Another new ticket that is actually very new.',
     ...     datecreated=now+timedelta(hours=1))
     >>> login(ANONYMOUS)
-
-
-tickets()
----------
-
-The tickets() method returns the tickets created on the target. They are
-sorted from most recent to least recent.
-
-    >>> for t in target.tickets():
-    ...     print t.title
-    Another ticket
-    Ticket title4
-    Ticket title3
-    Ticket title2
-    Ticket title1
-    Ticket title0
-    New ticket
-
-You can retrieve the X most recent tickets, by passing the wanted
-quantity as parameter:
-
-    >>> for t in target.tickets(5):
-    ...     print t.title
-    Another ticket
-    Ticket title4
-    Ticket title3
-    Ticket title2
-    Ticket title1
 
 
 searchTickets()
@@ -237,6 +215,14 @@ the tickets will be sorted NEWEST_FIRST.
 
 ('Ticket title4' is not shown in this case because it has REJECTED as
 its status.)
+
+You can also find ticket owner by a particular user by using the owner
+parameter.
+
+    >>> for t in target.searchTickets(owner=foo_bar):
+    ...     print t.title
+    Ticket title3
+    Ticket title1
 
 
 findSimilarTickets()
