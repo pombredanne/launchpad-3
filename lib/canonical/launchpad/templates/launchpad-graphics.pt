@@ -175,14 +175,15 @@
         <td>
           <img alt="" src="/@@/launchpad" />
         </td>
-        <td rowspan="3">
-          The Launchpad icon,
-          used for pages that don't belong to a pillar with its own icon.
-        </td>
+        <td>The Launchpad icon, used for bookmarks. 16 &times; 16 pixels.</td>
       </tr>
       <tr>
         <td>launchpad-large</td>
         <td><img alt="" src="/@@/launchpad-large" /></td>
+        <td rowspan="2">
+          The Launchpad icon,
+          used for pages that don't belong to a pillar with its own icon.
+        </td>
       </tr>
       <tr>
         <td>launchpad-heading</td>
@@ -604,13 +605,13 @@
       <tr>
         <td>build-depwait</td>
         <td><img src="/@@/build-depwait" /></td>
-        <td>This is a build which depends on other packages that have
+        <td>A build depending on other packages that have
         themselves not yet been built.</td>
       </tr>
       <tr>
         <td>build-failure</td>
         <td><img src="/@@/build-failure" /></td>
-        <td>A build which failed.</td>
+        <td>A build that failed.</td>
       </tr>
       <tr>
         <td>build-needed</td>
