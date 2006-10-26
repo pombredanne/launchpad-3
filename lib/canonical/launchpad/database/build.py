@@ -11,24 +11,21 @@ from sqlobject import (
     StringCol, ForeignKey, IntervalCol)
 from sqlobject.sqlbuilder import AND, IN
 
+from canonical.config import config
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-
-from canonical.config import config
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
-from canonical.launchpad.database.builder import BuildQueue
+from canonical.launchpad.database.buildqueue import BuildQueue
 from canonical.launchpad.database.queue import DistroReleaseQueueBuild
 from canonical.launchpad.helpers import (
     get_email_template, contactEmailAddresses)
 from canonical.launchpad.interfaces import (
     IBuild, IBuildSet, NotFoundError, ILaunchpadCelebrities)
 from canonical.launchpad.mail import simple_sendmail, format_address
-
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
-
 from canonical.lp.dbschema import (
     EnumCol, BuildStatus, PackagePublishingPocket, DistributionReleaseStatus)
 

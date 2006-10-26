@@ -1011,7 +1011,7 @@ COMMENT ON COLUMN PushMirrorAccess.name IS 'Name of an arch archive on the push 
 COMMENT ON COLUMN PushMirrorAccess.person IS 'A person that has access to update the named archive';
 
 -- Build
-COMMENT ON TABLE Builder IS 'Build: This table stores the build procedure information of a sourcepackagerelease and its results (binarypackagereleases) for a given distroarchrelease.';
+COMMENT ON TABLE Build IS 'Build: This table stores the build procedure information of a sourcepackagerelease and its results (binarypackagereleases) for a given distroarchrelease.';
 COMMENT ON COLUMN Build.datecreated IS 'When the build record was created.';
 COMMENT ON COLUMN Build.datebuilt IS 'When the build record was processed.';
 COMMENT ON COLUMN Build.buildduration IS 'How long this build took to be processed.';
@@ -1028,7 +1028,7 @@ COMMENT ON COLUMN Build.dependencies IS 'Contains a debian-like dependency line 
 COMMENT ON TABLE Builder IS 'Builder: This table stores the build-slave registry and status information as: name, url, trusted, builderok, builderaction, failnotes.';
 COMMENT ON COLUMN Builder.builderok IS 'Should a builder fail for any reason, from out-of-disk-space to not responding to the buildd master, the builderok flag is set to false and the failnotes column is filled with a reason.';
 COMMENT ON COLUMN Builder.failnotes IS 'This column gets filled out with a textual description of how/why a builder has failed. If the builderok column is true then the value in this column is irrelevant and should be treated as NULL or empty.';
-COMMENT ON COLUMN Builder.trusted IS 'Whether or not the builder is cleared to do SECURITY pocket builds. Such a builder will have firewall access to the embargo archives etc.';
+COMMENT ON COLUMN Builder.trusted IS 'Whether or not the builder is able to build only trusted or untrusted packages, in few words packages coming via ubuntu workflow are trusted and do not need facist behaviour to be build, in other hand, ppa/grumpy incomming packages can contain malicious, thus untrusted, code which requires isolated environment (xen-based builder) and extra network access restrictions.';
 COMMENT ON COLUMN Builder.url IS 'The url to the build slave. There may be more than one build slave on a given host so this url includes the port number to use. The default port number for a build slave is 8221';
 COMMENT ON COLUMN Builder.manual IS 'Whether or not builder was manual mode, i.e., collect any result from the it, but do not dispach anything to it automatically.';
 
