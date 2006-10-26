@@ -409,10 +409,10 @@ class TicketWorkflowView(LaunchpadFormView):
         # in the template for that. So, if the answer is missing, it's
         # either a programming error or an invalid handcrafted URL
         msgid = self.request.form.get('answer_id')
+        if msgid is None:
+            raise UnexpectedFormData('missing answer_id')
         try:
             data['answer']= self.context.messages[int(msgid)]
-        except TypeError:
-            raise UnexpectedFormData('missing answer_id')
         except ValueError:
             raise UnexpectedFormData('invalid answer_id: %s' % msgid)
         except IndexError:
