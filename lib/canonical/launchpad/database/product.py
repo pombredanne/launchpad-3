@@ -225,15 +225,6 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
         bug_params.setBugTarget(product=self)
         return BugSet().createBug(bug_params)
 
-    def tickets(self, quantity=None):
-        """See ITicketTarget."""
-        return Ticket.select("""
-            Ticket.product = %s
-            """ % sqlvalues(self.id),
-            orderBy='-Ticket.datecreated',
-            prejoins=['product', 'owner'],
-            limit=quantity)
-
     def newTicket(self, owner, title, description, datecreated=None):
         """See ITicketTarget."""
         return TicketSet.new(title=title, description=description,
@@ -252,10 +243,12 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
         return ticket
 
     def searchTickets(self, search_text=None,
-                      status=TICKET_STATUS_DEFAULT_SEARCH, sort=None):
+                      status=TICKET_STATUS_DEFAULT_SEARCH, owner=None,
+                      sort=None):
         """See ITicketTarget."""
-        return TicketSet.search(search_text=search_text, status=status,
-                                sort=sort, product=self)
+        return TicketSet.search(
+            product=self, search_text=search_text, status=status,
+            owner=owner, sort=sort)
 
     def findSimilarTickets(self, title):
         """See ITicketTarget."""
