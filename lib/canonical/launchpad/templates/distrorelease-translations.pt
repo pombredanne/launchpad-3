@@ -27,8 +27,16 @@
   <div tal:replace="structure context/@@+rosetta-status-legend" />
 
   <ul>
-    <li class="search">
-      <a href="/rosetta/prefs">Customize displayed languages</a>
+    <li class="edit">
+      <a tal:condition="request/lp:person"
+         tal:attributes="href string:${request/lp:person/fmt:url}/+editlanguages">
+        Customize displayed languages
+      </a>
+
+      <a tal:condition="not: request/lp:person"
+         tal:attributes="href string:${request/URL}/+login">
+        Login to customize displayed languages
+      </a>
     </li>
   </ul>
 
