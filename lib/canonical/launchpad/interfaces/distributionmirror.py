@@ -218,6 +218,9 @@ class IDistributionMirror(Interface):
         release and flavour, in case it exists.
         """
 
+    def deleteAllMirrorCDImageReleases():
+        """Delete all MirrorCDImageDistroReleases of this mirror."""
+
     def getExpectedPackagesPaths():
         """Get all paths where we can find Packages.gz files on this mirror.
 

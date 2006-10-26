@@ -258,6 +258,11 @@ class DistributionMirror(SQLBase):
         if mirror is not None:
             mirror.destroySelf()
 
+    def deleteAllMirrorCDImageReleases(self):
+        """See IDistributionMirror"""
+        for mirror in self.cdimage_releases:
+            mirror.destroySelf()
+
     @property
     def cdimage_releases(self):
         """See IDistributionMirror"""
