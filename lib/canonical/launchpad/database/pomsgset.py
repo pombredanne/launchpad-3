@@ -617,10 +617,10 @@ class POMsgSet(SQLBase):
         """See IPOMsgSet."""
         selection = self.getSelection(pluralform)
         active = None
-        if selection is not None and selection.activesubmission is not None:
-            active = selection.activesubmission
         query = '''pomsgset = %s AND
                    pluralform = %s''' % sqlvalues(self.id, pluralform)
+        if selection is not None and selection.activesubmission is not None:
+            active = selection.activesubmission
         if active is not None:
             # Don't show suggestions older than the current one.
             query += ''' AND datecreated > %s

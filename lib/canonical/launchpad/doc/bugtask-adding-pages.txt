@@ -40,8 +40,7 @@ that product is required:
 
     >>> form = {
     ...     'field.actions.request_fix': '', 'field.product': '',
-    ...     'field.bugtracker': '2',
-    ...     'field.link_to_bugwatch.used': '', 'field.remotebug': ''}
+    ...     'field.bug_url': ''}
     >>> add_task_view = get_and_setup_view(firefox_task, '+upstreamtask', form)
     >>> add_task_view.render_upstreamtask()
     ''
@@ -89,7 +88,7 @@ as smoothly as above.
     >>> form['field.product'] = u'alsa-utils'
     >>> request = LaunchpadTestRequest(
     ...     form={'FORM_SUBMIT': '', 'field.product': 'alsa-utils',
-    ...           'field.bugtracker': '2'})
+    ...           'field.bug_url': ''})
     >>> add_task_view = get_and_setup_view(firefox_task, '+upstreamtask', form)
     >>> add_task_view.render_upstreamtask()
     ''
@@ -142,20 +141,18 @@ are set to the default values.
     >>> alsa_task.importance.title
     'Undecided'
 
-On the same form, we can add a bug watch. If we specify a remote bug
-tracker, but omit the remote bug number, an error message is given:
+On the same form, we can add a bug watch, by specifying the remote bug
+URL. If we don't enter a valid URL, we get an error message.
 
     >>> del form['field.actions.confirm']
+    >>> form['field.product'] = u'alsa-utils'
     >>> form['field.actions.request_fix'] = u''
-    >>> form['field.product'] = u'thunderbird'
-    >>> form['field.link_to_bugwatch'] = 'on'
-    >>> form['field.remotebug']
-    ''
+    >>> form['field.bug_url'] = u'not-a-url'
     >>> add_task_view = get_and_setup_view(firefox_task, '+upstreamtask', form)
     >>> add_task_view.render_upstreamtask()
     ''
-    >>> add_task_view.form_wide_errors
-    ['Please specify the remote bug number in the remote bug tracker.']
+    >>> print add_task_view.getWidgetError('bug_url')
+    Launchpad doesn't know what kind of bug tracker this URL is pointing at.
 
 Note that this caused the transaction to be aborted, thus the bugtasks
 that got added earlier are now gone:
@@ -163,10 +160,11 @@ that got added earlier are now gone:
     >>> len(bug_four.bugtasks)
     1
 
-If we specify a remote bug number as well, both the task and the bug
-watch will be added without any confirmation needee:
+If we specify a valid URL, both the task and the bug watch will be added
+without any confirmation needee:
 
-    >>> form['field.remotebug'] = u'84'
+    >>> form['field.bug_url'] = (
+    ...     u'http://bugzilla.gnome.org/bugs/show_bug.cgi?id=84')
     >>> add_task_view = get_and_setup_view(firefox_task, '+upstreamtask', form)
     >>> add_task_view.render_upstreamtask()
     SQLObjectCreatedEvent: <BugWatch at ...>
@@ -178,8 +176,8 @@ watch will be added without any confirmation needee:
 
     >>> for bugtask in bug_four.bugtasks:
     ...     print bugtask.targetname
+    alsa-utils (upstream)
     firefox (upstream)
-    thunderbird (upstream)
 
     >>> for bugwatch in bug_four.watches:
     ...     print "%s: %s" % (bugwatch.bugtracker.title, bugwatch.remotebug)
@@ -189,15 +187,17 @@ The bug watch got linked to the create task, and all the bug task's
 attribute got initialised to Unknown. The bugtask will be synced with
 the bug watch's status later.
 
-    >>> thunderbird_task = bug_four.bugtasks[1]
-    >>> thunderbird_task.product.official_malone
+    >>> alsa_task = bug_four.bugtasks[0]
+    >>> alsa_task.targetname
+    u'alsa-utils (upstream)'
+    >>> alsa_task.product.official_malone
     False
-    >>> thunderbird_task.bugwatch == bug_four.watches[0]
+    >>> alsa_task.bugwatch == bug_four.watches[0]
     True
 
-    >>> thunderbird_task.status.title
+    >>> alsa_task.status.title
     'Unknown'
-    >>> thunderbird_task.importance.title
+    >>> alsa_task.importance.title
     'Unknown'
 
 
@@ -205,19 +205,23 @@ If we try to add a bug watch together with a product which does use
 Malone, an error will occur.
 
     >>> form['field.product'] = u'evolution'
-    >>> form['field.remotebug'] = u'42'
+    >>> form['field.bugtracker'] = u'1'
+    >>> form['field.bug_url'] = (
+    ...     u'http://bugzilla.gnome.org/bugs/show_bug.cgi?id=168')
     >>> add_task_view = get_and_setup_view(firefox_task, '+upstreamtask', form)
     >>> add_task_view.render_upstreamtask()
     ''
     >>> add_task_view.form_wide_errors
-    [u"Evolution uses Malone as its bug tracker, and it can't at the
-       same time be linked to a remote bug."]
+    [u'Bug watches can not be added for Evolution, as it uses Malone as
+       its official bug tracker. Alternatives are to add a watch for
+       another product, or a comment containing a URL to the related bug
+       report.']
 
 There's a method for easily retrieving the target display name for use
 on the confirmation page. If we request a fix in an upstream product,
 its display name is returned:
 
-    >>> del form['field.link_to_bugwatch']
+    >>> form['field.bug_url'] = u''
     >>> form['field.product'] = u'alsa-utils'
     >>> add_task_view = get_and_setup_view(firefox_task, '+upstreamtask', form)
     >>> add_task_view.render_upstreamtask()

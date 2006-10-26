@@ -11,7 +11,7 @@
   >>> browser.getControl('Content').value = ['Archive']
   >>> browser.getControl('Continue').click()
 
-  >>> message = 'All mirrors require at least one URL (HTTP, FTP or Rsync)'
+  >>> message = 'All mirrors require at least an HTTP or FTP URL'
   >>> message in browser.contents
   True
 

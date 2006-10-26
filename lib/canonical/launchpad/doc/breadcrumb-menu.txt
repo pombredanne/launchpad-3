@@ -36,23 +36,7 @@ the sitemap.  As there is just a single <li> element, it gets the CSS class
 "last".  The URL of "/" is hardcoded for the first breadcrumb.
 
     >>> render_breadcrumbs()
-    <li class="last"><a href="/"><img src="/@@/launchpad" alt="" /> Launchpad</a>
-        <ul id="launchPad" style="display: none">
-        ...href="/products"...
-        Products
-        ...
-        ...href="/distros"...
-        Distributions
-        ...
-        ...href="/people"...
-        People
-        ...
-        ...href="/projects"...
-        Projects
-        ...
-        ...href="/sprints"...
-        Meetings
-        ...
+    <li lpm:mid="root" class="item"><a href="/"><img src="/@@/launchpad" alt="" /> Launchpad</a></li>
 
 
 With a single breadcrumb, we get the "Launchpad" breadcrumb and the
@@ -60,11 +44,7 @@ popup site map.  As it is the only breadcrumb, it gets the CSS class "last".
 
     >>> request.addCrumb('http://localhost', 'Launchpad')
     >>> render_breadcrumbs()
-    <li class="last"><a href="/"><img src="/@@/launchpad" alt="" /> Launchpad</a>
-        <ul id="launchPad" style="display: none">
-        ...href="/products"...
-        Products
-        ...
+    <li lpm:mid="root" class="item"><a href="/"><img src="/@@/launchpad" alt="" /> Launchpad</a></li>
 
 
 When we add another breadcrumb, it appears as a top level <li> after the
@@ -73,12 +53,8 @@ of "last".
 
     >>> request.addCrumb('http://localhost/people', 'People')
     >>> render_breadcrumbs()
-    <li><a href="/"><img src="/@@/launchpad" alt="" /> Launchpad</a>
-        <ul id="launchPad" style="display: none">
-        ...
-        </ul>
-           </li>
-    <li class="last"><a href="http://localhost/people">People</a></li>
+    <li lpm:mid="root" class="item"><a href="/"><img src="/@@/launchpad" alt="" /> Launchpad</a></li>
+    <li class="item"><a href="http://localhost/people">People</a></li>
 
 
 When we add another breadcrumb, it appears as a top level <li> after the
@@ -87,12 +63,7 @@ class of "last".
 
     >>> request.addCrumb('http://localhost/people/someone', 'Someone')
     >>> render_breadcrumbs()
-    <li><a href="/"><img src="/@@/launchpad" alt="" /> Launchpad</a>
-        <ul id="launchPad" style="display: none">
-        ...
-        </ul>
-           </li>
-    <li><a href="http://localhost/people">People</a></li>
-    <li class="last"><a href="http://localhost/people/someone">Someone</a></li>
-
+    <li lpm:mid="root" class="item"><a href="/"><img src="/@@/launchpad" alt="" /> Launchpad</a></li>
+    <li class="item"><a href="http://localhost/people">People</a></li>
+    <li class="item"><a href="http://localhost/people/someone">Someone</a></li>
 
