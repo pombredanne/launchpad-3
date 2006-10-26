@@ -1,4 +1,4 @@
-<metal:page define-macro="master"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<metal:page define-macro="master"><metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
 <metal:block define-slot="top_slot" />
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"
     tal:attributes="lang default_language|default;
@@ -6,14 +6,12 @@
   <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
     <!-- Launchpad JS code -->
-    <meta name="author" content="Aidan Williams - almostborn.com/portfolio" />
     <script type="text/javascript" src="/@@/launchpad.js"></script>
     <script type="text/javascript" src="/+icing/global.js"></script>
     <script type="text/javascript" src="/@@/sorttable.js"></script>
-    <style type="text/css">
-      @import url("/@@/dynarch/skin-aqua.css");
-    </style>
-    <script type="text/javascript" src="/@@/dynarch/hmenu.js"></script>
+    <script type="text/javascript" src="/@@/MochiKit/MochiKit.js"></script>
+    <script type="text/javascript" src="/@@/SignalWrapper.js"></script>
+    <script type="text/javascript" src="/@@/lpmenu.js"></script>
     <!-- Launchpad style sheet -->
     <style
       type="text/css"
@@ -23,14 +21,12 @@
     <link rel="shortcut icon" href="/@@/launchpad" />
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>
-  <body
-    onload="
-      DynarchMenu.setup('menu', {electric: true});
-      sortables_init();
-      initHelpPanel();
-    "
-    id="document"
-  >
+  <body onload="lpmenu.initialize(['menuroot'], 
+                    '/',
+                    'menupreload',
+                    [],
+                    '2em', 16, true);" id="document">
+
     <div id="globalheader">
       <div class="launchpad">
         <img
@@ -44,24 +40,28 @@
         <li><a href="/" title="Home">Home</a></li>
       </ul>
     </div>
+
+
     <ul id="locationbar">
       <li><strong>Your location:</strong> <a href="/"><em>Home</em></a></li>
-      <li><a href="#"><em>Foo</em></a></li>
-      <li><a href="#"><em>Bar</em></a></li>
-      <li><a href="#"><em>Hum</em></a></li>
+    <div id="menucontainer">
+      <ul id="menuroot" class="menuroot">
+        <tal:hierarchy content="structure context/@@+breadcrumbs" />
+    </div>
     </ul>
+
     <div id="logincontrol" tal:content="structure context/@@login_status" />
-    <ul id="menu" tal:content="structure context/@@+breadcrumbs" />
     <!-- id="menu" should be id="locationbar" -->
     <tal:maintenance replace="structure context/@@+maintenancemessage" />
-    <div id="structuralobject">
-      <img alt="" src="/@@/nyet-heading" />
-      <div class="secondary">structural object secondary</div>
-      <div class="primary">structural object primary</div>
-      <div id="structuralobjectchildren">
-        <span class="primary">structural object children row 1</span>
-        <span class="secondary">structural object children row 2</span>
-      </div>
+    <div id="structuralobject"
+        tal:define="structuralobject CONTEXTS/lp:structuralobject">
+      <tal:if condition="structuralobject">
+      <tal:structuralobject
+          replace="structure structuralobject/@@+structural-heading" />
+      </tal:if>
+      <tal:if condition="not: structuralobject">
+        No structural object!
+      </tal:if>
     </div>
     <form id="globalsearch" action="/search" method="GET">
       <div>
@@ -153,18 +153,25 @@
                       </tal:notifications>
                       <metal:block define-slot="main" />
                     </div>
-                    <ul id="left_nav">
-                      <tal:notlogin condition="python: '+login' not in request.getURL()">
-                        <h2>Actions</h2>
-                        <tal:menu
-                          condition="not:exists:body"
-                          replace="structure CONTEXTS/@@+menubox"
-                        />
-                      </tal:notlogin>
+                    <div id="left_nav">
+                      <tal:actionsmenu
+                        tal:condition="python: '+login' not in request.getURL()"
+                      >
+                        <div
+                          tal:condition="not:exists:body"
+                          id="actions"
+                          class="portlet"
+                        >
+                          <h2>Actions</h2>
+                          <tal:menu
+                            replace="structure CONTEXTS/@@+menubox"
+                          />
+                        </div>
+                      </tal:actionsmenu>
                       <metal:portlets define-slot="portlets" />
                       <metal:portlets define-slot="portlets_two" />
-                      <div metal:define-slot="portlets_one" />
-                    </ul>
+                      <metal:portlets define-slot="portlets_one" />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -186,15 +193,28 @@
       <div class="bottom">&nbsp;</div>
     </div>
     <div id="globalfooter">
-      <a href="/malone">Malone</a> &ndash;
-      <a href="/specs">Blueprint</a> &ndash;
-      <a href="/rosetta">Rosetta</a> &ndash;
-      <a href="/support">Tech&nbsp;support</a> &ndash;
-      <a href="/bazaar">Bazaar</a> &ndash;
-      Copyright&nbsp;2004-2006&nbsp;<a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
-      &ndash;  <a href="/legal">Copyright&nbsp;terms</a> &ndash;
-      <a href="/feedback">Help&nbsp;us&nbsp;improve</a> &ndash;
-      <a href="/faq">FAQ</a>
+      <div id="applications">
+        <a href="/malone">Malone</a> |
+        <a href="/specs">Blueprint</a> |
+        <a href="/rosetta">Rosetta</a> |
+        <a href="/support">Tech&nbsp;support</a> |
+        <a href="/bazaar">Bazaar</a>
+      </div>
+      <div id="copyright">
+        Copyright&nbsp;2004-2006&nbsp;<a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
+      </div>
+      <div id="colophon">
+        <a href="/legal">Copyright&nbsp;terms</a> |
+        <a href="/feedback">Help&nbsp;us&nbsp;improve</a> |
+        <a href="/faq">FAQ</a>
+      </div>
+    <div id="menupreload">
+      <ul class="menu" lpm:mid="root" lpm:midbase="/$$/+menudata">
+        <li class="item"><a href="/products">Products</a></li>
+        <li class="item"><a href="/distros">Distributions</a></li>
+        <li class="item"><a href="/people">People</a></li>
+        <li class="item"><a href="/projects">Projects</a></li>
+        <li class="item"><a href="/sprints">Meetings</a></li>
     </div>
   </body>
 </html>

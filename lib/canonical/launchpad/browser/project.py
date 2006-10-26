@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'ProjectNavigation',
     'ProjectSetNavigation',
+    'ProjectSOP',
     'ProjectView',
     'ProjectEditView',
     'ProjectAddProductView',
@@ -30,6 +31,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, GetitemNavigation, LaunchpadFormView,
@@ -60,6 +62,28 @@ class ProjectSetNavigation(GetitemNavigation):
 
     def breadcrumb(self):
         return 'Projects'
+
+
+class ProjectSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        return self.context.title
+
+    def listChildren(self, num):
+        # XXX mpt 20061004: Products, alphabetically
+        return []
+
+    def countChildren(self):
+        return 0
+
+    def listAltChildren(self, num):
+        return None
+
+    def countAltChildren(self):
+        raise NotImplementedError
 
 
 class ProjectSetContextMenu(ContextMenu):

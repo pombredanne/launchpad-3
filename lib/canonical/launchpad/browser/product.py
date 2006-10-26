@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'ProductNavigation',
     'ProductSetNavigation',
+    'ProductSOP',
     'ProductFacets',
     'ProductOverviewMenu',
     'ProductBugsMenu',
@@ -48,6 +49,7 @@ from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.productseries import get_series_branch_error
 from canonical.launchpad.browser.tickettarget import (
     TicketTargetFacetMixin, TicketTargetTraversalMixin)
@@ -100,6 +102,28 @@ class ProductSetNavigation(GetitemNavigation):
 
     def breadcrumb(self):
         return 'Products'
+
+
+class ProductSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        return self.context.title
+
+    def listChildren(self, num):
+        # XXX mpt 20061004: product series, most recent first
+        return []
+
+    def countChildren(self):
+        return 0
+
+    def listAltChildren(self, num):
+        return None
+
+    def countAltChildren(self):
+        raise NotImplementedError
 
 
 class ProductFacets(TicketTargetFacetMixin, StandardLaunchpadFacets):
@@ -545,7 +569,7 @@ class ProductAddSeriesView(LaunchpadFormView):
         return canonical_url(self.series)
 
 
-class ProductRdfView(object):
+class ProductRdfView:
     """A view that sets its mime-type to application/rdf+xml"""
 
     template = ViewPageTemplateFile(
@@ -570,6 +594,49 @@ class ProductRdfView(object):
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
+
+
+class ProductDynMenu(LaunchpadView):
+
+    def render(self):
+        L = []
+        L.append('<ul class="menu"')
+        L.append('    lpm:mid="/products/%s/+menudata"' % self.context.name)
+        L.append('    lpm:midroot="/products/%s/$$/+menudata"'
+            % self.context.name)
+        L.append('>')
+
+        producturl = '/products/%s' % self.context.name
+
+        for link, name in [
+            ('+branches', 'Branches'),
+            ('+sprints', 'Meetings'),
+            ('+milestones', 'Milestones'),
+            ('+series', 'Product series')
+            ]:
+            L.append('<li class="item container" lpm:midpart="%s">' % link)
+            L.append('<a href="%s/%s">%s</a>' % (producturl, link, name))
+            L.append('</li>')
+        L.append('</ul>')
+        return u'\n'.join(L)
+
+class ProductSetDynMenu(LaunchpadView):
+
+    def render(self):
+        L = []
+        L.append('<ul class="menu"')
+        L.append('    lpm:mid="/products/+menudata"')
+        L.append('>')
+        for product in self.context:
+            # given in full because there was an error in the JS when
+            # i use midpart / midbase.
+            L.append('<li class="item container" lpm:mid="/products/%s/+menudata">' % product.name)
+            L.append('<a href="/products/%s">' % product.name)
+            L.append(product.name)
+            L.append('</a>')
+            L.append('</li>')
+        L.append('</ul>')
+        return u'\n'.join(L)
 
 
 class ProductSetView(LaunchpadView):

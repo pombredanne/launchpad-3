@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 """Browser code for the launchpad application."""
 
 __metaclass__ = type
@@ -13,18 +13,29 @@ __all__ = [
     'MaloneApplicationNavigation',
     'SoftTimeoutView',
     'OneZeroTemplateStatus',
-    'IcingFolder'
+    'IcingFolder',
+    'StructuralObjectPresentationView',
+    'StructuralObjectPresentation'
     ]
 
 import cgi
+import errno
 import urllib
+import os
 import os.path
+import re
 import time
 from datetime import timedelta, datetime
 
 from zope.app.datetimeutils import parseDatetimetz, tzinfo, DateTimeError
 from zope.component import getUtility
+from zope.interface import implements
 from zope.security.interfaces import Unauthorized
+from zope.app.content_types import guess_content_type
+from zope.publisher.interfaces.browser import IBrowserPublisher
+from zope.publisher.interfaces import NotFound
+
+from BeautifulSoup import BeautifulStoneSoup, Comment
 
 import canonical.launchpad.layers
 from canonical.config import config
@@ -37,9 +48,9 @@ from canonical.launchpad.interfaces import (
     IBazaarApplication, ICodeOfConductSet, IRegistryApplication,
     ISpecificationSet, ISprintSet, ITicketSet, IBuilderSet, IBountySet,
     ILaunchpadCelebrities, IBugSet, IBugTrackerSet, ICveSet,
-    ITranslationImportQueue, ITranslationGroupSet)
-from canonical.launchpad.layers import (
-    setFirstLayer, ShipItEdUbuntuLayer, ShipItKUbuntuLayer, ShipItUbuntuLayer)
+    IStructuralObjectPresentation, ITranslationImportQueue,
+    ITranslationGroupSet)
+
 from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView, Navigation,
@@ -117,36 +128,6 @@ class MenuBox(LaunchpadView):
 class Breadcrumbs(LaunchpadView):
     """Page fragment to display the breadcrumbs text."""
 
-    sitemaptext = ("""
-    <ul id="launchPad" style="display: none">
-          <li id="p1">
-          <a href="/products">
-          Products
-          </a>
-          </li>
-          <li>
-          <a href="/distros">
-          Distributions
-          </a>
-          </li>
-          <li>
-          <a href="/people">
-          People
-          </a>
-          </li>
-          <li>
-          <a href="/projects">
-          Projects
-          </a>
-          </li>
-          <li>
-          <a href="/sprints">
-          Meetings
-          </a>
-          </li>
-    </ul>
-       """)
-
     def render(self):
         """Render the breadcrumbs text.
 
@@ -167,38 +148,46 @@ class Breadcrumbs(LaunchpadView):
 
         if not crumbs:
             L.append(
-                '<li class="last">'
+                '<li lpm:mid="root" class="item">'
                 '<a href="%s">'
                 '<img src="/@@/launchpad" alt="" /> %s'
                 '</a>'
-                '%s'
                 '</li>'
                 % (firsturl,
-                   cgi.escape(firsttext),
-                   self.sitemaptext))
+                   cgi.escape(firsttext)))
         else:
             L.append(
-                '<li>'
+                '<li lpm:mid="root" class="item">'
                 '<a href="%s">'
                 '<img src="/@@/launchpad" alt="" /> %s'
                 '</a>'
-                '%s'
                 '</li>'
                 % (firsturl,
-                   cgi.escape(firsttext),
-                   self.sitemaptext))
+                   cgi.escape(firsttext)))
 
-            lastcrumb = crumbs.pop()
+            #lastcrumb = crumbs.pop()
 
             for crumb in crumbs:
-                L.append('<li><a href="%s">%s</a></li>'
+                # XXX: SteveAlexander, 2006-06-09, this is putting the
+                #      full URL in as the lpm:mid.  We want just the path
+                #      here instead.
+                ##L.append('<li class="item" lpm:mid="%s/+menudata">'
+                ##         '<a href="%s">%s</a>'
+                ##         '</li>'
+                ##         % (crumb.url, crumb.url, cgi.escape(crumb.text)))
+
+                # Disable these menus for now.  To be re-enabled on the ui 1.0
+                # branch.
+                L.append('<li class="item">'
+                         '<a href="%s">%s</a>'
+                         '</li>'
                          % (crumb.url, cgi.escape(crumb.text)))
 
-            L.append(
-                '<li class="last">'
-                '<a href="%s">%s</a>'
-                '</li>'
-                % (lastcrumb.url, cgi.escape(lastcrumb.text)))
+            #L.append(
+            #    '<li class="item">'
+            #    '<a href="%s">%s</a>'
+            #    '</li>'
+            #    % (lastcrumb.url, cgi.escape(lastcrumb.text)))
         return u'\n'.join(L)
 
 
@@ -481,8 +470,6 @@ class SoftTimeoutView(LaunchpadView):
             'Soft timeout threshold is set to %s ms. This page took'
             ' %s ms to render.' % (soft_timeout, time_to_generate_page))
 
-import os
-import re
 
 class ObjectForTemplate:
 
@@ -490,8 +477,6 @@ class ObjectForTemplate:
         for name, value in kw.items():
             setattr(self, name, value)
 
-
-from BeautifulSoup import BeautifulStoneSoup, Comment
 
 class OneZeroTemplateStatus(LaunchpadView):
     """A list showing how ready each template is for one-zero."""
@@ -568,13 +553,7 @@ class OneZeroTemplateStatus(LaunchpadView):
         self.excluded_from_run = sorted(excluded)
 
 
-from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.interface import implements
-from zope.publisher.interfaces import NotFound
 
-from zope.app.content_types import guess_content_type
-import os.path
-import errno
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -641,3 +620,117 @@ class IcingFolder:
     def browserDefault(self, request):
         return self, ()
 
+
+class StructuralObjectPresentationView(LaunchpadView):
+
+    # Object attributes used by the page template:
+    #   num_lists: 0, 1 or 2
+    #   children: []
+    #   more_children: 0
+    #   altchildren: []
+    #   more_altchildren: 0
+
+    def initialize(self):
+        self.structuralpresentation = IStructuralObjectPresentation(
+            self.context)
+
+        max_altchildren = 4
+        altchildren = self.structuralpresentation.listAltChildren(
+            max_altchildren)
+        if not altchildren:
+            max_children = 8
+            children = self.structuralpresentation.listChildren(max_children)
+            altchildcount = 0
+        else:
+            max_children = 4
+            children = self.structuralpresentation.listChildren(max_children)
+            altchildcount = self.structuralpresentation.countAltChildren()
+
+        if children:
+            childcount = self.structuralpresentation.countChildren()
+        else:
+            childcount = 0
+
+        if altchildren:
+            altchildren = list(altchildren)
+            assert len(altchildren) <= max_altchildren
+            if altchildcount > max_altchildren:
+                self.altchildren = altchildren[:-1]
+            else:
+                self.altchildren = altchildren
+            self.more_altchildren = altchildcount - len(self.altchildren)
+        else:
+            self.more_altchildren = 0
+            self.altchildren = []
+
+        children = list(children)
+        assert len(children) <= max_children
+        if childcount > max_children:
+            self.children = children[:-1]
+        else:
+            self.children = children
+        self.more_children = childcount - len(self.children)
+
+        if not children and not altchildren:
+            self.num_lists = 0
+        elif altchildren:
+            self.num_lists = 2
+        else:
+            self.num_lists = 1
+
+    def getIntroHeading(self):
+        return self.structuralpresentation.getIntroHeading()
+
+    def getMainHeading(self):
+        return self.structuralpresentation.getMainHeading()
+
+    def getGotchiURL(self):
+        return '/+not-found-gotchi'
+
+
+class StructuralObjectPresentation:
+    """Base class for StructuralObjectPresentation adapters."""
+
+    implements(IStructuralObjectPresentation)
+
+    def __init__(self, context):
+        self.context = context
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        raise NotImplementedError()
+
+    def listChildren(self, num):
+        return []
+
+    def countChildren(self):
+        return 0
+
+    def listAltChildren(self, num):
+        return None
+
+    def countAltChildren(self):
+        raise NotImplementedError()
+
+
+class DefaultStructuralObjectPresentation(StructuralObjectPresentation):
+
+    def getMainHeading(self):
+        if hasattr(self.context, 'title'):
+            return self.context.title
+        else:
+            return 'no title'
+
+    def listChildren(self, num):
+        return ['name%s' % n for n in range(num)]
+
+    def countChildren(self):
+        return 50
+
+    def listAltChildren(self, num):
+        return ['altname%s' % n for n in range(num)]
+
+    def countAltChildren(self):
+        return 4
