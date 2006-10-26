@@ -128,6 +128,9 @@ class ITranslationImportQueue(Interface):
         raised.
         """
 
+    def entryCount(self):
+        """Return the number of TranslationImportQueueEntry records."""
+
     def iterNeedReview():
         """Iterate over all entries in the queue that need review."""
 
