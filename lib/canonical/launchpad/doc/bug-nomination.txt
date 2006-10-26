@@ -381,16 +381,15 @@ The nomination model requires that a generic distribution task exists
 for each distrorelease task. This causes some problem when renaming the
 source package on an accepted nomination. For example, if we would
 change the thunderbird package on the Grumpy task, it won't have a
-corresponding generic distribution task. To solve this, such a task is
-automatically created.
+corresponding generic distribution task.
 
 The way we tie nominations to distribution releases, and not to source
-packages, it's hard to solve source package changes in a nice way. What
-happens when a source package is change is that we simply create a new
-distribution task, which in turn will create the necessary distrorelase
-tasks. This is far from ideal, but hopefully package renames after the
-bug has been targeted to a release is rare enough for this to be
-acceptable.
+packages, makes it hard to solve source package changes in a nice way.
+So what happens when a source package is changed is that we simply
+rename all other bugtasks which points to the same distribution and
+source package name.  This is not ideal, but hopefully package renames
+after the bug has been targeted to a release is rare enough for this to
+be acceptable.
 
     >>> thunderbird_grumpy = tasks[-2]
     >>> thunderbird_grumpy.targetname
