@@ -470,7 +470,6 @@ class POTemplate(SQLBase, RosettaStats):
             header=standardPOFileHeader % data,
             fuzzyheader=True,
             owner=owner,
-            pluralforms=data['nplurals'],
             variant=variant,
             path=path)
 
