@@ -12,6 +12,7 @@ First, we need some imports.
     ...     ITranslationImportQueue, IPOTemplateSet, IDistributionSet,
     ...     ISourcePackageNameSet)
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from canonical.database.sqlbase import flush_database_updates
 
 All the tests will be submitted as comming from the No Privilege person.
 
@@ -149,14 +150,14 @@ Now we do the submit
 
     >>> request = LaunchpadTestRequest(form={
     ...     'batch': '10',
-    ...     'start': '10',
-    ...     'show': 'untranslated',
+    ...     'start': '0',
+    ...     'show': 'all',
     ...     'msgset_130': None,
     ...     'msgset_130_es_translation_0_new_checkbox': True,
     ...     'msgset_130_es_translation_0_new': 'Foo',
     ...     'msgset_138': None,
     ...     'msgset_138_es_translation_0_new_checkbox': True,
-    ...     'msgset_138_es_translation_0': 'Bar',
+    ...     'msgset_138_es_translation_0_new': 'Bar',
     ...     'submit_translations': 'Save &amp; Continue'})
     >>> request.method = 'POST'
     >>> pofile_view = getView(pofile_es, '+translate', request)
@@ -171,10 +172,10 @@ And check again.
     >>> pofile_es.rosettaCount()
     1
 
-Also, we can see that we got redirected to next batch, that is the first one.
+Also, we can see that we got redirected to next batch.
 
     >>> pofile_view.request.response.getHeader('Location')
-    'http://127.0.0.1?start=0&show=untranslated'
+    'http://127.0.0.1?start=10'
 
 The messsage's sequence is the position of that message in latest imported
 template. We are going to test now what happens when we submit a potmsgset

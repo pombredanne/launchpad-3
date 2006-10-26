@@ -8,14 +8,22 @@ We define first a function we are going to use in this test.
 
   >>> def print_shown_translations(browser):
   ...     """Print the id/value of all shown translations on the page."""
+  ...     from canonical.launchpad.database import POTMsgSet
+  ...
   ...     for msgset_id in range(130, 152):
   ...         try:
   ...             translation_ctrl = browser.getControl(
-  ...                 name='msgset_%s_es_translation_0' % msgset_id)
+  ...                 name='msgset_%d_es_translation_0_new' % msgset_id)
   ...         except LookupError:
   ...             pass
   ...         else:
-  ...             print (msgset_id, translation_ctrl.value)
+  ...             potmsgset = POTMsgSet.get(msgset_id)
+  ...             pomsgset = potmsgset.getPOMsgSet('es')
+  ...             if pomsgset is None:
+  ...                 translation = None
+  ...             else:
+  ...                 translation = pomsgset.active_texts[0]
+  ...             print (msgset_id, translation)
 
 Let's see the list of untranslated messsages that the pofile has with the
 first batch of entries:
@@ -27,16 +35,16 @@ first batch of entries:
   'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=untranslated'
 
   >>> print_shown_translations(browser)
-  (133, '')
-  (135, '')
-  (136, '')
-  (137, '')
-  (138, '')
-  (139, '')
-  (140, '')
-  (141, '')
-  (142, '')
-  (148, '')
+  (133, None)
+  (135, None)
+  (136, None)
+  (137, None)
+  (138, None)
+  (139, None)
+  (140, None)
+  (141, None)
+  (142, None)
+  (148, None)
 
 
 The set of messages that are untranslated in the second batch:
@@ -46,9 +54,9 @@ The set of messages that are untranslated in the second batch:
   'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=untranslated&start=10'
 
   >>> print_shown_translations(browser)
-  (149, '')
-  (150, '')
-  (151, '')
+  (149, None)
+  (150, None)
+  (151, None)
 
 Now, we are going to select the amount of entries that need to be reviewed.
 
@@ -57,12 +65,9 @@ Now, we are going to select the amount of entries that need to be reviewed.
   >>> browser.url
   'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=need_review'
 
-XXX: CarlosPerelloMarin 20060824: The test has an extra '\n' char as the first
-character to workaround bug #47511.
-
   >>> print_shown_translations(browser)
-  (132, '\ntiene ')
-  (146, '\n%d foo')
+  (132, u'tiene ')
+  (146, u'%d foo')
 
 We are now at the end of this template. Let's try the form submission
 to be sure that we don't redirect to a broken URL but to the first batch.

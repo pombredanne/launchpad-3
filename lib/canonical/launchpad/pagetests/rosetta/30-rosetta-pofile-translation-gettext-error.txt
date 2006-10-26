@@ -1,49 +1,44 @@
 Test to check that Rosetta is able to get translation errors.
 
-  >>> import canonical.launchpad
-  >>> import os.path
-  >>> data_file_name = os.path.join(
-  ...     os.path.dirname(canonical.launchpad.__file__),
-  ...     'pagetests/rosetta/30-rosetta-pofile-translation-gettext-error.data')
-  >>> data = open(data_file_name)
-  >>> print http(r"""
-  ... POST /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=20 HTTP/1.1
-  ... Content-Length: 224
-  ... Content-Type: application/x-www-form-urlencoded
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... 
-  ... %s""" % data.read())
-  HTTP/1.1 200 Ok
-  ...
-  ...Error in Translation:...
-  ...format specifications in 'msgid' and 'msgstr[0]' for argument 1 are not the sameformat specifications in 'msgid' and 'msgstr[1]' for argument 1 are not the same...
-  ...
+  >>> user_browser.open(
+  ...     "http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=20")
+  >>> user_browser.url
+  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=20'
 
+Set the new values and submit the form.
 
-Check that the previous submit was not saved.
+  >>> user_browser.getControl(name='msgset_150_es_translation_0_new_checkbox').value = True
+  >>> user_browser.getControl(name='msgset_150_es_translation_0_new').value = u'Found %s invalid file'
+  >>> user_browser.getControl(name='msgset_150_es_translation_1_new_checkbox').value = True
+  >>> user_browser.getControl(name='msgset_150_es_translation_1_new').value = u'Found %s invalid files'
+  >>> user_browser.getControl(name='submit_translations').click()
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=20 HTTP/1.1
-  ... Accept-Language: en-gb,en;q=0.5
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-                        <td>Found <code>%i</code> invalid file.</td>
-  ...
-                        <td>Found <code>%i</code> invalid files.</td>
-  ...
+We got an error, that means the url should be the same.
 
-                          <input type="text"
-      name="msgset_150_es_translation_0" tabindex="1" />
+  >>> user_browser.url
+  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=20'
 
+And we can see the error.
 
+  >>> "Error in Translation" in user_browser.contents
+  True
+  >>> "format specifications in 'msgid' and 'msgstr[0]' for argument 1 are not the sameformat" in user_browser.contents
+  True
 
+Check that the previous submit was not saved. We know that because the text
+areas still have the text to allow the user to fix it.
 
+  >>> user_browser.getControl(name='msgset_150_es_translation_0_new_checkbox').value
+  True
 
-                          <input type="text"
-      name="msgset_150_es_translation_1" tabindex="1" />
-  ...
-                              <input type="checkbox"
-      value="fuzzy" name="msgset_150_es_needsreview" tabindex="1" />
-  ...
+XXX: CarlosPerelloMarin 20061026: The extra '\n' char is there to workaroud bug #47511
+
+  >>> user_browser.getControl(name='msgset_150_es_translation_0_new').value
+  '\nFound %s invalid file'
+  >>> user_browser.getControl(name='msgset_150_es_translation_1_new_checkbox').value
+  True
+
+XXX: CarlosPerelloMarin 20061026: The extra '\n' char is there to workaroud bug #47511
+
+  >>> user_browser.getControl(name='msgset_150_es_translation_1_new').value
+  '\nFound %s invalid files'

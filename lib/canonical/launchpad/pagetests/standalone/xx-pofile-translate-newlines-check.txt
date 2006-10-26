@@ -4,28 +4,34 @@ extra new line characters with text areas when you get the value with
 getControl(...).value. For more information, please, read bug #47511.
 
   >>> from BeautifulSoup import BeautifulSoup
+  >>> from canonical.launchpad.database import POTMsgSet
 
-First, we check that the textarea is empty by default.
+First, we check that the message is not translated.
+
+  >>> potmsgset = POTMsgSet.get(149)
+  >>> pomsgset = potmsgset.getPOMsgSet('es')
+  >>> pomsgset is not None
+  True
+  >>> pomsgset.active_texts
+  [None]
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
   >>> browser.open(
   ...     'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=19&batch=1')
   >>> browser.url
   'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=19&batch=1'
-  >>> soup = BeautifulSoup(browser.contents)
-  >>> soup.find(attrs={"name" : "msgset_149_es_translation_0"})
-  <textarea ... name="msgset_149_es_translation_0" ...></textarea>
 
 Now, we submit some text with new lines before and after the text, the
 answer should have exactly those strings.
 
-  >>> browser.getControl(name='msgset_149_es_translation_0').value = '\r\nfoo\r\n\r\n'
+  >>> browser.getControl(name='msgset_149_es_translation_0_new_checkbox').value = True
+  >>> browser.getControl(name='msgset_149_es_translation_0_new').value = '\r\nfoo\r\n\r\n'
   >>> browser.getControl(name='submit_translations').click()
   >>> browser.url
   'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate'
   >>> soup = BeautifulSoup(browser.contents)
-  >>> soup.find(attrs={"name" : "msgset_149_es_translation_0"})
-  <textarea ... name="msgset_149_es_translation_0" ...>
+  >>> soup.find(attrs={"name" : "msgset_149_es_translation_0_new"})
+  <textarea ... name="msgset_149_es_translation_0_new" ...>
   
   foo
   
@@ -35,13 +41,14 @@ And finally, a line that does not start with a new line so we are sure we
 don't get extra whitespaces. The NORMALIZE_WHITESPACE must be there, if you
 change the test, to be 100% sure that the textarea content is the right one.
 
-  >>> browser.getControl(name='msgset_149_es_translation_0').value = 'foo'
+  >>> browser.getControl(name='msgset_149_es_translation_0_new_checkbox').value = True
+  >>> browser.getControl(name='msgset_149_es_translation_0_new').value = 'foo'
   >>> browser.getControl(name='submit_translations').click()
   >>> browser.url
   'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate'
   >>> soup = BeautifulSoup(browser.contents)
-  >>> soup.find(attrs={"name" : "msgset_149_es_translation_0"}) #doctest: -NORMALIZE_WHITESPACE
-  <textarea ... name="msgset_149_es_translation_0" ...>
+  >>> soup.find(attrs={"name" : "msgset_149_es_translation_0_new"}) #doctest: -NORMALIZE_WHITESPACE
+  <textarea ... name="msgset_149_es_translation_0_new" ...>
   foo</textarea>
 
 Now, Check that even though the user forgot the trailing new line char, Rosetta
@@ -50,7 +57,8 @@ adds it automatically
   >>> browser.open('http://localhost/products/evolution/trunk/+pots/evolution-2.2/es/+translate?start=21&batch=1')
   >>> browser.url
   'http://localhost/products/evolution/trunk/+pots/evolution-2.2/es/+translate?start=21&batch=1'
-  >>> browser.getControl(name='msgset_165_es_translation_0').value = '%s: la opcion \xc2\xab%s\xc2\xbb es ambigua'
+  >>> browser.getControl(name='msgset_165_es_translation_0_new_checkbox').value = True
+  >>> browser.getControl(name='msgset_165_es_translation_0_new').value = '%s: la opcion \xc2\xab%s\xc2\xbb es ambigua'
   >>> browser.getControl(name='submit_translations').click()
 
 We were redirected to the next form, the translation was accepted.
@@ -66,15 +74,17 @@ Get previous page to check that the save translation is the right one.
 
 And, as we can see, we get the trailing new line char
 
-  >>> soup = BeautifulSoup(browser.contents)
-  >>> soup.find(attrs={"name" : "msgset_165_es_translation_0"})
-  <textarea ... name="msgset_165_es_translation_0" ...>
-  %s: la opcion «%s» es ambigua
-  </textarea>
+  >>> potmsgset = POTMsgSet.get(165)
+  >>> pomsgset = potmsgset.getPOMsgSet('es')
+  >>> pomsgset is not None
+  True
+  >>> pomsgset.active_texts
+  [u'%s: la opcion \xab%s\xbb es ambigua\n']
 
 Now, we do the right submit, with one trailing new line...
 
-  >>> browser.getControl(name='msgset_165_es_translation_0').value = '%s: la opcion \xc2\xab%s\xc2\xbb es ambigua\r\n'
+  >>> browser.getControl(name='msgset_165_es_translation_0_new_checkbox').value = True
+  >>> browser.getControl(name='msgset_165_es_translation_0_new').value = '%s: la opcion \xc2\xab%s\xc2\xbb es ambigua\r\n'
   >>> browser.getControl(name='submit_translations').click()
 
 We were redirected to the next form, the translation was accepted.
@@ -90,15 +100,17 @@ Get previous page to check that the save translation is the right one.
 
 And, as we can see, we get the same output, just one trailing new line char
 
-  >>> soup = BeautifulSoup(browser.contents)
-  >>> soup.find(attrs={"name" : "msgset_165_es_translation_0"})
-  <textarea ... name="msgset_165_es_translation_0" ...>
-  %s: la opcion «%s» es ambigua
-  </textarea>
+  >>> potmsgset = POTMsgSet.get(165)
+  >>> pomsgset = potmsgset.getPOMsgSet('es')
+  >>> pomsgset is not None
+  True
+  >>> pomsgset.active_texts
+  [u'%s: la opcion \xab%s\xbb es ambigua\n']
 
 Last check, the user sends two new line chars instead of just one...
 
-  >>> browser.getControl(name='msgset_165_es_translation_0').value = '%s: la opcion \xc2\xab%s\xc2\xbb es ambigua\r\n\r\n'
+  >>> browser.getControl(name='msgset_165_es_translation_0_new_checkbox').value = True
+  >>> browser.getControl(name='msgset_165_es_translation_0_new').value = '%s: la opcion \xc2\xab%s\xc2\xbb es ambigua\r\n\r\n'
   >>> browser.getControl(name='submit_translations').click()
 
 We were redirected to the next form, the translation was accepted.
@@ -114,8 +126,9 @@ Get previous page to check that the save translation is the right one.
 
 And Rosetta comes to the rescue and stores just one!.
 
-  >>> soup = BeautifulSoup(browser.contents)
-  >>> soup.find(attrs={"name" : "msgset_165_es_translation_0"})
-  <textarea ... name="msgset_165_es_translation_0" ...>
-  %s: la opcion «%s» es ambigua
-  </textarea>
+  >>> potmsgset = POTMsgSet.get(165)
+  >>> pomsgset = potmsgset.getPOMsgSet('es')
+  >>> pomsgset is not None
+  True
+  >>> pomsgset.active_texts
+  [u'%s: la opcion \xab%s\xbb es ambigua\n']

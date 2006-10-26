@@ -186,7 +186,8 @@ Now we do the submit.
     ...     form={
     ...         'alt': None,
     ...         'msgset_1': None,
-    ...         'msgset_1_es_translation_0': 'Foo',
+    ...         'msgset_1_es_translation_0_new_checkbox': True,
+    ...         'msgset_1_es_translation_0_new': 'Foo',
     ...         'submit_translations': 'Save &amp; Continue'})
     >>> request.method = 'POST'
     >>> pomsgset_page_view = getView(pomsgset, "+translate", request)
