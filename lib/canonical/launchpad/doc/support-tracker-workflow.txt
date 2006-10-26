@@ -363,9 +363,7 @@ request:
     >>> spam_ticket.canReject(stub)
     True
 
-    (Even if a user logged in that has the permission, the method cannot
-    be called on the behalf of a user who wouldn't have permission.)
-    >>> login('test@canonical.com')
+    >>> login(marilize.preferredemail.email)
     >>> spam_ticket.reject(
     ...     marilize, 'Use https://shipit.launchpad.net/ to order CD')
     Traceback (most recent call last):
@@ -375,6 +373,7 @@ request:
 The reject() method takes a comment explaining the reason behind the
 rejection.
 
+    >>> login('test@canonical.com')
     >>> reject_message = spam_ticket.reject(
     ...     sample_person, 'Use https://shipit.launchpad.net/ to order CD',
     ...     datecreated=now_plus_one_hour)
@@ -475,9 +474,10 @@ the answer and dateanswered attributes.
     >>> ticket.answer is None
     True
 
-But when the status is changed on behalf of a user who doesn't have
+But when the status is changed by a user who doesn't have the
 launchpad.Admin permission, an Unauthorized error is thrown:
 
+    >>> login('test@canonical.com')
     >>> ticket.setStatus(sample_person, TicketStatus.EXPIRED, 'Expire.')
     Traceback (most recent call last):
       ...

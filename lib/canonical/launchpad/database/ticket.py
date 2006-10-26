@@ -9,7 +9,6 @@ from email.Utils import make_msgid
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements, providedBy
-from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
 
 from sqlobject import (
@@ -152,9 +151,6 @@ class Ticket(SQLBase, BugLinkTargetMixin):
     @notify_ticket_modified()
     def setStatus(self, user, new_status, comment, datecreated=None):
         """See ITicket."""
-        if not self._isTargetOwnerOrAdmin(user):
-            raise Unauthorized, (
-                "Only target owner or admins can change a ticket status.")
         if new_status == self.status:
             raise InvalidTicketStateError(
                 "New status is same as the old one.")
@@ -299,10 +295,8 @@ class Ticket(SQLBase, BugLinkTargetMixin):
     @notify_ticket_modified()
     def reject(self, user, comment, datecreated=None):
         """See ITicket."""
-        if not self.canReject(user):
-            raise Unauthorized, (
-            "Only support contacts, target owner or admins can reject a "
-            "request")
+        assert self.canReject(user), (
+            'User "%s" cannot reject the ticket.' % user.displayname)
         if self.status == TicketStatus.INVALID:
             raise InvalidTicketStateError("Ticket is already rejected.")
         msg = self._newMessage(
