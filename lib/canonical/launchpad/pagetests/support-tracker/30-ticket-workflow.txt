@@ -278,15 +278,6 @@ When an answer is posted on a ticket, its owner will usually receive a
 notification by email. That email includes a link that can be used by
 the owner to confirm that the answer solved his problem.
 
-Of course, to access that link, the owner will have to login:
-
-    >>> anon_browser.open(
-    ...     'http://launchpad.dev/products/firefox/+ticket/6/+confirm?'
-    ...     'answer_id=1')
-    Traceback (most recent call last):
-      ...
-    Unauthorized...
-
 When the URL is used when the ticket isn't in the right state, the user
 will be redirected to the ticket page and a notification will be
 displayed:
@@ -349,15 +340,12 @@ handcrafted URL:
       ...
     UnexpectedFormData...
 
-If somebody else than the ticket owner try to access that page, an error
-message is also shown:
+The page is only accessible to the ticket owner:
 
     >>> support_browser.open(confirm_url)
-    >>> support_browser.url
-    'http://.../firefox/+ticket/6'
-    >>> soup = BeautifulSoup(support_browser.contents)
-    >>> print soup.first('div', 'error message').renderContents()
-    Only the person who opened the support request can confirm an answer.
+    Traceback (most recent call last):
+      ...
+    Unauthorized...
 
 On the confirmation page, the user can see the answer that he is
 confirming.

@@ -5,9 +5,7 @@ Launchpad includes a tech support ticket tracker. Tickets are created
 and accessed using the ITicketTarget interface. This interface is
 available on products, distributions and sourcepackages.
 
-    (Complete set of attributes for the interface is only available to
-    an administrator.)
-    >>> login('foo.bar@canonical.com')
+    >>> login('test@canonical.com')
 
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import (
@@ -42,7 +40,11 @@ ITicket
 Tickets are manipulated through the ITicket interface:
 
     >>> from canonical.launchpad.interfaces import ITicket
-    >>> verifyObject(ITicket, firefox_ticket)
+    >>> from zope.security.proxy import removeSecurityProxy
+
+    # The complete interface is not necessarily available to the
+    # logged in user.
+    >>> verifyObject(ITicket, removeSecurityProxy(firefox_ticket))
     True
 
 The person who submitted the ticket is available in the owner field.

@@ -134,6 +134,7 @@ attribute is updated to the message timestamp.
 The ticket owner can reply to this information by using the giveInfo()
 method which adds an ITicketMessage with action GIVEINFO.
 
+    >>> login('no-priv@canonical.com')
     >>> now_plus_two_hours = now + timedelta(hours=2)
     >>> reply_message = ticket.giveInfo(
     ...     "I have a PowerMac 7200.", datecreated=now_plus_two_hours)
@@ -160,6 +161,7 @@ support request. The giveAnswer() method is used for that purpose. Like
 the requestInfo() method, it takes two mandatory parameters: the user
 providing the answer and the answer itself.
 
+    >>> login('test@canonical.com')
     >>> now_plus_three_hours = now + timedelta(hours=3)
     >>> answer_message = ticket.giveAnswer(
     ...     sample_person, "You need some configuration on the Mac side "
@@ -184,6 +186,7 @@ have feedback from the user on whether it solved his problem or not. If
 it doesn't the user can reopen the request. The reopen() method is used
 for that purpose.
 
+    >>> login('no-priv@canonical.com')
     >>> tomorrow = now + timedelta(days=1)
     >>> reopen_message = ticket.reopen(
     ...     "I installed BootX and I've progressed somewhat. I now get the "
@@ -207,6 +210,7 @@ attribute is updated to the message creation date.
 
 The giveAnswer() will again be used to give an answer.
 
+    >>> login('test@canonical.com')
     >>> tomorrow_plus_one_hour = tomorrow + timedelta(hours=1)
     >>> answer2_message = ticket.giveAnswer(
     ...     marilize, "You probably do not have enough RAM to use the "
@@ -222,6 +226,7 @@ The submitter will hopefully come back to confirm that his problem is
 solved. The submitter can specify which message helped him solved his
 problem. The confirmAnswer() method is used for that purpose.
 
+    >>> login('no-priv@canonical.com')
     >>> two_weeks_from_now = now + timedelta(days=14)
     >>> confirm_message = ticket.confirmAnswer(
     ...     "I upgraded to 512M of RAM (found on eBay) and I've "
@@ -289,6 +294,7 @@ the request is too complex or too vague. These requests can be expired
 by using the expireTicket() method. (See support-tracker-expiration.txt
 for the documentation of the cron script handling this task.)
 
+    >>> login('no-priv@canonical.com')
     >>> ticket = ubuntu.newTicket(**new_ticket_args)
     >>> expire_message = ticket.expireTicket(
     ...     sample_person, "There was no activity on this ticket for two "
@@ -460,11 +466,15 @@ the answer and dateanswered attributes.
 
     >>> msg = ticket.setStatus(stub, TicketStatus.OPEN, 'Status change.')
     >>> answer_message = ticket.giveAnswer(sample_person, 'Install BootX.')
+
+    >>> login('no-priv@canonical.com')
     >>> msg = ticket.confirmAnswer('This worked.', answer=answer_message)
     >>> ticket.dateanswered is not None
     True
     >>> ticket.answer == answer_message
     True
+
+    >>> login(stub.preferredemail.email)
     >>> status_change_message = ticket.setStatus(
     ...     stub, TicketStatus.OPEN, 'Reopen the request',
     ...     datecreated=now_plus_one_hour)
@@ -570,6 +580,7 @@ is reopened, a TicketReopening is created.
 The most common use case is when a user confirms a solution, and then
 comes back to say that it doesn't work in fact.
 
+    >>> login('no-priv@canonical.com')
     >>> ticket = ubuntu.newTicket(**new_ticket_args)
     >>> answer_message = ticket.giveAnswer(
     ...    sample_person, "You need some setup on the Mac side. "

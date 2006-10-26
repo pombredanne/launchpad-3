@@ -43,7 +43,7 @@ class BaseSupportTrackerWorkflowTestCase(unittest.TestCase):
     def setUp(self):
         self.now = datetime.now(UTC)
 
-        # Workflow methods are available only to logged in user.
+        # Login as the ticket owner.
         login('no-priv@canonical.com')
 
         # Set up actors.
@@ -58,6 +58,7 @@ class BaseSupportTrackerWorkflowTestCase(unittest.TestCase):
 
         # Simple ubuntu ticket.
         self.ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+
         self.ticket = self.ubuntu.newTicket(
             self.owner, 'Help!', 'I need help with Ubuntu',
             datecreated=self.now)
@@ -274,28 +275,6 @@ class BaseSupportTrackerWorkflowTestCase(unittest.TestCase):
 class MiscSupportTrackerWorkflowTestCase(BaseSupportTrackerWorkflowTestCase):
     """Various other test cases for the support tracker workflow."""
 
-    def testWorkflowMethodsPermission(self):
-        """Verify the workflow methods permission.
-
-        Only a logged in user can access the workflow methods.
-        """
-        workflow_methods = (
-            'requestInfo', 'giveInfo', 'giveAnswer', 'confirmAnswer',
-            'expireTicket')
-        login(ANONYMOUS)
-        for method in workflow_methods:
-            try:
-                getattr(self.ticket, method)
-                self.fail(
-                    "Method %s should not be accessible by the anonymous "
-                    "user." % method)
-            except Unauthorized:
-                pass
-
-        login('no-priv@canonical.com')
-        for method in workflow_methods:
-            self.failUnless(getattr(self.ticket, method))
-
     def testDisallowNoOpSetStatus(self):
         """Test that calling setStatus to change to the same status
         raises an InvalidTicketStateError.
@@ -358,6 +337,14 @@ class RequestInfoTestCase(BaseSupportTrackerWorkflowTestCase):
             ['OPEN', 'NEEDSINFO', 'ANSWERED'], self.ticket.requestInfo,
             self.answerer, "What's up?", datecreated=self.nowPlus(3))
 
+    def test_requestInfoPermission(self):
+        """Test that only a logged in user can access requestInfo()."""
+        login(ANONYMOUS)
+        self.assertRaises(Unauthorized, getattr, self.ticket, 'requestInfo')
+
+        login(self.answerer.preferredemail.email)
+        getattr(self.ticket, 'requestInfo')
+
 
 class GiveInfoTestCase(BaseSupportTrackerWorkflowTestCase):
     """Test cases for the giveInfo() workflow action method."""
@@ -388,6 +375,18 @@ class GiveInfoTestCase(BaseSupportTrackerWorkflowTestCase):
             transition_method=self.ticket.giveInfo,
             transition_method_args=("That's that.",),
             edited_fields=None)
+
+    def test_giveInfoPermission(self):
+        """Test that only the owner can access giveInfo()."""
+        login(ANONYMOUS)
+        self.assertRaises(Unauthorized, getattr, self.ticket, 'giveInfo')
+        login(self.answerer.preferredemail.email)
+        self.assertRaises(Unauthorized, getattr, self.ticket, 'giveInfo')
+        login(self.admin.preferredemail.email)
+        self.assertRaises(Unauthorized, getattr, self.ticket, 'giveInfo')
+
+        login(self.owner.preferredemail.email)
+        getattr(self.ticket, 'giveInfo')
 
 
 class GiveAnswerTestCase(BaseSupportTrackerWorkflowTestCase):
@@ -447,6 +446,14 @@ class GiveAnswerTestCase(BaseSupportTrackerWorkflowTestCase):
             transition_method_kwargs={'datecreated': self.nowPlus(3)},
             edited_fields=['status', 'messages', 'dateanswered', 'answerer',
                            'answer', 'datelastquery'])
+
+    def test_giveAnswerPermission(self):
+        """Test that only a logged in user can access giveAnswer()."""
+        login(ANONYMOUS)
+        self.assertRaises(Unauthorized, getattr, self.ticket, 'giveAnswer')
+
+        login(self.answerer.preferredemail.email)
+        getattr(self.ticket, 'giveAnswer')
 
 
 class ConfirmAnswerTestCase(BaseSupportTrackerWorkflowTestCase):
@@ -537,6 +544,18 @@ class ConfirmAnswerTestCase(BaseSupportTrackerWorkflowTestCase):
             answerRefused, 'confirmAnswer accepted a message from a different'
             'ticket')
 
+    def test_confirmAnswerPermission(self):
+        """Test that only the owner can access confirmAnswer()."""
+        login(ANONYMOUS)
+        self.assertRaises(Unauthorized, getattr, self.ticket, 'confirmAnswer')
+        login(self.answerer.preferredemail.email)
+        self.assertRaises(Unauthorized, getattr, self.ticket, 'confirmAnswer')
+        login(self.admin.preferredemail.email)
+        self.assertRaises(Unauthorized, getattr, self.ticket, 'confirmAnswer')
+
+        login(self.owner.preferredemail.email)
+        getattr(self.ticket, 'confirmAnswer')
+
 
 class ReopenTestCase(BaseSupportTrackerWorkflowTestCase):
     """Test cases for the reopen() workflow action method."""
@@ -595,6 +614,18 @@ class ReopenTestCase(BaseSupportTrackerWorkflowTestCase):
                       'dateanswered', 'datelastquery'],
             TicketStatus.OPEN.title)
 
+    def test_reopenPermission(self):
+        """Test that only the owner can access reopen()."""
+        login(ANONYMOUS)
+        self.assertRaises(Unauthorized, getattr, self.ticket, 'reopen')
+        login(self.answerer.preferredemail.email)
+        self.assertRaises(Unauthorized, getattr, self.ticket, 'reopen')
+        login(self.admin.preferredemail.email)
+        self.assertRaises(Unauthorized, getattr, self.ticket, 'reopen')
+
+        login(self.owner.preferredemail.email)
+        getattr(self.ticket, 'reopen')
+
 
 class ExpireTicketTestCase(BaseSupportTrackerWorkflowTestCase):
     """Test cases for the expireTicket() workflow action method."""
@@ -620,6 +651,14 @@ class ExpireTicketTestCase(BaseSupportTrackerWorkflowTestCase):
             transition_method_args=(
                 self.answerer, 'This ticket is expired.'),
             edited_fields=['status', 'messages', 'datelastresponse'])
+
+    def test_expireTicketPermission(self):
+        """Test that only a logged in user can access expireTicket()."""
+        login(ANONYMOUS)
+        self.assertRaises(Unauthorized, getattr, self.ticket, 'expireTicket')
+
+        login(self.answerer.preferredemail.email)
+        getattr(self.ticket, 'expireTicket')
 
 
 class RejectTestCase(BaseSupportTrackerWorkflowTestCase):

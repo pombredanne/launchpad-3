@@ -456,14 +456,7 @@ class TicketConfirmAnswerView(TicketWorkflowView):
     """
 
     def initialize(self):
-        # This page is only available to the owner
-        if self.user != self.context.owner:
-            self.request.response.addErrorNotification(_(
-                "Only the person who opened the support request can confirm "
-                "an answer."))
-            self.request.response.redirect(canonical_url(self.context))
-            return
-
+        # This page is only accessible when a confirmation is possible.
         if not self.context.can_confirm_answer:
             self.request.response.addErrorNotification(_(
                 "The support request is not in a state where you can confirm "

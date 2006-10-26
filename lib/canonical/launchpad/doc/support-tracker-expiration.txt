@@ -57,6 +57,7 @@ Only tickets in the OPEN or NEEDSINFO state are subject to expiration.
     <TicketMessage...>
 
     (This one got an update from its owner recently.)
+    >>> login('test@canonical.com')
     >>> recent_open_ticket = ticketset.get(2)
     >>> recent_open_ticket.giveInfo(
     ...     'SVG works better now, but is still broken')

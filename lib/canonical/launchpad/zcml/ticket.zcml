@@ -21,9 +21,12 @@
                     subscriptions isSubscribed getSubscribers
                     getDirectSubscribers getIndirectSubscribers" />
     <require
+        permission="launchpad.Owner"
+        attributes="giveInfo reopen confirmAnswer"
+        />
+    <require
         permission="launchpad.AnyPerson"
-        attributes="requestInfo giveInfo giveAnswer confirmAnswer
-                    expireTicket reopen addComment
+        attributes="requestInfo giveAnswer expireTicket addComment
                     subscribe unsubscribe"
         set_attributes="title description datedue product distribution
                         sourcepackagename " />
@@ -92,7 +95,7 @@
     name="+confirm"
     for="canonical.launchpad.interfaces.ITicket"
     class="canonical.launchpad.browser.TicketConfirmAnswerView"
-    permission="launchpad.AnyPerson"
+    permission="launchpad.Owner"
     template="../templates/ticket-confirm-answer.pt" />
 
   <browser:page
