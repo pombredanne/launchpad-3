@@ -478,10 +478,6 @@ class TranslationImportQueue:
 
         return entry
 
-    def __len__(self):
-        """See ITranslationImportQueue."""
-        return TranslationImportQueueEntry.select().count()
-
     def iterNeedsReview(self):
         """See ITranslationImportQueue."""
         return iter(TranslationImportQueueEntry.selectBy(

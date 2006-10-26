@@ -128,11 +128,6 @@ class ITranslationImportQueue(Interface):
         raised.
         """
 
-    def __len__():
-        """Return the number of entries in the queue, including blocked
-        entries.
-        """
-
     def iterNeedReview():
         """Iterate over all entries in the queue that need review."""
 
