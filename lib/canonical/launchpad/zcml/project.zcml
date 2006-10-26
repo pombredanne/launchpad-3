@@ -132,28 +132,14 @@
               lp:url="/project/$project.id/+reassign" />
     </browser:pages>
 
-    <browser:addform
+    <browser:page
         name="+new"
         for="canonical.launchpad.interfaces.IProjectSet"
-        schema="canonical.launchpad.interfaces.IProject"
-        label="Register a project with Launchpad"
-        fields="name displayname title summary description homepageurl"
-        content_factory="canonical.launchpad.database.Project"
         class="canonical.launchpad.browser.ProjectAddView"
         facet="overview"
         permission="launchpad.Admin"
-        template="../templates/launchpad-addform.pt"
-        lp:url="projects/+new">
-        <browser:widget field="owner" class="canonical.widgets.HiddenUserWidget" />
-        <browser:widget
-           field="name"
-           class="zope.app.form.browser.TextWidget"
-           extra="tabindex=1" />
-        <browser:widget
-           field="homepageurl"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="30" />
-    </browser:addform>
+        template="../templates/project-add.pt"
+        lp:url="/projects/+new" />
 
     <browser:page
         name="+edit"
@@ -202,39 +188,14 @@
         lp:url="/$Project.name/+driver">
     </browser:editform>
 
-    <browser:addform
+    <browser:page
         name="+newproduct"
         for="canonical.launchpad.interfaces.IProject"
         facet="overview"
-        schema="canonical.launchpad.interfaces.IProduct"
-        label="Register a product in this project"
-        fields="name displayname title summary description homepageurl
-                sourceforgeproject freshmeatproject wikiurl screenshotsurl
-                downloadurl programminglang owner"
         class="canonical.launchpad.browser.ProjectAddProductView"
         permission="launchpad.AnyPerson"
         template="../templates/product-add.pt"
-        lp:url="/projects/$Project.name/+newproduct">
-        <browser:widget
-           field="owner"
-           class="canonical.widgets.HiddenUserWidget" />
-        <browser:widget
-           field="homepageurl"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="30" />
-        <browser:widget
-           field="screenshotsurl"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="30" />
-        <browser:widget
-           field="wikiurl"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="30" />
-        <browser:widget
-           field="downloadurl"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="30" />
-    </browser:addform>
+        lp:url="/projects/$Project.name/+newproduct" />
 
     <browser:addform
       name="+linkbounty"

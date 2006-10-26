@@ -132,7 +132,8 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
     def disabled_mirrors(self):
         """See canonical.launchpad.interfaces.IDistribution."""
         return DistributionMirror.selectBy(
-            distribution=self, enabled=False)
+            distribution=self, official_approved=True,
+            official_candidate=True, enabled=False)
 
     @property
     def unofficial_mirrors(self):
@@ -218,8 +219,9 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         if not self.full_functionality:
             return None
 
-        url = http_base_url or ftp_base_url or rsync_base_url
-        assert url is not None
+        url = http_base_url or ftp_base_url
+        assert url is not None, (
+            "A mirror must provide either an HTTP or FTP URL (or both).")
         dummy, host, dummy, dummy, dummy, dummy = urlparse(url)
         name = sanitize_name('%s-%s' % (host, content.name.lower()))
 
@@ -432,15 +434,6 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         """See ISpecificationTarget."""
         return Specification.selectOneBy(distribution=self, name=name)
 
-    def tickets(self, quantity=None):
-        """See ITicketTarget."""
-        return Ticket.select("""
-            Ticket.distribution = %s
-            """ % sqlvalues(self.id),
-            orderBy='-Ticket.datecreated',
-            prejoins=['distribution', 'owner', 'sourcepackagename'],
-            limit=quantity)
-
     def newTicket(self, owner, title, description, datecreated=None):
         """See ITicketTarget."""
         return TicketSet.new(
@@ -459,11 +452,12 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
             return None
         return ticket
 
-    def searchTickets(self, search_text=None,
-                      status=TICKET_STATUS_DEFAULT_SEARCH, sort=None):
+    def searchTickets(self, search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
+                      owner=None, sort=None):
         """See ITicketTarget."""
-        return TicketSet.search(search_text=search_text, status=status,
-                                sort=sort, distribution=self)
+        return TicketSet.search(
+            distribution=self, search_text=search_text, status=status,
+            owner=owner, sort=sort)
 
     def findSimilarTickets(self, title):
         """See ITicketTarget."""

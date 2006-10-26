@@ -222,8 +222,6 @@ class LibrarianLayer(BaseLayer):
 
         We do this by altering the configuration so the Librarian client
         looks for the Librarian server on the wrong port.
-
-        XXX: Untested -- StuartBishop 20060713
         """
         cls._hidden = True
         config.librarian.upload_port = 58091
@@ -233,8 +231,6 @@ class LibrarianLayer(BaseLayer):
         """Reveal a hidden Librarian.
 
         This just involves restoring the config to the original value.
-
-        XXX: Untested -- StuartBishop 20060713
         """
         cls._hidden = False
         config.librarian.upload_port = cls._orig_librarian_port
@@ -539,6 +535,21 @@ class LaunchpadZopelessLayer(
             raise LayerInvariantError(
                 "Failed to uninstall ZopelessTransactionManager"
                 )
+
+    @classmethod
+    def commit(cls):
+        from canonical.launchpad.ftests.harness import (
+                LaunchpadZopelessTestSetup
+                )
+        LaunchpadZopelessTestSetup.txn.commit()
+
+    @classmethod
+    def abort(cls):
+        from canonical.launchpad.ftests.harness import (
+                LaunchpadZopelessTestSetup
+                )
+        LaunchpadZopelessTestSetup.txn.abort()
+
 
 
 class PageTestLayer(LaunchpadFunctionalLayer):

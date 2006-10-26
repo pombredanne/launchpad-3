@@ -45,6 +45,14 @@ The bug_watch_updater celebrity updates the bug watches.
   >>> celebs.bug_watch_updater == bug_watch_updater
   True
 
+For all the products using SourceForge, we have a single registered
+tracker
+
+  >>> from canonical.launchpad.interfaces import IBugTrackerSet
+  >>> sf_tracker = getUtility(IBugTrackerSet).getByName('sf')
+  >>> celebs.sourceforge_tracker == sf_tracker
+  True
+
 
   TODO: add interface verification test.
         ask debonzi to add these in general.

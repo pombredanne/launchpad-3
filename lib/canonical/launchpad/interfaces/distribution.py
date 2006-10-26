@@ -114,7 +114,8 @@ class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
         "All enabled and official ARCHIVE mirrors of this Distribution.")
     release_mirrors = Attribute(
         "All enabled and official RELEASE mirrors of this Distribution.")
-    disabled_mirrors = Attribute("All disabled mirrors of this Distribution.")
+    disabled_mirrors = Attribute(
+        "All disabled and official mirrors of this Distribution.")
     unofficial_mirrors = Attribute(
         "All unofficial mirrors of this Distribution.")
     releases = Attribute("DistroReleases inside this Distributions")
@@ -195,7 +196,11 @@ class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
                   description=None, http_base_url=None, ftp_base_url=None,
                   rsync_base_url=None, enabled=False,
                   official_candidate=False):
-        """Create a new DistributionMirror for this distribution."""
+        """Create a new DistributionMirror for this distribution.
+        
+        At least one of http_base_url or ftp_base_url must be provided in
+        order to create a mirror.
+        """
 
     def getMilestone(name):
         """Return a milestone with the given name for this distribution, or
