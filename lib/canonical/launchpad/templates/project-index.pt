@@ -97,7 +97,6 @@
       </div>
       <div class="right">
         <div
-          tal:condition="nothing"
           tal:content="structure context/@@+portlet-details"
           class="two column section"
         />
