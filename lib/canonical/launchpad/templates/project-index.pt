@@ -42,11 +42,6 @@
         <li class="requestsupport"><a href="+addticket">Request support</a></li>
         <li class="helptranslate"><a href="+translations">Help translate</a></li>
       </ul>
-      <div
-        tal:condition="nothing"
-        tal:content="structure context/@@+portlet-details"
-        class="right"
-      />
       <div class="left">
         <div class="two column section">
           <h2>Products</h2>
@@ -101,6 +96,11 @@
         </div>
       </div>
       <div class="right">
+        <div
+          tal:condition="nothing"
+          tal:content="structure context/@@+portlet-details"
+          class="two column section"
+        />
         <div class="demo two column section">
           <h2>Latest bugs</h2>
           <ul class="bug">

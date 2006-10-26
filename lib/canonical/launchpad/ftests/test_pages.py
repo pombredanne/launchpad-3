@@ -53,10 +53,10 @@ def find_portlet(content, name):
 def find_main_content(content):
     """Find and return the main content area of the page"""
     soup = BeautifulSoup(content)
-    tag = soup.find(attrs={'id': 'maincontent'})
+    tag = soup.find(attrs={'id': 'maincontent'}) # standard page with portlets
     if tag:
         return tag
-    return soup.find(attrs={'id': 'content'})
+    return soup.find(attrs={'id': 'singlecolumn'}) # single-column page
 
 
 def setUpGlobs(test):
