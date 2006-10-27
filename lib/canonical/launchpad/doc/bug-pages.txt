@@ -436,10 +436,10 @@ approved nomination will have created a task anyway.
 
     >>> print_tasks_and_nominations(tasks_and_nominations)
     bugtask, Unconfirmed, firefox (upstream)
-    nomination, Proposed, firefox 1.0 (upstream)
+    nomination, Nominated, firefox 1.0 (upstream)
     bugtask, Confirmed, mozilla-firefox (Debian)
     bugtask, Unconfirmed, mozilla-firefox (Ubuntu)
-    nomination, Proposed, Ubuntu Hoary
+    nomination, Nominated, Ubuntu Hoary
 
 Let's nominate the bug for upstream and an Ubuntu release and see how
 the list changes.
@@ -461,12 +461,12 @@ the list changes.
 
     >>> print_tasks_and_nominations(tasks_and_nominations)
     bugtask, Unconfirmed, firefox (upstream)
-    nomination, Proposed, firefox 1.0 (upstream)
-    nomination, Proposed, firefox trunk (upstream)
+    nomination, Nominated, firefox 1.0 (upstream)
+    nomination, Nominated, firefox trunk (upstream)
     bugtask, Confirmed, mozilla-firefox (Debian)
     bugtask, Unconfirmed, mozilla-firefox (Ubuntu)
-    nomination, Proposed, Ubuntu Hoary
-    nomination, Proposed, Ubuntu Warty
+    nomination, Nominated, Ubuntu Hoary
+    nomination, Nominated, Ubuntu Warty
 
 Let's add another affected package in Ubuntu to the bug.
 
@@ -487,15 +487,15 @@ A nomination row will be included for evolution now too.
 
     >>> print_tasks_and_nominations(tasks_and_nominations)
     bugtask, Unconfirmed, firefox (upstream)
-    nomination, Proposed, firefox 1.0 (upstream)
-    nomination, Proposed, firefox trunk (upstream)
+    nomination, Nominated, firefox 1.0 (upstream)
+    nomination, Nominated, firefox trunk (upstream)
     bugtask, Unconfirmed, evolution (Ubuntu)
-    nomination, Proposed, Ubuntu Hoary
-    nomination, Proposed, Ubuntu Warty
+    nomination, Nominated, Ubuntu Hoary
+    nomination, Nominated, Ubuntu Warty
     bugtask, Confirmed, mozilla-firefox (Debian)
     bugtask, Unconfirmed, mozilla-firefox (Ubuntu)
-    nomination, Proposed, Ubuntu Hoary
-    nomination, Proposed, Ubuntu Warty
+    nomination, Nominated, Ubuntu Hoary
+    nomination, Nominated, Ubuntu Warty
 
 When a nomination is approved, it turns into a task; the nomination is
 no longer shown. Declined nominations continue to be shown.
@@ -518,8 +518,8 @@ approve/decline nominations.)
 
     >>> print_tasks_and_nominations(tasks_and_nominations)
     bugtask, Unconfirmed, firefox (upstream)
-    nomination, Proposed, firefox 1.0 (upstream)
-    nomination, Proposed, firefox trunk (upstream)
+    nomination, Nominated, firefox 1.0 (upstream)
+    nomination, Nominated, firefox trunk (upstream)
     bugtask, Unconfirmed, evolution (Ubuntu)
     nomination, Declined, Ubuntu Warty
     bugtask, Unconfirmed, evolution (Ubuntu Hoary)

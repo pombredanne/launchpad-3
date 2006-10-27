@@ -29,7 +29,7 @@ case errors, and we'll give an example of one shortly.
     >>> nopriv_browser.getControl("1.0").selected = True
     >>> nopriv_other_browser.getControl("1.0").selected = True
 
-    >>> nopriv_browser.getControl("Submit Nominations").click()
+    >>> nopriv_browser.getControl("Submit").click()
 
     >>> for tag in find_tags_by_class(
     ...     nopriv_browser.contents, 'informational message'):
@@ -40,7 +40,7 @@ Now, if no-priv, having the form open in another browser window,
 accidentally nominates the bug for firefox 1.0 a second time, an error
 is raised.
 
-    >>> nopriv_other_browser.getControl("Submit Nominations").click()
+    >>> nopriv_other_browser.getControl("Submit").click()
 
     >>> for tag in find_tags_by_class(nopriv_other_browser.contents, 'message'):
     ...     print tag
@@ -54,7 +54,7 @@ approved and targeted to the release.
     ...     "http://launchpad.dev/products/firefox/+bug/2/+nominate")
 
     >>> admin_browser.getControl("Trunk").selected = True
-    >>> admin_browser.getControl("Submit Nominations").click()
+    >>> admin_browser.getControl("Submit").click()
 
     >>> for tag in find_tags_by_class(
     ...     admin_browser.contents, 'informational message'):
