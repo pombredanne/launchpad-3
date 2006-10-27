@@ -17,16 +17,18 @@
       type="text/css"
       media="screen"
     >@import url(/+icing/style.css);</style>
-    <link type="text/css" media="print" href="/+icing/print.css">
+    <link type="text/css" media="print" href="/+icing/print.css" />
     <link rel="shortcut icon" href="/@@/launchpad" />
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>
-  <body onload="lpmenu.initialize(['menuroot'], 
-                    '/',
-                    'menupreload',
-                    [],
-                    '2em', 16, true);" id="document">
-
+  <body
+    onload="
+      lpmenu.initialize(['menuroot'], '/', 'menupreload', [], '2em', 16, true);
+      sortables_init();
+      initHelpPanel();
+    "
+    id="document"
+  >
     <div id="globalheader">
       <div class="launchpad">
         <img
@@ -41,18 +43,42 @@
       </ul>
     </div>
 
+    <div id="locationbar">
+      <strong>Your location:</strong>
+      <ul id="menuroot">
+        <li><a href="/"><em>Foo</em></a></li>
+        <li><a href="/">Bar</a></li> <!-- this should look the same -->
+        <li><a href="/"><em>Hum</em></a></li>
+      </ul>
+    </div>
 
-    <ul id="locationbar">
-      <li><strong>Your location:</strong> <a href="/"><em>Home</em></a></li>
-    <div id="menucontainer">
+    <tal:nothing condition="nothing">
+    <div id="locationbar">
+      <strong>Your location:</strong>
       <ul id="menuroot" class="menuroot">
         <tal:hierarchy content="structure context/@@+breadcrumbs" />
+      </ul>
     </div>
-    </ul>
+    </tal:nothing>
 
     <div id="logincontrol" tal:content="structure context/@@login_status" />
-    <!-- id="menu" should be id="locationbar" -->
     <tal:maintenance replace="structure context/@@+maintenancemessage" />
+    
+    <div id="singlecolumn" tal:condition="columns1|nothing">
+      <metal:heading define-slot="pageheading" />
+      <tal:XXX condition="nothing">20061025 mpt: pageheading deprecated</tal:XXX>
+      <tal:notifications
+        define="notifications request/notifications"
+        condition="notifications"
+      >
+        <metal:notifications
+         use-macro="context/@@+main-template-macros/notifications"
+        />
+      </tal:notifications>
+      <metal:block define-slot="main" />
+    </div>
+    <tal:layout condition="not:columns1|nothing">
+
     <div id="structuralobject"
         tal:define="structuralobject CONTEXTS/lp:structuralobject">
       <tal:if condition="structuralobject">
@@ -63,7 +89,7 @@
         No structural object!
       </tal:if>
     </div>
-    <form id="globalsearch" action="/search" method="GET">
+    <form id="globalsearch" action="/search" method="get">
       <div>
         <input
           type="text"
@@ -129,15 +155,18 @@
                       </tal:facet>
                     </ul>
                     <br class="clear" />
+
+                    <div id="container">
+
                     <div id="maincontent">
-                      <div id="immediateobjectheading">
+                      <div id="contentareaheading">
                         <div class="secondary">
-                          <metal:block define-slot="immediateobjectheadingsecondary"
-                          >immediateobjectheading secondary</metal:block>
+                          <metal:block define-slot="contentareaheadingsecondary"
+                          >contentareaheading secondary</metal:block>
                         </div>
                         <div class="primary">
-                          <metal:block define-slot="immediateobjectheadingprimary"
-                          >immediateobjectheading primary</metal:block>
+                          <metal:block define-slot="contentareaheadingprimary"
+                          >contentareaheading primary</metal:block>
                         </div>
                       </div>
 
@@ -153,7 +182,7 @@
                       </tal:notifications>
                       <metal:block define-slot="main" />
                     </div>
-                    <div id="left_nav">
+                    <div id="portlets">
                       <tal:actionsmenu
                         tal:condition="python: '+login' not in request.getURL()"
                       >
@@ -172,6 +201,11 @@
                       <metal:portlets define-slot="portlets_two" />
                       <metal:portlets define-slot="portlets_one" />
                     </div>
+
+                    <div class="clear"></div>
+
+                    </div>
+
                   </div>
                 </div>
               </div>
@@ -180,6 +214,9 @@
         </div>
       </div>
     </div>
+
+    </tal:layout>
+
     <div id="help_panel" class="closed">
       <div class="help1">
         <div class="help2">
@@ -193,7 +230,7 @@
       <div class="bottom">&nbsp;</div>
     </div>
     <div id="globalfooter">
-      <div id="applications">
+      <div id="applications-footer">
         <a href="/malone">Malone</a> |
         <a href="/specs">Blueprint</a> |
         <a href="/rosetta">Rosetta</a> |
@@ -219,7 +256,4 @@
   </body>
 </html>
 </metal:page>
-<!-- 1-0 inprogress
-
-CSS needs fixing to follow the proper markup.
--->
+<!-- 1-0 inprogress Help panel wrong in IE/Win; portlets wrong in IE/Mac -->

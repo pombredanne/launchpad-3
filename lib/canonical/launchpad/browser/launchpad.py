@@ -144,26 +144,13 @@ class Breadcrumbs(LaunchpadView):
 
         L = []
         firsturl = '/'
-        firsttext = 'Launchpad'
+        firsttext = 'Home'
 
-        if not crumbs:
-            L.append(
-                '<li lpm:mid="root" class="item">'
-                '<a href="%s">'
-                '<img src="/@@/launchpad" alt="" /> %s'
-                '</a>'
-                '</li>'
-                % (firsturl,
-                   cgi.escape(firsttext)))
-        else:
-            L.append(
-                '<li lpm:mid="root" class="item">'
-                '<a href="%s">'
-                '<img src="/@@/launchpad" alt="" /> %s'
-                '</a>'
-                '</li>'
-                % (firsturl,
-                   cgi.escape(firsttext)))
+        L.append(
+            '<li lpm:mid="root" class="item"><a href="%s">%s</a></li>'
+            % (firsturl, cgi.escape(firsttext)))
+
+        if crumbs:
 
             #lastcrumb = crumbs.pop()
 
