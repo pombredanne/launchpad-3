@@ -2,19 +2,22 @@ We want to simulate an expired subscription. This can't be done through
 the web UI, because we explicitly check that the expiration date is in
 the future.
 
-XXX: We can't use the new-style Browser() to test this because the form value
-for the year 2000 is not available in HTML. -- kiko, 2006-10-18
+We can't use the browser instance to test this directly because the form
+value for the year 2000 is not available in HTML, but we can encode the
+variables:
 
-  >>> print http(r"""
-  ... POST /people/myemail/+member/name16 HTTP/1.1
-  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
-  ... Content-Length: ...
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... admin=no&day=1&month=1&year=2000&comment=&editactive=Change""")
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
+  >>> import urllib
+  >>> browser.addHeader("Authorization", "Basic foo@baz.com:f")
+  >>> browser.open("http://launchpad.dev/people/myemail/+member/name16",
+  ...              urllib.urlencode(dict(
+  ...                   admin="no",
+  ...                   day=1,
+  ...                   month=1,
+  ...                   year=2000,
+  ...                   comment="",
+  ...                   editactive="Change")))
+  >>> browser.contents
+  <BLANKLINE>
   ...
   ...Invalid expiration: date provided is in the past...
   ...
