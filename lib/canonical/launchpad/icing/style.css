@@ -1029,11 +1029,18 @@ h1, h2, h3, #maincontent :link { /* On Overview tab or tab-less pages */
   display: block;
   margin: 0 auto;
 }
-#central {
+.central {
   clear: both;
   margin: 0 auto;
   padding: 4em 2em;
   text-align: center;
+}
+.central, .central input {
+  font-size: 1em;
+}
+.central table {
+  width: auto;
+  margin: 0 auto;
 }
 div.bordered {
   padding: 2em 4em;
