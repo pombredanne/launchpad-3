@@ -19,11 +19,12 @@
   <div metal:use-macro="context/@@launchpad_form/form">
 
     <h1 metal:fill-slot="heading"
-        i18n:translate="">Reject support request</h1>
+        i18n:translate="">Change support request status</h1>
 
     <p metal:fill-slot="extra_info" class="documentDescription">
-      If this support request is a hoax, spam, a test, or sample data, it should
-      be rejected.
+      Normally, the support request status should be changed through the
+      comment workflow. But if a mistake was made, e.g. a request was wrongly
+      rejected, you can use this page to correct it.
     </p>
   </div>
 </div>

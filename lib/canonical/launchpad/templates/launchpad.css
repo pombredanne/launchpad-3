@@ -1,10 +1,10 @@
 /* === Things browsers should do, but don't: === */
 
 .clearfix:after { /* use class="clearfix" whenever floats should be enclosed */
-  content: "."; 
-  display: block; 
-  height: 0; 
-  clear: both; 
+  content: ".";
+  display: block;
+  height: 0;
+  clear: both;
   visibility: hidden;
 }
 .clearfix {display: inline-table;}
@@ -121,7 +121,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 h1 :link, h2 :link, h3 :link, h4 :link, h5 :link, h6 :link,
 h1 :visited, h2 :visited, h3 :visited, h4 :visited, h5 :visited, h6 :visited {
-  color: inherit; 
+  color: inherit;
 }
 h1 {
   font-size: 1.6em;
@@ -152,7 +152,7 @@ pre {
   background-color: #dee7ec;
   padding: 0.5em;
 }
-.userLog { 
+.userLog {
   font-family: "Lucida Grande","trebuchet ms",verdana,sans-serif;
   font: 11px tahoma,verdana,sans-serif;
   position: absolute;
@@ -248,7 +248,7 @@ th.descending {
 ol, ul {
   padding: 0;
 }
-ul { 
+ul {
   list-style-type: square;
   list-style-image: url(/@@/bullet);
   margin: 0.5em 0 0 24px; /* because bullet graphics are px width */
@@ -310,7 +310,7 @@ input[type="text"], input[type="submit"], input[type="reset"] {
   font-size: 1em; /* Forces a readable font size in Safari */
 }
 textarea {
-  border: 1px solid #8cacbb;  
+  border: 1px solid #8cacbb;
   color: black;
   background-color: white;
   font-family: sans-serif;
@@ -332,7 +332,7 @@ input.urlTextType {
 }
 /* Temporarily make *all* buttons look plone-y. Ugh. */
 button {
-  border: 1px solid #8cacbb;  
+  border: 1px solid #8cacbb;
   color: Black;
   background-color: white;
 }
@@ -345,7 +345,7 @@ input[type="radio"] {
 .portlet a {
   text-decoration: none;
 }
-/* SteveA says they should still be underlined if they're in help text */ 
+/* SteveA says they should still be underlined if they're in help text */
 .portlet p a {
   text-decoration: underline;
 }
@@ -492,7 +492,7 @@ form {
 input {
     font-family: "Lucida Grande", Verdana, Lucida, Helvetica, Arial, sans-serif;
     visibility: visible;
-    border: 1px solid #8cacbb;  
+    border: 1px solid #8cacbb;
     color: Black;
     background-color: white;
     vertical-align: middle;
@@ -529,7 +529,7 @@ ins {
 }
 
 .formControls {
-   margin: 1em 0 0 0; 
+   margin: 1em 0 0 0;
 }
 
 .discreet {
@@ -567,7 +567,7 @@ ins {
 }
 
 /*
-** Accessibility and visual enhancement elements 
+** Accessibility and visual enhancement elements
 */
 
 .visualClear {
@@ -576,7 +576,7 @@ ins {
 }
 #portal-column-content fieldset > * input:focus,
 #portal-column-content fieldset > * textarea:focus {
-    border-color: #ffa500; 
+    border-color: #ffa500;
     border-width: 1px;
 }
 
@@ -702,9 +702,12 @@ tr.highlight {
 
 /* Ticket status */
 
-.ticketstatusOPEN            { color: Black; }
-.ticketstatusANSWERED        { color: Green; }
-.ticketstatusREJECTED        { color: Red; }
+.ticketstatusOPEN               { color: Black; }
+.ticketstatusNEEDSINFO          { color: Black; }
+.ticketstatusANSWERED           { color: Green; }
+.ticketstatusSOLVED             { color: Green; }
+.ticketstatusEXPIRED            { color: Red; }
+.ticketstatusINVALID            { color: Red; }
 
 /* Board-like comment CSS */
 
@@ -918,7 +921,7 @@ input[type="image"] {
   background: url(/@@/required) center left no-repeat;
   color: #999999;
   content: '(Required)';
-  font-weight: normal;  
+  font-weight: normal;
   padding: 0 0 0 8px;
   margin: 0 0 0 4px;
 }
