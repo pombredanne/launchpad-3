@@ -30,7 +30,7 @@ from canonical.launchpad.webapp import (
     ApplicationMenu, GeneralFormView, LaunchpadFormView, Link)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import TicketStatus
-from canonical.widgets.itemswidget import LabeledMultiCheckBoxWidget
+from canonical.widgets import LabeledMultiCheckBoxWidget
 
 
 class TicketTargetLatestTicketsView:
