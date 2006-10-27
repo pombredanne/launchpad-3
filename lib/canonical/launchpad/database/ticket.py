@@ -6,6 +6,7 @@ __all__ = ['Ticket', 'TicketSet']
 import operator
 from email.Utils import make_msgid
 
+from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
@@ -15,7 +16,7 @@ from sqlobject import (
 from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.launchpad.interfaces import (
-    IBugLinkTarget, IPerson, ITicket, ITicketSet,
+    IBugLinkTarget, ILanguageSet, IPerson, ITicket, ITicketSet,
     TICKET_STATUS_DEFAULT_SEARCH)
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
@@ -299,6 +300,8 @@ class TicketSet:
         """Common implementation for ITicketTarget.newTicket()."""
         if datecreated is None:
             datecreated = UTC_NOW
+        if language is None:
+            language = getUtility(ILanguageSet)['en']
         ticket = Ticket(
             title=title, description=description, owner=owner,
             product=product, distribution=distribution, language=language,

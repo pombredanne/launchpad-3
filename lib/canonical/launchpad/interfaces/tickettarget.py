@@ -43,7 +43,7 @@ def get_supported_languages(ticket_target):
 class ITicketTarget(Interface):
     """An object that can have a new ticket created for  it."""
 
-    def newTicket(owner, title, description, language, datecreated=None):
+    def newTicket(owner, title, description, language=None, datecreated=None):
         """Create a new support request, or trouble ticket.
 
          A new ticket is created with status OPEN.
@@ -54,7 +54,8 @@ class ITicketTarget(Interface):
         :owner: An IPerson.
         :title: A string.
         :description: A string.
-        :language: An ILanguage.
+        :language: An ILanguage. If that parameter is omitted, the support
+                request is assumed to be created in English.
         :datecreated:  A datetime object that will be used for the datecreated
                 attribute. Defaults to canonical.database.constants.UTC_NOW.
         """

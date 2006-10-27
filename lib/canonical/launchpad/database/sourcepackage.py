@@ -383,7 +383,8 @@ class SourcePackage(BugTargetBase):
         """See ITicketTarget."""
         return get_supported_languages(self)
 
-    def newTicket(self, owner, title, description, language, datecreated=None):
+    def newTicket(self, owner, title, description, language=None,
+                  datecreated=None):
         """See ITicketTarget."""
         return TicketSet.new(
             title=title, description=description, owner=owner,
