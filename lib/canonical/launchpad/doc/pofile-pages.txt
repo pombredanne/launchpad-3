@@ -242,8 +242,8 @@ To be sure that we are using the right entry from the import queue,
 we check that it's empty atm.
 
     >>> translationimportqueue = getUtility(ITranslationImportQueue)
-    >>> len(translationimportqueue) == 0
-    True
+    >>> translationimportqueue.entryCount()
+    0
 
 The FileUpload class needs a class with the attributes: filename, file and
 headers.
@@ -265,8 +265,8 @@ Now, we do the upload.
 
 As we can see, we have now one entry in our queue.
 
-    >>> len(translationimportqueue) == 1
-    True
+    >>> translationimportqueue.entryCount()
+    1
 
 Get it and check that some attributes are set as they should.
 

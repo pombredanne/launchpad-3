@@ -25,7 +25,7 @@ trap cleanup EXIT
 
 ## XXX cprov 20060609: We need to retrieve 'development' distrorelease
 ## from helper script. See bug # 49174
-suite=edgy
+suite=feisty
 
 echo -n "Running germinate... "
 cd $GERMINATEROOT
