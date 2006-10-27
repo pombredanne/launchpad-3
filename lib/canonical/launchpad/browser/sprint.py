@@ -248,6 +248,9 @@ class SprintTopicSetView(HasSpecificationsView, LaunchpadView):
     def initialize(self):
         self.status_message = None
         self.process_form()
+        self.attendee_ids = set(
+            attendance.attendee.id for attendance in self.context.attendances)
+
 
     @cachedproperty
     def spec_filter(self):
