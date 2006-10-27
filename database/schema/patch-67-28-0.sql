@@ -4,4 +4,4 @@ ALTER TABLE Person ADD COLUMN registrant integer;
 ALTER TABLE Person ADD CONSTRAINT person_registrant_fk
     FOREIGN KEY (registrant) REFERENCES Person(id);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (67, 66, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (67, 28, 0);
