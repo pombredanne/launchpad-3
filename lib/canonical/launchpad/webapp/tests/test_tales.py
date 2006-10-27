@@ -72,6 +72,19 @@ def test_dbschemaapi():
 
     """
 
+def test_split_paragraphs():
+    r"""
+    The split_paragraphs() method is used to split a block of text
+    into paragraphs, which are separated by one or more blank lines.
+    Paragraphs are yielded as a list of lines in the paragraph.
+
+      >>> from canonical.launchpad.webapp.tales import split_paragraphs
+      >>> for paragraph in split_paragraphs('\na\nb\n\nc\nd\n\n\n'):
+      ...     print paragraph
+      ['a', 'b']
+      ['c', 'd']
+    """
+
 def test_re_substitute():
     """
     When formatting text, we want to replace portions with links.
@@ -139,6 +152,9 @@ def test_break_long_words():
 
       >>> print break_long_words('1234567890&abcdefghi;123')
       1234567890&abcdefghi;123
+
+      >>> print break_long_words('<tag>1234567890123456</tag>')
+      <tag>1234567890123456</tag>
     """
 
 def test_suite():

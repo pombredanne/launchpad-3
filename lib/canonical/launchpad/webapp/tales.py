@@ -664,18 +664,10 @@ class PageTemplateContextsAPI:
 def split_paragraphs(text):
     """Split text into paragraphs.
 
-    This function yields lists of strings that represent
-    paragraphs of text.
+    This function yields lists of strings that represent lines of text
+    in each paragraph.
 
     Paragraphs are split by one or more blank lines.
-
-    Each paragraph is further split into one or more logical lines
-    of text.  Two adjacent lines are considered to be part of the
-    same logical line if the following conditions hold:
-      1. the first line is between 60 and 80 characters long
-      2. the second line does not begin with whitespace.
-      3. the second line does not begin with '>' (commonly used for
-         reply quoting in emails).
     """
     paragraph = []
     for line in text.splitlines():
@@ -693,9 +685,18 @@ def split_paragraphs(text):
     if paragraph:
         yield paragraph
 
+
 def re_substitute(pattern, replace_match, replace_nomatch, string):
-    """Process a string in a similar fashion to re.sub(), but also
-    allow replacement of the non-matched portions of the string.
+    """Transform a string, replacing matched and non-matched sections.
+
+     :param patter: a regular expression
+     :param replace_match: a function used to transform matches
+     :param replace_nomatch: a function used to transform non-matched text
+     :param string: the string to transform
+
+    This function behaves similarly to re.sub() when a function is
+    passed as the second argument, except that the non-matching
+    portions of the string can be transformed by a second function.
     """
     if replace_match is None:
         replace_match = lambda match: match.group()
@@ -703,7 +704,7 @@ def re_substitute(pattern, replace_match, replace_nomatch, string):
         replace_nomatch = lambda text: text
     parts = []
     position = 0
-    for match in pattern.finditer(string):
+    for match in re.finditer(pattern, string):
         if match.start() != position:
             parts.append(replace_nomatch(string[position:match.start()]))
         parts.append(replace_match(match))
@@ -713,27 +714,26 @@ def re_substitute(pattern, replace_match, replace_nomatch, string):
         parts.append(replace_nomatch(remainder))
     return ''.join(parts)
 
-def get_stem(word, nchars):
+
+def get_chars(word, nchars):
     """Return the first num characters of the word, plus the remainder.
 
     This function treats HTML entities in the string as single
     characters.  The string should not include HTML tags.
     """
-    stem = []
-    while word and len(stem) < nchars:
+    chars = []
+    while word and len(chars) < nchars:
         if word[0] == '&':
             # make sure we grab the entity as a whole
             pos = word.find(';')
-            if pos >= 0:
-                stem.append(word[:pos+1])
-                word = word[pos+1:]
-            else:
-                stem.append(word)
-                word = ''
+            assert pos >= 0, 'badly formed entity: %r' % word
+            chars.append(word[:pos+1])
+            word = word[pos+1:]
         else:
-            stem.append(word[0])
+            chars.append(word[0])
             word = word[1:]
-    return ''.join(stem), word
+    return ''.join(chars), word
+
 
 def add_word_breaks(word):
     """Insert manual word breaks into a string.
@@ -746,14 +746,15 @@ def add_word_breaks(word):
     """
     broken = []
     while word:
-        stem, word = get_stem(word, 7)
-        broken.append(stem)
-        # if the stem doesn't end with puctuation, grab more characters
-        if stem[-1].isalnum() and word != '':
+        chars, word = get_chars(word, 7)
+        broken.append(chars)
+        # If the leading characters don't end with puctuation, grab
+        # more characters.
+        if chars[-1].isalnum() and word != '':
             for i in range(8):
-                stem, word = get_stem(word, 1)
-                broken.append(stem)
-                if not (stem[-1].isalnum() and word != ''):
+                chars, word = get_chars(word, 1)
+                broken.append(chars)
+                if not (chars[-1].isalnum() and word != ''):
                     break
         if word != '':
             broken.append('<wbr></wbr>')
