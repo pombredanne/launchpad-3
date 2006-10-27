@@ -11,7 +11,6 @@ __all__ = [
     'PersonBranchesMenu',
     'PersonBugsMenu',
     'PersonSpecsMenu',
-    'PersonSupportMenu',
     'PersonOverviewMenu',
     'TeamOverviewMenu',
     'BaseListView',
@@ -43,6 +42,14 @@ __all__ = [
     'ObjectReassignmentView',
     'TeamReassignmentView',
     'RedirectToAssignedBugsView',
+    'PersonLatestTicketsView',
+    'PersonSearchTicketsView',
+    'PersonSupportMenu',
+    'SearchAnsweredTicketsView',
+    'SearchAssignedTicketsView',
+    'SearchCommentedTicketsView',
+    'SearchCreatedTicketsView',
+    'SearchSubscribedTicketsView',
     ]
 
 import cgi
@@ -62,7 +69,7 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
-    TeamSubscriptionPolicy, SpecificationFilter)
+    TeamSubscriptionPolicy, SpecificationFilter, TicketParticipation)
 
 from canonical.widgets import PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
@@ -82,6 +89,7 @@ from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
+from canonical.launchpad.browser.tickettarget import SearchTicketsView
 
 from canonical.launchpad.helpers import obfuscateEmail, convertToHtmlCode
 
@@ -221,13 +229,6 @@ class PersonFacets(StandardLaunchpadFacets):
             'Bug reports that %s is involved with' % self.context.browsername)
         return Link('+assignedbugs', text, summary)
 
-    def support(self):
-        text = 'Support'
-        summary = (
-            'Support requests that %s is involved with' %
-            self.context.browsername)
-        return Link('+tickets', text, summary)
-
     def specifications(self):
         text = 'Features'
         summary = (
@@ -247,6 +248,13 @@ class PersonFacets(StandardLaunchpadFacets):
         summary = ('Bazaar Branches and revisions registered and authored '
                    'by %s' % self.context.browsername)
         return Link('+branches', text, summary)
+
+    def support(self):
+        text = 'Support'
+        summary = (
+            'Support requests that %s is involved with' %
+            self.context.browsername)
+        return Link('+tickets', text, summary)
 
     def translations(self):
         target = '+translations'
@@ -373,29 +381,6 @@ class PersonSpecsMenu(ApplicationMenu):
         text = 'Roadmap'
         summary = 'Show recommended sequence of feature implementation'
         return Link('+roadmap', text, summary, icon='info')
-
-
-class PersonSupportMenu(ApplicationMenu):
-
-    usedfor = IPerson
-    facet = 'support'
-    links = ['created', 'assigned', 'answered', 'subscribed']
-
-    def created(self):
-        text = 'Requests Made'
-        return Link('+createdtickets', text, icon='ticket')
-
-    def assigned(self):
-        text = 'Requests Assigned'
-        return Link('+assignedtickets', text, icon='ticket')
-
-    def answered(self):
-        text = 'Requests Answered'
-        return Link('+answeredtickets', text, icon='ticket')
-
-    def subscribed(self):
-        text = 'Requests Subscribed'
-        return Link('+subscribedtickets', text, icon='ticket')
 
 
 class CommonMenuLinks:
@@ -1939,7 +1924,7 @@ class AdminRequestPeopleMergeView(LaunchpadView):
     """The view for the page where an admin can merge two accounts."""
 
     def initialize(self):
-        self.errormessages = [] 
+        self.errormessages = []
         self.shouldShowConfirmationPage = False
         setUpWidgets(self, IAdminRequestPeopleMerge, IInputWidget)
 
@@ -1955,11 +1940,11 @@ class AdminRequestPeopleMergeView(LaunchpadView):
 
             if self.dupe_account == self.target_account:
                 self.errormessages.append(_(
-                    "You can't merge %s into itself." 
+                    "You can't merge %s into itself."
                     % self.dupe_account.name))
                 return
 
-            emailset = getUtility(IEmailAddressSet) 
+            emailset = getUtility(IEmailAddressSet)
             self.emails = emailset.getByPerson(self.dupe_account)
             # display dupe_account email addresses and confirmation page
             self.shouldShowConfirmationPage = True
@@ -1975,10 +1960,10 @@ class AdminRequestPeopleMergeView(LaunchpadView):
         try:
             account = widget.getInputValue()
         except WidgetInputError:
-            self.errormessages.append(_("You must choose an account.")) 
+            self.errormessages.append(_("You must choose an account."))
             return
         except ConversionError:
-            self.errormessages.append(_("%s is an invalid account." % name)) 
+            self.errormessages.append(_("%s is an invalid account." % name))
             return
         return account
 
@@ -1990,7 +1975,7 @@ class AdminRequestPeopleMergeView(LaunchpadView):
         target_name = self.request.form.get('target_name')
 
         self.dupe_account = personset.getByName(dupe_name)
-        self.target_account = personset.getByName(target_name) 
+        self.target_account = personset.getByName(target_name)
 
         emails = emailset.getByPerson(self.dupe_account)
         if emails:
@@ -2042,7 +2027,7 @@ class RequestPeopleMergeMultipleEmailsView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.formProcessed = False
+        self.form_processed = False
         self.dupe = None
         self.notified_addresses = []
 
@@ -2062,7 +2047,7 @@ class RequestPeopleMergeMultipleEmailsView:
         if self.request.method != "POST":
             return
 
-        self.formProcessed = True
+        self.form_processed = True
         user = getUtility(ILaunchBag).user
         login = getUtility(ILaunchBag).login
         logintokenset = getUtility(ILoginTokenSet)
@@ -2244,3 +2229,179 @@ class TeamReassignmentView(ObjectReassignmentView):
         if oldOwner not in team.inactivemembers:
             team.setMembershipStatus(oldOwner, TeamMembershipStatus.ADMIN)
 
+
+class PersonLatestTicketsView(LaunchpadView):
+    """View used by the porlet displaying the latest requests made by
+    a person.
+    """
+
+    @cachedproperty
+    def getLatestTickets(self, quantity=5):
+        """Return <quantity> latest tickets created for this target. """
+        return self.context.searchTickets(
+            participation=TicketParticipation.OWNER)[:quantity]
+
+
+class PersonSearchTicketsView(SearchTicketsView):
+    """View used to search and display tickets in which an IPerson is
+    involved.
+    """
+
+    displayTargetColumn = True
+
+    @property
+    def pageheading(self):
+        """See SearchTicketsView."""
+        return _('Support requests involving $name',
+                 mapping=dict(name=self.context.displayname))
+
+    @property
+    def empty_listing_message(self):
+        """See SearchTicketsView."""
+        return _('No support requests involving $name found with the '
+                 'requested statuses.',
+                 mapping=dict(name=self.context.displayname))
+
+
+class SearchAnsweredTicketsView(SearchTicketsView):
+    """View used to search and display tickets answered by an IPerson."""
+
+    displayTargetColumn = True
+
+    def getDefaultFilter(self):
+        """See SearchTicketsView."""
+        return dict(participation=TicketParticipation.ANSWERER)
+
+    @property
+    def pageheading(self):
+        """See SearchTicketsView."""
+        return _('Support requests answered by $name',
+                 mapping=dict(name=self.context.displayname))
+
+    @property
+    def empty_listing_message(self):
+        """See SearchTicketsView."""
+        return _('No support requests answered by $name found with the '
+                 'requested statuses.',
+                 mapping=dict(name=self.context.displayname))
+
+
+class SearchAssignedTicketsView(SearchTicketsView):
+    """View used to search and display tickets assigned to an IPerson."""
+
+    displayTargetColumn = True
+
+    def getDefaultFilter(self):
+        """See SearchTicketsView."""
+        return dict(participation=TicketParticipation.ASSIGNEE)
+
+    @property
+    def pageheading(self):
+        """See SearchTicketsView."""
+        return _('Support requests assigned to $name',
+                 mapping=dict(name=self.context.displayname))
+
+    @property
+    def empty_listing_message(self):
+        """See SearchTicketsView."""
+        return _('No support requests assigned to $name found with the '
+                 'requested statuses.',
+                 mapping=dict(name=self.context.displayname))
+
+
+class SearchCommentedTicketsView(SearchTicketsView):
+    """View used to search and display tickets commented on by an IPerson."""
+
+    displayTargetColumn = True
+
+    def getDefaultFilter(self):
+        """See SearchTicketsView."""
+        return dict(participation=TicketParticipation.COMMENTER)
+
+    @property
+    def pageheading(self):
+        """See SearchTicketsView."""
+        return _('Support requests commented on by $name ',
+                 mapping=dict(name=self.context.displayname))
+
+    @property
+    def empty_listing_message(self):
+        """See SearchTicketsView."""
+        return _('No support requests commented on by $name found with the '
+                 'requested statuses.',
+                 mapping=dict(name=self.context.displayname))
+
+
+class SearchCreatedTicketsView(SearchTicketsView):
+    """View used to search and display tickets created by an IPerson."""
+
+    displayTargetColumn = True
+
+    def getDefaultFilter(self):
+        """See SearchTicketsView."""
+        return dict(participation=TicketParticipation.OWNER)
+
+    @property
+    def pageheading(self):
+        """See SearchTicketsView."""
+        return _('Support requests created by $name',
+                 mapping=dict(name=self.context.displayname))
+
+    @property
+    def empty_listing_message(self):
+        """See SearchTicketsView."""
+        return _('No support requests created by $name found with the '
+                 'requested statuses.',
+                 mapping=dict(name=self.context.displayname))
+
+
+class SearchSubscribedTicketsView(SearchTicketsView):
+    """View used to search and display tickets subscribed to by an IPerson."""
+
+    displayTargetColumn = True
+
+    def getDefaultFilter(self):
+        """See SearchTicketsView."""
+        return dict(participation=TicketParticipation.SUBSCRIBER)
+
+    @property
+    def pageheading(self):
+        """See SearchTicketsView."""
+        return _('Support requests $name is subscribed to',
+                 mapping=dict(name=self.context.displayname))
+
+    @property
+    def empty_listing_message(self):
+        """See SearchTicketsView."""
+        return _('No support requests subscribed to by $name found with the '
+                 'requested statuses.',
+                 mapping=dict(name=self.context.displayname))
+
+class PersonSupportMenu(ApplicationMenu):
+
+    usedfor = IPerson
+    facet = 'support'
+    links = ['answered', 'assigned', 'created', 'commented', 'subscribed']
+
+    def answered(self):
+        summary = 'Support requests answered by %s' % self.context.displayname
+        return Link('+answeredtickets', 'Answered', summary, icon='ticket')
+
+    def assigned(self):
+        summary = 'Support requests assigned to %s' % self.context.displayname
+        return Link('+assignedtickets', 'Assigned', summary, icon='ticket')
+
+    def created(self):
+        summary = 'Support requests created by %s' % self.context.displayname
+        return Link('+createdtickets', 'Created', summary, icon='ticket')
+
+    def commented(self):
+        summary = 'Support requests commented on by %s' % (
+            self.context.displayname)
+        return Link('+commentedtickets', 'Commented', summary, icon='ticket')
+
+    def subscribed(self):
+        text = 'Subscribed'
+        summary = 'Support requests subscribed to by %s' % (
+                self.context.displayname)
+        return Link('+subscribedtickets', text, summary, icon='ticket')

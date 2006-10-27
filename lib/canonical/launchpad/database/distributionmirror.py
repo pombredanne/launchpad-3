@@ -566,7 +566,7 @@ class MirrorDistroArchRelease(SQLBase, _MirrorReleaseMixIn):
         this mirror from where the BinaryPackageRelease file can be downloaded.
         """
         bpr = publishing_record.binarypackagerelease
-        base_url = self.distribution_mirror.http_base_url
+        base_url = self.distribution_mirror.base_url
         path = Poolifier().poolify(bpr.sourcepackagename, self.component.name)
         file = BinaryPackageFile.selectOneBy(
             binarypackagerelease=bpr, filetype=BinaryPackageFileType.DEB)
@@ -617,7 +617,7 @@ class MirrorDistroReleaseSource(SQLBase, _MirrorReleaseMixIn):
         this mirror from where the SourcePackageRelease file can be downloaded.
         """
         spr = publishing_record.sourcepackagerelease
-        base_url = self.distribution_mirror.http_base_url
+        base_url = self.distribution_mirror.base_url
         sourcename = spr.name
         path = Poolifier().poolify(sourcename, self.component.name)
         file = SourcePackageReleaseFile.selectOneBy(

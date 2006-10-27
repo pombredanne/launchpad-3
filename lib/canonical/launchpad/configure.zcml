@@ -105,8 +105,8 @@
       />
 
   <browser:resourceDirectory
-      name="dynarch"
-      directory="../../contrib/dynarch-resources"
+      name="MochiKit"
+      directory="../../contrib/MochiKit"
       />
 
 

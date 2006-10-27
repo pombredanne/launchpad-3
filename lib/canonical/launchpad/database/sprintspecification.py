@@ -47,7 +47,7 @@ class SprintSpecification(SQLBase):
     @property
     def is_decided(self):
         """See ISprintSpecification."""
-        return self.status <> SprintSpecificationStatus.PROPOSED
+        return self.status != SprintSpecificationStatus.PROPOSED
 
     def acceptBy(self, decider):
         """See ISprintSpecification."""

@@ -55,8 +55,8 @@ Now we serialise it as XML, and print it:
   <importance>LOW</importance>
   <assignee name="sabdfl">Mark Shuttleworth</assignee>
   <subscriptions>
-  <subscriber name="stevea">Steve Alexander</subscriber>
   <subscriber name="name12">Sample Person</subscriber>
+  <subscriber name="stevea">Steve Alexander</subscriber>
   </subscriptions>
   <comment>
   <sender name="name12">Sample Person</sender>
