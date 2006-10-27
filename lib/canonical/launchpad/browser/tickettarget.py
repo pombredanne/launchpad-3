@@ -108,6 +108,16 @@ class SearchTicketsView(LaunchpadFormView):
             field.custom_widget = self.custom_widgets['languages']
         self.form_fields += extra_fields
 
+    def setUpWidgets(self):
+        """See LaunchpadFormView."""
+        LaunchpadFormView.setUpWidgets(self)
+        # Make sure that the default filter is displayed
+        # correctly in the widgets when not overriden by the user
+        for name, value in self.getDefaultFilter().items():
+            widget = self.widgets.get(name)
+            if widget and not widget.hasValidInput():
+                widget.setRenderedValue(value)
+
     @property
     def pagetitle(self):
         """Page title."""
@@ -182,16 +192,6 @@ class SearchTicketsView(LaunchpadFormView):
             return set(self.search_params['status'])
         else:
             return self.getDefaultFilter().get('status', set())
-
-    def setUpWidgets(self):
-        """See LaunchpadFormView."""
-        LaunchpadFormView.setUpWidgets(self)
-        # Make sure that the default filter is displayed
-        # correctly in the widgets when not overriden by the user
-        for name, value in self.getDefaultFilter().items():
-            widget = self.widgets.get(name)
-            if widget and not widget.hasValidInput():
-                widget.setRenderedValue(value)
 
     @action(_('Search'))
     def search_action(self, action, data):
@@ -401,6 +401,7 @@ class TicketTargetSupportMenu(ApplicationMenu):
              'field.sort': 'by relevancy',
              'field.search_text': '',
              'field.actions.search': 'Search',
+             'field.languages' : 'ENGLISH',
              'field.status': statuses}, doseq=True)
 
     def open(self):

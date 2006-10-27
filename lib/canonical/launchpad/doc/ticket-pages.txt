@@ -397,7 +397,7 @@ confuse people by providing multiple English options) plus English.
     >>> british_english in vocab
     False
 
-    >>> False not in [(lang in vocab) 
+    >>> False not in [(lang in vocab)
     ...               for lang in user.languages if lang.code != 'en_GB']
     True
 
@@ -476,7 +476,8 @@ can tweak the search and filter the results:
     >>> search_view_harness.submit('search', {
     ...     'field.status': ['Answered', 'Open'],
     ...     'field.search_text': 'firefox',
-    ...     'field.sort': 'by relevancy',})
+    ...     'field.sort': 'by relevancy',
+    ...     'field.languages': 'ENGLISH'})
     >>> search_view = search_view_harness.view
     >>> tickets = search_view.searchResults()
     >>> for ticket in tickets.batch:
@@ -514,7 +515,8 @@ criteria.
     >>> search_view_harness.submit('search', {
     ...     'field.status': ['Answered'],
     ...     'field.search_text': 'firefox',
-    ...     'field.sort': 'by relevancy'})
+    ...     'field.sort': 'by relevancy',
+    ...     'field.languages': 'ENGLISH'})
     >>> search_view = search_view_harness.view
     >>> tickets = search_view.searchResults()
     >>> for ticket in tickets.batch:
@@ -547,7 +549,8 @@ It works also with user submitted values:
     >>> search_view_harness.submit('search', {
     ...     'field.status': ['Answered'],
     ...     'field.search_text': '',
-    ...     'field.sort': 'by relevancy'})
+    ...     'field.sort': 'by relevancy',
+    ...     'field.languages': 'ENGLISH'})
     >>> print translate(search_view_harness.view.pageheading)
     Answered support requests for Ubuntu
     >>> print translate(search_view_harness.view.empty_listing_message)
@@ -556,7 +559,8 @@ It works also with user submitted values:
     >>> search_view_harness.submit('search', {
     ...     'field.status': ['Open', 'Answered'],
     ...     'field.search_text': 'evolution',
-    ...     'field.sort': 'by relevancy'})
+    ...     'field.sort': 'by relevancy',
+    ...     'field.languages': 'ENGLISH'})
     >>> print translate(search_view_harness.view.pageheading)
     Support requests about "evolution" for Ubuntu
     >>> print translate(search_view_harness.view.empty_listing_message)
