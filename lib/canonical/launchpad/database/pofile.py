@@ -188,8 +188,6 @@ class POFile(SQLBase, RosettaStats):
     owner = ForeignKey(foreignKey='Person',
                        dbName='owner',
                        notNull=True)
-    pluralforms = IntCol(dbName='pluralforms',
-                         notNull=True)
     variant = StringCol(dbName='variant',
                         notNull=False,
                         default=None)
@@ -202,8 +200,7 @@ class POFile(SQLBase, RosettaStats):
     exporttime = UtcDateTimeCol(dbName='exporttime',
                                 notNull=False,
                                 default=None)
-    datecreated = UtcDateTimeCol(notNull=True,
-        default=UTC_NOW)
+    datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
     latestsubmission = ForeignKey(foreignKey='POSubmission',
         dbName='latestsubmission', notNull=False, default=None)
@@ -566,7 +563,6 @@ class POFile(SQLBase, RosettaStats):
         self.topcomment = new_header.commentText
         self.header = new_header.msgstr
         self.fuzzyheader = 'fuzzy' in new_header.flags
-        self.pluralforms = new_header.nplurals
 
     def isPORevisionDateOlder(self, header):
         """See IPOFile."""
@@ -842,7 +838,6 @@ class DummyPOFile(RosettaStats):
         self.language = language
         self.variant = variant
         self.latestsubmission = None
-        self.pluralforms = language.pluralforms
         self.lasttranslator = None
         self.contributors = []
 
@@ -862,7 +857,7 @@ class DummyPOFile(RosettaStats):
             return pomsgset
 
     def messageCount(self):
-        return len(self.potemplate)
+        return self.potemplate.messageCount()
 
     @property
     def title(self):

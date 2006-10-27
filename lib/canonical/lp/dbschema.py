@@ -61,6 +61,7 @@ __all__ = (
 'PackagePublishingStatus',
 'PackagePublishingPocket',
 'PackagingType',
+'PersonCreationRationale',
 'PollAlgorithm',
 'PollSecrecy',
 'ProjectRelationship',
@@ -88,6 +89,8 @@ __all__ = (
 'SprintSpecificationStatus',
 'SSHKeyType',
 'TextDirection',
+'TicketAction',
+'TicketParticipation',
 'TicketPriority',
 'TicketSort',
 'TicketStatus',
@@ -355,6 +358,18 @@ class Item:
 
     def __hash__(self):
         return self.value
+
+    # These properties are provided as a way to get at the other
+    # schema items and name from a security wrapped Item instance when
+    # there are no security declarations for the DBSchema class.  They
+    # are used by the enumvalue TALES expression.
+    @property
+    def schema_items(self):
+        return self.schema.items
+
+    @property
+    def schema_name(self):
+        return self.schema.__name__
 
 # TODO: make a metaclass for dbschemas that looks for ALLCAPS attributes
 #       and makes the introspectible.
@@ -1654,6 +1669,45 @@ class SprintSpecificationStatus(DBSchema):
         """)
 
 
+# Enumeration covered by bug 66633:
+#   Need way to define enumerations outside of dbschema
+class TicketParticipation(DBSchema):
+    """The different ways a person can be involved in a ticket.
+
+    This enumeration is part of the ITicketActor.searchTickets() API.
+    """
+
+    OWNER = Item(10, """
+        Owner
+
+        The person created the ticket.
+        """)
+
+    SUBSCRIBER = Item(15, """
+        Subscriber
+
+        The person subscribed to the ticket.
+        """)
+
+    ASSIGNEE = Item(20, """
+        Assignee
+
+        The person is assigned to the ticket.
+        """)
+
+    COMMENTER = Item(25, """
+        Commenter
+
+        The person commented on the ticket.
+        """)
+
+    ANSWERER = Item(30, """
+        Answerer
+
+        The person answered the ticket.
+        """)
+
+
 class TicketPriority(DBSchema):
     """The Priority with a Support Request must be handled.
 
@@ -1695,8 +1749,75 @@ class TicketPriority(DBSchema):
         """)
 
 
+class TicketAction(DBSchema):
+    """An enumeration of the possible actions done on a ticket.
+
+    This enumeration is used to tag the action done by a user with
+    each TicketMessage. Most of these action indicates a status change
+    on the ticket.
+    """
+
+    REQUESTINFO = Item(10, """
+        Request for more information
+
+        This message asks for more information about the support
+        request.
+        """)
+
+    GIVEINFO = Item(20, """
+        Give more information
+
+        In this message, the submitter provides more information about the
+        request.
+        """)
+
+    COMMENT = Item(30, """
+        Comment
+
+        User commented on the message. This is use for example for messages
+        added to a ticket in the SOLVED state.
+        """)
+
+    ANSWER = Item(35, """
+        Answer
+
+        This message provides an answer to the support request.
+        """)
+
+    CONFIRM = Item(40, """
+        Confirm
+
+        This message confirms that an answer solved the problem.
+        """)
+
+    REJECT = Item(50, """
+        Reject
+
+        This message rejects a support request as invalid.
+        """)
+
+    EXPIRE = Item(70, """
+        Expire
+
+        Automatic message created when the ticket is expired.
+        """)
+
+    REOPEN = Item(80, """
+        Reopen
+
+        Message from the submitter that reopens the ticket with more
+        information concerning the request.
+        """)
+
+    SETSTATUS = Item(90, """
+        Change status
+
+        Message from an administrator that explain why the ticket status
+        was changed.
+        """)
+
 class TicketSort(DBSchema):
-    """An enumveration of the valid ticket search sort order.
+    """An enumeration of the valid ticket search sort order.
 
     This enumeration is part of the ITicketTarget.searchTickets() API. The
     titles are formatted for nice display in browser code.
@@ -1716,7 +1837,8 @@ class TicketSort(DBSchema):
     STATUS = Item(10, """
     by status
 
-    Sort tickets by status: Open, Answered, Rejected.
+    Sort tickets by status: Open, Needs information, Answered, Solved,
+    Expired, Invalid.
 
     NEWEST_FIRST should be used as a secondary sort key.
     """)
@@ -1737,27 +1859,50 @@ class TicketSort(DBSchema):
 class TicketStatus(DBSchema):
     """The current status of a Support Request
 
-    This enum tells us the current status of the support ticket. The
-    request has a simple lifecycle, from open to answered or rejected.
+    This enum tells us the current status of the support ticket.
     """
 
-    OPEN = Item(10,
-        """Open
+    OPEN = Item(10, """
+        Open
 
-        There might be someone that answered the support request, but
-        the submitter hasn't accepted the answer yet.
+        The request is waiting for an answer. This could be a new request
+        or a request where the given answer was refused by the submitter.
         """)
 
-    ANSWERED = Item(20,
-        """Answered
+    NEEDSINFO = Item(15, """
+        Needs information
 
-        The submitter of the support request has accepted an answer.
+        A user requested more information from the submitter. The request
+        will be moved back to the OPEN state once the submitter provides the
+        answer.
         """)
 
-    REJECTED = Item(30,
-        """Rejected
+    ANSWERED = Item(18, """
+        Answered
 
-        No acceptable answer was provided to the question.
+        An answer was given on this request. We assume that the answer
+        is the correct one. The user will post back changing the ticket's
+        status back to OPEN if that is not the case.
+        """)
+
+    SOLVED = Item(20, """
+        Solved
+
+        The submitter confirmed that an answer solved his problem.
+        """)
+
+    EXPIRED = Item(25, """
+        Expired
+
+        The ticket has been expired after 15 days without comments in the
+        OPEN or NEEDSINFO state.
+        """)
+
+    INVALID = Item(30, """
+        Invalid
+
+        This ticket isn't a support request. It could be a duplicate request,
+        spam or anything that should not appear in the support tracker.
         """)
 
 
@@ -2785,30 +2930,6 @@ class RevisionControlSystems(DBSchema):
         in the CVS design.
         """)
 
-    ARCH = Item(3, """
-        The Arch Revision Control System
-
-        An open source revision control system that combines truly
-        distributed branching with advanced merge algorithms. This
-        removes the scalability problems of centralised revision
-        control.
-        """)
-
-    PACKAGE = Item(4, """
-        Package
-
-        DEPRECATED DO NOT USE
-        """)
-
-
-    BITKEEPER = Item(5, """
-        Bitkeeper
-
-        A commercial revision control system that, like Arch, uses
-        distributed branches to allow for faster distributed
-        development.
-        """)
-
 
 class RosettaTranslationOrigin(DBSchema):
     """Rosetta Translation Origin
@@ -2956,6 +3077,13 @@ class LoginTokenType(DBSchema):
 
         A user has submitted a new sign-only GPG key to his account and it
         needs to be validated.
+        """)
+
+    PROFILECLAIM = Item(8, """
+        Claim an unvalidated Launchpad profile
+
+        A user has found an unvalidated profile in Launchpad and is trying
+        to claim it.
         """)
 
 
@@ -3423,6 +3551,12 @@ class ShipItDistroRelease(DBSchema):
         The Dapper Drake lont-term-support release.
         """)
 
+    EDGY = Item(3, """
+        6.10 (Edgy Eft)
+
+        The Edgy Eft release.
+        """)
+
 
 class TextDirection(DBSchema):
     """The base text direction for a language."""
@@ -3439,3 +3573,88 @@ class TextDirection(DBSchema):
         Text is normally written from left to right in this language.
         """)
 
+
+class PersonCreationRationale(DBSchema):
+    """The rationale for the creation of a given person.
+
+    Launchpad automatically creates user accounts under certain
+    circumstances. The owners of these accounts may discover Launchpad
+    at a later date and wonder why Launchpad knows about them, so we
+    need to make it clear why a certain account was automatically created.
+    """
+
+    UNKNOWN = Item(1, """
+        Unknown
+
+        The reason for the creation of this person is unknown.
+        """)
+
+    BUGIMPORT = Item(2, """
+        Existing user in another bugtracker from which we imported bugs.
+
+        A bugzilla import or sf.net import, for instance. The bugtracker from
+        which we were importing should be described in
+        Person.creation_comment.
+        """)
+
+    SOURCEPACKAGEIMPORT = Item(3, """
+        This person was mentioned in a source package we imported.
+
+        When gina imports source packages, it has to create Person entries for
+        the email addresses that are listed as maintainer and/or uploader of
+        the package, in case they don't exist in Launchpad.
+        """)
+
+    POFILEIMPORT = Item(4, """
+        This person was mentioned in a POFile imported into Rosetta.
+
+        When importing POFiles into Rosetta, we need to give credit for the
+        translations on that POFile to its last translator, which may not
+        exist in Launchpad, so we'd need to create it.
+        """)
+
+    KEYRINGTRUSTANALYZER = Item(5, """
+        Created by the keyring trust analyzer.
+
+        The keyring trust analyzer is responsible for scanning GPG keys
+        belonging to the strongly connected set and assign all email addresses
+        registered on those keys to the people representing their owners in
+        Launchpad. If any of these people doesn't exist, it creates them.
+        """)
+
+    FROMEMAILMESSAGE = Item(6, """
+        Created when parsing an email message.
+
+        Sometimes we parse email messages and want to associate them with the
+        sender, which may not have a Launchpad account. In that case we need
+        to create a Person entry to associate with the email.
+        """)
+
+    SOURCEPACKAGEUPLOAD = Item(7, """
+        This person was mentioned in a source package uploaded.
+
+        Some uploaded packages may be uploaded with a maintainer that is not
+        registered in Launchpad, and in these cases, soyuz may decide to
+        create the new Person instead of complaining.
+        """)
+
+    OWNER_CREATED_LAUNCHPAD = Item(8, """
+        Created by the owner himself, coming from Launchpad.
+
+        Somebody was navigating through Launchpad and at some point decided to
+        create an account.
+        """)
+
+    OWNER_CREATED_SHIPIT = Item(9, """
+        Created by the owner himself, coming from Shipit.
+
+        Somebody went to one of the shipit sites to request Ubuntu CDs and was
+        directed to Launchpad to create an account.
+        """)
+
+    OWNER_CREATED_UBUNTU_WIKI = Item(10, """
+        Created by the owner himself, coming from the Ubuntu wiki.
+
+        Somebody went to the Ubuntu wiki and was directed to Launchpad to
+        create an account.
+        """)

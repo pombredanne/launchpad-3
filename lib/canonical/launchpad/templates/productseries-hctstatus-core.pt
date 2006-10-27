@@ -46,7 +46,7 @@
         <td><b tal:content="context/rcstype/title">CVS</b>
             <b>(<span tal:replace="context/rcstype/name" />)</b></td>
       </tr>
-        <tal:block condition="python:context.rcstype.name=='CVS'">
+        <tal:block condition="context/rcstype/enumvalue:CVS">
           <tr>
             <td>CVS root:</td>
             <td tal:content="context/cvsroot">cvs root</td>
@@ -60,7 +60,7 @@
             <td tal:content="context/cvsbranch">cvs branch</td>
           </tr>
         </tal:block>
-        <tal:block condition="python:context.rcstype.name=='SVN'">
+        <tal:block condition="context/rcstype/enumvalue:SVN">
           <tr>
             <td>Subversion Repository:</td>
             <td tal:content="context/svnrepository">svn repo</td>
