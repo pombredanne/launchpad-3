@@ -1654,9 +1654,8 @@ class BugTaskTableRowView(LaunchpadView):
         else:
             return canonical_url(bugtask) + "/+viewstatus"
 
-    def getReleaseTargetName(self):
-        """Get the release or series to which this task is targeted."""
-        bugtask = self.context
+    def _getReleaseTargetNameHelper(self, bugtask):
+        """Return the short name of bugtask's targeted release."""
         if IDistroReleaseBugTask.providedBy(bugtask):
             return bugtask.distrorelease.name.capitalize()
         elif IProductSeriesBugTask.providedBy(bugtask):
@@ -1665,6 +1664,14 @@ class BugTaskTableRowView(LaunchpadView):
             assert (
                 "Expected IDistroReleaseBugTask or IProductSeriesBugTask. "
                 "Got: %r" % bugtask)
+
+    def getReleaseTargetName(self):
+        """Get the release or series to which this task is targeted."""
+        return self._getReleaseTargetNameHelper(self.context)
+
+    def getConjoinedMasterName(self):
+        """Get the conjoined master's name for displaying."""
+        return self._getReleaseTargetNameHelper(self.context.conjoined_master)
 
     def canEditBugTask(self):
         """Can the current bugtask be edited?"""

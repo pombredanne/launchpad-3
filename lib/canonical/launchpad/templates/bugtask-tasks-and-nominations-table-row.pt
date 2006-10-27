@@ -30,25 +30,35 @@
       <span style="display: block; padding: 3px">
         <img src="/@@/package-source" tal:condition="view/shouldShowPackageIcon" />
         <img src="/@@/product" tal:condition="view/shouldShowProductIcon" />
-        <a
-          tal:condition="can_edit_bugtask"
-          tal:attributes="
-              href tasklink;
-              onclick string:return toggleFormVisibility(document.getElementById('${form_row_id}'))"
-          tal:content="context/targetname"
-        />
-        <a
-          tal:condition="not:can_edit_bugtask"
-          tal:attributes="href tasklink"
-          tal:content="context/targetname"
-        />
+        <tal:not-conjoined-task tal:condition="not: context/conjoined_master">
+          <a
+            tal:condition="can_edit_bugtask"
+            tal:attributes="
+                href tasklink;
+                onclick string:return toggleFormVisibility(document.getElementById('${form_row_id}'))"
+            tal:content="context/targetname"
+          />
+          <a
+            tal:condition="not:can_edit_bugtask"
+            tal:attributes="href tasklink"
+            tal:content="context/targetname"
+          />
+        </tal:not-conjoined-task>
+        <tal:conjoined-task
+            tal:condition="context/conjoined_master"
+            tal:replace="context/targetname">
+          evolution (Ubuntu)
+        </tal:conjoined-task>
       </span>
     </td>
 
     <tal:conjoined-task condition="context/conjoined_master">
     <td colspan="3" style="vertical-align: middle">
       <span class="discreet lesser" style="font-size: 100%">
-        Status tracked above
+        Status tracked in
+        <tal:master tal:replace="view/getConjoinedMasterName">
+          Hoary
+        </tal:master>
       </span>
     </td>
     </tal:conjoined-task>
