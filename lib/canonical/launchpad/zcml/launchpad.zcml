@@ -248,12 +248,4 @@
   template="../templates/app-buttons.pt"
   />
 
-<browser:page
-  for="zope.interface.Interface"
-  name="+structural-heading"
-  class="canonical.launchpad.browser.StructuralObjectPresentationView"
-  template="../templates/launchpad-structuralheader.pt"
-  permission="zope.Public"
-  />
-
 </configure>
