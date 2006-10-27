@@ -715,7 +715,7 @@ def re_substitute(pattern, replace_match, replace_nomatch, string):
     return ''.join(parts)
 
 
-def get_chars(word, nchars):
+def split_chars(word, nchars):
     """Return the first num characters of the word, plus the remainder.
 
     This function treats HTML entities in the string as single
@@ -746,13 +746,13 @@ def add_word_breaks(word):
     """
     broken = []
     while word:
-        chars, word = get_chars(word, 7)
+        chars, word = split_chars(word, 7)
         broken.append(chars)
         # If the leading characters don't end with puctuation, grab
         # more characters.
         if chars[-1].isalnum() and word != '':
             for i in range(8):
-                chars, word = get_chars(word, 1)
+                chars, word = split_chars(word, 1)
                 broken.append(chars)
                 if not (chars[-1].isalnum() and word != ''):
                     break
