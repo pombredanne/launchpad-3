@@ -3,10 +3,7 @@ Lastly, we should be able to set the translation group on a project. We'll
 use the Gnome project as an example. First make sure we can see the Gnome
 project page and that it has no translation group assigned.
 
-XXX 20061025 mpt: this test is disabled pending a decision from Mark on whether
-the project page should mention the project's translation group.
-
-  XXX print http(r"""
+  >>> print http(r"""
   ... GET /projects/gnome/ HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
@@ -15,15 +12,10 @@ the project page should mention the project's translation group.
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-  ...Translation Group:...
-  ..."/@@/languages"...
-  <BLANKLINE>
-  <BLANKLINE>
-              <i>Not assigned</i><br />
-  <BLANKLINE>
-              <b>Translation Perms:</b><br />
-              Open
-              <br />
+  ...Translation group:...
+  ...Not assigned...
+  ...Translations:...
+  ...Open...
   ...
 
 And now make sure we can see the form to change the translation group and
@@ -85,10 +77,7 @@ permissions.
 And make sure these changes are now reflected in the Gnome project page in
 the relevant portlet.
 
-XXX 20061025 mpt: this test is disabled pending a decision from Mark on whether
-the project page should mention the project's translation group.
-
-  XXX print http(r"""
+  >>> print http(r"""
   ... GET /projects/gnome HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
@@ -97,14 +86,8 @@ the project page should mention the project's translation group.
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-  ...Translation Group:...
-  ..."/@@/languages"...
-  <BLANKLINE>
-              <a href="/rosetta/groups/polyglot/">The PolyGlot Translation Group</a><br />
-  <BLANKLINE>
-  <BLANKLINE>
-              <b>Translation Perms:</b><br />
-              Closed
-              <br />
+  ...Translation group:...
+  ...<a href="/rosetta/groups/polyglot/">The PolyGlot Translation Group</a>...
+  ...Translations:...
+  ...Closed...
   ...
-

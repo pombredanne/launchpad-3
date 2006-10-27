@@ -67,6 +67,14 @@
     <div id="singlecolumn" tal:condition="columns1|nothing">
       <metal:heading define-slot="pageheading" />
       <tal:XXX condition="nothing">20061025 mpt: pageheading deprecated</tal:XXX>
+      <tal:notifications
+        define="notifications request/notifications"
+        condition="notifications"
+      >
+        <metal:notifications
+         use-macro="context/@@+main-template-macros/notifications"
+        />
+      </tal:notifications>
       <metal:block define-slot="main" />
     </div>
     <tal:layout condition="not:columns1|nothing">
