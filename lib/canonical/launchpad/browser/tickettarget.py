@@ -27,8 +27,8 @@ from zope.app.pagetemplate import ViewPageTemplateFile
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IDistribution, IManageSupportContacts, ILanguageSet, NotFoundError,
-    ISearchTicketsForm)
+    IDistribution, IManageSupportContacts, ILanguageSet, ISearchTicketsForm,
+    ITicketTarget, NotFoundError)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, redirection, stepthrough,
     ApplicationMenu, GeneralFormView, LaunchpadFormView, Link)
