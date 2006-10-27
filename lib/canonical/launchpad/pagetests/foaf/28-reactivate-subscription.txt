@@ -19,6 +19,8 @@ Open a second Browser on the same page:
   >>> browser2.addHeader("Authorization", "Basic foo@baz.com:f")
   >>> browser2.open("http://launchpad.dev/people/myemail/+member/name16")
 
+XXX: See test 27's comment on bug 68655.
+
 Reactivate the subscription:
 
   >>> browser.getControl(name="expires").value = ["date"]
