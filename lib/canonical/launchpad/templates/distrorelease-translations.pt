@@ -33,8 +33,9 @@
         Customize displayed languages
       </a>
 
-      <a tal:condition="not: request/lp:person" href="/people/+editlanguages">
-        Customize displayed languages
+      <a tal:condition="not: request/lp:person"
+         tal:attributes="href string:${request/URL}/+login">
+        Login to customize displayed languages
       </a>
     </li>
   </ul>

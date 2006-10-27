@@ -52,6 +52,7 @@ __all__ = [
     'SearchCommentedTicketsView',
     'SearchCreatedTicketsView',
     'SearchSubscribedTicketsView',
+    'PersonLanguagesView',
     ]
 
 import cgi
@@ -84,7 +85,7 @@ from canonical.launchpad.interfaces import (
     IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet, IPollSet,
     IAdminRequestPeopleMerge, NotFoundError, UNRESOLVED_BUGTASK_STATUSES,
     IPersonChangePassword, GPGKeyNotFoundError, UnexpectedFormData,
-    IPersonClaim, ILanguageSet, IRequestPreferredLanguages)
+    ILanguageSet, IRequestPreferredLanguages, IPersonClaim)
 
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.specificationtarget import (
