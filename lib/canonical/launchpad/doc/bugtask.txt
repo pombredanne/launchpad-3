@@ -585,38 +585,38 @@ We'll also add some product and productseries tasks.
     ...     productseries=alsa_utils.getSeries("trunk"))
 
 A conjoined bugtask involves a master and slave in the conjoined
-relationship. The master is the generic product or distribution task;
-the slave is the release- or series-specific task. These tasks are
+relationship. The slave is the generic product or distribution task;
+the master is the release- or series-specific task. These tasks are
 accessed through the conjoined_master and conjoined_slave properties.
 
-    >>> generic_netapplet_task.conjoined_slave == (
-    ...     current_release_netapplet_task)
-    True
-    >>> generic_netapplet_task.conjoined_master is None
-    True
-
-    >>> generic_ubuntu_task.conjoined_slave == (
-    ...     current_release_ubuntu_task)
-    True
-    >>> generic_ubuntu_task.conjoined_master is None
-    True
-
-    >>> generic_alsa_utils_task.conjoined_slave == (
-    ...     devel_focus_alsa_utils_task)
-    True
-    >>> generic_alsa_utils_task.conjoined_master is None
-    True
-
-    >>> current_release_netapplet_task.conjoined_slave is None
-    True
-    >>> current_release_netapplet_task.conjoined_master == (
+    >>> current_release_netapplet_task.conjoined_slave == (
     ...     generic_netapplet_task)
     True
-
-    >>> devel_focus_alsa_utils_task.conjoined_slave is None
+    >>> current_release_netapplet_task.conjoined_master is None
     True
-    >>> devel_focus_alsa_utils_task.conjoined_master == (
+
+    >>> current_release_ubuntu_task.conjoined_slave == (
+    ...     generic_ubuntu_task)
+    True
+    >>> current_release_ubuntu_task.conjoined_master is None
+    True
+
+    >>> devel_focus_alsa_utils_task.conjoined_slave == (
     ...     generic_alsa_utils_task)
+    True
+    >>> devel_focus_alsa_utils_task.conjoined_master is None
+    True
+
+    >>> generic_netapplet_task.conjoined_slave is None
+    True
+    >>> generic_netapplet_task.conjoined_master == (
+    ...     current_release_netapplet_task)
+    True
+
+    >>> generic_alsa_utils_task.conjoined_slave is None
+    True
+    >>> generic_alsa_utils_task.conjoined_master == (
+    ...     devel_focus_alsa_utils_task)
     True
 
 Now the attributes are kept in sync. Here are examples of each:
@@ -637,7 +637,8 @@ require extra privileges.)
     >>> current_release_netapplet_task.date_closed is None
     True
 
-    >>> generic_netapplet_task.transitionToStatus(BugTaskStatus.FIXRELEASED)
+    >>> current_release_netapplet_task.transitionToStatus(
+    ...     BugTaskStatus.FIXRELEASED)
 
     >>> print generic_netapplet_task.status.title
     Fix Released
@@ -663,7 +664,7 @@ require extra privileges.)
     >>> devel_focus_alsa_utils_task.date_assigned is None
     True
 
-    >>> generic_alsa_utils_task.transitionToAssignee(no_priv)
+    >>> devel_focus_alsa_utils_task.transitionToAssignee(no_priv)
 
     >>> print generic_alsa_utils_task.assignee.displayname
     No Privileges Person
@@ -683,7 +684,7 @@ require extra privileges.)
     >>> print current_release_netapplet_task.importance.title
     Critical
 
-    >>> generic_netapplet_task.importance = BugTaskImportance.MEDIUM
+    >>> current_release_netapplet_task.importance = BugTaskImportance.MEDIUM
 
     >>> print generic_netapplet_task.importance.title
     Medium
@@ -699,7 +700,7 @@ require extra privileges.)
     >>> devel_focus_alsa_utils_task.milestone is None
     True
 
-    >>> generic_alsa_utils_task.milestone = test_milestone
+    >>> devel_focus_alsa_utils_task.milestone = test_milestone
 
     >>> print generic_alsa_utils_task.milestone.name
     test
@@ -715,7 +716,7 @@ require extra privileges.)
     >>> print current_release_netapplet_task.sourcepackagename.name
     netapplet
 
-    >>> generic_netapplet_task.sourcepackagename = (
+    >>> current_release_netapplet_task.sourcepackagename = (
     ...     ubuntu_pmount.sourcepackagename)
 
     >>> print generic_netapplet_task.sourcepackagename.name
@@ -723,17 +724,14 @@ require extra privileges.)
     >>> print current_release_netapplet_task.sourcepackagename.name
     pmount
 
-The current release and development focus tasks are not directly
-editable.
+The generic tasks are not directly editable.
 
-    >>> current_release_netapplet_task.transitionToStatus(
-    ...     BugTaskStatus.REJECTED)
+    >>> generic_netapplet_task.transitionToStatus(BugTaskStatus.REJECTED)
     Traceback (most recent call last):
       ...
     ConjoinedBugTaskEditError: ...
 
-    >>> devel_focus_alsa_utils_task.transitionToAssignee(
-    ...     launchbag.user)
+    >>> generic_alsa_utils_task.transitionToAssignee(launchbag.user)
     Traceback (most recent call last):
       ...
     ConjoinedBugTaskEditError: ...

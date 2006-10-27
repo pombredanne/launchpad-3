@@ -156,25 +156,6 @@ class BugTask(SQLBase, BugTaskMixin):
     @property
     def conjoined_master(self):
         """See IBugTask."""
-        if not self._isConjoinedBugTask():
-            return None
-
-        if IDistroReleaseBugTask.providedBy(self):
-            distribution = self.distrorelease.distribution
-            sourcepackagename = self.sourcepackagename
-            for bt in self.bug.bugtasks:
-                if (bt.distribution == distribution and
-                    bt.sourcepackagename == self.sourcepackagename):
-                    return bt
-        elif IProductSeriesBugTask.providedBy(self):
-            product = self.productseries.product
-            for bt in self.bug.bugtasks:
-                if bt.product == product:
-                    return bt
-
-    @property
-    def conjoined_slave(self):
-        """See IBugTask."""
         if IDistroBugTask.providedBy(self):
             current_release = self.distribution.currentrelease
             for bt in self.bug.bugtasks:
@@ -188,6 +169,22 @@ class BugTask(SQLBase, BugTaskMixin):
                     return bt
 
         return None
+
+    @property
+    def conjoined_slave(self):
+        """See IBugTask."""
+        if IDistroReleaseBugTask.providedBy(self):
+            distribution = self.distrorelease.distribution
+            sourcepackagename = self.sourcepackagename
+            for bt in self.bug.bugtasks:
+                if (bt.distribution == distribution and
+                    bt.sourcepackagename == self.sourcepackagename):
+                    return bt
+        elif IProductSeriesBugTask.providedBy(self):
+            product = self.productseries.product
+            for bt in self.bug.bugtasks:
+                if bt.product == product:
+                    return bt
 
     # Conjoined bugtask synching methods. We override these methods
     # individually, to avoid cycle problems if we were to override
@@ -261,26 +258,23 @@ class BugTask(SQLBase, BugTaskMixin):
         attrsetter(value)
 
     def _isConjoinedBugTask(self):
-        if IProductSeriesBugTask.providedBy(self):
-            devel_focus = self.productseries.product.development_focus
-            return self.productseries == devel_focus
-        elif IDistroReleaseBugTask.providedBy(self):
-            currentrelease = self.distrorelease.distribution.currentrelease
-            return self.distrorelease == currentrelease
-        else:
-            return False
+        return self.conjoined_master is not None
 
-    def _syncToConjoinedMaster(self):
-        """Ensure the conjoined slave is synched to its master."""
-        conjoined_master = self.conjoined_master
+    def _syncFromConjoinedSlave(self):
+        """Ensure the conjoined master is synched from its slave.
+
+        This method should be used only directly after the bugtask
+        entered a conjoined relationship.
+        """
+        conjoined_slave = self.conjoined_slave
 
         for synched_attr in self._CONJOINED_ATTRIBUTES:
-            master_attr_value = getattr(conjoined_master, synched_attr)
+            slave_attr_value = getattr(conjoined_slave, synched_attr)
             # Bypass our checks that prevent setting attributes on
-            # conjoined slaves by calling the underlying sqlobject
+            # conjoined masters by calling the underlying sqlobject
             # setter methods directly.
             attrsetter = getattr(self, "_SO_set_%s" % synched_attr)
-            attrsetter(master_attr_value)
+            attrsetter(slave_attr_value)
 
     def _init(self, *args, **kw):
         """Marks the task when it's created or fetched from the database."""
@@ -844,8 +838,8 @@ class BugTaskSet:
                     sourcepackagename=sourcepackagename,
                     **non_target_create_params)
 
-        if bugtask.conjoined_master:
-            bugtask._syncToConjoinedMaster()
+        if bugtask.conjoined_slave:
+            bugtask._syncFromConjoinedSlave()
 
         return bugtask
 

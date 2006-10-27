@@ -142,9 +142,9 @@ class IBugTask(IHasDateCreated, IHasBug):
         "indirectly."), readonly=True)
 
     conjoined_master = Attribute(
-        "The generic bugtask in a conjoined relationship")
-    conjoined_slave = Attribute(
         "The series- or release-specific bugtask in a conjoined relationship")
+    conjoined_slave = Attribute(
+        "The generic bugtask in a conjoined relationship")
 
     def setImportanceFromDebbugs(severity):
         """Set the Malone BugTask importance on the basis of a debbugs
