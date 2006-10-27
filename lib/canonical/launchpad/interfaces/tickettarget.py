@@ -23,7 +23,9 @@ from canonical.launchpad.interfaces.language import ILanguageSet
 from canonical.lp.dbschema import TicketSort, TicketStatus
 
 
-TICKET_STATUS_DEFAULT_SEARCH = (TicketStatus.OPEN, TicketStatus.ANSWERED)
+TICKET_STATUS_DEFAULT_SEARCH = (
+    TicketStatus.OPEN, TicketStatus.NEEDSINFO, TicketStatus.ANSWERED,
+    TicketStatus.SOLVED)
 
 
 def get_supported_languages(ticket_target):

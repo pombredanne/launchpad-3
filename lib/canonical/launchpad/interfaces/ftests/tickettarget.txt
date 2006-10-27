@@ -128,13 +128,18 @@ owned by sample_person.
     ...         owner, 'Ticket title%d' % num, description,
     ...         datecreated=now+timedelta(minutes=num+1)))
 
-For more variety, we will set the status of the last to REJECTED and the
+For more variety, we will set the status of the last to INVALID and the
 fourth one to ANSWERED.
 
     >>> from canonical.lp.dbschema import TicketStatus
 
-    >>> tickets[-1].status = TicketStatus.REJECTED
-    >>> tickets[3].status = TicketStatus.ANSWERED
+    (Need an admin to change to an arbitrary status)
+    >>> login('foo.bar@canonical.com')
+    >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+    >>> message = tickets[-1].setStatus(
+    ...     foo_bar, TicketStatus.INVALID, 'Status change.')
+    >>> message = tickets[3].setStatus(
+    ...     foo_bar, TicketStatus.ANSWERED, 'Status change.')
 
     (Flush those changes to the database)
     >>> from canonical.database.sqlbase import flush_database_updates
@@ -143,6 +148,7 @@ fourth one to ANSWERED.
 And create another one that will also have the word 'new' in its
 description.
 
+    >>> login('test@canonical.com')
     >>> ticket = target.newTicket(sample_person, 'Another ticket',
     ...     'Another new ticket that is actually very new.',
     ...     datecreated=now+timedelta(hours=1))
@@ -177,16 +183,16 @@ The searchTickets() method can also filter tickets by status:
 In this previous example, because there is no sort text, the
 default sort order is from newest to oldest.
 
-    >>> for t in target.searchTickets(status=TicketStatus.REJECTED):
+    >>> for t in target.searchTickets(status=TicketStatus.INVALID):
     ...     print t.title
     Ticket title4
 
 You can also pass in a list of status, and you can also use the
 search_text and status parameters at the same time. This will search
-OPEN and REJECTED tickets with the word 'index'
+OPEN and INVALID tickets with the word 'index'
 
     >>> for t in target.searchTickets(search_text='request index',
-    ...         status=(TicketStatus.OPEN, TicketStatus.REJECTED)):
+    ...         status=(TicketStatus.OPEN, TicketStatus.INVALID)):
     ...     print t.title
     Ticket title4
     Ticket title2
@@ -207,8 +213,9 @@ You can sort also from oldest to newest using the OLDEST_FIRST constant:
     New ticket
     Another ticket
 
-You can sort by status, (the status order is OPEN, ANSWERED, REJECTED),
-this also sorts from newest to oldest as a secondary key.
+You can sort by status, (the status order is OPEN, NEEDSINFO, ANSWERED,
+SOLVED, EXPIRED, INVALID), this also sorts from newest to oldest as a
+secondary key.
 
     >>> for t in target.searchTickets(search_text='request index',
     ...                               status=None,
@@ -218,10 +225,10 @@ this also sorts from newest to oldest as a secondary key.
     Open Ticket title1
     Open Ticket title0
     Answered Ticket title3
-    Rejected Ticket title4
+    Invalid Ticket title4
 
 (In the previous example, we used status=None to search for all
-statuses, by default only OPEN and ANSWERED tickets are searched.)
+statuses, by default INVALID and EXPIRED tickets are excluded.)
 
 If there is no search_text and the requested sort order is RELEVANCY,
 the tickets will be sorted NEWEST_FIRST.
@@ -236,7 +243,7 @@ the tickets will be sorted NEWEST_FIRST.
     De l'aide S.V.P.
     New ticket
 
-('Ticket title4' is not shown in this case because it has REJECTED as
+('Ticket title4' is not shown in this case because it has INVALID as
 its status.)
 
 You can also find ticket owner by a particular user by using the owner
