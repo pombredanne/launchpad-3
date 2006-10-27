@@ -60,13 +60,26 @@
   >>> browser.getControl('Save Changes').click()
   >>> browser.url
   'http://localhost/people/name16/+editwikinames'
-  >>> print browser.contents
-  <...
-  ...Other wiki names...
-  ...http://foo.bar/wiki/...
-  ...FooBar...
-  ...
 
+  This new wiki is added in 'Other wiki names' section.
+
+  >>> import re
+  >>> from BeautifulSoup import BeautifulSoup
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> other_wiki_names_row = soup.first(
+  ...     'h2', text='Other wiki names').findParent('tr')
+  >>> wiki_input = other_wiki_names_row.findNext(
+  ...   'input', attrs={'name': re.compile(r'wiki_\d+')})
+  >>> print wiki_input['value']
+  http://foo.bar/wiki/
+  >>> wikiname_input = other_wiki_names_row.findNext(
+  ...   'input', attrs={'name': re.compile(r'wikiname_\d+')})
+  >>> print wikiname_input['value']
+  FooBar
+
+  # Save them for later user.
+  >>> wiki_input_id = wiki_input['name']
+  >>> wikiname_input_id = wikiname_input['name']
 
   Let's try to add it again, to see if it's possible to have two identical
   wikinames.
@@ -76,41 +89,28 @@
   >>> browser.getControl('Save Changes').click()
   >>> browser.url
   'http://localhost/people/name16/+editwikinames'
-  >>> print browser.contents
-  <...
-  ...The WikiName ... already belongs to you...
-  ...
-
+  >>> for message in find_tags_by_class(browser.contents, 'message'):
+  ...     print message.renderContents()
+  The WikiName http://foo.bar/wiki/FooBar already belongs to you.
 
   But the url/wikiname was wrong, so I'll fix it now.
 
-  >>> browser.getControl(name='wiki_53').value = 'http://foo.bar.com/wiki/'
+  >>> browser.getControl(name=wiki_input_id).value = (
+  ...     'http://foo.bar.com/wiki/')
+  >>> browser.getControl(name=wikiname_input_id).value = 'FooBar2'
   >>> browser.getControl('Save Changes').click()
   >>> browser.url
   'http://localhost/people/name16/+editwikinames'
-  >>> print browser.contents
-  <...
-  ...Other wiki names...
-  ...http://foo.bar.com/wiki/...
-  ...FooBar...
-  ...
 
-
-  >>> browser.getControl(name='wikiname_53').value = 'FooBar2'
-  >>> browser.getControl('Save Changes').click()
-  >>> browser.url
-  'http://localhost/people/name16/+editwikinames'
-  >>> print browser.contents
-  <...
-  ...Other wiki names...
-  ...http://foo.bar.com/wiki/...
-  ...FooBar2...
-  ...
-
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> print soup.first('input', attrs=dict(name=wiki_input_id))['value']
+  http://foo.bar.com/wiki/
+  >>> print soup.first('input', attrs=dict(name=wikiname_input_id))['value']
+  FooBar2
 
   Now remove the recently added WikiName.
 
-  >>> browser.getControl(name='remove_53').value = True
+  >>> browser.getControl('Remove').selected = True
   >>> browser.getControl('Save Changes').click()
   >>> browser.url
   'http://localhost/people/name16/+editwikinames'
