@@ -443,26 +443,15 @@ ul#applicationchooser li a#applicationchooser_selected {
 #portlets li.active ul li a:hover {
   background-color: #EBF6C7;
 }
-#xxxportlets {
-  float: left;
-  width: 200px;
-  overflow: hidden;
-  margin: 0px 16px 0px 16px;
-}
 #portlets .portlet {
-  xxxfloat: left;
-  xxxwidth: 200px;
   overflow: hidden;
   margin: 0;
-  xxxpadding: 0;
   list-style: none;
   font-size: 11px;
 }
 #portlets .portlet,
 #portlets .portlet h2,
 #portlets .portlet li {
-  xxxclear: both;
-  xxxfloat: left;
   font-size: 11px !important;
 }
 #portlets .portlet h2 {
@@ -711,12 +700,6 @@ ul#applicationchooser li a#applicationchooser_selected {
   background-image: url(mainarea_topright.gif);
   background-repeat: no-repeat;
   background-position: top right;
-}
-
-#xxxmainarea #maincontent {
-  float: right;
-  margin: 0px 20px 20px 10px;
-  width: 62%;
 }
 #help_panel {
   visibility: hidden; /* global.js reveals it if JavaScript is available */
