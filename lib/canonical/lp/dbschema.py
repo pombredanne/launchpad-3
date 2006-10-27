@@ -91,6 +91,7 @@ __all__ = (
 'TextDirection',
 'TicketParticipation',
 'TicketPriority',
+'TicketSearchLanguages',
 'TicketSort',
 'TicketStatus',
 'TeamMembershipStatus',
@@ -1771,7 +1772,7 @@ class TicketSearchLanguages(DBSchema):
 
         Any of the user's preferred languages.
         """)
-    
+
     ANY_LANGUAGE = Item(30, """
         Any language
 
