@@ -76,7 +76,7 @@ class TeamMembership(SQLBase):
         # Make sure the transition from the current status to the given status
         # is allowed. All allowed transitions are in the TeamMembership spec.
         if self.status in [admin, approved]:
-            assert status in [approved, admin, expired, deactivated]
+            assert status in [admin, approved, expired, deactivated]
         elif self.status in [deactivated]:
             assert status in [approved]
         elif self.status in [expired]:
