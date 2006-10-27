@@ -1,6 +1,5 @@
 <configure xmlns="http://namespaces.zope.org/browser">
     <!-- Style sheets -->
-    <resource name="launchpad.css" file="../templates/launchpad-1-0.css" />
     <resource name="ubuntu.css" file="../templates/ubuntu.css" />
     <resource name="ubuntu-discs.css" file="../templates/ubuntu-discs.css" />
     <resource name="ubuntu-plone.css" file="../templates/ubuntu-plone.css" />
