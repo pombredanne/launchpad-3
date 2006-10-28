@@ -564,6 +564,13 @@
           lp:url="/people/+peoplelist" />
   </browser:pages>
 
+  <browser:page
+      for="canonical.launchpad.interfaces.IPersonSet"
+      permission="zope.Public"
+      class="canonical.launchpad.browser.RedirectToEditLanguagesView"
+      name="+editlanguages"
+      />
+
   <browser:pages
       for="canonical.launchpad.interfaces.IPersonSet"
       permission="zope.Public"
