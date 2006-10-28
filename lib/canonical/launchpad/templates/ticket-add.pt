@@ -51,22 +51,23 @@
         </p>
       </tal:no-similar-tickets>
 
-      <p tal:condition="view/warn_about_unsupported_language"
-         i18n:translate="" class="warning message">
-        <strong tal:content="view/choosen_language/displayname">
-        Xhoza</strong> doesn't seem to be a language spoken by any members
-        of this support community. If you go ahead and make a support request
-        in that language, no members of this support community will be able
-        to read it. Currently, the languages spoken by at least one member
-        of this support community are:
-        <tal:langs tal:repeat="lang context/getSupportedLanguages">
-          <span tal:replace="lang/englishname"
-          /><span tal:condition="not: repeat/lang/end">,</span>
-        </tal:langs>.
+      <tal:unsupported_lang condition="view/warn_about_unsupported_language">
+        <p class="warning message" i18n:translate="">
+          <strong tal:content="view/choosen_language/displayname"
+                  i18n:name="language">
+          Xhoza</strong> doesn't seem to be a language spoken by any support
+          contacts in this community. If you go ahead and make a support request
+          in that language, no support contacts will be able to read it.
+          Currently, the languages spoken by at least one support contact are:
+          <tal:langs tal:repeat="lang context/getSupportedLanguages"
+                    i18n:name="languages">
+            <span tal:replace="lang/englishname"
+            /><span tal:condition="not: repeat/lang/end">,</span>
+          </tal:langs>.
+        </p>
         <input type="hidden" name="warned_about_unsupported_language"
-               value="1" />
-      </p>
-
+              value="1" />
+      </tal:unsupported_lang>
       </div>
     </metal:extra_info>
 

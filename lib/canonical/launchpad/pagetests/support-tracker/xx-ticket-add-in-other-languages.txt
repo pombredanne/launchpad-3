@@ -1,5 +1,4 @@
-Adding tickets in languages other than english
-==============================================
+== Adding tickets in languages other than English ==
 
 Although it's possible to add tickets in any of the user's preferred
 languages, we need to do some checks to warn the user in case he's using
@@ -14,9 +13,9 @@ contacts.
     ...     'Abrir uma pagina que requer java quebra o firefox')
     >>> browser.getControl('Continue').click()
 
-At this point we'll present any similar tickets (in any language) /and/ a
-warning message explaining that the chosen language is not understood by
-any member of the support community.
+At this point we'll present any similar tickets (in any language) /and/
+a warning message explaining that the chosen language is not understood
+by any member of the support community.
 
     >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(browser.contents)
@@ -30,30 +29,33 @@ any member of the support community.
 
     >>> for tag in find_tags_by_class(browser.contents, 'warning message'):
     ...     print tag.renderContents()
-    <BLANKLINE>
-    ...Portuguese (Brazil)...doesn't seem to be a language spoken by...
-    ...any members...of this support community...
-    ...Currently, the languages spoken by at least one member...
-    ...of this support community are:...English...
+    <strong>Portuguese (Brazil) (pt_BR)</strong> doesn't seem to be
+    a language spoken by any support contacts in this community. If you
+    go ahead and make a support request in that language, no support
+    contacts will be able to read it. Currently, the languages spoken
+    by at least one support contact are: English.
 
-Since we've already shown the warning, we won't try to block the user from
-making a request in the language of his choice.
+Since we've already shown the warning, we won't try to block the user
+from making a request in the language of his choice.
 
     >>> browser.getControl('Description').value = (
-    ...     'Eu uso Ubuntu em um AMD64 e instalei o plugin java blackdown. '
-    ...     'O plugin é exibido em about:plugins e quando eu abro a '
-    ...     'pagina http://java.com/en/download/help/testvm.xml, ela '
-    ...     'carrega corretamente e mostra a minha versao do java. No '
-    ...     'entanto, mover o mouse na pagina faz com que o firefox quebre.')
+    ...     u'Eu uso Ubuntu em um AMD64 e instalei o plugin java blackdown. '
+    ...     u'O plugin \xe9 exibido em about:plugins e quando eu abro a '
+    ...     u'pagina http://java.com/en/download/help/testvm.xml, ela '
+    ...     u'carrega corretamente e mostra a minha versao do java. No '
+    ...     u'entanto, mover o mouse na pagina faz com que o firefox quebre.'
+    ...     ).encode('utf-8')
     >>> browser.getControl('Add').click()
     >>> browser.url
     '.../distros/ubuntu/+ticket/...'
     >>> browser.title
     'Ubuntu support request #...Abrir uma pagina que requer...'
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> print soup.find('b', text='Language:').next.strip()
+    Portuguese (Brazil)
 
-
-It's also possible that the user choses english in the first page but then
-changes his mind on the second page.
+It's also possible that the user choses English in the first page but
+then changes his mind on the second page.
 
     >>> browser.open('http://launchpad.dev/distros/ubuntu/+addticket')
 
@@ -68,7 +70,7 @@ support community can understand English.
     0
 
 If now he changes his mind and decides to enter the request details in
-portuguese, we'll have to warn him.
+Portuguese, we'll have to warn him.
 
     >>> browser.getControl('Language').value = ['pt_BR']
     >>> browser.getControl('Summary').value = 'algumas palavras aleatorias'
@@ -81,18 +83,19 @@ portuguese, we'll have to warn him.
 
     >>> for tag in find_tags_by_class(browser.contents, 'warning message'):
     ...     print tag.renderContents()
-    <BLANKLINE>
-    ...Portuguese (Brazil)...doesn't seem to be a language spoken by...
-    ...any members...of this support community...
-    ...Currently, the languages spoken by at least one member...
-    ...of this support community are:...English...
+    <strong>Portuguese (Brazil) (pt_BR)</strong> doesn't seem to be
+    a language spoken by any support contacts in this community. If you
+    go ahead and make a support request in that language, no support
+    contacts will be able to read it. Currently, the languages spoken
+    by at least one support contact are: English.
 
-If even after the warning he decides to go ahead, we have to accept the new
-support request.
+If even after the warning he decides to go ahead, we have to accept the
+new support request.
 
     >>> browser.getControl('Add').click()
     >>> browser.url
     '.../distros/ubuntu/+ticket/...'
     >>> browser.title
     'Ubuntu support request #...algumas palavras aleatorias...'
-
+    >>> print soup.find('b', text='Language:').next.strip()
+    Portuguese (Brazil)

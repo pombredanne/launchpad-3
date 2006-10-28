@@ -12,53 +12,16 @@ __all__ = [
     'ITicketSet',
     ]
 
-from zope.component import getUtility
-from zope.interface import implements, Interface, Attribute
-from zope.schema.interfaces import IContextSourceBinder
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from zope.interface import Interface, Attribute
 
 from zope.schema import (
      Bool, Choice, Datetime,  Int, List, Object, Text, TextLine)
 
-from canonical.launchpad.helpers import request_languages
-from canonical.launchpad.interfaces import (
-    IHasOwner, ILanguageSet, IMessageTarget)
+from canonical.launchpad.interfaces import IHasOwner, IMessageTarget
 from canonical.launchpad.interfaces.ticketmessage import ITicketMessage
 from canonical.lp.dbschema import TicketStatus, TicketPriority
 
 from canonical.launchpad import _
-
-
-class TicketLanguageVocabularyFactory:
-    """Factory for a vocabulary with all languages a ticket can be written in.
-    
-    This includes the user's preferred languages (excluding English and all
-    its variants), the language the ticket is written in, in case we're
-    dealing with an existing ticket and English.
-    """
-
-    implements(IContextSourceBinder)
-
-    def __call__(self, context):
-        # XXX: This import must stay here to avoid circular imports.
-        # -- Guilherme Salgado, 2006-10-05
-        from canonical.launchpad.webapp.publisher import (
-            get_current_browser_request)
-        languages = set()
-        for lang in request_languages(get_current_browser_request()):
-            # Ignore English and all its variants.
-            if not lang.code.startswith('en'):
-                languages.add(lang)
-        if (context is not None and ITicket.providedBy(context) and
-            context.language.code != 'en'):
-            languages.add(context.language)
-        languages = list(languages)
-        # Now we insert English as the first element, to make it the default
-        # one.
-        languages.insert(0, getUtility(ILanguageSet)['en'])
-        terms = [SimpleTerm(lang, lang.code, lang.displayname)
-                 for lang in languages]
-        return SimpleVocabulary(terms)
 
 
 class InvalidTicketStateError(Exception):
@@ -88,11 +51,11 @@ class ITicket(IHasOwner):
     priority = Choice(
         title=_('Priority'), vocabulary='TicketPriority',
         default=TicketPriority.NORMAL)
+    # XXX flacoste 2006/10/28 It should be more precise to define a new
+    # vocabulary that excludes the English variants.
     language = Choice(
-        title=_('Language'), source=TicketLanguageVocabularyFactory(),
-        description=_('The language in which this request is written.'
-                      '(<a href="/people/+editlanguages">Change your '
-                      'preferred languages</a>)'))
+        title=_('Language'), vocabulary='LanguageVocabulary',
+        description=_('The language in which this request is written.'))
     owner = Choice(title=_('Owner'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam')
     assignee = Choice(title=_('Assignee'), required=False,

@@ -509,111 +509,99 @@ a distribution ticket:
 The TicketLanguage vocabulary
 -----------------------------
 
-This vocabulary contains the languages in which a request can be written.
+The TicketLanguageVocabularyFactory is an IContextSourceBinder which
+is used in browser forms to create a vocabulary containing only the
+languages that are likely to interest the user.
 
-Let's set some things up first.
+When the user has not configured his preferred languages, the vocabulary
+will contain 'English' (the default choice) and the most likely
+interesting languages based on GeoIP information and the request's
+languages.
 
+    # Set up a request asking for Portuguese (Brazil).
     >>> request = LaunchpadTestRequest(
     ...     HTTP_ACCEPT_LANGUAGE='pt_BR')
-    >>> from canonical.launchpad.interfaces import ILanguageSet
-    >>> english = getUtility(ILanguageSet)['en']
 
     # Monkey patch publisher.get_current_browser_request; otherwise the
     # TicketLanguageVocabularyFactory won't find a request and will fail.
     >>> publisher.get_current_browser_request = lambda: request
 
-    # Now we get the languages that a user without any preferred language
+    # Get the languages that a user without any preferred language
     # would speak, as told to us by helper.request_languages.
     >>> login(ANONYMOUS)
     >>> from canonical.launchpad.helpers import request_languages
     >>> req_languages = request_languages(request)
 
-Since we have 'pt_BR' in our HTTP_ACCEPT_LANGUAGE and our IP address
-(127.0.0.1) is hard-mapped in utilities/geoip.py as being located in
-South Africa, these are the languages we get from the request.
-
+    # Since we have 'pt_BR' in our HTTP_ACCEPT_LANGUAGE and our IP
+    # address (127.0.0.1) is hard-mapped in utilities/geoip.py as being
+    # located in South Africa, these are the languages we get from the
+    # request.
     >>> sorted([lang.code for lang in req_languages])
     [u'af', u'pt_BR', u'st', u'xh', u'zu']
 
-    >>> from canonical.launchpad.interfaces.ticket import (
+    >>> from canonical.launchpad.browser.ticket import (
     ...     TicketLanguageVocabularyFactory)
     >>> vocab = TicketLanguageVocabularyFactory()(None)
-
-First we'll login with a person which has no preferred languages set. This
-will cause the vocabulary to include only the languages from the request
-plus English, with the latter being the first in the list.
 
     >>> login('foo.bar@canonical.com')
     >>> user = getUtility(ILaunchBag).user
     >>> user.languages.count()
     0
 
-    >>> english in vocab
-    True
-    >>> False not in [(lang in vocab) for lang in req_languages]
-    True
-    >>> len(vocab) == len(req_languages) + 1
-    True
+In this example, the vocabulary will contain 'English',
+'Portuguese (Brazil)' and the languages spoken in South Africa:
 
-Now we login with a person which has some preferred languages. In this case
-the vocabulary will include this person's preferred languages plus English.
+    >>> languages = [term.value for term in vocab]
+    >>> languages[0].code
+    u'en'
+    >>> sorted([lang.code for lang in languages[1:]])
+    [u'af', u'pt_BR', u'st', u'xh', u'zu']
+
+When the user configured hist preferred languages, the vocabulary will
+contain 'English' plus the the preferred languages.
 
     >>> login('carlos@canonical.com')
     >>> user = getUtility(ILaunchBag).user
-    >>> user.languages.count()
-    2
+    >>> sorted([lang.code for lang in user.languages])
+    [u'ca', u'es']
 
     >>> vocab = TicketLanguageVocabularyFactory()(None)
-    >>> english in vocab
-    True
-
-    None of the request languages is on the vocabulary because this user
-    has preferred languages set and we use the request languages only as
-    a fallback.
-
-    >>> True not in [(lang in vocab) for lang in req_languages]
-    True
-    >>> False not in [(lang in vocab) for lang in user.languages]
-    True
-    >>> len(vocab) == user.languages.count() + 1
-    True
+    >>> languages = [term.value for term in vocab]
+    >>> languages[0].code
+    u'en'
+    >>> sorted([lang.code for lang in languages[1:]])
+    [u'ca', u'es']
 
 
-Now we login with a user which has preferred languages and one of these
-languages is en_GB. In this case the vocabulary will contain the user's
-preferred languages with the exception of en_GB (since we don't want to
-confuse people by providing multiple English options) plus English.
+Note that all variants of English are always excluded from the
+vocabulary (since we don't want to confuse people by providing multiple
+English options).
 
     >>> login('daf@canonical.com')
     >>> user = getUtility(ILaunchBag).user
-    >>> user.languages.count()
-    3
-
-    >>> british_english = getUtility(ILanguageSet)['en_GB']
-    >>> british_english in user.languages
-    True
+    >>> sorted([lang.code for lang in user.languages])
+    [u'cy', u'en_GB', u'ja']
 
     >>> vocab = TicketLanguageVocabularyFactory()(None)
-    >>> english in vocab
-    True
-    >>> british_english in vocab
-    False
+    >>> languages = [term.value for term in vocab]
+    >>> languages[0].code
+    u'en'
+    >>> sorted([lang.code for lang in languages[1:]])
+    [u'cy', u'ja']
 
-    >>> False not in [(lang in vocab)
-    ...               for lang in user.languages if lang.code != 'en_GB']
-    True
+Note also that the vocabulary will always contain the current ticket's
+language in the vocabulary, even if this language would not be selected
+by the previous rules.
 
-When you pass an existing ticket to TicketLanguageVocabularyFactory, the
-language of that ticket will always be included in the vocabulary, even
-if it's not a visible language.
-
+    >>> from canonical.launchpad.interfaces import ILanguageSet
     >>> afar = getUtility(ILanguageSet)['aa_DJ']
     >>> ticket_three.language = afar
     >>> vocab = TicketLanguageVocabularyFactory()(ticket_three)
     >>> afar in vocab
     True
 
-    Restore the function we had to monkey patch.
+    # Clean up.
+    >>> ticket_three.language = getUtility(ILanguageSet)['en']
     >>> publisher.get_current_browser_request = get_current_browser_request
 
 SearchTicketsView
