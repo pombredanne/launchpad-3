@@ -123,7 +123,11 @@ class TicketAddView(LaunchpadFormView):
             data=self.initial_values, ignore_request=False)
 
     def validate(self, data):
-        """Validate hook."""
+        """Validate hook.
+
+        This validation method sets the warn_about_unsupported_language
+        and choosen_language attributes.
+        """
         self.warn_about_unsupported_language = False
         if 'title' not in data:
             self.setFieldError(
