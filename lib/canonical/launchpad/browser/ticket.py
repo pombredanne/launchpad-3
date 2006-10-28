@@ -21,18 +21,23 @@ __all__ = [
 
 from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.pagetemplate import ViewPageTemplateFile
+from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
-from zope.interface import providedBy
+from zope.interface import implements, providedBy
+from zope.schema import Choice
+from zope.schema.interfaces import IContextSourceBinder
+from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 import zope.security
 
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.helpers import request_languages
 from canonical.launchpad import _
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.interfaces import (
-    CreateBugParams, ITicket, ITicketAddMessageForm, ITicketChangeStatusForm,
-    ITicketSet,  UnexpectedFormData)
+    CreateBugParams, ILanguageSet, ITicket, ITicketAddMessageForm,
+    ITicketChangeStatusForm, ITicketSet,  UnexpectedFormData)
 from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
     GeneralFormView, LaunchpadView, action, LaunchpadFormView,
@@ -84,6 +89,60 @@ class TicketSubscriptionView(LaunchpadView):
         return self.context.isSubscribed(self.user)
 
 
+class TicketLanguageVocabularyFactory:
+    """Factory for a vocabulary containing a subset of the possible languages.
+
+    The vocabulary will contain only the languages "interesting" for the user.
+    That's English plus the users preferred languages. These will be guessed
+    from the request when the preferred languages weren't configured.
+
+    It also always include the ticket's current language and excludes all
+    English variants.
+    """
+
+    implements(IContextSourceBinder)
+
+    def __call__(self, context):
+        # We import here because the tests need to be able to monkey patch
+        # that function.
+        from canonical.launchpad.webapp.publisher import (
+            get_current_browser_request)
+        languages = set()
+        for lang in request_languages(get_current_browser_request()):
+            # Ignore English and all its variants.
+            if not lang.code.startswith('en'):
+                languages.add(lang)
+        if (context is not None and ITicket.providedBy(context) and
+            context.language.code != 'en'):
+            languages.add(context.language)
+        languages = list(languages)
+
+        # Insert English as the first element, to make it the default one.
+        languages.insert(0, getUtility(ILanguageSet)['en'])
+
+        terms = [SimpleTerm(lang, lang.code, lang.displayname)
+                 for lang in languages]
+        return SimpleVocabulary(terms)
+
+
+def createLanguageField(the_form):
+    """Create a field to edit a ticket language using a special vocabulary.
+
+    :param the_form: The form that will use this field.
+    :return: A form.Fields instance containing the language field.
+    """
+    return form.Fields(
+            Choice(
+                __name__='language',
+                source=TicketLanguageVocabularyFactory(),
+                title=_('Language'),
+                description=_(
+                    'The language in which this request is written.'
+                    '(<a href="/people/+editlanguages">Change your preferred '
+                    'languages.</a>)')),
+            render_context=the_form.render_context)
+
+
 class TicketAddView(LaunchpadFormView):
     """Multi-page add view.
 
@@ -94,7 +153,7 @@ class TicketAddView(LaunchpadFormView):
 
     schema = ITicket
 
-    field_names = ['language', 'title', 'description']
+    field_names = ['title', 'description']
 
     custom_widget('title', TextWidget, displayWidth=40)
 
@@ -111,6 +170,12 @@ class TicketAddView(LaunchpadFormView):
 
     # Do not autofocus the title widget
     initial_focus_widget = None
+
+    def setUpFields(self):
+        # Add our language field with a vocabulary specialized for
+        # display purpose.
+        LaunchpadFormView.setUpFields(self)
+        self.form_fields = createLanguageField(self) + self.form_fields
 
     def setUpWidgets(self):
         # Only setup the widgets that needs validation
@@ -217,11 +282,13 @@ class TicketChangeStatusView(LaunchpadFormView):
         self.request.response.redirect(canonical_url(self.context))
 
 
+# XXX 2006/10/28 flacoste Should we also warn the user when he
+# changes the language like we do at creation time?
 class TicketEditView(LaunchpadEditFormView):
 
     schema = ITicket
     label = 'Edit request'
-    field_names = ["language", "title", "description", "sourcepackagename",
+    field_names = ["title", "description", "sourcepackagename",
                    "priority", "assignee", "whiteboard"]
 
     custom_widget('title', TextWidget, displayWidth=40)
@@ -238,6 +305,10 @@ class TicketEditView(LaunchpadEditFormView):
 
         if self.context.distribution is None:
             self.form_fields = self.form_fields.omit("sourcepackagename")
+
+        # Add the language field with a vocabulary specialized for display
+        # purpose.
+        self.form_fields = createLanguageField(self) + self.form_fields
 
         editable_fields = []
         for field in self.form_fields:

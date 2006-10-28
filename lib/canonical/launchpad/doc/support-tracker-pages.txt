@@ -538,7 +538,7 @@ languages.
     >>> sorted([lang.code for lang in req_languages])
     [u'af', u'pt_BR', u'st', u'xh', u'zu']
 
-    >>> from canonical.launchpad.interfaces.ticket import (
+    >>> from canonical.launchpad.browser.ticket import (
     ...     TicketLanguageVocabularyFactory)
     >>> vocab = TicketLanguageVocabularyFactory()(None)
 
