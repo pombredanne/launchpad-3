@@ -348,7 +348,7 @@ class SprintMeetingExportView(LaunchpadView):
             # get the list of attendees that will attend the sprint
             is_required = dict((sub.person, sub.essential)
                                for sub in spec.subscriptions)
-            interested = set(is_essential.keys()).intersection(attendee_set)
+            interested = set(is_required.keys()).intersection(attendee_set)
             if spec.assignee is not None:
                 interested.add(spec.assignee)
                 is_required[spec.assignee] = True
