@@ -569,7 +569,7 @@
       permission="zope.Public"
       class="canonical.launchpad.browser.RedirectToEditLanguagesView"
       name="+editlanguages"
-      attribute="__call__" />
+      />
 
   <browser:pages
       for="canonical.launchpad.interfaces.IPersonSet"
