@@ -16,8 +16,9 @@ from sqlobject import (
 from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.launchpad.interfaces import (
-    IBugLinkTarget, InvalidTicketStateError, ILaunchpadCelebrities, IMessage,
-    IPerson, ITicket, ITicketSet, TICKET_STATUS_DEFAULT_SEARCH)
+    IBugLinkTarget, InvalidTicketStateError, ILanguageSet,
+    ILaunchpadCelebrities, IMessage, IPerson, ITicket, ITicketSet,
+    TICKET_STATUS_DEFAULT_SEARCH)
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -85,10 +86,14 @@ class Ticket(SQLBase, BugLinkTargetMixin):
     description = StringCol(notNull=True)
     status = EnumCol(
         schema=TicketStatus, notNull=True, default=TicketStatus.OPEN)
-    priority = EnumCol(schema=TicketPriority, notNull=True,
-        default=TicketPriority.NORMAL)
-    assignee = ForeignKey(dbName='assignee', notNull=False,
-        foreignKey='Person', default=None)
+    priority = EnumCol(
+        schema=TicketPriority, notNull=True, default=TicketPriority.NORMAL)
+    assignee = ForeignKey(
+        dbName='assignee', notNull=False, foreignKey='Person', default=None)
+    answerer = ForeignKey(
+        dbName='answerer', notNull=False, foreignKey='Person', default=None)
+    language = ForeignKey(
+        dbName='language', notNull=True, foreignKey='Language')
     answerer = ForeignKey(dbName='answerer', notNull=False,
         foreignKey='Person', default=None)
     answer = ForeignKey(dbName='answer', notNull=False,
@@ -98,12 +103,14 @@ class Ticket(SQLBase, BugLinkTargetMixin):
     datelastquery = UtcDateTimeCol(notNull=True, default=DEFAULT)
     datelastresponse = UtcDateTimeCol(notNull=False, default=None)
     dateanswered = UtcDateTimeCol(notNull=False, default=None)
-    product = ForeignKey(dbName='product', foreignKey='Product',
+    product = ForeignKey(
+        dbName='product', foreignKey='Product', notNull=False, default=None)
+    distribution = ForeignKey(
+        dbName='distribution', foreignKey='Distribution', notNull=False,
+        default=None)
+    sourcepackagename = ForeignKey(
+        dbName='sourcepackagename', foreignKey='SourcePackageName',
         notNull=False, default=None)
-    distribution = ForeignKey(dbName='distribution',
-        foreignKey='Distribution', notNull=False, default=None)
-    sourcepackagename = ForeignKey(dbName='sourcepackagename',
-        foreignKey='SourcePackageName', notNull=False, default=None)
     whiteboard = StringCol(notNull=False, default=None)
 
     # useful joins
@@ -475,13 +482,15 @@ class TicketSet:
     @staticmethod
     def new(title=None, description=None, owner=None,
             product=None, distribution=None, sourcepackagename=None,
-            datecreated=None):
+            datecreated=None, language=None):
         """Common implementation for ITicketTarget.newTicket()."""
         if datecreated is None:
             datecreated = UTC_NOW
+        if language is None:
+            language = getUtility(ILanguageSet)['en']
         ticket = Ticket(
             title=title, description=description, owner=owner,
-            product=product, distribution=distribution,
+            product=product, distribution=distribution, language=language,
             sourcepackagename=sourcepackagename, datecreated=datecreated)
 
         # Subscribe the submitter
@@ -508,6 +517,7 @@ class TicketSet:
 
         return constraints
 
+    # XXX: Should this method accept a languages argument too?
     @staticmethod
     def findSimilar(title, product=None, distribution=None,
                     sourcepackagename=None):
@@ -522,12 +532,12 @@ class TicketSet:
     @staticmethod
     def search(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
                sort=None, owner=None, product=None, distribution=None,
-               sourcepackagename=None):
+               sourcepackagename=None, languages=None):
         """Common implementation for ITicketTarget.searchTickets()."""
         constraints = TicketSet._contextConstraints(
             product, distribution, sourcepackagename)
 
-        prejoins = []
+        prejoins = ['language']
         if product:
             prejoins.append('product')
         elif distribution:
@@ -541,12 +551,12 @@ class TicketSet:
             constraints.append('Ticket.owner = %s' % owner.id)
 
         return TicketSet._commonSearch(
-            constraints, prejoins, search_text, status, sort)
+            constraints, prejoins, search_text, status, sort, languages)
 
     @staticmethod
     def searchByPerson(
         person, search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-        participation=None, sort=None):
+        participation=None, sort=None, languages=None):
         """Implementation for ITicketActor.searchTickets()."""
 
         if participation is None:
@@ -565,7 +575,7 @@ class TicketSet:
         prejoins = ['product', 'distribution', 'sourcepackagename']
 
         return TicketSet._commonSearch(
-            constraints, prejoins, search_text, status, sort)
+            constraints, prejoins, search_text, status, sort, languages)
 
     queryByParticipationType = {
         TicketParticipation.ANSWERER:
@@ -583,7 +593,8 @@ class TicketSet:
             "SELECT id FROM Ticket WHERE assignee = %(personId)s"}
 
     @staticmethod
-    def _commonSearch(constraints, prejoins, search_text, status, sort):
+    def _commonSearch(
+            constraints, prejoins, search_text, status, sort, languages):
         """Implement search for the criteria common to search and
         searchByPerson.
         """
@@ -595,6 +606,10 @@ class TicketSet:
         if status:
             constraints.append(
                 'Ticket.status IN (%s)' % ', '.join(sqlvalues(*status)))
+
+        if languages is not None and len(languages) > 0:
+            constraints.append(
+                'Ticket.language IN (%s)' % ', '.join(sqlvalues(*languages)))
 
         orderBy = TicketSet._orderByFromTicketSort(search_text, sort)
 

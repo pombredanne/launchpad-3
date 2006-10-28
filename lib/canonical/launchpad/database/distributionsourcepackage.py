@@ -17,7 +17,8 @@ from canonical.lp.dbschema import PackagePublishingStatus
 
 from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, ITicketTarget, DuplicateBugContactError,
-    DeleteBugContactError, TICKET_STATUS_DEFAULT_SEARCH)
+    DeleteBugContactError, TICKET_STATUS_DEFAULT_SEARCH,
+    get_supported_languages)
 from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.bug import BugSet, get_bug_tags_open_count
@@ -258,11 +259,16 @@ class DistributionSourcePackage(BugTargetBase):
         return result
 
     # ticket related interfaces
-    def newTicket(self, owner, title, description, datecreated=None):
+    def getSupportedLanguages(self):
+        """See ITicketTarget."""
+        return get_supported_languages(self)
+
+    def newTicket(self, owner, title, description, language=None,
+                  datecreated=None):
         """See ITicketTarget."""
         return TicketSet.new(
             title=title, description=description, owner=owner,
-            distribution=self.distribution,
+            distribution=self.distribution, language=language,
             sourcepackagename=self.sourcepackagename,
             datecreated=datecreated)
 
@@ -282,10 +288,10 @@ class DistributionSourcePackage(BugTargetBase):
 
     def searchTickets(self, search_text=None,
                       status=TICKET_STATUS_DEFAULT_SEARCH, owner=None,
-                      sort=None):
+                      sort=None, languages=None):
         """See ITicketTarget."""
         return TicketSet.search(
-            distribution=self.distribution,
+            distribution=self.distribution, languages=languages,
             sourcepackagename=self.sourcepackagename, search_text=search_text,
             status=status, owner=owner, sort=sort)
 

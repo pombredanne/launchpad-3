@@ -43,8 +43,15 @@
                   condition="nocall: widget">
         <metal:widget use-macro="widget/@@launchpad_widget_macros/launchpad_widget_row" />
       </tal:status>
+
+      <label tal:attributes="for view/widgets/languages/name"
+             tal:content="view/widgets/languages/label">
+        Languages:
+      </label>
+      <tal:languages replace="structure view/widgets/languages" />
     </form>
   </div>
+  <br />
 
   <tal:no-results condition="not: tickets/batch">
     <p i18n:translate=""

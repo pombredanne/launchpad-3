@@ -9,14 +9,17 @@ __all__ = [
     'IManageSupportContacts',
     'ISearchTicketsForm',
     'TICKET_STATUS_DEFAULT_SEARCH',
+    'get_supported_languages',
     ]
 
 import sets
 
+from zope.component import getUtility
 from zope.interface import Interface
 from zope.schema import Bool, Choice, List, Set, TextLine
 
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.language import ILanguageSet
 from canonical.lp.dbschema import TicketSort, TicketStatus
 
 
@@ -25,10 +28,24 @@ TICKET_STATUS_DEFAULT_SEARCH = (
     TicketStatus.SOLVED)
 
 
+def get_supported_languages(ticket_target):
+    assert ITicketTarget.providedBy(ticket_target)
+    langs = set()
+    for contact in ticket_target.support_contacts:
+        for lang in contact.languages:
+            # Ignore english and all its variants since we assume english is
+            # supported (and thus we'll include it later) and we don't want to
+            # confuse people by displayng a bunch of entries named English.
+            if not lang.code.startswith('en'):
+                langs.add(lang)
+    langs.add(getUtility(ILanguageSet)['en'])
+    return langs
+
+
 class ITicketTarget(Interface):
     """An object that can have a new ticket created for  it."""
 
-    def newTicket(owner, title, description, datecreated=None):
+    def newTicket(owner, title, description, language=None, datecreated=None):
         """Create a new support request, or trouble ticket.
 
          A new ticket is created with status OPEN.
@@ -39,6 +56,8 @@ class ITicketTarget(Interface):
         :owner: An IPerson.
         :title: A string.
         :description: A string.
+        :language: An ILanguage. If that parameter is omitted, the support
+                request is assumed to be created in English.
         :datecreated:  A datetime object that will be used for the datecreated
                 attribute. Defaults to canonical.database.constants.UTC_NOW.
         """
@@ -52,7 +71,7 @@ class ITicketTarget(Interface):
         """
 
     def searchTickets(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-                      owner=None, sort=None):
+                      owner=None, sort=None, languages=None):
         """Search the object's tickets.
 
         :search_text: A string that is matched against the ticket
@@ -68,6 +87,9 @@ class ITicketTarget(Interface):
         When there is a search_text value, the default is to sort by RELEVANCY,
         otherwise results are sorted NEWEST_FIRST.
 
+        :languages: A sequence of Language objects to match against the
+        ticket's language. If None or an empty sequence, the language is not
+        included as a filter criteria.
         """
 
     def findSimilarTickets(title):
@@ -96,6 +118,14 @@ class ITicketTarget(Interface):
 
         Returns True if the person was removed, False if he isn't a
         support contact.
+        """
+
+    def getSupportedLanguages():
+        """Return the set of languages spoken by at least one of this object's
+        support contacts.
+
+        A support contact is considered to speak a given language if that
+        language is listed as one of his preferred languages.
         """
 
     support_contacts = List(

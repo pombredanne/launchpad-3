@@ -397,19 +397,28 @@ TicketEditView
 
 TicketEditView available through '+edit' is used to edit most ticket
 fields. It can be used to edit the ticket title and description and also
-its metadata like priority, assignee, source package and whiteboard.
+its metadata like language, priority, assignee, source package and
+whiteboard.
 
     >>> login('test@canonical.com')
     >>> ticket_three.sourcepackagename = None
     >>> request = LaunchpadTestRequest(form={
     ...     'field.actions.change': 'Continue',
     ...     'field.title': 'Better Title',
+    ...     'field.language': 'en',
     ...     'field.description': 'A better description.',
     ...     'field.sourcepackagename': 'mozilla-firefox',
     ...     'field.assignee': 'name16',
     ...     'field.whiteboard': 'Some note',
     ...     'field.priority': 'Wishlist'})
     >>> request.method = 'POST'
+
+    # Monkey patch publisher.get_current_browser_request; otherwise the
+    # TicketLanguageVocabularyFactory won't find a request and will fail.
+    >>> from canonical.launchpad.webapp import publisher
+    >>> get_current_browser_request = publisher.get_current_browser_request
+    >>> publisher.get_current_browser_request = lambda: request
+
     >>> view = getView(ticket_three, '+edit', request)
     >>> view.initialize()
     >>> ticket_three.title
@@ -435,6 +444,7 @@ This View send the event appropriate to send out a notification:
     >>> notifications = pop_notifications()
     >>> len(notifications)
     1
+
     >>> print notifications[0].get_payload(decode=True)
     Your support request #3...
     ...
@@ -445,13 +455,13 @@ This View send the event appropriate to send out a notification:
     A better description.
     <BLANKLINE>
 
-<<<<<<< TREE
 If the user has the required permission, the assignee, whiteboard and
 priority fields will be updated:
 
     >>> login('foo.bar@canonical.com')
     >>> request = LaunchpadTestRequest(form={
     ...     'field.actions.change': 'Continue',
+    ...     'field.language': 'en',
     ...     'field.title': 'Better Title',
     ...     'field.description': 'A better description.',
     ...     'field.sourcepackagename': 'mozilla-firefox',
@@ -459,6 +469,7 @@ priority fields will be updated:
     ...     'field.whiteboard': 'Some note',
     ...     'field.priority': 'Wishlist'})
     >>> request.method = 'POST'
+    >>> publisher.get_current_browser_request = lambda: request
     >>> view = getView(ticket_three, '+edit', request)
     >>> view.initialize()
     >>> print ticket_three.priority.title
@@ -473,6 +484,7 @@ a distribution ticket:
 
     >>> request = LaunchpadTestRequest(form={
     ...     'field.actions.change': 'Continue',
+    ...     'field.language': 'en',
     ...     'field.title': 'Better Title',
     ...     'field.description': 'A better description.',
     ...     'field.sourcepackagename': 'mozilla-firefox',
@@ -480,14 +492,129 @@ a distribution ticket:
     ...     'field.whiteboard': '',
     ...     'field.priority': 'Normal'})
     >>> request.method = 'POST'
+    >>> publisher.get_current_browser_request = lambda: request
     >>> view = getView(firefox_ticket, '+edit', request)
     >>> view.initialize()
+    >>> view.errors
+    []
     >>> firefox_ticket.sourcepackagename is None
     True
 
     (Clear out the pending notifications.)
     >>> notifications = pop_notifications()
 
+    # Restore the function we had to monkey patch.
+    >>> publisher.get_current_browser_request = get_current_browser_request
+
+The TicketLanguage vocabulary
+-----------------------------
+
+This vocabulary contains the languages in which a request can be written.
+
+Let's set some things up first.
+
+    >>> request = LaunchpadTestRequest(
+    ...     HTTP_ACCEPT_LANGUAGE='pt_BR')
+    >>> from canonical.launchpad.interfaces import ILanguageSet
+    >>> english = getUtility(ILanguageSet)['en']
+
+    # Monkey patch publisher.get_current_browser_request; otherwise the
+    # TicketLanguageVocabularyFactory won't find a request and will fail.
+    >>> publisher.get_current_browser_request = lambda: request
+
+    # Now we get the languages that a user without any preferred language
+    # would speak, as told to us by helper.request_languages.
+    >>> login(ANONYMOUS)
+    >>> from canonical.launchpad.helpers import request_languages
+    >>> req_languages = request_languages(request)
+
+Since we have 'pt_BR' in our HTTP_ACCEPT_LANGUAGE and our IP address
+(127.0.0.1) is hard-mapped in utilities/geoip.py as being located in
+South Africa, these are the languages we get from the request.
+
+    >>> sorted([lang.code for lang in req_languages])
+    [u'af', u'pt_BR', u'st', u'xh', u'zu']
+
+    >>> from canonical.launchpad.interfaces.ticket import (
+    ...     TicketLanguageVocabularyFactory)
+    >>> vocab = TicketLanguageVocabularyFactory()(None)
+
+First we'll login with a person which has no preferred languages set. This
+will cause the vocabulary to include only the languages from the request
+plus English, with the latter being the first in the list.
+
+    >>> login('foo.bar@canonical.com')
+    >>> user = getUtility(ILaunchBag).user
+    >>> user.languages.count()
+    0
+
+    >>> english in vocab
+    True
+    >>> False not in [(lang in vocab) for lang in req_languages]
+    True
+    >>> len(vocab) == len(req_languages) + 1
+    True
+
+Now we login with a person which has some preferred languages. In this case
+the vocabulary will include this person's preferred languages plus English.
+
+    >>> login('carlos@canonical.com')
+    >>> user = getUtility(ILaunchBag).user
+    >>> user.languages.count()
+    2
+
+    >>> vocab = TicketLanguageVocabularyFactory()(None)
+    >>> english in vocab
+    True
+
+    None of the request languages is on the vocabulary because this user
+    has preferred languages set and we use the request languages only as
+    a fallback.
+
+    >>> True not in [(lang in vocab) for lang in req_languages]
+    True
+    >>> False not in [(lang in vocab) for lang in user.languages]
+    True
+    >>> len(vocab) == user.languages.count() + 1
+    True
+
+
+Now we login with a user which has preferred languages and one of these
+languages is en_GB. In this case the vocabulary will contain the user's
+preferred languages with the exception of en_GB (since we don't want to
+confuse people by providing multiple English options) plus English.
+
+    >>> login('daf@canonical.com')
+    >>> user = getUtility(ILaunchBag).user
+    >>> user.languages.count()
+    3
+
+    >>> british_english = getUtility(ILanguageSet)['en_GB']
+    >>> british_english in user.languages
+    True
+
+    >>> vocab = TicketLanguageVocabularyFactory()(None)
+    >>> english in vocab
+    True
+    >>> british_english in vocab
+    False
+
+    >>> False not in [(lang in vocab)
+    ...               for lang in user.languages if lang.code != 'en_GB']
+    True
+
+When you pass an existing ticket to TicketLanguageVocabularyFactory, the
+language of that ticket will always be included in the vocabulary, even
+if it's not a visible language.
+
+    >>> afar = getUtility(ILanguageSet)['aa_DJ']
+    >>> ticket_three.language = afar
+    >>> vocab = TicketLanguageVocabularyFactory()(ticket_three)
+    >>> afar in vocab
+    True
+
+    Restore the function we had to monkey patch.
+    >>> publisher.get_current_browser_request = get_current_browser_request
 
 SearchTicketsView
 -----------------
@@ -548,7 +675,8 @@ can tweak the search and filter the results:
     >>> search_view_harness.submit('search', {
     ...     'field.status': ['Solved', 'Open'],
     ...     'field.search_text': 'firefox',
-    ...     'field.sort': 'by relevancy',})
+    ...     'field.sort': 'by relevancy',
+    ...     'field.languages': 'ENGLISH'})
     >>> search_view = search_view_harness.view
     >>> tickets = search_view.searchResults()
     >>> for ticket in tickets.batch:
@@ -586,7 +714,8 @@ criteria.
     >>> search_view_harness.submit('search', {
     ...     'field.status': ['Solved'],
     ...     'field.search_text': 'firefox',
-    ...     'field.sort': 'by relevancy'})
+    ...     'field.sort': 'by relevancy',
+    ...     'field.languages': 'ENGLISH'})
     >>> search_view = search_view_harness.view
     >>> tickets = search_view.searchResults()
     >>> for ticket in tickets.batch:
@@ -619,7 +748,8 @@ It works also with user submitted values:
     >>> search_view_harness.submit('search', {
     ...     'field.status': ['Answered'],
     ...     'field.search_text': '',
-    ...     'field.sort': 'by relevancy'})
+    ...     'field.sort': 'by relevancy',
+    ...     'field.languages': 'ENGLISH'})
     >>> print translate(search_view_harness.view.pageheading)
     Answered support requests for Ubuntu
     >>> print translate(search_view_harness.view.empty_listing_message)
@@ -628,7 +758,8 @@ It works also with user submitted values:
     >>> search_view_harness.submit('search', {
     ...     'field.status': ['Open', 'Answered'],
     ...     'field.search_text': 'evolution',
-    ...     'field.sort': 'by relevancy'})
+    ...     'field.sort': 'by relevancy',
+    ...     'field.languages': 'ENGLISH'})
     >>> print translate(search_view_harness.view.pageheading)
     Support requests about "evolution" for Ubuntu
     >>> print translate(search_view_harness.view.empty_listing_message)

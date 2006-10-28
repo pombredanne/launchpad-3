@@ -52,6 +52,7 @@ __all__ = [
     'SearchCommentedTicketsView',
     'SearchCreatedTicketsView',
     'SearchSubscribedTicketsView',
+    'PersonLanguagesView',
     ]
 
 import cgi

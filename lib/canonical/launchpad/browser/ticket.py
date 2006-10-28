@@ -87,14 +87,14 @@ class TicketSubscriptionView(LaunchpadView):
 class TicketAddView(LaunchpadFormView):
     """Multi-page add view.
 
-    The user enters first his ticket summary and then he his shown a list
+    The user enters first his ticket summary and then he is shown a list
     of similar results before adding the ticket.
     """
     label = _('Make a support request')
 
     schema = ITicket
 
-    field_names = ['title', 'description']
+    field_names = ['language', 'title', 'description']
 
     custom_widget('title', TextWidget, displayWidth=40)
 
@@ -106,13 +106,16 @@ class TicketAddView(LaunchpadFormView):
 
     _MAX_SIMILAR_TICKETS = 10
 
+    warn_about_unsupported_language = False
+    choosen_language = None
+
     # Do not autofocus the title widget
     initial_focus_widget = None
 
     def setUpWidgets(self):
         # Only setup the widgets that needs validation
         if not self.add_action.submitted():
-            fields = self.form_fields.select('title')
+            fields = self.form_fields.select('language', 'title')
         else:
             fields = self.form_fields
         self.widgets = form.setUpWidgets(
@@ -121,14 +124,22 @@ class TicketAddView(LaunchpadFormView):
 
     def validate(self, data):
         """Validate hook."""
+        self.warn_about_unsupported_language = False
         if 'title' not in data:
             self.setFieldError(
                 'title',_('You must enter a summary of your problem.'))
         if self.widgets.get('description'):
             if 'description' not in data:
                 self.setFieldError(
-                    'description', _('You must provide details about your '
-                                     'problem.'))
+                    'description',
+                    _('You must provide details about your problem.'))
+        self.choosen_language = data['language']
+        if (self.choosen_language not in self.context.getSupportedLanguages()
+            and 'warned_about_unsupported_language' not in self.request.form):
+            # The language choosen by the user is not spoken by any of this
+            # context's support contacts and we haven't yet warned the user
+            # about this fact. Let's do it now.
+            self.warn_about_unsupported_language = True
 
     @action(_('Continue'))
     def continue_action(self, action, data):
@@ -152,8 +163,9 @@ class TicketAddView(LaunchpadFormView):
         """
         if 'title' not in data:
             # Remove the description widget
-            self.widgets = form.Widgets(
-                [(True, self.widgets['title'])], len(self.prefix)+1)
+            widgets = [(True, self.widgets[name])
+                       for name in ('language', 'title')]
+            self.widgets = form.Widgets(widgets, len(self.prefix)+1)
             return self.search_template()
         return self.continue_action.success(data)
 
@@ -162,8 +174,13 @@ class TicketAddView(LaunchpadFormView):
     # which is fixed in 3.3.0b1 and 3.2.1
     @action(_('Add'), failure=handleAddError)
     def add_action(self, action, data):
-        ticket = self.context.newTicket(self.user, data['title'],
-                                        data['description'])
+        if self.warn_about_unsupported_language:
+            # Warn the user that the language is not supported.
+            self.searchResults = []
+            return self.add_template()
+
+        ticket = self.context.newTicket(
+            self.user, data['title'], data['description'], data['language'])
 
         # XXX flacoste 2006/07/25 This should be moved to newTicket().
         notify(SQLObjectCreatedEvent(ticket))
@@ -200,8 +217,8 @@ class TicketEditView(LaunchpadEditFormView):
 
     schema = ITicket
     label = 'Edit request'
-    field_names = ["title", "description", "sourcepackagename", "priority",
-                   "assignee", "whiteboard"]
+    field_names = ["language", "title", "description", "sourcepackagename",
+                   "priority", "assignee", "whiteboard"]
 
     custom_widget('title', TextWidget, displayWidth=40)
     custom_widget('whiteboard', TextAreaWidget, height=5)

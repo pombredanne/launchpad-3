@@ -16,6 +16,10 @@ __all__ = [
 
 from urllib import urlencode
 
+from zope.component import getUtility
+from zope.formlib import form
+from zope.schema import Choice
+from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import DropdownWidget
 from zope.app.pagetemplate import ViewPageTemplateFile
@@ -23,14 +27,15 @@ from zope.app.pagetemplate import ViewPageTemplateFile
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IDistribution, IManageSupportContacts, ISearchTicketsForm, ITicketTarget,
-    NotFoundError)
+    IDistribution, IManageSupportContacts, ILanguageSet, ISearchTicketsForm,
+    ITicketTarget, NotFoundError)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, redirection, stepthrough,
     ApplicationMenu, GeneralFormView, LaunchpadFormView, Link)
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.lp.dbschema import TicketStatus
-from canonical.widgets import LabeledMultiCheckBoxWidget
+from canonical.launchpad.helpers import request_languages
+from canonical.lp.dbschema import TicketSearchLanguages, TicketStatus
+from canonical.widgets import LaunchpadRadioWidget, LabeledMultiCheckBoxWidget
 
 
 class TicketTargetLatestTicketsView:
@@ -55,6 +60,7 @@ class SearchTicketsView(LaunchpadFormView):
     custom_widget('status', LabeledMultiCheckBoxWidget,
                   orientation='horizontal')
     custom_widget('sort', DropdownWidget, cssClass='inlined-widget')
+    custom_widget('languages', LaunchpadRadioWidget)
 
     template = ViewPageTemplateFile('../templates/ticket-listing.pt')
 
@@ -63,6 +69,53 @@ class SearchTicketsView(LaunchpadFormView):
 
     # Will contain the parameters used by searchResults
     search_params = None
+
+    def setUpFields(self):
+        LaunchpadFormView.setUpFields(self)
+        terms = [SimpleTerm(TicketSearchLanguages.ENGLISH,
+                            TicketSearchLanguages.ENGLISH.name,
+                            TicketSearchLanguages.ENGLISH.title)]
+
+        label = TicketSearchLanguages.PREFERRED_LANGUAGE.title
+        user_languages = request_languages(self.request)
+        if user_languages:
+            languages = ", ".join(lang.englishname for lang in user_languages)
+        else:
+            languages = "None"
+        change_langs_link = (
+            '<a href="/people/+editlanguages">Change your preferred '
+            'languages</a>')
+        label = "%s (%s) (%s)" % (label, languages, change_langs_link)
+        terms.append(SimpleTerm(TicketSearchLanguages.PREFERRED_LANGUAGE,
+                                TicketSearchLanguages.PREFERRED_LANGUAGE.name,
+                                label))
+
+        terms.append(SimpleTerm(TicketSearchLanguages.ANY_LANGUAGE,
+                                TicketSearchLanguages.ANY_LANGUAGE.name,
+                                TicketSearchLanguages.ANY_LANGUAGE.title))
+
+        languages_vocabulary = SimpleVocabulary(terms)
+        languages_field = Choice(
+            title=_('Written in:'), __name__='languages',
+            vocabulary=languages_vocabulary, required=True,
+            default=TicketSearchLanguages.ENGLISH)
+        extra_fields = form.Fields(
+            languages_field, render_context=self.render_context)
+        # XXX: Is it possible to do this without having to iterate through
+        # extra_fields? -- Guilherme Salgado, 2006-10-04
+        for field in extra_fields:
+            field.custom_widget = self.custom_widgets['languages']
+        self.form_fields += extra_fields
+
+    def setUpWidgets(self):
+        """See LaunchpadFormView."""
+        LaunchpadFormView.setUpWidgets(self)
+        # Make sure that the default filter is displayed
+        # correctly in the widgets when not overriden by the user
+        for name, value in self.getDefaultFilter().items():
+            widget = self.widgets.get(name)
+            if widget and not widget.hasValidInput():
+                widget.setRenderedValue(value)
 
     @cachedproperty
     def status_title_map(self):
@@ -111,6 +164,8 @@ class SearchTicketsView(LaunchpadFormView):
                 return _('Support requests for ${context}',
                          mapping=replacements)
 
+    # XXX: Must add the languages to these messages.
+    # -- Guilherme Salgado, 2006-10-20
     @property
     def empty_listing_message(self):
         """Message displayed when there is no tickets matching the filter."""
@@ -158,16 +213,6 @@ class SearchTicketsView(LaunchpadFormView):
         else:
             return self.getDefaultFilter().get('status', set())
 
-    def setUpWidgets(self):
-        """See LaunchpadFormView."""
-        LaunchpadFormView.setUpWidgets(self)
-        # Make sure that the default filter is displayed
-        # correctly in the widgets when not overriden by the user
-        for name, value in self.getDefaultFilter().items():
-            widget = self.widgets.get(name)
-            if widget and not widget.hasValidInput():
-                widget.setRenderedValue(value)
-
     @action(_('Search'))
     def search_action(self, action, data):
         """Action executed when the user clicked the search button.
@@ -175,6 +220,16 @@ class SearchTicketsView(LaunchpadFormView):
         Saves the user submitted search parameters in an instance
         attribute.
         """
+        languages = data.pop("languages")
+        if languages == TicketSearchLanguages.ENGLISH:
+            # XXX: Should this become a Celebrity? It's going to be needed in
+            # other places too.  -- Guilherme Salgado, 2006-10-04
+            languages = [getUtility(ILanguageSet)['en']]
+        elif languages == TicketSearchLanguages.PREFERRED_LANGUAGE:
+            languages = request_languages(self.request)
+        else:
+            languages = []
+        data["languages"] = languages
         self.search_params = dict(self.getDefaultFilter())
         self.search_params.update(**data)
 
@@ -245,6 +300,8 @@ class TicketTargetSearchMyTicketsView(SearchTicketsView):
             return _('Support requests you made for ${context}',
                      mapping={'context': self.context.displayname})
 
+    # XXX: Must add the languages to these messages.
+    # -- Guilherme Salgado, 2006-10-20
     @property
     def empty_listing_message(self):
         """See SearchTicketsView."""
@@ -364,6 +421,7 @@ class TicketTargetSupportMenu(ApplicationMenu):
              'field.sort': 'by relevancy',
              'field.search_text': '',
              'field.actions.search': 'Search',
+             'field.languages' : 'ENGLISH',
              'field.status': statuses}, doseq=True)
 
     def open(self):
