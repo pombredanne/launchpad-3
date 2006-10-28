@@ -180,7 +180,7 @@ class PersonMappingTestCase(unittest.TestCase):
 
         product = getUtility(IProductSet).getByName('netapplet')
         importer = sftracker.TrackerImporter(product)
-        person = importer.person('foo')
+        person = importer.get_person('foo')
         self.assertNotEqual(person, None)
         self.assertEqual(person.guessedemails.count(), 1)
         self.assertEqual(person.guessedemails[0].email,
@@ -193,27 +193,27 @@ class PersonMappingTestCase(unittest.TestCase):
     def test_find_existing_person(self):
         person = getUtility(IPersonSet).getByEmail('foo@users.sourceforge.net')
         self.assertEqual(person, None)
-        person = getUtility(IPersonSet).ensurePerson(
-            'foo@users.sourceforge.net', None,
-            PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
+        person, email = getUtility(IPersonSet).createPersonAndEmail(
+            email='foo@users.sourceforge.net',
+            rationale=PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
         self.assertNotEqual(person, None)
 
         product = getUtility(IProductSet).getByName('netapplet')
         importer = sftracker.TrackerImporter(product)
-        self.assertEqual(importer.person('foo'), person)
+        self.assertEqual(importer.get_person('foo'), person)
 
     def test_nobody_person(self):
-        # Test that TrackerImporter.person() returns None where appropriate
+        # Test that TrackerImporter.get_person() returns None where appropriate
         product = getUtility(IProductSet).getByName('netapplet')
         importer = sftracker.TrackerImporter(product)
-        self.assertEqual(importer.person(None), None)
-        self.assertEqual(importer.person(''), None)
-        self.assertEqual(importer.person('nobody'), None)
+        self.assertEqual(importer.get_person(None), None)
+        self.assertEqual(importer.get_person(''), None)
+        self.assertEqual(importer.get_person('nobody'), None)
 
     def test_verify_new_person(self):
         product = getUtility(IProductSet).getByName('netapplet')
         importer = sftracker.TrackerImporter(product, verify_users=True)
-        person = importer.person('foo')
+        person = importer.get_person('foo')
         self.assertNotEqual(person, None)
         self.assertNotEqual(person.preferredemail, None)
         self.assertEqual(person.preferredemail.email,
@@ -231,7 +231,7 @@ class PersonMappingTestCase(unittest.TestCase):
 
         product = getUtility(IProductSet).getByName('netapplet')
         importer = sftracker.TrackerImporter(product, verify_users=True)
-        person = importer.person('foo')
+        person = importer.get_person('foo')
         self.assertNotEqual(person.preferredemail, None)
         self.assertEqual(person.preferredemail.email,
                          'foo@users.sourceforge.net')
@@ -246,7 +246,7 @@ class PersonMappingTestCase(unittest.TestCase):
 
         product = getUtility(IProductSet).getByName('netapplet')
         importer = sftracker.TrackerImporter(product, verify_users=True)
-        person = importer.person('foo')
+        person = importer.get_person('foo')
         self.assertNotEqual(person.preferredemail, None)
         self.assertEqual(person.preferredemail.email, 'foo@example.com')
 

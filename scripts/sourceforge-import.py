@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
-import sys
 import logging
 import optparse
+import sys
 
 import _pythonpath
 

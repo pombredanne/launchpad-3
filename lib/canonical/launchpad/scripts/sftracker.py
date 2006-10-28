@@ -27,9 +27,12 @@ import pytz
 
 # use cElementTree if it is available ...
 try:
-    import cElementTree as ET
-except:
-    import elementtree.ElementTree as ET
+    import xml.elementtree.cElementTree as ET
+except ImportError:
+    try:
+        import cElementTree as ET
+    except ImportError:
+        import elementtree.ElementTree as ET
 
 from zope.component import getUtility
 from zope.app.content_types import guess_content_type
@@ -50,6 +53,7 @@ logger = logging.getLogger('canonical.launchpad.scripts.sftracker')
 SOURCEFORGE_TZ = pytz.timezone('US/Pacific')
 UTC = pytz.timezone('UTC')
 
+
 def parse_date(datestr):
     if datestr in ['', 'No updates since submission']:
         return None
@@ -57,6 +61,7 @@ def parse_date(datestr):
                                                    '%Y-%m-%d %H:%M')[:5]
     dt = datetime.datetime(year, month, day, hour, minute)
     return SOURCEFORGE_TZ.localize(dt).astimezone(UTC)
+
 
 def sanitise_name(name):
     """Sanitise a string to pass the valid_name() constraint"""
@@ -66,6 +71,7 @@ def sanitise_name(name):
     while name.endswith('-'):
         name = name[:-1]
     return name
+
 
 def gettext(elem):
     if elem is not None:
@@ -124,6 +130,7 @@ class TrackerAttachment:
 
         # otherwise, trust SourceForge.
         return self._content_type
+
 
 class TrackerItem:
     """An SF tracker item"""
@@ -226,6 +233,7 @@ class Tracker:
             self.dumpdir = dumpdir
 
     def __iter__(self):
+        """Yield TrackerItem instances for the bugs in this tracker."""
         for item_node in self.data.findall('item'):
             # open the summary file
             item_id = item_node.get('id')
@@ -243,14 +251,14 @@ class TrackerImporter:
         self._person_id_cache = {}
         self.bug_importer = getUtility(ILaunchpadCelebrities).bug_importer
 
-    def person(self, userid):
+    def get_person(self, sf_userid):
         """Get the Launchpad user corresponding to the given SF user ID"""
-        if userid in [None, '', 'nobody']:
+        if sf_userid in [None, '', 'nobody']:
             return None
         
-        email = '%s@users.sourceforge.net' % userid
+        email = '%s@users.sourceforge.net' % sf_userid
 
-        launchpad_id = self._person_id_cache.get(userid)
+        launchpad_id = self._person_id_cache.get(sf_userid)
         if launchpad_id is not None:
             person = getUtility(IPersonSet).get(launchpad_id)
             if person is not None and person.merged is not None:
@@ -267,7 +275,7 @@ class TrackerImporter:
                     rationale=PersonCreationRationale.BUGIMPORT,
                     comment='when importing bugs for %s from SourceForge.net'
                             % self.product.displayname)
-            self._person_id_cache[userid] = person.id
+            self._person_id_cache[sf_userid] = person.id
 
         # if we are auto-verifying new accounts, make sure the person
         # has a preferred email
@@ -284,9 +292,6 @@ class TrackerImporter:
 
         # turn milestone into a Launchpad name
         name = sanitise_name(name)
-        name = re.sub(r'[^a-z0-9\+\.\-]', '-', name.lower())
-        if not name[0].isalpha():
-            name = 'x-' + name
 
         milestone = self.product.getMilestone(name)
         if milestone is not None:
@@ -306,7 +311,7 @@ class TrackerImporter:
         """Create an IMessage for a particular comment."""
         if not text.strip():
             text = '<empty comment>'
-        owner = self.person(userid)
+        owner = self.get_person(userid)
         if owner is None:
             owner = self.bug_importer
         return getUtility(IMessageSet).fromText(subject, text, owner, date)
@@ -332,13 +337,15 @@ class TrackerImporter:
             return bug
 
         comments_by_date_and_user = {}
-        comments = item.comments[:]
-        
+        comments = list(item.comments)
+
+        # The first comment is used as the bug description, so we pop
+        # it off the list.
         date, userid, text = comments.pop(0)
         msg = self.createMessage(item.title, date, userid, text)
         comments_by_date_and_user[(date, userid)] = msg
 
-        owner = self.person(item.reporter)
+        owner = self.get_person(item.reporter)
         # LP bugs can't have no reporter ...
         if owner is None:
             owner = self.bug_importer
@@ -365,7 +372,7 @@ class TrackerImporter:
         bugtask.datecreated = item.datecreated
         bugtask.importance = item.lp_importance
         bugtask.transitionToStatus(item.lp_status)
-        bugtask.transitionToAssignee(self.person(item.assignee))
+        bugtask.transitionToAssignee(self.get_person(item.assignee))
 
         # Convert the category to a tag name
         if item.category not in ['None', '', None]:
