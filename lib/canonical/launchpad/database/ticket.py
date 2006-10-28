@@ -84,6 +84,8 @@ class Ticket(SQLBase, BugLinkTargetMixin):
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     title = StringCol(notNull=True)
     description = StringCol(notNull=True)
+    language = ForeignKey(
+        dbName='language', notNull=True, foreignKey='Language')
     status = EnumCol(
         schema=TicketStatus, notNull=True, default=TicketStatus.OPEN)
     priority = EnumCol(
@@ -92,10 +94,6 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         dbName='assignee', notNull=False, foreignKey='Person', default=None)
     answerer = ForeignKey(
         dbName='answerer', notNull=False, foreignKey='Person', default=None)
-    language = ForeignKey(
-        dbName='language', notNull=True, foreignKey='Language')
-    answerer = ForeignKey(dbName='answerer', notNull=False,
-        foreignKey='Person', default=None)
     answer = ForeignKey(dbName='answer', notNull=False,
         foreignKey='TicketMessage', default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
