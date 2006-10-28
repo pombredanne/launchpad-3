@@ -50,7 +50,9 @@ from making a request in the language of his choice.
     '.../distros/ubuntu/+ticket/...'
     >>> browser.title
     'Ubuntu support request #...Abrir uma pagina que requer...'
-
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> print soup.find('b', text='Language:').next.strip()
+    Portuguese (Brazil)
 
 It's also possible that the user choses English in the first page but
 then changes his mind on the second page.
@@ -95,4 +97,5 @@ new support request.
     '.../distros/ubuntu/+ticket/...'
     >>> browser.title
     'Ubuntu support request #...algumas palavras aleatorias...'
-
+    >>> print soup.find('b', text='Language:').next.strip()
+    Portuguese (Brazil)
