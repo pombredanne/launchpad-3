@@ -74,6 +74,14 @@
       template="../templates/person-changepassword.pt">
   </browser:page>
 
+  <browser:page
+      name="+editlanguages"
+      for="canonical.launchpad.interfaces.IPerson"
+      class="canonical.launchpad.browser.PersonLanguagesView"
+      permission="launchpad.Edit"
+      template="../templates/person-editlanguages.pt">
+  </browser:page>
+
   <browser:editform
       name="+edit"
       for="canonical.launchpad.interfaces.IPerson"
@@ -555,6 +563,13 @@
           template="../templates/people-list.pt"
           lp:url="/people/+peoplelist" />
   </browser:pages>
+
+  <browser:page
+      for="canonical.launchpad.interfaces.IPersonSet"
+      permission="zope.Public"
+      class="canonical.launchpad.browser.RedirectToEditLanguagesView"
+      name="+editlanguages"
+      />
 
   <browser:pages
       for="canonical.launchpad.interfaces.IPersonSet"

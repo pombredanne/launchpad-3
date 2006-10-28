@@ -26,6 +26,13 @@
         classes="RosettaApplicationNavigation"
         />
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IRosettaApplication"
+        name="prefs"
+        facet="translations"
+        permission="launchpad.AnyPerson"
+        class="canonical.launchpad.browser.RedirectToEditLanguagesView" />
+
     <browser:pages
         for="canonical.launchpad.interfaces.IRosettaApplication"
         facet="translations"
@@ -47,17 +54,6 @@
         <browser:page
             name="+portlet-groups"
             template="../templates/rosetta-portlet-groups.pt" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IRosettaApplication"
-        facet="translations"
-        permission="launchpad.AnyPerson"
-        class="canonical.launchpad.browser.RosettaPreferencesView" >
-        <browser:page
-            name="prefs"
-            template="../templates/rosetta-preferences.pt"
-            lp:url="Rosetta/prefs" />
     </browser:pages>
 
   <!-- Rosetta Stats Views -->
