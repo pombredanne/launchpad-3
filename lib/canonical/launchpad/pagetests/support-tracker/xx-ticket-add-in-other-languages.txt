@@ -29,11 +29,11 @@ by any member of the support community.
 
     >>> for tag in find_tags_by_class(browser.contents, 'warning message'):
     ...     print tag.renderContents()
-    <BLANKLINE>
-    ...Portuguese (Brazil)...doesn't seem to be a language spoken by...
-    ...any members...of this support community...
-    ...Currently, the languages spoken by at least one member...
-    ...of this support community are:...English...
+    <strong>Portuguese (Brazil) (pt_BR)</strong> doesn't seem to be
+    a language spoken by any support contacts in this community. If you
+    go ahead and make a support request in that language, no support
+    contacts will be able to read it. Currently, the languages spoken
+    by at least one support contact are: English.
 
 Since we've already shown the warning, we won't try to block the user
 from making a request in the language of his choice.
@@ -81,11 +81,11 @@ Portuguese, we'll have to warn him.
 
     >>> for tag in find_tags_by_class(browser.contents, 'warning message'):
     ...     print tag.renderContents()
-    <BLANKLINE>
-    ...Portuguese (Brazil)...doesn't seem to be a language spoken by...
-    ...any members...of this support community...
-    ...Currently, the languages spoken by at least one member...
-    ...of this support community are:...English...
+    <strong>Portuguese (Brazil) (pt_BR)</strong> doesn't seem to be
+    a language spoken by any support contacts in this community. If you
+    go ahead and make a support request in that language, no support
+    contacts will be able to read it. Currently, the languages spoken
+    by at least one support contact are: English.
 
 If even after the warning he decides to go ahead, we have to accept the
 new support request.
