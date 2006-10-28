@@ -397,19 +397,28 @@ TicketEditView
 
 TicketEditView available through '+edit' is used to edit most ticket
 fields. It can be used to edit the ticket title and description and also
-its metadata like priority, assignee, source package and whiteboard.
+its metadata like language, priority, assignee, source package and
+whiteboard.
 
     >>> login('test@canonical.com')
     >>> ticket_three.sourcepackagename = None
     >>> request = LaunchpadTestRequest(form={
     ...     'field.actions.change': 'Continue',
     ...     'field.title': 'Better Title',
+    ...     'field.language': 'en',
     ...     'field.description': 'A better description.',
     ...     'field.sourcepackagename': 'mozilla-firefox',
     ...     'field.assignee': 'name16',
     ...     'field.whiteboard': 'Some note',
     ...     'field.priority': 'Wishlist'})
     >>> request.method = 'POST'
+
+    # Monkey patch publisher.get_current_browser_request; otherwise the
+    # TicketLanguageVocabularyFactory won't find a request and will fail.
+    >>> from canonical.launchpad.webapp import publisher
+    >>> get_current_browser_request = publisher.get_current_browser_request
+    >>> publisher.get_current_browser_request = lambda: request
+
     >>> view = getView(ticket_three, '+edit', request)
     >>> view.initialize()
     >>> ticket_three.title
@@ -445,13 +454,13 @@ This View send the event appropriate to send out a notification:
     A better description.
     <BLANKLINE>
 
-<<<<<<< TREE
 If the user has the required permission, the assignee, whiteboard and
 priority fields will be updated:
 
     >>> login('foo.bar@canonical.com')
     >>> request = LaunchpadTestRequest(form={
     ...     'field.actions.change': 'Continue',
+    ...     'field.language': 'en',
     ...     'field.title': 'Better Title',
     ...     'field.description': 'A better description.',
     ...     'field.sourcepackagename': 'mozilla-firefox',
@@ -459,6 +468,7 @@ priority fields will be updated:
     ...     'field.whiteboard': 'Some note',
     ...     'field.priority': 'Wishlist'})
     >>> request.method = 'POST'
+    >>> publisher.get_current_browser_request = lambda: request
     >>> view = getView(ticket_three, '+edit', request)
     >>> view.initialize()
     >>> print ticket_three.priority.title
@@ -473,6 +483,7 @@ a distribution ticket:
 
     >>> request = LaunchpadTestRequest(form={
     ...     'field.actions.change': 'Continue',
+    ...     'field.language': 'en',
     ...     'field.title': 'Better Title',
     ...     'field.description': 'A better description.',
     ...     'field.sourcepackagename': 'mozilla-firefox',
@@ -480,14 +491,19 @@ a distribution ticket:
     ...     'field.whiteboard': '',
     ...     'field.priority': 'Normal'})
     >>> request.method = 'POST'
+    >>> publisher.get_current_browser_request = lambda: request
     >>> view = getView(firefox_ticket, '+edit', request)
     >>> view.initialize()
+    >>> view.errors
+    []
     >>> firefox_ticket.sourcepackagename is None
     True
 
     (Clear out the pending notifications.)
     >>> notifications = pop_notifications()
 
+    # Restore the function we had to monkey patch.
+    >>> publisher.get_current_browser_request = get_current_browser_request
 
 SearchTicketsView
 -----------------
