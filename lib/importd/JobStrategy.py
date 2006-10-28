@@ -88,7 +88,11 @@ class CSCVSStrategy(JobStrategy):
         target_manager = aJob.makeTargetManager()
         working_dir = self.getWorkingDir(aJob, dir)
         target_path = target_manager.createImportTarget(working_dir)
-        self.runtobaz("-SC", "%s.1:" % aJob.branchfrom, target_path, logger)
+        # Option -I here to do a full-tree import for the first revision.
+        # No option -C here because the working tree is not at revision 1.
+        self.runtobaz("-SI", "%s.1" % aJob.branchfrom, target_path, logger)
+        # No option -I here, because we want incremental import
+        self.runtobaz("-SC", "%s.1::" % aJob.branchfrom, target_path, logger)
 
     def sync(self, aJob, dir, logger):
         """sync from a concrete type to baz"""
