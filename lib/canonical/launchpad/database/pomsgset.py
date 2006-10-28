@@ -24,8 +24,6 @@ def _get_pluralforms(pomsgset):
     if pomsgset.potmsgset.getPOMsgIDs().count() > 1:
         if pomsgset.pofile.language.pluralforms is not None:
             entries = pomsgset.pofile.language.pluralforms
-        elif pomsgset.pofile.pluralforms is not None:
-            entries = pomsgset.pofile.pluralforms
         else:
             # Don't know anything about plural forms for this
             # language, fallback to the most common case, 2
@@ -617,10 +615,10 @@ class POMsgSet(SQLBase):
         """See IPOMsgSet."""
         selection = self.getSelection(pluralform)
         active = None
-        if selection is not None and selection.activesubmission is not None:
-            active = selection.activesubmission
         query = '''pomsgset = %s AND
                    pluralform = %s''' % sqlvalues(self.id, pluralform)
+        if selection is not None and selection.activesubmission is not None:
+            active = selection.activesubmission
         if active is not None:
             # Don't show suggestions older than the current one.
             query += ''' AND datecreated > %s

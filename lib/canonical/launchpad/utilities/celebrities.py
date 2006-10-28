@@ -88,6 +88,7 @@ class LaunchpadCelebrities:
     bazaar_expert = CelebrityDescriptor(IPersonSet, 'vcs-imports')
     vcs_imports = CelebrityDescriptor(IPersonSet, 'vcs-imports')
     debbugs = CelebrityDescriptor(IBugTrackerSet, 'debbugs')
+    sourceforge_tracker = CelebrityDescriptor(IBugTrackerSet, 'sf')
     shipit_admin = CelebrityDescriptor(IPersonSet, 'shipit-admins')
     buildd_admin = CelebrityDescriptor(IPersonSet, 'launchpad-buildd-admins')
     launchpad_developers = CelebrityDescriptor(IPersonSet, 'launchpad')
@@ -96,3 +97,5 @@ class LaunchpadCelebrities:
     bug_watch_updater = CelebrityDescriptor(IPersonSet, 'bug-watch-updater')
     bug_importer = CelebrityDescriptor(IPersonSet, 'bug-importer')
     landscape = CelebrityDescriptor(IProductSet, 'landscape')
+    support_tracker_janitor = CelebrityDescriptor(IPersonSet,
+                                                  'support-tracker-janitor')

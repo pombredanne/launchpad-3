@@ -32,14 +32,16 @@ __all__ = [
     'PollAlgorithmVocabulary',
     'PollSecrecyVocabulary',
     'RemoteBugTaskImportanceVocabulary',
-    'ShipItFlavourVocabulary',
     'RemoteBugTaskStatusVocabulary',
+    'RevisionControlSystemsVocabulary',
+    'ShipItFlavourVocabulary',
     'SpecificationDeliveryVocabulary',
     'SpecificationPriorityVocabulary',
     'SpecificationStatusVocabulary',
     'SpecificationGoalStatusVocabulary',
     'SprintSpecificationStatusVocabulary',
     'TeamSubscriptionPolicyVocabulary',
+    'TicketActionVocabulary',
     'TicketPriorityVocabulary',
     'TicketSortVocabulary',
     'TicketStatusVocabulary',
@@ -101,9 +103,11 @@ PackagePublishingPocketVocabulary = vocab_factory(
 PackagingTypeVocabulary = vocab_factory(dbschema.PackagingType)
 PollAlgorithmVocabulary = vocab_factory(dbschema.PollAlgorithm)
 PollSecrecyVocabulary = vocab_factory(dbschema.PollSecrecy)
-ShipItFlavourVocabulary = vocab_factory(dbschema.ShipItFlavour)
 RemoteBugTaskStatusVocabulary = vocab_factory(dbschema.BugTaskStatus)
 RemoteBugTaskImportanceVocabulary = vocab_factory(dbschema.BugTaskImportance)
+RevisionControlSystemsVocabulary = vocab_factory(
+    dbschema.RevisionControlSystems)
+ShipItFlavourVocabulary = vocab_factory(dbschema.ShipItFlavour)
 SpecificationDeliveryVocabulary =  vocab_factory(dbschema.SpecificationDelivery)
 SpecificationPriorityVocabulary = vocab_factory(dbschema.SpecificationPriority)
 SpecificationStatusVocabulary =  vocab_factory(dbschema.SpecificationStatus)
@@ -111,6 +115,7 @@ SpecificationGoalStatusVocabulary = vocab_factory(dbschema.SpecificationGoalStat
 SprintSpecificationStatusVocabulary =  vocab_factory(dbschema.SprintSpecificationStatus)
 TeamSubscriptionPolicyVocabulary = vocab_factory(
         dbschema.TeamSubscriptionPolicy)
+TicketActionVocabulary = vocab_factory(dbschema.TicketAction)
 TicketSortVocabulary =  vocab_factory(dbschema.TicketSort)
 TicketStatusVocabulary =  vocab_factory(dbschema.TicketStatus)
 TicketPriorityVocabulary = vocab_factory(dbschema.TicketPriority)
