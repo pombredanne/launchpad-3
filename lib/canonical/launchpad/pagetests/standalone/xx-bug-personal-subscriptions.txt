@@ -4,6 +4,9 @@ Personal Subscriptions
 Users can subscribe to bugs reported in Malone, via the "Subscribe" link
 in the actions portlet.
 
+  >>> from canonical.launchpad.ftests.bug import (
+  ...     print_direct_subscribers, print_indirect_subscribers)
+
   >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
   >>> browser.open('http://localhost/products/firefox/+bug/1')
   >>> browser.url
@@ -38,36 +41,10 @@ this.
   ...   print tag.renderContents()
   You have been subscribed to this bug.
 
-  >>> DIRECT_SUBS_PORTLET_INDEX = 0
-  >>> INDIRECT_SUBS_PORTLET_INDEX = 1
-
-  >>> def print_direct_subscribers(bug_page):
-  ...     print_subscribers(bug_page, DIRECT_SUBS_PORTLET_INDEX)
-
-  >>> def print_indirect_subscribers(bug_page):
-  ...     print_subscribers(bug_page, INDIRECT_SUBS_PORTLET_INDEX)
-
-  >>> def print_subscribers(bug_page, subscriber_portlet_index):
-  ...     """Print the subscribers listed in the subscriber portlet."""
-  ...     import re
-  ...     bug_id = re.search(r"bug #(\d+)", bug_page, re.IGNORECASE).group(1)
-  ...     subscriber_portlet = find_portlet(
-  ...         bug_page, 'Subscribers to bug %s:' % bug_id)
-  ...     try:
-  ...         portlet = subscriber_portlet.fetch(
-  ...             'ul', "people")[subscriber_portlet_index]
-  ...     except IndexError:
-  ...         # No portlet with this index, as can happen if there are
-  ...         # no indirect subscribers, so just print an empty string
-  ...         print ""
-  ...     else:
-  ...         for li in portlet.fetch('li'):
-  ...             if li.a:
-  ...                 print li.a.renderContents()
   >>> print_direct_subscribers(browser.contents)
-  Steve Alexander
-  Sample Person
   Foo Bar
+  Sample Person
+  Steve Alexander
 
 The "Subscribe" link now says "Unsubscribe".
 
@@ -112,9 +89,9 @@ first subscribing one of Foo Bar's teams.
   'http://localhost/products/firefox/+bug/1'
 
   >>> print_direct_subscribers(browser.contents)
-  Steve Alexander
-  Sample Person
   Launchpad Developers
+  Sample Person
+  Steve Alexander
 
 Now the subscribe link says 'Subscribe/Unsubscribe'.
 
@@ -146,8 +123,8 @@ Let's unsubscribe the Launchpad team.
   Launchpad Developers has been unsubscribed from this bug.
 
   >>> print_direct_subscribers(browser.contents)
-  Steve Alexander
   Sample Person
+  Steve Alexander
 
 On the subscribe page there's a Cancel button as well, so if we go to
 that page and press the Cancel button, we will return to the bug page.
@@ -173,8 +150,8 @@ Foo Bar wasn't subscribed to the bug.
   >>> len(find_tags_by_class(browser.contents, 'informational message'))
   0
   >>> print_direct_subscribers(browser.contents)
-  Steve Alexander
   Sample Person
+  Steve Alexander
 
 Subscriptions and Duplicate Bugs
 --------------------------------
@@ -260,8 +237,8 @@ previous example.)
   >>> stevea_browser.open("http://launchpad.dev/bugs/3")
 
   >>> print_indirect_subscribers(stevea_browser.contents)
-  Steve Alexander
   Sample Person
+  Steve Alexander
 
   >>> stevea_browser.getLink("Unsubscribe").click()
   >>> stevea_browser.getControl("Continue").click()
@@ -270,7 +247,7 @@ previous example.)
   ...     stevea_browser.contents, 'informational message'):
   ...   print tag.renderContents()
   You have been unsubscribed from this bug and 2 duplicates (<a...#1</a>, <a...#2</a>)...
-  This bug has been reported 3 times
+  This bug has 2 duplicates
 
 (Let's undupe bug #1 from bug #3, since it's unneeded for the examples
 that follow.)
@@ -319,7 +296,7 @@ up in the indirect subscriptions.
   ...     foobar_browser.contents, 'informational message'):
   ...   print tag.renderContents()
   Ubuntu Team has been unsubscribed from this bug and 1 duplicate (<a...#2</a>)...
-  This bug has been reported 2 times
+  This bug has 1 duplicate
 
 (ubuntu-team is no longer an indirect subscriber.)
 
