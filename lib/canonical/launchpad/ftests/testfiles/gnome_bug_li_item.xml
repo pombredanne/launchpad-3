@@ -8,9 +8,9 @@
           <bz:priority>NOT USED</bz:priority>
           <bz:op_sys>NOT USED</bz:op_sys>
           <bz:product>NOT USED</bz:product>
-          <bz:%(status_tag)s>%(status)s</bz:%(status_tag)s>
+          <bz:bug_status>%(status)s</bz:bug_status>
           <bz:resolution>%(resolution)s</bz:resolution>
-          <bz:short_short_desc>NOT USED %(non_ascii_utf8)s</bz:short_short_desc>
+          <bz:short_short_desc>NOT USED</bz:short_short_desc>
 
         </bz:bug>
 
