@@ -88,7 +88,8 @@ class CSCVSStrategy(JobStrategy):
         target_manager = aJob.makeTargetManager()
         working_dir = self.getWorkingDir(aJob, dir)
         target_path = target_manager.createImportTarget(working_dir)
-        self.runtobaz("-SC", "%s.1:" % aJob.branchfrom, target_path, logger)
+        # Option -I is needed here to do a full-tree import.
+        self.runtobaz("-SCI", "%s.1:" % aJob.branchfrom, target_path, logger)
 
     def sync(self, aJob, dir, logger):
         """sync from a concrete type to baz"""
@@ -107,6 +108,7 @@ class CSCVSStrategy(JobStrategy):
             raise RuntimeError(
                 "The incremental 'tobaz' was not performed because "
                 "there are no new commits.")
+        # No option -I here because we want an incremental import.
         self.runtobaz("-SC", "%s::" % lastCommit, target_path, logger)
 
     def sourceDir(self):

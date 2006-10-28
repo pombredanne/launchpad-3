@@ -99,7 +99,7 @@ status is changed to Open and his answer appended to the request.
     Open
     >>> print find_last_comment(owner_browser.contents).renderContents()
     <p>The following SVG doesn't display properly:<br />
-    <a...>http://www.w3.org/2001/08/rdfweb/rdfweb-chaals-and-dan.svg</a></p>
+    <a rel="nofollow" href="http://www.w3.org/2001/08/rdfweb/rdfweb-chaals-and-dan.svg">...</a></p>
 
 Giving an Answer
 ----------------
@@ -213,7 +213,7 @@ status to 'Open'.
     >>> print find_last_comment(owner_browser.contents).renderContents()
     <p>Actually, there are still SVGs that do not display correctly.
     For example, the following<br />
-    <a...>http://people.w3.org/maxf/ChessGML/immortal.svg</a> doesn't
+    <a rel="nofollow" href="http://people.w3.org/maxf/ChessGML/immortal.svg">...</a> doesn't
     display correctly.</p>
 
 This also removes the highlighting from the previous answer and sets
