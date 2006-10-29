@@ -44,12 +44,13 @@ support page and goes there to check.
 He sees a listing of the current tickets posted on Ubuntu:
 
     >>> soup = BeautifulSoup(browser.contents)
-    >>> soup('td', 'ticket')
-    [...
-      <a href=".../ubuntu/+ticket/11">Continue playing after shutdown</a>
-    ...
-      <a href=".../ubuntu/+ticket/10">Play DVDs in Totem</a>
-    ...]
+    >>> for ticket in soup.fetch('td', 'ticket'):
+    ...     print ticket.first('a').renderContents()
+    Continue playing after shutdown
+    Play DVDs in Totem
+    mailto: problem in webpage
+    Installation of Java Runtime Environment for Mozilla
+    Slow system
 
 None of the listed ticket titles quite match his problem. He sees that
 there is another page of tickets, so he goes to the next page of
@@ -59,10 +60,9 @@ results. There, he finds only one other ticket:
     >>> browser.title
     'Support requests for Ubuntu'
     >>> soup = BeautifulSoup(browser.contents)
-    >>> soup('td', 'ticket')
-    [<td class="ticket">
-      <a href=".../ubuntu/+ticket/5">Installation failed</a>
-     </td>]
+    >>> for ticket in soup.fetch('td', 'ticket'):
+    ...     print ticket.first('a').renderContents()
+    Installation failed
 
 This is the last results page, so the next and last links are greyed
 out.
@@ -100,6 +100,24 @@ greyed out:
     Traceback (most recent call last):
       ..
     LinkNotFoundError...
+
+When he passes the mouse over the ticket's row, the beginning of the
+description appears in a small pop-up:
+
+    >>> import re
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> ticket_link = soup.first('a', text=re.compile('Play DVDs'))
+    >>> print ticket_link.findParent('tr')['title']
+    How do you play DVDs in Totem..........?
+
+    >>> ticket_link = soup.first('a', text=re.compile('mailto:'))
+    >>> print ticket_link.findParent('tr')['title']
+    I am not able to open my email client if i click on a mailto: link in a
+    webpage in Firefox 1.5.0.4 (ubuntu dapper).
+    <BLANKLINE>
+    Earlier I could do this but since balsa was installed and then uninstalled,
+    things have not been the same. balsa used to start when a mailto: link was
+    clicked on a webpage. balsa i...
 
 He clicks on the ticket title to obtain the ticket page where the
 details of the ticket are available.
@@ -139,21 +157,20 @@ Unfortunately, the search doesn't return any similar requests:
     requested statuses.
 
 Joe observes under the search widget that there are checkboxes to select
-the ticket status to search. He notices that only 'Open' and
-'Answered' are selected. He selects 'Rejected, and run his search again.
+the ticket status to search. He notices that only some statuses are selected.
+He adds 'Invalid' to the selection, and run his search again.
 
-    >>> browser.getControl(name='field.status').displayValue
-    ['\xa0Open', '\xa0Answered']
-    >>> browser.getControl('Rejected').selected = True
+    >>> browser.getControl(name='field.status').value
+    ['Open', 'Needs information', 'Answered', 'Solved']
+    >>> browser.getControl('Invalid').selected = True
     >>> browser.getControl('Search').click()
 
 This time, the search returns one item.
 
     >>> soup = BeautifulSoup(browser.contents)
-    >>> soup('td', 'ticket')
-    [<td class="ticket">
-      <a href=".../ubuntu/+ticket/3">Firefox is slow and consumes too much RAM</a>
-     </td>]
+    >>> for ticket in soup.fetch('td', 'ticket'):
+    ...     print ticket.first('a').renderContents()
+    Firefox is slow and consumes too much RAM
 
 He clicks on the link to read the ticket description.
 
@@ -186,10 +203,10 @@ package's ticket listing.
     </table>]
 
 Average Joe wants to see all tickets but listed from the oldest to the
-newest. Again, he adds the 'Rejected' status to the selection and
+newest. Again, he adds the 'Invalid' status to the selection and
 selects the 'oldest first' sort order.
 
-    >>> browser.getControl('Rejected').selected = True
+    >>> browser.getControl('Invalid').selected = True
     >>> browser.getControl('oldest first').selected = True
     >>> browser.getControl('Search').click()
 
@@ -241,12 +258,15 @@ Answered Requests
 
 A random user has a problem with firefox in Ubuntu. He uses the
 'Answered' link on the support facet of the distribution to look for
-similar problems.
+similar problems. (This listing includes both 'Answered' and 'Solved'
+support requests.)
 
     >>> browser.open('http://launchpad.dev/distros/ubuntu/+tickets')
     >>> browser.getLink('Answered').click()
     >>> print browser.title
     Answered support requests for Ubuntu
+    >>> browser.getControl(name='field.status').value
+    ['Answered', 'Solved']
     >>> tickets = find_tag_by_id(browser.contents, 'ticket-listing')
     >>> for ticket in tickets.fetch('td', 'ticket'):
     ...     print ticket.first('a').renderContents()
@@ -300,7 +320,7 @@ He also remembers that his question was answered, so he unselects the
 other statuses and hits the search button.
 
     >>> user_browser.getControl('Open').selected = False
-    >>> user_browser.getControl('Rejected').selected = False
+    >>> user_browser.getControl('Invalid').selected = False
     >>> user_browser.getControl('Search').click()
 
 The exact request he was searching for is displayed!
@@ -364,7 +384,7 @@ requests to a particular status:
     (goBack() doesn't work)
     >>> browser.open('http://launchpad.dev/people/name16/+tickets')
     >>> browser.getControl(name='field.search_text').value = 'Firefox'
-    >>> browser.getControl(name='field.status').value = ['Answered', 'Rejected']
+    >>> browser.getControl(name='field.status').value = ['Solved', 'Invalid']
     >>> browser.getControl('Search').click()
     >>> tickets = find_tag_by_id(browser.contents, 'ticket-listing')
     >>> for ticket in tickets.fetch('td', 'ticket'):

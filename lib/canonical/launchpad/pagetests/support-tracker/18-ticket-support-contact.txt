@@ -46,8 +46,8 @@ new support contacts appear in the 'Support Contacts' portlet:
     >>> soup = BeautifulSoup(user_browser.contents)
     >>> for tag in soup.fetch('div', 'informational message'):
     ...     print tag.renderContents()
-    You have been added as a support contact for Ubuntu
-    Landscape Developers has been added as a support contact for Ubuntu
+    You have been added as a support contact for Ubuntu.
+    Landscape Developers has been added as a support contact for Ubuntu.
 
     >>> soup.first('div', id='portlet-support-contacts').first('ul')
      <ul class="people">
@@ -76,7 +76,7 @@ A confirmation message is displayed:
 
     >>> soup = BeautifulSoup(user_browser.contents)
     >>> print soup.first('div', 'informational message').renderContents()
-    Landscape Developers has been removed as a support contact for Ubuntu
+    Landscape Developers has been removed as a support contact for Ubuntu.
 
 Since support contacts are notified of changes to ticket, they are also
 listed in the 'Also notified' list in the 'Subscribers' portlet on a

@@ -188,22 +188,12 @@ the most common case:
 
   >>> print apa_dummypomsgset.pofile.language.pluralforms
   None
-  >>> print apa_dummypomsgset.pofile.pluralforms
-  None
   >>> apa_dummypomsgset.pluralforms
   2
   >>> apa_dummypomsgset.active_texts
   [None, None]
 
-We can guess the pluralforms for this language thru IPOFile.pluralforms:
-
-  >>> apa_dummypomsgset.pofile.pluralforms = 4 
-  >>> apa_dummypomsgset.pluralforms
-  4
-  >>> apa_dummypomsgset.active_texts
-  [None, None, None, None]
-
-Or thru ILanguage.pluralforms:
+We can guess the pluralforms for this language thru ILanguage.pluralforms:
 
   >>> ru_dummypofile = upstream_evo.getDummyPOFile('ru')
   >>> ru_dummypomsgset = ru_dummypofile.getPOMsgSet(u'%d contact')

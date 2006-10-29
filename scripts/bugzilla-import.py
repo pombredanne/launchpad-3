@@ -74,7 +74,7 @@ def main(argv):
     
     ztm = initZopeless()
     execute_zcml_for_scripts()
-    login('bugzilla-importer@launchpad.net')
+    login('bug-importer@launchpad.net')
 
     db = make_connection(options)
     bz = bugzilla.Bugzilla(db)
