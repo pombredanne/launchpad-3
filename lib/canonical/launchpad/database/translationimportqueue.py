@@ -22,6 +22,7 @@ from canonical.launchpad.interfaces import (
     IPOTemplateSet, ILanguageSet, NotFoundError)
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.lp.dbschema import RosettaImportStatus, EnumCol
+from canonical.lp.dbschema import RosettaFileFormat
 
 # Number of days when the DELETED and IMPORTED entries are removed from the
 # queue.
@@ -74,6 +75,8 @@ class TranslationImportQueueEntry(SQLBase):
         notNull=False, default=None)
     potemplate = ForeignKey(foreignKey='POTemplate',
         dbName='potemplate', notNull=False, default=None)
+    format = EnumCol(dbName='format', schema=RosettaFileFormat,
+        default=RosettaFileFormat.PO, notNull=True)
     status = EnumCol(dbName='status', notNull=True,
         schema=RosettaImportStatus, default=RosettaImportStatus.NEEDS_REVIEW)
     date_status_changed = UtcDateTimeCol(dbName='date_status_changed',

@@ -41,6 +41,7 @@ from canonical.lp.dbschema import (
     SpecificationStatus)
 
 
+
 class ProductSeries(SQLBase, BugTargetBase):
     """A series of product releases."""
     implements(IProductSeries, IProductSeriesSource, IProductSeriesSourceAdmin)

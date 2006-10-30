@@ -1,6 +1,10 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2006 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
+__all__ = [
+    'TranslationImportQueueEntry',
+    'TranslationImportQueue'
+    ]
 
 #import gettextpo
 import datetime
