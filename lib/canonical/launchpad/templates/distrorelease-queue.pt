@@ -156,7 +156,7 @@
 
      <tal:navigation
           tal:condition="batch"
-          replace="structure view/batchnav/@@+navigation-links" />
+          replace="structure view/batchnav/@@+navigation-links-bottom" />
 
      </tal:batch>
   </div>

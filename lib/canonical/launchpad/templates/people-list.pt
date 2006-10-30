@@ -33,7 +33,7 @@
       <td>
         <tal:navigation
          tal:condition="bn/currentBatch"
-         replace="structure bn/@@+navigation-links" />
+         replace="structure bn/@@+navigation-links-bottom" />
       </td>
     </tr>
   </table>

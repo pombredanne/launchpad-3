@@ -135,7 +135,7 @@
         </tbody>
         <tr>
           <td colspan="7" style="background-color: white"> 
-            <tal:navigation replace="structure bn/@@+navigation-links" />
+            <tal:navigation replace="structure bn/@@+navigation-links-bottom" />
           </td>
         </tr>
     </tal:block>

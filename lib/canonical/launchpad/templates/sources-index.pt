@@ -69,7 +69,7 @@
     </table>
 
     <div class="lesser"
-         tal:content="structure view/batchnav/@@+navigation-links" />
+         tal:content="structure view/batchnav/@@+navigation-links-bottom" />
   </tal:results>
 
 </div>

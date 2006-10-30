@@ -79,6 +79,8 @@
 
   </tal:block>
 
+  <tal:navigation tal:replace="structure view/batchnav/@@+navigation-links-bottom" />
+
 </div>
 
 </body>

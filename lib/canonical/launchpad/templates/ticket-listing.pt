@@ -106,7 +106,7 @@
         </tr>
       </tbody>
     </table>
-    <div class="lesser" tal:content="structure tickets/@@+navigation-links" />
+    <div class="lesser" tal:content="structure tickets/@@+navigation-links-bottom" />
   </tal:block>
 </div>
 </body>

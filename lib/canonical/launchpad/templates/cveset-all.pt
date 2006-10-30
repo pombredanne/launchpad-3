@@ -22,7 +22,7 @@
        tal:replace="structure cve/@@+listing-detailed" />
 
   <tal:navigation condition="batch"
-                  replace="structure batchnav/@@+navigation-links" />
+                  replace="structure batchnav/@@+navigation-links-bottom" />
 
 </div>
 </body>

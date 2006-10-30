@@ -9,6 +9,13 @@
       permission="zope.Public" />
 
   <browser:page
+      for="canonical.launchpad.webapp.interfaces.IBatchNavigator"
+      class="canonical.launchpad.webapp.batching.BottomBatchNavigationView"
+      name="+navigation-links-bottom"
+      template="../templates/batchnavigator-navigation-links.pt"
+      permission="zope.Public" />
+
+  <browser:page
       for="canonical.launchpad.webapp.interfaces.ITableBatchNavigator"
       name="+table-view"
       template="../templates/bugs-listing-table.pt"

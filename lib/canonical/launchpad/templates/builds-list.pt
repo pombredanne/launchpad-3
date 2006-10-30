@@ -120,7 +120,7 @@
 
   <tal:navigation_bottom
      condition="batch"
-     replace="structure view/batchnav/@@+navigation-links" />
+     replace="structure view/batchnav/@@+navigation-links-bottom" />
 
   <div id="empty-result" tal:condition="not: batch">
      No <span tal:replace="view/state/title|nothing" /> builds for <span

@@ -86,7 +86,7 @@
       </tbody>
     </table>
 
-    <tal:navigation replace="structure view/batchnav/@@+navigation-links" />
+    <tal:navigation replace="structure view/batchnav/@@+navigation-links-bottom" />
 
     <div tal:replace="structure context/@@+rosetta-status-legend" />
 

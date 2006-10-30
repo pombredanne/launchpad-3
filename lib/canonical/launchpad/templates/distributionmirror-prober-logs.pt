@@ -44,6 +44,7 @@
         </tr>
       </tbody>
     </table>
+    <tal:navigation replace="structure view/probe_records/@@+navigation-links-bottom" />
   </tal:logs>
 
 </div>
