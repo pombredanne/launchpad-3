@@ -4,14 +4,15 @@
 
   <browser:page
       for="canonical.launchpad.webapp.interfaces.IBatchNavigator"
-      name="+navigation-links"
+      class="canonical.launchpad.webapp.batching.UpperBatchNavigationView"
+      name="+navigation-links-upper"
       template="../templates/batchnavigator-navigation-links.pt"
       permission="zope.Public" />
 
   <browser:page
       for="canonical.launchpad.webapp.interfaces.IBatchNavigator"
-      class="canonical.launchpad.webapp.batching.BottomBatchNavigationView"
-      name="+navigation-links-bottom"
+      class="canonical.launchpad.webapp.batching.LowerBatchNavigationView"
+      name="+navigation-links-lower"
       template="../templates/batchnavigator-navigation-links.pt"
       permission="zope.Public" />
 

@@ -63,9 +63,7 @@
 
     <br />
 
-     <tal:navigation
-          tal:condition="batch"
-          replace="structure view/batchnav/@@+navigation-links" />
+     <tal:navigation replace="structure view/batchnav/@@+navigation-links-upper" />
 
      <form name="queue_items_action" action="" method="POST">
      <table class="listing sortable" tal:condition="batch"
@@ -154,9 +152,7 @@
        is empty.
      </div>
 
-     <tal:navigation
-          tal:condition="batch"
-          replace="structure view/batchnav/@@+navigation-links-bottom" />
+     <tal:navigation replace="structure view/batchnav/@@+navigation-links-lower" />
 
      </tal:batch>
   </div>

@@ -27,7 +27,7 @@
   </p>
 
   <tal:logs condition="view/probe_records/currentBatch">
-    <tal:navigation replace="structure view/probe_records/@@+navigation-links" />
+    <tal:navigation replace="structure view/probe_records/@@+navigation-links-upper" />
     <table class="listing">
       <thead>
         <tr>
@@ -44,7 +44,7 @@
         </tr>
       </tbody>
     </table>
-    <tal:navigation replace="structure view/probe_records/@@+navigation-links-bottom" />
+    <tal:navigation replace="structure view/probe_records/@@+navigation-links-lower" />
   </tal:logs>
 
 </div>

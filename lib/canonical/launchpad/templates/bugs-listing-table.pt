@@ -10,9 +10,7 @@
     </tal:no-search-performed>
   </tal:no-results>
 
-  <tal:results condition="context/batch">
-    <div class="lesser" tal:content="structure context/@@+navigation-links" />
-  </tal:results>
+  <div class="lesser" tal:content="structure context/@@+navigation-links-upper" />
 </div>
 <tal:results condition="context/batch">
   <table class="listing" id="buglisting">
@@ -64,5 +62,5 @@
       </tr>
     </tbody>
   </table>
-  <div class="lesser" tal:content="structure context/@@+navigation-links-bottom" />
+  <div class="lesser" tal:content="structure context/@@+navigation-links-lower" />
 </tal:results>

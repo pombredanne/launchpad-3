@@ -70,7 +70,7 @@
   </div>
 
   <h2>Bug watches</h2>
-  <tal:navigation tal:replace="structure view/batchnav/@@+navigation-links" />
+  <tal:navigation tal:replace="structure view/batchnav/@@+navigation-links-upper" />
 
   <tal:block define="watches view/batchnav/batch"
              condition="watches">
@@ -79,7 +79,7 @@
 
   </tal:block>
 
-  <tal:navigation tal:replace="structure view/batchnav/@@+navigation-links-bottom" />
+  <tal:navigation tal:replace="structure view/batchnav/@@+navigation-links-lower" />
 
 </div>
 
