@@ -16,7 +16,7 @@ from twisted.application import service
 from twisted.python import log
 
 
-twistdpath = os.path.abspath(os.path.join(
+twistd_script = os.path.abspath(os.path.join(
     os.path.dirname(__file__),
     os.pardir, os.pardir, os.pardir, os.pardir,
     'sourcecode', 'twisted', 'bin', 'twistd'))
@@ -35,7 +35,7 @@ class TacTestSetup:
     def setUp(self, spew=False):
         self.killTac()
         self.setUpRoot()
-        args = [sys.executable, twistdpath, '-o', '-y', self.tacfile,
+        args = [sys.executable, twistd_script, '-o', '-y', self.tacfile,
                 '--pidfile', self.pidfile, '--logfile', self.logfile]
         if spew:
             args.append('--spew')

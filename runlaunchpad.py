@@ -43,7 +43,7 @@ ZDOptions.schemafile = os.path.abspath(os.path.join(
         os.path.dirname(__file__), 'lib', 'canonical',
         'config', 'schema.xml'))
 
-twistdpath = os.path.abspath(os.path.join(
+twistd_script = os.path.abspath(os.path.join(
     os.path.dirname(__file__), 'sourcecode', 'twisted', 'bin', 'twistd'))
 
 def start_librarian():
@@ -68,7 +68,7 @@ def start_librarian():
 
     args = [
         sys.executable,
-        twistdpath,
+        twistd_script,
         "--no_save",
         "--nodaemon",
         "--python", tacfile,
@@ -121,7 +121,7 @@ def start_buildsequencer():
 
     args = [
         sys.executable,
-        twistdpath,
+        twistd_script,
         "--no_save",
         "--nodaemon",
         "--python", tacfile,
