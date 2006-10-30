@@ -55,10 +55,10 @@ class ArchiveFilePublisherBase:
                 log.debug(
                     "%s is already in pool with the same content." % path)
         except PoolFileOverwriteError, info:
-            log.error("System is trying to overwrite %s (%s), "
-                      "skipping publishing record. (%s)"
-                      % (diskpool.pathFor(component, source, filename),
-                         self.libraryfilealias.id, info))
+            log.error("PoolFileOverwriteError: %s. Skipping. This indicates "
+                      "some bad data, and Team Soyuz should be informed. "
+                      "However, publishing of other packages is not affected."
+                      % info)
             raise info
 
 

@@ -105,14 +105,19 @@ class _diskpool_atomicfile:
 
 
 class DiskPoolEntry:
-    """Represents a fully self-aware diskpool entry for a single file."""
+    """Represents a single file in the pool, across all components.
+
+    Creating a DiskPoolEntry performs disk reads, so don't create an
+    instance of this class unless you need to know what's already on
+    the disk for this file.
+    """
     def __init__(self, rootpath, source, filename, logger):
         self.rootpath = rootpath
         self.source = source
         self.filename = filename
         self.logger = logger
 
-        self.file_component = ''
+        self.file_component = None
         self.symlink_components = set()
 
         for component in HARDCODED_COMPONENT_ORDER:
@@ -137,8 +142,8 @@ class DiskPoolEntry:
     def preferredComponent(self, add=None, remove=None):
         """Return the appropriate component for the real file.
 
-        If add_component is passed, add it to the list before calculating.
-        If remove_component is passed, remove it before calculating.
+        If add is passed, add it to the list before calculating.
+        If remove is passed, remove it before calculating.
         Thus, we can calcuate which component should contain the main file
         after the addition or removal we are working on.
         """
@@ -148,7 +153,7 @@ class DiskPoolEntry:
         components = components.union(self.symlink_components)
         if add is not None:
             components.add(add)
-        if remove is not None:
+        if remove is not None and remove in components:
             components.remove(remove)
 
         for component in HARDCODED_COMPONENT_ORDER:
@@ -163,17 +168,17 @@ class DiskPoolEntry:
 
     def addFile(self, component, sha1, contents):
         """See DiskPool.addFile."""
+        assert component in HARDCODED_COMPONENT_ORDER
+
         targetpath = self.pathFor(component)
-        path = os.path.dirname(targetpath)
-        if not os.path.exists(path):
-            assert component in HARDCODED_COMPONENT_ORDER
-            os.makedirs(path)
+        if not os.path.exists(os.path.dirname(targetpath)):
+            os.makedirs(os.path.dirname(targetpath))
 
         if self.file_component:
             # There's something on disk. Check hash.
             if sha1 != self.file_hash:
-                raise PoolFileOverwriteError(
-                    '%s != %s' % (sha1, self.file_hash))
+                raise PoolFileOverwriteError('%s != %s for %s' %
+                    (sha1, self.file_hash, self.pathFor(self.file_component)))
 
             if (component == self.file_component
                 or component in self.symlink_components):
@@ -189,16 +194,11 @@ class DiskPoolEntry:
                 return FileAddActionEnum.SYMLINK_ADDED
 
         # If we get to here, we want to write the file.
+        assert not os.path.exists(targetpath)
+
         self.debug("Making new file in %s for %s/%s" %
                    (component, self.source, self.filename))
 
-        assert not os.path.exists(targetpath)
-
-        # Make the necessary directories, if they're not there already.
-        if not os.path.exists(os.path.dirname(targetpath)):
-            os.makedirs(os.path.dirname(targetpath))
-
-        # Write the file.
         file_to_write = _diskpool_atomicfile(
             targetpath, "wb", rootpath=self.rootpath)
         contents.open()
@@ -351,9 +351,6 @@ class DiskPool:
             self.rootpath += "/"
         self.entries = {}
         self.logger = logger
-
-    def debug(self, *args, **kwargs):
-        self.logger.debug(*args, **kwargs)
 
     def _getEntry(self, sourcename, file):
         """Return a new DiskPoolEntry for the given sourcename and file."""
