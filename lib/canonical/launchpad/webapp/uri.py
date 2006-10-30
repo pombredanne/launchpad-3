@@ -4,8 +4,8 @@
 
 __metaclass__ = type
 __all__ = [
-    'Uri',
-    'InvalidUriError',
+    'URI',
+    'InvalidURIError',
     'find_uris_in_text',
     'possible_uri_re']
 
@@ -121,11 +121,11 @@ def normalise_unreserved(s):
     return ''.join(res)
 
 
-class InvalidUriError(Exception):
+class InvalidURIError(Exception):
     """Invalid URI"""
 
 
-class Uri:
+class URI:
     """A class that represents a URI.
 
     This class can represent arbitrary URIs that conform to the
@@ -134,7 +134,7 @@ class Uri:
 
     def __init__(self, uri=None, scheme=None, userinfo=None, host=None,
                  port=None, path=None, query=None, fragment=None):
-        """Create a Uri instance.
+        """Create a URI instance.
 
         Can be called with either a string URI or the component parts
         of the URI as keyword arguments.
@@ -142,7 +142,7 @@ class Uri:
         assert (uri is not None and scheme is None and userinfo is None and
                 host is None and port is None and path is None and
                 query is None and fragment is None) or uri is None, (
-            "Uri() must be called with a single string argument or "
+            "URI() must be called with a single string argument or "
             "with URI components given as keyword arguments.")
 
         if uri is not None:
@@ -150,11 +150,11 @@ class Uri:
                 try:
                     uri = uri.encode('ASCII')
                 except UnicodeEncodeError:
-                    raise InvalidUriError(
+                    raise InvalidURIError(
                         'URIs must consist of ASCII characters')
             match = uri_pat.match(uri)
             if match is None:
-                raise InvalidUriError('"%s" is not a valid URI' % uri)
+                raise InvalidURIError('"%s" is not a valid URI' % uri)
             self.scheme = match.group('scheme')
             self.userinfo = match.group('userinfo')
             self.host = match.group('host')
@@ -170,12 +170,12 @@ class Uri:
             self.fragment = match.group('fragment')
         else:
             if scheme is None:
-                raise InvalidUriError('URIs must have a scheme')
+                raise InvalidURIError('URIs must have a scheme')
             if host is None and (userinfo is not None or port is not None):
-                raise InvalidUriError(
+                raise InvalidURIError(
                     'host must be given if userinfo or port are')
             if path is None:
-                raise InvalidUriError('URIs must have a path')
+                raise InvalidURIError('URIs must have a path')
             self.scheme = scheme
             self.userinfo = userinfo
             self.host = host
@@ -285,12 +285,12 @@ class Uri:
         # If the reference is a full URI, then return it as is.
         try:
             return self.__class__(reference)
-        except InvalidUriError:
+        except InvalidURIError:
             pass
         
         match = relative_ref_pat.match(reference)
         if match is None:
-            raise InvalidUriError("Invalid relative reference")
+            raise InvalidURIError("Invalid relative reference")
 
         parts = dict(scheme=self.scheme)
         authority = match.group('authority')
@@ -457,7 +457,7 @@ def find_uris_in_text(text):
         # part of the URI.
         uri_string = uri_trailers_pat.sub('', uri_string)
         try:
-            uri = Uri(uri_string)
-        except InvalidUriError:
+            uri = URI(uri_string)
+        except InvalidURIError:
             continue
         yield uri

@@ -15,7 +15,7 @@ from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    Description, ProductBugTracker, Summary, Title, UriField)
+    Description, ProductBugTracker, Summary, Title, URIField)
 from canonical.launchpad.interfaces import (
     IHasOwner, IHasDrivers, IBugTarget, ISpecificationTarget,
     IHasSecurityContact, IKarmaContext, PillarNameField)
@@ -117,28 +117,28 @@ class IProduct(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
         title=_('Date Created'),
         description=_("""The date this product was created in Launchpad."""))
 
-    homepageurl = UriField(
+    homepageurl = URIField(
         title=_('Homepage URL'),
         required=False,
         allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
         description=_("""The product home page. Please include
             the http://"""))
 
-    wikiurl = UriField(
+    wikiurl = URIField(
         title=_('Wiki URL'),
         required=False,
         allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
         description=_("""The full URL of this product's wiki, if it has one.
             Please include the http://"""))
 
-    screenshotsurl = UriField(
+    screenshotsurl = URIField(
         title=_('Screenshots URL'),
         required=False,
         allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
         description=_("""The full URL for screenshots of this product,
             if available. Please include the http://"""))
 
-    downloadurl = UriField(
+    downloadurl = URIField(
         title=_('Download URL'),
         required=False,
         allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,

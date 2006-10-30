@@ -18,23 +18,23 @@ from canonical.config import config
 from canonical.lp.dbschema import BranchLifecycleStatus
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Title, Summary, UriField, Whiteboard
+from canonical.launchpad.fields import Title, Summary, URIField, Whiteboard
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.validation import valid_webref
 
-class BranchUriField(UriField):
+class BranchURIField(URIField):
 
     def _validate(self, value):
         # import here to avoid circular import
         from canonical.launchpad.webapp import canonical_url
-        from canonical.launchpad.webapp.uri import Uri
+        from canonical.launchpad.webapp.uri import URI
 
-        super(BranchUriField, self)._validate(value)
-        # UriField has already established that we have a valid URI
-        uri = Uri(value)
-        supermirror_root = Uri(config.launchpad.supermirror_root)
+        super(BranchURIField, self)._validate(value)
+        # URIField has already established that we have a valid URI
+        uri = URI(value)
+        supermirror_root = URI(config.launchpad.supermirror_root)
         if supermirror_root.contains(uri):
             message = _(
                 "Don't manually register a bzr branch on "
@@ -71,7 +71,7 @@ class IBranch(IHasOwner):
         title=_('Summary'), required=False, description=_("A "
         "single-paragraph description of the branch. This will be "
         "displayed on the branch page."))
-    url = BranchUriField(
+    url = BranchURIField(
         title=_('Branch URL'), required=True,
         allowed_schemes=['http', 'https', 'ftp', 'sftp'],
         allow_userinfo=False,
@@ -124,7 +124,7 @@ class IBranch(IHasOwner):
 
 
     # Home page attributes
-    home_page = UriField(
+    home_page = URIField(
         title=_('Web Page'), required=False,
         allowed_schemes=['http', 'https', 'ftp'],
         allow_userinfo=False,

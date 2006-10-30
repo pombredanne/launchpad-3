@@ -129,9 +129,9 @@
 
     <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="canonical.launchpad.fields.IUriField"
+        for="canonical.launchpad.fields.IURIField"
         provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.widgets.textwidgets.UriWidget"
+        factory="canonical.widgets.textwidgets.URIWidget"
         permission="zope.Public"
         />
 

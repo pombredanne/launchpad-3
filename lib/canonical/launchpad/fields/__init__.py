@@ -103,7 +103,7 @@ class ITag(ITextLine):
     """
 
 
-class IUriField(ITextLine):
+class IURIField(ITextLine):
     """A URI.
 
     A text line that holds a simple
@@ -315,13 +315,13 @@ class ProductBugTracker(Choice):
             ob.bugtracker = value
 
 
-class UriField(TextLine):
-    implements(IUriField)
+class URIField(TextLine):
+    implements(IURIField)
 
     def __init__(self, allowed_schemes=(), allow_userinfo=True,
                  allow_port=True, allow_query=True, allow_fragment=True,
                  trailing_slash=None, **kwargs):
-        super(UriField, self).__init__(**kwargs)
+        super(URIField, self).__init__(**kwargs)
         self.allowed_schemes = set(allowed_schemes)
         self.allow_userinfo = allow_userinfo
         self.allow_port = allow_port
@@ -330,13 +330,13 @@ class UriField(TextLine):
         self.trailing_slash = trailing_slash
 
     def _validate(self, value):
-        super(UriField, self)._validate(value)
+        super(URIField, self)._validate(value)
 
         # Local import to avoid circular imports:
-        from canonical.launchpad.webapp.uri import Uri, InvalidUriError
+        from canonical.launchpad.webapp.uri import URI, InvalidURIError
         try:
-            uri = Uri(value)
-        except InvalidUriError, e:
+            uri = URI(value)
+        except InvalidURIError, e:
             raise LaunchpadValidationError(str(e))
         
         if self.allowed_schemes and uri.scheme not in self.allowed_schemes:

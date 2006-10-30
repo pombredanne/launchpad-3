@@ -3,28 +3,28 @@
 import unittest
 
 from canonical.launchpad.webapp.uri import (
-    Uri, InvalidUriError, remove_dot_segments, merge, find_uris_in_text)
+    URI, InvalidURIError, remove_dot_segments, merge, find_uris_in_text)
 
 
-class UriTestCase(unittest.TestCase):
+class URITestCase(unittest.TestCase):
 
     def test_normalisation(self):
         # Example from Section 6.2.2
-        self.assertEqual(str(Uri('eXAMPLE://a/./b/../b/%63/%7bfoo%7d')),
+        self.assertEqual(str(URI('eXAMPLE://a/./b/../b/%63/%7bfoo%7d')),
                          'example://a/b/c/%7Bfoo%7D')
 
-        self.assertEqual(str(Uri('http://www.EXAMPLE.com/')),
+        self.assertEqual(str(URI('http://www.EXAMPLE.com/')),
                          'http://www.example.com/')
-        self.assertEqual(str(Uri('http://www.gnome.org/%7ejamesh/')),
+        self.assertEqual(str(URI('http://www.gnome.org/%7ejamesh/')),
                          'http://www.gnome.org/~jamesh/')
 
         # Port number normalisation, and adding missing slash for URIs
         # with authority:
-        self.assertEqual(str(Uri('http://example.com')),
+        self.assertEqual(str(URI('http://example.com')),
                              'http://example.com/')
-        self.assertEqual(str(Uri('http://example.com:/')),
+        self.assertEqual(str(URI('http://example.com:/')),
                              'http://example.com/')
-        self.assertEqual(str(Uri('http://example.com:80/')),
+        self.assertEqual(str(URI('http://example.com:80/')),
                              'http://example.com/')
 
     def test_merge(self):
@@ -42,7 +42,7 @@ class UriTestCase(unittest.TestCase):
 
     def test_normal_resolution(self):
         # Examples from Section 5.4.1:
-        base = Uri('http://a/b/c/d;p?q')
+        base = URI('http://a/b/c/d;p?q')
         def resolve(relative):
             return str(base.resolve(relative))
         self.assertEqual(resolve('g:h'),     'g:h')
@@ -72,7 +72,7 @@ class UriTestCase(unittest.TestCase):
 
     def test_abnormal_resolution(self):
         # Examples from Section 5.4.2:
-        base = Uri('http://a/b/c/d;p?q')
+        base = URI('http://a/b/c/d;p?q')
         def resolve(relative):
             return str(base.resolve(relative))
         self.assertEqual(resolve('../../../g'),   'http://a/g')
