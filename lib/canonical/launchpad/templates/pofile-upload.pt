@@ -64,10 +64,9 @@
   <tal:isnotadmin condition="not:context/required:launchpad.Admin">
     <h1>Upload service is not available right now.</h1>
     <p>
-      To prevent any other unwanted data change, while we fix a problem detected
-      with offline translations, we had to disable this upload service. You can
-      get more information about this issue at bug
-      <a href="/bugs/68014">#68014</a>.
+      The upload service has been disabled to avoid regressions in
+      translations being caused by mass-approvals when submitting offline
+      translations. Read more about this in <a href="/bugs/68014">#68014</a>.
     </p>
     <p>
       Please, contact us for any question you would have about this at
