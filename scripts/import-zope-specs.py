@@ -34,6 +34,8 @@ author_email_pat = re.compile('[-.A-Za-z0-9]+(?:@|%s)[-.A-Za-z0-9]+' %
                                         for replacement in at_replacements]))
 
 def getTextContent(tag):
+    if tag is None:
+        return ''
     if isinstance(tag, basestring):
         return tag
     return ''.join([e for e in tag.recursiveChildGenerator()
@@ -148,9 +150,9 @@ class ZopeSpec:
                        'IsAcceptedProposal']:
             if status in self.statuses:
                 return SpecificationStatus.APPROVED
-        # WIP => BRAINDUMP
+        # WIP => DISCUSSION
         if 'IsWorkInProgress' in self.statuses:
-            return SpecificationStatus.BRAINDUMP
+            return SpecificationStatus.DISCUSSION
         for status in ['IsSupercededProposal', 'IsReplaced']:
             if status in self.statuses:
                 return SpecificationStatus.SUPERSEDED
@@ -212,7 +214,14 @@ class ZopeSpec:
         lpspec.title = self.title
         lpspec.summary = self.summary
         lpspec.status = self.lpstatus
-        lpspec.goalstatus = self.lpgoalstatus
+        newgoalstatus = self.lpgoalstatus
+        if newgoalstatus != lpspec.goalstatus:
+            if newgoalstatus == SpecificationGoalStatus.PROPOSED:
+                lpspec.proposeGoal(None, None)
+            elif newgoalstatus == SpecificationGoalStatus.ACCEPTED:
+                lpspec.acceptBy(None)
+            elif newgoalstatus == SpecificationGoalStatus.DECLINED:
+                lpspec.declineBy(None)
         lpspec.delivery = self.lpdelivery
         # set the assignee to the first author email with an LP account
         for author in sorted(self.authors):
