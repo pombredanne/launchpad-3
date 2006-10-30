@@ -43,6 +43,9 @@ ZDOptions.schemafile = os.path.abspath(os.path.join(
         os.path.dirname(__file__), 'lib', 'canonical',
         'config', 'schema.xml'))
 
+twistdpath = os.path.abspath(os.path.join(
+    os.path.dirname(__file__), 'sourcecode', 'twisted', 'bin', 'twistd'))
+
 def start_librarian():
     # Imported here as path is not set fully on module load
     from canonical.config import config
@@ -63,9 +66,9 @@ def start_librarian():
         os.path.dirname(__file__), 'daemons', 'librarian.tac'
         ))
 
-    ver = '%d.%d' % sys.version_info[:2]
     args = [
-        "twistd%s" % ver,
+        sys.executable,
+        twistdpath,
         "--no_save",
         "--nodaemon",
         "--python", tacfile,
@@ -116,9 +119,9 @@ def start_buildsequencer():
         os.path.dirname(__file__), 'daemons', 'buildd-sequencer.tac'
         ))
 
-    ver = '%d.%d' % sys.version_info[:2]
     args = [
-        "twistd%s" % ver,
+        sys.executable,
+        twistdpath,
         "--no_save",
         "--nodaemon",
         "--python", tacfile,
