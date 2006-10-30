@@ -4,8 +4,10 @@
 __metaclass__ = type
 
 
-import os
 import httplib
+import logging
+import os
+import urlparse
 from StringIO import StringIO
 from unittest import TestCase, TestLoader
 
@@ -17,7 +19,6 @@ from sqlobject import SQLObjectNotFound
 
 import canonical
 from canonical.config import config
-from canonical.lp import initZopeless
 from canonical.lp.dbschema import PackagePublishingPocket
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.database import DistributionMirror, DistroRelease
@@ -27,7 +28,7 @@ from canonical.launchpad.scripts.distributionmirror_prober import (
     ProberFactory, MirrorProberCallbacks, BadResponseCode,
     MirrorCDImageProberCallbacks, ProberTimeout, RedirectAwareProberFactory,
     InfiniteLoopDetected, UnknownURLScheme, MAX_REDIRECTS,
-    RedirectAwareProberProtocol)
+    RedirectAwareProberProtocol, probe_archive_mirror, probe_release_mirror)
 from canonical.launchpad.scripts.ftests.distributionmirror_http_server import (
     DistributionMirrorTestHTTPServer)
 
@@ -332,6 +333,67 @@ class TestMirrorProberCallbacks(LaunchpadZopelessTestCase):
         # that url
         self.assertRaises(
             SQLObjectNotFound, mirror_distro_release_source.sync)
+
+
+class TestProbeFunctions(LaunchpadZopelessTestCase):
+
+    def setUp(self):
+        self.logger = None
+
+    def _get_host_from_url(self, url):
+        dummy, host, dummy, dummy, dummy, dummy = urlparse.urlparse(url)
+        if ':' in host:
+            host, dummy = host.split(':')
+        return host
+
+    def test_host_semaphores_of_archive_mirror_probe_function(self):
+        """Make sure we don't issue more than one simultaneous request on
+        a given host when probing archive mirrors.
+        """
+        mirror1 = DistributionMirror.byName('archive-mirror')
+        mirror2 = DistributionMirror.byName('archive-mirror2')
+        mirror3 = DistributionMirror.byName('canonical-archive')
+        self._run_test(mirror1, mirror2, mirror3, probe_archive_mirror)
+
+    def test_host_semaphores_of_release_mirror_probe_function(self):
+        """Make sure we don't issue more than one simultaneous request on
+        a given host when probing release mirrors.
+        """
+        mirror1 = DistributionMirror.byName('releases-mirror')
+        mirror2 = DistributionMirror.byName('releases-mirror2')
+        mirror3 = DistributionMirror.byName('canonical-releases')
+        self._run_test(mirror1, mirror2, mirror3, probe_release_mirror)
+
+    def _run_test(self, mirror1, mirror2, mirror3, probe_function):
+        host_semaphores = {}
+        mirror1_host = self._get_host_from_url(mirror1.base_url)
+        mirror2_host = self._get_host_from_url(mirror2.base_url)
+        mirror3_host = self._get_host_from_url(mirror3.base_url)
+
+        probe_function(
+            mirror1, StringIO(), [], logging, host_semaphores=host_semaphores)
+        # Since we have a single mirror to probe we need to have a single
+        # Deferred with a limit of 1, to ensure we don't issue simultaneous
+        # connections on that mirror.
+        self.failUnless(len(host_semaphores.keys()) == 1)
+        self.failUnless(host_semaphores[mirror1_host].limit == 1)
+
+        probe_function(
+            mirror2, StringIO(), [], logging, host_semaphores=host_semaphores)
+        # Now we have two mirrors to probe, but they have the same hostname,
+        # so we'll still have a single semaphore in host_semaphores.
+        self.failUnless(mirror2_host == mirror1_host)
+        self.failUnless(len(host_semaphores.keys()) == 1)
+        self.failUnless(host_semaphores[mirror1_host].limit == 1)
+
+        probe_function(
+            mirror3, StringIO(), [], logging, host_semaphores=host_semaphores)
+        # This third mirror is on a separate host, so we'll have a second
+        # semaphore added to host_semaphores.
+        self.failUnless(mirror3_host != mirror1_host)
+        self.failUnless(len(host_semaphores.keys()) == 2)
+        self.failUnless(host_semaphores[mirror3_host].limit == 1)
+
 
 
 def test_suite():
