@@ -157,12 +157,12 @@ Unfortunately, the search doesn't return any similar requests:
     requested statuses.
 
 Joe observes under the search widget that there are checkboxes to select
-the ticket status to search. He notices that only 'Open' and
-'Answered' are selected. He selects 'Rejected, and run his search again.
+the ticket status to search. He notices that only some statuses are selected.
+He adds 'Invalid' to the selection, and run his search again.
 
-    >>> browser.getControl(name='field.status').displayValue
-    ['\xa0Open', '\xa0Answered']
-    >>> browser.getControl('Rejected').selected = True
+    >>> browser.getControl(name='field.status').value
+    ['Open', 'Needs information', 'Answered', 'Solved']
+    >>> browser.getControl('Invalid').selected = True
     >>> browser.getControl('Search').click()
 
 This time, the search returns one item.
@@ -203,10 +203,10 @@ package's ticket listing.
     </table>]
 
 Average Joe wants to see all tickets but listed from the oldest to the
-newest. Again, he adds the 'Rejected' status to the selection and
+newest. Again, he adds the 'Invalid' status to the selection and
 selects the 'oldest first' sort order.
 
-    >>> browser.getControl('Rejected').selected = True
+    >>> browser.getControl('Invalid').selected = True
     >>> browser.getControl('oldest first').selected = True
     >>> browser.getControl('Search').click()
 
@@ -258,12 +258,15 @@ Answered Requests
 
 A random user has a problem with firefox in Ubuntu. He uses the
 'Answered' link on the support facet of the distribution to look for
-similar problems.
+similar problems. (This listing includes both 'Answered' and 'Solved'
+support requests.)
 
     >>> browser.open('http://launchpad.dev/distros/ubuntu/+tickets')
     >>> browser.getLink('Answered').click()
     >>> print browser.title
     Answered support requests for Ubuntu
+    >>> browser.getControl(name='field.status').value
+    ['Answered', 'Solved']
     >>> tickets = find_tag_by_id(browser.contents, 'ticket-listing')
     >>> for ticket in tickets.fetch('td', 'ticket'):
     ...     print ticket.first('a').renderContents()
@@ -317,7 +320,7 @@ He also remembers that his question was answered, so he unselects the
 other statuses and hits the search button.
 
     >>> user_browser.getControl('Open').selected = False
-    >>> user_browser.getControl('Rejected').selected = False
+    >>> user_browser.getControl('Invalid').selected = False
     >>> user_browser.getControl('Search').click()
 
 The exact request he was searching for is displayed!
@@ -381,7 +384,7 @@ requests to a particular status:
     (goBack() doesn't work)
     >>> browser.open('http://launchpad.dev/people/name16/+tickets')
     >>> browser.getControl(name='field.search_text').value = 'Firefox'
-    >>> browser.getControl(name='field.status').value = ['Answered', 'Rejected']
+    >>> browser.getControl(name='field.status').value = ['Solved', 'Invalid']
     >>> browser.getControl('Search').click()
     >>> tickets = find_tag_by_id(browser.contents, 'ticket-listing')
     >>> for ticket in tickets.fetch('td', 'ticket'):

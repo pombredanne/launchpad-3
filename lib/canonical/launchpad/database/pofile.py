@@ -857,7 +857,7 @@ class DummyPOFile(RosettaStats):
             return pomsgset
 
     def messageCount(self):
-        return len(self.potemplate)
+        return self.potemplate.messageCount()
 
     @property
     def title(self):

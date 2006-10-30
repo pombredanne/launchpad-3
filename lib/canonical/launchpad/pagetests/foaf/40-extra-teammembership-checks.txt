@@ -35,7 +35,7 @@ Post an incomplete date and remove his administrator status.
 
 We get a nice error message
 
-  >>> 'Expiration date: incomplete date provided' in browser.contents
+  >>> 'incomplete date provided.' in browser.contents
   True
 
 Give up on change, nothing should have changed with Colin:
@@ -117,34 +117,6 @@ subscription never expires, but he can demote himself.
   ...     jdub, ubuntu_team)
   >>> jdub_membership.is_admin
   False
-  >>> logout()
-
-Jeff is no longer an admin for ubuntu-team, so Foo Bar decides to change his
-membership expiry date. He changes it to a date in the past.
-
-  >>> browser.getLink(url=url).click()
-  >>> browser.getControl(name='expires').value = ['date']
-  >>> browser.getControl(name='day').value = ['1']
-  >>> browser.getControl(name='month').value = ['1']
-  >>> browser.getControl(name='year').value = ['2006']
-  >>> browser.getControl(name='comment').value = 'Expire away baby'
-  >>> browser.getControl('Change').click()
-
-Redirected to the +members page
-
-  >>> browser.url
-  'http://localhost/people/ubuntu-team/+members'
-
-It will expire automatically and set the expiration date to `today`.
-
-  >>> 'Inactive members' in browser.contents
-  True
-
-  >>> login(ANONYMOUS)
-  >>> jdub_membership = teammembershipset.getByPersonAndTeam(
-  ...     jdub, ubuntu_team)
-  >>> jdub_membership.dateexpires.date() == datetime.utcnow().date()
-  True
   >>> logout()
 
 Sample person had his membership declined to the guadamen group. Test
