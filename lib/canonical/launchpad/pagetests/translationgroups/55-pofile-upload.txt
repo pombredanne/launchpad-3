@@ -21,7 +21,6 @@ it while fixing bug #68014)
   ... """)
   HTTP/1.1 200 Ok
   ...Afrikaans (af) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
-  ...Upload service is not available right now...
 
 Now hit the upload button, but without giving a file for upload. We get an
 error message back.
