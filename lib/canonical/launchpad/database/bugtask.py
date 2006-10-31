@@ -32,6 +32,7 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, ISourcePackage, IDistributionSourcePackage,
     UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES,
     ConjoinedBugTaskEditError)
+from canonical.launchpad.helpers import shortlist
 
 
 debbugsseveritymap = {None:        dbschema.BugTaskImportance.UNDECIDED,
@@ -162,13 +163,13 @@ class BugTask(SQLBase, BugTaskMixin):
         if IDistroReleaseBugTask.providedBy(self):
             distribution = self.distrorelease.distribution
             sourcepackagename = self.sourcepackagename
-            for bt in self.bug.bugtasks:
+            for bt in shortlist(self.bug.bugtasks):
                 if (bt.distribution == distribution and
                     bt.sourcepackagename == self.sourcepackagename):
                     return bt
         elif IProductSeriesBugTask.providedBy(self):
             product = self.productseries.product
-            for bt in self.bug.bugtasks:
+            for bt in shortlist(self.bug.bugtasks):
                 if bt.product == product:
                     return bt
 
@@ -177,13 +178,13 @@ class BugTask(SQLBase, BugTaskMixin):
         """See IBugTask."""
         if IDistroBugTask.providedBy(self):
             current_release = self.distribution.currentrelease
-            for bt in self.bug.bugtasks:
+            for bt in shortlist(self.bug.bugtasks):
                 if (bt.distrorelease == current_release and
                     bt.sourcepackagename == self.sourcepackagename):
                     return bt
         elif IUpstreamBugTask.providedBy(self):
             devel_focus = self.product.development_focus
-            for bt in self.bug.bugtasks:
+            for bt in shortlist(self.bug.bugtasks):
                 if bt.productseries == devel_focus:
                     return bt
 
