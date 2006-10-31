@@ -464,6 +464,9 @@ def probe_archive_mirror(mirror, logfile, unchecked_mirrors, logger,
         unchecked_mirrors.append(url)
         prober = ProberFactory(url)
 
+        # Use one semaphore per host, to limit the numbers of simultaneous
+        # connections on a given host. Note that we don't have an overall
+        # limit of connections, since the per-host limit should be enough.
         semaphore = host_semaphores.setdefault(
             prober.host, DeferredSemaphore(PER_HOST_REQUESTS))
         deferred = semaphore.run(prober.probe)
@@ -503,6 +506,9 @@ def probe_release_mirror(mirror, logfile, unchecked_mirrors, logger,
             # Use a RedirectAwareProberFactory because CD mirrors are allowed
             # to redirect, and we need to cope with that.
             prober = RedirectAwareProberFactory(url)
+            # Use one semaphore per host, to limit the numbers of simultaneous
+            # connections on a given host. Note that we don't have an overall
+            # limit of connections, since the per-host limit should be enough.
             semaphore = host_semaphores.setdefault(
                 prober.host, DeferredSemaphore(PER_HOST_REQUESTS))
             deferred = semaphore.run(prober.probe)
