@@ -27,8 +27,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
-from canonical.launchpad.interfaces import (
-    ISprint, ISprintSet, validate_date_interval)
+from canonical.launchpad.interfaces import ISprint, ISprintSet
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, GetitemNavigation, LaunchpadEditFormView,
     LaunchpadFormView, LaunchpadView, Link, Navigation,
@@ -172,6 +171,7 @@ class SprintView(HasSpecificationsView, LaunchpadView):
 
 
 class SprintAddView(LaunchpadFormView):
+    """Form for creating sprints"""
 
     schema = ISprint
     label = "Register a meeting"
@@ -191,6 +191,12 @@ class SprintAddView(LaunchpadFormView):
             tz = time_zone_widget.getInputValue()
             self.widgets['time_starts'].timeZoneName = tz
             self.widgets['time_ends'].timeZoneName = tz
+
+    def validate(self, data):
+        time_starts = data.get('time_starts')
+        time_ends = data.get('time_ends')
+        if time_starts and time_ends and time_ends < time_starts:
+            self.setFieldError('time_ends', 'Sprint must end after it starts')
 
     @action(_('Add Sprint'), name='add')
     def add_action(self, action, data):
@@ -213,6 +219,7 @@ class SprintAddView(LaunchpadFormView):
 
 
 class SprintEditView(LaunchpadEditFormView):
+    """Form for editing sprints"""
 
     schema = ISprint
     label = "Edit sprint details"
@@ -233,6 +240,12 @@ class SprintEditView(LaunchpadEditFormView):
             tz = self.context.time_zone
         self.widgets['time_starts'].timeZoneName = tz
         self.widgets['time_ends'].timeZoneName = tz
+
+    def validate(self, data):
+        time_starts = data.get('time_starts')
+        time_ends = data.get('time_ends')
+        if time_starts and time_ends and time_ends < time_starts:
+            self.setFieldError('time_ends', 'Sprint must end after it starts')
 
     @action(_('Edit'), name='edit')
     def edit_action(self, action, data):

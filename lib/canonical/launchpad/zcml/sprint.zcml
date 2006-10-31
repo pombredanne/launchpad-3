@@ -87,37 +87,21 @@
       facet="overview"
       template="../templates/sprint-edit.pt" />
 
-  <browser:generalform
-    name="+attend"
-    for="canonical.launchpad.interfaces.ISprint"
-    schema="canonical.launchpad.interfaces.ISprintAttendance"
-    facet="overview"
-    fields="attendee time_starts time_ends"
-    arguments="attendee time_starts time_ends"
-    class="canonical.launchpad.browser.SprintAttendanceAddView"
-    permission="launchpad.AnyPerson"
-    template="../templates/sprint-attend.pt"
-    >
-    <browser:widget
-      field="attendee"
-      class="canonical.widgets.HiddenUserWidget" />
-  </browser:generalform>
+  <browser:page
+      name="+attend"
+      for="canonical.launchpad.interfaces.ISprint"
+      class="canonical.launchpad.browser.SprintAttendanceAttendView"
+      facet="overview"
+      permission="launchpad.AnyPerson"
+      template="../templates/sprint-attend.pt" />
 
-  <browser:generalform
-    name="+register"
-    for="canonical.launchpad.interfaces.ISprint"
-    schema="canonical.launchpad.interfaces.ISprintAttendance"
-    class="canonical.launchpad.browser.SprintAttendanceAddView"
-    facet="overview"
-    fields="attendee time_starts time_ends"
-    arguments="attendee time_starts time_ends"
-    title="Register someone else"
-    description="Register someone for attendance at the conference. Note
-                 that anybody can register anybody else as being an
-                 attendee."
-    permission="launchpad.AnyPerson"
-    template="../templates/sprint-register.pt"
-    />
+  <browser:page
+      name="+register"
+      for="canonical.launchpad.interfaces.ISprint"
+      class="canonical.launchpad.browser.SprintAttendanceRegisterView"
+      facet="overview"
+      permission="launchpad.AnyPerson"
+      template="../templates/sprint-register.pt" />
 
   <browser:page
     for="canonical.launchpad.interfaces.ISprint"
