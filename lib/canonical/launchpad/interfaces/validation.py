@@ -60,9 +60,8 @@ def can_be_nominated_for_releases(releases):
 
     if unnominatable_releases:
         raise LaunchpadValidationError(_(
-            "Sorry, this bug cannot be nominated for: %s. "
-            "Perhaps it is already nominated or targeted "
-            "for this release?") % ", ".join(unnominatable_releases))
+            "This bug has already been nominated for these releases: %s" %
+                ", ".join(unnominatable_releases)))
 
     return True
 

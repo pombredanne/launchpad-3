@@ -29,7 +29,7 @@ from canonical.launchpad.interfaces import (
     ILaunchBag, IBug, IDistribution, IBugNomination, IBugNominationForm)
 from canonical.launchpad.webapp import (
     canonical_url, LaunchpadView, LaunchpadFormView, custom_widget, action)
-from canonical.widgets.itemswidget import LabeledMultiCheckBoxWidget
+from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 
 class BugNominationView(LaunchpadFormView):
 
@@ -64,10 +64,10 @@ class BugNominationView(LaunchpadFormView):
 
     def getReleaseManager(self):
         """Return the IPerson or ITeam that does release management."""
-        # Ignoring the "drivers" attribute for now, which includes the
+        # XXX: Ignoring the "drivers" attribute for now, which includes the
         # project-wide driver for upstreams because I'm guessing it's
         # hardly used, and would make displaying release managers a
-        # little harder.
+        # little harder. -- Brad Bollenbach, 2006-10-31
         return self.getReleaseContext().driver
 
     def getReleaseContext(self):

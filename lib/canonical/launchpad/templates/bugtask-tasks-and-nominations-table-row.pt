@@ -6,7 +6,7 @@
     <td style="padding: 0.3em 0em 0.3em 1.5em"
         tal:condition="indent_task"
         tal:define="release_targetname view/getReleaseTargetName">
-      <img src="/@@/milestone" />
+      <img src="/@@/milestone" alt="Targeted to" />
       <span tal:condition="context/conjoined_master"
             tal:content="release_targetname">
         Edgy
@@ -28,8 +28,8 @@
     </td>
     <td style="margin: 0; padding: 0" tal:condition="not:indent_task">
       <span style="display: block; padding: 3px">
-        <img src="/@@/package-source" tal:condition="view/shouldShowPackageIcon" />
-        <img src="/@@/product" tal:condition="view/shouldShowProductIcon" />
+        <img src="/@@/package-source" alt="package" tal:condition="view/shouldShowPackageIcon" />
+        <img src="/@@/product" alt="product" tal:condition="view/shouldShowProductIcon" />
         <a
           tal:condition="can_edit_bugtask"
           tal:attributes="
