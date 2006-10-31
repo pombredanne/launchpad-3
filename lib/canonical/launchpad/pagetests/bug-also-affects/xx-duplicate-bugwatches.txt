@@ -54,7 +54,6 @@ same bug watch.
     ...     else:
     ...         bugwatch = '-'
     ...     print "%s: %s" % (target_td.a.string, bugwatch)
-    thunderbird (Ubuntu): -
     evolution (Debian): debbugs #42
     mozilla-firefox (Debian): Foo Bar
     thunderbird (Debian): debbugs #42
