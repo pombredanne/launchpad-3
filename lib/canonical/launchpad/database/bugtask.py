@@ -190,9 +190,12 @@ class BugTask(SQLBase, BugTaskMixin):
 
         return None
 
-    # Conjoined bugtask synching methods. We override these methods
+    # XXX: Conjoined bugtask synching methods. We override these methods
     # individually, to avoid cycle problems if we were to override
-    # _SO_setValue instead.
+    # _SO_setValue instead. This indicates either a bug or design issue
+    # in SQLObject. -- Bjorn Tillenius, 2006-10-31
+    # Each attribute listed in _CONJOINED_ATTRIBUTES should have a
+    # _set_foo method below.
     def _set_status(self, value):
         self._setValueAndUpdateConjoinedBugTask("status", value)
 
@@ -224,10 +227,10 @@ class BugTask(SQLBase, BugTaskMixin):
         if self._isConjoinedBugTask():
             raise ConjoinedBugTaskEditError(
                 "This task cannot be edited directly.")
-        # The conjoined task is updated before the generic one because,
+        # The conjoined slave is updated before the master one because,
         # for distro tasks, conjoined_slave does a comparison on
         # sourcepackagename, and the sourcepackagenames will not match
-        # if the generic bugtask is altered before the conjoined one!
+        # if the conjoined master is altered before the conjoined slave!
         conjoined_bugtask = self.conjoined_slave
         if conjoined_bugtask:
             conjoined_attrsetter = getattr(
