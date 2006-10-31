@@ -32,30 +32,31 @@ from canonical.launchpad.webapp import (
 from canonical.widgets.itemswidget import LabeledMultiCheckBoxWidget
 
 class BugNominationView(LaunchpadFormView):
+
     schema = IBugNominationForm
     initial_focus_widget = None
     custom_widget('nominatable_releases', LabeledMultiCheckBoxWidget)
 
     def __init__(self, context, request):
         LaunchpadFormView.__init__(self, IBug(context), request)
-        
+
     @property
     def label(self):
         """Return a nomination or targeting label.
-        
+
         The label returned depends on the user's privileges.
         """
         if self.userIsReleaseManager():
             return "Target bug #%d to releases" % self.context.id
         else:
             return "Nominate bug #%d for releases" % self.context.id
-    
+
     def userIsReleaseManager(self):
         """Does the current user have release management privileges?"""
         current_bugtask = getUtility(ILaunchBag).bugtask
         return helpers.check_permission(
             "launchpad.Driver", current_bugtask.target)
-    
+
     def userCanChangeDriver(self):
         """Can the current user set the release management team?"""
         return helpers.check_permission(
