@@ -27,7 +27,7 @@ A message confirming that he was subscribed is displayed and the user
 name appears in the 'Subscribers' portlet:
 
     >>> soup = BeautifulSoup(user_browser.contents)
-    >>> print soup.first('p', 'informational message').renderContents()
+    >>> print soup.first('div', 'informational message').renderContents()
     You have subscribed to this request.
 
     >>> portlet = soup.first('div', id='ticket-subscribers')
@@ -58,7 +58,7 @@ A confirmation is displayed and the user, which was unsubscribed from
 the ticket, doesn't appear anymore in the subscribers portlet:
 
     >>> soup = BeautifulSoup(user_browser.contents)
-    >>> print soup.first('p', 'informational message').renderContents()
+    >>> print soup.first('div', 'informational message').renderContents()
     You have unsubscribed from this request.
 
     >>> portlet = soup.first('div', id='ticket-subscribers')
