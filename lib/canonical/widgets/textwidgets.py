@@ -25,13 +25,13 @@ class LocalisedDateTimeWidget(TextWidget):
         if input == self._missing:
             return self.context.missing_value
         try:
-            year, month, day, hour, minute, second = parse(input)
+            year, month, day, hour, minute, second, dummy_tz = parse(input)
             second, micro = divmod(second, 1.0)
             micro = round(micro * 1000000)
             dt = datetime.datetime(year, month, day,
                                    hour, minute, int(second), int(micro))
         except (DateTimeError, ValueError, IndexError), v:
-            raise ConversionError('Invalid datetime data', v)
+            raise ConversionError('Invalid date value', v)
         tz = pytz.timezone(self.timeZoneName)
         return tz.localize(dt)
         

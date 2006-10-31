@@ -20,27 +20,26 @@ __all__ = [
 import pytz
 
 from zope.component import getUtility
+from zope.app.form.browser import TextAreaWidget
+from zope.app.form.interfaces import InputErrors
 
-from canonical.launchpad.interfaces import (
-    ISprint, ISprintSet, validate_date_interval)
-
+from canonical.cachedproperty import cachedproperty
+from canonical.launchpad import _
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
-
-from canonical.lp.dbschema import (
-    SpecificationFilter,
-    SpecificationPriority,
-    SpecificationSort,
-    SpecificationStatus,
-    )
-
+from canonical.launchpad.interfaces import (
+    ISprint, ISprintSet, validate_date_interval)
 from canonical.launchpad.webapp import (
-    enabled_with_permission, canonical_url, ContextMenu, Link,
-    GeneralFormView, GetitemNavigation, Navigation, ApplicationMenu,
-    StandardLaunchpadFacets, LaunchpadView)
-
+    ApplicationMenu, ContextMenu, GetitemNavigation, LaunchpadEditFormView,
+    LaunchpadFormView, LaunchpadView, Link, Navigation,
+    StandardLaunchpadFacets, action, canonical_url, custom_widget,
+    enabled_with_permission)
 from canonical.launchpad.helpers import shortlist
-from canonical.cachedproperty import cachedproperty
+from canonical.lp.dbschema import (
+    SpecificationFilter, SpecificationPriority, SpecificationSort,
+    SpecificationStatus)
+from canonical.widgets.textwidgets import LocalisedDateTimeWidget
+
 
 
 class SprintFacets(StandardLaunchpadFacets):
@@ -172,70 +171,76 @@ class SprintView(HasSpecificationsView, LaunchpadView):
                     sort=SpecificationSort.DATE)
 
 
-class BaseSprintView(GeneralFormView):
-    """Base View for Add and Edit sprint views"""
+class SprintAddView(LaunchpadFormView):
 
-    def validate(self, form_data):
-        """Verify that the starting date precedes the ending date."""
-        time_starts = form_data['time_starts']
-        time_ends = form_data['time_ends']
-        validate_date_interval(time_starts, time_ends)
+    schema = ISprint
+    label = "Register a meeting"
+    field_names = ['name', 'title', 'summary', 'home_page', 'driver',
+                   'time_zone', 'time_starts', 'time_ends', 'address']
+    custom_widget('summary', TextAreaWidget, height=5)
+    custom_widget('time_starts', LocalisedDateTimeWidget)
+    custom_widget('time_ends', LocalisedDateTimeWidget)
+    custom_widget('address', TextAreaWidget, height=3)
 
-    def localize_dates(self, dates, timezone):
-        """Return a list of localized datetime objects."""
-        localized_dates = []
-        tz = pytz.timezone(timezone)
-        for date in dates:
-            localized_dates.append(tz.localize(date.replace(tzinfo=None)))
-        return localized_dates
+    sprint = None
 
+    def setUpWidgets(self):
+        LaunchpadFormView.setUpWidgets(self)
+        time_zone_widget = self.widgets['time_zone']
+        if time_zone_widget.hasValidInput():
+            tz = time_zone_widget.getInputValue()
+            self.widgets['time_starts'].timeZoneName = tz
+            self.widgets['time_ends'].timeZoneName = tz
 
-class SprintAddView(BaseSprintView):
-
-    def process(self, name, title, time_zone, time_starts, time_ends,
-        summary=None, driver=None, home_page=None):
-        """Create a new Sprint."""
-        # localize dates to the timezone entered by the user.
-        time_starts, time_ends = self.localize_dates(
-            [time_starts, time_ends], time_zone)
-        sprint = getUtility(ISprintSet).new(self.user, name, title,
-            time_zone, time_starts, time_ends, summary=summary,
-            driver=driver, home_page=home_page)
-        self._nextURL = canonical_url(sprint)
-
-
-class SprintEditView(BaseSprintView):
+    @action(_('Add Sprint'), name='add')
+    def add_action(self, action, data):
+        self.sprint = getUtility(ISprintSet).new(
+            owner=self.user,
+            name=data['name'],
+            title=data['title'],
+            summary=data['summary'],
+            home_page=data['home_page'],
+            driver=data['driver'],
+            time_zone=data['time_zone'],
+            time_starts=data['time_starts'],
+            time_ends=data['time_ends'])
+        self.request.response.addInfoNotification('Sprint created.')
 
     @property
-    def initial_values(self):
-        sprint = self.context
-        time_starts, time_ends = self.localize_dates(
-            [sprint.time_starts, sprint.time_ends], sprint.time_zone)
-        return {
-            'name': sprint.name,
-            'title': sprint.title,
-            'time_zone': sprint.time_zone,
-            'time_starts': time_starts,
-            'time_ends': time_ends,
-            'summary': sprint.summary,
-            'driver': sprint.driver,
-            'home_page': sprint.home_page}
+    def next_url(self):
+        assert self.sprint is not None, 'No sprint has been created'
+        return canonical_url(self.sprint)
 
-    def process(self, name, title, time_zone, time_starts, time_ends,
-        summary=None, driver=None, home_page=None, address=None):
-        """Edit a Sprint."""
-        sprint = self.context
-        # localize dates to the timezone entered by the user.
-        sprint.time_starts, sprint.time_ends = self.localize_dates(
-            [time_starts, time_ends], time_zone)
-        sprint.name = name
-        sprint.title = title
-        sprint.time_zone = time_zone
-        sprint.summary = summary
-        sprint.driver = driver
-        sprint.home_page = home_page
-        sprint.address = address
-        self._nextURL = canonical_url(sprint)
+
+class SprintEditView(LaunchpadEditFormView):
+
+    schema = ISprint
+    label = "Edit sprint details"
+    field_names = ['name', 'title', 'summary', 'home_page', 'driver',
+                   'time_zone', 'time_starts', 'time_ends', 'address']
+    custom_widget('summary', TextAreaWidget, height=5)
+    custom_widget('time_starts', LocalisedDateTimeWidget)
+    custom_widget('time_ends', LocalisedDateTimeWidget)
+    custom_widget('address', TextAreaWidget, height=3)
+
+    def setUpWidgets(self):
+        LaunchpadEditFormView.setUpWidgets(self)
+        time_zone_widget = self.widgets['time_zone']
+        # What time zone are the start and end values relative to?
+        if time_zone_widget.hasValidInput():
+            tz = time_zone_widget.getInputValue()
+        else:
+            tz = self.context.time_zone
+        self.widgets['time_starts'].timeZoneName = tz
+        self.widgets['time_ends'].timeZoneName = tz
+
+    @action(_('Edit'), name='edit')
+    def edit_action(self, action, data):
+        self.updateContextFromData(data)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
 
 
 class SprintTopicSetView(HasSpecificationsView, LaunchpadView):
