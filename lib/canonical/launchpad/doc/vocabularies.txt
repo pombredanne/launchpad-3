@@ -271,6 +271,133 @@ non-visible milestone, that milestone will be in the vocabulary.
     firefox: 1.0
 
 
+o BugNominatableReleaseVocabulary - All the releases that can be
+nominated for fixing in a specific release or series.
+
+This vocabulary needs either a product or distribution in the launchbag
+to get the available releases. It also needs a bug, since it list only
+releases that haven't already been nominated.
+
+Let's start with putting a product in the launchbag.
+
+    >>> getUtility(IOpenLaunchBag).clear()
+    >>> getUtility(IOpenLaunchBag).add(firefox)
+
+Firefox has the following release series:
+
+    >>> for series in firefox.serieslist:
+    ...     print series.name
+    1.0
+    trunk
+
+Now, if we look at bug one, we can see that it hasn't been targeted
+for any Firefox series yet:
+
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> for bugtask in bug_one.bugtasks:
+    ...     print bugtask.targetname
+    firefox (upstream)
+    mozilla-firefox (Ubuntu)
+    mozilla-firefox (Debian)
+
+It has however been nominated for 1.0:
+
+    >>> for nomination in bug_one.getNominations(firefox):
+    ...     print nomination.target.name
+    1.0
+
+This means that if we iterate through the vocabulary with bug one, only
+the trunk will be nominatable:
+
+    >>> series_vocabulary = vocabulary_registry.get(
+    ...     bug_one, 'BugNominatableReleases')
+    >>> for term in series_vocabulary:
+    ...     print "%s: %s" % (term.token, term.title)
+    trunk: Trunk
+
+No series is targeted or nominated on bug 4:
+
+    >>> bug_four = getUtility(IBugSet).get(4)
+    >>> for bugtask in bug_four.bugtasks:
+    ...     print bugtask.targetname
+    firefox (upstream)
+
+    >>> for nomination in bug_four.getNominations(firefox):
+    ...     print nomination.target.name
+
+So if we give bug four to the vocabulary, all releases will be returned:
+
+    >>> series_vocabulary = vocabulary_registry.get(
+    ...     bug_four, 'BugNominatableReleases')
+    >>> for term in series_vocabulary:
+    ...     print "%s: %s" % (term.token, term.title)
+    1.0: 1.0
+    trunk: Trunk
+
+The same works for distributions:
+
+    >>> getUtility(IOpenLaunchBag).clear()
+    >>> getUtility(IOpenLaunchBag).add(ubuntu)
+
+Bug one is nominated for Ubuntu Hoary:
+
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> for bugtask in bug_one.bugtasks:
+    ...     print bugtask.targetname
+    firefox (upstream)
+    mozilla-firefox (Ubuntu)
+    mozilla-firefox (Debian)
+
+    >>> for nomination in bug_one.getNominations(ubuntu):
+    ...     print nomination.target.name
+    hoary
+
+So Hoary isn't included in the vocabulary:
+
+    >>> releases_vocabulary = vocabulary_registry.get(
+    ...     bug_one, 'BugNominatableReleases')
+    >>> for term in releases_vocabulary:
+    ...     print "%s: %s" % (term.token, term.title)
+    breezy-autotest: Breezy-autotest
+    grumpy: Grumpy
+    warty: Warty
+
+The same is true for bug two, where the bug is targeted to Hoary.
+
+    >>> bug_two = getUtility(IBugSet).get(2)
+    >>> for bugtask in bug_two.bugtasks:
+    ...     print bugtask.targetname
+    ubuntu (upstream)
+    Ubuntu
+    Ubuntu Hoary
+    mozilla-firefox (Debian)
+    mozilla-firefox (Debian Woody)
+
+    >>> for nomination in bug_two.getNominations(ubuntu):
+    ...     print nomination.target.name
+    hoary
+
+    >>> releases_vocabulary = vocabulary_registry.get(
+    ...     bug_two, 'BugNominatableReleases')
+    >>> for term in releases_vocabulary:
+    ...     print "%s: %s" % (term.token, term.title)
+    breezy-autotest: Breezy-autotest
+    grumpy: Grumpy
+    warty: Warty
+
+We can get a specific term by using the release name:
+
+    >>> term = releases_vocabulary.getTermByToken('warty')
+    >>> term.value == ubuntu.getRelease('warty')
+    True
+
+Trying to get a non-existant release will result in a LookupError:
+
+    >>> series_vocabulary.getTermByToken('non-such-release')
+    Traceback (most recent call last):
+    ...
+    LookupError...
+
 Non-Enumerable Vocabularies
 ===========================
 

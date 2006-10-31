@@ -51,7 +51,7 @@ from canonical.launchpad.validators.cve import valid_cve
 from canonical.launchpad.validators.url import valid_absolute_url
 
 def can_be_nominated_for_releases(releases):
-    """Can the bug be nominated for this release?"""
+    """Can the bug be nominated for these releases?"""
     current_bug = getUtility(ILaunchBag).bug
     unnominatable_releases = []
     for release in releases:
