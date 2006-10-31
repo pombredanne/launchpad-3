@@ -237,6 +237,7 @@ class BugTaskBugWatchWidget(RadioWidget):
     def setPrefix(self, prefix):
         RadioWidget.setPrefix(self, prefix)
         self.remotebug_widget.setPrefix(prefix)
+        self.bugtracker_widget.setPrefix(prefix)
         self.setUpJavascript()
 
     _messageNoValue = "None, the status of the bug is updated manually."
