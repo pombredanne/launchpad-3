@@ -46,7 +46,7 @@ If we remove the bug watch, we'll be able to edit the status, which has
 been reset to Unconfirmed.
 
     >>> bugwatch_control.displayValue = []
-    >>> submit_button = browser.getControl(name='FORM_SUBMIT')
+    >>> submit_button = browser.getControl('Save Changes')
     >>> submit_button.click()
 
     >>> browser.open(
@@ -62,7 +62,7 @@ been reset to Unconfirmed.
 Let's try to actually edit the status to see that it works:
 
     >>> status_control.displayValue = ['Rejected']
-    >>> submit_button = browser.getControl(name='FORM_SUBMIT')
+    >>> submit_button = browser.getControl('Save Changes')
     >>> submit_button.click()
 
     >>> browser.open(
@@ -85,7 +85,7 @@ From the edit page we can also create a new bug watch:
     ['Debian Bug tracker']
     >>> remotebug_control.value = '1'
 
-    >>> submit_button = browser.getControl(name='FORM_SUBMIT')
+    >>> submit_button = browser.getControl('Save Changes')
     >>> submit_button.click()
     >>> browser.url
     'http://localhost/distros/debian/+source/mozilla-firefox/+bug/1'
@@ -116,7 +116,7 @@ created, instead the old one will be used.
     ['Debian Bug tracker']
     >>> remotebug_control.value = '1'
 
-    >>> submit_button = browser.getControl(name='FORM_SUBMIT')
+    >>> submit_button = browser.getControl('Save Changes')
     >>> submit_button.click()
     >>> browser.url
     'http://localhost/distros/debian/+source/mozilla-firefox/+bug/1'

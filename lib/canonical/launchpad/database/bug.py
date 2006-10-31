@@ -254,7 +254,7 @@ class Bug(SQLBase):
         indirect_subscribers = (
             self.getAlsoNotifiedSubscribers() +
             self.getSubscribersFromDuplicates())
-        
+
         return sorted(
             indirect_subscribers, key=operator.attrgetter("displayname"))
 
@@ -269,14 +269,14 @@ class Bug(SQLBase):
                 BugSubscription.bug = Bug.id AND
                 Bug.duplicateof = %d""" % self.id,
                 clauseTables=["Bug", "BugSubscription"]))
-            
+
         # Direct and "also notified" subscribers take precedence over
         # subscribers from dupes
         dupe_subscribers -= set(self.getDirectSubscribers())
         dupe_subscribers -= set(self.getAlsoNotifiedSubscribers())
 
         return sorted(dupe_subscribers, key=operator.attrgetter("displayname"))
-        
+
     def getAlsoNotifiedSubscribers(self):
         """See IBug."""
         if self.private:
@@ -475,17 +475,14 @@ class Bug(SQLBase):
 
     def getBugWatch(self, bugtracker, remote_bug):
         """See IBug."""
-        for bug_watch in self.watches:
-            #XXX: This matching is a bit fragile, since
-            #     bugwatch.remotebug is a user editable text string.
-            #     We should improve the matching so that for example
-            #     '#42' matches '42' and so on.
-            #     -- Bjorn Tillenius, 2006-10-11
-            if (bug_watch.bugtracker == bugtracker and
-                bug_watch.remotebug == remote_bug):
-                return bug_watch
-        # No matching bug watch was found.
-        return None
+        #XXX: This matching is a bit fragile, since
+        #     bugwatch.remotebug is a user editable text string.
+        #     We should improve the matching so that for example
+        #     '#42' matches '42' and so on.
+        #     -- Bjorn Tillenius, 2006-10-11
+        return BugWatch.selectFirstBy(
+            bug=self, bugtracker=bugtracker, remotebug=remote_bug,
+            orderBy='id')
 
     def _getTags(self):
         """Get the tags as a sorted list of strings."""
