@@ -207,7 +207,8 @@ class SprintAddView(LaunchpadFormView):
         time_starts = data.get('time_starts')
         time_ends = data.get('time_ends')
         if time_starts and time_ends and time_ends < time_starts:
-            self.setFieldError('time_ends', 'Sprint must end after it starts')
+            self.setFieldError('time_ends', "This event can't start after "
+                               "it ends")
 
     @action(_('Add Sprint'), name='add')
     def add_action(self, action, data):
@@ -256,10 +257,11 @@ class SprintEditView(LaunchpadEditFormView):
         time_starts = data.get('time_starts')
         time_ends = data.get('time_ends')
         if time_starts and time_ends and time_ends < time_starts:
-            self.setFieldError('time_ends', 'Sprint must end after it starts')
+            self.setFieldError('time_ends', "This event can't start after "
+                               "it ends")
 
-    @action(_('Edit'), name='edit')
-    def edit_action(self, action, data):
+    @action(_('Change'), name='change')
+    def change_action(self, action, data):
         self.updateContextFromData(data)
 
     @property

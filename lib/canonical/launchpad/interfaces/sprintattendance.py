@@ -16,9 +16,9 @@ from canonical.launchpad import _
 class ISprintAttendance(Interface):
     """An attendance of a person at a sprint."""
 
-    attendee = Choice(title=_('Attendee'), required=True, readonly=True,
+    attendee = Choice(title=_('Attendee'), required=True,
         vocabulary='ValidPersonOrTeam')
-    sprint = Choice(title=_('The Sprint'), required=True, readonly=True,
+    sprint = Choice(title=_('The Sprint'), required=True,
         vocabulary='Sprint',
         description=_("Select the meeting from the list presented above."))
     time_starts = Datetime(title=_('Starting At'), required=True,

@@ -52,7 +52,7 @@ First choose a driver for the UDS Guacamole sprint.
   'http://launchpad.dev/sprints/uds-guacamole/+edit'
 
   >>> browser.getControl('Meeting Driver').value = 'ubuntu-team'
-  >>> browser.getControl('Continue').click()
+  >>> browser.getControl('Change').click()
 
   >>> browser.url
   'http://launchpad.dev/sprints/uds-guacamole'

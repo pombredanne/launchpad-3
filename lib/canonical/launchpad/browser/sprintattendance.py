@@ -67,8 +67,8 @@ class SprintAttendanceAttendView(BaseSprintAttendanceAddView):
     custom_widget('time_starts', LocalisedDateTimeWidget)
     custom_widget('time_ends', LocalisedDateTimeWidget)
 
-    @action(_('Attend'), name='add')
-    def add_action(self, action, data):
+    @action(_('Register'), name='register')
+    def register_action(self, action, data):
         self.context.attend(self.user, data['time_starts'], data['time_ends'])
 
     @property
@@ -84,9 +84,9 @@ class SprintAttendanceRegisterView(BaseSprintAttendanceAddView):
     custom_widget('time_starts', LocalisedDateTimeWidget)
     custom_widget('time_ends', LocalisedDateTimeWidget)
 
-    @action(_('Register'), name='add')
-    def add_action(self, action, data):
-        self.context.attend(self.user, data['time_starts'], data['time_ends'])
+    @action(_('Register'), name='register')
+    def register_action(self, action, data):
+        self.context.attend(data['attendee'], data['time_starts'], data['time_ends'])
 
     @property
     def next_url(self):
