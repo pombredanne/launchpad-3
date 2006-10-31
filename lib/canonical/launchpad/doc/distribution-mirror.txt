@@ -246,7 +246,7 @@ Disabling a mirror causes it not to show up on the public mirror listings.
     >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_message)
     >>> msg['To']
-    'Mark Shuttleworth <mark@hbd.com>'
+    'mark@hbd.com'
     >>> valid_mirror.enabled
     False
 
