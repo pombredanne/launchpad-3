@@ -17,7 +17,7 @@ from canonical.launchpad.interfaces import (
     IDistroRelease)
 
 from canonical.launchpad import _
-from canonical.launchpad.webapp import LaunchpadView
+from canonical.launchpad.webapp import LaunchpadView, canonical_url
 from canonical.launchpad.helpers import shortlist
 from canonical.cachedproperty import cachedproperty
 
@@ -42,6 +42,66 @@ class HasSpecificationsView(LaunchpadView):
             self.title = _('Specifications involving $name', mapping=mapping)
         else:
             self.title = _('Specifications for $name', mapping=mapping)
+
+    def mdzCsv(self):
+        """Quick hack for mdz, to get csv dump of specs."""
+        import csv
+        from StringIO import StringIO
+        output = StringIO()
+        writer = csv.writer(output)
+        headings = [
+            'name',
+            'title',
+            'url',
+            'specurl',
+            'status',
+            'priority',
+            'assignee',
+            'drafter',
+            'approver',
+            'owner',
+            'distrorelease',
+            'direction_approved',
+            'man_days',
+            'delivery',
+            'informational'
+            ]
+        def dbschema(item):
+            """Format a dbschema sortably for a spreadsheet."""
+            return '%s-%s' % (item.value, item.title)
+        writer.writerow(headings)
+        for spec in self.context.all_specifications:
+            row = []
+            row.append(spec.name)
+            row.append(spec.title)
+            row.append(canonical_url(spec))
+            row.append(spec.specurl)
+            row.append(dbschema(spec.status))
+            row.append(dbschema(spec.priority))
+            if spec.assignee is None:
+                row.append('none')
+            else:
+                row.append(spec.assignee.name)
+            if spec.drafter is None:
+                row.append('none')
+            else:
+                row.append(spec.drafter.name)
+            if spec.approver is None:
+                row.append('none')
+            else:
+                row.append(spec.approver.name)
+            row.append(spec.owner.name)
+            if spec.distrorelease is None:
+                row.append('none')
+            else:
+                row.append(spec.distrorelease.name)
+            row.append(spec.direction_approved)
+            row.append(spec.man_days)
+            row.append(dbschema(spec.delivery))
+            row.append(spec.informational)
+            writer.writerow(row)
+        self.request.response.setHeader('Content-Type', 'text/plain')
+        return output.getvalue()
 
     def is_person(self):
         return IPerson.providedBy(self.context)
