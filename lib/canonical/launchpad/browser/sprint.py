@@ -137,6 +137,7 @@ class SprintView(HasSpecificationsView, LaunchpadView):
     def initialize(self):
         self.notices = []
         self.latest_specs_limit = 5
+        self.tzinfo = pytz.timezone(self.context.time_zone)
 
     def attendance(self):
         """establish if this user is attending"""
@@ -168,6 +169,16 @@ class SprintView(HasSpecificationsView, LaunchpadView):
         return self.context.specifications(filter=filter,
                     quantity=self.latest_specs_limit,
                     sort=SpecificationSort.DATE)
+
+    def formatDateTime(self, dt):
+        """Format a datetime value according to the sprint's time zone"""
+        dt = dt.astimezone(self.tzinfo)
+        return dt.strftime('%Y-%m-%d %H:%M:%S %Z')
+
+    def formatDate(self, dt):
+        """Format a date value according to the sprint's time zone"""
+        dt = dt.astimezone(self.tzinfo)
+        return dt.strftime('%Y-%m-%d')
 
 
 class SprintAddView(LaunchpadFormView):
