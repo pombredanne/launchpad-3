@@ -63,6 +63,9 @@
     facet="specifications"
     permission="zope.Public">
     <browser:page
+      name="+mdz-specs.csv"
+      attribute="mdzCsv" />
+    <browser:page
       name="+specs"
       template="../templates/sprint-specs.pt" />
     <browser:page
