@@ -1,0 +1,23 @@
+On the bug page, the bugtasks are editable inline. This means that
+basically the same form is included on the page for each bugtask. Even
+so, if a bug has more than one bugtasks, all the ids used in the forms
+are unique.
+
+For example, bug one has more than one Package field.
+
+    >>> user_browser.open('http://launchpad.dev/bugs/1')
+    >>> user_browser.getControl('Package')
+    Traceback (most recent call last):
+    ...
+    AmbiguityError: label 'Package'
+
+Still, the ids of the fields are unique.
+
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> non_unique_ids = []
+    >>> for label in soup.findAll('label', text='Package'):
+    ...     if len(soup.findAll(id=label.parent['for'])) > 1:
+    ...         non_unique_ids.append(label.parent['for'])
+    >>> non_unique_ids
+    []

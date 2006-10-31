@@ -706,7 +706,32 @@ class BugTaskEditView(GeneralFormView):
     _missing_value = object()
 
     def __init__(self, context, request):
+        self.prefix = self._getPrefix(context)
         GeneralFormView.__init__(self, context, request)
+
+    def _getPrefix(self, bugtask):
+        """Return a prefix that can be used for this form.
+
+        It's constructed by using the names of the bugtask's target, to
+        ensure that it's unique within the context of a bug. This is
+        needed in order to included multiple edit forms on the bug page,
+        while still keeping the field ids unique.
+        """
+        parts = []
+        if IUpstreamBugTask.providedBy(bugtask):
+            parts.append(bugtask.product.name)
+        elif IDistroBugTask.providedBy(bugtask):
+            parts.append(bugtask.distribution.name)
+            if bugtask.sourcepackagename is not None:
+                parts.append(bugtask.sourcepackagename.name)
+        elif IDistroReleaseBugTask.providedBy(bugtask):
+            parts.append(bugtask.distrorelease.distribution.name)
+            parts.append(bugtask.distrorelease.name)
+            if bugtask.sourcepackagename is not None:
+                parts.append(bugtask.sourcepackagename.name)
+        else:
+            raise AssertionError("Unknown IBugTask: %r" % bugtask)
+        return '.'.join(parts)
 
     def _setUpWidgets(self):
         """Set up a combination of display and edit widgets.
@@ -735,9 +760,9 @@ class BugTaskEditView(GeneralFormView):
                 BugTaskSourcePackageNameWidget)
         setUpWidgets(
             self, self.schema, IInputWidget, names=editable_field_names,
-            initial=self.initial_values)
+            initial=self.initial_values, prefix=self.prefix)
         setUpDisplayWidgets(
-            self, self.schema, names=read_only_field_names)
+            self, self.schema, names=read_only_field_names, prefix=self.prefix)
 
         self.fieldNames = editable_field_names
 
