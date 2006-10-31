@@ -900,6 +900,10 @@ ticket_add_search = ContextDisplayName('Request support with %s')
 
 ticket_bug = ContextId('Link support request #%s to a bug report')
 
+ticket_change_status = ContextId('Change status of support request #%s')
+
+ticket_confirm_answer = ContextId('Confirm an answer to support request #%s')
+
 ticket_edit = ContextId('Edit support request #%s details')
 
 def ticket_index(context, view):
@@ -918,12 +922,7 @@ ticket_reject = ContextId('Reject support request #%s')
 
 ticket_unlinkbugs = ContextId('Remove bug links from request #%s')
 
-ticket_reopen = ContextId('Reopen request #%s')
-
 ticket_subscription = ContextId('Subscription to request #%s')
-
-def tickettarget_tickets(context, view):
-    return view.title
 
 standardshipitrequests_index = 'Standard ShipIt options'
 
@@ -965,7 +964,8 @@ template_index = '%EXAMPLE TITLE'
 
 template_new = 'EXAMPLE NEW TITLE'
 
-ticket_listing = ContextDisplayName("Support requests for %s")
+def ticket_listing(context, view):
+    return view.pagetitle
 
 tickettarget_manage_supportcontacts = ContextTitle("Support contact for %s")
 

@@ -9,15 +9,16 @@ Basics
 ------
 
 The class that implements EBT is called Bugzilla. It works differently
-depending on which version of Bugzilla it is talking to. If it's an
-unknown version, UnsupportedBugTrackerVersion is raised:
+depending on which version of Bugzilla it is talking to. If it's a
+version we can't parse, UnparseableBugTrackerVersion is raised:
 
     >>> from canonical.launchpad.components.externalbugtracker import Bugzilla
-    >>> external_bugzilla = Bugzilla('http://foo.com/', version='2.15')
+    >>> external_bugzilla = Bugzilla('http://foo.com/', version='A.B4')
     >>> external_bugzilla.updateBugWatches([])
     Traceback (most recent call last):
       ...
-    UnsupportedBugTrackerVersion: Unsupported version '2.15' for http://foo.com
+    UnparseableBugTrackerVersion:
+    Failed to parse version 'A.B4' for http://foo.com
 
 Since we don't want to depend on a working network connection, we use a
 slightly modified implementation.
@@ -195,7 +196,6 @@ status mapping.
     >>> print thunderbird_task.bugwatch.remotestatus
     ASSIGNED
 
-
 If there are two bug watches, linked to different bugs, pointing to the
 same remote bug, both will of course be updated.
 
@@ -213,12 +213,14 @@ same remote bug, both will of course be updated.
     >>> print bug_watch2.remotestatus
     RESOLVED FIXED
 
-
 If updateBugWatches() can't parse the XML file returned from the remote
 bug tracker, an error is logged.
 
     >>> external_bugzilla._postPage = (
     ...     lambda self, data: '<invalid xml>')
     >>> external_bugzilla.updateBugWatches(gnome_bugzilla.watches)
-    ERROR:...:Failed to parse XML description...
+    Traceback (most recent call last):
+    ...
+    UnparseableBugData:
+    Failed to parse XML description for https://bugzilla.mozilla.org...
 

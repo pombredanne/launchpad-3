@@ -165,7 +165,7 @@ easier you can use IBugWatchSet.fromText().
     DEBBUGS: 42
     ROUNDUP: 42
     TRAC: 42
-    SOURCEFORGE: 42
+    SOURCEFORGE: 1568562
 
 Syncing the Status with Linked Bugtasks
 ---------------------------------------
