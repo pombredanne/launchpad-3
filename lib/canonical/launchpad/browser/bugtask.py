@@ -731,7 +731,7 @@ class BugTaskEditView(GeneralFormView):
                 parts.append(bugtask.sourcepackagename.name)
         else:
             raise AssertionError("Unknown IBugTask: %r" % bugtask)
-        return '.'.join(parts)
+        return '_'.join(parts)
 
     def _setUpWidgets(self):
         """Set up a combination of display and edit widgets.
@@ -863,7 +863,8 @@ class BugTaskEditView(GeneralFormView):
     def validate(self, data):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
         bugtask = self.context
-        comment_on_change = self.request.form.get("comment_on_change")
+        comment_on_change = self.request.form.get(
+            "%s.comment_on_change" % self.prefix)
         if comment_on_change:
             # There was a comment on this change, so make sure that a
             # change was actually made.
@@ -988,7 +989,8 @@ class BugTaskEditView(GeneralFormView):
                 "The milestone setting was ignored because you reassigned the "
                 "bug to a new product")
 
-        comment_on_change = self.request.form.get("comment_on_change")
+        comment_on_change = self.request.form.get(
+            "%s.comment_on_change" % self.prefix)
 
         # The statusexplanation field is being display as a "Comment on most
         # recent change" field now, so set it to the current change comment if

@@ -16,8 +16,11 @@ Still, the ids of the fields are unique.
     >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(user_browser.contents)
     >>> non_unique_ids = []
-    >>> for label in soup.findAll('label', text='Package'):
-    ...     if len(soup.findAll(id=label.parent['for'])) > 1:
-    ...         non_unique_ids.append(label.parent['for'])
+    >>> found_ids = set()
+    >>> import re
+    >>> for tag in soup.findAll(id=re.compile('.+')):
+    ...    if tag['id'] in found_ids:
+    ...        non_unique_ids.append(tag['id'])
+    ...    found_ids.add(tag['id'])
     >>> non_unique_ids
     []
