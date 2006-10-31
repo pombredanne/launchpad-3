@@ -1003,11 +1003,11 @@ h1, h2, h3, #maincontent :link { /* On Overview tab or tab-less pages */
 }
 .tab-bugs h1, .tab-bugs h2, .tab-bugs h3, .tab-bugs #maincontent :link {
   background: none;
-  color: #900; /* Darkest color from locationbar_em_bg.gif */
+  color: #c03;
 }
 .tab-features h1, .tab-features h2, .tab-features #maincontent :link {
   background: none;
-  color: #90b51a; /* Darkest color from locationbar_em_bg.gif */
+  color: #90b51a;
 }
 
 /* -- Front pages -- */
@@ -1032,8 +1032,7 @@ h1, h2, h3, #maincontent :link { /* On Overview tab or tab-less pages */
 .central {
   clear: both;
   margin: 0 auto;
-  padding: 4em 2em;
-  text-align: center;
+  padding: 4em 0;
 }
 .central, .central input {
   font-size: 1em;
@@ -1044,6 +1043,16 @@ h1, h2, h3, #maincontent :link { /* On Overview tab or tab-less pages */
 }
 div.bordered {
   padding: 2em 4em;
+}
+#application-summary {
+  background: none;
+  border-top: 1px dotted #999;
+  color: #999;
+  font-size: 1.5em;
+  padding-top: 1em;
+}
+#application-footer {
+  text-align: center;
 }
 
 /* -- Other pages -- */
