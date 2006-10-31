@@ -17,7 +17,7 @@ from canonical.launchpad.interfaces import (
     IDistroRelease)
 
 from canonical.launchpad import _
-from canonical.launchpad.webapp import LaunchpadView, canonical_url
+from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.helpers import shortlist
 from canonical.cachedproperty import cachedproperty
 
@@ -47,6 +47,7 @@ class HasSpecificationsView(LaunchpadView):
         """Quick hack for mdz, to get csv dump of specs."""
         import csv
         from StringIO import StringIO
+        from canonical.launchpad.webapp import canonical_url
         output = StringIO()
         writer = csv.writer(output)
         headings = [
@@ -69,6 +70,12 @@ class HasSpecificationsView(LaunchpadView):
         def dbschema(item):
             """Format a dbschema sortably for a spreadsheet."""
             return '%s-%s' % (item.value, item.title)
+        def fperson(person):
+            """Format a person as 'name (full name)', or 'none'"""
+            if person is None:
+                return 'none'
+            else:
+                return '%s (%s)' % (person.name, person.displayname)
         writer.writerow(headings)
         for spec in self.context.all_specifications:
             row = []
@@ -78,19 +85,10 @@ class HasSpecificationsView(LaunchpadView):
             row.append(spec.specurl)
             row.append(dbschema(spec.status))
             row.append(dbschema(spec.priority))
-            if spec.assignee is None:
-                row.append('none')
-            else:
-                row.append(spec.assignee.name)
-            if spec.drafter is None:
-                row.append('none')
-            else:
-                row.append(spec.drafter.name)
-            if spec.approver is None:
-                row.append('none')
-            else:
-                row.append(spec.approver.name)
-            row.append(spec.owner.name)
+            row.append(fperson(spec.assignee))
+            row.append(fperson(spec.drafter))
+            row.append(fperson(spec.approver))
+            row.append(fperson(spec.owner))
             if spec.distrorelease is None:
                 row.append('none')
             else:
@@ -99,7 +97,7 @@ class HasSpecificationsView(LaunchpadView):
             row.append(spec.man_days)
             row.append(dbschema(spec.delivery))
             row.append(spec.informational)
-            writer.writerow(row)
+            writer.writerow([unicode(item).encode('utf8') for item in row])
         self.request.response.setHeader('Content-Type', 'text/plain')
         return output.getvalue()
 
