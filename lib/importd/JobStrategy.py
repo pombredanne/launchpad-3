@@ -91,8 +91,12 @@ class CSCVSStrategy(JobStrategy):
         # Option -I here to do a full-tree import for the first revision.
         # No option -C here because the working tree is not at revision 1.
         self.runtobaz("-SI", "%s.1" % aJob.branchfrom, target_path, logger)
-        # No option -I here, because we want incremental import
-        self.runtobaz("-SC", "%s.1::" % aJob.branchfrom, target_path, logger)
+        # WARNING: Do not use the "1::" syntax for the revision range, because
+        # the svn revision range parser is not stable. If the svn branch to
+        # import was created at revision 42, the previous command will produce
+        # a commit with a cscvs id of "MAIN.42". Then the incremental import
+        # must start on revision 43. -- David Allouche 2006-10-31
+        self._importIncrementally(target_path)
 
     def sync(self, aJob, dir, logger):
         """sync from a concrete type to baz"""
@@ -105,13 +109,20 @@ class CSCVSStrategy(JobStrategy):
         target_manager = aJob.makeTargetManager()
         working_dir = self.getWorkingDir(aJob, dir)
         target_path = target_manager.getSyncTarget(working_dir)
+        self._importIncrementally(target_path)
+
+    def _importIncrementally(self, target_path):
+        """Do an incremental import, starting after the last imported revision.
+
+        :param target_path: path of the bzr workingtree to import into
+        """
         branch = SCM.branch(self.job.targetBranchName())
         lastCommit = cscvs.findLastCscvsCommit(branch)
         if lastCommit is None:
             raise RuntimeError(
                 "The incremental 'tobaz' was not performed because "
-                "there are no new commits.")
-        self.runtobaz("-SC", "%s::" % lastCommit, target_path, logger)
+                "no cscvs commit was found in the history of the target.")
+        self.runtobaz("-SC", "%s::" % lastCommit, target_path, self.logger)
 
     def sourceDir(self):
         """Get a source directory to work against"""
