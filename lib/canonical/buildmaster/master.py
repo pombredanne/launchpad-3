@@ -235,8 +235,8 @@ class BuilddMaster:
         pas_verify = BuildDaemonPackagesArchSpecific(config.builddmaster.root,
                                                      distrorelease)
 
-        sources_published = distrorelease.getAllReleasesByStatus(
-            dbschema.PackagePublishingStatus.PUBLISHED)
+        sources_published = distrorelease.getSourcesPublishedForAllArchives()
+
         self._logger.info("Found %d source(s) published in %s." %
                           (sources_published.count(), distrorelease.name))
 

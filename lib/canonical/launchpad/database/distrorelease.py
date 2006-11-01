@@ -592,10 +592,10 @@ class DistroRelease(SQLBase, BugTargetBase):
             DistributionReleaseStatus.EXPERIMENTAL,
         ]
 
-    def getAllReleasesByStatus(self, status):
+    def getSourcesPublishedForAllArchives(self):
         """See IDistroRelease."""
-        queries = ['distrorelease=%s AND archive=%s AND status=%s'
-                   % sqlvalues(self, self.main_archive, status)]
+        state = PackagePublishingStatus.PUBLISHED
+        queries = ['distrorelease=%s AND status=%s' % sqlvalues(self, state)]
 
         if not self.isUnstable():
             queries.append(
@@ -1711,13 +1711,30 @@ class DistroRelease(SQLBase, BugTargetBase):
         log.debug("Publishing %s" % self.title)
         dirty_pockets = set()
 
-        spphs = self.getAllReleasesByStatus(PackagePublishingStatus.PENDING)
+        # records for this distrorelease
+        queries = ['distrorelease=%s ' % sqlvalues(self)]
+
+        # in the main archive for this distrorelease
+        queries.append('archive=%s' % sqlvalues(self.main_archive))
+
+        # only pending records in the normal mode and ALL (pending & published)
+        # when in 'careful' mode.
+        states = [PackagePublishingStatus.PENDING]
         if is_careful:
-            spphs = spphs.union(self.getAllReleasesByStatus(
-                PackagePublishingStatus.PUBLISHED))
+            states.append(PackagePublishingStatus.PUBLISHED)
+        queries.append('status IN %s' % sqlvalues(states))
+
+        # exclude RELEASE pocket on stable distrorelease
+        # note that unstable releases have nothing published in
+        # post-release pockets (UPDATES, BACKPORTS, SECURITY, etc)
+        if not self.isUnstable():
+            queries.append(
+                'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
+        spphs = SourcePackagePublishingHistory.select(
+            " AND ".join(queries), orderBy="-id")
 
         log.debug("Attempting to publish pending sources.")
-        for spph in spphs.orderBy("-id"):
+        for spph in spphs:
             if not is_careful and self.checkLegalPocket(spph, log):
                 continue
             spph.publish(diskpool, log)
