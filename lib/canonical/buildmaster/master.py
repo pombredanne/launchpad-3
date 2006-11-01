@@ -272,7 +272,8 @@ class BuilddMaster:
             pubrec.sourcepackagerelease.createBuild(
                 distroarchrelease=archrelease,
                 pocket=pubrec.pocket,
-                processor=archrelease.default_processor)
+                processor=archrelease.default_processor,
+                archive=pubrec.archive)
 
 
     def addMissingBuildQueueEntries(self):

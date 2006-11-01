@@ -17,6 +17,8 @@ from canonical.launchpad import _
 class IArchive(Interface):
     """An Archive interface"""
     id = Attribute("The archive ID.")
+    # XXX cprov 20061101: this is a bogus description
+    tag = Attribute("Archive tag")
 
 class IArchiveSet(Interface):
     """Interface for ArchiveSet"""

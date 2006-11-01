@@ -536,6 +536,7 @@ INSERT INTO archive (id, tag) VALUES (4, 'gentoo main archive');
 INSERT INTO archive (id, tag) VALUES (5, 'kubuntu main archive');
 INSERT INTO archive (id, tag) VALUES (6, 'guadalinex main archive');
 INSERT INTO archive (id, tag) VALUES (7, 'ubuntutest main archive');
+INSERT INTO archive (id, tag) VALUES (8, 'cprov ubuntu archive');
 
 
 ALTER TABLE archive ENABLE TRIGGER ALL;
@@ -2938,7 +2939,7 @@ ALTER TABLE person ENABLE TRIGGER ALL;
 
 ALTER TABLE personalpackagearchive DISABLE TRIGGER ALL;
 
-
+INSERT INTO personalpackagearchive (id, person, archive) VALUES (1, 28, 8);
 
 ALTER TABLE personalpackagearchive ENABLE TRIGGER ALL;
 
