@@ -22,8 +22,12 @@
   <tal:block define="mirrors_by_country view/getMirrorsGroupedByCountry">
 
   <div tal:condition="not: mirrors_by_country">
-    This distribution has no 
-    <span tal:replace="view/heading">Archive Mirrors</span>.
+    <p tal:condition="not: mirrors_by_country">
+      We don't know about any <span tal:replace="view/heading">Archive
+      Mirrors</span> of this distribution. If you know any, please
+      <a tal:attributes="href string:${context/fmt:url}/+newmirror">register
+      it</a>.
+    </p>
   </div>
 
   <div tal:condition="mirrors_by_country">
@@ -34,6 +38,12 @@
   </tal:block>
 
 </div>
+
+<p metal:fill-slot="help">
+  These mirrors are periodically checked for their contents and
+  &#8220;freshness&#8221;; you can see more about these checks by
+  following the "Details" link of each mirror.
+</p>
 
 </body>
 </html>
