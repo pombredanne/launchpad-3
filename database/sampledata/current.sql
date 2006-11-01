@@ -1632,13 +1632,14 @@ INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (49, '
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (50, 'marilize@hbd.com', 55, 4, '2006-10-16 18:31:43.624885');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (51, 'jordi@ubuntu.com', 56, 4, '2006-10-16 18:31:43.625266');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (52, 'daniel.silverstone@canonical.com', 26, 4, '2006-10-16 18:31:43.625647');
-INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (53, 'bugzilla-importer@launchpad.net', 58, 4, '2006-10-16 18:31:43.62603');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (53, 'bug-importer@launchpad.net', 58, 4, '2006-10-16 18:31:43.62603');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (54, 'rosetta@launchpad.net', 30, 4, '2006-10-16 18:31:43.626521');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (55, 'salgado@ubuntu.com', 29, 1, '2006-10-16 18:31:43.626932');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (56, 'cprov@ubuntu.com', 28, 2, '2006-10-16 18:31:43.627318');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (57, 'bugwatch@bugs.launchpad.net', 62, 1, '2006-10-16 18:31:43.62774');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (58, 'karl@canonical.com', 63, 4, '2006-10-16 18:31:43.628123');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (59, 'limi@plone.org', 10, 1, '2006-10-16 18:31:43.628504');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (60, 'janitor@support.launchpad.net', 65, 4, '2006-10-17 23:23:23.232323');
 
 
 ALTER TABLE emailaddress ENABLE TRIGGER ALL;
@@ -1781,6 +1782,13 @@ INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (37,
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (38, 7, 5, 'ticketlinkedtobug', 'Ticket linked to a bug', 'User linked a ticket in Launchpad to a bug.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (39, 7, 5, 'ticketansweraccepted', 'Ticket owner accepted answer', 'The owner of a ticket accepted one of the comments as the actual answer of a ticket.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (40, 7, 15, 'ticketanswered', 'Answered ticket', 'The comment made by a given user was accepted by the ticket owner as answering that ticket.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (41, 7, 0, 'ticketrequestedinfo', 'Requested for information on a ticket', 'User made a comment requesting for more information from a ticket owner in Launchpad.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (42, 7, 0, 'ticketgaveinfo', 'Gave more information on a ticket', 'User replied to a comment asking for more information on a ticket in Launchpad.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (43, 7, 0, 'ticketgaveanswer', 'Gave answer on a ticket', 'User made a comment containing an answer to a ticket in Launchpad. This is distinct from having that comment confirmed as solving the problem.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (44, 7, 0, 'ticketrejected', 'Rejected ticket', 'User rejected a ticket in Launchpad.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (45, 7, 3, 'ticketownersolved', 'Solved own ticket', 'User made a comment explaining how he solved his own problem.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (46, 7, 0, 'ticketreopened', 'Reopened ticket', 'User made a comment to reopen his ticket in Launchpad.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (47, 7, 1, 'ticketcreated', 'Created ticket', 'User created a ticket in Launchpad.');
 
 
 ALTER TABLE karmaaction ENABLE TRIGGER ALL;
@@ -2908,13 +2916,14 @@ INSERT INTO person (id, displayname, "password", teamowner, teamdescription, nam
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses, creation_rationale, creation_comment) VALUES (55, 'Marilize Coetzee', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'marilize', NULL, '''maril'':1A,2A ''coetze'':3A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.593849', NULL, 'Africa/Johannesburg', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses, creation_rationale, creation_comment) VALUES (56, 'Jordi Mallach', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'jordi', NULL, '''jordi'':1A,2A ''mallach'':3A', NULL, NULL, 1, NULL, '2005-10-07 14:17:51.593849', NULL, 'UTC', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 95, '999432423', '+55 16 3374-2027', NULL, NULL, NULL, false, 8, NULL);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses, creation_rationale, creation_comment) VALUES (57, 'Launchpad Developers', NULL, 16, 'Launchpad developers', 'launchpad', NULL, '''develop'':3A ''launchpad'':1A,2A', NULL, NULL, 3, NULL, '2005-10-13 13:03:41.668724', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses, creation_rationale, creation_comment) VALUES (58, 'Bugzilla Importer', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'bugzilla-importer', NULL, '''import'':3A,5A ''bugzilla'':2A,4A ''bugzilla-import'':1A', NULL, NULL, 1, NULL, '2005-12-06 09:48:58.287679', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses, creation_rationale, creation_comment) VALUES (58, 'Bug Importer', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'bug-importer', NULL, '''bug'':2A,4A ''import'':3A,5A ''bug-import'':1A', NULL, NULL, 1, NULL, '2005-12-06 09:48:58.287679', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses, creation_rationale, creation_comment) VALUES (59, 'Mirror Administrators', NULL, 1, 'Mirror Administrators', 'ubuntu-mirror-admins', NULL, '''admin'':4A ''mirror'':3A,5A ''ubuntu'':2A ''administr'':6A ''ubuntu-mirror-admin'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.571899', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses, creation_rationale, creation_comment) VALUES (60, 'Registry Administrators', NULL, 1, 'Launchpad Registry Administrators Team', 'registry', NULL, '''registri'':1A,2A ''administr'':3A', NULL, NULL, 1, NULL, '2006-04-06 10:17:11.833824', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses, creation_rationale, creation_comment) VALUES (61, 'Launchpad Buildd Admins', NULL, 16, 'Buildd System administrators', 'launchpad-buildd-admins', NULL, '''admin'':4A,7A ''buildd'':3A,6A ''launchpad'':2A,5A ''launchpad-buildd-admin'':1A', NULL, NULL, 1, NULL, '2006-05-15 22:23:29.062603', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses, creation_rationale, creation_comment) VALUES (62, 'Bug Watch Updater', NULL, NULL, NULL, 'bug-watch-updater', NULL, '''bug'':2A,5A ''updat'':4A,7A ''watch'':3A,6A ''bug-watch-updat'':1A', NULL, NULL, 1, NULL, '2006-05-23 12:49:30.483464', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, 1, NULL);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses, creation_rationale, creation_comment) VALUES (63, 'Karl Tilbury', 'UnjDN34pTZ0xE3vbCNZDedIVpLPrA9nty9S/mOzbeefQXAEN6CMNUQ==', NULL, NULL, 'karl', NULL, '''karl'':1A,2A ''tilburi'':3A', NULL, NULL, 1, NULL, '2006-05-23 12:49:30.483464', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, 8, NULL);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses, creation_rationale, creation_comment) VALUES (64, 'Landscape Developers', NULL, 12, NULL, 'landscape-developers', NULL, '''develop'':3A,5A ''landscap'':2A,4A ''landscape-develop'':1A', NULL, NULL, 1, NULL, '2006-07-11 20:01:09.874128', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses, creation_rationale, creation_comment) VALUES (65, 'Support Tracker Janitor', NULL, NULL, NULL, 'support-tracker-janitor', NULL, '''janitor'':4A,7A ''support'':2A,5A ''tracker'':3A,6A ''support-tracker-janitor'':1A', NULL, NULL, 1, NULL, '2006-10-04 16:20:51.19954', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, 1, NULL);
 
 
 ALTER TABLE person ENABLE TRIGGER ALL;
@@ -3005,7 +3014,7 @@ ALTER TABLE poexportrequest ENABLE TRIGGER ALL;
 
 ALTER TABLE pofile DISABLE TRIGGER ALL;
 
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (1, 1, 387, 'Spanish translation for evolution in hoary', ' traducción de es.po al Spanish
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (1, 1, 387, 'Spanish translation for evolution in hoary', ' traducción de es.po al Spanish
  translation of es.po to Spanish
  translation of evolution.HEAD to Spanish
  Copyright © 2000-2002 Free Software Foundation, Inc.
@@ -3030,8 +3039,8 @@ Content-Transfer-Encoding: 8bit
 Report-Msgid-Bugs-To: serrador@hispalinux.es
 X-Generator: Rosetta (https://launchpad.net/rosetta/)
 Plural-Forms: nplurals=2; plural=(n != 1);
-', true, NULL, NULL, 7, 0, 0, NULL, 12, 2, NULL, 'es.po', NULL, NULL, '2005-06-06 08:59:54.24073', 690, NULL);
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (3, 2, 387, NULL, ' Spanish (Spain) translation for mount removable devices as normal user
+', true, NULL, NULL, 7, 0, 0, NULL, 12, NULL, 'es.po', NULL, NULL, '2005-06-06 08:59:54.24073', 690, NULL);
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (3, 2, 387, NULL, ' Spanish (Spain) translation for mount removable devices as normal user
  Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
  This file is distributed under the same license as the mount removable devices as normal user package.
  FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
@@ -3046,8 +3055,8 @@ Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n != 1
 X-Generator: Rosetta (https://launchpad.net/rosetta/)
-', true, NULL, NULL, 63, 0, 0, NULL, 31, 2, 'test', 'es.po', NULL, NULL, '2005-06-06 08:59:54.236824', 265, NULL);
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (4, 2, 143, NULL, ' German translations for PACKAGE package
+', true, NULL, NULL, 63, 0, 0, NULL, 31, 'test', 'es.po', NULL, NULL, '2005-06-06 08:59:54.236824', 265, NULL);
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (4, 2, 143, NULL, ' German translations for PACKAGE package
  German messages for PACKAGE.
  Copyright (C) 2004 Martin Pitt
  This file is distributed under the same license as the PACKAGE package.
@@ -3063,8 +3072,8 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=(n != 1);
-', true, NULL, NULL, 63, 0, 0, NULL, 31, 2, NULL, 'de.po', NULL, NULL, '2005-06-06 08:59:54.238198', 328, NULL);
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (5, 2, 68, NULL, ' Catalan translation for mount removable devices as normal user
+', true, NULL, NULL, 63, 0, 0, NULL, 31, NULL, 'de.po', NULL, NULL, '2005-06-06 08:59:54.238198', 328, NULL);
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (5, 2, 68, NULL, ' Catalan translation for mount removable devices as normal user
  Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
  This file is distributed under the same license as the mount removable devices as normal user package.
  FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
@@ -3079,8 +3088,8 @@ Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n != 1
 X-Generator: Rosetta (https://launchpad.net/rosetta/)
-', true, NULL, NULL, 62, 0, 0, NULL, 31, 2, NULL, 'ca.po', NULL, NULL, '2005-06-06 08:59:54.254523', 76, NULL);
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (6, 2, 132, NULL, ' French translation for mount removable devices as normal user
+', true, NULL, NULL, 62, 0, 0, NULL, 31, NULL, 'ca.po', NULL, NULL, '2005-06-06 08:59:54.254523', 76, NULL);
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (6, 2, 132, NULL, ' French translation for mount removable devices as normal user
  Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
  This file is distributed under the same license as the mount removable devices as normal user package.
  FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
@@ -3096,8 +3105,8 @@ Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n > 1
 X-Generator: Rosetta (https://launchpad.net/rosetta/)
-', true, NULL, NULL, 57, 0, 0, NULL, 31, 2, NULL, 'fr.po', NULL, NULL, '2005-06-06 08:59:54.256914', 391, NULL);
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (7, 2, 360, NULL, ' Croatian translation for pmount
+', true, NULL, NULL, 57, 0, 0, NULL, 31, NULL, 'fr.po', NULL, NULL, '2005-06-06 08:59:54.256914', 391, NULL);
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (7, 2, 360, NULL, ' Croatian translation for pmount
  Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
  This file is distributed under the same license as the pmount package.
  FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
@@ -3113,8 +3122,8 @@ Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2
 X-Generator: Rosetta (https://launchpad.net/rosetta/)
-', true, NULL, NULL, 63, 0, 0, NULL, 31, 3, NULL, 'hr.po', NULL, NULL, '2005-06-06 08:59:54.255734', 13, NULL);
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (8, 2, 527, NULL, ' Italian (Italy) translation for pmount
+', true, NULL, NULL, 63, 0, 0, NULL, 31, NULL, 'hr.po', NULL, NULL, '2005-06-06 08:59:54.255734', 13, NULL);
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (8, 2, 527, NULL, ' Italian (Italy) translation for pmount
  Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
  This file is distributed under the same license as the pmount package.
  FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
@@ -3130,8 +3139,8 @@ Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n != 1
 X-Generator: Rosetta (https://launchpad.net/rosetta/)
-', true, NULL, NULL, 49, 0, 0, NULL, 31, 2, NULL, 'it_IT.po', NULL, NULL, '2005-06-06 08:59:54.259358', 454, NULL);
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (9, 2, 98, NULL, ' Czech translation for mount removable devices as normal user
+', true, NULL, NULL, 49, 0, 0, NULL, 31, NULL, 'it_IT.po', NULL, NULL, '2005-06-06 08:59:54.259358', 454, NULL);
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (9, 2, 98, NULL, ' Czech translation for mount removable devices as normal user
  Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
  This file is distributed under the same license as the mount removable devices as normal user package.
  FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
@@ -3147,8 +3156,8 @@ Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2
 X-Generator: Rosetta (https://launchpad.net/rosetta/)
-', true, NULL, NULL, 56, 0, 0, NULL, 31, 3, NULL, 'cs.po', NULL, NULL, '2005-06-06 08:59:54.249601', 202, NULL);
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (10, 2, 302, NULL, ' Bokmål, Norwegian translation for pmount
+', true, NULL, NULL, 56, 0, 0, NULL, 31, NULL, 'cs.po', NULL, NULL, '2005-06-06 08:59:54.249601', 202, NULL);
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (10, 2, 302, NULL, ' Bokmål, Norwegian translation for pmount
  Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
  This file is distributed under the same license as the pmount package.
  FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
@@ -3164,8 +3173,8 @@ Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n != 1
 X-Generator: Rosetta (https://launchpad.net/rosetta/)
-', true, NULL, NULL, 63, 0, 0, NULL, 31, 2, NULL, 'nb.po', NULL, NULL, '2005-06-06 08:59:54.248418', 139, NULL);
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (11, 2, 387, NULL, ' Spanish translation for mount removable devices as normal user
+', true, NULL, NULL, 63, 0, 0, NULL, 31, NULL, 'nb.po', NULL, NULL, '2005-06-06 08:59:54.248418', 139, NULL);
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (11, 2, 387, NULL, ' Spanish translation for mount removable devices as normal user
  Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
  This file is distributed under the same license as the mount removable devices as normal user package.
  FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
@@ -3181,8 +3190,8 @@ Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n != 1
 X-Generator: Rosetta (https://launchpad.net/rosetta/)
-', true, NULL, NULL, 54, 0, 0, NULL, 31, 2, NULL, 'po/es.po', NULL, NULL, '2005-06-06 08:59:54.229882', 503, NULL);
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (12, 4, 387, NULL, ' traducción de es.po al Spanish
+', true, NULL, NULL, 54, 0, 0, NULL, 31, NULL, 'po/es.po', NULL, NULL, '2005-06-06 08:59:54.229882', 503, NULL);
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (12, 4, 387, NULL, ' traducción de es.po al Spanish
  translation of es.po to Spanish
  translation of evolution.HEAD to Spanish
  Copyright © 2000-2002 Free Software Foundation, Inc.
@@ -3207,8 +3216,8 @@ Content-Transfer-Encoding: 8bit
 Report-Msgid-Bugs-To: serrador@hispalinux.es
 X-Generator: Rosetta (https://launchpad.net/rosetta/)
 Plural-Forms: nplurals=2; plural=(n != 1);
-', true, NULL, NULL, 7, 1, 0, NULL, 31, 2, NULL, 'es.po', NULL, NULL, '2005-06-06 08:59:54.235169', 689, NULL);
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (13, 5, 132, NULL, '
+', true, NULL, NULL, 7, 1, 0, NULL, 31, NULL, 'es.po', NULL, NULL, '2005-06-06 08:59:54.235169', 689, NULL);
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (13, 5, 132, NULL, '
     Translators, if you are not familiar with the PO format, gettext
     documentation is worth reading, especially sections dedicated to
     this format, e.g. by running:
@@ -3231,8 +3240,8 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n > 1
-', true, NULL, NULL, 9, 0, 0, NULL, 31, 2, NULL, 'fr.po', NULL, NULL, '2005-06-06 08:59:54.243358', 577, NULL);
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (14, 5, 112, NULL, '
+', true, NULL, NULL, 9, 0, 0, NULL, 31, NULL, 'fr.po', NULL, NULL, '2005-06-06 08:59:54.243358', 577, NULL);
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (14, 5, 112, NULL, '
     Translators, if you are not familiar with the PO format, gettext
     documentation is worth reading, especially sections dedicated to
     this format, e.g. by running:
@@ -3254,8 +3263,8 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n != 1
-', true, NULL, NULL, 9, 0, 0, NULL, 31, 2, NULL, 'nl.po', NULL, NULL, '2005-06-06 08:59:54.260522', 610, NULL);
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (15, 5, 521, NULL, '
+', true, NULL, NULL, 9, 0, 0, NULL, 31, NULL, 'nl.po', NULL, NULL, '2005-06-06 08:59:54.260522', 610, NULL);
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (15, 5, 521, NULL, '
     Translators, if you are not familiar with the PO format, gettext
     documentation is worth reading, especially sections dedicated to
     this format, e.g. by running:
@@ -3278,8 +3287,8 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n > 1
-', true, NULL, NULL, 9, 0, 0, NULL, 31, 2, NULL, 'pt_BR.po', NULL, NULL, '2005-06-06 08:59:54.24721', 586, NULL);
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (16, 5, 143, NULL, '
+', true, NULL, NULL, 9, 0, 0, NULL, 31, NULL, 'pt_BR.po', NULL, NULL, '2005-06-06 08:59:54.24721', 586, NULL);
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (16, 5, 143, NULL, '
     Translators, if you are not familiar with the PO format, gettext
     documentation is worth reading, especially sections dedicated to
     this format, e.g. by running:
@@ -3302,8 +3311,8 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n != 1
-', true, NULL, NULL, 9, 0, 0, NULL, 31, 2, NULL, 'de.po', NULL, NULL, '2005-06-06 08:59:54.253299', 676, NULL);
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (17, 5, 427, NULL, ' Turkish translation of mozilla.
+', true, NULL, NULL, 9, 0, 0, NULL, 31, NULL, 'de.po', NULL, NULL, '2005-06-06 08:59:54.253299', 676, NULL);
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (17, 5, 427, NULL, ' Turkish translation of mozilla.
  This file is distributed under the same license as the mozilla package.
  Mehmet Türker <mturker@innova.com.tr>, 2004.
 
@@ -3317,8 +3326,8 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms:  nplurals=1; plural=0;
-', true, NULL, NULL, 6, 0, 0, NULL, 31, 1, NULL, 'tr.po', NULL, NULL, '2005-06-06 08:59:54.250735', 670, NULL);
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (18, 5, 193, NULL, ' Italian translation of debconf for mozilla.
+', true, NULL, NULL, 6, 0, 0, NULL, 31, NULL, 'tr.po', NULL, NULL, '2005-06-06 08:59:54.250735', 670, NULL);
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (18, 5, 193, NULL, ' Italian translation of debconf for mozilla.
  This file is distributed under the same license as the mozilla package.
  Copyright 2004 by Valentina Commissari <ayor@quaqua.net>.
 ', 'Project-Id-Version: mozilla 1.7.3-5
@@ -3332,8 +3341,8 @@ Content-Transfer-Encoding: 8bit
 X-Poedit-Language: Italian
 X-Poedit-Country: ITALY
 Plural-Forms: nplurals=2; plural=n != 1
-', true, NULL, NULL, 9, 0, 0, NULL, 31, 2, NULL, 'it.po', NULL, NULL, '2005-06-06 08:59:54.246003', 661, NULL);
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (19, 5, 100, NULL, '
+', true, NULL, NULL, 9, 0, 0, NULL, 31, NULL, 'it.po', NULL, NULL, '2005-06-06 08:59:54.246003', 661, NULL);
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (19, 5, 100, NULL, '
     Translators, if you are not familiar with the PO format, gettext
     documentation is worth reading, especially sections dedicated to
     this format, e.g. by running:
@@ -3358,8 +3367,8 @@ Content-Transfer-Encoding: 8bit
 X-Poedit-Language: Italian
 X-Poedit-Country: ITALY
 Plural-Forms: nplurals=2; plural=n != 1
-', true, NULL, NULL, 9, 0, 0, NULL, 31, 2, NULL, 'da.po', NULL, NULL, '2005-06-06 08:59:54.24466', 628, NULL);
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (20, 5, 241, NULL, ' Lithuanian translation of mozilla.
+', true, NULL, NULL, 9, 0, 0, NULL, 31, NULL, 'da.po', NULL, NULL, '2005-06-06 08:59:54.24466', 628, NULL);
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (20, 5, 241, NULL, ' Lithuanian translation of mozilla.
  This file is distributed under the same license as the mozilla package.
  Kęstutis Biliūnas <kebil@kaunas.init.lt>, 2004.
 
@@ -3374,8 +3383,8 @@ Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 X-Generator: KBabel 1.3.1
 Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && (n%100<10 || n%100>=20) ? 1 : 2
-', true, NULL, NULL, 9, 0, 0, NULL, 31, 3, NULL, 'lt.po', NULL, NULL, '2005-06-06 08:59:54.232379', 652, NULL);
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (21, 5, 98, NULL, '
+', true, NULL, NULL, 9, 0, 0, NULL, 31, NULL, 'lt.po', NULL, NULL, '2005-06-06 08:59:54.232379', 652, NULL);
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (21, 5, 98, NULL, '
     Translators, if you are not familiar with the PO format, gettext
     documentation is worth reading, especially sections dedicated to
     this format, e.g. by running:
@@ -3398,8 +3407,8 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-2
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2
-', true, NULL, NULL, 9, 0, 0, NULL, 31, 3, NULL, 'cs.po', NULL, NULL, '2005-06-06 08:59:54.2394', 619, NULL);
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (22, 5, 129, NULL, '  translation of fi.po to Finnish
+', true, NULL, NULL, 9, 0, 0, NULL, 31, NULL, 'cs.po', NULL, NULL, '2005-06-06 08:59:54.2394', 619, NULL);
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (22, 5, 129, NULL, '  translation of fi.po to Finnish
   mozilla translation
 
     Translators, if you are not familiar with the PO format, gettext
@@ -3425,8 +3434,8 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n != 1
-', true, NULL, NULL, 9, 0, 0, NULL, 31, 2, NULL, 'fi.po', NULL, NULL, '2005-06-06 08:59:54.242018', 637, NULL);
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (23, 5, 148, NULL, '
+', true, NULL, NULL, 9, 0, 0, NULL, 31, NULL, 'fi.po', NULL, NULL, '2005-06-06 08:59:54.242018', 637, NULL);
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (23, 5, 148, NULL, '
     Translators, if you are not familiar with the PO format, gettext
     documentation is worth reading, especially sections dedicated to
     this format, e.g. by running:
@@ -3449,8 +3458,8 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=1; plural=0
-', true, NULL, NULL, 3, 0, 0, NULL, 31, 1, NULL, 'gl.po', NULL, NULL, '2005-06-06 08:59:54.258136', 649, NULL);
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (24, 5, 196, NULL, '
+', true, NULL, NULL, 3, 0, 0, NULL, 31, NULL, 'gl.po', NULL, NULL, '2005-06-06 08:59:54.258136', 649, NULL);
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (24, 5, 196, NULL, '
     Translators, if you are not familiar with the PO format, gettext
     documentation is worth reading, especially sections dedicated to
     this format, e.g. by running:
@@ -3473,8 +3482,8 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=EUC-JP
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=1; plural=0
-', true, NULL, NULL, 9, 0, 0, NULL, 31, 1, NULL, 'ja.po', NULL, NULL, '2005-06-06 08:59:54.233769', 595, NULL);
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (25, 5, 387, NULL, '
+', true, NULL, NULL, 9, 0, 0, NULL, 31, NULL, 'ja.po', NULL, NULL, '2005-06-06 08:59:54.233769', 595, NULL);
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (25, 5, 387, NULL, '
     Translators, if you are not familiar with the PO format, gettext
     documentation is worth reading, especially sections dedicated to
     this format, e.g. by running:
@@ -3499,8 +3508,8 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n != 1
-', true, NULL, NULL, 6, 0, 0, NULL, 31, 2, NULL, 'es.po', NULL, NULL, '2005-06-06 08:59:54.251898', 604, NULL);
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (28, 4, 454, NULL, ' Xhosa translation for evolution
+', true, NULL, NULL, 6, 0, 0, NULL, 31, NULL, 'es.po', NULL, NULL, '2005-06-06 08:59:54.251898', 604, NULL);
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (28, 4, 454, NULL, ' Xhosa translation for evolution
  Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
  This file is distributed under the same license as the evolution package.
  FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
@@ -3515,8 +3524,8 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n != 1
-', true, NULL, NULL, 0, 0, 0, NULL, 31, 2, NULL, 'xh.po', NULL, NULL, '2005-06-15 19:26:21.919196', NULL, NULL);
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (29, 4, 196, NULL, ' Japanese translation for evolution
+', true, NULL, NULL, 0, 0, 0, NULL, 31, NULL, 'xh.po', NULL, NULL, '2005-06-15 19:26:21.919196', NULL, NULL);
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (29, 4, 196, NULL, ' Japanese translation for evolution
  Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
  This file is distributed under the same license as the evolution package.
  FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
@@ -3531,7 +3540,7 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=1; plural=0
-', true, NULL, NULL, 0, 0, 1, NULL, 13, 1, NULL, 'ja.po', NULL, NULL, '2005-10-11 23:08:01.899322', 695, NULL);
+', true, NULL, NULL, 0, 0, 1, NULL, 13, NULL, 'ja.po', NULL, NULL, '2005-10-11 23:08:01.899322', 695, NULL);
 
 
 ALTER TABLE pofile ENABLE TRIGGER ALL;
@@ -9209,6 +9218,7 @@ INSERT INTO teamparticipation (id, team, person) VALUES (98, 62, 62);
 INSERT INTO teamparticipation (id, team, person) VALUES (99, 63, 63);
 INSERT INTO teamparticipation (id, team, person) VALUES (100, 59, 63);
 INSERT INTO teamparticipation (id, team, person) VALUES (101, 64, 12);
+INSERT INTO teamparticipation (id, team, person) VALUES (102, 65, 65);
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;
@@ -9216,28 +9226,28 @@ ALTER TABLE teamparticipation ENABLE TRIGGER ALL;
 
 ALTER TABLE ticket DISABLE TRIGGER ALL;
 
-INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (1, 11, 'Firefox cannot render Bank Site', 'Hello, I''m trying to access http://www.citibank.com/ and the page is not rendering correctly. Is there a setting I can use to get it right? Thanks.', NULL, NULL, 4, NULL, NULL, 10, 10, '2005-09-05 18:46:07.392021', '2005-09-05 18:46:07.392021', NULL, NULL, NULL, NULL, NULL, NULL, '''m'':8B ''get'':28B ''set'':23B ''tri'':9B ''use'':26B ''bank'':4A ''page'':15B ''site'':5A ''hello'':6B ''right'':30B ''thank'':31B ''access'':11B ''cannot'':2A ''render'':3A,18B ''correct'':19B ''firefox'':1A ''www.citibank.com'':12B');
-INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (2, 12, 'Problem showing the SVG demo on W3C site', 'Hi! I''m trying to learn about SVG but I can''t get it to work at all in firefox. Maybe there is a plugin? Help! Thanks.', NULL, NULL, 4, NULL, NULL, 10, 10, '2005-09-05 18:47:27.657124', '2005-09-05 18:47:27.657124', NULL, NULL, NULL, NULL, NULL, NULL, '''m'':11B ''hi'':9B ''get'':21B ''svg'':4A,16B ''tri'':12B ''w3c'':7A ''demo'':5A ''help'':34B ''mayb'':29B ''show'':2A ''site'':8A ''work'':24B ''learn'':14B ''thank'':35B ''plugin'':33B ''firefox'':28B ''problem'':1A');
-INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (3, 16, 'Firefox is slow and consumes too much RAM', 'I''m running on a 486 with 32 MB ram. And Firefox is slow! What should I do?', NULL, 16, NULL, 1, 1, 30, 10, '2005-09-05 19:46:22.786269', '2005-09-05 19:46:22.786269', NULL, NULL, '2005-09-05 20:00:58.913139', '2005-09-05 20:00:58.913139', '2005-09-05 20:00:58.913139', NULL, '''m'':10B ''32'':16B ''mb'':17B ''486'':14B ''ram'':8A,18B ''run'':11B ''much'':7A ''slow'':3A,22B ''consum'':5A ''firefox'':1A,20B');
-INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (4, 16, 'Firefox loses focus and gets stuck', 'Every now and then I can''t type anything in the fields on a web form, and I have to click my mouse in the URL bar. Is that normal?', NULL, NULL, 4, NULL, NULL, 10, 10, '2005-09-05 20:03:10.967079', '2005-09-05 20:03:10.967079', NULL, NULL, NULL, NULL, NULL, NULL, '''bar'':33B ''get'':5A ''url'':32B ''web'':21B ''form'':22B ''lose'':2A ''mous'':29B ''type'':14B ''anyth'':15B ''click'':27B ''everi'':7B ''field'':18B ''focus'':3A ''stuck'':6A ''normal'':36B ''firefox'':1A');
-INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (5, 12, 'Installation failed', 'I can''t install Ubuntu, it fails to find my CD-ROM drive.', NULL, NULL, NULL, 1, NULL, 10, 10, '2005-10-13 09:08:27.006633', '2005-10-13 09:08:27.006633', NULL, NULL, NULL, NULL, NULL, NULL, '''cd'':14B ''rom'':15B ''fail'':2A,9B ''find'':11B ''drive'':16B ''cd-rom'':13B ''instal'':1A,6B ''ubuntu'':7B');
-INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (6, 12, 'Newly installed plug-in doesn''t seem to be used', 'I''ve installed a new plug-in in Firefox, but it doesn''t seem to be used.', NULL, NULL, 4, NULL, NULL, 10, 10, '2005-10-14 12:24:14.271257', '2005-10-14 12:24:14.271257', NULL, NULL, '2005-10-14 12:25:21.508923', NULL, NULL, NULL, '''ve'':13B ''new'':16B ''use'':11A,29B ''plug'':4A,18B ''seem'':8A,26B ''doesn'':6A,24B ''newli'':1A ''instal'':2A,14B ''firefox'':21B ''plug-in'':3A,17B');
-INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (7, 16, 'Slow system', 'I get really poor hard drive performance.', NULL, NULL, NULL, 1, NULL, 10, 10, '2005-10-14 13:27:35.664194', '2005-10-14 13:27:35.664194', NULL, NULL, '2005-10-14 13:28:11.554476', NULL, NULL, NULL, '''get'':4B ''hard'':7B ''poor'':6B ''slow'':1A ''drive'':8B ''realli'':5B ''system'':2A ''perform'':9B');
-INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (8, 12, 'Installation of Java Runtime Environment for Mozilla', 'When opening http://www.gotomypc.com/ with Mozilla, a java run time ennvironment plugin is requested.
+INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer) VALUES (1, 11, 'Firefox cannot render Bank Site', 'Hello, I''m trying to access http://www.citibank.com/ and the page is not rendering correctly. Is there a setting I can use to get it right? Thanks.', NULL, NULL, 4, NULL, NULL, 10, 10, '2005-09-05 18:46:07.392021', '2005-09-05 18:46:07.392021', NULL, NULL, NULL, NULL, NULL, NULL, '''m'':8B ''get'':28B ''set'':23B ''tri'':9B ''use'':26B ''bank'':4A ''page'':15B ''site'':5A ''hello'':6B ''right'':30B ''thank'':31B ''access'':11B ''cannot'':2A ''render'':3A,18B ''correct'':19B ''firefox'':1A ''www.citibank.com'':12B', NULL);
+INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer) VALUES (2, 12, 'Problem showing the SVG demo on W3C site', 'Hi! I''m trying to learn about SVG but I can''t get it to work at all in firefox. Maybe there is a plugin? Help! Thanks.', NULL, NULL, 4, NULL, NULL, 10, 10, '2005-09-05 18:47:27.657124', '2005-09-05 18:47:27.657124', NULL, NULL, NULL, NULL, NULL, NULL, '''m'':11B ''hi'':9B ''get'':21B ''svg'':4A,16B ''tri'':12B ''w3c'':7A ''demo'':5A ''help'':34B ''mayb'':29B ''show'':2A ''site'':8A ''work'':24B ''learn'':14B ''thank'':35B ''plugin'':33B ''firefox'':28B ''problem'':1A', NULL);
+INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer) VALUES (3, 16, 'Firefox is slow and consumes too much RAM', 'I''m running on a 486 with 32 MB ram. And Firefox is slow! What should I do?', NULL, 16, NULL, 1, 1, 30, 10, '2005-09-05 19:46:22.786269', '2005-09-05 19:46:22.786269', NULL, NULL, '2005-09-05 20:00:58.913139', '2005-09-05 20:00:58.913139', '2005-09-05 20:00:58.913139', NULL, '''m'':10B ''32'':16B ''mb'':17B ''486'':14B ''ram'':8A,18B ''run'':11B ''much'':7A ''slow'':3A,22B ''consum'':5A ''firefox'':1A,20B', NULL);
+INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer) VALUES (4, 16, 'Firefox loses focus and gets stuck', 'Every now and then I can''t type anything in the fields on a web form, and I have to click my mouse in the URL bar. Is that normal?', NULL, NULL, 4, NULL, NULL, 10, 10, '2005-09-05 20:03:10.967079', '2005-09-05 20:03:10.967079', NULL, NULL, NULL, NULL, NULL, NULL, '''bar'':33B ''get'':5A ''url'':32B ''web'':21B ''form'':22B ''lose'':2A ''mous'':29B ''type'':14B ''anyth'':15B ''click'':27B ''everi'':7B ''field'':18B ''focus'':3A ''stuck'':6A ''normal'':36B ''firefox'':1A', NULL);
+INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer) VALUES (5, 12, 'Installation failed', 'I can''t install Ubuntu, it fails to find my CD-ROM drive.', NULL, NULL, NULL, 1, NULL, 10, 10, '2005-10-13 09:08:27.006633', '2005-10-13 09:08:27.006633', NULL, NULL, NULL, NULL, NULL, NULL, '''cd'':14B ''rom'':15B ''fail'':2A,9B ''find'':11B ''drive'':16B ''cd-rom'':13B ''instal'':1A,6B ''ubuntu'':7B', NULL);
+INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer) VALUES (6, 12, 'Newly installed plug-in doesn''t seem to be used', 'I''ve installed a new plug-in in Firefox, but it doesn''t seem to be used.', NULL, NULL, 4, NULL, NULL, 10, 10, '2005-10-14 12:24:14.271257', '2005-10-14 12:24:14.271257', NULL, NULL, '2005-10-14 12:25:21.508923', NULL, NULL, NULL, '''ve'':13B ''new'':16B ''use'':11A,29B ''plug'':4A,18B ''seem'':8A,26B ''doesn'':6A,24B ''newli'':1A ''instal'':2A,14B ''firefox'':21B ''plug-in'':3A,17B', NULL);
+INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer) VALUES (7, 16, 'Slow system', 'I get really poor hard drive performance.', NULL, NULL, NULL, 1, NULL, 10, 10, '2005-10-14 13:27:35.664194', '2005-10-14 13:27:35.664194', NULL, NULL, '2005-10-14 13:28:11.554476', NULL, NULL, NULL, '''get'':4B ''hard'':7B ''poor'':6B ''slow'':1A ''drive'':8B ''realli'':5B ''system'':2A ''perform'':9B', NULL);
+INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer) VALUES (8, 12, 'Installation of Java Runtime Environment for Mozilla', 'When opening http://www.gotomypc.com/ with Mozilla, a java run time ennvironment plugin is requested.
 
 1) The plugin finder service indicates that JRE is available
 2) next screen indicates JRE "not available" and requests "manual install"
 3) clicking on "manual install" open java web site.......
 
 Question: what after?
-.......I have downloaded two available linux files "linux (self extracting)" and "linux RPM (self extracting)".', NULL, NULL, NULL, 1, 1, 10, 10, '2006-07-20 20:21:38.853569', '2006-07-20 20:21:38.853569', NULL, NULL, '2006-07-20 20:52:07.054216', NULL, NULL, NULL, '''1'':21B ''2'':31B ''3'':42B ''jre'':28B,35B ''rpm'':66B ''run'':15B ''two'':57B ''web'':49B ''file'':60B ''java'':3A,14B,48B ''next'':32B ''open'':9B,47B ''self'':62B,67B ''site'':50B ''time'':16B ''avail'':30B,37B,58B ''click'':43B ''indic'':26B,34B ''linux'':59B,61B,65B ''finder'':24B ''instal'':1A,41B,46B ''manual'':40B,45B ''plugin'':18B,23B ''runtim'':4A ''screen'':33B ''servic'':25B ''environ'':5A ''extract'':63B,68B ''mozilla'':7A,12B ''request'':20B,39B ''download'':56B ''ennviron'':17B ''question'':51B ''www.gotomypc.com'':10B');
-INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (9, 12, 'mailto: problem in webpage', 'I am not able to open my email client if i click on a mailto: link in a webpage in Firefox 1.5.0.4 (ubuntu dapper).
+.......I have downloaded two available linux files "linux (self extracting)" and "linux RPM (self extracting)".', NULL, NULL, NULL, 1, 1, 10, 10, '2006-07-20 20:21:38.853569', '2006-07-20 20:21:38.853569', NULL, NULL, '2006-07-20 20:52:07.054216', NULL, NULL, NULL, '''1'':21B ''2'':31B ''3'':42B ''jre'':28B,35B ''rpm'':66B ''run'':15B ''two'':57B ''web'':49B ''file'':60B ''java'':3A,14B,48B ''next'':32B ''open'':9B,47B ''self'':62B,67B ''site'':50B ''time'':16B ''avail'':30B,37B,58B ''click'':43B ''indic'':26B,34B ''linux'':59B,61B,65B ''finder'':24B ''instal'':1A,41B,46B ''manual'':40B,45B ''plugin'':18B,23B ''runtim'':4A ''screen'':33B ''servic'':25B ''environ'':5A ''extract'':63B,68B ''mozilla'':7A,12B ''request'':20B,39B ''download'':56B ''ennviron'':17B ''question'':51B ''www.gotomypc.com'':10B', NULL);
+INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer) VALUES (9, 12, 'mailto: problem in webpage', 'I am not able to open my email client if i click on a mailto: link in a webpage in Firefox 1.5.0.4 (ubuntu dapper).
 
 Earlier I could do this but since balsa was installed and then uninstalled, things have not been the same. balsa used to start when a mailto: link was clicked on a webpage. balsa is an email client bundled with dapper.
 
-I am using thunderbird as the default email client or wish that it becomes default again.', NULL, 16, NULL, 1, 1, 20, 10, '2006-07-20 20:24:52.3877', '2006-07-20 20:56:35.442839', NULL, NULL, '2006-07-20 20:49:47.551344', '2006-07-20 20:56:35.442839', NULL, NULL, '''abl'':8B ''use'':49B,71B ''link'':20B,55B ''open'':10B ''sinc'':35B ''wish'':79B ''balsa'':36B,48B,61B ''becom'':82B ''bundl'':66B ''click'':16B,57B ''could'':31B ''email'':12B,64B,76B ''start'':51B ''thing'':42B ''client'':13B,65B,77B ''dapper'':28B,68B ''instal'':38B ''mailto'':1A,19B,54B ''ubuntu'':27B ''webpag'':4A,23B,60B ''1.5.0.4'':26B ''default'':75B,83B ''earlier'':29B ''firefox'':25B ''problem'':2A ''uninstal'':41B ''thunderbird'':72B');
-INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (10, 12, 'Play DVDs in Totem', 'How do you play DVDs in Totem..........?', NULL, NULL, NULL, 1, NULL, 10, 10, '2006-07-20 20:34:29.635511', '2006-07-20 20:34:29.635511', NULL, NULL, '2006-07-20 20:53:53.684848', NULL, NULL, NULL, '''dvds'':2A,9B ''play'':1A,8B ''totem'':4A,11B');
-INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (11, 12, 'Continue playing after shutdown', 'I want to be able to shut down and start a mp3 where I left off, because some mp3s are 16++ hours long.', NULL, NULL, NULL, 1, NULL, 10, 10, '2006-07-20 20:40:50.467875', '2006-07-20 20:40:50.467875', NULL, NULL, '2006-07-20 20:48:24.975495', NULL, NULL, NULL, '''16'':25B ''abl'':9B ''mp3'':16B ''hour'':26B ''left'':19B ''long'':27B ''mp3s'':23B ''play'':2A ''shut'':11B ''want'':6B ''start'':14B ''continu'':1A ''shutdown'':4A');
+I am using thunderbird as the default email client or wish that it becomes default again.', NULL, 16, NULL, 1, 1, 20, 10, '2006-07-20 20:24:52.3877', '2006-07-20 20:56:35.442839', NULL, NULL, '2006-07-20 20:49:47.551344', '2006-07-20 20:56:35.442839', NULL, NULL, '''abl'':8B ''use'':49B,71B ''link'':20B,55B ''open'':10B ''sinc'':35B ''wish'':79B ''balsa'':36B,48B,61B ''becom'':82B ''bundl'':66B ''click'':16B,57B ''could'':31B ''email'':12B,64B,76B ''start'':51B ''thing'':42B ''client'':13B,65B,77B ''dapper'':28B,68B ''instal'':38B ''mailto'':1A,19B,54B ''ubuntu'':27B ''webpag'':4A,23B,60B ''1.5.0.4'':26B ''default'':75B,83B ''earlier'':29B ''firefox'':25B ''problem'':2A ''uninstal'':41B ''thunderbird'':72B', NULL);
+INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer) VALUES (10, 12, 'Play DVDs in Totem', 'How do you play DVDs in Totem..........?', NULL, NULL, NULL, 1, NULL, 10, 10, '2006-07-20 20:34:29.635511', '2006-07-20 20:34:29.635511', NULL, NULL, '2006-07-20 20:53:53.684848', NULL, NULL, NULL, '''dvds'':2A,9B ''play'':1A,8B ''totem'':4A,11B', NULL);
+INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer) VALUES (11, 12, 'Continue playing after shutdown', 'I want to be able to shut down and start a mp3 where I left off, because some mp3s are 16++ hours long.', NULL, NULL, NULL, 1, NULL, 10, 10, '2006-07-20 20:40:50.467875', '2006-07-20 20:40:50.467875', NULL, NULL, '2006-07-20 20:48:24.975495', NULL, NULL, NULL, '''16'':25B ''abl'':9B ''mp3'':16B ''hour'':26B ''left'':19B ''long'':27B ''mp3s'':23B ''play'':2A ''shut'':11B ''want'':6B ''start'':14B ''continu'':1A ''shutdown'':4A', NULL);
 
 
 ALTER TABLE ticket ENABLE TRIGGER ALL;
@@ -9252,13 +9262,13 @@ ALTER TABLE ticketbug ENABLE TRIGGER ALL;
 
 ALTER TABLE ticketmessage DISABLE TRIGGER ALL;
 
-INSERT INTO ticketmessage (id, ticket, message) VALUES (1, 6, 12);
-INSERT INTO ticketmessage (id, ticket, message) VALUES (2, 7, 13);
-INSERT INTO ticketmessage (id, ticket, message) VALUES (3, 11, 18);
-INSERT INTO ticketmessage (id, ticket, message) VALUES (4, 9, 19);
-INSERT INTO ticketmessage (id, ticket, message) VALUES (5, 8, 20);
-INSERT INTO ticketmessage (id, ticket, message) VALUES (6, 10, 21);
-INSERT INTO ticketmessage (id, ticket, message) VALUES (7, 9, 22);
+INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (1, 6, 12, 30, 10);
+INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (2, 7, 13, 30, 10);
+INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (3, 11, 18, 30, 10);
+INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (4, 9, 19, 30, 10);
+INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (5, 8, 20, 30, 10);
+INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (6, 10, 21, 30, 10);
+INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (7, 9, 22, 30, 10);
 
 
 ALTER TABLE ticketmessage ENABLE TRIGGER ALL;
@@ -9351,6 +9361,7 @@ INSERT INTO validpersonorteamcache (id) VALUES (60);
 INSERT INTO validpersonorteamcache (id) VALUES (61);
 INSERT INTO validpersonorteamcache (id) VALUES (63);
 INSERT INTO validpersonorteamcache (id) VALUES (64);
+INSERT INTO validpersonorteamcache (id) VALUES (65);
 
 
 ALTER TABLE validpersonorteamcache ENABLE TRIGGER ALL;
@@ -9462,6 +9473,7 @@ INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (49, 50, 'https://wiki.
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (50, 51, 'https://wiki.ubuntu.com/', 'HelgeKreutzmann');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (51, 52, 'https://wiki.ubuntu.com/', 'NoPrivilegesPerson');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (52, 62, 'https://wiki.ubuntu.com/', 'BugWatchUpdater');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (53, 65, 'https://wiki.ubuntu.com/', 'SupportTrackerJanitor');
 
 
 ALTER TABLE wikiname ENABLE TRIGGER ALL;

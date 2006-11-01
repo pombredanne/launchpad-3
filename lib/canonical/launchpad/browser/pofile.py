@@ -21,6 +21,7 @@ from zope.publisher.browser import FileUpload
 
 from canonical.cachedproperty import cachedproperty
 from canonical.lp.dbschema import RosettaFileFormat
+from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     IPOFile, IPOExportRequestSet, ITranslationImportQueue,
     UnexpectedFormData, NotFoundError)
@@ -211,6 +212,9 @@ class POFileUploadView(POFileView):
         if self.request.method != 'POST' or self.user is None:
             # The form was not submitted or the user is not logged in.
             return
+
+        if not helpers.check_permission('launchpad.Admin', self.context):
+            raise UnexpectedFormData('Only admins can use this form.')
 
         file = self.form['file']
 

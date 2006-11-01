@@ -51,10 +51,6 @@ class IPOFile(IRosettaStats):
 
     owner = Attribute("The owner for this pofile.")
 
-    pluralforms = Int(
-        title=u'The published number of plural forms this PO file has.',
-        required=True)
-
     variant = Attribute("The language variant for this PO file.")
 
     path = TextLine(

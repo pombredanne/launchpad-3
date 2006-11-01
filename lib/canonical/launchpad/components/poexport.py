@@ -239,7 +239,6 @@ class OutputMsgSet:
 
             # If there are fewer translations than the PO file's header
             # specifies, add blank ones.
-
             while len(self.msgstrs) < self.pofile.header.nplurals:
                 self.msgstrs.append('')
         else:
@@ -477,10 +476,19 @@ def export_rows(rows, pofile_output, force_utf8=False):
                 header['PO-Revision-Date'] = (
                     submission.datecreated.strftime('%F %R%z'))
 
-            # If the POFile does not have any active plural form, we don't
-            # export the plural form header because it will not be used.
-            if ((not row.potemplate.hasPluralMessage()) and
-                ('Plural-Forms' in header)):
+            if row.potemplate.hasPluralMessage():
+                if row.pofile.language.pluralforms is not None:
+                    # We have pluralforms information for this language so we
+                    # update the header to be sure that we use the language
+                    # information from our database instead of use the one
+                    # that we got from upstream. We check this information so
+                    # we are sure it's valid.
+                    header['Plural-Forms'] = 'nplurals=%d; plural=(%s);' % (
+                        row.pofile.language.pluralforms,
+                        row.pofile.language.pluralexpression)
+            elif 'Plural-Forms' in header:
+                # There is no plural forms here but we have a 'Plural-Forms'
+                # header, we remove it because it's not needed.
                 del header['Plural-Forms']
 
             # Create the new PO file.
@@ -530,8 +538,8 @@ def export_rows(rows, pofile_output, force_utf8=False):
             # There is an active submission, the plural form is higher than
             # the last imported plural form.
 
-            if (row.popluralforms is not None and
-                row.translationpluralform >= row.popluralforms):
+            if (row.pofile.language.pluralforms is not None and
+                row.translationpluralform >= row.pofile.language.pluralforms):
                 # The plural form index is higher than the number of plural
                 # form for this language, so we should ignore it.
                 continue
