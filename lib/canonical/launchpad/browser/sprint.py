@@ -37,7 +37,7 @@ from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import (
     SpecificationFilter, SpecificationPriority, SpecificationSort,
     SpecificationStatus)
-from canonical.widgets.textwidgets import LocalisedDateTimeWidget
+from canonical.widgets.textwidgets import LocalDateTimeWidget
 
 
 
@@ -189,8 +189,8 @@ class SprintAddView(LaunchpadFormView):
     field_names = ['name', 'title', 'summary', 'home_page', 'driver',
                    'time_zone', 'time_starts', 'time_ends', 'address']
     custom_widget('summary', TextAreaWidget, height=5)
-    custom_widget('time_starts', LocalisedDateTimeWidget)
-    custom_widget('time_ends', LocalisedDateTimeWidget)
+    custom_widget('time_starts', LocalDateTimeWidget)
+    custom_widget('time_ends', LocalDateTimeWidget)
     custom_widget('address', TextAreaWidget, height=3)
 
     sprint = None
@@ -238,8 +238,8 @@ class SprintEditView(LaunchpadEditFormView):
     field_names = ['name', 'title', 'summary', 'home_page', 'driver',
                    'time_zone', 'time_starts', 'time_ends', 'address']
     custom_widget('summary', TextAreaWidget, height=5)
-    custom_widget('time_starts', LocalisedDateTimeWidget)
-    custom_widget('time_ends', LocalisedDateTimeWidget)
+    custom_widget('time_starts', LocalDateTimeWidget)
+    custom_widget('time_ends', LocalDateTimeWidget)
     custom_widget('address', TextAreaWidget, height=3)
 
     def setUpWidgets(self):

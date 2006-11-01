@@ -14,7 +14,7 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces import ISprintAttendance
 from canonical.launchpad.webapp import (
     LaunchpadFormView, action, canonical_url, custom_widget)
-from canonical.widgets.textwidgets import LocalisedDateTimeWidget
+from canonical.widgets.textwidgets import LocalDateTimeWidget
 
 
 class BaseSprintAttendanceAddView(LaunchpadFormView):
@@ -64,8 +64,8 @@ class SprintAttendanceAttendView(BaseSprintAttendanceAddView):
                 
     schema = ISprintAttendance
     field_names = ['time_starts', 'time_ends']
-    custom_widget('time_starts', LocalisedDateTimeWidget)
-    custom_widget('time_ends', LocalisedDateTimeWidget)
+    custom_widget('time_starts', LocalDateTimeWidget)
+    custom_widget('time_ends', LocalDateTimeWidget)
 
     @action(_('Register'), name='register')
     def register_action(self, action, data):
@@ -81,8 +81,8 @@ class SprintAttendanceRegisterView(BaseSprintAttendanceAddView):
 
     schema = ISprintAttendance
     field_names = ['attendee', 'time_starts', 'time_ends']
-    custom_widget('time_starts', LocalisedDateTimeWidget)
-    custom_widget('time_ends', LocalisedDateTimeWidget)
+    custom_widget('time_starts', LocalDateTimeWidget)
+    custom_widget('time_ends', LocalDateTimeWidget)
 
     @action(_('Register'), name='register')
     def register_action(self, action, data):

@@ -17,11 +17,35 @@ class StrippedTextWidget(TextWidget):
         return TextWidget._toFieldValue(self, input.strip())
 
 
-class LocalisedDateTimeWidget(TextWidget):
+class LocalDateTimeWidget(TextWidget):
+    """A datetime widget that uses a particular time zone."""
 
     timeZoneName = 'UTC'
 
     def _toFieldValue(self, input):
+        """Convert a string to a datetime value.
+
+          >>> from zope.publisher.browser import TestRequest
+          >>> from zope.schema import Field
+          >>> field = Field(__name__='foo', title=u'Foo')
+          >>> widget = LocalDateTimeWidget(field, TestRequest())
+
+        The widget converts an empty string to the missing value:
+
+          >>> widget._toFieldValue('') == field.missing_value
+          True
+
+        By default, the date is interpreted as UTC:
+
+          >>> print widget._toFieldValue('2006-01-01 12:00:00')
+          2006-01-01 12:00:00+00:00
+
+        But it will handle other time zones:
+
+          >>> widget.timeZoneName = 'Australia/Perth'
+          >>> print widget._toFieldValue('2006-01-01 12:00:00')
+          2006-01-01 12:00:00+08:00
+        """
         if input == self._missing:
             return self.context.missing_value
         try:
@@ -36,6 +60,32 @@ class LocalisedDateTimeWidget(TextWidget):
         return tz.localize(dt)
         
     def _toFormValue(self, value):
+        """Convert a date to its string representation.
+
+          >>> from zope.publisher.browser import TestRequest
+          >>> from zope.schema import Field
+          >>> field = Field(__name__='foo', title=u'Foo')
+          >>> widget = LocalDateTimeWidget(field, TestRequest())
+
+        The 'missing' value is converted to an empty string:
+
+          >>> widget._toFormValue(field.missing_value)
+          u''
+
+        Dates are displayed without an associated time zone:
+
+          >>> dt = datetime.datetime(2006, 1, 1, 12, 0, 0,
+          ...                        tzinfo=pytz.timezone('UTC'))
+          >>> widget._toFormValue(dt)
+          '2006-01-01 12:00:00'
+
+        If the date value will be converted to the widget's time zone
+        before being displayed:
+
+          >>> widget.timeZoneName = 'Australia/Perth'
+          >>> widget._toFormValue(dt)
+          '2006-01-01 20:00:00'
+        """
         if value == self.context.missing_value:
             return self._missing
         tz = pytz.timezone(self.timeZoneName)
