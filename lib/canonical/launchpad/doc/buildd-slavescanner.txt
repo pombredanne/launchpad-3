@@ -162,7 +162,7 @@ slave has the requested file in cache.
   ...         print info
   ...         return (True, info)
   ...     def build(self, buildid, buildtype, chroot, filemap, args):
-  ...         info = 'OkSlaves BUILDING'
+  ...         info = 'OkSlave BUILDING'
   ...         print info
   ...         return ('BuildStatus.Building', info)
 
@@ -672,7 +672,7 @@ for further details:
 
   >>> bm.startBuild(real_buildergroup, builder2, bqItem3)
   OkSlave has everything
-  OkSlaves BUILDING
+  OkSlave BUILDING
 
 Check chroot assertion:
 
