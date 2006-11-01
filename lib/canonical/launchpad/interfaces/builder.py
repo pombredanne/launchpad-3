@@ -151,6 +151,8 @@ class IBuildQueue(Interface):
     builddependsindep = Attribute("SourcePackageRelease builddependsindep")
     buildduration = Attribute("The duration of the build in progress")
     manual = Attribute("whether or not the record was rescored manually")
+    is_trusted = Attribute(
+        "whether or not the record corresponds to an trusted build")
 
     def manualScore(value):
         """Manually set a score value to a queue item and lock it."""
@@ -194,10 +196,13 @@ class IBuildQueueSet(Interface):
         is empty, but the result isn't might to be used in call site.
         """
 
-    def calculateCandidates(archreleases, state):
-        """Return the candidates for building
+    def calculateCandidates(archreleases):
+        """Return the candidates for building (pending builds)
 
-        The result is a unsorted list of buildqueue items in a given state
-        within a given distroarchrelease group.
+        Return all the buildqueue items corresponding to the pending
+        build records and across archive (it includes untrusted requests,
+        i.e., PPA).
+
+        The result is sorted by descending lastscore.
         """
 

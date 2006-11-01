@@ -518,9 +518,8 @@ class BuilddMaster:
     def sanitiseAndScoreCandidates(self):
         """Iter over the buildqueue entries sanitising it."""
         # Get the current build job candidates
-        state = dbschema.BuildStatus.NEEDSBUILD
         bqset = getUtility(IBuildQueueSet)
-        candidates = bqset.calculateCandidates(self._archreleases, state)
+        candidates = bqset.calculateCandidates(self._archreleases)
         if not candidates:
             return
 
@@ -561,9 +560,8 @@ class BuilddMaster:
         """Split out each build by the processor it is to be built for then
         order each sublist by its score. Get the current build job candidates
         """
-        state = dbschema.BuildStatus.NEEDSBUILD
         bqset = getUtility(IBuildQueueSet)
-        candidates = bqset.calculateCandidates(self._archreleases, state)
+        candidates = bqset.calculateCandidates(self._archreleases)
         if not candidates:
             return {}
 
@@ -591,17 +589,19 @@ class BuilddMaster:
             self._logger.debug("No builder found.")
             return
 
-        builder = builders.firstAvailable()
-
-        while builder is not None and len(queueItems) > 0:
+        while len(queueItems) > 0:
             build_candidate = queueItems.pop(0)
-            spr = build_candidate.build.sourcepackagerelease
+            # retrieve the first available builder according the context
+            builder = builders.firstAvailable(
+                is_trusted=build_candidate.is_trusted)
+            if not builder:
+                break
             # either dispatch or mark obsolete builds (sources superseded
             # or removed) as SUPERSEDED.
+            spr = build_candidate.build.sourcepackagerelease
             if (spr.publishings and spr.publishings[0].status <=
                 dbschema.PackagePublishingStatus.PUBLISHED):
                 self.startBuild(builders, builder, build_candidate)
-                builder = builders.firstAvailable()
             else:
                 self._logger.debug(
                     "Build %s SUPERSEDED, queue item %s REMOVED"

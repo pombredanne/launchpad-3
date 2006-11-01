@@ -31,6 +31,7 @@ from canonical.launchpad.interfaces import (
     IHasBuildRecords, IBuildSet
     )
 from canonical.launchpad.webapp import urlappend
+from canonical.lp.dbschema import BuildStatus
 
 
 class TimeoutHTTPConnection(httplib.HTTPConnection):
@@ -193,6 +194,11 @@ class BuildQueue(SQLBase):
         return self.build.distroarchrelease
 
     @property
+    def is_trusted(self):
+        """See IBuildQueue"""
+        return self.build.is_trusted
+
+    @property
     def urgency(self):
         """See IBuildQueue"""
         return self.build.sourcepackagerelease.urgency
@@ -279,24 +285,19 @@ class BuildQueueSet(object):
             "buildqueue.build IN %s" % ','.join(sqlvalues(build_ids)),
             prejoins=['builder'])
 
-    def calculateCandidates(self, archreleases, state):
+    def calculateCandidates(self, archreleases):
         """See IBuildQueueSet."""
         if not archreleases:
             return None
-        clauses = ["build.distroarchrelease=%d" % d.id for d in archreleases]
-        clause = " OR ".join(clauses)
 
-        return BuildQueue.select("""
+        arch_ids = [dar.id for dar in archreleases]
+        query = """
             buildqueue.build = build.id AND
-            build.buildstate = %d AND
-            build.distroarchrelease = distroarchrelease.id AND
-            distroarchrelease.distrorelease = distrorelease.id AND
-            distrorelease.distribution = distribution.id AND
-            build.archive = distribution.main_archive AND
-            buildqueue.builder IS NULL AND (%s)
-            """ % (state.value, clause),
-                clauseTables=['Build',
-                              'DistroArchRelease',
-                              'DistroRelease',
-                              'Distribution'])
+            build.buildstate = %s AND
+            build.distroarchrelease IN %s AND
+            buildqueue.builder IS NULL
+            """ % sqlvalues(BuildStatus.NEEDSBUILD, arch_ids)
+
+        return BuildQueue.select(
+            query, clauseTables=['Build'])
 

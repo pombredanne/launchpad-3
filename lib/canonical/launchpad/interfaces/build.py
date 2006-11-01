@@ -55,6 +55,9 @@ class IBuild(Interface):
     calculated_buildstart = Attribute(
         "Emulates a buildstart timestamp by calculating it from "
         "datebuilt - buildduration.")
+    is_trusted = Attribute(
+        "whether or not the record corresponds to a source targeted to "
+        "the distribution main_archive (archive == distro.main_archive).")
 
     def retry():
         """Restore the build record to its initial state.

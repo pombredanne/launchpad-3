@@ -629,26 +629,30 @@ class BuilderGroup:
         # to use this content. For now we just ensure it's stored.
         queueItem.lastscore = 0
 
-    def firstAvailable(self):
+    def firstAvailable(self, is_trusted=False):
         """Return the first available builder slave.
 
-        Refuse failed and MANUAL MODE slaves. Return None if there is none
-        available.
+        Refuse failed and MANUAL MODE slaves.
+        Control whether or not the builder should be *trusted* via
+        'is_trusted' given argument, by default *untrusted* build
+        are returned.
+        Return None if there is none available.
         """
         for builder in self.builders:
             if builder.builderok:
                 if builder.manual:
                     continue
-
+                if builder.trusted != is_trusted:
+                    continue
                 # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
                 slave = removeSecurityProxy(builder.slave)
-
                 try:
                     slavestatus = slave.status()
                 except (xmlrpclib.Fault, socket.error), info:
                     continue
                 if slavestatus[0] == BuilderStatus.IDLE:
                     return builder
+
         return None
 
 

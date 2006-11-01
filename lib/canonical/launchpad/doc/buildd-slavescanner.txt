@@ -40,6 +40,7 @@ Mock Builder, a class to emulate the Builder behaviour:
   ...         self.url = 'http://fake:0000'
   ...         slave.urlbase = self.url
   ...         self.name = name
+  ...         self.trusted = False
   ...     def failbuilder(self, reason):
   ...         self.builderok = False
   ...         self.failnotes = reason
@@ -242,9 +243,6 @@ slave has the requested file in cache.
   >>> buildergroup.firstAvailable() is builder2
   True
 
-  >>> buildergroup.countAvailable() is 1
-  True
-
   Stub classes to emulate Build and BuildQueue
 
   >>> from canonical.launchpad.interfaces import IBuildSet
@@ -267,6 +265,7 @@ following states: FAILEDTOBUILD and CHROOTWAIT
   ...         self.pocket = tmp_build.pocket
   ...         self.title = 'Mock Build'
   ...         self.notification_sent = False
+  ...         self.is_trusted = tmp_build.is_trusted
   ...     @property
   ...     def distrorelease(self):
   ...         return self.distroarchrelease.distrorelease
@@ -290,6 +289,7 @@ following states: FAILEDTOBUILD and CHROOTWAIT
   ...         self.files = []
   ...         self.component_name = "main"
   ...         self.archhintlist = ""
+  ...         self.is_trusted = build.is_trusted
   ...     def destroySelf(self):
   ...         pass
 
@@ -637,7 +637,7 @@ goes nothing.
   >>> from canonical.lp.dbschema import PackagePublishingStatus
 
   >>> class MockBG:
-  ...     def firstAvailable(self):
+  ...     def firstAvailable(self, is_trusted=False):
   ...         return "Something which is not None"
 
   >>> class MockProcessor:
