@@ -341,11 +341,6 @@ ul#applicationchooser {
   background-repeat: no-repeat;
   background-position: top right;
 }
-/* This used to be ul#applicationchooser li */
-ul#applicationchooser li {
-  display: inline;
-}
-/* This used to be ul#applicationchooser li a, but not all tabs have <a>s */
 ul#applicationchooser li {
   float: left;
   display: block;
@@ -360,11 +355,11 @@ ul#applicationchooser li {
   color: #000000;
   padding: 8px 0px 0px 0px;
 }
-ul#applicationchooser li a:hover {
+ul#applicationchooser li:hover {
   background-position: 0px 0px;
   text-decoration: none;
 }
-ul#applicationchooser li a#applicationchooser_selected {
+ul#applicationchooser li#applicationchooser_selected {
   background-position: -200px 0px;
 }
 #portlets {
@@ -417,7 +412,7 @@ ul#applicationchooser li a#applicationchooser_selected {
   clear: both;
   float: left;
 }
-#actions li a {
+#portlets .portlet div, #actions li a {
   float: left;
   width: 180px;
   height: auto !important;
@@ -426,6 +421,11 @@ ul#applicationchooser li a#applicationchooser_selected {
   padding: 3px 6px 3px 6px !important;
   color: #717171;
   border-bottom: 1px solid #D2D2D2;
+}
+#portlets .portlet div {
+  width: 172px !important;
+  border-left: 4px solid #F4F4FC;
+  border-right: 4px solid #F4F4FC;
 }
 #actions li a:hover {
   background-color: #EBEBEB;
@@ -765,10 +765,10 @@ a.open, a.closed {
 #mainarea.tab-overview ul#applicationchooser {
   background-image: url(mainarea_topright.gif);
 }
-#mainarea.tab-overview ul#applicationchooser li a {
+#mainarea.tab-overview ul#applicationchooser li {
   background-image: url(appchoose_a.gif);
 }
-#mainarea.tab-overview ul#applicationchooser li.tab-overview a {
+#mainarea.tab-overview ul#applicationchooser li.tab-overview {
   background-position: -200px 0px !important;
 }
 #mainarea.tab-overview #portlets .portlet.active h2 a,
@@ -788,6 +788,10 @@ a.open, a.closed {
 #mainarea.tab-overview div#portlets div.portlet.active ul li a:hover {
   background-color: #FEFCF0;
 }
+#mainarea.tab-overview #portlets .portlet.active div {
+  border-left: 4px solid #FEFCF0;
+  border-right: 4px solid #FEFCF0;
+}
 /* tab-code */
 #mainarea.tab-code div.x {
   background-image: url(mainarea_tab1_top.gif);
@@ -799,10 +803,10 @@ a.open, a.closed {
 #mainarea.tab-code ul#applicationchooser {
   background-image: url(mainarea_tab1_topright.gif);
 }
-#mainarea.tab-code ul#applicationchooser li a {
+#mainarea.tab-code ul#applicationchooser li {
   background-image: url(appchoose_tab1_a.gif);
 }
-#mainarea.tab-code ul#applicationchooser li.tab-code a {
+#mainarea.tab-code ul#applicationchooser li.tab-code {
   background-position: -200px 0px !important;
 }
 #mainarea.tab-code #portlets .portlet.active h2 a,
@@ -821,6 +825,10 @@ a.open, a.closed {
 #mainarea.tab-code div#portlets div.portlet.active ul li a,
 #mainarea.tab-code div#portlets div.portlet.active ul li a:hover {
   background-color: #FCF4F2;
+}
+#mainarea.tab-code #portlets .portlet.active div {
+  border-left: 4px solid #FCF4F2;
+  border-right: 4px solid #FCF4F2;
 }
 /* tab-bugs */
 #mainarea.tab-bugs div.x {
@@ -856,6 +864,10 @@ a.open, a.closed {
 #mainarea.tab-bugs div#portlets div.portlet.active ul li a:hover {
   background-color: #FEFCF0;
 }
+#mainarea.tab-bugs #portlets .portlet.active div {
+  border-left: 4px solid #FEFCF0;
+  border-right: 4px solid #FEFCF0;
+}
 /* tab-features */
 #mainarea.tab-features div.x {
   background-image: url(mainarea_tab4_top.gif);
@@ -867,10 +879,10 @@ a.open, a.closed {
 #mainarea.tab-features ul#applicationchooser {
   background-image: url(mainarea_tab4_topright.gif);
 }
-#mainarea.tab-features ul#applicationchooser li a {
+#mainarea.tab-features ul#applicationchooser li {
   background-image: url(appchoose_tab4_a.gif);
 }
-#mainarea.tab-features ul#applicationchooser li.tab-features a {
+#mainarea.tab-features ul#applicationchooser li.tab-features {
   background-position: -200px 0px !important;
 }
 #mainarea.tab-features #portlets .portlet.active h2 a,
@@ -901,10 +913,10 @@ a.open, a.closed {
 #mainarea.tab-translations ul#applicationchooser {
   background-image: url(mainarea_tab5_topright.gif);
 }
-#mainarea.tab-translations ul#applicationchooser li a {
+#mainarea.tab-translations ul#applicationchooser li {
   background-image: url(appchoose_tab5_a.gif);
 }
-#mainarea.tab-translations ul#applicationchooser li.tab-translations a {
+#mainarea.tab-translations ul#applicationchooser li.tab-translations {
   background-position: -200px 0px !important;
 }
 #mainarea.tab-translations #portlets .portlet.active h2 a,
@@ -924,6 +936,10 @@ a.open, a.closed {
 #mainarea.tab-translations div#portlets div.portlet.active ul li a:hover {
   background-color: #F1F9FC;
 }
+#mainarea.tab-translations #portlets .portlet.active div {
+  border-left: 4px solid #f1f9fc;
+  border-right: 4px solid #f1f9fc;
+}
 /* tab-support */
 #mainarea.tab-support div.x {
   background-image: url(mainarea_tab6_top.gif);
@@ -935,10 +951,10 @@ a.open, a.closed {
 #mainarea.tab-support ul#applicationchooser {
   background-image: url(mainarea_tab6_topright.gif);
 }
-#mainarea.tab-support ul#applicationchooser li a {
+#mainarea.tab-support ul#applicationchooser li {
   background-image: url(appchoose_tab6_a.gif);
 }
-#mainarea.tab-support ul#applicationchooser li.tab-support a {
+#mainarea.tab-support ul#applicationchooser li.tab-support {
   background-position: -200px 0px !important;
 }
 #mainarea.tab-support #portlets .portlet.active h2 a,
@@ -957,6 +973,10 @@ a.open, a.closed {
 #mainarea.tab-support div#portlets div.portlet.active ul li a,
 #mainarea.tab-support div#portlets div.portlet.active ul li a:hover {
   background-color: #FEFCF0;
+}
+#mainarea.tab-support #portlets .portlet.active div {
+  border-left: 4px solid #FEFCF0;
+  border-right: 4px solid #FEFCF0;
 }
 
 /* Matthew's code for laying out the columns: */
