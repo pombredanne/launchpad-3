@@ -1,0 +1,145 @@
+= Buildd Dispatching =
+
+  >>> import transaction
+  >>> import logging
+  >>> logger = logging.getLogger()
+  >>> logger.setLevel(logging.DEBUG)
+
+The buildd dispatching basically consists of finding a available
+Buildd-slave in IDLE state, push required files to it, then request
+the it to start a build procedure.
+
+Those tasks are implemented by the BuilddMaster and BuilderGroup
+classes.
+
+  >>> from canonical.buildmaster.master import BuilddMaster
+  >>> bm = BuilddMaster(logger, transaction)
+
+Setup the test builder:
+
+  >>> from canonical.buildd.ftests import BuilddSlaveTestSetup
+  >>> BuilddSlaveTestSetup().setUp()
+
+Setup a suitable chroot for Hoary i386:
+
+  >>> from canonical.librarian.interfaces import ILibrarianClient
+  >>> from StringIO import StringIO
+  >>> librarian_client = getUtility(ILibrarianClient)
+
+  >>> content = 'anything'
+  >>> alias_id = librarian_client.addFile(
+  ...    'foo.tar.gz', len(content), StringIO(content), 'text/plain')
+
+  >>> from canonical.launchpad.interfaces import (
+  ...     IDistributionSet, ILibraryFileAliasSet)
+  >>> from canonical.lp.dbschema import PackagePublishingPocket
+
+  >>> hoary_i386 = getUtility(IDistributionSet)['ubuntu']['hoary']['i386']
+
+  >>> pocket = PackagePublishingPocket.RELEASE
+  >>> chroot = getUtility(ILibraryFileAliasSet)[alias_id]
+  >>> pc = hoary_i386.addOrUpdateChroot(pocket=pocket, chroot=chroot)
+
+Activate builders present in sampledata, we need to be logged in as a
+member of launchpad-buildd-admin:
+
+  >>> from canonical.launchpad.ftests import login
+  >>> login('celso.providelo@canonical.com')
+
+Set IBuilder.builderok of all present builders:
+
+  >>> from canonical.launchpad.interfaces import IBuilderSet
+  >>> builder_set = getUtility(IBuilderSet)
+
+  >>> builder_set.count()
+  2
+
+  >>> for b in builder_set:
+  ...     b.builderok = True
+
+Flush database changes, otherwise they won't be seem inside
+BuildMaster context:
+
+  >>> from canonical.database.sqlbase import flush_database_updates
+  >>> flush_database_updates()
+
+Setup BuilddMaster class:
+
+  >>> bm.addDistroArchRelease(hoary_i386)
+  >>> bm.setupBuilders(hoary_i386)
+
+Check if there builders available:
+
+  >>> available_builder = (
+  ...     bm._archreleases[hoary_i386]['builders'].firstAvailable(
+  ...     is_trusted=True))
+  >>> available_builder.name
+  u'bob'
+  >>> available_builder.trusted
+  True
+
+Verify how the inexistent builder was excluded, marked as failed:
+
+  >>> excluded_builder = builder_set['frog']
+  >>> excluded_builder.builderok
+  False
+  >>> excluded_builder.failnotes
+  u'<socket.error instance at ...>'
+
+Now let's check the build candidates which will be considered:
+
+  >>> jobs_by_proc = bm.sortAndSplitByProcessor()
+
+jobs_by_proc is a dictionary which keys are the initialised
+distroarchreleases 'processorfamily's, in this case
+hoary_i386.processorfamily only:
+
+  >>> proc = hoary_i386.processorfamily
+  >>> jobs = jobs_by_proc[proc]
+
+And the value is a list of BuildQueue records:
+
+  >>> len(jobs)
+  1
+
+The single BuildQueue found is a trusted pending build:
+
+  >>> job = jobs[0]
+
+  >>> job.build.buildstate.name
+  'NEEDSBUILD'
+  >>> job.builder is None
+  True
+  >>> job.buildstart is None
+  True
+  >>> job.is_trusted
+  True
+
+Update the SourcePackageReleaseFile corresponding to this job:
+
+  >>> content = 'anything'
+  >>> alias_id = librarian_client.addFile(
+  ...    'foo.dsc', len(content), StringIO(content), 'application/dsc')
+
+  >>> sprf = job.build.sourcepackagerelease.files[0]
+  >>> from zope.security.proxy import removeSecurityProxy
+  >>> naked_sprf = removeSecurityProxy(sprf)
+  >>> naked_sprf.libraryfile = getUtility(ILibraryFileAliasSet)[alias_id]
+  >>> flush_database_updates()
+
+Check the dispatching method itself:
+
+  >>> bm.dispatchByProcessor(proc, jobs)
+  >>> flush_database_updates()
+
+Verify if the job (BuildQueue) was updated appropriately:
+
+  >>> job.builder.name
+  u'bob'
+  >>> job.buildstart
+  CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+
+
+Shutdown builder:
+
+  >>> BuilddSlaveTestSetup().tearDown()
