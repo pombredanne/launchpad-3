@@ -582,12 +582,12 @@ class BuilddMaster:
 
     def dispatchByProcessor(self, proc, queueItems):
         """Dispatch Jobs according specific processor"""
-        self.getLogger().debug("dispatchByProcessor(%s, %d queueItem(s))"
-                               % (proc.name, len(queueItems)))
+        self._logger.debug("dispatchByProcessor(%s, %d queueItem(s))"
+                           % (proc.name, len(queueItems)))
         try:
             builders = notes[proc]["builders"]
         except KeyError:
-            self._logger.debug("No builder found.")
+            self._logger.warn("No initialised builders found.")
             return
 
         while len(queueItems) > 0:
@@ -617,14 +617,14 @@ class BuilddMaster:
         """Find the list of files and give them to the builder."""
         pocket = queueItem.build.pocket
 
-        self.getLogger().debug("startBuild(%s, %s, %s, %s)"
-                               % (builder.url, queueItem.name,
-                                  queueItem.version, pocket.title))
+        self._logger.debug("startBuild(%s, %s, %s, %s)"
+                           % (builder.url, queueItem.name,
+                              queueItem.version, pocket.title))
 
         # ensure build has the need chroot
         chroot = queueItem.archrelease.getChroot(pocket)
         if chroot is None:
-            self.getLogger().warn(
+            self._logger.warn(
                 "Missing CHROOT for %s/%s/%s/%s"
                 % (queueItem.build.distrorelease.distribution.name,
                    queueItem.build.distrorelease.name,
