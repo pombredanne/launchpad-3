@@ -1021,7 +1021,7 @@ class BugTaskEditView(GeneralFormView):
                 # The user entered a binary package name which got
                 # mapped to a source package.
                 self.request.response.addNotification(
-                    "'%(entered_package)s' is a binary package, this bug has"
+                    "'%(entered_package)s' is a binary package. This bug has"
                     " been assigned to its source package '%(real_package)s'"
                     " instead.",
                     entered_package=entered_package_name,
