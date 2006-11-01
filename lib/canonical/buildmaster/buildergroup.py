@@ -629,36 +629,6 @@ class BuilderGroup:
         # to use this content. For now we just ensure it's stored.
         queueItem.lastscore = 0
 
-    def countAvailable(self):
-        """Return the number of available builder slaves.
-
-        Return the number of not failed, accessible and IDLE slave.
-        Do not count failed and MANUAL MODE slaves.
-        """
-        count = 0
-        for builder in self.builders:
-            if builder.builderok:
-                # refuse builders in MANUAL MODE
-                if builder.manual:
-                    self.logger.debug("Builder %s wasn't count due it is in "
-                                      "MANUAL MODE." % builder.url)
-                    continue
-
-                # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
-                slave = removeSecurityProxy(builder.slave)
-
-                try:
-                    slavestatus = slave.status()
-                except (xmlrpclib.Fault, socket.error), info:
-                    self.logger.debug("Builder %s wasn't counted due to (%s)."
-                                      % (builder.url, info))
-                    continue
-
-                # ensure slave is IDLE
-                if slavestatus[0] == BuilderStatus.IDLE:
-                    count += 1
-        return count
-
     def firstAvailable(self):
         """Return the first available builder slave.
 
