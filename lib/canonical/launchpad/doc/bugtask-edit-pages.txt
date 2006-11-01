@@ -61,7 +61,7 @@ changed to the corresponding source package.
 
     >>> for notification in edit_view.request.response.notifications:
     ...     print notification.message
-    'linux-2.6.12' is a binary package, this bug has been assigned to
+    'linux-2.6.12' is a binary package. This bug has been assigned to
     its source package 'linux-source-2.6.15' instead.
     The bug contacts for linux-source-2.6.15 (Ubuntu) have been
     subscribed to this bug.
