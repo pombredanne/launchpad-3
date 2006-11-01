@@ -100,8 +100,8 @@
                         <div>
                       </form>
                       <p id="application-summary">
-                        Launchpad&rsquo;s bug tracker allows collaboration between software teams
-                        on bug reports and fixes.
+                        Launchpad&rsquo;s bug tracker allows collaboration
+                        between software teams on bug reports and fixes.
                       </p>
                       <ul class="buttons">
                         <li class="tour"><a href="+tour">Take a tour</a></li>
@@ -123,6 +123,7 @@
                           <h2>Recently fixed</h2>
                         </div>
                       </div><!--columns-->
+                      <div class="clear"></div>
                     </div><!--z-->
                   </div><!--y-->
                 </div><!--x-->

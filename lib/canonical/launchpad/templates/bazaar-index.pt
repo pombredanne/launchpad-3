@@ -60,6 +60,42 @@
                           value="Find a Project"
                         />
                       </form>
+                      <p id="application-summary">
+                        Launchpad lets you track branches of any product that
+                        uses the <a href="http://bazaar-vcs.org/">Bazaar</a>
+                        version control system &mdash; and imports many
+                        <abbr>CVS</abbr>, <abbr>SVN</abbr>, and git projects,
+                        so you can use Bazaar with those too.
+                      </p>
+                      <div class="columns">
+                        <div class="three column left">
+                          <h2>Recent imports</h2>
+                          <ul>
+                            <li>foo</li>
+                            <li>bar</li>
+                            <li>hum</li>
+                            <li>baz</li>
+                          </ul>
+                        </div>
+                        <div class="three column center">
+                          <h2>Recently registered</h2>
+                          <ul>
+                            <li>foo</li>
+                            <li>bar</li>
+                            <li>hum</li>
+                            <li>baz</li>
+                          </ul>
+                        </div>
+                        <div class="three column right">
+                          <h2>Recently changed</h2>
+                          <ul>
+                            <li>foo</li>
+                            <li>bar</li>
+                            <li>hum</li>
+                            <li>baz</li>
+                          </ul>
+                        </div>
+                      </div>
                       <div id="application-footer">
                         <div>
                           <tal:branches replace="nothing">12345</tal:branches>
@@ -76,6 +112,7 @@
                           branches associated with bug reports
                         </div>
                       </div>
+                      <div class="clear"></div>
                     </div><!--z-->
                   </div><!--y-->
                 </div><!--x-->

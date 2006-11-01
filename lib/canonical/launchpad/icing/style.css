@@ -756,17 +756,17 @@ a.open, a.closed {
 }
 /* tab-overview */
 #mainarea.tab-overview div.x {
-  background-image: url(mainarea_tab1_top.gif);
+  background-image: url(mainarea_top.gif);
 }
 #mainarea.tab-overview div.y {
-  background-image: url(mainarea_tab1_topleft.gif);
+  background-image: url(mainarea_topleft.gif);
 }
 #mainarea.tab-overview div.z,
 #mainarea.tab-overview ul#applicationchooser {
-  background-image: url(mainarea_tab1_topright.gif);
+  background-image: url(mainarea_topright.gif);
 }
 #mainarea.tab-overview ul#applicationchooser li a {
-  background-image: url(appchoose_tab1_a.gif);
+  background-image: url(appchoose_a.gif);
 }
 #mainarea.tab-overview ul#applicationchooser li.tab-overview a {
   background-position: -200px 0px !important;
@@ -790,17 +790,17 @@ a.open, a.closed {
 }
 /* tab-code */
 #mainarea.tab-code div.x {
-  background-image: url(mainarea_tab2_top.gif);
+  background-image: url(mainarea_tab1_top.gif);
 }
 #mainarea.tab-code div.y {
-  background-image: url(mainarea_tab2_topleft.gif);
+  background-image: url(mainarea_tab1_topleft.gif);
 }
 #mainarea.tab-code div.z,
 #mainarea.tab-code ul#applicationchooser {
-  background-image: url(mainarea_tab2_topright.gif);
+  background-image: url(mainarea_tab1_topright.gif);
 }
 #mainarea.tab-code ul#applicationchooser li a {
-  background-image: url(appchoose_tab2_a.gif);
+  background-image: url(appchoose_tab1_a.gif);
 }
 #mainarea.tab-code ul#applicationchooser li.tab-code a {
   background-position: -200px 0px !important;
@@ -824,17 +824,17 @@ a.open, a.closed {
 }
 /* tab-bugs */
 #mainarea.tab-bugs div.x {
-  background-image: url(mainarea_tab3_top.gif);
+  background-image: url(mainarea_tab2_top.gif);
 }
 #mainarea.tab-bugs div.y {
-  background-image: url(mainarea_tab3_topleft.gif);
+  background-image: url(mainarea_tab2_topleft.gif);
 }
 #mainarea.tab-bugs div.z,
 #mainarea.tab-bugs ul#applicationchooser {
-  background-image: url(mainarea_tab3_topright.gif);
+  background-image: url(mainarea_tab2_topright.gif);
 }
 #mainarea.tab-bugs ul#applicationchooser li a {
-  background-image: url(appchoose_tab3_a.gif);
+  background-image: url(appchoose_tab2_a.gif);
 }
 #mainarea.tab-bugs ul#applicationchooser li.tab-bugs a {
   background-position: -200px 0px !important;
