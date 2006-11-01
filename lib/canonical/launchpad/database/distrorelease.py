@@ -1071,7 +1071,6 @@ class DistroRelease(SQLBase, BugTargetBase):
             parent_arch = self.parentrelease[arch.architecturetag]
             self._copy_binary_publishing_records(cur, arch, parent_arch)
         self._copy_lucille_config(cur)
-        self._copy_active_translations(cur)
 
         # Finally, flush the caches because we've altered stuff behind the
         # back of sqlobject.
@@ -1278,8 +1277,8 @@ class DistroRelease(SQLBase, BugTargetBase):
             INSERT INTO POFile (
                 potemplate, language, description, topcomment, header,
                 fuzzyheader, lasttranslator, currentcount, updatescount,
-                rosettacount, lastparsed, owner, pluralforms, variant, path,
-                exportfile, exporttime, datecreated, latestsubmission,
+                rosettacount, lastparsed, owner, variant, path, exportfile,
+                exporttime, datecreated, latestsubmission,
                 from_sourcepackagename)
             SELECT
                 pt2.id AS potemplate,
@@ -1294,7 +1293,6 @@ class DistroRelease(SQLBase, BugTargetBase):
                 pf1.rosettacount AS rosettacount,
                 pf1.lastparsed AS lastparsed,
                 pf1.owner AS owner,
-                pf1.pluralforms AS pluralforms,
                 pf1.variant AS variant,
                 pf1.path AS path,
                 pf1.exportfile AS exportfile,

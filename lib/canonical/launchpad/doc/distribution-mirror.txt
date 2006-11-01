@@ -246,7 +246,7 @@ Disabling a mirror causes it not to show up on the public mirror listings.
     >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_message)
     >>> msg['To']
-    'Mark Shuttleworth <mark@hbd.com>'
+    'mark@hbd.com'
     >>> valid_mirror.enabled
     False
 
@@ -339,7 +339,7 @@ To do that we use the getURLsToCheckUpdateness() of either
 MirrorDistroReleaseSource or MirrorDistroArchRelease. This method returns a
 dictionary mapping MirrorStatuses to URLs on that mirror. 
 
-The prober would then check, between all reachable URLs, which one has the
+The prober will then check, between all reachable URLs, which one has the
 status which corresponds to the most recent sync, and then set that as the
 mirror's status.
 
@@ -365,6 +365,16 @@ there were no recent uploads there.
     >>> [(status.name, url) for (status, url) in urls.items()]
     [('UP', u'http://foo.bar.com/pub/pool/main/a/alsa-utils/alsa-utils_1.0.9a-4.dsc')]
 
+If the mirror has no HTTP base url, we'll use the FTP one.
+
+    >>> naked_mirror = removeSecurityProxy(warty_mirror)
+    >>> http_url = naked_mirror.distribution_mirror.http_base_url
+    >>> naked_mirror.distribution_mirror.http_base_url = None
+    >>> naked_mirror.distribution_mirror.ftp_base_url = 'ftp://foo.bar.com/pub'
+    >>> urls = warty_mirror.getURLsToCheckUpdateness()
+    >>> [(status.name, url) for (status, url) in urls.items()]
+    [('UP', u'ftp://foo.bar.com/pub/pool/main/a/alsa-utils/alsa-utils_1.0.9a-4.dsc')]
+    >>> naked_mirror.distribution_mirror.http_base_url = http_url
 
 The same goes for the warty i386 mirror, in which we had one upload on
 2005-06-18 and two others on 2005-06-20. One slightly difference in this case
@@ -404,6 +414,17 @@ skip that upload.
       u'http://foo.bar.com/pub/pool/main/p/pmount/pmount_1.9-1_all.deb'),
      ('TWODAYSBEHIND',
       u'http://foo.bar.com/pub/pool/main/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb')]
+
+If the mirror has no HTTP base url, we'll use the FTP one.
+
+    >>> naked_mirror = removeSecurityProxy(warty_i386_mirror)
+    >>> http_url = naked_mirror.distribution_mirror.http_base_url
+    >>> naked_mirror.distribution_mirror.http_base_url = None
+    >>> naked_mirror.distribution_mirror.ftp_base_url = 'ftp://foo.bar.com/pub'
+    >>> urls = warty_i386_mirror.getURLsToCheckUpdateness()
+    >>> [(status.name, url) for (status, url) in urls.items()]
+    [('UP', u'ftp://foo.bar.com/pub/pool/main/l/linux-source-2.6.15/linux-2.6.12_2.6.12.20_i386.deb')]
+    >>> naked_mirror.distribution_mirror.http_base_url = http_url
 
 
 Running the prober script

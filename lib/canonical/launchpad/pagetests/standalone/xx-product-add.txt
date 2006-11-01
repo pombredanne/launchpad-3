@@ -29,7 +29,7 @@ Tests if the validator is working for the URL fields
 >>> user_browser.getControl('Add').click()
 >>> user_browser.url
 'http://launchpad.dev/products/+new'
->>> '<p class="error message">An error occurred.</p>' in user_browser.contents
+>>> '<p class="error message">There is 1 error.</p>' in user_browser.contents
 True
 
 
@@ -57,7 +57,7 @@ Project.
 >>> anon_browser.open('http://launchpad.dev/products/testing')
 >>> 'This is a Test Product' in anon_browser.contents
 True
->>> '<h2>The Mozilla Project</h2>' in anon_browser.contents
+>>> 'The Mozilla Project' in anon_browser.contents
 True
 
 
@@ -112,7 +112,7 @@ Now let's try to insert a product with the same name (testing).
 >>> user_browser.getControl('Add').click()
 >>> user_browser.url
 'http://launchpad.dev/products/+new'
->>> '<p class="error message">An error occurred.</p>' in user_browser.contents
+>>> '<p class="error message">There is 1 error.</p>' in user_browser.contents
 True
 >>> ('testing is already in use by another product, project or distribution'
 ...     in user_browser.contents)
@@ -132,159 +132,36 @@ Traceback (most recent call last):
 LookupError:...
 
 
-And now, test with the Foo Bar user, who is a member of the vcs-imports
-team. This should fail suggesting an invalid owner, and the reviewed
-value should be on.
+And now, test with the David Allouche user, who is a member of the
+vcs-imports team. This should fail suggesting an invalid owner, and
+the reviewed value should be on.
 
-  >>> print http(r"""
-  ... POST /products/+new HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------367972547738338092465973618
-  ... 
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.name"
-  ... 
-  ... warpage
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.owner"
-  ... 
-  ... XXX
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.reviewed"
-  ... 
-  ... on
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.displayname"
-  ... 
-  ... dname
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.title"
-  ... 
-  ... title
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.summary"
-  ... 
-  ... summary
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.description"
-  ... 
-  ... description
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.homepageurl"
-  ... 
-  ... 
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.sourceforgeproject"
-  ... 
-  ... 
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.freshmeatproject"
-  ... 
-  ... 
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.wikiurl"
-  ... 
-  ... 
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.screenshotsurl"
-  ... 
-  ... 
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.downloadurl"
-  ... 
-  ... 
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.programminglang"
-  ... 
-  ... 
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... -----------------------------367972547738338092465973618--
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-          <p class="error message">An error occurred.</p>
-  ...
-  ...<input class="checkboxType" checked="checked" id="field.reviewed" name="field.reviewed" type="checkbox"  value="on"  />...
-  ...
+  >>> browser.addHeader('Authorization',
+  ...                   'Basic david.allouche@canonical.com:test')
+  >>> browser.open('http://launchpad.dev/products/+new')
+  >>> browser.getControl('Name', index=0).value = 'warpage'
+  >>> browser.getControl('Owner').value = 'XXX'
+  >>> browser.getControl('Display Name').value = 'dname'
+  >>> browser.getControl('Title').value = 'title'
+  >>> browser.getControl('Summary').value = 'summary'
+  >>> browser.getControl('Description').value = 'description'
+  >>> browser.getControl('Reviewed').click()
+  >>> browser.getControl('Add').click()
+  >>> print browser.url
+  http://launchpad.dev/products/+new
+
+  >>> '<p class="error message">There is 1 error.</p>' in browser.contents
+  True
+  >>> browser.getControl('Reviewed').selected
+  True
 
 
 And finally, submit a successful creation by an admin.
 
-  >>> print http(r"""
-  ... POST /products/+new HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------367972547738338092465973618
-  ... 
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.name"
-  ... 
-  ... warpage
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.owner"
-  ... 
-  ... sabdfl
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.reviewed"
-  ... 
-  ... on
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.displayname"
-  ... 
-  ... dname
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.title"
-  ... 
-  ... title
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.summary"
-  ... 
-  ... summary
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.description"
-  ... 
-  ... description
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.homepageurl"
-  ... 
-  ... 
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.sourceforgeproject"
-  ... 
-  ... 
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.freshmeatproject"
-  ... 
-  ... 
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.wikiurl"
-  ... 
-  ... 
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.screenshotsurl"
-  ... 
-  ... 
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.downloadurl"
-  ... 
-  ... 
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.programminglang"
-  ... 
-  ... 
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... -----------------------------367972547738338092465973618--
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  Location: warpage
-  ...
+  >>> browser.getControl('Owner').value = 'sabdfl'
+  >>> browser.getControl('Add').click()
+  >>> print browser.url
+  http://launchpad.dev/products/warpage
 
 And now check it was correctly created:
 

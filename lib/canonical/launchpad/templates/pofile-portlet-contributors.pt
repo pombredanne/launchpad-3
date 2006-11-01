@@ -1,4 +1,4 @@
-<div class="portlet" condition="context/contributors">
+<div class="portlet" tal:condition="context/contributors">
 
   <h2>Contributors</h2>
 
