@@ -31,7 +31,10 @@ check_launchpad_on_merge: build check importdcheck hctcheck
 	$(MAKE) -C sourcecode check_for_launchpad PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
-check_merge: build check importdcheck hctcheck
+check_not_a_ui_merge:
+	[ ! -f do-not-merge-to-mainline.txt ]
+
+check_merge: check_not_a_ui_merge build check importdcheck hctcheck
 	# Work around the current idiom of 'make check' getting too long
 	# because of hct and related tests. note that this is a short
 	# term solution, the long term solution will need to be 
@@ -41,6 +44,15 @@ check_merge: build check importdcheck hctcheck
 	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
+check_merge_edge: check_no_dbupdates check_merge
+	# Allow the merge if there are no database updates, including
+	# database patches or datamigration scripts (which should live
+	# in database/schema/pending. Used for maintaining the
+	# edge.lauchpad.net branch.
+
+check_no_dbupdates:
+	[ `PYTHONPATH= bzr status | grep database/schema/ | wc -l` -eq 0 ]
+
 hctcheck: build
 	env PYTHONPATH=$(PYTHONPATH) \
 	    ${PYTHON} -t ./test_on_merge.py -vv \
@@ -48,7 +60,7 @@ hctcheck: build
 
 importdcheck: build
 	env PYTHONPATH=$(PYTHONPATH) \
-	${PYTHON} -t ./lib/importd/test_all.py
+	${PYTHON} -t ./lib/importd/test_all.py "$$TESTFILTER"
 
 check: build
 	# Run all tests. test_on_merge.py takes care of setting up the
@@ -118,8 +130,7 @@ start: inplace stop
 # so killing them after is a race condition.
 stop: build
 	@ LPCONFIG=${LPCONFIG} ${PYTHON} \
-	    utilities/killservice.py librarian trebuchet \
-                                     buildsequencer launchpad
+	    utilities/killservice.py librarian buildsequencer launchpad
 
 harness:
 	PYTHONPATH=lib python -i lib/canonical/database/harness.py

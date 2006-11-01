@@ -3,7 +3,7 @@
      tal:define="current_task view/currentBugTask;
                  url current_task/fmt:url">
 
-  <h4>Web links:</h4>
+  <h2>Web links</h2>
 
   <div class="portletBody">
     <div class="portletContent">
@@ -18,8 +18,7 @@
           </small>
         </li>
       </ul>
-
-      <ul style="text-align: right">
+      <ul>
         <li class="add">
           <a tal:attributes="href string:$url/+addurl">Add</a>
         </li>

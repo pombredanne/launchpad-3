@@ -63,7 +63,8 @@ view:
 We now subscribe Sample Person to the Extension Manager Upgrades spec
 and check the list of interested people:
 
-  >>> ext_spec.subscribe(sampleperson)
+  >>> essential=False
+  >>> ext_spec.subscribe(sampleperson, essential)
   <SpecificationSubscription at ...>
   >>> view = getView(ubz, '+temp-meeting-export', request)
   >>> view.initialize()
@@ -112,7 +113,7 @@ sprint:
   >>> link = js_spec.sprint_links[0]
   >>> link.sprint == ubz
   True
-  >>> ubz.acceptSpecificationLinks([link.id])
+  >>> ubz.acceptSpecificationLinks([link.id], sabdfl)
   0
 
 Even though the Javascript spec has now been accepted for the sprint now,
@@ -130,7 +131,7 @@ of specs:
   >>> link = ext_spec.sprint_links[0]
   >>> link.sprint == ubz
   True
-  >>> ubz.declineSpecificationLinks([link.id])
+  >>> ubz.declineSpecificationLinks([link.id], sabdfl)
   0
 
   >>> view = getView(ubz, '+temp-meeting-export', request)

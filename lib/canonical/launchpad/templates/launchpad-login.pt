@@ -49,18 +49,45 @@
         <div tal:condition="not: view/login_success" tal:omit-tag>
         
           <!-- 3. just registered successfully: -->
-          <div tal:condition="view/registration_success" tal:omit-tag>
+          <tal:registered condition="view/registration_success">
             <h1>Registration mail sent</h1>
-            <p>Your registration URL has been sent to
-            <code tal:content="view/email">email@domain.com</code>.
-            Once you have followed the link included in that email
-            your Launchpad account will be activated.</p>
-            
-            <p>Thanks for signing up and welcome to the Launchpad community.
-            We are interested in your feedback, so feel free to join
-            <code>#launchpad</code> on <code>irc.freenode.net</code>
-            and share your ideas for improving Launchpad.</p>
-          </div>
+            <p>
+              Instructions on completing your registration have been sent to
+              <code tal:content="view/email">email@domain.com</code>.
+            </p>
+            <div class="discreet">
+              <p>
+                If you don&rsquo;t receive the instructions within a few
+                minutes, it might be because:
+              </p>
+              <ul>
+                <li>
+                  <p>
+                    Your mail provider uses &ldquo;greylisting&rdquo; to reduce
+                    spam. If so, you&rsquo;ll need to wait an hour or two
+                    for the message to arrive.
+                  </p>
+                </li>
+                <li>
+                  <p>
+                    Your mail provider mistakenly blocks messages from Launchpad.
+                    Try signing up using a service like
+                    <a href="http://gmail.com/">Gmail</a> or
+                    <a href="http://mail.yahoo.com/">Yahoo Mail</a>.
+                    If that works, complain to your usual mail provider.
+                  </p>
+                </li>
+                <li>
+                  <p>
+                    If neither of those work, Launchpad might be broken somehow.
+                    Let us know on the <a href=
+                    "https://lists.canonical.com/mailman/listinfo/launchpad-users"
+                    >launchpad-users mailing list</a> (requires subscription).
+                  </p>
+                </li>
+              </ul>
+            </div>
+          </tal:registered>
 
           <div tal:condition="not: view/registration_success" tal:omit-tag>
             <!-- 4a. didn't try to log in last time: -->
@@ -70,7 +97,7 @@
             <!-- 4b. just tried to log in and failed: -->
             <div tal:condition="view/login_error">
               <h1>Your login was unsuccessful</h1>
-              <p class="error" tal:content="view/login_error" />
+              <p class="error message" tal:content="view/login_error" />
             </div>
             <!-- 4. might want to log in: -->
             <p>
@@ -133,7 +160,7 @@
               tal:omit-tag
             >
               <h1>Your registration was unsuccessful</h1>
-              <p class="error"
+              <p class="error message"
                  tal:content="structure view/registration_error" />
             </div>
             <!-- 5. might want to register: -->
@@ -152,10 +179,11 @@
               <table>
                 <tr>
                   <th>
-                    <label for="email">E-mail address:</label>
+                    <label for="registeremail">E-mail address:</label>
                   </th>
                   <td>
                     <input type="text" size="30" name="loginpage_email"
+                      id="registeremail"
                       tal:attributes="value view/email|nothing"
                     />
                   </td>

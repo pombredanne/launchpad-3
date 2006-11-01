@@ -5,135 +5,241 @@
 __metaclass__ = type
 
 __all__ = [
-    'TicketTargetView',
     'ManageSupportContactView',
+    'SearchTicketsView',
+    'TicketTargetFacetMixin',
+    'TicketTargetLatestTicketsView',
+    'TicketTargetSearchMyTicketsView',
+    'TicketTargetTraversalMixin',
+    'TicketTargetSupportMenu',
     ]
 
-from zope.component import getUtility
-from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget
+from urllib import urlencode
 
+from zope.app.form import CustomWidgetFactory
+from zope.app.form.browser import DropdownWidget
+from zope.app.pagetemplate import ViewPageTemplateFile
+
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IManageSupportContacts, IPerson)
-from canonical.launchpad.webapp import GeneralFormView, canonical_url
-from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.cachedproperty import cachedproperty
+    IDistribution, IManageSupportContacts, ISearchTicketsForm, ITicketTarget,
+    NotFoundError)
+from canonical.launchpad.webapp import (
+    action, canonical_url, custom_widget, redirection, stepthrough,
+    ApplicationMenu, GeneralFormView, LaunchpadFormView, Link)
+from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.lp.dbschema import TicketStatus
+from canonical.widgets.itemswidget import LabeledMultiCheckBoxWidget
 
 
-class TicketTargetView(LaunchpadView):
-
-    def initialize(self):
-        mapping = {'name': self.context.displayname}
-        if IPerson.providedBy(self.context):
-            self.title = _('Support requests involving $name', mapping=mapping)
-        else:
-            self.title = _('Support requests for $name', mapping=mapping)
-
-    @cachedproperty
-    def tickets(self):
-        # Cache this and avoid having to regenerate it for each template
-        # and view test of the query results.
-        return list(self.context.tickets())
-
-    def categories(self):
-        """This organises the tickets related to this target by
-        "category", where a category corresponds to a particular ticket
-        status. It also determines the order of those categories, and the
-        order of the tickets inside each category. This is used for the
-        +tickets view.
-
-        It is also used in IPerson, which is not an ITicketTarget but
-        which does have a IPerson.tickets(). In this case, it will also
-        detect which set of tickets you want to see. The options are:
-
-         - all tickets (self.context.tickets())
-         - created by this person (self.context.created_tickets)
-         - assigned to this person (self.context.assigned_tickets)
-         - subscribed by this person (self.context.subscriber_tickets)
-
-        """
-        if not IPerson.providedBy(self.context):
-            tickets = self.tickets
-        else:
-            # for a person, we need to figure out which set of tickets to be
-            # showing.
-
-            # XXX sabdfl 07/09/05 we need to discuss this in UBZ
-            # SteveA says:
-            # First, a collection of ideas for discussion:
-            #   the request actually has just the information needed for this,
-            #   but in a private variable request._traversed_names -- a list
-            #   of the names traversed.  So it would be better to check the
-            #   last element of that list to get the name.
-            #   Otherwise, perhaps view classes should know what name they are
-            #   registered for in zcml.
-            #   Otherwise, we can use some trivial subclasses of
-            #   TicketTargetView that each have a getTickets() method.  In
-            #   zcml, the appropriate subclass is registered.  This decouples
-            #   the name traversed to from the intent of what tickets should
-            #   be shown.
-            # Now, the best solution, moving forwards:
-            #   Either wait for the Zope 3 improvement I'm on the hook to
-            #   land that makes templates called "template" in view classes,
-            #   or include it manually like Zope 3 will do in the future.
-            #   Then, have different methods as entry-points for the different
-            #   pages.
-            #     self.created_tickets
-            #     self.assigned_tickets
-            #     self.answered_tickets
-            #     self.subscribed_tickets
-            #     self.tickets  # everything else.
-            #   Hook these up in zcml
-            #   using the class and attribute style of registing pages.
-            url = self.request.getURL()
-            if '+createdtickets' in url:
-                tickets = self.context.created_tickets
-            elif '+assignedtickets' in url:
-                tickets = self.context.assigned_tickets
-            elif '+answeredtickets' in url:
-                tickets = self.context.answered_tickets
-            elif '+subscribedtickets' in url:
-                tickets = self.context.subscribed_tickets
-            else:
-                tickets = self.tickets
-
-        categories = {}
-        for ticket in tickets:
-            if categories.has_key(ticket.status):
-                category = categories[ticket.status]
-            else:
-                category = {}
-                category['status'] = ticket.status
-                category['tickets'] = []
-                categories[ticket.status] = category
-            category['tickets'].append(ticket)
-        categories = categories.values()
-        return sorted(categories, key=lambda a: a['status'].value)
+class TicketTargetLatestTicketsView:
+    """View used to display the latest support requests on a ticket target."""
 
     @cachedproperty
     def getLatestTickets(self, quantity=5):
         """Return <quantity> latest tickets created for this target. This
         is used by the +portlet-latesttickets view.
         """
-        return list(self.context.tickets(quantity=quantity))
+        return self.context.searchTickets()[:quantity]
 
 
-class SupportContactTeamsWidget(MultiCheckBoxWidget):
-    """A checkbox widget that doesn't require a vocabulary when constructed.
+class SearchTicketsView(LaunchpadFormView):
+    """View that can filter the target's ticket in a batched listing.
 
-    We need this in order to use CustomWidgetFactory, since
-    MultiCheckBoxWidget expects the vocabulary as the second argument.
+    This view provides a search form to filter the displayed tickets.
     """
-    # Make the labels clickable.
-    _joinButtonToMessageTemplate = (
-        u'<label style="font-weight: normal">%s&nbsp;%s</label>')
 
-    def __init__(self, field, dunno, request):
-        # XXX: Don't know what the middle parameter is! Zope 3.2 change.
-        # -- StuartBishop 20060330
-        MultiCheckBoxWidget.__init__(
-            self, field, field.value_type.vocabulary, request)
+    schema = ISearchTicketsForm
+
+    custom_widget('status', LabeledMultiCheckBoxWidget,
+                  orientation='horizontal')
+    custom_widget('sort', DropdownWidget, cssClass='inlined-widget')
+
+    template = ViewPageTemplateFile('../templates/ticket-listing.pt')
+
+    # Set to true to display a column showing the ticket's target
+    displayTargetColumn = False
+
+    # Will contain the parameters used by searchResults
+    search_params = None
+
+    @property
+    def pagetitle(self):
+        """Page title."""
+        return self.pageheading
+
+    @property
+    def pageheading(self):
+        """Heading to display above the search results."""
+        replacements = dict(
+            context=self.context.displayname,
+            search_text=self.search_text)
+        # When there is only one status selected, we use a more precise title.
+        if len(self.status_filter) == 1:
+            replacements['status'] = list(self.status_filter)[0].title
+            if self.search_text:
+                return _('${status} support requests about "${search_text}" '
+                         'for ${context}', mapping=replacements)
+            else:
+                return _('${status} support requests for ${context}',
+                         mapping=replacements)
+        else:
+            if self.search_text:
+                return _('Support requests about "${search_text}" for '
+                         '${context}', mapping=replacements)
+            else:
+                return _('Support requests for ${context}',
+                         mapping=replacements)
+
+    @property
+    def empty_listing_message(self):
+        """Message displayed when there is no tickets matching the filter."""
+        replacements = dict(
+            context=self.context.displayname,
+            search_text=self.search_text)
+        # When there is only one status selected, we use a more precise title.
+        if len(self.status_filter) == 1:
+            replacements['status'] = list(self.status_filter)[0].title.lower()
+            if self.search_text:
+                return _('There are no ${status} support requests about '
+                         '"${search_text}" for ${context}.',
+                         mapping=replacements)
+            else:
+                return _('There are no ${status} support requests for '
+                         '${context}.', mapping=replacements)
+        else:
+            if self.search_text:
+                return _('There are no support requests about '
+                         '"${search_text}" for ${context} with the requested '
+                         'statuses.', mapping=replacements)
+            else:
+                return _('There are no support requests for ${context} with '
+                         'the requested statuses.', mapping=replacements)
+
+    def getDefaultFilter(self):
+        """Hook for subclass to provide a default search filter."""
+        return {}
+
+    @property
+    def search_text(self):
+        """Search text used by the filter."""
+        if self.search_params:
+            return self.search_params['search_text']
+        else:
+            return self.getDefaultFilter().get('search_text')
+
+    @property
+    def status_filter(self):
+        """Set of statuses to filter the search with."""
+        if self.search_params:
+            return set(self.search_params['status'])
+        else:
+            return self.getDefaultFilter().get('status', set())
+
+    def setUpWidgets(self):
+        """See LaunchpadFormView."""
+        LaunchpadFormView.setUpWidgets(self)
+        # Make sure that the default filter is displayed
+        # correctly in the widgets when not overriden by the user
+        for name, value in self.getDefaultFilter().items():
+            widget = self.widgets.get(name)
+            if widget and not widget.hasValidInput():
+                widget.setRenderedValue(value)
+
+    @action(_('Search'))
+    def search_action(self, action, data):
+        """Action executed when the user clicked the search button.
+
+        Saves the user submitted search parameters in an instance
+        attribute.
+        """
+        self.search_params = dict(self.getDefaultFilter())
+        self.search_params.update(**data)
+
+    def searchResults(self):
+        """Return the tickets corresponding to the search."""
+        if self.search_params is None:
+            # Search button wasn't clicked.
+            self.search_params = self.getDefaultFilter()
+
+        # The search parameters used is defined by the union of the fields
+        # present in ISearchTicketsForm (search_text, status, sort) and the
+        # ones defined in getDefaultFilter() which varies based on the
+        # concrete view class.
+        return BatchNavigator(
+            self.context.searchTickets(**self.search_params), self.request)
+
+    def displaySourcePackageColumn(self):
+        """We display the source package column only on distribution."""
+        return IDistribution.providedBy(self.context)
+
+    def formatSourcePackageName(self, ticket):
+        """Format the source package name related to ticket.
+
+        Return an URL to the support page of the source package related
+        to ticket or mdash if there is no related source package.
+        """
+        assert self.context == ticket.distribution
+        if not ticket.sourcepackagename:
+            return "&mdash;"
+        else:
+            sourcepackage = self.context.getSourcePackage(
+                ticket.sourcepackagename)
+            return '<a href="%s/+tickets">%s</a>' % (
+                canonical_url(sourcepackage), ticket.sourcepackagename.name)
+
+    def formatTarget(self, ticket):
+        """Return an hyperlink to the ticket's target.
+
+        When there is a sourcepackagename associated to the ticket, link to
+        that source package tickets instead of the ticket target.
+        """
+        if ticket.sourcepackagename:
+            target = ticket.distribution.getSourcePackage(
+                ticket.sourcepackagename)
+        else:
+            target = ticket.target
+
+        return '<a href="%s/+tickets">%s</a>' % (
+                canonical_url(target), target.displayname)
+
+
+class TicketTargetSearchMyTicketsView(SearchTicketsView):
+    """SearchTicketsView specialization for the 'My Tickets' report.
+
+    It displays and searches the support requests made by the logged
+    in user in a tickettarget context.
+    """
+
+    @property
+    def pageheading(self):
+        """See SearchTicketsView."""
+        if self.search_text:
+            return _('Support requests you made about "${search_text}" for '
+                     '${context}', mapping=dict(
+                        context=self.context.displayname,
+                        search_text=self.search_text))
+        else:
+            return _('Support requests you made for ${context}',
+                     mapping={'context': self.context.displayname})
+
+    @property
+    def empty_listing_message(self):
+        """See SearchTicketsView."""
+        if self.search_text:
+            return _("You didn't make any support requests about "
+                     '"${search_text}" for ${context}.', mapping=dict(
+                        context=self.context.displayname,
+                        search_text=self.search_text))
+        else:
+            return _("You didn't make any support requests for ${context}.",
+                     mapping={'context': self.context.displayname})
+
+    def getDefaultFilter(self):
+        """See SearchTicketsView."""
+        return {'owner': self.user,
+                'status': set(TicketStatus.items)}
 
 
 class ManageSupportContactView(GeneralFormView):
@@ -148,7 +254,7 @@ class ManageSupportContactView(GeneralFormView):
 
     @property
     def initial_values(self):
-        user = getUtility(ILaunchBag).user
+        user = self.user
         support_contacts = self.context.support_contacts
         user_teams = [
             membership.team for membership in user.myactivememberships]
@@ -157,41 +263,105 @@ class ManageSupportContactView(GeneralFormView):
             'want_to_be_support_contact': user in support_contacts,
             'support_contact_teams': list(support_contact_teams)
             }
+
     def _setUpWidgets(self):
         if not self.user:
             return
         self.support_contact_teams_widget = CustomWidgetFactory(
-            SupportContactTeamsWidget)
-        GeneralFormView._setUpWidgets(self, context=getUtility(ILaunchBag).user)
+            LabeledMultiCheckBoxWidget)
+        GeneralFormView._setUpWidgets(self, context=self.user)
 
     def process(self, want_to_be_support_contact, support_contact_teams=None):
         if support_contact_teams is None:
             support_contact_teams = []
         response = self.request.response
+        replacements = {'context': self.context.displayname}
         if want_to_be_support_contact:
             if self.context.addSupportContact(self.user):
                 response.addNotification(
-                    'You have been added as a support contact for %s' % (
-                        self.context.displayname))
+                    _('You have been added as a support contact for '
+                      '$context.', mapping=replacements))
         else:
             if self.context.removeSupportContact(self.user):
                 response.addNotification(
-                    'You have been removed as a support contact for %s' % (
-                        self.context.displayname))
+                    _('You have been removed as a support contact for '
+                      '$context.', mapping=replacements))
 
         user_teams = [
             membership.team for membership in self.user.myactivememberships]
         for team in user_teams:
+            replacements['teamname'] = team.displayname
             if team in support_contact_teams:
                 if self.context.addSupportContact(team):
                     response.addNotification(
-                        '%s has been added as a support contact for %s' % (
-                            team.displayname, self.context.displayname))
+                        _('$teamname has been added as a support contact '
+                          'for $context.', mapping=replacements))
             else:
                 if self.context.removeSupportContact(team):
                     response.addNotification(
-                        '%s has been removed as a support contact for %s' % (
-                            team.displayname, self.context.displayname))
+                        _('$teamname has been removed as a support contact '
+                          'for $context.', mapping=replacements))
 
         self._nextURL = canonical_url(self.context) + '/+tickets'
+
+
+class TicketTargetFacetMixin:
+    """Mixin for tickettarget facet definition."""
+
+    def support(self):
+        summary = (
+            'Technical support requests for %s' % self.context.displayname)
+        return Link('+tickets', 'Support', summary)
+
+
+class TicketTargetTraversalMixin:
+    """Navigation mixin for ITicketTarget."""
+
+    @stepthrough('+ticket')
+    def traverse_ticket(self, name):
+        # tickets should be ints
+        try:
+            ticket_id = int(name)
+        except ValueError:
+            raise NotFoundError
+        return self.context.getTicket(ticket_id)
+
+    redirection('+ticket', '+tickets')
+
+
+class TicketTargetSupportMenu(ApplicationMenu):
+    """Base menu definition for TicketTargets."""
+
+    usedfor = ITicketTarget
+    facet = 'support'
+    links = ['open', 'answered', 'myrequests', 'new',
+             'support_contact']
+
+    def makeSearchLink(self, statuses):
+        return "+tickets?" + urlencode(
+            {'field.status': statuses,
+             'field.sort': 'by relevancy',
+             'field.search_text': '',
+             'field.actions.search': 'Search',
+             'field.status': statuses}, doseq=True)
+
+    def open(self):
+        text = 'Open'
+        return Link(self.makeSearchLink('Open'), text, icon='ticket')
+
+    def answered(self):
+        text = 'Answered'
+        return Link(self.makeSearchLink('Answered'), text, icon='ticket')
+
+    def myrequests(self):
+        text = 'My Requests'
+        return Link('+mytickets', text, icon='ticket')
+
+    def new(self):
+        text = 'Request Support'
+        return Link('+addticket', text, icon='add')
+
+    def support_contact(self):
+        text = 'Support Contact'
+        return Link('+support-contact', text, icon='edit')
 

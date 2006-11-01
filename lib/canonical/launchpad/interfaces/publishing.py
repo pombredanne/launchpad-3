@@ -5,8 +5,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'IBinaryPackagePublishing',
-    'ISourcePackagePublishing',
     'ISourcePackageFilePublishing',
     'IBinaryPackageFilePublishing',
     'ISourcePackagePublishingView',
@@ -22,12 +20,23 @@ __all__ = [
     'AlreadyInPool',
     'NotInPool',
     'NeedsSymlinkInPool',
-    'PoolFileOverwriteError'
+    'PoolFileOverwriteError',
+    'pocketsuffix'
     ]
 
 from zope.schema import Bool, Datetime, Int, TextLine
 from zope.interface import Interface, Attribute
+
 from canonical.launchpad import _
+from canonical.lp.dbschema import PackagePublishingPocket
+
+pocketsuffix = {
+    PackagePublishingPocket.RELEASE: "",
+    PackagePublishingPocket.SECURITY: "-security",
+    PackagePublishingPocket.UPDATES: "-updates",
+    PackagePublishingPocket.PROPOSED: "-proposed",
+    PackagePublishingPocket.BACKPORTS: "-backports",
+}
 
 #
 # Archive Publisher API and Exceptions
@@ -36,7 +45,7 @@ from canonical.launchpad import _
 class IPublishing(Interface):
     """Ability to publish associated publishing records."""
 
-    def publish(diskpool, log, careful=False, dirty_pockets=None):
+    def publish(diskpool, log, careful=False):
         """Publish associated publish records.
 
         IDistroRelease -> ISourcePackagePublishing
@@ -46,10 +55,6 @@ class IPublishing(Interface):
         'careful' argument would cause the 'republication' of all published
         records if True (system will DTRT checking hash of all
         published files.)
-
-        If passed, dirty_pockets will be treated as a nested dictionary
-        of booleans, keyed by distrorelease.name and pocket. It will be
-        updated to mark any pocket into which we publish as dirty.
         """
 
 class IArchivePublisher(Interface):
@@ -148,6 +153,9 @@ class IBaseSourcePackagePublishing(Interface):
     pocket = Int(
             title=_('Package publishing pocket'), required=True, readonly=True,
             )
+    archive = Int(
+            title=_('Archive ID'), required=True, readonly=True,
+            )
 
 
 class ISourcePackagePublishingView(IBaseSourcePackagePublishing):
@@ -172,8 +180,8 @@ class ISourcePackageFilePublishing(IBaseSourcePackagePublishing):
             )
 
 
-class ISourcePackagePublishing(Interface):
-    """A source package publishing record."""
+class ISourcePackagePublishingBase(Interface):
+    """Base class for ISourcePackagePublishing, without extra properties."""
     id = Int(
             title=_('ID'), required=True, readonly=True,
             )
@@ -209,9 +217,13 @@ class ISourcePackagePublishing(Interface):
             title=_('The pocket into which this entry is published'),
             required=True, readonly=True,
             )
+    archive = Int(
+            title=_('Archive ID'), required=True, readonly=True,
+            )
 
 
-class IExtendedSourcePackagePublishing(ISourcePackagePublishing):
+class IExtendedSourcePackagePublishing(ISourcePackagePublishingBase):
+    """Base class with extra attributes for ISSPPH."""
     supersededby = Int(
             title=_('The sourcepackagerelease which superseded this one'),
             required=False, readonly=False,
@@ -260,6 +272,15 @@ class ISourcePackagePublishingHistory(IExtendedSourcePackagePublishing):
         "correspondent to the supersededby attribute. if supersededby "
         "is None return None.")
 
+    def publishedBinaries():
+        """Return all resulted IBinaryPackagePublishingHistory.
+
+        Follow the build record and return every PUBLISHED binary publishing
+        record for DistroArchReleases in this DistroRelease, ordered by
+        architecturetag.
+        """
+
+
 #
 # Binary package publishing
 #
@@ -280,6 +301,9 @@ class IBaseBinaryPackagePublishing(Interface):
             )
     pocket = Int(
             title=_('Package publishing pocket'), required=True, readonly=True,
+            )
+    archive = Int(
+            title=_('Archive ID'), required=True, readonly=True,
             )
 
 
@@ -321,8 +345,7 @@ class IBinaryPackageFilePublishing(IBaseBinaryPackagePublishing):
             )
 
 
-class IBinaryPackagePublishing(Interface):
-    """A binary package publishing record."""
+class IExtendedBinaryPackagePublishing(Interface):
     id = Int(
             title=_('ID'), required=True, readonly=True,
             )
@@ -362,11 +385,6 @@ class IBinaryPackagePublishing(Interface):
             title=_('The pocket into which this entry is published'),
             required=True, readonly=True,
             )
-    distroarchreleasebinarypackagerelease = Attribute("The object that "
-        "represents this binarypacakgerelease in this distroarchrelease.")
-
-
-class IExtendedBinaryPackagePublishing(IBinaryPackagePublishing):
     supersededby = Int(
             title=_('The build which superseded this one'),
             required=False, readonly=False,
@@ -388,6 +406,9 @@ class IExtendedBinaryPackagePublishing(IBinaryPackagePublishing):
                     'published set'),
             required=False, readonly=False,
             )
+    archive = Int(
+            title=_('Archive ID'), required=True, readonly=True,
+            )
 
 
 class ISecureBinaryPackagePublishingHistory(IExtendedBinaryPackagePublishing):
@@ -405,6 +426,10 @@ class ISecureBinaryPackagePublishingHistory(IExtendedBinaryPackagePublishing):
 
 class IBinaryPackagePublishingHistory(IExtendedBinaryPackagePublishing):
     """A binary package publishing record."""
+
+    distroarchreleasebinarypackagerelease = Attribute("The object that "
+        "represents this binarypacakgerelease in this distroarchrelease.")
+
     hasRemovalRequested = Bool(
             title=_('Whether a removal has been requested for this record')
             )

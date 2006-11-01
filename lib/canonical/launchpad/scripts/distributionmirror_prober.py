@@ -3,15 +3,22 @@
 import httplib
 import logging
 import os
+import urllib2
 import urlparse
+
+from zope.component import getUtility
 
 from twisted.internet import defer, protocol, reactor
 from twisted.web.http import HTTPClient
 from twisted.python.failure import Failure
 
 from canonical.config import config
-from canonical.launchpad.interfaces import IDistroArchRelease, IDistroRelease
+from canonical.launchpad.interfaces import (
+    IDistroArchRelease, IDistroRelease, ILaunchpadCelebrities,
+    UnableToFetchCDImageFileList)
 from canonical.lp.dbschema import MirrorStatus
+
+MAX_REDIRECTS = 3
 
 
 class ProberProtocol(HTTPClient):
@@ -20,6 +27,7 @@ class ProberProtocol(HTTPClient):
     def connectionMade(self):
         """Simply requests path presence."""
         self.makeRequest()
+        self.headers = {}
         
     def makeRequest(self):
         """Request path presence via HTTP/1.1 using HEAD.
@@ -46,17 +54,37 @@ class ProberProtocol(HTTPClient):
         pass
 
 
-class ProberTimeout(Exception):
-    """The initialized URL did not return in time."""
+class RedirectAwareProberProtocol(ProberProtocol):
+    """A specialized version of ProberProtocol that follows HTTP redirects."""
 
-    def __init__(self, url, timeout, *args):
-        self.url = url
-        self.timeout = timeout
-        Exception.__init__(self, *args)
+    redirected_to_location = False
 
-    def __str__(self):
-        return ("Getting %s took longer than %s seconds"
-                % (self.url, self.timeout))
+    # The different redirect statuses that I handle.
+    handled_redirect_statuses = (
+        httplib.MOVED_PERMANENTLY, httplib.FOUND, httplib.SEE_OTHER)
+
+    def handleHeader(self, key, value):
+        key = key.lower()
+        l = self.headers.setdefault(key, [])
+        l.append(value)
+
+    def handleStatus(self, version, status, message):
+        if int(status) in self.handled_redirect_statuses:
+            # We need to redirect to the location specified in the headers.
+            self.redirected_to_location = True
+        else:
+            # We have the result immediately.
+            ProberProtocol.handleStatus(self, version, status, message)
+
+    def handleEndHeaders(self):
+        assert self.redirected_to_location, (
+            'All headers received but failed to find a result.')
+
+        # Server responded redirecting us to another location.
+        location = self.headers.get('location')
+        url = location[0]
+        self.factory.redirect(url)
+        self.transport.loseConnection()
 
 
 class ProberFactory(protocol.ClientFactory):
@@ -65,22 +93,23 @@ class ProberFactory(protocol.ClientFactory):
     protocol = ProberProtocol
 
     def __init__(self, url, timeout=config.distributionmirrorprober.timeout):
-        self.deferred = defer.Deferred()
+        # We want the deferred to be a private attribute (_deferred) to make
+        # sure our clients will only use the deferred returned by the probe()
+        # method; this is to ensure self._cancelTimeout is always the first
+        # callback in the chain.
+        self._deferred = defer.Deferred()
         self.timeout = timeout
         self.setURL(url.encode('ascii'))
-        # self.waiting is a variable that must be checked (and set to True)
-        # whenever we callback or errback. We do this because it's
-        # theoretically possible that succeeded() and/or failed() are
-        # called more than once per probe, in case a response is received at
-        # the same time it times out.
-        self.waiting = True
 
     def probe(self):
-        reactor.connectTCP(self.host, self.port, self)
+        self.connect()
         self.timeoutCall = reactor.callLater(
             self.timeout, self.failWithTimeoutError)
-        self.deferred.addBoth(self._cancelTimeout)
-        return self.deferred
+        self._deferred.addBoth(self._cancelTimeout)
+        return self._deferred
+
+    def connect(self):
+        reactor.connectTCP(self.host, self.port, self)
 
     def failWithTimeoutError(self):
         self.failed(ProberTimeout(self.url, self.timeout))
@@ -90,14 +119,10 @@ class ProberFactory(protocol.ClientFactory):
         self.connector = connector
 
     def succeeded(self, status):
-        if self.waiting:
-            self.waiting = False
-            self.deferred.callback(status)
+        self._deferred.callback(status)
 
     def failed(self, reason):
-        if self.waiting:
-            self.waiting = False
-            self.deferred.errback(reason)
+        self._deferred.errback(reason)
 
     def _cancelTimeout(self, result):
         if self.timeoutCall.active():
@@ -121,6 +146,14 @@ class ProberFactory(protocol.ClientFactory):
             path = url
         else:
             scheme, host, port, path = self._parse(url)
+        # XXX: We don't actually know how to handle FTP responses, but we
+        # expect to be behind a squid HTTP proxy with the patch at
+        # http://www.squid-cache.org/bugs/show_bug.cgi?id=1758 applied. So, if
+        # you encounter any problems with FTP URLs you'll probably have to nag
+        # the sysadmins to fix squid for you.
+        # -- Guilherme Salgado, 2006-09-19
+        if scheme not in ('http', 'ftp'):
+            raise UnknownURLScheme(scheme)
         if scheme and host:
             self.scheme = scheme
             self.host = host
@@ -128,14 +161,71 @@ class ProberFactory(protocol.ClientFactory):
         self.path = path
 
 
-class BadResponseCode(Exception):
+class RedirectAwareProberFactory(ProberFactory):
+
+    protocol = RedirectAwareProberProtocol
+    redirection_count = 0
+
+    def redirect(self, url):
+        self.timeoutCall.reset(self.timeout)
+
+        try:
+            if self.redirection_count >= MAX_REDIRECTS:
+                raise InfiniteLoopDetected()
+            self.redirection_count += 1
+
+            self.setURL(url)
+        except (InfiniteLoopDetected, UnknownURLScheme), e:
+            self.failed(e)
+        else:
+            self.connect()
+
+
+class ProberError(Exception):
+    """A generic prober error.
+
+    This class should be used as a base for more specific prober errors.
+    """
+
+
+class ProberTimeout(ProberError):
+    """The initialized URL did not return in time."""
+
+    def __init__(self, url, timeout, *args):
+        self.url = url
+        self.timeout = timeout
+        ProberError.__init__(self, *args)
+
+    def __str__(self):
+        return ("HEAD request on %s took longer than %s seconds"
+                % (self.url, self.timeout))
+
+
+class BadResponseCode(ProberError):
 
     def __init__(self, status, *args):
-        Exception.__init__(self, *args)
+        ProberError.__init__(self, *args)
         self.status = status
 
     def __str__(self):
         return "Bad response code: %s" % self.status
+
+
+class InfiniteLoopDetected(ProberError):
+
+    def __str__(self):
+        return "Infinite loop detected"
+
+
+class UnknownURLScheme(ProberError):
+
+    def __init__(self, scheme, *args):
+        ProberError.__init__(self, *args)
+        self.scheme = scheme
+
+    def __str__(self):
+        return ("The mirror prober doesn't know how to check URLs with an "
+                "'%s' scheme." % self.scheme)
 
 
 class MirrorProberCallbacks(object):
@@ -216,11 +306,11 @@ class MirrorProberCallbacks(object):
         arch_or_source_mirror.status = MirrorStatus.UNKNOWN
         for status, url in status_url_mapping.items():
             prober = ProberFactory(url)
-            prober.deferred.addCallback(
+            deferred = prober.probe()
+            deferred.addCallback(
                 self.setMirrorStatus, arch_or_source_mirror, status, url)
-            prober.deferred.addErrback(self.logError, url)
-            deferredList.append(prober.deferred)
-            reactor.connectTCP(prober.host, prober.port, prober)
+            deferred.addErrback(self.logError, url)
+            deferredList.append(deferred)
         return defer.DeferredList(deferredList)
 
     def setMirrorStatus(self, http_status, arch_or_source_mirror, status, url):
@@ -303,3 +393,38 @@ class MirrorCDImageProberCallbacks(object):
         self.log_file.write(
             "Failed %s: %s\n" % (url, failure.getErrorMessage()))
         return failure
+
+
+def _get_cdimage_file_list():
+    url = config.distributionmirrorprober.releases_file_list_url
+    try:
+        return urllib2.urlopen(url)
+    except urllib2.URLError, e:
+        raise UnableToFetchCDImageFileList(
+            'Unable to fetch %s: %s' % (url, e))
+
+
+def get_expected_cdimage_paths():
+    """Get all paths where we can find CD image files on a release mirror.
+
+    Return a list containing, for each Ubuntu DistroRelease and flavour, a
+    list of CD image file paths for that DistroRelease and flavour.
+
+    This list is read from a file located at http://releases.ubuntu.com,
+    so if something goes wrong while reading that file, an
+    UnableToFetchCDImageFileList exception will be raised.
+    """
+    d = {}
+    for line in _get_cdimage_file_list().readlines():
+        flavour, releasename, path, size = line.split('\t')
+        paths = d.setdefault((flavour, releasename), [])
+        paths.append(path)
+
+    ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+    paths = []
+    for key, value in d.items():
+        flavour, releasename = key
+        release = ubuntu.getRelease(releasename)
+        paths.append((release, flavour, value))
+    return paths
+

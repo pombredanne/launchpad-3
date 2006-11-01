@@ -18,6 +18,7 @@ from datetime import datetime, timedelta
 
 from zope.interface import implements
 from zope.app.session.interfaces import ISession
+import zope.i18n
 from zope.publisher.interfaces.browser import IBrowserRequest
 
 from canonical.uuid import generate_uuid
@@ -89,7 +90,16 @@ class NotificationResponse:
     >>> len(response.notifications)
     0
 
+    >>> response.addNotification("something")
+    >>> len(response.notifications)
+    1
+
+    >>> response.removeAllNotifications()
+    >>> len(response.notifications)
+    0
+
     >>> response.addNotification("<b>%(escaped)s</b>", escaped="<Fnord>")
+
     >>> response.addNotification("Whatever", BrowserNotificationLevel.DEBUG)
     >>> response.addNotification("%(percentage)0.2f%%", percentage=99.0)
     >>> response.addNotification("%(num)d thingies", num=10)
@@ -97,7 +107,11 @@ class NotificationResponse:
     >>> response.addInfoNotification('Info')
     >>> response.addNoticeNotification('Notice')
     >>> response.addWarningNotification('Warning')
-    >>> response.addErrorNotification('Error')
+
+    And an odd one to test Bug #54987
+
+    >>> from canonical.launchpad import _
+    >>> response.addErrorNotification(_('Error${value}', mapping={'value':''}))
 
     >>> INotificationList.providedBy(response.notifications)
     True
@@ -153,6 +167,9 @@ class NotificationResponse:
 
     def addNotification(self, msg, level=BrowserNotificationLevel.NOTICE, **kw):
         """See canonical.launchpad.webapp.interfaces.INotificationResponse."""
+        # Bug #54987
+        if isinstance(msg, (zope.i18n.Message, zope.i18n.MessageID)):
+            msg = zope.i18n.translate(msg, context=self._request)
         if kw:
             quoted_args = {}
             for key, value in kw.items():
@@ -185,8 +202,12 @@ class NotificationResponse:
 
         return self._notifications
 
+    def removeAllNotifications(self):
+        """See canonical.launchpad.webapp.interfaces.INotificationResponse"""
+        self._notifications = None
+
     def redirect(self, location, status=None):
-        """See canonical.launchpad.webapp.interfaces.ISessionNotifications"""
+        """See canonical.launchpad.webapp.interfaces.INotificationResponse"""
         # We are redirecting, so we need to stuff our notifications into
         # the session
         if self._notifications is not None and len(self._notifications) > 0:

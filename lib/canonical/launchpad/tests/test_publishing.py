@@ -2,7 +2,6 @@
 """Test native publication workflow for Soyuz. """
 
 from unittest import TestLoader
-import sys
 import os
 import shutil
 from StringIO import StringIO
@@ -12,22 +11,18 @@ from zope.component import getUtility
 from canonical.database.constants import UTC_NOW
 
 from canonical.archivepublisher.config import Config
-from canonical.archivepublisher.pool import (
+from canonical.archivepublisher.diskpool import (
     DiskPool, Poolifier)
 from canonical.archivepublisher.tests.util import FakeLogger
-
-from canonical.functional import ZopelessLayer
 
 from canonical.launchpad.ftests.harness import (
     LaunchpadZopelessTestCase, LaunchpadZopelessTestSetup)
 from canonical.launchpad.database.publishing import (
-    SourcePackagePublishing, SecureSourcePackagePublishingHistory,
-    BinaryPackagePublishing, SecureBinaryPackagePublishingHistory)
+    SourcePackagePublishingHistory, SecureSourcePackagePublishingHistory)
 from canonical.launchpad.interfaces import (
     ILibraryFileAliasSet, IDistributionSet, IPersonSet, ISectionSet,
     IComponentSet, ISourcePackageNameSet, IGPGKeySet)
 
-from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.librarian.client import LibrarianClient
 
 from canonical.lp.dbschema import (
@@ -44,8 +39,6 @@ class TestNativePublishing(LaunchpadZopelessTestCase):
         Also instantiate DiskPool component.
         """
         LaunchpadZopelessTestCase.setUp(self)
-        self.librarian = LibrarianTestSetup()
-        self.librarian.setUp()
         self.library = LibrarianClient()
 
         self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
@@ -108,22 +101,21 @@ class TestNativePublishing(LaunchpadZopelessTestCase):
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
             pocket=PackagePublishingPocket.RELEASE,
-            embargo=False
+            embargo=False,
+            archive=self.breezy_autotest.main_archive
             )
 
-        # SPP and SSPPH IDs are the same, since they are SPP is a SQLVIEW
+        # SPPH and SSPPH IDs are the same, since they are SPPH is a SQLVIEW
         # of SSPPH and other useful attributes.
-        return SourcePackagePublishing.get(sspph.id)
+        return SourcePackagePublishingHistory.get(sspph.id)
 
     def tearDown(self):
         """Tear down blows the pool dir away and stops librarian."""
-        self.librarian.tearDown()
         shutil.rmtree(self.config.distroroot)
         LaunchpadZopelessTestCase.tearDown(self)
 
     def testPublish(self):
         """Test publishOne in normal conditions (new file)."""
-        from canonical.archivepublisher import Publisher
         pub_source = self.getPubSource(
             "foo", "main", "foo.dsc", filecontent='Hello world')
         pub_source.publish(self.disk_pool, self.logger)
@@ -142,8 +134,6 @@ class TestNativePublishing(LaunchpadZopelessTestCase):
         has a special content, then publish 'foo' again, via publisher,
         and finally check one of the 'foo' files content.
         """
-        from canonical.archivepublisher import Publisher
-
         foo_path = os.path.join(self.pool_dir, 'main', 'f', 'foo')
         os.makedirs(foo_path)
         foo_dsc_path = os.path.join(foo_path, 'foo.dsc')
@@ -162,8 +152,6 @@ class TestNativePublishing(LaunchpadZopelessTestCase):
 
     def testPublishingDiferentContents(self):
         """Test if publishOne refuses to overwrite its own publication."""
-        from canonical.archivepublisher import Publisher
-
         pub_source = self.getPubSource(
             "foo", "main", "foo.dsc", filecontent='foo is happy')
         pub_source.publish(self.disk_pool, self.logger)
@@ -191,8 +179,6 @@ class TestNativePublishing(LaunchpadZopelessTestCase):
         It should identify that the file has the same content and
         mark it as PUBLISHED.
         """
-        from canonical.archivepublisher import Publisher
-
         pub_source = self.getPubSource(
             "bar", "main", "bar.dsc", filecontent='bar is good')
         pub_source.publish(self.disk_pool, self.logger)
@@ -215,8 +201,6 @@ class TestNativePublishing(LaunchpadZopelessTestCase):
         After check if the pool file contents as the same, it should
         create a symlink in the new pointing to the original file.
         """
-        from canonical.archivepublisher import Publisher
-
         content = 'am I a file or a symbolic link ?'
         # publish sim.dsc in main and re-publish in universe
         pub_source = self.getPubSource(

@@ -73,7 +73,3 @@ XXX: This test is disabled in wait for SQLObject being fixed to accept
   ...2 results...
   ...
 
-(Shutdown the Librarian.)
-
-  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().tearDown()

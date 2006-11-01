@@ -8,8 +8,6 @@ import unittest
 
 from zope.interface.verify import verifyObject
 
-from twisted.enterprise import adbapi
-
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 
 from canonical.authserver.interfaces import (
@@ -294,82 +292,6 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
         ssha = SSHADigestEncryptor().encrypt('wrong', self.salt)
         userDict = storage._authUserInteraction(self.cursor, 'mark@hbd.com',
                                                 ssha)
-        self.assertEqual({}, userDict)
-
-    def test_createUser(self):
-        # Creating a user should return a user dict with that user's details
-        storage = DatabaseUserDetailsStorage(None)
-        ssha = SSHADigestEncryptor().encrypt('supersecret!')
-        displayname = 'Testy the Test User'
-        emailaddresses = ['test1@test.test', 'test2@test.test']
-        # This test needs a real Transaction, because it calls rollback
-        trans = adbapi.Transaction(None, self.connection)
-        userDict = storage._createUserInteraction(
-            trans, ssha, displayname, emailaddresses
-        )
-        self.assertNotEqual({}, userDict)
-        self.assertEqual(displayname, userDict['displayname'])
-        self.assertEqual(emailaddresses, userDict['emailaddresses'])
-        self.assertEqual('TestyTheTestUser', userDict['wikiname'])
-
-    def test_createUserUnicode(self):
-        # Creating a user should return a user dict with that user's details
-        storage = DatabaseUserDetailsStorage(None)
-        ssha = SSHADigestEncryptor().encrypt('supersecret!')
-        # Name with an e acute, and an apostrophe too.
-        displayname = u'Test\xc3\xa9 the Test\' User'
-        emailaddresses = ['test1@test.test', 'test2@test.test']
-        # This test needs a real Transaction, because it calls rollback
-        trans = adbapi.Transaction(None, self.connection)
-        userDict = storage._createUserInteraction(
-            trans, ssha, displayname, emailaddresses
-        )
-        self.assertNotEqual({}, userDict)
-        self.assertEqual(displayname, userDict['displayname'])
-        self.assertEqual(emailaddresses, userDict['emailaddresses'])
-
-        # Check that the nickname was correctly generated (and that getUser
-        # returns the same values that createUser returned)
-        userDict2 = storage._getUserInteraction(self.cursor, 'test1')
-        self.assertEqual(userDict, userDict2)
-
-    # FIXME: behaviour of this case isn't defined yet
-    ##def test_createUserFailure(self):
-    ##    # Creating a user with a loginID that already exists should fail
-
-    def test_changePassword(self):
-        storage = DatabaseUserDetailsStorage(None)
-        # Changing a password should return a user dict with that user's details
-        ssha = SSHADigestEncryptor().encrypt('test', self.salt)
-        newSsha = SSHADigestEncryptor().encrypt('testing123')
-        userDict = storage._changePasswordInteraction(self.cursor,
-                                                      'mark@hbd.com', ssha,
-                                                      newSsha)
-        self.assertNotEqual({}, userDict)
-
-        # In fact, it should return the same dict as getUser
-        goodDict = storage._getUserInteraction(self.cursor, 'mark@hbd.com')
-        self.assertEqual(goodDict, userDict)
-
-        # And we should be able to authenticate with the new password...
-        authDict = storage._authUserInteraction(self.cursor, 'mark@hbd.com',
-                                                newSsha)
-        self.assertEqual(goodDict, authDict)
-
-        # ...but not the old
-        authDict = storage._authUserInteraction(self.cursor, 'mark@hbd.com',
-                                                ssha)
-        self.assertEqual({}, authDict)
-
-    def test_changePasswordFailure(self):
-        storage = DatabaseUserDetailsStorage(None)
-        # Changing a password without giving the right current pw should fail
-        # (i.e. return {})
-        ssha = SSHADigestEncryptor().encrypt('WRONG', self.salt)
-        newSsha = SSHADigestEncryptor().encrypt('testing123')
-        userDict = storage._changePasswordInteraction(self.cursor,
-                                                      'mark@hbd.com', ssha,
-                                                      newSsha)
         self.assertEqual({}, userDict)
 
     def test_getSSHKeys(self):
@@ -732,7 +654,7 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         results = storage._getBranchPullQueueInteraction(self.cursor)
         branch_ids = [branch_id for branch_id, pull_url in results]
         self.failUnless(
-            14 in branch_ids, 
+            14 in branch_ids,
             "import branch last mirrored >1 day ago not in pull queue.")
 
         # Mark 14 as mirrored now.
@@ -744,7 +666,7 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         results = storage._getBranchPullQueueInteraction(self.cursor)
         branch_ids = [branch_id for branch_id, pull_url in results]
         self.failIf(
-            14 in branch_ids, 
+            14 in branch_ids,
             "import branch mirrored <1 day ago in pull queue.")
 
 

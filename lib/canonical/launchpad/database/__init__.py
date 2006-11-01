@@ -2,6 +2,7 @@
 
 from canonical.launchpad.database.milestone import *
 from canonical.launchpad.database.person import *
+from canonical.launchpad.database.pillar import *
 from canonical.launchpad.database.product import *
 from canonical.launchpad.database.productbounty import *
 from canonical.launchpad.database.packaging import *
@@ -108,3 +109,7 @@ from canonical.launchpad.database.poexportrequest import *
 from canonical.launchpad.database.developmentmanifest import *
 from canonical.launchpad.database.distrocomponentuploader import *
 from canonical.launchpad.database.revision import *
+from canonical.launchpad.database.gpgkey import *
+from canonical.launchpad.database.archive import *
+from canonical.launchpad.database.emailaddress import *
+from canonical.launchpad.database.personalpackagearchive import *

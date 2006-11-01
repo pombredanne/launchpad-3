@@ -22,6 +22,11 @@
 
 <div metal:fill-slot="main">
 
+  <p class="documentDescription">
+    This page allows you to accept or decline feature goals for
+    <span tal:replace="context/title">Ubuntu Below Zero</span>.
+  </p>
+
   <p
     tal:condition="view/status_message"
     tal:content="view/status_message"
@@ -51,17 +56,29 @@
               <label tal:attributes="for string:spec_${spec/name}">
                 <span tal:replace="spec/title/fmt:shorten/60">fix-it</span>
               </label>
-            </td>
-          </tr>
-          <tr>
-            <td></td>
-            <td>
-              <div class="lesser discreet" />
+              <div class="discreet">
+                <span tal:attributes="
+                      class string:specpriority${spec/priority/name}" 
+                      tal:content="spec/priority/title">High</span>,
+                <span tal:attributes="
+                      class string:specstatus${spec/status/name}"
+                      tal:content="spec/status/title">New</span>,
+                <span tal:attributes="
+                      class string:specdelivery${spec/delivery/name}"
+                      tal:content="spec/delivery/title">New</span>,
                 <img src="/@@/spec" />&nbsp;<a
                      tal:attributes="href spec/fmt:url">Details</a >
                 <img src="/@@/link" />&nbsp;<a
                      tal:attributes="href spec/specurl">Specification</a>
-                <tal:summary replace="spec/summary" />
+                <tal:summary replace="spec/summary/fmt:shorten/400" />
+                Proposed for
+                <span tal:replace="context/displayname">Edgy</span>
+                by
+                <img src="/@@/user" />
+                <a tal:attributes="href spec/goal_proposer/fmt:url"
+                   tal:content="spec/goal_proposer/browsername">Carlos</a>
+                on <span tal:replace="spec/date_goal_proposed/fmt:date" />.
+              </div>
             </td>
           </tr>
         </tal:per_spec>
@@ -73,9 +90,6 @@
     </p>
 
     <div class="actions">
-      <input type="submit"
-             name="SUBMIT_CANCEL"
-             value="Cancel" />
       <input tal:condition="view/specs"
              type="submit"
              name="SUBMIT_ACCEPT"
@@ -84,6 +98,9 @@
              type="submit"
              name="SUBMIT_DECLINE"
              value="Decline" />
+      <input type="submit"
+             name="SUBMIT_CANCEL"
+             value="Cancel" />
     </div>
 
   </form>

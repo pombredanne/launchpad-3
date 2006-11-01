@@ -11,34 +11,29 @@ import re
 
 # Zope
 from zope.interface import implements
-from zope.event import notify
 
 # SQL imports
 from sqlobject import (
     StringCol, SQLRelatedJoin, SQLMultipleJoin, SQLObjectNotFound)
 
-from canonical.launchpad.interfaces import (ICve, ICveSet,
-    UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
+from canonical.launchpad.interfaces import IBugLinkTarget, ICve, ICveSet
 from canonical.launchpad.validators.cve import valid_cve
-
-from canonical.launchpad.event.sqlobjectevent import (
-    SQLObjectCreatedEvent, SQLObjectDeletedEvent)
 
 from canonical.lp.dbschema import EnumCol, CveStatus
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
 from canonical.launchpad.database.bugcve import BugCve
-from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.cvereference import CveReference
 
 cverefpat = re.compile(r'(CVE|CAN)-((19|20)\d{2}\-\d{4})')
 
-class Cve(SQLBase):
+class Cve(SQLBase, BugLinkTargetMixin):
     """A CVE database record."""
 
-    implements(ICve)
+    implements(ICve, IBugLinkTarget)
 
     _table = 'Cve'
 
@@ -78,24 +73,12 @@ class Cve(SQLBase):
         assert ref.cve == self
         CveReference.delete(ref.id)
 
-    # linking to bugs
-    def linkBug(self, bug, user=None):
-        """See IBugLinkTarget."""
-        for buglink in self.bug_links:
-            if buglink.bug.id == bug.id:
-                return buglink
-        bugcve = BugCve(bug=bug, cve=self)
-        notify(SQLObjectCreatedEvent(bugcve, user=user))
-        return bugcve
+    # Template methods for BugLinkTargetMixin
+    buglinkClass = BugCve
 
-    def unlinkBug(self, bug, user=None):
-        """See IBugLinkTarget."""
-        # see if a relevant bug link exists, and if so, delete it
-        for buglink in self.bug_links:
-            if buglink.bug.id == bug.id:
-                notify(SQLObjectDeletedEvent(buglink, user=user))
-                BugCve.delete(buglink.id)
-                return buglink
+    def createBugLink(self, bug):
+        """See BugLinkTargetMixin."""
+        return BugCve(cve=self, bug=bug)
 
 
 class CveSet:
@@ -181,46 +164,11 @@ class CveSet:
                 raise AssertionError('MessageChunk without content or blob.')
         return sorted(cves, key=lambda a: a.sequence)
 
-    def getOpenBugTasks(self, distribution=None, distrorelease=None):
-        """Return all open bug tasks related to CVEs"""
-        assert distribution or distrorelease
-        return self._getBugTasks(distribution=distribution,
-                                 distrorelease=distrorelease,
-                                 statuses=UNRESOLVED_BUGTASK_STATUSES)
-
-    def getResolvedBugTasks(self, distribution=None, distrorelease=None):
-        """Return all resolved bug tasks related to CVEs"""
-        assert distribution or distrorelease
-        return self._getBugTasks(distribution=distribution,
-                                 distrorelease=distrorelease,
-                                 statuses=RESOLVED_BUGTASK_STATUSES)
-
-    def _getBugTasks(self, statuses, distribution=None, distrorelease=None):
-        # XXX: this code is used in the -cvereport pages. Unfortunately,
-        # the bugtasks we grab here are then re-traversed later via a
-        # RelatedJoin, which makes things scale very poorly. It is
-        # likely that the proper fix is to actually return BugCve
-        # objects, prejoining in Cve, Bug and BugTask.
-        #   -- kiko, 2006-07-10
-        status_sql_values = "(%s)" % (', '.join(sqlvalues(*statuses)))
-
-        if distribution is not None:
-            clause = "BugTask.distribution = %d" % distribution.id
-        else:
-            clause = "BugTask.distrorelease = %d" % distrorelease.id
-
-        # XXX: also, we need to use use BugTaskSet.search(), because
-        # this code will cause permissions crashes. -- kiko, 2006-07-10
-        result = BugTask.select("""
-            CVE.id = BugCve.cve AND
-            BugCve.bug = Bug.id AND
-            BugTask.bug = Bug.id AND
-            %s AND
-            BugTask.status IN %s
-            """ % (clause, status_sql_values),
-            clauseTables=['Bug', 'Cve', 'BugCve'],
-            prejoinClauseTables=['Bug', 'Cve'],
-            orderBy=['-importance', 'datecreated'])
-
-        return result
+    def getBugCvesForBugTasks(self, bugtasks):
+        bug_ids = set(task.bug.id for task in bugtasks)
+        assert bug_ids, "bugtasks must be non-empty, received %r" % bugtasks
+        return BugCve.select("""
+            BugCve.bug IN %s""" % sqlvalues(bug_ids),
+            prejoins=["cve"],
+            orderBy=['bug', 'cve'])
 

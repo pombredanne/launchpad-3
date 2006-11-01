@@ -39,7 +39,7 @@ Now, we test that a member of a translation team is able to translate
 directly, in this example, we are using 'tsukimi' account.
 
   >>> print http(r"""
-  ... GET /products/netapplet/releases/+pots/netapplet/es/+translate HTTP/1.1
+  ... GET /products/netapplet/trunk/+pots/netapplet/es/+translate HTTP/1.1
   ... Authorization: Basic dHN1a2ltaUBxdWFxdWEubmV0OnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -53,19 +53,19 @@ Next test is with a non member of that translation team, the 'No Privileges'
 account. We check that we get the warning that we are not members of the team.
 
   >>> print http(r"""
-  ... GET /products/netapplet/releases/+pots/netapplet/es/+translate HTTP/1.1
+  ... GET /products/netapplet/trunk/+pots/netapplet/es/+translate HTTP/1.1
   ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  ...You are not an official translator for this file...
   ...You are translating...
+  ...Your translations will be held for review...
   ...
 
 And finally, we test that a language without a team lets to anyone (in this
 case, the 'No Privileges' account) to translate directly.
 
   >>> print http(r"""
-  ... GET /products/netapplet/releases/+pots/netapplet/fr/+translate HTTP/1.1
+  ... GET /products/netapplet/trunk/+pots/netapplet/fr/+translate HTTP/1.1
   ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -73,6 +73,6 @@ case, the 'No Privileges' account) to translate directly.
   ...You are translating...
   ...
   ...French...
-  ...translators:...
+  ...translators...
   ...No translators currently designated for this PO file...
   ...

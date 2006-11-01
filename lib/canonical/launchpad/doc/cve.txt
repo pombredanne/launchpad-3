@@ -34,10 +34,10 @@ To create a CVE, call ICveSet.new(sequence, description,
     >>> cve.displayname
     u'CVE-2004-0276'
 
-Linking CVE's to Bugs
-=====================
+Linking CVEs to Bugs
+---------------------
 
-You can link a CVE to a bug. You can also see which CVE's are currently
+You can link a CVE to a bug. You can also see which CVEs are currently
 linked to a bug:
 
     >>> from canonical.launchpad.database import Bug
@@ -70,3 +70,47 @@ string of text:
     >>> cve in b.cves
     True
     >>> b.unlinkCVE(cve)
+
+CVE Reports
+-----------
+
+Launchpad offers distributions, distribution releases and products with
+reports that inform on the status of bugs related to CVEs in the
+distribution. The method that drives this report is
+ICveSet.getBugCvesForBugTasks:
+
+    >>> from canonical.launchpad.interfaces import BugTaskSearchParams
+    >>> from canonical.launchpad.database import Distribution
+    >>> params = BugTaskSearchParams(None)
+    >>> ubuntu = Distribution.selectOneBy(name="ubuntu")
+    >>> ubuntu_tasks = ubuntu.searchTasks(params)
+    >>> bugcves = cveset.getBugCvesForBugTasks(ubuntu_tasks)
+    >>> [(bugcve.bug.id, bugcve.cve.title) for bugcve in bugcves]
+    [(1, u'CVE-1999-8979 (Entry)'),
+     (2, u'CVE-1999-2345 (Candidate)')]
+
+This method is used in the CVEReportView:
+
+    >>> from zope.component import getView
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> request = LaunchpadTestRequest()
+    >>> cve_report = getView(ubuntu, "+cve", request)
+    >>> cve_report.initialize()
+
+This view has a pair of methods that constructs a data structure that
+connects bugs to bugtasks and CVEs. The open_cve_bugtasks returned are, not
+surprisingly, the same the method above returned:
+
+    >>> for bugtaskcve in cve_report.open_cve_bugtasks:
+    ...    ([bugtask.title for bugtask in bugtaskcve.bugtasks],
+    ...     [cve.title for cve in bugtaskcve.cves])
+    ([u'Bug #1 in mozilla-firefox (Ubuntu): "Firefox does not support SVG"'],
+     [u'CVE-1999-8979 (Entry)'])
+    ([u'Bug #2 in Ubuntu: "Blackhole Trash folder"'],
+     [u'CVE-1999-2345 (Candidate)'])
+
+There are no resolved bugtasks linked to CVEs in Ubuntu:
+
+    >>> cve_report.resolved_cve_bugtasks
+    []
+

@@ -19,6 +19,8 @@ class IPrincipalIdentifiedEvent(Interface):
     """
     principal = Attribute('The principal')
     request = Attribute('The request')
+    login = Attribute(
+        'The login id that was used.  For example, an email address.')
 
 
 class ILoggedInEvent(Interface):
@@ -41,9 +43,10 @@ class CookieAuthLoggedInEvent:
 
 class CookieAuthPrincipalIdentifiedEvent:
     implements(IPrincipalIdentifiedEvent)
-    def __init__(self, principal, request):
+    def __init__(self, principal, request, login):
         self.principal = principal
         self.request = request
+        self.login = login
 
 
 class BasicAuthLoggedInEvent:
@@ -189,6 +192,12 @@ class INotificationResponse(Interface):
 
         level is one of the BrowserNotificationLevels: DEBUG, INFO, NOTICE,
         WARNING, ERROR.
+        """
+
+    def removeAllNotifications():
+        """Remove all notifications.
+
+        This will be used when rendering an error page.
         """
 
     notifications = Object(

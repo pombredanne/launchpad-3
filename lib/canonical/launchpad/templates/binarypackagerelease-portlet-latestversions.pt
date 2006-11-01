@@ -1,5 +1,5 @@
 <div class="portlet">
-  <h4>Latest versions:</h4>
+  <h2>Latest versions</h2>
   <div
     class="portletBody portletContent"
     tal:define="lastversions context/lastversions"

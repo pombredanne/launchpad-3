@@ -27,7 +27,6 @@ from canonical.launchpad.interfaces import (
     IDistroReleaseLanguageSet, IDistroRelease, ICountry, IDistroReleaseSet,
     ILaunchBag, ILanguageSet, NotFoundError)
 
-from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.queue import QueueItemsView
@@ -149,7 +148,7 @@ class DistroReleaseBugsMenu(ApplicationMenu):
         return Link('+filebug', 'Report a Bug', icon='add')
 
     def cve(self):
-        return Link('+cve', 'CVE List', icon='cve')
+        return Link('+cve', 'CVE Reports', icon='cve')
 
 
 class DistroReleaseSpecificationsMenu(ApplicationMenu):
@@ -238,20 +237,6 @@ class DistroReleaseView(BuildRecordsView, QueueItemsView):
 
     def browserLanguages(self):
         return helpers.browserLanguages(self.request)
-
-    def templateviews(self):
-        """Return the view class of the IPOTemplate associated with the context.
-        """
-        templateview_list = [
-            POTemplateView(template, self.request)
-            for template in self.context.currentpotemplates
-            ]
-
-        # Initialize the views.
-        for templateview in templateview_list:
-            templateview.initialize()
-
-        return templateview_list
 
     def distroreleaselanguages(self):
         """Produces a list containing a DistroReleaseLanguage object for

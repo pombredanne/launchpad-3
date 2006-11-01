@@ -29,6 +29,7 @@ Get the current counts of stuff in the database:
     >>> orig_bpr_count = BinaryPackageRelease.select().count()
     >>> orig_build_count = Build.select().count()
     >>> orig_sbpph_count = SBPPH.select().count()
+    >>> orig_sspph_main_count = SSPPH.selectBy(componentID=1, pocket=0).count()
 
 Create a distribution release and an arch release for breezy:
 
@@ -114,11 +115,6 @@ Let's set up the filesystem:
     ...                  'ftests/gina_test_archive')
     >>> path = os.path.join(os.getcwd(), relative_path)
     >>> os.symlink(path, '/tmp/gina_test_archive')
-
-Get the librarian going:
-
-    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-    >>> LibrarianTestSetup().setUp()
 
 And give her a spin:
 
@@ -302,11 +298,9 @@ successfully processed.
     >>> print SSPPH.select().count() - orig_sspph_count
     19
 
-Ensure all we published to was main, in the main pocket:
-
     >>> print SSPPH.selectBy(componentID=1,
-    ...                     pocket=0).count() - orig_sspph_count
-    18
+    ...                     pocket=0).count() - orig_sspph_main_count
+    19
 
 === Testing Binary Package Results ===
 
@@ -436,6 +430,27 @@ that we imported exactly 9 people (13 packages with 3 being uploaded by Kamion,
     12
     >>> print WikiName.select().count() - orig_wiki_count
     12
+
+The ensure_person function, defined in gina/handlers.py is used by gina to
+create Person entries when necessary. It also sets the creation_rationale
+and creation_comment of the created Person entry.
+
+    >>> from canonical.launchpad.scripts.gina.handlers import ensure_person
+    >>> transaction.commit()
+    >>> person = ensure_person(
+    ...     'Display Name', 'bar@foo.com', 'firefox', 'Ubuntu Breezy')
+    >>> person.is_valid_person  # Not valid because it lacks a preferred email
+    False
+    >>> person.creation_rationale.name
+    'SOURCEPACKAGEIMPORT'
+    >>> person.creation_comment
+    u'when the firefox package was imported into Ubuntu Breezy'
+
+Now we remove the newly created person so it doesn't interfere in the rest of
+the test.
+
+    >>> transaction.abort()
+
 
 === Re-run Gina ===
 
@@ -575,9 +590,6 @@ For kicks, finally, run gina on a configured but incomplete archive:
     1
 
 === Wrap up ===
-
-Stop Librarian
-    >>> LibrarianTestSetup().tearDown()
 
 Remove the tmp link to the gina_test_archive
     >>> os.remove('/tmp/gina_test_archive')

@@ -1,12 +1,12 @@
 <div class="portlet">
 
-  <h4><span tal:replace="context/target/displayname">Ubuntu</span> ticket
-      #<span tal:replace="context/id">234</span>:</h4>
+  <h2><span tal:replace="context/target/displayname">Ubuntu</span> ticket
+      #<span tal:replace="context/id">234</span></h2>
 
   <div class="portletBody portletContent">
 
     <b>Support request from:</b><br />
-    <img src="/@@/user.gif" />
+    <img src="/@@/user" />
     <a tal:attributes="href context/owner/fmt:url"
        tal:content="context/owner/browsername">Foo Bar</a><br />
 
@@ -35,7 +35,7 @@
 
     <b>Assignee:</b><br />
     <tal:block condition="context/assignee">
-      <img src="/@@/user.gif" />
+      <img src="/@@/user" />
       <a tal:attributes="href context/assignee/fmt:url"
          tal:content="context/assignee/browsername">Foo Bar</a>
     </tal:block>
@@ -46,7 +46,7 @@
 
     <b>Answered by:</b><br />
     <tal:block condition="context/answerer">
-      <img src="/@@/user.gif" />
+      <img src="/@@/user" />
       <a tal:attributes="href context/answerer/fmt:url"
          tal:content="context/answerer/browsername">Foo Bar</a>
     </tal:block>

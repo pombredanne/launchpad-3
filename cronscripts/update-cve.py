@@ -13,20 +13,19 @@ import gzip
 import StringIO
 import timing
 import _pythonpath
-from xml.dom.minidom import parseString
 
 from optparse import OptionParser
 
+import cElementTree
+
 from canonical.lp import initZopeless
+from canonical.config import config
 from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
-from canonical.launchpad.scripts.cveimport import update_one_cve
-from canonical.config import config
+from canonical.launchpad.scripts.cveimport import CVEDB_NS, update_one_cve
 
 _default_lock_file = '/var/lock/launchpad-update-cve.lock'
-_cve_db_url = 'http://cve.mitre.org/cve/downloads/full-allitems.xml.gz'
-
 
 def parse_options():
     """Parse command line arguments."""
@@ -38,7 +37,7 @@ def parse_options():
     parser.add_option("-f", "--cvefile", dest="cvefile",
         default=None, help="An XML file containing the CVE database.")
     parser.add_option("-u", "--cveurl", dest="cveurl",
-        default=_cve_db_url,
+        default=config.cveupdater.cve_db_url,
         help="The URL for the gzipped XML CVE database.")
 
     (options, args) = parser.parse_args()
@@ -57,11 +56,11 @@ def main(log, cvefile=None, cveurl=None):
             log.error('Unable to open CVE database in %s' % cvefile)
             return 1
     elif cveurl is not None:
-        log.info("Downloading CVE database...")
+        log.info("Downloading CVE database from %s..." % cveurl)
         try:
             url = urllib2.urlopen(cveurl)
         except (urllib2.HTTPError, urllib2.URLError), val:
-            log.error('Unable to connect for CVE database')
+            log.error('Unable to connect for CVE database %s' % cveurl)
             return 1
         cve_db_gz = url.read()
         log.info("%d bytes downloaded." % len(cve_db_gz))
@@ -72,8 +71,8 @@ def main(log, cvefile=None, cveurl=None):
     # start analysing the data
     timing.start()
     log.info("Processing CVE XML...")
-    dom = parseString(cve_db)
-    items = dom.getElementsByTagName('item')
+    dom = cElementTree.fromstring(cve_db)
+    items = dom.findall(CVEDB_NS + 'item')
     log.info("Updating database...")
     for item in items:
         txn.begin()
@@ -81,8 +80,6 @@ def main(log, cvefile=None, cveurl=None):
         txn.commit()
     timing.finish()
     log.info('%d seconds to update database.' % timing.seconds())
-    log.info('Cleaning up...')
-    dom.unlink()
 
 
 if __name__ == '__main__':

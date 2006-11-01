@@ -9,19 +9,19 @@ for publishing as appropriate.
 import _pythonpath
 
 import sys
-
 from optparse import OptionParser
 
 from zope.component import getUtility
 
-from canonical.lp import initZopeless
 from canonical.config import config
+from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
-from canonical.launchpad.interfaces import IDistributionSet
+from canonical.lp import (
+    initZopeless, READ_COMMITTED_ISOLATION)
 
 from contrib.glock import GlobalLock
-from canonical.lp.dbschema import DistroReleaseQueueStatus
+from canonical.lp.dbschema import PackageUploadStatus
 
 def main():
     # Parse command-line arguments
@@ -48,8 +48,8 @@ def main():
 
     log.debug("Initialising connection.")
 
-    ztm = initZopeless(dbuser=config.uploadqueue.dbuser)
-
+    ztm = initZopeless(
+        dbuser=config.uploadqueue.dbuser, isolation=READ_COMMITTED_ISOLATION)
     execute_zcml_for_scripts()
 
     try:
@@ -58,7 +58,7 @@ def main():
         for release in distro.releases:
             log.debug("Processing queue for %s" % release.name)
             queue_items = release.getQueueItems(
-                DistroReleaseQueueStatus.ACCEPTED)
+                PackageUploadStatus.ACCEPTED)
             for queue_item in queue_items:
                 try:
                     queue_item.realiseUpload(log)

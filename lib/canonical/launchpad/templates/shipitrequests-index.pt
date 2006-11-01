@@ -14,25 +14,18 @@
   <tr>
   <td width="80%">
 
-  <form name="search" action="" method="GET">
+  <form name="search" method="GET" tal:attributes="action request/URL">
   <table>
     <tbody>
     <tr>
       <th>Show:</th>
       <td colspan="2">
         <select name="statusfilter">
-          <option value="pending" 
-                  tal:attributes="selected python: view.selectedStatus == 'pending'">
-            Pending</option>
-          <option value="approved"
-                  tal:attributes="selected python: view.selectedStatus == 'approved'">
-            Approved</option>
-          <option value="denied"
-                  tal:attributes="selected python: view.selectedStatus == 'denied'">
-            Denied</option>
-          <option value="all"
-                  tal:attributes="selected python: view.selectedStatus == 'all'">
-            All</option>
+          <option tal:repeat="option view/status_options"
+                  tal:attributes="
+                    value option/name;
+                    selected option/is_selected"
+                  tal:content="option/title" />
         </select>
         requests
       </td>
@@ -69,6 +62,9 @@
       <th>sorted by:</th>
       <td colspan="2">
         <select name="orderby" tal:define="orderby request/orderby|nothing">
+          <option value="recipientdisplayname"
+            tal:attributes="selected python: orderby == 'recipientdisplayname'">
+            recipient</option>
           <option value="daterequested" 
             tal:attributes="selected python: orderby == 'daterequested'">
             oldest first</option>
@@ -78,9 +74,6 @@
           <option value="highpriority"
             tal:attributes="selected python: orderby == '-highpriority'">
             priority</option>
-          <option value="recipientdisplayname"
-            tal:attributes="selected python: orderby == 'recipientdisplayname'">
-            recipient</option>
         </select>
         <input type="submit" value="Show" name="show" />
       </td>
@@ -93,13 +86,13 @@
              define="bn view/batchNavigator;
                      prev_url bn/prevBatchURL;
                      next_url bn/nextBatchURL;
-                     currentBatch bn/currentBatch">
+                     shipitrequests view/shipitrequests">
 
-    <p tal:condition="not: bn/currentBatch">
+    <p tal:condition="not: shipitrequests">
       No requests were found
     </p>
 
-    <tal:block condition="bn/currentBatch">
+    <tal:block condition="shipitrequests">
       <table width="90%" class="listing" id="results">
         <thead style="border: none">
           <tr>
@@ -118,8 +111,11 @@
           </tr>
         </thead>
         <tbody>
-          <tal:block repeat="shipitrequest currentBatch">
-            <tr tal:define="bg python: shipitrequest.highpriority and '#ff6666' or None"
+          <tal:block repeat="shipitrequest shipitrequests">
+            <tr tal:define="
+              bg python: shipitrequest.highpriority and '#ff6666' or None;
+              total_requested python: view.totals_for_shipitrequests[shipitrequest.id][0];
+              total_approved python: view.totals_for_shipitrequests[shipitrequest.id][1]"
                 tal:attributes="style string: background-color:${bg}">
               <td><a tal:attributes="href shipitrequest/fmt:url"
                      tal:content="shipitrequest/id">id</a></td>
@@ -131,30 +127,9 @@
               </td>
               <td tal:content="shipitrequest/daterequested/fmt:date" />
               <td tal:content="shipitrequest/country/name" />
-              <td style="text-align: right" 
-                  tal:content="shipitrequest/getTotalCDs" />
-              <td style="text-align: right" 
-                  tal:content="shipitrequest/getTotalApprovedCDs" />
-              <td>
-                <tal:block condition="not: shipitrequest/cancelled">
-                  <tal:block condition="shipitrequest/isApproved">
-                    approved<br />
-                    <span tal:condition="not: shipitrequest/shipment"
-                      >(unshipped)</span>
-                    <span tal:condition="shipitrequest/shipment"
-                      >(sent for shipping on 
-                      <span tal:replace="
-                        shipitrequest/shipment/shippingrun/datecreated/fmt:date"
-                        />)
-                    </span>
-                  </tal:block>
-                  <span tal:condition="shipitrequest/isDenied">denied</span>
-                  <span tal:condition="shipitrequest/isAwaitingApproval">
-                    pending
-                  </span>
-                </tal:block>
-                <span tal:condition="shipitrequest/cancelled">cancelled</span>
-              </td>
+              <td style="text-align: right" tal:content="total_requested" />
+              <td style="text-align: right" tal:content="total_approved" />
+              <td tal:content="shipitrequest/status_desc" />
             </tr>
           </tal:block>
         </tbody>

@@ -226,8 +226,8 @@
     />
 
   <vocabulary
-    name="ProductBranch"
-    factory="canonical.launchpad.vocabularies.ProductBranchVocabulary"
+    name="Branch"
+    factory="canonical.launchpad.vocabularies.BranchVocabulary"
     />
 
   <vocabulary
@@ -256,8 +256,8 @@
     />
 
   <vocabulary
-    name="Schema"
-    factory="canonical.launchpad.vocabularies.SchemaVocabulary"
+    name="RevisionControlSystems"
+    factory="canonical.launchpad.vocabularies.RevisionControlSystemsVocabulary"
     />
 
   <vocabulary
@@ -326,6 +326,11 @@
     />
 
   <vocabulary
+    name="TicketSort"
+    factory="canonical.launchpad.vocabularies.TicketSortVocabulary"
+    />
+
+  <vocabulary
     name="TicketStatus"
     factory="canonical.launchpad.vocabularies.TicketStatusVocabulary"
     />
@@ -343,6 +348,11 @@
   <vocabulary
     name="TranslationPermission"
     factory="canonical.launchpad.vocabularies.TranslationPermissionVocabulary"
+    />
+
+  <vocabulary
+    name="UpstreamFileType"
+    factory="canonical.launchpad.vocabularies.UpstreamFileTypeVocabulary"
     />
 
   <vocabulary

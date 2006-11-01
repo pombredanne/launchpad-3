@@ -13,7 +13,6 @@ __all__ = [
     'SourcePackageHandler',
     'SourcePackagePublisher',
     'DistroHandler',
-    'PersonHandler',
     ]
 
 import os
@@ -28,14 +27,17 @@ from zope.component import getUtility
 from canonical.database.sqlbase import quote
 from canonical.database.constants import nowUTC
 
-from canonical.archivepublisher import Poolifier, parse_tagfile
+from canonical.archivepublisher.diskpool import Poolifier
+from canonical.archivepublisher.tagfiles import parse_tagfile
 
-from canonical.lp.dbschema import (PackagePublishingStatus, BuildStatus,
-    SourcePackageFormat)
+from canonical.database.sqlbase import sqlvalues
+
+from canonical.lp.dbschema import (
+    PackagePublishingStatus, BuildStatus, SourcePackageFormat,
+    PersonCreationRationale)
 
 from canonical.launchpad.scripts import log
-from canonical.launchpad.scripts.gina.library import (getLibraryAlias,
-                                                      checkLibraryForFile)
+from canonical.launchpad.scripts.gina.library import getLibraryAlias
 from canonical.launchpad.scripts.gina.packages import (SourcePackageData,
     urgencymap, prioritymap, get_dsc_path, licence_cache, read_dsc,
     PoolFileNotFound)
@@ -388,7 +390,6 @@ class SourcePackageHandler:
     on the launchpad db a little easier.
     """
     def __init__(self, KTDB, archive_root, keyrings, pocket):
-        self.person_handler = PersonHandler()
         self.distro_handler = DistroHandler()
         self.ktdb = KTDB
         self.archive_root = archive_root
@@ -516,9 +517,11 @@ class SourcePackageHandler:
                     sourcepackagerelease.id AND
                 sourcepackagepublishinghistory.distrorelease = 
                     distrorelease.id AND
+                sourcepackagepublishinghistory.archive = %s AND
                 distrorelease.distribution = %s
-                """ % (sourcepackagename.id, quote(version),
-                       distrorelease.distribution.id)
+                """ % sqlvalues(sourcepackagename, version,
+                                distrorelease.main_archive,
+                                distrorelease.distribution)
         ret = SourcePackageRelease.select(query,
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
             orderBy=["-SourcePackagePublishingHistory.datecreated"])
@@ -531,10 +534,9 @@ class SourcePackageHandler:
 
         Returns the created SourcePackageRelease, or None if it failed.
         """
-
         displayname, emailaddress = src.maintainer
-        maintainer = self.person_handler.ensurePerson(displayname,
-                                                      emailaddress)
+        maintainer = ensure_person(
+            displayname, emailaddress, src.package, distrorelease.displayname)
 
         # XXX: Check it later -- Debonzi 20050516
         #         if src.dsc_signing_key_owner:
@@ -571,7 +573,8 @@ class SourcePackageHandler:
                                    builddependsindep=src.build_depends_indep,
                                    architecturehintlist=src.architecture,
                                    format=SourcePackageFormat.DPKG,
-                                   uploaddistrorelease=distrorelease.id)
+                                   uploaddistrorelease=distrorelease.id,
+                                   uploadarchive=distrorelease.main_archive)
         log.info('Source Package Release %s (%s) created' % 
                  (name.name, src.version))
 
@@ -626,7 +629,8 @@ class SourcePackagePublisher:
             section=section.id,
             datecreated=nowUTC,
             datepublished=nowUTC,
-            pocket=self.pocket
+            pocket=self.pocket,
+            archive=self.distrorelease.main_archive
             )
         log.info('Source package %s (%s) published' % (
             entry.sourcepackagerelease.sourcepackagename.name,
@@ -637,10 +641,12 @@ class SourcePackagePublisher:
         ret = SecureSourcePackagePublishingHistory.select(
                 """sourcepackagerelease = %s
                    AND distrorelease = %s
+                   AND archive = %s
                    AND status in (%s, %s)""" %
-                (sourcepackagerelease.id, self.distrorelease.id,
-                 PackagePublishingStatus.PUBLISHED,
-                 PackagePublishingStatus.PENDING),
+                sqlvalues(sourcepackagerelease, self.distrorelease,
+                          self.distrorelease.main_archive,
+                          PackagePublishingStatus.PUBLISHED,
+                          PackagePublishingStatus.PENDING),
                 orderBy=["-datecreated"])
         ret = list(ret)
         if ret:
@@ -652,7 +658,6 @@ class BinaryPackageHandler:
     """Handler to deal with binarypackages."""
     def __init__(self, sphandler, archive_root, pocket):
         # Create other needed object handlers.
-        self.person_handler = PersonHandler()
         self.distro_handler = DistroHandler()
         self.source_handler = sphandler
         self.archive_root = archive_root
@@ -848,7 +853,8 @@ class BinaryPackageHandler:
                           buildlog=None,
                           builder=None,
                           datebuilt=None,
-                          pocket=self.pocket)
+                          pocket=self.pocket,
+                          archive=distroarchrelease.main_archive)
         return build
 
 
@@ -900,6 +906,7 @@ class BinaryPackagePublisher:
             supersededby = None,
             datemadepending = None,
             dateremoved = None,
+            archive=self.distroarchrelease.main_archive
             )
 
         log.info('BinaryPackage %s-%s published into %s.' % (
@@ -911,10 +918,12 @@ class BinaryPackagePublisher:
         ret = SecureBinaryPackagePublishingHistory.select(
                 """binarypackagerelease = %s
                    AND distroarchrelease = %s
+                   AND archive = %s
                    AND status in (%s, %s)""" %
-                (binarypackage.id, self.distroarchrelease.id,
-                 PackagePublishingStatus.PUBLISHED,
-                 PackagePublishingStatus.PENDING),
+                sqlvalues(binarypackage, self.distroarchrelease,
+                          self.distroarchrelease.main_archive,
+                          PackagePublishingStatus.PUBLISHED,
+                          PackagePublishingStatus.PENDING),
                 orderBy=["-datecreated"])
         ret = list(ret)
         if ret:
@@ -923,26 +932,22 @@ class BinaryPackagePublisher:
 
 
 
-class PersonHandler:
-    """Class to handle person."""
+def ensure_person(displayname, emailaddress, package_name, distrorelease_name):
+    """Return a person by its email.
 
-    def ensurePerson(self, displayname, emailaddress):
-        """Return a person by its email.
+    :package_name: The imported package that mentions the person with the
+                   given email address.
+    :distrorelease_name: The distrorelease into which the package is to be
+                         imported.
 
-        Create and Return if does not exist.
-        """
-        person = self.checkPerson(emailaddress)
-        if person is None:
-            return self.createPerson(emailaddress, displayname)
-        return person
-
-    def checkPerson(self, emailaddress):
-        """Check if a person already exists using its email."""
-        return getUtility(IPersonSet).getByEmail(emailaddress, default=None)
-
-    def createPerson(self, emailaddress, displayname):
-        """Create a new Person"""
+    Create and return a new Person if it does not exist.
+    """
+    person = getUtility(IPersonSet).getByEmail(emailaddress)
+    if person is None:
+        comment=('when the %s package was imported into %s'
+                 % (package_name, distrorelease_name))
         person, email = getUtility(IPersonSet).createPersonAndEmail(
-            email=emailaddress, displayname=displayname)
-        return person
+            emailaddress, PersonCreationRationale.SOURCEPACKAGEIMPORT,
+            comment=comment, displayname=displayname)
+    return person
 

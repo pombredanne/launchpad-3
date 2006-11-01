@@ -85,9 +85,6 @@ Plural-Forms: nplurals=2; plural=(n != 1);
 >>> pofile.fuzzyheader
 True
 
->>> pofile.pluralforms
-2
-
 Now, is time to change the old header with the new one.
 
 >>> pofile.updateHeader(new_header)
@@ -106,9 +103,6 @@ Plural-Forms: nplurals=2; plural=n != 1;
 
 >>> pofile.fuzzyheader
 False
-
->>> pofile.pluralforms
-2
 
 Now I'm going to test creating a header with invalid plural-forms and
 trying to parse the number and type of plural forms it has.
@@ -353,6 +347,46 @@ that as not bein complete too.
     ...     assert (pomsgset is None or
     ...             (pomsgset.iscomplete == False and
     ...              pomsgset.isfuzzy == False))
+
+createMessageSetFromText
+------------------------
+
+This method returns a new IPOMsgSet for the associated text.
+
+Let's get the IPOFile we are going to use for this test.
+
+  >>> pofile_sr = potemplate.newPOFile('sr')
+
+And the msgid we are looking for.
+
+  >>> msgid = u'Found %i invalid file.'
+
+Now, just to be sure that this entry doesn't exist yet:
+
+  >>> pofile_sr.getPOMsgSet(msgid) is None
+  True
+
+Is time to create it.
+
+  >>> pomsgset = pofile_sr.createMessageSetFromText(msgid)
+
+As we can see, is the msgid we were looking for.
+
+  >>> pomsgset.potmsgset.primemsgid_.msgid == msgid
+  True
+
+This entry is in fact one that is not used anymore, that means, its sequence
+is zero.
+
+  >>> pomsgset.potmsgset.sequence
+  0
+
+Also, as we just created it, it shouldn't have any translation.
+
+  >>> pomsgset.active_texts
+  [None, None, None]
+  >>> pomsgset.published_texts
+  [None, None, None]
 
 
 Security tests

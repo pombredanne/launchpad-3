@@ -119,7 +119,7 @@ the user is subscribed to the bug.
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> request = LaunchpadTestRequest(
-    ...     form={'create': 'create', 
+    ...     form={'create': 'create',
     ...           'field.title': 'Bug title',
     ...           'field.description': 'Bug description.'})
     >>> request.method = 'POST'
@@ -168,11 +168,12 @@ If the ticket already has bugs linked to it, no new bug can be created.
 Now, let's take a look at the '+linkbug' page. If we use that one to
 link to a bug, we'll get a similar notification like above:
 
-    >>> request = TestRequest(form={'UPDATE_SUBMIT': '', 'field.bug': '2'})
+    >>> request = LaunchpadTestRequest(
+    ...     form={'field.actions.link': 'Link', 'field.bug': '2'})
     >>> request.method = 'POST'
     >>> index = getView(ticket_three, '+linkbug', request)
-    >>> index.update()
-    ''
+    >>> index.initialize()
+
     >>> 2 in [bug.id for bug in ticket_three.bugs]
     True
 
@@ -194,11 +195,13 @@ link to a bug, we'll get a similar notification like above:
 
 Let's take a look at the '+unlinkbug' page as well:
 
-    >>> request = TestRequest(form={'UPDATE_SUBMIT': '', 'field.bug': '2'})
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> request = LaunchpadTestRequest(
+    ...     form={'field.actions.remove':'Remove', 'field.bugs' : ['2']})
     >>> request.method = 'POST'
     >>> index = getView(ticket_three, '+unlinkbug', request)
-    >>> index.update()
-    ''
+    >>> index.initialize()
+
     >>> 2 in [bug.id for bug in ticket_three.bugs]
     False
 
@@ -221,13 +224,12 @@ Let's take a look at the '+unlinkbug' page as well:
 To edit the title and description of a bug, +edit is used.
 
     >>> request = TestRequest(form={
-    ...     'UPDATE_SUBMIT': '',
+    ...     'field.actions.change': 'Continue',
     ...     'field.title': 'Better Title',
     ...     'field.description': 'A better description.'})
     >>> request.method = 'POST'
     >>> index = getView(ticket_three, '+edit', request)
-    >>> index.update()
-    u'Updated...'
+    >>> index.initialize()
     >>> ticket_three.title
     u'Better Title'
     >>> ticket_three.description
@@ -293,3 +295,156 @@ And now we can change the status to Answered:
     Thanks!
 
     >>> stub.test_emails = []
+
+
+SearchTicketsView
+-----------------
+
+This view is used as a base class to search for tickets. It is intended
+to be easily customizable to offer more specific reports, while
+keeping those searchable.
+
+    # Define a subclass to demonstrate the customizability of the base
+    # view.
+    >>> from canonical.launchpad.browser import SearchTicketsView
+    >>> class MyCustomSearchTicketsView(SearchTicketsView):
+    ...
+    ...     default_filter = {}
+    ...
+    ...     def getDefaultFilter(self):
+    ...         return dict(**self.default_filter)
+
+    # Set up a harness for easier testing.
+    >>> from canonical.launchpad.ftests import LaunchpadFormHarness
+    >>> search_view_harness = LaunchpadFormHarness(
+    ...     ubuntu, MyCustomSearchTicketsView)
+
+By default, that class provides widgets to search by text and by status.
+
+    >>> search_view = search_view_harness.view
+    >>> search_view.widgets.get('search_text') is not None
+    True
+    >>> search_view.widgets.get('status') is not None
+    True
+
+It also includes a widget to select the sort order.
+
+    >>> search_view.widgets.get('sort') is not None
+    True
+
+The tickets matching the search are available by using the
+searchResults() method. The returned results are batched.
+
+    # We want 5 items per page for these tests.
+    >>> from canonical.config import config
+    >>> original_default_batch_size = config.launchpad.default_batch_size
+    >>> config.launchpad.default_batch_size = 5
+
+    >>> tickets = search_view.searchResults()
+    >>> tickets
+    <canonical.launchpad.webapp.batching.BatchNavigator ...>
+    >>> print "\n".join([ticket.title for ticket in tickets.batch])
+    Continue playing after shutdown
+    Play DVDs in Totem
+    mailto: problem in webpage
+    Installation of Java Runtime Environment for Mozilla
+    Slow system
+
+These were the default results when no search is entered. The user
+can tweak the search and filter the results:
+
+    >>> search_view_harness.submit('search', {
+    ...     'field.status': ['Answered', 'Open'],
+    ...     'field.search_text': 'firefox',
+    ...     'field.sort': 'by relevancy',})
+    >>> search_view = search_view_harness.view
+    >>> tickets = search_view.searchResults()
+    >>> for ticket in tickets.batch:
+    ...     print ticket.title, ticket.status.title
+    mailto: problem in webpage  Answered
+
+Specific views can provide a default filter by returning the default
+search parameters to use in the getDefaultFilter() method:
+
+    >>> from canonical.lp.dbschema import TicketStatus
+    >>> MyCustomSearchTicketsView.default_filter = {
+    ...     'status': [TicketStatus.ANSWERED, TicketStatus.REJECTED]}
+    >>> search_view_harness.submit('', {})
+
+In this example, only the answered and rejected tickets are listed by
+default.
+
+    >>> search_view = search_view_harness.view
+    >>> tickets = search_view.searchResults()
+    >>> for ticket in tickets.batch:
+    ...     print ticket.title
+    mailto: problem in webpage
+    Better Title
+
+The status widget displays the default criteria used:
+
+    >>> for status in search_view.widgets['status']._getFormValue():
+    ...     print status.title
+    Answered
+    Rejected
+
+The user selected search parameters will override these default
+criteria.
+
+    >>> search_view_harness.submit('search', {
+    ...     'field.status': ['Answered'],
+    ...     'field.search_text': 'firefox',
+    ...     'field.sort': 'by relevancy'})
+    >>> search_view = search_view_harness.view
+    >>> tickets = search_view.searchResults()
+    >>> for ticket in tickets.batch:
+    ...     print ticket.title
+    mailto: problem in webpage
+    >>> for status in search_view.widgets['status']._getFormValue():
+    ...     print status.title
+    Answered
+
+The base view computes the page heading and the message displayed when
+no results are found based on the selected search filter:
+
+    >>> from zope.i18n import translate
+    >>> search_view_harness.submit('', {})
+    >>> print translate(search_view_harness.view.pageheading)
+    Support requests for Ubuntu
+    >>> print translate(search_view_harness.view.empty_listing_message)
+    There are no support requests for Ubuntu with the requested statuses.
+
+    >>> MyCustomSearchTicketsView.default_filter = dict(
+    ...     status=[TicketStatus.OPEN], search_text='Firefox')
+    >>> search_view_harness.submit('', {})
+    >>> print translate(search_view_harness.view.pageheading)
+    Open support requests about "Firefox" for Ubuntu
+    >>> print translate(search_view_harness.view.empty_listing_message)
+    There are no open support requests about "Firefox" for Ubuntu.
+
+It works also with user submitted values:
+
+    >>> search_view_harness.submit('search', {
+    ...     'field.status': ['Answered'],
+    ...     'field.search_text': '',
+    ...     'field.sort': 'by relevancy'})
+    >>> print translate(search_view_harness.view.pageheading)
+    Answered support requests for Ubuntu
+    >>> print translate(search_view_harness.view.empty_listing_message)
+    There are no answered support requests for Ubuntu.
+
+    >>> search_view_harness.submit('search', {
+    ...     'field.status': ['Open', 'Answered'],
+    ...     'field.search_text': 'evolution',
+    ...     'field.sort': 'by relevancy'})
+    >>> print translate(search_view_harness.view.pageheading)
+    Support requests about "evolution" for Ubuntu
+    >>> print translate(search_view_harness.view.empty_listing_message)
+    There are no support requests about "evolution" for Ubuntu with the
+    requested statuses.
+
+Cleanup
+-------
+
+    # Restore original batch size.
+    >>> config.launchpad.default_batch_size = original_default_batch_size

@@ -23,19 +23,20 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.database.binarypackagename import BinaryPackageName
 from canonical.launchpad.database.distroarchreleasebinarypackage import (
     DistroArchReleaseBinaryPackage)
-from canonical.launchpad.database.publishing import BinaryPackagePublishing
+from canonical.launchpad.database.publishing import (
+    BinaryPackagePublishingHistory)
 from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.processor import Processor
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import (
-    EnumCol, PackagePublishingPocket, DistributionReleaseStatus,
-    PackagePublishingStatus)
+    EnumCol, PackagePublishingPocket, PackagePublishingStatus)
 
 class DistroArchRelease(SQLBase):
     implements(IDistroArchRelease, IHasBuildRecords, IPublishing)
     _table = 'DistroArchRelease'
+    _defaultOrder = 'id'
 
     distrorelease = ForeignKey(dbName='distrorelease',
         foreignKey='DistroRelease', notNull=True)
@@ -57,13 +58,17 @@ class DistroArchRelease(SQLBase):
     @property
     def default_processor(self):
         """See IDistroArchRelease"""
+        # XXX cprov 20050831
+        # I could possibly be better designed, let's think about it in
+        # the future. Pick the first processor we found for this
+        # distroarchrelease.processorfamily. The data model should
+        # change to have a default processor for a processorfamily
         return self.processors[0]
 
     @property
     def processors(self):
         """See IDistroArchRelease"""
-        return Processor.selectBy(familyID=self.processorfamily.id,
-                                  orderBy='id')
+        return Processor.selectBy(family=self.processorfamily, orderBy='id')
 
     @property
     def title(self):
@@ -81,15 +86,18 @@ class DistroArchRelease(SQLBase):
     def updatePackageCount(self):
         """See IDistroArchRelease """
         query = """
-            BinaryPackagePublishing.distroarchrelease = %s AND
-            BinaryPackagePublishing.status = %s AND
-            BinaryPackagePublishing.pocket = %s
+            BinaryPackagePublishingHistory.distroarchrelease = %s AND
+            BinaryPackagePublishingHistory.archive = %s AND
+            BinaryPackagePublishingHistory.status = %s AND
+            BinaryPackagePublishingHistory.pocket = %s
             """ % sqlvalues(
-                    self.id,
+                    self,
+                    self.main_archive,
                     PackagePublishingStatus.PUBLISHED,
                     PackagePublishingPocket.RELEASE
                  )
-        self.package_count = BinaryPackagePublishing.select(query).count()
+        self.package_count = BinaryPackagePublishingHistory.select(
+            query).count()
 
     @property
     def isNominatedArchIndep(self):
@@ -102,8 +110,8 @@ class DistroArchRelease(SQLBase):
         if not pocket:
             pocket = PackagePublishingPocket.RELEASE
 
-        pchroot = PocketChroot.selectOneBy(
-            distroarchreleaseID=self.id, pocket=pocket)
+        pchroot = PocketChroot.selectOneBy(distroarchrelease=self,
+                                           pocket=pocket)
 
         return pchroot
 
@@ -132,23 +140,30 @@ class DistroArchRelease(SQLBase):
         """Search BinaryPackages matching pattern and archtag"""
         binset = getUtility(IBinaryPackageReleaseSet)
         return binset.findByNameInDistroRelease(
-            self.distrorelease.id, pattern, self.architecturetag, fti)
+            self.distrorelease, pattern, self.architecturetag, fti)
 
     def searchBinaryPackages(self, text):
         """See IDistroArchRelease."""
         bprs = BinaryPackageRelease.select("""
-            BinaryPackagePublishing.distroarchrelease = %s AND
-            BinaryPackagePublishing.binarypackagerelease =
+            BinaryPackagePublishingHistory.distroarchrelease = %s AND
+            BinaryPackagePublishingHistory.archive = %s AND
+            BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
-             BinaryPackageRelease.binarypackagename =
+            BinaryPackagePublishingHistory.status != %s AND
+            BinaryPackageRelease.binarypackagename =
                 BinaryPackageName.id AND
             (BinaryPackageRelease.fti @@ ftq(%s) OR
              BinaryPackageName.name ILIKE '%%' || %s || '%%')
-            """ % (quote(self.id), quote(text), quote_like(text)),
+            """ % (quote(self),
+                   quote(self.main_archive),
+                   quote(PackagePublishingStatus.REMOVED),
+                   quote(text),
+                   quote_like(text)),
             selectAlso="""
                 rank(BinaryPackageRelease.fti, ftq(%s))
                 AS rank""" % sqlvalues(text),
-            clauseTables=['BinaryPackagePublishing',  'BinaryPackageName'],
+            clauseTables=['BinaryPackagePublishingHistory',
+                          'BinaryPackageName'],
             prejoinClauseTables=["BinaryPackageName"],
             orderBy=['-rank'],
             distinct=True)
@@ -172,8 +187,8 @@ class DistroArchRelease(SQLBase):
     def getBuildRecords(self, status=None, name=None, pocket=None):
         """See IHasBuildRecords"""
         # use facility provided by IBuildSet to retrieve the records
-        return getUtility(IBuildSet).getBuildsByArchIds([self.id], status,
-                                                        name, pocket)
+        return getUtility(IBuildSet).getBuildsByArchIds(
+            [self.id], status, name, pocket)
 
     def getReleasedPackages(self, binary_name, pocket=None,
                             include_pending=False, exclude_pocket=None):
@@ -181,14 +196,14 @@ class DistroArchRelease(SQLBase):
         queries = []
 
         if not IBinaryPackageName.providedBy(binary_name):
-            binname_set = getUtility(IBinaryPackageNameSet)
-            binary_name = binname_set.getOrCreateByName(binary_name)
+            binary_name = BinaryPackageName.byName(binary_name)
 
         queries.append("""
         binarypackagerelease=binarypackagerelease.id AND
         binarypackagerelease.binarypackagename=%s AND
-        distroarchrelease=%s
-        """ % sqlvalues(binary_name.id, self.id))
+        distroarchrelease=%s AND
+        archive = %s
+        """ % sqlvalues(binary_name, self, self.main_archive))
 
         if pocket is not None:
             queries.append("pocket=%s" % sqlvalues(pocket.value))
@@ -204,7 +219,7 @@ class DistroArchRelease(SQLBase):
             queries.append("status=%s" % sqlvalues(
                 PackagePublishingStatus.PUBLISHED))
 
-        published = BinaryPackagePublishing.select(
+        published = BinaryPackagePublishingHistory.select(
             " AND ".join(queries),
             clauseTables = ['BinaryPackageRelease'])
 
@@ -213,51 +228,42 @@ class DistroArchRelease(SQLBase):
     def findDepCandidateByName(self, name):
         """See IPublishedSet."""
         return PublishedPackage.selectFirstBy(
-            binarypackagename=name, distroarchreleaseID=self.id,
+            binarypackagename=name, distroarchrelease=self,
             packagepublishingstatus=PackagePublishingStatus.PUBLISHED,
             orderBy=['-id'])
 
-    def publish(self, diskpool, log, careful=False, dirty_pockets=None):
+    def publish(self, diskpool, log, is_careful=False):
         """See IPublishing."""
+        # XXX: this method shares exactly the same pattern as
+        # DistroRelease.publish(); they could be factored if API was
+        # provided to return the correct publishing entries.
+        #    -- kiko, 2006-08-23
         log.debug("Attempting to publish pending binaries for %s"
               % self.architecturetag)
 
-        queries = ["distroarchrelease=%s" % sqlvalues(self)]
+        dirty_pockets = set()
+        queries = ["distroarchrelease=%s AND archive = %s" %
+                   sqlvalues(self, self.main_archive)]
 
-        if careful:
-            target_status = [
-                PackagePublishingStatus.PENDING,
-                PackagePublishingStatus.PUBLISHED,
-                ]
-        else:
-            target_status = [
-                PackagePublishingStatus.PENDING,
-                ]
-
+        target_status = [PackagePublishingStatus.PENDING]
+        if is_careful:
+            target_status.append(PackagePublishingStatus.PUBLISHED)
         queries.append("status in %s" % sqlvalues(target_status))
 
-        unstable_states = [
-            DistributionReleaseStatus.FROZEN,
-            DistributionReleaseStatus.DEVELOPMENT,
-            DistributionReleaseStatus.EXPERIMENTAL,
-            ]
+        is_unstable = self.distrorelease.isUnstable()
+        publications = BinaryPackagePublishingHistory.select(
+                    " AND ".join(queries), orderBy=["-id"])
+        for bpph in publications:
+            if not is_careful and self.distrorelease.checkLegalPocket(bpph, log):
+                continue
+            bpph.publish(diskpool, log)
+            dirty_pockets.add((self.distrorelease.name, bpph.pocket))
 
-        if self.distrorelease.releasestatus in unstable_states:
-            queries.append(
-                "pocket=%s" % sqlvalues(PackagePublishingPocket.RELEASE))
-        else:
-            queries.append(
-                "pocket!=%s" % sqlvalues(PackagePublishingPocket.RELEASE))
+        return dirty_pockets
 
-        bpps = BinaryPackagePublishing.select(" AND ".join(queries))
-
-        for bpp in bpps:
-            bpp.publish(diskpool, log)
-            if dirty_pockets is not None:
-                name = self.distrorelease.name
-                release_pockets = dirty_pockets.setdefault(name, {})
-                release_pockets[bpp.pocket] = True
-
+    @property
+    def main_archive(self):
+        return self.distrorelease.distribution.main_archive
 
 
 class DistroArchReleaseSet:
@@ -289,3 +295,4 @@ class PocketChroot(SQLBase):
                      notNull=True)
 
     chroot = ForeignKey(dbName='chroot', foreignKey='LibraryFileAlias')
+

@@ -10,6 +10,7 @@
   <include package="canonical.launchpad.validators" />
   <include package="canonical.launchpad.zcml" />
   <authorizations module="canonical.launchpad.security" />
+  <include package="canonical.launchpad.xmlrpc" />
 
   <browser:url
     for="canonical.launchpad.interfaces.IProductSet"
@@ -104,8 +105,8 @@
       />
 
   <browser:resourceDirectory
-      name="dynarch"
-      directory="../../contrib/dynarch-resources"
+      name="MochiKit"
+      directory="../../contrib/MochiKit"
       />
 
 
