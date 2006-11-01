@@ -44,6 +44,11 @@
     </div>
   </div>
 </div>
+<p metal:fill-slot="help">If the displayed answer is indeed the one that
+  helped you solved your problem. Simply click on the
+  <strong>This Solved my Problem</strong> button. Your comments, if any, will
+  be added at to the support request discussion.
+</p>
 </body>
 </html>
 
