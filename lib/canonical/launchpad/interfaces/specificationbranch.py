@@ -22,3 +22,6 @@ class ISpecificationBranch(IHasDateCreated):
     branch = Choice(
         title=_("Branch"), vocabulary="Branch")
     summary = TextLine(title=_("Summary"), required=False)
+
+    def destroySelf():
+        """Destroy this specification branch link"""

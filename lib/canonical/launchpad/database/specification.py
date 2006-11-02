@@ -557,21 +557,18 @@ class Specification(SQLBase, BugLinkTargetMixin):
         return sorted(blocked, key=lambda s: (s.status, s.priority, s.title))
 
     # branches
+    def getBranchLink(self, branch):
+        return SpecificationBranch.selectOneBy(
+            specificationID=self.id, branchID=branch.id)
+        
     def addBranch(self, branch, summary=None):
-        for link in self.branch_links:
-            if link.branch.id == branch.id:
-                return link
+        branchlink = self.getBranchLink(branch)
+        if branchlink is not None:
+            return branchlink
         return SpecificationBranch(specification=self,
                                    branch=branch,
                                    summary=summary)
 
-    def removeBranch(self, branch):
-        deleted = False
-        for link in self.branch_links:
-            if link.branch.id == branch.id:
-                SpecificationBranch.delete(link.id)
-                deleted = True
-        return deleted
 
 class SpecificationSet:
     """The set of feature specifications."""

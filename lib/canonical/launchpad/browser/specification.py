@@ -32,6 +32,7 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IDistribution,
     ILaunchBag,
+    IPersonSet,
     IProduct,
     ISpecification,
     ISpecificationSet,
@@ -56,6 +57,28 @@ class SpecificationNavigation(Navigation):
     @stepthrough('+subscription')
     def traverse_subscriptions(self, name):
         return self.context.getSubscriptionByName(name)
+
+    @stepto('+branch')
+    def traverse_branch(self):
+        person_name = self.request.stepstogo.consume()
+        product_name = self.request.stepstogo.consume()
+        branch_name = self.request.stepstogo.consume()
+        if person_name is None or product_name is None or branch_name is None:
+            raise NotFoundError
+        
+        person = getUtility(IPersonSet).getByName(person_name)
+        if person is None:
+            raise NotFoundError
+
+        if product_name == '+junk':
+            branch = person.getBranch(None, branch_name)
+        else:
+            branch = person.getBranch(product_name, branch_name)
+
+        if not branch:
+            raise NotFoundError
+
+        return self.context.getBranchLink(branch)
 
     def traverse(self, name):
         # fallback to looking for a sprint with this name, with this feature

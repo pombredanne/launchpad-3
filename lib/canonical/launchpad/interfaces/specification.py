@@ -321,11 +321,12 @@ class ISpecification(IHasOwner):
         """Remove any dependency of this spec on the spec provided."""
 
     # branches
+    def getBranchLink(branch):
+        """Return the SpecificationBranch link for the branch, or None."""
+    
     def addBranch(branch, summary=None):
-        """Creates a association with the branch"""
+        """Create a SpecificationBranch for the given branch."""
 
-    def removeBranch(branch):
-        """Removes the association with the branch"""
 
 # Interfaces for containers
 class ISpecificationSet(IHasSpecifications):
