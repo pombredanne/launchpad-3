@@ -127,9 +127,6 @@ class Specification(SQLBase, BugLinkTargetMixin):
     branch_links = SQLMultipleJoin('SpecificationBranch',
         joinColumn='specification',
         orderBy='id')
-    branches = SQLRelatedJoin('Branch',
-        joinColumn='specification', otherColumn='branch',
-        intermediateTable='SpecificationBranch', orderBy='id')
     spec_dependency_links = SQLMultipleJoin('SpecificationDependency',
         joinColumn='specification', orderBy='id')
 

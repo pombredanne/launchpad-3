@@ -209,8 +209,6 @@ class ISpecification(IHasOwner):
     all_deps = Attribute("All dependencies, recursively")
     all_blocked = Attribute("All specs blocked on this, recursively.")
     branch_links = Attribute('The entries that link the branches to the spec')
-    branches = Attribute('Branches associated with this spec.  '
-                         'Normally for implementation purposes.')
 
     # emergent properties
     is_complete = Attribute('Is True if this spec is already completely '
