@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 
 """IBugTask-related browser views."""
 
@@ -608,6 +608,9 @@ class BugTaskEditView(GeneralFormView):
         parts = []
         if IUpstreamBugTask.providedBy(bugtask):
             parts.append(bugtask.product.name)
+        elif IProductSeriesBugTask.providedBy(bugtask):
+            parts.append(bugtask.productseries.name)
+            parts.append(bugtask.productseries.product.name)
         elif IDistroBugTask.providedBy(bugtask):
             parts.append(bugtask.distribution.name)
             if bugtask.sourcepackagename is not None:
