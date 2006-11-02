@@ -157,36 +157,49 @@ class BugTask(SQLBase, BugTaskMixin):
     @property
     def conjoined_master(self):
         """See IBugTask."""
+        conjoined_master = None
         if IDistroBugTask.providedBy(self):
             current_release = self.distribution.currentrelease
             for bt in shortlist(self.bug.bugtasks):
                 if (bt.distrorelease == current_release and
                     bt.sourcepackagename == self.sourcepackagename):
-                    return bt
+                    conjoined_master = bt
+                    break
         elif IUpstreamBugTask.providedBy(self):
             devel_focus = self.product.development_focus
             for bt in shortlist(self.bug.bugtasks):
                 if bt.productseries == devel_focus:
-                    return bt
+                    conjoined_master = bt
+                    break
 
-        return None
+        if (conjoined_master is not None and
+            conjoined_master.status == dbschema.BugTaskStatus.REJECTED):
+            conjoined_master = None
+        return conjoined_master
 
     @property
     def conjoined_slave(self):
         """See IBugTask."""
+        conjoined_slave = None
         if IDistroReleaseBugTask.providedBy(self):
             distribution = self.distrorelease.distribution
             sourcepackagename = self.sourcepackagename
             for bt in shortlist(self.bug.bugtasks):
                 if (bt.distribution == distribution and
                     bt.sourcepackagename == self.sourcepackagename):
-                    return bt
+                    conjoined_slave = bt
+                    break
         elif IProductSeriesBugTask.providedBy(self):
             product = self.productseries.product
             for bt in shortlist(self.bug.bugtasks):
                 if bt.product == product:
-                    return bt
+                    conjoined_slave = bt
+                    break
 
+        if (conjoined_slave is not None and
+            self.status == dbschema.BugTaskStatus.REJECTED):
+            conjoined_slave = None
+        return conjoined_slave
     # XXX: Conjoined bugtask synching methods. We override these methods
     # individually, to avoid cycle problems if we were to override
     # _SO_setValue instead. This indicates either a bug or design issue
@@ -194,7 +207,10 @@ class BugTask(SQLBase, BugTaskMixin):
     # Each attribute listed in _CONJOINED_ATTRIBUTES should have a
     # _set_foo method below.
     def _set_status(self, value):
-        self._setValueAndUpdateConjoinedBugTask("status", value)
+        if value != dbschema.BugTaskStatus.REJECTED:
+            self._setValueAndUpdateConjoinedBugTask("status", value)
+        else:
+            self._SO_set_status(value)
 
     def _set_assignee(self, value):
         self._setValueAndUpdateConjoinedBugTask("assignee", value)
@@ -357,13 +373,14 @@ class BugTask(SQLBase, BugTaskMixin):
             # No change in the status, so nothing to do.
             return
 
+        old_status = self.status
+        self.status = new_status
+
         if new_status == dbschema.BugTaskStatus.UNKNOWN:
             # Ensure that all status-related dates are cleared,
             # because it doesn't make sense to have any values set for
             # date_confirmed, date_closed, etc. when the status
             # becomes UNKNOWN.
-            self.status = new_status
-
             self.date_confirmed = None
             self.date_inprogress = None
             self.date_closed = None
@@ -375,7 +392,7 @@ class BugTask(SQLBase, BugTaskMixin):
 
         # Record the date of the particular kinds of transitions into
         # certain states.
-        if ((self.status.value < dbschema.BugTaskStatus.CONFIRMED.value) and
+        if ((old_status.value < dbschema.BugTaskStatus.CONFIRMED.value) and
             (new_status.value >= dbschema.BugTaskStatus.CONFIRMED.value)):
             # Even if the bug task skips the Confirmed status
             # (e.g. goes directly to Fix Committed), we'll record a
@@ -384,13 +401,13 @@ class BugTask(SQLBase, BugTaskMixin):
             # reports.
             self.date_confirmed = now
 
-        if ((self.status.value < dbschema.BugTaskStatus.INPROGRESS.value) and
+        if ((old_status.value < dbschema.BugTaskStatus.INPROGRESS.value) and
             (new_status.value >= dbschema.BugTaskStatus.INPROGRESS.value)):
             # Same idea with In Progress as the comment above about
             # Confirmed.
             self.date_inprogress = now
 
-        if ((self.status in UNRESOLVED_BUGTASK_STATUSES) and
+        if ((old_status in UNRESOLVED_BUGTASK_STATUSES) and
             (new_status in RESOLVED_BUGTASK_STATUSES)):
             self.date_closed = now
 
@@ -407,8 +424,6 @@ class BugTask(SQLBase, BugTaskMixin):
 
         if new_status < dbschema.BugTaskStatus.INPROGRESS:
             self.date_inprogress = None
-
-        self.status = new_status
 
     def transitionToAssignee(self, assignee):
         """See canonical.launchpad.interfaces.IBugTask."""

@@ -736,6 +736,51 @@ The generic tasks are not directly editable.
       ...
     Unauthorized: (<BugTask at ...>, 'transitionToAssignee', 'launchpad.Edit')
 
+
+A conjoined relationship can be broken, though. If the development
+task (i.e the conjoined master) is Rejected, it means that the bug is
+deferred to the next release. In this case the development task should
+be Rejected, while the generic task keeps the value it had before,
+allowing it to stay open.
+
+First let's change the status from Fix Released, since it doesn't make
+sense to reject such a task.
+
+    >>> current_release_netapplet_task.transitionToStatus(
+    ...     BugTaskStatus.CONFIRMED)
+    >>> print generic_netapplet_task.status.title
+    Confirmed
+    >>> print current_release_netapplet_task.status.title
+    Confirmed
+    >>> generic_netapplet_task.date_closed is None
+    True
+    >>> current_release_netapplet_task.date_closed is None
+    True
+
+
+Now, if we reject the current release task, the generic task will still
+be confirmed.
+
+    >>> current_release_netapplet_task.transitionToStatus(
+    ...     BugTaskStatus.REJECTED)
+
+    >>> print generic_netapplet_task.status.title
+    Confirmed
+    >>> print current_release_netapplet_task.status.title
+    Rejected
+
+    >>> generic_netapplet_task.date_closed is None
+    True
+    >>> current_release_netapplet_task.date_closed is None
+    False
+
+And the bugtasks are no longer conjoined:
+
+    >>> generic_netapplet_task.conjoined_master is None
+    True
+    >>> current_release_netapplet_task.conjoined_slave is None
+    True
+
 Null Bug Tasks
 --------------
 
