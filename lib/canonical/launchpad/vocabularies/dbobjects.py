@@ -1317,7 +1317,7 @@ class BugNominatableReleaseVocabularyBase(NamedSQLObjectVocabulary):
         return SimpleTerm(obj, obj.name, obj.name.capitalize())
 
     def getTermByToken(self, token):
-        obj = self._queryNominatableObjectByToken(token)
+        obj = self._queryNominatableObjectByName(token)
         if obj is None:
             raise LookupError(token)
 
@@ -1365,6 +1365,6 @@ class BugNominatableDistroReleaseVocabulary(BugNominatableReleaseVocabularyBase)
             release for release in shortlist(self.distribution.releases)
             if release.releasestatus != DistributionReleaseStatus.OBSOLETE]
 
-    def _queryNominatableObjectByToken(self, token):
+    def _queryNominatableObjectByName(self, name):
         """See BugNominatableReleaseVocabularyBase."""
-        return self.distribution.getRelease(token)
+        return self.distribution.getRelease(name)
