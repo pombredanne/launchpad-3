@@ -730,13 +730,13 @@ editable.
     ...     BugTaskStatus.REJECTED)
     Traceback (most recent call last):
       ...
-    ConjoinedBugTaskEditError: ...
+    Unauthorized: (<BugTask at ...>, 'transitionToStatus', 'launchpad.Edit')
 
     >>> devel_focus_alsa_utils_task.transitionToAssignee(
     ...     launchbag.user)
     Traceback (most recent call last):
       ...
-    ConjoinedBugTaskEditError: ...
+    Unauthorized: (<BugTask at ...>, 'transitionToAssignee', 'launchpad.Edit')
 
 Null Bug Tasks
 --------------

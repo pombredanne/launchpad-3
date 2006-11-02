@@ -426,7 +426,7 @@ Then get the PO file from the exporter.
   >>> print pofile
   # Japanese translation for evolution
   ...
-  "Plural-Forms: nplurals=1; plural=0\n"
+  "Plural-Forms: nplurals=1; plural=(0);\n"
   ...
   #, c-format
   msgid "%d contact"

@@ -32,6 +32,8 @@ __all__ = [
     'validate_date_interval'
     ]
 
+import re
+import string
 import urllib
 from textwrap import dedent
 from StringIO import StringIO
@@ -49,7 +51,7 @@ from canonical.launchpad.validators.cve import valid_cve
 from canonical.launchpad.validators.url import valid_absolute_url
 
 def can_be_nominated_for_releases(releases):
-    """Can the bug be nominated for this release?"""
+    """Can the bug be nominated for these releases?"""
     current_bug = getUtility(ILaunchBag).bug
     unnominatable_releases = []
     for release in releases:
@@ -58,22 +60,27 @@ def can_be_nominated_for_releases(releases):
 
     if unnominatable_releases:
         raise LaunchpadValidationError(_(
-            "Sorry, this bug cannot be nominated for: %s. "
-            "Perhaps it is already nominated or targeted "
-            "for this release?") % ", ".join(unnominatable_releases))
+            "This bug has already been nominated for these releases: %s" %
+                ", ".join(unnominatable_releases)))
 
     return True
 
-def _validate_ascii_text(text):
-    """Check if the given text contains only ASCII characters.
-    
-    >>> print _validate_ascii_text(u'no non-ascii characters')
+
+def _validate_ascii_printable_text(text):
+    """Check if the given text contains only printable ASCII characters.
+
+    >>> print _validate_ascii_printable_text(u'no non-ascii characters')
     None
-    >>> print _validate_ascii_text(u'\N{LATIN SMALL LETTER E WITH ACUTE}')
+    >>> print _validate_ascii_printable_text(
+    ...     u'\N{LATIN SMALL LETTER E WITH ACUTE}')
     Traceback (most recent call last):
     ...
     LaunchpadValidationError: ...
-    >>> print _validate_ascii_text('\xc3\xa7')
+    >>> print _validate_ascii_printable_text(u'\x06')
+    Traceback (most recent call last):
+    ...
+    LaunchpadValidationError: Non printable characters are not allowed.
+    >>> print _validate_ascii_printable_text('\xc3\xa7')
     Traceback (most recent call last):
     ...
     AssertionError: Expected unicode string, but got <type 'str'>
@@ -90,6 +97,9 @@ def _validate_ascii_text(text):
             by our shipping company. Please change these to ASCII
             equivalents. (For instance, '%s' should be changed to 'e')"""
             % (first_non_ascii_char, e_with_acute))))
+    if re.search(r"^[%s]*$" % re.escape(string.printable), text) is None:
+        raise LaunchpadValidationError(_(
+            'Non printable characters are not allowed.'))
 
 
 def shipit_postcode_required(country):
@@ -132,7 +142,7 @@ class ShipItAddressValidator:
         ...
         LaunchpadValidationError: some custom message
         """
-        _validate_ascii_text(value)
+        _validate_ascii_printable_text(value)
         if len(value) > self.length:
             if not self.msg:
                 self.msg = ("The %s can't have more than %d characters."
@@ -163,7 +173,7 @@ validate_shipit_province = ShipItAddressValidator('province', 30)
 # heard back from MediaMotion on the length constraint.
 # -- Guilherme Salgado, 2006-05-22
 def validate_shipit_postcode(value):
-    _validate_ascii_text(value)
+    _validate_ascii_printable_text(value)
     return True
 
 

@@ -42,9 +42,9 @@ raised.
     >>> nopriv_other_browser.getControl("Submit").click()
 
     >>> for tag in find_tags_by_class(nopriv_other_browser.contents, 'message'):
-    ...     print tag
-    <p...There is 1 error...
-    <div...Sorry, this bug cannot be nominated for: Grumpy...
+    ...     print tag.renderContents()
+    There is 1 error.
+    This bug has already been nominated for these releases: Grumpy
 
 When a nomination is submitted by a privileged user, it is immediately
 approved and targeted to the release.
