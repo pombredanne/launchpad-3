@@ -43,7 +43,7 @@ from canonical.launchpad.browser.addview import SQLObjectAddView
 
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
-    LaunchpadView, Navigation, GeneralFormView, stepthrough)
+    LaunchpadView, Navigation, GeneralFormView, stepthrough, stepto)
 
 from canonical.launchpad.helpers import check_permission
 
