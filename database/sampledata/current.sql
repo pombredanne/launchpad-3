@@ -513,6 +513,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 ALTER TABLE archconfig DISABLE TRIGGER ALL;
 
 
@@ -8637,6 +8640,14 @@ INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter,
 
 
 ALTER TABLE specification ENABLE TRIGGER ALL;
+
+
+ALTER TABLE specificationbranch DISABLE TRIGGER ALL;
+
+INSERT INTO specificationbranch (id, datecreated, specification, branch, summary) VALUES (1, '2006-11-02 09:07:48.389829', 6, 20, NULL);
+
+
+ALTER TABLE specificationbranch ENABLE TRIGGER ALL;
 
 
 ALTER TABLE specificationbug DISABLE TRIGGER ALL;
