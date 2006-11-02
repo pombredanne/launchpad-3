@@ -728,4 +728,28 @@ o BugWatchVocabulary - all bug watches associated with a bugtask's bug
     The Mozilla.org Bug Tracker <a...>#42</a>
     Debian Bug tracker <a...>#304014</a>
 
+o DistributionOrProductVocabulary - all products and distributions.
+  Note that the value type is heterogeneous.
+
+    >>> vocab = vocabulary_registry.get(None, "DistributionOrProduct")
+    >>> for term in vocab:
+    ...     if 'Ubuntu' in term.title:
+    ...         print term.title, '- class', term.value.__class__.__name__
+    Ubuntu Linux (Distribution) - class Distribution
+    Ubuntu (Product) - class Product
+    Ubuntu Test (Distribution) - class Distribution
+
+o DistributionOrProductOrProjectVocabulary - all products, projects
+    and distributions. Note that the value type is heterogeneous.
+
+    >>> vocab = vocabulary_registry.get(None, "DistributionOrProductOrProject")
+    >>> for term in vocab:
+    ...     if 'Ubuntu' in term.title:
+    ...         print term.title, '- class', term.value.__class__.__name__
+    Ubuntu Linux (Distribution) - class Distribution
+    Ubuntu (Product) - class Product
+    The Ubuntu Project (Project) - class Project
+    Ubuntu Test (Distribution) - class Distribution
+
+
 XXX: document more vocabularies here, particularly when they break!

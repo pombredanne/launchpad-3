@@ -400,6 +400,16 @@
     factory="canonical.launchpad.vocabularies.ProcessorFamilyVocabulary"
     />
 
+  <vocabulary
+    name="DistributionOrProduct"
+    factory="canonical.launchpad.vocabularies.DistributionOrProductVocabulary"
+    />
+
+  <vocabulary
+    name="DistributionOrProductOrProject"
+    factory="canonical.launchpad.vocabularies.DistributionOrProductOrProjectVocabulary"
+    />
+
   <!-- Define the widget used by Choice fields that use huge vocabularies -->
   <view
     type="zope.publisher.interfaces.browser.IBrowserRequest"
