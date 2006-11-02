@@ -145,6 +145,7 @@ Create a new bug task on a distrorelease:
 
 Accept a distro release task.
 
+    >>> debian_woody_task.transitionToStatus(BugTaskStatus.UNCONFIRMED)
     >>> from canonical.launchpad.interfaces import IDistroReleaseBugTask
     >>> old_bugtask = Snapshot(
     ...     debian_woody_task, providing=IDistroReleaseBugTask)
