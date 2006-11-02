@@ -24,4 +24,8 @@ class POSelection(SQLBase):
         dbName='activesubmission', notNull=False, default=None)
     publishedsubmission = ForeignKey(foreignKey='POSubmission',
         dbName='publishedsubmission', notNull=False, default=None)
+    reviewer = ForeignKey(foreignKey='Person', dbName='reviewer',
+        notNull=False, default=None)
+    date_reviewed = UtcDateTimeCol(dbName='date_reviewed', notNull=False,
+        default=None)
 
