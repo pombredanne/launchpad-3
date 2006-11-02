@@ -28,5 +28,11 @@
     </p>
   </div>
 </div>
+
+<p fill-slot="help">Select the correct new status for the request. You can
+  find the meaning of each status in the
+  <a href="https://help.launchpad.net/SupportRequestLifeCycle">Support Request
+     Life-cycle</a> document.
+</p>
 </body>
 </html>

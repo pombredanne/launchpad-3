@@ -9,7 +9,8 @@ the Debian task on bug #1.
 
 There's currently a bug watch linked to the task.
 
-    >>> bugwatch_control = browser.getControl(name='field.bugwatch')
+    >>> bugwatch_control = browser.getControl(
+    ...     name='debian_mozilla-firefox.bugwatch')
     >>> bugwatch_control.type
     'radio'
     >>> bugwatch_control.displayValue
@@ -20,27 +21,27 @@ This means that we only display the status, it's not possible to edit it:
     >>> print browser.contents
     <!DOCTYPE...
 
-    <label for="field.status">Status</label>
+    <label for="debian_mozilla-firefox.status">Status</label>
     ...
     <td><span class="statusConfirmed">Confirmed</span></td>
     ...
 
-    >>> status_control = browser.getControl(name='field.status')
+    >>> status_control = browser.getControl(name='debian_mozilla-firefox.status')
     Traceback (most recent call last):
     ...
-    LookupError: name 'field.status'
+    LookupError: name 'debian_mozilla-firefox.status'
 
 Of course we can't edit the importance or assignee either.
 
-    >>> browser.getControl(name='field.importance')
+    >>> browser.getControl(name='debian_mozilla-firefox.importance')
     Traceback (most recent call last):
     ...
-    LookupError: name 'field.importance'
+    LookupError: name 'debian_mozilla-firefox.importance'
 
-    >>> browser.getControl(name='field.assignee')
+    >>> browser.getControl(name='debian_mozilla-firefox.assignee')
     Traceback (most recent call last):
     ...
-    LookupError: name 'field.assignee'
+    LookupError: name 'debian_mozilla-firefox.assignee'
 
 If we remove the bug watch, we'll be able to edit the status, which has
 been reset to Unconfirmed.
@@ -52,11 +53,11 @@ been reset to Unconfirmed.
     >>> browser.open(
     ...     'http://localhost/distros/debian/+source/mozilla-firefox/'
     ...     '+bug/1/+editstatus')
-    >>> status_control = browser.getControl(name='field.status')
+    >>> status_control = browser.getControl(name='debian_mozilla-firefox.status')
     >>> status_control.displayValue
     ['Unconfirmed']
 
-    >>> browser.getControl(name='field.assignee') is not None
+    >>> browser.getControl(name='debian_mozilla-firefox.assignee') is not None
     True
 
 Let's try to actually edit the status to see that it works:
@@ -68,7 +69,7 @@ Let's try to actually edit the status to see that it works:
     >>> browser.open(
     ...     'http://localhost/distros/debian/+source/mozilla-firefox/'
     ...     '+bug/1/+editstatus')
-    >>> status_control = browser.getControl(name='field.status')
+    >>> status_control = browser.getControl(name='debian_mozilla-firefox.status')
     >>> status_control.displayValue
     ['Rejected']
 
@@ -77,9 +78,12 @@ From the edit page we can also create a new bug watch:
     >>> browser.open(
     ...     'http://localhost/distros/debian/+source/mozilla-firefox/'
     ...     '+bug/1/+editstatus')
-    >>> bugwatch_control = browser.getControl(name='field.bugwatch')
-    >>> bugtracker_control = browser.getControl(name='field.bugtracker')
-    >>> remotebug_control = browser.getControl(name='field.remotebug')
+    >>> bugwatch_control = browser.getControl(
+    ...     name='debian_mozilla-firefox.bugwatch')
+    >>> bugtracker_control = browser.getControl(
+    ...     name='debian_mozilla-firefox.bugtracker')
+    >>> remotebug_control = browser.getControl(
+    ...     name='debian_mozilla-firefox.remotebug')
     >>> bugwatch_control.value = ['NEW']
     >>> bugtracker_control.displayValue
     ['Debian Bug tracker']
