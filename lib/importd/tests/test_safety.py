@@ -2,11 +2,32 @@
 
 """Test safety checks in importd.
 
-We do some simple safety checks on imports to avoid putting excessive load on
-the servers we are connecting to. These checks are only performed on the
-initial import, because the system guarantees that syncs are only run on
-published imports and once a vcs import is published, its details can only be
-changed by a privileged operator.
+We do some simple safety checks on imports to avoid putting excessive
+load on the servers we are connecting to. These checks are only
+performed on the initial import, because the system guarantees that
+syncs are only run on published imports and once a vcs import is
+published, its details can only be changed by a privileged operator.
+
+SVN repositories are typically laid out as:
+
+    product/
+         branches/
+         tags/
+         trunk/
+
+Less often, they are laid out as:
+
+    trunk/
+         productA/
+         productB/
+         ...
+    branches/
+         ...
+
+In the first example, if a client attempts to fetch svn://repo/product
+(e.g. to import it to bzr), the server will send them the full text of
+every single branch and tag, which is much larger than the actual size
+of the repository.
 """
 
 __metaclass__ = type
