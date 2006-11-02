@@ -8644,7 +8644,7 @@ ALTER TABLE specification ENABLE TRIGGER ALL;
 
 ALTER TABLE specificationbranch DISABLE TRIGGER ALL;
 
-INSERT INTO specificationbranch (id, datecreated, specification, branch, summary) VALUES (1, '2006-11-02 09:07:48.389829', 6, 20, NULL);
+INSERT INTO specificationbranch (id, datecreated, specification, branch, summary) VALUES (1, '2006-11-02 09:07:48.389829', 6, 20, 'This branch should fix the issue');
 
 
 ALTER TABLE specificationbranch ENABLE TRIGGER ALL;

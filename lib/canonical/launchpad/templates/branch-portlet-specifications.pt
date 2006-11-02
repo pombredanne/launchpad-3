@@ -7,7 +7,8 @@
            tal:content="speclink/specification/title">Spec title</a>
         <a tal:condition="speclink/required:launchpad.AnyPerson"
            tal:attributes="href speclink/fmt:url"
-          >(edit)</a>
+          >(edit)</a><tal:block condition="speclink/summary"><br/>
+        <i tal:content="speclink/summary">summary</i></tal:block>
       </li>
     </ul>
   </div>
