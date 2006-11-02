@@ -331,6 +331,11 @@
     />
 
   <vocabulary
+    name="TicketAction"
+    factory="canonical.launchpad.vocabularies.TicketActionVocabulary"
+    />
+
+  <vocabulary
     name="TicketPriority"
     factory="canonical.launchpad.vocabularies.TicketPriorityVocabulary"
     />

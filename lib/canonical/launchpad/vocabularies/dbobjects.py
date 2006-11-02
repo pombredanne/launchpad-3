@@ -1290,73 +1290,81 @@ class ProcessorFamilyVocabulary(NamedSQLObjectVocabulary):
         return SimpleTerm(obj, obj.name, obj.title)
 
 
-class BugNominatableReleasesVocabulary(NamedSQLObjectVocabulary):
-    """The releases for which a bug can be nominated.
+def BugNominatableReleasesVocabulary(context=None):
+    """Return a nominatable releases vocabulary."""
+    if getUtility(ILaunchBag).distribution:
+        return BugNominatableDistroReleaseVocabulary(
+            context, getUtility(ILaunchBag).distribution)
+    else:
+        assert getUtility(ILaunchBag).product
+        return BugNominatableProductSeriesVocabulary(
+            context, getUtility(ILaunchBag).product)
 
-    This is context-sensitive, so that we don't include, for example, a
-    bunch of product series when looking at the bug in a distro context.
-    """
-    def __init__(self, context=None):
-        """Set the _table depending on the context, distro or product."""
-        NamedSQLObjectVocabulary.__init__(self, context)
 
-        distribution = getUtility(ILaunchBag).distribution
-        product = getUtility(ILaunchBag).product
-        if distribution:
-            self._table = DistroRelease
-        else:
-            assert product
-            self._table = ProductSeries
+class BugNominatableReleaseVocabularyBase(NamedSQLObjectVocabulary):
+    """Base vocabulary class for releases for which a bug can be nominated."""
 
     def __iter__(self):
-        distribution = getUtility(ILaunchBag).distribution
-        product = getUtility(ILaunchBag).product
-        by_displayname = attrgetter("displayname")
         bug = self.context
 
-        releases = []
-        if distribution:
-            for distrorelease in distribution.releases:
-                if not bug.canBeNominatedFor(distrorelease):
-                    continue
+        releases = self._getNominatableObjects()
 
-                if (distrorelease.releasestatus ==
-                    DistributionReleaseStatus.OBSOLETE):
-                    continue
-
-                releases.append(distrorelease)
-
-            for release in sorted(releases, key=by_displayname):
+        for release in sorted(releases, key=attrgetter("displayname")):
+            if bug.canBeNominatedFor(release):
                 yield self.toTerm(release)
-
-        else:
-            assert product
-
-            serieslist = []
-            for series in product.serieslist:
-                if not bug.canBeNominatedFor(series):
-                    continue
-
-                serieslist.append(series)
-
-            for series in sorted(serieslist, key=by_displayname):
-                yield self.toTerm(series)
 
     def toTerm(self, obj):
         return SimpleTerm(obj, obj.name, obj.name.capitalize())
 
     def getTermByToken(self, token):
-        distribution = getUtility(ILaunchBag).distribution
-        product = getUtility(ILaunchBag).product
-
-        obj = None
-        if distribution:
-            obj = distribution.getRelease(token)
-        else:
-            assert product
-            obj = product.getSeries(token)
-
+        obj = self._queryNominatableObjectByToken(token)
         if obj is None:
             raise LookupError(token)
 
         return self.toTerm(obj)
+
+    def _getNominatableObjects(self):
+        """Return the release objects that the bug can be nominated for."""
+        raise NotImplementedError
+
+    def _queryNominatableObjectByName(self, name):
+        """Return the release object with the given name."""
+        raise NotImplementedError
+
+
+class BugNominatableProductSeriesVocabulary(BugNominatableReleaseVocabularyBase):
+    """The product series for which a bug can be nominated."""
+
+    _table = ProductSeries
+
+    def __init__(self, context, product):
+        BugNominatableReleaseVocabularyBase.__init__(self, context)
+        self.product = product
+
+    def _getNominatableObjects(self):
+        """See BugNominatableReleaseVocabularyBase."""
+        return shortlist(self.product.serieslist)
+
+    def _queryNominatableObjectByName(self, name):
+        """See BugNominatableReleaseVocabularyBase."""
+        return self.product.getSeries(name)
+
+
+class BugNominatableDistroReleaseVocabulary(BugNominatableReleaseVocabularyBase):
+    """The distribution releases for which a bug can be nominated."""
+
+    _table = DistroRelease
+
+    def __init__(self, context, distribution):
+        BugNominatableReleaseVocabularyBase.__init__(self, context)
+        self.distribution = distribution
+
+    def _getNominatableObjects(self):
+        """Return all non-obsolete distribution releases."""
+        return [
+            release for release in shortlist(self.distribution.releases)
+            if release.releasestatus != DistributionReleaseStatus.OBSOLETE]
+
+    def _queryNominatableObjectByToken(self, token):
+        """See BugNominatableReleaseVocabularyBase."""
+        return self.distribution.getRelease(token)

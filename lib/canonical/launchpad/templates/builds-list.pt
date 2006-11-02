@@ -23,9 +23,7 @@
           <input type="submit" value="Update" />
      </form>
 
-  <tal:navigation_top
-       condition="batch"
-       replace="structure view/batchnav/@@+navigation-links" />
+  <tal:navigation_top replace="structure view/batchnav/@@+navigation-links-upper" />
 
   <table class="listing" tal:condition="batch">
     <tbody>
@@ -118,9 +116,7 @@
     </tbody>
   </table>
 
-  <tal:navigation_bottom
-     condition="batch"
-     replace="structure view/batchnav/@@+navigation-links" />
+  <tal:navigation_bottom replace="structure view/batchnav/@@+navigation-links-lower" />
 
   <div id="empty-result" tal:condition="not: batch">
      No <span tal:replace="view/state/title|nothing" /> builds for <span

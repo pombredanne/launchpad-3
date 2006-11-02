@@ -67,7 +67,9 @@ class ILaunchpadCelebrities(Interface):
     launchpad_developers = Attribute("The Launchpad development team.")
     ubuntu_bugzilla = Attribute("The Ubuntu Bugzilla.")
     bug_watch_updater = Attribute("The Bug Watch Updater.")
+    bug_importer = Attribute("The bug importer.")
     landscape = Attribute("The Landscape project.")
+    support_tracker_janitor = Attribute("The Support Tracker Janitor.")
 
 
 class ICrowd(Interface):
@@ -359,7 +361,7 @@ class IOpenLaunchBag(ILaunchBag):
         '''Set the login to the given value.'''
     def setDeveloper():
         '''Set the developer flag.
-        
+
         Because we use this during exception handling, we need this set
         and cached at the start of the transaction in case our database
         connection blows up.
@@ -573,7 +575,7 @@ class BeforeTraverseEvent(zope.app.publication.interfaces.BeforeTraverseEvent):
 #      for the publisher simplification work.  SteveAlexander 2005-09-14
 # class IEndRequestEvent(Interface):
 #     """An event which gets sent when the publication is ended"""
-# 
+#
 # # called in zopepublication's endRequest method, after ending
 # # the interaction.  it is used only by local sites, to clean
 # # up per-thread state.

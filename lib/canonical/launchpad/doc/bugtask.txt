@@ -729,12 +729,12 @@ The generic tasks are not directly editable.
     >>> generic_netapplet_task.transitionToStatus(BugTaskStatus.REJECTED)
     Traceback (most recent call last):
       ...
-    ConjoinedBugTaskEditError: ...
+    Unauthorized: (<BugTask at ...>, 'transitionToStatus', 'launchpad.Edit')
 
     >>> generic_alsa_utils_task.transitionToAssignee(launchbag.user)
     Traceback (most recent call last):
       ...
-    ConjoinedBugTaskEditError: ...
+    Unauthorized: (<BugTask at ...>, 'transitionToAssignee', 'launchpad.Edit')
 
 Null Bug Tasks
 --------------
