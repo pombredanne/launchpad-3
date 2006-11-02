@@ -324,8 +324,8 @@ class ISpecification(IHasOwner):
     def getBranchLink(branch):
         """Return the SpecificationBranch link for the branch, or None."""
     
-    def addBranch(branch, summary=None):
-        """Create a SpecificationBranch for the given branch."""
+    def linkBranch(branch, summary=None):
+        """Link the given branch to this specification."""
 
 
 # Interfaces for containers

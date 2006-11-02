@@ -561,7 +561,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
         return SpecificationBranch.selectOneBy(
             specificationID=self.id, branchID=branch.id)
         
-    def addBranch(self, branch, summary=None):
+    def linkBranch(self, branch, summary=None):
         branchlink = self.getBranchLink(branch)
         if branchlink is not None:
             return branchlink

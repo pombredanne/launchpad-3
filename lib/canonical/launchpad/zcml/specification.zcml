@@ -392,6 +392,14 @@
     attribute="__call__"
     />
 
+  <browser:page
+    for="canonical.launchpad.interfaces.ISpecification"
+    name="+linkbranch"
+    class="canonical.launchpad.browser.SpecificationLinkBranchView"
+    template="../templates/specification-linkbranch.pt"
+    permission="launchpad.AnyPerson"
+    />
+
   <!-- SpecificationSet -->
   <content class="canonical.launchpad.database.SpecificationSet">
     <allow interface="canonical.launchpad.interfaces.ISpecificationSet" />

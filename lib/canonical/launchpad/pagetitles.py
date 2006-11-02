@@ -848,7 +848,11 @@ specification_subscription = 'Subscribe to specification'
 
 specification_queue = 'Queue specification for review'
 
+specification_linkbranch = 'Link branch to specification'
+
 specifications_index = ContextTitle('%s')
+
+specificationbranch_status = 'Edit specification branch status'
 
 specificationgoal_specs = ContextTitle('List goals for %s')
 

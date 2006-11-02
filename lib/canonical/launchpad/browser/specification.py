@@ -12,6 +12,7 @@ __all__ = [
     'SpecificationEditView',
     'SpecificationGoalProposeView',
     'SpecificationGoalDecideView',
+    'SpecificationLinkBranchView',
     'SpecificationRetargetingView',
     'SpecificationSprintAddView',
     'SpecificationSupersedingView',
@@ -31,14 +32,15 @@ from canonical.launchpad import _
 
 from canonical.launchpad.interfaces import (
     IDistribution, ILaunchBag, IPersonSet, IProduct, ISpecification,
-    ISpecificationSet, NotFoundError)
+    ISpecificationBranch, ISpecificationSet, NotFoundError)
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
 
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, enabled_with_permission,
-    LaunchpadView, Navigation, GeneralFormView, stepthrough, stepto)
+    ContextMenu, GeneralFormView, LaunchpadView, LaunchpadFormView,
+    Link, Navigation, action, canonical_url, enabled_with_permission,
+    stepthrough, stepto)
 
 from canonical.launchpad.helpers import check_permission
 
@@ -90,7 +92,7 @@ class SpecificationContextMenu(ContextMenu):
              'subscribeanother',
              'linkbug', 'unlinkbug', 'adddependency', 'removedependency',
              'dependencytree', 'linksprint', 'supersede',
-             'retarget', 'administer']
+             'retarget', 'administer', 'linkbranch']
 
     @enabled_with_permission('launchpad.Admin')
     def administer(self):
@@ -215,6 +217,11 @@ class SpecificationContextMenu(ContextMenu):
     def whiteboard(self):
         text = 'Edit whiteboard'
         return Link('+whiteboard', text, icon='edit')
+
+    @enabled_with_permission('launchpad.AnyPerson')
+    def linkbranch(self):
+        text = 'Link branch'
+        return Link('+linkbranch', text, icon='add')
 
 
 class SpecificationView(LaunchpadView):
@@ -697,9 +704,9 @@ def dict_to_DOT_attrs(some_dict, indent='    '):
     The attributes are sorted by dict key.
 
     >>> some_dict = dict(
-    ...     foo='foo',
-    ...     bar='bar " \n bar',
-    ...     baz='zab')
+    ...     foo="foo",
+    ...     bar="bar \" \n bar",
+    ...     baz="zab")
     >>> print dict_to_DOT_attrs(some_dict, indent='  ')
       [
       "bar"="bar \" \n bar",
@@ -807,3 +814,26 @@ class SpecificationTreeDotOutput(SpecificationTreeGraphView):
         self.request.response.setHeader('Content-type', 'text/plain')
         return self.getDotFileText()
 
+class SpecificationLinkBranchView(LaunchpadFormView):
+    """A form used to link a branch to this specification."""
+
+    schema = ISpecificationBranch
+    field_names = ['branch', 'summary']
+    label = _('Link branch to specification')
+
+    def validate(self, data):
+        branch = data.get('branch')
+        if branch:
+            branchlink = self.context.getBranchLink(branch)
+            if branchlink is not None:
+                self.setFieldError('branch', 'This branch has already '
+                                   'been linked to the specification')
+
+    @action(_('Link to Specification'), name='link')
+    def link_action(self, action, data):
+        self.context.linkBranch(branch=data['branch'],
+                                summary=data['summary'])
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)

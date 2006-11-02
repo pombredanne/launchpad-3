@@ -10,6 +10,7 @@ from zope.interface import Interface
 from zope.schema import Choice, Int, TextLine
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import Summary
 from canonical.launchpad.interfaces import (
     IHasDateCreated, non_duplicate_branch)
 
@@ -21,7 +22,7 @@ class ISpecificationBranch(IHasDateCreated):
     specification = Int(title=_("Specification"))
     branch = Choice(
         title=_("Branch"), vocabulary="Branch")
-    summary = TextLine(title=_("Summary"), required=False)
+    summary = Summary(title=_("Summary"), required=False)
 
     def destroySelf():
         """Destroy this specification branch link"""

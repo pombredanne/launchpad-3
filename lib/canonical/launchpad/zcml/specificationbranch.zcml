@@ -5,6 +5,8 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+  <facet facet="specifications">
+
     <!-- ISpecificationBranch -->
     <content class="canonical.launchpad.database.SpecificationBranch">
       <allow interface="canonical.launchpad.interfaces.ISpecificationBranch" />
@@ -21,13 +23,14 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.ISpecificationBranch"
         name="+status" />
-<!--
-    <browser:generalform
+
+    <browser:page
         name="+status"
         for="canonical.launchpad.interfaces.ISpecificationBranch"
-        schema="canonical.launchpad.interfaces.ISpecificationBranch"
-        class="canonical.launchpad.browser.specificationbranch.SpecificationBranchView"
-        label="Edit specification branch status"
-        permission="launchpad.View"
-        template="../templates/specificationbranch-status.pt" /> -->
+        class="canonical.launchpad.browser.SpecificationBranchStatusView"
+        permission="launchpad.AnyPerson"
+        template="../templates/specificationbranch-status.pt" />
+
+  </facet>
+
 </configure>
