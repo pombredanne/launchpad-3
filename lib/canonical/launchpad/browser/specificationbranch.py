@@ -25,10 +25,12 @@ class SpecificationBranchStatusView(LaunchpadEditFormView):
 
     @action(_('Change Summary'), name='change')
     def change_action(self, action, data):
-        next_url = canonical_url(self.context.specification)
+        self.next_url = canonical_url(self.context.specification)
         self.updateContextFromData(data)
 
-    @action(_('Delete link'), name='delete')
+    @action(_('Delete Link'), name='delete')
     def delete_action(self, action, data):
-        next_url = canonical_url(self.context.specification)
+        self.next_url = canonical_url(self.context.specification)
         self.context.destroySelf()
+
+   
