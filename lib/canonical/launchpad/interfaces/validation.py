@@ -65,9 +65,10 @@ def can_be_nominated_for_releases(releases):
 
     return True
 
+
 def _validate_ascii_printable_text(text):
     """Check if the given text contains only printable ASCII characters.
-    
+
     >>> print _validate_ascii_printable_text(u'no non-ascii characters')
     None
     >>> print _validate_ascii_printable_text(
