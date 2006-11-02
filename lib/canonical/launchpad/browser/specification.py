@@ -30,13 +30,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 
 from canonical.launchpad.interfaces import (
-    IDistribution,
-    ILaunchBag,
-    IPersonSet,
-    IProduct,
-    ISpecification,
-    ISpecificationSet,
-    )
+    IDistribution, ILaunchBag, IPersonSet, IProduct, ISpecification,
+    ISpecificationSet, NotFoundError)
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
