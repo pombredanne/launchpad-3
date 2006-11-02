@@ -21,6 +21,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.app.form.browser.widget import renderElement
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.browser.launchpad import RosettaContextMenu
@@ -317,10 +318,10 @@ class TranslationImportQueueView(LaunchpadView):
         # Process the form.
         self.processForm()
 
-    @property
+    @cachedproperty
     def has_entries(self):
         """Return whether there are things on the queue."""
-        return len(self.context) > 0
+        return bool(self.context.entryCount())
 
     def processForm(self):
         """Block or remove entries from the queue based on the selection of

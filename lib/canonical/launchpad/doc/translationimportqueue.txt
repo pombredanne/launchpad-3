@@ -735,7 +735,7 @@ entries that are stored on the same directory and are already blocked.
 
 Check the number of entries on the queue.
 
-    >>> len(translationimportqueue)
+    >>> translationimportqueue.entryCount()
     3
 
 First, let's check the status of the existing entries.

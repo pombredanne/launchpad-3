@@ -486,7 +486,7 @@ class TranslationImportQueue:
 
         return entry
 
-    def __len__(self):
+    def entryCount(self):
         """See ITranslationImportQueue."""
         return TranslationImportQueueEntry.select().count()
 
