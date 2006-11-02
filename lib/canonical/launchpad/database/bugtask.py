@@ -95,6 +95,7 @@ class BugTask(SQLBase, BugTaskMixin):
         "status", "importance", "assignee", "milestone",
         "date_assigned", "date_confirmed", "date_inprogress",
         "date_closed")
+    _NON_CONJOINED_STATUSES = (dbschema.BugTaskStatus.REJECTED,)
 
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     product = ForeignKey(
@@ -173,7 +174,7 @@ class BugTask(SQLBase, BugTaskMixin):
                     break
 
         if (conjoined_master is not None and
-            conjoined_master.status == dbschema.BugTaskStatus.REJECTED):
+            conjoined_master.status in self._NON_CONJOINED_STATUSES):
             conjoined_master = None
         return conjoined_master
 
@@ -197,7 +198,7 @@ class BugTask(SQLBase, BugTaskMixin):
                     break
 
         if (conjoined_slave is not None and
-            self.status == dbschema.BugTaskStatus.REJECTED):
+            self.status in self._NON_CONJOINED_STATUSES):
             conjoined_slave = None
         return conjoined_slave
     # XXX: Conjoined bugtask synching methods. We override these methods
@@ -207,7 +208,7 @@ class BugTask(SQLBase, BugTaskMixin):
     # Each attribute listed in _CONJOINED_ATTRIBUTES should have a
     # _set_foo method below.
     def _set_status(self, value):
-        if value != dbschema.BugTaskStatus.REJECTED:
+        if value not in self._NON_CONJOINED_STATUSES:
             self._setValueAndUpdateConjoinedBugTask("status", value)
         else:
             self._SO_set_status(value)
