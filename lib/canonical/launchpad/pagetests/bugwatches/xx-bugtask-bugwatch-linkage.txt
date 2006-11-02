@@ -112,9 +112,12 @@ created, instead the old one will be used.
     >>> browser.open(
     ...     'http://localhost/distros/debian/+source/mozilla-firefox/'
     ...     '+bug/1/+editstatus')
-    >>> bugwatch_control = browser.getControl(name='field.bugwatch')
-    >>> bugtracker_control = browser.getControl(name='field.bugtracker')
-    >>> remotebug_control = browser.getControl(name='field.remotebug')
+    >>> bugwatch_control = browser.getControl(
+    ...     name='debian_mozilla-firefox.bugwatch')
+    >>> bugtracker_control = browser.getControl(
+    ...     name='debian_mozilla-firefox.bugtracker')
+    >>> remotebug_control = browser.getControl(
+    ...     name='debian_mozilla-firefox.remotebug')
     >>> bugwatch_control.value = ['NEW']
     >>> bugtracker_control.displayValue
     ['Debian Bug tracker']
