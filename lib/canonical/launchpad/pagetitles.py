@@ -278,11 +278,11 @@ default_editform = 'Default "Edit" Page'
 
 distributionmirror_edit = ContextTitle('Edit mirror %s')
 
-distributionmirror_mark_official = ContextTitle('Mark mirror %s as official')
-
 distributionmirror_index = ContextTitle('Mirror %s')
 
-distributionmirror_uploadfilelist = ContextTitle('Upload File List for %s')
+distributionmirror_mark_official = ContextTitle('Mark mirror %s as official')
+
+distributionmirror_prober_logs = ContextTitle('%s mirror prober logs')
 
 distribution_allpackages = ContextTitle('All packages in %s')
 
@@ -436,6 +436,8 @@ launchpad_librarianfailure = "Sorry, you can't do this right now"
 
 # launchpad_widget_macros doesn't need a title.
 
+logintoken_claimprofile = 'Claim Launchpad profile'
+
 logintoken_index = 'Launchpad: redirect to the logintoken page'
 
 logintoken_mergepeople = 'Merge Launchpad accounts'
@@ -508,6 +510,8 @@ def person_bugs(context, view):
     return view.getSearchPageHeading()
 
 person_changepassword = 'Change your password'
+
+person_claim = 'Claim account'
 
 person_codesofconduct = ContextDisplayName(smartquote("%s's code of conduct signatures"))
 
@@ -625,6 +629,8 @@ product_branches = ContextDisplayName(
 
 product_distros = ContextDisplayName('%s packages: Comparison of distributions')
 
+product_cvereport = ContextTitle('CVE reports for %s')
+
 product_edit = ContextTitle('%s in Launchpad')
 
 product_index = ContextTitle('%s in Launchpad')
@@ -653,13 +659,13 @@ productseries_packaging = ContextDisplayName('Packaging of %s in distributions')
 
 productseries_source = 'Import product series'
 
-productseries_sourceadmin = 'Add source import'
-
 productseries_translations = ContextTitle('Translation templates for %s')
 
 productseries_translations_upload = 'Request new translations upload'
 
 productseries_ubuntupkg = 'Ubuntu source package'
+
+project_add = 'Register a project with Launchpad'
 
 project_index = ContextTitle('%s in Launchpad')
 
@@ -725,6 +731,8 @@ shipit_adminrequest = 'ShipIt admin request'
 
 shipit_index = 'ShipIt'
 
+shipit_index_new = 'ShipIt'
+
 shipit_exports = 'ShipIt exports'
 
 shipit_forbidden = 'Forbidden'
@@ -754,8 +762,6 @@ signedcodeofconduct_acknowledge = 'Acknowledge code of conduct signature'
 signedcodeofconduct_activate = ContextDisplayName('Activating %s')
 
 signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
-
-sourcepackage_index = ContextTitle('%s')
 
 sourcepackage_bugs = ContextDisplayName('Bugs in %s')
 
@@ -894,6 +900,10 @@ ticket_add_search = ContextDisplayName('Request support with %s')
 
 ticket_bug = ContextId('Link support request #%s to a bug report')
 
+ticket_change_status = ContextId('Change status of support request #%s')
+
+ticket_confirm_answer = ContextId('Confirm an answer to support request #%s')
+
 ticket_edit = ContextId('Edit support request #%s details')
 
 def ticket_index(context, view):
@@ -912,12 +922,7 @@ ticket_reject = ContextId('Reject support request #%s')
 
 ticket_unlinkbugs = ContextId('Remove bug links from request #%s')
 
-ticket_reopen = ContextId('Reopen request #%s')
-
 ticket_subscription = ContextId('Subscription to request #%s')
-
-def tickettarget_tickets(context, view):
-    return view.title
 
 standardshipitrequests_index = 'Standard ShipIt options'
 
@@ -959,7 +964,8 @@ template_index = '%EXAMPLE TITLE'
 
 template_new = 'EXAMPLE NEW TITLE'
 
-ticket_listing = ContextDisplayName("Support requests for %s")
+def ticket_listing(context, view):
+    return view.pagetitle
 
 tickettarget_manage_supportcontacts = ContextTitle("Support contact for %s")
 

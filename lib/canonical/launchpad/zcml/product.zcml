@@ -32,7 +32,7 @@
             set_attributes="name active reviewed autoupdate"
         />
         <!-- ITicketTarget -->
-        <allow attributes="tickets getTicket searchTickets findSimilarTickets
+        <allow attributes="getTicket searchTickets findSimilarTickets
               support_contacts" />
         <require permission="launchpad.AnyPerson"
             attributes="newTicket addSupportContact removeSupportContact" />
@@ -56,7 +56,7 @@
         module="canonical.launchpad.browser"
         classes="
             ProductFacets ProductOverviewMenu ProductBountiesMenu
-            ProductBranchesMenu ProductSupportMenu ProductSpecificationsMenu
+            ProductBranchesMenu ProductSpecificationsMenu
             ProductTranslationsMenu ProductBugsMenu ProductSetContextMenu
             "
             />
@@ -148,6 +148,9 @@
             facet="translations"
             template="../templates/product-portlet-translatables.pt"
             lp:url="/products/evolution/+portlet-translatables" />
+        <browser:page
+            name="+portlet-aboutcve"
+            template="../templates/portlet-aboutcve.pt" />
     </browser:pages>
 
     <browser:pages
@@ -179,6 +182,14 @@
         lp:url="/projects/$Product.name/+rdf"
         attribute="__call__"
         />
+
+    <browser:page
+      for="canonical.launchpad.interfaces.IProduct"
+      class="canonical.launchpad.browser.CVEReportView"
+      permission="zope.Public"
+      name="+cve"
+      facet="bugs"
+      template="../templates/product-cvereport.pt" />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProduct"
@@ -314,21 +325,11 @@
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"
-           displayWidth="50"
-           extra="tabindex=1" />
+           displayWidth="50" />
         <browser:widget
            field="comment"
            class="zope.app.form.browser.TextAreaWidget"
-           extra="tabindex=2"
            width="62" />
-        <browser:widget
-           field="security_related"
-           class="zope.app.form.browser.CheckBoxWidget"
-           extra="tabindex=3" />
-        <browser:widget
-           field="private"
-           class="zope.app.form.browser.CheckBoxWidget"
-           extra="tabindex=4" />
     </browser:generalform>
 
     <browser:addform
@@ -403,6 +404,22 @@
         path_expression="string:products"
         parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot" />
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IProductSet"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.product.ProductSetDynMenu"
+        attribute="__call__"
+        name="+menudata"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IProduct"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.product.ProductDynMenu"
+        attribute="__call__"
+        name="+menudata"
+        />
+
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSet"
         permission="zope.Public"
@@ -430,37 +447,13 @@
             lp:url="/products/+review" />
     </browser:pages>
 
-    <browser:addform
+    <browser:page
         name="+new"
         for="canonical.launchpad.interfaces.IProductSet"
-        schema="canonical.launchpad.interfaces.IProduct"
-        label="Register an upstream open source product"
-        content_factory="canonical.launchpad.database.Product"
         facet="overview"
         class="canonical.launchpad.browser.ProductAddView"
         permission="launchpad.AnyPerson"
         template="../templates/product-new.pt"
-        >
-        <browser:widget
-           field="name"
-           class="zope.app.form.browser.TextWidget"
-           extra="tabindex=1" />
-        <browser:widget
-           field="homepageurl"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="30" />
-        <browser:widget
-           field="screenshotsurl"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="30" />
-        <browser:widget
-           field="wikiurl"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="30" />
-        <browser:widget
-           field="downloadurl"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="30" />
-    </browser:addform>
+        />
 
 </configure>

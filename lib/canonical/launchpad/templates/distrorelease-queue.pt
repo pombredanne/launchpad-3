@@ -63,9 +63,7 @@
 
     <br />
 
-     <tal:navigation
-          tal:condition="batch"
-          replace="structure view/batchnav/@@+navigation-links" />
+     <tal:navigation replace="structure view/batchnav/@@+navigation-links-upper" />
 
      <form name="queue_items_action" action="" method="POST">
      <table class="listing sortable" tal:condition="batch"
@@ -117,7 +115,7 @@
                      title="Upgrader"/>
                 <img tal:condition="queue/containsDdtp"
                      alt="[Debian Description Translation Project Indexes]"
-                     src="/@@/topic_icon.gif"
+                     src="/@@/topic"
                      title="Debian Description Translation Project Indexes"/>
               </td>
               <td tal:content="queue/displayversion">2.0.17-6</td>
@@ -154,9 +152,7 @@
        is empty.
      </div>
 
-     <tal:navigation
-          tal:condition="batch"
-          replace="structure view/batchnav/@@+navigation-links" />
+     <tal:navigation replace="structure view/batchnav/@@+navigation-links-lower" />
 
      </tal:batch>
   </div>

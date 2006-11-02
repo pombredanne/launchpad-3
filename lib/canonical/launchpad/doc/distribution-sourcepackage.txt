@@ -93,10 +93,29 @@ Useful methods:
     0
 
 Retrieve a version of 'pmount in Ubuntu' as a
-IDistributionSourcePackageRelease or None if not found:
+IDistributionSourcePackageRelease (IDSPR) or None if not found:
 
     >>> dsp.getVersion('1.0') is None
     True
 
-    >>> dsp.getVersion('0.1-1').title
+    >>> pmount_dspr = dsp.getVersion('0.1-1')
+    >>> pmount_dspr.title
     u'pmount 0.1-1 (source) in Ubuntu'
+
+    >>> for pub in pmount_dspr.publishing_history:
+    ...     print pub.distrorelease.name, pub.status.name
+    hoary SUPERSEDED
+
+'getVersion' also return IDSPRs for REMOVED version which allows
+developers to investigate history of files already removed from the
+archive (bug #60440):
+
+    >>> ubuntutest = getUtility(IDistributionSet)["ubuntutest"]
+    >>> alsa_dsp = ubuntutest.getSourcePackage("alsa-utils")
+    >>> alsa_dspr = alsa_dsp.getVersion('1.0.9a-4')
+    >>> alsa_dspr.title
+    u'alsa-utils 1.0.9a-4 (source) in ubuntutest'
+
+    >>> for pub in alsa_dspr.publishing_history:
+    ...     print pub.distrorelease.name, pub.status.name
+    breezy-autotest REMOVED

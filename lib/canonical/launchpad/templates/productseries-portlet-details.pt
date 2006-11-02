@@ -1,5 +1,5 @@
 <div class="portlet">
-  <h4 tal:content="context/title">Product series details</h4>
+  <h2 tal:content="context/title">Product series details</h2>
 
   <div class="portletBody portletContent">
     <b>Product:</b>
@@ -22,12 +22,5 @@
       <br />
     </tal:per_driver>
 
-    <tal:block define="branch context/series_branch" condition="branch">
-    <b>Bazaar Branch:</b><br />
-    <img alt="" src="/@@/branch" />
-    <a tal:attributes="href branch/fmt:url" tal:content="branch/displayname">
-      branch name
-    </a>
-    </tal:block>
   </div>
 </div>

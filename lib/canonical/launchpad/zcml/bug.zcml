@@ -27,14 +27,16 @@
                         productinfestations packageinfestations watches
                         externalrefs cves cve_links duplicates
                         attachments tickets specifications followup_subject
-                        subscribe unsubscribe isSubscribed messages
-                        notificationRecipientAddresses hasBranch
-                        security_related tags getMessageChunks" />
+                        isSubscribed messages notificationRecipientAddresses
+                        hasBranch security_related tags getMessageChunks
+                        isSubscribedToDupes getSubscribersFromDuplicates
+                        getAlsoNotifiedSubscribers" />
         <require
             permission="launchpad.Edit"
             attributes="addChangeNotification addCommentNotification addWatch
                         linkCVE unlinkCVE findCvesInText newMessage
-                        linkMessage addBranch addAttachment"
+                        linkMessage addBranch addAttachment unsubscribeFromDupes
+                        subscribe unsubscribe"
             set_attributes="datecreated date_last_updated name title description
                             ownerID owner duplicateof communityscore
                             communitytimestamp hits hitstimestamp activityscore
@@ -84,17 +86,6 @@
         <allow interface="canonical.launchpad.interfaces.IBugSet" />
     </securedutility>
 
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IBugSet"
-        name="+index" />
-
-    <browser:page
-        name="+index"
-        for="canonical.launchpad.interfaces.IBugSet"
-        class="canonical.launchpad.browser.BugSetView"
-        attribute="redirectToBug"
-        permission="zope.Public" />
-
     <browser:pages
       for="canonical.launchpad.interfaces.IBug"
       class="canonical.launchpad.browser.BugView"
@@ -137,6 +128,7 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IBug"
+        class="canonical.launchpad.browser.BugView"
         name="+portlet-subscribers"
         template="../templates/bug-portlet-subscribers.pt"
         permission="zope.Public" />

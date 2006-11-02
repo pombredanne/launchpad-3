@@ -3,7 +3,7 @@
   <tal:block condition="python:context.validatedemails or context.preferredemail">
     <div class="portlet" tal:condition="request/lp:person">
 
-      <h4>Confirmed e-mail addresses:</h4>
+      <h2>Confirmed e-mail addresses</h2>
 
       <div class="portletBody portletContent">
 

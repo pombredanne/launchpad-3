@@ -128,10 +128,8 @@ class ITranslationImportQueue(Interface):
         raised.
         """
 
-    def __len__():
-        """Return the number of entries in the queue, including blocked
-        entries.
-        """
+    def entryCount(self):
+        """Return the number of TranslationImportQueueEntry records."""
 
     def iterNeedReview():
         """Iterate over all entries in the queue that need review."""
@@ -217,8 +215,10 @@ class ITranslationImportQueue(Interface):
         imported from the Needs Review status to the Accepted one.
         """
 
-    def executeOptimisticBlock():
+    def executeOptimisticBlock(ztm):
         """Try to move entries from the Needs Review status to Blocked one.
+
+        :arg ztm: Zope transaction manager object or None.
 
         This method moves all .po entries that are on the same directory that
         a .pot entry that has the status Blocked to that same status.

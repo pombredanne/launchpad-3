@@ -28,9 +28,9 @@ Check that the previous submit was saved.
   ... """)
   HTTP/1.1 200 Ok
   ...
-                          <td>Found <span class="interpolation">%i</span> invalid file.</td>
+                          <td>Found <code>%i</code> invalid file.</td>
   ...
-                          <td>Found <span class="interpolation">%i</span> invalid files.</td>
+                          <td>Found <code>%i</code> invalid files.</td>
   ...
 
                           <input type="text"
@@ -43,8 +43,8 @@ Check that the previous submit was saved.
 
                           <input type="text"
       name="msgset_150_es_translation_1" value="bar %i"
-      tabindex="2" />
+      tabindex="1" />
   ...
                               <input type="checkbox"
-      value="fuzzy" name="msgset_150_es_needsreview" tabindex="3" />
+      value="fuzzy" name="msgset_150_es_needsreview" tabindex="1" />
   ...

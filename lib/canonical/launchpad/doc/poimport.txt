@@ -49,6 +49,40 @@ Login as an admin to be able to do changes to the import queue.
 
     >>> login('carlos@canonical.com')
 
+When importing a POFile, it may be necessary to create new Person entries,
+to represent the last translators of that POFile. This is done by the
+getLastTranslator() function of components/poimport.py.
+
+    >>> from canonical.launchpad.components.poimport import getLastTranslator
+    >>> from canonical.launchpad.components.poparser import POParser
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILanguageSet, IPOFileSet, IPOTemplateSet)
+    >>> parser = POParser()
+    >>> pofile_content = r'''
+    ... msgid ""
+    ... msgstr ""
+    ... "PO-Revision-Date: 2005-06-03 20:41+0100\n"
+    ... "Last-Translator: Baz <baz@canonical.com>\n"
+    ... "Content-Type: text/plain; charset=UTF-8\n"
+    ... "Plural-Forms: nplurals=4; plural=n==1) ? 0 : n==2 ? 1 : (n != 8 || n != 11) ? 2 : 3;\n"
+    ...
+    ... msgid "foo"
+    ... msgstr "blah"
+    ... '''
+    >>> parser.write(pofile_content)
+    >>> parser.finish()
+    >>> potemplates = getUtility(IPOTemplateSet).getAllByName('evolution-2.2')
+    >>> aa = getUtility(ILanguageSet)['aa']
+    >>> potemplate = potemplates[0]
+    >>> potemplate.displayname
+    u'evolution-2.2 in Evolution trunk'
+    >>> pofile = getUtility(IPOFileSet).getDummy(potemplates[0], aa)
+    >>> person = getLastTranslator(parser, pofile)
+    >>> person.creation_rationale.name
+    'POFILEIMPORT'
+    >>> person.creation_comment
+    u'when importing the Afar (aa) translation of evolution-2.2 in Evolution trunk'
+
 Now, is time to create the new potemplate
 
     >>> from canonical.launchpad.database import ProductRelease
@@ -606,7 +640,7 @@ We flush the entry contents.
 
     >>> for entry in translation_import_queue:
     ...     translation_import_queue.remove(entry)
-    >>> len(translation_import_queue)
+    >>> translation_import_queue.entryCount()
     0
 
 Attach the first version of the file.
@@ -620,7 +654,7 @@ Attach the first version of the file.
 
 It's in the queue now.
 
-    >>> len(translation_import_queue)
+    >>> translation_import_queue.entryCount()
     1
 
 For the second version, we need a new importer, in this case, Jordi.
@@ -638,7 +672,7 @@ Attach the second version of the file.
 
 It's in the queue now.
 
-    >>> len(translation_import_queue)
+    >>> translation_import_queue.entryCount()
     2
 
 Do the final import.
