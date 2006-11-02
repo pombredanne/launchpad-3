@@ -28,11 +28,11 @@ INSERT INTO POFileTranslator (
         POSubmission.datecreated DESC, POSubmission.id DESC;
         
 
-CREATE TRIGGER t_mv_pofiletranslator_posubmission
+CREATE TRIGGER mv_pofiletranslator_posubmission
 AFTER INSERT OR UPDATE OR DELETE ON POSubmission FOR EACH ROW
 EXECUTE PROCEDURE mv_pofiletranslator_posubmission();
 
-CREATE TRIGGER t_mv_pofiletranslator_pomsgset
+CREATE TRIGGER mv_pofiletranslator_pomsgset
 BEFORE UPDATE OR DELETE ON POMsgSet FOR EACH ROW
 EXECUTE PROCEDURE mv_pofiletranslator_pomsgset();
 
