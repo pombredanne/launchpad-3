@@ -37,9 +37,7 @@
 
     <tal:batch define="batch view/batchnav/currentBatch">
 
-      <tal:navigation
-        replace="structure view/batchnav/@@+navigation-links"
-        tal:condition="batch"/>
+      <tal:navigation replace="structure view/batchnav/@@+navigation-links-upper" />
 
       <ul class="sources" tal:condition="batch">
         <li tal:repeat="dsp batch">
@@ -78,9 +76,7 @@
         </li>
       </ul>
 
-      <tal:navigation
-        replace="structure view/batchnav/@@+navigation-links"
-        tal:condition="batch"/>
+      <tal:navigation replace="structure view/batchnav/@@+navigation-links-lower" />
 
       <tal:no_matches condition="not: view/matches">
 
