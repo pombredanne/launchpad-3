@@ -106,6 +106,8 @@ The single BuildQueue found is a trusted pending build:
 
   >>> job = jobs[0]
 
+  >>> job.id
+  2
   >>> job.build.buildstate.name
   'NEEDSBUILD'
   >>> job.builder is None
@@ -134,12 +136,92 @@ Check the dispatching method itself:
 
 Verify if the job (BuildQueue) was updated appropriately:
 
-  >>> job.builder.name
-  u'bob'
+  >>> job.builder.id == available_builder.id
+  True
+  >>> job.build.buildstate.name
+  'BUILDING'
   >>> job.buildstart
   CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
 
-
-Shutdown builder:
+Shutdown builder, mark the build record as failed and remove the
+buildqueue record, so the build was eliminated:
 
   >>> BuilddSlaveTestSetup().tearDown()
+
+  >>> from canonical.lp.dbschema import BuildStatus
+  >>> job.build.buildstate = BuildStatus.FAILEDTOBUILD
+  >>> job.destroySelf()
+  >>> flush_database_updates()
+
+Restart buildd-slave:
+
+  >>> BuilddSlaveTestSetup().setUp()
+
+Create new Build record of the same source targeted for a PPA archive:
+
+  XXX cprov 20061103: used IPerson PPA lookup API.
+  >>> from canonical.launchpad.database import Archive
+  >>> cprov_ppa = Archive.get(8)
+
+  >>> ppa_build = sprf.sourcepackagerelease.createBuild(
+  ...     hoary_i386, PackagePublishingPocket.RELEASE, archive=cprov_ppa)
+
+Create BuildQueue record and inspect some parameters:
+
+  >>> ppa_job = ppa_build.createBuildQueueEntry()
+  >>> ppa_job.id
+  3L
+  >>> ppa_job.builder == None
+  True
+  >>> ppa_job.buildstart == None
+  True
+  >>> ppa_job.is_trusted
+  False
+
+Update the BuildMaster list of pending jobs, check if the new:
+
+  >>> jobs_by_proc = bm.sortAndSplitByProcessor()
+  >>> jobs = jobs_by_proc[proc]
+  >>> len(jobs) == 1
+  True
+  >>> ppa_job.id in [j.id for j in jobs]
+  True
+
+Check if the job doesn't get dispatched since 'bob' builder is
+designed to build only TRUSTED code:
+
+  >>> bm.dispatchByProcessor(proc, jobs)
+  >>> flush_database_updates()
+
+  >>> ppa_job.builder == None
+  True
+
+The job can only be dispatched after modifying the current builder
+parameters:
+
+  >>> builder_set['bob'].trusted = False
+  >>> flush_database_updates()
+
+Unfortunately, re-building the entire BuildMaster class is also,
+necessary. It's mainly required because the use of the 'notes'
+(buildmaster/notes.py) infrastructure, which retains the annotated
+contents in python domain.
+
+  >>> new_bm = BuilddMaster(logger, transaction)
+  >>> new_bm.addDistroArchRelease(hoary_i386)
+  >>> new_bm.setupBuilders(hoary_i386)
+  >>> jobs_by_proc = new_bm.sortAndSplitByProcessor()
+  >>> jobs = jobs_by_proc[proc]
+  >>> new_bm.dispatchByProcessor(proc, jobs)
+  >>> flush_database_updates()
+
+Anyway, after making 'bob' builder available to build *untrusted*
+code, and dispatching pending jobs, we can see that ppa_job is building:
+
+  >>> ppa_job.builder.name
+  u'bob'
+  >>> ppa_job.build.buildstate.name
+  'BUILDING'
+  >>> ppa_job.buildstart
+  CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+
