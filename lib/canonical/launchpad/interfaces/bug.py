@@ -324,6 +324,12 @@ class IBug(IMessageTarget):
         :target: An IProduct or IDistribution.
         """
 
+    def getBugWatch(bugtracker, remote_bug):
+        """Return the BugWatch that has the given bugtracker and remote bug.
+
+        Return None if this bug doesn't have such a bug watch.
+        """
+
 
 class IBugDelta(Interface):
     """The quantitative change made to a bug that was edited."""
