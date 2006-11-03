@@ -28,7 +28,7 @@ from canonical.launchpad.webapp.notifications import (
 from canonical.launchpad.webapp.interfaces import (
         INotificationRequest, INotificationResponse)
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
-from canonical.launchpad.webapp.url import Url
+from canonical.launchpad.webapp.uri import URI
 
 
 class StepsToGo:
@@ -273,12 +273,12 @@ class LaunchpadBrowserFactory:
             self._hostname_requestpublication[host])
 
         # Get hostname, protocol and port out of rooturl.
-        rooturlobj = Url(rooturl)
+        rooturlobj = URI(rooturl)
 
         request_factory = ApplicationServerSettingRequestFactory(
             request_factory,
-            rooturlobj.hostname,
-            rooturlobj.addressingscheme,
+            rooturlobj.host,
+            rooturlobj.scheme,
             rooturlobj.port)
         return request_factory, publication_factory
 

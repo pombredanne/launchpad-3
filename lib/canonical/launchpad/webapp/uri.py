@@ -56,6 +56,7 @@ relative_ref_re = r"%s(?:\?%s)?(?:#%s)?$" % (
 uri_pat = re.compile(uri_re, re.IGNORECASE)
 relative_ref_pat = re.compile(relative_ref_re, re.IGNORECASE)
 
+
 def merge(basepath, relpath, has_authority):
     """Merge two URI path components.
 
@@ -65,6 +66,7 @@ def merge(basepath, relpath, has_authority):
         return '/' + relpath
     slash = basepath.rfind('/')
     return basepath[:slash+1] + relpath
+
 
 def remove_dot_segments(path):
     """Remove '.' and '..' segments from a URI path.
@@ -95,6 +97,7 @@ def remove_dot_segments(path):
             output.append(path[:slash])
             path = path[slash:]
     return ''.join(output)
+
 
 def normalise_unreserved(s):
     """Return a version of 's' where no unreserved characters are encoded.
@@ -334,10 +337,7 @@ class URI:
         with a slash.
         """
         assert not path.startswith('/')
-        basepath = self.path
-        if not basepath.endswith('/'):
-            basepath += '/'
-        return self.replace(path=basepath+path, query=None, fragment=None)
+        return self.ensure_slash().resolve(path)
 
     def contains(self, other):
         """Returns True if the URI 'other' is contained by this one."""
@@ -350,6 +350,20 @@ class URI:
         if not basepath.endswith('/'):
             basepath += '/'
         return other.path.startswith(basepath)
+
+    def ensure_slash(self):
+        """Return a URI with the path normalised to end with a slash."""
+        if self.path.endswith('/'):
+            return self
+        else:
+            return self.replace(path=self.path + '/')
+
+    def ensure_no_slash(self):
+        """Return a URI with the path normalised to not end with a slash."""
+        if self.path.endswith('/'):
+            return self.replace(path=self.path.rstrip('/'))
+        else:
+            return self
 
 
 # Regular expression for finding URIs in a body of text:

@@ -185,7 +185,7 @@ class MenuBase(UserAttributeCache):
         else:
             raise AssertionError('unknown site', site)
 
-    def iterlinks(self, requesturl=None):
+    def iterlinks(self, requesturi=None):
         """See IMenu."""
         if not self._initialized:
             self.initialize()
@@ -237,9 +237,8 @@ class MenuBase(UserAttributeCache):
                         link.target)
 
             # Make the link unlinked if it is a link to the current page.
-            if requesturl is not None:
-                linkurlobj = URI(link.url)
-                if requesturl == linkurlobj:
+            if requesturi is not None:
+                if requesturi.ensure_slash() == link.url.ensure_slash():
                     link.linked = False
             yield link
 
@@ -261,11 +260,11 @@ class FacetMenu(MenuBase):
     def _get_link(self, name):
         return IFacetLink(self._filterLink(name, MenuBase._get_link(self, name)))
 
-    def iterlinks(self, requesturl=None, selectedfacetname=None):
+    def iterlinks(self, requesturi=None, selectedfacetname=None):
         """See IFacetMenu."""
         if selectedfacetname is None:
             selectedfacetname = self.defaultlink
-        for link in MenuBase.iterlinks(self, requesturl=requesturl):
+        for link in MenuBase.iterlinks(self, requesturi=requesturi):
             if (selectedfacetname is not None and
                 selectedfacetname == link.name):
                 link.selected = True

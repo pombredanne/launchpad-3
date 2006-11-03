@@ -3,59 +3,11 @@
 """Functions for working with URLs."""
 
 __metaclass__ = type
-__all__ = ['Url', 'urlappend', 'urlparse', 'urlsplit']
+__all__ = ['urlappend', 'urlparse', 'urlsplit']
 
 import urlparse as urlparse_module
 from  urlparse import (
     urljoin, urlparse as original_urlparse, urlsplit as original_urlsplit)
-
-
-class Url:
-    """A class for url operations."""
-
-    def __init__(self, url, query=None):
-        self.url = url
-        if query is not None:
-            self.url += '?%s' % query
-        urlparts = iter(urlparse(self.url))
-        self.addressingscheme = urlparts.next()
-        self.networklocation = urlparts.next()
-        if ':' in self.networklocation:
-            self.hostname, port = self.networklocation.split(':', 1)
-            self.port = int(port)
-        else:
-            self.hostname = self.networklocation
-            self.port = None
-        self.path = urlparts.next()
-        if self.path.endswith('/'):
-            self.pathslash = self.path
-            self.pathnoslash = self.path[:-1]
-        else:
-            self.pathslash = self.path + '/'
-            self.pathnoslash = self.path
-        self.parameters = urlparts.next()
-        self.query = urlparts.next()
-        self.fragmentids = urlparts.next()
-
-    @property
-    def protohost(self):
-        """Returns the addressing scheme and network location."""
-        return '%s://%s' % (self.addressingscheme, self.networklocation)
-
-    def __repr__(self):
-        return '<Url %s>' % self.url
-
-    def is_inside(self, otherurl):
-        return (self.protohost == otherurl.protohost and
-                self.pathslash.startswith(otherurl.pathslash))
-
-    def __eq__(self, otherurl):
-        return (otherurl.protohost == self.protohost and
-                otherurl.pathslash == self.pathslash and
-                otherurl.query == self.query)
-
-    def __ne__(self, otherurl):
-        return not self.__eq__(self, otherurl)
 
 
 def _enable_sftp_in_urlparse():

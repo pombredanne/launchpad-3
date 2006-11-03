@@ -72,18 +72,19 @@ class MenuAPI:
         except NoCanonicalUrl:
             return None
 
-    def _requesturl(self):
+    def _requesturi(self):
         request = self._request
         if request is None:
             return None
-        requesturiobj = URI(request.getURL()).replace(
-            query=request.get('QUERY_STRING'))
+        requesturiobj = URI(request.getURL())
         # If the default view name is being used, we will want the url
         # without the default view name.
         defaultviewname = zapi.getDefaultViewName(self._context, request)
         if requesturiobj.path.rstrip('/').endswith(defaultviewname):
-            requesturiobj = URI(request.getURL(1)).replace(
-                query=request.get('QUERY_STRING'))
+            requesturiobj = URI(request.getURL(1))
+        query = request.get('QUERY_STRING')
+        if query:
+            requesturiobj = requesturiobj.replace(query=query)
         return requesturiobj
 
     def facet(self):
@@ -93,7 +94,7 @@ class MenuAPI:
         else:
             menu.request = self._request
             return list(menu.iterlinks(
-                requesturl=self._requesturl(),
+                requesturi=self._requesturi(),
                 selectedfacetname=self._selectedfacetname))
 
     def application(self):
@@ -106,7 +107,7 @@ class MenuAPI:
             return []
         else:
             menu.request = self._request
-            return list(menu.iterlinks(requesturl=self._requesturl()))
+            return list(menu.iterlinks(requesturi=self._requesturi()))
 
     def context(self):
         menu = IContextMenu(self._context, None)
@@ -114,7 +115,7 @@ class MenuAPI:
             return  []
         else:
             menu.request = self._request
-            return list(menu.iterlinks(requesturl=self._requesturl()))
+            return list(menu.iterlinks(requesturi=self._requesturi()))
 
 
 class CountAPI:
