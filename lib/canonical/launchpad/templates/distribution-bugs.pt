@@ -1,0 +1,63 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xml:lang="en" lang="en"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="malone"
+>
+  <body>
+    <div metal:fill-slot="main" class="tab-bugs">
+      <h1>Bugs in Ubuntu</h1>
+      <xmetal:search
+        use-macro="context/@@+bugtarget-macros-search/simple-search-form"
+      />
+      <div class="columns">
+        <div class="two column left">
+          pie chart here
+        </div>
+        <div class="two column right">
+          <h2>Key contacts</h2>
+          <table class="summary">
+            <tbody>
+              <tr>
+                <th>Driver:</th>
+                <td>
+                  <tal:none condition="not:context/driver">None set</tal:none>
+                  <a
+                    tal:condition="context/driver"
+                    tal:attributes="href context/driver/fmt:url"
+                    tal:content="context/driver/name"
+                  >John Smith</a>
+                </td>
+              </tr>
+              <tr>
+                <th>Bug contact:</th>
+                <td>
+                  <tal:none condition="not:context/bugcontact"
+                  >None set</tal:none>
+                  <a
+                    tal:condition="context/bugcontact"
+                    tal:attributes="href context/bugcontact/fmt:url"
+                    tal:content="context/bugcontact/name"
+                  >Bob Johnson</a>
+                </td>
+              </tr>
+              <tr>
+                <th>Security contact:</th>
+                <td>
+                  <tal:none condition="not:context/securitycontact"
+                  >None set</tal:none>
+                  <a
+                    tal:condition="context/driver"
+                    tal:attributes="href context/driver/fmt:url"
+                    tal:content="context/driver/name"
+                  >Billy Anderson</a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
+<!-- 1-0 in-progress Needs form traversal work -->
