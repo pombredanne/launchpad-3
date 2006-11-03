@@ -31,7 +31,7 @@ from canonical.launchpad.interfaces import (
 import canonical.launchpad.pagetitles
 from canonical.lp import dbschema
 from canonical.launchpad.webapp import canonical_url, nearest_menu
-from canonical.launchpad.webapp.url import Url
+from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.launchpad.helpers import check_permission
 
@@ -76,13 +76,15 @@ class MenuAPI:
         request = self._request
         if request is None:
             return None
-        requesturlobj = Url(request.getURL(), request.get('QUERY_STRING'))
+        requesturiobj = URI(request.getURL()).replace(
+            query=request.get('QUERY_STRING'))
         # If the default view name is being used, we will want the url
         # without the default view name.
         defaultviewname = zapi.getDefaultViewName(self._context, request)
-        if requesturlobj.pathnoslash.endswith(defaultviewname):
-            requesturlobj = Url(request.getURL(1), request.get('QUERY_STRING'))
-        return requesturlobj
+        if requesturiobj.path.rstrip('/').endswith(defaultviewname):
+            requesturiobj = URI(request.getURL(1)).replace(
+                query=request.get('QUERY_STRING'))
+        return requesturiobj
 
     def facet(self):
         menu = self._nearest_menu(IFacetMenu)
