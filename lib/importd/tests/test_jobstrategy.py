@@ -13,26 +13,59 @@ from importd.tests import testutil
 class TestCvsStrategyCreation(unittest.TestCase):
 
     def assertInstanceMethod(self, method, class_, name):
+        """Assert that `method` is a specific instance method.
+
+        :param method: this must be an instance method
+        :param class_: `method` must be from an instance of this class.
+        :param name: `method` must have this name.
+        """
         self.assertEqual(method.im_class, class_)
         self.assertEqual(method.im_func.__name__, name)
 
-    def testGet(self):
-        """Test getting a Strategy"""
-        CVS_import = JobStrategy.get("CVS", "import")
-        self.assertInstanceMethod(CVS_import, JobStrategy.CVSStrategy, 'Import')
-        cvs_import = JobStrategy.get("cvs", "import")
-        self.assertInstanceMethod(cvs_import, JobStrategy.CVSStrategy, 'Import')
-        CVS_sync = JobStrategy.get("CVS", "sync")
-        self.assertInstanceMethod(CVS_sync, JobStrategy.CVSStrategy, 'sync')
-        cvs_sync = JobStrategy.get("cvs", "sync")
-        self.assertInstanceMethod(cvs_sync, JobStrategy.CVSStrategy, 'sync')
+    def assertCvsStrategyMethod(self, method, name):
+        """Assert that method is an instance method from CVSStrategy.
+
+        :param method: this must be a method of a CVSStrategy instance.
+        :param name: 'method' must have this name.
+        """
+        self.assertInstanceMethod(method, JobStrategy.CVSStrategy, name)
+
+    def testGetCvsStrategy(self):
+        # Test getting a cvs strategy.
+        CVS_import = JobStrategy.get('CVS', 'import')
+        self.assertCvsStrategyMethod(CVS_import, 'Import')
+        cvs_import = JobStrategy.get('cvs', 'import')
+        self.assertCvsStrategyMethod(cvs_import, 'Import')
+        CVS_sync = JobStrategy.get('CVS', 'sync')
+        self.assertCvsStrategyMethod(CVS_sync, 'sync')
+        cvs_sync = JobStrategy.get('cvs', 'sync')
+        self.assertCvsStrategyMethod(cvs_sync, 'sync')
+
+    def assertSvnStrategyMethod(self, method, name):
+        """Assert that method is an instance method from SVNStrategy.
+
+        :param method: this must be a method of a SVNStrategy instance.
+        :param name: 'method' must have this name.
+        """
+        self.assertInstanceMethod(method, JobStrategy.SVNStrategy, name)
+
+    def testGetSvnStrategy(self):
+        # Test getting a svn strategy.
+        SVN_import = JobStrategy.get('SVN', 'import')
+        self.assertSvnStrategyMethod(SVN_import, 'Import')
+        svn_import = JobStrategy.get('svn', 'import')
+        self.assertSvnStrategyMethod(svn_import, 'Import')
+        SVN_sync = JobStrategy.get('SVN', 'sync')
+        self.assertSvnStrategyMethod(SVN_sync, 'sync')
+        svn_sync = JobStrategy.get('svn', 'sync')
+        self.assertSvnStrategyMethod(svn_sync, 'sync')
 
     def testGetInvalidRCS(self):
-        """Test getting with invalid RCS"""
+        # Test getting a strategy with an invalid RCS name.
         self.assertRaises(KeyError, JobStrategy.get, "blargh", "sync")
 
     def testGetInvalidType(self):
-        """Test getting with invalid type"""
+        # Test getting a strategy with an invalid job type.
         self.assertRaises(KeyError, JobStrategy.get, "CVS", "blargh")
 
 
