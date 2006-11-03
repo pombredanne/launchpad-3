@@ -4,7 +4,7 @@ first finding out if you're bug has already been reported.
     >>> user_browser.open("http://launchpad.dev/distros/ubuntu/+filebug")
 
     >>> user_browser.getControl(name="field.title").value = "crashes"
-    >>> user_browser.getControl("Search for similar bugs").click()
+    >>> user_browser.getControl("Continue").click()
 
 In this case, there is one similar bug.
 
@@ -24,7 +24,7 @@ But there are no duplicate bugs reported in Ubuntu.
 Assuming the one bug found isn't the one we were going to report, we'll
 continue with filing our bug.
 
-    >>> user_browser.getControl("I don't see my bug in this list").click()
+    >>> user_browser.getControl("Continue").click()
 
     >>> print user_browser.url
     http://launchpad.dev/distros/ubuntu/+filebug

@@ -76,6 +76,8 @@ class FileBugViewBase(LaunchpadFormView):
             if packagename:
                 if IDistribution.providedBy(self.context):
                     distribution = self.context
+                elif 'distribution' in data:
+                    distribution = data['distribution']
                 else:
                     assert IDistributionSourcePackage.providedBy(self.context)
                     distribution = self.context.distribution
@@ -83,12 +85,17 @@ class FileBugViewBase(LaunchpadFormView):
                 try:
                     distribution.guessPackageNames(packagename)
                 except NotFoundError:
-                    packagename_error = (
-                        '"%s" does not exist in %s. Please choose a different '
-                        'package. If you\'re unsure, please select '
-                        '"I don\'t know"' % (
-                            packagename, distribution.displayname))
-                    self.setFieldError("packagename", packagename_error)
+                    if distribution.releases:
+                        # If a distribution doesn't have any releases,
+                        # it won't have any source packages published at
+                        # all, so we set the error only if there are
+                        # releases.
+                        packagename_error = (
+                            '"%s" does not exist in %s. Please choose a '
+                            "different package. If you're unsure, please"
+                            'select "I don\'t know"' % (
+                                packagename, distribution.displayname))
+                        self.setFieldError("packagename", packagename_error)
             else:
                 self.setFieldError("packagename", "Please enter a package name")
 

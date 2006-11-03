@@ -6,7 +6,7 @@ already exists.
     ...     "http://launchpad.dev/distros/ubuntu/+source/mozilla-firefox/"
     ...     "+filebug")
     >>> user_browser.getControl(name="field.title").value = "wontmatch"
-    >>> user_browser.getControl("Search for similar bugs").click()
+    >>> user_browser.getControl("Continue").click()
 
 In this case, there are no similar matching bugs.
 
@@ -23,14 +23,12 @@ And no duplicated bugs in this package.
     >>> most_common_bugs_table is None
     True
 
-The button to continue reporting a bug now just says "Continue".
+The user got taken to the bug submit form directly.
 
-    >>> user_browser.getControl("I don't see my bug in this list")
+    >>> user_browser.getControl("Continue")
     Traceback (most recent call last):
       ...
     LookupError: ...
-
-    >>> user_browser.getControl("Continue").click()
 
 The filebug form looks similar to the normal distro form, but the
 package name is prepopulated.

@@ -8,7 +8,7 @@ bugs.
     >>> user_browser.open("http://launchpad.dev/products/firefox/+filebug")
 
     >>> user_browser.getControl(name="field.title").value = "svg"
-    >>> user_browser.getControl("Search for similar bugs").click()
+    >>> user_browser.getControl("Continue").click()
 
 The form is self-posting, so the user is still at +filebug. This makes
 it difficult to bypass the search-for-dupes bit.
@@ -30,7 +30,7 @@ a list of most common bugs in the current context.
 If the user doesn't see their bug already reported, they can proceed to
 file the bug.
 
-    >>> user_browser.getControl("I don't see my bug in this list").click()
+    >>> user_browser.getControl("Continue").click()
 
     >>> print user_browser.url
     http://launchpad.dev/products/firefox/+filebug
