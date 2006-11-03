@@ -28,7 +28,9 @@
       initHelpPanel();
     "
     id="document"
+    tal:attributes="class string:tab-${CONTEXTS/menu:selectedfacetname}"
   >
+    <p tal:content="CONTEXTS/menu:selectedfacetname" />
     <div id="globalheader">
       <div class="launchpad">
         <img

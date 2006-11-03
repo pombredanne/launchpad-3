@@ -94,6 +94,12 @@ class MenuAPI:
                 requesturl=self._requesturl(),
                 selectedfacetname=self._selectedfacetname))
 
+    def selectedfacetname(self):
+        if self._selectedfacetname is None:
+            return 'unknown'
+        else:
+            return self._selectedfacetname
+
     def application(self):
         selectedfacetname = self._selectedfacetname
         if selectedfacetname is None:
