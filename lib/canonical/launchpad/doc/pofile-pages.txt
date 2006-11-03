@@ -242,8 +242,8 @@ To be sure that we are using the right entry from the import queue,
 we check that it's empty atm.
 
     >>> translationimportqueue = getUtility(ITranslationImportQueue)
-    >>> len(translationimportqueue) == 0
-    True
+    >>> translationimportqueue.entryCount()
+    0
 
 The FileUpload class needs a class with the attributes: filename, file and
 headers.
@@ -261,12 +261,24 @@ Now, we do the upload.
     ...     'pofile_upload': 'Upload'})
     >>> request.method = 'POST'
     >>> pofile_view = getView(pofile_es, '+upload', request)
+
+We get an error, because we have disabled this kind of uploads
+while bug #68014 is fixed.
+
+    >>> pofile_view.initialize()
+    Traceback (most recent call last):
+    ...
+    UnexpectedFormData: Only admins can use this form.
+
+We log now as an admin and see that be sure that submissions still work.
+
+    >>> login('carlos@canonical.com')
     >>> pofile_view.initialize()
 
 As we can see, we have now one entry in our queue.
 
-    >>> len(translationimportqueue) == 1
-    True
+    >>> translationimportqueue.entryCount()
+    1
 
 Get it and check that some attributes are set as they should.
 

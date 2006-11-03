@@ -11,8 +11,8 @@
   </tal:no-results>
 
   <tal:results condition="context/batch">
-    <div class="lesser" tal:content="structure context/@@+navigation-links" />
+    <div class="lesser" tal:content="structure context/@@+navigation-links-upper" />
     <div tal:replace="structure context/@@+table-view-without-navlinks" />
-    <div class="lesser" tal:content="structure context/@@+navigation-links" />
+    <div class="lesser" tal:content="structure context/@@+navigation-links-lower" />
   </tal:results>
 </div>

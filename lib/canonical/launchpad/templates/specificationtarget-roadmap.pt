@@ -5,19 +5,6 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div class="portlet">
-    <h4>About this page:</h4>
-    <div class="portletBody portletContent">
-      <img src="/@@/info" />
-      Specifications should be implemented in the order given.
-      This will ensure that the <b>most important</b> specifications
-      are implemented first, and that specification <b>dependencies</b>
-      are respected.
-    </div>
-  </div>
-</metal:leftportlets>
-
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-latestspecs" />
@@ -59,5 +46,11 @@
   </tal:block>
 
 </div>
-</body>
+
+    <p metal:fill-slot="help">
+      Specifications should be implemented in the order given.
+      This will ensure that the most important specifications are implemented
+      first, and that specification dependencies are respected.
+    </p>
+  </body>
 </html>
