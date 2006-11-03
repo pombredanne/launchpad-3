@@ -257,7 +257,7 @@ class Bug(SQLBase):
         indirect_subscribers = (
             self.getAlsoNotifiedSubscribers() +
             self.getSubscribersFromDuplicates())
-        
+
         return sorted(
             indirect_subscribers, key=operator.attrgetter("displayname"))
 
@@ -272,14 +272,14 @@ class Bug(SQLBase):
                 BugSubscription.bug = Bug.id AND
                 Bug.duplicateof = %d""" % self.id,
                 clauseTables=["Bug", "BugSubscription"]))
-            
+
         # Direct and "also notified" subscribers take precedence over
         # subscribers from dupes
         dupe_subscribers -= set(self.getDirectSubscribers())
         dupe_subscribers -= set(self.getAlsoNotifiedSubscribers())
 
         return sorted(dupe_subscribers, key=operator.attrgetter("displayname"))
-        
+
     def getAlsoNotifiedSubscribers(self):
         """See IBug."""
         if self.private:
@@ -376,15 +376,14 @@ class Bug(SQLBase):
 
     def addWatch(self, bugtracker, remotebug, owner):
         """See IBug."""
-        # run through the existing watches and try to find an existing watch
-        # that matches... and return that
-        for watch in self.watches:
-            if (watch.bugtracker == bugtracker and
-                watch.remotebug == remotebug):
-                return watch
-        # ok, we need a new one
-        return BugWatch(bug=self, bugtracker=bugtracker,
-            remotebug=remotebug, owner=owner)
+        # We shouldn't add duplicate bug watches.
+        bug_watch = self.getBugWatch(bugtracker, remotebug)
+        if bug_watch is not None:
+            return bug_watch
+        else:
+            return BugWatch(
+                bug=self, bugtracker=bugtracker,
+                remotebug=remotebug, owner=owner)
 
     def addAttachment(self, owner, file_, description, comment, filename,
                       is_patch=False):
@@ -571,6 +570,17 @@ class Bug(SQLBase):
             nominations = filtered_nominations
 
         return sorted(nominations, key=by_bugtargetname)
+
+    def getBugWatch(self, bugtracker, remote_bug):
+        """See IBug."""
+        #XXX: This matching is a bit fragile, since
+        #     bugwatch.remotebug is a user editable text string.
+        #     We should improve the matching so that for example
+        #     '#42' matches '42' and so on.
+        #     -- Bjorn Tillenius, 2006-10-11
+        return BugWatch.selectFirstBy(
+            bug=self, bugtracker=bugtracker, remotebug=remote_bug,
+            orderBy='id')
 
     def _getTags(self):
         """Get the tags as a sorted list of strings."""
