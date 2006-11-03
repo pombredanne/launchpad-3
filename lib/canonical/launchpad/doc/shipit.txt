@@ -151,19 +151,20 @@ Instead, it'll be part of the past requests of that recipient.
 Searching for requests
 ----------------------
 
-We have 15 requests, and two of them are cancelled
+We have 16 requests, and two of them are cancelled
 
   >>> sorted((shipreq.id, shipreq.recipient.name) 
   ...        for shipreq in requestset.search())
   [(1, u'no-priv'), (2, u'stub'), (3, u'kreutzm'), (4, u'lifeless'),
    (5, u'ddaa'), (6, u'cprov'), (7, u'debonzi'), (12, u'jdub'),
    (13, u'shipit-admins'), (14, u'jblack'), (15, u'ddaa'),
-   (16, u'jordi'), (17, u'jblack'), (18, u'ddaa'), (19L, u'name16')]
+   (16, u'jordi'), (17, u'jblack'), (18, u'ddaa'), (19, u'shipit-admins'),
+   (20L, u'name16')]
 
   >>> cancelled = ShippingRequestStatus.CANCELLED
   >>> sorted((shipreq.id, shipreq.recipient.name) 
   ...        for shipreq in requestset.search(status=cancelled))
-  [(6, u'cprov'), (19L, u'name16')]
+  [(6, u'cprov'), (20L, u'name16')]
 
 Two of them are pending review, because their recipients asked for extra CDs.
 
@@ -173,13 +174,13 @@ Two of them are pending review, because their recipients asked for extra CDs.
   12 : I want 100 more CDs.
   13 : I need 50 more CDs to give away to my friends.
 
-Seven are approved but not yet shipped.
+Eight are approved but not yet shipped.
   
   >>> approved = ShippingRequestStatus.APPROVED
   >>> sorted((shipreq.id, shipreq.recipient.name) 
   ...         for shipreq in requestset.search(status=approved))
   [(1, u'no-priv'), (2, u'stub'), (3, u'kreutzm'), (4, u'lifeless'),
-   (5, u'ddaa'), (7, u'debonzi'), (16, u'jordi')]
+   (5, u'ddaa'), (7, u'debonzi'), (16, u'jordi'), (19, u'shipit-admins')]
 
 And finally, four of them are already shipped.
 
@@ -197,7 +198,7 @@ of a given distrorelease (or both, obviously).
   ...  for shipreq in requestset.search(flavour=kubuntu)]
   [(u'Celso Providelo', 6), (u'David Allouche', 5),
    (u'Daniel Henrique Debonzi', 7), (u'Jordi Mallach', 16),
-   (u'James Blackwell', 17)]
+   (u'James Blackwell', 17), (u'ShipIt Administrators', 19)]
 
   >>> from canonical.lp.dbschema import ShipItDistroRelease
   >>> dapper = ShipItDistroRelease.DAPPER
@@ -208,7 +209,7 @@ of a given distrorelease (or both, obviously).
    (u'Daniel Henrique Debonzi', 7), (u'Jordi Mallach', 16),
    (u'David Allouche', 18), (u'Jeff Waugh', 12),
    (u'ShipIt Administrators', 13), (u'James Blackwell', 17),
-   (u'Stuart Bishop', 2), (u'Foo Bar', 19L)]
+   (u'Stuart Bishop', 2), (u'Foo Bar', 20L)]
 
   >>> edubuntu = ShipItFlavour.EDUBUNTU
   >>> [(shipreq.recipient.displayname , shipreq.id)
@@ -293,6 +294,33 @@ shipped, by running the shipit-exports cronscript.
   >>> run.requests[0].highpriority
   False
 
+Since we're now allowing shipit admins to make requests for Edgy CDs, we need
+to have a separate export containing only Edgy requests. Similarly, these
+Edgy requests won't be included in the default export.
+
+  >>> len(requestset.getUnshippedRequestsIDs(ShippingRequestPriority.NORMAL,
+  ...                                        ShipItDistroRelease.EDGY))
+  1
+
+  >>> args = '-q --priority=normal --distrorelease=edgy'
+  >>> process = subprocess.Popen(
+  ...     'cronscripts/shipit-exports.py %s' % args, shell=True,
+  ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  >>> (out, err) = process.communicate()
+  >>> out, err
+  ('', '')
+  >>> process.returncode
+  0
+
+  >>> transaction.commit()
+  >>> flush_database_updates()
+  >>> len(requestset.getUnshippedRequestsIDs(ShippingRequestPriority.NORMAL,
+  ...                                        ShipItDistroRelease.EDGY))
+  0
+  >>> run = ShippingRun.select(orderBy='-datecreated', limit=1)[0]
+  >>> sorted([request.id for request in run.requests])
+  [19]
+
 
 Generating reports
 ------------------
@@ -312,14 +340,15 @@ ShipItConstants.current_distrorelease.
   >>> for line in csv_file.readlines():
   ...     line.strip()
   '"Country","Total Shipped Ubuntu","Total Shipped Kubuntu","Total Shipped Edubuntu","Total Shipped","Shipped Ubuntu x86 CDs","Shipped Ubuntu AMD64 CDs","Shipped Ubuntu PPC CDs","Shipped Kubuntu x86 CDs","Shipped Kubuntu AMD64 CDs","Shipped Kubuntu PPC CDs","Shipped Edubuntu x86 CDs","Shipped Edubuntu AMD64 CDs","Shipped Edubuntu PPC CDs","Normal-prio shipments","High-prio shipments","Average request size","Percentage of requested CDs that were approved","Percentage of total shipped CDs","Continent"'
-  '"Bermuda","10","0","0","10","8","1","1","0","0","0","0","0","0","1","0","10","100.00%","9.80%","North America"'
-  '"British Indian Ocean Territory","25","11","5","41","9","6","10","6","5","0","5","0","0","3","1","10","100.00%","40.20%","Asia"'
-  '"Burkina Faso","10","0","0","10","10","0","0","0","0","0","0","0","0","1","0","10","100.00%","9.80%","Africa"'
-  '"China","1","0","0","1","0","1","0","0","0","0","0","0","0","1","0","1","100.00%","0.98%","Asia"'
-  '"France","0","0","1","1","0","0","0","0","0","0","1","0","0","1","0","1","100.00%","0.98%","Europe"'
-  '"Heard Island and McDonald Islands","5","0","0","5","5","0","0","0","0","0","0","0","0","1","0","5","100.00%","4.90%","Antarctica"'
-  '"United States","24","0","0","24","9","6","9","0","0","0","0","0","0","1","0","24","100.00%","23.53%","North America"'
-  '"\xc3\x85land Islands","0","10","0","10","0","0","0","8","2","0","0","0","0","0","1","10","100.00%","9.80%","Europe"'
+  '"Antarctica","50","50","50","150","50","0","0","50","0","0","50","0","0","1","0","150","100.00%","59.52%","Antarctica"'
+  '"Bermuda","10","0","0","10","8","1","1","0","0","0","0","0","0","1","0","10","100.00%","3.97%","North America"'
+  '"British Indian Ocean Territory","25","11","5","41","9","6","10","6","5","0","5","0","0","3","1","10","100.00%","16.27%","Asia"'
+  '"Burkina Faso","10","0","0","10","10","0","0","0","0","0","0","0","0","1","0","10","100.00%","3.97%","Africa"'
+  '"China","1","0","0","1","0","1","0","0","0","0","0","0","0","1","0","1","100.00%","0.40%","Asia"'
+  '"France","0","0","1","1","0","0","0","0","0","0","1","0","0","1","0","1","100.00%","0.40%","Europe"'
+  '"Heard Island and McDonald Islands","5","0","0","5","5","0","0","0","0","0","0","0","0","1","0","5","100.00%","1.98%","Antarctica"'
+  '"United States","24","0","0","24","9","6","9","0","0","0","0","0","0","1","0","24","100.00%","9.52%","North America"'
+  '"\xc3\x85land Islands","0","10","0","10","0","0","0","8","2","0","0","0","0","0","1","10","100.00%","3.97%","Europe"'
 
   >>> csv_file = requestset.generateCountryBasedReport(
   ...     current_release_only=True)
@@ -352,6 +381,7 @@ ShipItConstants.current_distrorelease.
   '"5","2"'
   '"10","4"'
   '"24","2"'
+  '"150","1"'
 
   >>> csv_file = requestset.generateShipmentSizeBasedReport(
   ...     current_release_only=True)
