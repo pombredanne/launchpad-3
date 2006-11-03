@@ -238,7 +238,7 @@ class MenuBase(UserAttributeCache):
 
             # Make the link unlinked if it is a link to the current page.
             if requesturi is not None:
-                if requesturi.ensure_slash() == link.url.ensure_slash():
+                if requesturi.ensureSlash() == link.url.ensureSlash():
                     link.linked = False
             yield link
 

@@ -337,7 +337,7 @@ class URI:
         with a slash.
         """
         assert not path.startswith('/')
-        return self.ensure_slash().resolve(path)
+        return self.ensureSlash().resolve(path)
 
     def contains(self, other):
         """Returns True if the URI 'other' is contained by this one."""
@@ -349,16 +349,19 @@ class URI:
         basepath = self.path
         if not basepath.endswith('/'):
             basepath += '/'
-        return other.path.startswith(basepath)
+        otherpath = other.path
+        if not otherpath.endswith('/'):
+            otherpath += '/'
+        return otherpath.startswith(basepath)
 
-    def ensure_slash(self):
+    def ensureSlash(self):
         """Return a URI with the path normalised to end with a slash."""
         if self.path.endswith('/'):
             return self
         else:
             return self.replace(path=self.path + '/')
 
-    def ensure_no_slash(self):
+    def ensureNoSlash(self):
         """Return a URI with the path normalised to not end with a slash."""
         if self.path.endswith('/'):
             return self.replace(path=self.path.rstrip('/'))
