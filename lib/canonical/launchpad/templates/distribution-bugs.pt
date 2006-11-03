@@ -12,11 +12,11 @@
       />
       <div class="columns">
         <div class="two column left">
-          pie chart here
+          <img alt="" src="/@@/nyet-mugshot" title="pie chart here" />
         </div>
         <div class="two column right">
           <h2>Key contacts</h2>
-          <table class="summary">
+          <table class="summary" style="width: 100%;">
             <tbody>
               <tr>
                 <th>Driver:</th>
@@ -44,20 +44,45 @@
               <tr>
                 <th>Security contact:</th>
                 <td>
-                  <tal:none condition="not:context/securitycontact"
+                  <tal:none condition="not:context/security_contact"
                   >None set</tal:none>
                   <a
-                    tal:condition="context/driver"
-                    tal:attributes="href context/driver/fmt:url"
-                    tal:content="context/driver/name"
+                    tal:condition="context/security_contact"
+                    tal:attributes="href context/security_contact/fmt:url"
+                    tal:content="context/security_contact/name"
                   >Billy Anderson</a>
                 </td>
               </tr>
             </tbody>
           </table>
-        </div>
-      </div>
-    </div>
+          <ul class="cross-reference">
+            <li>
+              <a href="">
+                <strong tal:content="nothing"></strong>
+                bugs fixed elsewhere
+              </a>
+            </li>
+            <li>
+              <a href="">
+                <strong tal:content="nothing"></strong>
+                open CVE bugs
+              </a>
+            </li>
+          </ul>
+          <ul class="buttons">
+            <li class="report-bug">
+              <a href="+filebug">Report a bug</a>
+            </li>
+            <li class="request-support">
+              <a href="+addticket">Request support</a>
+            </li>
+          </ul>
+        </div><!-- two column right -->
+      </div><!-- columns -->
+      <div class="clear"></div>
+      <tal:latest-bugs replace="structure context/@@+portlet-latestbugs" />
+      <xtal:touched-bugs replace="structure context/@@+portlet-touched-bugs" />
+    </div><!-- main -->
   </body>
 </html>
-<!-- 1-0 in-progress Needs form traversal work -->
+<!-- 1-0 in-progress Needs form traversal, pie chart, and canned searches. -->

@@ -1017,15 +1017,15 @@ h1, h2, h3, #maincontent :link { /* On Overview tab or tab-less pages */
   background: none;
   color: #90b51a; /* darkest color from locationbar_em_bg.gif */
 }
-.tab-code h1, .tab-code h2, .tab-code h3, .tab-code #maincontent :link {
+.tab-code h1, .tab-code h2, .tab-code h3, .tab-code :link, .tab-code :visited {
   background: none;
   color: #f3cb00; /* "it fits nicely with the Bazaar logo" -- sabdfl */
 }
-.tab-bugs h1, .tab-bugs h2, .tab-bugs h3, .tab-bugs #maincontent :link {
+.tab-bugs h1, .tab-bugs h2, .tab-bugs h3, .tab-bugs :link, .tab-bugs :visited {
   background: none;
   color: #c03;
 }
-.tab-features h1, .tab-features h2, .tab-features #maincontent :link {
+.tab-features h1, .tab-features h2, .tab-features :link, .tab-features :visited {
   background: none;
   color: #90b51a;
 }
@@ -1135,6 +1135,9 @@ ul.buttons {
 ul.buttons li {
   display: inline;
   margin-right: 1em;
+}
+ul.cross-reference {
+  font-size: 1.25em;
 }
 li {
   margin-bottom: 0.75em;
