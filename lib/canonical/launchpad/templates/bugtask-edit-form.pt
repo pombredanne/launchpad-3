@@ -145,20 +145,20 @@
     </table>
   </div>
   <div class="field">
-    <label for="comment_on_change">Comment on most recent change</label>
+    <label tal:attributes="for string:${view/prefix}.comment_on_change">Comment on most recent change</label>
     <div style="margin-top: 5px">
       <i tal:content="python:context.statusexplanation or '(none)'" />
     </div>
   </div>
   <div class="field">
     <div>
-      <label for="comment_on_change">Comment on this change (optional)</label>
+      <label  tal:attributes="for string:${view/prefix}.comment_on_change">Comment on this change (optional)</label>
       <textarea
         cols="62"
-        id="comment_on_change"
-        name="comment_on_change"
         rows="4"
         tal:content="request/comment_on_change|nothing"
+        tal:attributes="id string:${view/prefix}.comment_on_change;
+                        name string:${view/prefix}.comment_on_change"
       ></textarea>
     </div>
     <div tal:condition="python:not context.bug.isSubscribed(view.user)">
