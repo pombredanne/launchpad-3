@@ -232,7 +232,7 @@ class TestCvsStrategyBzr(CvsStrategyTestCase):
     def mirrorPath(self, branch_id):
         return os.path.join(self.job.push_prefix, '%08x' % branch_id)
 
-    def testImportAndSync(self):
+    def testCvsImportAndSync(self):
         # Feature test for a CVS import to bzr
         # Check we can do an initial import from CVS.
         self.cscvs_helper.setUpCvsImport()

@@ -1,6 +1,7 @@
 from importd.tests import testutil
 from importd.tests import (
-    test_bzrmanager, test_cvsstrategy, test_Job, test_jobstrategy)
+    test_Job, test_bzrmanager,
+    test_cvsstrategy, test_jobstrategy, test_svnstrategy)
 
 
 def test_suite():
@@ -10,5 +11,6 @@ def test_suite():
     result.addTest(test_bzrmanager.test_suite())
     result.addTest(test_jobstrategy.test_suite())
     result.addTest(test_cvsstrategy.test_suite())
+    result.addTest(test_svnstrategy.test_suite())
     return result
 

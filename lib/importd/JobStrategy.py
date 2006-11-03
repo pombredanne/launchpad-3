@@ -106,10 +106,22 @@ class CSCVSStrategy(JobStrategy):
         self.aJob = aJob
         self.logger = logger
         self.dir = dir
-        target_manager = aJob.makeTargetManager()
         working_dir = self.getWorkingDir(aJob, dir)
-        target_path = target_manager.getSyncTarget(working_dir)
+        target_path = self._getSyncTarget(working_dir)
         self._importIncrementally(target_path)
+
+    def _getSyncTarget(self, working_dir):
+        """Retrieve the bzrworking directory when doing a sync.
+
+        This is factored out as a separate method to allow shorting out the
+        this functionality and its dependencies when testing sync.
+
+        :param working_dir: path of job's working directory
+        :return: path of the bzr working tree to import into
+        """
+        target_manager = self.job.makeTargetManager()
+        target_path = target_manager.getSyncTarget(working_dir)
+        return target_path
 
     def _importIncrementally(self, target_path):
         """Do an incremental import, starting after the last imported revision.
@@ -427,7 +439,7 @@ class SVNStrategy(CSCVSStrategy):
                     SCM.tree(path).update()
                 else:
                     self.logger.debug("getting from SVN: %s %s",
-                                      (repository, self.aJob.module))
+                        repository, self.aJob.module)
                     client=pysvn.Client()
                     client.checkout(repository, path)
             except Exception: # don't leave partial checkouts around
