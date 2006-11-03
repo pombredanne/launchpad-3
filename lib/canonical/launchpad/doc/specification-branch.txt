@@ -1,5 +1,4 @@
-Secifications and Branches
-==========================
+= Secification Branch Links =
 
 A specification can be linked to a number of branches.  For example,
 the Ubuntu media-integrity-check specifcation has a branch link:
@@ -19,7 +18,6 @@ A spec link has a summary attached to it:
   >>> branchlink = spec.branch_links[0]
   >>> branchlink.summary
   u'This branch should fix the issue'
-
 
 The summary can only be changed by non-anonymous users:
 
