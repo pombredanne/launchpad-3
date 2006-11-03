@@ -16,7 +16,7 @@ from importd.tests import testutil, helpers
 from importd.tests.test_bzrmanager import ProductSeriesHelper
 
 
-class CscvsJobHelper(helpers.SimpleJobHelper):
+class CvsJobHelper(helpers.SimpleJobHelper):
     """Job factory for CVSStrategy test cases."""
 
     def setUp(self):
@@ -34,8 +34,8 @@ class CscvsJobHelper(helpers.SimpleJobHelper):
         return job
 
 
-class CscvsHelper(object):
-    """Helper for integration tests with CSCVS."""
+class CscvsCvsHelper(object):
+    """Helper for integration tests with cscvs for CVS functionality."""
 
     sourcefile_data = {
         'import': 'import\n',
@@ -84,27 +84,26 @@ class CscvsHelper(object):
         shutil.rmtree(sourcedir)
 
 
-class CscvsTestCase(helpers.JobTestCase):
+class CscvsCvsTestCase(helpers.JobTestCase):
     """Base class for tests using cscvs."""
 
-    jobHelperType = CscvsJobHelper
+    jobHelperType = CvsJobHelper
 
     def setUp(self):
         helpers.JobTestCase.setUp(self)
-        self.cscvs_helper = CscvsHelper(self.sandbox, self.job_helper)
+        self.cscvs_helper = CscvsCvsHelper(self.sandbox, self.job_helper)
         self.cscvs_helper.setUp()
-        self.job_helper.cvsroot = self.cscvs_helper.cvsroot
 
     def tearDown(self):
         self.cscvs_helper.tearDown()
         helpers.JobTestCase.tearDown(self)
 
 
-class CvsStrategyTestCase(CscvsTestCase):
+class CvsStrategyTestCase(CscvsCvsTestCase):
     """Common base for CVSStrategy test case classes."""
 
     def setUp(self):
-        CscvsTestCase.setUp(self)
+        CscvsCvsTestCase.setUp(self)
         self.job = self.job_helper.makeJob()
         self.logger = testutil.makeSilentLogger()
         self.cvspath = self.sandbox.join('series-0000002a', 'cvsworking')
