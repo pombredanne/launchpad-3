@@ -1,93 +1,68 @@
 Secifications and Branches
 ==========================
 
-Branches can now be linked to Specifications in a similar way to how they are
-linked to bugs.
+A specification can be linked to a number of branches.  For example,
+the Ubuntu media-integrity-check specifcation has a branch link:
 
-Firstly lets create a new specification to which we'll connect the branches
+  >>> from zope.component import getUtility
+  >>> from canonical.launchpad.interfaces import (
+  ...     IBranchSet, ILaunchpadCelebrities)
+  >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+  >>> spec = ubuntu.getSpecification('media-integrity-check')
 
+  >>> for branchlink in spec.branch_links:
+  ...     print branchlink.branch.unique_name
+  ~name12/+junk/junk.dev
 
-    >>> from canonical.launchpad.interfaces import IProductSet
-    >>> productset = getUtility(IProductSet)
-    >>> upstream_firefox = productset.get(4)
-    >>> from canonical.launchpad.database import Person
-    >>> from canonical.lp.dbschema import SpecificationStatus
-    >>> from canonical.launchpad.interfaces import ISpecificationSet
-    >>> specset = getUtility(ISpecificationSet)
-    >>> sabdfl = Person.byName('sabdfl')
-    >>> newspec = specset.new('firefox-magic', 'Magic Firefox', 'http://www.silly.me/SpecName', 'Firefox should guess where I want to go and preload the page', SpecificationStatus.APPROVED, sabdfl, product=upstream_firefox)
-    >>> print newspec.name
-    firefox-magic
+A spec link has a summary attached to it:
 
-Initially there will be no branches associated.
-
-    >>> len(list(newspec.branches))
-    0
-    >>> len(list(newspec.branch_links))
-    0
+  >>> branchlink = spec.branch_links[0]
+  >>> branchlink.summary
+  u'This branch should fix the issue'
 
 
-Now associate a branch with the specification
+The summary can only be changed by non-anonymous users:
 
-    >>> from canonical.launchpad.interfaces import IBranchSet
-    >>> branchset = getUtility(IBranchSet)
-    >>> branch = branchset.get(10)
-    >>> newspec.addBranch(branch)
-    <SpecificationBranch at ...>
-    >>> len(list(newspec.branches))
-    1
-    >>> newspec.branches[0].id
-    10
-    >>> len(list(newspec.branch_links))
-    1
-    >>> sb = newspec.branch_links[0]
-    >>> sb.summary
+  >>> branchlink.summary = 'New summary'
+  Traceback (most recent call last):
+    ...
+  Unauthorized: (... 'launchpad.AnyPerson')
+  >>> login('test@canonical.com')
+  >>> branchlink.summary = 'New summary'
 
+We can create a new branch link with the linkBranch() method:
 
-You cannot associate the same branch to the same spec more than once
+  >>> branch = getUtility(IBranchSet).getByUniqueName(
+  ...     '~name12/+junk/junk.contrib')
+  >>> branchlink = spec.linkBranch(branch, 'A summary')
 
-    >>> newspec.addBranch(branch)
-    <SpecificationBranch at ...>
-    >>> len(list(newspec.branches))
-    1
-    
+Now the branch has two branch links:
 
-You can however link branches that are not necessarily associated with the
-product of the specification
+  >>> for branchlink in spec.branch_links:
+  ...     print branchlink.branch.unique_name
+  ~name12/+junk/junk.dev
+  ~name12/+junk/junk.contrib
 
-    >>> thunderbird_branch = branchset.get(8)
-    >>> newspec.addBranch(thunderbird_branch, 'tweak thunderbird')
-    <SpecificationBranch at ...>
-    >>> len(list(newspec.branches))
-    2
-    >>> len(list(newspec.branch_links))
-    2
-    >>> newspec.branch_links[1].summary
-    u'tweak thunderbird'
+Similarly, the branch has a list of attached specifications:
 
-Links aren't permanent, and can be removed
+  >>> for speclink in branch.spec_links:
+  ...     print speclink.specification.name
+  media-integrity-check
 
-    >>> newspec.removeBranch(thunderbird_branch)
-    True
-    >>> len(list(newspec.branches))
-    1
-    >>> newspec.branches[0].id
-    10
-    >>> len(list(newspec.branch_links))
-    1
+We can also look up a branch link with the getBranchLink() method:
 
+  >>> branchlink = spec.getBranchLink(branch)
+  >>> branchlink.specification == spec
+  True
+  >>> branchlink.branch == branch
+  True
+  >>> branchlink.summary
+  u'A summary'
 
-The summary on the branch links can be updated after creation, although you
-have to be logged in in order to change the summary.
+Finally, the branch link can be removed using its destroySelf()
+method:
 
-    >>> sb = newspec.branch_links[0]
-    >>> sb.summary = 'Implementing the feature here'
-    Traceback (most recent call last):
-      ...
-    Unauthorized: (... 'launchpad.AnyPerson')
-    >>> login('test@canonical.com')
-    >>> sb.summary = 'Implementing the feature here'
-    >>> sb.summary
-    u'Implementing the feature here'
-
-    
+  >>> branchlink.destroySelf()
+  >>> for branchlink in spec.branch_links:
+  ...     print branchlink.branch.unique_name
+  ~name12/+junk/junk.dev
