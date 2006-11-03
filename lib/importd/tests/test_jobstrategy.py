@@ -4,10 +4,12 @@
 
 __metaclass__ = type
 
+import os
 import unittest
 
 from importd import JobStrategy
 from importd.tests import testutil
+from importd.tests.helpers import JobTestCase
 
 
 class TestCvsStrategyCreation(unittest.TestCase):
@@ -67,6 +69,19 @@ class TestCvsStrategyCreation(unittest.TestCase):
     def testGetInvalidType(self):
         # Test getting a strategy with an invalid job type.
         self.assertRaises(KeyError, JobStrategy.get, "CVS", "blargh")
+
+
+class TestCscvsStrategy(JobTestCase):
+    """Test cases for CSCVSStrategy."""
+
+    def testGetWorkingDir(self):
+        # test that the working dir is calculated & created correctly
+        strategy = JobStrategy.CSCVSStrategy()
+        job = self.job_helper.makeJob()
+        working_dir = strategy.getWorkingDir(job, self.sandbox.path)
+        expected_working_dir = self.sandbox.join('series-0000002a')
+        self.assertEqual(working_dir, expected_working_dir)
+        self.failUnless(os.path.exists(working_dir))
 
 
 testutil.register(__name__)

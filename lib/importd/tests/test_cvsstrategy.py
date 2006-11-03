@@ -34,7 +34,7 @@ class CvsJobHelper(helpers.SimpleJobHelper):
         return job
 
 
-class CscvsCvsHelper(object):
+class CscvsCvsHelper:
     """Helper for integration tests with cscvs for CVS functionality."""
 
     sourcefile_data = {
@@ -85,7 +85,7 @@ class CscvsCvsHelper(object):
 
 
 class CscvsCvsTestCase(helpers.JobTestCase):
-    """Base class for tests using cscvs."""
+    """Base class for tests using cscvs for CVS imports."""
 
     jobHelperType = CvsJobHelper
 
@@ -164,14 +164,6 @@ class TestCvsStrategy(CvsStrategyTestCase):
         cvspath = self.strategy.getCVSDirPath(self.job, self.sandbox.path)
         self.assertEqual(cvspath, self.cvspath)
 
-    def testGetWorkingDir(self):
-        # test that the working dir is calculated & created correctly
-        workingdir = self.sandbox.join('series-0000002a')
-        self.assertEqual(
-            self.strategy.getWorkingDir(self.job, self.sandbox.path),
-            workingdir)
-        self.failUnless(os.path.exists(workingdir))
-
     def testSyncArgsSanityChecks(self):
         # XXX: I am not sure what these tests are for
         # -- David Allouche 2006-06-06
@@ -221,7 +213,6 @@ class TestCvsStrategyBzr(CvsStrategyTestCase):
         CvsStrategyTestCase.tearDown(self)
 
     def localRevno(self):
-        # The working dir still includes the Arch version name
         workingdir = self.sandbox.join('series-%08x' %
                                        self.series_helper.series.id)
         bzrworking = os.path.join(workingdir, 'bzrworking')
