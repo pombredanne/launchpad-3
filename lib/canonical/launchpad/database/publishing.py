@@ -1,13 +1,18 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
+
 __all__ = ['SourcePackageFilePublishing', 'BinaryPackageFilePublishing',
            'SourcePackagePublishingView', 'BinaryPackagePublishingView',
            'SecureSourcePackagePublishingHistory',
            'SecureBinaryPackagePublishingHistory',
            'SourcePackagePublishingHistory',
-           'BinaryPackagePublishingHistory'
+           'BinaryPackagePublishingHistory',
+           'IndexStanzaFields',
            ]
+
+from warnings import warn
+import operator
 
 from zope.interface import implements
 
@@ -16,7 +21,6 @@ from sqlobject import ForeignKey, StringCol, BoolCol, IntCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, nowUTC
 from canonical.database.datetimecol import UtcDateTimeCol
-
 from canonical.launchpad.interfaces import (
     ISourcePackagePublishingView, IBinaryPackagePublishingView,
     ISourcePackageFilePublishing, IBinaryPackageFilePublishing,
@@ -29,41 +33,6 @@ from canonical.lp.dbschema import (
     EnumCol, PackagePublishingPriority, PackagePublishingStatus,
     PackagePublishingPocket)
 
-from warnings import warn
-
-binary_stanza_template = """
-Package: %(package)s
-Priority: %(priority)s
-Section: %(section)s
-Installed-Size: %(installed_size)s
-Maintainer: %(maintainer)s
-Architecture: %(arch)s
-Version: %(version)s
-Replaces: %(replaces)s
-Depends: %(depends)s
-Conflicts: %(conflicts)s
-Filename: %(filename)s
-Size: %(size)s
-MD5sum: %(md5sum)s
-Description: %(description)s
-Bugs: %(bugs)s
-Origin: %(origin)s
-Task: %(task)s
-"""
-
-source_stanza_template = """
-Package: %(package)s
-Binary: %(binary)s
-Version: %(version)s
-Maintainer: %(maintainer)s
-Build-Depends: %(build_depends)s
-Architecture: %(arch)s
-Standards-Version: %(standards_version)s
-Format: %(format)s
-Directory: %(directory)s
-Files:
-%(files)s
-"""
 
 # XXX cprov 20060818: move it away, perhaps archivepublisher/pool.py
 def makePoolPath(source_name, component_name):
@@ -378,6 +347,45 @@ class ArchivePublisherBase:
         else:
             self.secure_record.setPublished()
 
+    def getIndexStanza(self):
+        """See IArchivePublisher"""
+        fields = self.buildIndexStanzaFields()
+        return fields.makeOutput()
+
+
+class IndexStanzaFields:
+    """Store and format ordered Index Stanza fields."""
+
+    def __init__(self):
+        self.index = 0
+        self.fields = []
+
+    def append(self, name, value):
+        """Append an (field, value) tuple to the internal list.
+
+        It also append an internally incremented index to the tuple,
+        then we can use the FIFO-lik behaviour in makeOutput().
+        """
+        self.fields.append((name, value, self.index))
+        self.index += 1
+
+    def makeOutput(self):
+        """Return a line-by-line aggregation of appended fields.
+
+        Empty fields values will cause the exclusion of the field.
+        The output order will preserve the insertion order, FIFO.
+        """
+        output_lines = []
+        ordered_fields = self.fields
+        ordered_fields.sort(key=operator.itemgetter(2))
+
+        for name, value, index in ordered_fields:
+            if not value:
+                continue
+            output_lines.append('%s: %s' % (name, value))
+
+        return '\n'.join(output_lines)
+
 
 class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     """A source package release publishing record.
@@ -471,28 +479,31 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return "%s %s in %s" % (name, release.version,
                                 self.distrorelease.name)
 
-    def index_stanza(self):
+    def buildIndexStanzaFields(self):
         """See IArchivePublisher"""
+        # special fields preparation
         spr = self.sourcepackagerelease
-        files = ''.join(
-            [' %s %s %s\n' % (spf.libraryfile.content.md5,
+        pool_path = makePoolPath(spr.name, self.component.name)
+        files_subsection = ''.join(
+            ['\n %s %s %s' % (spf.libraryfile.content.md5,
                               spf.libraryfile.content.filesize,
                               spf.libraryfile.filename)
              for spf in spr.files])
+        # options filling
+        fields = IndexStanzaFields()
+        fields.append('Package', spr.name)
+        fields.append('Binary', spr.dsc_binaries)
+        fields.append('Version', spr.version)
+        fields.append('Maintainer', spr.dsc_maintainer_rfc822)
+        fields.append('Build-Depends', spr.builddepends)
+        fields.append('Build-Depends-Indep', spr.builddependsindep)
+        fields.append('Architecture', spr.architecturehintlist)
+        fields.append('Standards-Version', spr.dsc_standards_version)
+        fields.append('Format', spr.dsc_format)
+        fields.append('Directory', pool_path)
+        fields.append('Files', files_subsection)
 
-        replacement = {
-            'package': spr.name,
-            'binary': spr.dsc_binaries,
-            'version': spr.version,
-            'maintainer': spr.dsc_maintainer_rfc822,
-            'build_depends': spr.builddependsindep,
-            'arch': spr.architecturehintlist,
-            'standards_version': spr.dsc_standards_version,
-            'format': spr.dsc_format,
-            'directory': makePoolPath(spr.name, self.component.name),
-            'files': files,
-            }
-        return source_stanza_template % replacement
+        return fields
 
 
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
@@ -556,31 +567,47 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                                    distrorelease.name,
                                    self.distroarchrelease.architecturetag)
 
-    def index_stanza(self):
+    def buildIndexStanzaFields(self):
         """See IArchivePublisher"""
         bpr = self.binarypackagerelease
         spr = bpr.build.sourcepackagerelease
 
-        replacement = {
-            'package': bpr.name,
-            'priority': self.priority.title,
-            'section': self.section.name,
-            'installed_size': bpr.installedsize,
-            'maintainer': spr.dsc_maintainer_rfc822,
-            'arch': bpr.build.distroarchrelease.architecturetag,
-            'version': bpr.version,
-            'replaces': bpr.replaces,
-            'suggests': bpr.suggests,
-            'provides':bpr.provides,
-            'depends': bpr.depends,
-            'conflicts': bpr.conflicts,
-            'filename': bpr.files[0].libraryfile.filename,
-            'size': bpr.files[0].libraryfile.content.filesize,
-            'md5sum': bpr.files[0].libraryfile.content.md5,
-            'description': '%s\n%s'% (bpr.summary, bpr.description),
-            'bugs': 'NDA',
-            'origin': 'NDA',
-            'task': 'NDA',
-            }
+        # binaries have only one file, the DEB
+        bin_file = bpr.files[0]
+        bin_filename = bin_file.libraryfile.filename
+        bin_size = bin_file.libraryfile.content.filesize
+        bin_md5 = bin_file.libraryfile.content.md5
+        # description field in index is an association of summary and
+        # description, as:
+        #
+        # Descrition: <SUMMARY>\n
+        #  <DESCRIPTION L1>
+        #  ...
+        #  <DESCRIPTION LN>
+        bin_description = (
+            '%s\n %s'% (bpr.summary, '\n '.join(bpr.description.splitlines())))
 
-        return binary_stanza_template % replacement
+        fields = IndexStanzaFields()
+        fields.append('Package', bpr.name)
+        fields.append('Priority', self.priority.title)
+        fields.append('Section', self.section.name)
+        fields.append('Installed-Size', bpr.installedsize)
+        fields.append('Maintainer', spr.dsc_maintainer_rfc822)
+        fields.append(
+            'Architecture', bpr.build.distroarchrelease.architecturetag)
+        fields.append('Version', bpr.version)
+        fields.append('Replaces', bpr.replaces)
+        fields.append('Suggests', bpr.suggests)
+        fields.append('Provides', bpr.provides)
+        fields.append('Depends', bpr.depends)
+        fields.append('Conflicts', bpr.conflicts)
+        fields.append('Filename', bin_filename)
+        fields.append('Size', bin_size)
+        fields.append('MD5sum', bin_md5)
+        fields.append('Description', bin_description)
+
+        # XXX cprov 20061103: the extra override fields (Bugs, Origin and
+        # Task) included in the template be were not populated.
+        # When we have the information this will be the place to fill them.
+
+        return fields

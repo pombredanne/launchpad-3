@@ -371,16 +371,27 @@ mentioned in bug # 30621)
   ...
    -- James Troup <james@nocrew.org>  Wed,  2 Apr 2003 17:19:47 +0100
 
-Check the contents of the new fields required for NoMoreAptFtparchive implementation:
+Some new fields required for NoMoreAptFtparchive implementation are
+present in SourcePackageRelease. They are cached from the DSC and used
+for the archive index generation:
+
+The 'Maintainer:' identification in RFC-822 format, as it was in DSC:
 
   >>> ed_spr.dsc_maintainer_rfc822
   u'James Troup <james@nocrew.org>'
 
+Version of debian policy/standards used to build this sourcepackage:
+
   >>> ed_spr.dsc_standards_version
   u'3.5.8.0'
 
+Format of the included DSC (.dsc) file:
+
   >>> ed_spr.dsc_format
   u'1.0'
+
+Binaries names claimed to be resulted of this source, line with names
+separated by space:
 
   >>> ed_spr.dsc_binaries
   u'ed'

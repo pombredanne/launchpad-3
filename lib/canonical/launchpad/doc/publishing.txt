@@ -79,24 +79,42 @@ SourcePackagPublishingHistory implements both interfaces properly:
  >>> verifyObject(IArchivePublisher, spph)
  True
 
+Generating respective archive index *stanzas* based on IArchivePublisher:
 
-Generating respective "Sources" stanzas based on IArchivePublishBase:
+A 'stanza' is the name given to a group of attributes related to one
+source or binary package in the archive index file, it provides
+informations to APT, things like, package name, pool path, DSC format,
+files checksum, etc.
 
- >>> print spph.index_stanza()
- <BLANKLINE>
+The archive index should containg one entry for each source or binary
+currently published in the archive, it is usually partionated by
+component:
+
+<mirror_url_base>/ubuntu/edgy/main/binary-i386/Packages
+<mirror_url_base>/ubuntu/edgy/main/source/Sources
+
+The archive index is also available in in compressed formats.
+
+IArchivePublisher provide the following API to retrieve the *stanza*
+for a particular publication:
+
+ >>> print spph.getIndexStanza() #doctest: -NORMALIZE_WHITESPACE
  Package: alsa-utils
  Binary: alsa-mixer
  Version: 1.0.8-1ubuntu1
  Maintainer: Mark Shuttleworth <sabdfl@hbd.com>
- Build-Depends: None
  Architecture: all
  Standards-Version: 3.6.2
  Format: 1.0
  Directory: pool/main/a/alsa-utils
- Files:
+ Files: 
   whatever                         3 alsa-utils_1.0.8-1ubuntu1.dsc
- <BLANKLINE>
 
+
+Empty fields like are suppressed, like 'Build-Depends' or
+'Build-Depends-Indep' to avoid extra charge on download.
+See sourcepackagerelease.txt for further information about the fields
+in question.
 
 IArchivePublisher.files are the SourcePackageFilePublishing records
 contained in this publication record. Each instance also implements
@@ -140,31 +158,25 @@ BinaryPackageFile and ISecureBinaryPackagePublishingHistory
  >>> verifyObject(IArchivePublisher, bpph)
  True
 
+Generating respective "Packages" stanzas based on IArchivePublish:
 
-Generating respective "Packages" stanzas based on IArchivePublishBase:
-
- >>> print bpph.index_stanza()
- <BLANKLINE>
+ >>> print bpph.getIndexStanza() #doctest: -NORMALIZE_WHITESPACE
  Package: mozilla-firefox
  Priority: Important
  Section: editors
- Installed-Size: None
  Maintainer: Mark Shuttleworth <mark@canonical.com>
  Architecture: i386
  Version: 0.9
  Replaces: gnome-mozilla-browser
+ Suggests: firefox-gnome-support (= 1.0.7-0ubuntu20), latex-xft-fonts, xprint
+ Provides: mozilla-firefox
  Depends: gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)
  Conflicts: firefox, mozilla-web-browser
  Filename: mozilla-firefox_0.9_i386.deb
  Size: 3
- MD5sum: whatever
+ MD5sum: whatever                        
  Description: Mozilla Firefox Web Browser
- Mozilla Firefox Web Browser is .....
- Bugs: NDA
- Origin: NDA
- Task: NDA
- <BLANKLINE>
-
+  Mozilla Firefox Web Browser is .....
 
  >>> sbpph = bpph.secure_record
  >>> ISecureBinaryPackagePublishingHistory.providedBy(sbpph)

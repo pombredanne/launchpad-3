@@ -54,8 +54,8 @@ class TestNativeArchiveIndexes(LaunchpadZopelessTestCase):
         LaunchpadZopelessTestSetup.txn.commit()
         return getUtility(ILibraryFileAliasSet)[alias_id]
 
-    def getPubSource(self, sourcename='foo', version='666', builddepends='',
-                     builddependsindep='', architecturehintlist='',
+    def getPubSource(self, sourcename='foo', version='666', builddepends=None,
+                     builddependsindep=None, architecturehintlist='all',
                      dsc_standards_version='3.6.2', dsc_format='1.0',
                      dsc_binaries='foo-bin',
                      dsc_maintainer_rfc822='Foo Bar <foo@bar.com>'):
@@ -74,8 +74,8 @@ class TestNativeArchiveIndexes(LaunchpadZopelessTestCase):
             builddepends=builddepends,
             builddependsindep=builddependsindep,
             architecturehintlist=architecturehintlist,
-            changelog='',
-            dsc='',
+            changelog=None,
+            dsc=None,
             dscsigningkey=self.signingkey,
             manifest=None,
             dsc_maintainer_rfc822=dsc_maintainer_rfc822,
@@ -104,9 +104,10 @@ class TestNativeArchiveIndexes(LaunchpadZopelessTestCase):
         return SourcePackagePublishingHistory.get(sspph.id)
 
     def getPubBinary(self, binaryname='foo-bin', summary='Foo app is great',
-                     description='Well, it does nothing, though', shlibdep='',
-                     depends='', recommends='', suggests='', conflicts='',
-                     replaces='', provides=''):
+                     description='Well ...\nit does nothing, though',
+                     shlibdep=None, depends=None, recommends=None,
+                     suggests=None, conflicts=None, replaces=None,
+                     provides=None):
         """Return a mock binary publishing record."""
         sourcename = "%s" % binaryname.split('-')[0]
         pub_source = self.getPubSource(sourcename)
@@ -158,48 +159,86 @@ class TestNativeArchiveIndexes(LaunchpadZopelessTestCase):
         return BinaryPackagePublishingHistory.get(sbpph.id)
 
     def testSourceStanza(self):
-        """Check just-created source publication Index stanza."""
+        """Check just-created source publication Index stanza.
+
+        The so-called 'stanza' method return a chunk of text which
+        corresponds to the APT index reference.
+
+        It contains specific package attributes, like: name of the source,
+        maintainer identification, DSC format and standarts version, etc
+
+        Also contains the paths and checksums for the files included in
+        the package in question.
+        """
         pub_source = self.getPubSource()
         self.assertEqual(
-            [u'',
-             u'Package: foo',
+            [u'Package: foo',
              u'Binary: foo-bin',
              u'Version: 666',
              u'Maintainer: Foo Bar <foo@bar.com>',
-             u'Build-Depends: ',
-             u'Architecture: ',
+             u'Architecture: all',
              u'Standards-Version: 3.6.2',
              u'Format: 1.0',
              u'Directory: pool/main/f/foo',
-             u'Files:',
-             u' 3e47b75000b0924b6c9ba5759a7cf15d 7 foo.dsc',
-             u''],
-            pub_source.index_stanza().splitlines())
+             u'Files: ',
+             u' 3e47b75000b0924b6c9ba5759a7cf15d 7 foo.dsc'],
+            pub_source.getIndexStanza().splitlines())
 
     def testBinaryStanza(self):
-        """Check just-created binary publication Index stanza."""
+        """Check just-created binary publication Index stanza.
+
+        See also testSourceStanza, it must present something similar for
+        binary packages.
+        """
         pub_binary = self.getPubBinary()
         self.assertEqual(
-            [u'',
-             u'Package: foo-bin',
+            [u'Package: foo-bin',
              u'Priority: Standard',
              u'Section: base',
              u'Installed-Size: 100',
              u'Maintainer: Foo Bar <foo@bar.com>',
              u'Architecture: i386',
              u'Version: 666',
-             u'Replaces: ',
-             u'Depends: ',
-             u'Conflicts: ',
              u'Filename: foo-bin.deb',
              u'Size: 18',
              u'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
              u'Description: Foo app is great',
-             u'Well, it does nothing, though',
-             u'Bugs: NDA',
-             u'Origin: NDA',
-             u'Task: NDA'],
-            pub_binary.index_stanza().splitlines())
+             u' Well ...',
+             u' it does nothing, though'],
+            pub_binary.getIndexStanza().splitlines())
+
+
+    def testIndexStanzaFields(self):
+        """Check how this auxiliary class works...
+
+        This class provides simple FIFO API for aggregating fields
+        (name & values) in a ordered way.
+
+        Provides an method to format the option in a ready-to-use string.
+        """
+        from canonical.launchpad.database.publishing import IndexStanzaFields
+
+        fields = IndexStanzaFields()
+        fields.append('breakfast', 'coffee')
+        fields.append('lunch', 'beef')
+        fields.append('dinner', 'fish')
+        # IndexStanzaFields has an internal index, appended to the
+        # (name, value). It is auto-incremented on each append.
+        self.assertEqual(3, fields.index)
+        self.assertTrue(('dinner', 'fish', 2) in fields.fields)
+        # the internal index is the ordering base, FIFO.
+        self.assertEqual(
+            ['breakfast: coffee', 'lunch: beef', 'dinner: fish',
+             ], fields.makeOutput().splitlines())
+
+        fields = IndexStanzaFields()
+        fields.append('one', 'um')
+        fields.append('three', 'tres')
+        fields.append('two', 'dois')
+
+        self.assertEqual(
+            ['one: um', 'three: tres', 'two: dois',
+             ], fields.makeOutput().splitlines())
 
 
 def test_suite():

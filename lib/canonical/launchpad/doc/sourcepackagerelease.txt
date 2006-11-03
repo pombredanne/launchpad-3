@@ -5,6 +5,12 @@ The SourcePackageRelease table represents a particular release of a
 SourcePackageName, but isn't tied to any particular DistroRelease
 as the same release can appear in many.
 
+In a very basic explanation, this table caches the attributes of an
+uploaded DSC (Debian Source Control) file.
+
+This model allow us to have more granular control of the fields,
+enabling faster searches, faster readings and model constraints.
+
 Basic attributes
 ----------------
 

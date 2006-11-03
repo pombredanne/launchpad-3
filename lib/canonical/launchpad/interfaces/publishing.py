@@ -72,8 +72,19 @@ class IArchivePublisher(Interface):
         If all the files get published correctly update its status properly.
         """
 
-    def index_stanza():
-        """Return respective archive index stanza contents"""
+    def getIndexStanza():
+        """Return respective archive index stanza contents
+
+        It's based on the locally provided buildIndexStanzaTemplate method,
+        which differs for binary and source instances.
+        """
+
+    def buildIndexStanzaFields():
+        """Build a map of fields and values to be in the Index file.
+
+        The fields and values ae mapped into a dictionary, where the key is
+        the field name and value is the value string.
+        """
 
 
 class IArchiveFilePublisher(Interface):

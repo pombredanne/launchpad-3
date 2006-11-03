@@ -128,27 +128,6 @@ class Publisher(object):
         self.log.debug("* Step C: Set apt-ftparchive up and run it")
         self.apt_handler.run(is_careful)
 
-    def C_writeIndexes(self, is_careful):
-        """Write Index files (Packages & Sources) using LP information.
-
-        Iterates over all distroreleases and its pockets and components.
-        """
-        self.log.debug("* Step C': write indexes derictly from DB")
-        for distrorelease in self.distro:
-            for pocket, suffix in pocketsuffix.items():
-                if not is_careful:
-                    if not self.isDirty(distrorelease, pocket):
-                        self.log.debug("Skipping index generation for %s/%s" %
-                                   (distrorelease.name, pocket))
-                        continue
-                    if not distrorelease.isUnstable():
-                        # See comment in B_dominate
-                        assert pocket != PackagePublishingPocket.RELEASE
-
-                for component in distrorelease.components:
-                    self._writeComponentIndexes(
-                        distrorelease, pocket, component)
-
     def D_writeReleaseFiles(self, is_careful):
         """Write out the Release files for the provided distribution.
 
@@ -241,50 +220,6 @@ class Publisher(object):
             self._writeSumLine(full_name, f, file_name, sha)
 
         f.close()
-
-    def _writeComponentIndexes(self, distrorelease, pocket, component):
-        """Write Index files for single distrorelease + pocket + component.
-
-        Iterates over all supported architectures and 'sources', no
-        support for installer-* yet.
-        Write contents using LP info to an extra plain file (Packages.lp
-        and Sources.lp .
-        """
-        full_name = distrorelease.name + pocketsuffix[pocket]
-
-        self.log.debug("Generate Indexes for %s/%s"
-                       % (full_name, component.name))
-
-        source_index_path = os.path.join(
-            self._config.distsroot, full_name, component.name,
-            'source', "Sources.lp")
-        source_index = open(source_index_path, "w")
-
-        self.log.debug("Generating Sources")
-
-        for spp in distrorelease.getSourcePackagePublishing(
-            PackagePublishingStatus.PUBLISHED, pocket=pocket,
-            component=component):
-            source_index.write(spp.index_stanza().encode('utf-8'))
-
-        source_index.close()
-
-        for arch in distrorelease.architectures:
-            arch_path = 'binary-%s' % arch.architecturetag
-            self.log.debug("Generating Packages for %s" % arch_path)
-
-            package_index_path = os.path.join(
-                self._config.distsroot, full_name, component.name,
-                arch_path, "Packages.lp")
-
-            package_index = open(package_index_path, "w")
-
-            for bpp in distrorelease.getBinaryPackagePublishing(
-                archtag=arch.architecturetag, pocket=pocket,
-                component=component):
-                package_index.write(bpp.index_stanza().encode('utf-8'))
-
-            package_index.close()
 
     def _writeDistroArchRelease(self, distrorelease, pocket, component,
                                 architecture, all_files):
