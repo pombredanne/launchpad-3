@@ -95,6 +95,7 @@ class LaunchpadCelebrities:
     ubuntu_bugzilla = CelebrityDescriptor(IBugTrackerSet, 'ubuntu-bugzilla')
     registry = CelebrityDescriptor(IPersonSet, 'registry')
     bug_watch_updater = CelebrityDescriptor(IPersonSet, 'bug-watch-updater')
+    bug_importer = CelebrityDescriptor(IPersonSet, 'bug-importer')
     landscape = CelebrityDescriptor(IProductSet, 'landscape')
     support_tracker_janitor = CelebrityDescriptor(IPersonSet,
                                                   'support-tracker-janitor')

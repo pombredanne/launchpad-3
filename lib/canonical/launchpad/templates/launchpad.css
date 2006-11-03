@@ -78,6 +78,17 @@ thead th, tr.thead th {
   display: block;
 }
 
+/* make <wbr> work with Opera */
+/* XXX: 20061026 jamesh
+ * Disabled for now, since BjornT reported display problems
+ */
+/*
+wbr:after {
+  content: "\00200B"
+}
+*/
+
+
 /* === Global Launchpad design: === */
 
 .debug {
