@@ -230,6 +230,12 @@ class Build(SQLBase):
         if config.builddmaster.notify_owner:
             recipients = recipients.union(contactEmailAddresses(creator))
 
+        # XXX cprov 20061027: temporary extra debug info about the
+        # SPR.creator in context, to be used during the service quarantine,
+        # notify_owner will be disabled to avoid *spamming* Debian people.
+        extra_headers['X-Creator-Recipient'] = ",".join(
+            contactEmailAddresses(creator))
+
         subject = "[Build #%d] %s" % (self.id, self.title)
 
         # XXX cprov 20060802: pending security recipients for SECURITY

@@ -435,6 +435,7 @@ COMMENT ON COLUMN SprintSpecification.date_decided IS 'The date this specificati
 COMMENT ON TABLE Ticket IS 'A trouble ticket, or support request, for a distribution or for an application. Such tickets are created by end users who need support on a particular feature or package or product.';
 COMMENT ON COLUMN Ticket.assignee IS 'The person who has been assigned to resolve this support ticket. Note that there is no requirement that every ticket be assigned somebody. Anybody can chip in to help resolve a ticket, and if they think they have done so we call them the "answerer".';
 COMMENT ON COLUMN Ticket.answerer IS 'The person who last claimed to have "answered" this support ticket, giving a response that they believe should be sufficient to close the ticket. This will move the status of the ticket to "answered". Note that the only person who can actually set the status to "closed" (other than an admin) is the person who made the support request.';
+COMMENT ON COLUMN Ticket.answer IS 'The TicketMessage that was accepted by the submitter as the "answer" the request.';
 COMMENT ON COLUMN Ticket.product IS 'The upstream product to which this support request is related. Note that a support request MUST be linked either to a product, or to a distribution. In future, we may allow a request to be linked to both.';
 COMMENT ON COLUMN Ticket.distribution IS 'The distribution for which a support request was filed. Note that a request MUST be linked either to a product or a distribution, and in future, we may allow it to be linked to both.';
 COMMENT ON COLUMN Ticket.sourcepackagename IS 'An optional source package name. This only makes sense if the ticket is bound to a distribution. It then allows us to guess the correct upstream product, allowing the user to "publish this request upstream too".';
@@ -453,6 +454,8 @@ COMMENT ON TABLE TicketBug IS 'A link between a ticket and a bug, showing that t
 /* TicketMessage */
 
 COMMENT ON TABLE TicketMessage IS 'A link between a support ticket and a message. This means that the message will be displayed on the ticket page.';
+COMMENT ON COLUMN TicketMessage.action IS 'The action on the ticket that was done with this message. This is a value from the TicketAction enum.';
+COMMENT ON COLUMN TicketMessage.new_status IS 'The status of the ticket after this message.';
 
 /* TicketReopening */
 

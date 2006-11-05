@@ -16,6 +16,11 @@ from twisted.application import service
 from twisted.python import log
 
 
+twistd_script = os.path.abspath(os.path.join(
+    os.path.dirname(__file__),
+    os.pardir, os.pardir, os.pardir, os.pardir,
+    'sourcecode', 'twisted', 'bin', 'twistd'))
+
 LOG_MAGIC = 'daemon ready!'
 
 class TacException(Exception):
@@ -30,9 +35,8 @@ class TacTestSetup:
     def setUp(self, spew=False):
         self.killTac()
         self.setUpRoot()
-        ver = sys.version[:3]
-        args = ['twistd' + ver, '-o', '-y', self.tacfile, '--pidfile',
-                self.pidfile, '--logfile', self.logfile]
+        args = [sys.executable, twistd_script, '-o', '-y', self.tacfile,
+                '--pidfile', self.pidfile, '--logfile', self.logfile]
         if spew:
             args.append('--spew')
 

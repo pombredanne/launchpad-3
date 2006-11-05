@@ -98,10 +98,6 @@ class POTemplate(SQLBase, RosettaStats):
     # joins
     pofiles = SQLMultipleJoin('POFile', joinColumn='potemplate')
 
-    def __len__(self):
-        """Return the number of CURRENT POTMsgSets in this POTemplate."""
-        return self.messageCount()
-
     def __iter__(self):
         """See IPOTemplate."""
         for potmsgset in self.getPOTMsgSets():
