@@ -32,7 +32,9 @@ from canonical.launchpad.interfaces import (
     IIrcIDSet, ISSHKeySet, IJabberIDSet, IWikiNameSet, IGPGKeySet,
     ISSHKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner,
     IBugTaskSet, UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
-    ITranslationGroupSet, ILaunchpadStatisticSet, ShipItConstants, ILaunchpadCelebrities)
+    ITranslationGroupSet, ILaunchpadStatisticSet, ShipItConstants,
+    ILaunchpadCelebrities,
+    )
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -1657,6 +1659,11 @@ class PersonSet:
             WHERE person=%(from_id)d
             ''' % vars())
         skip.append(('posubmission', 'person'))
+
+        # Handle the POFileTranslator cache by doing nothing. As it is
+        # maintained by triggers, the data migration has already been done
+        # for us when we updated the source tables.
+        skip.append(('pofiletranslator', 'person'))
 
         # Update only the TranslationImportQueueEntry that will not conflict
         # and trash the rest
