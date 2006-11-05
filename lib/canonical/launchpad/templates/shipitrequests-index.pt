@@ -97,7 +97,7 @@
         <thead style="border: none">
           <tr>
             <td colspan="7" style="background-color: white"> 
-              <tal:navigation replace="structure bn/@@+navigation-links" />
+              <tal:navigation replace="structure bn/@@+navigation-links-upper" />
             </td>
           </tr>
           <tr>
@@ -135,7 +135,7 @@
         </tbody>
         <tr>
           <td colspan="7" style="background-color: white"> 
-            <tal:navigation replace="structure bn/@@+navigation-links" />
+            <tal:navigation replace="structure bn/@@+navigation-links-lower" />
           </td>
         </tr>
     </tal:block>

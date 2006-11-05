@@ -695,17 +695,11 @@ class Person(SQLBase):
                             comment=None):
         """See IPerson."""
         tm = TeamMembership.selectOneBy(person=person, team=self)
-
-        # XXX: Do we need this assert?
-        #      -- SteveAlexander, 2005-04-23
         assert tm is not None
 
-        now = datetime.now(pytz.timezone('UTC'))
-        if expires is not None and expires <= now:
-            status = TeamMembershipStatus.EXPIRED
-            # XXX: This is a workaround while
-            # https://launchpad.net/products/launchpad/+bug/30649 isn't fixed.
-            expires = now
+        if expires is not None:
+            now = datetime.now(pytz.timezone('UTC'))
+            assert expires > now, expires
 
         tm.setStatus(status, reviewer, comment)
         tm.dateexpires = expires
@@ -908,8 +902,11 @@ class Person(SQLBase):
         # comparison oddity
         assert email.person.id == self.id, 'Wrong person! %r, %r' % (
             email.person, self)
-        assert self.preferredemail != email, 'Wrong prefemail! %r, %r' % (
-            self.preferredemail, email)
+
+        # This email is already validated and is this person's preferred
+        # email, so we have nothing to do.
+        if self.preferredemail == email:
+            return
 
         if self.preferredemail is None:
             # This branch will be executed only in the first time a person

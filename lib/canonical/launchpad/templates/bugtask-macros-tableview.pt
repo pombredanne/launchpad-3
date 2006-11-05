@@ -51,7 +51,7 @@
   <tr class="results">
     <td
       tal:attributes="colspan listing_columns/count:len"
-      tal:content="structure task_batch_navigator/@@+navigation-links" />
+      tal:content="structure task_batch_navigator/@@+navigation-links-upper" />
   </tr>
 </metal:header>
 

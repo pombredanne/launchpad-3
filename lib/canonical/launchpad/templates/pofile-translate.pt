@@ -136,7 +136,7 @@
                 <tr class="results">
                   <td colspan="5">
                     <!-- Paging doodads. -->
-                    <tal:navigation replace="structure view/batchnav/@@+navigation-links" />
+                    <tal:navigation replace="structure view/batchnav/@@+navigation-links-upper" />
                   </td>
                 </tr>
               </thead>

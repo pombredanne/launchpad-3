@@ -170,26 +170,36 @@ class DistributionMirror(SQLBase):
 
     def disableAndNotifyOwner(self):
         """See IDistributionMirror"""
+        assert self.last_probe_record is not None, (
+            "This method can't be called on a mirror that has never been "
+            "probed.")
+
+        was_enabled = self.enabled
         self.enabled = False
-        template = get_email_template('notify-mirror-owner.txt')
-        fromaddress = format_address(
-            "Launchpad Mirror Prober", config.noreply_from_address)
+        if was_enabled or self.all_probe_records.count() == 1:
+            # Need to notify the owner.
+            template = get_email_template('notify-mirror-owner.txt')
+            fromaddress = format_address(
+                "Launchpad Mirror Prober", config.noreply_from_address)
 
-        replacements = {'distro': self.distribution.title,
-                        'mirror_name': self.name,
-                        'mirror_url': canonical_url(self),
-                        'logfile_url': self.last_probe_record.log_file.url}
-        message = template % replacements
+            replacements = {'distro': self.distribution.title,
+                            'mirror_name': self.name,
+                            'mirror_url': canonical_url(self),
+                            'logfile_url': self.last_probe_record.log_file.url}
+            message = template % replacements
+            subject = (
+                "Launchpad: Notification of failure from the mirror prober")
+            owner_address = contactEmailAddresses(self.owner)
+            simple_sendmail(fromaddress, owner_address, subject, message)
 
-        subject = "Launchpad: Notification of failure from the mirror prober"
-        to_address = format_address(
-            self.owner.displayname, self.owner.preferredemail.email)
-        simple_sendmail(fromaddress, to_address, subject, message)
-        # Send also a notification to the distribution's mirror admin.
-        subject = "Launchpad: Distribution mirror seems to be unreachable"
-        mirror_admin_address = contactEmailAddresses(
-            self.distribution.mirror_admin)
-        simple_sendmail(fromaddress, mirror_admin_address, subject, message)
+            # XXX: How about always notifying mirror admins?
+            # -- Guilherme Salgado, 2006-10-26
+            # Send also a notification to the distribution's mirror admin.
+            subject = "Launchpad: Distribution mirror seems to be unreachable"
+            mirror_admin_address = contactEmailAddresses(
+                self.distribution.mirror_admin)
+            simple_sendmail(
+                fromaddress, mirror_admin_address, subject, message)
 
     def newProbeRecord(self, log_file):
         """See IDistributionMirror"""
@@ -566,7 +576,7 @@ class MirrorDistroArchRelease(SQLBase, _MirrorReleaseMixIn):
         this mirror from where the BinaryPackageRelease file can be downloaded.
         """
         bpr = publishing_record.binarypackagerelease
-        base_url = self.distribution_mirror.http_base_url
+        base_url = self.distribution_mirror.base_url
         path = poolify(bpr.sourcepackagename, self.component.name)
         file = BinaryPackageFile.selectOneBy(
             binarypackagerelease=bpr, filetype=BinaryPackageFileType.DEB)
@@ -617,7 +627,7 @@ class MirrorDistroReleaseSource(SQLBase, _MirrorReleaseMixIn):
         this mirror from where the SourcePackageRelease file can be downloaded.
         """
         spr = publishing_record.sourcepackagerelease
-        base_url = self.distribution_mirror.http_base_url
+        base_url = self.distribution_mirror.base_url
         sourcename = spr.name
         path = poolify(sourcename, self.component.name)
         file = SourcePackageReleaseFile.selectOneBy(
