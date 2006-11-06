@@ -3546,6 +3546,42 @@ Plural-Forms: nplurals=1; plural=0
 ALTER TABLE pofile ENABLE TRIGGER ALL;
 
 
+ALTER TABLE pofiletranslator DISABLE TRIGGER ALL;
+
+INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (1, 1, 1, 690, '2005-06-06 20:08:02.521892');
+INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (2, 13, 1, 694, '2005-10-11 20:18:55.9815');
+INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (3, 13, 12, 576, '2005-05-06 21:12:13.908028');
+INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (4, 13, 29, 695, '2005-10-11 23:08:01.899322');
+INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (5, 16, 12, 685, '2005-06-06 19:42:48.236409');
+INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (6, 30, 17, 675, '2005-05-06 21:12:40.937835');
+INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (7, 30, 23, 651, '2005-05-06 21:12:35.766036');
+INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (8, 30, 24, 603, '2005-05-06 21:12:23.441015');
+INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (9, 33, 7, 75, '2005-05-06 20:09:31.825695');
+INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (10, 34, 5, 138, '2005-05-06 20:09:51.386766');
+INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (11, 35, 10, 201, '2005-05-06 20:10:18.431259');
+INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (12, 36, 9, 264, '2005-05-06 20:10:41.732277');
+INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (13, 37, 3, 327, '2005-05-06 20:11:16.591589');
+INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (14, 38, 4, 390, '2005-05-06 20:11:41.773683');
+INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (15, 39, 6, 453, '2005-05-06 20:12:08.283113');
+INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (16, 40, 8, 502, '2005-05-06 20:12:35.976807');
+INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (17, 41, 11, 564, '2005-05-06 20:13:10.405056');
+INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (18, 42, 13, 585, '2005-05-06 21:12:18.833057');
+INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (19, 43, 15, 594, '2005-05-06 21:12:20.874654');
+INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (20, 44, 25, 609, '2005-05-06 21:12:25.930403');
+INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (21, 45, 14, 618, '2005-05-06 21:12:27.602384');
+INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (22, 46, 21, 627, '2005-05-06 21:12:29.45271');
+INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (23, 47, 19, 636, '2005-05-06 21:12:31.382429');
+INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (24, 48, 22, 648, '2005-05-06 21:12:33.238579');
+INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (25, 49, 20, 660, '2005-05-06 21:12:37.221421');
+INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (26, 50, 12, 689, '2005-06-06 20:05:03.244905');
+INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (27, 50, 18, 669, '2005-05-06 21:12:39.082421');
+INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (28, 51, 16, 684, '2005-05-06 21:12:42.747648');
+INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (29, 52, 1, 693, '2005-08-29 16:16:58.010285');
+
+
+ALTER TABLE pofiletranslator ENABLE TRIGGER ALL;
+
+
 ALTER TABLE poll DISABLE TRIGGER ALL;
 
 INSERT INTO poll (id, team, name, title, dateopens, datecloses, proposition, "type", allowspoilt, secrecy, date_created) VALUES (1, 17, 'director-2004', '2004 Director''s Elections', '2004-01-01 00:00:00', '2004-01-15 00:00:00', 'Who''s going to be the next director?', 2, true, 3, '2006-10-16 18:31:44.605729');

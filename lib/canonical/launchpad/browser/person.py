@@ -31,6 +31,7 @@ __all__ = [
     'SubscribedBugTaskSearchListingView',
     'PersonRdfView',
     'PersonView',
+    'PersonTranslationView',
     'PersonGPGView',
     'TeamJoinView',
     'TeamLeaveView',
@@ -80,9 +81,9 @@ from canonical.launchpad.interfaces import (
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, UBUNTU_WIKI_URL,
     ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
     IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet, IPollSet,
-    IAdminRequestPeopleMerge, NotFoundError, UNRESOLVED_BUGTASK_STATUSES,
-    IPersonChangePassword, GPGKeyNotFoundError, UnexpectedFormData,
-    IPersonClaim)
+    IPOTemplateSet, IAdminRequestPeopleMerge, NotFoundError,
+    UNRESOLVED_BUGTASK_STATUSES, IPersonChangePassword,
+    GPGKeyNotFoundError, UnexpectedFormData, IPersonClaim)
 
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.specificationtarget import (
@@ -1394,6 +1395,42 @@ class PersonView(LaunchpadView):
         comment = sshkey.comment
         sshkey.destroySelf()
         self.info_message = 'Key "%s" removed' % comment
+
+
+class PersonTranslationView(LaunchpadView):
+    """View for translation-related Person pages."""
+    @cachedproperty
+    def batchnav(self):
+        batchnav = BatchNavigator(self.context.translation_history,
+                                  self.request)
+        # XXX: See bug 60320. Because of a template reference to
+        # pofile.potemplate.displayname, it would be ideal to also
+        # prejoin inside translation_history:
+        #   potemplate.potemplatename
+        #   potemplate.productseries
+        #   potemplate.productseries.product
+        #   potemplate.distrorelease
+        #   potemplate.distrorelease.distribution
+        #   potemplate.sourcepackagename
+        # However, a list this long may be actually suggesting that
+        # displayname be cached in a table field; particularly given the
+        # fact that it won't be altered very often. At any rate, the
+        # code below works around this by caching all the templates in
+        # one shot. The list() ensures that we materialize the query
+        # before passing it on to avoid reissuing it. Note also that the
+        # fact that we iterate over currentBatch() here means that the
+        # translation_history query is issued again. Tough luck.
+        #   -- kiko, 2006-03-17
+        ids = set(record.pofile.potemplate.id
+                  for record in batchnav.currentBatch())
+        if ids:
+            cache = list(getUtility(IPOTemplateSet).getByIDs(ids))
+        return batchnav
+
+    @cachedproperty
+    def translation_groups(self):
+        """Return translation groups a person is a member of."""
+        return list(self.context.translation_groups)
 
 
 class PersonGPGView(LaunchpadView):

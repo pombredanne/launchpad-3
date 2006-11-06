@@ -19,6 +19,7 @@ from zope.app.form.browser import DropdownWidget
 from zope.component import getUtility
 from zope.publisher.browser import FileUpload
 
+from canonical.cachedproperty import cachedproperty
 from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
@@ -192,6 +193,10 @@ class BaseExportView(LaunchpadView):
 class POFileView(LaunchpadView):
     """A basic view for a POFile"""
     __used_for__ = IPOFile
+
+    @cachedproperty
+    def contributors(self):
+        return list(self.context.contributors)
 
 
 class POFileUploadView(POFileView):
