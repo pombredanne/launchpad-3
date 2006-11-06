@@ -289,18 +289,12 @@ class MaloneContextMenu(ContextMenu):
 
 class RosettaContextMenu(ContextMenu):
     usedfor = IRosettaApplication
-    links = ['about', 'preferences', 'import_queue', 'translation_groups']
+    links = ['about', 'import_queue', 'translation_groups']
 
     def about(self):
         text = 'About Rosetta'
         rosetta_application = getUtility(IRosettaApplication)
         url = '/'.join([canonical_url(rosetta_application), '+about'])
-        return Link(url, text)
-
-    def preferences(self):
-        text = 'Translation preferences'
-        rosetta_application = getUtility(IRosettaApplication)
-        url = '/'.join([canonical_url(rosetta_application), 'prefs'])
         return Link(url, text)
 
     def import_queue(self):

@@ -1371,6 +1371,12 @@ COMMENT ON COLUMN SectionSelection.section IS 'Refers to the section in question
 -- PillarName
 COMMENT ON TABLE PillarName IS 'A cache of the names of our "Pillar''s" (distribution, product, project) to ensure uniqueness in this shared namespace. This is a materialized view maintained by database triggers.';
 
+-- POFileTranslator
+COMMENT ON TABLE POFileTranslator IS 'A materialized view caching who has translated what pofile.';
+COMMENT ON COLUMN POFileTranslator.person IS 'The person who submitted the translation.';
+COMMENT ON COLUMN POFileTranslator.pofile IS 'The pofile the translation was submitted for.';
+COMMENT ON COLUMN POFileTranslator.latest_posubmission IS 'The most recent translation submitted by this user to this pofile.';
+COMMENT ON COLUMN POFileTranslator.date_last_touched IS 'When the most recent submission was made.';
 
 -- NameBlacklist
 COMMENT ON TABLE NameBlacklist IS 'A list of regular expressions used to blacklist names.';

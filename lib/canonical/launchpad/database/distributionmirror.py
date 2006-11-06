@@ -19,7 +19,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 
-from canonical.archivepublisher.diskpool import Poolifier
+from canonical.archivepublisher.diskpool import poolify
 from canonical.lp.dbschema import (
     MirrorSpeed, MirrorContent, MirrorStatus, PackagePublishingPocket,
     EnumCol, PackagePublishingStatus, SourcePackageFileType,
@@ -170,26 +170,36 @@ class DistributionMirror(SQLBase):
 
     def disableAndNotifyOwner(self):
         """See IDistributionMirror"""
+        assert self.last_probe_record is not None, (
+            "This method can't be called on a mirror that has never been "
+            "probed.")
+
+        was_enabled = self.enabled
         self.enabled = False
-        template = get_email_template('notify-mirror-owner.txt')
-        fromaddress = format_address(
-            "Launchpad Mirror Prober", config.noreply_from_address)
+        if was_enabled or self.all_probe_records.count() == 1:
+            # Need to notify the owner.
+            template = get_email_template('notify-mirror-owner.txt')
+            fromaddress = format_address(
+                "Launchpad Mirror Prober", config.noreply_from_address)
 
-        replacements = {'distro': self.distribution.title,
-                        'mirror_name': self.name,
-                        'mirror_url': canonical_url(self),
-                        'logfile_url': self.last_probe_record.log_file.url}
-        message = template % replacements
+            replacements = {'distro': self.distribution.title,
+                            'mirror_name': self.name,
+                            'mirror_url': canonical_url(self),
+                            'logfile_url': self.last_probe_record.log_file.url}
+            message = template % replacements
+            subject = (
+                "Launchpad: Notification of failure from the mirror prober")
+            owner_address = contactEmailAddresses(self.owner)
+            simple_sendmail(fromaddress, owner_address, subject, message)
 
-        subject = "Launchpad: Notification of failure from the mirror prober"
-        to_address = format_address(
-            self.owner.displayname, self.owner.preferredemail.email)
-        simple_sendmail(fromaddress, to_address, subject, message)
-        # Send also a notification to the distribution's mirror admin.
-        subject = "Launchpad: Distribution mirror seems to be unreachable"
-        mirror_admin_address = contactEmailAddresses(
-            self.distribution.mirror_admin)
-        simple_sendmail(fromaddress, mirror_admin_address, subject, message)
+            # XXX: How about always notifying mirror admins?
+            # -- Guilherme Salgado, 2006-10-26
+            # Send also a notification to the distribution's mirror admin.
+            subject = "Launchpad: Distribution mirror seems to be unreachable"
+            mirror_admin_address = contactEmailAddresses(
+                self.distribution.mirror_admin)
+            simple_sendmail(
+                fromaddress, mirror_admin_address, subject, message)
 
     def newProbeRecord(self, log_file):
         """See IDistributionMirror"""
@@ -256,6 +266,11 @@ class DistributionMirror(SQLBase):
             distribution_mirror=self, distrorelease=distrorelease,
             flavour=flavour)
         if mirror is not None:
+            mirror.destroySelf()
+
+    def deleteAllMirrorCDImageReleases(self):
+        """See IDistributionMirror"""
+        for mirror in self.cdimage_releases:
             mirror.destroySelf()
 
     @property
@@ -567,7 +582,7 @@ class MirrorDistroArchRelease(SQLBase, _MirrorReleaseMixIn):
         """
         bpr = publishing_record.binarypackagerelease
         base_url = self.distribution_mirror.base_url
-        path = Poolifier().poolify(bpr.sourcepackagename, self.component.name)
+        path = poolify(bpr.sourcepackagename, self.component.name)
         file = BinaryPackageFile.selectOneBy(
             binarypackagerelease=bpr, filetype=BinaryPackageFileType.DEB)
         full_path = 'pool/%s/%s' % (path, file.libraryfile.filename)
@@ -619,7 +634,7 @@ class MirrorDistroReleaseSource(SQLBase, _MirrorReleaseMixIn):
         spr = publishing_record.sourcepackagerelease
         base_url = self.distribution_mirror.base_url
         sourcename = spr.name
-        path = Poolifier().poolify(sourcename, self.component.name)
+        path = poolify(sourcename, self.component.name)
         file = SourcePackageReleaseFile.selectOneBy(
             sourcepackagerelease=spr, filetype=SourcePackageFileType.DSC)
         full_path = 'pool/%s/%s' % (path, file.libraryfile.filename)
