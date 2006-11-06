@@ -23,7 +23,7 @@
           Register your project.
         </a>
         <a href="/bazaar">
-          <img alt="" src="/+icing/app-register.gif" />
+          <img alt="" src="/+icing/app-code.gif" />
           Publish your code.
         </a>
         <a href="/bugs">
@@ -43,7 +43,7 @@
           Help your users.
         </a>
       </div>
-      <form id="central" action="/products/" method="get">
+      <form class="central" action="/products/" method="get">
         <label for="text">Is your project registered yet?</label>
         <input id="text" type="text" name="text" size="30" />
         <input type="submit" value="Search" />

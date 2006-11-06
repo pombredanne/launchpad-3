@@ -150,6 +150,12 @@
             lp:url="/distros/$Distribution.name/+members"
             />
         <browser:page
+            name="+bugs"
+            facet="bugs"
+            template="../templates/distribution-bugs.pt"
+            lp:url="/distros/$Distribution.name/+bugs"
+            />
+        <browser:page
             name="+translations"
             facet="translations"
             template="../templates/distribution-translations.pt"

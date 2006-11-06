@@ -94,6 +94,12 @@ class MenuAPI:
                 requesturl=self._requesturl(),
                 selectedfacetname=self._selectedfacetname))
 
+    def selectedfacetname(self):
+        if self._selectedfacetname is None:
+            return 'unknown'
+        else:
+            return self._selectedfacetname
+
     def application(self):
         selectedfacetname = self._selectedfacetname
         if selectedfacetname is None:
@@ -661,6 +667,130 @@ class PageTemplateContextsAPI:
                 return title
 
 
+def split_paragraphs(text):
+    """Split text into paragraphs.
+
+    This function yields lists of strings that represent lines of text
+    in each paragraph.
+
+    Paragraphs are split by one or more blank lines.
+    """
+    paragraph = []
+    for line in text.splitlines():
+        line = line.rstrip()
+
+        # blank lines split paragraphs
+        if not line:
+            if paragraph:
+                yield paragraph
+            paragraph = []
+            continue
+
+        paragraph.append(line)
+
+    if paragraph:
+        yield paragraph
+
+
+def re_substitute(pattern, replace_match, replace_nomatch, string):
+    """Transform a string, replacing matched and non-matched sections.
+
+     :param patter: a regular expression
+     :param replace_match: a function used to transform matches
+     :param replace_nomatch: a function used to transform non-matched text
+     :param string: the string to transform
+
+    This function behaves similarly to re.sub() when a function is
+    passed as the second argument, except that the non-matching
+    portions of the string can be transformed by a second function.
+    """
+    if replace_match is None:
+        replace_match = lambda match: match.group()
+    if replace_nomatch is None:
+        replace_nomatch = lambda text: text
+    parts = []
+    position = 0
+    for match in re.finditer(pattern, string):
+        if match.start() != position:
+            parts.append(replace_nomatch(string[position:match.start()]))
+        parts.append(replace_match(match))
+        position = match.end()
+    remainder = string[position:]
+    if remainder:
+        parts.append(replace_nomatch(remainder))
+    return ''.join(parts)
+
+
+def split_chars(word, nchars):
+    """Return the first num characters of the word, plus the remainder.
+
+    This function treats HTML entities in the string as single
+    characters.  The string should not include HTML tags.
+    """
+    chars = []
+    while word and len(chars) < nchars:
+        if word[0] == '&':
+            # make sure we grab the entity as a whole
+            pos = word.find(';')
+            assert pos >= 0, 'badly formed entity: %r' % word
+            chars.append(word[:pos+1])
+            word = word[pos+1:]
+        else:
+            chars.append(word[0])
+            word = word[1:]
+    return ''.join(chars), word
+
+
+def add_word_breaks(word):
+    """Insert manual word breaks into a string.
+
+    The word may be entity escaped, but is not expected to contain
+    any HTML tags.
+
+    Breaks are inserted at least every 7 to 15 characters,
+    preferably after puctuation.
+    """
+    broken = []
+    while word:
+        chars, word = split_chars(word, 7)
+        broken.append(chars)
+        # If the leading characters don't end with puctuation, grab
+        # more characters.
+        if chars[-1].isalnum() and word != '':
+            for i in range(8):
+                chars, word = split_chars(word, 1)
+                broken.append(chars)
+                if not (chars[-1].isalnum() and word != ''):
+                    break
+        if word != '':
+            broken.append('<wbr></wbr>')
+    return ''.join(broken)
+
+
+break_text_pat = re.compile(r'''
+  (?P<tag>
+    <[^>]*>
+  ) |
+  (?P<longword>
+    (?<![^\s<>])(?:[^\s<>&]|&[^;]*;){20,}
+  )
+''', re.VERBOSE)
+
+def break_long_words(text):
+    """Add word breaks to long words in a run of text.
+
+    The text may contain entity references or HTML tags.
+    """
+    def replace(match):
+        if match.group('tag'):
+            return match.group()
+        elif match.group('longword'):
+            return add_word_breaks(match.group())
+        else:
+            raise AssertionError('text matched but neither named group found')
+    return break_text_pat.sub(replace, text)
+
+
 class FormattersAPI:
     """Adapter from strings to HTML formatted text."""
 
@@ -719,7 +849,8 @@ class FormattersAPI:
             else:
                 trailers = ''
             return '<a rel="nofollow" href="%s">%s</a>%s' % (
-                url.replace('"', '&quot;'), url, trailers)
+                url.replace('"', '&quot;'), add_word_breaks(url),
+                trailers)
         elif match.group('oops') is not None:
             text = match.group('oops')
 
@@ -846,39 +977,6 @@ class FormattersAPI:
     # don't want to include in the link.
     _re_url_trailers = re.compile(r'((?:[,\.\?:\);]|&gt;)+)$')
 
-    @staticmethod
-    def _split_paragraphs(text):
-        """Split text into paragraphs.
-
-        This function yields lists of strings that represent
-        paragraphs of text.
-
-        Paragraphs are split by one or more blank lines.
-
-        Each paragraph is further split into one or more logical lines
-        of text.  Two adjacent lines are considered to be part of the
-        same logical line if the following conditions hold:
-          1. the first line is between 60 and 80 characters long
-          2. the second line does not begin with whitespace.
-          3. the second line does not begin with '>' (commonly used for
-             reply quoting in emails).
-        """
-        paragraph = []
-        for line in text.splitlines():
-            line = line.rstrip()
-
-            # blank lines split paragraphs
-            if not line:
-                if paragraph:
-                    yield paragraph
-                paragraph = []
-                continue
-
-            paragraph.append(line)
-
-        if paragraph:
-            yield paragraph
-
     def text_to_html(self):
         """Quote text according to DisplayingParagraphsOfText."""
         # This is based on the algorithm in the
@@ -893,7 +991,7 @@ class FormattersAPI:
 
         output = []
         first_para = True
-        for para in self._split_paragraphs(self._stringtoformat):
+        for para in split_paragraphs(self._stringtoformat):
             if not first_para:
                 output.append('\n')
             first_para = False
@@ -914,7 +1012,8 @@ class FormattersAPI:
         text = ''.join(output)
 
         # Linkify the text.
-        text = self._re_linkify.sub(self._linkify_substitution, text)
+        text = re_substitute(self._re_linkify, self._linkify_substitution,
+                             break_long_words, text)
 
         return text
 

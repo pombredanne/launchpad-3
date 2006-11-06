@@ -51,8 +51,6 @@ class Message(SQLBase):
     rfc822msgid = StringCol(unique=True, notNull=True)
     bugs = SQLRelatedJoin('Bug', joinColumn='message', otherColumn='bug',
         intermediateTable='BugMessage')
-    tickets = SQLRelatedJoin('Ticket', joinColumn='message',
-        otherColumn='ticket', intermediateTable='TicketMessage')
     chunks = SQLMultipleJoin('MessageChunk', joinColumn='message')
     raw = ForeignKey(foreignKey='LibraryFileAlias', dbName='raw', default=None)
     bugattachments = SQLMultipleJoin('BugAttachment', joinColumn='message')
@@ -84,6 +82,10 @@ class Message(SQLBase):
         bits = [unicode(chunk) for chunk in self if chunk.content]
         return '\n\n'.join(bits)
 
+    # XXX flacoste 2006/09/08 Bogus attribute only present so that
+    # verifyObject doesn't fail. That attribute is part of the
+    # interface because it is used as a UI field in MessageAddView
+    content = None
 
 def get_parent_msgids(parsed_message):
     """Returns a list of message ids the mail was a reply to.

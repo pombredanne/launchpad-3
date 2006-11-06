@@ -1,14 +1,11 @@
-
-Ticket Tracking System
+Support Tracker System
 ======================
 
-Launchpad includes a tech support ticket tracker. Tickets are created and
-accessed using the ITicketTarget interface. This interface is available on
-products, distributions and sourcepackages.
+Launchpad includes a tech support ticket tracker. Tickets are created
+and accessed using the ITicketTarget interface. This interface is
+available on products, distributions and sourcepackages.
 
-    (Some of the attributes of the ITicketTarget interface are only
-    available to logged in users.)
-    >>> login('no-priv@canonical.com')
+    >>> login('test@canonical.com')
 
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import (
@@ -27,8 +24,8 @@ products, distributions and sourcepackages.
     >>> verifyObject(ITicketTarget, firefox_package)
     True
 
-You create a new ticket by calling the newTicket() method of an ITicketTarget
-attribute.
+You create a new ticket by calling the newTicket() method of an
+ITicketTarget attribute.
 
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
     >>> firefox_ticket = firefox.newTicket(
@@ -43,7 +40,11 @@ ITicket
 Tickets are manipulated through the ITicket interface:
 
     >>> from canonical.launchpad.interfaces import ITicket
-    >>> verifyObject(ITicket, firefox_ticket)
+    >>> from zope.security.proxy import removeSecurityProxy
+
+    # The complete interface is not necessarily available to the
+    # logged in user.
+    >>> verifyObject(ITicket, removeSecurityProxy(firefox_ticket))
     True
 
 The person who submitted the ticket is available in the owner field.
@@ -51,7 +52,8 @@ The person who submitted the ticket is available in the owner field.
     >>> firefox_ticket.owner == sample_person
     True
 
-When the ticket is created, the owner is added to the ticket's subscribers:
+When the ticket is created, the owner is added to the ticket's
+subscribers:
 
     >>> sample_person in [s.person for s in firefox_ticket.subscriptions]
     True
@@ -69,7 +71,7 @@ And the creation time is recorded in the datecreated attribute:
     >>> now - firefox_ticket.datecreated < timedelta(seconds=5)
     True
 
-The target onto which the ticket was created is available throught the target
+The target onto which the ticket was created is available throught the
 attribute:
 
     >>> firefox_ticket.target == firefox
@@ -160,122 +162,32 @@ getSubscribers() method.
     [u'No Privileges Person', u'Sample Person']
 
 (More documentation on the ticket notifications can be found in
-'ticket-notifications.txt'.)
+'support-tracker-notifications.txt'.)
 
-ITicket Workflow
-----------------
+Workflow
+--------
 
-The ticket status is usually changed through methods implementating the ticket
-workflow.
+A ticket status should not be manipulated directly but through the
+workflow methods.
 
-Sample Person was the one who filed the ticket, so he can reject the
-ticket if he thinks it's not relevant anymore:
-
-    >>> firefox_ticket.reject(sample_person)
-    True
-    >>> firefox_ticket.status.title
-    'Rejected'
-
-He can also reopen it:
-
-    >>> firefox_ticket.reopen(sample_person)
-    <TicketReopening at ...>
-    >>> firefox_ticket.status.title
-    'Open'
-
-Now let's log in as another, non admin, user to show that anyone can edit a
-ticket. First of all the title and description don't say much about the
-problem, so let's ask Sample Person to clarify.
-
-    >>> login('no-priv@canonical.com')
-    >>> no_priv = getUtility(ILaunchBag).user
-
-    >>> now_plus_one_hour = (now + timedelta(hours=1))
-
-    >>> comment = firefox_ticket.newMessage(
-    ...     no_priv, firefox_ticket.followup_subject,
-    ...     'Could you please describe what the problem is?',
-    ...     when=now_plus_one_hour)
-
-When some other Person than the submitter comments on a ticket,
-datelastresponse gets set to the comment's creation date.
-
-    >>> firefox_ticket.datelastresponse == now_plus_one_hour
-    True
-
-We also assign the ticket to ourselves to show that we're working on
-the issue.
-
-    >>> firefox_ticket.assignee = no_priv
-
-Sample Person replies:
-
-    >>> now_plus_two_hours = now_plus_one_hour + timedelta(hours=1)
-    >>> login('test@canonical.com')
-    >>> sample_person = getUtility(ILaunchBag).user
-    >>> comment = firefox_ticket.newMessage(
-    ...     sample_person, firefox_ticket.followup_subject,
-    ...     'When I start Firefox, all I get is a blank page. I want to '
-    ...     'have a search page at start-up?',
-    ...     when=now_plus_two_hours)
-
-When the submitter adds a comment, datelastquery gets set to the
-comment's date:
-
-    >>> firefox_ticket.datelastresponse == now_plus_one_hour
-    True
-    >>> firefox_ticket.datelastquery == now_plus_two_hours
-    True
-
-Now it's clear what the problem is, so let's edit the title and
-description to describe the problem:
-
-    >>> login('no-priv@canonical.com')
-    >>> firefox_ticket.title = 'No home page is set.'
-    >>> firefox_ticket.description = (
-    ...     'When Firefox is started, an empty page is shown. I want a '
-    ...     'search page to be shown.')
-
-Let's help Sample Person with his problem by providing an answer:
-
-    >>> comment = firefox_ticket.newMessage(
-    ...     no_priv, firefox_ticket.followup_subject,
-    ...     "Go to 'http://www.google.com', enter the preferences "
-    ...     "dialog, and choose 'Use Current Page'.")
-
-Sample Person is happy with the answer, so he closes the ticket:
-
-    >>> login('test@canonical.com')
-    >>> now_plus_three_hours = now_plus_two_hours + timedelta(hours=1)
-    >>> comment = firefox_ticket.newMessage(
-    ...     sample_person, firefox_ticket.followup_subject, 'Thanks!',
-    ...     when=now_plus_three_hours)
-    >>> firefox_ticket.acceptAnswer(sample_person, when=now_plus_three_hours)
-    >>> firefox_ticket.status.title
-    'Answered'
-
-Since No Privileges Person was the last, non-submitter, to comment on
-the ticket, he's considered as the one who answered it:
-
-    >>> print firefox_ticket.answerer.displayname
-    No Privileges Person
-    >>> firefox_ticket.dateanswered == now_plus_three_hours
-    True
+The complete ticket workflow is documented in
+'support-tracker-workflow.txt'.
 
 Bug Linking
 -----------
 
-Ticket implements the IBugLinkTarget interface which makes it possible to
-link bug report to ticket.
+Ticket implements the IBugLinkTarget interface which makes it possible
+to link bug report to ticket.
 
     >>> from canonical.launchpad.interfaces import IBugLinkTarget
     >>> verifyObject(IBugLinkTarget, firefox_ticket)
     True
 
-(See buglink.txt for the documentation and test of the IBugLinkTarget
-interface.)
+(See ../interfaces/ftests/buglinktarget.txt for the documentation and
+test of the IBugLinkTarget interface.)
 
-When a bug is linked to a ticket, the ticket's owner is subscribed to the bug.
+When a bug is linked to a ticket, the ticket's owner is subscribed to
+the bug.
 
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> bug7 = getUtility(IBugSet).get(7)
