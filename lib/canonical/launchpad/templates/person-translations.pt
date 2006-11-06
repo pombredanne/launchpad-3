@@ -18,7 +18,7 @@
     <tal:block condition="history">
 
       <div class="lesser">
-        <tal:navigation content="structure view/batchnav/@@+navigation-links" />
+        <tal:navigation content="structure view/batchnav/@@+navigation-links-upper" />
       </div>
 
       <table class="listing">
@@ -44,7 +44,7 @@
       </table>
 
       <div class="lesser">
-        <tal:navigation content="structure view/batchnav/@@+navigation-links" />
+        <tal:navigation content="structure view/batchnav/@@+navigation-links-lower" />
       </div>
 
     </tal:block>
