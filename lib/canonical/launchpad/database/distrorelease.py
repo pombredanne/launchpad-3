@@ -1277,8 +1277,8 @@ class DistroRelease(SQLBase, BugTargetBase):
             INSERT INTO POFile (
                 potemplate, language, description, topcomment, header,
                 fuzzyheader, lasttranslator, currentcount, updatescount,
-                rosettacount, lastparsed, owner, pluralforms, variant, path,
-                exportfile, exporttime, datecreated, latestsubmission,
+                rosettacount, lastparsed, owner, variant, path, exportfile,
+                exporttime, datecreated, latestsubmission,
                 from_sourcepackagename)
             SELECT
                 pt2.id AS potemplate,
@@ -1293,7 +1293,6 @@ class DistroRelease(SQLBase, BugTargetBase):
                 pf1.rosettacount AS rosettacount,
                 pf1.lastparsed AS lastparsed,
                 pf1.owner AS owner,
-                pf1.pluralforms AS pluralforms,
                 pf1.variant AS variant,
                 pf1.path AS path,
                 pf1.exportfile AS exportfile,
@@ -1692,7 +1691,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         # Request the translation copy.
         self._copy_active_translations(cur)
 
-    def publish(self, diskpool, log, pocket=None, is_careful=False):
+    def publish(self, diskpool, log, pocket, is_careful=False):
         """See IPublishing."""
         dirty_pockets = set()
         log.debug("Publishing %s-%s" % (self.title, pocket.name))

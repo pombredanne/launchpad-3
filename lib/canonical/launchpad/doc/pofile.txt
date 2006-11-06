@@ -85,9 +85,6 @@ Plural-Forms: nplurals=2; plural=(n != 1);
 >>> pofile.fuzzyheader
 True
 
->>> pofile.pluralforms
-2
-
 Now, is time to change the old header with the new one.
 
 >>> pofile.updateHeader(new_header)
@@ -106,9 +103,6 @@ Plural-Forms: nplurals=2; plural=n != 1;
 
 >>> pofile.fuzzyheader
 False
-
->>> pofile.pluralforms
-2
 
 Now I'm going to test creating a header with invalid plural-forms and
 trying to parse the number and type of plural forms it has.

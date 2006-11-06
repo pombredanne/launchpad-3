@@ -12,7 +12,6 @@ __all__ = [
     'BugContextMenu',
     'BugWithoutContextView',
     'DeprecatedAssignedBugsView',
-    'BugSubscriberPortletView',
     'BugTextView',
     'BugURL',
     'BugMarkAsDuplicateView',
@@ -484,10 +483,12 @@ class BugAlsoReportInView(LaunchpadFormView):
         if remotebug:
             assert bugtracker is not None, (
                 "validate() should have ensured that bugtracker is not None.")
-            bug_watch = getUtility(IBugWatchSet).createBugWatch(
-                bug=taskadded.bug, owner=self.user, bugtracker=bugtracker,
-                remotebug=remotebug)
-            notify(SQLObjectCreatedEvent(bug_watch))
+            # Make sure that we don't add duplicate bug watches.
+            bug_watch = taskadded.bug.getBugWatch(bugtracker, remotebug)
+            if bug_watch is None:
+                bug_watch = taskadded.bug.addWatch(
+                    bugtracker, remotebug, self.user)
+                notify(SQLObjectCreatedEvent(bug_watch))
             if not target.official_malone:
                 taskadded.bugwatch = bug_watch
 
@@ -509,29 +510,6 @@ class BugAlsoReportInView(LaunchpadFormView):
         # The confirmation button shouldn't be rendered automatically.
         self.actions = [self.continue_action]
         return LaunchpadFormView.render(self)
-
-
-class BugSubscriberPortletView(LaunchpadView):
-    """View class for the bug subscriber portlet."""
-    def __init__(self, context, request):
-        LaunchpadView.__init__(self, IBug(context), request)
-
-    def getSubscribersFromDupes(self):
-        """Return a list of IPersons that are subscribed from dupes."""
-        bug = self.context
-        return [subscriber
-                for subscriber in bug.getIndirectSubscribers()
-                if bug.isSubscribedToDupes(subscriber)]
-
-    def getSubscribersAlsoNotified(self):
-        """Return a list of IPersons indirectly subscribed to this bug.
-
-        This list excludes subscribers from dupes.
-        """
-        bug = self.context
-        return [subscriber
-                for subscriber in bug.getIndirectSubscribers()
-                if not bug.isSubscribedToDupes(subscriber)]
 
 
 class BugEditViewBase(LaunchpadEditFormView):

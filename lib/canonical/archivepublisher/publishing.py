@@ -9,16 +9,12 @@ from datetime import datetime
 
 from canonical.archivepublisher.domination import Dominator
 from canonical.archivepublisher.ftparchive import FTPArchiveHandler
+from canonical.launchpad.interfaces import pocketsuffix
 from canonical.librarian.client import LibrarianClient
 from canonical.lp.dbschema import PackagePublishingPocket
-
-from canonical.launchpad.interfaces import pocketsuffix
+from canonical.archivepublisher import HARDCODED_COMPONENT_ORDER
 
 suffixpocket = dict((v, k) for (k, v) in pocketsuffix.items())
-# XXX: if people actually start seriously using ComponentSelections this
-# will need to be revisited. For instance, adding new components will
-# break places which use this list. -- kiko, 2006-08-23
-HARDCODED_COMPONENT_ORDER = ['main', 'restricted', 'universe', 'multiverse']
 
 DISTRORELEASE_STANZA = """Origin: %s
 Label: %s
@@ -64,8 +60,13 @@ class Publisher(object):
 
     def __init__(self, log, config, diskpool, distribution,
                  allowed_suites=None, library=None):
-        """Initialise a publisher. Publishers need the pool root dir
-        and a DiskPool object.
+        """Initialise a publisher.
+
+        Publishers need the pool root dir and a DiskPool object.
+
+        Optionally we can pass a list of tuples, (distrorelease.name, pocket),
+        which will restrict the publisher actions, only suites listed in
+        allowed_suites will be modified.
         """
         self.log = log
         self._config = config
@@ -112,8 +113,8 @@ class Publisher(object):
                     continue
 
                 more_dirt = distrorelease.publish(
-                    self._diskpool, self.log,is_careful=force_publishing,
-                    pocket=pocket)
+                    self._diskpool, self.log, pocket,
+                    is_careful=force_publishing)
 
                 self.dirty_pockets.update(more_dirt)
 
@@ -162,11 +163,6 @@ class Publisher(object):
                         assert pocket != PackagePublishingPocket.RELEASE
 
                 self._writeDistroRelease(distrorelease, pocket)
-
-    def E_sanitiseLinks(self):
-        """Ensure links in the pool are sane."""
-        self.log.debug("* Step E: Sanitising links in the pool.")
-        self._diskpool.sanitiseLinks(HARDCODED_COMPONENT_ORDER)
 
     def isDirty(self, distrorelease, pocket):
         """True if a publication has happened in this release and pocket."""

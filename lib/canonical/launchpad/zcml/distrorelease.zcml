@@ -251,4 +251,11 @@
       class="canonical.widgets.HiddenUserWidget" />
   </browser:addform>
 
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    class="canonical.launchpad.browser.HasSpecificationsView"
+    permission="zope.Public"
+    name="+mdz-specs.csv"
+    attribute="mdzCsv"
+    />
 </configure>
