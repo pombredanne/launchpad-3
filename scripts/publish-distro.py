@@ -12,7 +12,7 @@ from canonical.database.sqlbase import (
     flush_database_updates,
     clear_current_connection_cache)
 
-from canonical.archivepublisher.diskpool import DiskPool, Poolifier, POOL_DEBIAN
+from canonical.archivepublisher.diskpool import DiskPool
 from canonical.archivepublisher.config import Config, LucilleConfigError
 from canonical.archivepublisher.publishing import Publisher
 
@@ -73,11 +73,9 @@ def getPublisher(options, log):
     pubconf.setupArchiveDirs()
 
     log.debug("Preparing on-disk pool representation.")
-    dp = DiskPool(Poolifier(POOL_DEBIAN),
-                  pubconf.poolroot, logging.getLogger("DiskPool"))
+    dp = DiskPool(pubconf.poolroot, logging.getLogger("DiskPool"))
     # Set the diskpool's log level to INFO to suppress debug output
     dp.logger.setLevel(20)
-    dp.scan()
 
     log.debug("Preparing publisher.")
     return Publisher(log, pubconf, dp, distro)
@@ -131,7 +129,6 @@ def main():
                    options.careful or options.careful_apt)
     try_and_commit("doing release files", publisher.D_writeReleaseFiles,
                    options.careful)
-    try_and_commit("santising links", publisher.E_sanitiseLinks)
 
     log.debug("Ciao")
 
