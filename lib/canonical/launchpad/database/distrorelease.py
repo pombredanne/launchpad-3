@@ -1704,18 +1704,35 @@ class DistroRelease(SQLBase, BugTargetBase):
         # Request the translation copy.
         self._copy_active_translations(cur)
 
-    def publish(self, diskpool, log, is_careful=False):
+    def publish(self, diskpool, log, pocket, is_careful=False):
         """See IPublishing."""
-        log.debug("Publishing %s" % self.title)
         dirty_pockets = set()
+        log.debug("Publishing %s-%s" % (self.title, pocket.name))
 
-        spphs = self.getAllReleasesByStatus(PackagePublishingStatus.PENDING)
+        queries = ['distrorelease = %s' % sqlvalues(self)]
+
+        # careful publishing should include all PUBLISHED rows, normal run
+        # only includes PENDING ones.
+        statuses = [PackagePublishingStatus.PENDING]
         if is_careful:
-            spphs = spphs.union(self.getAllReleasesByStatus(
-                PackagePublishingStatus.PUBLISHED))
+            statuses.append(PackagePublishingStatus.PUBLISHED)
+        queries.append('status IN %s' % sqlvalues(statuses))
+
+        # restrict to a specific pocket if it is given.
+        if pocket is not None:
+            queries.append('pocket = %s' % sqlvalues(pocket))
+
+        # exclude RELEASE pocket if the distrorelease was already released,
+        # since it should not change.
+        if not self.isUnstable():
+            queries.append(
+            'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
+
+        spphs = SourcePackagePublishingHistory.select(
+            " AND ".join(queries), orderBy="-id")
 
         log.debug("Attempting to publish pending sources.")
-        for spph in spphs.orderBy("-id"):
+        for spph in spphs:
             if not is_careful and self.checkLegalPocket(spph, log):
                 continue
             spph.publish(diskpool, log)

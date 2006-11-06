@@ -4,7 +4,8 @@ __metaclass__ = type
 __all__ = [
     'POFile',
     'DummyPOFile',
-    'POFileSet'
+    'POFileSet',
+    'POFileTranslator',
     ]
 
 import StringIO
@@ -21,8 +22,6 @@ from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLObjectNotFound, SQLMultipleJoin
     )
 
-from canonical.cachedproperty import cachedproperty
-
 from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, sqlvalues)
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -35,8 +34,9 @@ import canonical.launchpad
 from canonical.launchpad import helpers
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.interfaces import (
-    IPOFileSet, IPOFile, IPOTemplateExporter, ILibraryFileAliasSet,
-    ILaunchpadCelebrities, ZeroLengthPOExportError, NotFoundError)
+    IPersonSet, IPOFileSet, IPOFile, IPOTemplateExporter,
+    ILibraryFileAliasSet, ILaunchpadCelebrities, IPOFileTranslator,
+    ZeroLengthPOExportError, NotFoundError)
 
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
@@ -98,6 +98,7 @@ def _check_translation_perms(permission, translators, person):
 
     # ok, thats all we can check, and so we must assume the answer is no
     return False
+
 
 def _can_edit_translations(pofile, person):
     """Say if a person is able to edit existing translations.
@@ -233,20 +234,10 @@ class POFile(SQLBase, RosettaStats):
         """See IPOFile."""
         return self.potemplate.translationpermission
 
-    @cachedproperty
+    @property
     def contributors(self):
         """See IPOFile."""
-        from canonical.launchpad.database.person import Person
-
-        return list(Person.select("""
-            POSubmission.person = Person.id AND
-            POSubmission.pomsgset = POMsgSet.id AND
-            POMsgSet.pofile = %d""" % self.id,
-            clauseTables=('POSubmission', 'POMsgSet'),
-            # We can't use Person._defaultOrder because this is a
-            # distinct query. -- kiko
-            orderBy=["Person.displayname", "Person.name"],
-            distinct=True))
+        return getUtility(IPersonSet).getPOFileContributors(self)
 
     def canEditTranslations(self, person):
         """See IPOFile."""
@@ -1027,3 +1018,15 @@ class POFileSet:
                 POTemplate.sourcepackagename = %s''' % sqlvalues(
                     path, distrorelease.id, sourcepackagename.id),
                 clauseTables=['POTemplate'])
+
+
+class POFileTranslator(SQLBase):
+    """See IPOFileTranslator."""
+    implements(IPOFileTranslator)
+    pofile = ForeignKey(foreignKey='POFile', dbName='pofile', notNull=True)
+    person = ForeignKey(foreignKey='Person', dbName='person', notNull=True)
+    latest_posubmission = ForeignKey(foreignKey='POSubmission',
+        dbName='latest_posubmission', notNull=True)
+    date_last_touched = UtcDateTimeCol(dbName='date_last_touched',
+        notNull=False, default=None)
+
