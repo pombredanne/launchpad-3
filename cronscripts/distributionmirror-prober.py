@@ -82,6 +82,11 @@ def probe_release_mirror(mirror, logfile, unchecked_mirrors, logger):
     files for a given release and flavour, then we consider that mirror is
     actually mirroring that release and flavour.
     """
+    # The list of files a mirror should contain will change over time and we
+    # don't want to keep records for files a mirror once had but doesn't have
+    # anymore, so we delete all records before start probing. This also fixes
+    # https://launchpad.net/bugs/46662
+    mirror.deleteAllMirrorCDImageReleases()
     try:
         cdimage_paths = get_expected_cdimage_paths()
     except UnableToFetchCDImageFileList, e:
