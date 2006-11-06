@@ -1,7 +1,8 @@
 ITicketTarget for SourcePackage
 ===============================
 
-The ITicketTarget implementation contain one some small differences with
+The implementation of ITicketTarget by SourcePackage and
+DistributionSourcePackage contain some small differences with
 the other ones. (See tickettarget.txt for the generic interface
 description.)
 
@@ -28,3 +29,55 @@ for DistributionSourcePackage.
     False
     >>> ticket.target == ubuntu
     True
+
+The support contacts of a SourcePackage contain all the support contacts
+from its containing distribution.
+
+    >>> sample_person = getUtility(IPersonSet).getByName('name16')
+
+    >>> ubuntu.addSupportContact(sample_person)
+    True
+    >>> [person.name for person in firefox.support_contacts]
+    [u'name16']
+
+A user can still subscribe as support contact for specific sourcepackage
+even if he's already a support contact for the distribution.
+
+    >>> firefox.addSupportContact(sample_person)
+    True
+
+But he's only listed once in the support contacts list.
+
+    >>> [person.name for person in firefox.support_contacts]
+    [u'name16']
+
+The removeSupportContact() method can only be used to remove the user
+from the sourcepackage support contact list, not from the ubuntu
+distribution list:
+
+    >>> firefox.removeSupportContact(sample_person)
+    True
+    >>> [person.name for person in firefox.support_contacts]
+    [u'name16']
+    >>> firefox.removeSupportContact(sample_person)
+    False
+    >>> [person.name for person in firefox.support_contacts]
+    [u'name16']
+
+The same principle applies to DistributionSourcePackage:
+
+    >>> [person.name for person in evolution.support_contacts]
+    [u'name16']
+    >>> evolution.addSupportContact(sample_person)
+    True
+    >>> [person.name for person in evolution.support_contacts]
+    [u'name16']
+    >>> evolution.removeSupportContact(sample_person)
+    True
+    >>> [person.name for person in evolution.support_contacts]
+    [u'name16']
+    >>> evolution.removeSupportContact(sample_person)
+    False
+    >>> [person.name for person in evolution.support_contacts]
+    [u'name16']
+

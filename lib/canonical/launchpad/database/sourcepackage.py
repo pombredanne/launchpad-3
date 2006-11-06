@@ -83,7 +83,11 @@ class SourcePackageTicketTargetMixin:
 
     def addSupportContact(self, person):
         """See ITicketTarget."""
-        if person in self.support_contacts:
+        support_contact_entry = SupportContact.selectOneBy(
+            distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename,
+            person=person)
+        if support_contact_entry:
             return False
         SupportContact(
             product=None, person=person,
@@ -93,26 +97,27 @@ class SourcePackageTicketTargetMixin:
 
     def removeSupportContact(self, person):
         """See ITicketTarget."""
-        if person not in self.support_contacts:
-            return False
         support_contact_entry = SupportContact.selectOneBy(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename,
             person=person)
+        if not support_contact_entry:
+            return False
         support_contact_entry.destroySelf()
         return True
 
     @property
     def support_contacts(self):
         """See ITicketTarget."""
-        support_contacts = SupportContact.selectBy(
-            distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename)
-
-        return shortlist([
-            support_contact.person for support_contact in support_contacts
-            ],
-            longest_expected=100)
+        support_contacts = set()
+        support_contacts.update([
+            contact.person for contact in SupportContact.selectBy(
+                distribution=self.distribution,
+                sourcepackagename=self.sourcepackagename)])
+        support_contacts.update([
+            contact.person for contact in SupportContact.selectBy(
+                distribution=self.distribution)])
+        return support_contacts
 
 
 class SourcePackage(BugTargetBase, SourcePackageTicketTargetMixin):
