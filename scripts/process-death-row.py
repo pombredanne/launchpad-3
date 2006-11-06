@@ -11,7 +11,7 @@ from canonical.launchpad.database import Distribution
 from canonical.launchpad.scripts import (execute_zcml_for_scripts,
                                          logger, logger_options)
 
-from canonical.archivepublisher.diskpool import DiskPool, Poolifier, POOL_DEBIAN
+from canonical.archivepublisher.diskpool import DiskPool
 from canonical.archivepublisher.config import Config, LucilleConfigError
 from canonical.archivepublisher.deathrow import DeathRow
 
@@ -32,11 +32,9 @@ def getDeathRow(distroname, log, pool_root_override):
         pool_root = pubconf.poolroot
 
     log.debug("Preparing on-disk pool representation.")
-    dp = DiskPool(Poolifier(POOL_DEBIAN),
-                  pool_root, logging.getLogger("DiskPool"))
+    dp = DiskPool(pool_root, logging.getLogger("DiskPool"))
     # Set the diskpool's log level to INFO to suppress debug output
     dp.logger.setLevel(20)
-    dp.scan()
 
     log.debug("Preparing death row.")
     return DeathRow(distro, dp, log)

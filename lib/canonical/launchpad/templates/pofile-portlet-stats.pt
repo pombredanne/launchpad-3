@@ -7,7 +7,7 @@
         <div class="portletContent">
 
             <b>Messages:</b>
-            <span tal:replace="context/potemplate/count:len">N</span>
+            <span tal:replace="context/messageCount">N</span>
             <br/>
             <b>To do:</b>
             <span tal:replace="context/untranslatedCount">N</span>

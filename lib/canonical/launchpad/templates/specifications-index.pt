@@ -13,11 +13,11 @@
   <div tal:replace="structure context/@@+portlet-overview" />
   <div class="portlet">
 
-    <h4>Search specifications:</h4>
+    <h2>Search specifications</h2>
 
     <div class="portletBody portletContent">
   
-      <form name="spec_search" method="GET">
+      <form name="spec_search" method="get">
         Show specifications containing:<br />
         <span class="lesser">
           <input type="text" name="searchtext" size="20"

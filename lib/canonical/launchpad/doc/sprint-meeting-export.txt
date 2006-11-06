@@ -73,7 +73,7 @@ The person does not show up as interested in the spec though. Only the
 specification assignee is listed (the drafter would be too if one was
 assigned).
 
-  >>> sorted(person.name for person in view.specifications[0]['interested'])
+  >>> sorted(person['name'] for person in view.specifications[0]['interested'])
   [u'carlos']
 
 This is because sample person has not registered as an attendee of the
@@ -86,7 +86,7 @@ sprint.  If we add them as an attendee, then they will be available:
 
   >>> view = getView(ubz, '+temp-meeting-export', request)
   >>> view.initialize()
-  >>> sorted(person.name for person in view.specifications[0]['interested'])
+  >>> sorted(person['name'] for person in view.specifications[0]['interested'])
   [u'carlos', u'name12']
 
 The person is also included in the list of attendees:
