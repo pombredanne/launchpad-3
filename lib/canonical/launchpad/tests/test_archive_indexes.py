@@ -165,7 +165,7 @@ class TestNativeArchiveIndexes(LaunchpadZopelessTestCase):
         corresponds to the APT index reference.
 
         It contains specific package attributes, like: name of the source,
-        maintainer identification, DSC format and standarts version, etc
+        maintainer identification, DSC format and standards version, etc
 
         Also contains the paths and checksums for the files included in
         the package in question.
