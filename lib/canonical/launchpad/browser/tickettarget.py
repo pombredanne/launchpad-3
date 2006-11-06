@@ -216,12 +216,8 @@ class SearchTicketsView(LaunchpadFormView):
         When there is a sourcepackagename associated to the ticket, link to
         that source package tickets instead of the ticket target.
         """
-        if ticket.sourcepackagename:
-            target = ticket.distribution.getSourcePackage(
-                ticket.sourcepackagename)
-        else:
-            target = ticket.target
-
+        #XXX: Inline this method in the template.
+        target = ticket.target
         return '<a href="%s/+tickets">%s</a>' % (
                 canonical_url(target), target.displayname)
 
