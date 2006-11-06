@@ -28,8 +28,7 @@ from canonical.lp.dbschema import (
     PackagePublishingStatus, PackagePublishingPocket, SourcePackageUrgency)
 
 
-class TestNativePublishing(LaunchpadZopelessTestCase):
-
+class TestNativePublishingBase(LaunchpadZopelessTestCase):
     dbuser = 'lucille'
 
     def setUp(self):
@@ -60,11 +59,13 @@ class TestNativePublishing(LaunchpadZopelessTestCase):
         return getUtility(ILibraryFileAliasSet)[alias_id]
 
     def getPubSource(self, sourcename, component, filename,
-                     filecontent="I do not care about sources."):
+                     filecontent="I do not care about sources.",
+                     status=PackagePublishingStatus.PENDING,
+                     pocket=PackagePublishingPocket.RELEASE,
+                     distrorelease=None):
         """Return a mock source publishing record."""
 
         alias = self.addMockFile(filename, filecontent)
-
         spn = getUtility(ISourcePackageNameSet).getOrCreateByName(sourcename)
         component = getUtility(IComponentSet)[component]
         # any person, key, section
@@ -72,7 +73,10 @@ class TestNativePublishing(LaunchpadZopelessTestCase):
         signingkey = getUtility(IGPGKeySet).get(1)
         section = getUtility(ISectionSet)['base']
 
-        spr = self.breezy_autotest.createUploadedSourcePackageRelease(
+        if distrorelease is None:
+            distrorelease = self.breezy_autotest
+
+        spr = distrorelease.createUploadedSourcePackageRelease(
             sourcepackagename=spn,
             maintainer=person,
             creator=person,
@@ -93,13 +97,13 @@ class TestNativePublishing(LaunchpadZopelessTestCase):
         spr.addFile(alias)
 
         sspph = SecureSourcePackagePublishingHistory(
-            distrorelease=self.breezy_autotest,
+            distrorelease=distrorelease,
             sourcepackagerelease=spr,
             component=spr.component,
             section=spr.section,
-            status=PackagePublishingStatus.PENDING,
+            status=status,
             datecreated=UTC_NOW,
-            pocket=PackagePublishingPocket.RELEASE,
+            pocket=pocket,
             embargo=False
             )
 
@@ -112,6 +116,9 @@ class TestNativePublishing(LaunchpadZopelessTestCase):
         shutil.rmtree(self.config.distroroot)
         LaunchpadZopelessTestCase.tearDown(self)
 
+
+class TestNativePublishing(TestNativePublishingBase):
+
     def testPublish(self):
         """Test publishOne in normal conditions (new file)."""
         pub_source = self.getPubSource(
@@ -122,7 +129,6 @@ class TestNativePublishing(LaunchpadZopelessTestCase):
         self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
         foo_name = "%s/main/f/foo/foo.dsc" % self.pool_dir
         self.assertEqual(open(foo_name).read().strip(), 'Hello world')
-
 
     def testPublishingOverwriteFileInPool(self):
         """Test if publishOne refuses to overwrite a file in pool.
