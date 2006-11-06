@@ -51,6 +51,7 @@ __all__ = [
     'SearchCommentedTicketsView',
     'SearchCreatedTicketsView',
     'SearchSubscribedTicketsView',
+    'PersonLanguagesView',
     ]
 
 import cgi
@@ -76,14 +77,14 @@ from canonical.widgets import PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
-    ISSHKeySet, IPersonSet, IEmailAddressSet, IWikiNameSet,
+    ISSHKeySet, IPersonSet, IEmailAddressSet, IWikiNameSet, ICountry,
     IJabberIDSet, IIrcIDSet, ILaunchBag, ILoginTokenSet, IPasswordEncryptor,
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, UBUNTU_WIKI_URL,
     ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
     IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet, IPollSet,
-    IPOTemplateSet, IAdminRequestPeopleMerge, NotFoundError,
-    UNRESOLVED_BUGTASK_STATUSES, IPersonChangePassword,
-    GPGKeyNotFoundError, UnexpectedFormData, IPersonClaim)
+    IAdminRequestPeopleMerge, NotFoundError, UNRESOLVED_BUGTASK_STATUSES,
+    IPersonChangePassword, GPGKeyNotFoundError, UnexpectedFormData,
+    ILanguageSet, IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet)
 
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.specificationtarget import (
@@ -404,14 +405,21 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     usedfor = IPerson
     facet = 'overview'
     links = ['karma', 'edit', 'common_edithomepage', 'editemailaddresses',
-             'editwikinames', 'editircnicknames', 'editjabberids',
-             'editpassword', 'edithackergotchi', 'editsshkeys', 'editpgpkeys',
-             'codesofconduct', 'administer', 'common_packages',]
+             'editlanguages', 'editwikinames', 'editircnicknames',
+             'editjabberids', 'editpassword', 'edithackergotchi',
+             'editsshkeys', 'editpgpkeys', 'codesofconduct', 'administer',
+             'common_packages']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         target = '+edit'
         text = 'Personal Details'
+        return Link(target, text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def editlanguages(self):
+        target = '+editlanguages'
+        text = 'Preferred Languages'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -1043,6 +1051,69 @@ class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
     def getSimpleSearchURL(self):
         """Return a URL that can be used as an href to the simple search."""
         return canonical_url(self.context) + "/+subscribedbugs"
+
+
+class PersonLanguagesView(LaunchpadView):
+
+    def initialize(self):
+        request = self.request
+        if (request.method == "POST" and "SAVE-LANGS" in request.form):
+            self.submitLanguages()
+
+    def requestCountry(self):
+        return ICountry(self.request, None)
+
+    def browserLanguages(self):
+        return IRequestPreferredLanguages(self.request).getPreferredLanguages()
+
+    def visible_checked_languages(self):
+        return self.user.languages
+
+    def visible_unchecked_languages(self):
+        common_languages = getUtility(ILanguageSet).common_languages
+        return sorted(set(common_languages) - set(self.user.languages),
+                      key=lambda x: x.englishname)
+
+    def getRedirectionURL(self):
+        request = self.request
+        referrer = request.getHeader('referer')
+        if referrer and referrer.startswith(request.getApplicationURL()):
+            return referrer
+        else:
+            return ''
+
+    def submitLanguages(self):
+        '''Process a POST request to the language preference form.
+
+        This list of languages submitted is compared to the the list of
+        languages the user has, and the latter is matched to the former.
+        '''
+
+        all_languages = getUtility(ILanguageSet)
+        old_languages = self.user.languages
+        new_languages = []
+
+        for key in all_languages.keys():
+            if self.request.has_key(key) and self.request.get(key) == u'on':
+                new_languages.append(all_languages[key])
+
+        # Add languages to the user's preferences.
+        for language in set(new_languages) - set(old_languages):
+            self.user.addLanguage(language)
+            self.request.response.addInfoNotification(
+                "Added %(language)s to your preferred languages." %
+                {'language' : language.englishname})
+
+        # Remove languages from the user's preferences.
+        for language in set(old_languages) - set(new_languages):
+            self.user.removeLanguage(language)
+            self.request.response.addInfoNotification(
+                "Removed %(language)s from your preferred languages." % 
+                {'language' : language.englishname})
+
+        redirection_url = self.request.get('redirection_url')
+        if redirection_url:
+            self.request.response.redirect(redirection_url)
 
 
 class PersonView(LaunchpadView):
