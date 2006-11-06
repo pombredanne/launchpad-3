@@ -342,6 +342,7 @@ class SprintMeetingExportView(LaunchpadView):
                 continue
 
             if spec.status not in [SpecificationStatus.NEW,
+                                   SpecificationStatus.DISCUSSION,
                                    SpecificationStatus.DRAFT]:
                 continue
 
