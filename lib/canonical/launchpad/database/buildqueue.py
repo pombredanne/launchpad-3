@@ -42,17 +42,17 @@ class BuildQueue(SQLBase):
 
     @property
     def archrelease(self):
-        """See IBuildQueue"""
+        """See IBuildQueue."""
         return self.build.distroarchrelease
 
     @property
     def urgency(self):
-        """See IBuildQueue"""
+        """See IBuildQueue."""
         return self.build.sourcepackagerelease.urgency
 
     @property
     def component_name(self):
-        """See IBuildQueue"""
+        """See IBuildQueue."""
         # check currently published version
         publishings = self.build.sourcepackagerelease.publishings
         if publishings.count() > 0:
@@ -62,32 +62,32 @@ class BuildQueue(SQLBase):
 
     @property
     def archhintlist(self):
-        """See IBuildQueue"""
+        """See IBuildQueue."""
         return self.build.sourcepackagerelease.architecturehintlist
 
     @property
     def name(self):
-        """See IBuildQueue"""
+        """See IBuildQueue."""
         return self.build.sourcepackagerelease.name
 
     @property
     def version(self):
-        """See IBuildQueue"""
+        """See IBuildQueue."""
         return self.build.sourcepackagerelease.version
 
     @property
     def files(self):
-        """See IBuildQueue"""
+        """See IBuildQueue."""
         return self.build.sourcepackagerelease.files
 
     @property
     def builddependsindep(self):
-        """See IBuildQueue"""
+        """See IBuildQueue."""
         return self.build.sourcepackagerelease.builddependsindep
 
     @property
     def buildduration(self):
-        """See IBuildQueue"""
+        """See IBuildQueue."""
         if self.buildstart:
             UTC = pytz.timezone('UTC')
             now = datetime.now(UTC)
@@ -103,9 +103,11 @@ class BuildQueueSet(object):
         self.title = "The Launchpad build queue"
 
     def __iter__(self):
+        """See IBuildQueueSet."""
         return iter(BuildQueue.select())
 
     def __getitem__(self, job_id):
+        """See IBuildQueueSet."""
         try:
             return BuildQueue.get(job_id)
         except SQLObjectNotFound:
@@ -139,13 +141,18 @@ class BuildQueueSet(object):
     def calculateCandidates(self, archreleases, state):
         """See IBuildQueueSet."""
         if not archreleases:
-            return None
-        clauses = ["build.distroarchrelease=%d" % d.id for d in archreleases]
-        clause = " OR ".join(clauses)
+            # return an empty SQLResult instance to make the callsites happy.
+            return BuildQueue.select("1=2")
 
-        return BuildQueue.select("buildqueue.build = build.id AND "
-                                 "build.buildstate = %d AND "
-                                 "buildqueue.builder IS NULL AND (%s)"
-                                 % (state.value, clause),
-                                 clauseTables=['Build'])
+        if not isinstance(archreleases, list):
+            archrelease = [archreleases]
+        arch_ids = [d.id for d in archreleases]
 
+        candidates = BuildQueue.select("""
+        build.distroarchrelease IN %s AND
+        build.buildstate = %s AND
+        buildqueue.build = build.id AND
+        buildqueue.builder IS NULL
+        """ % sqlvalues(arch_ids, state), clauseTables=['Build'])
+
+        return candidates

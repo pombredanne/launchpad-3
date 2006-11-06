@@ -70,7 +70,7 @@ class IBuilder(IHasOwner):
 
     trusted = Bool(title=_('Trusted'), required=True,
                    description=_('Whether or not the builder is prepared '
-                                 'to build packages untrusted code, like ')
+                                 'to build untrusted packages.')
                    )
 
     manual = Bool(title=_('Manual Mode'), required=False,
