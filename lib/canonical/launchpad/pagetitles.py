@@ -719,8 +719,6 @@ rosetta_about = 'About Rosetta'
 
 rosetta_index = 'Rosetta'
 
-rosetta_preferences = 'Rosetta: Preferences'
-
 product_branch_add = ContextDisplayName('Register a new %s branch')
 
 def productseries_edit(context, view):
