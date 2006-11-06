@@ -10,6 +10,7 @@ __all__ = [
     'ZeroLengthPOExportError',
     'IPOFileSet',
     'IPOFile',
+    'IPOFileTranslator',
     'IPOFileAlternativeLanguage'
     ]
 
@@ -49,10 +50,6 @@ class IPOFile(IRosettaStats):
     lastparsed = Attribute("Last time this pofile was parsed.")
 
     owner = Attribute("The owner for this pofile.")
-
-    pluralforms = Int(
-        title=u'The published number of plural forms this PO file has.',
-        required=True)
 
     variant = Attribute("The language variant for this PO file.")
 
@@ -275,7 +272,7 @@ class IPOFileAlternativeLanguage(Interface):
 
 
 class IPOFileSet(Interface):
-    """A set of POFile."""
+    """A set of POFiles."""
 
     def getPOFilesPendingImport():
         """Return a list of PO files that have data to be imported."""
@@ -292,3 +289,13 @@ class IPOFileSet(Interface):
 
         Return None if there is not such IPOFile.
         """
+
+
+class IPOFileTranslator(Interface):
+    """Represents contributions from people to POFiles."""
+
+    person = Attribute("The Person this record represents.")
+    pofile = Attribute("The POFile modified by the translator.")
+    latest_posubmission = Attribute("Latest POSubmission added to this POFile.")
+    date_last_touched = Attribute("Date the latest POSubmission was added.")
+
