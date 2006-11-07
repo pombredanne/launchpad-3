@@ -335,6 +335,23 @@ class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
                 header_output, http_transaction
                 )
 
+    def redirect(self, location, status=None, temporary_if_possible=False):
+        """Do a redirect.
+
+        If temporary_if_possible is True, then do a temporary redirect
+        if this is a HEAD or GET, otherwise do a 303.
+
+        See RFC 2616.
+        """
+        if temporary_if_possible:
+            assert status is None, (
+                "Do not set 'status' if also setting 'temporary_if_possible'.")
+            method = self._request.method
+            if method == 'GET' or method == 'HEAD':
+                status = 307
+            else:
+                status = 303
+        super(LaunchpadBrowserResponse, self).redirect(location, status=status)
 
 def adaptResponseToSession(response):
     """Adapt LaunchpadBrowserResponse to ISession"""

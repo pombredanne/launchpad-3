@@ -11,6 +11,7 @@ from zope.component import getUtility
 from zope.app.session.interfaces import ISession
 from zope.event import notify
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad import _
 from canonical.launchpad.validators.email import valid_email
@@ -22,7 +23,8 @@ from canonical.launchpad.interfaces import (
     ILoginTokenSet, IPersonSet, UBUNTU_WIKI_URL, ShipItConstants)
 from canonical.launchpad.interfaces.validation import valid_password
 from canonical.lp.dbschema import LoginTokenType
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from canonical.config import config
+
 
 class UnauthorizedView(SystemErrorView):
 
@@ -84,6 +86,24 @@ class BasicLoginPage:
         else:
             self.request.response.redirect(self.request.getURL(1))
         return ''
+
+
+class RestrictedLoginInfo:
+    """On a team-restricted launchpad server, show who may access the server.
+
+    Otherwise, show that this is an unrestricted server.
+    """
+
+    def isTeamRestrictedServer(self):
+        return bool(config.launchpad.restrict_to_team)
+
+    def getAllowedTeamURL(self):
+        return 'https://launchpad.net/people/%s' % (
+            config.launchpad.restrict_to_team)
+
+    def getAllowedTeamDescription(self):
+        return getUtility(IPersonSet).getByName(
+            config.launchpad.restrict_to_team).title
 
 
 class LoginOrRegister:
@@ -282,7 +302,7 @@ class LoginOrRegister:
             list(self.iter_form_items()), doseq=True)
         if query_string:
             target = '%s?%s' % (target, query_string)
-        self.request.response.redirect(target)
+        self.request.response.redirect(target, temporary_if_possible=True)
 
     def iter_form_items(self):
         """Iterate over keys and single values, excluding stuff we don't
@@ -310,7 +330,7 @@ class LoginOrRegister:
             L.append('<input type="hidden" name="%s" value="%s" />' % (
                 name, cgi.escape(value, quote=True)
                 ))
-                    
+
         return '\n'.join(L)
 
 

@@ -132,6 +132,23 @@
       permission="zope.Public"
       />
 
+  <!-- Special login and information pages for a site restricted so that just
+       one team given in launchpad.conf may access it.  -->
+  <browser:page
+      for="canonical.launchpad.interfaces.ILaunchpadRoot"
+      name="+restrictedlogin"
+      template="../templates/launchpad-restrictedlogin.pt"
+      permission="zope.Public"
+      class="canonical.launchpad.webapp.login.LoginOrRegister"
+      />
+  <browser:page
+      for="canonical.launchpad.interfaces.ILaunchpadRoot"
+      name="+restrictedinfo"
+      template="../templates/launchpad-restrictedinfo.pt"
+      permission="zope.Public"
+      class="canonical.launchpad.webapp.login.RestrictedLoginInfo"
+      />
+
   <!-- A page to list all the icons in LP -->
   <browser:page
       for="canonical.launchpad.interfaces.ILaunchpadApplication"
