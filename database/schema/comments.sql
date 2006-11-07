@@ -369,6 +369,8 @@ COMMENT ON COLUMN POSelection.publishedsubmission IS 'The submission in which
 we noted this as the current translation published in revision control (or
 in the public po files for this translation template, in the package or
 tarball or branch which is considered the source of it).';
+COMMENT ON COLUMN POSelection.reviewer IS 'The person that approved POSelection.activesubmission.';
+COMMENT ON COLUMN POSelection.date_reviewed IS 'When POSelection.activesubmission was reviewed.';
 
 -- POSubmission
 COMMENT ON TABLE POSubmission IS 'This table records the fact

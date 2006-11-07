@@ -20,4 +20,4 @@ ALTER TABLE POSelection
         CHECK (reviewer = date_reviewed OR
                (reviewer IS NOT NULL AND date_reviewed IS NOT NULL));
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (67, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (67, 30, 0);
