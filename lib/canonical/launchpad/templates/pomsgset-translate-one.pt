@@ -152,7 +152,7 @@
       condition="selection">
       <tr class="discreet secondary"
           tal:condition="selection/activesubmission">
-        <th colspan="3" style="padding-bottom: 1em;">
+        <th colspan="3">
           Translated by:
         </th>
         <td class="icon left right" />
@@ -166,7 +166,7 @@
       </tr>
       <tr class="discreet secondary"
           tal:condition="selection/reviewer">
-        <th colspan="3" style="padding-bottom: 1em;">
+        <th colspan="3">
           Reviewed by:
         </th>
         <td class="icon left right" />
