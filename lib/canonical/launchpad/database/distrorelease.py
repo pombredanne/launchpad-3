@@ -1277,8 +1277,8 @@ class DistroRelease(SQLBase, BugTargetBase):
             INSERT INTO POFile (
                 potemplate, language, description, topcomment, header,
                 fuzzyheader, lasttranslator, currentcount, updatescount,
-                rosettacount, lastparsed, owner, pluralforms, variant, path,
-                exportfile, exporttime, datecreated, latestsubmission,
+                rosettacount, lastparsed, owner, variant, path, exportfile,
+                exporttime, datecreated, latestsubmission,
                 from_sourcepackagename)
             SELECT
                 pt2.id AS potemplate,
@@ -1293,7 +1293,6 @@ class DistroRelease(SQLBase, BugTargetBase):
                 pf1.rosettacount AS rosettacount,
                 pf1.lastparsed AS lastparsed,
                 pf1.owner AS owner,
-                pf1.pluralforms AS pluralforms,
                 pf1.variant AS variant,
                 pf1.path AS path,
                 pf1.exportfile AS exportfile,
@@ -1692,18 +1691,35 @@ class DistroRelease(SQLBase, BugTargetBase):
         # Request the translation copy.
         self._copy_active_translations(cur)
 
-    def publish(self, diskpool, log, is_careful=False):
+    def publish(self, diskpool, log, pocket, is_careful=False):
         """See IPublishing."""
-        log.debug("Publishing %s" % self.title)
         dirty_pockets = set()
+        log.debug("Publishing %s-%s" % (self.title, pocket.name))
 
-        spphs = self.getAllReleasesByStatus(PackagePublishingStatus.PENDING)
+        queries = ['distrorelease = %s' % sqlvalues(self)]
+
+        # careful publishing should include all PUBLISHED rows, normal run
+        # only includes PENDING ones.
+        statuses = [PackagePublishingStatus.PENDING]
         if is_careful:
-            spphs = spphs.union(self.getAllReleasesByStatus(
-                PackagePublishingStatus.PUBLISHED))
+            statuses.append(PackagePublishingStatus.PUBLISHED)
+        queries.append('status IN %s' % sqlvalues(statuses))
+
+        # restrict to a specific pocket if it is given.
+        if pocket is not None:
+            queries.append('pocket = %s' % sqlvalues(pocket))
+
+        # exclude RELEASE pocket if the distrorelease was already released,
+        # since it should not change.
+        if not self.isUnstable():
+            queries.append(
+            'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
+
+        spphs = SourcePackagePublishingHistory.select(
+            " AND ".join(queries), orderBy="-id")
 
         log.debug("Attempting to publish pending sources.")
-        for spph in spphs.orderBy("-id"):
+        for spph in spphs:
             if not is_careful and self.checkLegalPocket(spph, log):
                 continue
             spph.publish(diskpool, log)

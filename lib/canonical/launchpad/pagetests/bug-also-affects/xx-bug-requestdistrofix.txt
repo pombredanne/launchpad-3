@@ -16,13 +16,6 @@ and we return to the newly created task's page.
     >>> browser.url
     'http://localhost/distros/ubuntu/+bug/6'
 
-The ubuntu task is in the task list.
-
-    >>> print browser.contents
-    <...
-    ...>Ubuntu</a>...
-    ...
-
 It should not be possible to add the same distrotask again.
 
     >>> browser.getLink(url='+distrotask').click()

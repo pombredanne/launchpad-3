@@ -489,7 +489,7 @@ o ProductVocabulary - the list of selectable products. Results are
     >>> l[2:]
     [u'The Gnome Panel Applets', u'Ubuntu', u'Gnome Baker']
     >>> arch = product_vocabulary.getTermByToken("arch-mirrors")
-    >>> arch.title 
+    >>> arch.title
     u'Arch archive mirrors'
 
   The ProductVocabulary does not list inactive products.
@@ -544,9 +544,9 @@ o PersonAccountToMergeVocabulary - all non-merged people. This vocabulary
     >>> list(vocab.search('team'))
     []
 
-    A search using part of the email address of a team will also return an 
+    A search using part of the email address of a team will also return an
     empty list.
-    >>> list(vocab.search('support'))
+    >>> list(vocab.search('rosetta'))
     []
 
     Searching for a person without a preferred email will return that person's
@@ -554,9 +554,9 @@ o PersonAccountToMergeVocabulary - all non-merged people. This vocabulary
     >>> [person.name for person in vocab.search('salgado')]
     [u'salgado']
 
-    A search using the beginning of a person's preferred email will return 
+    A search using the beginning of a person's preferred email will return
     that person that owns that email.
-    >>> [(person.name, person.preferredemail.email) 
+    >>> [(person.name, person.preferredemail.email)
     ...  for person in vocab.search('foo.bar')]
     [(u'name16', u'foo.bar@canonical.com')]
 
@@ -630,7 +630,7 @@ o ValidPersonOrTeam - all 'valid' persons or teams. This is currently defined
     as part of their name or displayname, or the beginning of
     one of its email addresses.
     >>> sorted(person.name for person in vocab.search('support'))
-    [u'ubuntu-team']
+    [u'support-tracker-janitor', u'ubuntu-team']
 
     Dave hasn't validated his email address; he's not a valid Person.
     >>> sorted(person.name for person in vocab.search('dave.miller'))

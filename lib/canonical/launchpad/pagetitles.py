@@ -521,6 +521,9 @@ person_edit = ContextDisplayName(smartquote("%s's details"))
 
 person_editemails = ContextDisplayName(smartquote("%s's e-mail addresses"))
 
+person_editlanguages = ContextDisplayName(
+    smartquote("%s's preferred languages"))
+
 person_editpgpkeys = ContextDisplayName(smartquote("%s's OpenPGP keys"))
 
 person_edithomepage = ContextDisplayName(smartquote("%s's home page"))
@@ -718,8 +721,6 @@ rosetta_about = 'About Rosetta'
 
 rosetta_index = 'Rosetta'
 
-rosetta_preferences = 'Rosetta: Preferences'
-
 product_branch_add = ContextDisplayName('Register a new %s branch')
 
 def productseries_edit(context, view):
@@ -902,6 +903,10 @@ ticket_add_search = ContextDisplayName('Request support with %s')
 
 ticket_bug = ContextId('Link support request #%s to a bug report')
 
+ticket_change_status = ContextId('Change status of support request #%s')
+
+ticket_confirm_answer = ContextId('Confirm an answer to support request #%s')
+
 ticket_edit = ContextId('Edit support request #%s details')
 
 def ticket_index(context, view):
@@ -919,8 +924,6 @@ ticket_makebug = ContextId('Create bug report based on request #%s')
 ticket_reject = ContextId('Reject support request #%s')
 
 ticket_unlinkbugs = ContextId('Remove bug links from request #%s')
-
-ticket_reopen = ContextId('Reopen request #%s')
 
 ticket_subscription = ContextId('Subscription to request #%s')
 
