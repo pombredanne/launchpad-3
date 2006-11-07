@@ -21,7 +21,6 @@ from canonical.lp.dbschema import (
     PackagingType, PackagePublishingPocket, BuildStatus,
     PackagePublishingStatus)
 
-from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     ISourcePackage, IHasBuildRecords, ITicketTarget,
     TICKET_STATUS_DEFAULT_SEARCH)
@@ -90,6 +89,7 @@ class SourcePackageTicketTargetMixin:
             person=person)
         if support_contact_entry:
             return False
+
         SupportContact(
             product=None, person=person,
             sourcepackagename=self.sourcepackagename,
@@ -104,6 +104,7 @@ class SourcePackageTicketTargetMixin:
             person=person)
         if not support_contact_entry:
             return False
+
         support_contact_entry.destroySelf()
         return True
 
@@ -127,9 +128,10 @@ class SourcePackageTicketTargetMixin:
 
 
 class SourcePackage(BugTargetBase, SourcePackageTicketTargetMixin):
-    """A source package, e.g. apache2, in a distrorelease.  This object
-    implements the MagicSourcePackage specification. It is not a true
-    database object, but rather attempts to represent the concept of a
+    """A source package, e.g. apache2, in a distrorelease.
+
+    This object implements the MagicSourcePackage specification. It is not a
+    true database object, but rather attempts to represent the concept of a
     source package in a distro release, with links to the relevant database
     objects.
     """
