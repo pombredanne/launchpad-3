@@ -62,7 +62,7 @@ And the fuzzy flags should also be disabled
 Let's add a fuzzy translation.
 
   >>> upstream_pomsgset.updateTranslationSet(
-  ...     carlos, { 0: u'foo' }, fuzzy=True, published=True)
+  ...     carlos, {0: u'foo'}, fuzzy=True, published=True)
 
 Now it should appear as active and as published.
 
@@ -81,7 +81,7 @@ And also, the fuzzy flag should be set in both cases.
 Now let's think that upstream removed that translation completely...
 
   >>> upstream_pomsgset.updateTranslationSet(
-  ...     carlos, { 0: u''}, fuzzy=False, published=True)
+  ...     carlos, {0: u''}, fuzzy=False, published=True)
 
 The active text should still have it as we never remove anything from Rosetta
 if upstream does it
@@ -118,7 +118,7 @@ editor for this POFile.
 
   >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
   >>> pomsgset.updateTranslationSet(
-  ...     no_priv, { 0: u'test string' }, fuzzy=False, published=False)
+  ...     no_priv, {0: u'test string'}, fuzzy=False, published=False)
 
 Now, we should have one extra suggestion.
 
@@ -146,7 +146,7 @@ Now, Foo Bar, a translator with permissions, is going to approve that new
 suggestion.
 
   >>> pomsgset.updateTranslationSet(
-  ...     foobar, { 0: u'test string' }, fuzzy=False, published=False)
+  ...     foobar, {0: u'test string'}, fuzzy=False, published=False)
 
 We don't have any suggestion newer than the new active translation
   >>> suggested = pomsgset.getSuggestedSubmissions(0)
