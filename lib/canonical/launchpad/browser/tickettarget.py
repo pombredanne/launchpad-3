@@ -272,7 +272,7 @@ class ManageSupportContactView(GeneralFormView):
     @property
     def initial_values(self):
         user = self.user
-        support_contacts = self.context.support_contacts
+        support_contacts = self.context.registered_support_contacts
         user_teams = [
             membership.team for membership in user.myactivememberships]
         support_contact_teams = set(support_contacts).intersection(user_teams)
