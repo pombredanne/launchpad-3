@@ -6,6 +6,7 @@ __all__ = [
     'SourcePackageTicketTargetMixin',
     ]
 
+from operator import attrgetter
 from warnings import warn
 
 from zope.interface import implements
@@ -112,14 +113,17 @@ class SourcePackageTicketTargetMixin:
         support_contacts = set()
         support_contacts.update(self.registered_support_contacts)
         support_contacts.update(self.distribution.support_contacts)
-        return support_contacts
+        return sorted(support_contacts, key=attrgetter('displayname'))
 
     @property
     def registered_support_contacts(self):
         """See ITicketTarget."""
-        return [contact.person for contact in SupportContact.selectBy(
-                    distribution=self.distribution,
-                    sourcepackagename=self.sourcepackagename)]
+        support_contacts = SupportContact.selectBy(
+            distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename)
+        return sorted(
+            [contact.person for contact in support_contacts],
+            key=attrgetter('displayname'))
 
 
 class SourcePackage(BugTargetBase, SourcePackageTicketTargetMixin):
