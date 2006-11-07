@@ -33,6 +33,15 @@
   </div>
 
 </div>
+
+<div metal:fill-slot="help">
+<p>If you know that someone is attending the sprint, but has not yet
+registered themselves, you can register them here.</p>
+
+<p>The times should be entered in the local time for the location of
+the sprint, which is
+<kbd tal:content="context/time_zone">UTC</kbd>.</p>
+</div>
     
 </body>
 </html>

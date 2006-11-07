@@ -21,5 +21,10 @@
 
 </div>
 
+<div metal:fill-slot="help">
+<p>Note that the start and end dates for the sprint are treated as
+local time for the sprint.</p>
+</div>
+
 </body>
 </html>
