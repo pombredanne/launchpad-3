@@ -14,8 +14,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.archivepublisher.config import Config
-from canonical.archivepublisher.diskpool import (
-    DiskPool, Poolifier)
+from canonical.archivepublisher.diskpool import DiskPool
 from canonical.lp.dbschema import PackagePublishingPriority
 from canonical.archivepublisher.tests.util import (
     FakeSourcePublishing, FakeSourceFilePublishing,
@@ -45,7 +44,7 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         self._overdir = self._config.overrideroot
         self._listdir = self._config.overrideroot
         self._logger = FakeLogger()
-        self._dp = DiskPool(Poolifier(), self._pooldir, self._logger)
+        self._dp = DiskPool(self._pooldir, self._logger)
 
     def tearDown(self):
         LaunchpadZopelessTestCase.tearDown(self)
