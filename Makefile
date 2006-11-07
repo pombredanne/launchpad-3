@@ -169,10 +169,10 @@ launchpad.pot:
 	    -o locales
 
 TAGS:
-	ctags -e -R lib sourcecode
+	ctags -e -R lib
 
 tags:
-	ctags -R lib sourcecode
+	ctags -R lib
 
 .PHONY: check tags TAGS zcmldocs realclean clean debug stop start run \
 		ftest_build ftest_inplace test_build test_inplace pagetests \
