@@ -148,7 +148,7 @@
       </tal:without-content>
     </tr>
     <tal:selection
-      define="selection python:view.context.getSelection(index)"
+      define="selection python:view.context.getSelection(plural_index)"
       condition="selection">
       <tr class="discreet secondary"
           tal:condition="selection/activesubmission">
@@ -213,7 +213,7 @@
 <tal:content replace="python:view.getTranslation(plural_index)" /></textarea>
         </tal:with-content>
         <tal:without-content
-          condition="python:view.getTranslation(plural_index) is None">
+          condition="python: not view.getTranslation(plural_index)">
           <textarea
             style="width: 100%;"
             rows=6
