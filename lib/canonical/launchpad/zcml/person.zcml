@@ -533,7 +533,7 @@
       name="+newperson"
       for="canonical.launchpad.interfaces.IPersonSet"
       class="canonical.launchpad.browser.PersonAddView"
-      permission="launchpad.AnyPerson"
+      permission="launchpad.Admin"
       template="../templates/foaf-newperson.pt" />
 
   <browser:addform

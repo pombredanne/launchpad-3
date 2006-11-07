@@ -1,51 +1,51 @@
 
-We allow any user to create random profiles that can latter be used
+We allow Launchpad admins to create random profiles that can latter be used
 throughout Launchpad. These profiles are not considered validated and because
 of that we won't send any email notification to them, except for an initial
 email explaining that a given user has created a Launchpad profile for that
 email address' owner.
 
-    >>> user_browser.open('http://launchpad.dev/people/+newperson')
-    >>> user_browser.url
+    >>> admin_browser.open('http://launchpad.dev/people/+newperson')
+    >>> admin_browser.url
     'http://launchpad.dev/people/+newperson'
 
-All fields (email address, displayname and creation comment) in that form
+All fields (email address, displayname and creation reason) in that form
 are required.
 
-    >>> user_browser.getControl('Create Profile').click()
-    >>> print user_browser.contents
+    >>> admin_browser.getControl('Create Profile').click()
+    >>> print admin_browser.contents
     <...
     ...class="error message">There are 3 errors...
 
 Trying to create a profile with an invalid or already used email address
 is not allowed.
 
-    >>> user_browser.getControl('Email address').value = 'foo@'
-    >>> user_browser.getControl('Display name').value = 'Foo'
-    >>> user_browser.getControl('Creation comment').value = (
+    >>> admin_browser.getControl('Email address').value = 'foo@'
+    >>> admin_browser.getControl('Display name').value = 'Foo'
+    >>> admin_browser.getControl('Creation reason').value = (
     ...     'I was just playing around and found this nice form, so I '
     ...     'decided to create a new profile to test.')
-    >>> user_browser.getControl('Create Profile').click()
-    >>> for tag in find_tags_by_class(user_browser.contents, 'message'):
+    >>> admin_browser.getControl('Create Profile').click()
+    >>> for tag in find_tags_by_class(admin_browser.contents, 'message'):
     ...     print tag.renderContents()
     There is 1 error.
     foo@ isn't a valid email address.
 
-    >>> user_browser.getControl('Email address').value = 'test@canonical.com'
-    >>> user_browser.getControl('Create Profile').click()
-    >>> for tag in find_tags_by_class(user_browser.contents, 'message'):
+    >>> admin_browser.getControl('Email address').value = 'test@canonical.com'
+    >>> admin_browser.getControl('Create Profile').click()
+    >>> for tag in find_tags_by_class(admin_browser.contents, 'message'):
     ...     print tag.renderContents()
     There is 1 error.
     test@canonical.com is already taken by <a...Sample Person...
 
 When all fields are filled correctly, the new profile is created.
 
-    >>> user_browser.getControl('Email address').value = 'test2@canonical.com'
-    >>> user_browser.getControl('Create Profile').click()
-    >>> user_browser.url
+    >>> admin_browser.getControl('Email address').value = 'test2@canonical.com'
+    >>> admin_browser.getControl('Create Profile').click()
+    >>> admin_browser.url
     'http://launchpad.dev/people/test2'
 
-    >>> print user_browser.contents
+    >>> print admin_browser.contents
     <...
     ...This page was created on
     ...
@@ -55,7 +55,7 @@ When all fields are filled correctly, the new profile is created.
 
 The creation of this new profile will trigger an email notification to the
 profile's email address. This email will contain the name of the person who
-created the profile as well as the comment left by that person. It'll also
+created the profile as well as the reason left by that person. It'll also
 contain a link to a page where it's possible to finish the registration
 process in order to validate that profile.
 
@@ -70,7 +70,7 @@ process in order to validate that profile.
 
     >>> print email.message_from_string(raw_msg).get_payload()
     Hello!
-    Sample Person has created a new Launchpad profile [1] for
+    ... has created a new Launchpad profile [1] for
     you, and left the following comment as the reason for its creation:
     ...
     If you wish to use this profile, please follow the instructions here:
