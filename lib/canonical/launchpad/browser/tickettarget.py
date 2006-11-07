@@ -210,17 +210,6 @@ class SearchTicketsView(LaunchpadFormView):
             return '<a href="%s/+tickets">%s</a>' % (
                 canonical_url(sourcepackage), ticket.sourcepackagename.name)
 
-    def formatTarget(self, ticket):
-        """Return an hyperlink to the ticket's target.
-
-        When there is a sourcepackagename associated to the ticket, link to
-        that source package tickets instead of the ticket target.
-        """
-        #XXX: Inline this method in the template.
-        target = ticket.target
-        return '<a href="%s/+tickets">%s</a>' % (
-                canonical_url(target), target.displayname)
-
 
 class TicketTargetSearchMyTicketsView(SearchTicketsView):
     """SearchTicketsView specialization for the 'My Tickets' report.
