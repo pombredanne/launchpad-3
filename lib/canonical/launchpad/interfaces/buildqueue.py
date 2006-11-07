@@ -34,6 +34,7 @@ class IBuildQueue(Interface):
     buildstart = Attribute("The datetime of the last build attempt")
     logtail = Attribute("The current tail of the log of the build")
     lastscore = Attribute("Last score to be computed for this job")
+    manual = Attribute("Whether or not the job was manually scored")
 
     # properties inherited from related Content classes.
     archrelease = Attribute(
@@ -53,6 +54,8 @@ class IBuildQueue(Interface):
         "architecturehintlist of the SourcePackageRelease in context.")
     builddependsindep = Attribute(
         "builddependsindep of the SourcePackageRelease in context.")
+    buildduration = Attribute(
+        "Durarion of the job, calculated on-the-fly based on buildstart.")
 
     def manualScore(value):
         """Manually set a score value to a queue item and lock it."""
