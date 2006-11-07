@@ -46,6 +46,10 @@ class BranchSetAPI(LaunchpadXMLRPCView):
         else:
             product = None
 
+        # Branch URLs in Launchpad do not end in a slash, so strip any
+        # slashes from the end of the URL.
+        branch_url = branch_url.rstrip('/')
+
         existing_branch = getUtility(IBranchSet).getByUrl(branch_url)
         if existing_branch is not None:
             return faults.BranchAlreadyRegistered(branch_url)
