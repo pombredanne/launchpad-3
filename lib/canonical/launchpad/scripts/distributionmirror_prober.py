@@ -467,6 +467,8 @@ def probe_archive_mirror(mirror, logfile, unchecked_mirrors, logger,
         # Use one semaphore per host, to limit the numbers of simultaneous
         # connections on a given host. Note that we don't have an overall
         # limit of connections, since the per-host limit should be enough.
+        # If we ever need an overall limit, we can use Andrews's suggestion
+        # on https://launchpad.net/bugs/54791 to implement it.
         semaphore = host_semaphores.setdefault(
             prober.host, DeferredSemaphore(PER_HOST_REQUESTS))
         deferred = semaphore.run(prober.probe)
@@ -509,6 +511,8 @@ def probe_release_mirror(mirror, logfile, unchecked_mirrors, logger,
             # Use one semaphore per host, to limit the numbers of simultaneous
             # connections on a given host. Note that we don't have an overall
             # limit of connections, since the per-host limit should be enough.
+            # If we ever need an overall limit, we can use Andrews's
+            # suggestion on https://launchpad.net/bugs/54791 to implement it.
             semaphore = host_semaphores.setdefault(
                 prober.host, DeferredSemaphore(PER_HOST_REQUESTS))
             deferred = semaphore.run(prober.probe)

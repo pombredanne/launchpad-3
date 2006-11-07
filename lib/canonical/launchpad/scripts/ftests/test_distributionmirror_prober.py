@@ -7,7 +7,6 @@ __metaclass__ = type
 import httplib
 import logging
 import os
-import urlparse
 from StringIO import StringIO
 from unittest import TestCase, TestLoader
 
@@ -20,6 +19,7 @@ from sqlobject import SQLObjectNotFound
 import canonical
 from canonical.config import config
 from canonical.lp.dbschema import PackagePublishingPocket
+from canonical.launchpad.webapp.url import Url
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.database import DistributionMirror, DistroRelease
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
@@ -335,64 +335,67 @@ class TestMirrorProberCallbacks(LaunchpadZopelessTestCase):
             SQLObjectNotFound, mirror_distro_release_source.sync)
 
 
-class TestProbeFunctions(LaunchpadZopelessTestCase):
+class TestProbeFunctionSemaphores(LaunchpadZopelessTestCase):
+    """Make sure we use one DeferredSemaphore for each hostname when probing
+    mirrors.
+    """
 
     def setUp(self):
         self.logger = None
 
-    def _get_host_from_url(self, url):
-        dummy, host, dummy, dummy, dummy, dummy = urlparse.urlparse(url)
-        if ':' in host:
-            host, dummy = host.split(':')
-        return host
-
-    def test_host_semaphores_of_archive_mirror_probe_function(self):
-        """Make sure we don't issue more than one simultaneous request on
-        a given host when probing archive mirrors.
-        """
+    def test_archive_mirror_probe_function(self):
         mirror1 = DistributionMirror.byName('archive-mirror')
         mirror2 = DistributionMirror.byName('archive-mirror2')
         mirror3 = DistributionMirror.byName('canonical-archive')
-        self._run_test(mirror1, mirror2, mirror3, probe_archive_mirror)
+        self._test_one_semaphore_for_each_host(
+            mirror1, mirror2, mirror3, probe_archive_mirror)
 
-    def test_host_semaphores_of_release_mirror_probe_function(self):
-        """Make sure we don't issue more than one simultaneous request on
-        a given host when probing release mirrors.
-        """
+    def test_release_mirror_probe_function(self):
         mirror1 = DistributionMirror.byName('releases-mirror')
         mirror2 = DistributionMirror.byName('releases-mirror2')
         mirror3 = DistributionMirror.byName('canonical-releases')
-        self._run_test(mirror1, mirror2, mirror3, probe_release_mirror)
+        self._test_one_semaphore_for_each_host(
+            mirror1, mirror2, mirror3, probe_release_mirror)
 
-    def _run_test(self, mirror1, mirror2, mirror3, probe_function):
+    def _test_one_semaphore_for_each_host(
+            self, mirror1, mirror2, mirror3, probe_function):
+        """Check that we create one semaphore per host when probing the given
+        mirrors using the given probe_function.
+
+        mirror1.base_url and mirror2.base_url must be on the same host while
+        mirror3.base_url must be on a different one.
+
+        The given probe_function must be either probe_release_mirror or
+        probe_archive_mirror.
+        """
         host_semaphores = {}
-        mirror1_host = self._get_host_from_url(mirror1.base_url)
-        mirror2_host = self._get_host_from_url(mirror2.base_url)
-        mirror3_host = self._get_host_from_url(mirror3.base_url)
+        mirror1_host = Url(mirror1.base_url).hostname
+        mirror2_host = Url(mirror2.base_url).hostname
+        mirror3_host = Url(mirror3.base_url).hostname
 
         probe_function(
             mirror1, StringIO(), [], logging, host_semaphores=host_semaphores)
         # Since we have a single mirror to probe we need to have a single
         # Deferred with a limit of 1, to ensure we don't issue simultaneous
         # connections on that mirror.
-        self.failUnless(len(host_semaphores.keys()) == 1)
-        self.failUnless(host_semaphores[mirror1_host].limit == 1)
+        self.assertEquals(len(host_semaphores), 1)
+        self.assertEquals(host_semaphores[mirror1_host].limit, 1)
 
         probe_function(
             mirror2, StringIO(), [], logging, host_semaphores=host_semaphores)
         # Now we have two mirrors to probe, but they have the same hostname,
         # so we'll still have a single semaphore in host_semaphores.
-        self.failUnless(mirror2_host == mirror1_host)
-        self.failUnless(len(host_semaphores.keys()) == 1)
-        self.failUnless(host_semaphores[mirror1_host].limit == 1)
+        self.assertEquals(mirror2_host, mirror1_host)
+        self.assertEquals(len(host_semaphores), 1)
+        self.assertEquals(host_semaphores[mirror1_host].limit, 1)
 
         probe_function(
             mirror3, StringIO(), [], logging, host_semaphores=host_semaphores)
         # This third mirror is on a separate host, so we'll have a second
         # semaphore added to host_semaphores.
         self.failUnless(mirror3_host != mirror1_host)
-        self.failUnless(len(host_semaphores.keys()) == 2)
-        self.failUnless(host_semaphores[mirror3_host].limit == 1)
+        self.assertEquals(len(host_semaphores), 2)
+        self.assertEquals(host_semaphores[mirror3_host].limit, 1)
 
 
 
