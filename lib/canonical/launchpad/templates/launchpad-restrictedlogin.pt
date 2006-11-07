@@ -6,8 +6,12 @@
   <body>
     <h1>Log in to a Launchpad test site</h1>
 
+    <tal:comment condition="nothing">
+      See launchpad-login.pt for an explanation of the numbered comments.
+    </tal:comment>
+
     <!-- 1. already logged in and shouldn't be here: -->
-    <div tal:condition="request/lp:person" tal:omit-tag>
+    <tal:block condition="request/lp:person">
 
       <!-- 2. just logged in successfully: -->
       <p tal:condition="view/login_success">
@@ -15,7 +19,7 @@
         tal:content="request/lp:person/browsername">Person Name</strong>.
       </p>
 
-      <div tal:condition="not: view/login_success" tal:omit-tag>        
+      <tal:block condition="not: view/login_success">
         <h1>You&#8217;re already logged in</h1>
         <p>
           You are already logged in as
@@ -23,10 +27,10 @@
           name</strong>.  If this is not you, please
           <a href="/+logout">log out now</a>.
         </p>
-      </div>
-    </div>
+      </tal:block>
+    </tal:block>
 
-    <div tal:condition="not: request/lp:person" tal:omit-tag>
+    <tal:block condition="not: request/lp:person">
 
       <h1 tal:condition="not: view/login_error">
         Already registered?
@@ -85,7 +89,7 @@
         </table>
       </form>
 
-    </div>
+    </tal:block>
   </body>
 </html>
 

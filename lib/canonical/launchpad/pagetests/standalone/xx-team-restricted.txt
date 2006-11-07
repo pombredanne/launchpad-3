@@ -24,19 +24,19 @@ login page when they go to any page.
 
     >>> browser.open("http://launchpad.dev/people")
     >>> print browser.url
-    http://launchpad.dev/+restrictedlogin
+    http://launchpad.dev/+restricted-login
 
 This includes nonsense URLs and not-found URLs.
 
     >>> browser.open("http://launchpad.dev/p/p/p/p")
     >>> print browser.url
-    http://launchpad.dev/+restrictedlogin
+    http://launchpad.dev/+restricted-login
 
 That is, any page except an information page about the restriction.
 
-    >>> browser.open("http://launchpad.dev/+restrictedinfo")
+    >>> browser.open("http://launchpad.dev/+restricted-info")
     >>> print browser.url
-    http://launchpad.dev/+restrictedinfo
+    http://launchpad.dev/+restricted-info
 
 Anyway, the anonymous user logs in as name16 (foo.bar@canonical.com), who
 is in the admin team, and gets redirected to the front page.
@@ -53,7 +53,7 @@ is in the admin team, and gets redirected to the front page.
 
     >>> browser.open("http://launchpad.dev/p/p/p/p")
     >>> print browser.url
-    http://launchpad.dev/+restrictedlogin
+    http://launchpad.dev/+restricted-login
     >>> submit_login(browser, 'foo.bar@canonical.com', 'test')
     >>> print browser.url
     http://launchpad.dev
@@ -64,7 +64,7 @@ be able to log in.
 
     >>> browser.getControl(name="logout").click()
     >>> print browser.url
-    http://launchpad.dev/+restrictedlogin
+    http://launchpad.dev/+restricted-login
     >>> submit_login(browser, 'test@canonical.com', 'test')
     >>> print browser.url
     http://launchpad.dev
@@ -75,10 +75,10 @@ page to explain why he can't use the server.
 
     >>> browser.getControl(name="logout").click()
     >>> print browser.url
-    http://launchpad.dev/+restrictedlogin
+    http://launchpad.dev/+restricted-login
     >>> submit_login(browser, 'celso.providelo@canonical.com', 'cprov')
     >>> print browser.url
-    http://launchpad.dev/+restrictedinfo
+    http://launchpad.dev/+restricted-info
 
 Set restrict_to_team back to being a server that is open to anyone.
 
@@ -86,13 +86,13 @@ Set restrict_to_team back to being a server that is open to anyone.
 
 Note that the info page still works even when the server is open.
 
-    >>> browser.open("http://launchpad.dev/+restrictedinfo")
+    >>> browser.open("http://launchpad.dev/+restricted-info")
     >>> print browser.contents
     <...This server is open to anonymous access and registered users...
 
 The restricted login page redirects to the normal login page.
 
-    >>> browser.open("http://launchpad.dev/+restrictedlogin")
+    >>> browser.open("http://launchpad.dev/+restricted-login")
     >>> print browser.url
     http://launchpad.dev/+login
 

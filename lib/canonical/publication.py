@@ -182,8 +182,8 @@ class LaunchpadBrowserPublication(
         if not restrict_to_team:
             return
 
-        restrictedlogin = '+restrictedlogin'
-        restrictedinfo = '+restrictedinfo'
+        restrictedlogin = '+restricted-login'
+        restrictedinfo = '+restricted-info'
 
         # Always allow access to +restrictedlogin and +restrictedinfo.
         traversal_stack = request.getTraversalStack()

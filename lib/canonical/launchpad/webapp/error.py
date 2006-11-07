@@ -34,12 +34,16 @@ class SystemErrorView:
     debugging = False
     specialuser = False
 
-    # This type of error page can conceivably be shown when an unauthorized
-    # user is on the login or info pages of a Launchpad running in
-    # restrict_to_team mode.
-    # Set this to False in subclasses where we're certain that the error
-    # cannot occur on these pages in restricted mode.
-    possible_when_restricted = True
+    # For the UI 1.0, we'll be wanting to try out fancy error pages of
+    # various kinds so, those particular pages will need to fully render.
+    # For example, like special 404 pages.
+    # So we need to mark those particular error handling views as safe
+    # for fully rendering by checking that there is no way to get that
+    # error if the user is unauthorized to use the server in restircted mode.
+    #
+    # Set this value to True in subclasses where the error cannot possibly
+    # be shown to unauthorized visitors.
+    safe_to_show_in_restricted_mode = False
 
     def __init__(self, context, request):
         self.context = context
@@ -119,7 +123,8 @@ class SystemErrorView:
     def __call__(self):
         if self.pagetesting:
             return self.render_as_text()
-        elif config.launchpad.restrict_to_team and self.possible_when_restricted:
+        elif (config.launchpad.restrict_to_team and
+              not self.safe_to_show_in_restricted_mode):
             return self.plain_oops_template()
         else:
             return self.index()

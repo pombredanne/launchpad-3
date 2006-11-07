@@ -172,7 +172,7 @@ class LoginOrRegister:
     def getRedirectionURL(self):
         """Return the URL we should redirect the user to, after finishing a
         registration or password reset process.
-        
+
         If the request has an 'origin' query parameter, that means the user came
         from either the ubuntu wiki or shipit, and thus we return the URL for
         either shipit or the wiki. When there's no 'origin' query parameter, we
