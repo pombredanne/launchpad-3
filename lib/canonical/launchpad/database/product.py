@@ -283,6 +283,11 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
             longest_expected=100)
 
     @property
+    def registered_support_contacts(self):
+        """See ITicketTarget."""
+        return self.support_contacts
+
+    @property
     def translatable_packages(self):
         """See IProduct."""
         packages = set(package for package in self.sourcepackages

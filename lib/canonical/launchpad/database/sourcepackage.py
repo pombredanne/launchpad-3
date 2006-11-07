@@ -110,14 +110,16 @@ class SourcePackageTicketTargetMixin:
     def support_contacts(self):
         """See ITicketTarget."""
         support_contacts = set()
-        support_contacts.update([
-            contact.person for contact in SupportContact.selectBy(
-                distribution=self.distribution,
-                sourcepackagename=self.sourcepackagename)])
-        support_contacts.update([
-            contact.person for contact in SupportContact.selectBy(
-                distribution=self.distribution)])
+        support_contacts.update(self.registered_support_contacts)
+        support_contacts.update(self.distribution.support_contacts)
         return support_contacts
+
+    @property
+    def registered_support_contacts(self):
+        """See ITicketTarget."""
+        return [contact.person for contact in SupportContact.selectBy(
+                    distribution=self.distribution,
+                    sourcepackagename=self.sourcepackagename)]
 
 
 class SourcePackage(BugTargetBase, SourcePackageTicketTargetMixin):

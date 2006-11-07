@@ -1,5 +1,4 @@
-ITicketTarget for SourcePackage
-===============================
+== ITicketTarget for SourcePackage ==
 
 The implementation of ITicketTarget by SourcePackage and
 DistributionSourcePackage contain some small differences with
@@ -52,11 +51,20 @@ from its containing distribution.
     >>> [person.name for person in firefox.support_contacts]
     [u'name16']
 
+It is possible to obtain the list of IPerson registed as support
+contacts specifically for the source package through the
+registered_support_contacts attributes.
+
+    >>> [person.name for person in firefox.registered_support_contacts]
+    []
+
 A user can still subscribe as support contact for specific sourcepackage
 even if he's already a support contact for the distribution.
 
     >>> firefox.addSupportContact(sample_person)
     True
+    >>> [person.name for person in firefox.registered_support_contacts]
+    [u'name16']
 
 But he's only listed once in the support contacts list.
 
@@ -69,6 +77,8 @@ distribution list:
 
     >>> firefox.removeSupportContact(sample_person)
     True
+    >>> [person.name for person in firefox.registered_support_contacts]
+    []
     >>> [person.name for person in firefox.support_contacts]
     [u'name16']
     >>> firefox.removeSupportContact(sample_person)
@@ -78,10 +88,14 @@ distribution list:
 
 The same principle applies to DistributionSourcePackage:
 
+    >>> [person.name for person in evolution.registered_support_contacts]
+    []
     >>> [person.name for person in evolution.support_contacts]
     [u'name16']
     >>> evolution.addSupportContact(sample_person)
     True
+    >>> [person.name for person in evolution.registered_support_contacts]
+    [u'name16']
     >>> [person.name for person in evolution.support_contacts]
     [u'name16']
     >>> evolution.removeSupportContact(sample_person)
@@ -90,6 +104,7 @@ The same principle applies to DistributionSourcePackage:
     [u'name16']
     >>> evolution.removeSupportContact(sample_person)
     False
+    >>> [person.name for person in evolution.registered_support_contacts]
+    []
     >>> [person.name for person in evolution.support_contacts]
     [u'name16']
-

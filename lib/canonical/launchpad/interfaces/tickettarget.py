@@ -105,6 +105,14 @@ class ITicketTarget(Interface):
             " requests."),
         value_type=Choice(vocabulary="ValidPersonOrTeam"))
 
+    registered_support_contacts = List(
+        title=_("Registered Support Contacts"),
+        description=_(
+            "IPersons that registered as support contacts explicitely on "
+            "this target. (support_contacts may include support contacts "
+            "inherited from other context.)"),
+        value_type=Choice(vocabulary="ValidPersonOrTeam"))
+
 
 # These schemas are only used by browser/tickettarget.py and should really
 # live there. See Bug #66950.

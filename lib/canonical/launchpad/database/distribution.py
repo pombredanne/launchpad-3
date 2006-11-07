@@ -493,6 +493,11 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
             ],
             longest_expected=100)
 
+    @property
+    def registered_support_contacts(self):
+        """See ITicketTarget."""
+        return self.support_contacts
+
     def ensureRelatedBounty(self, bounty):
         """See IDistribution."""
         for curr_bounty in self.bounties:
