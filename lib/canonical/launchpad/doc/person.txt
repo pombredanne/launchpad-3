@@ -25,11 +25,14 @@ Verify that foobar (a Person object) correctly implements IPerson.
     >>> verifyObject(IPerson, foobar)
     True
 
+The IPersonSet component
+------------------------
+
 Access to people (Persons or Teams) is done through the IPersonSet
 utility:
 
 You can create a new person using the createPersonAndEmail method of
-IPersonSet. All you need for that is a valid email address. You can also 
+IPersonSet. All you need for that is a valid email address. You can also
 hide the user email addresses.
 
 Some of our scripts may create Person entries, and in these cases they must
@@ -67,8 +70,8 @@ the person should look like this:
     u'when the ed package was imported into Ubuntu Breezy'
 
 
-In case of failure of creating a new person or email the method returns 
-(None, None). Let's demonstrate this trying to create a person with 
+In case of failure of creating a new person or email the method returns
+(None, None). Let's demonstrate this trying to create a person with
 an invalid email.
 
     >>> p2, invalid_email = personset.createPersonAndEmail(
@@ -79,7 +82,7 @@ an invalid email.
 And now with the same name of a existing account
 
     >>> p3, invalid_email = personset.createPersonAndEmail(
-    ...     'randomemail@randomhost.com', PersonCreationRationale.UNKNOWN, 
+    ...     'randomemail@randomhost.com', PersonCreationRationale.UNKNOWN,
     ...     name='name12')
     >>> p3, invalid_email
     (None, None)
@@ -137,8 +140,8 @@ the team will go to the preferred email of each member.
          'foo.bar@canonical.com'])
 
 
-Renaming
---------
+Renaming persons
+----------------
 
 All persons have a unique name in launchpad, so to allow them to change their
 names, we must make sure that name is not already in use by someone else.
@@ -163,7 +166,8 @@ But you can't use Mark's name, of course. ;)
     >>> field.validate(u'sabdfl')
     Traceback (most recent call last):
       ...
-    LaunchpadValidationError: ...sabdfl is already in use by another person/team...
+    LaunchpadValidationError: ...sabdfl is already in use by another
+    person or team...
 
 
 Searching
@@ -267,6 +271,33 @@ alphabetically (A to Z) by package name.
     [u'mozilla-firefox', u'pmount']
 
 
+Translations
+------------
+
+The IPerson interface offers a way of returning POFileTranslator records
+for a Person:
+
+  >>> carlos = getUtility(IPersonSet).getByName('carlos')
+  >>> [pt.pofile.title for pt in carlos.translation_history]
+  [u'Japanese (ja) translation of evolution-2.2 in Ubuntu Hoary package "evolution"',
+   u'Spanish (es) translation of evolution-2.2 in Evolution trunk',
+   u'Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"']
+
+The IPersonSet component contains a few convenience methods to return
+Person objects that have contributed translations.
+
+  >>> from canonical.launchpad.database import POFile
+  >>> pofile = POFile.get(12)
+  >>> [p.name for p in personset.getPOFileContributors(pofile)]
+  [u'carlos', u'name16', u'tsukimi']
+
+  >>> from canonical.launchpad.database import DistroRelease, Language
+  >>> hoary = DistroRelease.selectOneBy(name="hoary")
+  >>> spanish = Language.selectOneBy(code="es")
+  >>> [p.name for p in personset.getPOFileContributorsByDistroRelease(hoary, spanish)]
+  [u'jorge-gonzalez-gonzalez', u'carlos', u'valyag', u'danner', u'name16', u'tsukimi']
+
+
 Specification Lists
 -------------------
 
@@ -275,7 +306,6 @@ certain criteria:
 
 First, Carlos does not have any completed specifications assigned to him:
 
-    >>> carlos = getUtility(IPersonSet).getByName('carlos')
     >>> from canonical.lp.dbschema import SpecificationFilter
     >>> carlos.specifications(filter=[
     ...     SpecificationFilter.ASSIGNEE, SpecificationFilter.COMPLETE]).count()
@@ -362,30 +392,6 @@ Reset firefox so we don't mess up later tests.
 
     >>> firefox.active = True
     >>> flush_database_updates()
-
-
-Ticket API
-----------
-
-It's easy to find out what tickets a person is related to:
-
-    >>> name12 = personset.getByName('name16')
-    >>> [(t.title, t.status.title) for t in name12.tickets()]
-    [(u'mailto: problem in webpage', 'Answered'),
-     (u'Slow system', 'Open'),
-     (u'Firefox loses focus and gets stuck', 'Open'),
-     (u'Firefox is slow and consumes too much RAM', 'Rejected')]
-
-    >>> [(t.title, t.status.title) for t in name12.answered_tickets]
-    [(u'mailto: problem in webpage', 'Answered'),
-     (u'Firefox is slow and consumes too much RAM', 'Rejected')]
-
-    >>> [(t.title, t.status.title) for t in name12.assigned_tickets]
-    []
-
-    >>> [(t.title, t.status.title) for t in name12.subscribed_tickets]
-    [(u'Slow system', 'Open'),
-     (u'Firefox is slow and consumes too much RAM', 'Rejected')]
 
 Ubunteros
 ---------

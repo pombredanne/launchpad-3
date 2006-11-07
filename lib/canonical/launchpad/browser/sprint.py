@@ -102,7 +102,7 @@ class SprintSpecificationsMenu(ApplicationMenu):
         summary = 'Show topics that were not accepted for discussion'
         return Link('+specs?acceptance=declined', text, summary, icon='info')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.Driver')
     def settopics(self):
         text = 'Set Topics'
         summary = 'Approve or defer topics for discussion'
@@ -244,12 +244,13 @@ class SprintTopicSetView(HasSpecificationsView, LaunchpadView):
     It is unusual because we want to display multiple objects with
     checkboxes, then process the selected items, which is not the usual
     add/edit metaphor."""
-    # XXX: SteveAlexander, 2006-03-06, this class and its
-    #      associated templates are not tested.
 
     def initialize(self):
         self.status_message = None
         self.process_form()
+        self.attendee_ids = set(
+            attendance.attendee.id for attendance in self.context.attendances)
+
 
     @cachedproperty
     def spec_filter(self):
@@ -304,7 +305,7 @@ class SprintTopicSetView(HasSpecificationsView, LaunchpadView):
             action_fn = self.context.acceptSpecificationLinks
         else:
             action_fn = self.context.declineSpecificationLinks
-        leftover = action_fn(selected_specs)
+        leftover = action_fn(selected_specs, self.user)
 
         # Status message like: "Accepted 27 specification(s)."
         self.status_message = '%s %d specification(s).' % (
@@ -341,16 +342,23 @@ class SprintMeetingExportView(LaunchpadView):
                 continue
 
             if spec.status not in [SpecificationStatus.NEW,
+                                   SpecificationStatus.DISCUSSION,
                                    SpecificationStatus.DRAFT]:
                 continue
 
             # get the list of attendees that will attend the sprint
-            interested = set(sub.person for sub in spec.subscriptions)
-            interested = interested.intersection(attendee_set)
+            is_required = dict((sub.person, sub.essential)
+                               for sub in spec.subscriptions)
+            interested = set(is_required.keys()).intersection(attendee_set)
             if spec.assignee is not None:
                 interested.add(spec.assignee)
+                is_required[spec.assignee] = True
             if spec.drafter is not None:
                 interested.add(spec.drafter)
+                is_required[spec.drafter] = True
+            interested = [dict(name=person.name,
+                               required=is_required[person])
+                          for person in interested]
 
             self.specifications.append(dict(
                 spec=spec,

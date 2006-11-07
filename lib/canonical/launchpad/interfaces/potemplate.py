@@ -174,9 +174,6 @@ class IPOTemplate(IRosettaStats):
             title=_('Date for last update'),
             required=True)
 
-    def __len__():
-        """Return the number of Current IPOTMsgSets in this template."""
-
     def __iter__():
         """Return an iterator over current IPOTMsgSets in this template."""
 
@@ -382,6 +379,9 @@ class IPOTemplateSet(Interface):
 
     def __iter__():
         """Return an iterator over all PO templates."""
+
+    def getByIDs(ids):
+        """Return all PO templates with the given IDs."""
 
     def getAllByName(name):
         """Return a list with all PO templates with the given name."""

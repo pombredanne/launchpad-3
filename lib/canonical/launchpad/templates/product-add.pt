@@ -20,12 +20,12 @@
 
 <div metal:fill-slot="main">
 
-  <div metal:use-macro="context/@@launchpad_addform/addform">
+  <div metal:use-macro="context/@@launchpad_form/form">
 
     <p metal:fill-slot="extra_info">
       Before you register a product from scratch, you might want to search
       through the
-      <a href="/products/">existing products registered in Launchpad</a>
+      <a href="/products">existing products registered in Launchpad</a>
       and see if the
       product you are thinking of is not already in there. If so, you can
       just ask in #launchpad for that product to be made part of this

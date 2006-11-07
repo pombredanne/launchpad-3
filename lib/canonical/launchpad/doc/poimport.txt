@@ -640,7 +640,7 @@ We flush the entry contents.
 
     >>> for entry in translation_import_queue:
     ...     translation_import_queue.remove(entry)
-    >>> len(translation_import_queue)
+    >>> translation_import_queue.entryCount()
     0
 
 Attach the first version of the file.
@@ -654,7 +654,7 @@ Attach the first version of the file.
 
 It's in the queue now.
 
-    >>> len(translation_import_queue)
+    >>> translation_import_queue.entryCount()
     1
 
 For the second version, we need a new importer, in this case, Jordi.
@@ -672,7 +672,7 @@ Attach the second version of the file.
 
 It's in the queue now.
 
-    >>> len(translation_import_queue)
+    >>> translation_import_queue.entryCount()
     2
 
 Do the final import.

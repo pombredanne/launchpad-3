@@ -63,6 +63,9 @@
     facet="specifications"
     permission="zope.Public">
     <browser:page
+      name="+mdz-specs.csv"
+      attribute="mdzCsv" />
+    <browser:page
       name="+specs"
       template="../templates/sprint-specs.pt" />
     <browser:page
@@ -138,7 +141,7 @@
     name="+settopics"
     facet="specifications"
     class="canonical.launchpad.browser.sprint.SprintTopicSetView"
-    permission="launchpad.Edit"
+    permission="launchpad.Driver"
     template="../templates/sprint-settopics.pt"
     />
 

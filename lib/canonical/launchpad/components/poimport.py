@@ -9,12 +9,11 @@ from email.Utils import parseaddr
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-        IPOTemplate, IPOFile, IPersonSet, NotFoundError
+        IPOTemplate, IPOFile, IPersonSet, TranslationConstants
         )
 from canonical.launchpad.components.poparser import POParser
-from canonical.launchpad.helpers import TranslationConstants
-from canonical.lp.dbschema import PersonCreationRationale
 
+from canonical.lp.dbschema import PersonCreationRationale
 
 class OldPOImported(Exception):
     """Raised when an older PO file is imported."""
@@ -51,12 +50,10 @@ def getLastTranslator(parser, pofile):
         person = personset.getByEmail(email)
 
         if person is None:
-            comment = None
-            if pofile is not None:
-                comment = ('when importing the %s translation of %s'
-                           % (pofile.language.displayname,
-                              pofile.potemplate.displayname))
             # We create a new user without a password.
+            comment = ('when importing the %s translation of %s'
+                       % (pofile.language.displayname,
+                          pofile.potemplate.displayname))
             person, dummy = personset.createPersonAndEmail(
                 email, PersonCreationRationale.POFILEIMPORT,
                 displayname=name, comment=comment)
