@@ -204,10 +204,10 @@ class TestSvnStrategyImport(SvnStrategyTestCase):
         job = self.job_helper.makeJob()
         job.working_root = self.sandbox.path
         cscvs.ProgressPrinter.set_interval(0) # log all progress messages
-        # Actually run the import, now that we have all the required bits
+        # Actually run the import, now that we have all the required bits.
         strategy = JobStrategy.SVNStrategy()
         strategy.Import(job, self.sandbox.path, logger)
-        # Check the progress messages
+        # Check the progress messages.
         messages = self.progressMessages(logger)
         self.assertEqual(messages, [
             # The first revision on trunk is 2. It must be a full-tree import,
@@ -218,6 +218,8 @@ class TestSvnStrategyImport(SvnStrategyTestCase):
             # import, and contain only one change, for the modification on
             # /trunk/foo.
             'N changeset 3', 'change 0'])
+        # Check that import created the right number of bzr revisions.
+        self.assertEqual(self.targetRevno(), 2)
         # Check the import result
         target_tree = self.targetTree()
         inventory = target_tree.iter_inventory(source=True, both=True)
@@ -234,20 +236,19 @@ class TestSvnStrategySync(SvnStrategyTestCase):
         job = self.job_helper.makeJob()
         job.working_root = self.sandbox.path
         cscvs.ProgressPrinter.set_interval(0) # log all progress messages
-        # Actually run the import, now that we have all the required bits
+        # Actually run the import, now that we have all the required bits.
         strategy = JobStrategy.SVNStrategy()
         strategy.Import(job, self.sandbox.path, logger)
-        # If there is nothing new, a sync must produce no commit
+        # If there is nothing new, a sync must produce no commit.
         logger = testutil.makeCollectingLogger()
-        revno_before_sync = 2
-        self.assertEqual(self.targetRevno(), revno_before_sync)
+        revno_before_sync = self.targetRevno()
         strategy = JobStrategy.SVNStrategy()
         strategy._getSyncTarget = self.stubGetSyncTarget
         strategy.sync(job, self.sandbox.path, logger)
         messages = self.progressMessages(logger)
         self.assertEqual(messages, []) # no change was reported
         self.assertEqual(self.targetRevno(), revno_before_sync)
-        # If was a new commit, sync must produce a new revision
+        # If was a new commit, sync must produce a new revision.
         self.svn_helper.setUpSvnSync()
         logger = testutil.makeCollectingLogger()
         strategy = JobStrategy.SVNStrategy()
