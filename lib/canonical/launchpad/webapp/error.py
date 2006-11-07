@@ -9,6 +9,7 @@ from zope.interface import implements
 from zope.exceptions.exceptionformatter import format_exception
 from zope.component import getUtility
 from zope.app.exception.interfaces import ISystemErrorView
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.config import config
 import canonical.launchpad.layers
@@ -22,6 +23,9 @@ class SystemErrorView:
     """
     implements(ISystemErrorView)
 
+    plain_oops_template = ViewPageTemplateFile(
+        '../templates/oops-veryplain.pt')
+
     # Override this in subclasses.  A value of None means "don't set this"
     response_code = 500
 
@@ -29,6 +33,13 @@ class SystemErrorView:
     pagetesting = False
     debugging = False
     specialuser = False
+
+    # This type of error page can conceivably be shown when an unauthorized
+    # user is on the login or info pages of a Launchpad running in
+    # restrict_to_team mode.
+    # Set this to False in subclasses where we're certain that the error
+    # cannot occur on these pages in restricted mode.
+    possible_when_restricted = True
 
     def __init__(self, context, request):
         self.context = context
@@ -108,6 +119,8 @@ class SystemErrorView:
     def __call__(self):
         if self.pagetesting:
             return self.render_as_text()
+        elif config.launchpad.restrict_to_team and self.possible_when_restricted:
+            return self.plain_oops_template()
         else:
             return self.index()
 

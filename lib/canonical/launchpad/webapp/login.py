@@ -139,12 +139,23 @@ class LoginOrRegister:
         'shipit-kubuntu': ShipItConstants.kubuntu_url,
         'ubuntuwiki': UBUNTU_WIKI_URL}
 
+    def process_restricted_form(self):
+        """Entry-point for the team-restricted login page.
+
+        If we're not running in team-restricted mode, then redirect to a
+        regular login page.  Otherwise, process_form as usual.
+        """
+        if config.launchpad.restrict_to_team:
+            self.process_form()
+        else:
+            self.request.response.redirect('/+login', temporary_if_possible=True)
+
     def process_form(self):
         """Determines whether this is the login form or the register
         form, and delegates to the appropriate function.
         """
         if self.request.method != "POST":
-            return 
+            return
 
         self.submitted = True
         if self.request.form.get(self.submit_login):

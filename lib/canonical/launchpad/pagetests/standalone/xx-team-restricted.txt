@@ -80,8 +80,19 @@ page to explain why he can't use the server.
     >>> print browser.url
     http://launchpad.dev/+restrictedinfo
 
-
 Set restrict_to_team back to being a server that is open to anyone.
 
     >>> config.launchpad.restrict_to_team = ''
+
+Note that the info page still works even when the server is open.
+
+    >>> browser.open("http://launchpad.dev/+restrictedinfo")
+    >>> print browser.contents
+    <...This server is open to anonymous access and registered users...
+
+The restricted login page redirects to the normal login page.
+
+    >>> browser.open("http://launchpad.dev/+restrictedlogin")
+    >>> print browser.url
+    http://launchpad.dev/+login
 
