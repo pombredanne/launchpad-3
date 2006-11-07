@@ -4,9 +4,9 @@ messages for this POFile, we still detect the error and notify to our users.
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
   >>> browser.open(
-  ...     'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=10&batch=5')
+  ...     'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=10&batch=5')
   >>> browser.url
-  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=10&batch=5'
+  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=10&batch=5'
 
 Submit the form using a wrong format string. The msgid is using '%s' which
 means it will be an string, but we are going to use '%i' which means an
@@ -14,6 +14,7 @@ integer.
 
   >>> browser.getControl(name='msgset_142_es_translation_0_new_checkbox').value = True
   >>> browser.getControl(name='msgset_142_es_translation_0_new').value = 'Migrando \xc2\xab%i\xc2\xbb'
+
   >>> browser.getControl(name='submit_translations').click()
 
 We remain at the same page:

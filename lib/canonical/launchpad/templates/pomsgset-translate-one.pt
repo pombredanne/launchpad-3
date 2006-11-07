@@ -147,23 +147,38 @@
         </td>
       </tal:without-content>
     </tr>
-    <tal:active
-      define="active python:view.context.getActiveSubmission(plural_index)"
-      condition="active">
-      <tr class="discreet secondary">
+    <tal:selection
+      define="selection python:view.context.getSelection(index)"
+      condition="selection">
+      <tr class="discreet secondary"
+          tal:condition="selection/activesubmission">
         <th colspan="3" style="padding-bottom: 1em;">
           Translated by:
         </th>
         <td class="icon left right" />
         <td style="overflow: auto;">
-          <a tal:content="active/person/browsername"
-             tal:attributes="href active/person/fmt:url">Foo Bar</a> on
-          <span tal:content="active/datecreated/fmt:datetime">
+          <a tal:content="selection/activesubmission/person/browsername"
+             tal:attributes="href selection/activesubmission/person/fmt:url">Foo Bar</a> on
+          <span tal:content="selection/activesubmission/datecreated/fmt:datetime">
             2006-08-05 01:04 UTC
           </span>
         </td>
       </tr>
-    </tal:active>
+      <tr class="discreet secondary"
+          tal:condition="selection/reviewer">
+        <th colspan="3" style="padding-bottom: 1em;">
+          Reviewed by:
+        </th>
+        <td class="icon left right" />
+        <td style="overflow: auto;">
+          <a tal:content="selection/reviewer/browsername"
+             tal:attributes="href selection/reviewer/fmt:url">Foo Bar</a> on
+          <span tal:content="selection/date_reviewed/fmt:datetime">
+            2006-08-05 01:04 UTC
+          </span>
+        </td>
+      </tr>
+    </tal:selection>
     <tal:suggestion_block define="suggestion_block python:view.suggestion_blocks[plural_index]">
       <tal:suggestions repeat="suggestions suggestion_block">
         <div tal:replace="structure suggestions/@@+display" />

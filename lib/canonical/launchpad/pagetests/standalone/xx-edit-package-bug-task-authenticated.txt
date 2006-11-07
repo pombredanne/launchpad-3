@@ -5,7 +5,8 @@ Any authenticated user can edit a source package bug task.
     ...     "http://localhost:9000/distros/ubuntu/+source/mozilla-firefox"
     ...     "/+bug/1/+editstatus")
 
-    >>> status_control = browser.getControl(name="field.status")
+    >>> status_control = browser.getControl(
+    ...     name="ubuntu_mozilla-firefox.status")
     >>> status_control.value
     ['Unconfirmed']
     >>> status_control.value = ["Confirmed"]
@@ -16,7 +17,8 @@ Any authenticated user can edit a source package bug task.
     ...     "http://localhost:9000/distros/ubuntu/+source/mozilla-firefox"
     ...     "/+bug/1/+editstatus")
 
-    >>> status_control = browser.getControl(name="field.status")
+    >>> status_control = browser.getControl(
+    ...     name="ubuntu_mozilla-firefox.status")
     >>> status_control.value
     ['Confirmed']
     >>> status_control.value = ["Unconfirmed"]

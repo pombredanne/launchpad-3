@@ -128,7 +128,9 @@ distribution owner can see them and mark the ones that should be official.
     >>> [(mirror.name, mirror.speed.title, mirror.country.name) 
     ...  for mirror in ubuntu.unofficial_mirrors]
     [(u'foo.bar.com-archive', '2 Mbps', u'Brazil'),
-     (u'invalid-mirror', '2 Mbps', u'British Indian Ocean Territory')]
+     (u'invalid-mirror', '2 Mbps', u'British Indian Ocean Territory'),
+     (u'canonical-archive', '128 Kbps', u'Afghanistan'),
+     (u'canonical-releases', '128 Kbps', u'Afghanistan')]
 
 It's possible to retrieve a mirror by its name:
 
@@ -246,7 +248,7 @@ Disabling a mirror causes it not to show up on the public mirror listings.
     >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_message)
     >>> msg['To']
-    'Mark Shuttleworth <mark@hbd.com>'
+    'mark@hbd.com'
     >>> valid_mirror.enabled
     False
 

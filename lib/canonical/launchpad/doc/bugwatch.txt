@@ -80,14 +80,31 @@ remote bug using getBugsWatching():
     >>> [bug.id for bug in mozilla_bugtracker.getBugsWatching('42')]
     [1, 2]
 
+If we have a bug, we can query for a bug watch associated with that
+bug. This method is useful for preventing duplicate bug watches from
+being added.
+
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> mozilla_watch = bug_one.getBugWatch(mozilla_bugtracker, '2000')
+    >>> mozilla_watch in bug_one.watches
+    True
+    >>> mozilla_watch.bugtracker.name
+    u'mozilla.org'
+    >>> mozilla_watch.remotebug
+    u'2000'
+
+If no matching bug watch can be found, None is returned.
+
+    >>> bug_one.getBugWatch(mozilla_bugtracker, 'no-such-bug') is None
+    True
 
 Creating Bug Watches
 --------------------
 
 To create a bugwatch, use IBugWatchSet.createBugWatch:
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IBugSet)
+    >>> from canonical.launchpad.interfaces import IPersonSet
 
     >>> sample_person = getUtility(IPersonSet).get(12)
     >>> bug_one = getUtility(IBugSet).get(1)

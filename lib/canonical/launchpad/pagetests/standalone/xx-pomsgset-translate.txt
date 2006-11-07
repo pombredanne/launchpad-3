@@ -169,11 +169,16 @@ character to workaround bug #47511.
   >>> browser.getControl(name='msgset_142_es_translation_0').value == '\nfoo %s'
   True
 
-And now, we get someone as the Translator:
+And now, we get someone as the Translator and also, we have a reviewer (in
+this case, it's the same):
 
   >>> print browser.contents
   <!DOCTYPE...
   Translated by:
+  ...Carlos...
+  on
+  ...
+  Reviewed by:
   ...Carlos...
   on
   ...
