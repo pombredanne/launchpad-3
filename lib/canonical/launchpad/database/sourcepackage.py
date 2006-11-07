@@ -109,16 +109,16 @@ class SourcePackageTicketTargetMixin:
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename)
 
-        return shortlist([
-            support_contact.person for support_contact in support_contacts
-            ],
+        return shortlist(
+            [support_contact.person for support_contact in support_contacts],
             longest_expected=100)
 
 
 class SourcePackage(BugTargetBase, SourcePackageTicketTargetMixin):
-    """A source package, e.g. apache2, in a distrorelease.  This object
-    implements the MagicSourcePackage specification. It is not a true
-    database object, but rather attempts to represent the concept of a
+    """A source package, e.g. apache2, in a distrorelease.
+
+    This object implements the MagicSourcePackage specification. It is not a
+    true database object, but rather attempts to represent the concept of a
     source package in a distro release, with links to the relevant database
     objects.
     """
