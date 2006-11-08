@@ -482,4 +482,5 @@ class SVNStrategy(CSCVSStrategy):
          'svn://svn.debian.org/gcccvs/branches/sid/gcc-defaults',
          'svn://svn.xara.com/Trunk/XaraLX',
          'svn://svnanon.samba.org/samba/branches/SAMBA_4_0/source/lib/talloc',
+         'https://numexp.org/svn/numexp-core',
          ])
