@@ -17,7 +17,7 @@ from zope.security.proxy import isinstance as zope_isinstance
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IDistroBugTask, IDistroReleaseBugTask, ISpecification,
+    IDistroBugTask, IDistroReleaseBugTask, ILanguageSet, ISpecification,
     IUpstreamBugTask, ITeamMembershipSet)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
@@ -916,9 +916,18 @@ class TicketNotification:
     def getRecipients(self):
         """Return the recipient of the notification.
 
-        Default to the ticket's subscribers.
+        Default to the ticket's subscribers that speaks the request languages.
+        If the ticket owner is subscribed, he's always consider to speak the
+        language.
         """
-        return self.ticket.getSubscribers()
+        english = getUtility(ILanguageSet)['en']
+        ticket_language = self.ticket.language
+        if ticket_language == english:
+            return self.ticket.getSubscribers()
+
+        return [person for person in self.ticket.getSubscribers()
+                if ticket_language in person.languages or
+                   person == self.ticket.owner]
 
     def initialize(self):
         """Initialization hook for subclasses.
@@ -951,6 +960,21 @@ class TicketNotification:
                         from_address, address, subject, body)
                     sent_addrs.add(address)
 
+    @property
+    def unsupported_language(self):
+        """Whether the ticket language is unsupported or not."""
+        supported_languages = self.ticket.target.getSupportedLanguages()
+        return self.ticket.language not in supported_languages
+
+    @property
+    def unsupported_language_warning(self):
+        """Warning about the fact that the ticket is written in an
+        unsupported language."""
+        return get_email_template(
+                'ticket-unsupported-language-warning.txt') % {
+                'ticket_language': self.ticket.language.englishname,
+                'target_name': self.ticket.target.displayname}
+
 
 class TicketAddedNotification(TicketNotification):
     """Notification sent when a ticket is added."""
@@ -958,11 +982,14 @@ class TicketAddedNotification(TicketNotification):
     def getBody(self):
         """See TicketNotification."""
         ticket = self.ticket
-        return get_email_template('ticket_added.txt') % {
+        body = get_email_template('ticket_added.txt') % {
             'target_name': ticket.target.displayname,
             'ticket_id': ticket.id,
             'ticket_url': canonical_url(ticket),
             'comment': ticket.description}
+        if self.unsupported_language:
+            body += self.unsupported_language_warning
+        return body
 
 
 class TicketModifiedDefaultNotification(TicketNotification):
@@ -1056,10 +1083,10 @@ class TicketModifiedDefaultNotification(TicketNotification):
         return get_email_template(self.body_template) % replacements
 
     def getRecipients(self):
-        """The default notification goes to all ticket susbcribers except
-        the owner.
+        """The default notification goes to all ticket susbcribers that
+        speaks the request language, except the owner.
         """
-        return [person for person in self.ticket.getSubscribers()
+        return [person for person in TicketNotification.getRecipients(self)
                 if person != self.ticket.owner]
 
     # Header template used when a new message is added to the ticket.
@@ -1135,6 +1162,40 @@ class TicketModifiedOwnerNotification(TicketModifiedDefaultNotification):
             return [self.ticket.owner]
         else:
             return []
+
+    def getBody(self):
+        """See TicketNotification."""
+        body = TicketModifiedDefaultNotification.getBody(self)
+        if self.unsupported_language:
+            body += self.unsupported_language_warning
+        return body
+
+
+class TicketUnsupportedLanguageNotification(TicketNotification):
+    """Notification sent to support contacts for unsupported languages."""
+
+    def getSubject(self):
+        """See TicketNotification."""
+        return '[Support #%s]: (%s) %s' % (
+            self.ticket.id, self.ticket.language.englishname,
+            self.ticket.title)
+
+    def getRecipients(self):
+        """Notify all the support contacts."""
+        if not self.unsupported_language:
+            return []
+        return self.ticket.target.support_contacts
+
+    def getBody(self):
+        """See TicketNotification."""
+        ticket = self.ticket
+        return get_email_template('ticket_unsupported_languages_added.txt') % {
+            'target_name': ticket.target.displayname,
+            'ticket_id': ticket.id,
+            'ticket_url': canonical_url(ticket),
+            'ticket_language': ticket.language.englishname,
+            'comment': ticket.description}
+
 
 def notify_specification_modified(spec, event):
     """Notify the related people that a specification has been modifed."""

@@ -41,7 +41,6 @@ on Ubuntu, so only 1 notification is sent:
     []
     >>> [sub.person.displayname for sub in ubuntu_ticket.subscriptions]
     [u'Sample Person']
-
     >>> notifications = pop_notifications()
     >>> len(notifications)
     1
@@ -573,3 +572,134 @@ Notification received by the owner:
     Foo Bar changed the request status:
     The rejection was a mistake.
     <BLANKLINE>
+
+== Notifications and Localized Requests ==
+
+In general, only subscribers speaking the language of the ticket will
+receive notifications related to it.
+
+    # Register salgado as support, this makes the pt_BR language
+    # supported in Ubuntu.
+    >>> salgado = getUtility(IPersonSet).getByName('salgado')
+    >>> ubuntu.addSupportContact(salgado)
+    True
+    >>> [lang.code for lang in ubuntu.getSupportedLanguages()]
+    [u'en', u'pt_BR']
+
+    >>> from canonical.launchpad.interfaces import ILanguageSet
+    >>> login('test@canonical.com')
+    >>> pt_BR_ticket = ubuntu.newTicket(
+    ...     sample_person, title=(
+    ...     u"Abrir uma p\xe1gina que requer java quebra o firefox"),
+    ...     description=(
+    ...         u'Eu uso Ubuntu em um AMD64 e instalei o plugin java '
+    ...         u'blackdown. O plugin \xe9 exibido em about:plugins e '
+    ...         u'quando eu abro a pagina '
+    ...         u'http://java.com/en/download/help/testvm.xml, ela carrega '
+    ...         u'corretamente e mostra a minha versao do java. No entanto, '
+    ...         u'mover o mouse na pagina faz com que o firefox quebre.'),
+    ...     language=getUtility(ILanguageSet)['pt_BR'])
+    >>> notify(SQLObjectCreatedEvent(pt_BR_ticket))
+    >>> notifications = pop_notifications()
+    >>> [email_msg['To'] for email_msg in notifications]
+    ['guilherme.salgado@canonical.com', 'test@canonical.com']
+
+    >>> from email.Header import decode_header, make_header
+    >>> unicode(make_header(decode_header(notifications[0]['Subject'])))
+    u'[Support #...]: Abrir uma p\xe1gina que requer java quebra o firefox'
+
+Similarly, when a ticket in a non-English language is modified or its
+status changed, only the subscribers speaking that language will receive
+the notifications.
+
+    >>> pt_BR_ticket.giveInfo("Veja o screenshot: http://tinyurl.com/y8jq8z")
+    <TicketMessage...>
+    >>> notifications = pop_notifications()
+    >>> [email_msg['To'] for email_msg in notifications]
+    ['guilherme.salgado@canonical.com', 'test@canonical.com']
+
+The exception to these general rules is that when a request is created
+in language spoken by none of the support contacts, each support
+contact will receive an email notifying them that a request was posted
+in an unsupported language.
+
+For example, the French language is not spoken by any Ubuntu support
+contacts. So after posting a request in French, a notification will be
+sent to the support list about that request:
+
+    >>> french_ticket = ubuntu.newTicket(
+    ...     sample_person, title="Impossible d'installer Ubuntu",
+    ...     description=u"Le CD ne semble pas fonctionn\xe9.",
+    ...     language=getUtility(ILanguageSet)['fr'])
+    >>> notify(SQLObjectCreatedEvent(french_ticket))
+    >>> notifications = pop_notifications()
+    >>> [email_msg['To'] for email_msg in notifications]
+    ['guilherme.salgado@canonical.com', 'support@ubuntu.com',
+     'test@canonical.com']
+
+    >>> notifications[0]['Subject']
+    "[Support #...]: (French) Impossible d'installer Ubuntu"
+
+    >>> notification_body = notifications[0].get_payload(decode=True)
+    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    A support request was filed in a language (French) spoken by
+    none of the registered Ubuntu support contacts.
+    <BLANKLINE>
+    http://.../distros/ubuntu/+ticket/...
+
+The notification received by the ticket owner contain a warning that
+the request is in a language spoken by none of the support contacts:
+
+    >>> notifications[-1]['Subject']
+    "[Support #...]: Impossible d'installer Ubuntu"
+
+    # Define a function that will replace non-ascii character with
+    # its UTF-8 encoded value.
+    # Effectively replace u'\xe9' by '\xc3\xa9'.
+    >>> import re
+    >>> def escape_utf8_payload(message):
+    ...     charset = message.get_content_charset()
+    ...     content = unicode(message.get_payload(decode=True), charset)
+    ...     def encode_utf8(match):
+    ...         utf8_string = match.group(0).encode('utf-8')
+    ...         return repr(utf8_string)[1:-1]
+    ...     return str(re.sub(r'[^\x00-\x7F]', encode_utf8, content))
+
+    >>> notification_body = escape_utf8_payload(notifications[-1])
+    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    New support request #... on Ubuntu:
+    http://.../distros/ubuntu/+ticket/...
+    <BLANKLINE>
+    Le CD ne semble pas fonctionn\xc3\xa9.
+    <BLANKLINE>
+    _______________________________________________________________________
+    WARNING: This support request is filed in a language (French)
+    spoken by none of the registered Ubuntu support contacts.
+
+No notification will be sent to the support contacts when this ticket is
+modified. Only the owner will receive a modification notification with a
+warning appended to it.
+
+    >>> unmodified_ticket = Snapshot(
+    ...     french_ticket, providing=providedBy(french_ticket))
+    >>> french_ticket.title = u"CD d'Ubuntu ne d\xe9marre pas"
+    >>> notify(SQLObjectModifiedEvent(
+    ...     french_ticket, unmodified_ticket, ['title']))
+
+    >>> notifications = pop_notifications()
+    >>> [email_msg['To'] for email_msg in notifications]
+    ['test@canonical.com']
+
+    >>> notification_body = escape_utf8_payload(notifications[0])
+    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    Your support request #... on Ubuntu changed:
+    http://.../distros/ubuntu/+ticket/...
+    <BLANKLINE>
+    Summary changed to:
+    CD d'Ubuntu ne d\xc3\xa9marre pas
+    <BLANKLINE>
+    _______________________________________________________________________
+    WARNING: This support request is filed in a language (French)
+    spoken by none of the registered Ubuntu support contacts.
+
+
