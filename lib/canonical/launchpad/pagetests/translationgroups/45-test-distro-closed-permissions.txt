@@ -19,28 +19,27 @@ directly.
 
 First, we show that the message 137 is not translated.
 
-  >>> browser.open('http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+translate')
+  >>> browser.open('http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/8/+translate')
   >>> browser.url
-  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+translate'
-  >>> browser.getControl(name='msgset_137_af_translation_0').value
-  ''
+  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/8/+translate'
+  >>> '(no translation yet)' in browser.contents
+  True
 
 Now, we need to show that it is translated after a post. Let's go ahead and
 POST and see that all goes well:
 
-  >>> browser.getControl(name='msgset_137_af_translation_0').value = 'evolution minikaart'
+  >>> browser.getControl(name='msgset_137_af_translation_0_new_checkbox').value = True
+  >>> browser.getControl(name='msgset_137_af_translation_0_new').value = 'evolution minikaart'
   >>> browser.getControl(name='submit_translations').click()
   >>> browser.url
-  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+translate?start=10'
+  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/9/+translate'
 
 And finally, let's take a look again, and we should have a translation added.
 
-  >>> browser.open('http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+translate')
+  >>> browser.getLink('Previous').click()
   >>> browser.url
-  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+translate'
-
-XXX: CarlosPerelloMarin 20060824: The test has an extra '\n' char as the first
-character to workaround bug #47511.
-
-  >>> browser.getControl(name='msgset_137_af_translation_0').value
-  '\nevolution minikaart'
+  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/8/+translate'
+  >>> '(no translation yet)' in browser.contents
+  False
+  >>> 'evolution minikaart' in browser.contents
+  True
