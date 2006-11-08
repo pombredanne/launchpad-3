@@ -13,7 +13,7 @@
     <div tal:replace="structure context/@@+portlet-releases" />
     <div tal:replace="structure context/@@+portlet-bugcontacts" />
     <div tal:replace="structure context/@@+portlet-latestbugs" />
-    <div tal:replace="structure context/@@+portlet-tickets" />
+    <div tal:replace="structure context/@@+portlet-latesttickets" />
   </metal:leftportlets>
 
 
@@ -29,18 +29,19 @@
             <th>Datetime</th>
             <th>Status</th>
             <th>Target</th>
-            <th>Place</th>
+            <th>Pocket</th>
+            <th>Component</th>
+            <th>Section</th>
             <th>Version</th>
-            <th colspan="3">Info</th>
           </tr>
         </thead>
         <tbody>
-  <tal:block repeat="publishing context/publishing_history"
-             replace="structure publishing/@@+listing-detailed">
-  </tal:block>
+          <tal:block repeat="publishing context/publishing_history"
+                     replace="structure publishing/@@+listing-detailed">
+          </tal:block>
         </tbody>
       </table>
     </div>
   </body>
 </html>
- 
+

@@ -31,9 +31,10 @@ To display the icon for a milestone, use fmt:icon:
    >>> from canonical.launchpad.database import MilestoneSet
    >>> milestone = MilestoneSet().get(1)
    >>> test_tales("milestone/fmt:icon", milestone=milestone)
-   '<img alt="" src="/@@/target" />'
+   '<img alt="" src="/@@/milestone" />'
 
-datetimes can be formatted with fmt:date, fmt:time and fmt:datetime.
+datetimes can be formatted with fmt:date, fmt:time, fmt:datetime and
+fmt:rfc822utcdatetime.
 
    >>> from datetime import datetime, timedelta
    >>> dt = datetime(2005, 4, 1, 16, 22)
@@ -43,6 +44,8 @@ datetimes can be formatted with fmt:date, fmt:time and fmt:datetime.
    '16:22:00'
    >>> test_tales('dt/fmt:datetime', dt=dt)
    '2005-04-01 16:22:00'
+   >>> test_tales('dt/fmt:rfc822utcdatetime', dt=dt)
+   'Fri, 01 Apr 2005 16:22:00 -0000'
 
 To truncate a long string, use fmt:shorten:
 
@@ -151,6 +154,8 @@ do with 'None/fmt:foo'.
     ''
     >>> test_tales('foo/fmt:datetime', foo=None)
     ''
+    >>> test_tales('foo/fmt:rfc822utcdatetime', foo=None)
+    ''
     >>> test_tales('foo/fmt:pagetitle', foo=None)
     ''
     >>> test_tales('foo/fmt:text-to-html', foo=None)
@@ -227,3 +232,16 @@ It is possible for dbschemas to have a 'None' value.  This is a bit awkward,
 because when the value is None, we can't do any checking whether a new value
 is from the correct schema.  In any case, this case is not currently handled.
 
+The enumvalue tales expression is designed to work with security
+wrapped dbschema items too:
+
+    >>> from zope.security.proxy import ProxyFactory
+    >>> wrapped_deb = ProxyFactory(BinaryPackageFormat.DEB)
+    >>> test_tales('deb/enumvalue:DEB', deb=wrapped_deb)
+    True
+    >>> test_tales('deb/enumvalue:UDEB', deb=wrapped_deb)
+    False
+    >>> test_tales('deb/enumvalue:CHEESEFISH', deb=wrapped_deb)
+    Traceback (most recent call last):
+    ...
+    TraversalError: 'The BinaryPackageFormat dbschema does not have a value CHEESEFISH.'

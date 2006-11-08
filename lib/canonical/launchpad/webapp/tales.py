@@ -8,8 +8,11 @@ __metaclass__ = type
 
 import bisect
 import cgi
-import re
+from email.Utils import formatdate
+import math
 import os.path
+import re
+import rfc822
 
 from zope.interface import Interface, Attribute, implements
 from zope.component import getUtility, queryAdapter
@@ -145,13 +148,13 @@ class EnumValueAPI:
             return True
         else:
             # Check whether this was an allowed value for this dbschema.
-            schema = self.item.schema
+            schema_items = self.item.schema_items
             try:
-                schema.items[name]
+                schema_items[name]
             except KeyError:
                 raise TraversalError(
                     'The %s dbschema does not have a value %s.' %
-                    (schema.__name__, name))
+                    (self.item.schema_name, name))
             return False
 
 
@@ -267,6 +270,7 @@ class NoneFormatter:
         'date',
         'time',
         'datetime',
+        'rfc822utcdatetime',
         'exactduration',
         'approximateduration',
         'pagetitle',
@@ -324,7 +328,7 @@ class BugTaskFormatterAPI(ObjectFormatterAPI):
             importance = self._context.importance.title.lower()
             alt = "(%s)" % importance
             title = importance.capitalize()
-            if importance not in ("untriaged", "wishlist"):
+            if importance not in ("undecided", "wishlist"):
                 # The other status names do not make a lot of sense on
                 # their own, so tack on a noun here.
                 title += " importance"
@@ -337,7 +341,7 @@ class BugTaskFormatterAPI(ObjectFormatterAPI):
         icon = image_template % (alt, title, src)
 
         if self._context.bug.private:
-            icon += image_template % ("", "Private", "/@@/padlock")
+            icon += image_template % ("", "Private", "/@@/locked")
 
         return icon
 
@@ -350,7 +354,62 @@ class MilestoneFormatterAPI(ObjectFormatterAPI):
 
     def icon(self):
         """Return the appropriate <img> tag for the milestone icon."""
-        return '<img alt="" src="/@@/target" />'
+        return '<img alt="" src="/@@/milestone" />'
+
+
+class BuildFormatterAPI(ObjectFormatterAPI):
+    """Adapter for IBuild objects to a formatted string.
+
+    Used for fmt:icon.
+    """
+    def icon(self):
+        """Return the appropriate <img> tag for the build icon."""
+        image_template = '<img alt="%s" title="%s" src="%s" />'
+
+        icon_map = {
+            dbschema.BuildStatus.NEEDSBUILD: "/@@/build-needed",
+            dbschema.BuildStatus.FULLYBUILT: "/@@/build-success",
+            dbschema.BuildStatus.FAILEDTOBUILD: "/@@/build-failure",
+            dbschema.BuildStatus.MANUALDEPWAIT: "/@@/build-depwait",
+            dbschema.BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
+            # XXX cprov 20060321: proper icons
+            dbschema.BuildStatus.SUPERSEDED: "/@@/topic",
+            dbschema.BuildStatus.BUILDING: "/@@/progress",
+            }
+
+        alt = '[%s]' % self._context.buildstate.name
+        title = self._context.buildstate.name
+        source = icon_map[self._context.buildstate]
+
+        return image_template % (alt, title, source)
+
+
+class NumberFormatterAPI:
+    """Adapter for converting numbers to formatted strings."""
+
+    def __init__(self, number):
+        assert not float(number) < 0, "Expected a non-negative number."
+        self._number = number
+
+    def bytes(self):
+        """Render number as byte contractions according to IEC60027-2."""
+        # See http://en.wikipedia.org/wiki/Binary_prefixes#Specific_units_of_IEC_60027-2_A.2
+        # Note that there is a zope.app.size.byteDisplay() function, but
+        # it really limited and doesn't work well enough for us here.
+        n = int(self._number)
+        if n == 1:
+            # Handle the singular case.
+            return "1 byte"
+        if n == 0:
+            # To avoid math.log(0, X) blowing up.
+            return "0 bytes"
+        suffixes = ["KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"]
+        exponent = int(math.log(n, 1024))
+        exponent = min(len(suffixes), exponent)
+        if exponent < 1:
+            # If this is less than 1 KiB, no need for rounding.
+            return "%s bytes" % n
+        return "%.1f %s" % (n / 1024.0 ** exponent, suffixes[exponent - 1])
 
 
 class DateTimeFormatterAPI:
@@ -374,6 +433,10 @@ class DateTimeFormatterAPI:
 
     def datetime(self):
         return "%s %s" % (self.date(), self.time())
+
+    def rfc822utcdatetime(self):
+        return formatdate(
+            rfc822.mktime_tz(self._datetime.utctimetuple() + (0,)))
 
 
 class DurationFormatterAPI:
@@ -598,6 +661,130 @@ class PageTemplateContextsAPI:
                 return title
 
 
+def split_paragraphs(text):
+    """Split text into paragraphs.
+
+    This function yields lists of strings that represent lines of text
+    in each paragraph.
+
+    Paragraphs are split by one or more blank lines.
+    """
+    paragraph = []
+    for line in text.splitlines():
+        line = line.rstrip()
+
+        # blank lines split paragraphs
+        if not line:
+            if paragraph:
+                yield paragraph
+            paragraph = []
+            continue
+
+        paragraph.append(line)
+
+    if paragraph:
+        yield paragraph
+
+
+def re_substitute(pattern, replace_match, replace_nomatch, string):
+    """Transform a string, replacing matched and non-matched sections.
+
+     :param patter: a regular expression
+     :param replace_match: a function used to transform matches
+     :param replace_nomatch: a function used to transform non-matched text
+     :param string: the string to transform
+
+    This function behaves similarly to re.sub() when a function is
+    passed as the second argument, except that the non-matching
+    portions of the string can be transformed by a second function.
+    """
+    if replace_match is None:
+        replace_match = lambda match: match.group()
+    if replace_nomatch is None:
+        replace_nomatch = lambda text: text
+    parts = []
+    position = 0
+    for match in re.finditer(pattern, string):
+        if match.start() != position:
+            parts.append(replace_nomatch(string[position:match.start()]))
+        parts.append(replace_match(match))
+        position = match.end()
+    remainder = string[position:]
+    if remainder:
+        parts.append(replace_nomatch(remainder))
+    return ''.join(parts)
+
+
+def split_chars(word, nchars):
+    """Return the first num characters of the word, plus the remainder.
+
+    This function treats HTML entities in the string as single
+    characters.  The string should not include HTML tags.
+    """
+    chars = []
+    while word and len(chars) < nchars:
+        if word[0] == '&':
+            # make sure we grab the entity as a whole
+            pos = word.find(';')
+            assert pos >= 0, 'badly formed entity: %r' % word
+            chars.append(word[:pos+1])
+            word = word[pos+1:]
+        else:
+            chars.append(word[0])
+            word = word[1:]
+    return ''.join(chars), word
+
+
+def add_word_breaks(word):
+    """Insert manual word breaks into a string.
+
+    The word may be entity escaped, but is not expected to contain
+    any HTML tags.
+
+    Breaks are inserted at least every 7 to 15 characters,
+    preferably after puctuation.
+    """
+    broken = []
+    while word:
+        chars, word = split_chars(word, 7)
+        broken.append(chars)
+        # If the leading characters don't end with puctuation, grab
+        # more characters.
+        if chars[-1].isalnum() and word != '':
+            for i in range(8):
+                chars, word = split_chars(word, 1)
+                broken.append(chars)
+                if not (chars[-1].isalnum() and word != ''):
+                    break
+        if word != '':
+            broken.append('<wbr></wbr>')
+    return ''.join(broken)
+
+
+break_text_pat = re.compile(r'''
+  (?P<tag>
+    <[^>]*>
+  ) |
+  (?P<longword>
+    (?<![^\s<>])(?:[^\s<>&]|&[^;]*;){20,}
+  )
+''', re.VERBOSE)
+
+def break_long_words(text):
+    """Add word breaks to long words in a run of text.
+
+    The text may contain entity references or HTML tags.
+    """
+    def replace(match):
+        if match.group('tag'):
+            return match.group()
+        elif match.group('longword'):
+            return add_word_breaks(match.group())
+        else:
+            raise AssertionError('text matched but neither named group found')
+    return break_text_pat.sub(replace, text)
+
+
 class FormattersAPI:
     """Adapter from strings to HTML formatted text."""
 
@@ -648,34 +835,16 @@ class FormattersAPI:
             # The text will already have been cgi escaped.
             # We still need to escape quotes for the url.
             url = match.group('url')
-            # The url might end in a spurious &gt;.  If so, remove it
-            # and put it outside the url text.
-            trail = ''
-            gt = ''
-            if url[-1] in (",", ".", "?", ":") or url[-2:] == ";;":
-                # These common punctuation symbols often trail URLs; we
-                # deviate from the specification slightly here but end
-                # up with less chance of corrupting a URL because
-                # somebody added punctuation after it in the comment.
-                #
-                # The special test for ";;" is done to catch the case
-                # where the URL is wrapped in greater/less-than and
-                # then followed with a semicolon. We can't just knock
-                # off a trailing semi-colon because it might have been
-                # part of an entity -- and that's what the next clauses
-                # handle.
-                trail = url[-1]
-                url = url[:-1]
-            if url.lower().endswith('&gt;'):
-                gt = url[-4:]
-                url = url[:-4]
-            elif url.endswith(";"):
-                # This is where a single semi-colon is consumed, for
-                # the case where the URL didn't end in an entity.
-                trail = url[-1]
-                url = url[:-1]
-            return '<a rel="nofollow" href="%s">%s</a>%s%s' % (
-                url.replace('"', '&quot;'), url, gt, trail)
+            # Search for punctuation to strip off the end of the URL
+            match = FormattersAPI._re_url_trailers.search(url)
+            if match:
+                trailers = match.group(1)
+                url = url[:-len(trailers)]
+            else:
+                trailers = ''
+            return '<a rel="nofollow" href="%s">%s</a>%s' % (
+                url.replace('"', '&quot;'), add_word_breaks(url),
+                trailers)
         elif match.group('oops') is not None:
             text = match.group('oops')
 
@@ -695,72 +864,112 @@ class FormattersAPI:
     # match whitespace at the beginning of a line
     _re_leadingspace = re.compile(r'^(\s+)')
 
-    # From RFC1738:
+    # From RFC 3986 ABNF for URIs:
     #
-    #   safe = "$" | "-" | "_" | "." | "+"
-    #   extra = "!" | "*" | "'" | "(" | ")" | ","
-    #   national = "{" | "}" | "|" | "\" | "^" | "~" | "[" | "]" | "`"
-    #   punctuation = "<" | ">" | "#" | "%" | <">
-    #   reserved = ";" | "/" | "?" | ":" | "@" | "&" | "="
+    #   URI           = scheme ":" hier-part [ "?" query ] [ "#" fragment ]
+    #   hier-part     = "//" authority path-abempty
+    #                 / path-absolute
+    #                 / path-rootless
+    #                 / path-empty
     #
-    # XXX: (, ), {, }, [ and ] are omitted to allow URLs to be wrapped
-    # in these safely. < and > are omitted to avoid matching tags in the
-    # DPoT output. I'm not sure whether we can actually match those
-    # safely. X-Chat allows {, }, [ and ], so if users report bugs for
-    # those we might consider fixing them -- we could avoid matching on
-    # them when they were the last character in the URL. Testcase:
-    # http://www.searchtools.com/test/urls/(parens).html
-    #   -- kiko, 2006-07-11
+    #   authority     = [ userinfo "@" ] host [ ":" port ]
+    #   userinfo      = *( unreserved / pct-encoded / sub-delims / ":" )
+    #   host          = IP-literal / IPv4address / reg-name
+    #   reg-name      = *( unreserved / pct-encoded / sub-delims )
+    #   port          = *DIGIT
+    #
+    #   path-abempty  = *( "/" segment )
+    #   path-absolute = "/" [ segment-nz *( "/" segment ) ]
+    #   path-rootless = segment-nz *( "/" segment )
+    #   path-empty    = 0<pchar>
+    #
+    #   segment       = *pchar
+    #   segment-nz    = 1*pchar
+    #   pchar         = unreserved / pct-encoded / sub-delims / ":" / "@"
+    #
+    #   query         = *( pchar / "/" / "?" )
+    #   fragment      = *( pchar / "/" / "?" )
+    #
+    #   unreserved    = ALPHA / DIGIT / "-" / "." / "_" / "~"
+    #   pct-encoded   = "%" HEXDIG HEXDIG
+    #   sub-delims    = "!" / "$" / "&" / "'" / "(" / ")"
+    #                 / "*" / "+" / "," / ";" / "="
+    #
+    # We only match a set of known scheme names too.  We don't handle
+    # IP-literal either.
+    #
+    # We will simplify "unreserved / pct-encoded / sub-delims" as the
+    # following regular expression:
+    #   [-a-zA-Z0-9._~%!$&'()*+,;=]
+    #
+    # We also require that the path-rootless form not begin with a
+    # colon to avoid matching strings like "http::foo" (to avoid bug
+    # #40255).
+    #
+    # The path-empty pattern is not matched either, due to false
+    # positives.
+    #
+    # Some allowed URI punctuation characters will be trimmed if they
+    # appear at the end of the URI since they may be incidental in the
+    # flow of the text.
 
     # Match urls or bugs or oopses.
     _re_linkify = re.compile(r'''
       (?P<url>
-        (?:about|gopher|http|https|sftp|news|ftp|mailto|file|irc|jabber):[/]*
-        (?P<host>[a-zA-Z0-9:@_\-\.]+)
-        (?P<urlchars>[a-zA-Z0-9/:;@_%~#=&,!\.\-\?\+\$\*'\`\\"\|\^]*)
+        \b
+        (?:about|gopher|http|https|sftp|news|ftp|mailto|file|irc|jabber)
+        :
+        (?:
+          (?:
+            # "//" authority path-abempty
+            //
+            (?: # userinfo
+              [%(unreserved)s:]*
+              @
+            )?
+            (?: # host
+              \d+\.\d+\.\d+\.\d+ |
+              [%(unreserved)s]*
+            )
+            (?: # port
+              : \d*
+            )?
+            (?: / [%(unreserved)s:@]* )*
+          ) | (?:
+            # path-absolute
+            /
+            (?: [%(unreserved)s:@]+
+                (?: / [%(unreserved)s:@]* )* )?
+          ) | (?:
+            # path-rootless
+            [%(unreserved)s@]
+            [%(unreserved)s:@]*
+            (?: / [%(unreserved)s:@]* )*
+          )
+        )
+        (?: # query
+          \?
+          [%(unreserved)s:@/\?]*
+        )?
+        (?: # fragment
+          \#
+          [%(unreserved)s:@/\?]*
+        )?          
       ) |
       (?P<bug>
-        bug\s*(?:\#|number\.?|num\.?|no\.?)?\s*
+        \bbug(?:\s|<br\s*/>)*(?:\#|report|number\.?|num\.?|no\.?)?(?:\s|<br\s*/>)*
         0*(?P<bugnum>\d+)
       ) |
       (?P<oops>
-        oops\s*-?\s*
+        \boops\s*-?\s*
         (?P<oopscode> \d* [a-z]+ \d+)
       )
-    ''', re.IGNORECASE | re.VERBOSE)
+    ''' % {'unreserved': "-a-zA-Z0-9._~%!$&'()*+,;="},
+                             re.IGNORECASE | re.VERBOSE)
 
-    @staticmethod
-    def _split_paragraphs(text):
-        """Split text into paragraphs.
-
-        This function yields lists of strings that represent
-        paragraphs of text.
-
-        Paragraphs are split by one or more blank lines.
-
-        Each paragraph is further split into one or more logical lines
-        of text.  Two adjacent lines are considered to be part of the
-        same logical line if the following conditions hold:
-          1. the first line is between 60 and 80 characters long
-          2. the second line does not begin with whitespace.
-          3. the second line does not begin with '>' (commonly used for
-             reply quoting in emails).
-        """
-        paragraph = []
-        for line in text.splitlines():
-            line = line.rstrip()
-
-            # blank lines split paragraphs
-            if not line:
-                if paragraph:
-                    yield paragraph
-                paragraph = []
-                continue
-
-            paragraph.append(line)
-
-        if paragraph:
-            yield paragraph
+    # a pattern to match common trailing punctuation for URLs that we
+    # don't want to include in the link.
+    _re_url_trailers = re.compile(r'((?:[,\.\?:\);]|&gt;)+)$')
 
     def text_to_html(self):
         """Quote text according to DisplayingParagraphsOfText."""
@@ -776,7 +985,7 @@ class FormattersAPI:
 
         output = []
         first_para = True
-        for para in self._split_paragraphs(self._stringtoformat):
+        for para in split_paragraphs(self._stringtoformat):
             if not first_para:
                 output.append('\n')
             first_para = False
@@ -797,7 +1006,8 @@ class FormattersAPI:
         text = ''.join(output)
 
         # Linkify the text.
-        text = self._re_linkify.sub(self._linkify_substitution, text)
+        text = re_substitute(self._re_linkify, self._linkify_substitution,
+                             break_long_words, text)
 
         return text
 

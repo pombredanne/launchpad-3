@@ -253,6 +253,9 @@ def setup(con, configuration=DEFAULT_CONFIG):
         query = args[0].decode('utf8')
         ## plpy.debug('1 query is %s' % repr(query))
 
+        # Normalize whitespace
+        query = re.sub("(?u)\s+"," ", query)
+
         # Convert AND, OR, NOT and - to tsearch2 punctuation
         query = re.sub(r"(?u)(?:^|\s)-([\w\(])", r" !\1", query)
         query = re.sub(r"(?u)\bAND\b", "&", query)
@@ -296,7 +299,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
         query = re.sub(r"(?u)(?<![\(\|\&\!])\s*\(", "&(", query)
         ## plpy.debug('6 query is %s' % repr(query))
         # ) not followed by )|&
-        query = re.sub(r"(?u)\)\s*(?!(\)|\||\&|\s*$))", ")&", query)
+        query = re.sub(r"(?u)\)(?!\s*(\)|\||\&|\s*$))", ")&", query)
         ## plpy.debug('6.1 query is %s' % repr(query))
         # Whitespace not proceded by (|&! not followed by &|
         query = re.sub(r"(?u)(?<![\(\|\&\!\s])\s+(?![\&\|\s])", "&", query)
@@ -447,7 +450,6 @@ def setup(con, configuration=DEFAULT_CONFIG):
             WHERE ts_name='default'
             """)
     
-
     # Don't bother with this - the setting is not exported with dumps
     # or propogated  when duplicating the database. Only reliable
     # way we can use is setting search_path in postgresql.conf

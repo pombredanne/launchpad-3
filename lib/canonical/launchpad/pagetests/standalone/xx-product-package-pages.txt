@@ -1,22 +1,26 @@
-Launchpad can show you a product's packages by distribution.
+Launchpad can show you a product's packages by distribution, with links to each.
 
-  >>> print http(r"""
-  ... GET /products/evolution/+distributions HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-    <h1>Packages by distribution</h1>
-  ...
-      <h2>Ubuntu Linux</h2>
-  ...
+    >>> from zope.testbrowser.testing import Browser
+
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/products/evolution/+distributions')
+    >>> anon_browser.url
+    'http://launchpad.dev/products/evolution/+distributions'
+    >>> print anon_browser.contents
+    <...
+    ...<h1>Packages by distribution</h1>
+    ...
+    ...<h2>Ubuntu Linux</h2>
+    ...
+    >>> anon_browser.getLink(url='http://launchpad.dev/distros/ubuntu/warty/+source/evolution').click()
+    >>> print anon_browser.contents
+    <...
+    ...evolution in Ubuntu Warty...
+    ...
 
 It can also show the packages by product series. And if you have permission (for
 example, you're the owner of the product), Launchpad lets you register packages
 for each series. In this case, mark@hbd.com is the owner of Evolution.
-
-    >>> from zope.testbrowser.testing import Browser
 
     >>> evo_owner = Browser()
     >>> evo_owner.addHeader('Authorization', 'Basic mark@hbd.com:test')
@@ -29,6 +33,8 @@ for each series. In this case, mark@hbd.com is the owner of Evolution.
     ...
     ...trunk...
     ...
+    >>> evo_owner.getLink(url='http://launchpad.dev/distros/ubuntu/hoary/+source/evolution') is not None
+    True
     >>> evo_owner.getLink(url='http://launchpad.dev/products/evolution/trunk/+addpackage') is not None
     True
 
@@ -46,23 +52,3 @@ the link to add packages yourself.
     Traceback (most recent call last):
     ...
     LinkNotFoundError
-
-If there are no product series, Launchpad invites you to create a series. 
-XXX 20060704 mpt: Remove once bug 51799 is fixed.
-
-    >>> from zope.testbrowser.testing import Browser
-
-    >>> unprivileged = Browser()
-    >>> unprivileged.addHeader(
-    ...     'Authorization', 'Basic no-priv@canonical.com:test')
-    >>> unprivileged.open(
-    ...     'http://launchpad.dev/products/bazaar/+packages')
-    >>> unprivileged.url
-    'http://launchpad.dev/products/bazaar/+packages'
-    >>> print unprivileged.contents
-    <...
-    ...no series are registered...
-    ...
-    >>> unprivileged.getLink(
-    ...     url='http://launchpad.dev/products/bazaar/+addseries') is not None
-    True

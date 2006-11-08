@@ -76,7 +76,7 @@ class TeamMembership(SQLBase):
         # Make sure the transition from the current status to the given status
         # is allowed. All allowed transitions are in the TeamMembership spec.
         if self.status in [admin, approved]:
-            assert status in [approved, admin, expired, deactivated]
+            assert status in [admin, approved, expired, deactivated]
         elif self.status in [deactivated]:
             assert status in [approved]
         elif self.status in [expired]:
@@ -195,7 +195,7 @@ class TeamMembershipSet:
 
     def getByPersonAndTeam(self, person, team, default=None):
         """See ITeamMembershipSet"""
-        result = TeamMembership.selectOneBy(personID=person.id, teamID=team.id)
+        result = TeamMembership.selectOneBy(person=person, team=team)
         if result is None:
             return default
         return result
@@ -212,7 +212,7 @@ class TeamMembershipSet:
 
     def getTeamMembersCount(self, team):
         """See ITeamMembershipSet"""
-        return TeamMembership.selectBy(teamID=team.id).count()
+        return TeamMembership.selectBy(team=team).count()
 
     def _getMembershipsByStatuses(self, team, statuses, orderBy=None):
         if orderBy is None:
@@ -292,7 +292,7 @@ def _removeParticipantFromTeamAndSuperTeams(person, team):
             # be kept as so.
             return
 
-    result = TeamParticipation.selectOneBy(personID=person.id, teamID=team.id)
+    result = TeamParticipation.selectOneBy(person=person, team=team)
     if result is not None:
         result.destroySelf()
 
@@ -317,5 +317,5 @@ def _fillTeamParticipation(member, team):
     for m in members:
         for t in itertools.chain(team.getSuperTeams(), [team]):
             if not m.hasParticipationEntryFor(t):
-                TeamParticipation(personID=m.id, teamID=t.id)
+                TeamParticipation(person=m, team=t)
 

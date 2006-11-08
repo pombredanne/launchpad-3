@@ -16,17 +16,11 @@ import re
 import tarfile
 import warnings
 from StringIO import StringIO
-from math import ceil
-from xml.sax.saxutils import escape as xml_escape
 from difflib import unified_diff
 import sha
 
 from zope.component import getUtility
-from zope.interface import implements, providedBy
-from zope.security.interfaces import IParticipation
-from zope.security.management import (
-    newInteraction, endInteraction, checkPermission as zcheckPermission)
-from zope.app.security.interfaces import IUnauthenticatedPrincipal
+from zope.security.management import checkPermission as zcheckPermission
 from zope.app.security.permission import (
     checkPermission as check_permission_is_registered)
 
@@ -34,10 +28,9 @@ import canonical
 from canonical.lp.dbschema import (
     SourcePackageFileType, BinaryPackageFormat, BinaryPackageFileType)
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IOpenLaunchBag, IRequestPreferredLanguages,
-    IRequestLocalLanguages, ITeam, TranslationConstants)
+    ILaunchBag, IRequestPreferredLanguages,
+    IRequestLocalLanguages, ITeam)
 from canonical.launchpad.components.poparser import POParser
-from canonical.launchpad.validators.gpg import valid_fingerprint
 
 
 def text_replaced(text, replacements, _cache={}):
@@ -101,35 +94,6 @@ def backslashreplace(str):
     xNN or uNNNN. Used to test data containing typographical quotes etc.
     """
     return str.decode('UTF-8').encode('ASCII', 'backslashreplace')
-
-
-CHARACTERS_PER_LINE = 50
-
-def get_attribute_names(ob):
-    """Gets all the attribute names ob provides.
-
-    It loops through all the interfaces that ob provides, and returns all the
-    attribute names specified in the interfaces.
-
-        >>> from zope.interface import Interface, implements, Attribute
-        >>> class IFoo(Interface):
-        ...     foo = Attribute('Foo')
-        ...     baz = Attribute('Baz')
-        >>> class IBar(Interface):
-        ...     bar = Attribute('Bar')
-        ...     baz = Attribute('Baz')
-        >>> class FooBar:
-        ...     implements(IFoo, IBar)
-        >>> attribute_names = get_attribute_names(FooBar())
-        >>> attribute_names.sort()
-        >>> attribute_names
-        ['bar', 'baz', 'foo']
-    """
-    ifaces = providedBy(ob)
-    names = set()
-    for iface in ifaces:
-        names.update(iface.names(all=True))
-    return list(names)
 
 
 def join_lines(*lines):
@@ -351,22 +315,6 @@ def shortlist(sequence, longest_expected=15):
     return L
 
 
-def count_lines(text):
-    '''Count the number of physical lines in a string. This is always at least
-    as large as the number of logical lines in a string.
-    '''
-
-    count = 0
-
-    for line in text.split('\n'):
-        if len(line) == 0:
-            count += 1
-        else:
-            count += int(ceil(float(len(line)) / CHARACTERS_PER_LINE))
-
-    return count
-
-
 def request_languages(request):
     '''Turn a request into a list of languages to show.'''
     user = getUtility(ILaunchBag).user
@@ -380,210 +328,6 @@ def request_languages(request):
         if lang not in languages:
             languages.append(lang)
     return languages
-
-
-class UnrecognisedCFormatString(ValueError):
-    """Exception raised when a string containing C format sequences can't be
-    parsed."""
-
-
-def parse_cformat_string(string):
-    """Parse a printf()-style format string into a sequence of interpolations
-    and non-interpolations."""
-
-    # The sequence '%%' is not counted as an interpolation. Perhaps splitting
-    # into 'special' and 'non-special' sequences would be better.
-
-    # This function works on the basis that s can be one of three things: an
-    # empty string, a string beginning with a sequence containing no
-    # interpolations, or a string beginning with an interpolation.
-
-    segments = []
-    end = string
-    plain_re = re.compile('(%%|[^%])+')
-    interpolation_re = re.compile('%[^diouxXeEfFgGcspmn]*[diouxXeEfFgGcspmn]')
-
-    while end:
-        # Check for a interpolation-less prefix.
-
-        match = plain_re.match(end)
-
-        if match:
-            segment = match.group(0)
-            segments.append(('string', segment))
-            end = end[len(segment):]
-            continue
-
-        # Check for an interpolation sequence at the beginning.
-
-        match = interpolation_re.match(end)
-
-        if match:
-            segment = match.group(0)
-            segments.append(('interpolation', segment))
-            end = end[len(segment):]
-            continue
-
-        # Give up.
-
-        raise UnrecognisedCFormatString(string)
-
-    return segments
-
-
-def convert_newlines_to_web_form(unicode_text):
-    r"""Convert an Unicode text from any newline style to the one used on web
-    forms, that's the Windows style ('\r\n').
-
-    >>> convert_newlines_to_web_form(u'foo')
-    u'foo'
-    >>> convert_newlines_to_web_form(u'foo\n')
-    u'foo\r\n'
-    >>> convert_newlines_to_web_form(u'foo\nbar\n\nbaz')
-    u'foo\r\nbar\r\n\r\nbaz'
-    >>> convert_newlines_to_web_form(u'foo\r\nbar')
-    u'foo\r\nbar'
-    >>> convert_newlines_to_web_form(u'foo\rbar')
-    u'foo\r\nbar'
-    """
-    assert isinstance(unicode_text, unicode), (
-        "The given text must be unicode instead of %s" % type(unicode_text))
-
-    if unicode_text is None:
-        return None
-    elif u'\r\n' in unicode_text:
-        # The text is already using the windows newline chars
-        return unicode_text
-    elif u'\n' in unicode_text:
-        return text_replaced(unicode_text, {u'\n': u'\r\n'})
-    else:
-        return text_replaced(unicode_text, {u'\r': u'\r\n'})
-
-
-def contract_rosetta_tabs(text):
-    r"""Replace Rosetta representation of tab characters with their native form.
-
-    Normal strings get passed through unmolested.
-
-    >>> contract_rosetta_tabs('foo')
-    'foo'
-    >>> contract_rosetta_tabs('foo\\nbar')
-    'foo\\nbar'
-
-    The string '[tab]' gets gonveted to a tab character.
-
-    >>> contract_rosetta_tabs('foo[tab]bar')
-    'foo\tbar'
-
-    The string '\[tab]' gets converted to a literal '[tab]'.
-
-    >>> contract_rosetta_tabs('foo\\[tab]bar')
-    'foo[tab]bar'
-
-    The string '\\[tab]' gets converted to a literal '\[tab]'.
-
-    >>> contract_rosetta_tabs('foo\\\\[tab]bar')
-    'foo\\[tab]bar'
-
-    And so on...
-
-    >>> contract_rosetta_tabs('foo\\\\\\[tab]bar')
-    'foo\\\\[tab]bar'
-    """
-    return text_replaced(text, {'[tab]': '\t', r'\[tab]': '[tab]'})
-
-
-def expand_rosetta_tabs(unicode_text):
-    r"""Replace tabs with their Rosetta representation.
-
-    Normal strings get passed through unmolested.
-
-    >>> expand_rosetta_tabs(u'foo')
-    u'foo'
-    >>> expand_rosetta_tabs(u'foo\\nbar')
-    u'foo\\nbar'
-
-    Tabs get converted to u'[tab]'.
-
-    >>> expand_rosetta_tabs(u'foo\tbar')
-    u'foo[tab]bar'
-
-    Literal occurrences of u'[tab]' get escaped.
-
-    >>> expand_rosetta_tabs(u'foo[tab]bar')
-    u'foo\\[tab]bar'
-
-    Escaped ocurrences themselves get escaped.
-
-    >>> expand_rosetta_tabs(u'foo\\[tab]bar')
-    u'foo\\\\[tab]bar'
-
-    And so on...
-
-    >>> expand_rosetta_tabs(u'foo\\\\[tab]bar')
-    u'foo\\\\\\[tab]bar'
-    """
-    return text_replaced(unicode_text, {u'\t': u'[tab]', u'[tab]': ur'\[tab]'})
-
-
-def msgid_html(text, flags, space=TranslationConstants.SPACE_CHAR,
-               newline=TranslationConstants.NEWLINE_CHAR):
-    """Convert a message ID to a HTML representation."""
-
-    lines = []
-
-    # Replace leading and trailing spaces on each line with special markup.
-
-    for line in xml_escape(text).split('\n'):
-        # Pattern:
-        # - group 1: zero or more spaces: leading whitespace
-        # - group 2: zero or more groups of (zero or
-        #   more spaces followed by one or more non-spaces): maximal string
-        #   which doesn't begin or end with whitespace
-        # - group 3: zero or more spaces: trailing whitespace
-        match = re.match('^( *)((?: *[^ ]+)*)( *)$', line)
-
-        if match:
-            lines.append(
-                space * len(match.group(1)) +
-                match.group(2) +
-                space * len(match.group(3)))
-        else:
-            raise AssertionError(
-                "A regular expression that should always match didn't.")
-
-    if 'c-format' in flags:
-        # Replace c-format sequences with marked-up versions. If there is a
-        # problem parsing the c-format sequences on a particular line, that
-        # line is left unformatted.
-
-        for i in range(len(lines)):
-            formatted_line = ''
-
-            try:
-                segments = parse_cformat_string(lines[i])
-            except UnrecognisedCFormatString:
-                continue
-
-            for segment in segments:
-                type, content = segment
-
-                if type == 'interpolation':
-                    formatted_line += ('<span class="interpolation">%s</span>'
-                        % content)
-                elif type == 'string':
-                    formatted_line += content
-
-            lines[i] = formatted_line
-
-    # Replace newlines and tabs with their respective representations.
-
-    html = expand_rosetta_tabs(newline.join(lines))
-    html = text_replaced(html, {
-        '[tab]': TranslationConstants.TAB_CHAR,
-        r'\[tab]': TranslationConstants.TAB_CHAR_ESCAPED
-        })
-    return html
 
 
 def check_po_syntax(s):
@@ -622,63 +366,6 @@ def test_diff(lines_a, lines_b):
         tofile='actual',
         lineterm='',
         )))
-
-
-def sanitiseFingerprint(fpr):
-    """Returns sanitised fingerprint if fpr is well-formed,
-    otherwise returns False.
-
-    >>> sanitiseFingerprint('C858 2652 1A6E F6A6 037B  B3F7 9FF2 583E 681B 6469')
-    'C85826521A6EF6A6037BB3F79FF2583E681B6469'
-    >>> sanitiseFingerprint('c858 2652 1a6e f6a6 037b  b3f7 9ff2 583e 681b 6469')
-    'C85826521A6EF6A6037BB3F79FF2583E681B6469'
-    >>> sanitiseFingerprint('681B 6469')
-    False
-
-    >>> sanitiseFingerprint('abnckjdiue')
-    False
-
-    """
-    # replace the white spaces
-    fpr = fpr.replace(' ', '')
-
-    # convert to upper case
-    fpr = fpr.upper()
-
-    if not valid_fingerprint(fpr):
-        return False
-
-    return fpr
-
-class Participation:
-    implements(IParticipation)
-
-    interaction = None
-    principal = None
-
-
-def setupInteraction(principal, login=None, participation=None):
-    """Sets up a new interaction with the given principal.
-
-    The login gets added to the launch bag.
-
-    You can optionally pass in a participation to be used.  If no
-    participation is given, a Participation is used.
-    """
-    if participation is None:
-        participation = Participation()
-
-    # First end any running interaction, and start a new one
-    endInteraction()
-    newInteraction(participation)
-
-    launchbag = getUtility(IOpenLaunchBag)
-    if IUnauthenticatedPrincipal.providedBy(principal):
-        launchbag.setLogin(None)
-    else:
-        launchbag.setLogin(login)
-
-    participation.principal = principal
 
 
 def check_permission(permission_name, context):

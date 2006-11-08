@@ -15,13 +15,13 @@ Test to check the POFile index page list all contributors as it should.
               22
               <br />
               <b>To do:</b>
-              14
+              15
   ...
 
 And it should work also even when we don't have that POFile created in our database.
 
   >>> print http(r"""
-  ... GET /products/netapplet/releases/+pots/netapplet/af HTTP/1.1
+  ... GET /products/netapplet/trunk/+pots/netapplet/af HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...

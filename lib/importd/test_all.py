@@ -50,7 +50,6 @@ import unittest
 lp_root = os.path.realpath(os.path.join(__file__, '..', '..', '..'))
 sys.path[:] = [p for p in sys.path if os.path.abspath(p) != lp_root]
 
-
 from importd.tests.testutil import TestVisitor, TestSuite
 
 
@@ -125,7 +124,7 @@ class filteringVisitor(TestVisitor):
             self._suite=TestSuite()
         return self._suite
     def visitCase(self, aCase):
-        if self.filter.match(aCase.id()):
+        if self.filter.search(aCase.id()):
             self.suite().addTest(aCase)
 
 

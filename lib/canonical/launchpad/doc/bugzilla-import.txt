@@ -107,16 +107,14 @@ it to return:
 
   >>> from zope.component import getUtility
   >>> from canonical.launchpad.ftests import login, ANONYMOUS
-  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
   >>> from canonical.launchpad.interfaces import (
   ...     IPersonSet, IBugSet, IBugTrackerSet, ILaunchpadCelebrities)
   >>> from canonical.lp.dbschema import BugTrackerType
   >>> from canonical.launchpad.scripts import bugzilla
-  >>> LibrarianTestSetup().setUp()
 
 Get a reference to the Ubuntu bug tracker, and log in:
 
-  >>> login('bugzilla-importer@launchpad.net')
+  >>> login('bug-importer@launchpad.net')
   >>> bugtracker = getUtility(ILaunchpadCelebrities).ubuntu_bugzilla
 
 Now we create a bugzilla.Bugzilla instance to handle the import, using
@@ -232,7 +230,7 @@ to notice:
    effect of the import, because they are subscribed to the bug.
  * The "RESOLVED WONTFIX" status is converted to a status of REJECTED.
  * The fact that the "unknown" package does not exist in Ubuntu has
-   been logged, along with the exception raised by getPackageNames().
+   been logged, along with the exception raised by guessPackageNames().
 
   >>> print getUtility(IPersonSet).getByEmail('new.user@canonical.com')
   None
@@ -358,7 +356,7 @@ and attach a watch to the upstream bug tracker:
   Task: evolution (upstream)
       Status: UNCONFIRMED
       Product: evolution
-      Importance: UNTRIAGED
+      Importance: UNDECIDED
       Watch: http://bugzilla.gnome.org/show_bug.cgi?id=273041
   Task: evolution (Ubuntu)
       Status: UNCONFIRMED
@@ -371,7 +369,7 @@ and attach a watch to the upstream bug tracker:
       Status: UNCONFIRMED
       Distro: debian
       Source package: evolution
-      Importance: UNTRIAGED
+      Importance: UNDECIDED
       Watch: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1234
   Messages:
       Author: Sample Person
@@ -530,8 +528,4 @@ Now check that the bugs have been marked duplicate:
   >>> bug4.duplicateof == bug2
   True
 
-
-Cleanup:
-
-  >>> LibrarianTestSetup().tearDown()
 

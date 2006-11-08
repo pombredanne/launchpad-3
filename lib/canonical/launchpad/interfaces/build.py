@@ -29,7 +29,8 @@ class IBuild(Interface):
     sourcepackagerelease = Attribute("SourcePackageRelease reference")
     pocket = Attribute("Target pocket of this build")
     dependencies = Attribute("Debian-like dependency line for DEPWAIT builds")
-
+    archive = Attribute("The archive")
+    
     # useful properties
     title = Attribute("Build Title")
     changesfile = Attribute("The Build Changesfile object, returns None if "
@@ -48,10 +49,14 @@ class IBuild(Interface):
     can_be_rescored = Attribute(
         "Whether or not this build record can be rescored manually.")
 
-    can_be_reset = Attribute(
-        "Whether or not this build record can be reset.")
+    can_be_retried = Attribute(
+        "Whether or not this build record can be retried.")
 
-    def reset():
+    calculated_buildstart = Attribute(
+        "Emulates a buildstart timestamp by calculating it from "
+        "datebuilt - buildduration.")
+
+    def retry():
         """Restore the build record to its initial state.
 
         Build record loses its history, is moved to NEEDSBUILD and a new
@@ -81,6 +86,25 @@ class IBuild(Interface):
 
     def createBuildQueueEntry():
         """Create a BuildQueue entry for this build record."""
+
+    def notify():
+        """Notify current build state to related people via email.
+
+        If config.buildmaster.build_notification is disable, simply
+        return.
+
+        If config.builddmaster.notify_owner is enabled and SPR.creator
+        has preferredemail it will send an email to the creator, Bcc:
+        to the config.builddmaster.default_recipient. If one of the
+        conditions was not satisfied, no preferredemail found (autosync
+        or untouched packages from debian) or config options disabled,
+        it will only send email to the specified default recipient.
+
+        This notification will contain useful information about
+        the record in question (all states are supported), see
+        doc/build-notification.txt for further information.
+        """
+
 
 class IBuildSet(Interface):
     """Interface for BuildSet"""

@@ -12,10 +12,10 @@ First, we check that the textarea is empty by default.
   'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=19&batch=1'
   >>> print browser.contents
   <!DOCTYPE html PUBLIC...
-  ...<textarea style="width: 100%;" lang="es"
-               rows="5"
+  ...<textarea style="width: 100%;" tabindex="1"
+               lang="es" rows="5"
                name="msgset_149_es_translation_0"
-               dir="ltr" tabindex="1"></textarea>...
+               dir="ltr"></textarea>...
 
 Now, we submit some text with new lines before and after the text, the
 answer should have exactly those strings.
@@ -26,10 +26,10 @@ answer should have exactly those strings.
   'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate'
   >>> print browser.contents
   <!DOCTYPE html PUBLIC...
-  ...<textarea style="width: 100%;" lang="es"
-               rows="5"
+  ...<textarea style="width: 100%;" tabindex="1"
+               lang="es" rows="5"
                name="msgset_149_es_translation_0"
-               dir="ltr" tabindex="1">
+               dir="ltr">
   <BLANKLINE>
   foo
   <BLANKLINE>
@@ -46,10 +46,10 @@ change the test, to be 100% sure that the textarea content is the right one.
   'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate'
   >>> print browser.contents #doctest: -NORMALIZE_WHITESPACE
   <!DOCTYPE html PUBLIC...
-              <textarea style="width: 100%;" lang="es"
-                        rows="5"
+              <textarea style="width: 100%;" tabindex="1"
+                        lang="es" rows="5"
                         name="msgset_149_es_translation_0"
-                        dir="ltr" tabindex="1">
+                        dir="ltr">
   foo</textarea>
   ...
 
@@ -77,10 +77,10 @@ And, as we can see, we get the trailing new line char
 
   >>> print browser.contents
   <!DOCTYPE html PUBLIC...
-  ...<textarea style="width: 100%;" lang="es"
-               rows="2"
+  ...<textarea style="width: 100%;" tabindex="1"
+               lang="es" rows="2"
                name="msgset_165_es_translation_0"
-               dir="ltr" tabindex="1">
+               dir="ltr">
   %s: la opcion «%s» es ambigua
   </textarea>
   ...
@@ -105,10 +105,10 @@ And, as we can see, we get the same output, just one trailing new line char
 
   >>> print browser.contents
   <!DOCTYPE html PUBLIC...
-  ...<textarea style="width: 100%;" lang="es"
-               rows="2"
+  ...<textarea style="width: 100%;" tabindex="1"
+               lang="es" rows="2"
                name="msgset_165_es_translation_0"
-               dir="ltr" tabindex="1">
+               dir="ltr">
   %s: la opcion «%s» es ambigua
   </textarea>
   ...
@@ -133,10 +133,10 @@ And Rosetta comes to the rescue and stores just one!.
 
   >>> print browser.contents
   <!DOCTYPE html PUBLIC...
-  ...<textarea style="width: 100%;" lang="es"
-               rows="2"
+  ...<textarea style="width: 100%;" tabindex="1"
+               lang="es" rows="2"
                name="msgset_165_es_translation_0"
-               dir="ltr" tabindex="1">
+               dir="ltr">
   %s: la opcion «%s» es ambigua
   </textarea>
   ...

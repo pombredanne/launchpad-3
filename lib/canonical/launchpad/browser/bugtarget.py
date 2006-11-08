@@ -69,7 +69,7 @@ class FileBugView(GeneralFormView):
                     distribution = self.context.distribution
 
                 try:
-                    distribution.getPackageNames(packagename)
+                    distribution.guessPackageNames(packagename)
                 except NotFoundError:
                     self.packagename_error = (
                         '"%s" does not exist in %s. Please choose a different '
@@ -111,9 +111,9 @@ class FileBugView(GeneralFormView):
             packagename = str(packagename)
             try:
                 sourcepackagename, binarypackagename = (
-                    context.getPackageNames(packagename))
+                    context.guessPackageNames(packagename))
             except NotFoundError:
-                # getPackageNames may raise NotFoundError. It would be
+                # guessPackageNames may raise NotFoundError. It would be
                 # nicer to allow people to indicate a package even if
                 # never published, but the quick fix for now is to note
                 # the issue and move on.
@@ -224,6 +224,7 @@ class BugTargetBugTagsView(LaunchpadView):
 
     def getUsedBugTagsWithURLs(self):
         """Return the bug tags and their search URLs."""
+        bug_tag_counts = self.context.getUsedBugTagsWithOpenCounts(self.user)
         return [
-            {'tag': tag, 'url': self._getSearchURL(tag)}
-            for tag in self.context.getUsedBugTags()]
+            {'tag': tag, 'count': count, 'url': self._getSearchURL(tag)}
+            for tag, count in bug_tag_counts]

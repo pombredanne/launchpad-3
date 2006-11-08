@@ -4,12 +4,6 @@ Rosetta PO Export Request Queue
 The queue of export requests is served by a cron script. Let's check if it can
 serve those requests properly.
 
-  >>> from canonical.launchpad.ftests.harness import \
-  ...     LaunchpadFunctionalTestSetup
-  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LaunchpadFunctionalTestSetup().setUp()
-  >>> LibrarianTestSetup().setUp()
-
 This is a dummy logger class to capture the export's log messages.
 
     >>> import sys
@@ -104,7 +98,7 @@ Let's download it and make sure the contents look ok.
   >>> import urllib2
   >>> from canonical.launchpad.helpers import string_to_tarfile
   >>> tarball = string_to_tarfile(urllib2.urlopen(url).read())
-  >>> for name in tarball.getnames():
+  >>> for name in sorted(tarball.getnames()):
   ...   print name
   rosetta-pmount/
   rosetta-pmount/ca.po
@@ -228,6 +222,29 @@ Let's test the .mo compilation.
   ...
   MOCompilationError: ...
 
-  >>> LibrarianTestSetup().tearDown()
-  >>> LaunchpadFunctionalTestSetup().tearDown()
+Finally, test running the script directly to be sure the user has the correct
+rights.
+We need to request again some files:
+
+  >>> request_set = POExportRequestSet()
+  >>> request_set.addRequest(person, None, [ca, cs])
+  >>> transaction.commit()
+
+And run the script.
+
+  >>> import subprocess
+  >>> import sys
+  >>> process = subprocess.Popen([
+  ...     sys.executable, 'cronscripts/rosetta-export-queue.py', '-vv'
+  ...     ], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+  ...     stderr=subprocess.STDOUT
+  ...     )
+  >>> (output, empty) = process.communicate()
+  >>> print output
+  INFO    creating lockfile
+  DEBUG   Exporting objects for person 1, PO template 2
+  INFO    Done.
+  DEBUG   Removing lock file: /var/lock/rosetta-export-queue.lock
+  <BLANKLINE>
+
 

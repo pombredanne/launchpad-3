@@ -1,50 +1,45 @@
-# (c) Canonical Ltd. 2004-2005, all rights reserved.
+# (c) Canonical Ltd. 2004-2006, all rights reserved.
 
 __metaclass__ = type
 
-# python standard library
-import sys
 import thread
 import traceback
 from new import instancemethod
 
-# interfaces and components
 from zope.interface import implements, providedBy
 from zope.component import getUtility, queryView
 from zope.event import notify
 from zope.app import zapi  # used to get at the adapters service
 
-# zope publication and traversal
 import zope.app.publication.browser
-from zope.app.publication.zopepublication import Cleanup
 from zope.publisher.interfaces.browser import IDefaultSkin
-from zope.publisher.interfaces import IPublishTraverse, Retry
+from zope.publisher.interfaces import IPublishTraverse, Retry, Redirect
 
-# zope transactions
 import transaction
 
-# zope security
 from zope.security.proxy import removeSecurityProxy
 from zope.security.interfaces import Unauthorized
 from zope.security.management import newInteraction
+from zope.app.security.interfaces import IUnauthenticatedPrincipal
 
-# launchpad
 from canonical.launchpad.interfaces import (
-    IOpenLaunchBag, ILaunchpadRoot, AfterTraverseEvent, BeforeTraverseEvent)
+    IOpenLaunchBag, ILaunchpadRoot, AfterTraverseEvent, BeforeTraverseEvent,
+    IShipItApplication, IPersonSet, IPerson, ITeam, ILaunchpadCelebrities)
 import canonical.launchpad.layers as layers
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 import canonical.launchpad.webapp.adapter as da
+from canonical.config import config
 
-# sqlos
 import sqlos.connection
 from sqlos.interfaces import IConnectionName
-
 
 __all__ = [
     'LoginRoot',
     'LaunchpadBrowserPublication',
     'MainLaunchpadPublication',
-    'BlueprintPublication']
+    'BlueprintPublication',
+    'ShipItPublication']
+
 
 class LoginRoot:
     """Object that provides IPublishTraverse to return only itself.
@@ -71,6 +66,8 @@ class LaunchpadBrowserPublication(
     This subclass undoes the ZODB-specific things in ZopePublication, a
     superclass of z.a.publication.BrowserPublication.
     """
+
+    root_object_interface = ILaunchpadRoot
 
     def __init__(self, db):
         self.db = db
@@ -106,7 +103,7 @@ class LaunchpadBrowserPublication(
         else:
             bag = getUtility(IOpenLaunchBag)
             assert bag.site is None, 'Argh! Steve was wrong!'
-            root_object = getUtility(ILaunchpadRoot)
+            root_object = getUtility(self.root_object_interface)
             bag.add(root_object)
             return root_object
 
@@ -178,6 +175,46 @@ class LaunchpadBrowserPublication(
                 raise Unauthorized # If there's no default principal
 
         request.setPrincipal(p)
+        self.maybeRestrictToTeam(request)
+
+    def maybeRestrictToTeam(self, request):
+        restrict_to_team = config.launchpad.restrict_to_team
+        if not restrict_to_team:
+            return
+
+        restrictedlogin = '+restricted-login'
+        restrictedinfo = '+restricted-info'
+
+        # Always allow access to +restrictedlogin and +restrictedinfo.
+        traversal_stack = request.getTraversalStack()
+        if (traversal_stack == [restrictedlogin] or
+            traversal_stack == [restrictedinfo]):
+            return
+
+        principal = request.principal
+        team = getUtility(IPersonSet).getByName(restrict_to_team)
+        if team is None:
+            raise AssertionError(
+                'restrict_to_team "%s" not found' % restrict_to_team)
+        elif not ITeam.providedBy(team):
+            raise AssertionError(
+                'restrict_to_team "%s" is not a team' % restrict_to_team)
+
+        if IUnauthenticatedPrincipal.providedBy(principal):
+            location = '/%s' % restrictedlogin
+        else:
+            # We have a team we can work with.
+            user = IPerson(principal)
+            if (user.inTeam(team) or
+                user.inTeam(getUtility(ILaunchpadCelebrities).admin)):
+                return
+            else:
+                location = '/%s' % restrictedinfo
+
+        request.response.setResult('')
+        request.response.redirect(location, temporary_if_possible=True)
+        # Quash further traversal.
+        request.setTraversalStack([])
 
     def callTraversalHooks(self, request, ob):
         """ We don't want to call _maybePlacefullyAuthenticate as does
@@ -188,7 +225,7 @@ class LaunchpadBrowserPublication(
         """ We don't want to call _maybePlacefullyAuthenticate as does
         zopepublication but we do want to send an AfterTraverseEvent """
         notify(AfterTraverseEvent(ob, request))
-        
+
         # Debugging code. Please leave. -- StuartBishop 20050622
         # Set 'threads 1' in launchpad.conf if you are using this.
         # from canonical.mem import printCounts, mostRefs, memory
@@ -241,3 +278,10 @@ class MainLaunchpadPublication(LaunchpadBrowserPublication):
 
 class BlueprintPublication(LaunchpadBrowserPublication):
     """The publication used for the Blueprint site."""
+
+
+class ShipItPublication(LaunchpadBrowserPublication):
+    """The publication used for the ShipIt sites."""
+
+    root_object_interface = IShipItApplication
+

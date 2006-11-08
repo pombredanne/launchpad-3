@@ -99,6 +99,11 @@
             name="+index"
             lp:url="+builds/$name/+index" />
         <browser:page
+            template="../templates/builder-history.pt"
+            facet="overview"
+            name="+history"
+            lp:url="+builds/$name/+history" />
+        <browser:page
             template="../templates/builds-list.pt"
             name="+builds-list"
             facet="overview"

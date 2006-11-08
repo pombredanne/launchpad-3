@@ -10,31 +10,25 @@
     <allow interface="canonical.launchpad.interfaces.ISprintSpecification" />
     <require
       permission="launchpad.Edit"
-      set_attributes="status whiteboard"
+      set_attributes="whiteboard"
       />
   </content>
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.ISprintSpecification"
-    name="+edit" />
+    name="+decide" />
 
   <browser:url
     for="canonical.launchpad.interfaces.ISprintSpecification"
     path_expression="string:${sprint/name}"
     attribute_to_parent="specification" />
 
-  <browser:editform
-    name="+edit"
-    schema="canonical.launchpad.interfaces.ISprintSpecification"
-    class="canonical.launchpad.browser.SprintSpecificationEditView"
-    label="Approve spec for meeting agenda"
-    fields="status whiteboard"
-    permission="launchpad.Edit"
-    template="../templates/sprintspecification-edit.pt">
-    <browser:widget
-      field="whiteboard"
-      class="zope.app.form.browser.TextAreaWidget"
-      height="5" />
-  </browser:editform>
+  <browser:page
+    name="+decide"
+    for="canonical.launchpad.interfaces.ISprintSpecification"
+    class="canonical.launchpad.browser.SprintSpecificationDecideView"
+    permission="launchpad.Driver"
+    template="../templates/sprintspecification-decide.pt">
+  </browser:page>
 
 </configure>

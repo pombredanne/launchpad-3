@@ -9,10 +9,11 @@ from doctest import DocTestSuite
 
 def test_suite():
     suite = TestSuite()
-    from canonical.launchpad.validators import name, url, version
+    from canonical.launchpad.validators import name, url, version, email
     suite.addTest(DocTestSuite(url))
     suite.addTest(DocTestSuite(version))
     suite.addTest(DocTestSuite(name))
+    suite.addTest(DocTestSuite(email))
     return suite
 
 if __name__ == '__main__':

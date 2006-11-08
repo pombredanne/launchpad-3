@@ -53,6 +53,7 @@ class IDistroArchRelease(IHasOwner):
     processors = Attribute(
         "The group of Processors for this Distroarchrelease.processorfamily."
         )
+    main_archive = Attribute('Main Archive')
 
     def updatePackageCount():
         """Update the cached binary package count for this distro arch
@@ -83,6 +84,8 @@ class IDistroArchRelease(IHasOwner):
 
         The 'name' passed in should either be a BinaryPackageName instance
         or else a string which will be looked up as a BinaryPackageName.
+        If the BinaryPackageName cannot be found, NotFoundError will be
+        raised.
 
         If pocket is not specified, we look in all pockets.
 

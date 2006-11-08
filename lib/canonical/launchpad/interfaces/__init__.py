@@ -13,6 +13,7 @@ from canonical.launchpad.interfaces.validation import *
 from canonical.launchpad.interfaces.specificationtarget import *
 from canonical.launchpad.interfaces.tickettarget import *
 from canonical.launchpad.interfaces.messagetarget import *
+from canonical.launchpad.interfaces.pillar import *
 
 from canonical.launchpad.interfaces.binarypackagerelease import *
 from canonical.launchpad.interfaces.binarypackagename import *
@@ -20,6 +21,7 @@ from canonical.launchpad.interfaces.bounty import *
 from canonical.launchpad.interfaces.bountymessage import *
 from canonical.launchpad.interfaces.bountysubscription import *
 from canonical.launchpad.interfaces.branch import *
+from canonical.launchpad.interfaces.branchref import *
 from canonical.launchpad.interfaces.branchsubscription import *
 from canonical.launchpad.interfaces.bugactivity import *
 from canonical.launchpad.interfaces.bugattachment import *
@@ -37,6 +39,7 @@ from canonical.launchpad.interfaces.bugtracker import *
 from canonical.launchpad.interfaces.bugwatch import *
 from canonical.launchpad.interfaces.build import *
 from canonical.launchpad.interfaces.builder import *
+from canonical.launchpad.interfaces.buildqueue import *
 from canonical.launchpad.interfaces.codeofconduct import *
 from canonical.launchpad.interfaces.component import *
 from canonical.launchpad.interfaces.country import *
@@ -56,6 +59,7 @@ from canonical.launchpad.interfaces.distroreleasebinarypackage import *
 from canonical.launchpad.interfaces.distroreleaselanguage import *
 from canonical.launchpad.interfaces.distroreleasepackagecache import *
 from canonical.launchpad.interfaces.distroreleasesourcepackagerelease import *
+from canonical.launchpad.interfaces.emailaddress import *
 from canonical.launchpad.interfaces.externalbugtracker import *
 from canonical.launchpad.interfaces.files import *
 from canonical.launchpad.interfaces.geoip import *
@@ -142,4 +146,5 @@ from canonical.launchpad.interfaces.developmentmanifest import *
 from canonical.launchpad.interfaces.distrocomponentuploader import *
 
 from canonical.launchpad.interfaces.cal import *
-
+from canonical.launchpad.interfaces.archive import *
+from canonical.launchpad.interfaces.personalpackagearchive import *

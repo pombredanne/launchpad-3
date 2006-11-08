@@ -61,6 +61,7 @@ __all__ = (
 'PackagePublishingStatus',
 'PackagePublishingPocket',
 'PackagingType',
+'PersonCreationRationale',
 'PollAlgorithm',
 'PollSecrecy',
 'ProjectRelationship',
@@ -72,6 +73,7 @@ __all__ = (
 'ShipItArchitecture',
 'ShipItDistroRelease',
 'ShipItFlavour',
+'ShippingRequestStatus',
 'ShippingService',
 'SourcePackageFileType',
 'SourcePackageFormat',
@@ -80,34 +82,40 @@ __all__ = (
 'SpecificationDelivery',
 'SpecificationFilter',
 'SpecificationGoalStatus',
+'SpecificationLifecycleStatus',
 'SpecificationPriority',
 'SpecificationSort',
 'SpecificationStatus',
 'SprintSpecificationStatus',
 'SSHKeyType',
 'TextDirection',
+'TicketAction',
+'TicketParticipation',
 'TicketPriority',
+'TicketSort',
 'TicketStatus',
 'TeamMembershipStatus',
 'TeamSubscriptionPolicy',
 'TranslationPriority',
 'TranslationPermission',
 'TranslationValidationStatus',
-'DistroReleaseQueueStatus',
-'DistroReleaseQueueCustomFormat',
+'PackageUploadStatus',
+'PackageUploadCustomFormat',
 'UpstreamFileType',
 'UpstreamReleaseVersionStyle',
 )
 
-from canonical.database.constants import DEFAULT
-
-from zope.interface.advice import addClassAdvisor
 import sys
 import warnings
+
+from zope.interface.advice import addClassAdvisor
+from zope.security.proxy import isinstance as zope_isinstance
 
 from sqlobject.col import SOCol, Col
 from sqlobject.include import validators
 import sqlobject.constraints as consts
+
+from canonical.database.constants import DEFAULT
 
 
 class SODBSchemaEnumCol(SOCol):
@@ -143,6 +151,10 @@ class DBSchemaValidator(validators.Validator):
         >>> validator = DBSchemaValidator(schema=BugTaskStatus)
         >>> validator.fromPython(BugTaskStatus.FIXCOMMITTED, None)
         25
+        >>> validator.fromPython(tuple(), None)
+        Traceback (most recent call last):
+        ...
+        TypeError: Not a DBSchema Item: ()
         >>> validator.fromPython(ImportTestStatus.NEW, None)
         Traceback (most recent call last):
         ...
@@ -152,15 +164,13 @@ class DBSchemaValidator(validators.Validator):
         """
         if value is None:
             return None
+        if value is DEFAULT:
+            return value
         if isinstance(value, int):
             raise TypeError(
                 'Need to set a dbschema Enum column to a dbschema Item,'
                 ' not an int')
-        # Allow this to work in the presence of security proxies.
-        ##if not isinstance(value, Item):
-        if value is DEFAULT:
-            return value
-        if value.__class__ != Item:
+        if not zope_isinstance(value, Item):
             # We use repr(value) because if it's a tuple (yes, it has been
             # seen in some cases) then the interpolation would swallow that
             # fact, confusing poor programmers like Daniel.
@@ -210,16 +220,16 @@ def docstring_to_title_descr(string):
     >>> print title
     Title of foo
     >>> for num, line in enumerate(descr.splitlines()):
-    ...    print num, line
+    ...    print "%d.%s" % (num, line)
     ...
-    0 Description of foo starts here.  It may
-    1 spill onto multiple lines.  It may also have
-    2 indented examples:
-    3 
-    4   Foo
-    5   Bar
-    6 
-    7 like the above.
+    0.Description of foo starts here.  It may
+    1.spill onto multiple lines.  It may also have
+    2.indented examples:
+    3.
+    4.  Foo
+    5.  Bar
+    6.
+    7.like the above.
 
     """
     lines = string.splitlines()
@@ -326,9 +336,7 @@ class Item:
             warnings.warn('comparison of DBSchema Item to an int: %r' % self,
                 stacklevel=stacklevel)
             return False
-        # Cannot use isinstance, because 'other' might be security proxied.
-        ##elif isinstance(other, Item):
-        elif other.__class__ == Item:
+        elif zope_isinstance(other, Item):
             return self.value == other.value and self.schema == other.schema
         else:
             return False
@@ -350,6 +358,18 @@ class Item:
 
     def __hash__(self):
         return self.value
+
+    # These properties are provided as a way to get at the other
+    # schema items and name from a security wrapped Item instance when
+    # there are no security declarations for the DBSchema class.  They
+    # are used by the enumvalue TALES expression.
+    @property
+    def schema_items(self):
+        return self.schema.items
+
+    @property
+    def schema_name(self):
+        return self.schema.__name__
 
 # TODO: make a metaclass for dbschemas that looks for ALLCAPS attributes
 #       and makes the introspectible.
@@ -699,6 +719,7 @@ class PackagingType(DBSchema):
         relationship with the libneon product.
         """)
 
+
 ##XXX: (gpg+dbschema) cprov 20041004
 ## the data structure should be rearranged to support 4 field
 ## needed: keynumber(1,16,17,20), keyalias(R,g,D,G), title and description
@@ -899,6 +920,7 @@ class EmailAddressStatus(DBSchema):
         The email address was validated and is the person's choice for
         receiving notifications from Launchpad.
         """)
+
 
 class TeamMembershipStatus(DBSchema):
     """TeamMembership Status
@@ -1181,20 +1203,33 @@ class SourcePackageUrgency(DBSchema):
 
 
 class SpecificationDelivery(DBSchema):
+    # Note that some of the states associated with this schema correlate to
+    # a "not started" definition. See Specification.started_clause for
+    # further information, and make sure that it is updated (together with
+    # the relevant database checks) if additional states are added that are
+    # also "not started".
     """Specification Delivery Status
-    
+
     This tracks the implementation or delivery of the feature being
     specified. The status values indicate the progress that is being made in
     the actual coding or configuration that is needed to realise the
     feature.
     """
-
+    # NB this state is considered "not started"
     UNKNOWN = Item(0, """
         Unknown
 
         We have no information on the implementation of this feature.
         """)
 
+    # NB this state is considered "not started"
+    NOTSTARTED = Item(5, """
+        Not started
+
+        No work has yet been done on the implementation of this feature.
+        """)
+
+    # NB this state is considered "not started"
     DEFERRED = Item(10, """
         Deferred
 
@@ -1206,24 +1241,24 @@ class SpecificationDelivery(DBSchema):
     NEEDSINFRASTRUCTURE = Item(40, """
         Needs Infrastructure
 
-        Work cannot proceed on this feature, because it depends on
+        Work cannot proceed, because the feature depends on
         infrastructure (servers, databases, connectivity, system
-        administration work) which has not been done.
+        administration work) that has not been supplied.
         """)
 
     BLOCKED = Item(50, """
         Blocked
 
         Work cannot proceed on this specification because it depends on
-        another feature in a different specification which has not yet been
-        done. Note: the other specification should be listed as a blocker of
-        this one.
+        a separate feature that has not yet been implemented.
+        (The specification for that feature should be listed as a blocker of
+        this one.)
         """)
 
     STARTED = Item(60, """
         Started
 
-        Work has begun on this feature, but has not yet been published
+        Work has begun, but has not yet been published
         except as informal branches or patches. No indication is given as to
         whether or not this work will be completed for the targeted release.
         """)
@@ -1231,25 +1266,22 @@ class SpecificationDelivery(DBSchema):
     SLOW = Item(65, """
         Slow progress
 
-        Work has been slow on this item and it has a high risk of not being
-        delivered on time. Help is wanted on direction or assistance is
-        needed with the implementation of the feature.
+        Work has been slow on this item, and it has a high risk of not being
+        delivered on time. Help is wanted with the implementation.
         """)
 
     GOOD = Item(70, """
         Good progress
 
-        This functionality is making good progress and is considered on 
-        track for delivery in the targeted release.
+        The feature is considered on track for delivery in the targeted release.
         """)
 
     BETA = Item(75, """
         Beta Available
 
-        The code for this feature has reached the point where a beta version
-        that implements substantially all of the required functionality
-        is being published for widespread testing, in personal package
-        archives or a personal release, but the code is not yet in the
+        A beta version, implementing substantially all of the feature,
+        has been published for widespread testing in personal package
+        archives or a personal release. The code is not yet in the
         main archive or mainline branch. Testing and feedback are solicited.
         """)
 
@@ -1257,18 +1289,17 @@ class SpecificationDelivery(DBSchema):
         Needs Code Review
 
         The developer is satisfied that the feature has been well
-        implemented, and is now ready for review and final sign-off on the
-        feature, after which it will be marked implemented or deployed.
+        implemented. It is now ready for review and final sign-off,
+        after which it will be marked implemented or deployed.
         """)
 
     AWAITINGDEPLOYMENT = Item(85, """
         Deployment
 
-        The work contemplated in this specification has been done, and can
-        be deployed in the production environment, but the system
-        administrators have not yet attended to that. This status is
-        typically used for web services where code is not released but
-        instead is pushed into production.
+        The implementation has been done, and can be deployed in the production
+        environment, but this has not yet been done by the system
+        administrators. (This status is typically used for Web services where
+        code is not released but instead is pushed into production.
         """)
 
     IMPLEMENTED = Item(90, """
@@ -1277,6 +1308,31 @@ class SpecificationDelivery(DBSchema):
         This functionality has been delivered for the targeted release, the
         code has been uploaded to the main archives or committed to the
         targeted product series, and no further work is necessary.
+        """)
+
+
+class SpecificationLifecycleStatus(DBSchema):
+    """The current "lifecycle" status of a specification. Specs go from
+    NOTSTARTED, to STARTED, to COMPLETE.
+    """
+
+    NOTSTARTED = Item(10, """
+        Not started
+
+        No work has yet been done on this feature.
+        """)
+
+    STARTED = Item(20, """
+        Started
+
+        This feature is under active development.
+        """)
+
+    COMPLETE = Item(30, """
+        Complete
+
+        This feature has been marked "complete" because no further work is
+        expected. Either the feature is done, or it has been abandoned.
         """)
 
 
@@ -1308,7 +1364,7 @@ class SpecificationPriority(DBSchema):
     LOW = Item(10, """
         Low
 
-        The specification is low priority. We would like to have it in the
+        We would like to have it in the
         code, but it's not on any critical path and is likely to get bumped
         in favour of higher-priority work. The idea behind the specification
         is sound and the project leaders would incorporate this
@@ -1319,16 +1375,15 @@ class SpecificationPriority(DBSchema):
     MEDIUM = Item(50, """
         Medium
 
-        The specification is of a medium, or normal priority. The project
-        developers will definitely get to this feature but perhaps not in
-        the next major release or two.
+        The project developers will definitely get to this feature,
+        but perhaps not in the next major release or two.
         """)
 
     HIGH = Item(70, """
         High
 
-        This specification is strongly desired by the project leaders.
-        The feature will definitely get review time and contributions would
+        Strongly desired by the project leaders.
+        The feature will definitely get review time, and contributions would
         be most effective if directed at a feature with this priority.
         """)
 
@@ -1366,7 +1421,7 @@ class SpecificationFilter(DBSchema):
 
     INCOMPLETE = Item(10, """
         Incomplete
-        
+
         This indicates that the list should include the incomplete items
         only. The rules for determining if a specification is incomplete are
         complex, depending on whether or not the spec is informational.
@@ -1493,25 +1548,24 @@ class SpecificationStatus(DBSchema):
     APPROVED = Item(10, """
         Approved
 
-        This specification has been approved. The project team believe that
-        it is ready to be implemented without substantial further issues being
-        encountered.
+        The project team believe that the specification is ready to be
+        implemented, without substantial issues being encountered.
         """)
 
     PENDINGAPPROVAL = Item(15, """
         Pending Approval
 
-        This spec has been reviewed, and is considered to be ready for final
-        approval. The reviewer believes that the specification is clearly
-        written and adequately addresses all the important issues that will
+        Reviewed and considered ready for final approval.
+        The reviewer believes the specification is clearly written,
+        and adequately addresses all important issues that will
         be raised during implementation.
         """)
 
     PENDINGREVIEW = Item(20, """
         Review
 
-        This spec has been put in a reviewers queue. The reviewer will
-        assess the clarity and comprehensiveness of the spec, and decide
+        Has been put in a reviewer's queue. The reviewer will
+        assess it for clarity and comprehensiveness, and decide
         whether further work is needed before the spec can be considered for
         actual approval.
         """)
@@ -1519,41 +1573,43 @@ class SpecificationStatus(DBSchema):
     DRAFT = Item(30, """
         Drafting
 
-        The specification is actively being drafted. The spec should only be
-        in this state if it has a drafter in place, and the spec is under
-        regular revision. Please do not park specs in the "drafting" state
-        indefinitely.
+        The specification is actively being drafted, with a drafter in place
+        and frequent revision occurring.
+        Do not park specs in the "drafting" state indefinitely.
         """)
 
-    BRAINDUMP = Item(40, """
-        Braindump
+    DISCUSSION = Item(35, """
+        Discussion
 
-        The specification is a thought, or collection of thoughts, with
-        no attention yet given to implementation strategy, dependencies or
-        presentation/UI issues.
+        Still needs active discussion, at a sprint for example.
+        """)
+
+    NEW = Item(40, """
+        New
+
+        No thought has yet been given to implementation strategy, dependencies,
+        or presentation/UI issues.
         """)
 
     SUPERSEDED = Item(60, """
         Superseded
 
-        This specification is still interesting, but has been superseded by
-        a newer spec, or set of specs, that clarify or describe a newer way
-        to implement the desired feature(s). Please use the newer specs and
-        not this one.
+        Still interesting, but superseded by a newer spec or set of specs that
+        clarify or describe a newer way to implement the desired feature.
+        Please use the newer specs and not this one.
         """)
 
     OBSOLETE = Item(70, """
         Obsolete
 
-        This specification has been obsoleted. Probably, we decided not to
-        implement it for some reason. It should not be displayed, and people
-        should not put any effort into implementing it.
+        The specification has been obsoleted, probably because it was decided
+        against. People should not put any effort into implementing it.
         """)
 
 
 class SpecificationGoalStatus(DBSchema):
     """The target status for this specification
-    
+
     This enum allows us to show whether or not the specification has been
     approved or declined as a target for the given product series or distro
     release.
@@ -1584,7 +1640,7 @@ class SpecificationGoalStatus(DBSchema):
 
 class SprintSpecificationStatus(DBSchema):
     """The current approval status of the spec on this sprint's agenda.
-    
+
     This enum allows us to know whether or not the meeting admin team has
     agreed to discuss an item.
     """
@@ -1599,7 +1655,7 @@ class SprintSpecificationStatus(DBSchema):
     DECLINED = Item(20, """
         Declined
 
-        This spec has been declined from the meeting agenda 
+        This spec has been declined from the meeting agenda
         because of a lack of available resources, or uncertainty over
         the specific requirements or outcome desired.
         """)
@@ -1608,8 +1664,47 @@ class SprintSpecificationStatus(DBSchema):
         Proposed
 
         This spec has been submitted for consideration by the meeting
-        organisers. It has not yet been accepted or declined for the 
+        organisers. It has not yet been accepted or declined for the
         agenda.
+        """)
+
+
+# Enumeration covered by bug 66633:
+#   Need way to define enumerations outside of dbschema
+class TicketParticipation(DBSchema):
+    """The different ways a person can be involved in a ticket.
+
+    This enumeration is part of the ITicketActor.searchTickets() API.
+    """
+
+    OWNER = Item(10, """
+        Owner
+
+        The person created the ticket.
+        """)
+
+    SUBSCRIBER = Item(15, """
+        Subscriber
+
+        The person subscribed to the ticket.
+        """)
+
+    ASSIGNEE = Item(20, """
+        Assignee
+
+        The person is assigned to the ticket.
+        """)
+
+    COMMENTER = Item(25, """
+        Commenter
+
+        The person commented on the ticket.
+        """)
+
+    ANSWERER = Item(30, """
+        Answerer
+
+        The person answered the ticket.
         """)
 
 
@@ -1654,30 +1749,160 @@ class TicketPriority(DBSchema):
         """)
 
 
+class TicketAction(DBSchema):
+    """An enumeration of the possible actions done on a ticket.
+
+    This enumeration is used to tag the action done by a user with
+    each TicketMessage. Most of these action indicates a status change
+    on the ticket.
+    """
+
+    REQUESTINFO = Item(10, """
+        Request for more information
+
+        This message asks for more information about the support
+        request.
+        """)
+
+    GIVEINFO = Item(20, """
+        Give more information
+
+        In this message, the submitter provides more information about the
+        request.
+        """)
+
+    COMMENT = Item(30, """
+        Comment
+
+        User commented on the message. This is use for example for messages
+        added to a ticket in the SOLVED state.
+        """)
+
+    ANSWER = Item(35, """
+        Answer
+
+        This message provides an answer to the support request.
+        """)
+
+    CONFIRM = Item(40, """
+        Confirm
+
+        This message confirms that an answer solved the problem.
+        """)
+
+    REJECT = Item(50, """
+        Reject
+
+        This message rejects a support request as invalid.
+        """)
+
+    EXPIRE = Item(70, """
+        Expire
+
+        Automatic message created when the ticket is expired.
+        """)
+
+    REOPEN = Item(80, """
+        Reopen
+
+        Message from the submitter that reopens the ticket with more
+        information concerning the request.
+        """)
+
+    SETSTATUS = Item(90, """
+        Change status
+
+        Message from an administrator that explain why the ticket status
+        was changed.
+        """)
+
+class TicketSort(DBSchema):
+    """An enumeration of the valid ticket search sort order.
+
+    This enumeration is part of the ITicketTarget.searchTickets() API. The
+    titles are formatted for nice display in browser code.
+
+    XXX flacoste 2006/08/29 This has nothing to do with database code and
+    is really part of the ITicketTarget definitions. We should find a way
+    to define enumerations in interface code and generate easily,
+    when required, the database implementation code.
+    """
+
+    RELEVANCY = Item(5, """
+    by relevancy
+
+    Sort by relevancy of the ticket toward the search text.
+    """)
+
+    STATUS = Item(10, """
+    by status
+
+    Sort tickets by status: Open, Needs information, Answered, Solved,
+    Expired, Invalid.
+
+    NEWEST_FIRST should be used as a secondary sort key.
+    """)
+
+    NEWEST_FIRST = Item(15, """
+    newest first
+
+    Sort ticket from newest to oldest.
+    """)
+
+    OLDEST_FIRST = Item(20, """
+    oldest first
+
+    Sort tickets from oldset to newest.
+    """)
+
+
 class TicketStatus(DBSchema):
     """The current status of a Support Request
 
-    This enum tells us the current status of the support ticket. The
-    request has a simple lifecycle, from open to answered or rejected.
+    This enum tells us the current status of the support ticket.
     """
 
-    OPEN = Item(10,
-        """Open
+    OPEN = Item(10, """
+        Open
 
-        There might be someone that answered the support request, but
-        the submitter hasn't accepted the answer yet.
+        The request is waiting for an answer. This could be a new request
+        or a request where the given answer was refused by the submitter.
         """)
 
-    ANSWERED = Item(20,
-        """Answered
+    NEEDSINFO = Item(15, """
+        Needs information
 
-        The submitter of the support request has accepted an answer.
+        A user requested more information from the submitter. The request
+        will be moved back to the OPEN state once the submitter provides the
+        answer.
         """)
 
-    REJECTED = Item(30,
-        """Rejected
+    ANSWERED = Item(18, """
+        Answered
 
-        No acceptable answer was provided to the question.
+        An answer was given on this request. We assume that the answer
+        is the correct one. The user will post back changing the ticket's
+        status back to OPEN if that is not the case.
+        """)
+
+    SOLVED = Item(20, """
+        Solved
+
+        The submitter confirmed that an answer solved his problem.
+        """)
+
+    EXPIRED = Item(25, """
+        Expired
+
+        The ticket has been expired after 15 days without comments in the
+        OPEN or NEEDSINFO state.
+        """)
+
+    INVALID = Item(30, """
+        Invalid
+
+        This ticket isn't a support request. It could be a duplicate request,
+        spam or anything that should not appear in the support tracker.
         """)
 
 
@@ -1834,6 +2059,7 @@ class TranslationPriority(DBSchema):
         A low priority POTemplate should only show up if a comprehensive
         search or complete listing is requested by the user.  """)
 
+
 class TranslationPermission(DBSchema):
     """Translation Permission System
 
@@ -1872,11 +2098,12 @@ class TranslationPermission(DBSchema):
         suggestions for new translations, but those suggestions need to be
         reviewed before being accepted by the designated translator.""")
 
-class DistroReleaseQueueStatus(DBSchema):
+
+class PackageUploadStatus(DBSchema):
     """Distro Release Queue Status
 
     An upload has various stages it must pass through before becoming part
-    of a DistroRelease. These are managed via the DistroReleaseQueue table
+    of a DistroRelease. These are managed via the Upload table
     and related tables and eventually (assuming a successful upload into the
     DistroRelease) the effects are published via the PackagePublishing and
     SourcePackagePublishing tables.  """
@@ -1925,10 +2152,11 @@ class DistroReleaseQueueStatus(DBSchema):
         is present to allow logging tools to record the rejection and then
         clean up any subsequently unnecessary records.  """)
 
+
 # If you change this (add items, change the meaning, whatever) search for
 # the token ##CUSTOMFORMAT## e.g. database/queue.py or nascentupload.py and
 # update the stuff marked with it.
-class DistroReleaseQueueCustomFormat(DBSchema):
+class PackageUploadCustomFormat(DBSchema):
     """Custom formats valid for the upload queue
 
     An upload has various files potentially associated with it, from source
@@ -1956,6 +2184,14 @@ class DistroReleaseQueueCustomFormat(DBSchema):
         A raw-dist-upgrader file is a tarball. It is simply published into
         the archive.
         """)
+
+    DDTP_TARBALL = Item(3, """
+        raw-ddtp-tarball
+
+        A raw-ddtp-tarball contains all the translated package description
+        indexes for a component.
+        """)
+
 
 class PackagePublishingStatus(DBSchema):
     """Package Publishing Status
@@ -2009,6 +2245,7 @@ class PackagePublishingStatus(DBSchema):
         and thus will not be considered in most queries about source
         packages in distroreleases. """)
 
+
 class PackagePublishingPriority(DBSchema):
     """Package Publishing Priority
 
@@ -2056,6 +2293,7 @@ class PackagePublishingPriority(DBSchema):
         other priority levels; or packages which are only useful to people
         who have very specialised needs.
         """)
+
 
 class PackagePublishingPocket(DBSchema):
     """Package Publishing Pocket
@@ -2106,6 +2344,7 @@ class PackagePublishingPocket(DBSchema):
 
         Backported packages.
         """)
+
 
 class SourcePackageRelationships(DBSchema):
     """Source Package Relationships
@@ -2582,9 +2821,9 @@ class BugTaskImportance(DBSchema):
         documentation fix.
         """)
 
-    UNTRIAGED = Item(5, """
-        Untriaged
-        
+    UNDECIDED = Item(5, """
+        Undecided
+
         A relevant developer or manager has not yet decided how
         important this bug is.
         """)
@@ -2634,7 +2873,7 @@ class BugAttachmentType(DBSchema):
 
     An attachment to a bug can be of different types, since for example
     a patch is more important than a screenshot. This schema describes the
-    different types. 
+    different types.
     """
 
     PATCH = Item(1, """
@@ -2689,30 +2928,6 @@ class RevisionControlSystems(DBSchema):
         Subversion aims to address some of the shortcomings in
         CVS, but retains the central server bottleneck inherent
         in the CVS design.
-        """)
-
-    ARCH = Item(3, """
-        The Arch Revision Control System
-
-        An open source revision control system that combines truly
-        distributed branching with advanced merge algorithms. This
-        removes the scalability problems of centralised revision
-        control.
-        """)
-
-    PACKAGE = Item(4, """
-        Package
-
-        DEPRECATED DO NOT USE
-        """)
-
-
-    BITKEEPER = Item(5, """
-        Bitkeeper
-
-        A commercial revision control system that, like Arch, uses
-        distributed branches to allow for faster distributed
-        development.
         """)
 
 
@@ -2851,7 +3066,7 @@ class LoginTokenType(DBSchema):
         """)
 
     VALIDATEGPG = Item(6, """
-        Validate GPG key 
+        Validate GPG key
 
         A user has submited a new GPG key to his account and it need to
         be validated.
@@ -2862,6 +3077,13 @@ class LoginTokenType(DBSchema):
 
         A user has submitted a new sign-only GPG key to his account and it
         needs to be validated.
+        """)
+
+    PROFILECLAIM = Item(8, """
+        Claim an unvalidated Launchpad profile
+
+        A user has found an unvalidated profile in Launchpad and is trying
+        to claim it.
         """)
 
 
@@ -3046,7 +3268,7 @@ class MirrorSpeed(DBSchema):
 
 
 class MirrorStatus(DBSchema):
-    """The status of a given mirror."""
+    """The status (freshness) of a given mirror."""
 
     UP = Item(1, """
         Up to date
@@ -3091,7 +3313,7 @@ class MirrorStatus(DBSchema):
         """)
 
     UNKNOWN = Item(8, """
-        Unknown
+        Unknown freshness
 
         We couldn't determine when this mirror's content was last updated.
         """)
@@ -3186,6 +3408,7 @@ class RosettaFileFormat(DBSchema):
         The .qm format as used by programs using the QT toolkit.
         """)
 
+
 class TranslationValidationStatus(DBSchema):
     """Translation Validation Status
 
@@ -3210,6 +3433,46 @@ class TranslationValidationStatus(DBSchema):
         Unknown Error
 
         This translation has an unknown error.
+        """)
+
+
+class ShippingRequestStatus(DBSchema):
+    """The status of a given ShippingRequest."""
+
+    PENDING = Item(0, """
+        Pending
+
+        The request is pending approval.
+        """)
+
+    APPROVED = Item(1, """
+        Approved (unshipped)
+
+        The request is approved but not yet sent to the shipping company.
+        """)
+
+    DENIED = Item(2, """
+        Denied
+
+        The request is denied.
+        """)
+
+    CANCELLED = Item(3, """
+        Cancelled
+
+        The request is cancelled.
+        """)
+
+    SHIPPED = Item(4, """
+        Approved (shipped)
+
+        The request was sent to the shipping company.
+        """)
+
+    PENDINGSPECIAL = Item(5, """
+        Pending Special Consideration
+
+        This request needs special consideration.
         """)
 
 
@@ -3288,6 +3551,12 @@ class ShipItDistroRelease(DBSchema):
         The Dapper Drake lont-term-support release.
         """)
 
+    EDGY = Item(3, """
+        6.10 (Edgy Eft)
+
+        The Edgy Eft release.
+        """)
+
 
 class TextDirection(DBSchema):
     """The base text direction for a language."""
@@ -3302,4 +3571,90 @@ class TextDirection(DBSchema):
         Right to Left
 
         Text is normally written from left to right in this language.
+        """)
+
+
+class PersonCreationRationale(DBSchema):
+    """The rationale for the creation of a given person.
+
+    Launchpad automatically creates user accounts under certain
+    circumstances. The owners of these accounts may discover Launchpad
+    at a later date and wonder why Launchpad knows about them, so we
+    need to make it clear why a certain account was automatically created.
+    """
+
+    UNKNOWN = Item(1, """
+        Unknown
+
+        The reason for the creation of this person is unknown.
+        """)
+
+    BUGIMPORT = Item(2, """
+        Existing user in another bugtracker from which we imported bugs.
+
+        A bugzilla import or sf.net import, for instance. The bugtracker from
+        which we were importing should be described in
+        Person.creation_comment.
+        """)
+
+    SOURCEPACKAGEIMPORT = Item(3, """
+        This person was mentioned in a source package we imported.
+
+        When gina imports source packages, it has to create Person entries for
+        the email addresses that are listed as maintainer and/or uploader of
+        the package, in case they don't exist in Launchpad.
+        """)
+
+    POFILEIMPORT = Item(4, """
+        This person was mentioned in a POFile imported into Rosetta.
+
+        When importing POFiles into Rosetta, we need to give credit for the
+        translations on that POFile to its last translator, which may not
+        exist in Launchpad, so we'd need to create it.
+        """)
+
+    KEYRINGTRUSTANALYZER = Item(5, """
+        Created by the keyring trust analyzer.
+
+        The keyring trust analyzer is responsible for scanning GPG keys
+        belonging to the strongly connected set and assign all email addresses
+        registered on those keys to the people representing their owners in
+        Launchpad. If any of these people doesn't exist, it creates them.
+        """)
+
+    FROMEMAILMESSAGE = Item(6, """
+        Created when parsing an email message.
+
+        Sometimes we parse email messages and want to associate them with the
+        sender, which may not have a Launchpad account. In that case we need
+        to create a Person entry to associate with the email.
+        """)
+
+    SOURCEPACKAGEUPLOAD = Item(7, """
+        This person was mentioned in a source package uploaded.
+
+        Some uploaded packages may be uploaded with a maintainer that is not
+        registered in Launchpad, and in these cases, soyuz may decide to
+        create the new Person instead of complaining.
+        """)
+
+    OWNER_CREATED_LAUNCHPAD = Item(8, """
+        Created by the owner himself, coming from Launchpad.
+
+        Somebody was navigating through Launchpad and at some point decided to
+        create an account.
+        """)
+
+    OWNER_CREATED_SHIPIT = Item(9, """
+        Created by the owner himself, coming from Shipit.
+
+        Somebody went to one of the shipit sites to request Ubuntu CDs and was
+        directed to Launchpad to create an account.
+        """)
+
+    OWNER_CREATED_UBUNTU_WIKI = Item(10, """
+        Created by the owner himself, coming from the Ubuntu wiki.
+
+        Somebody went to the Ubuntu wiki and was directed to Launchpad to
+        create an account.
         """)

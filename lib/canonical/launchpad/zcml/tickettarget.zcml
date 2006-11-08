@@ -7,18 +7,21 @@
 
 <facet facet="support">
 
-  <browser:pages
-    for="canonical.launchpad.interfaces.IHasTickets"
-    class="canonical.launchpad.browser.TicketTargetView"
-    permission="zope.Public">
-    <browser:page
-      name="+tickets"
-      template="../templates/tickettarget-tickets.pt" />
-  </browser:pages>
+  <browser:page
+    for="canonical.launchpad.interfaces.ITicketTarget"
+    class="canonical.launchpad.browser.SearchTicketsView"
+    name="+tickets"
+    permission="zope.Public" />
 
   <browser:page
-    for="canonical.launchpad.interfaces.IHasTickets"
-    class="canonical.launchpad.browser.TicketTargetView"
+    for="canonical.launchpad.interfaces.ITicketTarget"
+    class="canonical.launchpad.browser.TicketTargetSearchMyTicketsView"
+    name="+mytickets"
+    permission="launchpad.AnyPerson" />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITicketTarget"
+    class="canonical.launchpad.browser.TicketTargetLatestTicketsView"
     name="+portlet-latesttickets"
     permission="zope.Public"
     template="../templates/tickettarget-portlet-latesttickets.pt"
@@ -37,21 +40,15 @@
       permission="zope.Public"
       template="../templates/tickettarget-portlet-supportcontacts.pt" />
 
-  <browser:addform
+  <browser:page
     name="+addticket"
     for="canonical.launchpad.interfaces.ITicketTarget"
-    schema="canonical.launchpad.interfaces.ITicket"
     class="canonical.launchpad.browser.TicketAddView"
-    label="Make a support request"
-    fields="description title owner"
-    keyword_arguments="title description owner"
-    permission="launchpad.AnyPerson"
-    template="../templates/ticket-add.pt"
-    >
-    <browser:widget
-      field="owner"
-      class="canonical.widgets.HiddenUserWidget" />
-  </browser:addform>
+    permission="launchpad.AnyPerson" />
+
+  <browser:menus
+    module="canonical.launchpad.browser"
+    classes="TicketTargetSupportMenu" />
 
 </facet>
 

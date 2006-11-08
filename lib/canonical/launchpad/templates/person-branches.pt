@@ -32,37 +32,31 @@
          tal:condition="branchset">
     <thead>
       <tr>
-        <th>Role</th>
-        <th class="initial-sort">Product</th>
-        <th>Author</th>
-        <th>Title</th>
         <th>Name</th>
+        <th>Title</th>
+        <th>Author</th>
         <th>Status</th>
+        <th class="initial-sort">Product</th>
+        <th>Role</th>
       </tr>
     </thead>
     <tbody>
       <tr tal:repeat="branch branchviewset">
-        <td tal:define="role python:view.branch_role(branch)">
-          <span class="sortkey" tal:content="role/sortkey">12</span>
-          <span tal:replace="role/title">Role of the person</span>
-        </td>
-        <td>
-          <span tal:condition="branch/product"
-                tal:replace="branch/product/name">
-            Product
-          </span>
-        </td>
-        <td>
-          <span tal:condition="branch/author"
-                tal:replace="branch/author/browsername">Author</span>
-        </td>
+        <!-- Name -->
+        <td tal:content="branch/name/fmt:shorten/30">Name</td>
+        <!-- Title -->
         <td>
           <a tal:attributes="href branch/fmt:url"
              tal:content="branch/displayname/fmt:shorten/50">
                Title Goes Here!
           </a>
         </td>
-        <td tal:content="branch/name/fmt:shorten/30">Name</td>
+        <!-- Author -->
+        <td>
+          <span tal:condition="branch/author"
+                tal:replace="branch/author/browsername">Author</span>
+        </td>
+        <!-- Status -->
         <td>
           <span tal:content="branch/lifecycle_status/sortkey"
                 class="sortkey">23</span>
@@ -70,6 +64,18 @@
                 tal:attributes="
                   class string:branchstatus${branch/lifecycle_status/name}">
                   Status</span>
+        </td>
+        <!-- Product -->
+        <td>
+          <span tal:condition="branch/product"
+                tal:replace="branch/product/name">
+            Product
+          </span>
+        </td>
+        <!-- Role -->
+        <td tal:define="role python:view.branch_role(branch)">
+          <span class="sortkey" tal:content="role/sortkey">12</span>
+          <span tal:replace="role/title">Role of the person</span>
         </td>
       </tr>
       <tr tal:condition="not: branchviewset">
@@ -91,6 +97,38 @@
     using distributed version control.
   </p>
 
-</div>
+</div><tal:comment condition="nothing"><!-- end main slot --></tal:comment>
+
+<metal:block fill-slot="help">
+
+  <p>Launchpad can act as a registry of branches for the <a
+    href="http://bazaar-vcs.org/">Bazaar</a>distributed version control
+    system.</p>
+
+  <p>This page lists all the branches which are related to a person or team.
+    A person or team can be related to a branch in several ways:</p>
+
+  <ul>
+    <li>The <strong>registrant</strong> of a branch is responsible for
+      administering this branch. The registrant can edit all the branch
+      details. Upload branches can only be modified (with <code>bzr
+      push</code>, <code>commit</code>, etc.) by the registrant.</li>
+
+    <li>The <strong>author</strong> is the person being given credit for the
+      branch. The author cannot modify the branch in any way, and should
+      normally be the same as the registrant.</li>
+
+    <li>A <strong>subscriber</strong> is a person expressing interest in a
+      branch. Subscribing to a branch does not give any right, and is only
+      useful to link to a branch from a person's page.</li>
+  </ul>
+
+  <p>If a person or team is both the <em>registrant</em> and the
+    <em>author</em> of a branch, it appears as the <em>author</em>. A person or
+    team is presented as the registrant only if the branch has different
+    author, or if the author is not specified.</p>
+
+</metal:block><tal:comment condition="nothing"><!-- end help slot --></tal:comment>
+
 </body>
 </html>

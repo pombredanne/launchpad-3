@@ -1,7 +1,8 @@
 Check the shipit login page.
 
   >>> print http(r"""
-  ... GET /shipit-ubuntu/++vh++http:shipit:80/++/ HTTP/1.1
+  ... GET /login HTTP/1.1
+  ... Host: shipit.ubuntu.dev
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -18,7 +19,8 @@ Check posting to the shipit login page.  On a successful login, it redirects
 you to the myrequest page.
 
   >>> print http(r"""
-  ... POST /shipit-ubuntu/++vh++http:shipit:80/++/ HTTP/1.1
+  ... POST /login HTTP/1.1
+  ... Host: shipit.ubuntu.dev
   ... Content-Length: ...
   ... Content-Type: application/x-www-form-urlencoded
   ...
@@ -35,7 +37,8 @@ We want to redirect from here to the shipit front page, rather than giving
 an unfriendly 404 error.
 
   >>> print http(r"""
-  ... GET /shipit-ubuntu/++vh++http:shipit:80/++/user.cgi HTTP/1.1
+  ... GET /user.cgi HTTP/1.1
+  ... Host: shipit.ubuntu.dev
   ... """)  #doctest: -NORMALIZE_WHITESPACE
   HTTP/1.1 301 Moved Permanently
   ...

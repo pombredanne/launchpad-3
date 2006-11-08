@@ -1037,8 +1037,9 @@ SELECT bpn.name, bpr.version, c.name
        securebinarypackagepublishinghistory sbpph, distroarchrelease dar
  WHERE bpr.binarypackagename = bpn.id AND sbpph.binarypackagerelease = bpr.id
    AND sbpph.component = c.id AND sbpph.distroarchrelease = dar.id
-   AND sbpph.status = %s AND dar.id in (%s)""" \
-             % (dbschema.PackagePublishingStatus.PUBLISHED, dar_ids)
+   AND sbpph.status = %s AND sbppd.archive = %s AND dar.id in (%s)""" \
+             % (dbschema.PackagePublishingStatus.PUBLISHED,
+                distrorelease.main_archive, dar_ids)
     cur.execute(query)
     print "Getting binaries for %s..." % (distrorelease.name)
     for (pkg, version, component) in cur.fetchall():
@@ -1103,6 +1104,7 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
     files = Sources[pkg]["files"]
     for filename in files:
         clauseTables = ['SourcePackageFilePublishing']
+        # XXX: this query should at least restrict to distro/archive.
         query = "SourcePackageFilePublishing.libraryfilealiasfilename = %s" % \
                 sqlvalues(filename)
         spfp_l = shortlist(SourcePackageFilePublishing.select(
@@ -1381,7 +1383,7 @@ def init():
 
     # Blacklist
     Blacklisted = {}
-    # XXX
+    # XXX de-hardcode me harder
     blacklist_file = open("/srv/launchpad.net/dak/sync-blacklist.txt")
     for line in blacklist_file:
         line = line.strip()

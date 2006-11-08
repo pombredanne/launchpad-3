@@ -2,11 +2,6 @@
 Language Pack Exports
 --------------------
 
-    >>> from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
-    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-    >>> LaunchpadFunctionalTestSetup().setUp()
-    >>> LibrarianTestSetup().setUp()
-
 This is a workaround to give this test the same permissions as the cron script
 has.
 
@@ -57,13 +52,8 @@ Check that the log looks ok.
     Exporting PO file ... (1/11)
     Exporting PO file ... (2/11)
     ...
-    Exporting POTemplates
-    Exporting pmount in Ubuntu Hoary package "pmount" (1)
-    ...
     Adding timestamp file
     Adding mapping file
     Done.
     Upload complete, file alias: ...
 
-    >>> LibrarianTestSetup().tearDown()
-    >>> LaunchpadFunctionalTestSetup().tearDown()

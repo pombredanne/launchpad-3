@@ -15,8 +15,8 @@ __all__ = [
     'NamedSQLObjectHugeVocabulary',
     'BinaryAndSourcePackageNameVocabulary',
     'BinaryPackageNameVocabulary',
-    'ProductBranchVocabulary',
     'BountyVocabulary',
+    'BranchVocabulary',
     'BugVocabulary',
     'BugTrackerVocabulary',
     'BugWatchVocabulary',
@@ -42,7 +42,6 @@ __all__ = [
     'ProductSeriesVocabulary',
     'ProductVocabulary',
     'ProjectVocabulary',
-    'SchemaVocabulary',
     'SourcePackageNameVocabulary',
     'SpecificationVocabulary',
     'SpecificationDependenciesVocabulary',
@@ -75,9 +74,11 @@ from canonical.launchpad.database import (
     Bounty, Country, Specification, Bug, Processor, ProcessorFamily,
     BinaryAndSourcePackageName, Component)
 from canonical.launchpad.interfaces import (
-    IBugTask, IDistribution, IEmailAddressSet, ILaunchBag, IPersonSet, ITeam,
-    IMilestoneSet, IPerson, IProduct, IProject, IUpstreamBugTask,
-    IDistroBugTask, IDistroReleaseBugTask, ISpecification)
+    IBranchSet, IBugTask, IDistribution, IDistributionSourcePackage,
+    IDistroBugTask, IDistroRelease, IDistroReleaseBugTask, IEmailAddressSet,
+    ILaunchBag, IMilestoneSet, IPerson, IPersonSet, IProduct, IProject,
+    ISourcePackage, ISpecification, ITeam, IUpstreamBugTask)
+
 
 class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
     """Interface for huge vocabularies.
@@ -350,10 +351,12 @@ class BinaryPackageNameVocabulary(NamedSQLObjectHugeVocabulary):
             % quote_like(query))
 
 
-class ProductBranchVocabulary(SQLObjectVocabularyBase):
-    """The set of branches associated with a product.
+class BranchVocabulary(SQLObjectVocabularyBase):
+    """A vocabulary for searching branches.
 
-    Perhaps this should be renamed to BranchVocabulary.
+    If the context is a product or the launchbag contains a product,
+    then the search results are limited to branches associated with
+    that product.
     """
 
     implements(IHugeVocabulary)
@@ -363,23 +366,35 @@ class ProductBranchVocabulary(SQLObjectVocabularyBase):
     displayname = 'Select a Branch'
 
     def toTerm(self, obj):
-        return SimpleTerm(obj, obj.id, obj.name)
+        return SimpleTerm(obj, obj.unique_name, obj.displayname)
+
+    def getTermByToken(self, token):
+        branchset = getUtility(IBranchSet)
+        branch = branchset.getByUniqueName(token)
+        # fall back to interpreting the token as a branch URL
+        if branch is None:
+            url = token.rstrip('/')
+            branch = branchset.getByUrl(url)
+        if branch is None:
+            raise LookupError(token)
+        return self.toTerm(branch)
 
     def search(self, query):
         """Return terms where query is a subtring of the name or URL."""
         if not query:
             return self.emptySelectResults()
 
-        quoted_query = quote_like(query)
+        sql_query = OR(CONTAINSSTRING(Branch.q.name, query),
+                       CONTAINSSTRING(Branch.q.url, query))
 
-        sql_query = "("
+        # if the context is a product or we have a product in the
+        # LaunchBag, narrow the search appropriately.
         if IProduct.providedBy(self.context):
-            sql_query += "(Branch.product = %d) AND " % self.context.id
-        sql_query += ((
-            "((Branch.name ILIKE '%%' || %s || '%%') OR "
-            "  (Branch.url ILIKE '%%' || %s || '%%'))") % (
-                quoted_query, quoted_query))
-        sql_query += ")"
+            product = self.context
+        else:
+            product = getUtility(ILaunchBag).product
+        if product is not None:
+            sql_query = AND(Branch.q.productID == product.id, sql_query)
 
         return self._table.select(sql_query, orderBy=self._orderBy)
 
@@ -915,28 +930,25 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
 
         milestone_context = self.context
 
-        # First, assume the context is a bugtask to try to figure out
-        # what milestones make sense for this vocab. If it's not a
-        # bugtask, fallback to the ILaunchBag for context.
         if IUpstreamBugTask.providedBy(milestone_context):
             target = milestone_context.product
         elif IDistroBugTask.providedBy(milestone_context):
             target = milestone_context.distribution
         elif IDistroReleaseBugTask.providedBy(milestone_context):
-            target = milestone_context.distrorelease.distribution
+            target = milestone_context.distrorelease
+        elif IDistributionSourcePackage.providedBy(milestone_context):
+            target = milestone_context.distribution
+        elif ISourcePackage.providedBy(milestone_context):
+            target = milestone_context.distrorelease
+        elif (IProject.providedBy(milestone_context) or
+              IProduct.providedBy(milestone_context) or
+              IDistribution.providedBy(milestone_context) or
+              IDistroRelease.providedBy(milestone_context)):
+            target = milestone_context
         else:
-            launchbag = getUtility(ILaunchBag)
-            project = launchbag.project
-            if project is not None:
-                target = project
-
-            product = launchbag.product
-            if product is not None:
-                target = product
-
-            distribution = launchbag.distribution
-            if distribution is not None:
-                target = distribution
+            # We didn't find a context that can have milestones attached
+            # to it.
+            target = None
 
         # XXX, Brad Bollenbach, 2006-02-24: Listifying milestones is
         # evil, but we need to sort the milestones by a non-database
@@ -960,7 +972,17 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             milestones = shortlist(
                 getUtility(IMilestoneSet), longest_expected=40)
 
-        for ms in sorted(milestones, key=lambda m: m.displayname):
+        visible_milestones = [
+            milestone for milestone in milestones if milestone.visible]
+        if (IBugTask.providedBy(milestone_context) and
+            milestone_context.milestone is not None and
+            milestone_context.milestone not in visible_milestones):
+            # Even if we inactivate a milestone, a bugtask might still be
+            # linked to it. Include such milestones in the vocabulary to
+            # ensure that the +editstatus page doesn't break.
+            visible_milestones.append(milestone_context.milestone)
+
+        for ms in sorted(visible_milestones, key=lambda m: m.displayname):
             yield self.toTerm(ms)
 
 
@@ -1266,8 +1288,3 @@ class ProcessorFamilyVocabulary(NamedSQLObjectVocabulary):
         return SimpleTerm(obj, obj.name, obj.title)
 
 
-class SchemaVocabulary(NamedSQLObjectHugeVocabulary):
-    """See NamedSQLObjectVocabulary."""
-
-    displayname = 'Select a Schema'
-    _table = Schema

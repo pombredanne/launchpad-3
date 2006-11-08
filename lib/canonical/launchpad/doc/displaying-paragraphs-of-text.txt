@@ -79,7 +79,7 @@ previous line.  This aids in the display of code samples:
     <p>This is a code sample written in Python.<br />
     &nbsp;&nbsp;&nbsp;&nbsp;def messageCount(self):<br />
     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"""See IRosettaStats."""<br />
-    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return self.potemplate.messageCount()</p>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return self.potemplate<wbr></wbr>.messageCount(<wbr></wbr>)</p>
     <p>&nbsp;&nbsp;&nbsp;&nbsp;def currentCount(self, language=None):<br />
     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"""See IRosettaStats."""<br />
     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return self.currentCount</p>
@@ -110,34 +110,67 @@ fmt:text-to-html knows how to linkify URLs:
     ...     'http://localhost/bar/baz/foo.bar.html?a=b&b=a,\n'
     ...     'http://localhost/bar/baz/foo.bar.html?a=b&b=a;\n'
     ...     'http://localhost/bar/baz/foo.bar.html?a=b&b=a:\n'
-    ...     'http://localhost/bar/baz/foo.bar.html?a=b&b=a:b;c@d_e%f~g#h,j!k-l+m$n*o\'p`q"r|s^t\\u\n'
+    ...     'http://localhost/bar/baz/foo.bar.html?a=b&b=a:b;c@d_e%f~g#h,j!k-l+m$n*o\'p\n'
+    ...     'http://www.searchtools.com/test/urls/(parens).html\n'
+    ...     'http://www.searchtools.com/test/urls/-dash.html\n'
+    ...     'http://www.searchtools.com/test/urls/_underscore.html\n'
+    ...     'http://www.searchtools.com/test/urls/period.x.html\n'
+    ...     'http://www.searchtools.com/test/urls/!exclamation.html\n'
+    ...     'http://www.searchtools.com/test/urls/~tilde.html\n'
+    ...     'http://www.searchtools.com/test/urls/*asterisk.html\n'
+    ...     'irc://irc.freenode.net/launchpad\n'
+    ...     'irc://irc.freenode.net/%23launchpad,isserver\n'
+    ...     'mailto:noreply@launchpad.net\n'
+    ...     'jabber:noreply@launchpad.net\n'
     ... )
 
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a rel="nofollow" href="http://localhost:8086/bar/baz/foo.html">http://localhost:8086/bar/baz/foo.html</a><br />
-    <a rel="nofollow" href="ftp://localhost:8086/bar/baz/foo.bar.html">ftp://localhost:8086/bar/baz/foo.bar.html</a><br />
-    <a rel="nofollow" href="sftp://localhost:8086/bar/baz/foo.bar.html">sftp://localhost:8086/bar/baz/foo.bar.html</a>.<br />
-    <a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>;<br />
-    <a rel="nofollow" href="news://localhost:8086/bar/baz/foo.bar.html">news://localhost:8086/bar/baz/foo.bar.html</a>:<br />
-    <a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>?<br />
-    <a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>,<br />
-    &lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>&gt;<br />
-    &lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>&gt;,<br />
-    &lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>&gt;.<br />
-    &lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>&gt;;<br />
-    &lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>&gt;:<br />
-    &lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>&gt;?<br />
-    (<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>)<br />
-    (<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>),<br />
-    (<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>).<br />
-    (<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>);<br />
-    (<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>):<br />
-    <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a</a><br />
-    <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a</a>.<br />
-    <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a</a>,<br />
-    <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a</a>;<br />
-    <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a</a>:<br />
-    <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a:b;c@d_e%f~g#h,j!k-l+m$n*o'p`q&quot;r|s^t\u">http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a:b;c@d_e%f~g#h,j!k-l+m$n*o'p`q"r|s^t\u</a></p>
+    <p><a rel="nofollow" href="http://localhost:8086/bar/baz/foo.html">http://<wbr></wbr>localhost:<wbr></wbr>8086/bar/<wbr></wbr>baz/foo.<wbr></wbr>html</a><br />
+    <a rel="nofollow" href="ftp://localhost:8086/bar/baz/foo.bar.html">ftp://localhost<wbr></wbr>:8086/bar/<wbr></wbr>baz/foo.<wbr></wbr>bar.html</a><br />
+    <a rel="nofollow" href="sftp://localhost:8086/bar/baz/foo.bar.html">sftp://<wbr></wbr>localhost:<wbr></wbr>8086/bar/<wbr></wbr>baz/foo.<wbr></wbr>bar.html</a>.<br />
+    <a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://<wbr></wbr>localhost:<wbr></wbr>8086/bar/<wbr></wbr>baz/foo.<wbr></wbr>bar.html</a>;<br />
+    <a rel="nofollow" href="news://localhost:8086/bar/baz/foo.bar.html">news://<wbr></wbr>localhost:<wbr></wbr>8086/bar/<wbr></wbr>baz/foo.<wbr></wbr>bar.html</a>:<br />
+    <a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://<wbr></wbr>localhost:<wbr></wbr>8086/bar/<wbr></wbr>baz/foo.<wbr></wbr>bar.html</a>?<br />
+    <a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://<wbr></wbr>localhost:<wbr></wbr>8086/bar/<wbr></wbr>baz/foo.<wbr></wbr>bar.html</a>,<br />
+    &lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://<wbr></wbr>localhost:<wbr></wbr>8086/bar/<wbr></wbr>baz/foo.<wbr></wbr>bar.html</a>&gt;<br />
+    &lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://<wbr></wbr>localhost:<wbr></wbr>8086/bar/<wbr></wbr>baz/foo.<wbr></wbr>bar.html</a>&gt;,<br />
+    &lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://<wbr></wbr>localhost:<wbr></wbr>8086/bar/<wbr></wbr>baz/foo.<wbr></wbr>bar.html</a>&gt;.<br />
+    &lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://<wbr></wbr>localhost:<wbr></wbr>8086/bar/<wbr></wbr>baz/foo.<wbr></wbr>bar.html</a>&gt;;<br />
+    &lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://<wbr></wbr>localhost:<wbr></wbr>8086/bar/<wbr></wbr>baz/foo.<wbr></wbr>bar.html</a>&gt;:<br />
+    &lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://<wbr></wbr>localhost:<wbr></wbr>8086/bar/<wbr></wbr>baz/foo.<wbr></wbr>bar.html</a>&gt;?<br />
+    (<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://<wbr></wbr>localhost:<wbr></wbr>8086/bar/<wbr></wbr>baz/foo.<wbr></wbr>bar.html</a>)<br />
+    (<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://<wbr></wbr>localhost:<wbr></wbr>8086/bar/<wbr></wbr>baz/foo.<wbr></wbr>bar.html</a>),<br />
+    (<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://<wbr></wbr>localhost:<wbr></wbr>8086/bar/<wbr></wbr>baz/foo.<wbr></wbr>bar.html</a>).<br />
+    (<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://<wbr></wbr>localhost:<wbr></wbr>8086/bar/<wbr></wbr>baz/foo.<wbr></wbr>bar.html</a>);<br />
+    (<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://<wbr></wbr>localhost:<wbr></wbr>8086/bar/<wbr></wbr>baz/foo.<wbr></wbr>bar.html</a>):<br />
+    <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://<wbr></wbr>localhost/<wbr></wbr>bar/baz/<wbr></wbr>foo.bar.<wbr></wbr>html?a=<wbr></wbr>b&amp;b=a</a><br />
+    <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://<wbr></wbr>localhost/<wbr></wbr>bar/baz/<wbr></wbr>foo.bar.<wbr></wbr>html?a=<wbr></wbr>b&amp;b=a</a>.<br />
+    <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://<wbr></wbr>localhost/<wbr></wbr>bar/baz/<wbr></wbr>foo.bar.<wbr></wbr>html?a=<wbr></wbr>b&amp;b=a</a>,<br />
+    <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://<wbr></wbr>localhost/<wbr></wbr>bar/baz/<wbr></wbr>foo.bar.<wbr></wbr>html?a=<wbr></wbr>b&amp;b=a</a>;<br />
+    <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://<wbr></wbr>localhost/<wbr></wbr>bar/baz/<wbr></wbr>foo.bar.<wbr></wbr>html?a=<wbr></wbr>b&amp;b=a</a>:<br />
+    <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a:b;c@d_e%f~g#h,j!k-l+m$n*o'p">http://<wbr></wbr>localhost/<wbr></wbr>bar/baz/<wbr></wbr>foo.bar.<wbr></wbr>html?a=<wbr></wbr>b&amp;b=a:b;<wbr></wbr>c@d_e%f~<wbr></wbr>g#h,j!k-<wbr></wbr>l+m$n*o'<wbr></wbr>p</a><br />
+    <a rel="nofollow" href="http://www.searchtools.com/test/urls/(parens).html">http://<wbr></wbr>www.searchtools<wbr></wbr>.com/test/<wbr></wbr>urls/(parens)<wbr></wbr>.html</a><br />
+    <a rel="nofollow" href="http://www.searchtools.com/test/urls/-dash.html">http://<wbr></wbr>www.searchtools<wbr></wbr>.com/test/<wbr></wbr>urls/-dash.<wbr></wbr>html</a><br />
+    <a rel="nofollow" href="http://www.searchtools.com/test/urls/_underscore.html">http://<wbr></wbr>www.searchtools<wbr></wbr>.com/test/<wbr></wbr>urls/_underscor<wbr></wbr>e.html</a><br />
+    <a rel="nofollow" href="http://www.searchtools.com/test/urls/period.x.html">http://<wbr></wbr>www.searchtools<wbr></wbr>.com/test/<wbr></wbr>urls/period.<wbr></wbr>x.html</a><br />
+    <a rel="nofollow" href="http://www.searchtools.com/test/urls/!exclamation.html">http://<wbr></wbr>www.searchtools<wbr></wbr>.com/test/<wbr></wbr>urls/!exclamati<wbr></wbr>on.html</a><br />
+    <a rel="nofollow" href="http://www.searchtools.com/test/urls/~tilde.html">http://<wbr></wbr>www.searchtools<wbr></wbr>.com/test/<wbr></wbr>urls/~tilde.<wbr></wbr>html</a><br />
+    <a rel="nofollow" href="http://www.searchtools.com/test/urls/*asterisk.html">http://<wbr></wbr>www.searchtools<wbr></wbr>.com/test/<wbr></wbr>urls/*asterisk.<wbr></wbr>html</a><br />
+    <a rel="nofollow" href="irc://irc.freenode.net/launchpad">irc://irc.<wbr></wbr>freenode.<wbr></wbr>net/launchpad</a><br />
+    <a rel="nofollow" href="irc://irc.freenode.net/%23launchpad,isserver">irc://irc.<wbr></wbr>freenode.<wbr></wbr>net/%23launchpa<wbr></wbr>d,isserver</a><br />
+    <a rel="nofollow" href="mailto:noreply@launchpad.net">mailto:<wbr></wbr>noreply@<wbr></wbr>launchpad.<wbr></wbr>net</a><br />
+    <a rel="nofollow" href="jabber:noreply@launchpad.net">jabber:<wbr></wbr>noreply@<wbr></wbr>launchpad.<wbr></wbr>net</a></p>
+
+
+The fmt:text-to-html formatter leaves a number of non-URIs unlinked:
+
+    >>> text = (
+    ...     'nothttp://launchpad.net/\n'
+    ...     'http::No-cache=True\n')
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p>nothttp:<wbr></wbr>//launchpad.<wbr></wbr>net/<br />
+    http::No-cache=True</p>
+
 
 fmt:text-to-html is also smart enough to convert bug references into
 links:
@@ -151,8 +184,12 @@ links:
     ...     'bug num 123\n'
     ...     'bug num. 123\n'
     ...     'bug no 123\n'
+    ...     'bug report 123\n'
     ...     'bug no. 123\n'
-    ...     'bug#123\n')
+    ...     'bug#123\n'
+    ...     'bug\n'
+    ...     '#123\n'
+    ...     'debug #52\n')
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
     <p><a href="/bugs/123" title="No such bug">bug 123</a><br />
     <a href="/bugs/123" title="No such bug">bug    123</a><br />
@@ -162,8 +199,12 @@ links:
     <a href="/bugs/123" title="No such bug">bug num 123</a><br />
     <a href="/bugs/123" title="No such bug">bug num. 123</a><br />
     <a href="/bugs/123" title="No such bug">bug no 123</a><br />
+    <a href="/bugs/123" title="No such bug">bug report 123</a><br />
     <a href="/bugs/123" title="No such bug">bug no. 123</a><br />
-    <a href="/bugs/123" title="No such bug">bug#123</a></p>
+    <a href="/bugs/123" title="No such bug">bug#123</a><br />
+    <a href="/bugs/123" title="No such bug">bug<br />
+    #123</a><br />
+    debug #52</p>
 
     >>> text = (
     ...     'bug 123\n'
@@ -206,32 +247,36 @@ fmt:text-to-html is also smart enough to convert OOPS references into
 links. However, it only does this if the logged in person is a member of the
 Launchpad Developers team.
 
-XXX
-test@canonical.com is a member of the Launchpad development team, and hence
-LaunchBag.developer should be True.
-https://launchpad.net/products/launchpad/+bug/30746
- -- Daf, 2006/02/07
+XXX 2006-08-23 jamesh
+We explicitly cal set_developer_in_launchbag_before_traversal() here.
+If this event handler is not called, then the "developer" attribute in
+the launchbag is not updated.  Normally it would be called during the
+request before traversal, but we aren't doing publication traversal in
+this test.
+  https://launchpad.net/bugs/30746
+
 
 When not logged in as a privileged user, no link:
 
-    >>> text = 'OOPS 38C23'
-    >>> getUtility(ILaunchBag).login
-    'test@canonical.com'
+    >>> from canonical.launchpad.webapp.launchbag import (
+    ...     set_developer_in_launchbag_before_traversal)
+    >>> login('test@canonical.com')
+    >>> set_developer_in_launchbag_before_traversal(None)
     >>> getUtility(ILaunchBag).developer
     False
+
+    >>> text = 'OOPS 38C23'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
     <p>OOPS 38C23</p>
 
+
 After login, a link:
 
-    >>> login('daf@canonical.com')
-    >>> getUtility(ILaunchBag).login
-    'daf@canonical.com'
-    >>> getUtility(ILaunchBag).developer
-    False
-    >>> getUtility(ILaunchBag).setDeveloper(True)
+    >>> login('foo.bar@canonical.com')
+    >>> set_developer_in_launchbag_before_traversal(None)
     >>> getUtility(ILaunchBag).developer
     True
+
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
     <p><a rel="nofollow" href="https://chinstrap.ubuntu.com/~jamesh/oops.cgi/38C23">OOPS 38C23</a></p>
 
@@ -272,9 +317,9 @@ Check against false positives:
 Reset login information.
 
     >>> login('test@canonical.com')
-    >>> getUtility(ILaunchBag).login
-    'test@canonical.com'
-    >>> getUtility(ILaunchBag).setDeveloper(False)
+    >>> set_developer_in_launchbag_before_traversal(None)
+    >>> getUtility(ILaunchBag).developer
+    False
 
 Testing a bunch of URL links.
 
@@ -289,12 +334,12 @@ Testing a bunch of URL links.
     ...     'I have a Jabber account (jabber:foo@jabber.example.com)\n'
     ...     'Foo Bar <mailto:foo.bar@example.net>')
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a rel="nofollow" href="https://launchpad.net/">https://launchpad.net/</a> is the new Launchpad site<br />
-    <a rel="nofollow" href="http://example.com/something?foo=bar&amp;hum=baz">http://example.com/something?foo=bar&amp;hum=baz</a><br />
-    You can check the PPC md5sums at <a rel="nofollow" href="ftp://ftp.ubuntu.com/ubuntu/dists/breezy/main/installer-powerpc/current/images/MD5SUMS">ftp://ftp.ubuntu.com/ubuntu/dists/breezy/main/installer-powerpc/current/images/MD5SUMS</a><br />
-    <a rel="nofollow" href="irc://irc.freenode.net/#launchpad">irc://irc.freenode.net/#launchpad</a></p>
-    <p>I have a Jabber account (<a rel="nofollow" href="jabber:foo@jabber.example.com">jabber:foo@jabber.example.com</a>)<br />
-    Foo Bar &lt;<a rel="nofollow" href="mailto:foo.bar@example.net">mailto:foo.bar@example.net</a>&gt;</p>
+    <p><a rel="nofollow" href="https://launchpad.net/">https:/<wbr></wbr>/launchpad.<wbr></wbr>net/</a> is the new Launchpad site<br />
+    <a rel="nofollow" href="http://example.com/something?foo=bar&amp;hum=baz">http://<wbr></wbr>example.<wbr></wbr>com/something?<wbr></wbr>foo=bar&amp;<wbr></wbr>hum=baz</a><br />
+    You can check the PPC md5sums at <a rel="nofollow" href="ftp://ftp.ubuntu.com/ubuntu/dists/breezy/main/installer-powerpc/current/images/MD5SUMS">ftp://ftp.<wbr></wbr>ubuntu.<wbr></wbr>com/ubuntu/<wbr></wbr>dists/breezy/<wbr></wbr>main/installer-<wbr></wbr>powerpc/<wbr></wbr>current/<wbr></wbr>images/<wbr></wbr>MD5SUMS</a><br />
+    <a rel="nofollow" href="irc://irc.freenode.net/#launchpad">irc://irc.<wbr></wbr>freenode.<wbr></wbr>net/#launchpad</a></p>
+    <p>I have a Jabber account (<a rel="nofollow" href="jabber:foo@jabber.example.com">jabber:<wbr></wbr>foo@jabber.<wbr></wbr>example.<wbr></wbr>com</a>)<br />
+    Foo Bar &lt;<a rel="nofollow" href="mailto:foo.bar@example.net">mailto:<wbr></wbr>foo.bar@<wbr></wbr>example.<wbr></wbr>net</a>&gt;</p>
 
 regex helper functions
 ----------------------

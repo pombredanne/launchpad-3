@@ -79,7 +79,7 @@ class IBugTask(IHasDateCreated, IHasBug):
         default=dbschema.BugTaskStatus.UNCONFIRMED)
     importance = Choice(
         title=_('Importance'), vocabulary='BugTaskImportance',
-        default=dbschema.BugTaskImportance.UNTRIAGED)
+        default=dbschema.BugTaskImportance.UNDECIDED)
     statusexplanation = Text(
         title=_("Status notes (optional)"), required=False)
     assignee = Choice(
@@ -123,12 +123,6 @@ class IBugTask(IHasDateCreated, IHasBug):
                          readonly=True)
     related_tasks = Attribute("IBugTasks related to this one, namely other "
                               "IBugTasks on the same IBug.")
-    statusdisplayhtml = Attribute(
-        "A HTML representation of the status. This field produces "
-        "its value from the status, assignee and milestone values.")
-    statuselsewhere = Attribute(
-        "A human-readable representation of the status of this IBugTask's bug "
-        "in the other contexts in which it's reported.")
     # This property does various database queries. It is a property so a
     # "snapshot" of its value will be taken when a bugtask is modified, which
     # allows us to compare it to the current value and see if there are any new
@@ -231,6 +225,10 @@ class IBugTaskSearchBase(Interface):
         title=_('Target'), value_type=IBugTask['milestone'], required=False)
     component = List(
         title=_('Component'), value_type=IComponent['name'], required=False)
+    tag = List(title=_("Tag"), value_type=Tag(), required=False)
+    status_upstream = Choice(
+        title=_('Status Upstream'), required=False,
+        vocabulary="AdvancedBugTaskUpstreamStatus")
 
 
 class IBugTaskSearch(IBugTaskSearchBase):
@@ -395,8 +393,8 @@ class BugTaskSearchParams:
                  statusexplanation=None, attachmenttype=None,
                  orderby=None, omit_dupes=False, subscriber=None,
                  component=None, pending_bugwatch_elsewhere=False,
-                 status_elsewhere=None, omit_status_elsewhere=None,
-                 tag=None):
+                 only_resolved_upstream=False, has_no_upstream_bugtask=False,
+                 tag=None, has_cve=False):
         self.bug = bug
         self.searchtext = searchtext
         self.status = status
@@ -413,9 +411,10 @@ class BugTaskSearchParams:
         self.subscriber = subscriber
         self.component = component
         self.pending_bugwatch_elsewhere = pending_bugwatch_elsewhere
-        self.status_elsewhere = status_elsewhere
-        self.omit_status_elsewhere = omit_status_elsewhere
+        self.only_resolved_upstream = only_resolved_upstream
+        self.has_no_upstream_bugtask = has_no_upstream_bugtask
         self.tag = tag
+        self.has_cve = has_cve
 
         self._has_context = False
 
@@ -536,15 +535,7 @@ class IAddBugTaskForm(Interface):
     product = IUpstreamBugTask['product']
     distribution = IDistroBugTask['distribution']
     sourcepackagename = IDistroBugTask['sourcepackagename']
-    link_to_bugwatch = Bool(
-        title=_('Link to a bug in another bug tracker:'),
-        required=False)
-    bugtracker = Choice(
-        title=_('Remote Bug Tracker'), required=False, vocabulary='BugTracker',
-        description=_("The bug tracker in which the remote bug is found. "
-            "Choose from the list. You can register additional bug trackers "
-            "from the Malone home page."))
-    remotebug = StrippedTextLine(
-        title=_('Remote Bug'), required=False, description=_(
-            "The bug number of this bug in the remote bug tracker."))
+    bug_url = StrippedTextLine(
+        title=_('URL'), required=False,
+        description=_("The URL of this bug in the remote bug tracker."))
 

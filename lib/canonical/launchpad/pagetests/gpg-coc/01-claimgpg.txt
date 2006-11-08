@@ -1,181 +1,116 @@
 
-Setup the stub KeyServer
-
-  >>> from canonical.zeca.ftests.harness import ZecaTestSetup
-  >>> z = ZecaTestSetup()
-  >>> z.setUp()
-  
-Clean page
-
-  >>> print http(r"""
-  ... GET /people/name12/+editpgpkeys HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-    <head>
-      <title>Sample Person's OpenPGP keys</title>
-  ...
-
-Claim OpenPGP key
-
-  >>> print http(r"""
-  ... POST /people/name12/+editpgpkeys HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: ...
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... action=claim_gpg&fingerprint=A419AE861E88BC9E04B9C26FBA2B9389DFD20543""")
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  ...1024D/DFD20543...
-  ...  
-
-Recover Token URL
+This test verifies the basic claim a GPG key workflow.
 
   >>> import email, re
   >>> from canonical.launchpad.mail import stub
+  >>> from canonical.zeca.ftests.harness import ZecaTestSetup
+
+Setup the stub KeyServer:
+
+  >>> z = ZecaTestSetup()
+  >>> z.setUp()
+
+Start out with a clean page:
+
+  >>> user_browser.open("http://launchpad.dev/people/name12/+editpgpkeys")
+  >>> "<title>Sample Person's OpenPGP keys</title>" in user_browser.contents
+  True
+  >>> "1024D/DFD20543" in user_browser.contents
+  False
+
+Claim OpenPGP key:
+
+  >>> key = "A419AE861E88BC9E04B9C26FBA2B9389DFD20543"
+  >>> user_browser.getControl(name='fingerprint').value = key
+  >>> user_browser.getControl(name='import').click()
+  >>> "error message" not in user_browser.contents
+  True
+  >>> print user_browser.contents
+  <BLANKLINE>
+  ...
+  A message has been sent to <code>test@canonical.com</code>, encrypted
+  with the key <code>1024D/DFD20543</code>.
+  To confirm the key is yours, decrypt the message and follow the
+  link inside.
+  ...
+
+Recover token URL..
+
   >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
   >>> msg = email.message_from_string(raw_msg)
 
-Decode the content, originally encoded in 'base-64' or 'quoted-printable'
+..decoding the content, originally encoded in 'base-64' or 'quoted-printable':
   
   >>> cipher_body = msg.get_payload(decode=True)
 
-  >>> from canonical.launchpad.helpers import setupInteraction
+  >>> from canonical.launchpad.webapp.interaction import setupInteraction
   >>> setupInteraction(None)
 
   >>> from canonical.launchpad.interfaces import IGPGHandler 
   >>> from zope.component import getUtility
   >>> gpghandler = getUtility(IGPGHandler)
 
-Import the secret keys need for this test
+Import the secret keys needed for this test:
 
-  >>> from canonical.launchpad.ftests import import_secret_test_key
+  >>> from canonical.launchpad.ftests import (
+  ...     import_secret_test_key, decrypt_content)
   >>> import_secret_test_key()
 
-'cipher_body' is a message encrypted to the just-imported 1024D/DFD20543
-OpenPGP key, we need to access the current IGpghandler instance to
-access this key and decrypt the message.
+'cipher_body' is a message encrypted with the just-imported
+1024D/DFD20543 OpenPGP key, we need to access the current IGpghandler
+instance to access this key and decrypt the message.
 
-  >>> body = gpghandler.decryptContent(cipher_body, 'test')
+  >>> body = decrypt_content(cipher_body, 'test')
 
   >>> from zope.security.management import endInteraction
   >>> endInteraction()
 
-Do the usual procedure to extract the token URL
+Do the usual procedure to extract the token URL:
  
   >>> link = re.findall(r'http.*/token/.*', body)[0]
   >>> token = re.sub(r'.*token/', '', link)
 
-Ensure token is ascii to avoid utf-8 mess in URL  
+Ensure token is ascii to avoid utf-8 mess in URL:
 
   >>> base_path = '/token/%s' % token.encode('ascii')
 
 Go to the link sent by email, to validate the email address.
 
-  >>> print http(r"""
-  ... GET %s HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """ % base_path)
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://localhost:9000/token/.../+validategpg
+  >>> user_browser.open("http://launchpad.dev%s" % base_path)
+
+Get redirected to +validategpg, and confirm token:
+
+  >>> print user_browser.url
+  http://launchpad.dev/token/.../+validategpg
+  >>> user_browser.getControl(name='VALIDATE').click()
+
+Get redirected to the user's homepage with a greeting:
+
+  >>> user_browser.url
+  'http://launchpad.dev/people/name12'
+  >>> "The key 1024D/DFD20543 was successfully validated" in user_browser.contents
+  True
+
+Certify the key is imported:
+
+  >>> user_browser.open("http://launchpad.dev/people/name12/+editpgpkeys")
+
+  >>> print user_browser.contents
   <BLANKLINE>
-
-Get Redirected
-
-  >>> path = '%s/+validategpg' % base_path
-  >>> print http(r"""
-  ... GET %s HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """ % path)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
+  ...
+  <h2>Active keys</h2>
+  ...
+  1024D/DFD20543
   ...
 
-Validate UID and consequently import the Key.
+Make sure that UIDs were properly processed; in particular, check that
+the revoked UID in the key wasn't added as an email address:
 
-  >>> print http(r"""
-  ... POST %s HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: ...
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... password=test&SUBMIT_CHANGES=Submit""" % path)
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://localhost:9000/people/name12
-  ...
-  ...informational message">The key 1024D/DFD20543 was successfully validated...
-  ...
-
-Certify the key is imported
-
-  >>> print http(r"""
-  ... GET /people/name12/+editpgpkeys HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-    <head>
-      <title>Sample Person's OpenPGP keys</title>
-  ...
-  ...1024D/DFD20543...
-
-Attempt to the fact the revoked uid present in the key in question
-wasn't added.
-
-  >>> print http(r"""
-  ... GET /people/name12/+editemails HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  ...test@canonical.com...
-  ...
-      <div>
-        <label for="testing@canonical.com">
-          <input type="radio" name="VALIDATED_SELECTED"
-                 id="testing@canonical.com"
-                 value="testing@canonical.com" />
-          <b>testing@canonical.com</b>
-        </label>
-      </div>
-    </div>
-    <input type="submit" value="Remove" name="REMOVE_VALIDATED" />
-    <input type="submit" value="Set as Contact Address" name="SET_PREFERRED" />
-  ...
-      <div>
-        <label for="testtest@canonical.com_unvalidated">
-          <input type="radio" name="UNVALIDATED_SELECTED"
-                 id="testtest@canonical.com_unvalidated"
-                 value="testtest@canonical.com" />
-          <b>testtest@canonical.com</b>
-        </label>
-      </div>
-      <div>
-        <label for="sample.person@canonical.com_unvalidated">
-          <input type="radio" name="UNVALIDATED_SELECTED"
-                 id="sample.person@canonical.com_unvalidated"
-                 value="sample.person@canonical.com" />
-          <b>sample.person@canonical.com</b>
-        </label>
-      </div>
-      </div>
-      <input type="submit" value="Remove" name="REMOVE_UNVALIDATED" />
-      <input type="submit" value="Confirm" name="VALIDATE" />
-  ... 
-
+  >>> user_browser.open("http://launchpad.dev/people/name12/+editemails")
+  >>> "sample.person@canonical.com_unvalidated" in user_browser.contents
+  True
+  >>> "sample.revoked@canonical.com" in user_browser.contents
+  False
 
 Verify that the key was imported with the "can encrypt" flag set:
 
@@ -187,7 +122,7 @@ Verify that the key was imported with the "can encrypt" flag set:
   >>> print key.can_encrypt
   True
 
+Kill stub KeyServer:
 
-Kill stub KeyServer
-  
   >>> z.tearDown()
+

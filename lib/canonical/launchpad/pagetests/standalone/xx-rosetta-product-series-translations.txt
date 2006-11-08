@@ -8,10 +8,10 @@ series is working.
   ...
       <title>Translation templates for Evolution Series: trunk</title>
   ...
-      <tr onclick="window.location='http://.../products/evolution/trunk/+pots/evolution-2.2/af/+translate'">
+      <tr>
   <BLANKLINE>
           <td>
             <a href="http://.../products/evolution/trunk/+pots/evolution-2.2/af/+translate">Afrikaans</a>
           </td>
-          <td class="amount">23</td>
+          <td class="amount">22</td>
   ...

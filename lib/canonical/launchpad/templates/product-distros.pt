@@ -52,7 +52,14 @@
             <span tal:replace="pkging/distrorelease/version">3.04</span>
             (<span tal:replace="pkging/distrorelease/displayname">
             Hoary</span>)</td>
-          <td tal:content="pkging/sourcepackagename/name">Apache</td>
+            
+            <td>
+              <a
+                tal:attributes="href string:${pkging/distrorelease/fmt:url}/+source/${pkging/sourcepackagename/name}"
+                tal:content="pkging/sourcepackagename/name"
+              >Apache</a>
+            </td>
+            
           <td tal:content="pkging/productseries/name">2.0</td>
           <td><span tal:condition="pkging/sourcepackage/currentrelease"
                     tal:replace="pkging/sourcepackage/currentrelease/version"
