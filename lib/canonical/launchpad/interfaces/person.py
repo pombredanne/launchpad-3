@@ -326,8 +326,12 @@ class IPerson(IHasSpecifications):
             "this is set to None, then this Person has not been merged "
             "into another and is still valid"))
 
-    touched_pofiles = Attribute(
-        "The set of pofiles which the person has worked on in some way.")
+    translation_history = Attribute(
+        "The set of POFileTranslator objects that represent work done "
+        "by this translator.")
+
+    translation_groups = Attribute(
+        "The set of TranslationGroup objects this person is a member of.")
 
     # title is required for the Launchpad Page Layout main template
     title = Attribute('Person Page Title')
@@ -654,6 +658,12 @@ class IPersonSet(Interface):
         If no orderBy is specified the results will be ordered using the
         default ordering specified in Person._defaultOrder.
         """
+
+    def getPOFileContributors(pofile):
+        """Return people that have contributed to the specified POFile."""
+
+    def getPOFileContributorsByDistroRelease(self, distrorelease, language):
+        """Return people who translated strings in distroRelease to language."""
 
     def getAllPersons(orderBy=None):
         """Return all Persons, ignoring the merged ones.

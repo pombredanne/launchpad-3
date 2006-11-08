@@ -35,8 +35,7 @@
   </tal:no-results>
 
   <tal:results condition="batch">
-    <div class="lesser"
-         tal:content="structure view/batchnav/@@+navigation-links" />
+    <div class="lesser" tal:content="structure view/batchnav/@@+navigation-links-upper" />
     <table class="listing" width="100%">
       <thead>
         <tr>
@@ -67,9 +66,7 @@
         </tr>
       </tbody>
     </table>
-
-    <div class="lesser"
-         tal:content="structure view/batchnav/@@+navigation-links" />
+    <div class="lesser" tal:content="structure view/batchnav/@@+navigation-links-lower" />
   </tal:results>
 
 </div>

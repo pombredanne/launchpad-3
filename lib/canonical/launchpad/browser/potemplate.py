@@ -115,7 +115,7 @@ class POTemplateSubsetView:
 
     def __call__(self):
         # We are not using this context directly, only for traversals.
-        return self.request.response.redirect('../+translations')
+        self.request.response.redirect('../+translations')
 
 
 class POTemplateView(LaunchpadView):
