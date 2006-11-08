@@ -1180,10 +1180,11 @@ class TicketUnsupportedLanguageNotification(TicketNotification):
             self.ticket.id, self.ticket.language.englishname,
             self.ticket.title)
 
+    def shouldNotify(self):
+        return self.unsupported_language
+
     def getRecipients(self):
         """Notify all the support contacts."""
-        if not self.unsupported_language:
-            return []
         return self.ticket.target.support_contacts
 
     def getBody(self):
