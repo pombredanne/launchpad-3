@@ -918,16 +918,28 @@ class TicketNotification:
 
         Default to the ticket's subscribers that speaks the request languages.
         If the ticket owner is subscribed, he's always consider to speak the
-        language.
+        language. When a subscriber is a team and it doesn't have an email
+        set, only contacts the members that speaks the supported language.
         """
+        # Optimize the English case.
         english = getUtility(ILanguageSet)['en']
         ticket_language = self.ticket.language
         if ticket_language == english:
             return self.ticket.getSubscribers()
 
-        return [person for person in self.ticket.getSubscribers()
-                if ticket_language in person.languages or
-                   person == self.ticket.owner]
+        recipients = set()
+        subscribers = set(self.ticket.getSubscribers())
+        while subscribers:
+            person = subscribers.pop()
+            if person == self.ticket.owner:
+                recipients.add(person)
+            elif not person.preferredemail:
+                # When the team doesn't have an email address, proces
+                # each of its members individually.
+                subscribers.update(person.activemembers)
+            elif ticket_language in person.getSupportedLanguages():
+                recipients.add(person)
+        return recipients
 
     def initialize(self):
         """Initialization hook for subclasses.
