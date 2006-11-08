@@ -8,19 +8,19 @@ Let's identify us first.
 The main page for a pomsgset object should redirect us to the translation form.
 
   >>> browser.open(
-  ...     'http://localhost/distros/ubuntu/hoary/+source/evolution/'
+  ...     'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/'
   ...     '+pots/evolution-2.2/es/1')
   >>> browser.url
-  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate'
+  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate'
 
 When we are on the first message, we should be 100% sure that the 'First' and
 'Previous' links are hidden and 'Next' and 'Last' are the right ones.
 
   >>> browser.open(
-  ...     'http://localhost/distros/ubuntu/hoary/+source/evolution/'
+  ...     'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/'
   ...     '+pots/evolution-2.2/es/1/+translate')
   >>> browser.url
-  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate'
+  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate'
 
   >>> browser.getLink('First')
   Traceback (most recent call last):
@@ -34,47 +34,47 @@ When we are on the first message, we should be 100% sure that the 'First' and
 
   >>> next = browser.getLink('Next')
   >>> next
-  <Link text='Next' url='http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/2/+translate'>
+  <Link text='Next' url='http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/2/+translate'>
   >>> browser.getLink('Last')
-  <Link text='Last\xa0\xbb' url='http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate'>
+  <Link text='Last\xc2\xa0\xc2\xbb' url='http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate'>
 
 And the link to the IPOFile view should be there too:
 
   >>> browser.getLink('Return to multiple messages view')
-  <Link text='Return to multiple messages view.[IMG]' url='http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=0'>
+  <Link text='Return to multiple messages view.[IMG]' url='http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=0'>
 
 when we choose the next entry, all links should appear.
 
   >>> next.click()
   >>> browser.url
-  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/2/+translate'
+  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/2/+translate'
 
   >>> browser.getLink('First')
-  <Link text='\xab\xa0First' url='http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate'>
+  <Link text='\xc2\xab\xc2\xa0First' url='http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate'>
   >>> browser.getLink('Previous')
-  <Link text='Previous' url='http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate'>
+  <Link text='Previous' url='http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate'>
   >>> browser.getLink('Next')
-  <Link text='Next' url='http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/3/+translate'>
+  <Link text='Next' url='http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/3/+translate'>
   >>> last = browser.getLink('Last')
   >>> last
-  <Link text='Last\xa0\xbb' url='http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate'>
+  <Link text='Last\xc2\xa0\xc2\xbb' url='http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate'>
 
 And the link to the IPOFile view should be there too:
 
   >>> browser.getLink('Return to multiple messages view')
-  <Link text='Return to multiple messages view.[IMG]' url='http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=1'>
+  <Link text='Return to multiple messages view.[IMG]' url='http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=1'>
 
 And the last one.
 
   >>> last.click()
   >>> browser.url
-  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate'
+  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate'
 
   >>> browser.getLink('First')
-  <Link text='\xab\xa0First' url='http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate'>
+  <Link text='\xc2\xab\xc2\xa0First' url='http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate'>
   >>> prev = browser.getLink('Previous')
   >>> prev
-  <Link text='Previous' url='http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/21/+translate'>
+  <Link text='Previous' url='http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/21/+translate'>
 
   >>> browser.getLink('Next')
   Traceback (most recent call last):
@@ -89,35 +89,35 @@ And the last one.
 And the link to the IPOFile view should be there too:
 
   >>> browser.getLink('Return to multiple messages view')
-  <Link text='Return to multiple messages view.[IMG]' url='http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=21'>
+  <Link text='Return to multiple messages view.[IMG]' url='http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=21'>
 
 Let's test the ones at the end of the form.
 
   >>> prev.click()
   >>> browser.url
-  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/21/+translate'
+  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/21/+translate'
 
   >>> browser.getLink('First')
-  <Link text='\xab\xa0First' url='http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate'>
+  <Link text='\xc2\xab\xc2\xa0First' url='http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate'>
   >>> browser.getLink('Previous')
-  <Link text='Previous' url='http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/20/+translate'>
+  <Link text='Previous' url='http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/20/+translate'>
   >>> browser.getLink('Next')
-  <Link text='Next' url='http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate'>
+  <Link text='Next' url='http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate'>
   >>> browser.getLink('Last')
-  <Link text='Last\xa0\xbb' url='http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate'>
+  <Link text='Last\xc2\xa0\xc2\xbb' url='http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate'>
 
 Now, we are going to check a message submission.
 
   >>> browser.open(
-  ...     'http://localhost/distros/ubuntu/hoary/+source/evolution/'
+  ...     'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/'
   ...     '+pots/evolution-2.2/es/13/+translate')
   >>> browser.url
-  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/13/+translate'
+  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/13/+translate'
 
 Check that the message #13 is without translation.
 
-  >>> browser.getControl(name='msgset_142_es_translation_0').value
-  ''
+  >>> '(no translation yet)' in browser.contents
+  True
 
 And also, we don't get anyone as the Last translator because there is no
 translation at all ;-)
@@ -127,10 +127,11 @@ translation at all ;-)
 
 Let's submit an invalid value for this message #13.
 
-  >>> browser.getControl(name='msgset_142_es_translation_0').value = 'foo %i'
+  >>> browser.getControl(name='msgset_142_es_translation_0_new_checkbox').value = True
+  >>> browser.getControl(name='msgset_142_es_translation_0_new').value = 'foo %i'
   >>> browser.getControl(name='submit_translations').click()
   >>> browser.url
-  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/13/+translate'
+  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/13/+translate'
   >>> 'There is an error in the translation you provided' in browser.contents
   True
   >>> "format specifications in 'msgid' and 'msgstr' for argument 1 are not the same" in browser.contents
@@ -139,34 +140,33 @@ Let's submit an invalid value for this message #13.
 XXX: CarlosPerelloMarin 20060824: The test has an extra '\n' char as the first
 character to workaround bug #47511.
 
-  >>> browser.getControl(name='msgset_142_es_translation_0').value == '\nfoo %i'
+  >>> '(no translation yet)' in browser.contents
   True
 
 And now a good submit.
 
-  >>> browser.getControl(name='msgset_142_es_translation_0').value = 'foo %s'
+  >>> browser.getControl(name='msgset_142_es_translation_0_new_checkbox').value = True
+  >>> browser.getControl(name='msgset_142_es_translation_0_new').value = 'foo %s'
   >>> browser.getControl(name='submit_translations').click()
 
 We moved to the next message, that means this submission worked.
 
   >>> browser.url
-  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate'
+  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate'
 
 Now, it has the submitted value.
 
   >>> browser.open(
-  ...     'http://localhost/distros/ubuntu/hoary/+source/evolution/'
+  ...     'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/'
   ...     '+pots/evolution-2.2/es/13/+translate')
   >>> browser.url
-  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/13/+translate'
+  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/13/+translate'
 
 Check that the message #13 has the new value we submitted.
 
-
-XXX: CarlosPerelloMarin 20060824: The test has an extra '\n' char as the first
-character to workaround bug #47511.
-
-  >>> browser.getControl(name='msgset_142_es_translation_0').value == '\nfoo %s'
+  >>> '(no translation yet)' in browser.contents
+  False
+  >>> 'foo %s' in browser.contents
   True
 
 And now, we get someone as the Translator and also, we have a reviewer (in
@@ -186,16 +186,16 @@ this case, it's the same):
 Now, we will check suggestions in this form.
 
   >>> browser.open(
-  ...     'http://localhost/distros/ubuntu/hoary/+source/evolution/'
+  ...     'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/'
   ...     '+pots/evolution-2.2/es/14/+translate')
   >>> browser.url
-  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate'
+  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate'
 
 Check that suggestions come in from other contexts:
 
   >>> "<label>Suggested elsewhere:</label>" in browser.contents
   True
-  >>> suggested = '<div lang="es" dir="ltr">This is a suggestion added by a non-editor for a multiline entry, and it happens to have a very long first line.'
+  >>> suggested = "This is a suggestion added by a non-editor for a multiline entry, and it happens to have a "
   >>> suggested in browser.contents
   True
 
@@ -222,13 +222,13 @@ Also check that the alternative language selection is working:
   >>> browser.getControl(name='field.alternative_language').value = ['ja']
   >>> browser.getControl(name='select_alternate_language').click()
   >>> browser.url
-  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate?field.alternative_language=ja&field.alternative_language-empty-marker=1&select_alternate_language=Change'
+  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate?field.alternative_language=ja&field.alternative_language-empty-marker=1&select_alternate_language=Change'
 
 If we specify more than one alternative language in the URL, we get an
 UnexpectedFormData exception:
 
   >>> browser.open(
-  ...  'http://localhost/distros/ubuntu/hoary/+source/evolution/'
+  ...  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/'
   ...  '+pots/evolution-2.2/es/14/+translate?field.alternative_language=ja&field.alternative_language=aj')
   Traceback (most recent call last):
     ...
@@ -238,7 +238,7 @@ UnexpectedFormData exception:
 as well!)
 
   >>> browser.open(
-  ...  'http://localhost/distros/ubuntu/hoary/+source/evolution/'
+  ...  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/'
   ...  '+pots/evolution-2.2/es/+translate?field.alternative_language=ja&field.alternative_language=aj')
   Traceback (most recent call last):
     ...

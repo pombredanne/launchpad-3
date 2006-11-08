@@ -7,6 +7,7 @@
   </td>
   <td style="text-align: right;">
     <span tal:replace="view/sequence">1</span>.
+    <a tal:attributes="name view/sequence" />
     <input
       type="hidden"
       tal:attributes="
