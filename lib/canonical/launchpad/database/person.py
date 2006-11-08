@@ -33,7 +33,7 @@ from canonical.launchpad.interfaces import (
     ISSHKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner,
     IBugTaskSet, UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
     ITranslationGroupSet, ILaunchpadStatisticSet, ShipItConstants,
-    ILaunchpadCelebrities,
+    ILaunchpadCelebrities, ILanguageSet
     )
 
 from canonical.launchpad.database.cal import Calendar
@@ -375,6 +375,22 @@ class Person(SQLBase):
     def searchTickets(self, **kwargs):
         # See ITicketActor
         return TicketSet.searchByPerson(person=self, **kwargs)
+
+    def getSupportedLanguages(self):
+        """See IPerson."""
+        langs = set()
+        known_languages = shortlist(self.languages)
+        if len(known_languages):
+            for lang in known_languages:
+                # Ignore English and all its variants since we assume English
+                # is supported
+                if not lang.code.startswith('en'):
+                    langs.add(lang)
+        elif ITeam.providedBy(self):
+            for member in self.activemembers:
+                langs |= member.getSupportedLanguages()
+        langs.add(getUtility(ILanguageSet)['en'])
+        return langs
 
     @property
     def branches(self):
@@ -864,7 +880,7 @@ class Person(SQLBase):
         history = POFileTranslator.select(
             "POFileTranslator.person = %d" % self.id,
             prejoins=[
-                "pofile", 
+                "pofile",
                 "pofile.potemplate",
                 "latest_posubmission",
                 "latest_posubmission.pomsgset.potmsgset.primemsgid_",

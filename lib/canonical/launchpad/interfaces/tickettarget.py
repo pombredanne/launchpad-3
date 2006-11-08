@@ -28,39 +28,12 @@ TICKET_STATUS_DEFAULT_SEARCH = (
     TicketStatus.SOLVED)
 
 
-def _getLanguagesSupportedByContact(person_or_team):
-    """Return the supported languages by a team or person.
-
-    For a person, the list of supported languages is the same than the
-    languages spoken by that person.
-    For a team, when the languages attribute is not set, the list will
-    included the languages spoken by all team members.
-    """
-    # Prevent circular import.
-    from canonical.launchpad.helpers import shortlist
-    from canonical.launchpad.interfaces.person import ITeam
-    langs = set()
-    spoken_languages = shortlist(person_or_team.languages)
-    if len(spoken_languages):
-        for lang in spoken_languages:
-            # Ignore english and all its variants since we assume english is
-            # supported (and thus we'll include it later) and we don't want to
-            # confuse people by displayng a bunch of entries named English.
-            if not lang.code.startswith('en'):
-                langs.add(lang)
-    elif ITeam.providedBy(person_or_team):
-        for member in person_or_team.activemembers:
-            langs |= _getLanguagesSupportedByContact(member)
-    return langs
-
-
 def get_supported_languages(ticket_target):
     assert ITicketTarget.providedBy(ticket_target)
     langs = set()
     for contact in ticket_target.support_contacts:
-        langs |= _getLanguagesSupportedByContact(contact)
+        langs |= contact.getSupportedLanguages()
 
-    # English is always supported.
     langs.add(getUtility(ILanguageSet)['en'])
     return langs
 
