@@ -50,12 +50,10 @@ def getLastTranslator(parser, pofile):
         person = personset.getByEmail(email)
 
         if person is None:
-            comment = None
-            if pofile is not None:
-                comment = ('when importing the %s translation of %s'
-                           % (pofile.language.displayname,
-                              pofile.potemplate.displayname))
             # We create a new user without a password.
+            comment = ('when importing the %s translation of %s'
+                       % (pofile.language.displayname,
+                          pofile.potemplate.displayname))
             person, dummy = personset.createPersonAndEmail(
                 email, PersonCreationRationale.POFILEIMPORT,
                 displayname=name, comment=comment)

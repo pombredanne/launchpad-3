@@ -19,7 +19,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 
-from canonical.archivepublisher.diskpool import Poolifier
+from canonical.archivepublisher.diskpool import poolify
 from canonical.lp.dbschema import (
     MirrorSpeed, MirrorContent, MirrorStatus, PackagePublishingPocket,
     EnumCol, PackagePublishingStatus, SourcePackageFileType,
@@ -266,6 +266,11 @@ class DistributionMirror(SQLBase):
             distribution_mirror=self, distrorelease=distrorelease,
             flavour=flavour)
         if mirror is not None:
+            mirror.destroySelf()
+
+    def deleteAllMirrorCDImageReleases(self):
+        """See IDistributionMirror"""
+        for mirror in self.cdimage_releases:
             mirror.destroySelf()
 
     @property
@@ -579,7 +584,7 @@ class MirrorDistroArchRelease(SQLBase, _MirrorReleaseMixIn):
         """
         bpr = publishing_record.binarypackagerelease
         base_url = self.distribution_mirror.base_url
-        path = Poolifier().poolify(bpr.sourcepackagename, self.component.name)
+        path = poolify(bpr.sourcepackagename, self.component.name)
         file = BinaryPackageFile.selectOneBy(
             binarypackagerelease=bpr, filetype=BinaryPackageFileType.DEB)
         full_path = 'pool/%s/%s' % (path, file.libraryfile.filename)
@@ -633,7 +638,7 @@ class MirrorDistroReleaseSource(SQLBase, _MirrorReleaseMixIn):
         spr = publishing_record.sourcepackagerelease
         base_url = self.distribution_mirror.base_url
         sourcename = spr.name
-        path = Poolifier().poolify(sourcename, self.component.name)
+        path = poolify(sourcename, self.component.name)
         file = SourcePackageReleaseFile.selectOneBy(
             sourcepackagerelease=spr, filetype=SourcePackageFileType.DSC)
         full_path = 'pool/%s/%s' % (path, file.libraryfile.filename)
