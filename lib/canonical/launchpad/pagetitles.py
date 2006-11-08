@@ -519,6 +519,9 @@ person_edit = ContextDisplayName(smartquote("%s's details"))
 
 person_editemails = ContextDisplayName(smartquote("%s's e-mail addresses"))
 
+person_editlanguages = ContextDisplayName(
+    smartquote("%s's preferred languages"))
+
 person_editpgpkeys = ContextDisplayName(smartquote("%s's OpenPGP keys"))
 
 person_edithomepage = ContextDisplayName(smartquote("%s's home page"))
@@ -715,8 +718,6 @@ root_index = 'Launchpad'
 rosetta_about = 'About Rosetta'
 
 rosetta_index = 'Rosetta'
-
-rosetta_preferences = 'Rosetta: Preferences'
 
 product_branch_add = ContextDisplayName('Register a new %s branch')
 
