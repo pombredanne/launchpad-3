@@ -61,7 +61,7 @@
   </tal:no-results>
 
   <tal:block condition="tickets/batch">
-    <div class="lesser" tal:content="structure tickets/@@+navigation-links" />
+    <div class="lesser" tal:content="structure tickets/@@+navigation-links-upper" />
     <table class="listing" id="ticket-listing">
       <thead>
         <tr>
@@ -113,7 +113,7 @@
         </tr>
       </tbody>
     </table>
-    <div class="lesser" tal:content="structure tickets/@@+navigation-links" />
+    <div class="lesser" tal:content="structure tickets/@@+navigation-links-lower" />
   </tal:block>
 </div>
 </body>

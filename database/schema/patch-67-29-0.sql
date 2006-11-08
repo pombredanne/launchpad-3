@@ -6,4 +6,4 @@ UPDATE ticket SET language = 119;
 
 ALTER TABLE ticket ALTER COLUMN language SET NOT NULL;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (67, 49, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (67, 29, 0);

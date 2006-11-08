@@ -12,7 +12,7 @@
 
 <metal:rightportlets fill-slot="portlets_two">
   <div class="portlet">
-    <h4>About Soyuz:</h4>
+    <h2>About Soyuz</h2>
 
     <div class="portletBody portletContent">
       <img src="/@@/info" />
