@@ -342,6 +342,11 @@ class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
         if this is a HEAD or GET, otherwise do a 303.
 
         See RFC 2616.
+
+        The interface doesn't say that redirect returns anything.
+        However, Zope's implementation does return the location given.  This
+        is largely useless, as it is just the location given which is often
+        relative.  So we won't return anything.
         """
         if temporary_if_possible:
             assert status is None, (
