@@ -27,7 +27,7 @@ from zope.component import getUtility
 from canonical.database.sqlbase import quote
 from canonical.database.constants import nowUTC
 
-from canonical.archivepublisher.diskpool import Poolifier
+from canonical.archivepublisher.diskpool import poolify
 from canonical.archivepublisher.tagfiles import parse_tagfile
 
 from canonical.database.sqlbase import sqlvalues
@@ -51,9 +51,6 @@ from canonical.launchpad.database import (Distribution, DistroRelease,
 
 from canonical.launchpad.interfaces import IPersonSet, IBinaryPackageNameSet
 from canonical.launchpad.helpers import getFileType, getBinaryPackageFormat
-
-# Stash a reference to the poolifier method
-poolify = Poolifier().poolify
 
 
 def check_not_in_librarian(files, archive_root, directory):

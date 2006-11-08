@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = ['Archive', 'ArchiveSet']
 
+from sqlobject import StringCol
 from zope.interface import implements
 
 from canonical.database.sqlbase import SQLBase
@@ -17,17 +18,18 @@ class Archive(SQLBase):
     _table = 'Archive'
     _defaultOrder = 'id'
 
+    tag = StringCol(notNull=True)
+
 
 class ArchiveSet:
     implements(IArchiveSet)
 
     def __init__(self):
-        self.title = "Distributions registered in Launchpad"
+        self.title = "Archives registered in Launchpad"
 
     def get(self, archiveid):
-        """See canonical.launchpad.interfaces.IDistributionSet."""
+        """See canonical.launchpad.interfaces.IArchiveSet."""
         return Archive.get(archiveid)
 
-    def new(self):
-        return Archive()
-
+    def new(self, tag):
+        return Archive(tag=tag)

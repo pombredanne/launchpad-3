@@ -42,7 +42,6 @@ class VPOExportSet:
         'sourcecomment',
         'filereferences',
         'flagscomment',
-        'popluralforms',
     ]
     columns = ', '.join(['POExport.' + name for name in column_names])
 
@@ -284,8 +283,7 @@ class VPOExport:
          self.pocommenttext,
          self.sourcecomment,
          self.filereferences,
-         self.flagscomment,
-         self.popluralforms) = args
+         self.flagscomment) = args
 
         self.language = Language.get(language)
         if pofile is None:

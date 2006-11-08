@@ -72,6 +72,7 @@ from canonical.launchpad.database.branch import *
 from canonical.launchpad.database.branchsubscription import *
 from canonical.launchpad.database.build import *
 from canonical.launchpad.database.builder import *
+from canonical.launchpad.database.buildqueue import *
 from canonical.launchpad.database.publishing import *
 from canonical.launchpad.database.files import *
 from canonical.launchpad.database.bounty import *
@@ -112,3 +113,4 @@ from canonical.launchpad.database.revision import *
 from canonical.launchpad.database.gpgkey import *
 from canonical.launchpad.database.archive import *
 from canonical.launchpad.database.emailaddress import *
+from canonical.launchpad.database.personalpackagearchive import *

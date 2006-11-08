@@ -408,7 +408,7 @@ class DistributionSetAddView(AddView):
             raise Unauthorized(
                 "Need an authenticated user in order to create a"
                 " distribution.")
-        archive = getUtility(IArchiveSet).new()
+        archive = getUtility(IArchiveSet).new("%s main archive" % data['name'])
         distribution = getUtility(IDistributionSet).new(
             name=data['name'],
             displayname=data['displayname'],
@@ -418,7 +418,7 @@ class DistributionSetAddView(AddView):
             domainname=data['domainname'],
             members=data['members'],
             owner=owner,
-            main_archive = archive)
+            main_archive=archive)
         notify(ObjectCreatedEvent(distribution))
         self._nextURL = data['name']
         return distribution

@@ -12,7 +12,8 @@ DROP TABLE PersonalPackageArchive;
 
 -- Create the new tables...
 CREATE TABLE Archive (
-	id SERIAL NOT NULL PRIMARY KEY
+	id SERIAL NOT NULL PRIMARY KEY,
+	tag text NOT NULL
 	);
 
 CREATE TABLE PersonalPackageArchive (
@@ -294,8 +295,12 @@ SELECT binarypackagepublishing.id,
 
 -- Data migration for distribution and publishing tables
 --- Each distribution needs a main archive
-INSERT INTO ARCHIVE (id) SELECT id FROM Distribution;
-UPDATE Distribution SET main_archive = id;
+INSERT INTO ARCHIVE (tag) SELECT name || ' main archive' FROM Distribution;
+UPDATE Distribution SET main_archive = (
+          SELECT id
+            FROM archive
+           WHERE archive.tag = distribution.name || ' main archive'
+	);
 
 --- Update the publishing tables to reference this archive
 UPDATE SecureSourcePackagePublishingHistory

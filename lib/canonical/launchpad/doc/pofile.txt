@@ -55,7 +55,6 @@ This is the new header.
 ... Content-Type: text/plain; charset=UTF-8
 ... Content-Transfer-Encoding: 8bit
 ... Report-Msgid-Bugs-To: serrador@hispalinux.es
-... X-Generator: Rosetta (https://launchpad.net/rosetta/)
 ... Plural-Forms: nplurals=2; plural=n != 1;'''
 
 Now, get a POHeader object with that information.
@@ -85,9 +84,6 @@ Plural-Forms: nplurals=2; plural=(n != 1);
 >>> pofile.fuzzyheader
 True
 
->>> pofile.pluralforms
-2
-
 Now, is time to change the old header with the new one.
 
 >>> pofile.updateHeader(new_header)
@@ -107,9 +103,6 @@ Plural-Forms: nplurals=2; plural=n != 1;
 >>> pofile.fuzzyheader
 False
 
->>> pofile.pluralforms
-2
-
 Now I'm going to test creating a header with invalid plural-forms and
 trying to parse the number and type of plural forms it has.
 
@@ -122,7 +115,6 @@ trying to parse the number and type of plural forms it has.
 ... Content-Type: text/plain; charset=UTF-8
 ... Content-Transfer-Encoding: 8bit
 ... Report-Msgid-Bugs-To: serrador@hispalinux.es
-... X-Generator: Rosetta (http://launchpad.ubuntu.com/rosetta/)
 ... Plural-Forms: n != 1'''
 >>> new_header = POHeader(msgstr=msgstr)
 >>> new_header.updateDict()
@@ -315,7 +307,7 @@ The header is not changed.
 And checking one of the translations, we can see that it's using the EUC-JP
 encoding.
 
-    >>> stream_list[29]
+    >>> stream_list[30]
     'msgstr "\xc0\xdf\xc4\xea\xa4\xce\xa5\xab\xa5\xb9\xa5\xbf\xa5\xde\xa5\xa4\xa5\xba\xa4\xcb /etc/mozilla/prefs.js \xa4\xac\xcd\xf8\xcd\xd1\xa4\xc7\xa4\xad\xa4\xde\xa4\xb9\xa1\xa3"'
 
 
@@ -331,7 +323,7 @@ We can see that the header has been updated to have UTF-8
 
 And the encoding used is also using UTF-8 chars.
 
-    >>> stream_list[29]
+    >>> stream_list[30]
     'msgstr "\xe8\xa8\xad\xe5\xae\x9a\xe3\x81\xae\xe3\x82\xab\xe3\x82\xb9\xe3\x82\xbf\xe3\x83\x9e\xe3\x82\xa4\xe3\x82\xba\xe3\x81\xab /etc/mozilla/prefs.js \xe3\x81\x8c\xe5\x88\xa9\xe7\x94\xa8\xe3\x81\xa7\xe3\x81\x8d\xe3\x81\xbe\xe3\x81\x99\xe3\x80\x82"'
 
 getPOTMsgSetUntranslated

@@ -17,51 +17,50 @@ button:
   >>> print http(r"""
   ... POST /distros/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 1999
   ... Content-Type: multipart/form-data; boundary=---------------------------19759086281403130373932339922
   ... 
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.status"
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.status"
   ... 
   ... Confirmed
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.status-empty-marker"
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.status-empty-marker"
   ... 
   ... 1
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.importance"
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.importance"
   ... 
   ... Low
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.importance-empty-marker"
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.importance-empty-marker"
   ... 
   ... 1
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.milestone"
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.milestone"
   ... 
   ... 
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.milestone-empty-marker"
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.milestone-empty-marker"
   ... 
   ... 1
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.sourcepackagename"
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.sourcepackagename"
   ... 
   ... mozilla-firefox
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.assignee.option"
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.assignee.option"
   ... 
-  ... assign_to_me
+  ... ubuntu_mozilla-firefox.assignee.assign_to_me
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.assignee"
-  ... 
-  ... 
-  ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.bugwatch"
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.assignee"
   ... 
   ... 
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.bugwatch-empty-marker"
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.bugwatch"
+  ... 
+  ... 
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.bugwatch-empty-marker"
   ... 
   ... 1
   ... -----------------------------19759086281403130373932339922
@@ -94,47 +93,47 @@ But, you can also assign the task to another person, of course:
   ... Content-Type: multipart/form-data; boundary=---------------------------19759086281403130373932339922
   ... 
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.status"
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.status"
   ... 
   ... Confirmed
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.status-empty-marker"
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.status-empty-marker"
   ... 
   ... 1
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.importance"
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.importance"
   ... 
   ... Low
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.importance-empty-marker"
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.importance-empty-marker"
   ... 
   ... 1
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.milestone"
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.milestone"
   ... 
   ... 
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.milestone-empty-marker"
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.milestone-empty-marker"
   ... 
   ... 1
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.sourcepackagename"
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.sourcepackagename"
   ... 
   ... mozilla-firefox
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.assignee.option"
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.assignee.option"
   ... 
-  ... assign_to
+  ... ubuntu_mozilla-firefox.assignee.assign_to
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.assignee"
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.assignee"
   ... 
   ... name12
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.bugwatch"
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.bugwatch"
   ... 
   ... 
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.bugwatch-empty-marker"
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.bugwatch-empty-marker"
   ... 
   ... 1
   ... -----------------------------19759086281403130373932339922
@@ -167,47 +166,47 @@ Lastly, the widget also allows you to simply assign the task to nobody
   ... Content-Type: multipart/form-data; boundary=---------------------------19759086281403130373932339922
   ... 
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.status"
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.status"
   ... 
   ... Confirmed
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.status-empty-marker"
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.status-empty-marker"
   ... 
   ... 1
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.importance"
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.importance"
   ... 
   ... Low
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.importance-empty-marker"
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.importance-empty-marker"
   ... 
   ... 1
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.milestone"
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.milestone"
   ... 
   ... 
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.milestone-empty-marker"
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.milestone-empty-marker"
   ... 
   ... 1
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.sourcepackagename"
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.sourcepackagename"
   ... 
   ... mozilla-firefox
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.assignee.option"
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.assignee.option"
   ... 
-  ... assign_to_nobody
+  ... ubuntu_mozilla-firefox.assignee.assign_to_nobody
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.assignee"
-  ... 
-  ... 
-  ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.bugwatch"
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.assignee"
   ... 
   ... 
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.bugwatch-empty-marker"
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.bugwatch"
+  ... 
+  ... 
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.bugwatch-empty-marker"
   ... 
   ... 1
   ... -----------------------------19759086281403130373932339922
