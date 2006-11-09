@@ -35,6 +35,7 @@
         <thead>
           <th>Status</th>
           <th>Filename</th>
+          <th>Help text</th>
           <th>Comments</th>
         </thead>
         <tbody>
@@ -42,6 +43,18 @@
               tal:attributes="class page/status">
             <td tal:content="page/status" />
             <td tal:content="page/filename"/>
+            <td>
+              <tal:if condition="page/helptext">
+                <a
+                  tal:attributes="onclick string:document.getElementById('${page/filename}-helptext').style.visibility='visible';;return false;;">
+                  help</a>
+                <div
+                  style="visibility:hidden;position:absolute;border:1px solid grey"
+                  tal:attributes="id string:${page/filename}-helptext"
+                  onclick="this.style.visibility='hidden';return false;"
+                  tal:content="structure page/helptext"/>
+              </tal:if>
+            </td>
             <td tal:content="structure page/comment" />
           </tr>
         </tbody>

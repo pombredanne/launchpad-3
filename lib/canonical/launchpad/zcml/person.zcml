@@ -81,6 +81,14 @@
       template="../templates/person-changepassword.pt">
   </browser:page>
 
+  <browser:page
+      name="+editlanguages"
+      for="canonical.launchpad.interfaces.IPerson"
+      class="canonical.launchpad.browser.PersonLanguagesView"
+      permission="launchpad.Edit"
+      template="../templates/person-editlanguages.pt">
+  </browser:page>
+
   <browser:editform
       name="+edit"
       for="canonical.launchpad.interfaces.IPerson"
@@ -153,11 +161,6 @@
           template="../templates/person-karma.pt"
           lp:url="/people/$Person.name/+karma" />
       <browser:page
-          name="+translations"
-          facet="translations"
-          template="../templates/person-translations.pt"
-          lp:url="/people/$Person.name/+translations" />
-      <browser:page
           name="+sshkeys"
           attribute="showSSHKeys"
           lp:url="/people/$Person.name/+sshkeys" />
@@ -192,6 +195,14 @@
     class="canonical.launchpad.browser.PersonSpecWorkLoadView"
     template="../templates/person-table-specworkload.pt"
     lp:url="/people/$Person.name/+table-specworkload" />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    name="+translations"
+    facet="translations"
+    class="canonical.launchpad.browser.PersonTranslationView"
+    permission="zope.Public"
+    template="../templates/person-translations.pt" />
 
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"

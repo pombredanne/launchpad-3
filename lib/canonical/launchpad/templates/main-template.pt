@@ -192,11 +192,8 @@
                       <metal:portlets define-slot="portlets_two" />
                       <metal:portlets define-slot="portlets_one" />
                     </div>
-
                     <div class="clear"></div>
-
                     </div>
-
                   </div>
                 </div>
               </div>
