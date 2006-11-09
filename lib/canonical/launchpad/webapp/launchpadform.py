@@ -265,7 +265,8 @@ class LaunchpadFormView(LaunchpadView):
 
     def isCheckBoxLayout(self, field_name):
         widget = self.widgets[field_name]
-        return ICheckBoxWidgetLayout.providedBy(widget)
+        return (ICheckBoxWidgetLayout.providedBy(widget) and
+                not IMultiLineWidgetLayout.providedBy(widget))
 
     def showOptionalMarker(self, field_name):
         widget = self.widgets[field_name]
