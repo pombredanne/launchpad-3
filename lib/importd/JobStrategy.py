@@ -95,7 +95,15 @@ class CSCVSStrategy(JobStrategy):
         target_manager = aJob.makeTargetManager()
         working_dir = self.getWorkingDir(aJob, dir)
         target_path = target_manager.createImportTarget(working_dir)
-        self.runtobaz("-SC", "%s.1:" % aJob.branchfrom, target_path, logger)
+        # Option -I here to do a full-tree import for the first revision.
+        # No option -C here because the working tree is not at revision 1.
+        self.runtobaz("-SI", "%s.1" % aJob.branchfrom, target_path, logger)
+        # WARNING: Do not use the "1::" syntax for the revision range, because
+        # the svn revision range parser is not stable. If the svn branch to
+        # import was created at revision 42, the previous command will produce
+        # a commit with a cscvs id of "MAIN.42". Then the incremental import
+        # must start on revision 43. -- David Allouche 2006-10-31
+        self._importIncrementally(target_path)
 
     def _checkSafety(self):
         """Run safety checks to avoid putting excessive load on server.
@@ -112,16 +120,35 @@ class CSCVSStrategy(JobStrategy):
         self.aJob = aJob
         self.logger = logger
         self.dir = dir
-        target_manager = aJob.makeTargetManager()
         working_dir = self.getWorkingDir(aJob, dir)
+        target_path = self._getSyncTarget(working_dir)
+        self._importIncrementally(target_path)
+
+    def _getSyncTarget(self, working_dir):
+        """Retrieve the bzrworking directory when doing a sync.
+
+        This is factored out as a separate method to allow shorting out the
+        this functionality and its dependencies when testing sync.
+
+        :param working_dir: path of job's working directory
+        :return: path of the bzr working tree to import into
+        """
+        target_manager = self.job.makeTargetManager()
         target_path = target_manager.getSyncTarget(working_dir)
+        return target_path
+
+    def _importIncrementally(self, target_path):
+        """Do an incremental import, starting after the last imported revision.
+
+        :param target_path: path of the bzr workingtree to import into
+        """
         branch = SCM.branch(self.job.targetBranchName())
         lastCommit = cscvs.findLastCscvsCommit(branch)
         if lastCommit is None:
             raise RuntimeError(
                 "The incremental 'tobaz' was not performed because "
-                "there are no new commits.")
-        self.runtobaz("-SC", "%s::" % lastCommit, target_path, logger)
+                "no cscvs commit was found in the history of the target.")
+        self.runtobaz("-SC", "%s::" % lastCommit, target_path, self.logger)
 
     def sourceDir(self):
         """Get a source directory to work against"""
@@ -428,7 +455,7 @@ class SVNStrategy(CSCVSStrategy):
                     SCM.tree(path).update()
                 else:
                     self.logger.debug("getting from SVN: %s %s",
-                                      (repository, self.aJob.module))
+                        repository, self.aJob.module)
                     client=pysvn.Client()
                     client.checkout(repository, path)
             except Exception: # don't leave partial checkouts around
