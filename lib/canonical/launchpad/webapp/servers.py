@@ -168,6 +168,9 @@ class LaunchpadRequestPublicationFactory:
         vhrps.append(VHRP('mainsite', LaunchpadBrowserRequest, MainLaunchpadPublication))
         vhrps.append(VHRP('blueprints', BlueprintBrowserRequest, BlueprintPublication))
         vhrps.append(VHRP('code', CodeBrowserRequest, CodePublication))
+        vhrps.append(VHRP('translations', TranslationsBrowserRequest, TranslationsPublication))
+        vhrps.append(VHRP('bugs', BugsBrowserRequest, BugsPublication))
+        vhrps.append(VHRP('answers', AnswersBrowserRequest, AnswersPublication))
         vhrps.append(VHRP('shipitubuntu', UbuntuShipItBrowserRequest, ShipItPublication))
         vhrps.append(VHRP('shipitkubuntu', KubuntuShipItBrowserRequest, ShipItPublication))
         vhrps.append(VHRP('shipitedubuntu', EdubuntuShipItBrowserRequest, ShipItPublication))
@@ -457,6 +460,30 @@ class CodePublication(LaunchpadBrowserPublication):
 
 class CodeBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.launchpad.layers.CodeLayer)
+
+# ---- translations
+
+class TranslationsPublication(LaunchpadBrowserPublication):
+    """The publication used for the Translations site."""
+
+class TranslationsBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.TranslationsLayer)
+
+# ---- bugs
+
+class BugsPublication(LaunchpadBrowserPublication):
+    """The publication used for the Bugs site."""
+
+class BugsBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.BugsLayer)
+
+# ---- answers
+
+class AnswersPublication(LaunchpadBrowserPublication):
+    """The publication used for the Answers site."""
+
+class AnswersBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.AnswersLayer)
 
 # ---- shipit
 

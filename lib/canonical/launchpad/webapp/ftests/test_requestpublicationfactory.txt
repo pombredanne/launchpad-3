@@ -23,8 +23,16 @@ These are parsed into webapp.vhost.allvhosts.
     ...     print 'rooturl:', vhost.rooturl
     ...     print 'althosts:', ', '.join(vhost.althostnames)
     ...     print '----'
+    answers @ answers.launchpad.dev
+    rooturl: http://answers.launchpad.dev/
+    althosts:
+    ----
     blueprints @ blueprints.launchpad.dev
     rooturl: http://blueprints.launchpad.dev/
+    althosts:
+    ----
+    bugs @ bugs.launchpad.dev
+    rooturl: http://bugs.launchpad.dev/
     althosts:
     ----
     code @ code.launchpad.dev
@@ -45,6 +53,10 @@ These are parsed into webapp.vhost.allvhosts.
     ----
     shipitubuntu @ shipit.ubuntu.dev
     rooturl: http://shipit.ubuntu.dev/
+    althosts:
+    ----
+    tranlsations @ translations.launchpad.dev
+    rooturl: http://translations.launchpad.dev/
     althosts:
     ----
     xmlrpc @ xmlrpc.launchpad.dev

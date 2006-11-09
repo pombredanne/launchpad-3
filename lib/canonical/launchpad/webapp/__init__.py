@@ -88,6 +88,12 @@ class StandardLaunchpadFacets(FacetMenu):
                 link.site = 'blueprints'
             elif name == 'branches':
                 link.site = 'code'
+            elif name == 'translations':
+                link.site = 'translations'
+            elif name == 'support':
+                link.site = 'answers'
+            elif name == 'bugs':
+                link.site = 'bugs'
             else:
                 link.site = 'mainsite'
         return link

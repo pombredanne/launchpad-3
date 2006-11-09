@@ -237,18 +237,18 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
         return Link(target, text)
 
     def translations(self):
-        target = 'rosetta'
+        target = ''
         text = 'Translations'
         return Link(target, text)
 
     def bugs(self):
-        target = 'malone'
+        target = ''
         text = 'Bugs'
         return Link(target, text)
 
     def support(self):
-        target = 'support'
-        text = 'Support'
+        target = ''
+        text = 'Answers'
         summary = 'Launchpad technical support tracker.'
         return Link(target, text, summary)
 

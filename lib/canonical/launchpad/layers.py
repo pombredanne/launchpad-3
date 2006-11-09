@@ -26,15 +26,22 @@ class LaunchpadLayer(IDefaultBrowserLayer):
 
 class RosettaLayer(LaunchpadLayer):
     """The `RosettaLayer` layer."""
+TranslationsLayer = RosettaLayer
 
 class MaloneLayer(LaunchpadLayer):
     """The `MaloneLayer` layer."""
+BugsLayer = MaloneLayer
 
 class CodeLayer(LaunchpadLayer):
     """The `CodeLayer` layer."""
 
 class BlueprintLayer(LaunchpadLayer):
     """The `BlueprintLayer` layer."""
+BlueprintsLayer = BlueprintLayer
+
+class AnswersLayer(LaunchpadLayer):
+    """The `AnswersLayer` layer."""
+
 
 class DebugLayer(Interface):
     """The `DebugLayer` layer.
