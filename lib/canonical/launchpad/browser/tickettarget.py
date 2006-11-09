@@ -60,7 +60,7 @@ class SearchTicketsView(LaunchpadFormView):
     custom_widget('status', LabeledMultiCheckBoxWidget,
                   orientation='horizontal')
     custom_widget('sort', DropdownWidget, cssClass='inlined-widget')
-    custom_widget('languages', LaunchpadRadioWidget)
+    custom_widget('language', LaunchpadRadioWidget)
 
     template = ViewPageTemplateFile('../templates/ticket-listing.pt')
 
@@ -94,17 +94,17 @@ class SearchTicketsView(LaunchpadFormView):
                                 TicketSearchLanguages.ANY_LANGUAGE.name,
                                 TicketSearchLanguages.ANY_LANGUAGE.title))
 
-        languages_vocabulary = SimpleVocabulary(terms)
-        languages_field = Choice(
-            title=_('Written in:'), __name__='languages',
-            vocabulary=languages_vocabulary, required=True,
+        language_vocabulary = SimpleVocabulary(terms)
+        language_field = Choice(
+            title=_('Written in:'), __name__='language',
+            vocabulary=language_vocabulary, required=True,
             default=TicketSearchLanguages.ENGLISH)
         extra_fields = form.Fields(
-            languages_field, render_context=self.render_context)
+            language_field, render_context=self.render_context)
         # XXX: Is it possible to do this without having to iterate through
         # extra_fields? -- Guilherme Salgado, 2006-10-04
         for field in extra_fields:
-            field.custom_widget = self.custom_widgets['languages']
+            field.custom_widget = self.custom_widgets['language']
         self.form_fields += extra_fields
 
     def setUpWidgets(self):
@@ -220,16 +220,14 @@ class SearchTicketsView(LaunchpadFormView):
         Saves the user submitted search parameters in an instance
         attribute.
         """
-        languages = data.pop("languages")
-        if languages == TicketSearchLanguages.ENGLISH:
-            # XXX: Should this become a Celebrity? It's going to be needed in
-            # other places too.  -- Guilherme Salgado, 2006-10-04
-            languages = [getUtility(ILanguageSet)['en']]
-        elif languages == TicketSearchLanguages.PREFERRED_LANGUAGE:
-            languages = request_languages(self.request)
+        language = data.pop("language")
+        if language == TicketSearchLanguages.ENGLISH:
+            language = [getUtility(ILanguageSet)['en']]
+        elif language == TicketSearchLanguages.PREFERRED_LANGUAGE:
+            language = request_languages(self.request)
         else:
-            languages = []
-        data["languages"] = languages
+            language = []
+        data["language"] = language
         self.search_params = dict(self.getDefaultFilter())
         self.search_params.update(**data)
 
@@ -421,7 +419,7 @@ class TicketTargetSupportMenu(ApplicationMenu):
              'field.sort': 'by relevancy',
              'field.search_text': '',
              'field.actions.search': 'Search',
-             'field.languages' : 'ENGLISH',
+             'field.language' : 'ENGLISH',
              'field.status': statuses}, doseq=True)
 
     def open(self):
