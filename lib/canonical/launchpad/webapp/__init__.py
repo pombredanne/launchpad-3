@@ -90,9 +90,9 @@ class StandardLaunchpadFacets(FacetMenu):
     def _filterLink(self, name, link):
         if link.site is None:
             if name == 'specifications':
-                link.site = 'blueprint'
+                link.site = 'blueprints'
             else:
-                link.site = 'launchpad'
+                link.site = 'mainsite'
         return link
 
     def overview(self):

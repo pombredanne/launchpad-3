@@ -18,7 +18,6 @@ from zope.server.http.commonaccesslogger import CommonAccessLogger
 import zope.publisher.publish
 from zope.publisher.interfaces import IRequest
 
-from canonical.config import config
 import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
     ILaunchpadBrowserApplicationRequest, IBasicLaunchpadRequest)
@@ -29,6 +28,7 @@ from canonical.launchpad.webapp.interfaces import (
         INotificationRequest, INotificationResponse)
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
 from canonical.launchpad.webapp.url import Url
+from canonical.launchpad.webapp.vhosts import vhosts
 
 
 class StepsToGo:
@@ -151,73 +151,26 @@ class LaunchpadBrowserFactory:
             BlueprintPublication, MainLaunchpadPublication, ShipItPublication)
         # Set up a dict which maps a host name to a tuple of a reqest and
         # publication factory.
-        self._hostname_requestpublication = {}
-        self._setUpHostnames(
-            config.launchpad.main_hostname,
-            config.launchpad.root_url,
-            LaunchpadBrowserRequest,
-            MainLaunchpadPublication)
-        self._setUpHostnames(
-            config.launchpad.blueprint_hostname,
-            config.launchpad.blueprint_root_url,
-            BlueprintBrowserRequest,
-            BlueprintPublication)
-        self._setUpHostnames(
-            config.launchpad.shipitubuntu_hostname,
-            config.launchpad.shipitubuntu_root_url,
-            UbuntuShipItBrowserRequest,
-            ShipItPublication)
+        hrp = self._hostname_requestpublication = {}
+        hrp['mainsite'] = (LaunchpadBrowserRequest, MainLaunchpadPublication)
+        hrp['blueprints'] = (BlueprintBrowserRequest, BlueprintPublication)
+        hrp['shipitubuntu'] = (UbuntuShipItBrowserRequest, ShipItPublication)
+        hrp['shipitkubuntu'] = (KubuntuShipItBrowserRequest, ShipItPublication)
+        hrp['shipitedubuntu'] = (EdubuntuShipItBrowserRequest, ShipItPublication)
+        hrp['xmlrpc'] = (LaunchpadXMLRPCRequest, MainLaunchpadPublication)
 
-        self._setUpHostnames(
-            config.launchpad.shipitkubuntu_hostname,
-            config.launchpad.shipitkubuntu_root_url,
-            KubuntuShipItBrowserRequest,
-            ShipItPublication)
+        for name, value in hrp.items():
+            request, publication = value
+            hrp[name] = (vhosts.configs[name], request, publication)
 
-        self._setUpHostnames(
-            config.launchpad.shipitedubuntu_hostname,
-            config.launchpad.shipitedubuntu_root_url,
-            EdubuntuShipItBrowserRequest,
-            ShipItPublication)
-
-        self._setUpHostnames(
-            config.launchpad.xmlrpc_hostname,
-            config.launchpad.root_url,
-            LaunchpadXMLRPCRequest,
-            MainLaunchpadPublication)
+        # Make extend hrp to include reverse-lookup of all hostnames.
+        for name in hrp.keys():
+            vhconfig = vhosts.configs[name]
+            for hostname in vhconfig.allhostnames:
+                if hostname not in hrp:
+                    hrp[hostname] = hrp[name]
 
         self._thread_local = threading.local()
-
-    @staticmethod
-    def _hostnameStrToList(hostnamestr):
-        """Return list of hostname string.
-
-        >>> thismethod = LaunchpadBrowserFactory._hostnameStrToList
-        >>> thismethod('foo')
-        ['foo']
-        >>> thismethod('foo,bar, baz')
-        ['foo', 'bar', 'baz']
-        >>> thismethod('foo,,bar, ,baz ,')
-        ['foo', 'bar', 'baz']
-        >>> thismethod('')
-        []
-        >>> thismethod(' ')
-        []
-
-        """
-        if not hostnamestr.strip():
-            return []
-        return [
-            name.strip() for name in hostnamestr.split(',') if name.strip()]
-
-    def _setUpHostnames(
-        self, hostnamestr, rooturl, requestfactory, publicationfactory):
-        """Set up the hostnames from the given config string in the lookup
-        table.
-        """
-        for hostname in self._hostnameStrToList(hostnamestr):
-            self._hostname_requestpublication[hostname] = (
-                rooturl, requestfactory, publicationfactory)
 
     def _defaultFactories(self):
         from canonical.publication import LaunchpadBrowserPublication
@@ -269,11 +222,11 @@ class LaunchpadBrowserFactory:
         # cases.  Where we have an unknown host header, we can just leave
         # things as is.
 
-        rooturl, request_factory, publication_factory = (
+        vhostconfig, request_factory, publication_factory = (
             self._hostname_requestpublication[host])
 
         # Get hostname, protocol and port out of rooturl.
-        rooturlobj = Url(rooturl)
+        rooturlobj = Url(vhostconfig.rooturl)
 
         request_factory = ApplicationServerSettingRequestFactory(
             request_factory,
