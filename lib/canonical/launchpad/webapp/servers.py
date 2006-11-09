@@ -28,7 +28,7 @@ from canonical.launchpad.webapp.interfaces import (
         INotificationRequest, INotificationResponse)
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
 from canonical.launchpad.webapp.url import Url
-from canonical.launchpad.webapp.vhosts import vhosts
+from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 class StepsToGo:
@@ -130,7 +130,7 @@ class ApplicationServerSettingRequestFactory:
         return request
 
 
-class LaunchpadBrowserFactory:
+class LaunchpadRequestPublicationFactory:
     """An IRequestPublicationFactory which looks at the Host header.
 
     It chooses the request and publication factories by looking at the
@@ -144,31 +144,48 @@ class LaunchpadBrowserFactory:
     USE_DEFAULTS = object()
     UNHANDLED_HOST = object()
 
+    class VirtualHostRequestPublication:
+        """Data type to represent request publication of a single virtual host.
+        """
+        def __init__(self, conffilename, requestfactory, publicationfactory):
+            self.conffilename = conffilename
+            self.requestfactory = requestfactory
+            self.publicationfactory = publicationfactory
+            # Add data from launchpad.conf
+            self.vhostconfig = allvhosts.configs[self.conffilename]
+
+            self.allhostnames = set(self.vhostconfig.althostnames
+                                    + [self.vhostconfig.hostname])
+
     def __init__(self):
         # This is run just once at server start-up.
 
         from canonical.publication import (
             BlueprintPublication, MainLaunchpadPublication, ShipItPublication)
-        # Set up a dict which maps a host name to a tuple of a reqest and
-        # publication factory.
-        hrp = self._hostname_requestpublication = {}
-        hrp['mainsite'] = (LaunchpadBrowserRequest, MainLaunchpadPublication)
-        hrp['blueprints'] = (BlueprintBrowserRequest, BlueprintPublication)
-        hrp['shipitubuntu'] = (UbuntuShipItBrowserRequest, ShipItPublication)
-        hrp['shipitkubuntu'] = (KubuntuShipItBrowserRequest, ShipItPublication)
-        hrp['shipitedubuntu'] = (EdubuntuShipItBrowserRequest, ShipItPublication)
-        hrp['xmlrpc'] = (LaunchpadXMLRPCRequest, MainLaunchpadPublication)
 
-        for name, value in hrp.items():
-            request, publication = value
-            hrp[name] = (vhosts.configs[name], request, publication)
+        vhrps = []
+        # Use a short form of VirtualHostRequestPublication, for clarity.
+        VHRP = self.VirtualHostRequestPublication
+        vhrps.append(VHRP('mainsite', LaunchpadBrowserRequest, MainLaunchpadPublication))
+        vhrps.append(VHRP('blueprints', BlueprintBrowserRequest, BlueprintPublication))
+        vhrps.append(VHRP('shipitubuntu', UbuntuShipItBrowserRequest, ShipItPublication))
+        vhrps.append(VHRP('shipitkubuntu', KubuntuShipItBrowserRequest, ShipItPublication))
+        vhrps.append(VHRP('shipitedubuntu', EdubuntuShipItBrowserRequest, ShipItPublication))
+        vhrps.append(VHRP('xmlrpc', LaunchpadXMLRPCRequest, MainLaunchpadPublication))
+        # Done with using the short form of VirtualHostRequestPublication, so
+        # clean up, as we won't need to use it again later.
+        del VHRP
 
-        # Make extend hrp to include reverse-lookup of all hostnames.
-        for name in hrp.keys():
-            vhconfig = vhosts.configs[name]
-            for hostname in vhconfig.allhostnames:
-                if hostname not in hrp:
-                    hrp[hostname] = hrp[name]
+        # Set up a dict that maps a host name to a
+        # VirtualHostRequestPublication object.
+        self._hostname_vhrp = {}
+
+        # Register hostname and althostnames for each virtual host.
+        for vhrp in vhrps:
+            for hostname in vhrp.allhostnames:
+                assert hostname not in self._hostname_vhrp, (
+                    "The alt host name '%s' was defined more than once.")
+                self._hostname_vhrp[hostname] = vhrp
 
         self._thread_local = threading.local()
 
@@ -188,7 +205,7 @@ class LaunchpadBrowserFactory:
             assert len(host.split(':')) == 2, (
                 "Having a ':' in the host name isn't allowed.")
             host, port = host.split(':')
-        if host not in self._hostname_requestpublication:
+        if host not in self._hostname_vhrp:
             self._thread_local.host = self.UNHANDLED_HOST
             return False
         self._thread_local.host = host
@@ -222,18 +239,17 @@ class LaunchpadBrowserFactory:
         # cases.  Where we have an unknown host header, we can just leave
         # things as is.
 
-        vhostconfig, request_factory, publication_factory = (
-            self._hostname_requestpublication[host])
+        vhrp = self._hostname_vhrp[host]
 
         # Get hostname, protocol and port out of rooturl.
-        rooturlobj = Url(vhostconfig.rooturl)
+        rooturlobj = Url(vhrp.vhostconfig.rooturl)
 
-        request_factory = ApplicationServerSettingRequestFactory(
-            request_factory,
+        requestfactory = ApplicationServerSettingRequestFactory(
+            vhrp.requestfactory,
             rooturlobj.hostname,
             rooturlobj.addressingscheme,
             rooturlobj.port)
-        return request_factory, publication_factory
+        return requestfactory, vhrp.publicationfactory
 
 
 class BasicLaunchpadRequest:

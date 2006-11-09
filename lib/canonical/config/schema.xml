@@ -27,7 +27,7 @@
             <description>
                 Host name of this virtual host.
                 This is matched from the incoming Host header, and
-                also used to calculate URLs if rooturl is not provided.
+                also used to put together URLs if rooturl is not provided.
                 Example: launchpad.net
             </description>
         </key>

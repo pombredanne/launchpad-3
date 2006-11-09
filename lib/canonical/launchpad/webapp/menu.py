@@ -18,7 +18,7 @@ from canonical.launchpad.webapp.publisher import (
     canonical_url, canonical_url_iterator, UserAttributeCache
     )
 from canonical.launchpad.webapp.url import Url
-from canonical.launchpad.webapp.vhosts import vhosts
+from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 class structured:
@@ -179,7 +179,7 @@ class MenuBase(UserAttributeCache):
     def _rootUrlForSite(self, site):
         """Return the root URL for the given site."""
         try:
-            return vhosts.configs[site].rooturl
+            return allvhosts.configs[site].rooturl
         except KeyError:
             raise AssertionError('unknown site', site)
 

@@ -27,7 +27,7 @@ from canonical.launchpad.layers import (
 from canonical.launchpad.interfaces import (
     ICanonicalUrlData, NoCanonicalUrl, ILaunchpadRoot, ILaunchpadApplication,
     ILaunchBag, IOpenLaunchBag, IBreadcrumb, NotFoundError)
-from canonical.launchpad.webapp.vhosts import vhosts
+from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 class DecoratorAdvisor:
@@ -294,25 +294,25 @@ def canonical_url(obj, request=None):
         # If there is no request, fall back to the root_url from the
         # config file.
         if request is None:
-            root_url = vhosts.configs['mainsite'].rooturl
+            root_url = allvhosts.configs['mainsite'].rooturl
         else:
             root_url = request.getApplicationURL() + '/'
     else:
         # We should use the site given.
-        if rootsite in vhosts.configs:
-            root_url = vhosts.configs[rootsite].rooturl
+        if rootsite in allvhosts.configs:
+            root_url = allvhosts.configs[rootsite].rooturl
         elif rootsite == 'shipit':
             # Special case for shipit.  We need to take the request's layer
             # into account.
             if ShipItUbuntuLayer.providedBy(request):
-                root_url = vhosts.configs['shipitubuntu'].rooturl
+                root_url = allvhosts.configs['shipitubuntu'].rooturl
             elif ShipItEdUbuntuLayer.providedBy(request):
-                root_url = vhosts.configs['shipitedubuntu'].rooturl
+                root_url = allvhosts.configs['shipitedubuntu'].rooturl
             elif ShipItKUbuntuLayer.providedBy(request):
-                root_url = vhosts.configs['shipitkubuntu'].rooturl
+                root_url = allvhosts.configs['shipitkubuntu'].rooturl
             elif request is None:
                 # Fall back to shipitubuntu_root_url
-                root_url = vhosts.configs['shipitubuntu'].rooturl
+                root_url = allvhosts.configs['shipitubuntu'].rooturl
             else:
                 raise AssertionError(
                     "Shipit canonical urls must be used only with request "
