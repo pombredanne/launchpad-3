@@ -30,8 +30,8 @@ class RosettaLayer(LaunchpadLayer):
 class MaloneLayer(LaunchpadLayer):
     """The `MaloneLayer` layer."""
 
-class BazaarLayer(LaunchpadLayer):
-    """The `BazaarLayer` layer."""
+class CodeLayer(LaunchpadLayer):
+    """The `CodeLayer` layer."""
 
 class BlueprintLayer(LaunchpadLayer):
     """The `BlueprintLayer` layer."""

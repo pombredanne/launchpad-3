@@ -50,6 +50,7 @@
 
     <sectiontype name="mainsite" extends="virtual_host" />
     <sectiontype name="blueprints" extends="virtual_host" />
+    <sectiontype name="code" extends="virtual_host" />
     <sectiontype name="shipitubuntu" extends="virtual_host" />
     <sectiontype name="shipitkubuntu" extends="virtual_host" />
     <sectiontype name="shipitedubuntu" extends="virtual_host" />
@@ -64,6 +65,7 @@
         </key>
         <section name="*" type="mainsite" attribute="mainsite" required="yes" />
         <section name="*" type="blueprints" attribute="blueprints" required="yes" />
+        <section name="*" type="code" attribute="code" required="yes" />
         <section name="*" type="shipitubuntu" attribute="shipitubuntu" required="yes" />
         <section name="*" type="shipitkubuntu" attribute="shipitkubuntu" required="yes" />
         <section name="*" type="shipitedubuntu" attribute="shipitedubuntu" required="yes" />

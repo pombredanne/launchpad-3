@@ -20,7 +20,8 @@ from zope.publisher.interfaces import IRequest
 
 import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
-    ILaunchpadBrowserApplicationRequest, IBasicLaunchpadRequest)
+    ILaunchpadBrowserApplicationRequest, IBasicLaunchpadRequest,
+    IShipItApplication)
 from canonical.launchpad.webapp.notifications import (
         NotificationRequest, NotificationResponse, NotificationList
         )
@@ -29,6 +30,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
 from canonical.launchpad.webapp.url import Url
 from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
 
 
 class StepsToGo:
@@ -160,14 +162,12 @@ class LaunchpadRequestPublicationFactory:
     def __init__(self):
         # This is run just once at server start-up.
 
-        from canonical.publication import (
-            BlueprintPublication, MainLaunchpadPublication, ShipItPublication)
-
         vhrps = []
         # Use a short form of VirtualHostRequestPublication, for clarity.
         VHRP = self.VirtualHostRequestPublication
         vhrps.append(VHRP('mainsite', LaunchpadBrowserRequest, MainLaunchpadPublication))
         vhrps.append(VHRP('blueprints', BlueprintBrowserRequest, BlueprintPublication))
+        vhrps.append(VHRP('code', CodeBrowserRequest, CodePublication))
         vhrps.append(VHRP('shipitubuntu', UbuntuShipItBrowserRequest, ShipItPublication))
         vhrps.append(VHRP('shipitkubuntu', KubuntuShipItBrowserRequest, ShipItPublication))
         vhrps.append(VHRP('shipitedubuntu', EdubuntuShipItBrowserRequest, ShipItPublication))
@@ -190,12 +190,12 @@ class LaunchpadRequestPublicationFactory:
         self._thread_local = threading.local()
 
     def _defaultFactories(self):
-        from canonical.publication import LaunchpadBrowserPublication
+        from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
         return LaunchpadBrowserRequest, LaunchpadBrowserPublication
 
     def canHandle(self, environment):
         """Only configured domains are handled."""
-        from canonical.publication import LaunchpadBrowserPublication
+        from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
         if 'HTTP_HOST' not in environment:
             self._thread_local.host = self.USE_DEFAULTS
             return True
@@ -399,27 +399,6 @@ class LaunchpadTestResponse(LaunchpadBrowserResponse):
         return self._notifications
 
 
-class BlueprintBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.BlueprintLayer)
-
-
-class UbuntuShipItBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.ShipItUbuntuLayer)
-
-
-class KubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.ShipItKUbuntuLayer)
-
-
-class EdubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.ShipItEdUbuntuLayer)
-
-
-class LaunchpadXMLRPCRequest(BasicLaunchpadRequest, XMLRPCRequest,
-                             ErrorReportRequest):
-    """Request type for doing XMLRPC in Launchpad."""
-
-
 class DebugLayerRequestFactory(HTTPPublicationRequestFactory):
     """RequestFactory that sets the DebugLayer on a request."""
 
@@ -456,3 +435,49 @@ debughttp = wsgi.ServerType(
     8082,
     True,
     requestFactory=DebugLayerRequestFactory)
+
+
+# ---- mainsite
+
+class MainLaunchpadPublication(LaunchpadBrowserPublication):
+    """The publication used for the main Launchpad site."""
+
+# ---- blueprint
+
+class BlueprintBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.BlueprintLayer)
+
+class BlueprintPublication(LaunchpadBrowserPublication):
+    """The publication used for the Blueprint site."""
+
+# ---- code
+
+class CodePublication(LaunchpadBrowserPublication):
+    """The publication used for the Code site."""
+
+class CodeBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.CodeLayer)
+
+# ---- shipit
+
+class ShipItPublication(LaunchpadBrowserPublication):
+    """The publication used for the ShipIt sites."""
+
+    root_object_interface = IShipItApplication
+
+class UbuntuShipItBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.ShipItUbuntuLayer)
+
+class KubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.ShipItKUbuntuLayer)
+
+class EdubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.ShipItEdUbuntuLayer)
+
+# ---- xmlrpc
+
+class LaunchpadXMLRPCRequest(BasicLaunchpadRequest, XMLRPCRequest,
+                             ErrorReportRequest):
+    """Request type for doing XMLRPC in Launchpad."""
+
+

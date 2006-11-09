@@ -10,7 +10,7 @@
     -->
     <include file="bug-5133.zcml" />
 
-    <content class="canonical.launchpad.webapp.LaunchpadBrowserRequest">
+    <content class="canonical.launchpad.webapp.servers.LaunchpadBrowserRequest">
       <allow
         interface="
           canonical.launchpad.interfaces.ILaunchpadBrowserApplicationRequest"
@@ -361,7 +361,7 @@
 
     <!-- LaunchpadBrowserResponse needs to be able to find the session -->
     <adapter
-        for="canonical.launchpad.webapp.LaunchpadBrowserResponse"
+        for="canonical.launchpad.webapp.servers.LaunchpadBrowserResponse"
         provides="zope.app.session.interfaces.ISession"
         factory="canonical.launchpad.webapp.servers.adaptResponseToSession"
         />
@@ -370,7 +370,7 @@
     We don't just use the response attribute, as this makes our tests harder
     to write -->
     <adapter
-        for="canonical.launchpad.webapp.LaunchpadBrowserRequest"
+        for="canonical.launchpad.webapp.servers.LaunchpadBrowserRequest"
         provides="canonical.launchpad.webapp.interfaces.INotificationResponse"
         factory="canonical.launchpad.webapp.servers.adaptRequestToResponse"
         />
@@ -425,5 +425,11 @@
         for="zope.app.publication.interfaces.IEndRequestEvent"
         handler="canonical.launchpad.webapp.sigusr1.end_request"
         />
+
+    <content class="canonical.launchpad.webapp.publication.LoginRoot">
+      <allow
+        attributes="publishTraverse"
+        />
+    </content>
 
 </configure>

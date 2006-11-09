@@ -5,7 +5,7 @@ and one for the sites of the various applications.
     >>> config.launchpad.vhosts.mainsite.hostname
     'launchpad.dev'
     >>> config.launchpad.vhosts.blueprints.hostname
-    'features.launchpad.dev'
+    'blueprints.launchpad.dev'
 
 It also says whether we use http or https (although this setting can be
 overridden for the root URL of a particular host).
@@ -23,8 +23,12 @@ These are parsed into webapp.vhost.allvhosts.
     ...     print 'rooturl:', vhost.rooturl
     ...     print 'althosts:', ', '.join(vhost.althostnames)
     ...     print '----'
-    blueprints @ features.launchpad.dev
-    rooturl: http://features.launchpad.dev/
+    blueprints @ blueprints.launchpad.dev
+    rooturl: http://blueprints.launchpad.dev/
+    althosts:
+    ----
+    code @ code.launchpad.dev
+    rooturl: http://code.launchpad.dev/
     althosts:
     ----
     mainsite @ launchpad.dev
@@ -60,7 +64,8 @@ site host name, MainLaunchpadPublication will be chosen.
     >>> factory.canHandle(environment)
     True
 
-    >>> from canonical.publication import MainLaunchpadPublication
+    >>> from canonical.launchpad.webapp.servers import (
+    ...     MainLaunchpadPublication)
     >>> requestfactory, publicationfactory = factory()
     >>> publicationfactory is MainLaunchpadPublication
     True
@@ -80,12 +85,12 @@ ignored, so we can pass in any port and it will still work.
 If we pass in the Features host name, BlueprintPublication will be
 chosen.
 
-    >>> environment = {'HTTP_HOST': 'features.launchpad.dev'}
+    >>> environment = {'HTTP_HOST': 'blueprints.launchpad.dev'}
     >>> factory = LaunchpadRequestPublicationFactory()
     >>> factory.canHandle(environment)
     True
 
-    >>> from canonical.publication import BlueprintPublication
+    >>> from canonical.launchpad.webapp.servers import BlueprintPublication
     >>> from canonical.launchpad.webapp.servers import (
     ...     BlueprintBrowserRequest, ApplicationServerSettingRequestFactory)
     >>> requestfactory, publicationfactory = factory()
@@ -127,7 +132,7 @@ returned.
     >>> factory.canHandle(environment)
     True
 
-    >>> from canonical.publication import LaunchpadBrowserPublication
+    >>> from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
     >>> requestfactory, publicationfactory = factory()
     >>> publicationfactory is LaunchpadBrowserPublication
     True

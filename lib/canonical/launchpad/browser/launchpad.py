@@ -254,7 +254,7 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
 
     def specifications(self):
         target = ''
-        text = 'Features'
+        text = 'Blueprints'
         summary = 'Launchpad feature specification tracker.'
         return Link(target, text, summary)
 
@@ -265,7 +265,7 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
         return Link(target, text, summary)
 
     def branches(self):
-        target = 'bazaar'
+        target = ''
         text = 'Code'
         summary = 'The Code Bazaar'
         return Link(target, text, summary)

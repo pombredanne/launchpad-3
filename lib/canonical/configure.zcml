@@ -80,6 +80,22 @@
         layer="canonical.launchpad.layers.BlueprintLayer"
         />
 
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        name="bazaar"
+        layer="canonical.launchpad.layers.CodeLayer"
+        />
+    <browser:page
+        name=""
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        class="zope.app.publisher.browser.resources.Resources"
+        permission="zope.Public"
+        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
+        layer="canonical.launchpad.layers.CodeLayer"
+        />
+
+
+
     <!-- This should really be on ILaunchpadRoot for all layers, and we should
          be registering views on the launchpad main side front page object
          thing on ILaunchpadApplication. -->
@@ -145,12 +161,6 @@
 
     <include package="canonical.widgets" />
     <include package="canonical.launchpad" />
-
-    <content class="canonical.publication.LoginRoot">
-      <allow
-        attributes="publishTraverse"
-        />
-    </content>
 
     <include package="canonical.lp" />
 

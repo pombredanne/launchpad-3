@@ -15,7 +15,6 @@ __all__ = ['Link', 'FacetMenu', 'ApplicationMenu', 'ContextMenu',
            'stepto', 'GetitemNavigation', 'smartquote',
            'urlappend', 'urlparse', 'urlsplit',
            'GeneralFormView', 'GeneralFormViewFactory',
-           'LaunchpadBrowserRequest', 'LaunchpadBrowserResponse',
            'Utf8PreferredCharsets', 'LaunchpadFormView',
            'LaunchpadEditFormView', 'action', 'custom_widget']
 
@@ -37,10 +36,6 @@ from canonical.launchpad.webapp.preferredcharsets import Utf8PreferredCharsets
 from canonical.launchpad.webapp.publisher import (
     canonical_url, nearest, LaunchpadView, Navigation, stepthrough,
     redirection, stepto, LaunchpadXMLRPCView)
-from canonical.launchpad.webapp.servers import (
-        LaunchpadBrowserRequest, LaunchpadBrowserResponse
-        )
-from canonical.launchpad.interfaces import ILaunchBag
 
 
 def smartquote(str):
@@ -91,6 +86,8 @@ class StandardLaunchpadFacets(FacetMenu):
         if link.site is None:
             if name == 'specifications':
                 link.site = 'blueprints'
+            elif name == 'branches':
+                link.site = 'code'
             else:
                 link.site = 'mainsite'
         return link
