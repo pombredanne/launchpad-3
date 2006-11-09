@@ -254,6 +254,23 @@ parameter.
     Ticket title3
     Ticket title1
 
+The language criteria can be used to select only tickets written in a
+particular language.
+
+    >>> english = getUtility(ILanguageSet)['en']
+    >>> for t in target.searchTickets(language=french):
+    ...     print t.title
+    De l'aide S.V.P.
+
+    >>> for t in target.searchTickets(language=[english, french]):
+    ...     print t.title
+    Another ticket
+    Ticket title3
+    Ticket title2
+    Ticket title1
+    Ticket title0
+    De l'aide S.V.P.
+    New ticket
 
 findSimilarTickets()
 --------------------
