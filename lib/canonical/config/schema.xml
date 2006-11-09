@@ -105,8 +105,6 @@
                 Domains should not start with a leading '.'.
             </description>
         </key>
-        <key name="root_url" datatype="canonical.config.urlbase"
-            default="https://launchpad.net/" />
         <key name="errors_address" datatype="string" required="no"
             default="launchpad-error-reports@lists.canonical.com" />
         <key name="bugs_domain" datatype="string" required="no"

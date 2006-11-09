@@ -56,8 +56,8 @@ class VirtualHostingConfiguration:
             vhost = getattr(configuration, vhostname)
             self.configs[vhostname] = VirtualHostConfig(
                 vhost.hostname,
-                vhost.rooturl,
                 vhost.althostnames,
+                vhost.rooturl,
                 self.use_https)
 
 
