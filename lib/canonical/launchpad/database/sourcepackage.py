@@ -34,7 +34,8 @@ from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.supportcontact import SupportContact
 from canonical.launchpad.database.potemplate import POTemplate
-from canonical.launchpad.database.ticket import Ticket, TicketSet
+from canonical.launchpad.database.ticket import (
+    SimilarTicketsSearch, Ticket, TicketTargetSearch, TicketSet)
 from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.distroreleasesourcepackagerelease import (
@@ -405,19 +406,19 @@ class SourcePackage(BugTargetBase):
             return None
         return ticket
 
-    def searchTickets(self, search_text=None,
-                      status=TICKET_STATUS_DEFAULT_SEARCH, owner=None,
-                      sort=None, languages=None):
+
+    def searchTickets(self, **search_criteria):
         """See ITicketTarget."""
-        return TicketSet.search(
-            distribution=self.distribution, languages=None,
-            sourcepackagename=self.sourcepackagename, search_text=search_text,
-            status=status, owner=owner, sort=sort)
+        return TicketTargetSearch(
+            distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename,
+            **search_criteria).getResults()
 
     def findSimilarTickets(self, title):
         """See ITicketTarget."""
-        return TicketSet.findSimilar(title, distribution=self.distribution,
-                                     sourcepackagename=self.sourcepackagename)
+        return SimilarTicketsSearch(
+            title, distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename).getResults()
 
     def addSupportContact(self, person):
         """See ITicketTarget."""
