@@ -65,6 +65,24 @@ class ShipitFrontPageView(LaunchpadView):
             self.request.response.redirect('login')
         self.flavour = _get_flavour_from_layer(self.request)
 
+    @property
+    def download_or_buy_link(self):
+        if self.flavour == ShipItFlavour.UBUNTU:
+            return 'http://www.ubuntu.com/products/GetUbuntu'
+        elif self.flavour == ShipItFlavour.KUBUNTU:
+            return 'http://www.kubuntu.org/download.php'
+        elif self.flavour == ShipItFlavour.EDUBUNTU:
+            return 'http://www.edubuntu.org/Download'
+
+    @property
+    def download_link(self):
+        if self.flavour == ShipItFlavour.UBUNTU:
+            return 'http://www.ubuntu.com/download'
+        elif self.flavour == ShipItFlavour.KUBUNTU:
+            return 'http://www.kubuntu.org/download.php'
+        elif self.flavour == ShipItFlavour.EDUBUNTU:
+            return 'http://www.edubuntu.org/Download'
+
 
 # XXX: The LoginOrRegister class is not really designed to be reused. That
 # class must either be fixed to allow proper reuse or we should write a new

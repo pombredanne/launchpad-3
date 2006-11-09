@@ -1,4 +1,5 @@
 .tags
+bzr-version-info.py
 launchpad.log
 launchpad-access.log
 configs/+config-overrides.zcml
