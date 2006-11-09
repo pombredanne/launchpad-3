@@ -439,6 +439,27 @@ class CvsWorkingTree:
 
 class SVNStrategy(CSCVSStrategy):
 
+    def __init__(self):
+        CSCVSStrategy.__init__(self)
+        self._svn_url_whitelist = set([
+            'http://mg.pov.lt/gtimelog/svn',
+            'http://opensvn.csie.org/srb2d6',
+            'http://www.eigenheimstrasse.de/svn/josm',
+            'http://www2.cs.tum.edu/repos/cup/develop',
+            'https://svn.sourceforge.net/svnroot/aptoncd',
+            'https://svn.sourceforge.net/svnroot/comix',
+            'https://svn.sourceforge.net/svnroot/jubler/src',
+            'https://svn.sourceforge.net/svnroot/listengnome/releases/0.5.x',
+            'https://svn.sourceforge.net/svnroot/listengnome/trunk-0.5',
+            'https://svn.sourceforge.net/svnroot/scherzo',
+            'svn://elgg.net/elgg/devel',
+            'svn://mielke.cc/main/brltty',
+            'svn://svn.debian.org/gcccvs/branches/sid/gcc-defaults',
+            'svn://svn.xara.com/Trunk/XaraLX',
+            'svn://svnanon.samba.org/samba/branches/SAMBA_4_0/source/lib/talloc',
+            'https://numexp.org/svn/numexp-core',
+         ])
+
     def getSVNDirPath(self, aJob, dir):
         """return the cvs working dir path"""
         return os.path.join(self.getWorkingDir(aJob,dir), "svnworking")
@@ -492,22 +513,3 @@ class SVNStrategy(CSCVSStrategy):
         in the Launchpad web UI.
         """
         return self.job.repository in self._svn_url_whitelist
-
-    _svn_url_whitelist = set([
-         'http://mg.pov.lt/gtimelog/svn',
-         'http://opensvn.csie.org/srb2d6',
-         'http://www.eigenheimstrasse.de/svn/josm',
-         'http://www2.cs.tum.edu/repos/cup/develop',
-         'https://svn.sourceforge.net/svnroot/aptoncd',
-         'https://svn.sourceforge.net/svnroot/comix',
-         'https://svn.sourceforge.net/svnroot/jubler/src',
-         'https://svn.sourceforge.net/svnroot/listengnome/releases/0.5.x',
-         'https://svn.sourceforge.net/svnroot/listengnome/trunk-0.5',
-         'https://svn.sourceforge.net/svnroot/scherzo',
-         'svn://elgg.net/elgg/devel',
-         'svn://mielke.cc/main/brltty',
-         'svn://svn.debian.org/gcccvs/branches/sid/gcc-defaults',
-         'svn://svn.xara.com/Trunk/XaraLX',
-         'svn://svnanon.samba.org/samba/branches/SAMBA_4_0/source/lib/talloc',
-         'https://numexp.org/svn/numexp-core',
-         ])

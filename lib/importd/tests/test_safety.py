@@ -44,24 +44,21 @@ class SafetyIsOverriddenCalled(Exception):
 
 
 class SvnSafetyTestCase(helpers.JobTestCase):
-    """Base class for Subversion safety tests.
-
-    Encapsulates knowledge about the internals of Job and JobStrategy.
-    """
-
-    svn_url = None
+    """Base class for Subversion safety tests."""
 
     def setUp(self):
         helpers.JobTestCase.setUp(self)
         self.logger = testutil.makeSilentLogger()
 
-    def makeJob(self):
+    def makeTestingSvnJob(self, svn_url):
+        """Create a job with svn details, to test svn safety checking."""
         job = self.job_helper.makeJob()
-        job.repository = self.svn_url
+        job.repository = svn_url
         return job
 
-    def makeStrategy(self):
-        job = self.makeJob()
+    def makeTestingSvnStrategy(self, svn_url):
+        """Create a a SVNStrategy to test safety checking."""
+        job = self.makeTestingSvnJob(svn_url)
         strategy = SVNStrategy()
         strategy.job = job
         strategy.aJob = job
@@ -82,8 +79,8 @@ class TestSvnSafety(SvnSafetyTestCase):
         # Since the job does not have the information necessary to perform an
         # import, CheckSafetyCalled is only raised if _checkSafety is called
         # before doing anything.
-        self.svn_url = None
-        job = self.makeJob()
+        invalid_url = None
+        job = self.makeTestingSvnJob(invalid_url)
         self.assertRaises(CheckSafetyCalled,
             strategy.Import, job, '.', self.logger)
 
@@ -92,8 +89,8 @@ class TestSvnSafety(SvnSafetyTestCase):
         #
         # Use an obviously invalid svn url, so SafetyrIsOverridenCalled is only
         # raised if _safetyIsOverriden is called early on.
-        self.svn_url = None
-        strategy = self.makeStrategy()
+        invalid_url = None
+        strategy = self.makeTestingSvnStrategy(invalid_url)
         def safety_is_overridden():
             raise SafetyIsOverriddenCalled()
         strategy._safetyIsOverridden = safety_is_overridden
@@ -102,48 +99,48 @@ class TestSvnSafety(SvnSafetyTestCase):
     def testSafetyIsOverridenFalse(self):
         # SvnStrategy._safetyIsOverriden returns false for an URL not in the
         # exception list
-        self.svn_url = 'svn://example.com/trunk'
-        strategy = self.makeStrategy()
-        self.assertFalse(self.svn_url in strategy._svn_url_whitelist)
+        not_whitelisted_url = 'svn://example.com/trunk'
+        strategy = self.makeTestingSvnStrategy(not_whitelisted_url)
+        self.assertFalse(not_whitelisted_url in strategy._svn_url_whitelist)
         self.assertFalse(strategy._safetyIsOverridden())
 
     def testSafetyIsOverridenTrue(self):
         # SvnStrategy._safetyIsOverriden returns true for an URL in the
         # exception list
-        self.svn_url = 'svn://example.com/bogus'
-        strategy = self.makeStrategy()
-        strategy._svn_url_whitelist.add(self.svn_url)
+        unsafe_url = 'svn://example.com/bogus'
+        strategy = self.makeTestingSvnStrategy(unsafe_url)
+        strategy._svn_url_whitelist.add(unsafe_url)
         self.assertTrue(strategy._safetyIsOverridden())
 
     def testCheckSafetyNoTrunk(self):
         # SvnStrategy._checkSafety raises for URL w/o trunk
-        self.svn_url = 'svn://example.com/bogus'
-        strategy = self.makeStrategy()
+        unsafe_url = 'svn://example.com/bogus'
+        strategy = self.makeTestingSvnStrategy(unsafe_url)
         self.assertRaises(ImportSafetyError, strategy._checkSafety)
 
     def testCheckSafetyUrlIncludesTrunk(self):
         # SvnStrategy._checkSafety does not raise for URL including '/trunk/'
-        self.svn_url = 'svn://example.com/trunk/foo'
-        strategy = self.makeStrategy()
+        good_url = 'svn://example.com/trunk/foo'
+        strategy = self.makeTestingSvnStrategy(good_url)
         strategy._checkSafety() # test that it does not raise
 
     def testCheckSafetyUrlEndswithTrunk(self):
         # SvnStrategy._checkSafety does not raise for URL ending in '/trunk'
-        self.svn_url = 'svn://example.com/foo/trunk'
-        strategy = self.makeStrategy()
+        good_url = 'svn://example.com/foo/trunk'
+        strategy = self.makeTestingSvnStrategy(good_url)
         strategy._checkSafety() # test that it does not raise
 
     def testCheckSafetyUrlsEndswithSlash(self):
         # SvnStrategy._checkSafety raises for URL with a trailing slash
-        self.svn_url = 'svn://example.com/foo/trunk/'
-        strategy = self.makeStrategy()
+        url_slash = 'svn://example.com/foo/trunk/'
+        strategy = self.makeTestingSvnStrategy(url_slash)
         self.assertRaises(ImportSafetyError, strategy._checkSafety)
 
     def testCheckSafetyCanBeOverridden(self):
         # SvnStrategy._checkSafety does not raise for a bad URL if
         # _safetyIsOverridenReturns is true.
-        self.svn_url = 'svn://example.com/bogus'
-        strategy = self.makeStrategy()
+        unsafe_url = 'svn://example.com/bogus'
+        strategy = self.makeTestingSvnStrategy(unsafe_url)
         def safety_is_overridden():
             return True
         strategy._safetyIsOverridden = safety_is_overridden
