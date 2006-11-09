@@ -2,6 +2,7 @@
 
 import _pythonpath
 
+from datetime import datetime
 from canonical.database.sqlbase import connect
 
 
@@ -32,7 +33,7 @@ def main():
                 WHERE reviewer IS NULL AND POSelection.id = PoUp2.id;
                 """)
             count += cur.rowcount
-            print 'Updated %d rows' % count
+            print '%s UTC Updated %d rows' % (datetime.utcnow().ctime(), count)
             cur.execute("""
                 DELETE FROM PoUp
                 WHERE id IN (SELECT id FROM PoUp ORDER BY id LIMIT 10000)
