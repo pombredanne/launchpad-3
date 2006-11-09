@@ -101,9 +101,9 @@ a widget.
   <tr>
     <th></th>
     <td width="100%">
+      ...
+      <input ... name="field.official_rosetta" type="checkbox" ... />
       <label for="field.official_rosetta">
-        ...
-        <input ... name="field.official_rosetta" type="checkbox" ... />
         Uses Rosetta Officially
       </label>
       <p class="formHelp">...</p>

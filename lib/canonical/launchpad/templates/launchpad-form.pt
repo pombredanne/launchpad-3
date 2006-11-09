@@ -129,8 +129,8 @@
     <tr tal:condition="python: view.isCheckBoxLayout(field_name)">
       <th></th>
       <td tal:attributes="class error_class" width="100%">
+        <input type="checkbox" tal:replace="structure widget" />
         <label tal:attributes="for widget/name">
-          <input type="checkbox" tal:replace="structure widget" />
           <span tal:replace="widget/label">Label</span>
         </label>
         <div class="message" tal:condition="error"
