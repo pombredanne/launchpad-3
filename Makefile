@@ -116,8 +116,8 @@ run: inplace stop
 	rm -f thread*.request
 	rm -f bzr-version-info.py bzr-version-info.pyc
 	if which bzr > /dev/null  && test -x `which bzr`; \
-		then bzr version-info --format=python > bzr-version-info.py 2> /dev/null ; \
-		fi;
+		then PYTHONPATH= bzr version-info --format=python > bzr-version-info.py 2>/dev/null; \
+	fi
 	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
 		 $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE)
 
