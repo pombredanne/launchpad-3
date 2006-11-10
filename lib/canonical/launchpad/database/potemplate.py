@@ -24,7 +24,7 @@ from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     IPOTemplate, IPOTemplateSet, IPOTemplateSubset,
     IPOTemplateExporter, ILaunchpadCelebrities, LanguageNotFound,
-    TranslationConstants, NotFoundError, NameNotAvailable)
+    TranslationConstants, NotFoundError)
 from canonical.librarian.interfaces import ILibrarianClient
 
 from canonical.launchpad.webapp.snapshot import Snapshot
@@ -44,7 +44,7 @@ from canonical.launchpad.components.poparser import (POSyntaxError,
     POInvalidInputError)
 
 standardPOFileTopComment = ''' %(languagename)s translation for %(origin)s
- Copyright (c) %(copyright)s %(year)s
+ Copyright %(copyright)s %(year)s
  This file is distributed under the same license as the %(origin)s package.
  FIRST AUTHOR <EMAIL@ADDRESS>, %(year)s.
 
@@ -99,10 +99,6 @@ class POTemplate(SQLBase, RosettaStats):
     # joins
     pofiles = SQLMultipleJoin('POFile', joinColumn='potemplate')
 
-    def __len__(self):
-        """Return the number of CURRENT POTMsgSets in this POTemplate."""
-        return self.messageCount()
-
     def __iter__(self):
         """See IPOTemplate."""
         for potmsgset in self.getPOTMsgSets():
@@ -110,7 +106,11 @@ class POTemplate(SQLBase, RosettaStats):
 
     def __getitem__(self, key):
         """See IPOTemplate."""
-        return self.getPOTMsgSetByMsgIDText(key, onlyCurrent=True)
+        potmsgset = self.getPOTMsgSetByMsgIDText(key, only_current=True)
+        if potmsgset is None:
+            raise NotFoundError(key)
+        else:
+            return potmsgset
 
     # properties
     @property
@@ -248,26 +248,22 @@ class POTemplate(SQLBase, RosettaStats):
                 sourcepackagename=self.sourcepackagename)
         raise AssertionError('Unknown POTemplate translation target')
 
-    def getPOTMsgSetByMsgIDText(self, key, onlyCurrent=False):
+    def getPOTMsgSetByMsgIDText(self, key, only_current=False):
         """See IPOTemplate."""
         query = 'potemplate = %s' % sqlvalues(self.id)
-        if onlyCurrent:
+        if only_current:
             query += ' AND sequence > 0'
 
         # Find a message ID with the given text.
         try:
             pomsgid = POMsgID.byMsgid(key)
         except SQLObjectNotFound:
-            raise NotFoundError(key)
+            return None
 
         # Find a message set with the given message ID.
 
-        result = POTMsgSet.selectOne(query +
+        return POTMsgSet.selectOne(query +
             (' AND primemsgid = %s' % sqlvalues(pomsgid.id)))
-
-        if result is None:
-            raise NotFoundError(key)
-        return result
 
     def getPOTMsgSetBySequence(self, sequence):
         """See IPOTemplate."""
@@ -435,7 +431,7 @@ class POTemplate(SQLBase, RosettaStats):
             'languagecode': language_code,
             'date': now.isoformat(' '),
             'templatedate': self.datecreated,
-            'copyright': '(c) %d Canonical Ltd, and Rosetta Contributors'
+            'copyright': '(c) %d Rosetta Contributors and Canonical Ltd'
                          % now.year,
             'nplurals': language.pluralforms or 1,
             'pluralexpr': language.pluralexpression or '0',
@@ -471,7 +467,6 @@ class POTemplate(SQLBase, RosettaStats):
             header=standardPOFileHeader % data,
             fuzzyheader=True,
             owner=owner,
-            pluralforms=data['nplurals'],
             variant=variant,
             path=path)
 
@@ -525,15 +520,15 @@ class POTemplate(SQLBase, RosettaStats):
         """See IPOTemplate."""
         try:
             messageID = POMsgID.byMsgid(text)
-            if self.hasMessageID(messageID):
-                raise NameNotAvailable(
-                    "There is already a message set for this template, file "
-                    "and primary msgid")
         except SQLObjectNotFound:
             # If there are no existing message ids, create a new one.
             # We do not need to check whether there is already a message set
             # with the given text in this template.
             messageID = POMsgID(msgid=text)
+        else:
+            assert not self.hasMessageID(messageID), (
+                "There is already a message set for this template, file and"
+                " primary msgid")
 
         return self.createMessageSetFromMessageID(messageID, altKey)
 
@@ -642,6 +637,9 @@ class POTemplateSubset:
             self.orderby.append('DistroRelease.name')
             self.clausetables.append('DistroRelease')
 
+        # Finally, we sort the query by its path in all cases.
+        self.orderby.append('POTemplate.path')
+
     def __iter__(self):
         """See IPOTemplateSubset."""
         res = POTemplate.select(self.query, clauseTables=self.clausetables,
@@ -730,6 +728,32 @@ class POTemplateSubset:
         return POTemplate.select(
             ' AND '.join(query), orderBy=['-date_last_updated'])
 
+    def getClosestPOTemplate(self, path):
+        """See IPOTemplateSubset."""
+        if path is None:
+            return None
+
+        closest_template = None
+        closest_template_path_length = 0
+        repeated = False
+        for template in self:
+            template_path_length = len(
+                os.path.commonprefix([template.path, path]))
+            if template_path_length > closest_template_path_length:
+                # This template is more near than the one we got previously
+                closest_template = template
+                closest_template_path_length = template_path_length
+                repeated = False
+            elif template_path_length == closest_template_path_length:
+                # We found two templates with the same length, we note that
+                # fact, if we don't get a better template, we ignore them and
+                # leave it to the admins.
+                repeated = True
+        if repeated:
+            return None
+        else:
+            return closest_template
+
 
 class POTemplateSet:
     implements(IPOTemplateSet)
@@ -753,7 +777,8 @@ class POTemplateSet:
         return helpers.shortlist(POTemplate.select(
             'POTemplate.potemplatename = POTemplateName.id AND'
             ' POTemplateName.name = %s' % sqlvalues(name),
-            clauseTables=['POTemplateName']))
+            clauseTables=['POTemplateName'],
+            orderBy=['POTemplateName.name', 'POTemplate.id']))
 
     def getAllOrderByDateLastUpdated(self):
         """See IPOTemplateSet."""

@@ -1,8 +1,9 @@
 <div class="portlet">
-  <h4>Subscribers to bug <span tal:replace="context/id">4</span>:</h4>
+  <h2>Subscribers to bug <span tal:replace="context/id">4</span></h2>
 
   <div class="portletBody portletContent"
-       tal:define="indirect_subscribers context/getIndirectSubscribers">
+       tal:define="from_dupes_subscribers context/getSubscribersFromDuplicates;
+                   also_notified_subscribers context/getAlsoNotifiedSubscribers">
 
     <ul class="people">
       <li tal:repeat="subscriber context/getDirectSubscribers">
@@ -15,12 +16,24 @@
       </li>
     </ul>
 
-    <div tal:condition="indirect_subscribers">
+    <div tal:condition="from_dupes_subscribers">
+      <br />
+      <b>From duplicates:</b><br />
+      <ul class="people">
+        <li tal:repeat="subscriber from_dupes_subscribers">
+          <a href="#"
+             tal:content="subscriber/browsername"
+             tal:attributes="href subscriber/fmt:url">Dafydd Harries</a>
+        </li>
+      </ul>
+    </div>
+
+    <div tal:condition="also_notified_subscribers">
 
       <br />
       <b>Also notified:</b><br />
       <ul class="people">
-        <li tal:repeat="subscriber indirect_subscribers">
+        <li tal:repeat="subscriber also_notified_subscribers">
           <a href="#"
              tal:content="subscriber/browsername"
              tal:attributes="href subscriber/fmt:url">Dafydd Harries</a>

@@ -1,21 +1,6 @@
 # (c) Canonical Software Ltd. 2004, all rights reserved.
-#
-# arch-tag: 103d33ec-b2f1-4406-94ed-291953a4bfb5
-#
-# This is the python package that defines the
-# 'canonical.archivepublisher' package namespace.
 
-# Pool maintainance
-from canonical.archivepublisher.pool import *
-# Publisher
-from canonical.archivepublisher.publishing import Publisher
-# Dominator
-from canonical.archivepublisher.domination import Dominator
-# Configuration management
-from canonical.archivepublisher.config import Config, LucilleConfigError
-# Librarian wrapper
-from canonical.archivepublisher.library import Librarian
-# Tag files
-from canonical.archivepublisher.tagfiles import *
-# Upload processor
-from canonical.archivepublisher.uploadprocessor import UploadProcessor
+# XXX: if people actually start seriously using ComponentSelections this
+# will need to be revisited. For instance, adding new components will
+# break places which use this list. -- kiko, 2006-08-23
+HARDCODED_COMPONENT_ORDER = ['main', 'restricted', 'universe', 'multiverse']

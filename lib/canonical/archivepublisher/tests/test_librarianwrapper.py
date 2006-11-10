@@ -29,20 +29,20 @@ class TestLibrarianWrapper(unittest.TestCase):
         shutil.rmtree(datadir('cache'))
 
     def testImport(self):
-        """canonical.archivepublisher.Librarian should be importable"""
-        from canonical.archivepublisher import Librarian
+        """Librarian should be importable"""
+        from canonical.archivepublisher.library import Librarian
 
     def testInstatiate(self):
-        """canonical.archivepublisher.Librarian should be instantiatable"""
-        from canonical.archivepublisher import Librarian
+        """Librarian should be instantiatable"""
+        from canonical.archivepublisher.library import Librarian
         lib = Librarian('localhost', 9090, 8000, datadir('cache'))
 
     def testUpload(self):
-        """canonical.archivepublisher.Librarian Upload"""
+        """Librarian Upload"""
         name = 'ed_0.2-20.dsc'
         path = datadir(name)
 
-        from canonical.archivepublisher import Librarian
+        from canonical.archivepublisher.library import Librarian
         lib = Librarian('localhost', 9090, 8000, datadir('cache'))
 
         fileobj = open(path, 'rb')
@@ -62,11 +62,11 @@ class TestLibrarianWrapper(unittest.TestCase):
         os.path.exists(cached)
 
     def testDownload(self):
-        """canonical.archivepublisher.Librarian DownloadToDisk process"""
+        """Librarian DownloadToDisk process"""
         filealias = '1'
         archive = os.path.join (datadir('archive'), 'test')
 
-        from canonical.archivepublisher import Librarian
+        from canonical.archivepublisher.library import Librarian
         lib = Librarian('localhost', 9090, 8000, datadir('cache'))
         ## Use Fake Librarian Class 
         downloader = FakeDownloadClient()

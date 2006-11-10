@@ -5,7 +5,7 @@ application."""
 
 from canonical.launchpad.interfaces import IDistroBugTask, IDistroReleaseBugTask
 from canonical.launchpad.mailnotification import get_bug_delta, get_task_delta
-from canonical.lp.dbschema import BugTaskStatus
+from canonical.lp.dbschema import BugTaskStatus, TicketAction
 
 
 def bug_created(bug, event):
@@ -146,4 +146,59 @@ def spec_modified(spec, event):
                 actionname, product=spec.product,
                 distribution=spec.distribution)
 
+
+def _assignKarmaUsingTicketContext(person, ticket, actionname):
+    """Assign Karma with the given actionname to the given person.
+
+    Use the given ticket's context as the karma context.
+    """
+    person.assignKarma(
+        actionname, product=ticket.product, distribution=ticket.distribution,
+        sourcepackagename=ticket.sourcepackagename)
+
+
+def ticket_created(ticket, event):
+    """Assign karma to the user which created <ticket>."""
+    _assignKarmaUsingTicketContext(ticket.owner, ticket, 'ticketcreated')
+
+
+def ticket_modified(ticket, event):
+    """Check changes made to <ticket> and assign karma to user if needed."""
+    user = event.user
+    old_ticket = event.object_before_modification
+
+    if old_ticket.description != ticket.description:
+        _assignKarmaUsingTicketContext(
+            user, ticket, 'ticketdescriptionchanged')
+
+    if old_ticket.title != ticket.title:
+        _assignKarmaUsingTicketContext(user, ticket, 'tickettitlechanged')
+
+
+TicketAction2KarmaAction = {
+    TicketAction.REQUESTINFO: 'ticketrequestedinfo',
+    TicketAction.GIVEINFO: 'ticketgaveinfo',
+    TicketAction.SETSTATUS: None,
+    TicketAction.COMMENT: 'ticketcommentadded',
+    TicketAction.ANSWER: 'ticketgaveanswer',
+    TicketAction.CONFIRM: None, # Handled in giveAnswer() and confirmAnswer()
+    TicketAction.EXPIRE: None,
+    TicketAction.REJECT: 'ticketrejected',
+    TicketAction.REOPEN: 'ticketreopened',
+}
+
+
+def ticket_comment_added(ticketmessage, event):
+    """Assign karma to the user which added <ticketmessage>."""
+    ticket = ticketmessage.ticket
+    karma_action = TicketAction2KarmaAction.get(ticketmessage.action)
+    if karma_action:
+        _assignKarmaUsingTicketContext(
+            ticketmessage.owner, ticket, karma_action)
+
+
+def ticket_bug_added(ticketbug, event):
+    """Assign karma to the user which added <ticketbug>."""
+    ticket = ticketbug.ticket
+    _assignKarmaUsingTicketContext(event.user, ticket, 'ticketlinkedtobug')
 

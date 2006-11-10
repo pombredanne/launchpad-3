@@ -1,7 +1,7 @@
 <div class="portlet">
 
-  <h4>"<span tal:replace="context/name">apache2</span>" source package in
-  <span tal:replace="context/distribution/name">ubuntu</span>:</h4>
+  <h2>"<span tal:replace="context/name">apache2</span>" source package in
+  <span tal:replace="context/distribution/name">ubuntu</span></h2>
 
   <div class="portletBody portletContent"
        tal:define="cr context/currentrelease">
@@ -13,9 +13,8 @@
       <div tal:replace="structure cr/sourcepackagerelease/@@+portlet-details-content" />
     </tal:has_currentrelease>
     <tal:no_currentrelease condition="not: cr">
-      <img src="/@@/alert" />
-      <i>There is no current release for this source package in
-        <span tal:replace="context/distribution/displayname">ubuntu</span></i>
+      There is no current release for this source package in
+      <span tal:replace="context/distribution/displayname">ubuntu</span>.
     </tal:no_currentrelease>
 
   </div>

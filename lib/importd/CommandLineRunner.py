@@ -15,13 +15,6 @@ from canonical.launchpad.database import Product
 from importd.Job import Job
 import canonical
 
-import pybaz
-import pybaz.backends.forkexec
-pybaz.backend.spawning_strategy = pybaz.backends.forkexec.PyArchSpawningStrategy
-import gnarly.process
-import gnarly.process.unix_process
-gnarly.process.Popen = gnarly.process.unix_process.Popen
-
 
 class Doer(object):
 

@@ -9,35 +9,42 @@ __all__ = ['ProductSeriesNavigation',
            'ProductSeriesTranslationMenu',
            'ProductSeriesView',
            'ProductSeriesEditView',
+           'ProductSeriesAppointDriverView',
+           'ProductSeriesSourceView',
            'ProductSeriesRdfView',
            'ProductSeriesSourceSetView',
-           'ProductSeriesReviewView']
+           'ProductSeriesReviewView',
+           'get_series_branch_error']
 
+import cgi
 import re
 
-from zope.component import getUtility
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.publisher.browser import FileUpload
+from BeautifulSoup import BeautifulSoup
 
-from CVS.protocol import CVSRoot
-import pybaz
+from zope.component import getUtility
+from zope.app.form.browser import TextAreaWidget
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.formlib import form
+from zope.publisher.browser import FileUpload
 
 from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
 
 from canonical.launchpad.helpers import (
-    request_languages, browserLanguages, is_tar_filename)
+    browserLanguages, check_permission, is_tar_filename, request_languages)
 from canonical.launchpad.interfaces import (
     ICountry, IPOTemplateSet, ILaunchpadCelebrities,
     ISourcePackageNameSet, validate_url, IProductSeries,
-    ITranslationImportQueue, IProductSeriesSourceSet, NotFoundError
-    )
-from canonical.launchpad.browser.potemplate import POTemplateView
+    ITranslationImportQueue, IProductSeriesSet, NotFoundError)
+from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     Link, enabled_with_permission, Navigation, ApplicationMenu, stepto,
-    canonical_url, LaunchpadView, StandardLaunchpadFacets
+    canonical_url, LaunchpadView, StandardLaunchpadFacets,
+    LaunchpadEditFormView, action, custom_widget
     )
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.widgets.itemswidgets import LaunchpadRadioWidget
+from canonical.widgets.textwidgets import StrippedTextWidget
 
 from canonical.launchpad import _
 
@@ -48,6 +55,13 @@ class ProductSeriesNavigation(Navigation):
 
     def breadcrumb(self):
         return 'Series ' + self.context.name
+
+    @stepto('.bzr')
+    def dotbzr(self):
+        if self.context.series_branch:
+            return BranchRef(self.context.series_branch)
+        else:
+            return None
 
     @stepto('+pots')
     def pots(self):
@@ -72,15 +86,18 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
              'add_package', 'add_milestone', 'add_release',
              'add_potemplate', 'rdf', 'review']
 
+    @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Change Series Details'
         return Link('+edit', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def driver(self):
         text = 'Appoint driver'
         summary = 'Someone with permission to set goals this series'
         return Link('+driver', text, summary, icon='edit')
 
+    @enabled_with_permission('launchpad.EditSource')
     def editsource(self):
         text = 'Edit Source'
         return Link('+source', text, icon='edit')
@@ -177,34 +194,16 @@ class ProductSeriesTranslationMenu(ApplicationMenu):
         return Link('+translations-upload', text, icon='add')
 
 
-def validate_cvs_root(cvsroot, cvsmodule):
-    try:
-        root = CVSRoot(cvsroot + '/' + cvsmodule)
-    except ValueError:
-        return False
-    valid_module = re.compile('^[a-zA-Z][a-zA-Z0-9_/.+-]*$')
-    if not valid_module.match(cvsmodule):
-        return False
-    # 'CVS' is illegal as a module name
-    if cvsmodule == 'CVS':
-        return False
-    if root.method == 'local' or root.hostname.count('.') == 0:
-        return False
-    return True
+def get_series_branch_error(product, branch):
+    """Check if the given branch is suitable for the given product.
 
-def validate_cvs_branch(branch):
-    if not len(branch):
-        return False
-    valid_branch = re.compile('^[a-zA-Z][a-zA-Z0-9_-]*$')
-    if valid_branch.match(branch):
-        return True
-    return False
-
-def validate_release_root(repo):
-    return validate_url(repo, ["http", "https", "ftp"])
-
-def validate_svn_repo(repo):
-    return validate_url(repo, ["http", "https", "svn", "svn+ssh"])
+    Returns an HTML error message on error, and None otherwise.
+    """
+    if branch.product != product:
+        return ('<a href="%s">%s</a> is not a branch of <a href="%s">%s</a>.'
+                % (canonical_url(branch), cgi.escape(branch.unique_name),
+                   canonical_url(product), cgi.escape(product.displayname)))
+    return None
 
 
 # A View Class for ProductSeries
@@ -216,35 +215,9 @@ def validate_svn_repo(repo):
 class ProductSeriesView(LaunchpadView):
 
     def initialize(self):
-        self.product = self.context.product
         self.form = self.request.form
-        self.displayname = self.context.displayname
-        self.summary = self.context.summary
-        self.rcstype = self.context.rcstype
-        self.cvsroot = self.context.cvsroot
-        self.cvsmodule = self.context.cvsmodule
-        self.cvsbranch = self.context.cvsbranch
-        self.svnrepository = self.context.svnrepository
-        self.releaseroot = self.context.releaseroot
-        self.releasefileglob = self.context.releasefileglob
-        self.targetarcharchive = self.context.targetarcharchive
-        self.targetarchcategory = self.context.targetarchcategory
-        self.targetarchbranch = self.context.targetarchbranch
-        self.targetarchversion = self.context.targetarchversion
-        self.name = self.context.name
         self.has_errors = False
-        if self.context.product.project:
-            self.default_targetarcharchive = self.context.product.project.name
-            self.default_targetarcharchive += '@bazaar.ubuntu.com'
-        else:
-            self.default_targetarcharchive = self.context.product.name
-            self.default_targetarcharchive += '@bazaar.ubuntu.com'
-        self.default_targetarchcategory = self.context.product.name
-        if self.cvsbranch:
-            self.default_targetarchbranch = self.cvsbranch
-        else:
-            self.default_targetarchbranch = self.context.name
-        self.default_targetarchversion = '0'
+
         # Whether there is more than one PO template.
         self.has_multiple_templates = len(self.context.currentpotemplates) > 1
 
@@ -268,8 +241,6 @@ class ProductSeriesView(LaunchpadView):
             return
 
         dispatch_table = {
-            'edit_productseries_source': self.editSource,
-            'admin_productseries_source': self.adminSource,
             'set_ubuntu_pkg': self.setCurrentUbuntuPackage,
             'translations_upload': self.translationsUpload
         }
@@ -290,18 +261,6 @@ class ProductSeriesView(LaunchpadView):
         key, method = dispatch_to[0]
         method()
 
-    def templateviews(self):
-        """Return the view class of the IPOTemplate associated with the context.
-        """
-        templateview_list = [POTemplateView(template, self.request)
-                for template in self.context.currentpotemplates]
-
-        # Initialize the views.
-        for templateview in templateview_list:
-            templateview.initialize()
-
-        return templateview_list
-
     def setUpPackaging(self):
         """Ensure that the View class correctly reflects the packaging of
         its product series context."""
@@ -316,216 +275,6 @@ class ProductSeriesView(LaunchpadView):
             pass
         ubuntu = self.curr_ubuntu_release.distribution
         self.ubuntu_history = self.context.getPackagingInDistribution(ubuntu)
-
-    def rcs_selector(self):
-        html = '<select name="rcstype">\n'
-        html += '  <option value="cvs" onClick="morf(\'cvs\')"'
-        if self.rcstype == RevisionControlSystems.CVS:
-            html += ' selected'
-        html += '>CVS</option>\n'
-        html += '  <option value="svn" onClick="morf(\'svn\')"'
-        if self.rcstype == RevisionControlSystems.SVN:
-            html += ' selected'
-        html += '>Subversion</option>\n'
-        html += '</select>\n'
-        return html
-
-    def cvs_details_already_in_use(self, cvsroot, cvsmodule, cvsbranch):
-        """Check if the CVS details are in use by another ProductSeries.
-
-        Return True if the CVS details don't exist in the database or 
-        if it's already set in this ProductSeries, otherwise return False.
-        """
-        productseries = getUtility(IProductSeriesSourceSet).getByCVSDetails(
-            cvsroot, cvsmodule, cvsbranch) 
-        if productseries is None or productseries == self.context:
-            return True
-        else: 
-            return False 
-
-    def svn_details_already_in_use(self, svnrepository): 
-        """Check if the SVN details are in use by another ProductSeries.
-
-        Return True if the SVN details don't exist in the database or
-        if it's already set in this ProductSeries, otherwise return False.
-        """
-        productseries = getUtility(IProductSeriesSourceSet).getBySVNDetails(
-            svnrepository)
-        if productseries is None or productseries == self.context:
-            return True
-        else: 
-            return False 
-
-    def editSource(self, fromAdmin=False):
-        """Edit the upstream revision control details for this series."""
-        form = self.form
-        if self.context.syncCertified() and not fromAdmin:
-            self.request.response.addErrorNotification(
-                    'This Source has been certified and is now '
-                    'unmodifiable.'
-                    )
-            self.has_errors = True
-            return
-        # get the form content, defaulting to what was there
-        rcstype = form.get("rcstype")
-        if rcstype == 'cvs':
-            self.rcstype = RevisionControlSystems.CVS
-            self.cvsroot = form.get("cvsroot").strip()
-            self.cvsmodule = form.get("cvsmodule").strip()
-            self.cvsbranch = form.get("cvsbranch").strip()
-            self.svnrepository = None
-        elif rcstype == 'svn':
-            self.rcstype = RevisionControlSystems.SVN
-            self.cvsroot = None 
-            self.cvsmodule = None 
-            self.cvsbranch = None 
-            self.svnrepository = form.get("svnrepository").strip()
-        else:
-            raise NotImplementedError, 'Unknown RCS %s' % rcstype
-        # FTP release details
-        self.releaseroot = form.get("releaseroot")
-        self.releasefileglob = form.get("releasefileglob") 
-        if self.releaseroot:
-            if not validate_release_root(self.releaseroot):
-                self.request.response.addErrorNotification(
-                    'Invalid release root URL')
-                self.has_errors = True
-                return
-        # make sure we at least got something for the relevant rcs
-        if rcstype == 'cvs':
-            if not (self.cvsroot and self.cvsmodule and self.cvsbranch):
-                if not fromAdmin:
-                    self.request.response.addErrorNotification(
-                        'Please give valid CVS details')
-                    self.has_errors = True
-                return
-            if not validate_cvs_branch(self.cvsbranch):
-                self.request.response.addErrorNotification(
-                    'Your CVS branch name is invalid.')
-                self.has_errors = True
-                return
-            if not validate_cvs_root(self.cvsroot, self.cvsmodule):
-                self.request.response.addErrorNotification(
-                    'Your CVS root and module are invalid.')
-                self.has_errors = True
-                return
-            if self.svnrepository:
-                self.request.response.addErrorNotification(
-                    'Please remove the SVN repository.')
-                self.has_errors = True
-                return
-            if not self.cvs_details_already_in_use(self.cvsroot, self.cvsmodule,
-                    self.cvsbranch):
-                self.request.response.addErrorNotification(
-                    'CVS repository details already in use by another product.')
-                self.has_errors = True
-                return
-        elif rcstype == 'svn':
-            if not validate_svn_repo(self.svnrepository):
-                self.request.response.addErrorNotification(
-                    'Please give valid SVN server details.')
-                self.has_errors = True
-                return
-            if (self.cvsroot or self.cvsmodule or self.cvsbranch):
-                self.request.response.addErrorNotification(
-                    'Please remove the CVS repository details.')
-                self.has_errors = True
-                return
-            if not self.svn_details_already_in_use(self.svnrepository):
-                self.request.response.addErrorNotification(
-                    'SVN repository details already in use by another product.')
-                self.has_errors = True
-                return
-        oldrcstype = self.context.rcstype
-        self.context.rcstype = self.rcstype
-        self.context.cvsroot = self.cvsroot
-        self.context.cvsmodule = self.cvsmodule
-        self.context.cvsbranch = self.cvsbranch
-        self.context.svnrepository = self.svnrepository
-        self.context.releaseroot = self.releaseroot
-        self.context.releasefileglob = self.releasefileglob
-        if not fromAdmin:
-            self.context.importstatus = ImportStatus.TESTING
-        elif (oldrcstype is None and self.rcstype is not None):
-            self.context.importstatus = ImportStatus.TESTING
-        # make sure we also update the ubuntu packaging if it has been
-        # modified
-        self.setCurrentUbuntuPackage()
-        if not self.has_errors:
-            self.request.response.redirect(canonical_url(self.context))
-
-    def adminSource(self):
-        """Make administrative changes to the source details of the
-        upstream.
-
-        Since this is a superset of the editing function we can
-        call the edit method of the view class to get any editing changes,
-        then continue parsing the form here, looking for admin-type
-        changes.
-        """
-        form = self.form
-        # FTP release details
-        self.releaseroot = form.get("releaseroot", self.releaseroot) or None
-        self.releasefileglob = form.get("releasefileglob",
-                self.releasefileglob) or None
-        if self.releaseroot:
-            if not validate_release_root(self.releaseroot):
-                self.request.response.addErrorNotification(
-                    'Invalid release root URL')
-                self.has_errors = True
-                return
-        # look for admin changes and retrieve those
-        self.cvsroot = form.get('cvsroot', self.cvsroot) or None
-        self.cvsmodule = form.get('cvsmodule', self.cvsmodule) or None
-        self.cvsbranch = form.get('cvsbranch', self.cvsbranch) or None
-        self.svnrepository = form.get(
-            'svnrepository', self.svnrepository) or None
-        self.targetarcharchive = form.get(
-            'targetarcharchive', self.targetarcharchive).strip() or None
-        self.targetarchcategory = form.get(
-            'targetarchcategory', self.targetarchcategory).strip() or None
-        self.targetarchbranch = form.get(
-            'targetarchbranch', self.targetarchbranch).strip() or None
-        self.targetarchversion = form.get(
-            'targetarchversion', self.targetarchversion).strip() or None
-        # validate arch target details
-        arch_name_was_set = bool(
-            self.targetarcharchive or self.targetarchcategory
-            or self.targetarchbranch or self.targetarchversion)
-        if arch_name_was_set:
-            parser = pybaz.NameParser
-            for is_valid_check, value, description in [
-                (parser.is_archive_name, self.targetarcharchive, 'archive name'),
-                (parser.is_category_name, self.targetarchcategory, 'category'),
-                (parser.is_branch_name, self.targetarchbranch, 'branch name'),
-                (parser.is_version_id, self.targetarchversion, 'version id')]:
-                if not is_valid_check(value):
-                    self.request.response.addErrorNotification(
-                        'Invalid target Arch %s.' % description)
-                    self.has_errors = True
-
-        # possibly resubmit for testing
-        if self.context.autoTestFailed() and form.get('resetToAutotest', False):
-            self.context.importstatus = ImportStatus.TESTING
-
-        # Return if there were any errors, so as not to update anything.
-        if self.has_errors:
-            return
-        # update the database
-        self.context.targetarcharchive = self.targetarcharchive
-        self.context.targetarchcategory = self.targetarchcategory
-        self.context.targetarchbranch = self.targetarchbranch
-        self.context.targetarchversion = self.targetarchversion
-        self.context.releaseroot = self.releaseroot
-        self.context.releasefileglob = self.releasefileglob
-        # find and handle editing changes
-        self.editSource(fromAdmin=True)
-        if self.form.get('syncCertified', None):
-            if not self.context.syncCertified():
-                self.context.certifyForSync()
-        if self.form.get('autoSyncEnabled', None):
-            if not self.context.autoSyncEnabled():
-                self.context.enableAutoSync()
 
     def setCurrentUbuntuPackage(self):
         """Set the Packaging record for this product series in the current
@@ -646,12 +395,175 @@ class ProductSeriesView(LaunchpadView):
                 " recognised as a file that can be imported.")
 
 
-class ProductSeriesEditView(SQLObjectEditView):
-    """View class that lets you edit a ProductSeries object."""
+class ProductSeriesEditView(LaunchpadEditFormView):
+
+    schema = IProductSeries
+    field_names = ['name', 'summary', 'user_branch', 'releasefileglob']
+    custom_widget('summary', TextAreaWidget, height=7, width=62)
+    custom_widget('releasefileglob', StrippedTextWidget, displayWidth=40)
+
+    def validate(self, data):
+        branch = data.get('user_branch')
+        if branch is not None:
+            message = get_series_branch_error(self.context.product, branch)
+            if message:
+                self.setFieldError('user_branch', message)
+
+    @action(_('Change'), name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+
+class ProductSeriesAppointDriverView(SQLObjectEditView):
+    """View class that lets you appoint a driver for a ProductSeries object."""
 
     def changed(self):
         # If the name changed then the URL changed, so redirect
         self.request.response.redirect(canonical_url(self.context))
+
+
+class ProductSeriesSourceView(LaunchpadEditFormView):
+    """View for editing upstream RCS details for the product series.
+
+    This form is protected by the launchpad.EditSource permission,
+    which basically allows anyone to edit the details until the import
+    has been certified (at which point only vcs-imports team members
+    can edit it).
+
+    In addition, users with launchpad.Admin (i.e. vcs-imports team
+    members or administrators) permission are provided with a few
+    extra buttons to certify the import or reset failed test imports.
+    """
+    schema = IProductSeries
+    field_names = ['rcstype', 'user_branch', 'cvsroot', 'cvsmodule',
+                   'cvsbranch', 'svnrepository']
+
+    custom_widget('rcstype', LaunchpadRadioWidget)
+    custom_widget('cvsroot', StrippedTextWidget, displayWidth=50)
+    custom_widget('cvsmodule', StrippedTextWidget, displayWidth=20)
+    custom_widget('cvsbranch', StrippedTextWidget, displayWidth=20)
+    custom_widget('svnrepository', StrippedTextWidget, displayWidth=50)
+
+    def setUpWidgets(self):
+        LaunchpadEditFormView.setUpWidgets(self)
+
+        # Extract the radio buttons from the rcstype widget, so we can
+        # display them separately in the form.
+        soup = BeautifulSoup(self.widgets['rcstype']())
+        [norcs_button, cvs_button,
+         svn_button, empty_marker] = soup.findAll('input')
+        norcs_button['onclick'] = 'updateWidgets()'
+        cvs_button['onclick'] = 'updateWidgets()'
+        svn_button['onclick'] = 'updateWidgets()'
+        self.rcstype_none = str(norcs_button)
+        self.rcstype_cvs = str(cvs_button)
+        self.rcstype_svn = str(svn_button)
+        self.rcstype_emptymarker = str(empty_marker)
+
+    def validate(self, data):
+        rcstype = data.get('rcstype')
+        if 'rcstype' in data:
+            # Make sure fields for unselected revision control systems
+            # are blanked out:
+            if rcstype != RevisionControlSystems.CVS:
+                data['cvsroot'] = None
+                data['cvsmodule'] = None
+                data['cvsbranch'] = None
+            if rcstype != RevisionControlSystems.SVN:
+                data['svnrepository'] = None
+
+        if rcstype == RevisionControlSystems.CVS:
+            cvsroot = data.get('cvsroot')
+            cvsmodule = data.get('cvsmodule')
+            cvsbranch = data.get('cvsbranch')
+            # Make sure there is an error set for these fields if they
+            # are unset.
+            if not (cvsroot or self.getWidgetError('cvsroot')):
+                self.setFieldError('cvsroot',
+                                   'Please enter a CVS root.')
+            if not (cvsmodule or self.getWidgetError('cvsmodule')):
+                self.setFieldError('cvsmodule',
+                                   'Please enter a CVS module.')
+            if not (cvsbranch or self.getWidgetError('cvsbranch')):
+                self.setFieldError('cvsbranch',
+                                   'Please enter a CVS branch.')
+            if cvsroot and cvsmodule and cvsbranch:
+                series = getUtility(IProductSeriesSet).getByCVSDetails(
+                    cvsroot, cvsmodule, cvsbranch)
+                if self.context != series and series is not None:
+                    self.addError('CVS repository details already in use '
+                                  'by another product.')
+
+        elif rcstype == RevisionControlSystems.SVN:
+            svnrepository = data.get('svnrepository')
+            if not (svnrepository or self.getWidgetError('svnrepository')):
+                self.setFieldError('svnrepository',
+                                   'Please give valid Subversion server '
+                                   'details.')
+            if svnrepository:
+                series = getUtility(IProductSeriesSet).getBySVNDetails(
+                    svnrepository)
+                if self.context != series and series is not None:
+                    self.setFieldError('svnrepository',
+                                       'Subversion repository details '
+                                       'already in use by another product.')
+
+        if self.resettoautotest_action.submitted():
+            if rcstype is None:
+                self.addError('Can not rerun import without CVS or '
+                              'Subversion details.')
+        elif self.certify_action.submitted():
+            if rcstype is None:
+                self.addError('Can not certify import without CVS or '
+                              'Subversion details.')
+            if self.context.syncCertified():
+                self.addError('Import has already been approved.')
+
+    def isAdmin(self):
+        return check_permission('launchpad.Admin', self.context)
+
+    @action(_('Update RCS Details'), name='update')
+    def update_action(self, action, data):
+        old_rcstype = self.context.rcstype
+        self.updateContextFromData(data)
+        if self.context.rcstype is None:
+            self.context.importstatus = None
+        else:
+            if not self.isAdmin() or (old_rcstype is None and
+                                      self.context.rcstype is not None):
+                self.context.importstatus = ImportStatus.TESTING
+        self.request.response.addInfoNotification(
+            'Upstream RCS details updated.')
+
+    def allowResetToAutotest(self, action):
+        return self.isAdmin() and self.context.autoTestFailed()
+
+    @action(_('Rerun import in the Autotester'), name='resettoautotest',
+            condition=allowResetToAutotest)
+    def resettoautotest_action(self, action, data):
+        self.updateContextFromData(data)
+        self.context.importstatus = ImportStatus.TESTING
+        self.request.response.addInfoNotification(
+            'Source import reset to TESTING')
+
+    def allowCertify(self, action):
+        return self.isAdmin() and not self.context.syncCertified()
+
+    @action(_('Approve import for production and publication'), name='certify',
+            condition=allowCertify)
+    def certify_action(self, action, data):
+        self.updateContextFromData(data)
+        self.context.certifyForSync()
+        self.request.response.addInfoNotification(
+            'Source import certified for publication')
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
 
 
 class ProductSeriesReviewView(SQLObjectEditView):

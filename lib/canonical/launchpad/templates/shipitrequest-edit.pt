@@ -17,6 +17,7 @@
     </tal:block>
 
     <h1>
+      <span tal:replace="context/distrorelease/name/capitalize" />
       Request #<span tal:replace="context/id" />
     </h1>
 
@@ -81,7 +82,7 @@
     </table>
 
     <tal:can-be-changed condition="view/contextCanBeModified">
-      <div style="text-align: right;" tal:condition="not: context/isDenied">
+      <div style="text-align: right;" tal:condition="context/canBeDenied">
         <form name="denyrequest" method="post"
               tal:attributes="action request/URL">
           <input type="submit" value="Deny &amp; Continue" name="DENY" />
@@ -110,13 +111,11 @@
       <br />
       <div style="text-align: right;" 
            tal:condition="view/contextCanBeModified">
-        <tal:block condition="not: context/isCancelled">
-          <tal:block condition="not: context/isApproved">
-            <input type="submit" value="Approve &amp; Continue" name="APPROVE" />
-          </tal:block>
-          <tal:block condition="context/isApproved">
-            <input type="submit" value="Change Approved Totals" name="CHANGE" />
-          </tal:block>
+        <tal:block condition="context/canBeApproved">
+          <input type="submit" value="Approve &amp; Continue" name="APPROVE" />
+        </tal:block>
+        <tal:block condition="context/isApproved">
+          <input type="submit" value="Change Approved Totals" name="CHANGE" />
         </tal:block>
       </div>
     </form>

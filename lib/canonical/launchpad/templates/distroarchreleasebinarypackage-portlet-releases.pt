@@ -1,5 +1,5 @@
 <div class="portlet">
-  <h4>Package releases:</h4>
+  <h2>Package releases</h2>
   <div class="portletBody portletContent">
     <ul>
       <li tal:repeat="release context/releases">

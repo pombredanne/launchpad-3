@@ -1,11 +1,10 @@
 
 <div class="portlet">
 
-    <h4>Template details:</h4>
+    <h2>Template details</h2>
 
     <div class="portletBody">
         <div class="portletContent">
-            <img alt="" src="/@@/document" />
             <span tal:replace="view/num_messages" /><br />
             <img alt="" src="/@@/languages" />
             <span tal:replace="context/language_count">421</span>

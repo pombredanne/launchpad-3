@@ -8,23 +8,27 @@ __all__ = [
     'TranslationImportQueueEntryNavigation',
     'TranslationImportQueueEntryURL',
     'TranslationImportQueueEntryView',
+    'TranslationImportQueueEntryContextMenu',
     'TranslationImportQueueContextMenu',
     'TranslationImportQueueNavigation',
     'TranslationImportQueueView',
     ]
 
 import datetime
+import os
 import pytz
 from zope.component import getUtility
 from zope.interface import implements
 from zope.app.form.browser.widget import renderElement
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
+from canonical.launchpad.browser.launchpad import RosettaContextMenu
 from canonical.launchpad.interfaces import (
     ITranslationImportQueueEntry, ITranslationImportQueue, ICanonicalUrlData,
-    IPOTemplateSet, NotFoundError, UnexpectedFormData)
+    IPOTemplateSet, ILanguageSet, NotFoundError, UnexpectedFormData)
 from canonical.launchpad.webapp import (
-    GetitemNavigation, LaunchpadView, ContextMenu, Link, canonical_url)
+    GetitemNavigation, LaunchpadView, canonical_url)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.generalform import GeneralFormView
 
@@ -38,7 +42,7 @@ class TranslationImportQueueEntryNavigation(GetitemNavigation):
 class TranslationImportQueueEntryURL:
     implements(ICanonicalUrlData)
 
-    rootsite = 'launchpad'
+    rootsite = 'mainsite'
 
     def __init__(self, context):
         self.context = context
@@ -78,15 +82,23 @@ class TranslationImportQueueEntryView(GeneralFormView):
             field_values['variant'] = self.context.pofile.variant
         else:
             # We try to guess the values.
-            (language, variant) = self.context.guessed_language_and_variant
-            if language is not None:
-                field_values['language'] = language
-                # Need to warn the user that we guessed the language information.
-                self.request.response.addWarningNotification(
-                    "Review the language selection as we guessed it and could"
-                    " not be accurated.")
-            if variant is not None:
-                field_values['variant'] = variant
+            language_set = getUtility(ILanguageSet)
+            filename = os.path.basename(self.context.path)
+            guessed_language, file_ext = filename.split(u'.', 1)
+            if file_ext == 'po':
+                # The entry is a .po file so its filename would be a language
+                # code.
+                (language, variant) = (
+                    language_set.getLanguageAndVariantFromString(guessed_language))
+                if language is not None:
+                    field_values['language'] = language
+                    # Need to warn the user that we guessed the language
+                    # information.
+                    self.request.response.addWarningNotification(
+                        "Review the language selection as we guessed it and"
+                        " could not be accurated.")
+                if variant is not None:
+                    field_values['variant'] = variant
 
         return field_values
 
@@ -173,17 +185,15 @@ class TranslationImportQueueEntryView(GeneralFormView):
 
 
 class TranslationImportQueueNavigation(GetitemNavigation):
-
     usedfor = ITranslationImportQueue
 
 
-class TranslationImportQueueContextMenu(ContextMenu):
+class TranslationImportQueueContextMenu(RosettaContextMenu):
     usedfor = ITranslationImportQueue
-    links = ['overview']
 
-    def overview(self):
-        text = 'Import queue'
-        return Link('', text)
+
+class TranslationImportQueueEntryContextMenu(RosettaContextMenu):
+    usedfor = ITranslationImportQueueEntry
 
 
 class TranslationImportQueueView(LaunchpadView):
@@ -255,10 +265,10 @@ class TranslationImportQueueView(LaunchpadView):
         # Process the form.
         self.processForm()
 
-    @property
+    @cachedproperty
     def has_entries(self):
         """Return whether there are things on the queue."""
-        return len(self.context) > 0
+        return bool(self.context.entryCount())
 
     def processForm(self):
         """Block or remove entries from the queue based on the selection of

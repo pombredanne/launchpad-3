@@ -13,6 +13,10 @@ that we are going to edit.
 
     >>> login('kurem@debian.cz')
 
+
+No plural forms
+---------------
+
 We are going to see what happens if we get an entry for a language
 without the plural form information.
 
@@ -21,96 +25,167 @@ without the plural form information.
     >>> pomsgset_tlh = pofile_tlh.getPOMsgSet(u'evolution addressbook')
     >>> SERVER_URL = '/'.join([canonical_url(pomsgset), '+translate'])
     >>> request = LaunchpadTestRequest(SERVER_URL=SERVER_URL)
-    >>> pomsgset_view = getView(pomsgset_tlh, "+translate", request)
-    >>> pomsgset_view.initialize()
+    >>> pomsgset_page_view = getView(pomsgset_tlh, "+translate", request)
+    >>> pomsgset_page_view.initialize()
 
 Here we can see that it's lacking that information.
 
-    >>> pomsgset_view.context.pofile.language.pluralforms is None
+    >>> pomsgset_page_view.context.pofile.language.pluralforms is None
     True
 
 And the view class detects it correctly.
 
-    >>> pomsgset_view.has_plural_form_information
+    >>> pomsgset_page_view.has_plural_form_information
     False
 
-Now, we will use a objects that we have in our database, instead of dummy ones.
 
-    >>> pomsgset_view = getView(pomsgset, "+translate", request)
-    >>> pomsgset_view.initialize()
+Basic checks
+------------
+
+Now, we will use a objects that we have in our database, instead of
+dummy ones.
+
+    >>> pomsgset_page_view = getView(pomsgset, "+translate", request)
+    >>> pomsgset_page_view.initialize()
 
 We have the plural form information for this language.
 
-    >>> pomsgset_view.context.pofile.language.pluralforms is not None
+    >>> pomsgset_page_view.context.pofile.language.pluralforms is not None
     True
 
 And thus, the view class should know that it doesn't lacks the plural forms
 information.
 
-    >>> pomsgset_view.has_plural_form_information
+    >>> pomsgset_page_view.has_plural_form_information
     True
+
+
+The subview: POMsgSetView
+-------------------------
+
+For the next tests, we grab the subview which is what holds information
+that pertains to the POMsgSet rendering itself:
+
+    >>> subview = pomsgset_page_view.pomsgset_view
+    >>> subview.initialize()
 
 The request didn't get any argument, and because that, we should get the
 default values for the alternative language.
 
-    >>> pomsgset_view.second_lang_code is None
+    >>> subview.sec_lang is None
     True
 
-We are at the beginning because this pomsgset is for the first item.
+We are at the beginning because this subview is being used for the first
+item.
 
-    >>> pomsgset_view.context.potmsgset.sequence == 1
+    >>> subview.context.potmsgset.sequence == 1
     True
 
 How many lines does the message have.
 
-    >>> pomsgset_view.max_lines_count
+    >>> subview.max_lines_count
     1
 
 And as it has only one line, it's not a multi line message set.
 
-    >>> pomsgset_view.is_multi_line
+    >>> subview.is_multi_line
     False
 
 It does not have a plural msgid.
 
-    >>> pomsgset_view.msgid_plural is None
+    >>> subview.msgid_plural is None
     True
 
 And thus, it only has one translation.
 
-    >>> pomsgset_view.translation_range
+    >>> subview.pluralform_indices
     [0]
 
 Which is the one we wanted.
 
-    >>> pomsgset_view.getTranslation(0)
+    >>> subview.getTranslation(0)
     u'libreta de direcciones de Evolution'
 
-Now, we are going to test the tab index generator to be sure the TAB key
-will work as expected when navigating over the translation form.
 
-First time we call it, first position.
+Web presentation
+----------------
 
-    >>> pomsgset_view.generateNextTabIndex()
-    1
+Some characters are presented specially in the Web interface, and there are
+functions to determine whether to advise translators about their presence.
 
-Next time we call it, it's increased.
+First, msg_id_has_tab() determines whether a message set contains any tabs.
 
-    >>> pomsgset_view.generateNextTabIndex()
-    2
+    >>> subview.msgid_has_tab
+    False
+
+When we change the set to include a tab character, the function detects it.
+
+    >>> subview.context.potmsgset.primemsgid_.msgid = u'Foo\tBar'
+    >>> subview.msgid_has_tab
+    True
+
+Similarly, msgid_has_newline() determines whether a message contains newlines.
+
+    >>> subview.context.potmsgset.primemsgid_.msgid = u'Foo Bar'
+    >>> subview.msgid_has_newline
+    False
+
+    >>> subview.context.potmsgset.primemsgid_.msgid = u'Foo\nBar'
+    >>> subview.msgid_has_newline
+    True
+
+And msgid_has_leading_or_trailing_space() determines ... well, you can guess.
+
+    >>> subview.context.potmsgset.primemsgid_.msgid = u'Foo Bar'
+    >>> subview.msgid_has_leading_or_trailing_space
+    False
+
+    >>> subview.context.potmsgset.primemsgid_.msgid = u' Leading space'
+    >>> subview.msgid_has_leading_or_trailing_space
+    True
+
+    >>> subview.context.potmsgset.primemsgid_.msgid = u'  Leading spaces'
+    >>> subview.msgid_has_leading_or_trailing_space
+    True
+
+    >>> subview.context.potmsgset.primemsgid_.msgid = u'Trailing space  '
+    >>> subview.msgid_has_leading_or_trailing_space
+    True
+
+    >>> subview.context.potmsgset.primemsgid_.msgid = u'Trailing spaces  '
+    >>> subview.msgid_has_leading_or_trailing_space
+    True
+
+    >>> subview.context.potmsgset.primemsgid_.msgid = u'Leading\n Space'
+    >>> subview.msgid_has_leading_or_trailing_space
+    True
+
+    >>> subview.context.potmsgset.primemsgid_.msgid = u'Trailing \nSpace'
+    >>> subview.msgid_has_leading_or_trailing_space
+    True
+
+    >>> subview.context.potmsgset.primemsgid_.msgid = u'Trailing \r\nSpace'
+    >>> subview.msgid_has_leading_or_trailing_space
+    True
+
+The test system should reset this msgid to its original value for other tests.
+
+
+Submitting translations
+-----------------------
 
 It's time to check the submission of translations and the IPOFile statistics
 update.
 
 But first, let's see current values.
 
-    >>> pomsgset_view.context.pofile.updateStatistics()
+    >>> subview.context.pofile.updateStatistics()
     (7, 0, 0)
-    >>> pomsgset_view.context.pofile.currentCount()
+    >>> subview.context.pofile.currentCount()
     7
-    >>> pomsgset_view.context.pofile.updatesCount()
+    >>> subview.context.pofile.updatesCount()
     0
-    >>> pomsgset_view.context.pofile.rosettaCount()
+    >>> subview.context.pofile.rosettaCount()
     0
 
 Now we do the submit.
@@ -124,21 +199,26 @@ Now we do the submit.
     ...         'msgset_1_es_translation_0': 'Foo',
     ...         'submit_translations': 'Save &amp; Continue'})
     >>> request.method = 'POST'
-    >>> pomsgset_view = getView(pomsgset, "+translate", request)
-    >>> pomsgset_view.initialize()
+    >>> pomsgset_page_view = getView(pomsgset, "+translate", request)
+    >>> pomsgset_page_view.initialize()
     >>> import transaction
     >>> transaction.commit()
 
 And check again.
 
-    >>> pomsgset_view.context.pofile.currentCount()
+    >>> pomsgset_page_view.context.pofile.currentCount()
     7
-    >>> pomsgset_view.context.pofile.updatesCount()
+    >>> pomsgset_page_view.context.pofile.updatesCount()
     1
-    >>> pomsgset_view.context.pofile.rosettaCount()
+    >>> pomsgset_page_view.context.pofile.rosettaCount()
     0
 
-What would happen if we get a submit for another msgset that aren't we?
+
+Bogus translation submission
+----------------------------
+
+What would happen if we get a submit for another msgset that isn't being
+considered?
 
     >>> request = LaunchpadTestRequest(
     ...     SERVER_URL=SERVER_URL,
@@ -148,12 +228,17 @@ What would happen if we get a submit for another msgset that aren't we?
     ...         'msgset_2_es_translation_0': 'Foo',
     ...         'submit_translations': 'Save &amp; Continue'})
     >>> request.method = 'POST'
-    >>> pomsgset_view = getView(pomsgset, "+translate", request)
-    >>> pomsgset_view.initialize()
+    >>> pomsgset_page_view = getView(pomsgset, "+translate", request)
+    >>> pomsgset_page_view.initialize()
 
-The list of translations will be empty because the submission is ignored.
+The list of translations parsed will be empty because the submission is
+ignored:
 
-    >>> pomsgset_view.translations is None
+    >>> pomsgset_page_view.form_posted_translations
+    {}
+
+And since this was a POST, we don't even build the subview:
+
+    >>> pomsgset_page_view.pomsgset_view is None
     True
 
-And that's all, folks!

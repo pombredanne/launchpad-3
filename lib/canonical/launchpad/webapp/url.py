@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = ['Url', 'urlappend', 'urlparse', 'urlsplit']
 
+import urlparse as urlparse_module
 from  urlparse import (
     urljoin, urlparse as original_urlparse, urlsplit as original_urlsplit)
 
@@ -55,6 +56,29 @@ class Url:
 
     def __ne__(self, otherurl):
         return not self.__eq__(self, otherurl)
+
+
+def _enable_sftp_in_urlparse():
+    """Teach the urlparse module about the sftp scheme.
+
+    That allows the helpers in this module to operate usefully on sftp URLs.
+    This fix was suggested by Jamesh Henstridge and is said to be used by bzr
+    and other unrelated projects.
+
+    Without that, some operations on sftp URLs give obviously wrong results.
+    For example: urlappend('sftp://foo/bar', 'gam') => 'gam'
+
+    >>> urlappend('sftp://foo/bar', 'gam')
+    'sftp://foo/bar/gam'
+    """
+    if 'sftp' not in urlparse_module.uses_netloc:
+        urlparse_module.uses_netloc.append('sftp')
+    if 'sftp' not in urlparse_module.uses_relative:
+        urlparse_module.uses_relative.append('sftp')
+
+
+# Extend urlparse to support sftp at module load time.
+_enable_sftp_in_urlparse()
 
 
 def urlappend(baseurl, path):

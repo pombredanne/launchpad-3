@@ -172,13 +172,12 @@ def set_login_in_launchbag_when_principal_identified(event):
     """Subscriber for IPrincipalIdentifiedEvent that sets 'login' in launchbag.
     """
     launchbag = getUtility(IOpenLaunchBag)
+    # Basic auths principal identified event is also an ILoggedInEvent.
+    # Cookie auth seperates these two events.
     loggedinevent = ILoggedInEvent(event, None)
     if loggedinevent is None:
         # We must be using session auth.
-        session = ISession(event.request)
-        authdata = session['launchpad.authenticateduser']
-        assert authdata['personid'] == event.principal.id
-        launchbag.setLogin(authdata['login'])
+        launchbag.setLogin(event.login)
     else:
         launchbag.setLogin(loggedinevent.login)
 

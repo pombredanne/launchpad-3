@@ -1,129 +1,161 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 #
-
-"""Tests for publishing.py"""
+"""Tests for publisher class."""
 
 __metaclass__ = type
 
-import os
-import sys
-import shutil
-from StringIO import StringIO
 import unittest
+import os
 
-from zope.component import getUtility
-
-from canonical.archivepublisher.config import Config
-from canonical.archivepublisher.pool import (
-    DiskPool, Poolifier)
-from canonical.archivepublisher.tests.util import (
-    FakeSourcePublishing, FakeBinaryPublishing, FakeLogger)
-from canonical.launchpad.ftests.harness import (
-    LaunchpadZopelessTestCase, LaunchpadZopelessTestSetup)
-from canonical.launchpad.interfaces import (
-    ILibraryFileAliasSet, IDistributionSet)
-from canonical.librarian.client import LibrarianClient
+from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
+from canonical.lp.dbschema import (
+    PackagePublishingStatus, PackagePublishingPocket,
+    DistributionReleaseStatus)
 
 
-class TestPublisher(LaunchpadZopelessTestCase):
-    dbuser = 'lucille'
+class TestPublisher(TestNativePublishingBase):
 
-    # Setup creates a pool dir...
-    def setUp(self):
-        LaunchpadZopelessTestCase.setUp(self)
-        self.library = LibrarianClient()
-        self._distribution = getUtility(IDistributionSet)['ubuntutest']
-        self._config = Config(self._distribution)
-        self._config.setupArchiveDirs()
-
-        self._pooldir = self._config.poolroot
-        self._overdir = self._config.overrideroot
-        self._listdir = self._config.overrideroot
-        self._logger = FakeLogger()
-        self._dp = DiskPool(Poolifier(), self._pooldir, self._logger)
-
-    def addMockFile(self, filename, content):
-        """Add a mock file in Librarian.
-
-        Returns a ILibraryFileAlias corresponding to the file uploaded.
-        """
-        alias_id = self.library.addFile(
-            filename, len(content), StringIO(content), 'application/text')
-        LaunchpadZopelessTestSetup.txn.commit()
-        return getUtility(ILibraryFileAliasSet)[alias_id]
-
-    def getFakePubSource(self, sourcename, component, leafname,
-                         section='', dr='',
-                         filecontent="I do not care about sources."):
-        """Return a mock source publishing record."""
-        alias = self.addMockFile(leafname, filecontent)
-        return FakeSourcePublishing(sourcename, component, leafname, alias,
-                                    section, dr)
-
-    def getFakePubBinary(self, binaryname, component, filename,
-                         section='', dr='', priority=0, archtag='',
-                         filecontent="I do not care about binaries."):
-        """Return a mock binary publishing record."""
-        alias = self.addMockFile(filename, filecontent)
-        return FakeBinaryPublishing(binaryname, component, filename, alias,
-                                    section, dr, priority, archtag)
-
-    # Tear down blows the pool dir away...
-    def tearDown(self):
-        LaunchpadZopelessTestCase.tearDown(self)
-        shutil.rmtree(self._config.distroroot)
+    def assertDirtyPocketsContents(self, expected, dirty_pockets):
+        contents = [(str(dr_name), pocket.name) for dr_name, pocket in
+                    dirty_pockets]
+        self.assertEqual(expected, contents)
 
     def testInstantiate(self):
-        """canonical.archivepublisher.Publisher should be instantiatable"""
-        from canonical.archivepublisher import Publisher
-        Publisher(self._logger, self._config, self._dp, self._distribution)
+        """Publisher should be instantiatable"""
+        from canonical.archivepublisher.publishing import Publisher
+        Publisher(self.logger, self.config, self.disk_pool, self.ubuntutest)
 
-    def testPathFor(self):
-        """canonical.archivepublisher.Publisher._pathfor should work"""
-        from canonical.archivepublisher import Publisher
-        p = Publisher(self._logger, self._config, self._dp, self._distribution)
-        cases = (
-            ("main", "foo", None, "%s/main/f/foo" % self._config.poolroot),
-            ("main", "foo", "foo.deb", "%s/main/f/foo/foo.deb"
-             % self._config.poolroot)
-            )
-        for case in cases:
-            self.assertEqual( case[3], p._pathfor(case[0], case[1], case[2]) )
+    def testPublishing(self):
+        """Test the non-careful publishing procedure.
 
-    def testPublishOverrides(self):
-        """canonical.archivepublisher.Publisher.publishOverrides should work"""
-        from canonical.archivepublisher import Publisher
-        p = Publisher(self._logger, self._config, self._dp, self._distribution)
-        src = [self.getFakePubSource(
-            "foo", "main", "foo.dsc", "misc", "warty")]
-        bin = [self.getFakePubBinary(
-            "foo", "main", "foo.deb", "misc", "warty", 10, "i386")]
-        p.publishOverrides(src, bin)
-        # Check that the files exist
-        os.stat("%s/override.warty.main" % self._overdir)
-        os.stat("%s/override.warty.main.src" % self._overdir)
+        With one PENDING record, respective pocket *dirtied*.
+        """
+        from canonical.archivepublisher.publishing import Publisher
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool, self.ubuntutest)
 
-    def testPublishFileLists(self):
-        """canonical.archivepublisher.Publisher.publishFileLists should work"""
-        from canonical.archivepublisher import Publisher
-        p = Publisher(self._logger, self._config, self._dp, self._distribution)
-        src = [self.getFakePubSource(
-            "foo", "main", "foo.dsc", "misc", "warty")]
-        bin = [self.getFakePubBinary(
-            "foo", "main", "foo.deb", "misc", "warty", 10, "i386")]
-        p.publishFileLists(src, bin)
-        os.stat("%s/warty_main_source" % self._listdir)
-        os.stat("%s/warty_main_binary-i386" % self._listdir)
+        pub_source = self.getPubSource(
+            "foo", "main", "foo.dsc", filecontent='Hello world',
+            status=PackagePublishingStatus.PENDING)
 
-    def testGenerateConfig(self):
-        """Generate apt-ftparchive config"""
-        from canonical.archivepublisher import Publisher
-        p = Publisher(self._logger, self._config, self._dp, self._distribution)
-        p.generateAptFTPConfig()
-        # XXX: dsilvers 2004-11-15
-        # For now, all we can sensibly do is assert that the config was created
-        # In future we may parse it and check values make sense.
+        publisher.A_publish(False)
+        self.layer.txn.commit()
+
+        self.assertDirtyPocketsContents(
+            [('breezy-autotest', 'RELEASE')], publisher.dirty_pockets)
+        self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
+
+        # file got published
+        foo_path = "%s/main/f/foo/foo.dsc" % self.pool_dir
+        self.assertEqual(open(foo_path).read().strip(), 'Hello world')
+
+    def testPublishingSpecificDistroRelease(self):
+        """Test the publishing procedure with the suite argument.
+
+        To publish a specific distrorelease.
+        """
+        from canonical.archivepublisher.publishing import Publisher
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool, self.ubuntutest,
+            allowed_suites=[('hoary-test', PackagePublishingPocket.RELEASE)])
+
+        pub_source = self.getPubSource(
+            "foo", "main", "foo.dsc", filecontent='foo',
+            status=PackagePublishingStatus.PENDING,
+            pocket=PackagePublishingPocket.RELEASE,
+            distrorelease=self.ubuntutest['breezy-autotest'])
+        pub_source2 = self.getPubSource(
+            "baz", "main", "baz.dsc", filecontent='baz',
+            status=PackagePublishingStatus.PENDING,
+            pocket=PackagePublishingPocket.RELEASE,
+            distrorelease=self.ubuntutest['hoary-test'])
+
+        publisher.A_publish(force_publishing=False)
+        self.layer.txn.commit()
+
+        self.assertDirtyPocketsContents(
+            [('hoary-test', 'RELEASE')], publisher.dirty_pockets)
+        self.assertEqual(pub_source2.status, PackagePublishingStatus.PUBLISHED)
+        self.assertEqual(pub_source.status, PackagePublishingStatus.PENDING)
+
+    def testPublishingSpecificPocket(self):
+        """Test the publishing procedure with the suite argument.
+
+        To publish a specific pocket.
+        """
+        from canonical.archivepublisher.publishing import Publisher
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool, self.ubuntutest,
+            allowed_suites=[('breezy-autotest',
+                             PackagePublishingPocket.UPDATES)])
+
+        self.ubuntutest['breezy-autotest'].releasestatus = (
+            DistributionReleaseStatus.CURRENT)
+
+        pub_source = self.getPubSource(
+            "foo", "main", "foo.dsc", filecontent='foo',
+            status=PackagePublishingStatus.PENDING,
+            pocket=PackagePublishingPocket.UPDATES,
+            distrorelease=self.ubuntutest['breezy-autotest'])
+        pub_source2 = self.getPubSource(
+            "baz", "main", "baz.dsc", filecontent='baz',
+            status=PackagePublishingStatus.PENDING,
+            pocket=PackagePublishingPocket.BACKPORTS,
+            distrorelease=self.ubuntutest['breezy-autotest'])
+
+        publisher.A_publish(force_publishing=False)
+        self.layer.txn.commit()
+
+        self.assertDirtyPocketsContents(
+            [('breezy-autotest', 'UPDATES')], publisher.dirty_pockets)
+        self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
+        self.assertEqual(pub_source2.status, PackagePublishingStatus.PENDING)
+
+    def testNonCarefulPublishing(self):
+        """Test the non-careful publishing procedure.
+
+        With one PUBLISHED record, no pockets *dirtied*.
+        """
+        from canonical.archivepublisher.publishing import Publisher
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool, self.ubuntutest)
+
+        pub_source = self.getPubSource(
+            "foo", "main", "foo.dsc", status=PackagePublishingStatus.PUBLISHED)
+
+        # a new non-careful publisher won't find anything to publish, thus
+        # no pockets will be *dirtied*.
+        publisher.A_publish(False)
+
+        self.assertDirtyPocketsContents([], publisher.dirty_pockets)
+        # nothing got published
+        foo_path = "%s/main/f/foo/foo.dsc" % self.pool_dir
+        self.assertEqual(False, os.path.exists(foo_path))
+
+    def testCarefulPublishing(self):
+        """Test the careful publishing procedure.
+
+        With one PUBLISHED record, pocket gets *dirtied*.
+        """
+        from canonical.archivepublisher.publishing import Publisher
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool, self.ubuntutest)
+
+        pub_source = self.getPubSource(
+            "foo", "main", "foo.dsc", filecontent='Hello world',
+            status=PackagePublishingStatus.PUBLISHED)
+
+        # A careful publisher run will re-publish the PUBLISHED records,
+        # then we will have a corresponding dirty_pocket entry.
+        publisher.A_publish(True)
+
+        self.assertDirtyPocketsContents(
+            [('breezy-autotest', 'RELEASE')], publisher.dirty_pockets)
+        # file got published
+        foo_path = "%s/main/f/foo/foo.dsc" % self.pool_dir
+        self.assertEqual(open(foo_path).read().strip(), 'Hello world')
 
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
+

@@ -7,7 +7,7 @@
     <tal:block metal:fill-slot="head_epilogue">
       <tal:visible_emails condition="not: context/hide_email_addresses">
         <link rel="meta" type="application/rdf+xml" title="FOAF" href="+rdf"
-              tal:condition="context/preferredemail" />
+              tal:condition="context/is_valid_person_or_team" />
       </tal:visible_emails>
     </tal:block>
 </head>
@@ -20,25 +20,29 @@
 
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/@@+portlet-calendar" />
   <div tal:replace="structure context/@@+portlet-latesttickets" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
-      <img
-        tal:condition="context/hackergotchi"
-        tal:attributes="src context/hackergotchi/url"
-        style="float: right; margin: 0 0 0.5em 0.5em"
-        alt=""
-      />
-      <tal:homepage tal:condition="context/homepage_content"
-                    content="structure context/homepage_content/fmt:text-to-html">
-         The person's homepage goes here.
-      </tal:homepage>
-      <tal:description condition="context/teamdescription">
-        <b>About this team:</b>
-        <span tal:replace="context/teamdescription">DESCRIPTION</span>
-      </tal:description>
+
+<tal:valid-person-or-team condition="context/is_valid_person_or_team">
+
+  <h1 tal:content="context/browsername" />
+
+  <img
+    tal:condition="context/hackergotchi"
+    tal:attributes="src context/hackergotchi/secure_url"
+    style="float: right; margin: 0 0 0.5em 0.5em"
+    alt=""
+  />
+  <tal:homepage tal:condition="context/homepage_content"
+                content="structure context/homepage_content/fmt:text-to-html">
+     The person's homepage goes here.
+  </tal:homepage>
+  <tal:description condition="context/teamdescription">
+    <b>About this team:</b>
+    <span tal:replace="context/teamdescription">DESCRIPTION</span>
+  </tal:description>
 
   <h2>Details</h2>
 
@@ -74,7 +78,7 @@
       </td>
     </tr> 
 
-    <tr tal:condition="view/gpgkeysCount">
+    <tr tal:condition="context/gpgkeys">
       <th>OpenPGP keys:</th>
       <td>
         <tal:block repeat="key context/gpgkeys">
@@ -89,7 +93,7 @@
       <th>SSH Keys:</th>
       <td>
         <a href="+sshkeys">
-          <span tal:replace="view/sshkeysCount">0</span> SSH key(s)
+          <span tal:replace="context/sshkeys/count">0</span> SSH key(s)
         </a>
       </td>
     </tr>
@@ -174,7 +178,6 @@
     </tal:block>
   </tal:members>
 
-
   <tal:memberships condition="not: context/isTeam">
     <tal:block condition="context/myactivememberships">
       <h2>Team memberships</h2>
@@ -198,7 +201,7 @@
     </p>
   </tal:memberships>
 
-  <tal:block condition="context/isTeam">
+  <tal:isteam condition="context/isTeam">
     <h2>Your involvement</h2>
 
     <p tal:condition="not: request/lp:person">
@@ -224,7 +227,36 @@
         </p>
       </tal:block>
     </tal:block>
-  </tal:block>
+  </tal:isteam>
+
+</tal:valid-person-or-team>
+
+<tal:invalid-person condition="not: context/is_valid_person_or_team">
+  <h1 tal:content="context/browsername" />
+
+  <p><span tal:replace="context/browsername" /> does not use Launchpad.
+    <tal:block condition="context/creation_comment">
+      (This page was created on 
+      <span tal:replace="context/datecreated/fmt:date" />
+      <span tal:replace="context/creation_comment" />.)
+    </tal:block>
+    <tal:block condition="not: context/creation_comment">
+      (This page was created on 
+      <span tal:replace="context/datecreated/fmt:date" />.)
+    </tal:block>
+  </p>
+
+  <tal:logged-in condition="request/lp:person">
+    <a tal:attributes="
+      href string:/people/+requestmerge?field.dupeaccount=${context/name}"
+    >Hey, I'm <span tal:replace="context/browsername" /></a>
+  </tal:logged-in>
+
+  <tal:not-logged-in condition="not: request/lp:person">
+    <a href="+claim">Hey, I'm <span tal:replace="context/browsername" /></a>
+  </tal:not-logged-in>
+
+</tal:invalid-person>
 
 </div> 
 </body>

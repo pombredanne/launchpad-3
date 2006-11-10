@@ -3,3 +3,5 @@
 """Module docstring goes here."""
 
 __metaclass__ = type
+__all__ = []
+

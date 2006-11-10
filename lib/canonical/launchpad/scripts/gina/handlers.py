@@ -13,7 +13,6 @@ __all__ = [
     'SourcePackageHandler',
     'SourcePackagePublisher',
     'DistroHandler',
-    'PersonHandler',
     ]
 
 import os
@@ -28,14 +27,15 @@ from zope.component import getUtility
 from canonical.database.sqlbase import quote
 from canonical.database.constants import nowUTC
 
-from canonical.archivepublisher import Poolifier, parse_tagfile
+from canonical.archivepublisher.diskpool import poolify
+from canonical.archivepublisher.tagfiles import parse_tagfile
 
-from canonical.lp.dbschema import (PackagePublishingStatus, BuildStatus,
-    SourcePackageFormat)
+from canonical.lp.dbschema import (
+    PackagePublishingStatus, BuildStatus, SourcePackageFormat,
+    PersonCreationRationale)
 
 from canonical.launchpad.scripts import log
-from canonical.launchpad.scripts.gina.library import (getLibraryAlias,
-                                                      checkLibraryForFile)
+from canonical.launchpad.scripts.gina.library import getLibraryAlias
 from canonical.launchpad.scripts.gina.packages import (SourcePackageData,
     urgencymap, prioritymap, get_dsc_path, licence_cache, read_dsc,
     PoolFileNotFound)
@@ -49,9 +49,6 @@ from canonical.launchpad.database import (Distribution, DistroRelease,
 
 from canonical.launchpad.interfaces import IPersonSet, IBinaryPackageNameSet
 from canonical.launchpad.helpers import getFileType, getBinaryPackageFormat
-
-# Stash a reference to the poolifier method
-poolify = Poolifier().poolify
 
 
 def check_not_in_librarian(files, archive_root, directory):
@@ -388,7 +385,6 @@ class SourcePackageHandler:
     on the launchpad db a little easier.
     """
     def __init__(self, KTDB, archive_root, keyrings, pocket):
-        self.person_handler = PersonHandler()
         self.distro_handler = DistroHandler()
         self.ktdb = KTDB
         self.archive_root = archive_root
@@ -531,10 +527,9 @@ class SourcePackageHandler:
 
         Returns the created SourcePackageRelease, or None if it failed.
         """
-
         displayname, emailaddress = src.maintainer
-        maintainer = self.person_handler.ensurePerson(displayname,
-                                                      emailaddress)
+        maintainer = ensure_person(
+            displayname, emailaddress, src.package, distrorelease.displayname)
 
         # XXX: Check it later -- Debonzi 20050516
         #         if src.dsc_signing_key_owner:
@@ -652,7 +647,6 @@ class BinaryPackageHandler:
     """Handler to deal with binarypackages."""
     def __init__(self, sphandler, archive_root, pocket):
         # Create other needed object handlers.
-        self.person_handler = PersonHandler()
         self.distro_handler = DistroHandler()
         self.source_handler = sphandler
         self.archive_root = archive_root
@@ -923,26 +917,22 @@ class BinaryPackagePublisher:
 
 
 
-class PersonHandler:
-    """Class to handle person."""
+def ensure_person(displayname, emailaddress, package_name, distrorelease_name):
+    """Return a person by its email.
 
-    def ensurePerson(self, displayname, emailaddress):
-        """Return a person by its email.
+    :package_name: The imported package that mentions the person with the
+                   given email address.
+    :distrorelease_name: The distrorelease into which the package is to be
+                         imported.
 
-        Create and Return if does not exist.
-        """
-        person = self.checkPerson(emailaddress)
-        if person is None:
-            return self.createPerson(emailaddress, displayname)
-        return person
-
-    def checkPerson(self, emailaddress):
-        """Check if a person already exists using its email."""
-        return getUtility(IPersonSet).getByEmail(emailaddress, default=None)
-
-    def createPerson(self, emailaddress, displayname):
-        """Create a new Person"""
+    Create and return a new Person if it does not exist.
+    """
+    person = getUtility(IPersonSet).getByEmail(emailaddress)
+    if person is None:
+        comment=('when the %s package was imported into %s'
+                 % (package_name, distrorelease_name))
         person, email = getUtility(IPersonSet).createPersonAndEmail(
-            email=emailaddress, displayname=displayname)
-        return person
+            emailaddress, PersonCreationRationale.SOURCEPACKAGEIMPORT,
+            comment=comment, displayname=displayname)
+    return person
 

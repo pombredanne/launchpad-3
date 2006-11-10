@@ -5,28 +5,26 @@ __metaclass__ = type
 __all__ = [
     'ProductSeries',
     'ProductSeriesSet',
-    'ProductSeriesSourceSet',
     ]
 
 
 import datetime
-import sets
 from warnings import warn
 
 from zope.interface import implements
 from sqlobject import (
     IntervalCol, ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
 
-from canonical.database.sqlbase import flush_database_updates
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.launchpad.interfaces import (
-    IProductSeries, IProductSeriesSet, IProductSeriesSource,
-    IProductSeriesSourceAdmin, IProductSeriesSourceSet, NotFoundError)
+    IProductSeries, IProductSeriesSet, IProductSeriesSourceAdmin,
+    NotFoundError)
 
-from canonical.launchpad.database.bug import get_bug_tags
+from canonical.launchpad.database.bug import (
+    get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.packaging import Packaging
@@ -41,10 +39,9 @@ from canonical.lp.dbschema import (
     SpecificationStatus)
 
 
-
-class ProductSeries(SQLBase, BugTargetBase):
+class ProductSeries(SQLBase):
     """A series of product releases."""
-    implements(IProductSeries, IProductSeriesSource, IProductSeriesSourceAdmin)
+    implements(IProductSeries, IProductSeriesSourceAdmin)
     _table = 'ProductSeries'
 
     product = ForeignKey(dbName='product', foreignKey='Product', notNull=True)
@@ -55,7 +52,10 @@ class ProductSeries(SQLBase, BugTargetBase):
         foreignKey="Person", dbName="owner", notNull=True)
     driver = ForeignKey(
         foreignKey="Person", dbName="driver", notNull=False, default=None)
-    branch = ForeignKey(foreignKey='Branch', dbName='branch', default=None)
+    import_branch = ForeignKey(foreignKey='Branch', dbName='import_branch',
+                               default=None)
+    user_branch = ForeignKey(foreignKey='Branch', dbName='user_branch',
+                             default=None)
     importstatus = EnumCol(dbName='importstatus', notNull=False,
         schema=ImportStatus, default=None)
     datelastsynced = UtcDateTimeCol(default=None)
@@ -68,16 +68,8 @@ class ProductSeries(SQLBase, BugTargetBase):
     # where are the tarballs released from this branch placed?
     cvstarfileurl = StringCol(default=None)
     svnrepository = StringCol(default=None)
-    # XXX bkrepository is in the data model but not here
-    #   -- matsubara, 2005-10-06
-    releaseroot = StringCol(default=None)
     releasefileglob = StringCol(default=None)
     releaseverstyle = StringCol(default=None)
-    # these fields tell us where to publish upstream as bazaar branch
-    targetarcharchive = StringCol(default=None)
-    targetarchcategory = StringCol(default=None)
-    targetarchbranch = StringCol(default=None)
-    targetarchversion = StringCol(default=None)
     # key dates on the road to import happiness
     dateautotested = UtcDateTimeCol(default=None)
     datestarted = UtcDateTimeCol(default=None)
@@ -97,18 +89,20 @@ class ProductSeries(SQLBase, BugTargetBase):
         return self.name
 
     @property
-    def bugtargetname(self):
-        """See IBug."""
-        return "%s %s (upstream)" % (self.product.name, self.name)
-
-    @property
     def drivers(self):
-        """See IDistroRelease."""
+        """See IProductSeries."""
         drivers = set()
         drivers.add(self.driver)
         drivers = drivers.union(self.product.drivers)
         drivers.discard(None)
         return sorted(drivers, key=lambda x: x.browsername)
+
+    @property
+    def series_branch(self):
+        """See IProductSeries."""
+        if self.user_branch is not None:
+            return self.user_branch
+        return self.import_branch
 
     @property
     def potemplates(self):
@@ -284,19 +278,6 @@ class ProductSeries(SQLBase, BugTargetBase):
         results = Specification.select(query, orderBy=order, limit=quantity)
         return results.prejoin(['assignee', 'approver', 'drafter'])
 
-    def searchTasks(self, search_params):
-        """See IBugTarget."""
-        search_params.setProductSeries(self)
-        return BugTaskSet().search(search_params)
-
-    def getUsedBugTags(self):
-        """See IBugTarget."""
-        return get_bug_tags("BugTask.productseries = %s" % sqlvalues(self))
-
-    def createBug(self, bug_params):
-        """See IBugTarget."""
-        raise NotImplementedError('Cannot file a bug against a productseries')
-
     def getSpecification(self, name):
         """See ISpecificationTarget."""
         return self.product.getSpecification(name)
@@ -396,12 +377,6 @@ class ProductSeriesSet:
         except SQLObjectNotFound:
             return default
 
-
-# XXX matsubara, 2005-11-30: This class should be merged with ProductSeriesSet
-# https://launchpad.net/products/launchpad-bazaar/+bug/5247
-class ProductSeriesSourceSet:
-    """See IProductSeriesSourceSet"""
-    implements(IProductSeriesSourceSet)
     def search(self, ready=None, text=None, forimport=None, importstatus=None,
                start=None, length=None):
         query, clauseTables = self._querystr(
@@ -427,7 +402,7 @@ class ProductSeriesSourceSet:
                          import status.
         """
         queries = []
-        clauseTables = sets.Set()
+        clauseTables = set()
         # deal with the cases which require project and product
         if ( ready is not None ) or text:
             if text:
@@ -462,7 +437,7 @@ class ProductSeriesSourceSet:
         return query, clauseTables
 
     def getByCVSDetails(self, cvsroot, cvsmodule, cvsbranch, default=None):
-        """See IProductSeriesSourceSet."""
+        """See IProductSeriesSet."""
         result = ProductSeries.selectOneBy(
             cvsroot=cvsroot, cvsmodule=cvsmodule, cvsbranch=cvsbranch)
         if result is None:
@@ -470,8 +445,9 @@ class ProductSeriesSourceSet:
         return result
 
     def getBySVNDetails(self, svnrepository, default=None):
-        """See IProductSeriesSourceSet."""
+        """See IProductSeriesSet."""
         result = ProductSeries.selectOneBy(svnrepository=svnrepository)
         if result is None:
             return default
         return result
+

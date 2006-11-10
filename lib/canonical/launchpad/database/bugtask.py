@@ -4,7 +4,8 @@ __metaclass__ = type
 __all__ = [
     'BugTask',
     'BugTaskSet',
-    'bugtask_sort_key']
+    'bugtask_sort_key',
+    'get_bug_privacy_filter']
 
 import urllib
 import cgi
@@ -32,7 +33,7 @@ from canonical.launchpad.interfaces import (
     UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
 
 
-debbugsseveritymap = {None:        dbschema.BugTaskImportance.UNTRIAGED,
+debbugsseveritymap = {None:        dbschema.BugTaskImportance.UNDECIDED,
                       'wishlist':  dbschema.BugTaskImportance.WISHLIST,
                       'minor':     dbschema.BugTaskImportance.LOW,
                       'normal':    dbschema.BugTaskImportance.MEDIUM,
@@ -49,27 +50,27 @@ def bugtask_sort_key(bugtask):
           - ubuntu first among the distros
     """
     if bugtask.product:
-        product = bugtask.product.name
+        product_name = bugtask.product.name
     else:
-        product = None
+        product_name = None
     if bugtask.distribution:
-        distribution = bugtask.distribution.name
+        distribution_name = bugtask.distribution.name
     else:
-        distribution = None
+        distribution_name = None
     if bugtask.distrorelease:
-        distrorelease = bugtask.distrorelease.version
-        distribution = bugtask.distrorelease.distribution.name
+        distrorelease_name = bugtask.distrorelease.version
+        distribution_name = bugtask.distrorelease.distribution.name
     else:
-        distrorelease = None
+        distrorelease_name = None
     if bugtask.sourcepackagename:
-        sourcepackagename = bugtask.sourcepackagename.name
+        sourcepackage_name = bugtask.sourcepackagename.name
     else:
-        sourcepackagename = None
+        sourcepackage_name = None
     # and move ubuntu to the top
-    if distribution == 'ubuntu':
-        distribution = '-'
-    return (bugtask.bug, distribution, product, distrorelease,
-            sourcepackagename)
+    if distribution_name == 'ubuntu':
+        distribution_name = '-'
+    return (bugtask.bug.id, distribution_name, product_name,
+            distrorelease_name, sourcepackage_name)
 
 
 class BugTask(SQLBase, BugTaskMixin):
@@ -102,7 +103,7 @@ class BugTask(SQLBase, BugTaskMixin):
     importance = dbschema.EnumCol(
         dbName='importance', notNull=True,
         schema=dbschema.BugTaskImportance,
-        default=dbschema.BugTaskImportance.UNTRIAGED)
+        default=dbschema.BugTaskImportance.UNDECIDED)
     assignee = ForeignKey(
         dbName='assignee', foreignKey='Person',
         notNull=False, default=None)
@@ -351,29 +352,6 @@ class BugTask(SQLBase, BugTaskMixin):
 
         return header_value
 
-    @property
-    def statusdisplayhtml(self):
-        """See canonical.launchpad.interfaces.IBugTask."""
-        # XXX sabdfl 20060813 this should be in browser code, not database
-        # code!
-        assignee = self.assignee
-        status = self.status
-
-        if assignee:
-            assignee_html = (
-                '<img alt="" src="/@@/user" /> '
-                '<a href="/people/%s/+assignedbugs">%s</a>' % (
-                    urllib.quote_plus(assignee.name),
-                    cgi.escape(assignee.browsername)))
-
-            if status in (dbschema.BugTaskStatus.REJECTED,
-                          dbschema.BugTaskStatus.FIXCOMMITTED):
-                return '%s by %s' % (status.title.lower(), assignee_html)
-            else:
-                return '%s, assigned to %s' % (status.title.lower(), assignee_html)
-        else:
-            return status.title.lower() + ' (unassigned)'
-
 
 def search_value_to_where_condition(search_value):
     """Convert a search value to a WHERE condition.
@@ -405,6 +383,27 @@ def search_value_to_where_condition(search_value):
         # only NULL values for the column named by
         # arg_name.
         return "IS NULL"
+
+
+def get_bug_privacy_filter(user):
+    """An SQL filter for search results that adds privacy-awareness."""
+    if user is None:
+        return "Bug.private = FALSE"
+    admin_team = getUtility(ILaunchpadCelebrities).admin
+    if user.inTeam(admin_team):
+        return ""
+    # A subselect is used here because joining through
+    # TeamParticipation is only relevant to the "user-aware"
+    # part of the WHERE condition (i.e. the bit below.) The
+    # other half of this condition (see code above) does not
+    # use TeamParticipation at all.
+    return """
+        (Bug.private = FALSE OR Bug.id in (
+             SELECT BugSubscription.bug
+             FROM BugSubscription, TeamParticipation
+             WHERE TeamParticipation.person = %(personid)s AND
+                   BugSubscription.person = TeamParticipation.team))
+                     """ % sqlvalues(personid=user.id)
 
 
 class BugTaskSet:
@@ -450,7 +449,6 @@ class BugTaskSet:
             'product': params.product,
             'distribution': params.distribution,
             'distrorelease': params.distrorelease,
-            'productseries': params.productseries,
             'milestone': params.milestone,
             'assignee': params.assignee,
             'sourcepackagename': params.sourcepackagename,
@@ -492,6 +490,10 @@ class BugTaskSet:
         if params.omit_dupes:
             extra_clauses.append("Bug.duplicateof is NULL")
 
+        if params.has_cve:
+            extra_clauses.append("BugTask.bug IN "
+                                 "(SELECT DISTINCT bug FROM BugCve)")
+
         if params.attachmenttype is not None:
             clauseTables.append('BugAttachment')
             if isinstance(params.attachmenttype, any):
@@ -518,7 +520,8 @@ class BugTaskSet:
                     sqlvalues(personid=params.subscriber.id))
 
         if params.component:
-            clauseTables += ["SourcePackagePublishing", "SourcePackageRelease"]
+            clauseTables += ["SourcePackagePublishingHistory",
+                             "SourcePackageRelease"]
             distrorelease = None
             if params.distribution:
                 distrorelease = params.distribution.currentrelease
@@ -533,17 +536,21 @@ class BugTaskSet:
             else:
                 component_ids = sqlvalues(params.component)
 
-            extra_clauses.extend([
-                "BugTask.sourcepackagename = SourcePackageRelease.sourcepackagename",
-                "SourcePackageRelease.id = SourcePackagePublishing.sourcepackagerelease",
-                "SourcePackagePublishing.distrorelease = %d" % distrorelease.id,
-                "SourcePackagePublishing.component IN (%s)" % ', '.join(component_ids),
-                "SourcePackagePublishing.status = %s" %
-                    dbschema.PackagePublishingStatus.PUBLISHED.value])
+            extra_clauses.extend(["""
+            BugTask.sourcepackagename =
+                SourcePackageRelease.sourcepackagename AND
+            SourcePackageRelease.id =
+                SourcePackagePublishingHistory.sourcepackagerelease AND
+            SourcePackagePublishingHistory.distrorelease = %s AND
+            SourcePackagePublishingHistory.component IN %s AND
+            SourcePackagePublishingHistory.status = %s
+            """ % sqlvalues(distrorelease, component_ids,
+                            dbschema.PackagePublishingStatus.PUBLISHED)])
 
         if params.pending_bugwatch_elsewhere:
             # Include only bugtasks that have other bugtasks on targets
-            # not using Malone, and have no bug watch.
+            # not using Malone, which are not Rejected, and have no bug
+            # watch.
             pending_bugwatch_elsewhere_clause = """
                 EXISTS (
                     SELECT TRUE FROM BugTask AS RelatedBugTask
@@ -558,8 +565,9 @@ class BugTaskSet:
                             OtherDistribution.official_malone IS FALSE
                             OR OtherProduct.official_malone IS FALSE
                             )
+                        AND RelatedBugTask.status != %s
                     )
-                """
+                """ % sqlvalues(dbschema.BugTaskStatus.REJECTED)
 
             extra_clauses.append(pending_bugwatch_elsewhere_clause)
 
@@ -616,7 +624,7 @@ class BugTaskSet:
             extra_clauses.append(tags_clause)
             clauseTables.append('BugTag')
 
-        clause = self._getPrivacyFilter(params.user)
+        clause = get_bug_privacy_filter(params.user)
         if clause:
             extra_clauses.append(clause)
 
@@ -686,7 +694,7 @@ class BugTaskSet:
             filters.append(
                 'BugTask.importance >= %s' % sqlvalues(minimportance))
 
-        privacy_filter = self._getPrivacyFilter(user)
+        privacy_filter = get_bug_privacy_filter(user)
         if privacy_filter:
             filters.append(privacy_filter)
 
@@ -699,26 +707,6 @@ class BugTaskSet:
     def getOrderByColumnDBName(self, col_name):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
         return self._ORDERBY_COLUMN[col_name]
-
-    def _getPrivacyFilter(self, user):
-        """An SQL filter for search results that adds privacy-awareness."""
-        if user is None:
-            return "Bug.private = FALSE"
-        admin_team = getUtility(ILaunchpadCelebrities).admin
-        if user.inTeam(admin_team):
-            return ""
-        # A subselect is used here because joining through
-        # TeamParticipation is only relevant to the "user-aware"
-        # part of the WHERE condition (i.e. the bit below.) The
-        # other half of this condition (see code above) does not
-        # use TeamParticipation at all.
-        return """
-            (Bug.private = FALSE OR Bug.id in (
-                 SELECT BugSubscription.bug
-                 FROM BugSubscription, TeamParticipation
-                 WHERE TeamParticipation.person = %(personid)s AND
-                       BugSubscription.person = TeamParticipation.team))
-                         """ % sqlvalues(personid=user.id)
 
     def _processOrderBy(self, params):
         # Process the orderby parameter supplied to search(), ensuring

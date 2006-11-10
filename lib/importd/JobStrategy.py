@@ -73,7 +73,7 @@ class CSCVSStrategy(JobStrategy):
         from cscvs.cmds import totla
         import CVS
         config=CVS.Config(self.sourceDir())
-        config.args =  ["--strict", "-b", self.job.bazFullPackageVersion(),
+        config.args =  ["--strict", "-b", self.job.targetBranchName(),
                         flags, revisions, bazpath]
         totla.totla(config, logger, config.args, self.sourceTree())
 
@@ -86,12 +86,17 @@ class CSCVSStrategy(JobStrategy):
         self.dir = dir
         self.logger = logger
         target_manager = aJob.makeTargetManager()
-        target_manager.createMaster()
-        target_manager.createMirror()
         working_dir = self.getWorkingDir(aJob, dir)
         target_path = target_manager.createImportTarget(working_dir)
-        self.runtobaz("-SC", "%s.1:" % aJob.branchfrom, target_path, logger)
-        shutil.rmtree(target_path)
+        # Option -I here to do a full-tree import for the first revision.
+        # No option -C here because the working tree is not at revision 1.
+        self.runtobaz("-SI", "%s.1" % aJob.branchfrom, target_path, logger)
+        # WARNING: Do not use the "1::" syntax for the revision range, because
+        # the svn revision range parser is not stable. If the svn branch to
+        # import was created at revision 42, the previous command will produce
+        # a commit with a cscvs id of "MAIN.42". Then the incremental import
+        # must start on revision 43. -- David Allouche 2006-10-31
+        self._importIncrementally(target_path)
 
     def sync(self, aJob, dir, logger):
         """sync from a concrete type to baz"""
@@ -101,18 +106,35 @@ class CSCVSStrategy(JobStrategy):
         self.aJob = aJob
         self.logger = logger
         self.dir = dir
-        target_manager = aJob.makeTargetManager()
-        target_manager.rollbackToMirror()
-        branch = SCM.branch(self.job.bazFullPackageVersion())
+        working_dir = self.getWorkingDir(aJob, dir)
+        target_path = self._getSyncTarget(working_dir)
+        self._importIncrementally(target_path)
+
+    def _getSyncTarget(self, working_dir):
+        """Retrieve the bzrworking directory when doing a sync.
+
+        This is factored out as a separate method to allow shorting out the
+        this functionality and its dependencies when testing sync.
+
+        :param working_dir: path of job's working directory
+        :return: path of the bzr working tree to import into
+        """
+        target_manager = self.job.makeTargetManager()
+        target_path = target_manager.getSyncTarget(working_dir)
+        return target_path
+
+    def _importIncrementally(self, target_path):
+        """Do an incremental import, starting after the last imported revision.
+
+        :param target_path: path of the bzr workingtree to import into
+        """
+        branch = SCM.branch(self.job.targetBranchName())
         lastCommit = cscvs.findLastCscvsCommit(branch)
         if lastCommit is None:
             raise RuntimeError(
                 "The incremental 'tobaz' was not performed because "
-                "there are no new commits.")
-        working_dir = self.getWorkingDir(aJob, dir)
-        target_path = target_manager.getSyncTarget(working_dir)
-        self.runtobaz("-SC", "%s::" % lastCommit, target_path, logger)
-        shutil.rmtree(target_path)
+                "no cscvs commit was found in the history of the target.")
+        self.runtobaz("-SC", "%s::" % lastCommit, target_path, self.logger)
 
     def sourceDir(self):
         """Get a source directory to work against"""
@@ -294,12 +316,14 @@ class CvsWorkingTree:
         """Initialise or update the cscvs cache.
 
         :precondition: `treeExists` is true.
+        :precondition: the target branch exists for cscvs to scan for imported
+            revisions.
         """
         tree = self.cscvsCvsTree()
         one_week = 168 # hours
         catalog = tree.catalog(
             False, False, None, one_week, "update",
-            tlaBranchName=self._job.bazFullPackageVersion())
+            tlaBranchName=self._job.targetBranchName())
         for branch in sorted(catalog.branches):
             self.logger.critical(
                 "%s revs on %s", len(catalog.getBranch(branch)), branch)
@@ -415,7 +439,7 @@ class SVNStrategy(CSCVSStrategy):
                     SCM.tree(path).update()
                 else:
                     self.logger.debug("getting from SVN: %s %s",
-                                      (repository, self.aJob.module))
+                        repository, self.aJob.module)
                     client=pysvn.Client()
                     client.checkout(repository, path)
             except Exception: # don't leave partial checkouts around

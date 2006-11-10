@@ -24,6 +24,7 @@ class BzrManager:
     """
 
     def __init__(self, job):
+        self.job = job
         self.logger = job.logger
         self.series_id = job.seriesID
         self.push_prefix = job.push_prefix
@@ -33,17 +34,9 @@ class BzrManager:
         # if the script fails.
         self.silent = False
 
-    def createMaster(self):
-       """Do nothing. For compatibility with ArchiveManager."""
-
-    def createMirror(self):
-       """Do nothing. For compatibility with ArchiveManager."""
-
-    def nukeMaster(self):
-       """Do nothing. For compatibility with ArchiveManager."""
-
-    def rollbackToMirror(self):
-        """Do nothing. For compatibility with ArchiveManager."""
+    def targetBranchName(self, dir):
+        working_dir = self.job.getWorkingDir(dir)
+        return self._targetTreePath(working_dir)
 
     def _targetTreePath(self, working_dir):
         return os.path.join(working_dir, "bzrworking")
@@ -53,6 +46,7 @@ class BzrManager:
         # TODO: fail if there is a mirror -- David Allouche 2006-07-28
         path = self._targetTreePath(working_dir)
         BzrDir.create_standalone_workingtree(path)
+        return path
 
     def mirrorBranch(self, working_dir):
         """Run scripts/importd-publish to publish bzrworking."""
@@ -70,6 +64,7 @@ class BzrManager:
         arguments = self._scriptCommand('importd-get-target.py',
             [working_dir, str(self.series_id), self.push_prefix])
         self._runCommand(arguments)
+        return self._targetTreePath(working_dir)
 
     def _scriptCommand(self, name, arguments):
         return ([sys.executable, os.path.join(config.root, 'scripts', name)]

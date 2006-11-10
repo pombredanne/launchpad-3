@@ -2,12 +2,12 @@
 """Launchpad bug-related database table classes."""
 
 __metaclass__ = type
-__all__ = ['Bug', 'BugSet', 'get_bug_tags']
+__all__ = ['Bug', 'BugSet', 'get_bug_tags', 'get_bug_tags_open_count']
 
+import operator
+import re
 from cStringIO import StringIO
 from email.Utils import make_msgid
-import re
-from sets import Set
 
 from zope.app.content_types import guess_content_type
 from zope.component import getUtility
@@ -21,7 +21,8 @@ from sqlobject import SQLObjectNotFound
 from canonical.launchpad.interfaces import (
     IBug, IBugSet, ICveSet, NotFoundError, ILaunchpadCelebrities,
     IDistroBugTask, IDistroReleaseBugTask, ILibraryFileAliasSet,
-    IBugAttachmentSet, IMessage, IUpstreamBugTask)
+    IBugAttachmentSet, IMessage, IUpstreamBugTask,
+    UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT
@@ -33,13 +34,19 @@ from canonical.launchpad.database.message import (
     MessageSet, Message, MessageChunk)
 from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugtask import (
-    BugTask, BugTaskSet, bugtask_sort_key)
+    BugTask, BugTaskSet, bugtask_sort_key, get_bug_privacy_filter)
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugsubscription import BugSubscription
+from canonical.launchpad.database.person import Person
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent)
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lp.dbschema import BugAttachmentType
+
+
+_bug_tag_query_template = """
+        SELECT %(columns)s FROM %(tables)s WHERE
+            %(condition)s GROUP BY BugTag.tag ORDER BY BugTag.tag"""
 
 
 def get_bug_tags(context_clause):
@@ -49,12 +56,53 @@ def get_bug_tags(context_clause):
     specific context. The SQL clause can only use the BugTask table to
     choose the context.
     """
+    from_tables = ['BugTag', 'BugTask']
+    select_columns = ['BugTag.tag']
+    conditions = ['BugTag.bug = BugTask.bug', '(%s)' % context_clause]
+
     cur = cursor()
-    cur.execute(
-        "SELECT DISTINCT BugTag.tag FROM BugTag, BugTask WHERE"
-        " BugTag.bug = BugTask.bug AND (%s) ORDER BY BugTag.tag" % (
-            context_clause))
+    cur.execute(_bug_tag_query_template % dict(
+            columns=', '.join(select_columns),
+            tables=', '.join(from_tables),
+            condition=' AND '.join(conditions)))
     return shortlist([row[0] for row in cur.fetchall()])
+
+
+def get_bug_tags_open_count(maincontext_clause, user,
+                            count_subcontext_clause=None):
+    """Return all the used bug tags with their open bug count.
+
+    maincontext_clause is a SQL condition clause, limiting the used tags
+    to a specific context.
+    count_subcontext_clause is a SQL condition clause, limiting the open bug
+    count to a more limited context, for example a source package.
+
+    Both SQL clauses may only use the BugTask table to choose the context.
+    """
+    from_tables = ['BugTag', 'BugTask', 'Bug']
+    count_conditions = ['BugTask.status IN (%s)' % ','.join(
+        sqlvalues(*UNRESOLVED_BUGTASK_STATUSES))]
+    if count_subcontext_clause:
+        count_conditions.append(count_subcontext_clause)
+    select_columns = [
+        'BugTag.tag',
+        'COUNT (CASE WHEN %s THEN Bug.id ELSE NULL END)' %
+            ' AND '.join(count_conditions),
+        ]
+    conditions = [
+        'BugTag.bug = BugTask.bug',
+        'Bug.id = BugTag.bug',
+        '(%s)' % maincontext_clause]
+    privacy_filter = get_bug_privacy_filter(user)
+    if privacy_filter:
+        conditions.append(privacy_filter)
+
+    cur = cursor()
+    cur.execute(_bug_tag_query_template % dict(
+            columns=', '.join(select_columns),
+            tables=', '.join(from_tables),
+            condition=' AND '.join(conditions)))
+    return shortlist([(row[0], row[1]) for row in cur.fetchall()])
 
 
 class BugTag(SQLBase):
@@ -111,6 +159,7 @@ class Bug(SQLBase):
     cves = SQLRelatedJoin('Cve', intermediateTable='BugCve',
         orderBy='sequence', joinColumn='bug', otherColumn='cve')
     cve_links = SQLMultipleJoin('BugCve', joinColumn='bug', orderBy='id')
+    # XXX: why is subscriptions ordered by ID? -- kiko, 2006-09-23
     subscriptions = SQLMultipleJoin(
             'BugSubscription', joinColumn='bug', orderBy='id',
             prejoins=["person"])
@@ -165,29 +214,80 @@ class Bug(SQLBase):
                 BugSubscription.delete(sub.id)
                 return
 
+    def unsubscribeFromDupes(self, person):
+        """See canonical.launchpad.interfaces.IBug."""
+        bugs_unsubscribed = []
+        for dupe in self.duplicates:
+            if dupe.isSubscribed(person):
+                dupe.unsubscribe(person)
+                bugs_unsubscribed.append(dupe)
+
+        return bugs_unsubscribed
+
     def isSubscribed(self, person):
         """See canonical.launchpad.interfaces.IBug."""
         if person is None:
             return False
 
         bs = BugSubscription.selectBy(bug=self, person=person)
-        return bool(bs.count())
+        return bool(bs)
+
+    def isSubscribedToDupes(self, person):
+        """See canonical.launchpad.interfaces.IBug."""
+        return bool(
+            BugSubscription.select("""
+                bug IN (SELECT id FROM Bug WHERE duplicateof = %d) AND
+                person = %d""" % (self.id, person.id)))
 
     def getDirectSubscribers(self):
         """See canonical.launchpad.interfaces.IBug."""
-        return [sub.person for sub in self.subscriptions]
+        return list(
+            Person.select("""
+                Person.id = BugSubscription.person AND
+                BugSubscription.bug = %d""" % self.id,
+                orderBy="displayname", clauseTables=["BugSubscription"]))
 
     def getIndirectSubscribers(self):
         """See canonical.launchpad.interfaces.IBug."""
+        # "Also notified" and duplicate subscribers are mutually
+        # exclusive, so return both lists.
+        indirect_subscribers = (
+            self.getAlsoNotifiedSubscribers() +
+            self.getSubscribersFromDuplicates())
+
+        return sorted(
+            indirect_subscribers, key=operator.attrgetter("displayname"))
+
+    def getSubscribersFromDuplicates(self):
+        """See IBug."""
         if self.private:
             return []
 
-        indirect_subscribers = set()
+        dupe_subscribers = set(
+            Person.select("""
+                Person.id = BugSubscription.person AND
+                BugSubscription.bug = Bug.id AND
+                Bug.duplicateof = %d""" % self.id,
+                clauseTables=["Bug", "BugSubscription"]))
+
+        # Direct and "also notified" subscribers take precedence over
+        # subscribers from dupes
+        dupe_subscribers -= set(self.getDirectSubscribers())
+        dupe_subscribers -= set(self.getAlsoNotifiedSubscribers())
+
+        return sorted(dupe_subscribers, key=operator.attrgetter("displayname"))
+
+    def getAlsoNotifiedSubscribers(self):
+        """See IBug."""
+        if self.private:
+            return []
+
+        also_notified_subscribers = set()
 
         for bugtask in self.bugtasks:
             # Assignees are indirect subscribers.
             if bugtask.assignee:
-                indirect_subscribers.add(bugtask.assignee)
+                also_notified_subscribers.add(bugtask.assignee)
 
             # Bug contacts are indirect subscribers.
             if (IDistroBugTask.providedBy(bugtask) or
@@ -198,35 +298,31 @@ class Bug(SQLBase):
                     distribution = bugtask.distrorelease.distribution
 
                 if distribution.bugcontact:
-                    indirect_subscribers.add(distribution.bugcontact)
+                    also_notified_subscribers.add(distribution.bugcontact)
 
                 if bugtask.sourcepackagename:
                     sourcepackage = distribution.getSourcePackage(
                         bugtask.sourcepackagename)
-                    indirect_subscribers.update(
+                    also_notified_subscribers.update(
                         pbc.bugcontact for pbc in sourcepackage.bugcontacts)
             else:
                 assert IUpstreamBugTask.providedBy(bugtask)
                 product = bugtask.product
                 if product.bugcontact:
-                    indirect_subscribers.add(product.bugcontact)
+                    also_notified_subscribers.add(product.bugcontact)
                 else:
-                    indirect_subscribers.add(product.owner)
-
-        # Subscribers, whether direct or indirect, from duplicate bugs become
-        # indirect subscribers of this bug.
-        for dupe in self.duplicates:
-            indirect_subscribers.update(dupe.getDirectSubscribers())
-            indirect_subscribers.update(dupe.getIndirectSubscribers())
+                    also_notified_subscribers.add(product.owner)
 
         # Direct subscriptions always take precedence over indirect
         # subscriptions.
         direct_subscribers = set(self.getDirectSubscribers())
-        return list(indirect_subscribers.difference(direct_subscribers))
+        return sorted(
+            (also_notified_subscribers - direct_subscribers),
+            key=operator.attrgetter('displayname'))
 
     def notificationRecipientAddresses(self):
         """See canonical.launchpad.interfaces.IBug."""
-        emails = Set()
+        emails = set()
         for direct_subscriber in self.getDirectSubscribers():
             emails.update(contactEmailAddresses(direct_subscriber))
 
@@ -238,7 +334,7 @@ class Bug(SQLBase):
                 "Indirect subscribers found on private bug. "
                 "A private bug should never have implicit subscribers!")
 
-        return list(emails)
+        return sorted(emails)
 
     def addChangeNotification(self, text, person, when=None):
         """See IBug."""
@@ -274,15 +370,14 @@ class Bug(SQLBase):
 
     def addWatch(self, bugtracker, remotebug, owner):
         """See IBug."""
-        # run through the existing watches and try to find an existing watch
-        # that matches... and return that
-        for watch in self.watches:
-            if (watch.bugtracker == bugtracker and
-                watch.remotebug == remotebug):
-                return watch
-        # ok, we need a new one
-        return BugWatch(bug=self, bugtracker=bugtracker,
-            remotebug=remotebug, owner=owner)
+        # We shouldn't add duplicate bug watches.
+        bug_watch = self.getBugWatch(bugtracker, remotebug)
+        if bug_watch is not None:
+            return bug_watch
+        else:
+            return BugWatch(
+                bug=self, bugtracker=bugtracker,
+                remotebug=remotebug, owner=owner)
 
     def addAttachment(self, owner, file_, description, comment, filename,
                       is_patch=False):
@@ -365,10 +460,29 @@ class Bug(SQLBase):
             BugMessage.message = Message.id AND
             BugMessage.bug = %s
             """ % sqlvalues(self),
-            prejoins=["message", "message.owner"],
             clauseTables=["BugMessage", "Message"],
-            orderBy=["Message.datecreated", "MessageChunk.sequence"])
+            # XXX: See bug 60745. There is an issue that presents itself
+            # here if we prejoin message.owner: because Message is
+            # already in the clauseTables, the SQL generated joins
+            # against message twice and that causes the results to
+            # break. -- kiko, 2006-09-16
+            prejoinClauseTables=["Message"],
+            # Note the ordering by Message.id here; while datecreated in
+            # production is never the same, it can be in the test suite.
+            orderBy=["Message.datecreated", "Message.id",
+                     "MessageChunk.sequence"])
         return chunks
+
+    def getBugWatch(self, bugtracker, remote_bug):
+        """See IBug."""
+        #XXX: This matching is a bit fragile, since
+        #     bugwatch.remotebug is a user editable text string.
+        #     We should improve the matching so that for example
+        #     '#42' matches '42' and so on.
+        #     -- Bjorn Tillenius, 2006-10-11
+        return BugWatch.selectFirstBy(
+            bug=self, bugtracker=bugtracker, remotebug=remote_bug,
+            orderBy='id')
 
     def _getTags(self):
         """Get the tags as a sorted list of strings."""

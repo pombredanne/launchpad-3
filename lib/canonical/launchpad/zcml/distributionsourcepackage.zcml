@@ -13,14 +13,19 @@
                   releases publishing_history binary_package_names
                   current_publishing_records
                   bugcontacts __getitem__ getVersion bugtasks __eq__ __ne__
-                  tickets getTicket searchTasks isBugContact open_bugtasks
+                  searchTasks isBugContact open_bugtasks
                   critical_bugtasks inprogress_bugtasks unassigned_bugtasks
-                  unconfirmed_bugtasks all_bugtasks support_contacts
-                  getUsedBugTags bugtargetname" />
+                  unconfirmed_bugtasks all_bugtasks
+                  getUsedBugTags getUsedBugTagsWithOpenCounts bugtargetname" />
     <require
       permission="launchpad.AnyPerson"
-      attributes="addBugContact removeBugContact newTicket subscribe
-                  createBug addSupportContact removeSupportContact" />
+      attributes="addBugContact removeBugContact subscribe createBug " />
+
+    <!-- ITicketTarget -->
+    <allow attributes="getTicket searchTickets findSimilarTickets
+              support_contacts" />
+    <require permission="launchpad.AnyPerson"
+      attributes="newTicket addSupportContact removeSupportContact" />
   </content>
 
   <browser:defaultView
@@ -42,12 +47,10 @@
     module="canonical.launchpad.browser.distributionsourcepackage"
     classes="DistributionSourcePackageFacets
              DistributionSourcePackageOverviewMenu
-             DistributionSourcePackageBugsMenu
-             DistributionSourcePackageSupportMenu" />
+             DistributionSourcePackageBugsMenu " />
 
   <browser:pages
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"
-    class="canonical.launchpad.browser.DistributionSourcePackageView"
     permission="zope.Public">
     <browser:page
       name="+index"
@@ -67,10 +70,6 @@
     <browser:page
       name="+portlet-releases"
       template="../templates/distributionsourcepackage-portlet-releases.pt"
-      />
-    <browser:page
-      name="+portlet-tickets"
-      template="../templates/distributionsourcepackage-portlet-tickets.pt"
       />
   </browser:pages>
 
