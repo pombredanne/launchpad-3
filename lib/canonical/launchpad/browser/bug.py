@@ -483,10 +483,12 @@ class BugAlsoReportInView(LaunchpadFormView):
         if remotebug:
             assert bugtracker is not None, (
                 "validate() should have ensured that bugtracker is not None.")
-            bug_watch = getUtility(IBugWatchSet).createBugWatch(
-                bug=taskadded.bug, owner=self.user, bugtracker=bugtracker,
-                remotebug=remotebug)
-            notify(SQLObjectCreatedEvent(bug_watch))
+            # Make sure that we don't add duplicate bug watches.
+            bug_watch = taskadded.bug.getBugWatch(bugtracker, remotebug)
+            if bug_watch is None:
+                bug_watch = taskadded.bug.addWatch(
+                    bugtracker, remotebug, self.user)
+                notify(SQLObjectCreatedEvent(bug_watch))
             if not target.official_malone:
                 taskadded.bugwatch = bug_watch
 
@@ -696,7 +698,7 @@ class BugURL:
     implements(ICanonicalUrlData)
 
     inside = None
-    rootsite = 'launchpad'
+    rootsite = 'mainsite'
 
     def __init__(self, context):
         self.context = context

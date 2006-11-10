@@ -1277,8 +1277,8 @@ class DistroRelease(SQLBase, BugTargetBase):
             INSERT INTO POFile (
                 potemplate, language, description, topcomment, header,
                 fuzzyheader, lasttranslator, currentcount, updatescount,
-                rosettacount, lastparsed, owner, pluralforms, variant, path,
-                exportfile, exporttime, datecreated, latestsubmission,
+                rosettacount, lastparsed, owner, variant, path, exportfile,
+                exporttime, datecreated, latestsubmission,
                 from_sourcepackagename)
             SELECT
                 pt2.id AS potemplate,
@@ -1293,7 +1293,6 @@ class DistroRelease(SQLBase, BugTargetBase):
                 pf1.rosettacount AS rosettacount,
                 pf1.lastparsed AS lastparsed,
                 pf1.owner AS owner,
-                pf1.pluralforms AS pluralforms,
                 pf1.variant AS variant,
                 pf1.path AS path,
                 pf1.exportfile AS exportfile,
@@ -1570,7 +1569,10 @@ class DistroRelease(SQLBase, BugTargetBase):
             # only situation when we could have POSelection rows to update.
             logger_object.info('Updating POSelection table...')
             cur.execute('''
-                UPDATE POSelection SET activesubmission = ps2.id
+                UPDATE POSelection
+                    SET activesubmission = ps2.id,
+                        reviewer = psel1.reviewer,
+                        date_reviewed = psel1.date_reviewed
                     FROM
                         POTemplate AS pt1
                         JOIN POFile AS pf1 ON pf1.potemplate = pt1.id
@@ -1623,12 +1625,15 @@ class DistroRelease(SQLBase, BugTargetBase):
         logger_object.info('Filling POSelection table...')
         cur.execute('''
             INSERT INTO POSelection (
-                pomsgset, pluralform, activesubmission, publishedsubmission)
+                pomsgset, pluralform, activesubmission, publishedsubmission,
+                reviewer, date_reviewed)
             SELECT
                 pms2.id AS pomsgset,
                 psel1.pluralform AS pluralform,
                 psactive2.id AS activesubmission,
-                %s AS publishedsubmission
+                %s AS publishedsubmission,
+                psel1.reviewer AS reviewer,
+                psel1.date_reviewed AS date_reviewed
             FROM
                 POTemplate AS pt1
                 JOIN POFile AS pf1 ON pf1.potemplate = pt1.id
@@ -1692,18 +1697,35 @@ class DistroRelease(SQLBase, BugTargetBase):
         # Request the translation copy.
         self._copy_active_translations(cur)
 
-    def publish(self, diskpool, log, is_careful=False):
+    def publish(self, diskpool, log, pocket, is_careful=False):
         """See IPublishing."""
-        log.debug("Publishing %s" % self.title)
         dirty_pockets = set()
+        log.debug("Publishing %s-%s" % (self.title, pocket.name))
 
-        spphs = self.getAllReleasesByStatus(PackagePublishingStatus.PENDING)
+        queries = ['distrorelease = %s' % sqlvalues(self)]
+
+        # careful publishing should include all PUBLISHED rows, normal run
+        # only includes PENDING ones.
+        statuses = [PackagePublishingStatus.PENDING]
         if is_careful:
-            spphs = spphs.union(self.getAllReleasesByStatus(
-                PackagePublishingStatus.PUBLISHED))
+            statuses.append(PackagePublishingStatus.PUBLISHED)
+        queries.append('status IN %s' % sqlvalues(statuses))
+
+        # restrict to a specific pocket if it is given.
+        if pocket is not None:
+            queries.append('pocket = %s' % sqlvalues(pocket))
+
+        # exclude RELEASE pocket if the distrorelease was already released,
+        # since it should not change.
+        if not self.isUnstable():
+            queries.append(
+            'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
+
+        spphs = SourcePackagePublishingHistory.select(
+            " AND ".join(queries), orderBy="-id")
 
         log.debug("Attempting to publish pending sources.")
-        for spph in spphs.orderBy("-id"):
+        for spph in spphs:
             if not is_careful and self.checkLegalPocket(spph, log):
                 continue
             spph.publish(diskpool, log)

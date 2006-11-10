@@ -248,6 +248,9 @@ class SprintTopicSetView(HasSpecificationsView, LaunchpadView):
     def initialize(self):
         self.status_message = None
         self.process_form()
+        self.attendee_ids = set(
+            attendance.attendee.id for attendance in self.context.attendances)
+
 
     @cachedproperty
     def spec_filter(self):
@@ -339,16 +342,23 @@ class SprintMeetingExportView(LaunchpadView):
                 continue
 
             if spec.status not in [SpecificationStatus.NEW,
+                                   SpecificationStatus.DISCUSSION,
                                    SpecificationStatus.DRAFT]:
                 continue
 
             # get the list of attendees that will attend the sprint
-            interested = set(sub.person for sub in spec.subscriptions)
-            interested = interested.intersection(attendee_set)
+            is_required = dict((sub.person, sub.essential)
+                               for sub in spec.subscriptions)
+            interested = set(is_required.keys()).intersection(attendee_set)
             if spec.assignee is not None:
                 interested.add(spec.assignee)
+                is_required[spec.assignee] = True
             if spec.drafter is not None:
                 interested.add(spec.drafter)
+                is_required[spec.drafter] = True
+            interested = [dict(name=person.name,
+                               required=is_required[person])
+                          for person in interested]
 
             self.specifications.append(dict(
                 spec=spec,

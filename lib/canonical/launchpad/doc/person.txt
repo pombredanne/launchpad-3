@@ -25,6 +25,9 @@ Verify that foobar (a Person object) correctly implements IPerson.
     >>> verifyObject(IPerson, foobar)
     True
 
+The IPersonSet component
+------------------------
+
 Access to people (Persons or Teams) is done through the IPersonSet
 utility:
 
@@ -137,8 +140,8 @@ the team will go to the preferred email of each member.
          'foo.bar@canonical.com'])
 
 
-Renaming
---------
+Renaming persons
+----------------
 
 All persons have a unique name in launchpad, so to allow them to change their
 names, we must make sure that name is not already in use by someone else.
@@ -268,6 +271,33 @@ alphabetically (A to Z) by package name.
     [u'mozilla-firefox', u'pmount']
 
 
+Translations
+------------
+
+The IPerson interface offers a way of returning POFileTranslator records
+for a Person:
+
+  >>> carlos = getUtility(IPersonSet).getByName('carlos')
+  >>> [pt.pofile.title for pt in carlos.translation_history]
+  [u'Japanese (ja) translation of evolution-2.2 in Ubuntu Hoary package "evolution"',
+   u'Spanish (es) translation of evolution-2.2 in Evolution trunk',
+   u'Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"']
+
+The IPersonSet component contains a few convenience methods to return
+Person objects that have contributed translations.
+
+  >>> from canonical.launchpad.database import POFile
+  >>> pofile = POFile.get(12)
+  >>> [p.name for p in personset.getPOFileContributors(pofile)]
+  [u'carlos', u'name16', u'tsukimi']
+
+  >>> from canonical.launchpad.database import DistroRelease, Language
+  >>> hoary = DistroRelease.selectOneBy(name="hoary")
+  >>> spanish = Language.selectOneBy(code="es")
+  >>> [p.name for p in personset.getPOFileContributorsByDistroRelease(hoary, spanish)]
+  [u'jorge-gonzalez-gonzalez', u'carlos', u'valyag', u'danner', u'name16', u'tsukimi']
+
+
 Specification Lists
 -------------------
 
@@ -276,7 +306,6 @@ certain criteria:
 
 First, Carlos does not have any completed specifications assigned to him:
 
-    >>> carlos = getUtility(IPersonSet).getByName('carlos')
     >>> from canonical.lp.dbschema import SpecificationFilter
     >>> carlos.specifications(filter=[
     ...     SpecificationFilter.ASSIGNEE, SpecificationFilter.COMPLETE]).count()
