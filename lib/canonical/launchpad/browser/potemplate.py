@@ -115,7 +115,7 @@ class POTemplateSubsetView:
 
     def __call__(self):
         # We are not using this context directly, only for traversals.
-        return self.request.response.redirect('../+translations')
+        self.request.response.redirect('../+translations')
 
 
 class POTemplateView(LaunchpadView):
@@ -376,7 +376,7 @@ class POTemplateExportView(BaseExportView):
 class POTemplateSubsetURL:
     implements(ICanonicalUrlData)
 
-    rootsite = 'launchpad'
+    rootsite = 'mainsite'
 
     def __init__(self, context):
         self.context = context
