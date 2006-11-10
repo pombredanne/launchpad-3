@@ -55,7 +55,7 @@ These are parsed into webapp.vhost.allvhosts.
     rooturl: http://shipit.ubuntu.dev/
     althosts:
     ----
-    tranlsations @ translations.launchpad.dev
+    translations @ translations.launchpad.dev
     rooturl: http://translations.launchpad.dev/
     althosts:
     ----
