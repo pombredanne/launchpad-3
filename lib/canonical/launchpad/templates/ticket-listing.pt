@@ -44,11 +44,6 @@
         <metal:widget use-macro="widget/@@launchpad_widget_macros/launchpad_widget_row" />
       </tal:status>
 
-      <label tal:attributes="for view/widgets/language/name"
-             tal:content="view/widgets/language/label">
-        Language:
-      </label>
-      <tal:languages replace="structure view/widgets/language" />
     </form>
   </div>
   <br />

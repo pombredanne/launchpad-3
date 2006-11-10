@@ -92,7 +92,6 @@ __all__ = (
 'TicketAction',
 'TicketParticipation',
 'TicketPriority',
-'TicketSearchLanguages',
 'TicketSort',
 'TicketStatus',
 'TeamMembershipStatus',
@@ -1747,33 +1746,6 @@ class TicketPriority(DBSchema):
         requests should fall into this category. Support engineers should
         ensure that there is somebody on this problem full time until it is
         resolved, or escalate it to the core technical and management team.
-        """)
-
-# Enumeration covered by bug 66633:
-#   Need way to define enumerations outside of dbschema
-class TicketSearchLanguages(DBSchema):
-    """An enumeration of the languages we can use when searching for tickets.
-
-    This enumeration is used by c.l.interfaces.ISearchTicketsForm. The
-    titles are formatted for nice display in browser code.
-    """
-
-    ENGLISH = Item(10, """
-        English
-
-        The english language.
-        """)
-
-    PREFERRED_LANGUAGE = Item(20, """
-        My preferred languages
-
-        Any of the user's preferred languages.
-        """)
-
-    ANY_LANGUAGE = Item(30, """
-        Any language
-
-        Any language that we know about.
         """)
 
 

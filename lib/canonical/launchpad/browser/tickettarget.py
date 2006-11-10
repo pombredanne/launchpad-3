@@ -17,9 +17,6 @@ __all__ = [
 from urllib import urlencode
 
 from zope.component import getUtility
-from zope.formlib import form
-from zope.schema import Choice
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import DropdownWidget
 from zope.app.pagetemplate import ViewPageTemplateFile
@@ -33,8 +30,7 @@ from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, redirection, stepthrough,
     ApplicationMenu, GeneralFormView, LaunchpadFormView, Link)
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.helpers import request_languages
-from canonical.lp.dbschema import TicketSearchLanguages, TicketStatus
+from canonical.lp.dbschema import TicketStatus
 from canonical.widgets import LaunchpadRadioWidget, LabeledMultiCheckBoxWidget
 
 
@@ -46,7 +42,8 @@ class TicketTargetLatestTicketsView:
         """Return <quantity> latest tickets created for this target. This
         is used by the +portlet-latesttickets view.
         """
-        return self.context.searchTickets()[:quantity]
+        english = getUtility(ILanguageSet)['en']
+        return self.context.searchTickets(language=english)[:quantity]
 
 
 class SearchTicketsView(LaunchpadFormView):
@@ -69,43 +66,6 @@ class SearchTicketsView(LaunchpadFormView):
 
     # Will contain the parameters used by searchResults
     search_params = None
-
-    def setUpFields(self):
-        LaunchpadFormView.setUpFields(self)
-        terms = [SimpleTerm(TicketSearchLanguages.ENGLISH,
-                            TicketSearchLanguages.ENGLISH.name,
-                            TicketSearchLanguages.ENGLISH.title)]
-
-        label = TicketSearchLanguages.PREFERRED_LANGUAGE.title
-        user_languages = request_languages(self.request)
-        if user_languages:
-            languages = ", ".join(lang.englishname for lang in user_languages)
-        else:
-            languages = "None"
-        change_langs_link = (
-            '<a href="/people/+editlanguages">Change your preferred '
-            'languages</a>')
-        label = "%s (%s) (%s)" % (label, languages, change_langs_link)
-        terms.append(SimpleTerm(TicketSearchLanguages.PREFERRED_LANGUAGE,
-                                TicketSearchLanguages.PREFERRED_LANGUAGE.name,
-                                label))
-
-        terms.append(SimpleTerm(TicketSearchLanguages.ANY_LANGUAGE,
-                                TicketSearchLanguages.ANY_LANGUAGE.name,
-                                TicketSearchLanguages.ANY_LANGUAGE.title))
-
-        language_vocabulary = SimpleVocabulary(terms)
-        language_field = Choice(
-            title=_('Written in:'), __name__='language',
-            vocabulary=language_vocabulary, required=True,
-            default=TicketSearchLanguages.ENGLISH)
-        extra_fields = form.Fields(
-            language_field, render_context=self.render_context)
-        # XXX: Is it possible to do this without having to iterate through
-        # extra_fields? -- Guilherme Salgado, 2006-10-04
-        for field in extra_fields:
-            field.custom_widget = self.custom_widgets['language']
-        self.form_fields += extra_fields
 
     def setUpWidgets(self):
         """See LaunchpadFormView."""
@@ -164,8 +124,6 @@ class SearchTicketsView(LaunchpadFormView):
                 return _('Support requests for ${context}',
                          mapping=replacements)
 
-    # XXX: Must add the languages to these messages.
-    # -- Guilherme Salgado, 2006-10-20
     @property
     def empty_listing_message(self):
         """Message displayed when there is no tickets matching the filter."""
@@ -220,14 +178,6 @@ class SearchTicketsView(LaunchpadFormView):
         Saves the user submitted search parameters in an instance
         attribute.
         """
-        language = data.pop("language")
-        if language == TicketSearchLanguages.ENGLISH:
-            language = [getUtility(ILanguageSet)['en']]
-        elif language == TicketSearchLanguages.PREFERRED_LANGUAGE:
-            language = request_languages(self.request)
-        else:
-            language = []
-        data["language"] = language
         self.search_params = dict(self.getDefaultFilter())
         self.search_params.update(**data)
 
@@ -235,14 +185,18 @@ class SearchTicketsView(LaunchpadFormView):
         """Return the tickets corresponding to the search."""
         if self.search_params is None:
             # Search button wasn't clicked.
-            self.search_params = self.getDefaultFilter()
+            search_criteria = dict(self.getDefaultFilter())
+        else:
+            search_criteria = dict(self.search_params)
 
-        # The search parameters used is defined by the union of the fields
+        search_criteria['language'] = getUtility(ILanguageSet)['en']
+
+        # The search criteria used is defined by the union of the fields
         # present in ISearchTicketsForm (search_text, status, sort) and the
         # ones defined in getDefaultFilter() which varies based on the
         # concrete view class.
         return BatchNavigator(
-            self.context.searchTickets(**self.search_params), self.request)
+            self.context.searchTickets(**search_criteria), self.request)
 
     def displaySourcePackageColumn(self):
         """We display the source package column only on distribution."""
@@ -419,7 +373,6 @@ class TicketTargetSupportMenu(ApplicationMenu):
              'field.sort': 'by relevancy',
              'field.search_text': '',
              'field.actions.search': 'Search',
-             'field.language' : 'ENGLISH',
              'field.status': statuses}, doseq=True)
 
     def open(self):
