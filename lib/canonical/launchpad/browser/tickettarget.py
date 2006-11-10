@@ -12,6 +12,7 @@ __all__ = [
     'TicketTargetSearchMyTicketsView',
     'TicketTargetTraversalMixin',
     'TicketTargetSupportMenu',
+    'UserSupportLanguagesMixin',
     ]
 
 from urllib import urlencode
@@ -23,6 +24,7 @@ from zope.app.pagetemplate import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
+from canonical.launchpad.helpers import request_languages
 from canonical.launchpad.interfaces import (
     IDistribution, IManageSupportContacts, ILanguageSet, ISearchTicketsForm,
     ITicketTarget, NotFoundError)
@@ -32,6 +34,26 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import TicketStatus
 from canonical.widgets import LaunchpadRadioWidget, LabeledMultiCheckBoxWidget
+
+
+class UserSupportLanguagesMixin:
+    """Mixin for views that needs to get the set of user support languages."""
+
+    @property
+    def user_support_languages(self):
+        """The set of user support languages.
+
+        This set includes English and the user's preferred languages,
+        excluding all English variants. If the user is not logged in, or
+        doesn't have any preferred languages set, the languages will be
+        inferred from the request's (the Accept-Language header and GeoIP
+        information).
+        """
+        languages = set(
+            language for language in request_languages(self.request)
+            if not language.code.startswith('en'))
+        languages.add(getUtility(ILanguageSet)['en'])
+        return languages
 
 
 class TicketTargetLatestTicketsView:
