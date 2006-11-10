@@ -12,7 +12,7 @@ from canonical.testing import LaunchpadFunctionalLayer
 
 def test_suite():
     suite = FunctionalDocFileSuite(
-            'test_browserfactory.txt',
+            'test_requestpublicationfactory.txt',
             optionflags=REPORT_NDIFF|NORMALIZE_WHITESPACE|ELLIPSIS,
             layer=LaunchpadFunctionalLayer
             )
