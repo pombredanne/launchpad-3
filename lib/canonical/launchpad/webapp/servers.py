@@ -165,16 +165,24 @@ class LaunchpadRequestPublicationFactory:
         vhrps = []
         # Use a short form of VirtualHostRequestPublication, for clarity.
         VHRP = self.VirtualHostRequestPublication
-        vhrps.append(VHRP('mainsite', LaunchpadBrowserRequest, MainLaunchpadPublication))
-        vhrps.append(VHRP('blueprints', BlueprintBrowserRequest, BlueprintPublication))
+        vhrps.append(VHRP('mainsite', LaunchpadBrowserRequest,
+            MainLaunchpadPublication))
+        vhrps.append(VHRP('blueprints', BlueprintBrowserRequest,
+            BlueprintPublication))
         vhrps.append(VHRP('code', CodeBrowserRequest, CodePublication))
-        vhrps.append(VHRP('translations', TranslationsBrowserRequest, TranslationsPublication))
+        vhrps.append(VHRP('translations', TranslationsBrowserRequest,
+            TranslationsPublication))
         vhrps.append(VHRP('bugs', BugsBrowserRequest, BugsPublication))
-        vhrps.append(VHRP('answers', AnswersBrowserRequest, AnswersPublication))
-        vhrps.append(VHRP('shipitubuntu', UbuntuShipItBrowserRequest, ShipItPublication))
-        vhrps.append(VHRP('shipitkubuntu', KubuntuShipItBrowserRequest, ShipItPublication))
-        vhrps.append(VHRP('shipitedubuntu', EdubuntuShipItBrowserRequest, ShipItPublication))
-        vhrps.append(VHRP('xmlrpc', LaunchpadXMLRPCRequest, MainLaunchpadPublication))
+        vhrps.append(VHRP('answers', AnswersBrowserRequest,
+            AnswersPublication))
+        vhrps.append(VHRP('shipitubuntu', UbuntuShipItBrowserRequest,
+            ShipItPublication))
+        vhrps.append(VHRP('shipitkubuntu', KubuntuShipItBrowserRequest,
+            ShipItPublication))
+        vhrps.append(VHRP('shipitedubuntu', EdubuntuShipItBrowserRequest,
+            ShipItPublication))
+        vhrps.append(VHRP('xmlrpc', LaunchpadXMLRPCRequest,
+            MainLaunchpadPublication))
         # Done with using the short form of VirtualHostRequestPublication, so
         # clean up, as we won't need to use it again later.
         del VHRP
