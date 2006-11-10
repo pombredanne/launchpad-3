@@ -11,6 +11,7 @@ from sqlobject import (ForeignKey, IntCol, StringCol, BoolCol,
 
 from canonical.database.sqlbase import (SQLBase, sqlvalues,
                                         flush_database_updates)
+from canonical.database.constants import UTC_NOW
 from canonical.lp.dbschema import (RosettaTranslationOrigin,
     TranslationValidationStatus)
 from canonical.launchpad import helpers
@@ -235,7 +236,10 @@ class POMsgSet(SQLBase):
                 if published:
                     selection.publishedsubmission = None
                 else:
+                    # We keep track of who decided to remove this translation.
                     selection.activesubmission = None
+                    selection.reviewer = person
+                    selection.date_reviewed = UTC_NOW
 
         # now loop through the translations and submit them one by one
         for index in fixed_new_translations.keys():
@@ -360,6 +364,8 @@ class POMsgSet(SQLBase):
                 # activesubmission is updated only if the translation is
                 # valid and it's an editor.
                 selection.activesubmission = None
+                selection.reviewer = person
+                selection.date_reviewed = UTC_NOW
 
         # If nothing was submitted, return None
         if text is None:
@@ -496,8 +502,10 @@ class POMsgSet(SQLBase):
                         sourcepackagename=potemplate.sourcepackagename)
 
             # Now that we assigned all karma, is time to update the active
-            # submission.
+            # submission, the person that reviewed it and when it was done.
             selection.activesubmission = submission
+            selection.reviewer = person
+            selection.date_reviewed = UTC_NOW
 
             # And this is the latest submission that this IPOFile got.
             self.pofile.latestsubmission = submission

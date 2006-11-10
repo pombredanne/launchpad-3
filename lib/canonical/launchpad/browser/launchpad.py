@@ -239,24 +239,24 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
         return Link(target, text)
 
     def translations(self):
-        target = 'rosetta'
+        target = ''
         text = 'Translations'
         return Link(target, text)
 
     def bugs(self):
-        target = 'malone'
+        target = ''
         text = 'Bugs'
         return Link(target, text)
 
     def support(self):
-        target = 'support'
-        text = 'Support'
+        target = ''
+        text = 'Answers'
         summary = 'Launchpad technical support tracker.'
         return Link(target, text, summary)
 
     def specifications(self):
         target = ''
-        text = 'Features'
+        text = 'Blueprints'
         summary = 'Launchpad feature specification tracker.'
         return Link(target, text, summary)
 
@@ -267,7 +267,7 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
         return Link(target, text, summary)
 
     def branches(self):
-        target = 'bazaar'
+        target = ''
         text = 'Code'
         summary = 'The Code Bazaar'
         return Link(target, text, summary)
@@ -538,7 +538,8 @@ class OneZeroTemplateStatus(LaunchpadView):
 
             helptextsoup = soup.find(attrs={'metal:fill-slot':'help'})
             if helptextsoup:
-                helptext = ''.join(unicode(t) for t in helptextsoup.findAll(recursive=False))
+                #helptext = ''.join(unicode(t) for t in helptextsoup.findAll(recursive=False))
+                helptext = unicode(helptextsoup)
             else:
                 helptext = ''
             output_category.append(self.PageStatus(
