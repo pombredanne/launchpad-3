@@ -46,21 +46,10 @@
 
     <div id="locationbar">
       <strong>Your location:</strong>
-      <ul id="menuroot">
-        <li><a href="/"><em>Foo</em></a></li>
-        <li><a href="/">Bar</a></li> <!-- this should look the same -->
-        <li><a href="/"><em>Hum</em></a></li>
-      </ul>
-    </div>
-
-    <tal:nothing condition="nothing">
-    <div id="locationbar">
-      <strong>Your location:</strong>
       <ul id="menuroot" class="menuroot">
         <tal:hierarchy content="structure context/@@+breadcrumbs" />
       </ul>
     </div>
-    </tal:nothing>
 
     <div id="logincontrol" tal:content="structure context/@@login_status" />
     <tal:maintenance replace="structure context/@@+maintenancemessage" />

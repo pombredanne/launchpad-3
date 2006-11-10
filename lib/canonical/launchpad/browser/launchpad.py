@@ -147,7 +147,7 @@ class Breadcrumbs(LaunchpadView):
         firsttext = 'Home'
 
         L.append(
-            '<li lpm:mid="root" class="item"><a href="%s">%s</a></li>'
+            '<li lpm:mid="root" class="item"><a href="%s"><em>%s</em></a></li>'
             % (firsturl, cgi.escape(firsttext)))
 
         if crumbs:
@@ -166,7 +166,7 @@ class Breadcrumbs(LaunchpadView):
                 # Disable these menus for now.  To be re-enabled on the ui 1.0
                 # branch.
                 L.append('<li class="item">'
-                         '<a href="%s">%s</a>'
+                         '<a href="%s"><em>%s</em></a>'
                          '</li>'
                          % (crumb.url, cgi.escape(crumb.text)))
 

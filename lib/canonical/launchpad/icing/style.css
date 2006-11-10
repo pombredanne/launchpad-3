@@ -270,12 +270,15 @@ hr, #globalheader label {
   font-weight: bold;
   color: #FFFFFF;
 }
+#locationbar strong {
+  margin-right: 16px;
+}
 ul#menuroot {
   display: inline;
   float: left;
   margin: 0;
 }
-#locationbar li {
+ul#menuroot li {
   display: inline;
 }
 #locationbar li a {
@@ -302,7 +305,7 @@ ul#menuroot {
   background-image: url(locationbar_em_bg.gif);
   background-repeat: no-repeat;
   background-position: right top;
-  padding: 5px 26px 10px 20px;
+  padding: 2px 26px 10px 20px;
   cursor: hand;
   cursor: pointer;
 }
