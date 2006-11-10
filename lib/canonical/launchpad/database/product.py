@@ -31,6 +31,7 @@ from canonical.launchpad.database.productbounty import ProductBounty
 from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.bugtask import BugTaskSet
+from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import Specification
@@ -286,6 +287,13 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
             support_contact.person for support_contact in support_contacts
             ],
             longest_expected=100)
+
+    @property
+    def ticket_languages(self):
+        """See ITicketTarget."""
+        return set(Language.select(
+            'Language.id = language AND product = %s' % sqlvalues(self),
+            clauseTables=['Ticket'], distinct=True))
 
     @property
     def translatable_packages(self):

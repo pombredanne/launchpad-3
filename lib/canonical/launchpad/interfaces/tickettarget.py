@@ -16,10 +16,10 @@ import sets
 
 from zope.component import getUtility
 from zope.interface import Interface
-from zope.schema import Bool, Choice, List, Set, TextLine
+from zope.schema import Bool, Choice, List, Object, Set, TextLine
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.language import ILanguageSet
+from canonical.launchpad.interfaces.language import ILanguageSet, ILanguage
 from canonical.lp.dbschema import TicketSort, TicketStatus
 
 
@@ -134,6 +134,12 @@ class ITicketTarget(Interface):
             "Persons that will be automatically subscribed to new support"
             " requests."),
         value_type=Choice(vocabulary="ValidPersonOrTeam"))
+
+    ticket_languages = Set(
+        title=_("Ticket Languages"),
+        description=_( "The ILanguage used by all of this target's tickets."),
+        value_type=Object(schema=ILanguage))
+
 
 
 # These schemas are only used by browser/tickettarget.py and should really

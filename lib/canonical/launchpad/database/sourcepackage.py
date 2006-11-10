@@ -28,6 +28,7 @@ from canonical.launchpad.components.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.bug import get_bug_tags_open_count
 from canonical.launchpad.database.bugtask import BugTaskSet
+from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
@@ -123,6 +124,16 @@ class SourcePackageTicketTargetMixin:
     def getSupportedLanguages(self):
         """See ITicketTarget."""
         return get_supported_languages(self)
+
+    @property
+    def ticket_languages(self):
+        """See ITicketTarget."""
+        return set(Language.select(
+            'Language.id = language AND distribution = %s AND '
+            'sourcepackagename = %s'
+                % sqlvalues(self.distribution, self.sourcepackagename),
+            clauseTables=['Ticket'], distinct=True))
+
 
 
 class SourcePackage(BugTargetBase, SourcePackageTicketTargetMixin):

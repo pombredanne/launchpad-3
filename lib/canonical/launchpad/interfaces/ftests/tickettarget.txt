@@ -377,3 +377,10 @@ because we ignore all English variants.
     ...                               key=operator.attrgetter('code'))]
     [u'ca', u'cy', u'en', u'es', u'ja']
 
+== ticket_languages ==
+
+The ticket_languages attribute contain the set of languages used by all
+of the target's tickets.
+
+    >>> sorted([language.code for language in target.ticket_languages])
+    [u'en', u'fr']
