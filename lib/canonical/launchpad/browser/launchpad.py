@@ -538,8 +538,8 @@ class OneZeroTemplateStatus(LaunchpadView):
 
             helptextsoup = soup.find(attrs={'metal:fill-slot':'help'})
             if helptextsoup:
-                import pdb; pdb.set_trace()
-                helptext = ''.join(unicode(t) for t in helptextsoup.findAll(recursive=False))
+                #helptext = ''.join(unicode(t) for t in helptextsoup.findAll(recursive=False))
+                helptext = unicode(helptextsoup)
             else:
                 helptext = ''
             output_category.append(self.PageStatus(
