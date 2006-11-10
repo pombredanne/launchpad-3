@@ -504,7 +504,7 @@ class DistributionMirrorsRSSBaseView(LaunchpadView):
 class DistributionArchiveMirrorsRSSView(DistributionMirrorsRSSBaseView):
     """The RSS feed for archive mirrors."""
 
-    heading = 'Archive'
+    heading = 'Archive Mirrors'
 
     @property
     def mirrors(self):
@@ -514,7 +514,7 @@ class DistributionArchiveMirrorsRSSView(DistributionMirrorsRSSBaseView):
 class DistributionReleaseMirrorsRSSView(DistributionMirrorsRSSBaseView):
     """The RSS feed for release mirrors."""
 
-    heading = 'CD'
+    heading = 'CD Mirrors'
 
     @property
     def mirrors(self):
