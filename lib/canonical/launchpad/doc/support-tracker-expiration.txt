@@ -23,7 +23,7 @@ Only tickets in the OPEN or NEEDSINFO state are subject to expiration.
     >>> from canonical.lp.dbschema import TicketStatus
     >>> Ticket.select('status IN (%i,%i)' % (
     ...     TicketStatus.OPEN.value, TicketStatus.NEEDSINFO.value)).count()
-    9
+    11
 
     (By default, all open and needs info ticket should expire. Make sure
     that no new tickets were recently added and will make this test fails
@@ -93,8 +93,8 @@ Only tickets in the OPEN or NEEDSINFO state are subject to expiration.
     INFO    creating lockfile
     INFO    Expiring OPEN and NEEDSINFO tickets without activity for the
             last 15 days.
-    INFO    Found 7 tickets to expire.
-    INFO    Expired 7 tickets.
+    INFO    Found 9 tickets to expire.
+    INFO    Expired 9 tickets.
     INFO    Finished expiration run.
     <BLANKLINE>
     >>> print out
