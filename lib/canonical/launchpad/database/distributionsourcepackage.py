@@ -1,4 +1,4 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2006 Canonical Ltd.  All rights reserved.
 
 """Classes to represent source packages in a distribution."""
 
@@ -32,13 +32,15 @@ from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
-from canonical.launchpad.database.sourcepackage import SourcePackage
+from canonical.launchpad.database.sourcepackage import (
+    SourcePackage, SourcePackageTicketTargetMixin)
 from canonical.launchpad.database.supportcontact import SupportContact
 from canonical.launchpad.database.ticket import Ticket, TicketSet
 from canonical.launchpad.helpers import shortlist
 
 
-class DistributionSourcePackage(BugTargetBase):
+class DistributionSourcePackage(BugTargetBase,
+                                SourcePackageTicketTargetMixin):
     """This is a "Magic Distribution Source Package". It is not an
     SQLObject, but instead it represents a source package with a particular
     name in a particular distribution. You can then ask it all sorts of
@@ -257,81 +259,6 @@ class DistributionSourcePackage(BugTargetBase):
                     sourcepackagerelease=spp.sourcepackagerelease)
                 result.append(dspr)
         return result
-
-    # ticket related interfaces
-    def getSupportedLanguages(self):
-        """See ITicketTarget."""
-        return get_supported_languages(self)
-
-    def newTicket(self, owner, title, description, language=None,
-                  datecreated=None):
-        """See ITicketTarget."""
-        return TicketSet.new(
-            title=title, description=description, owner=owner,
-            distribution=self.distribution, language=language,
-            sourcepackagename=self.sourcepackagename,
-            datecreated=datecreated)
-
-    def getTicket(self, ticket_id):
-        """See ITicketTarget."""
-        # first see if there is a ticket with that number
-        try:
-            ticket = Ticket.get(ticket_id)
-        except SQLObjectNotFound:
-            return None
-        # now verify that that ticket is actually for this target
-        if ticket.distribution != self.distribution:
-            return None
-        if ticket.sourcepackagename != self.sourcepackagename:
-            return None
-        return ticket
-
-    def searchTickets(self, search_text=None,
-                      status=TICKET_STATUS_DEFAULT_SEARCH, owner=None,
-                      sort=None):
-        """See ITicketTarget."""
-        return TicketSet.search(
-            distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename, search_text=search_text,
-            status=status, owner=owner, sort=sort)
-
-    def findSimilarTickets(self, title):
-        """See ITicketTarget."""
-        return TicketSet.findSimilar(title, distribution=self.distribution,
-                                     sourcepackagename=self.sourcepackagename)
-
-    def addSupportContact(self, person):
-        """See ITicketTarget."""
-        if person in self.support_contacts:
-            return False
-        SupportContact(
-            product=None, person=person,
-            sourcepackagename=self.sourcepackagename,
-            distribution=self.distribution)
-        return True
-
-    def removeSupportContact(self, person):
-        """See ITicketTarget."""
-        if person not in self.support_contacts:
-            return False
-        support_contact_entry = SupportContact.selectOneBy(
-            distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename,
-            person=person)
-        support_contact_entry.destroySelf()
-        return True
-
-    @property
-    def support_contacts(self):
-        """See ITicketTarget."""
-        support_contacts = SupportContact.selectBy(
-            distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename)
-
-        return shortlist([
-            support_contact.person for support_contact in support_contacts
-            ],
-            longest_expected=100)
 
     def __eq__(self, other):
         """See IDistributionSourcePackage."""

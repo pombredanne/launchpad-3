@@ -44,9 +44,11 @@
             No revision control system, or Bazaar
           </label>
         </legend>
-        <tal:widget define="widget nocall:view/widgets/user_branch">
-          <metal:block use-macro="context/@@launchpad_widget_macros/launchpad_widget_row" />
-        </tal:widget>
+        <table class="form">
+          <tal:widget define="widget nocall:view/widgets/user_branch">
+            <metal:block use-macro="context/@@launchpad_form/widget_row" />
+          </tal:widget>
+        </table>
       </fieldset>
 
       <fieldset>
@@ -56,15 +58,17 @@
             CVS
           </label>
         </legend>
-        <tal:widget define="widget nocall:view/widgets/cvsroot">
-          <metal:block use-macro="context/@@launchpad_widget_macros/launchpad_widget_row" />
-        </tal:widget>
-        <tal:widget define="widget nocall:view/widgets/cvsmodule">
-          <metal:block use-macro="context/@@launchpad_widget_macros/launchpad_widget_row" />
-        </tal:widget>
-        <tal:widget define="widget nocall:view/widgets/cvsbranch">
-          <metal:block use-macro="context/@@launchpad_widget_macros/launchpad_widget_row" />
-        </tal:widget>
+        <table class="form">
+          <tal:widget define="widget nocall:view/widgets/cvsroot">
+            <metal:block use-macro="context/@@launchpad_form/widget_row" />
+          </tal:widget>
+          <tal:widget define="widget nocall:view/widgets/cvsmodule">
+            <metal:block use-macro="context/@@launchpad_form/widget_row" />
+          </tal:widget>
+          <tal:widget define="widget nocall:view/widgets/cvsbranch">
+            <metal:block use-macro="context/@@launchpad_form/widget_row" />
+          </tal:widget>
+        </table>
       </fieldset>
 
       <fieldset>
@@ -75,9 +79,11 @@
           </label>
         </legend>
 
-        <tal:widget define="widget nocall:view/widgets/svnrepository">
-          <metal:block use-macro="context/@@launchpad_widget_macros/launchpad_widget_row" />
-        </tal:widget>
+        <table class="form">
+          <tal:widget define="widget nocall:view/widgets/svnrepository">
+            <metal:block use-macro="context/@@launchpad_form/widget_row" />
+          </tal:widget>
+        </table>
       </fieldset>
 
       <input tal:replace="structure view/rcstype_emptymarker" />
