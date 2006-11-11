@@ -185,6 +185,9 @@ class IPerson(IHasSpecifications):
             "exception to this is when we allow users to create Launchpad "
             "profiles through the /people/+newperson page."),
         required=False, readonly=False)
+    # XXX: We can't use a Choice field here because we don't have a vocabulary
+    # which contains valid people but not teams, and we don't really need one
+    # appart from here. -- Guilherme Salgado, 2006-11-10
     registrant = Attribute('The user who created this profile.')
     # bounty relations
     ownedBounties = Attribute('Bounties issued by this person.')

@@ -652,9 +652,10 @@ class PersonAddView(LaunchpadFormView):
         emailaddress = data['emailaddress']
         displayname = data['displayname']
         creation_comment = data['creation_comment']
-        person = getUtility(IPersonSet).ensurePerson(
-            emailaddress, displayname, PersonCreationRationale.USER_CREATED,
-            creation_comment, registrant=self.user)
+        person, email = getUtility(IPersonSet).createPersonAndEmail(
+            emailaddress, PersonCreationRationale.USER_CREATED,
+            displayname=displayname, comment=creation_comment,
+            registrant=self.user)
         self.next_url = canonical_url(person)
         logintokenset = getUtility(ILoginTokenSet)
         token = logintokenset.new(

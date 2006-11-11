@@ -557,7 +557,7 @@ class NewAccountView(BaseLoginTokenView, GeneralFormView):
             PersonCreationRationale.OWNER_CREATED_SHIPIT,
         UBUNTU_WIKI_URL: PersonCreationRationale.OWNER_CREATED_UBUNTU_WIKI}
 
-    person = None
+    created_person = None
 
     def initialize(self):
         self.expected_token_types = (

@@ -363,9 +363,9 @@ def valid_unregistered_email(email):
         emailaddress = emailset.getByEmail(email)
         if emailaddress is not None:
             owner = emailaddress.person
-            raise LaunchpadValidationError(_(dedent("""
-                %s is already taken by <a href="%s">%s</a>."""
-                % (email, canonical_url(owner), owner.browsername))))
+            raise LaunchpadValidationError(_(
+                '%s is already taken by <a href="%s">%s</a>.'),
+                email, canonical_url(owner), owner.browsername)
         else:
             return True
     else:
