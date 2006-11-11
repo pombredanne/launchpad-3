@@ -4,7 +4,7 @@
   <channel>
     <title>Ubuntu <span tal:replace="view/heading" /> Status</title>
     <link tal:content="request/URL"></link>
-    <description>Status of Ubuntu <span tal:replace="view/heading" /> </description>
+    <description>Status of Ubuntu <span tal:replace="view/heading" /></description>
 
     <lastBuildDate tal:content="view/now/fmt:rfc822utcdatetime">
       Tue, 10 Jun 2003 09:41:01 -0000
