@@ -570,7 +570,7 @@
       class="canonical.launchpad.browser.PeopleListView">
       <browser:page
           name="+peoplelist"
-          template="../templates/people-list.pt"
+          template="../templates/foaf-peoplelist.pt"
           lp:url="/people/+peoplelist" />
   </browser:pages>
 
@@ -580,7 +580,7 @@
       class="canonical.launchpad.browser.TeamListView">
       <browser:page
           name="+teamlist"
-          template="../templates/people-list.pt"
+          template="../templates/foaf-peoplelist.pt"
           lp:url="/people/+teamlist" />
   </browser:pages>
 
@@ -590,7 +590,7 @@
       class="canonical.launchpad.browser.UbunteroListView">
       <browser:page
           name="+ubunterolist"
-          template="../templates/people-list.pt"
+          template="../templates/foaf-peoplelist.pt"
           lp:url="/people/+ubunterolist" />
   </browser:pages>
 
@@ -600,7 +600,7 @@
       class="canonical.launchpad.browser.FOAFSearchView">
       <browser:page
           name="+index"
-          template="../templates/people-index.pt"
+          template="../templates/foaf-index.pt"
           lp:url="/people" />
       <browser:page
         name="+portlet-stats"

@@ -80,6 +80,12 @@ process in order to validate that profile.
     >>> browser.url
     'http://launchpad.dev/token/.../+newaccount'
 
+We don't prefill the new account's display name because the one we have was
+not entered by the users themselves.
+
+    >>> browser.getControl('Display Name').value == ''
+    True
+
     >>> browser.getControl('Display Name').value = 'My name'
     >>> browser.getControl(name='field.password').value = 'aaa'
     >>> browser.getControl(name='field.password_dupe').value = 'aaa'
@@ -87,3 +93,11 @@ process in order to validate that profile.
 
     >>> browser.url
     'http://launchpad.dev/people/test2'
+
+
+Non-launchpad admins can't acces the page to ceate a new profile.
+
+    >>> user_browser.open('http://launchpad.dev/people/+newperson')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...

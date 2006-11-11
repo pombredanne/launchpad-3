@@ -497,9 +497,9 @@ oops = 'Oops!'
 def package_bugs(context, view):
     return 'Bugs in %s' % context.name
 
-people_index = 'People and teams in Launchpad'
+foaf_index = 'People and teams in Launchpad'
 
-def people_list(context, view):
+def foaf_peoplelist(context, view):
     return view.header
 
 person_bounties = ContextDisplayName('Bounties for %s')
