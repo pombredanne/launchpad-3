@@ -7,30 +7,28 @@
   <body>
     <div metal:fill-slot="main">
       <!-- tal:buttons replace="structure context/@@+app-buttons" / -->
-      <div id="applications">
+      <div
+        id="applications"
+        tal:define="vhosts modules/canonical.launchpad.webapp.vhosts/allvhosts/configs"
+      >
         <a href="/products">
-          <img alt="" src="/+icing/app-register.gif" />
-          Register your project.
+          <img alt="" src="/+icing/app-register.mono.gif" />
         </a>
-        <a href="/bazaar">
-          <img alt="" src="/+icing/app-code.gif" />
-          Publish your code.
+        <a tal:attributes="href vhosts/code/rooturl">
+          <img alt="" src="/+icing/app-code.mono.gif" />
         </a>
-        <a href="/bugs">
-          <img alt="" src="/+icing/app-bugs-large.gif" />
+        <a tal:attributes="href vhosts/bugs/rooturl">
+          <img alt="" src="/+icing/app-bugs.large.gif" />
           Share bug reports and fixes.
         </a>
-        <a href="/specs">
-          <img alt="" src="/+icing/app-features.gif" />
-          Track specifications.
+        <a tal:attributes="href vhosts/blueprints/rooturl">
+          <img alt="" src="/+icing/app-features.mono.gif" />
         </a>
-        <a href="/rosetta">
-          <img alt="" src="/+icing/app-translations.gif" />
-          Localize your software.
+        <a tal:attributes="href vhosts/translations/rooturl">
+          <img alt="" src="/+icing/app-translations.mono.gif" />
         </a>
-        <a href="/support">
-          <img alt="" src="/+icing/app-support.gif" />
-          Help your users.
+        <a tal:attributes="href vhosts/answers/rooturl">
+          <img alt="" src="/+icing/app-support.mono.gif" />
         </a>
       </div><!--applications-->
 
