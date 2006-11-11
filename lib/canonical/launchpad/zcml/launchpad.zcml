@@ -251,13 +251,20 @@
   permission="zope.Public"
   />
 
-<browser:page
+<browser:pages
   for="zope.interface.Interface"
-  name="+structural-heading"
   class="canonical.launchpad.browser.StructuralObjectPresentationView"
-  template="../templates/launchpad-structuralheader.pt"
   permission="zope.Public"
+>
+  <browser:page
+    name="+structural-header"
+    template="../templates/launchpad-structuralheader.pt"
   />
+  <browser:page
+    name="+structural-footer"
+    template="../templates/launchpad-structuralfooter.pt"
+  />
+</browser:pages>
 <browser:page
   for="canonical.launchpad.interfaces.ILaunchpadApplication"
   name="+applications"

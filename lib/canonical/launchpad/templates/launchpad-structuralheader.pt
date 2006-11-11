@@ -1,31 +1,5 @@
 <div id="structuralobjectheading">
-  <img alt="" src="/@@/nyet-heading" />
+  <img alt="" src="/@@/nyet-heading" /> <!-- XXX hackergotchi -->
   <div class="intro" tal:content="view/getIntroHeading">Ubuntu 6.10</div>
   <div class="main" tal:content="view/getMainHeading">Edgy Eft</div>
-</div>
-
-      <div id="structuralobjectchildren">
-        <tal:if condition="python:view.num_lists == 0">
-          (no children)
-        </tal:if>
-        <tal:if condition="python:view.num_lists == 1">
-          <span class="primary">
-            <span tal:repeat="child view/children"
-                  tal:replace="child" />
-            <span tal:condition="view/more_children">more</span>
-          </span>
-        </tal:if>
-        <tal:if condition="python:view.num_lists == 2">
-          <span class="primary">
-            <span tal:repeat="child view/children"
-                  tal:replace="child" />
-            <span tal:condition="view/more_children">more</span>
-          </span>
-          <span class="secondary">
-            <span tal:repeat="child view/altchildren"
-                  tal:replace="child" />
-            <span tal:condition="view/more_altchildren">more</span>
-          </span>
-        </tal:if>
-
 </div>

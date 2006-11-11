@@ -69,15 +69,16 @@
     </div>
     <tal:layout condition="not:columns1|nothing">
 
-    <div id="structuralobject"
-        tal:define="structuralobject CONTEXTS/lp:structuralobject">
-      <tal:if condition="structuralobject">
-      <tal:structuralobject
-          replace="structure structuralobject/@@+structural-heading" />
-      </tal:if>
-      <tal:if condition="not: structuralobject">
-        No structural object!
-      </tal:if>
+    <div
+      id="structuralobject"
+      tal:define="structuralobject CONTEXTS/lp:structuralobject"
+      tal:
+    >
+      <tal:header
+        condition="structuralobject"
+        replace="structure structuralobject/@@+structural-header"
+      />
+      <tal:none condition="not:structuralobject">No structural object</tal:none>
     </div>
     <form id="globalsearch" action="/search" method="get">
       <div>
@@ -160,6 +161,11 @@
                           use-macro="context/@@+main-template-macros/notifications" />
                       </tal:notifications>
                       <metal:block define-slot="main" />
+                      <div id="structural-children"
+                        tal:define="structuralobject CONTEXTS/lp:structuralobject" 
+                        tal:condition="structuralobject"
+                        tal:content="structure structuralobject/@@+structural-footer"
+                      />
                     </div>
                     <div id="portlets">
                       <tal:actionsmenu

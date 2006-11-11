@@ -542,6 +542,7 @@ ul#applicationchooser li#applicationchooser_selected {
 #globalsearch {
   width: 220px;
   float: right;
+  margin-top: 20px;
 }
 #globalsearch #q {
   width: 170px;
@@ -981,7 +982,11 @@ a.open, a.closed {
   border-left: 4px solid #FEFCF0;
   border-right: 4px solid #FEFCF0;
 }
-
+#structural-children {
+  margin-top: 4em;
+  padding-top: 0;
+  border-top: 1px dotted #ccc;
+}
 /* Matthew's code for laying out the columns: */
 body {
   min-width: 480px;
