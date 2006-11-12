@@ -72,7 +72,6 @@
     <div
       id="structuralobject"
       tal:define="structuralobject CONTEXTS/lp:structuralobject"
-      tal:
     >
       <tal:header
         condition="structuralobject"
@@ -213,21 +212,24 @@
     </div>
     <div id="globalfooter">
       <div id="applications-footer" tal:define="vhosts modules/canonical.launchpad.webapp.vhosts/allvhosts/configs">
+        <a tal:attributes="href vhosts/mainsite/rooturl">Launchpad home</a> |
+        <a tal:attributes="href vhosts/code/rooturl">Code</a> |
+      
       <a tal:attributes="href vhosts/bugs/rooturl">Bugs</a> |
       <a tal:attributes="href vhosts/blueprints/rooturl">Blueprints</a> |
       <a tal:attributes="href vhosts/translations/rooturl">Translations</a> |
-      <a tal:attributes="href vhosts/answers/rooturl">Answers</a> |
-      <a tal:attributes="href vhosts/code/rooturl">Code</a> |
-      </div>
-      <div id="copyright">
-        Copyright&nbsp;2004-2006&nbsp;<a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
+
+        <a tal:attributes="href vhosts/answers/rooturl">Answers</a>
       </div>
       <div id="colophon">
         <a href="/legal">Copyright&nbsp;terms</a> |
         <a href="/feedback">Help&nbsp;us&nbsp;improve</a> |
-        <a href="/faq">FAQ</a> |
+        <a href="/faq">FAQ</a>
+      </div>
+      <div id="copyright">
+        Copyright&nbsp;2004-2006&nbsp;<a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
         <tal:block define="revno modules/canonical.launchpad.versioninfo/revno">
-            build
+            | build
             <tal:block condition="revno" replace="revno" />
             <tal:block condition="not: revno">unknown</tal:block>
         </tal:block> |
