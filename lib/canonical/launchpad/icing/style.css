@@ -1029,18 +1029,25 @@ h1, h2, h3, #maincontent :link { /* On Overview tab or tab-less pages */
   background: none;
   color: #90b51a; /* darkest color from locationbar_em_bg.gif */
 }
-.tab-branches h1, .tab-branches h2, .tab-branches h3, .tab-branches :link, .tab-branches :visited {
+.tab-branches h1, .tab-branches h2, .tab-branches h3,
+.tab-branches #maincontent :link, .tab-branches #maincontent :visited {
   background: none;
   color: #f3cb00; /* "it fits nicely with the Bazaar logo" -- sabdfl */
 }
 .tab-bugs h1, .tab-bugs h2, .tab-bugs h3,
-.tab-bugs div.z :link, .tab-bugs div.z :visited {
+.tab-bugs #maincontent :link, .tab-bugs #maincontent :visited {
   background: none;
   color: #c03;
 }
-.tab-specifications h1, .tab-specifications h2, .tab-specifications :link, .tab-specifications :visited {
+.tab-specifications h1, .tab-specifications h2, .tab-specifications h3,
+.tab-specifications #maincontent :link, .tab-specifications #maincontent :visited {
   background: none;
-  color: #90b51a;
+  color: #3f3ccc; /* darkest color from mainarea_tab4-* */
+}
+.tab-translations h1, .tab-translations h2, .tab-translations h3,
+.tab-translations #maincontent :link, .tab-translations #maincontent :visited {
+  background: none;
+  color: #159cc8; /* darkest color from mainarea_tab5-* */
 }
 
 /* -- Front pages -- */
