@@ -272,4 +272,12 @@
   template="../templates/app-buttons.pt"
   />
 
+<browser:page
+  for="canonical.launchpad.interfaces.ILaunchpadApplication"
+  name="+applicationbuttons"
+  permission="zope.Public"
+  class="canonical.launchpad.browser.ApplicationButtons"
+  attribute="__call__"
+  />
+
 </configure>

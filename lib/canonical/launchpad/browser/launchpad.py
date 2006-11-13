@@ -15,7 +15,8 @@ __all__ = [
     'OneZeroTemplateStatus',
     'IcingFolder',
     'StructuralObjectPresentationView',
-    'StructuralObjectPresentation'
+    'StructuralObjectPresentation',
+    'ApplicationButtons'
     ]
 
 import cgi
@@ -32,6 +33,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 from zope.app.content_types import guess_content_type
+from zope.app.traversing.interfaces import ITraversable
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces import NotFound
 
@@ -55,6 +57,8 @@ from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView, Navigation,
     stepto, canonical_url)
+from canonical.launchpad.webapp.vhosts import allvhosts
+
 
 # XXX SteveAlexander, 2005-09-22, this is imported here because there is no
 #     general timedelta to duration format adapter available.  This should
@@ -729,3 +733,81 @@ class DefaultStructuralObjectPresentation(StructuralObjectPresentation):
 
     def countAltChildren(self):
         return 4
+
+
+class Button:
+    def __init__(self, **kw):
+        assert len(kw) == 1
+        self.name = kw.keys()[0]
+        self.text = kw.values()[0]
+        self.replacement_dict = self.makeReplacementDict()
+
+    def makeReplacementDict(self):
+        return dict(
+            url=allvhosts.configs[self.name].rooturl,
+            buttonname=self.name,
+            text=self.text)
+
+    def renderActive(self):
+        return (
+            '<a href="%(url)s">\n'
+            '  <img alt="" src="/+icing/app-%(buttonname)s.large.gif" />\n'
+            '%(text)s\n'
+            '</a>\n' % self.replacement_dict)
+
+    def renderInactive(self):
+        return (
+            '<a href="%(url)s">\n'
+            '  <img alt="" src="/+icing/app-%(buttonname)s.mono.gif" />\n'
+            '</a>\n' % self.replacement_dict)
+
+    def renderButton(self, is_active):
+        if is_active:
+            return self.renderActive()
+        else:
+            return self.renderInactive()
+
+
+class ProductsButton(Button):
+    def makeReplacementDict(self):
+        return dict(
+            url='%s/products/' % allvhosts.configs['mainsite'].rooturl,
+            buttonname=self.name,
+            text=self.text)
+
+
+class ApplicationButtons(LaunchpadView):
+    """Those buttons that you get on the index pages."""
+
+    implements(ITraversable)
+
+    def __init__(self, context, request):
+        LaunchpadView.__init__(self, context, request)
+        self.name = None
+
+    buttons = [
+        ProductsButton(register="Register your project."),
+        Button(code="Publish your code."),
+        Button(bugs="Share bug reports and fixes."),
+        Button(blueprints="Track specifications."),
+        Button(translations="Localize your software."),
+        Button(answers="Help your users.")
+        ]
+
+    def render(self):
+        L = []
+        for button in self.buttons:
+            if self.name:
+                is_active = button.name == self.name
+            else:
+                is_active = True
+            L.append(button.renderButton(is_active))
+        return u'\n'.join(L)
+
+    def traverse(self, name, furtherPath):
+        self.name = name
+        if furtherPath:
+            raise AssertionError(
+                'Max of one path item after +applicationbuttons')
+        return self
+
