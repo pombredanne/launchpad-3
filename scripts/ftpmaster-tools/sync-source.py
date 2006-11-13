@@ -25,27 +25,25 @@ import sys
 import tempfile
 import time
 import urllib
-
 import apt_pkg
-
-import dak_utils
 
 import _pythonpath
 
 from zope.component import getUtility
 
 from canonical.database.sqlbase import (sqlvalues, cursor)
-from canonical.launchpad.scripts import (execute_zcml_for_scripts,
-                                         logger, logger_options)
+from canonical.launchpad.scripts import (
+    execute_zcml_for_scripts,logger, logger_options)
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.database.publishing import SourcePackageFilePublishing
+from canonical.launchpad.database.publishing import (
+    SourcePackageFilePublishing)
+from canonical.launchpad.interfaces import (
+    IDistributionSet, IPersonSet)
 from canonical.librarian.client import LibrarianClient
-from canonical.launchpad.interfaces import (IDistributionSet,
-                                            ILibraryFileAliasSet,
-                                            IPersonSet)
 from canonical.lp import (dbschema, initZopeless)
-
 from contrib.glock import GlobalLock
+
+import dak_utils
 
 ################################################################################
 
@@ -59,7 +57,6 @@ re_bug_numbers = re.compile(r"\#?\s?(\d+)")
 
 Blacklisted = None
 Library = None
-LibraryFileAliasSet = None
 Lock = None
 Log = None
 Options = None
@@ -602,8 +599,8 @@ def sign_changes(changes, dsc):
     filehandle.write(changes)
     filehandle.close()
 
-    output_filename = "%s_%s_source.changes" % (dsc["source"],
-                                                dak_utils.re_no_epoch.sub('', dsc["version"]))
+    sane_version = dak_utils.re_no_epoch.sub('', dsc["version"])
+    output_filename = "%s_%s_source.changes" % (dsc["source"], sane_version)
 
     cmd = "gpg --no-options --batch --no-tty --secret-keyring=%s --keyring=%s --default-key=0x%s --output=%s --clearsign %s" % (secret_keyring, pub_keyring, keyid, output_filename, temp_filename)
     (result, output) = commands.getstatusoutput(cmd)
@@ -1032,73 +1029,75 @@ def read_Sources(filename, origin):
 
 ################################################################################
 
-def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
-               current_sources, current_binaries):
+def add_source(pkg, Sources, previous_version, suite, requested_by,
+               origin, current_sources, current_binaries):
     print " * Trying to add %s..." % (pkg)
 
     # Check it's in the Sources file
     if not Sources.has_key(pkg):
         dak_utils.fubar("%s doesn't exist in the Sources file." % (pkg))
-        
+
     have_orig_tar_gz = False
 
     # Download the source
     files = Sources[pkg]["files"]
     for filename in files:
-        clauseTables = ['SourcePackageFilePublishing']
-        query = "SourcePackageFilePublishing.libraryfilealiasfilename = %s" % \
-                sqlvalues(filename)
+        clauseTables = [
+            'SourcePackageFilePublishing',
+            'LibraryFileAlias',
+            ]
+        query = """
+        SourcePackageFilePublishing.libraryfilealiasfilename = %s AND
+        SourcePackageFilePublishing.libraryfilealias =
+            LibraryFileAlias.id AND
+        LibraryFileAlias.id IN (
+          SELECT DISTINCT ON (content) id FROM LibraryFileAlias
+          WHERE filename = %s
+            )
+        """ % sqlvalues(filename, filename)
         spfp_l = shortlist(SourcePackageFilePublishing.select(
-            query, clauseTables=clauseTables, distinct=True))
+            query, clauseTables=clauseTables))
+
         if spfp_l:
             if not filename.endswith("orig.tar.gz"):
-                dak_utils.fubar("%s (from %s) is in the DB but isn't an orig.tar.gz.  Help?" % (filename, pkg))
+                dak_utils.fubar(
+                    "%s (from %s) is in the DB but isn't an "
+                    "orig.tar.gz. Help?" % (filename, pkg))
+
             if len(spfp_l) != 1:
-                # XXX If I could distinct on libraryfilealias, I'd do
-                #     that, but I don't know how
-                xx_d = {}
                 for i in spfp_l:
-                    xx_d[i.libraryfilealias] = ""
-                # XXX: see LP #38227.  Check the sha1sum + size, to
-                #      really find different orig.tar.gz's
-                if len(xx_d.keys()) > 1:
-                    sha1 = None
-                    filesize = None
-                    broken = False
-                    for i in spfp_l:
-                        l = LibraryFileAliasSet[i.libraryfilealias]
-                        if sha1 is None:
-                            sha1 = l.content.sha1
-                        if filesize is None:
-                            filesize = l.content.filesize
-                        if sha1 != l.content.sha1 or filesize != l.content.filesize:
-                            broken = True
-                            break
-                    if broken:
-                        # We've found really differing duplicates - dump
-                        # some debug info and give up.
-                        for i in spfp_l:
-                            print "*****"
-                            print "[%s]: %s" % (i.libraryfilealias, i.libraryfilealiasfilename)
-                            l = LibraryFileAliasSet[i.libraryfilealias]
-                            print "sha1 & size: %s %s" % (l.content.sha1, l.content.filesize)
-                            print "distrorelease: %s, component: %s, source: %s, status: %s" \
-                                  % (i.distroreleasename, i.componentname, i.sourcepackagename,
-                                     i.publishingstatus)
-                        dak_utils.fubar("%s (from %s) returns multiple IDs for orig.tar.gz.  Help?" % (filename, pkg))
+                    print "*****"
+                    print (
+                        "[%s]: %s" % (i.libraryfilealias.id,
+                                      i.libraryfilealiasfilename))
+                    l = i.libraryfilealias
+                    print ("sha1 & size: %s %s" % (
+                        l.content.sha1, l.content.filesize))
+                    print ("distrorelease: %s, component: %s, source: "
+                           "%s, status: %s" % (
+                        i.distroreleasename, i.componentname,
+                        i.sourcepackagename, i.publishingstatus))
+                    dak_utils.fubar(
+                        "%s (from %s) returns multiple IDs for "
+                        "orig.tar.gz.  Help?" % (filename, pkg))
             spfp = spfp_l[0]
             have_orig_tar_gz = filename
-            print "  - <%s: already in distro - downloading from librarian>" % (filename)
+            print ("  - <%s: already in distro - downloading from "
+                   "librarian>" % (filename))
             output_file = open(filename, 'w')
-            librarian_input = Library.getFileByAlias(spfp.libraryfilealias)
+            librarian_input = Library.getFileByAlias(
+                spfp.libraryfilealias)
             output_file.write(librarian_input.read())
             output_file.close()
             continue
 
         # Download the file
-        download_f = "%s%s" % (origin["url"], files[filename]["remote filename"])
+        download_f = ("%s%s" % (origin["url"],
+                                files[filename]["remote filename"]))
         if not os.path.exists(filename):
-            print "  - <%s: downloading from %s>" % (filename, origin["url"])
+            print (
+                "  - <%s: downloading from %s>" % (
+                filename, origin["url"]))
             sys.stdout.flush()
             urllib.urlretrieve(download_f, filename)
         else:
@@ -1108,13 +1107,16 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
         actual_md5sum = md5sum_file(filename)
         expected_md5sum = files[filename]["md5sum"]
         if actual_md5sum != expected_md5sum:
-            dak_utils.fubar("%s: md5sum check failed (%s [actual] vs. %s [expected])." \
-                        % (filename, actual_md5sum, expected_md5sum))
+            dak_utils.fubar(
+                "%s: md5sum check failed (%s [actual] "
+                "vs. %s [expected])."
+                % (filename, actual_md5sum, expected_md5sum))
         actual_size = os.stat(filename)[stat.ST_SIZE]
         expected_size = int(files[filename]["size"])
         if actual_size != expected_size:
-            dak_utils.fubar("%s: size mismatch (%s [actual] vs. %s [expected])." \
-                        % (filename, actual_size, expected_size))
+            dak_utils.fubar(
+                "%s: size mismatch (%s [actual] vs. %s [expected])."
+                % (filename, actual_size, expected_size)))
 
         # Remember the name of the .dsc file
         if filename.endswith(".dsc"):
@@ -1126,7 +1128,7 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
         signing_rules = 0
     else:
         signing_rules = -1
-    
+
     import_dsc(dsc_filename, suite, previous_version, signing_rules,
                have_orig_tar_gz, requested_by, origin, current_sources,
                current_binaries)
@@ -1293,26 +1295,32 @@ def options_setup():
 ################################################################################
 
 def objectize_options():
-    # Convert 'todistro', 'tosuite' and 'incomponent' to objects rather than strings
+    """Parse given options.
 
+    Convert 'todistro', 'tosuite' and 'incomponent' to objects
+    rather than strings.
+    """
     Options.todistro = getUtility(IDistributionSet)[Options.todistro]
 
     if not Options.tosuite:
         Options.tosuite = Options.todistro.currentrelease.name
     Options.tosuite = Options.todistro.getRelease(Options.tosuite)
 
-    valid_components = dict([(c.name,c) for c in Options.tosuite.components])
+    valid_components = (
+        dict([(c.name,c) for c in Options.tosuite.components]))
     if Options.incomponent:
         if Options.incomponent not in valid_components:
-            dak_utils.fubar("%s is not a valid component for %s/%s."
-                            % (Options.incomponent, Options.todistro.name,
-                               Options.tosuite.name))
+            dak_utils.fubar(
+                "%s is not a valid component for %s/%s."
+                % (Options.incomponent, Options.todistro.name,
+                   Options.tosuite.name))
         Options.incomponent = valid_components[Options.incomponent]
 
     # Fix up Options.requestor
     if not Options.requestor:
         if Options.action and not Options.all:
-            dak_utils.fubar("Need -a/--all or an argument for -b/--requested-by.")
+            dak_utils.fubar(
+                "Need -a/--all or an argument for -b/--requested-by.")
         else:
             Options.requestor = whoami
     else:
@@ -1323,12 +1331,14 @@ def objectize_options():
                             % (Options.requestor))
         Options.requestor = "%s <%s>" % (person.displayname,
                                          person.preferredemail.email)
+        # XXX cprov 20061113: is it ensuring RFC-822 sentence is
+        # ASCII ? Don't we support unicodes ?
         Options.requestor = str(Options.requestor)
 
 ########################################
 
 def init():
-    global Blacklisted, Library, LibraryFileAliasSet, Lock, Log
+    global Blacklisted, Library, Lock, Log
 
     apt_pkg.init()
 
@@ -1346,7 +1356,6 @@ def init():
     execute_zcml_for_scripts()
 
     Library = LibrarianClient()
-    LibraryFileAliasSet = getUtility(ILibraryFileAliasSet)
 
     objectize_options()
 
