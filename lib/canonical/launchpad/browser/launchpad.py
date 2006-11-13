@@ -771,7 +771,7 @@ class Button:
 class ProductsButton(Button):
     def makeReplacementDict(self):
         return dict(
-            url='%s/products/' % allvhosts.configs['mainsite'].rooturl,
+            url='%sproducts/' % allvhosts.configs['mainsite'].rooturl,
             buttonname=self.name,
             text=self.text)
 
