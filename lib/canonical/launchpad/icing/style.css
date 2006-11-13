@@ -803,6 +803,10 @@ body.tab-overview #mainarea #portlets .portlet.active div {
   border-left: 4px solid #FEFCF0;
   border-right: 4px solid #FEFCF0;
 }
+h1, h2, h3, #maincontent :link { /* On Overview tab or tab-less pages */
+  background: none;
+  color: #90b51a; /* darkest color from locationbar_em_bg.gif */
+}
 /* tab-branches */
 body.tab-branches #mainarea div.x {
   background-image: url(mainarea_tab1_top.gif);
@@ -840,6 +844,11 @@ body.tab-branches #mainarea div#portlets div.portlet.active ul li a:hover {
 body.tab-branches #mainarea #portlets .portlet.active div {
   border-left: 4px solid #FCF4F2;
   border-right: 4px solid #FCF4F2;
+}
+.tab-branches h1, .tab-branches h2, .tab-branches h3,
+.tab-branches #maincontent :link, .tab-branches #maincontent :visited {
+  background: none;
+  color: #f3cb00; /* "it fits nicely with the Bazaar logo" -- sabdfl */
 }
 /* tab-bugs */
 body.tab-bugs #mainarea div.x {
@@ -879,6 +888,11 @@ body.tab-bugs #mainarea #portlets .portlet.active div {
   border-left: 4px solid #FEFCF0;
   border-right: 4px solid #FEFCF0;
 }
+.tab-bugs h1, .tab-bugs h2, .tab-bugs h3,
+.tab-bugs #maincontent :link, .tab-bugs #maincontent :visited {
+  background: none;
+  color: #c03;
+}
 /* tab-features */
 body.tab-specifications #mainarea div.x {
   background-image: url(mainarea_tab4_top.gif);
@@ -912,6 +926,11 @@ body.tab-specifications #mainarea div#portlets div.portlet.active ul,
 body.tab-specifications #mainarea div#portlets div.portlet.active ul li a,
 body.tab-specifications #mainarea div#portlets div.portlet.active ul li a:hover {
   background-color: #F4F4FC;
+}
+.tab-specifications h1, .tab-specifications h2, .tab-specifications h3,
+.tab-specifications #maincontent :link, .tab-specifications #maincontent :visited {
+  background: none;
+  color: #3f3ccc; /* darkest color from mainarea_tab4-* */
 }
 /* tab-translations */
 body.tab-translations #mainarea div.x {
@@ -950,6 +969,11 @@ body.tab-translations #mainarea div#portlets div.portlet.active ul li a:hover {
 body.tab-translations #mainarea #portlets .portlet.active div {
   border-left: 4px solid #f1f9fc;
   border-right: 4px solid #f1f9fc;
+}
+.tab-translations h1, .tab-translations h2, .tab-translations h3,
+.tab-translations #maincontent :link, .tab-translations #maincontent :visited {
+  background: none;
+  color: #159cc8; /* darkest color from mainarea_tab5-* */
 }
 /* tab-support */
 body.tab-support #mainarea div.x {
@@ -1030,31 +1054,6 @@ body {
 }
 
 /* ====== Content area styles ====== */
-
-h1, h2, h3, #maincontent :link { /* On Overview tab or tab-less pages */
-  background: none;
-  color: #90b51a; /* darkest color from locationbar_em_bg.gif */
-}
-.tab-branches h1, .tab-branches h2, .tab-branches h3,
-.tab-branches #maincontent :link, .tab-branches #maincontent :visited {
-  background: none;
-  color: #f3cb00; /* "it fits nicely with the Bazaar logo" -- sabdfl */
-}
-.tab-bugs h1, .tab-bugs h2, .tab-bugs h3,
-.tab-bugs #maincontent :link, .tab-bugs #maincontent :visited {
-  background: none;
-  color: #c03;
-}
-.tab-specifications h1, .tab-specifications h2, .tab-specifications h3,
-.tab-specifications #maincontent :link, .tab-specifications #maincontent :visited {
-  background: none;
-  color: #3f3ccc; /* darkest color from mainarea_tab4-* */
-}
-.tab-translations h1, .tab-translations h2, .tab-translations h3,
-.tab-translations #maincontent :link, .tab-translations #maincontent :visited {
-  background: none;
-  color: #159cc8; /* darkest color from mainarea_tab5-* */
-}
 
 /* -- Front pages -- */
 
