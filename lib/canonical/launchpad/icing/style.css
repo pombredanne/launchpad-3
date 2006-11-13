@@ -503,7 +503,7 @@ ul#applicationchooser li#applicationchooser_selected {
   clear: both;
   float: left;
 }
-#portlets .portlet ul li a {
+#XXXportlets .portlet ul li a {
   float: left;
   width: 180px;
   height: auto !important;
