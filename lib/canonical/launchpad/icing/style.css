@@ -449,9 +449,15 @@ ul#applicationchooser li#applicationchooser_selected {
 }
 #portlets .portlet {
   overflow: hidden;
-  margin: 0;
+  margin: 0 0 0.5em 0;
   list-style: none;
   font-size: 11px;
+}
+#portlets .portlet.expanded .portletBody {
+  display: block;
+}
+#portlets .portlet.collapsed .portletBody {
+  display: none;
 }
 #portlets .portlet,
 #portlets .portlet h2,
