@@ -6,6 +6,7 @@ import datetime
 import glob
 import os
 import stat
+import shutil
 from zope.security.interfaces import Unauthorized
 from zope.server.interfaces.ftp import IFileSystem
 from zope.interface import implements
@@ -20,16 +21,16 @@ class UploadFileSystem:
 
     def _full(self, path):
         """Returns the full path name (i.e. rootpath + path)"""
-        return os.path.join(self.rootpath, path)
+        full_path = os.path.join(self.rootpath, path)
+        if not os.path.realpath(full_path).startswith(self.rootpath):
+            raise OSError("Path not allowed:", path)
+        return full_path
 
     def _sanitize(self, path):
         if path.startswith('/'):
             path = path[1:]
         path = os.path.normpath(path)
-        if '/' in path:
-            raise OSError("No access to anything outside CWD:", path)
-        else:
-            return path
+        return path
 
     def type(self, path):
         """Return the file type at path
@@ -44,7 +45,7 @@ class UploadFileSystem:
                 return 'd'
             elif os.path.isfile(full_path):
                 return 'f'
-    
+
     def names(self, path, filter=None):
         """Return a sequence of the names in a directory
 
@@ -52,31 +53,33 @@ class UploadFileSystem:
         the filter returns a true value.
         """
         path = self._sanitize(path)
-        if path != ".":
-            return []
-        glob_files = glob.glob(os.path.join(self.rootpath, "*"))
+        full_path = self._full(path)
+        if not os.path.exists(full_path):
+            raise OSError("Not exists:", path)
+        glob_files = glob.glob(os.path.join(self.rootpath, path, "*"))
         prefix = "%s/" % self.rootpath
         files = []
         for filename in glob_files:
-            if os.path.isfile(filename):
-                filename = filename.replace(prefix, "")
-                if not filter or filter(filename):
-                    files += [filename]
+            filename = filename.replace(prefix, "")
+            filename = filename.replace("./", "")
+            if not filter or filter(filename):
+                files += [filename]
         return files
 
     def ls(self, path, filter=None):
         """Return a sequence of information objects."""
         path = self._sanitize(path)
-        if path != ".":
-            return []
-        glob_files = glob.glob(os.path.join(self.rootpath, "*"))
+        full_path = self._full(path)
+        if not os.path.exists(full_path):
+            raise OSError("Not exists:", path)
+        glob_files = glob.glob(os.path.join(self.rootpath, path, "*"))
         prefix = "%s/" % self.rootpath
         infos = []
         for filename in glob_files:
-            if os.path.isfile(filename):
-                filename = filename.replace(prefix, "")
-                if filter is None or filter(filename):
-                    infos.append(self.lsinfo(filename))
+            filename = filename.replace(prefix, "")
+            filename = filename.replace("./", "")
+            if not filter or filter(filename):
+                infos.append(self.lsinfo(filename))
         return infos
 
     def readfile(self, path, outstream, start=0, end=None):
@@ -94,17 +97,15 @@ class UploadFileSystem:
         """
         path = self._sanitize(path)
         full_path = self._full(path)
-        if os.path.exists(full_path):
-            if os.path.isdir(full_path):
-                raise OSError("Is a directory:", path)
-        else:
+        if not os.path.exists(full_path):
             raise OSError("Not exists:", path)
-        info = {"type": 'f',
-                "owner_name": "upload",
+
+        info = {"owner_name": "upload",
                 "group_name": "upload",
-                "nlinks": 1,
-                "name": path}
+                "name": path.split("/")[-1]}
+
         s = os.stat(full_path)
+
         info["owner_readable"] = bool(s[stat.ST_MODE] & stat.S_IRUSR)
         info["owner_writable"] = bool(s[stat.ST_MODE] & stat.S_IWUSR)
         info["owner_executable"] = bool(s[stat.ST_MODE] & stat.S_IXUSR)
@@ -114,8 +115,10 @@ class UploadFileSystem:
         info["other_readable"] = bool(s[stat.ST_MODE] & stat.S_IROTH)
         info["other_writable"] = bool(s[stat.ST_MODE] & stat.S_IWOTH)
         info["other_executable"] = bool(s[stat.ST_MODE] & stat.S_IXOTH)
-        info["mtime"] = datetime.datetime.fromtimestamp(self.mtime(path)) 
+        info["mtime"] = datetime.datetime.fromtimestamp(self.mtime(path))
         info["size"] = self.size(path)
+        info["type"] = self.type(path)
+        info["nlinks"] = s[stat.ST_NLINK]
         return info
 
     def mtime(self, path):
@@ -133,11 +136,18 @@ class UploadFileSystem:
             return os.path.getsize(full_path)
 
     def mkdir(self, path):
-        """Create a directory.
-
-        Not Implemented - see upload.txt.
-        """
+        """Create a directory."""
         path = self._sanitize(path)
+        full_path = self._full(path)
+        if os.path.exists(full_path):
+            if os.path.isfile(full_path):
+                raise OSError("File already exists:", path)
+            elif os.path.isdir(full_path):
+                raise OSError("Directory already exists:", path)
+            raise OSError("OOPS, can't create:", path)
+        else:
+            # XXX check leaf !?!?!
+            os.makedirs(full_path)
 
     def remove(self, path):
         """Remove a file."""
@@ -154,9 +164,14 @@ class UploadFileSystem:
     def rmdir(self, path):
         """Remove a directory.
 
-        Not Implemented - see upload.txt.
+        Remove a target path recursively.
         """
         path = self._sanitize(path)
+        full_path = self._full(path)
+        if os.path.exists(full_path):
+            shutil.rmtree(full_path)
+        else:
+            raise OSError("Not exists:", path)
 
     def rename(self, old, new):
         """Rename a file."""
@@ -187,6 +202,12 @@ class UploadFileSystem:
         if os.path.exists(full_path):
             if os.path.isdir(full_path):
                 raise OSError("Is a directory:", path)
+        else:
+            dirname = os.path.dirname(full_path)
+            if dirname:
+                if not os.path.exists(dirname):
+                    os.makedirs(dirname)
+
         if start and start < 0:
             raise ValueError("Negative start argument:", start)
         if end and end < 0:

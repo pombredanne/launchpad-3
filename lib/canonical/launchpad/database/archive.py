@@ -33,4 +33,3 @@ class ArchiveSet:
 
     def new(self, tag):
         return Archive(tag=tag)
-
