@@ -197,15 +197,16 @@ hr, #globalheader label {
   padding-top: 10px;
   padding-bottom: 20px;
 }
-#copyright {
+#colophon {
   float: left;
   width: 45%;
 }
 #applications-footer {
   float: right;
+  text-align: right;
   width: 45%;
 }
-#colophon {
+#copyright {
   clear: left;
   float: left;
   margin-top: 0.5em;
@@ -270,12 +271,15 @@ hr, #globalheader label {
   font-weight: bold;
   color: #FFFFFF;
 }
+#locationbar strong {
+  margin-right: 16px;
+}
 ul#menuroot {
   display: inline;
   float: left;
   margin: 0;
 }
-#locationbar li {
+ul#menuroot li {
   display: inline;
 }
 #locationbar li a {
@@ -302,7 +306,7 @@ ul#menuroot {
   background-image: url(locationbar_em_bg.gif);
   background-repeat: no-repeat;
   background-position: right top;
-  padding: 5px 26px 10px 20px;
+  padding: 2px 26px 10px 20px;
   cursor: hand;
   cursor: pointer;
 }
@@ -499,7 +503,7 @@ ul#applicationchooser li#applicationchooser_selected {
   clear: both;
   float: left;
 }
-#portlets .portlet ul li a {
+#XXXportlets .portlet ul li a {
   float: left;
   width: 180px;
   height: auto !important;
@@ -539,6 +543,7 @@ ul#applicationchooser li#applicationchooser_selected {
 #globalsearch {
   width: 220px;
   float: right;
+  margin-top: 20px;
 }
 #globalsearch #q {
   width: 170px;
@@ -755,230 +760,237 @@ a.open, a.closed {
   background-image: url(help_ttl_closed.gif);
 }
 /* tab-overview */
-#mainarea.tab-overview div.x {
+body.tab-overview #mainarea div.x {
   background-image: url(mainarea_top.gif);
 }
-#mainarea.tab-overview div.y {
+body.tab-overview #mainarea div.y {
   background-image: url(mainarea_topleft.gif);
 }
-#mainarea.tab-overview div.z,
-#mainarea.tab-overview ul#applicationchooser {
+body.tab-overview #mainarea div.z,
+body.tab-overview #mainarea ul#applicationchooser {
   background-image: url(mainarea_topright.gif);
 }
-#mainarea.tab-overview ul#applicationchooser li {
+body.tab-overview #mainarea ul#applicationchooser li {
   background-image: url(appchoose_a.gif);
 }
-#mainarea.tab-overview ul#applicationchooser li.tab-overview {
+body.tab-overview #mainarea ul#applicationchooser li.tab-overview {
   background-position: -200px 0px !important;
 }
-#mainarea.tab-overview #portlets .portlet.active h2 a,
-#mainarea.tab-overview div#portlets div.portlet.active a {
+body.tab-overview #mainarea #portlets .portlet.active h2 a,
+body.tab-overview #mainarea div#portlets div.portlet.active a {
   background-color: #F0CB00;
 }
-#mainarea.tab-overview #portlets .portlet.active h2 a:hover,
-#mainarea.tab-overview div#portlets div.portlet.active a:hover {
+body.tab-overview #mainarea #portlets .portlet.active h2 a:hover,
+body.tab-overview #mainarea div#portlets div.portlet.active a:hover {
   background-color: #FFE40F;
 }
-#mainarea.tab-overview #portlets .portlet.active div,
-#mainarea.tab-overview #portlets .portlet.active ul,
-#mainarea.tab-overview #portlets .portlet.active ul li a,
-#mainarea.tab-overview #portlets .portlet.active ul li a:hover,
-#mainarea.tab-overview div#portlets div.portlet.active ul,
-#mainarea.tab-overview div#portlets div.portlet.active ul li a,
-#mainarea.tab-overview div#portlets div.portlet.active ul li a:hover {
+body.tab-overview #mainarea #portlets .portlet.active div,
+body.tab-overview #mainarea #portlets .portlet.active ul,
+body.tab-overview #mainarea #portlets .portlet.active ul li a,
+body.tab-overview #mainarea #portlets .portlet.active ul li a:hover,
+body.tab-overview #mainarea div#portlets div.portlet.active ul,
+body.tab-overview #mainarea div#portlets div.portlet.active ul li a,
+body.tab-overview #mainarea div#portlets div.portlet.active ul li a:hover {
   background-color: #FEFCF0;
 }
-#mainarea.tab-overview #portlets .portlet.active div {
+body.tab-overview #mainarea #portlets .portlet.active div {
   border-left: 4px solid #FEFCF0;
   border-right: 4px solid #FEFCF0;
 }
-/* tab-code */
-#mainarea.tab-code div.x {
+/* tab-branches */
+body.tab-branches #mainarea div.x {
   background-image: url(mainarea_tab1_top.gif);
 }
-#mainarea.tab-code div.y {
+body.tab-branches #mainarea div.y {
   background-image: url(mainarea_tab1_topleft.gif);
 }
-#mainarea.tab-code div.z,
-#mainarea.tab-code ul#applicationchooser {
+body.tab-branches #mainarea div.z,
+body.tab-branches #mainarea ul#applicationchooser {
   background-image: url(mainarea_tab1_topright.gif);
 }
-#mainarea.tab-code ul#applicationchooser li {
+body.tab-branches #mainarea ul#applicationchooser li {
   background-image: url(appchoose_tab1_a.gif);
 }
-#mainarea.tab-code ul#applicationchooser li.tab-code {
+body.tab-branches #mainarea ul#applicationchooser li.tab-branches {
   background-position: -200px 0px !important;
 }
-#mainarea.tab-code #portlets .portlet.active h2 a,
-#mainarea.tab-code div#portlets div.portlet.active a {
+body.tab-branches #mainarea #portlets .portlet.active h2 a,
+body.tab-branches #mainarea div#portlets div.portlet.active a {
   background-color: #CE4227;
 }
-#mainarea.tab-code #portlets .portlet.active h2 a:hover,
-#mainarea.tab-code div#portlets div.portlet.active a:hover {
+body.tab-branches #mainarea #portlets .portlet.active h2 a:hover,
+body.tab-branches #mainarea div#portlets div.portlet.active a:hover {
   background-color: #E2563B;
 }
-#mainarea.tab-code #portlets .portlet.active div,
-#mainarea.tab-code #portlets .portlet.active ul,
-#mainarea.tab-code #portlets .portlet.active ul li a,
-#mainarea.tab-code #portlets .portlet.active ul li a:hover,
-#mainarea.tab-code div#portlets div.portlet.active ul,
-#mainarea.tab-code div#portlets div.portlet.active ul li a,
-#mainarea.tab-code div#portlets div.portlet.active ul li a:hover {
+body.tab-branches #mainarea #portlets .portlet.active div,
+body.tab-branches #mainarea #portlets .portlet.active ul,
+body.tab-branches #mainarea #portlets .portlet.active ul li a,
+body.tab-branches #mainarea #portlets .portlet.active ul li a:hover,
+body.tab-branches #mainarea div#portlets div.portlet.active ul,
+body.tab-branches #mainarea div#portlets div.portlet.active ul li a,
+body.tab-branches #mainarea div#portlets div.portlet.active ul li a:hover {
   background-color: #FCF4F2;
 }
-#mainarea.tab-code #portlets .portlet.active div {
+body.tab-branches #mainarea #portlets .portlet.active div {
   border-left: 4px solid #FCF4F2;
   border-right: 4px solid #FCF4F2;
 }
 /* tab-bugs */
-#mainarea.tab-bugs div.x {
+body.tab-bugs #mainarea div.x {
   background-image: url(mainarea_tab2_top.gif);
 }
-#mainarea.tab-bugs div.y {
+body.tab-bugs #mainarea div.y {
   background-image: url(mainarea_tab2_topleft.gif);
 }
-#mainarea.tab-bugs div.z,
-#mainarea.tab-bugs ul#applicationchooser {
+body.tab-bugs #mainarea div.z,
+body.tab-bugs #mainarea ul#applicationchooser {
   background-image: url(mainarea_tab2_topright.gif);
 }
-#mainarea.tab-bugs ul#applicationchooser li a {
+body.tab-bugs #mainarea ul#applicationchooser li {
   background-image: url(appchoose_tab2_a.gif);
 }
-#mainarea.tab-bugs ul#applicationchooser li.tab-bugs a {
+body.tab-bugs #mainarea ul#applicationchooser li.tab-bugs {
   background-position: -200px 0px !important;
 }
-#mainarea.tab-bugs #portlets .portlet.active h2 a,
-#mainarea.tab-bugs div#portlets div.portlet.active a {
+body.tab-bugs #mainarea #portlets .portlet.active h2 a,
+body.tab-bugs #mainarea div#portlets div.portlet.active a {
   background-color: #F0CB00;
 }
-#mainarea.tab-bugs #portlets .portlet.active h2 a:hover,
-#mainarea.tab-bugs div#portlets div.portlet.active a:hover {
+body.tab-bugs #mainarea #portlets .portlet.active h2 a:hover,
+body.tab-bugs #mainarea div#portlets div.portlet.active a:hover {
   background-color: #FFE40F;
 }
-#mainarea.tab-bugs #portlets .portlet.active div,
-#mainarea.tab-bugs #portlets .portlet.active ul,
-#mainarea.tab-bugs #portlets .portlet.active ul li a,
-#mainarea.tab-bugs #portlets .portlet.active ul li a:hover,
-#mainarea.tab-bugs div#portlets div.portlet.active ul,
-#mainarea.tab-bugs div#portlets div.portlet.active ul li a,
-#mainarea.tab-bugs div#portlets div.portlet.active ul li a:hover {
+body.tab-bugs #mainarea #portlets .portlet.active div,
+body.tab-bugs #mainarea #portlets .portlet.active ul,
+body.tab-bugs #mainarea #portlets .portlet.active ul li a,
+body.tab-bugs #mainarea #portlets .portlet.active ul li a:hover,
+body.tab-bugs #mainarea div#portlets div.portlet.active ul,
+body.tab-bugs #mainarea div#portlets div.portlet.active ul li a,
+body.tab-bugs #mainarea div#portlets div.portlet.active ul li a:hover {
   background-color: #FEFCF0;
 }
-#mainarea.tab-bugs #portlets .portlet.active div {
+body.tab-bugs #mainarea #portlets .portlet.active div {
   border-left: 4px solid #FEFCF0;
   border-right: 4px solid #FEFCF0;
 }
 /* tab-features */
-#mainarea.tab-features div.x {
+body.tab-specifications #mainarea div.x {
   background-image: url(mainarea_tab4_top.gif);
 }
-#mainarea.tab-features div.y {
+body.tab-specifications #mainarea div.y {
   background-image: url(mainarea_tab4_topleft.gif);
 }
-#mainarea.tab-features div.z,
-#mainarea.tab-features ul#applicationchooser {
+body.tab-specifications #mainarea div.z,
+body.tab-specifications #mainarea ul#applicationchooser {
   background-image: url(mainarea_tab4_topright.gif);
 }
-#mainarea.tab-features ul#applicationchooser li {
+body.tab-specifications #mainarea ul#applicationchooser li {
   background-image: url(appchoose_tab4_a.gif);
 }
-#mainarea.tab-features ul#applicationchooser li.tab-features {
+body.tab-specifications #mainarea ul#applicationchooser li.tab-specifications {
   background-position: -200px 0px !important;
 }
-#mainarea.tab-features #portlets .portlet.active h2 a,
-#mainarea.tab-features div#portlets div.portlet.active a {
+body.tab-specifications #mainarea #portlets .portlet.active h2 a,
+body.tab-specifications #mainarea div#portlets div.portlet.active a {
   background-color: #3F3CCC;
 }
-#mainarea.tab-features #portlets .portlet.active h2 a:hover,
-#mainarea.tab-features div#portlets div.portlet.active a:hover {
+body.tab-specifications #mainarea #portlets .portlet.active h2 a:hover,
+body.tab-specifications #mainarea div#portlets div.portlet.active a:hover {
   background-color: #5350E0;
 }
-#mainarea.tab-features #portlets .portlet.active div,
-#mainarea.tab-features #portlets .portlet.active ul,
-#mainarea.tab-features #portlets .portlet.active ul li a,
-#mainarea.tab-features #portlets .portlet.active ul li a:hover,
-#mainarea.tab-features div#portlets div.portlet.active ul,
-#mainarea.tab-features div#portlets div.portlet.active ul li a,
-#mainarea.tab-features div#portlets div.portlet.active ul li a:hover {
+body.tab-specifications #mainarea #portlets .portlet.active div,
+body.tab-specifications #mainarea #portlets .portlet.active ul,
+body.tab-specifications #mainarea #portlets .portlet.active ul li a,
+body.tab-specifications #mainarea #portlets .portlet.active ul li a:hover,
+body.tab-specifications #mainarea div#portlets div.portlet.active ul,
+body.tab-specifications #mainarea div#portlets div.portlet.active ul li a,
+body.tab-specifications #mainarea div#portlets div.portlet.active ul li a:hover {
   background-color: #F4F4FC;
 }
 /* tab-translations */
-#mainarea.tab-translations div.x {
+body.tab-translations #mainarea div.x {
   background-image: url(mainarea_tab5_top.gif);
 }
-#mainarea.tab-translations div.y {
+body.tab-translations #mainarea div.y {
   background-image: url(mainarea_tab5_topleft.gif);
 }
-#mainarea.tab-translations div.z,
-#mainarea.tab-translations ul#applicationchooser {
+body.tab-translations #mainarea div.z,
+body.tab-translations #mainarea ul#applicationchooser {
   background-image: url(mainarea_tab5_topright.gif);
 }
-#mainarea.tab-translations ul#applicationchooser li {
+body.tab-translations #mainarea ul#applicationchooser li {
   background-image: url(appchoose_tab5_a.gif);
 }
-#mainarea.tab-translations ul#applicationchooser li.tab-translations {
+body.tab-translations #mainarea ul#applicationchooser li.tab-translations {
   background-position: -200px 0px !important;
 }
-#mainarea.tab-translations #portlets .portlet.active h2 a,
-#mainarea.tab-translations div#portlets div.portlet.active a {
+body.tab-translations #mainarea #portlets .portlet.active h2 a,
+body.tab-translations #mainarea div#portlets div.portlet.active a {
   background-color: #159CC8;
 }
-#mainarea.tab-translations #portlets .portlet.active h2 a:hover,
-#mainarea.tab-translations div#portlets div.portlet.active a:hover {
+body.tab-translations #mainarea #portlets .portlet.active h2 a:hover,
+body.tab-translations #mainarea div#portlets div.portlet.active a:hover {
   background-color: #29B0DC;
 }
-#mainarea.tab-translations #portlets .portlet.active div,
-#mainarea.tab-translations #portlets .portlet.active ul,
-#mainarea.tab-translations #portlets .portlet.active ul li a,
-#mainarea.tab-translations #portlets .portlet.active ul li a:hover,
-#mainarea.tab-translations div#portlets div.portlet.active ul,
-#mainarea.tab-translations div#portlets div.portlet.active ul li a,
-#mainarea.tab-translations div#portlets div.portlet.active ul li a:hover {
+body.tab-translations #mainarea #portlets .portlet.active div,
+body.tab-translations #mainarea #portlets .portlet.active ul,
+body.tab-translations #mainarea #portlets .portlet.active ul li a,
+body.tab-translations #mainarea #portlets .portlet.active ul li a:hover,
+body.tab-translations #mainarea div#portlets div.portlet.active ul,
+body.tab-translations #mainarea div#portlets div.portlet.active ul li a,
+body.tab-translations #mainarea div#portlets div.portlet.active ul li a:hover {
   background-color: #F1F9FC;
 }
-#mainarea.tab-translations #portlets .portlet.active div {
+body.tab-translations #mainarea #portlets .portlet.active div {
   border-left: 4px solid #f1f9fc;
   border-right: 4px solid #f1f9fc;
 }
 /* tab-support */
-#mainarea.tab-support div.x {
+body.tab-support #mainarea div.x {
   background-image: url(mainarea_tab6_top.gif);
 }
-#mainarea.tab-support div.y {
+body.tab-support #mainarea div.y {
   background-image: url(mainarea_tab6_topleft.gif);
 }
-#mainarea.tab-support div.z,
-#mainarea.tab-support ul#applicationchooser {
+body.tab-support #mainarea div.z,
+body.tab-support #mainarea ul#applicationchooser {
   background-image: url(mainarea_tab6_topright.gif);
 }
-#mainarea.tab-support ul#applicationchooser li {
+body.tab-support #mainarea ul#applicationchooser li {
   background-image: url(appchoose_tab6_a.gif);
 }
-#mainarea.tab-support ul#applicationchooser li.tab-support {
+body.tab-support #mainarea ul#applicationchooser li.tab-support {
   background-position: -200px 0px !important;
 }
-#mainarea.tab-support #portlets .portlet.active h2 a,
-#mainarea.tab-support div#portlets div.portlet.active a {
+body.tab-support #mainarea #portlets .portlet.active h2 a,
+body.tab-support #mainarea div#portlets div.portlet.active a {
   background-color: #F0CB00;
 }
-#mainarea.tab-support #portlets .portlet.active h2 a:hover,
-#mainarea.tab-support div#portlets div.portlet.active a:hover {
+body.tab-support #mainarea #portlets .portlet.active h2 a:hover,
+body.tab-support #mainarea div#portlets div.portlet.active a:hover {
   background-color: #FFE40F;
 }
-#mainarea.tab-support #portlets .portlet.active div,
-#mainarea.tab-support #portlets .portlet.active ul,
-#mainarea.tab-support #portlets .portlet.active ul li a,
-#mainarea.tab-support #portlets .portlet.active ul li a:hover,
-#mainarea.tab-support div#portlets div.portlet.active ul,
-#mainarea.tab-support div#portlets div.portlet.active ul li a,
-#mainarea.tab-support div#portlets div.portlet.active ul li a:hover {
+body.tab-support #mainarea #portlets .portlet.active div,
+body.tab-support #mainarea #portlets .portlet.active ul,
+body.tab-support #mainarea #portlets .portlet.active ul li a,
+body.tab-support #mainarea #portlets .portlet.active ul li a:hover,
+body.tab-support #mainarea div#portlets div.portlet.active ul,
+body.tab-support #mainarea div#portlets div.portlet.active ul li a,
+body.tab-support #mainarea div#portlets div.portlet.active ul li a:hover {
   background-color: #FEFCF0;
 }
-#mainarea.tab-support #portlets .portlet.active div {
+body.tab-support #mainarea #portlets .portlet.active div {
   border-left: 4px solid #FEFCF0;
   border-right: 4px solid #FEFCF0;
 }
-
+ul#applicationchooser a, ul#applicationchooser a:hover {
+  color: #000;
+}
+#structural-children {
+  margin-top: 4em;
+  padding-top: 0;
+  border-top: 1px dotted #ccc;
+}
 /* Matthew's code for laying out the columns: */
 body {
   min-width: 480px;
@@ -1017,17 +1029,25 @@ h1, h2, h3, #maincontent :link { /* On Overview tab or tab-less pages */
   background: none;
   color: #90b51a; /* darkest color from locationbar_em_bg.gif */
 }
-.tab-code h1, .tab-code h2, .tab-code h3, .tab-code :link, .tab-code :visited {
+.tab-branches h1, .tab-branches h2, .tab-branches h3,
+.tab-branches #maincontent :link, .tab-branches #maincontent :visited {
   background: none;
   color: #f3cb00; /* "it fits nicely with the Bazaar logo" -- sabdfl */
 }
-.tab-bugs h1, .tab-bugs h2, .tab-bugs h3, .tab-bugs :link, .tab-bugs :visited {
+.tab-bugs h1, .tab-bugs h2, .tab-bugs h3,
+.tab-bugs #maincontent :link, .tab-bugs #maincontent :visited {
   background: none;
   color: #c03;
 }
-.tab-features h1, .tab-features h2, .tab-features :link, .tab-features :visited {
+.tab-specifications h1, .tab-specifications h2, .tab-specifications h3,
+.tab-specifications #maincontent :link, .tab-specifications #maincontent :visited {
   background: none;
-  color: #90b51a;
+  color: #3f3ccc; /* darkest color from mainarea_tab4-* */
+}
+.tab-translations h1, .tab-translations h2, .tab-translations h3,
+.tab-translations #maincontent :link, .tab-translations #maincontent :visited {
+  background: none;
+  color: #159cc8; /* darkest color from mainarea_tab5-* */
 }
 
 /* -- Front pages -- */

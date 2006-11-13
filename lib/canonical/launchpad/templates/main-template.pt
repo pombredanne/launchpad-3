@@ -46,21 +46,10 @@
 
     <div id="locationbar">
       <strong>Your location:</strong>
-      <ul id="menuroot">
-        <li><a href="/"><em>Foo</em></a></li>
-        <li><a href="/">Bar</a></li> <!-- this should look the same -->
-        <li><a href="/"><em>Hum</em></a></li>
-      </ul>
-    </div>
-
-    <tal:nothing condition="nothing">
-    <div id="locationbar">
-      <strong>Your location:</strong>
       <ul id="menuroot" class="menuroot">
         <tal:hierarchy content="structure context/@@+breadcrumbs" />
       </ul>
     </div>
-    </tal:nothing>
 
     <div id="logincontrol" tal:content="structure context/@@login_status" />
     <tal:maintenance replace="structure context/@@+maintenancemessage" />
@@ -80,15 +69,15 @@
     </div>
     <tal:layout condition="not:columns1|nothing">
 
-    <div id="structuralobject"
-        tal:define="structuralobject CONTEXTS/lp:structuralobject">
-      <tal:if condition="structuralobject">
-      <tal:structuralobject
-          replace="structure structuralobject/@@+structural-heading" />
-      </tal:if>
-      <tal:if condition="not: structuralobject">
-        No structural object!
-      </tal:if>
+    <div
+      id="structuralobject"
+      tal:define="structuralobject CONTEXTS/lp:structuralobject"
+    >
+      <tal:header
+        condition="structuralobject"
+        replace="structure structuralobject/@@+structural-header"
+      />
+      <tal:none condition="not:structuralobject">No structural object</tal:none>
     </div>
     <form id="globalsearch" action="/search" method="get">
       <div>
@@ -107,7 +96,7 @@
         />
       </div>
     </form>
-    <div id="mainarea" class="tab-overview">
+    <div id="mainarea">
       <div class="t">
         <div class="u">
           <div class="v">
@@ -171,6 +160,11 @@
                           use-macro="context/@@+main-template-macros/notifications" />
                       </tal:notifications>
                       <metal:block define-slot="main" />
+                      <div id="structural-children"
+                        tal:define="structuralobject CONTEXTS/lp:structuralobject" 
+                        tal:condition="structuralobject"
+                        tal:content="structure structuralobject/@@+structural-footer"
+                      />
                     </div>
                     <div id="portlets">
                       <tal:actionsmenu
@@ -218,21 +212,24 @@
     </div>
     <div id="globalfooter">
       <div id="applications-footer" tal:define="vhosts modules/canonical.launchpad.webapp.vhosts/allvhosts/configs">
+        <a tal:attributes="href vhosts/mainsite/rooturl">Launchpad home</a> |
+        <a tal:attributes="href vhosts/code/rooturl">Code</a> |
+      
       <a tal:attributes="href vhosts/bugs/rooturl">Bugs</a> |
       <a tal:attributes="href vhosts/blueprints/rooturl">Blueprints</a> |
       <a tal:attributes="href vhosts/translations/rooturl">Translations</a> |
-      <a tal:attributes="href vhosts/answers/rooturl">Answers</a> |
-      <a tal:attributes="href vhosts/code/rooturl">Code</a> |
-      </div>
-      <div id="copyright">
-        Copyright&nbsp;2004-2006&nbsp;<a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
+
+        <a tal:attributes="href vhosts/answers/rooturl">Answers</a>
       </div>
       <div id="colophon">
         <a href="/legal">Copyright&nbsp;terms</a> |
         <a href="/feedback">Help&nbsp;us&nbsp;improve</a> |
-        <a href="/faq">FAQ</a> |
+        <a href="/faq">FAQ</a>
+      </div>
+      <div id="copyright">
+        Copyright&nbsp;2004-2006&nbsp;<a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
         <tal:block define="revno modules/canonical.launchpad.versioninfo/revno">
-            build
+            | build
             <tal:block condition="revno" replace="revno" />
             <tal:block condition="not: revno">unknown</tal:block>
         </tal:block> |
