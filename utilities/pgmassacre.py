@@ -38,9 +38,10 @@ def send_signal(database, signal):
         import os
 
         signal = args[0]
-        for row in plpy.execute(
-            "SELECT procpid FROM pg_stat_activity WHERE datname=%(qdatabase)s"
-            ):
+        for row in plpy.execute('''
+            SELECT procpid FROM pg_stat_activity WHERE datname=%(qdatabase)s
+                AND procpid != pg_backend_pid()
+            '''):
             try:
                 os.kill(row['procpid'], signal)
             except OSError:
@@ -104,7 +105,7 @@ def main():
     cur = con.cursor()
 
     # Ensure the database exists. Note that the script returns success
-    # in this case to ease scripting.
+    # if the database does not exist to ease scripting.
     cur.execute("SELECT count(*) FROM pg_database WHERE datname=%s", [database])
     if cur.fetchone()[0] == 0:
         print >> sys.stderr, \

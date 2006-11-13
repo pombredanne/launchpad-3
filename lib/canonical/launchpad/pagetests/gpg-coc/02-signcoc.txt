@@ -1,7 +1,7 @@
   First we check that Sample Person never signed a code of conduct.
 
   >>> browser.addHeader("Authorization", "Basic test@canonical.com:test")
-  >>> browser.open("http://localhost:9000/people/name12/+codesofconduct")
+  >>> browser.open("http://launchpad.dev/people/name12/+codesofconduct")
 
   >>> "Sample Person has never signed" in browser.contents
   True
@@ -22,7 +22,7 @@
   >>> filename = filename_path("truncated_coc.asc")
   >>> truncated_coc = open(filename).read()
 
-  >>> browser.open("http://localhost:9000/codeofconduct/1.0.1/+sign")
+  >>> browser.open("http://launchpad.dev/codeofconduct/1.0.1/+sign")
   >>> browser.getControl("Signed Code").value = truncated_coc
   >>> browser.getControl("Continue").click()
 
@@ -43,18 +43,18 @@
   True
 
   If we try to access the old version page to sign it
-  >>> browser.open("http://localhost:9000/codeofconduct/1.0/+sign")
+  >>> browser.open("http://launchpad.dev/codeofconduct/1.0/+sign")
 
   We're presented with a link to the current code page
   >>> current_coc_link = browser.getLink("the current version")
   >>> current_coc_link.url
-  'http://localhost:9000/codeofconduct/1.0.1'
+  'http://launchpad.dev/codeofconduct/1.0.1'
 
   We navigate to the current Code page
   >>> current_coc_link.click()
   >>> browser.getLink("Sign This Version").click()
   >>> browser.url
-  'http://localhost:9000/codeofconduct/1.0.1/+sign'
+  'http://launchpad.dev/codeofconduct/1.0.1/+sign'
 
 
   Now we try to register the code of conduct, using an reformatted copy
@@ -68,8 +68,8 @@
   This succeeds because the words are the same and in the same order.
 
   >>> browser.url
-  'http://localhost:9000/people/name12/+codesofconduct'
+  'http://launchpad.dev/people/name12/+codesofconduct'
 
-  >>> browser.open("http://localhost:9000/people/name12/+codesofconduct")
+  >>> browser.open("http://launchpad.dev/people/name12/+codesofconduct")
   >>> "1024D/DFD20543" in browser.contents
   True

@@ -85,8 +85,10 @@ class BinaryPackageRelease(SQLBase):
         return self.build.sourcepackagerelease.sourcepackagename.name
 
     def lastversions(self):
-        """Return the SUPERSEDED BinaryPackageReleases in a DistroRelease
-        that comes from the same SourcePackage.
+        """Return the SUPERSEDED BinaryPackageReleases in a DistroRelease.
+
+        The distrorelease information comes from the SourcepackageRelease
+        and the publishing system.
         """
         # Daniel Debonzi: To get the lastest versions of a BinaryPackage
         # Im suposing that one BinaryPackage is build for only one
@@ -98,18 +100,18 @@ class BinaryPackageRelease(SQLBase):
         # be retrieved in a view class where I can use informations from
         # the launchbag.
 
-        clauseTables = ['BinaryPackagePublishing', 'BinaryPackageName']
-        query = ('''BinaryPackagePublishing.binarypackagerelease =
-                        BinaryPackageRelease.id
-                    AND BinaryPackageRelease.binarypackagename =
-                    BinaryPackageName.id
-                    AND BinaryPackageName.id = %s
-                    AND BinaryPackagePublishing.distroarchrelease = %s
-                    AND BinaryPackagePublishing.status = %s'''
-                 % sqlvalues(self.binarypackagename.id,
-                             self.build.distroarchrelease.id,
-                             dbschema.PackagePublishingStatus.SUPERSEDED)
-                 )
+        clauseTables = ['BinaryPackagePublishingHistory', 'BinaryPackageName']
+        query = """
+        BinaryPackagePublishingHistory.binarypackagerelease =
+            BinaryPackageRelease.id AND
+        BinaryPackageRelease.binarypackagename =
+            BinaryPackageName.id AND
+        BinaryPackageName.id = %s AND
+        BinaryPackagePublishingHistory.distroarchrelease = %s AND
+        BinaryPackagePublishingHistory.status = %s
+        """ % sqlvalues(self.binarypackagename.id,
+                        self.build.distroarchrelease.id,
+                        dbschema.PackagePublishingStatus.SUPERSEDED)
 
         return shortlist(BinaryPackageRelease.select(
             query, clauseTables=clauseTables, distinct=True))
@@ -124,9 +126,9 @@ class BinaryPackageRelease(SQLBase):
         elif file.filename.endswith(".udeb"):
             determined_filetype = dbschema.BinaryPackageFileType.UDEB
 
-        return BinaryPackageFile(binarypackagerelease=self.id,
+        return BinaryPackageFile(binarypackagerelease=self,
                                  filetype=determined_filetype,
-                                 libraryfile=file.id)
+                                 libraryfile=file)
 
     def publish(self, priority, status, pocket, embargo,
                 distroarchrelease=None):
@@ -136,10 +138,10 @@ class BinaryPackageRelease(SQLBase):
             distroarchrelease = self.build.distroarchrelease
 
         return SecureBinaryPackagePublishingHistory(
-            binarypackagereleaseID=self.id,
-            distroarchreleaseID=distroarchrelease.id,
-            componentID=self.build.sourcepackagerelease.component,
-            sectionID=self.build.sourcepackagerelease.section,
+            binarypackagerelease=self,
+            distroarchrelease=distroarchrelease,
+            component=self.build.sourcepackagerelease.component,
+            section=self.build.sourcepackagerelease.section,
             priority=priority,
             status=status,
             pocket=pocket,
@@ -201,7 +203,7 @@ class BinaryPackageReleaseSet:
                          % sqlvalues(version))
         else:
             status_published = dbschema.PackagePublishingStatus.PUBLISHED
-            queries.append('BinaryPackagePublishing.status = %s'
+            queries.append('BinaryPackagePublishingHistory.status = %s'
                          % sqlvalues(status_published))
 
         if archtag:
@@ -214,15 +216,18 @@ class BinaryPackageReleaseSet:
                                            orderBy=orderBy)
 
     def _buildBaseQuery(self, distroreleaseID):
-        query = '''BinaryPackagePublishing.binarypackagerelease =
-                        BinaryPackageRelease.id
-                   AND BinaryPackagePublishing.distroarchrelease =
-                        DistroArchRelease.id
-                   AND DistroArchRelease.distrorelease = %d
-                   AND BinaryPackageRelease.binarypackagename =
-                        BinaryPackageName.id''' % distroreleaseID
+        query = """
+        BinaryPackagePublishingHistory.binarypackagerelease =
+           BinaryPackageRelease.id AND
+        BinaryPackagePublishingHistory.distroarchrelease =
+           DistroArchRelease.id AND
+        DistroArchRelease.distrorelease = %d AND
+        BinaryPackageRelease.binarypackagename =
+           BinaryPackageName.id AND
+        BinaryPackagePublishingHistory.status != %s
+        """ % (distroreleaseID, dbschema.PackagePublishingStatus.REMOVED)
 
-        clauseTables = ['BinaryPackagePublishing', 'DistroArchRelease',
+        clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchRelease',
                         'BinaryPackageRelease', 'BinaryPackageName']
 
         return query, clauseTables

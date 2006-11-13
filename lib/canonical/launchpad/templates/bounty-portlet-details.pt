@@ -1,11 +1,11 @@
 <div class="portlet">
 
-  <h4>Bounty details:</h4>
+  <h2>Bounty details</h2>
 
   <div class="portletBody portletContent">
 
     <b>Registrant:</b>
-    <img src="/@@/user.gif" />
+    <img src="/@@/user" />
     <a tal:content="context/owner/browsername"
        tal:attributes="href context/owner/fmt:url">Foo Bar</a><br />
 	

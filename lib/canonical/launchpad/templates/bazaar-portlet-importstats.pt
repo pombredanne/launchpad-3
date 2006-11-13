@@ -1,11 +1,11 @@
 <div class="portlet">
 
-  <h4>Upstream Imports:</h4>
+  <h2>Upstream imports</h2>
 
   <div class="portletBody">
     <div class="portletContent">
 	
-      <ul class="statistics">
+      <ul>
         <li>Testing: <span tal:replace="view/testing_count">3</span></li>
         <li>Autotested: <span tal:replace="view/autotested_count">3</span></li>
         <li>Test Failed: <span tal:replace="view/testfailed_count">3</span></li>

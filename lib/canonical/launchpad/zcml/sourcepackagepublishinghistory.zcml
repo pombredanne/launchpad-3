@@ -10,6 +10,7 @@
   <!-- SourcePackagePublishingHistory -->
   <content class="canonical.launchpad.database.SourcePackagePublishingHistory">
     <allow interface="canonical.launchpad.interfaces.ISourcePackagePublishingHistory"/>
+    <allow interface="canonical.launchpad.interfaces.IArchivePublisher" />
   </content>
 
   <browser:pages
@@ -20,6 +21,14 @@
       template="../templates/sourcepackagepublishinghistory-listing-detailed.pt"
       />
   </browser:pages>
+
+  <!-- SourcePackageFilePublishing -->
+  <content class="canonical.launchpad.database.SourcePackageFilePublishing">
+    <allow
+     interface="canonical.launchpad.interfaces.ISourcePackageFilePublishing" />
+    <allow interface="canonical.launchpad.interfaces.IArchiveFilePublisher" />
+    <!-- XXX cprov 20060614: missing security adapter -->
+  </content>
 
   <!-- SecureSourcePackagePublishingHistory -->
   <content class="canonical.launchpad.database.SecureSourcePackagePublishingHistory">

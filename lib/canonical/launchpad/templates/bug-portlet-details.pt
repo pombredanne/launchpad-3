@@ -1,6 +1,6 @@
 <div class="portlet">
 
-  <h4>Bug details:</h4>
+  <h2>Bug details</h2>
 
 
   <div class="portletBody portletContent"
@@ -18,7 +18,7 @@
     </tal:nickname>
 
     <b>Initial Reporter:</b><br />
-    <img src="/@@/user.gif" />
+    <img src="/@@/user" />
     <a tal:attributes="href context/owner/fmt:url"
       tal:content="context/owner/browsername"></a><br />
 
@@ -28,7 +28,7 @@
 
     <div title="Can be seen only by the bug subscribers"
         tal:condition="context/private">
-      <img src="/@@/padlock" alt="" />
+      <img src="/@@/locked" alt="" />
       <span style="color: red; font-weight: bold">Marked Private</span>
       <br />
 

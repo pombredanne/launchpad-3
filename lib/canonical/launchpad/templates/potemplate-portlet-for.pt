@@ -1,11 +1,11 @@
 
 <div class="portlet">
 
-  <h4>Translation of:</h4>
+  <h2>Translation of</h2>
 
   <div class="portletBody">
     <div class="portletContent">
-    <img src="/@@/info_icon.gif" alt="info" />
+    <img src="/@@/info" alt="info" />
     <tal:block condition="context/distrorelease">
       This template came from the following source package and
       distribution:<br />

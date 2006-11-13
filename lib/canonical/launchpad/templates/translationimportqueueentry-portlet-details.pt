@@ -1,7 +1,5 @@
-
 <div class="portlet">
-
-    <h4>Import Entry Details:</h4>
+  <h2>Import entry details</h2>
 
     <div class="portletBody">
         <div class="portletContent">
@@ -17,7 +15,7 @@
             <b>Path:</b>
             <span tal:replace="context/path" /><br />
             <b>Uploader:</b><br />
-            <img src="/@@/user.gif" />
+            <img src="/@@/user" />
             <span tal:replace="context/importer/browsername" /><br />
             <b>Waiting since:</b>
             <span tal:replace="context/dateimported/fmt:date">

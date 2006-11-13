@@ -1,6 +1,6 @@
 
 <tal:block condition="not: context/rcstype">
-
+<tal:block condition="not: context/user_branch">
   <p class="error message">
     No revision control details recorded for <span
     tal:replace="context/displayname">evolution MAIN</span>
@@ -17,6 +17,15 @@
   <a href="/bazaar/">The Bazaar</a>, and HCT will be able to work with
   packages based on it.</p>
 
+</tal:block>
+</tal:block>
+
+<tal:block tal:condition="context/user_branch">
+  <p>The following branch has been registered as the mainline branch
+  for this product series:</p>
+
+  <ul class="branch"
+      tal:content="structure context/user_branch/@@+product-summary-listing" />
 </tal:block>
 
 <tal:block tal:condition="context/rcstype">
@@ -37,7 +46,7 @@
         <td><b tal:content="context/rcstype/title">CVS</b>
             <b>(<span tal:replace="context/rcstype/name" />)</b></td>
       </tr>
-        <tal:block condition="python:context.rcstype.name=='CVS'">
+        <tal:block condition="context/rcstype/enumvalue:CVS">
           <tr>
             <td>CVS root:</td>
             <td tal:content="context/cvsroot">cvs root</td>
@@ -51,7 +60,7 @@
             <td tal:content="context/cvsbranch">cvs branch</td>
           </tr>
         </tal:block>
-        <tal:block condition="python:context.rcstype.name=='SVN'">
+        <tal:block condition="context/rcstype/enumvalue:SVN">
           <tr>
             <td>Subversion Repository:</td>
             <td tal:content="context/svnrepository">svn repo</td>
@@ -61,7 +70,8 @@
           <td><b>Bazaar Status:</b></td>
           <td tal:content="context/importstatus/title">Publishing</td>
         </tr>
-        <tal:block condition="context/branch" replace="structure context/branch/@@+series-reference" />
+        <tal:block condition="context/import_branch"
+            replace="structure context/import_branch/@@+series-reference" />
     </tbody>
   </table>
 </tal:block>

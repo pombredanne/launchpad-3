@@ -4,11 +4,11 @@ Person Views of Spec Lists
 
 There are a couple of views of the specs related to a person.
 
-The Specifications link show a page giving an overview of all the specs
+The Features link shows an overview of all the specifications
 involving that person.
 
-  >>> browser.open('http://localhost/people/name16')
-  >>> browser.getLink('Specifications').click()
+  >>> browser.open('http://blueprints.launchpad.dev/people/name16')
+  >>> browser.getLink('Features').click()
   >>> browser.url
   '.../people/name16/+specs'
   >>> browser.title

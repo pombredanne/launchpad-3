@@ -89,14 +89,14 @@ string:
     u'install sco'
 
 If we pass in a value via the request, we'll be able to get the tags as
-a list through getInputValue():
+a sorted list from getInputValue():
 
     >>> request = TestRequest(form={'field.tags': u'svg sco'})
     >>> tags_widget = BugTagsWidget(bug_tags_field, tag_field, request)
     >>> tags_widget._getFormValue()
-    u'svg sco'
+    u'sco svg'
     >>> tags_widget.getInputValue()
-    [u'svg', u'sco']
+    [u'sco', u'svg']
 
 When we have an input value, the widget can edit the bug tags.
 
@@ -106,6 +106,20 @@ When we have an input value, the widget can edit the bug tags.
     True
     >>> bug_one.tags
     [u'sco', u'svg']
+
+If a user enters an invalid tag, we get an error explaining what's
+wrong.
+
+    >>> request = TestRequest(form={'field.tags': u'!!!! foo $$$$'})
+    >>> tags_widget = BugTagsWidget(bug_tags_field, tag_field, request)
+    >>> tags_widget.getInputValue()
+    Traceback (most recent call last):
+    ...
+    WidgetInputError...
+
+    >>> print tags_widget._error.doc()
+    '!!!!' isn't a valid tag name. Only alphanumeric characters may be used.
+
 
 Let's take a closer look at _toFormValue() to ensure that it works
 properly:
@@ -124,9 +138,19 @@ And _toFieldValue():
     >>> tags_widget._toFieldValue(u'foo')
     [u'foo']
     >>> tags_widget._toFieldValue(u'FOO bar')
-    [u'foo', u'bar']
+    [u'bar', u'foo']
     >>> tags_widget._toFieldValue(u'foo   \t          bar')
-    [u'foo', u'bar']
+    [u'bar', u'foo']
+
+A comma isn't valid in a tag name and sometimes users use commas to
+separate the tags, so we accept that as well.
+
+    >>> tags_widget._toFieldValue(u'foo, bar')
+    [u'bar', u'foo']
+
+    >>> tags_widget._toFieldValue(u'foo,bar')
+    [u'bar', u'foo']
+
 
 == Searching ==
 
@@ -176,14 +200,23 @@ If we now set bug one's tag to 'some-tag', it will be found.
 
 == Tags for a context ==
 
-When viewing a bug listing for a context we want to display all the
-tags that are used in that context. For this we have a method on each
-bug target to return all the used tags. For source packages we return
-the tags used in its distribution/distrorelease, since it's good to see
-which tags can be used. The tags are ordered alphabetically.
+When viewing a bug listing for a context we want to display all the tags
+that are used in that context. For this we have a method on each bug
+target to return all the used tags. For source packages we return the
+tags used in its distribution/distrorelease, since it's good to see
+which tags can be used. The tags are ordered alphabetically.  All tags
+are shown, no matter if they are used in open bugs or closed ones.
 
     >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from canonical.lp.dbschema import BugTaskStatus
     >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> login('test@canonical.com')
+    >>> for bugtask in firefox.searchTasks(BugTaskSearchParams(
+    ...     tag=u'layout-test', user=None)):
+    ...     bugtask.transitionToStatus(BugTaskStatus.FIXRELEASED)
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+
     >>> firefox.getUsedBugTags()
     [u'doc', u'layout-test', u'sco', u'svg']
 
@@ -207,3 +240,63 @@ which tags can be used. The tags are ordered alphabetically.
     >>> debian_woody_firefox = debian_woody.getSourcePackage('mozilla-firefox')
     >>> debian_woody_firefox.getUsedBugTags()
     [u'dataloss', u'layout-test', u'pebcak']
+
+We can also get all the used tags, together with the number of open
+bugs each tag has.
+
+    >>> firefox.getUsedBugTagsWithOpenCounts(None)
+    [(u'doc', 1L), (u'layout-test', 0L), (u'sco', 1L), (u'svg', 1L)]
+
+    >>> mozilla.getUsedBugTagsWithOpenCounts(None)
+    [(u'crash', 0L), (u'doc', 1L), (u'layout-test', 0L),
+     (u'sco', 1L), (u'svg', 1L)]
+
+    >>> ubuntu.getUsedBugTagsWithOpenCounts(None)
+    [(u'crash', 2L), (u'dataloss', 1L), (u'pebcak', 1L),
+     (u'sco', 1L), (u'svg', 1L)]
+
+
+Source packages are a bit special, they return all the tags that are
+used in the whole distribution, while the bug count includes only bugs
+in the specific package.
+
+    >>> ubuntu_thunderbird.getUsedBugTagsWithOpenCounts(None)
+    [(u'crash', 1L), (u'dataloss', 0L), (u'pebcak', 0L),
+     (u'sco', 0L), (u'svg', 0L)]
+
+    >>> debian_woody.getUsedBugTagsWithOpenCounts(None)
+    [(u'dataloss', 1L), (u'layout-test', 1L), (u'pebcak', 1L)]
+
+    >>> debian_woody_firefox.getUsedBugTagsWithOpenCounts(None)
+    [(u'dataloss', 1L), (u'layout-test', 1L), (u'pebcak', 1L)]
+
+Only bugs that the supplied user has access to will be counted:
+
+    >>> bug_nine = getUtility(IBugSet).get(9)
+    >>> bug_nine.private = True
+    >>> flush_database_updates()
+
+    >>> ubuntu_thunderbird.getUsedBugTagsWithOpenCounts(None)
+    [(u'crash', 0L), (u'dataloss', 0L), (u'pebcak', 0L),
+     (u'sco', 0L), (u'svg', 0L)]
+
+    >>> sample_person = getUtility(ILaunchBag).user
+    >>> bug_nine.isSubscribed(sample_person)
+    True
+    >>> ubuntu_thunderbird.getUsedBugTagsWithOpenCounts(sample_person)
+    [(u'crash', 1L), (u'dataloss', 0L), (u'pebcak', 0L),
+     (u'sco', 0L), (u'svg', 0L)]
+
+When context doesn't have any tags getUsedBugTags() returns a empty list.
+
+    >>> gimp = getUtility(IProjectSet).getByName('gimp')
+    >>> gimp.getUsedBugTags()
+    []
+
+    >>> alsa = getUtility(IProductSet).getByName('alsa-utils')
+    >>> alsa.getUsedBugTags()
+    []
+
+    >>> gentoo = getUtility(IDistributionSet).getByName('gentoo')
+    >>> gentoo.getUsedBugTags()
+    []

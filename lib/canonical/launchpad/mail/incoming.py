@@ -17,8 +17,8 @@ from canonical.uuid import generate_uuid
 from canonical.launchpad.interfaces import (
     IGPGHandler, ILibraryFileAliasSet, IMailHandler, IMailBox, IPerson,
     IWeaklyAuthenticatedPrincipal, GPGVerificationError)
-from canonical.launchpad.helpers import setupInteraction
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
+from canonical.launchpad.webapp.interaction import setupInteraction
 from canonical.launchpad.mail.handlers import mail_handlers
 from canonical.launchpad.mail.signedmessage import signed_message_from_string
 from canonical.launchpad.mailnotification import notify_errors_list
@@ -103,18 +103,20 @@ def authenticateEmail(mail):
 def handleMail(trans=transaction):
     # First we define an error handler. We define it as a local
     # function, to avoid having to pass a lot of parameters.
-    def _handle_error(error_msg, file_alias_url):
+    def _handle_error(error_msg, file_alias_url, notify=True):
         """Handles error occuring in handleMail's for-loop.
 
         It does the following:
 
             * deletes the current mail from the mailbox
-            * sends error_msg and file_alias_url to the errors list
+            * sends error_msg and file_alias_url to the errors list if
+              notify is True
             * commits the current transaction to ensure that the
-              message gets sent.
+              message gets sent
         """
         mailbox.delete(mail_id)
-        notify_errors_list(error_msg, file_alias_url)
+        if notify:
+            notify_errors_list(error_msg, file_alias_url)
         trans.commit()
 
     log = getLogger('process-mail')
@@ -169,7 +171,9 @@ def handleMail(trans=transaction):
                 # that it's a bounce from a message we sent.
                 if mail['Return-Path'] == '<>':
                     _handle_error(
-                        "Message had an empty Return-Path.", file_alias_url)
+                        "Message had an empty Return-Path.",
+                        file_alias_url, notify=False
+                        )
                     continue
 
                 try:
@@ -212,7 +216,9 @@ def handleMail(trans=transaction):
 
                 if principal is None and not handler.allow_unknown_users:
                     _handle_error(
-                        'Unknown user: %s ' % mail['From'], file_alias_url)
+                        'Unknown user: %s ' % mail['From'],
+                        file_alias_url, notify=False
+                        )
                     continue
 
                 handled = handler.process(mail, email_addr, file_alias)
@@ -221,7 +227,7 @@ def handleMail(trans=transaction):
                     _handle_error(
                         "Handler found, but message was not handled: %s" % (
                             mail['From'], ),
-                        file_alias_url) 
+                        file_alias_url)
                     continue
 
                 # Commit the transaction before deleting the mail in

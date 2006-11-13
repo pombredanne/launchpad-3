@@ -3,8 +3,8 @@
 
 __metaclass__ = type
 __all__ = ['nearest_menu', 'FacetMenu', 'ApplicationMenu', 'ContextMenu',
-           'Link', 'LinkData', 'FacetLink', 'MenuLink', 'structured',
-           'enabled_with_permission']
+           'Link', 'LinkData', 'FacetLink', 'MenuLink',
+           'structured', 'enabled_with_permission']
 
 import cgi
 from zope.interface import implements
@@ -18,6 +18,7 @@ from canonical.launchpad.webapp.publisher import (
     canonical_url, canonical_url_iterator, UserAttributeCache
     )
 from canonical.launchpad.webapp.url import Url
+from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 class structured:
@@ -69,7 +70,8 @@ class LinkData:
     """
     implements(ILinkData)
 
-    def __init__(self, target, text, summary=None, icon=None, enabled=True):
+    def __init__(self, target, text, summary=None, icon=None, enabled=True,
+                 site=None):
         """Create a new link to 'target' with 'text' as the link text.
 
         'target' is a relative path, an absolute path, or an absolute url.
@@ -82,12 +84,17 @@ class LinkData:
 
         The 'icon' is the name of the icon to use, or None if there is no
         icon.
+
+        The 'site' is None for whatever the current site is, and 'main' or
+        'blueprint' for a specific site.
+
         """
         self.target = target
         self.text = text
         self.summary = summary
         self.icon = icon
         self.enabled = enabled
+        self.site = site
 
 Link = LinkData
 
@@ -169,6 +176,13 @@ class MenuBase(UserAttributeCache):
         # we can set attributes on it like 'name' and 'url' and 'linked'.
         return ILink(linkdata)
 
+    def _rootUrlForSite(self, site):
+        """Return the root URL for the given site."""
+        try:
+            return allvhosts.configs[site].rooturl
+        except KeyError:
+            raise AssertionError('unknown site', site)
+
     def iterlinks(self, requesturl=None):
         """See IMenu."""
         if not self._initialized:
@@ -206,14 +220,20 @@ class MenuBase(UserAttributeCache):
                 link.enabled = False
 
             # Set the .url attribute of the link, using the menu's context.
+            if link.site is None:
+                # the protohost has no trailing slash.
+                rootsite = contexturlobj.protohost
+            else:
+                # Strip trailing slash from the root URL for this site.
+                rootsite = self._rootUrlForSite(link.site)[:-1]
             targeturlobj = Url(link.target)
             if targeturlobj.addressingscheme:
                 link.url = link.target
             elif link.target.startswith('/'):
-                link.url = '%s%s' % (contexturlobj.protohost, link.target)
+                link.url = '%s%s' % (rootsite, link.target)
             else:
                 link.url = '%s%s%s' % (
-                    contexturlobj.protohost, contexturlobj.pathslash, link.target)
+                    rootsite, contexturlobj.pathslash, link.target)
 
             # Make the link unlinked if it is a link to the current page.
             if requesturl is not None:
@@ -233,8 +253,12 @@ class FacetMenu(MenuBase):
     # See IFacetMenu.
     defaultlink = None
 
+    def _filterLink(self, name, link):
+        """Hook to allow subclasses to alter links based on the name used."""
+        return link
+
     def _get_link(self, name):
-        return IFacetLink(MenuBase._get_link(self, name))
+        return IFacetLink(self._filterLink(name, MenuBase._get_link(self, name)))
 
     def iterlinks(self, requesturl=None, selectedfacetname=None):
         """See IFacetMenu."""

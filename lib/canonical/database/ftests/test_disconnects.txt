@@ -2,37 +2,14 @@ This test demonstrates the normal behaviour of psycopg when a connection to
 postgres breaks (i.e. queries fail).  This can happen in real life when postgres
 restarts.
 
-Setup the database
-
-    >>> from canonical.ftests.pgsql import PgTestSetup
-    >>> PgTestSetup().setUp()
-
 Make a TCP proxy to postgres. Note that the twisted version needs to match
 the Python version.
 
-    >>> import os, sys, os.path
-    >>> from subprocess import Popen, PIPE, STDOUT
-    >>> import canonical.lp
-    >>> from canonical.database.ftests import (
-    ...     getDBHost, wait_until_proxy_is_ready, wait_until_proxy_is_stopped)
-    >>> dbhost = getDBHost()
-    >>> ver = sys.version[:3]
-    >>> cmd = ('mktap%s portforward --port 5555 --dest_port 5432 '
-    ...        '--host %s' % (ver, dbhost)).split()
-    >>> proc = Popen(cmd, stdout=PIPE, stderr=STDOUT, stdin=PIPE)
-    >>> proc.wait()
-    0
-    >>> tap_cmd = [
-    ...     'twistd%s' % ver, '-onf', 'portforward.tap',
-    ...     '--pidfile=portforward.pid', '--logfile=twistd.log',
-    ...     ]
-    >>> tap = Popen(tap_cmd, stdout=PIPE, stderr=STDOUT, stdin=PIPE)
-
-Wait for the proxy to start.
-
-    >>> wait_until_proxy_is_ready()
-    >>> tap.poll() is None
-    True
+    >>> import os
+    >>> from canonical.ftests.pgsql import PgTestSetup
+    >>> from canonical.database.ftests import PortForwardTestSetup
+    >>> portforward = PortForwardTestSetup()
+    >>> portforward.setUp()
     
 Connect to postgres via the proxy
 
@@ -50,21 +27,11 @@ Check that the connection is working normally
 
 Break the connection by stopping the proxy 
 
-    >>> from signal import SIGTERM
-    >>> os.kill(tap.pid, SIGTERM)
-    >>> tap.wait()
-    0
-
-Wait for the proxy to stop.
-
-    >>> wait_until_proxy_is_stopped()
+    >>> portforward.tearDown()
 
 And restart it.
 
-    >>> tap = Popen(tap_cmd, stdout=PIPE, stderr=STDOUT, stdin=PIPE)
-    >>> tap.poll() is None
-    True
-    >>> wait_until_proxy_is_ready()
+    >>> portforward.setUp()
 
 Now using our connection should fail
 
@@ -90,15 +57,6 @@ Close our connection
 
 Clean up the proxy.
 
-    >>> os.kill(tap.pid, SIGTERM)
-    >>> tap.wait()
-    -15
-    >>> os.remove('twistd.log')
-    >>> os.remove('portforward.tap')
-    >>> if os.path.exists('portforward.pid'):
-    ...     os.remove('portforward.pid')
-
-Tear down the database
-
-    >>> PgTestSetup().tearDown()
+    >>> portforward.tearDown()
+    >>> os.remove(portforward.logfile)
 

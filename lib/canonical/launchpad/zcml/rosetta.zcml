@@ -40,10 +40,6 @@
             name="+about"
             template="../templates/rosetta-about.pt"
             lp:url="Rosetta/+about" />
-        <browser:page
-            name="+interest"
-            template="../templates/project-interest.pt"
-            lp:url="Rosetta/project/+interest" />
         <!-- portlets -->
         <browser:page
             name="+portlet-stats"
@@ -51,17 +47,6 @@
         <browser:page
             name="+portlet-groups"
             template="../templates/rosetta-portlet-groups.pt" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IRosettaApplication"
-        facet="translations"
-        permission="launchpad.AnyPerson"
-        class="canonical.launchpad.browser.RosettaPreferencesView" >
-        <browser:page
-            name="prefs"
-            template="../templates/rosetta-preferences.pt"
-            lp:url="Rosetta/prefs" />
     </browser:pages>
 
   <!-- Rosetta Stats Views -->

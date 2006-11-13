@@ -29,13 +29,10 @@ Let's check the complex properties of a build object.
   u'breezy-autotest'
 
   >>> firefox_build.title
-  u'i386 build of mozilla-firefox 0.9 in ubuntu breezy-autotest'
+  u'i386 build of mozilla-firefox 0.9 in ubuntu breezy-autotest RELEASE'
 
   >>> firefox_build.was_built
   True
-
-  >>> firefox_build.build_icon
-  '/@@/build-success'
 
   >>> firefox_build.buildlog = 34
   >>> firefox_build.buildlog.url
@@ -44,46 +41,49 @@ Let's check the complex properties of a build object.
   >>> firefox_build.changesfile
   <LibraryFileAlias ...>
 
-Test "reset" functionality:
+  >>> firefox_build.calculated_buildstart
+  datetime.datetime(2004, 9, 27, 11, 55, 12, tzinfo=<UTC>)
 
-  >>> firefox_build.can_be_reset
+Test "retry" functionality:
+
+  >>> firefox_build.can_be_retried
   False
 
   >>> frozen_build = getUtility(IBuildSet).getByBuildID(9)
   >>> frozen_build.title
-  u'i386 build of pmount 0.1-1 in ubuntu warty'
+  u'i386 build of pmount 0.1-1 in ubuntu warty RELEASE'
   >>> frozen_build.buildstate.title
   'Failed to build'
-  >>> frozen_build.can_be_reset
+  >>> frozen_build.can_be_retried
   False
 
-  >>> resetable_build = getUtility(IBuildSet).getByBuildID(17)
-  >>> resetable_build.title
-  u'i386 build of pmount 0.1-1 in ubuntu breezy-autotest'
-  >>> resetable_build.buildstate.title
+  >>> active_build = getUtility(IBuildSet).getByBuildID(17)
+  >>> active_build.title
+  u'i386 build of pmount 0.1-1 in ubuntu breezy-autotest RELEASE'
+  >>> active_build.buildstate.title
   'Failed to build'
-  >>> resetable_build.can_be_reset
+  >>> active_build.can_be_retried
   True
-  >>> resetable_build.builder.name
+  >>> active_build.builder.name
   u'bob'
 
-Reset Build record in question:
+Retry Build record in question:
 
-  >>> resetable_build.reset()
+  >>> active_build.retry()
 
 Build record has no history and is NEEDSBUILD:
 
-  >>> resetable_build.builder is None
+  >>> active_build.builder is None
   True
 
-  >>> resetable_build.buildstate.value is 0
+  >>> active_build.buildstate.value is 0
   True
 
-  >>> resetable_build.buildqueue_record is not None
+  >>> active_build.buildqueue_record is not None
   True
 
 
-Initialize all the required arguments to create a binary package for a
+Initialise all the required arguments to create a binary package for a
 given build record entry.
 
   >>> from canonical.launchpad.interfaces import IBinaryPackageNameSet
@@ -127,9 +127,11 @@ Invoke createBinaryPackageRelease with all required arguments.
   True
 
 
-Commit previous transaction, data we want to preserv:
+Commit previous transaction, data we want to preserve:
+XXX: flush_database_updates() shouldn't be needed. This seems to be
+Bug 3989 -- StuarBishop 20060713
 
-  >>> import transaction
+  >>> flush_database_updates()
   >>> transaction.commit()
 
 Check binarypackages property:
@@ -200,15 +202,24 @@ We can find builds given a source package release and architecture tag.
   >>> bs.getBuildBySRAndArchtag(20,'i386').count()
   5
 
-Exercises IHasBuildRecords' base method getBuildsByArchIds():
+IHasBuildRecords uses a base method provided by IBuildSet,
+getBuildsByArchIds():
 
-For full architectures in hoary:
+It receives list of architectures IDs:
 
   >>> arch_ids = [arch.id for arch in hoary.architectures]
   >>> bs.getBuildsByArchIds(arch_ids).count()
   5
 
-Using build status, only the succesfully built ones:
+It still working for empty list or None:
+
+  >>> bs.getBuildsByArchIds([]).count()
+  0
+
+  >>> bs.getBuildsByArchIds(None).count()
+  0
+
+Using build status, only the successfully built ones:
 
   >>> bs.getBuildsByArchIds(arch_ids,
   ...     status=BuildStatus.FULLYBUILT).count()
@@ -218,9 +229,10 @@ Check the result content:
 
   >>> [b.title for b in bs.getBuildsByArchIds(arch_ids,
   ...     status=BuildStatus.FULLYBUILT)]
-  [u'i386 build of pmount 0.1-1 in ubuntu hoary', u'i386 build of pmount 0.1-1 in ubuntu hoary']
+  [u'i386 build of pmount 0.1-1 in ubuntu hoary RELEASE', u'i386 build
+  of pmount 0.1-1 in ubuntu hoary RELEASE']
 
-Using optional 'name' filter (mathing with SQL LIKE %||filter||%)
+Using optional 'name' filter (matching with SQL LIKE %||filter||%)
 
   >>> bs.getBuildsByArchIds(arch_ids,
   ...     status=BuildStatus.FULLYBUILT,
@@ -246,7 +258,7 @@ We can find recent and pending builds for a given distrorelease.
 
 Or for a given distroarchrelease.
 
-  >>> hoaryi386 = hoary.architectures[0]
+  >>> hoaryi386 = hoary['i386']
   >>> hoaryi386.title
   u'The Hoary Hedgehog Release for i386 (x86)'
 
@@ -312,14 +324,14 @@ For sourcepackage:
 For a given distribution as well:
 
   >>> ubuntu.getBuildRecords().count()
-  13
+  14
 
   >>> L = ubuntu.getBuildRecords(status=BuildStatus.FULLYBUILT)
   >>> for l in L:
-  ...     print l.datecreated, l.id, l.buildstate.value
-  2005-03-24 00:00:00+00:00 19 1
-  2005-03-24 00:00:00+00:00 16 1
-  2005-03-24 00:00:00+00:00 7 1
+  ...     print l.datebuilt, l.id, l.buildstate.value
+  2005-03-25 00:00:01+00:00 19 1
+  2005-03-25 00:00:01+00:00 16 1
+  2005-03-25 00:00:01+00:00 7 1
   2004-09-27 11:57:13+00:00 18 1
   2004-09-27 11:57:13+00:00 2 1
 
@@ -329,27 +341,8 @@ Retrieve the current PENDING builds
   >>> builds.count()
   2
 
-Inspect the FAILED builds:
-
-  >>> failures = ubuntu.getBuildRecords(status=BuildStatus.FAILEDTOBUILD)
-  >>> failures.count()
-  1
-
-Retrieve the single entry:
-
-  >>> failed_build = failures[0]
-  >>> failed_build.title
-  u'i386 build of pmount 0.1-1 in ubuntu warty'
-
-Try resetting the failed build record for released distroreleases failed:
-
-  >>> failed_build.reset()
-  Traceback (most recent call last):
-  ...
-  AssertionError: Build 9 can not be reset
-
 Note, by ordering the build by BuildQueue.lastscore, it already notice
-the existence of a new pending build, since reset already creates a
+the existence of a new pending build, since retry already creates a
 new BuildQueue record:
 
   >>> builds = ubuntu.getBuildRecords(status=BuildStatus.NEEDSBUILD)
@@ -384,3 +377,75 @@ or using optional pocket argument:
   ...    status=BuildStatus.NEEDSBUILD,
   ...    pocket=PackagePublishingPocket.SECURITY).count()
   0
+
+Check IHasBuildRecords when implemented by Builder:
+
+  >>> from canonical.launchpad.interfaces import IBuilderSet
+  >>> bob = getUtility(IBuilderSet)['bob']
+
+  >>> bob_builds = bob.getBuildRecords()
+  >>> bob_builds.count()
+  10
+
+  >>> bob_failed_builds = bob.getBuildRecords(status=BuildStatus.FAILEDTOBUILD)
+  >>> bob_failed_builds.count()
+  1
+
+  >>> bob_pmount_builds = bob.getBuildRecords(name='pmount')
+  >>> bob_pmount_builds.count()
+  4
+
+  >>> bob_pmount_ok_builds = bob.getBuildRecords(
+  ...    status=BuildStatus.FULLYBUILT, name='pmount')
+  >>> bob_pmount_ok_builds.count()
+  3
+
+
+== AssertionErrors in IBuild ==
+
+Build records inserted by gina doesn't provide calculated_buildstart
+value, since they miss fields used in its calculation.
+
+  >>> gina_build = getUtility(IBuildSet).getByBuildID(10)
+  >>> gina_build.title
+  u'i386 build of cnews cr.g7-37 in ubuntu warty RELEASE'
+
+even if IBuild.was_built return true:
+
+  >>> gina_build.was_built
+  True
+
+this method is protected by an assertion on valid buildduration and
+datebuilt, it makes the diagnosis of problems in current DB easier.
+
+  >>> gina_build.calculated_buildstart
+  Traceback (most recent call last):
+  ...
+  AssertionError: value is not suitable for this build record (10)
+
+
+Only builds in failed_states (FAILEDTOBUILD, MANUALDEPWAIT and
+CHROOTWAIT) can be retried. We must check if Soyuz is able to accept
+its result in case of success, i.e., we should not be able to retry a
+build for a released pocket.
+
+All those conditions are controlled by IBuild.can_be_retried() property
+(see above).
+
+  >>> failed_build = getUtility(IBuildSet).getByBuildID(9)
+
+  >>> failed_build.title
+  u'i386 build of pmount 0.1-1 in ubuntu warty RELEASE'
+
+  >>> failed_build.buildstate.name
+  'FAILEDTOBUILD'
+
+  >>> failed_build.can_be_retried
+  False
+
+Attempt to retry this build record will fail with an AssertionError:
+
+  >>> failed_build.retry()
+  Traceback (most recent call last):
+  ...
+  AssertionError: Build 9 can not be retried

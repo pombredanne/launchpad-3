@@ -21,26 +21,24 @@ import pytz
 
 from zope.component import getUtility
 
-from zope.app.form.interfaces import WidgetsError
+from canonical.launchpad.interfaces import (
+    ISprint, ISprintSet, validate_date_interval)
 
-from canonical.launchpad.interfaces import ILaunchBag, ISprint, ISprintSet
-
-from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 
 from canonical.lp.dbschema import (
-    SprintSpecificationStatus, SpecificationFilter, SpecificationStatus,
-    SpecificationPriority)
-
-from canonical.database.sqlbase import flush_database_updates
+    SpecificationFilter,
+    SpecificationPriority,
+    SpecificationSort,
+    SpecificationStatus,
+    )
 
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, GeneralFormView, GetitemNavigation,
-    Navigation, ApplicationMenu, StandardLaunchpadFacets, LaunchpadView)
+    enabled_with_permission, canonical_url, ContextMenu, Link,
+    GeneralFormView, GetitemNavigation, Navigation, ApplicationMenu,
+    StandardLaunchpadFacets, LaunchpadView)
 
-from canonical.launchpad.browser.specificationtarget import (
-    HasSpecificationsView)
 from canonical.launchpad.helpers import shortlist
 from canonical.cachedproperty import cachedproperty
 
@@ -52,7 +50,7 @@ class SprintFacets(StandardLaunchpadFacets):
     enable_only = ['overview', 'specifications']
 
     def specifications(self):
-        text = 'Specifications'
+        text = 'Features'
         summary = 'Topics for discussion at %s' % self.context.title
         return Link('+specs', text, summary)
 
@@ -81,6 +79,7 @@ class SprintOverviewMenu(ApplicationMenu):
         summary = 'Register someone else to attend the meeting'
         return Link('+register', text, summary, icon='add')
 
+    @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Edit Details'
         summary = 'Modify the meeting description, dates or title'
@@ -103,6 +102,7 @@ class SprintSpecificationsMenu(ApplicationMenu):
         summary = 'Show topics that were not accepted for discussion'
         return Link('+specs?acceptance=declined', text, summary, icon='info')
 
+    @enabled_with_permission('launchpad.Driver')
     def settopics(self):
         text = 'Set Topics'
         summary = 'Approve or defer topics for discussion'
@@ -138,6 +138,7 @@ class SprintView(HasSpecificationsView, LaunchpadView):
 
     def initialize(self):
         self.notices = []
+        self.latest_specs_limit = 5
 
     def attendance(self):
         """establish if this user is attending"""
@@ -163,40 +164,78 @@ class SprintView(HasSpecificationsView, LaunchpadView):
         filter = [SpecificationFilter.PROPOSED]
         return self.context.specificationLinks(filter=filter).count()
 
+    @cachedproperty
+    def latest_approved(self):
+        filter = [SpecificationFilter.ACCEPTED]
+        return self.context.specifications(filter=filter,
+                    quantity=self.latest_specs_limit,
+                    sort=SpecificationSort.DATE)
 
-class SprintAddView(GeneralFormView):
 
-    def initialize(self):
-        self.top_of_page_errors = []
+class BaseSprintView(GeneralFormView):
+    """Base View for Add and Edit sprint views"""
 
     def validate(self, form_data):
+        """Verify that the starting date precedes the ending date."""
         time_starts = form_data['time_starts']
         time_ends = form_data['time_ends']
-        if time_starts >= time_ends:
-            self.top_of_page_errors.append(
-                "Sprint can't start after it ends")
-            raise WidgetsError(self.top_of_page_errors)
+        validate_date_interval(time_starts, time_ends)
+
+    def localize_dates(self, dates, timezone):
+        """Return a list of localized datetime objects."""
+        localized_dates = []
+        tz = pytz.timezone(timezone)
+        for date in dates:
+            localized_dates.append(tz.localize(date.replace(tzinfo=None)))
+        return localized_dates
+
+
+class SprintAddView(BaseSprintView):
 
     def process(self, name, title, time_zone, time_starts, time_ends,
-        summary=None, home_page=None):
+        summary=None, driver=None, home_page=None):
         """Create a new Sprint."""
-        # Make the time entered by the user a naive datetime object
-        time_starts = time_starts.replace(tzinfo=None)
-        time_ends = time_ends.replace(tzinfo=None)
-        # Now localize it to the timezone entered by the user. 
-        tz = pytz.timezone(time_zone)
-        time_starts = tz.localize(time_starts)
-        time_ends = tz.localize(time_ends)
+        # localize dates to the timezone entered by the user.
+        time_starts, time_ends = self.localize_dates(
+            [time_starts, time_ends], time_zone)
         sprint = getUtility(ISprintSet).new(self.user, name, title,
             time_zone, time_starts, time_ends, summary=summary,
-            home_page=home_page)
+            driver=driver, home_page=home_page)
         self._nextURL = canonical_url(sprint)
 
 
-class SprintEditView(SQLObjectEditView):
+class SprintEditView(BaseSprintView):
 
-    def changed(self):
-        self.request.response.redirect(canonical_url(self.context))
+    @property
+    def initial_values(self):
+        sprint = self.context
+        time_starts, time_ends = self.localize_dates(
+            [sprint.time_starts, sprint.time_ends], sprint.time_zone)
+        return {
+            'name': sprint.name,
+            'title': sprint.title,
+            'time_zone': sprint.time_zone,
+            'time_starts': time_starts,
+            'time_ends': time_ends,
+            'summary': sprint.summary,
+            'driver': sprint.driver,
+            'home_page': sprint.home_page}
+
+    def process(self, name, title, time_zone, time_starts, time_ends,
+        summary=None, driver=None, home_page=None, address=None):
+        """Edit a Sprint."""
+        sprint = self.context
+        # localize dates to the timezone entered by the user.
+        sprint.time_starts, sprint.time_ends = self.localize_dates(
+            [time_starts, time_ends], time_zone)
+        sprint.name = name
+        sprint.title = title
+        sprint.time_zone = time_zone
+        sprint.summary = summary
+        sprint.driver = driver
+        sprint.home_page = home_page
+        sprint.address = address
+        self._nextURL = canonical_url(sprint)
 
 
 class SprintTopicSetView(HasSpecificationsView, LaunchpadView):
@@ -205,12 +244,13 @@ class SprintTopicSetView(HasSpecificationsView, LaunchpadView):
     It is unusual because we want to display multiple objects with
     checkboxes, then process the selected items, which is not the usual
     add/edit metaphor."""
-    # XXX: SteveAlexander, 2006-03-06, this class and its
-    #      associated templates are not tested.
 
     def initialize(self):
         self.status_message = None
         self.process_form()
+        self.attendee_ids = set(
+            attendance.attendee.id for attendance in self.context.attendances)
+
 
     @cachedproperty
     def spec_filter(self):
@@ -265,7 +305,7 @@ class SprintTopicSetView(HasSpecificationsView, LaunchpadView):
             action_fn = self.context.acceptSpecificationLinks
         else:
             action_fn = self.context.declineSpecificationLinks
-        leftover = action_fn(selected_specs)
+        leftover = action_fn(selected_specs, self.user)
 
         # Status message like: "Accepted 27 specification(s)."
         self.status_message = '%s %d specification(s).' % (
@@ -301,17 +341,24 @@ class SprintMeetingExportView(LaunchpadView):
                 spec.priority < SpecificationPriority.LOW):
                 continue
 
-            if spec.status not in [SpecificationStatus.BRAINDUMP,
+            if spec.status not in [SpecificationStatus.NEW,
+                                   SpecificationStatus.DISCUSSION,
                                    SpecificationStatus.DRAFT]:
                 continue
 
             # get the list of attendees that will attend the sprint
-            interested = set(sub.person for sub in spec.subscriptions)
-            interested = interested.intersection(attendee_set)
+            is_required = dict((sub.person, sub.essential)
+                               for sub in spec.subscriptions)
+            interested = set(is_required.keys()).intersection(attendee_set)
             if spec.assignee is not None:
                 interested.add(spec.assignee)
+                is_required[spec.assignee] = True
             if spec.drafter is not None:
                 interested.add(spec.drafter)
+                is_required[spec.drafter] = True
+            interested = [dict(name=person.name,
+                               required=is_required[person])
+                          for person in interested]
 
             self.specifications.append(dict(
                 spec=spec,

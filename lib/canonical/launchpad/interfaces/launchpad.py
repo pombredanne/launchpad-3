@@ -22,7 +22,7 @@ __all__ = [
     'IBazaarApplication', 'IPasswordEncryptor', 'IReadZODBAnnotation',
     'IWriteZODBAnnotation', 'ILaunchpadBrowserApplicationRequest',
     'IZODBAnnotation', 'IAuthorization',
-    'IHasOwner', 'IHasAssignee', 'IHasProduct',
+    'IHasOwner', 'IHasDrivers', 'IHasAssignee', 'IHasProduct',
     'IHasProductAndAssignee', 'IOpenLaunchBag',
     'IAging', 'IHasDateCreated', 'IHasBug',
     'ILaunchBag', 'ICrowd', 'ILaunchpadCelebrities',
@@ -62,11 +62,14 @@ class ILaunchpadCelebrities(Interface):
     vcs_imports = Attribute("The 'vcs-imports' team.")
     bazaar_expert = Attribute("The Bazaar Experts team.")
     debbugs = Attribute("The Debian Bug Tracker")
+    sourceforge_tracker = Attribute("The SourceForge Bug Tracker")
     shipit_admin = Attribute("The ShipIt Administrators.")
     launchpad_developers = Attribute("The Launchpad development team.")
     ubuntu_bugzilla = Attribute("The Ubuntu Bugzilla.")
     bug_watch_updater = Attribute("The Bug Watch Updater.")
+    bug_importer = Attribute("The bug importer.")
     landscape = Attribute("The Landscape project.")
+    support_tracker_janitor = Attribute("The Support Tracker Janitor.")
 
 
 class ICrowd(Interface):
@@ -266,6 +269,15 @@ class IHasOwner(Interface):
     owner = Attribute("The object's owner, which is an IPerson.")
 
 
+class IHasDrivers(Interface):
+    """An object that has drivers.
+
+    Drivers have permission to approve bugs and features for specific
+    distribution releases and product series.
+    """
+    drivers = Attribute("A list of drivers")
+
+
 class IHasAssignee(Interface):
     """An object that has an assignee."""
 
@@ -347,7 +359,7 @@ class IOpenLaunchBag(ILaunchBag):
         '''Set the login to the given value.'''
     def setDeveloper():
         '''Set the developer flag.
-        
+
         Because we use this during exception handling, we need this set
         and cached at the start of the transaction in case our database
         connection blows up.
@@ -380,6 +392,9 @@ class ILinkData(Interface):
     icon = Attribute("The name of the icon to use.")
 
     enabled = Attribute("Boolean to say whether this link is enabled.")
+
+    site = Attribute(
+        "The name of the site this link is to, or None for the current site.")
 
 
 class ILink(ILinkData):
@@ -558,7 +573,7 @@ class BeforeTraverseEvent(zope.app.publication.interfaces.BeforeTraverseEvent):
 #      for the publisher simplification work.  SteveAlexander 2005-09-14
 # class IEndRequestEvent(Interface):
 #     """An event which gets sent when the publication is ended"""
-# 
+#
 # # called in zopepublication's endRequest method, after ending
 # # the interaction.  it is used only by local sites, to clean
 # # up per-thread state.

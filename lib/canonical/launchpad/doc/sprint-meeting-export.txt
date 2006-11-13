@@ -63,7 +63,8 @@ view:
 We now subscribe Sample Person to the Extension Manager Upgrades spec
 and check the list of interested people:
 
-  >>> ext_spec.subscribe(sampleperson)
+  >>> essential=False
+  >>> ext_spec.subscribe(sampleperson, essential)
   <SpecificationSubscription at ...>
   >>> view = getView(ubz, '+temp-meeting-export', request)
   >>> view.initialize()
@@ -72,7 +73,7 @@ The person does not show up as interested in the spec though. Only the
 specification assignee is listed (the drafter would be too if one was
 assigned).
 
-  >>> sorted(person.name for person in view.specifications[0]['interested'])
+  >>> sorted(person['name'] for person in view.specifications[0]['interested'])
   [u'carlos']
 
 This is because sample person has not registered as an attendee of the
@@ -85,7 +86,7 @@ sprint.  If we add them as an attendee, then they will be available:
 
   >>> view = getView(ubz, '+temp-meeting-export', request)
   >>> view.initialize()
-  >>> sorted(person.name for person in view.specifications[0]['interested'])
+  >>> sorted(person['name'] for person in view.specifications[0]['interested'])
   [u'carlos', u'name12']
 
 The person is also included in the list of attendees:
@@ -112,7 +113,7 @@ sprint:
   >>> link = js_spec.sprint_links[0]
   >>> link.sprint == ubz
   True
-  >>> ubz.acceptSpecificationLinks([link.id])
+  >>> ubz.acceptSpecificationLinks([link.id], sabdfl)
   0
 
 Even though the Javascript spec has now been accepted for the sprint now,
@@ -130,7 +131,7 @@ of specs:
   >>> link = ext_spec.sprint_links[0]
   >>> link.sprint == ubz
   True
-  >>> ubz.declineSpecificationLinks([link.id])
+  >>> ubz.declineSpecificationLinks([link.id], sabdfl)
   0
 
   >>> view = getView(ubz, '+temp-meeting-export', request)

@@ -3,12 +3,6 @@
 
 __metaclass__ = type
 
-# XXX: Bug 39889
-import warnings
-warnings.filterwarnings(
-        'ignore', 'PublisherHTTPServer', DeprecationWarning
-        )
-
 import threading
 
 from zope.publisher.browser import BrowserRequest, BrowserResponse, TestRequest
@@ -16,24 +10,18 @@ from zope.publisher.xmlrpc import XMLRPCRequest
 from zope.app.session.interfaces import ISession
 from zope.interface import implements
 from zope.app.publication.httpfactory import HTTPPublicationRequestFactory
-from zope.app.publication.interfaces import (
-        IBrowserRequestFactory, IRequestPublicationFactory,
-        IPublicationRequestFactory,
-        )
-from zope.server.http.publisherhttpserver import PublisherHTTPServer
+from zope.app.publication.interfaces import IRequestPublicationFactory
 from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer, WSGIHTTPServer
-from zope.app.server.servertype import ServerType
 from zope.app.server import wsgi
 from zope.app.wsgi import WSGIPublisherApplication
 from zope.server.http.commonaccesslogger import CommonAccessLogger
 import zope.publisher.publish
 from zope.publisher.interfaces import IRequest
 
-from canonical.config import config
 import canonical.launchpad.layers
-#from zope.publisher.http import HTTPRequest
 from canonical.launchpad.interfaces import (
-    ILaunchpadBrowserApplicationRequest, IBasicLaunchpadRequest)
+    ILaunchpadBrowserApplicationRequest, IBasicLaunchpadRequest,
+    IShipItApplication)
 from canonical.launchpad.webapp.notifications import (
         NotificationRequest, NotificationResponse, NotificationList
         )
@@ -41,6 +29,8 @@ from canonical.launchpad.webapp.interfaces import (
         INotificationRequest, INotificationResponse)
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
 from canonical.launchpad.webapp.url import Url
+from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
 
 
 class StepsToGo:
@@ -142,7 +132,7 @@ class ApplicationServerSettingRequestFactory:
         return request
 
 
-class LaunchpadBrowserFactory:
+class LaunchpadRequestPublicationFactory:
     """An IRequestPublicationFactory which looks at the Host header.
 
     It chooses the request and publication factories by looking at the
@@ -156,65 +146,59 @@ class LaunchpadBrowserFactory:
     USE_DEFAULTS = object()
     UNHANDLED_HOST = object()
 
+    class VirtualHostRequestPublication:
+        """Data type to represent request publication of a single virtual host.
+        """
+        def __init__(self, conffilename, requestfactory, publicationfactory):
+            self.conffilename = conffilename
+            self.requestfactory = requestfactory
+            self.publicationfactory = publicationfactory
+            # Add data from launchpad.conf
+            self.vhostconfig = allvhosts.configs[self.conffilename]
+
+            self.allhostnames = set(self.vhostconfig.althostnames
+                                    + [self.vhostconfig.hostname])
+
     def __init__(self):
         # This is run just once at server start-up.
 
-        from canonical.publication import (
-            BlueprintPublication, MainLaunchpadPublication)
-        # Set up a dict which maps a host name to a tuple of a reqest and
-        # publication factory.
-        self._hostname_requestpublication = {}
-        self._setUpHostnames(
-            config.launchpad.main_hostname,
-            config.launchpad.root_url,
-            LaunchpadBrowserRequest,
-            MainLaunchpadPublication)
-        self._setUpHostnames(
-            config.launchpad.blueprint_hostname,
-            config.launchpad.blueprint_root_url,
-            BlueprintBrowserRequest,
-            BlueprintPublication)
+        vhrps = []
+        # Use a short form of VirtualHostRequestPublication, for clarity.
+        VHRP = self.VirtualHostRequestPublication
+        vhrps.append(VHRP('mainsite', LaunchpadBrowserRequest, MainLaunchpadPublication))
+        vhrps.append(VHRP('blueprints', BlueprintBrowserRequest, BlueprintPublication))
+        vhrps.append(VHRP('code', CodeBrowserRequest, CodePublication))
+        vhrps.append(VHRP('translations', TranslationsBrowserRequest, TranslationsPublication))
+        vhrps.append(VHRP('bugs', BugsBrowserRequest, BugsPublication))
+        vhrps.append(VHRP('answers', AnswersBrowserRequest, AnswersPublication))
+        vhrps.append(VHRP('shipitubuntu', UbuntuShipItBrowserRequest, ShipItPublication))
+        vhrps.append(VHRP('shipitkubuntu', KubuntuShipItBrowserRequest, ShipItPublication))
+        vhrps.append(VHRP('shipitedubuntu', EdubuntuShipItBrowserRequest, ShipItPublication))
+        vhrps.append(VHRP('xmlrpc', LaunchpadXMLRPCRequest, MainLaunchpadPublication))
+        # Done with using the short form of VirtualHostRequestPublication, so
+        # clean up, as we won't need to use it again later.
+        del VHRP
+
+        # Set up a dict that maps a host name to a
+        # VirtualHostRequestPublication object.
+        self._hostname_vhrp = {}
+
+        # Register hostname and althostnames for each virtual host.
+        for vhrp in vhrps:
+            for hostname in vhrp.allhostnames:
+                assert hostname not in self._hostname_vhrp, (
+                    "The alt host name '%s' was defined more than once.")
+                self._hostname_vhrp[hostname] = vhrp
 
         self._thread_local = threading.local()
 
-    @staticmethod
-    def _hostnameStrToList(hostnamestr):
-        """Return list of hostname string.
-
-        >>> thismethod = LaunchpadBrowserFactory._hostnameStrToList
-        >>> thismethod('foo')
-        ['foo']
-        >>> thismethod('foo,bar, baz')
-        ['foo', 'bar', 'baz']
-        >>> thismethod('foo,,bar, ,baz ,')
-        ['foo', 'bar', 'baz']
-        >>> thismethod('')
-        []
-        >>> thismethod(' ')
-        []
-
-        """
-        if not hostnamestr.strip():
-            return []
-        return [
-            name.strip() for name in hostnamestr.split(',') if name.strip()]
-
-    def _setUpHostnames(
-        self, hostnamestr, rooturl, requestfactory, publicationfactory):
-        """Set up the hostnames from the given config string in the lookup
-        table.
-        """
-        for hostname in self._hostnameStrToList(hostnamestr):
-            self._hostname_requestpublication[hostname] = (
-                rooturl, requestfactory, publicationfactory)
-
     def _defaultFactories(self):
-        from canonical.publication import LaunchpadBrowserPublication
+        from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
         return LaunchpadBrowserRequest, LaunchpadBrowserPublication
 
     def canHandle(self, environment):
         """Only configured domains are handled."""
-        from canonical.publication import LaunchpadBrowserPublication
+        from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
         if 'HTTP_HOST' not in environment:
             self._thread_local.host = self.USE_DEFAULTS
             return True
@@ -224,7 +208,7 @@ class LaunchpadBrowserFactory:
             assert len(host.split(':')) == 2, (
                 "Having a ':' in the host name isn't allowed.")
             host, port = host.split(':')
-        if host not in self._hostname_requestpublication:
+        if host not in self._hostname_vhrp:
             self._thread_local.host = self.UNHANDLED_HOST
             return False
         self._thread_local.host = host
@@ -258,18 +242,17 @@ class LaunchpadBrowserFactory:
         # cases.  Where we have an unknown host header, we can just leave
         # things as is.
 
-        rooturl, request_factory, publication_factory = (
-            self._hostname_requestpublication[host])
+        vhrp = self._hostname_vhrp[host]
 
         # Get hostname, protocol and port out of rooturl.
-        rooturlobj = Url(rooturl)
+        rooturlobj = Url(vhrp.vhostconfig.rooturl)
 
-        request_factory = ApplicationServerSettingRequestFactory(
-            request_factory,
+        requestfactory = ApplicationServerSettingRequestFactory(
+            vhrp.requestfactory,
             rooturlobj.hostname,
             rooturlobj.addressingscheme,
             rooturlobj.port)
-        return request_factory, publication_factory
+        return requestfactory, vhrp.publicationfactory
 
 
 class BasicLaunchpadRequest:
@@ -324,6 +307,28 @@ class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
                 header_output, http_transaction
                 )
 
+    def redirect(self, location, status=None, temporary_if_possible=False):
+        """Do a redirect.
+
+        If temporary_if_possible is True, then do a temporary redirect
+        if this is a HEAD or GET, otherwise do a 303.
+
+        See RFC 2616.
+
+        The interface doesn't say that redirect returns anything.
+        However, Zope's implementation does return the location given.  This
+        is largely useless, as it is just the location given which is often
+        relative.  So we won't return anything.
+        """
+        if temporary_if_possible:
+            assert status is None, (
+                "Do not set 'status' if also setting 'temporary_if_possible'.")
+            method = self._request.method
+            if method == 'GET' or method == 'HEAD':
+                status = 307
+            else:
+                status = 303
+        super(LaunchpadBrowserResponse, self).redirect(location, status=status)
 
 def adaptResponseToSession(response):
     """Adapt LaunchpadBrowserResponse to ISession"""
@@ -397,39 +402,6 @@ class LaunchpadTestResponse(LaunchpadBrowserResponse):
         return self._notifications
 
 
-class BlueprintBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.BlueprintLayer)
-
-
-class LaunchpadXMLRPCRequest(BasicLaunchpadRequest, XMLRPCRequest,
-                             ErrorReportRequest):
-    """Request type for doing XMLRPC in Launchpad."""
-
-
-class XMLRPCPublicationRequestFactory:
-
-    implements(IPublicationRequestFactory)
-
-    def __init__(self, db):
-        from canonical.publication import LaunchpadBrowserPublication
-        LaunchpadXMLRPCPublication = LaunchpadBrowserPublication
-        self._xmlrpc = LaunchpadXMLRPCPublication(db)
-
-    def __call__(self, input_stream, env, output_stream=None):
-        """See zope.app.publication.interfaces.IPublicationRequestFactory"""
-        assert output_stream is None, 'output_stream is deprecated in Z3.2'
-
-        method = env.get('REQUEST_METHOD', 'GET').upper()
-
-        if method in ['POST']:
-            request = LaunchpadXMLRPCRequest(input_stream, env)
-            request.setPublication(self._xmlrpc)
-        else:
-            raise NotImplementedError()
-
-        return request
-
-
 class DebugLayerRequestFactory(HTTPPublicationRequestFactory):
     """RequestFactory that sets the DebugLayer on a request."""
 
@@ -444,17 +416,6 @@ class DebugLayerRequestFactory(HTTPPublicationRequestFactory):
             request, canonical.launchpad.layers.DebugLayer)
         return request
 
-
-# XXX: SteveAlexander, 2006-03-16.  We'll replace these different servers
-#      with fewer ones, and switch based on the Host: header.
-#      http://httpd.apache.org/docs/2.0/mod/mod_proxy.html#proxypreservehost
-
-xmlrpc = ServerType(
-    PublisherHTTPServer,
-    XMLRPCPublicationRequestFactory,
-    CommonAccessLogger,
-    8080,
-    True)
 
 http = wsgi.ServerType(
     WSGIHTTPServer,
@@ -477,3 +438,73 @@ debughttp = wsgi.ServerType(
     8082,
     True,
     requestFactory=DebugLayerRequestFactory)
+
+
+# ---- mainsite
+
+class MainLaunchpadPublication(LaunchpadBrowserPublication):
+    """The publication used for the main Launchpad site."""
+
+# ---- blueprint
+
+class BlueprintBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.BlueprintLayer)
+
+class BlueprintPublication(LaunchpadBrowserPublication):
+    """The publication used for the Blueprint site."""
+
+# ---- code
+
+class CodePublication(LaunchpadBrowserPublication):
+    """The publication used for the Code site."""
+
+class CodeBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.CodeLayer)
+
+# ---- translations
+
+class TranslationsPublication(LaunchpadBrowserPublication):
+    """The publication used for the Translations site."""
+
+class TranslationsBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.TranslationsLayer)
+
+# ---- bugs
+
+class BugsPublication(LaunchpadBrowserPublication):
+    """The publication used for the Bugs site."""
+
+class BugsBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.BugsLayer)
+
+# ---- answers
+
+class AnswersPublication(LaunchpadBrowserPublication):
+    """The publication used for the Answers site."""
+
+class AnswersBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.AnswersLayer)
+
+# ---- shipit
+
+class ShipItPublication(LaunchpadBrowserPublication):
+    """The publication used for the ShipIt sites."""
+
+    root_object_interface = IShipItApplication
+
+class UbuntuShipItBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.ShipItUbuntuLayer)
+
+class KubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.ShipItKUbuntuLayer)
+
+class EdubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.ShipItEdUbuntuLayer)
+
+# ---- xmlrpc
+
+class LaunchpadXMLRPCRequest(BasicLaunchpadRequest, XMLRPCRequest,
+                             ErrorReportRequest):
+    """Request type for doing XMLRPC in Launchpad."""
+
+

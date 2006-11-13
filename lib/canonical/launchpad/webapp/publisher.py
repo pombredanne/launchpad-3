@@ -11,7 +11,7 @@ __all__ = ['UserAttributeCache', 'LaunchpadView', 'LaunchpadXMLRPCView',
            'stepthrough', 'redirection', 'stepto']
 
 from zope.interface import implements
-from zope.component import getUtility, queryView
+from zope.component import getUtility
 from zope.app import zapi
 from zope.interface.advice import addClassAdvisor
 import zope.security.management
@@ -22,11 +22,12 @@ from zope.app.publisher.interfaces.xmlrpc import IXMLRPCView
 from zope.app.publisher.xmlrpc import IMethodPublisher
 from zope.publisher.interfaces import NotFound
 
-from canonical.config import config
-from canonical.launchpad.layers import setFirstLayer
+from canonical.launchpad.layers import (
+    setFirstLayer, ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer)
 from canonical.launchpad.interfaces import (
     ICanonicalUrlData, NoCanonicalUrl, ILaunchpadRoot, ILaunchpadApplication,
     ILaunchBag, IOpenLaunchBag, IBreadcrumb, NotFoundError)
+from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 class DecoratorAdvisor:
@@ -279,29 +280,46 @@ def canonical_url(obj, request=None):
         raise NoCanonicalUrl(obj, obj)
     rootsite = obj_urldata.rootsite
 
+    # The request is needed when there's no rootsite specified and when
+    # handling the different shipit sites.
+    if request is None:
+        # Look for a request from the interaction.
+        current_request = get_current_browser_request()
+        if current_request is not None:
+            request = current_request
+
     if rootsite is None:
         # This means we should use the request, or fall back to the main site.
 
+        # If there is no request, fall back to the root_url from the
+        # config file.
         if request is None:
-            # Look for a request from the interaction.  If there is none, fall
-            # back to the root_url from the config file.
-            current_request = get_current_browser_request()
-            if current_request is not None:
-                request = current_request
-
-        if request is None:
-            root_url = config.launchpad.root_url
+            root_url = allvhosts.configs['mainsite'].rooturl
         else:
             root_url = request.getApplicationURL() + '/'
     else:
         # We should use the site given.
-        if rootsite == 'launchpad':
-            root_url = config.launchpad.root_url
-        elif rootsite == 'blueprint':
-            root_url = config.launchpad.blueprint_root_url
+        if rootsite in allvhosts.configs:
+            root_url = allvhosts.configs[rootsite].rooturl
+        elif rootsite == 'shipit':
+            # Special case for shipit.  We need to take the request's layer
+            # into account.
+            if ShipItUbuntuLayer.providedBy(request):
+                root_url = allvhosts.configs['shipitubuntu'].rooturl
+            elif ShipItEdUbuntuLayer.providedBy(request):
+                root_url = allvhosts.configs['shipitedubuntu'].rooturl
+            elif ShipItKUbuntuLayer.providedBy(request):
+                root_url = allvhosts.configs['shipitkubuntu'].rooturl
+            elif request is None:
+                # Fall back to shipitubuntu_root_url
+                root_url = allvhosts.configs['shipitubuntu'].rooturl
+            else:
+                raise AssertionError(
+                    "Shipit canonical urls must be used only with request "
+                    "== None or a request providing one of the ShipIt Layers")
         else:
             raise AssertionError(
-                "rootsite is %s.  Must be 'launchpad' or 'blueprint'."
+                "rootsite is %s.  Must be 'launchpad', 'blueprint' or 'shipit'."
                 % rootsite)
     return unicode(root_url + u'/'.join(reversed(urlparts)))
 

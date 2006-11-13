@@ -54,7 +54,6 @@
     <th>Component</th>
     <th>Section</th>
     <th>Version</th>
-    <th colspan="3">Info</th>
   </tr>
   </thead>
   <tbody>
@@ -71,12 +70,11 @@
         <li tal:repeat="file files">
           <a
             tal:content="file/url/filename"
-            tal:attributes="href file/url/fileurl" /> 
+            tal:attributes="href file/url/fileurl">evolution_2.tar.gz</a>
+          (<span tal:replace="file/libraryfile/content/filesize/fmt:bytes" />)
         </li>
      </ul>
-     <i tal:condition="not:files">
-       No files available for download.
-     </i>
+     <i tal:condition="not:files">No files available for download.</i>
    </div>
 
 

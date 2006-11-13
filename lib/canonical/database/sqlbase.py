@@ -26,7 +26,7 @@ __all__ = ['SQLBase', 'quote', 'quote_like', 'quoteIdentifier', 'sqlvalues',
            'begin', 'commit', 'rollback', 'alreadyInstalledMsg', 'connect',
            'AUTOCOMMIT_ISOLATION', 'READ_COMMITTED_ISOLATION',
            'SERIALIZABLE_ISOLATION', 'DEFAULT_ISOLATION',
-           'clear_current_connection_cache']
+           'clear_current_connection_cache', 'expire_from_cache']
 
 # As per badly documented psycopg 1 constants
 AUTOCOMMIT_ISOLATION=0
@@ -34,11 +34,16 @@ READ_COMMITTED_ISOLATION=1
 SERIALIZABLE_ISOLATION=3
 DEFAULT_ISOLATION=SERIALIZABLE_ISOLATION
 
-# First, let's monkey-patch SQLObject a little, to stop its getID function from
-# returning None for security-proxied SQLObjects!
+# First, let's monkey-patch SQLObject a little:
 import zope.security.proxy
 import sqlobject.main
+import sqlobject.dbconnection
+# 1. Make its getID function work for proxied SQLObjects
 sqlobject.main.isinstance = zope.security.proxy.isinstance
+# 2. Make _SO_columnClause use the right isinstance so that Proxied
+# SQLObjects can be used in the RHS of a select*By expression (for
+# instance, selectBy(foo=obj))
+sqlobject.dbconnection.isinstance = zope.security.proxy.isinstance
 
 
 class LaunchpadStyle(Style):
@@ -89,6 +94,7 @@ class SQLBase(SQLOS):
     """
     implements(ISQLBase)
     _style = LaunchpadStyle()
+    _randomiseOrder = config.randomise_select_results
     # Silence warnings in linter script, which complains about all
     # SQLBase-derived objects missing an id.
     id = None
@@ -312,6 +318,7 @@ class ZopelessTransactionManager(object):
         self.__class__._installed = None
 
     def _dm(self):
+        assert hasattr(self, 'sqlClass'), 'initZopeless not called'
         return self.sqlClass._connection._dm
 
     def begin(self):
@@ -350,14 +357,19 @@ class ZopelessTransactionManager(object):
 def clear_current_connection_cache():
     """Clear SQLObject's object cache for the current connection."""
     # XXX: There is a different hack for (I think?) similar reasons in
-    #      canonical.publication.  This should probably share code with
-    #      that one.
+    #      canonical.launchpad.webapp.publication.  This should probably
+    #      share code with that one.
     #        - Andrew Bennetts, 2005-02-01
 
     # Don't break if _connection is a FakeZopelessConnectionDescriptor
     if getattr(SQLBase._connection, 'cache', None) is not None:
         for c in SQLBase._connection.cache.allSubCaches():
             c.clear()
+
+def expire_from_cache(obj):
+    """Expires a single object from the SQLObject cache."""
+    if getattr(SQLBase._connection, 'cache', None) is not None:
+        SQLBase._connection.cache.expire(obj.id, obj.__class__)
 
 
 def quote(x):
@@ -402,13 +414,22 @@ def quote(x):
 
     >>> sqlrepr(datetime(2003, 12, 4, 13, 45, 50), 'postgres')
     "'2003-12-04T13:45:50'"
+
+    This function also special cases set objects, which SQLObject's
+    sqlrepr() doesn't know how to handle.
+
+    >>> quote(set([1,2,3]))
+    '(1, 2, 3)'
     """
     if isinstance(x, datetime):
         return "'%s'" % x
     elif ISQLBase(x, None) is not None:
         return str(x.id)
-    else:
-        return sqlrepr(x, 'postgres')
+    elif isinstance(x, set):
+        # SQLObject can't cope with sets, so convert to a list, which it
+        # /does/ know how to handle.
+        x = list(x)
+    return sqlrepr(x, 'postgres')
 
 def quote_like(x):
     r"""Quote a variable ready for inclusion in a SQL statement's LIKE clause

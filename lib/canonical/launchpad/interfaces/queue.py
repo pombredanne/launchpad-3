@@ -17,10 +17,9 @@ __all__ = [
     'IHasQueueItems',
     ]
 
-from zope.schema import Int
+from zope.schema import Int, TextLine
 from zope.interface import Interface, Attribute
 from canonical.launchpad import _
-
 
 
 class QueueStateWriteProtectedError(Exception):
@@ -73,7 +72,6 @@ class IDistroReleaseQueue(Interface):
 
     changesfile = Attribute("The librarian alias for the changes file "
                             "associated with this upload")
-    changesfilename = Attribute("The filename of the changes file.")
 
     sources = Attribute("The queue sources associated with this queue item")
     builds = Attribute("The queue builds associated with the queue item")
@@ -81,14 +79,16 @@ class IDistroReleaseQueue(Interface):
                             "queue item")
 
     datecreated = Attribute("The date on which this queue was created.")
+    displayname = TextLine(
+        title=_("Generic displayname for a queue item"), readonly=True)
+    displayversion = TextLine(
+        title=_("The source package version for this item"), readonly=True)
+    displayarchs = TextLine(
+        title=_("Architetures related to this item"), readonly=True)
 
-    sourcepackagename = Attribute("The source package name for this item.")
+    sourcepackagerelease = Attribute(
+        "The source package release for this item")
 
-    sourceversion = Attribute("The source package version for this item")
-
-    sourcepackagerelease = Attribute("The source package release for this item")
-
-    displayname = Attribute("Generic displayname for a queue item")
     containsSource = Attribute("whether or not this upload contains sources")
     containsBuild = Attribute("whether or not this upload contains binaries")
     containsInstaller = Attribute(
@@ -97,6 +97,8 @@ class IDistroReleaseQueue(Interface):
         "whether or not this upload contains translations")
     containsUpgrader = Attribute(
         "wheter or not this upload contains upgrader images")
+    containsDdtp = Attribute(
+        "wheter or not this upload contains DDTP images")
 
     def setNew():
         """Set queue state to NEW."""
@@ -221,7 +223,16 @@ class IDistroReleaseQueueSource(Interface):
 
 
 class IDistroReleaseQueueCustom(Interface):
-    """A Queue item's related custom format files (for uploader/queue)"""
+    """Stores anything else than source and binaries that needs publication.
+
+    It is essentially a map between DistroRelease/Pocket/LibrarianFileAlias.
+
+    The LibrarianFileAlias usually is a TGZ containing an specific format.
+    Currently we support:
+     [Debian-Installer, Rosetta-Translation, Dist-Upgrader, DDTP-Tarball]
+
+    Each one has an processor which is invoked by the publish method.
+    """
 
     id = Int(
             title=_("ID"), required=True, readonly=True,
@@ -282,6 +293,16 @@ class IDistroReleaseQueueCustom(Interface):
         process will be logged to it.
         """
 
+    def publish_DDTP_TARBALL(logger=None):
+        """Publish this custom item as a raw ddtp-tarball.
+
+        This will write the ddtp-tarball out to the right part of
+        the archive.
+
+        If a logger is provided, information pertaining to the publishing
+        process will be logged to it.
+        """
+
     def publish_ROSETTA_TRANSLATIONS(logger=None):
         """Publish this custom item as a rosetta tarball.
 
@@ -303,12 +324,12 @@ class IDistroReleaseQueueSet(Interface):
     def get(queue_id):
         """Retrieve an IDistroReleaseQueue by a given id"""
 
-    def count(status=None, distrorelease=None):
+    def count(status=None, distrorelease=None, pocket=None):
         """Number of IDistroReleaseQueue present in a given status.
 
         If status is ommitted return the number of all entries.
         'distrorelease' is optional and restrict the results in given
-        distrorelease.
+        distrorelease, same for pocket.
         """
 
 class IHasQueueItems(Interface):
@@ -319,13 +340,18 @@ class IHasQueueItems(Interface):
         """Get the union of builds, sources and custom queue items.
 
         Returns builds, sources and custom queue items in a given state,
-        matching a give name and version terms. If 'status' is not supplied,
-        return all items in the queues. if 'name' and 'version'
-        are supplied return only items which the sourcepackage name or
-        binarypackage name or the filename match (SQL LIKE).
-        'name' doesn't require 'version'
-        'version' doesn't has effect on custom queue items
-        If pocket is specified return only queue items inside it, otherwise
-        return all pockets.
+        matching a give name and version terms.
+
+        If 'status' is not supplied, return all items in the queues,
+        it supports multiple statuses as a list.
+
+        If 'name' and 'version' are supplied only items which match (SQL LIKE)
+        the sourcepackage name, binarypackage name or the filename will be
+        returned.  'name' can be supplied without supplying 'version'.
+        'version' has no effect on custom queue items.
+
+        If 'pocket' is specified return only queue items inside it, otherwise
+        return all pockets.  It supports multiple pockets as a list.
+
         Use 'exact_match' argument for precise results.
         """

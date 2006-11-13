@@ -6,7 +6,8 @@ __all__ = ['LibraryFileContent', 'LibraryFileAlias', 'LibraryFileAliasSet']
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import ILibraryFileAliasSet
+from canonical.launchpad.interfaces import (
+    ILibraryFileContent, ILibraryFileAlias, ILibraryFileAliasSet)
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW, DEFAULT
@@ -16,6 +17,8 @@ from sqlobject import StringCol, ForeignKey, IntCol, SQLRelatedJoin, BoolCol
 
 class LibraryFileContent(SQLBase):
     """A pointer to file content in the librarian."""
+
+    implements(ILibraryFileContent)
 
     _table = 'LibraryFileContent'
 
@@ -29,6 +32,8 @@ class LibraryFileContent(SQLBase):
 
 class LibraryFileAlias(SQLBase):
     """A filename and mimetype that we can serve some given content with."""
+
+    implements(ILibraryFileAlias)
 
     _table = 'LibraryFileAlias'
 
@@ -53,6 +58,13 @@ class LibraryFileAlias(SQLBase):
     def url(self):
         """See ILibraryFileAlias.url"""
         return getUtility(ILibrarianClient).getURLForAlias(self.id)
+
+    @property
+    def secure_url(self):
+        """See ILibraryFileAlias.secure_url"""
+        if not self.url:
+            return None
+        return self.url.replace('http', 'https', 1)
 
     _datafile = None
 
@@ -97,4 +109,11 @@ class LibraryFileAliasSet(object):
     def __getitem__(self, key):
         """See ILibraryFileAliasSet.__getitem__"""
         return LibraryFileAlias.get(key)
+
+    def findBySHA1(self, sha1):
+        """See ILibraryFileAliasSet."""
+        return LibraryFileAlias.select("""
+            content = LibraryFileContent.id
+            AND LibraryFileContent.sha1 = '%s'
+            """ % sha1, clauseTables=['LibraryFileContent'])
 

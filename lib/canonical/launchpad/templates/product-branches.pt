@@ -32,23 +32,27 @@
          tal:condition="branchset">
     <thead>
       <tr>
-        <th>Author</th>
-        <th>Title</th>
         <th>Name</th>
+        <th>Title</th>
+        <th>Author</th>
         <th class="initial-sort">Status</th>
       </tr>
     </thead>
     <tbody>
       <tr tal:repeat="branch branchviewset">
+        <!-- Name -->
+        <td tal:content="branch/name/fmt:shorten/30">Name</td>
+        <!-- Title -->
+        <td>
+          <a tal:attributes="href branch/fmt:url"
+             tal:content="branch/displayname/fmt:shorten/50">Title Goes Here!</a>
+        </td>
+        <!-- Author -->
         <td>
           <span tal:condition="branch/author"
                 tal:replace="branch/author/browsername">Author</span>
         </td>
-        <td>
-          <a tal:attributes="href branch/fmt:url" 
-             tal:content="branch/displayname/fmt:shorten/50">Title Goes Here!</a>
-        </td>
-        <td tal:content="branch/name/fmt:shorten/30">Name</td>
+        <!-- Status -->
         <td>
           <span tal:content="branch/lifecycle_status/sortkey"
                 class="sortkey">23</span>
@@ -78,6 +82,34 @@
     improve community participation in this product.
   </p>
 
-</div>
+</div><tal:comment condition="nothing"><!-- end main slot --></tal:comment>
+
+<metal:block fill-slot="help">
+
+  <p>Launchpad can act as a registry of branches for the <a
+    href="http://bazaar-vcs.org/">Bazaar</a>distributed version control
+    system.</p>
+
+  <p>This page lists all the branches that are associated to a product. There,
+     you can see what code contributions are being worked on or proposed for
+     inclusion in this product.</p>
+
+  <p>Although it is possible for a branch not to be associated to any product,
+    we recommend against using this feature: such branches are harder to
+    locate. Associating your branches to the right product makes it easier for
+    other developers to locate your contributions.</p>
+
+  <p>From this page you can:</p>
+
+  <ul>
+    <li>Browse to every listed branch.</li>
+
+    <li>See this listing in a more detailed format.</li>
+
+    <li>Register a new mirror branch associated to this product.</li>
+  </ul>
+
+</metal:block><tal:comment condition="nothing"><!-- end help slot --></tal:comment>
+
 </body>
 </html>

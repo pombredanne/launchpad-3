@@ -11,6 +11,7 @@ from sqlobject import (ForeignKey, IntCol, StringCol, BoolCol,
 
 from canonical.database.sqlbase import (SQLBase, sqlvalues,
                                         flush_database_updates)
+from canonical.database.constants import UTC_NOW
 from canonical.lp.dbschema import (RosettaTranslationOrigin,
     TranslationValidationStatus)
 from canonical.launchpad import helpers
@@ -24,8 +25,6 @@ def _get_pluralforms(pomsgset):
     if pomsgset.potmsgset.getPOMsgIDs().count() > 1:
         if pomsgset.pofile.language.pluralforms is not None:
             entries = pomsgset.pofile.language.pluralforms
-        elif pomsgset.pofile.pluralforms is not None:
-            entries = pomsgset.pofile.pluralforms
         else:
             # Don't know anything about plural forms for this
             # language, fallback to the most common case, 2
@@ -58,6 +57,18 @@ class DummyPOMsgSet:
     def active_texts(self):
         """See IPOMsgSet."""
         return [None] * self.pluralforms
+
+    def getSelection(self, pluralform):
+        """See IPOMsgSet."""
+        return None
+
+    def getActiveSubmission(self, pluralform):
+        """See IPOMsgSet."""
+        return None
+
+    def getPublishedSubmission(self, pluralform):
+        """See IPOMsgSet."""
+        return None
 
     def getSuggestedSubmissions(self, pluralform):
         """See IPOMsgSet."""
@@ -225,7 +236,10 @@ class POMsgSet(SQLBase):
                 if published:
                     selection.publishedsubmission = None
                 else:
+                    # We keep track of who decided to remove this translation.
                     selection.activesubmission = None
+                    selection.reviewer = person
+                    selection.date_reviewed = UTC_NOW
 
         # now loop through the translations and submit them one by one
         for index in fixed_new_translations.keys():
@@ -350,6 +364,8 @@ class POMsgSet(SQLBase):
                 # activesubmission is updated only if the translation is
                 # valid and it's an editor.
                 selection.activesubmission = None
+                selection.reviewer = person
+                selection.date_reviewed = UTC_NOW
 
         # If nothing was submitted, return None
         if text is None:
@@ -373,7 +389,7 @@ class POMsgSet(SQLBase):
         # create the selection if there wasn't one
         if selection is None:
             selection = POSelection(
-                pomsgsetID=self.id,
+                pomsgset=self,
                 pluralform=pluralform)
 
         # find or create the relevant submission. We always create a
@@ -426,18 +442,14 @@ class POMsgSet(SQLBase):
 
         # Try to get the submission from the suggestions one.
         submission = POSubmission.selectOneBy(
-            pomsgsetID=self.id, pluralform=pluralform,
-            potranslationID=translation.id)
+            pomsgset=self, pluralform=pluralform, potranslation=translation)
 
         if submission is None:
             # We need to create the submission, it's the first time we see
             # this translation.
             submission = POSubmission(
-                pomsgsetID=self.id,
-                pluralform=pluralform,
-                potranslationID=translation.id,
-                origin=origin,
-                personID=person.id,
+                pomsgset=self, pluralform=pluralform, potranslation=translation,
+                origin=origin, person=person,
                 validationstatus=validation_status)
 
         potemplate = self.pofile.potemplate
@@ -490,8 +502,10 @@ class POMsgSet(SQLBase):
                         sourcepackagename=potemplate.sourcepackagename)
 
             # Now that we assigned all karma, is time to update the active
-            # submission.
+            # submission, the person that reviewed it and when it was done.
             selection.activesubmission = submission
+            selection.reviewer = person
+            selection.date_reviewed = UTC_NOW
 
             # And this is the latest submission that this IPOFile got.
             self.pofile.latestsubmission = submission
@@ -609,10 +623,10 @@ class POMsgSet(SQLBase):
         """See IPOMsgSet."""
         selection = self.getSelection(pluralform)
         active = None
-        if selection is not None and selection.activesubmission is not None:
-            active = selection.activesubmission
         query = '''pomsgset = %s AND
                    pluralform = %s''' % sqlvalues(self.id, pluralform)
+        if selection is not None and selection.activesubmission is not None:
+            active = selection.activesubmission
         if active is not None:
             # Don't show suggestions older than the current one.
             query += ''' AND datecreated > %s

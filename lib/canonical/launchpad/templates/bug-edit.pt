@@ -1,4 +1,3 @@
-<tal:tag condition="view/update"/>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
@@ -29,12 +28,23 @@
 
   <div metal:fill-slot="main">
 
-    <div metal:use-macro="context/@@launchpad_editform/editform">
+    <div metal:use-macro="context/@@launchpad_form/form">
 
-      <p metal:fill-slot="extra_info">
-        Your changes will be reflected in all contexts where
-        this bug has been reported.
-      </p>
+
+      <metal:extra_info metal:fill-slot="extra_info">
+
+        <p>
+          Your changes will be reflected in all contexts where
+          this bug has been reported.
+        </p>
+
+        <p class="informational message"
+           tal:repeat="message view/notifications"
+           tal:content="structure message">
+          Confirmation message.
+        </p>
+
+      </metal:extra_info>
 
     </div>
 

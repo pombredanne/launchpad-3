@@ -3,10 +3,13 @@
 __metaclass__ = type
 
 import os, os.path, shutil
-from canonical.config import config
-import canonical
+from signal import SIGTERM
 
+import canonical
+from canonical.config import config
 from canonical.launchpad.daemons.tachandler import TacTestSetup
+from canonical.librarian.storage import _relFileLocation
+
 
 class LibrarianTestSetup(TacTestSetup):
     r"""Set up a librarian for use by functional tests.
@@ -51,9 +54,16 @@ class LibrarianTestSetup(TacTestSetup):
 
     """
     def setUpRoot(self):
+        self.tearDownRoot()
+        os.makedirs(self.root, 0700)
+
+    def tearDownRoot(self):
         if os.path.isdir(self.root):
             shutil.rmtree(self.root)
-        os.makedirs(self.root, 0700)
+
+    def clear(self):
+        """Clear all files from the Librarian"""
+        cleanupLibrarianFiles()
 
     @property
     def root(self):
@@ -75,7 +85,21 @@ class LibrarianTestSetup(TacTestSetup):
         return os.path.join(self.root, 'librarian.log')
 
 
-# Kill any librarian left lying around from a previous interrupted run.
-# Be paranoid since we trash the librarian directory as part of this.
-if config.default_section == 'testrunner':
-    LibrarianTestSetup().killTac()
+def fillLibrarianFile(fileid, content='Fake Content'):
+    """Write contents in disk for a librarian sampledata."""
+    filepath = os.path.join(
+        config.librarian.server.root, _relFileLocation(fileid))
+
+    if not os.path.exists(os.path.dirname(filepath)):
+        os.makedirs(os.path.dirname(filepath))
+
+    libfile = open(filepath, 'wb')
+    libfile.write(content)
+    libfile.close()
+
+def cleanupLibrarianFiles():
+    """Remove all librarian files present in disk."""
+    # Make this smarter if our tests create huge numbers of files
+    root = config.librarian.server.root
+    if os.path.isdir(os.path.join(root, '00')):
+        shutil.rmtree(os.path.join(root, '00'))

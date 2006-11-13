@@ -95,7 +95,7 @@ It's time to test that we get the right message sets from the submitted form.
 
 We get the first entry that should be in the form, the one with id == 130.
 
-    >>> for potmsgset in pofile_view.getSelectedPOTMsgSet():
+    >>> for potmsgset in pofile_view._getSelectedPOTMsgSets():
     ...     if potmsgset.id == 130:
     ...         break
 
@@ -111,7 +111,8 @@ And as it's the first entry, its sequence number is also the right one.
 
 Test that the associated msgid is the one we want.
 
-    >>> pomsgset_view = pofile_view.getPOMsgSetViewFromPOTMsgSet(potmsgset)
+    >>> pomsgset_view = pofile_view._buildPOMsgSetView(potmsgset)
+    >>> pomsgset_view.initialize()
     >>> pomsgset_view.msgid
     u'evolution addressbook'
 
@@ -132,30 +133,13 @@ It does not have a plural msgid.
 
 And thus, it only has one translation.
 
-    >>> pomsgset_view.translation_range
+    >>> pomsgset_view.pluralform_indices
     [0]
 
 Which is the one we wanted.
 
     >>> pomsgset_view.getTranslation(0)
     u'libreta de direcciones de Evolution'
-
-Now, we are going to test the tab index generator to be sure the TAB key
-will work as expected when navigating over the translation form.
-
-    >>> request = LaunchpadTestRequest(form={'show': 'all' })
-    >>> pofile_view = getView(pofile_es, '+translate', request)
-    >>> pofile_view.initialize()
-
-First time we call it, first position.
-
-    >>> pofile_view.generateNextTabIndex()
-    1
-
-Next time we call it, it's increased.
-
-    >>> pofile_view.generateNextTabIndex()
-    2
 
 It's time to check the submission of translations and the IPOFile statistics
 update.
@@ -195,10 +179,48 @@ And check again.
     >>> pofile_es.rosettaCount()
     1
 
-Also, we can see that the messages appears in the new URL.
+Also, we can see that we got redirected to next batch, that is the first one.
 
     >>> pofile_view.request.response.getHeader('Location')
     'http://127.0.0.1?start=0&show=untranslated'
+
+The messsage's sequence is the position of that message in latest imported
+template. We are going to test now what happens when we submit a potmsgset
+that has a sequence == 0. It means that that msgset is disabled and we don't
+serve such messages in our translation form, but we could get it in some
+situations, like when this set of actions happen:
+
+ - A user gets a translation form for the template X.
+ - A new template X is imported into the system that removes some messages
+   from the previous import.
+ - Previous user, submits the translation form he got for the old template X.
+
+The problem here is that some of the messages on that form are disabled so
+their sequence is 0.
+
+    >>> from canonical.launchpad.database import POTMsgSet
+    >>> potmsgset = POTMsgSet.get(161)
+    >>> potmsgset.sequence
+    0
+    >>> request = LaunchpadTestRequest(form={
+    ...     'batch': '10',
+    ...     'start': '0',
+    ...     'show': 'untranslated',
+    ...     'msgset_161': None,
+    ...     'msgset_161_es_translation_0': 'Foo',
+    ...     'submit_translations': 'Save &amp; Continue'})
+    >>> request.method = 'POST'
+    >>> pofile_view = getView(pofile_es, '+translate', request)
+    >>> pofile_view.initialize()
+
+And we can see that we didn't get errors.
+
+    >>> pomsgset = potmsgset.getPOMsgSet(
+    ...     pofile_es.language.code, pofile_es.variant)
+    >>> pomsgset.active_texts
+    [u'Foo']
+    >>> pofile_view.errors
+    {}
 
 Now, we are going to check the alternative language submission.
 
@@ -208,14 +230,11 @@ Now, we are going to check the alternative language submission.
     ...     'start': '10',
     ...     'field.alternative_language': 'fr',
     ...     'select_alternate_language': 'Change'})
-    >>> request.method = 'POST'
+    >>> request.method = 'get'
     >>> pofile_view = getView(pofile_es, '+translate', request)
     >>> pofile_view.initialize()
-    >>> pofile_view.request.response.getHeader('Location')
-    'http://127.0.0.1?start=10&alt=fr'
-
     >>> pofile_view.second_lang_code
-    u'fr'
+    'fr'
 
 Let's check that the upload form sets the right fields.
 
@@ -223,8 +242,8 @@ To be sure that we are using the right entry from the import queue,
 we check that it's empty atm.
 
     >>> translationimportqueue = getUtility(ITranslationImportQueue)
-    >>> len(translationimportqueue) == 0
-    True
+    >>> translationimportqueue.entryCount()
+    0
 
 The FileUpload class needs a class with the attributes: filename, file and
 headers.
@@ -242,12 +261,24 @@ Now, we do the upload.
     ...     'pofile_upload': 'Upload'})
     >>> request.method = 'POST'
     >>> pofile_view = getView(pofile_es, '+upload', request)
+
+We get an error, because we have disabled this kind of uploads
+while bug #68014 is fixed.
+
+    >>> pofile_view.initialize()
+    Traceback (most recent call last):
+    ...
+    UnexpectedFormData: Only admins can use this form.
+
+We log now as an admin and see that be sure that submissions still work.
+
+    >>> login('carlos@canonical.com')
     >>> pofile_view.initialize()
 
 As we can see, we have now one entry in our queue.
 
-    >>> len(translationimportqueue) == 1
-    True
+    >>> translationimportqueue.entryCount()
+    1
 
 Get it and check that some attributes are set as they should.
 

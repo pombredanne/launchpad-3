@@ -1,6 +1,6 @@
-<div class="portlet">
+<div class="portlet" id="portlet-support-contacts">
 
-  <h4>Support contacts for <span tal:replace="context/displayname"/>:</h4>
+  <h2>Support contacts for <span tal:replace="context/displayname"/></h2>
 
   <div class="portletBody portletContent">
 
@@ -13,9 +13,9 @@
     </ul>
 
 
-    <div tal:condition="not:context/support_contacts">
+    <p tal:condition="not:context/support_contacts">
       <i>There are no support contacts.</i>
-    </div>
+    </p>
 
   </div>
 </div>

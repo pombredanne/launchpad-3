@@ -11,27 +11,27 @@ import os
 import shutil
 import gc
 
-from bzrlib.bzrdir import ScratchDir
 import bzrlib.branch
 from bzrlib.tests import TestCaseInTempDir
 from bzrlib.tests.repository_implementations.test_repository import (
     TestCaseWithRepository)
-from bzrlib.errors import NoSuchFile, NotBranchError
+from bzrlib.errors import NoSuchFile, NotBranchError, PermissionDenied
 from bzrlib.transport import get_transport
-from bzrlib.transport import sftp
+from bzrlib.transport import sftp, ssh
+from bzrlib.urlutils import local_path_from_url
 from bzrlib.builtins import cmd_push
 
 from twisted.python.util import sibpath
 
 import canonical
 from canonical.config import config
+from canonical.database.sqlbase import cursor, commit
 from canonical.launchpad import database
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.database.sqlbase import sqlvalues
 from canonical.authserver.ftests.harness import AuthserverTacTestSetup
-from canonical.testing import reset_logging
-from canonical.functional import ZopelessLayer
+from canonical.testing import LaunchpadZopelessLayer
 
 
 class SFTPSetup(TacTestSetup):
@@ -54,26 +54,24 @@ class SFTPSetup(TacTestSetup):
 
 
 class SFTPTestCase(TestCaseWithRepository):
-    layer = ZopelessLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         super(SFTPTestCase, self).setUp()
 
         # insert SSH keys for testuser -- and insert testuser!
-        LaunchpadZopelessTestSetup().setUp()
-        connection = LaunchpadZopelessTestSetup().connect()
-        cursor = connection.cursor()
-        cursor.execute(
+        cur = cursor()
+        cur.execute(
             "UPDATE Person SET name = 'testuser' WHERE name = 'spiv';")
-        cursor.execute(
+        cur.execute(
             "UPDATE Person SET name = 'testteam' WHERE name = 'name18';")
-        cursor.execute("""
+        cur.execute("""
             INSERT INTO SSHKey (person, keytype, keytext, comment)
             VALUES (7, 2,
             'AAAAB3NzaC1kc3MAAABBAL5VoWG5sy3CnLYeOw47L8m9A15hA/PzdX2u0B7c2Z1ktFPcEaEuKbLqKVSkXpYm7YwKj9y88A9Qm61CdvI0c50AAAAVAKGY0YON9dEFH3DzeVYHVEBGFGfVAAAAQCoe0RhBcefm4YiyQVwMAxwTlgySTk7FSk6GZ95EZ5Q8/OTdViTaalvGXaRIsBdaQamHEBB+Vek/VpnF1UGGm8YAAABAaCXDl0r1k93JhnMdF0ap4UJQ2/NnqCyoE8Xd5KdUWWwqwGdMzqB1NOeKN6ladIAXRggLc2E00UsnUXh3GE3Rgw==',
             'testuser');
             """)
-        connection.commit()
+        commit()
 
         # Point $HOME at a test ssh config and key.
         self.userHome = os.path.abspath(tempfile.mkdtemp())
@@ -90,8 +88,8 @@ class SFTPTestCase(TestCaseWithRepository):
 
         # XXX spiv 2005-01-13: 
         # Force bzrlib to use paramiko (because OpenSSH doesn't respect $HOME)
-        self.realSshVendor = sftp._ssh_vendor
-        sftp._ssh_vendor = 'none'
+        self.realSshVendor = ssh._ssh_vendor
+        ssh._ssh_vendor = ssh.ParamikoVendor()
 
         # Start authserver.
         self.authserver = AuthserverTacTestSetup()
@@ -125,10 +123,8 @@ class SFTPTestCase(TestCaseWithRepository):
         # LaunchpadZopelessTestSetup's tear down will remove bzrlib's logging
         # handlers, causing it to blow up.  See bug #41697.
         super(SFTPTestCase, self).tearDown()
-        LaunchpadZopelessTestSetup().tearDown()
-        sftp._ssh_vendor = self.realSshVendor
+        ssh._ssh_vendor = self.realSshVendor
         shutil.rmtree(self.userHome)
-        reset_logging()
 
         # XXX spiv 2006-04-28: as the comment bzrlib.tests.run_suite says, this
         # is "a little bogus".  Because we aren't using the bzr test runner, we
@@ -143,7 +139,7 @@ class AcceptanceTests(SFTPTestCase):
     initial implementation of bzr support, converted from the English at
     https://launchpad.canonical.com/SupermirrorTaskList
     """
-    layer = ZopelessLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         super(AcceptanceTests, self).setUp()
@@ -176,7 +172,7 @@ class AcceptanceTests(SFTPTestCase):
 
     def _push(self, remote_url):
         old_dir = os.getcwdu()
-        os.chdir(self.local_branch.base)
+        os.chdir(local_path_from_url(self.local_branch.base))
         try:
             cmd_push().run_argv([remote_url])
         finally:
@@ -214,7 +210,7 @@ class AcceptanceTests(SFTPTestCase):
     def _test_missing_parent_directory(self, relpath):
         transport = get_transport(self.server_base + relpath).clone('..')
         self.assertRaises(
-            NoSuchFile,
+            (NoSuchFile, PermissionDenied),
             transport.mkdir, 'hello')
         return transport
 
@@ -314,8 +310,6 @@ class AcceptanceTests(SFTPTestCase):
         # database.
 
     def test_push_team_branch(self):
-        transport = get_transport(self.server_base)
-        transport.mkdir('~testteam/firefox')
         remote_url = self.server_base + '~testteam/firefox/a-new-branch'
         self._push(remote_url)
         remote_branch = bzrlib.branch.Branch.open(remote_url)

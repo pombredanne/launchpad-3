@@ -1,18 +1,18 @@
 <div class="portlet">
-  <h4 tal:content="context/title">product title</h4>
+  <h2 tal:content="context/title">product title</h2>
 
   <div class="portletBody">
     <div class="portletContent">
 
       <tal:has-homepage condition="context/homepageurl">
           <b>External links:</b><br />
-          <img src="/@@/link_icon.gif" alt="" />
+          <img src="/@@/link" alt="" />
           <a tal:attributes="href context/homepageurl"
              class="link">Home page</a><br />
       </tal:has-homepage>
 
       <b>Registrant:</b><br />
-      <img alt="" src="/@@/user.gif" />
+      <img alt="" src="/@@/user" />
       <a tal:attributes="href string:/people/${context/owner/name}"
          tal:content="context/owner/browsername"
          class="link">ownername
@@ -21,9 +21,11 @@
 
       <b>Bug contact:</b><br />
       <span tal:condition="context/bugcontact">
-        <img alt="" src="/@@/user.gif" />
-        <a tal:attributes="href string:${context/fmt:url}/+bugcontact"
-           tal:content="context/bugcontact/browsername">foo bar</a>
+        <img alt="" src="/@@/user" />
+        <a
+          tal:attributes="href context/bugcontact/fmt:url"
+          tal:content="context/bugcontact/browsername"
+        >foo bar</a>
       </span>
       <span tal:condition="not:context/bugcontact">
         <i>Not yet assigned</i>
@@ -32,8 +34,8 @@
 
       <b>Security contact:</b><br />
       <span tal:condition="context/security_contact">
-        <img alt="" src="/@@/user.gif" />
-        <a tal:attributes="href string:${context/fmt:url}/+securitycontact"
+        <img alt="" src="/@@/user" />
+        <a tal:attributes="href context/security_contact/fmt:url"
            tal:content="context/security_contact/browsername">sample person</a>
       </span>
       <span tal:condition="not:context/security_contact">
@@ -44,14 +46,14 @@
       <b>Driver:</b><br />
       <i tal:condition="not:context/driver">Not yet assigned</i>
       <tal:has_driver condition="context/driver">
-        <img alt="" src="/@@/user.gif" />
+        <img alt="" src="/@@/user" />
         <a tal:content="context/driver/browsername"
            tal:attributes="href context/driver/fmt:url">Carlos Perello</a>
       </tal:has_driver>
       <br />
 
       <b>Translation group:</b><br />
-      <img alt="" src="/@@/languages.gif" />
+      <img alt="" src="/@@/languages" />
       <tal:block condition="context/translationgroup">
       <a tal:attributes="href
                string:/rosetta/groups/${context/translationgroup/name}/"
@@ -63,6 +65,19 @@
       </tal:block>
       <b>Translation contributions:</b><br />
       <span tal:replace="context/translationpermission/title">Open</span><br />
+
+      <tal:bugtracker
+           tal:define="bugtracker context/getExternalBugTracker"
+           tal:condition="not:context/official_malone">
+
+        <b>Bug Tracker:</b><br />
+        <a tal:condition="bugtracker" tal:content="bugtracker/title"
+           tal:attributes="href bugtracker/fmt:url">Tracker</a>
+        <i tal:condition="not: bugtracker">None specified</i>
+        <br />
+
+      </tal:bugtracker>
+
 
       <b>Product status:</b>
       <ul>
@@ -76,20 +91,20 @@
       </ul>
       <tal:has-project condition="context/project">
         <b>Part of:</b><br />
-        <img src="/@@/project_icon.gif" alt="" />
+        <img src="/@@/project" alt="" />
         <a tal:attributes="href context/project/fmt:url"
            tal:content="context/project/title"
            class="link">Project name</a><br />
       </tal:has-project>
-      <tal:has_series condition="context/serieslist">
-        <b>Registered series:</b>
-        <ul>
-          <li tal:repeat="series context/serieslist">
-            <a tal:attributes="href series/fmt:url"
-               tal:content="series/name">1.0</a>
-          </li>
-        </ul>
-      </tal:has_series>
+      <b>Registered series:</b>
+      <ul>
+        <li tal:repeat="series context/serieslist">
+          <a tal:attributes="href series/fmt:url"
+             tal:content="series/name">1.0</a>
+          <small tal:condition="python:series == context.development_focus"
+            >(development focus)</small>
+        </li>
+      </ul>
 
     </div>
   </div>

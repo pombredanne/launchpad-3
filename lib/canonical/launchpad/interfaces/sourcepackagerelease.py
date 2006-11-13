@@ -92,23 +92,24 @@ class ISourcePackageRelease(Interface):
         in this package.
         """
 
-    def createBuild(distroarchrelease, processor=None,
-                    status=BuildStatus.NEEDSBUILD,
-                    pocket=None):
-        """Create a build for the given distroarchrelease and return it.
+    def createBuild(distroarchrelease, pocket, processor=None,
+                    status=BuildStatus.NEEDSBUILD):
+        """Create a build for a given distroarchrelease/pocket  and return it.
 
         If the processor isn't given, guess it from the distroarchrelease.
-        If the status isn't given, use NEEDSBUILD. 'pocket' is required
+        If the status isn't given, use NEEDSBUILD.
         """
 
     def getBuildByArch(distroarchrelease):
         """Return build for the given distroarchrelease.
 
-        This will look only for published architecture-specific binary
-        package releases in the given distroarchrelease. It uses the publishing
-        tables to return a build, even if the build is from another
-        distroarchrelease, so long as the binaries are published in the
-        distroarchrelease given.
+        This will look first for published builds in the given
+        distroarchrelease. It uses the publishing tables to return a build,
+        even if the build is from another distroarchrelease, so long as the
+        binaries are published in the distroarchrelease given.
+
+        If no published build is located, it will then look for a build in
+        any state registered directly against this distroarchrelease.
 
         Return None if not found.
         """

@@ -31,9 +31,12 @@ from canonical.launchpad.interfaces import (
     IPerson, IBuilderSet, IBuilder, IBuildSet
     )
 
+from canonical.lp.dbschema import BuildStatus
+
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, GetitemNavigation, stepthrough, Link,
+    StandardLaunchpadFacets, GetitemNavigation, Navigation, stepthrough, Link,
     ApplicationMenu, enabled_with_permission)
+from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 
 
 class BuilderSetNavigation(GetitemNavigation):
@@ -55,7 +58,7 @@ class BuilderSetNavigation(GetitemNavigation):
             return None
 
 
-class BuilderNavigation(GetitemNavigation):
+class BuilderNavigation(Navigation):
     """Navigation methods for IBuilder."""
     usedfor = IBuilder
 
@@ -93,7 +96,11 @@ class BuilderOverviewMenu(ApplicationMenu):
     """Overview Menu for IBuilder."""
     usedfor = IBuilder
     facet = 'overview'
-    links = ['edit', 'mode', 'cancel', 'admin']
+    links = ['history', 'edit', 'mode', 'cancel', 'admin']
+
+    def history(self):
+        text = 'Build History'
+        return Link('+history', text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -122,7 +129,7 @@ class CommonBuilderView:
     def now(self):
         """Offers the timestamp for page rendering."""
         UTC = pytz.timezone('UTC')
-        return datetime.datetime.now(UTC)
+        return DateTimeFormatterAPI(datetime.datetime.now(UTC)).datetime()
 
 
 class BuilderSetView(CommonBuilderView):
@@ -152,6 +159,10 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
         # in BUILDING state it does depends of the major issue for testing
         # Auto Build System, getting slave building something sane. 
         return '<p>Cancel (%s). Not implemented yet</p>' % builder_id
+
+    def defaultBuildState(self):
+        """Present all jobs by default."""
+        return None
 
     def showBuilderInfo(self):
         """Hide Builder info, see BuildRecordsView for further details"""

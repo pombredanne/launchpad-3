@@ -1,15 +1,17 @@
 <div class="portlet">
-
-  <h4 tal:content="string:Search ${context/targetname} bugs:">
-    Search Mozilla Firefox bugs:
-  </h4>
-
+  <h2 tal:content="string:Search ${context/targetname} bugs"
+  >Search Mozilla Firefox bugs</h2>
   <div class="portletBody portletContent"
        tal:define="bugs_url string:${context/target/fmt:url}/+bugs">
     <b>Enter bug ID or keywords:</b><br /><br />
     <form name="bugtask_search" method="GET"
           tal:attributes="action bugs_url">
-      <input class="textType" id="field.searchtext" name="field.searchtext" size="13" value="" />
+      <input
+        id="field.searchtext"
+        name="field.searchtext"
+        size="6"
+        style="width: 90%;"
+      />
       <input type="submit" name="search" value="Search" />
     </form>
     <br />

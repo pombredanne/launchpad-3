@@ -1,70 +1,141 @@
-#!/usr/bin/env python
-
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 #
 
-import unittest
-import sys
+"""Tests for pool.py."""
+
+__metaclass__ = type
+
+
 import os
+import sha
+import sys
 import shutil
+from tempfile import mkdtemp
+import unittest
 
-class TestPool(unittest.TestCase):
+from canonical.archivepublisher.tests.util import FakeLogger
+from canonical.archivepublisher.diskpool import DiskPool, poolify
 
-    def testImport(self):
-        """canonical.archivepublisher.Poolifier should be importable"""
-        from canonical.archivepublisher import Poolifier
 
-    def testInstatiate(self):
-        """canonical.archivepublisher.Poolifier should be instantiatable"""
-        from canonical.archivepublisher import Poolifier
-        p = Poolifier()
+class MockFile:
+    def __init__(self, contents):
+        self.contents = contents
 
-    def testBadStyle(self):
-        """canonical.archivepublisher.Poolifier should not instantiate on bad style"""
-        from canonical.archivepublisher import Poolifier
-        bad_style = object()
-        self.assertRaises(ValueError, Poolifier, bad_style)
+    def open(self):
+        self.loc = 0
+    
+    def read(self, chunksize):
+        end_chunk = self.loc + chunksize
+        chunk = self.contents[self.loc:end_chunk]
+        self.loc = end_chunk
+        return chunk
+
+    def close(self):
+        pass
+
+
+class PoolTestingFile:
+    def __init__(self, pool, sourcename, filename):
+        self.pool = pool
+        self.sourcename = sourcename
+        self.filename = filename
+        self.contents = sourcename
+
+    def addToPool(self, component):
+        return self.pool.addFile(
+            component, self.sourcename, self.filename,
+            sha.sha(self.contents).hexdigest(), MockFile(self.contents))
+
+    def removeFromPool(self, component):
+        return self.pool.removeFile(component, self.sourcename, self.filename)
+
+    def checkExists(self, component):
+        path = self.pool.pathFor(component, self.sourcename, self.filename)
+        return os.path.exists(path)
+
+    def checkIsLink(self, component):
+        path = self.pool.pathFor(component, self.sourcename, self.filename)
+        return os.path.islink(path)
+
+    def checkIsFile(self, component):
+        return self.checkExists(component) and not self.checkIsLink(component)
+    
+        
+class TestPoolification(unittest.TestCase):
 
     def testPoolificationOkay(self):
-        """canonical.archivepublisher.Poolifier.poolify should poolify properly"""
-        from canonical.archivepublisher import Poolifier
-        p = Poolifier()
+        """poolify should poolify properly"""
         cases = (
             ( "foo", "main", "main/f/foo" ),
             ( "foo", "universe", "universe/f/foo" ),
             ( "libfoo", "main", "main/libf/libfoo" )
             )
         for case in cases:
-            self.assertEqual( case[2], p.poolify(case[0], case[1]) )
+            self.assertEqual( case[2], poolify(case[0], case[1]) )
 
-    def testPoolificationWithNoComponent(self):
-        """canonical.archivepublisher.Poolifier.poolify should raise with no component"""
-        from canonical.archivepublisher import Poolifier
-        p = Poolifier()
-        self.assertRaises(ValueError, p.poolify, "foo")
 
-    def testPoolificationWorksAfterComponent(self):
-        """canonical.archivepublisher.Poolifier.poolify should work after a component"""
-        from canonical.archivepublisher import Poolifier
-        p = Poolifier()
-        p.component("main")
-        self.assertEqual( p.poolify("foo"), "main/f/foo" )
-        self.assertEqual( p.poolify("foo","bar"), "bar/f/foo" )
+class TestPool(unittest.TestCase):
+    def setUp(self):
+        self.pool_path = mkdtemp()
+        self.pool = DiskPool(self.pool_path, FakeLogger())
+
+    def tearDown(self):
+        shutil.rmtree(self.pool_path)
+
+    def testSimpleAdd(self):
+        """Adding a new file should work."""
+        foo = PoolTestingFile(self.pool, "foo", "foo-1.0.deb")
+        result = foo.addToPool("main")
+        self.assertEqual(self.pool.results.FILE_ADDED, result)
+        self.assertTrue(foo.checkIsFile("main"))
+        
+    def testSimpleSymlink(self):
+        """Adding a file twice should result in a symlink."""
+        foo = PoolTestingFile(self.pool, "foo", "foo-1.0.deb")
+        foo.addToPool("main")
+        result = foo.addToPool("universe")
+        self.assertEqual(self.pool.results.SYMLINK_ADDED, result)
+        self.assertTrue(foo.checkIsFile("main"))
+        self.assertTrue(foo.checkIsLink("universe"))
+
+    def testSymlinkShuffleOnAdd(self):
+        """If the second add is a more preferred component, links shuffle."""
+        foo = PoolTestingFile(self.pool, "foo", "foo-1.0.deb")
+        foo.addToPool("universe")
+        result = foo.addToPool("main")
+        self.assertEqual(self.pool.results.SYMLINK_ADDED, result)
+        self.assertTrue(foo.checkIsFile("main"))
+        self.assertTrue(foo.checkIsLink("universe"))
+
+    def testRemoveSymlink(self):
+        """Remove file should just remove a symlink"""
+        foo = PoolTestingFile(self.pool, "foo", "foo-1.0.deb")
+        foo.addToPool("main")
+        foo.addToPool("universe")
+        
+        size = foo.removeFromPool("universe")
+        self.assertFalse(foo.checkExists("universe"))
+        self.assertEqual(31, size)
+
+    def testRemoveLoneFile(self):
+        """Removing a file with no symlinks removes it."""
+        foo = PoolTestingFile(self.pool, "foo", "foo-1.0.deb")
+        foo.addToPool("main")
+        
+        size = foo.removeFromPool("main")
+        self.assertFalse(foo.checkExists("universe"))
+        self.assertEqual(3, size)
+
+    def testSymlinkShuffleOnRemove(self):
+        """Removing a file with a symlink shuffles links."""
+        foo = PoolTestingFile(self.pool, "foo", "foo-1.0.deb")
+        foo.addToPool("universe")
+        foo.addToPool("main")
+
+        foo.removeFromPool("main")
+        self.assertFalse(foo.checkExists("main"))
+        self.assertTrue(foo.checkIsFile("universe"))
 
 
 def test_suite():
-    suite = unittest.TestSuite()
-    loader = unittest.TestLoader()
-    suite.addTest(loader.loadTestsFromTestCase(TestPool))
-    return suite
-
-def main(argv):
-    suite = test_suite()
-    runner = unittest.TextTestRunner(verbosity=2)
-    if not runner.run(suite).wasSuccessful():
-        return 1
-    return 0
-
-if __name__ == '__main__':
-    sys.exit(main(sys.argv))
-
+    return unittest.TestLoader().loadTestsFromName(__name__)

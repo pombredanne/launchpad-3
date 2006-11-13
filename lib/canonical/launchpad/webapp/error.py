@@ -9,10 +9,12 @@ from zope.interface import implements
 from zope.exceptions.exceptionformatter import format_exception
 from zope.component import getUtility
 from zope.app.exception.interfaces import ISystemErrorView
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.config import config
 import canonical.launchpad.layers
 from canonical.launchpad.interfaces import ILaunchBag, ILaunchpadCelebrities
+
 
 class SystemErrorView:
     """Helper class for views on exceptions.
@@ -20,6 +22,9 @@ class SystemErrorView:
     Also, sets a 500 response code.
     """
     implements(ISystemErrorView)
+
+    plain_oops_template = ViewPageTemplateFile(
+        '../templates/oops-veryplain.pt')
 
     # Override this in subclasses.  A value of None means "don't set this"
     response_code = 500
@@ -29,9 +34,21 @@ class SystemErrorView:
     debugging = False
     specialuser = False
 
+    # For the UI 1.0, we'll be wanting to try out fancy error pages of
+    # various kinds so, those particular pages will need to fully render.
+    # For example, like special 404 pages.
+    # So we need to mark those particular error handling views as safe
+    # for fully rendering by checking that there is no way to get that
+    # error if the user is unauthorized to use the server in restircted mode.
+    #
+    # Set this value to True in subclasses where the error cannot possibly
+    # be shown to unauthorized visitors.
+    safe_to_show_in_restricted_mode = False
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        self.request.response.removeAllNotifications()
         if self.response_code is not None:
             self.request.response.setStatus(self.response_code)
         self.computeDebugOutput()
@@ -45,7 +62,7 @@ class SystemErrorView:
 
     def isSystemError(self):
         """See zope.app.exception.interfaces import ISystemErrorView
-        
+
         It appears that returning True from this method means the
         exception is logged as a SiteError.
         """
@@ -106,6 +123,9 @@ class SystemErrorView:
     def __call__(self):
         if self.pagetesting:
             return self.render_as_text()
+        elif (config.launchpad.restrict_to_team and
+              not self.safe_to_show_in_restricted_mode):
+            return self.plain_oops_template()
         else:
             return self.index()
 

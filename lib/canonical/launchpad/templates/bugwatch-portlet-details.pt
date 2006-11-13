@@ -1,5 +1,5 @@
 <div class="portlet">
-  <h4>Bug watch details:</h4>
+  <h2>Bug watch details</h2>
   <div class="portletBody">
     <div class="portletContent">
     Malone <a tal:attributes="href context/bug/fmt:url">Bug #
@@ -25,7 +25,7 @@
     <b>Created:</b>
       <span tal:replace="context/datecreated/fmt:date">15 Feb 2003</span><br />
     <b>By:</b>
-      <img src="/@@/user.gif" />
+      <img src="/@@/user" />
       <a tal:attributes="href string:/people/${context/owner/name}/"
          tal:content="context/owner/browsername">Foo Bar</a><br />
     </div>

@@ -1,11 +1,4 @@
 <configure xmlns="http://namespaces.zope.org/zope">
-    <!-- This is the XMLRPC server, set up to do ZODB-free publication.  -->
-    <utility
-        name="XMLRPC"
-        component="canonical.launchpad.webapp.servers.xmlrpc"
-        provides="zope.app.server.servertype.IServerType"
-        />
-
     <!-- This is the HTTP server, set up to do ZODB-free publication.  -->
     <utility
         name="HTTP"

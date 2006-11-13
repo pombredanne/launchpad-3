@@ -34,6 +34,13 @@
         name="+index"
         />
 
+    <browser:page
+        name="+preferred-chart"
+        for="canonical.launchpad.interfaces.IPOTemplate"
+        class="canonical.launchpad.browser.POTemplateViewPreferred"
+        permission="zope.Public"
+        template="../templates/potemplate-chart.pt" />
+
     <browser:pages
         for="canonical.launchpad.interfaces.IPOTemplate"
         class="canonical.launchpad.browser.POTemplateView"

@@ -4,28 +4,28 @@ __metaclass__ = type
 
 __all__ = [
     'ProductSeries',
-    'ProductSeriesSourceSet',
+    'ProductSeriesSet',
     ]
 
 
 import datetime
-import sets
 from warnings import warn
 
 from zope.interface import implements
-
-from sqlobject import ForeignKey, StringCol, SQLMultipleJoin, DateTimeCol
-
-from canonical.database.sqlbase import flush_database_updates
+from sqlobject import (
+    IntervalCol, ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
-# canonical imports
+from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.launchpad.interfaces import (
-    IProductSeries, IProductSeriesSource, IProductSeriesSourceAdmin,
-    IProductSeriesSourceSet, NotFoundError)
+    IProductSeries, IProductSeriesSet, IProductSeriesSourceAdmin,
+    NotFoundError)
 
+from canonical.launchpad.database.bug import (
+    get_bug_tags, get_bug_tags_open_count)
+from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.potemplate import POTemplate
@@ -41,7 +41,7 @@ from canonical.lp.dbschema import (
 
 class ProductSeries(SQLBase):
     """A series of product releases."""
-    implements(IProductSeries, IProductSeriesSource, IProductSeriesSourceAdmin)
+    implements(IProductSeries, IProductSeriesSourceAdmin)
     _table = 'ProductSeries'
 
     product = ForeignKey(dbName='product', foreignKey='Product', notNull=True)
@@ -52,11 +52,14 @@ class ProductSeries(SQLBase):
         foreignKey="Person", dbName="owner", notNull=True)
     driver = ForeignKey(
         foreignKey="Person", dbName="driver", notNull=False, default=None)
-    branch = ForeignKey(foreignKey='Branch', dbName='branch', default=None)
+    import_branch = ForeignKey(foreignKey='Branch', dbName='import_branch',
+                               default=None)
+    user_branch = ForeignKey(foreignKey='Branch', dbName='user_branch',
+                             default=None)
     importstatus = EnumCol(dbName='importstatus', notNull=False,
         schema=ImportStatus, default=None)
     datelastsynced = UtcDateTimeCol(default=None)
-    syncinterval = DateTimeCol(default=None)
+    syncinterval = IntervalCol(default=None)
     rcstype = EnumCol(dbName='rcstype', schema=RevisionControlSystems,
         notNull=False, default=None)
     cvsroot = StringCol(default=None)
@@ -65,16 +68,8 @@ class ProductSeries(SQLBase):
     # where are the tarballs released from this branch placed?
     cvstarfileurl = StringCol(default=None)
     svnrepository = StringCol(default=None)
-    # XXX bkrepository is in the data model but not here
-    #   -- matsubara, 2005-10-06
-    releaseroot = StringCol(default=None)
     releasefileglob = StringCol(default=None)
     releaseverstyle = StringCol(default=None)
-    # these fields tell us where to publish upstream as bazaar branch
-    targetarcharchive = StringCol(default=None)
-    targetarchcategory = StringCol(default=None)
-    targetarchbranch = StringCol(default=None)
-    targetarchversion = StringCol(default=None)
     # key dates on the road to import happiness
     dateautotested = UtcDateTimeCol(default=None)
     datestarted = UtcDateTimeCol(default=None)
@@ -95,7 +90,7 @@ class ProductSeries(SQLBase):
 
     @property
     def drivers(self):
-        """See IDistroRelease."""
+        """See IProductSeries."""
         drivers = set()
         drivers.add(self.driver)
         drivers = drivers.union(self.product.drivers)
@@ -103,14 +98,21 @@ class ProductSeries(SQLBase):
         return sorted(drivers, key=lambda x: x.browsername)
 
     @property
+    def series_branch(self):
+        """See IProductSeries."""
+        if self.user_branch is not None:
+            return self.user_branch
+        return self.import_branch
+
+    @property
     def potemplates(self):
-        result = POTemplate.selectBy(productseriesID=self.id)
+        result = POTemplate.selectBy(productseries=self)
         result = list(result)
         return sorted(result, key=lambda x: x.potemplatename.name)
 
     @property
     def currentpotemplates(self):
-        result = POTemplate.selectBy(productseriesID=self.id, iscurrent=True)
+        result = POTemplate.selectBy(productseries=self, iscurrent=True)
         result = list(result)
         return sorted(result, key=lambda x: x.potemplatename.name)
 
@@ -136,11 +138,12 @@ class ProductSeries(SQLBase):
     def sourcepackages(self):
         """See IProductSeries"""
         from canonical.launchpad.database.sourcepackage import SourcePackage
-        ret = Packaging.selectBy(productseriesID=self.id)
+        ret = Packaging.selectBy(productseries=self)
         ret = [SourcePackage(sourcepackagename=r.sourcepackagename,
                              distrorelease=r.distrorelease)
                     for r in ret]
-        ret.sort(key=lambda a: a.distribution.name + a.sourcepackagename.name)
+        ret.sort(key=lambda a: a.distribution.name + a.distrorelease.version
+                 + a.sourcepackagename.name)
         return ret
 
     @property
@@ -197,7 +200,27 @@ class ProductSeries(SQLBase):
         if sort is None or sort == SpecificationSort.PRIORITY:
             order = ['-priority', 'status', 'name']
         elif sort == SpecificationSort.DATE:
-            order = ['-datecreated', 'id']
+            # we are showing specs for a GOAL, so under some circumstances
+            # we care about the order in which the specs were nominated for
+            # the goal, and in others we care about the order in which the
+            # decision was made.
+
+            # we need to establish if the listing will show specs that have
+            # been decided only, or will include proposed specs.
+            show_proposed = set([
+                SpecificationFilter.ALL,
+                SpecificationFilter.PROPOSED,
+                ])
+            if len(show_proposed.intersection(set(filter))) > 0:
+                # we are showing proposed specs so use the date proposed
+                # because not all specs will have a date decided.
+                order = ['-Specification.datecreated', 'Specification.id']
+            else:
+                # this will show only decided specs so use the date the spec
+                # was accepted or declined for the sprint
+                order = ['-Specification.date_goal_decided',
+                         '-Specification.datecreated',
+                         'Specification.id']
 
         # figure out what set of specifications we are interested in. for
         # productseries, we need to be able to filter on the basis of:
@@ -332,50 +355,28 @@ class ProductSeries(SQLBase):
     def newMilestone(self, name, dateexpected=None):
         """See IProductSeries."""
         return Milestone(name=name, dateexpected=dateexpected,
-            product=self.product.id, productseries=self.id)
-
-    def acceptSpecificationGoal(self, spec):
-        """See ISpecificationGoal."""
-        spec.productseries = self
-        spec.goalstatus = SpecificationGoalStatus.ACCEPTED
-
-    def declineSpecificationGoal(self, spec):
-        """See ISpecificationGoal."""
-        spec.productseries = self
-        spec.goalstatus = SpecificationGoalStatus.DECLINED
-
-    def acceptSpecificationGoals(self, speclist):
-        """See ISpecificationGoal."""
-        for spec in speclist:
-            self.acceptSpecificationGoal(spec)
-
-        # we need to flush all the changes we have made to disk, then try
-        # the query again to see if we have any specs remaining in this
-        # queue
-        flush_database_updates()
-
-        return self.specifications(
-                        filter=[SpecificationFilter.PROPOSED]).count()
-
-    def declineSpecificationGoals(self, speclist):
-        """See ISpecificationGoal."""
-        for spec in speclist:
-            self.declineSpecificationGoal(spec)
-
-        # we need to flush all the changes we have made to disk, then try
-        # the query again to see if we have any specs remaining in this
-        # queue
-        flush_database_updates()
-
-        return self.specifications(
-                        filter=[SpecificationFilter.PROPOSED]).count()
+                         product=self.product, productseries=self)
 
 
-# XXX matsubara, 2005-11-30: This class should be renamed to ProductSeriesSet
-# https://launchpad.net/products/launchpad/+bug/5247
-class ProductSeriesSourceSet:
-    """See IProductSeriesSourceSet"""
-    implements(IProductSeriesSourceSet)
+class ProductSeriesSet:
+    """See IProductSeriesSet."""
+
+    implements(IProductSeriesSet)
+
+    def __getitem__(self, series_id):
+        """See IProductSeriesSet."""
+        series = self.get(series_id)
+        if series is None:
+            raise NotFoundError(series_id)
+        return series
+
+    def get(self, series_id, default=None):
+        """See IProductSeriesSet."""
+        try:
+            return ProductSeries.get(series_id)
+        except SQLObjectNotFound:
+            return default
+
     def search(self, ready=None, text=None, forimport=None, importstatus=None,
                start=None, length=None):
         query, clauseTables = self._querystr(
@@ -401,7 +402,7 @@ class ProductSeriesSourceSet:
                          import status.
         """
         queries = []
-        clauseTables = sets.Set()
+        clauseTables = set()
         # deal with the cases which require project and product
         if ( ready is not None ) or text:
             if text:
@@ -436,7 +437,7 @@ class ProductSeriesSourceSet:
         return query, clauseTables
 
     def getByCVSDetails(self, cvsroot, cvsmodule, cvsbranch, default=None):
-        """See IProductSeriesSourceSet."""
+        """See IProductSeriesSet."""
         result = ProductSeries.selectOneBy(
             cvsroot=cvsroot, cvsmodule=cvsmodule, cvsbranch=cvsbranch)
         if result is None:
@@ -444,8 +445,9 @@ class ProductSeriesSourceSet:
         return result
 
     def getBySVNDetails(self, svnrepository, default=None):
-        """See IProductSeriesSourceSet."""
+        """See IProductSeriesSet."""
         result = ProductSeries.selectOneBy(svnrepository=svnrepository)
         if result is None:
             return default
         return result
+

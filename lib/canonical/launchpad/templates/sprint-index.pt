@@ -37,20 +37,25 @@
     <span tal:replace="context/title">Ubuntu Below Zero</span>.
   </p>
 
-  <h2>Agenda</h2>
+  <h2>Latest <span tal:replace="view/latest_specs_limit">5</span> additions to
+      the meeting agenda</h2>
 
-  <div tal:repeat="spec_link view/spec_links"
-       tal:replace="structure spec_link/specification/@@+listing-simple"
+  <div tal:repeat="spec view/latest_approved"
+       tal:replace="structure spec/@@+listing-simple"
        />
 
   <p class="discreet">
-    <span tal:replace="view/count">5</span> specifications on the agenda.
+    There are a total of <span tal:replace="view/count">5</span>
+    specifications on the meeting agenda.
     <tal:proposed define="proposed view/proposed_count"
                   condition="proposed">
       There are <span tal:replace="proposed">7</span>
-      specifications proposed that have not yet been 
-      <a href="+settopics">approved or declined</a>.
+      specifications 
+      <a tal:omit-tag="not: context/required:launchpad.Driver" href="+settopics">
+        proposed
+      </a> which the organisers will review.
     </tal:proposed>
+    You can view the <a href="+specs">full current agenda here</a>.
   </p>
 
   <div tal:condition="view/count"

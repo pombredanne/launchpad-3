@@ -1,7 +1,7 @@
   First of all we'll create a new mirror for the Ubuntu distribution...
 
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
-  >>> browser.open('http://localhost:9000/distros/ubuntu/+newmirror')
+  >>> browser.open('http://launchpad.dev/distros/ubuntu/+newmirror')
 
   ...but every mirror must have at least one of HTTP, FTP or Rsync URL, and
   the form will raise an error message if this is not provided by the user.
@@ -11,7 +11,7 @@
   >>> browser.getControl('Content').value = ['Archive']
   >>> browser.getControl('Continue').click()
 
-  >>> message = 'All mirrors require at least one URL (HTTP, FTP or Rsync)'
+  >>> message = 'All mirrors require at least an HTTP or FTP URL'
   >>> message in browser.contents
   True
 
@@ -77,7 +77,7 @@
   ...and the mirror is created just fine.
 
   >>> browser.url
-  'http://localhost:9000/distros/ubuntu/+mirror/my.mirror.com-archive'
+  'http://launchpad.dev/distros/ubuntu/+mirror/my.mirror.com-archive'
 
   It's possible to change the auto-generated mirror name, if we want, but
   the name is unique, and so we can't use a name that is already in use by
@@ -85,7 +85,7 @@
 
   >>> browser.getLink('Edit Details').click()
   >>> browser.url
-  'http://localhost:9000/distros/ubuntu/+mirror/my.mirror.com-archive/+edit'
+  'http://launchpad.dev/distros/ubuntu/+mirror/my.mirror.com-archive/+edit'
   >>> browser.getControl(name='field.name').value = 'archive-mirror'
   >>> browser.getControl('Change').click()
 
@@ -97,37 +97,13 @@
   distribution owners.
 
   >>> browser.open(
-  ...   'http://localhost:9000/distros/ubuntu/+mirror/my.mirror.com-archive/')
-  >>> 'mirror "my.mirror.com-archive"' in browser.contents
+  ...   'http://launchpad.dev/distros/ubuntu/+mirror/my.mirror.com-archive/')
+  >>> 'mirror "My.mirror.com-archive"' in browser.contents
   True
+
   >>> "This mirror is an unofficial" in browser.contents
   True
   >>> "and will not be verified" in browser.contents
-  True
-
-  Now the mirror's owner mark it as enabled and as a candidate for being
-  official.
-
-  >>> browser.getLink('Edit Details').click()
-  >>> browser.url
-  'http://localhost:9000/distros/ubuntu/+mirror/my.mirror.com-archive/+edit'
-
-  >>> enabled = browser.getControl(
-  ...     'Probe this mirror for its content periodically')
-  >>> enabled.selected = True
-  >>> official_candidate = browser.getControl(
-  ...     'Apply to be an official mirror of this distribution')
-  >>> official_candidate.selected = True
-  >>> browser.getControl('Change').click()
-
-  >>> browser.url
-  'http://localhost:9000/distros/ubuntu/+mirror/my.mirror.com-archive'
-
-
-  But that's not enough to make a mirror official, as we can see in the
-  details portlet.
-
-  >>> 'Unofficial' in browser.contents
   True
 
   To make a mirror official, one has to go to the +mark-official page, which
@@ -135,7 +111,7 @@
   distribution owner.
 
   >>> browser.open(
-  ...   'http://localhost:9000/distros/ubuntu/+mirror/my.mirror.com-archive/+mark-official')
+  ...   'http://launchpad.dev/distros/ubuntu/+mirror/my.mirror.com-archive/+mark-official')
   Traceback (most recent call last):
   ...
   Unauthorized...
@@ -152,7 +128,7 @@
 
   >>> browser.addHeader('Authorization', 'Basic karl@canonical.com:test')
   >>> browser.open(
-  ...   'http://localhost:9000/distros/ubuntu/+mirror/my.mirror.com-archive/+mark-official')
+  ...   'http://launchpad.dev/distros/ubuntu/+mirror/my.mirror.com-archive/+mark-official')
 
   >>> official_approved = browser.getControl(
   ...     'This is one of the official mirrors of this distribution')
@@ -160,7 +136,7 @@
   >>> browser.getControl('Change').click()
 
   >>> browser.url
-  'http://localhost:9000/distros/ubuntu/+mirror/my.mirror.com-archive'
+  'http://launchpad.dev/distros/ubuntu/+mirror/my.mirror.com-archive'
 
 
   And in the mirror's main page we can now see that it's an official mirror.

@@ -67,14 +67,11 @@ Now we send a few test mails to foo.com, bar.com, and baz.com:
 The test mails are now in Launchpad's mail box, so now we can call
 handleMail, so that every mail gets handled by the correct handler.
 Since the User gets authenticated using OpenPGP signatures we have to
-import the keys first. We also need to start the Librarian, since every
-mail will get filed in there:
+import the keys first.
 
     >>> from canonical.launchpad.ftests import import_public_test_keys
-    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
     >>> import_public_test_keys()
     >>> transaction.commit()
-    >>> LibrarianTestSetup().setUp()
 
     >>> handleMail()
     WARNING:canonical.launchpad.mail:No X-Original-To header was present in email: ...
@@ -235,7 +232,10 @@ If for some reason the Librarian isn't up and running, we shouldn't
 loose any emails. All that should happen is that an error should get
 logged.
 
-    >>> LibrarianTestSetup().tearDown()
+
+    >>> from canonical.testing.layers import LibrarianLayer
+    >>> LibrarianLayer.hide()
+
     >>> msg = read_test_message('signed_detached.txt')
     >>> msg.replace_header('To', '123@foo.com')
     >>> msgid = '<%s>' % sendmail(msg)
@@ -251,7 +251,7 @@ logged.
     >>> len(stub.test_emails)
     1
 
-    >>> LibrarianTestSetup().setUp()
+    >>> LibrarianLayer.reveal()
     >>> stub.test_emails = []
 
 Handling bounces
@@ -274,26 +274,20 @@ Emails with an empty Return-Path header should be dropped:
     >>> msgid in foo_handler.handledMails
     False
 
-Since this shouldn't occur that often, an email is sent about it to the
-errors-list. This is to make it easier to detect any errors, and fine
-tune it. Later we might simply drop the email without noticing anyone
-about it.
+Since this happens way too often, as we seem to get more spam than
+legitimate email, an email is not sent about it to the errors-list.
 
     >>> import email
-    >>> from_addr, to_addr, raw_mail = stub.test_emails[-1]
-    >>> error_mail = email.message_from_string(raw_mail)
-    >>> error_mail['To'] == config.launchpad.errors_address
-    True
-    >>> print error_mail['Subject']
-    Unhandled Email:...
-    >>> print error_mail.get_payload()
-    The following email was unhandled:
-    ...
-    Message had an empty Return-Path.
+    >>> len(stub.test_emails)
+    0
 
-    >>> LibrarianTestSetup().tearDown()
+
+Some test cleanup code:
+
+    >>> LibrarianLayer.hide()
     >>> config.malone.bugmail_error_from_address = old_error_from_address
     >>> mail_handlers.add('foo.com', None)
     >>> mail_handlers.add('bar.com', None)
     >>> mail_handlers.add(errors_domain, None)
     >>> mail_handlers.add('except.com', None)
+    >>> LibrarianLayer.reveal()

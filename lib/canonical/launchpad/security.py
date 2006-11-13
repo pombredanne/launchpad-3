@@ -7,10 +7,10 @@ __metaclass__ = type
 from zope.interface import implements, Interface
 from zope.component import getUtility
 
+from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.interfaces import (
-    IAuthorization, IHasOwner, IPerson, ITeam, ISprintSpecification,
-    IDistribution, ITeamMembership, IProductSeriesSource, IProductSet,
-    IProductSeriesSourceAdmin, IMilestone, IBug, ITranslator,
+    IAuthorization, IHasOwner, IPerson, ITeam, ISprint, ISprintSpecification,
+    IDistribution, ITeamMembership, IMilestone, IBug, ITranslator,
     IProduct, IProductSeries, IPOTemplate, IPOFile, IPOTemplateName,
     IPOTemplateNameSet, ISourcePackage, ILaunchpadCelebrities, IDistroRelease,
     IBugTracker, IBugAttachment, IPoll, IPollSubset, IPollOption,
@@ -18,7 +18,8 @@ from canonical.launchpad.interfaces import (
     IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
     IShippingRun, ISpecification, ITicket, ITranslationImportQueueEntry,
     ITranslationImportQueue, IDistributionMirror, IHasBug,
-    IBazaarApplication, IDistroReleaseQueue, IBuilderSet, IBuild)
+    IBazaarApplication, IDistroReleaseQueue, IBuilderSet,
+    IBuilder, IBuild, ISpecificationSubscription, IHasDrivers)
 
 from canonical.lp.dbschema import DistroReleaseQueueStatus
 
@@ -103,12 +104,12 @@ class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):
         for driver in goaldrivers:
             if user.inTeam(driver):
                 return True
-        return (user.inTeam(self.obj.target.owner) or 
-                user.inTeam(goalowner) or 
-                user.inTeam(self.obj.owner) or 
-                user.inTeam(self.obj.drafter) or 
-                user.inTeam(self.obj.assignee) or 
-                user.inTeam(self.obj.approver) or 
+        return (user.inTeam(self.obj.target.owner) or
+                user.inTeam(goalowner) or
+                user.inTeam(self.obj.owner) or
+                user.inTeam(self.obj.drafter) or
+                user.inTeam(self.obj.assignee) or
+                user.inTeam(self.obj.approver) or
                 user.inTeam(admins))
 
 
@@ -124,26 +125,79 @@ class AdminSpecification(AuthorizationBase):
             if user.inTeam(driver):
                 return True
         admins = getUtility(ILaunchpadCelebrities).admin
-        return (user.inTeam(self.obj.target.owner) or 
+        return (user.inTeam(self.obj.target.owner) or
                 user.inTeam(admins))
 
 
+class DriverSpecification(AuthorizationBase):
+    permission = 'launchpad.Driver'
+    usedfor = ISpecification
+
+    def checkAuthenticated(self, user):
+        # If no goal is proposed for the spec then there can be no
+        # drivers for it - we use launchpad.Driver on a spec to decide
+        # if the person can see the page which lets you decide whether
+        # to accept the goal, and if there is no goal then this is
+        # extremely difficult to do :-)
+        return (
+            self.obj.goal and
+            check_permission("launchpad.Driver", self.obj.goal))
+
+
 class EditSprintSpecification(AuthorizationBase):
-    """The sprint owner can say what makes it onto the agenda for the
-    sprint.
+    """The sprint owner or driver can say what makes it onto the agenda for
+    the sprint.
     """
-    permission = 'launchpad.Edit'
+    permission = 'launchpad.Driver'
     usedfor = ISprintSpecification
 
     def checkAuthenticated(self, user):
         admins = getUtility(ILaunchpadCelebrities).admin
         return (user.inTeam(self.obj.sprint.owner) or
+                user.inTeam(self.obj.sprint.driver) or
                 user.inTeam(admins))
 
 
-class AdminSeriesSourceByVCSImports(AuthorizationBase):
+class DriveSprint(AuthorizationBase):
+    """The sprint owner or driver can say what makes it onto the agenda for
+    the sprint.
+    """
+    permission = 'launchpad.Driver'
+    usedfor = ISprint
+
+    def checkAuthenticated(self, user):
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.owner) or
+                user.inTeam(self.obj.driver) or
+                user.inTeam(admins))
+
+
+class EditSpecificationSubscription(AuthorizationBase):
+    """The subscriber, and people related to the spec or the target of the
+    spec can determine who is essential."""
+    permission = 'launchpad.Edit'
+    usedfor = ISpecificationSubscription
+
+    def checkAuthenticated(self, user):
+        admins = getUtility(ILaunchpadCelebrities).admin
+        if self.obj.specification.goal is not None:
+            for driver in self.obj.specification.goal.drivers:
+                if user.inTeam(driver):
+                    return True
+        else:
+            for driver in self.obj.specification.target.drivers:
+                if user.inTeam(driver):
+                    return True
+        return (user.inTeam(self.obj.person) or
+                user.inTeam(self.obj.specification.owner) or
+                user.inTeam(self.obj.specification.assignee) or
+                user.inTeam(self.obj.specification.drafter) or
+                user.inTeam(self.obj.specification.approver) or
+                user.inTeam(admins))
+
+class AdminSeriesByVCSImports(AuthorizationBase):
     permission = 'launchpad.Admin'
-    usedfor = IProductSeriesSourceAdmin
+    usedfor = IProductSeries
 
     def checkAuthenticated(self, user):
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
@@ -203,7 +257,7 @@ class AdminShippingRequestSetByShipItAdmins(AdminShippingRequestByShipItAdmins):
 
 class EditSeriesSourceByVCSImports(AuthorizationBase):
     permission = 'launchpad.EditSource'
-    usedfor = IProductSeriesSource
+    usedfor = IProductSeries
 
     def checkAuthenticated(self, user):
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
@@ -362,7 +416,7 @@ class AdminDistroRelease(AdminByAdminsTeam):
     """Soyuz involves huge chunks of data in the archive and librarian,
     so for the moment we are locking down admin and edit on distributions
     and distroreleases to the Launchpad admin team.
-    
+
     NB: Please consult with SABDFL before modifying this permission because
         changing it could cause the archive to get rearranged, with tons of
         files moved to the new namespace, and mirrors would get very very
@@ -375,7 +429,7 @@ class AdminDistroRelease(AdminByAdminsTeam):
 class EditDistroReleaseByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
     """The owner of the distro release should be able to modify some of the
     fields on the IDistroRelease
-    
+
     NB: there is potential for a great mess if this is not done correctly so
     please consult with SABDFL before modifying these permissions.
     """
@@ -389,27 +443,13 @@ class EditDistroReleaseByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
                 user.inTeam(admins))
 
 
-class DistroReleaseDrivers(AuthorizationBase):
-    """The drivers of a distrorelease can approve or decline features and
-    bugs for targeting to the distrorelease.
+class ReleaseAndSeriesDrivers(AuthorizationBase):
+    """Drivers can approve or decline features and target bugs.
+
+    Drivers exist for distribution releases and product series.
     """
     permission = 'launchpad.Driver'
-    usedfor = IDistroRelease
-
-    def checkAuthenticated(self, user):
-        for driver in self.obj.drivers:
-            if user.inTeam(driver):
-                return True
-        admins = getUtility(ILaunchpadCelebrities).admin
-        return user.inTeam(admins)
-
-
-class ProductSeriesDrivers(AuthorizationBase):
-    """The drivers of a product series can approve or decline features and
-    bugs for targeting to the series.
-    """
-    permission = 'launchpad.Driver'
-    usedfor = IProductSeries
+    usedfor = IHasDrivers
 
     def checkAuthenticated(self, user):
         for driver in self.obj.drivers:
@@ -421,7 +461,7 @@ class ProductSeriesDrivers(AuthorizationBase):
 
 class EditProductSeries(EditByOwnersOrAdmins):
     usedfor = IProductSeries
-    
+
     def checkAuthenticated(self, user):
         """Allow product owner, Rosetta Experts, or admins."""
         if user.inTeam(self.obj.product.owner):
@@ -774,6 +814,18 @@ class AdminBuilderSet(AdminByBuilddAdmin):
     usedfor = IBuilderSet
 
 
+class AdminBuilder(AdminByBuilddAdmin):
+    usedfor = IBuilder
+
+
+# XXX cprov 20060731: As soon as we have external builders, as presumed
+# in the original plan, we should grant some rights to the owners and
+# that's what Edit is for.
+class EditBuilder(AdminByBuilddAdmin):
+    permission = 'launchpad.Edit'
+    usedfor = IBuilder
+
+
 class AdminBuildRecord(AdminByBuilddAdmin):
     usedfor = IBuild
 
@@ -786,3 +838,26 @@ class AdminTicket(AdminByAdminsTeam):
         """Allow only admins and ticket target owners"""
         return (AdminByAdminsTeam.checkAuthenticated(self, user) or
                 user.inTeam(self.obj.target.owner))
+
+
+class ModerateTicket(AdminTicket):
+    permission = 'launchpad.Moderate'
+    usedfor = ITicket
+
+    def checkAuthenticated(self, user):
+        """Allow user who can administer the ticket and support contacts."""
+        if AdminTicket.checkAuthenticated(self, user):
+            return True
+        for support_contact in self.obj.target.support_contacts:
+            if user.inTeam(support_contact):
+                return True
+        return False
+
+
+class TicketOwner(AuthorizationBase):
+    permission = 'launchpad.Owner'
+    usedfor = ITicket
+
+    def checkAuthenticated(self, user):
+        """Allow the ticket's owner."""
+        return user.inTeam(self.obj.owner)
