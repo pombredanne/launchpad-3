@@ -17,7 +17,12 @@
 <div metal:fill-slot="main">
 
       <div id="applications" tal:content="structure context/@@+applicationbuttons" />
-      <form class="central" action="/products/" method="get">
+      <form
+        class="central"
+        style="text-align: center;"
+        action="/products/"
+        method="get"
+      >
         <label for="text">Is your project registered yet?</label>
         <input id="text" type="text" name="text" size="30" />
         <input type="submit" value="Search" />
