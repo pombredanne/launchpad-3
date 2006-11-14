@@ -23,7 +23,7 @@
   </head>
   <body
     onload="
-      lpmenu.initialize(['menuroot'], '/', 'menupreload', [], '2em', 16, true);
+      lpmenu.initialize(['menuroot'], '/', 'menupreload', [], '1.3em', 16, true);
       sortables_init();
       initHelpPanel();
       initPortlets();

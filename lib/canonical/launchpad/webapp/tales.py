@@ -1115,3 +1115,4 @@ class GotoStructuralObject:
         except NoCanonicalUrl:
             return None
         return facetmenu.context
+

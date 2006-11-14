@@ -282,6 +282,9 @@ ul#menuroot {
 ul#menuroot li {
   display: inline;
 }
+ul#menuroot em {
+  margin-top: 0px;
+}
 #locationbar li a {
   position: relative;
   left: -16px;
@@ -306,7 +309,7 @@ ul#menuroot li {
   background-image: url(locationbar_em_bg.gif);
   background-repeat: no-repeat;
   background-position: right top;
-  padding: 2px 26px 10px 20px;
+  padding: 6px 26px 10px 20px;
   cursor: hand;
   cursor: pointer;
 }
