@@ -1,7 +1,7 @@
 Any logged in user can propose specs to be discussed in a sprint.
 
   >>> user_browser.open(
-  ...     'http://features.launchpad.dev/distros/ubuntu/'
+  ...     'http://blueprints.launchpad.dev/distros/ubuntu/'
   ...     '+spec/media-integrity-check/+linksprint')
   >>> user_browser.getControl('Sprint').value = ['uds-guacamole']
   >>> user_browser.getControl('Add').click()
@@ -12,7 +12,7 @@ Any logged in user can propose specs to be discussed in a sprint.
   u'uds-guacamole'
 
   >>> user_browser.open(
-  ...     'http://features.launchpad.dev/distros/kubuntu/'
+  ...     'http://blueprints.launchpad.dev/distros/kubuntu/'
   ...     '+spec/kde-desktopfile-langpacks/+linksprint')
   >>> user_browser.getControl('Sprint').value = ['uds-guacamole']
   >>> user_browser.getControl('Add').click()
@@ -72,7 +72,7 @@ Guacamole agenda.
   >>> cprov_browser.open('http://launchpad.dev/sprints/uds-guacamole')
   >>> cprov_browser.getLink('Features').click()
   >>> cprov_browser.url
-  'http://features.launchpad.dev/sprints/uds-guacamole/+specs'
+  'http://blueprints.launchpad.dev/sprints/uds-guacamole/+specs'
 
   >>> cprov_browser.getLink('Set Topics').click()
 
@@ -87,4 +87,4 @@ Guacamole agenda.
   >>> cprov_browser.getControl('Decline').click()
 
   >>> cprov_browser.url
-  'http://features.launchpad.dev/sprints/uds-guacamole/+specs'
+  'http://blueprints.launchpad.dev/sprints/uds-guacamole/+specs'

@@ -177,7 +177,15 @@ class IDistributionMirror(Interface):
         """
 
     def disableAndNotifyOwner():
-        """Mark this mirror as disabled and notifying the owner."""
+        """Mark this mirror as disabled and notify the owner by email.
+        
+        This method can't be called before a probe record has been created
+        because we'll link to the latest probe record in the email we send to
+        notify the owner.
+
+        The owner will be notified only if this mirror was previously enabled
+        or if it was probed only once.
+        """
 
     def newProbeRecord(log_file):
         """Create and return a new MirrorProbeRecord for this mirror."""
@@ -217,6 +225,9 @@ class IDistributionMirror(Interface):
         """Delete the MirrorCDImageDistroRelease with the given arch 
         release and flavour, in case it exists.
         """
+
+    def deleteAllMirrorCDImageReleases():
+        """Delete all MirrorCDImageDistroReleases of this mirror."""
 
     def getExpectedPackagesPaths():
         """Get all paths where we can find Packages.gz files on this mirror.
