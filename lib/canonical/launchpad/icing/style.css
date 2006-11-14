@@ -405,50 +405,10 @@ ul#applicationchooser li#applicationchooser_selected {
   padding: 0.5em;
   width: 100%;
 }
-#actions ul {
-  clear: both;
-  float: left;
-  width: 192px;
-  overflow: hidden;
-  margin: 0px 0px 4px 0px;
-  padding: 4px;
-  list-style: none;
-  background-color: #EBEBEB;
-}
-#portlets .portlet ul li {
-  clear: both;
-  float: left;
-}
-#portlets .portlet div, #actions li a {
-  float: left;
-  width: 180px;
-  height: auto !important;
-  display: block;
-  background-color: #EBEBEB;
-  padding: 3px 6px 3px 6px !important;
-  color: #717171;
-  border-bottom: 1px solid #D2D2D2;
-}
 #portlets .portlet div {
   width: 172px !important;
   border-left: 4px solid #F4F4FC;
   border-right: 4px solid #F4F4FC;
-}
-#actions li a:hover {
-  background-color: #EBEBEB;
-  text-decoration: underline;
-  color: #414141;
-}
-#actions li.active a {
-  background-color: #9BC11B;
-}
-#actions li.active a:hover {
-  background-color: #AFDB1F;
-}
-#portlets li.active ul,
-#portlets li.active ul li a,
-#portlets li.active ul li a:hover {
-  background-color: #EBF6C7;
 }
 #portlets .portlet {
   overflow: hidden;
@@ -478,6 +438,13 @@ ul#applicationchooser li#applicationchooser_selected {
   margin-bottom: 3px !important;
   padding-top: 0 !important;
   padding-bottom: 3px !important;
+  clear: both;
+  float: left;
+  width: 192px;
+  overflow: hidden;
+  margin: 0px 0px 4px 0px;
+  padding: 4px;
+  list-style: none;
 }
 #portlets .portlet h2 a {
   float: left;
@@ -497,20 +464,6 @@ ul#applicationchooser li#applicationchooser_selected {
 #portlets .portlet h2 a:hover {
   background-color: #A3A3A3;
   text-decoration: none;
-}
-#portlets .portlet ul {
-  clear: both;
-  float: left;
-  width: 192px;
-  overflow: hidden;
-  margin: 0px 0px 4px 0px;
-  padding: 4px;
-  list-style: none;
-  background-color: #EBEBEB;
-}
-#portlets .portlet ul li {
-  clear: both;
-  float: left;
 }
 #XXXportlets .portlet ul li a {
   float: left;
@@ -547,6 +500,39 @@ ul#applicationchooser li#applicationchooser_selected {
 #portlets .portlet.active ul li a,
 #portlets .portlet.active ul li a:hover {
   background-color: #EBF6C7;
+}
+#portlets li.active ul,
+#portlets li.active ul li a,
+#portlets li.active ul li a:hover {
+  background-color: #EBF6C7;
+}
+#actions ul {
+  width: 192px;
+  overflow: hidden;
+  margin: 3px 0px 0px 0px;
+  padding: 4px;
+  list-style: none;
+}
+#actions li {
+  border-bottom: 1px solid #D2D2D2;
+}
+#actions li a {
+  width: 180px;
+  height: auto !important;
+  display: block;
+  padding: 0 6px 6px 6px !important;
+  color: #717171;
+}
+#actions li a:hover {
+  background-color: #EBEBEB;
+  text-decoration: underline;
+  color: #414141;
+}
+#actions li.active a {
+  background-color: #9BC11B;
+}
+#actions li.active a:hover {
+  background-color: #AFDB1F;
 }
 
 #globalsearch {
@@ -848,6 +834,8 @@ body.tab-branches #mainarea #portlets .portlet.active div {
   border-left: 4px solid #FCF4F2;
   border-right: 4px solid #FCF4F2;
 }
+body.tab-branches #actions {background-color: #ffc;}
+body.tab-branches #actions h2 {background-color: #f3cb00;}
 .tab-branches h1, .tab-branches h2, .tab-branches h3,
 .tab-branches #maincontent :link, .tab-branches #maincontent :visited {
   background: none;
@@ -891,6 +879,8 @@ body.tab-bugs #mainarea #portlets .portlet.active div {
   border-left: 4px solid #FEFCF0;
   border-right: 4px solid #FEFCF0;
 }
+body.tab-bugs #actions {background-color: #fee;}
+body.tab-bugs #actions h2 {background-color: #c03;}
 .tab-bugs h1, .tab-bugs h2, .tab-bugs h3,
 .tab-bugs #maincontent :link, .tab-bugs #maincontent :visited {
   background: none;
@@ -930,6 +920,8 @@ body.tab-specifications #mainarea div#portlets div.portlet.active ul li a,
 body.tab-specifications #mainarea div#portlets div.portlet.active ul li a:hover {
   background-color: #F4F4FC;
 }
+body.tab-specifications #actions {background-color: #eef;}
+body.tab-specifications #actions h2 {background-color: #3f3ccc;}
 .tab-specifications h1, .tab-specifications h2, .tab-specifications h3,
 .tab-specifications #maincontent :link, .tab-specifications #maincontent :visited {
   background: none;
@@ -973,6 +965,8 @@ body.tab-translations #mainarea #portlets .portlet.active div {
   border-left: 4px solid #f1f9fc;
   border-right: 4px solid #f1f9fc;
 }
+body.tab-translations #actions {background-color: #eff;}
+body.tab-translations #actions h2 {background-color: #159cc8;}
 .tab-translations h1, .tab-translations h2, .tab-translations h3,
 .tab-translations #maincontent :link, .tab-translations #maincontent :visited {
   background: none;
