@@ -513,6 +513,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 ALTER TABLE archconfig DISABLE TRIGGER ALL;
 
 
@@ -1545,6 +1548,7 @@ INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile, 
 INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile, date_created) VALUES (8, 1, 10, 0, 1, '2006-10-16 18:31:43.526197');
 INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile, date_created) VALUES (9, 1, 10, 0, 1, '2006-10-16 18:31:43.526624');
 INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile, date_created) VALUES (10, 1, 10, 40, 1, '2006-10-16 18:31:43.526624');
+INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile, date_created) VALUES (11, 3, 1, 0, 1, '2006-11-14 18:39:27.186515');
 
 
 ALTER TABLE distroreleasequeue ENABLE TRIGGER ALL;
@@ -1576,6 +1580,7 @@ INSERT INTO distroreleasequeuesource (id, distroreleasequeue, sourcepackagerelea
 INSERT INTO distroreleasequeuesource (id, distroreleasequeue, sourcepackagerelease, date_created) VALUES (2, 4, 25, '2006-10-16 18:31:43.537586');
 INSERT INTO distroreleasequeuesource (id, distroreleasequeue, sourcepackagerelease, date_created) VALUES (3, 8, 30, '2006-10-16 18:31:43.53795');
 INSERT INTO distroreleasequeuesource (id, distroreleasequeue, sourcepackagerelease, date_created) VALUES (4, 9, 31, '2006-10-16 18:31:43.538319');
+INSERT INTO distroreleasequeuesource (id, distroreleasequeue, sourcepackagerelease, date_created) VALUES (5, 11, 14, '2006-11-14 18:40:09.479212');
 
 
 ALTER TABLE distroreleasequeuesource ENABLE TRIGGER ALL;
@@ -8635,6 +8640,7 @@ INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetyp
 INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (23, 39, 3, 4);
 INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (24, 38, 3, 3);
 INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (25, 43, 3, 5);
+INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (14, 3, 6, 6);
 
 
 ALTER TABLE sourcepackagereleasefile ENABLE TRIGGER ALL;

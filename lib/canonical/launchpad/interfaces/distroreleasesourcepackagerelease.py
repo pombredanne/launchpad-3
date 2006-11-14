@@ -56,6 +56,8 @@ class IDistroReleaseSourcePackageRelease(ISourcePackageRelease):
     current_published = Attribute("is last SourcePackagePublishing record "
                                   "that is in PUBLISHED status.")
 
+    changesfile = Attribute("Correspondent changesfile.")
+
     def changeOverride(new_component=None, new_section=None):
         """Change the component and/or section.
 

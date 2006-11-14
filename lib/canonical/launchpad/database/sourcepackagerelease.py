@@ -75,6 +75,8 @@ class SourcePackageRelease(SQLBase):
         joinColumn='sourcepackagerelease')
     publishings = SQLMultipleJoin('SourcePackagePublishingHistory',
         joinColumn='sourcepackagerelease', orderBy="-datecreated")
+    queues = SQLMultipleJoin('DistroReleaseQueueSource',
+        joinColumn='sourcepackagerelease', orderBy="-datecreated")
 
     @property
     def latest_build(self):
