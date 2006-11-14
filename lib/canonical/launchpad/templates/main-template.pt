@@ -26,6 +26,7 @@
       lpmenu.initialize(['menuroot'], '/', 'menupreload', [], '1.3em', 16, true);
       sortables_init();
       initHelpPanel();
+      initPortlets();
     "
     id="document"
     tal:attributes="class string:tab-${CONTEXTS/menu:selectedfacetname}"
