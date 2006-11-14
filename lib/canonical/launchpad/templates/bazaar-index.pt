@@ -21,7 +21,7 @@
                           xtal:condition="view/error_message"
                           xtal:content="view/error_message"
                           class="error message"
-                        >Error message.</p>
+                        ><!-- Error message. --></p>
                         <input
                           id="text"
                           type="text"
@@ -129,7 +129,7 @@
         person's page.
         To create a hosted branch, use the <code>bzr push</code> command. When
         registering the first branch for a product, you may have to use the
-        <code>--create-prefix</code> option. The destination URL must be of the
+        <code>--create-prefix</code> option. <!-- The destination URL must be of the
         form <code>sftp://<var>user</var>@bazaar.launchpad.net/~<var>registrant</var>/<var>product</var>/<var>branch</var></code>
         where <var>user</var> is your short name in Launchpad
         (omitted if it is the same as your system login or is specified in
@@ -137,7 +137,7 @@
         <var>registrant</var> is your short name in Launchpad
         (which can be a team name for shared branches),
         <var>product</var> is the Launchpad product the branch belongs to,
-        and <var>name</var> is the short name of the branch.
+        and <var>name</var> is the short name of the branch. -->
       </p>
       <p>
         To create a shared branch to which multiple people can commit and push,

@@ -1,4 +1,4 @@
-.demo {background-color: #fee;}
+.XXXdemo {background-color: #fff;} /* turned off for the demo */
 
 body {
   position: relative;
@@ -405,10 +405,12 @@ ul#applicationchooser li#applicationchooser_selected {
   padding: 0.5em;
   width: 100%;
 }
-#portlets .portlet div {
-  width: 172px !important;
-  border-left: 4px solid #F4F4FC;
-  border-right: 4px solid #F4F4FC;
+#portlets .portletBody {
+  border-left: 4px solid #ebebeb;
+  border-right: 4px solid #ebebeb;
+  background-color: #EBEBEB;
+  padding: 3px 12px 3px 8px !important;
+  color: #717171;
 }
 #portlets .portlet {
   overflow: hidden;
@@ -432,19 +434,6 @@ ul#applicationchooser li#applicationchooser_selected {
   margin-bottom: 0 !important;
   padding-top: 0 !important;
   padding-bottom: 0 !important;
-}
-#portlets .portlet ul {
-  margin-top: 0 !important;
-  margin-bottom: 3px !important;
-  padding-top: 0 !important;
-  padding-bottom: 3px !important;
-  clear: both;
-  float: left;
-  width: 192px;
-  overflow: hidden;
-  margin: 0px 0px 4px 0px;
-  padding: 4px;
-  list-style: none;
 }
 #portlets .portlet h2 a {
   float: left;
@@ -479,15 +468,6 @@ ul#applicationchooser li#applicationchooser_selected {
   background-color: #EBEBEB;
   text-decoration: underline;
   color: #414141;
-}
-#portlets .portlet div {
-  float: left;
-  width: 180px;
-  height: auto !important;
-  display: block;
-  background-color: #EBEBEB;
-  padding: 3px 12px 3px 8px !important;
-  color: #717171;
 }
 #portlets .portlet.active h2 a {
   background-color: #9BC11B;
@@ -640,7 +620,7 @@ ul#applicationchooser li#applicationchooser_selected {
 }
 #structuralobjectheading .main {
   font-weight: bold;
-  margin: 0;
+  margin: 20px 0 0;
   font-size: 1.5em;
 }
 #structuralobjectchildren {
@@ -658,6 +638,9 @@ ul#applicationchooser li#applicationchooser_selected {
   background-image: url(mainarea_bottom.gif);
   background-repeat: repeat-x;
   background-position: bottom left;
+}
+#singlecolumn #mainarea {
+  margin-left: 0;
 }
 #mainarea div.t {
   width: 100%;
@@ -700,6 +683,9 @@ ul#applicationchooser li#applicationchooser_selected {
   background-image: url(mainarea_topright.gif);
   background-repeat: no-repeat;
   background-position: top right;
+}
+#singlecolumn div.z {
+  padding: 0 20px 20px; /* XXX Makes the top right corner disappear */
 }
 #help_panel {
   visibility: hidden; /* global.js reveals it if JavaScript is available */
@@ -1047,7 +1033,7 @@ body {
   width: 200px;
 }
 #singlecolumn {
-  margin: 40px 20px 20px 38px;
+  margin: 40px 0px 20px 38px;
 }
 
 /* ====== Content area styles ====== */
@@ -1059,6 +1045,7 @@ body {
   font-size: 1.2em;
   margin: 2em auto;
   padding: 1em;
+  text-align: center;
 }
 #applications a {
   display: block;
@@ -1073,8 +1060,9 @@ body {
 }
 .central {
   clear: both;
-  margin: 0 auto;
+  margin: auto;
   padding: 4em 0;
+  width: auto;
 }
 .central, .central input {
   font-size: 1em;
@@ -1166,4 +1154,59 @@ li {
 }
 .bug-summary {
   font-weight: bold;
+}
+
+/* For the demo: */
+fieldset {
+  border: none;
+  margin: 0.5em 0 1em;
+  padding: 0;
+}
+thead th, tfoot th {text-align: left;}
+
+table.listing {
+  margin-top: 0.5em;
+}
+table.listing, table.listing>tbody {
+  border: 1px solid #d2d2d2;
+  width: 100%;
+}
+table.listing>thead, table.listing>thead>tr>th,table.listing tfoot tr {
+  border: 1px solid #d2d2d2;
+  background-color: #fff;
+}
+table.listing tfoot td {
+  border: 1px solid #d2d2d2;
+}
+table.listing>thead>tr>td {
+  border: none;
+}
+tr.highlight { /* highlight specific table entry */
+  background-color: #fdd;
+}
+table.listing>tr.note, table.listing>tbody>tr.note {
+  font-size: smaller;
+}
+tr.amount, td.amount {
+  text-align: right;
+}
+table.listing th, table.listing td {
+  padding: 0.125em 0.25em;
+}
+table.listing th {
+  font-size: 1.125em;
+  white-space: nowrap;
+}
+table.listing>tr>td, table.listing>tbody>tr>td {
+  border: 1px #d2d2d2;
+  border-style: dotted none none none;
+}
+table.listing>tr.note>td, table.listing>tbody>tr.note>td {
+  border-style: none;
+}
+table.listing img {
+  vertical-align: middle;
+}
+table.listing tr.secondary>th, table.listing tr.secondary td {
+  border-top: none;
 }
