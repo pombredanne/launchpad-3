@@ -396,6 +396,22 @@ Most recent published history row:
    >>> spph.section.name
    u'web'
 
+The changesfile for this sourcepackagerelease:
+
+   >>> firefox_srcrel =  warty.getSourcePackage(
+   ...    'mozilla-firefox').currentrelease
+   >>> firefox_srcrel.title
+   u'mozilla-firefox 0.9 (source) in ubuntu warty'
+
+Changesfile is provided as a LibraryFileAlias instance or None if not
+available:
+
+   >>> firefox_srcrel.changesfile
+   <LibraryFileAlias at ...>
+
+   >>> netapplet_srcrel.changesfile is None
+   True
+
 Perform `post publication` override:
 
    >>> new_section = getUtility(ISectionSet)['base']
