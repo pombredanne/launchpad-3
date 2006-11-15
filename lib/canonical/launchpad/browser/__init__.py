@@ -73,10 +73,11 @@ from canonical.launchpad.browser.specificationtarget import *
 from canonical.launchpad.browser.sprint import *
 from canonical.launchpad.browser.sprintattendance import *
 from canonical.launchpad.browser.sprintspecification import *
-from canonical.launchpad.browser.ticket import *
-from canonical.launchpad.browser.tickettarget import *
 from canonical.launchpad.browser.team import *
 from canonical.launchpad.browser.teammembership import *
+from canonical.launchpad.browser.temporaryblobstorage import *
+from canonical.launchpad.browser.ticket import *
+from canonical.launchpad.browser.tickettarget import *
 from canonical.launchpad.browser.build import *
 from canonical.launchpad.browser.builder import *
 from canonical.launchpad.browser.translationgroup import *

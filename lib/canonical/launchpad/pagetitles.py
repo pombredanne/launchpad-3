@@ -965,6 +965,8 @@ template_index = '%EXAMPLE TITLE'
 
 template_new = 'EXAMPLE NEW TITLE'
 
+temporaryblobstorage_storeblob = 'Store a BLOB temporarily in Launchpad'
+
 def ticket_listing(context, view):
     return view.pagetitle
 
