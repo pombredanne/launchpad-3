@@ -43,8 +43,6 @@ __all__ = [
     'ObjectReassignmentView',
     'TeamReassignmentView',
     'RedirectToAssignedBugsView',
-    'PersonLanguagesView',
-    'RedirectToEditLanguagesView',
     'PersonLatestTicketsView',
     'PersonSearchTicketsView',
     'PersonSupportMenu',
@@ -701,21 +699,6 @@ class PersonClaimView(LaunchpadFormView):
             "An email message was sent to '%(email)s'. Follow the "
             "instructions in that message to finish claiming this "
             "profile."), email=email)
-
-
-class RedirectToEditLanguagesView(LaunchpadView):
-    """Redirect the logged in user to his +editlanguages page.
-
-    This view should always be registered with a launchpad.AnyPerson
-    permission, to make sure the user is logged in. It exists so that
-    we can keep the /rosetta/prefs link working and also provide a link
-    for non logged in users that will require them to login and them send
-    them straight to the page they want to go.
-    """
-
-    def initialize(self):
-        self.request.response.redirect(
-            '%s/+editlanguages' % canonical_url(self.user))
 
 
 class PersonRdfView:
@@ -2501,7 +2484,6 @@ class SearchSubscribedTicketsView(SearchTicketsView):
         return _('No support requests subscribed to by $name found with the '
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
-
 
 class PersonSupportMenu(ApplicationMenu):
 
