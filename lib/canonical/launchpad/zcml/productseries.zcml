@@ -244,7 +244,7 @@
 
   <browser:defaultView
       for="canonical.launchpad.interfaces.IProductSeriesSet"
-      layer="canonical.launchpad.layers.BazaarLayer"
+      layer="canonical.launchpad.layers.CodeLayer"
       name="+bazaar-index" />
 
   <!-- XXX need better permissions -->
