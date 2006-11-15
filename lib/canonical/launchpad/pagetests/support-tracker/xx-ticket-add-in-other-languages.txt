@@ -38,6 +38,8 @@ by any member of the support community.
 Since we've already shown the warning, we won't try to block the user
 from making a request in the language of his choice.
 
+    >>> browser.getControl('Language').value
+    ['pt_BR']
     >>> browser.getControl('Description').value = (
     ...     u'Eu uso Ubuntu em um AMD64 e instalei o plugin java blackdown. '
     ...     u'O plugin \xe9 exibido em about:plugins e quando eu abro a '
@@ -57,6 +59,9 @@ from making a request in the language of his choice.
 It's also possible that the user choses English in the first page but
 then changes his mind on the second page.
 
+    >>> from zope.testbrowser.testing import Browser
+    >>> browser = Browser()
+    >>> browser.addHeader('Authorization', 'Basic daf@canonical.com:daf')
     >>> browser.open('http://launchpad.dev/distros/ubuntu/+addticket')
 
     >>> browser.getControl('Language').value = ['en']
@@ -70,12 +75,12 @@ support community can understand English.
     0
 
 If now he changes his mind and decides to enter the request details in
-Portuguese, we'll have to warn him.
+Welsh, we'll have to warn him.
 
-    >>> browser.getControl('Language').value = ['pt_BR']
-    >>> browser.getControl('Summary').value = 'algumas palavras aleatorias'
+    >>> browser.getControl('Language').value = ['cy']
+    >>> browser.getControl('Summary').value = 'Gofyn cymorth'
     >>> browser.getControl('Description').value = (
-    ...     'Este eh apenas um pedido de suporte aleatorio.')
+    ...     'Ghai damweiniol gair.')
     >>> browser.getControl('Add').click()
 
     >>> browser.url
@@ -83,7 +88,25 @@ Portuguese, we'll have to warn him.
 
     >>> for tag in find_tags_by_class(browser.contents, 'warning message'):
     ...     print tag.renderContents()
-    <strong>Portuguese (Brazil) (pt_BR)</strong> doesn't seem to be
+    <strong>Welsh (cy)</strong> doesn't seem to be
+    a language spoken by any support contacts in this community. If you
+    go ahead and make a support request in that language, no support
+    contacts will be able to read it. Currently, the languages spoken
+    by at least one support contact are: English.
+
+If he changes the language to another unsupported language, we will
+display the warning again.
+
+    >>> browser.getControl('Language').value = ['ja']
+    >>> browser.getControl('Summary').value = (
+    ...     u'\u52a9\u3051\u306e\u8981\u6c42'.encode('utf-8'))
+    >>> browser.getControl('Description').value = (
+    ...     u'\u3042\u308b\u4efb\u610f\u5358\u8a9e\u3002'.encode('utf-8'))
+    >>> browser.getControl('Add').click()
+
+    >>> for tag in find_tags_by_class(browser.contents, 'warning message'):
+    ...     print tag.renderContents()
+    <strong>Japanese (ja)</strong> doesn't seem to be
     a language spoken by any support contacts in this community. If you
     go ahead and make a support request in that language, no support
     contacts will be able to read it. Currently, the languages spoken
@@ -95,7 +118,8 @@ new support request.
     >>> browser.getControl('Add').click()
     >>> browser.url
     '.../distros/ubuntu/+ticket/...'
-    >>> browser.title
-    'Ubuntu support request #...algumas palavras aleatorias...'
+    >>> browser.title.decode('utf-8')
+    u'Ubuntu support request #...\u52a9\u3051\u306e\u8981\u6c42...'
+    >>> soup = BeautifulSoup(browser.contents)
     >>> print soup.find('b', text='Language:').next.strip()
-    Portuguese (Brazil)
+    Japanese

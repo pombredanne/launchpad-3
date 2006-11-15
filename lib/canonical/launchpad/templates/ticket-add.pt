@@ -51,9 +51,9 @@
         </p>
       </tal:no-similar-tickets>
 
-      <tal:unsupported_lang condition="view/warn_about_unsupported_language">
+      <tal:unsupported_lang condition="view/shouldWarnAboutUnsupportedLanguage">
         <p class="warning message" i18n:translate="">
-          <strong tal:content="view/choosen_language/displayname"
+          <strong tal:content="view/chosen_language/displayname"
                   i18n:name="language">
           Xhoza</strong> doesn't seem to be a language spoken by any support
           contacts in this community. If you go ahead and make a support request
@@ -65,8 +65,8 @@
             /><span tal:condition="not: repeat/lang/end">,</span>
           </tal:langs>.
         </p>
-        <input type="hidden" name="warned_about_unsupported_language"
-              value="1" />
+        <input type="hidden" name="chosen_language" value="en"
+               tal:attributes="value view/chosen_language/code" />
       </tal:unsupported_lang>
       </div>
     </metal:extra_info>

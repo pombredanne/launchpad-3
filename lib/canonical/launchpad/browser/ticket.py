@@ -166,7 +166,7 @@ class TicketAddView(LaunchpadFormView):
     _MAX_SIMILAR_TICKETS = 10
 
     warn_about_unsupported_language = False
-    choosen_language = None
+    chosen_language = None
 
     # Do not autofocus the title widget
     initial_focus_widget = None
@@ -190,10 +190,8 @@ class TicketAddView(LaunchpadFormView):
     def validate(self, data):
         """Validate hook.
 
-        This validation method sets the warn_about_unsupported_language
-        and choosen_language attributes.
+        This validation method sets the chosen_language attribute.
         """
-        self.warn_about_unsupported_language = False
         if 'title' not in data:
             self.setFieldError(
                 'title',_('You must enter a summary of your problem.'))
@@ -202,13 +200,21 @@ class TicketAddView(LaunchpadFormView):
                 self.setFieldError(
                     'description',
                     _('You must provide details about your problem.'))
-        self.choosen_language = data['language']
-        if (self.choosen_language not in self.context.getSupportedLanguages()
-            and 'warned_about_unsupported_language' not in self.request.form):
-            # The language choosen by the user is not spoken by any of this
-            # context's support contacts and we haven't yet warned the user
-            # about this fact. Let's do it now.
-            self.warn_about_unsupported_language = True
+        self.chosen_language = data['language']
+
+    def shouldWarnAboutUnsupportedLanguage(self):
+        """Test if the warning about unsupported language should be displayed.
+
+        A warning will be displayed if the request's language is not listed
+        as a spoken language for any of the support contacts. The warning
+        will only be displayed one time, except if the user changes the
+        request language to another unsupported value.
+        """
+        if self.chosen_language in self.context.getSupportedLanguages():
+            return False
+
+        old_chosen_language = self.request.form.get('chosen_language')
+        return self.chosen_language.code != old_chosen_language
 
     @action(_('Continue'))
     def continue_action(self, action, data):
@@ -243,7 +249,7 @@ class TicketAddView(LaunchpadFormView):
     # which is fixed in 3.3.0b1 and 3.2.1
     @action(_('Add'), failure=handleAddError)
     def add_action(self, action, data):
-        if self.warn_about_unsupported_language:
+        if self.shouldWarnAboutUnsupportedLanguage():
             # Warn the user that the language is not supported.
             self.searchResults = []
             return self.add_template()
