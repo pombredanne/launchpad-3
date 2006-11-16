@@ -39,8 +39,9 @@
    <div id="files">
      <ul class="download" tal:condition="context/files">
         <li tal:repeat="file context/files">
-          <a tal:content="file/url/filename"
-             tal:attributes="href file/url/fileurl" />
+          <a tal:content="file/libraryfile/filename"
+             tal:attributes="href file/libraryfile/url" />
+          (<span tal:replace="file/libraryfile/content/filesize/fmt:bytes" />)
         </li>
      </ul>
      <p tal:condition="not:context/files">No files available for download.</p>

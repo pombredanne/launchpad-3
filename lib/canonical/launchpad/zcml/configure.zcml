@@ -68,7 +68,6 @@
     <include file="logintoken.zcml" />
     <include file="message.zcml" />
     <include file="milestone.zcml" />
-    <include file="package.zcml" />
     <include file="packagebugcontact.zcml" />
     <include file="packaging.zcml" />
     <include file="pillar.zcml" />

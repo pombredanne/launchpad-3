@@ -1,10 +1,10 @@
-= DistroRelease Source Pages =
+= DistroRelease Source Package Pages =
 
 In Launchpad, SourcePackageReleases are directly attached to a
 DistroRelease by a publication record (see doc/publishing.txt).
 
-A SourcePackage, or better names DistroReleaseSourcePackage, is a
-collection of SourcePackageRelease once published in a given
+A SourcePackage, or better named DistroReleaseSourcePackage, is a
+collection of SourcePackageReleases once published in a given
 DistroRelease.
 
 Web UI exposes SourcePackages after obtain a valid pair DistroRelease
@@ -162,6 +162,7 @@ And also download the files contained in this source, like '.orig',
   <ul class="download">
   <li>
   <a href="http://localhost:58000/3/firefox-0.9.2.tar.gz">firefox-0.9.2.tar.gz</a>
+  (9.5 MiB)
   </li>
   </ul>
   </div>
