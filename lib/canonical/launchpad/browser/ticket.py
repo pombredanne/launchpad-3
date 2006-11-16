@@ -102,13 +102,17 @@ class TicketLanguageVocabularyFactory:
 
     implements(IContextSourceBinder)
 
+    def __init__(self, request):
+        """Create a TicketLanguageVocabularyFactory.
+
+        :param request: The request in which the vocabulary will be used. This
+        will be used to determine the user languages.
+        """
+        self.request = request
+
     def __call__(self, context):
-        # We import here because the tests need to be able to monkey patch
-        # that function.
-        from canonical.launchpad.webapp.publisher import (
-            get_current_browser_request)
         languages = set()
-        for lang in request_languages(get_current_browser_request()):
+        for lang in request_languages(self.request):
             # Ignore English and all its variants.
             if not lang.code.startswith('en'):
                 languages.add(lang)
@@ -134,7 +138,7 @@ def createLanguageField(the_form):
     return form.Fields(
             Choice(
                 __name__='language',
-                source=TicketLanguageVocabularyFactory(),
+                source=TicketLanguageVocabularyFactory(the_form.request),
                 title=_('Language'),
                 description=_(
                     'The language in which this request is written.'
