@@ -79,3 +79,29 @@ the Accept-Language header, we won't consider that as a valid language code.
 
   >>> print_languages(browser.contents, portlet='browser')
   Portuguese (Brazil)
+
+We also have a page under the launchpad root, called +editmylanguages, with
+launchpad.AnyPerson as permission. This is the page to which we direct
+non-logged in users to edit their preferred languages.
+
+  >>> anon_browser.handleErrors = True
+  >>> anon_browser.open('http://launchpad.dev/+editmylanguages')
+  >>> anon_browser.url
+  'http://launchpad.dev/+editmylanguages/+login'
+
+  >>> anon_browser.open('http://launchpad.dev/+editmylanguages/+login')
+  >>> anon_browser.getControl('E-mail address:', index=0).value = (
+  ...     'no-priv@canonical.com')
+  >>> anon_browser.getControl('Password:').value = 'test'
+  >>> anon_browser.getControl(name='loginpage_submit_login').click()
+  >>> anon_browser.url
+  'http://launchpad.dev/people/no-priv/+editlanguages'
+
+
+  >>> print http(r"""
+  ... GET /rosetta/prefs HTTP/1.1
+  ... """)
+  HTTP/1.1 301 Moved Permanently
+  ...
+  Location: /+editmylanguages
+
