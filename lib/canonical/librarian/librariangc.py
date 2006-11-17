@@ -17,6 +17,18 @@ BATCH_SIZE = 1
 log = None
 debug = False
 
+def delete_expired_blobs(con):
+    """Remove expired TemporaryBlobStorage entries"""
+    cur = con.cursor()
+    cur.execute("""
+        DELETE FROM TemporaryBlobStorage, LibraryFileAlias
+        WHERE blob = LibraryFileAlias.id
+            AND expires < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+        """)
+    log.info("Removed %d expired blobs" % cur.rowcount)
+    con.commit()
+
+
 def merge_duplicates(con):
     """Merge duplicate LibraryFileContent rows
     

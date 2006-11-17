@@ -18,15 +18,23 @@ perhaps as attachments.
 
 To create a new TemporaryBlob, use ITemporaryStorageManager.new:
 
-    >>> uuid = tsm.new('abcdefg')
+    >>> from cStringIO import StringIO
+    >>> data = 'abcdefg'
+    >>> uuid = tsm.new(len(data), StringIO(data))
     >>> uuid is not None
     True
 
-To retrieve a blob, we can also use the tsm:
+Because the blob is stored in the Librarian, we cannot retrieve it in the
+same transaction as we stored it in:
+
+    >>> import transaction
+    >>> transaction.commit()
+
+To retrieve a blob, we can also use the tsm.
 
     >>> blob = tsm.fetch(uuid)
     >>> blob.blob
-    u'abcdefg'
+    'abcdefg'
 
 We can delete a blob by UUID too:
 

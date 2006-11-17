@@ -10,8 +10,8 @@ CREATE TABLE TemporaryBlobStorage (
   uuid              text NOT NULL UNIQUE,
   date_created      timestamp without time zone NOT NULL
                         DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
-  blob              bytea NOT NULL
+  file_alias        int NOT NULL UNIQUE REFERENCES LibraryFileAlias
   );
 
+INSERT INTO LaunchpadDatabaseRevision VALUES (67, 32, 0);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (67, 93, 0);

@@ -9,29 +9,29 @@ __all__ = [
     'ITemporaryStorageManager',
     ]
 
-from zope.interface import Interface
-from zope.schema import Datetime, Text
+from zope.interface import Interface, Attribute
+from zope.schema import Datetime, Text, Bytes
 from canonical.launchpad import _
 
 class ITemporaryBlobStorage(Interface):
     """A blob which we will store in the database temporarily."""
 
     uuid = Text(title=_('UUID'), required=True, readonly=True)
-    blob = Text(title=_('BLOB'), required=True, readonly=True)
+    blob = Bytes(title=_('BLOB'), required=True, readonly=True)
     date_created = Datetime(title=_('Date created'),
         required=True, readonly=True)
-
+    filealias = Attribute("Link to actual storage of blob")
 
 class ITemporaryStorageManager(Interface):
     """A tool to create temporary blobs."""
     
-    def new(blob):
+    def new(blob, expires=None):
         """Create a new blob for storage in the database, returning the
-        UUID assigned to it."""
-
-    def sweep(age_in_seconds):
-        """Clean up all the expired BLOB's. Age is the allowed age of a
-        BLOB, in seconds, during this sweep."""
+        UUID assigned to it.
+        
+        Default expiry timestamp is calculated using
+        config.launchpad.default_blob_expiry
+        """
 
     def fetch(uuid):
         """Retrieve a TemporaryBlobStorage by uuid."""
