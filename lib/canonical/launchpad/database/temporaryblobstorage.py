@@ -20,6 +20,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical import uuid
+from canonical.config import config
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -27,6 +28,7 @@ from canonical.launchpad.interfaces import (
     ITemporaryBlobStorage,
     ITemporaryStorageManager,
     ILibraryFileAliasSet,
+    BlobTooLarge,
     )
 
 
@@ -70,12 +72,14 @@ class TemporaryStorageManager:
         # return an error code if that volume was unacceptably high. But for
         # the moment we will just ensure the BLOB is not that LARGE.
         #
-        # YAGNI - there are plenty of other ways to upload large chunks
+        # YAGNI? There are plenty of other ways to upload large chunks
         # of data to Launchpad that will hang around permanently. Size
         # limitations on uploads needs to be done in Zope3 to avoid DOS
         # attacks in general.
-        # if len(blob) > 320000:
-        #     return None
+        max_blob_size = config.launchpad.max_blob_size
+        if max_blob_size > 0 and len(blob) > max_blob_size:
+            raise BlobTooLarge(len(blob))
+
         # create the BLOB and return the UUID
 
         new_uuid = str(uuid.generate_uuid())

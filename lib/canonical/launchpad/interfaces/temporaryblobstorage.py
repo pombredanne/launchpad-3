@@ -7,11 +7,18 @@ __metaclass__ = type
 __all__ = [
     'ITemporaryBlobStorage',
     'ITemporaryStorageManager',
+    'BlobTooLarge',
     ]
 
 from zope.interface import Interface, Attribute
 from zope.schema import Datetime, Text, Bytes
 from canonical.launchpad import _
+
+class BlobTooLarge(Exception):
+    """Raised if attempting to create a blob larger than the maximum
+       allowed size.
+    """
+    pass
 
 class ITemporaryBlobStorage(Interface):
     """A blob which we will store in the database temporarily."""
@@ -28,6 +35,8 @@ class ITemporaryStorageManager(Interface):
     def new(blob, expires=None):
         """Create a new blob for storage in the database, returning the
         UUID assigned to it.
+
+        May raise a BlobTooLarge exception.
         
         Default expiry timestamp is calculated using
         config.launchpad.default_blob_expiry
