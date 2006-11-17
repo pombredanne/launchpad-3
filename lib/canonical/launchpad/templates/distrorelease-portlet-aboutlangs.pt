@@ -11,7 +11,7 @@
     <br />
     Your preferred languages list reflects the languages we think you are
     most interested in.
-    Choose "<a tal:attributes="href /+editmylanguages">Select languages...
+    Choose "<a href="/+editmylanguages">Select languages...
     </a>" to ensure that the languages you speak are included in all
     translation pages.
   </div>
