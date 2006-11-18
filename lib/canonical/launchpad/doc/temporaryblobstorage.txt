@@ -50,6 +50,5 @@ Size limits can be enforced, although this is turned off by default:
     Traceback (most recent call last):
     ...
     BlobTooLarge: 7
-
     >>> config.launchpad.max_blob_size = 0
     
