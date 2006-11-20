@@ -37,7 +37,7 @@ from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.interfaces import (
     CreateBugParams, ILanguageSet, ITicket, ITicketAddMessageForm,
-    ITicketChangeStatusForm, ITicketSet,  UnexpectedFormData)
+    ITicketChangeStatusForm, ITicketSet, ITicketTarget, UnexpectedFormData)
 from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
     GeneralFormView, LaunchpadView, action, LaunchpadFormView,
@@ -129,25 +129,72 @@ class TicketLanguageVocabularyFactory:
         return SimpleVocabulary(terms)
 
 
-def createLanguageField(the_form):
-    """Create a field to edit a ticket language using a special vocabulary.
+class TicketSupportLanguageMixin:
+    """Helper mixin for views manipulating the ticket language.
 
-    :param the_form: The form that will use this field.
-    :return: A form.Fields instance containing the language field.
+    It provides a method to check if the selected language is supported
+    and another to create the form field to select the ticket language.
+
+    This mixin adapts its context to ITicketTarget, so it will work if
+    the context either provides ITicketTarget directly or if an adapter
+    exists.
     """
-    return form.Fields(
-            Choice(
-                __name__='language',
-                source=TicketLanguageVocabularyFactory(the_form.request),
-                title=_('Language'),
-                description=_(
-                    'The language in which this request is written.'
-                    '(<a href="/people/+editlanguages">Change your preferred '
-                    'languages.</a>)')),
-            render_context=the_form.render_context)
+
+    supported_languages_macros = ViewPageTemplateFile(
+        '../templates/ticket-supported-languages-macros.pt')
+
+    @property
+    def chosen_language(self):
+        """Return the language chosen by the user."""
+        if self.widgets['language'].hasInput():
+            return self.widgets['language'].getInputValue()
+        else:
+            return self.context.language
+
+    @property
+    def unsupported_languages_warning(self):
+        """Macro displaying a warning in case of unsupported languages."""
+        macros = self.supported_languages_macros.macros
+        return macros['unsupported_languages_warning']
+
+    @property
+    def ticket_target(self):
+        """Return the ITicketTarget related to the context."""
+        return ITicketTarget(self.context)
+
+    def createLanguageField(self):
+        """Create a field to edit a ticket language using a special vocabulary.
+
+        :param the_form: The form that will use this field.
+        :return: A form.Fields instance containing the language field.
+        """
+        return form.Fields(
+                Choice(
+                    __name__='language',
+                    source=TicketLanguageVocabularyFactory(self.request),
+                    title=_('Language'),
+                    description=_(
+                        'The language in which this request is written.'
+                        '(<a href="/people/+editlanguages">Change your preferred '
+                        'languages.</a>)')),
+                render_context=self.render_context)
+
+    def shouldWarnAboutUnsupportedLanguage(self):
+        """Test if the warning about unsupported language should be displayed.
+
+        A warning will be displayed if the request's language is not listed
+        as a spoken language for any of the support contacts. The warning
+        will only be displayed one time, except if the user changes the
+        request language to another unsupported value.
+        """
+        if self.chosen_language in self.ticket_target.getSupportedLanguages():
+            return False
+
+        old_chosen_language = self.request.form.get('chosen_language')
+        return self.chosen_language.code != old_chosen_language
 
 
-class TicketAddView(LaunchpadFormView):
+class TicketAddView(TicketSupportLanguageMixin, LaunchpadFormView):
     """Multi-page add view.
 
     The user enters first his ticket summary and then he is shown a list
@@ -169,9 +216,6 @@ class TicketAddView(LaunchpadFormView):
 
     _MAX_SIMILAR_TICKETS = 10
 
-    warn_about_unsupported_language = False
-    chosen_language = None
-
     # Do not autofocus the title widget
     initial_focus_widget = None
 
@@ -179,7 +223,7 @@ class TicketAddView(LaunchpadFormView):
         # Add our language field with a vocabulary specialized for
         # display purpose.
         LaunchpadFormView.setUpFields(self)
-        self.form_fields = createLanguageField(self) + self.form_fields
+        self.form_fields = self.createLanguageField() + self.form_fields
 
     def setUpWidgets(self):
         # Only setup the widgets that needs validation
@@ -204,21 +248,6 @@ class TicketAddView(LaunchpadFormView):
                 self.setFieldError(
                     'description',
                     _('You must provide details about your problem.'))
-        self.chosen_language = data['language']
-
-    def shouldWarnAboutUnsupportedLanguage(self):
-        """Test if the warning about unsupported language should be displayed.
-
-        A warning will be displayed if the request's language is not listed
-        as a spoken language for any of the support contacts. The warning
-        will only be displayed one time, except if the user changes the
-        request language to another unsupported value.
-        """
-        if self.chosen_language in self.context.getSupportedLanguages():
-            return False
-
-        old_chosen_language = self.request.form.get('chosen_language')
-        return self.chosen_language.code != old_chosen_language
 
     @action(_('Continue'))
     def continue_action(self, action, data):
@@ -292,9 +321,7 @@ class TicketChangeStatusView(LaunchpadFormView):
         self.request.response.redirect(canonical_url(self.context))
 
 
-# XXX 2006/10/28 flacoste Should we also warn the user when he
-# changes the language like we do at creation time?
-class TicketEditView(LaunchpadEditFormView):
+class TicketEditView(TicketSupportLanguageMixin, LaunchpadEditFormView):
 
     schema = ITicket
     label = 'Edit request'
@@ -318,7 +345,7 @@ class TicketEditView(LaunchpadEditFormView):
 
         # Add the language field with a vocabulary specialized for display
         # purpose.
-        self.form_fields = createLanguageField(self) + self.form_fields
+        self.form_fields = self.createLanguageField() + self.form_fields
 
         editable_fields = []
         for field in self.form_fields:
@@ -328,6 +355,8 @@ class TicketEditView(LaunchpadEditFormView):
 
     @action(u"Continue", name="change")
     def change_action(self, action, data):
+        if self.shouldWarnAboutUnsupportedLanguage():
+            return self.template()
         self.updateContextFromData(data)
         self.request.response.redirect(canonical_url(self.context))
 

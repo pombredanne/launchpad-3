@@ -18,8 +18,13 @@
 
 <div metal:fill-slot="main">
 
-  <div metal:use-macro="context/@@launchpad_form/form" />
-  
+  <div metal:use-macro="context/@@launchpad_form/form">
+    <metal:extra_info fill-slot="extra_info">
+      <metal:unsupported_languages_warning
+        use-macro="view/unsupported_languages_warning" />
+    </metal:extra_info>
+  </div>
+
 </div>
 </body>
 </html>
