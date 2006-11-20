@@ -44,7 +44,7 @@ get another warning again.
     contacts will be able to read it. Currently, the languages spoken
     by at least one support contact are: English.
 
-If even after the warning he decides to go ahead, we the unsupported
+If even after the warning he decides to go ahead, the unsupported
 language is accepted.
 
     >>> browser.getControl('Continue').click()

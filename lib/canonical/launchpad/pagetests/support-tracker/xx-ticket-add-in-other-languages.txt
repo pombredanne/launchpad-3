@@ -1,5 +1,24 @@
 == Adding tickets in languages other than English ==
 
+It is possible to create support requests in a language other than
+English. The 'Request Support' page has a pop-up where the user
+can select the language of the request. By default, the support request
+language is 'English'.
+
+    >>> user_browser.open('http://launchpad.dev/distros/ubuntu/+tickets')
+    >>> user_browser.getLink('Request Support').click()
+    >>> user_browser.getControl('Language').value
+    ['en']
+
+The user may choose from any of his preferred languages and there is a
+link to enable to change his preferred languages:
+
+    >>> user_browser.getLink('Change your preferred languages').click()
+    >>> print user_browser.title
+    Sample Person's preferred languages
+    >>> user_browser.url
+    '.../people/name16/+editlanguages'
+
 Although it's possible to add tickets in any of the user's preferred
 languages, we need to do some checks to warn the user in case he's using
 a language that is not spoken/understood by any of the context's support
