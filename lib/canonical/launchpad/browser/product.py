@@ -42,7 +42,8 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPerson, IProduct, IProductLaunchpadUsageForm,
     IProductSet, IProductSeries, ISourcePackage, ICountry,
-    ICalendarOwner, ITranslationImportQueue, NotFoundError)
+    ICalendarOwner, ITranslationImportQueue, NotFoundError,
+    ILaunchpadRoot)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.branchref import BranchRef
@@ -104,7 +105,9 @@ class ProductSetNavigation(RedirectionNavigation):
     def breadcrumb(self):
         return 'Products'
 
-    redirection_root_url = config.launchpad.root_url
+    @property
+    def redirection_root_url(self):
+        return canonical_url(getUtility(ILaunchpadRoot))
 
     def traverse(self, name):
         # Raise a 404 on an invalid product name

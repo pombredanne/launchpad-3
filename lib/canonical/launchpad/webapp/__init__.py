@@ -36,10 +36,6 @@ from canonical.launchpad.webapp.preferredcharsets import Utf8PreferredCharsets
 from canonical.launchpad.webapp.publisher import (
     canonical_url, nearest, LaunchpadView, Navigation, stepthrough,
     redirection, RedirectionView, stepto, LaunchpadXMLRPCView)
-from canonical.launchpad.webapp.servers import (
-        LaunchpadBrowserRequest, LaunchpadBrowserResponse
-        )
-from canonical.launchpad.interfaces import ILaunchBag
 
 
 def smartquote(str):

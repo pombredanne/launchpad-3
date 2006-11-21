@@ -85,7 +85,8 @@ from canonical.launchpad.interfaces import (
     IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet, IPollSet,
     IAdminRequestPeopleMerge, NotFoundError, UNRESOLVED_BUGTASK_STATUSES,
     IPersonChangePassword, GPGKeyNotFoundError, UnexpectedFormData,
-    ILanguageSet, IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet)
+    ILanguageSet, IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet,
+    ILaunchpadRoot)
 
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.specificationtarget import (
@@ -178,7 +179,9 @@ class PersonSetNavigation(RedirectionNavigation):
     def breadcrumb(self):
         return 'People'
 
-    redirection_root_url = config.launchpad.root_url
+    @property
+    def redirection_root_url(self):
+        return canonical_url(getUtility(ILaunchpadRoot))
 
     def traverse(self, name):
         # Raise a 404 on an invalid Person name
@@ -191,7 +194,7 @@ class PersonSetNavigation(RedirectionNavigation):
     @stepto('+me')
     def me(self):
         target = urlappend(
-                config.launchpad.root_url,
+                self.redirection_root_url,
                 '~' + getUtility(ILaunchBag).user.name
                 )
         return RedirectionView(target, self.request, 301)

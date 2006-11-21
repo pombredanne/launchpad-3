@@ -27,13 +27,14 @@ from zope.security.interfaces import Unauthorized
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    ICalendarOwner, IPerson, IProduct, IProductSet, IProject, IProjectSet)
+    ICalendarOwner, IPerson, IProduct, IProductSet, IProject, IProjectSet,
+    ILaunchpadRoot)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
-    enabled_with_permission, LaunchpadEditFormView, Link,
+    enabled_with_permission, LaunchpadEditFormView, Link, LaunchpadFormView,
     Navigation, RedirectionNavigation, StandardLaunchpadFacets, structured)
 
 
@@ -58,7 +59,9 @@ class ProjectSetNavigation(RedirectionNavigation):
     def breadcrumb(self):
         return 'Projects'
 
-    redirection_root_url = config.launchpad.root_url
+    @property
+    def redirection_root_url(self):
+        return canonical_url(getUtility(ILaunchpadRoot))
 
     def traverse(self, name):
         # Raise a 404 on an invalid project name

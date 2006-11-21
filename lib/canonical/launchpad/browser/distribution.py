@@ -35,7 +35,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IPerson, IPublishedPackageSet,
-    ILaunchBag)
+    ILaunchBag, ILaunchpadRoot)
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -90,7 +90,9 @@ class DistributionSetNavigation(RedirectionNavigation):
     def breadcrumb(self):
         return 'Distributions'
 
-    redirection_root_url = config.launchpad.root_url
+    @property
+    def redirection_root_url(self):
+        return canonical_url(getUtility(ILaunchpadRoot))
 
     def traverse(self, name):
         # Raise a 404 on an invalid distribution name
