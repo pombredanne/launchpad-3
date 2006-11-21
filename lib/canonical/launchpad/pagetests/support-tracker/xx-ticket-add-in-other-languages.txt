@@ -17,7 +17,7 @@ link to enable to change his preferred languages:
     >>> print user_browser.title
     Sample Person's preferred languages
     >>> user_browser.url
-    '.../people/name16/+editlanguages'
+    '.../people/name12/+editlanguages'
 
 Although it's possible to add tickets in any of the user's preferred
 languages, we need to do some checks to warn the user in case he's using
