@@ -428,17 +428,20 @@ class LaunchpadRootNavigation(Navigation):
         'token': ILoginTokenSet,
         'karmaaction': IKarmaActionSet,
         'potemplatenames': IPOTemplateNameSet,
-        'bazaar': IBazaarApplication,
         'codeofconduct': ICodeOfConductSet,
-        'malone': IMaloneApplication,
         'bugs': IMaloneApplication,
         'registry': IRegistryApplication,
-        'rosetta': IRosettaApplication,
         'specs': ISpecificationSet,
         'sprints': ISprintSet,
         'support': ITicketSet,
         '+builds': IBuilderSet,
         'bounties': IBountySet,
+        '+code': IBazaarApplication,
+        # These three have been renamed, and no redirects done, as the old
+        # urls now point to the product pages.
+        #'bazaar': IBazaarApplication,
+        #'malone': IMaloneApplication,
+        #'rosetta': IRosettaApplication,
         }
 
     def traverse(self, name):
