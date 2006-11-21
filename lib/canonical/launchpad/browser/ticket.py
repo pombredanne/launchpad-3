@@ -174,9 +174,7 @@ class TicketSupportLanguageMixin:
                     source=TicketLanguageVocabularyFactory(self.request),
                     title=_('Language'),
                     description=_(
-                        'The language in which this request is written.'
-                        '(<a href="/people/+editlanguages">Change your preferred '
-                        'languages.</a>)')),
+                        'The language in which this request is written.')),
                 render_context=self.render_context)
 
     def shouldWarnAboutUnsupportedLanguage(self):
