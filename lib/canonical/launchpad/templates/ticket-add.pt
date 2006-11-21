@@ -51,23 +51,17 @@
         </p>
       </tal:no-similar-tickets>
 
-      <tal:unsupported_lang condition="view/warn_about_unsupported_language">
-        <p class="warning message" i18n:translate="">
-          <strong tal:content="view/choosen_language/displayname"
-                  i18n:name="language">
-          Xhoza</strong> doesn't seem to be a language spoken by any support
-          contacts in this community. If you go ahead and make a support request
-          in that language, no support contacts will be able to read it.
-          Currently, the languages spoken by at least one support contact are:
-          <tal:langs tal:repeat="lang context/getSupportedLanguages"
-                    i18n:name="languages">
-            <span tal:replace="lang/englishname"
-            /><span tal:condition="not: repeat/lang/end">,</span>
-          </tal:langs>.
-        </p>
-        <input type="hidden" name="warned_about_unsupported_language"
-              value="1" />
-      </tal:unsupported_lang>
+      <tal:comment replace="nothing">
+        This link should appear in the appropriate widget description,
+        but cannot because of bug #72730.
+      </tal:comment>
+      <p><a href="/people/+editlanguages">Change your
+        preferred languages</a> to modify the list of languages available
+        for writing the request.
+      </p>
+
+      <metal:unsupported_languages_warning
+         use-macro="view/unsupported_languages_warning" />
       </div>
     </metal:extra_info>
 

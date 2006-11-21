@@ -29,7 +29,7 @@
     <p metal:fill-slot="extra_info">
     A <em>support contact</em> gets automatically subscribed to new
     support requests. By checking the box below, you will be subscribed
-    to all support requests (written in english or one of your <a
+    to all support requests (written in English or one of your <a
     tal:attributes="href string:${request/lp:person/fmt:url}/+editlanguages"
     >preferred languages</a>) opened on <span
     tal:replace="context/displayname">Mozilla Firefox</span>, and thus
@@ -45,14 +45,14 @@
           <div tal:replace="structure view/want_to_be_support_contact_widget" />
           <label style="font-weight: normal"
               tal:attributes="for view/want_to_be_support_contact_widget/name">
-            I want to be a support contact for 
+            I want to be a support contact for
             <span tal:replace="context/displayname">Mozilla Firefox</span>
           </label>
         </div>
 
       </div>
 
-      <div class="row" 
+      <div class="row"
            tal:condition="view/support_contact_teams_widget/vocabulary">
 
         <div class="field">

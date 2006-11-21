@@ -29,11 +29,11 @@ TICKET_STATUS_DEFAULT_SEARCH = (
 
 
 def get_supported_languages(ticket_target):
+    """Common implementation for ITicketTarget.getSupportedLanguages()."""
     assert ITicketTarget.providedBy(ticket_target)
     langs = set()
     for contact in ticket_target.support_contacts:
         langs |= contact.getSupportedLanguages()
-
     langs.add(getUtility(ILanguageSet)['en'])
     return langs
 
