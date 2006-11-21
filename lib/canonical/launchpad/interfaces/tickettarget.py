@@ -29,11 +29,12 @@ TICKET_STATUS_DEFAULT_SEARCH = (
 
 
 def get_supported_languages(ticket_target):
+    """Common implementation for ITicketTarget.getSupportedLanguages()."""
     assert ITicketTarget.providedBy(ticket_target)
     langs = set()
     for contact in ticket_target.support_contacts:
         for lang in contact.languages:
-            # Ignore english and all its variants since we assume english is
+            # Ignore English and all its variants since we assume English is
             # supported (and thus we'll include it later) and we don't want to
             # confuse people by displayng a bunch of entries named English.
             if not lang.code.startswith('en'):

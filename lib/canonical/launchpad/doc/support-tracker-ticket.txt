@@ -77,6 +77,12 @@ attribute:
     >>> firefox_ticket.target == firefox
     True
 
+It is also possible to adapt a ticket to its ITicketTarget.
+
+    >>> target = ITicketTarget(firefox_ticket)
+    >>> verifyObject(ITicketTarget, target)
+    True
+
 Subscriptions and Notifications
 -------------------------------
 
