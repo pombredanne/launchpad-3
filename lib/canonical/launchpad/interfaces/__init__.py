@@ -30,7 +30,6 @@ from canonical.launchpad.interfaces.bug import *
 from canonical.launchpad.interfaces.bugbranch import *
 from canonical.launchpad.interfaces.bugcve import *
 from canonical.launchpad.interfaces.buglink import *
-from canonical.launchpad.interfaces.buglinktarget_browser import *
 from canonical.launchpad.interfaces.bugmessage import *
 from canonical.launchpad.interfaces.bugnotification import *
 from canonical.launchpad.interfaces.bugsubscription import *
@@ -40,6 +39,7 @@ from canonical.launchpad.interfaces.bugtracker import *
 from canonical.launchpad.interfaces.bugwatch import *
 from canonical.launchpad.interfaces.build import *
 from canonical.launchpad.interfaces.builder import *
+from canonical.launchpad.interfaces.buildqueue import *
 from canonical.launchpad.interfaces.codeofconduct import *
 from canonical.launchpad.interfaces.component import *
 from canonical.launchpad.interfaces.country import *
@@ -135,7 +135,6 @@ from canonical.launchpad.interfaces.ticketbug import *
 from canonical.launchpad.interfaces.ticketmessage import *
 from canonical.launchpad.interfaces.ticketreopening import *
 from canonical.launchpad.interfaces.ticketsubscription import *
-from canonical.launchpad.interfaces.tickettarget_browser import *
 from canonical.launchpad.interfaces.translationgroup import *
 from canonical.launchpad.interfaces.translationimportqueue import *
 from canonical.launchpad.interfaces.translator import *

@@ -20,5 +20,5 @@
     >User's browser name
     </a>
     &ndash;
-  <input type="submit" value="Log Out" />
+  <input type="submit" name="logout" value="Log Out" />
 </form>

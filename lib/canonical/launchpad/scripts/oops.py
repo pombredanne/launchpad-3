@@ -72,7 +72,7 @@ def path_to_oopsid(path):
     date_str = os.path.basename(os.path.dirname(path))
     match = re.search('^(\d\d\d\d)-(\d\d+)-(\d\d+)$', date_str)
     year, month, day = (int(bit) for bit in match.groups())
-    oops_id = path.split('.')[1]
+    oops_id = os.path.basename(path).split('.')[1]
     day = (datetime(year, month, day, tzinfo=utc) - errorlog.epoch).days + 1
     return '%d%s' % (day, oops_id)
 

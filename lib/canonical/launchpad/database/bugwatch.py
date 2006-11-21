@@ -144,16 +144,7 @@ class BugWatchSet(BugSetBase):
                 # It doesn't look like a bug URL, so simply ignore it.
                 continue
 
-            for bugwatch in bug.watches:
-                #XXX: This matching is a bit fragile, since
-                #     bugwatch.remotebug is a user editable text string.
-                #     We should improve the matching so that for example
-                #     '#42' matches '42' and so on.
-                #     -- Bjorn Tillenius, 2006-10-11
-                if (bugwatch.bugtracker == bugtracker and
-                    bugwatch.remotebug == remotebug):
-                    break
-            else:
+            if bug.getBugWatch(bugtracker, remotebug) is None:
                 # This bug doesn't have such a bug watch, let's create
                 # one.
                 bugwatch = BugWatch(
@@ -247,10 +238,10 @@ class BugWatchSet(BugSetBase):
         """
         if not path.startswith('/tracker/'):
             return None
-        if not query.get('atid'):
+        if not query.get('aid'):
             return None
 
-        remote_bug = query['atid']
+        remote_bug = query['aid']
         # There's only one global SF instance registered in Launchpad.
         sf_tracker = getUtility(ILaunchpadCelebrities).sourceforge_tracker
 

@@ -28,7 +28,9 @@
     >your Support page</a>.
   </p>
 
-  <form action="." method="POST">
+  <form action="."
+        tal:attributes="action request/URL"
+        method="post">
 
     <div class="actions">
       <input type="submit"

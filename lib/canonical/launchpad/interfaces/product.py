@@ -330,7 +330,8 @@ class IProductSet(Interface):
                       description, project=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
-                      sourceforgeproject=None):
+                      sourceforgeproject=None, programminglang=None,
+                      reviewed=False):
         """Create and Return a brand new Product."""
 
     def forReview():

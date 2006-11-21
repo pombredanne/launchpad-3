@@ -519,6 +519,9 @@ person_edit = ContextDisplayName(smartquote("%s's details"))
 
 person_editemails = ContextDisplayName(smartquote("%s's e-mail addresses"))
 
+person_editlanguages = ContextDisplayName(
+    smartquote("%s's preferred languages"))
+
 person_editpgpkeys = ContextDisplayName(smartquote("%s's OpenPGP keys"))
 
 person_edithomepage = ContextDisplayName(smartquote("%s's home page"))
@@ -665,6 +668,8 @@ productseries_translations_upload = 'Request new translations upload'
 
 productseries_ubuntupkg = 'Ubuntu source package'
 
+project_add = 'Register a project with Launchpad'
+
 project_index = ContextTitle('%s in Launchpad')
 
 project_branches = ContextTitle('Bazaar branches for %s')
@@ -714,8 +719,6 @@ rosetta_about = 'About Rosetta'
 
 rosetta_index = 'Rosetta'
 
-rosetta_preferences = 'Rosetta: Preferences'
-
 product_branch_add = ContextDisplayName('Register a new %s branch')
 
 def productseries_edit(context, view):
@@ -728,6 +731,8 @@ securitycontact_edit = ContextDisplayName("Edit %s security contact")
 shipit_adminrequest = 'ShipIt admin request'
 
 shipit_index = 'ShipIt'
+
+shipit_index_new = 'ShipIt'
 
 shipit_exports = 'ShipIt exports'
 
@@ -896,6 +901,10 @@ ticket_add_search = ContextDisplayName('Request support with %s')
 
 ticket_bug = ContextId('Link support request #%s to a bug report')
 
+ticket_change_status = ContextId('Change status of support request #%s')
+
+ticket_confirm_answer = ContextId('Confirm an answer to support request #%s')
+
 ticket_edit = ContextId('Edit support request #%s details')
 
 def ticket_index(context, view):
@@ -914,12 +923,7 @@ ticket_reject = ContextId('Reject support request #%s')
 
 ticket_unlinkbugs = ContextId('Remove bug links from request #%s')
 
-ticket_reopen = ContextId('Reopen request #%s')
-
 ticket_subscription = ContextId('Subscription to request #%s')
-
-def tickettarget_tickets(context, view):
-    return view.title
 
 standardshipitrequests_index = 'Standard ShipIt options'
 
@@ -961,7 +965,8 @@ template_index = '%EXAMPLE TITLE'
 
 template_new = 'EXAMPLE NEW TITLE'
 
-ticket_listing = ContextDisplayName("Support requests for %s")
+def ticket_listing(context, view):
+    return view.pagetitle
 
 tickettarget_manage_supportcontacts = ContextTitle("Support contact for %s")
 

@@ -44,6 +44,15 @@ check_merge: check_not_a_ui_merge build check importdcheck hctcheck
 	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
+check_merge_edge: check_no_dbupdates check_merge
+	# Allow the merge if there are no database updates, including
+	# database patches or datamigration scripts (which should live
+	# in database/schema/pending. Used for maintaining the
+	# edge.lauchpad.net branch.
+
+check_no_dbupdates:
+	[ `PYTHONPATH= bzr status | grep database/schema/ | wc -l` -eq 0 ]
+
 hctcheck: build
 	env PYTHONPATH=$(PYTHONPATH) \
 	    ${PYTHON} -t ./test_on_merge.py -vv \
@@ -105,6 +114,10 @@ ftest_inplace: inplace
 
 run: inplace stop
 	rm -f thread*.request
+	rm -f bzr-version-info.py bzr-version-info.pyc
+	if which bzr > /dev/null  && test -x `which bzr`; \
+		then PYTHONPATH= bzr version-info --format=python > bzr-version-info.py 2>/dev/null; \
+	fi
 	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
 		 $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE)
 
@@ -160,10 +173,10 @@ launchpad.pot:
 	    -o locales
 
 TAGS:
-	ctags -e -R lib sourcecode
+	ctags -e -R lib
 
 tags:
-	ctags -R lib sourcecode
+	ctags -R lib
 
 .PHONY: check tags TAGS zcmldocs realclean clean debug stop start run \
 		ftest_build ftest_inplace test_build test_inplace pagetests \

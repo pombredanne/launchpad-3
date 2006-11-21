@@ -7,7 +7,7 @@ Products should link their branch listing page.
   ... Host: launchpad.dev
   ... """)
   HTTP/1.1 200 Ok
-  ...href="http://launchpad.dev/products/gnome-terminal/+branches"...
+  ...href="http://code.launchpad.dev/products/gnome-terminal/"...
 
 There are two listings of branches for a product. The short tabular listing,
 and the detailed branch listing that includes branch summaries and more

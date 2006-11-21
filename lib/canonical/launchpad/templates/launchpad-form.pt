@@ -1,17 +1,9 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
-
-<div metal:fill-slot="main">
-
-  <div tal:condition="nothing">
-    This is a general form. You should not edit this file, or copy it and
-    use it, but rather copy the example page template in
-    template-generalform.pt to your own form page, and edit that.
-  </div>
+<div
+    xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:tal="http://xml.zope.org/namespaces/tal"
+    xmlns:metal="http://xml.zope.org/namespaces/metal"
+    xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+    i18n:domain="launchpad" xml:lang="en">
 
   <div metal:define-macro="form">
 
@@ -53,7 +45,7 @@
         </div>
 
         <metal:widgets metal:define-slot="widgets">
-        <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows" />
+          <div metal:use-macro="context/@@launchpad_form/widget_rows" />
         </metal:widgets>
 
         <script type="text/javascript"
@@ -83,8 +75,75 @@
     </form>
   </div>
 
-  </div>
-  </body>
+  <metal:macro define-macro="widget_rows">
+    <table class="form">
+      <tal:block define="widgets widgets|view/widgets"
+                 repeat="widget widgets">
 
-</html>
+  <metal:macro define-macro="widget_row"
+      tal:define="field_name widget/context/__name__;
+                  error python:view.getWidgetError(field_name);
+                  error_class python:error and 'error' or None;
+                  show_optional python:view.showOptionalMarker(field_name)">
+    <tr tal:condition="python: view.isSingleLineLayout(field_name)">
+      <th><label tal:attributes="for widget/name"
+                 tal:content="string:${widget/label}:">
+        Label</label></th>
+      <td tal:attributes="class error_class" width="100%">
+        <div>
+          <input tal:replace="structure widget" />
+          <span tal:condition="show_optional"
+                class="fieldRequired">(Optional)</span>
+        </div>
+        <div class="message" tal:condition="error"
+             tal:content="structure error">Error message</div>
+        <p class="formHelp"
+           tal:condition="widget/hint"
+           tal:content="widget/hint">Some Help Text
+        </p>
+      </td>
+    </tr>
+    <tal:block condition="python: view.isMultiLineLayout(field_name)">
+      <tr>
+        <th colspan="2" style="text-align: left"><label
+            tal:attributes="for widget/name"
+            tal:content="string:${widget/label}:">Label:</label>
+          <span tal:condition="show_optional"
+                class="fieldRequired">(Optional)</span>
+        </th>
+      </tr>
+      <tr>
+        <td colspan="2" tal:attributes="class error_class">
+          <div tal:content="structure widget">
+            <input type="text" style="width: 100%" />
+          </div>
+          <div class="message" tal:condition="error"
+               tal:content="structure error">Error message</div>
+          <p class="formHelp"
+             tal:condition="widget/hint"
+             tal:content="widget/hint">Some Help Text
+          </p>
+        </td>
+      </tr>
+    </tal:block>
+    <tr tal:condition="python: view.isCheckBoxLayout(field_name)">
+      <th></th>
+      <td tal:attributes="class error_class" width="100%">
+        <input type="checkbox" tal:replace="structure widget" />
+        <label tal:attributes="for widget/name"
+               tal:content="widget/label">Label</label>
+        <div class="message" tal:condition="error"
+             tal:content="structure error">Error message</div>
+        <p class="formHelp"
+           tal:condition="widget/hint"
+           tal:content="widget/hint">Some Help Text
+        </p>
+      </td>
+    </tr>
+  </metal:macro>
 
+      </tal:block>
+    </table>
+  </metal:macro>
+
+</div>

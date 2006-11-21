@@ -222,6 +222,16 @@ class IBug(IMessageTarget):
         dupes, etc.
         """
 
+    def getAlsoNotifiedSubscribers():
+        """A list of IPersons in the "Also notified" subscriber list.
+
+        This includes bug contacts and assignees, but not subscribers
+        from duplicates.
+        """
+
+    def getSubscribersFromDuplicates():
+        """A list of IPersons subscribed from dupes of this bug."""
+
     def notificationRecipientAddresses():
         """Return the list of email addresses that recieve notifications.
 
@@ -277,6 +287,13 @@ class IBug(IMessageTarget):
 
     def getMessageChunks():
         """Return MessageChunks corresponding to comments made on this bug"""
+
+    def getBugWatch(bugtracker, remote_bug):
+        """Return the BugWatch that has the given bugtracker and remote bug.
+
+        Return None if this bug doesn't have such a bug watch.
+        """
+
 
 
 class IBugDelta(Interface):
