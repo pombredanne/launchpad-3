@@ -181,7 +181,7 @@ class SearchTicketsView(UserSupportLanguagesMixin, LaunchpadFormView):
     def search_text(self):
         """Search text used by the filter."""
         if self.search_params:
-            return self.search_params['search_text']
+            return self.search_params.get('search_text')
         else:
             return self.getDefaultFilter().get('search_text')
 
@@ -189,9 +189,9 @@ class SearchTicketsView(UserSupportLanguagesMixin, LaunchpadFormView):
     def status_filter(self):
         """Set of statuses to filter the search with."""
         if self.search_params:
-            return set(self.search_params['status'])
+            return set(self.search_params.get('status', []))
         else:
-            return self.getDefaultFilter().get('status', set())
+            return set(self.getDefaultFilter().get('status', []))
 
     @property
     def all_languages_shown(self):
@@ -228,6 +228,8 @@ class SearchTicketsView(UserSupportLanguagesMixin, LaunchpadFormView):
         """Return the tickets corresponding to the search."""
         if self.search_params is None:
             # Search button wasn't clicked.
+            # Search button wasn't clicked, use the default filter.
+            # Copy it so that it doesn't get mutated accidently.
             self.search_params = dict(self.getDefaultFilter())
 
         if self.request.form.get('all_languages'):
