@@ -154,9 +154,9 @@ class SearchTicketsView(LaunchpadFormView):
     def status_filter(self):
         """Set of statuses to filter the search with."""
         if self.search_params:
-            return set(self.search_params.get('status', set()))
+            return set(self.search_params.get('status', []))
         else:
-            return self.getDefaultFilter().get('status', set())
+            return set(self.getDefaultFilter().get('status', []))
 
     def setUpWidgets(self):
         """See LaunchpadFormView."""
@@ -181,7 +181,8 @@ class SearchTicketsView(LaunchpadFormView):
     def searchResults(self):
         """Return the tickets corresponding to the search."""
         if self.search_params is None:
-            # Search button wasn't clicked.
+            # Search button wasn't clicked, use the default filter.
+            # Copy it so that it doesn't get mutated accidently.
             self.search_params = dict(self.getDefaultFilter())
 
         # The search parameters used is defined by the union of the fields
