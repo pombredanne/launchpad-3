@@ -15,7 +15,6 @@ __all__ = ['Link', 'FacetMenu', 'ApplicationMenu', 'ContextMenu',
            'stepto', 'GetitemNavigation', 'smartquote',
            'urlappend', 'urlparse', 'urlsplit',
            'GeneralFormView', 'GeneralFormViewFactory',
-           'LaunchpadBrowserRequest', 'LaunchpadBrowserResponse',
            'Utf8PreferredCharsets', 'LaunchpadFormView',
            'LaunchpadEditFormView', 'action', 'custom_widget']
 
@@ -37,10 +36,6 @@ from canonical.launchpad.webapp.preferredcharsets import Utf8PreferredCharsets
 from canonical.launchpad.webapp.publisher import (
     canonical_url, nearest, LaunchpadView, Navigation, stepthrough,
     redirection, stepto, LaunchpadXMLRPCView)
-from canonical.launchpad.webapp.servers import (
-        LaunchpadBrowserRequest, LaunchpadBrowserResponse
-        )
-from canonical.launchpad.interfaces import ILaunchBag
 
 
 def smartquote(str):
@@ -79,8 +74,8 @@ class StandardLaunchpadFacets(FacetMenu):
     # provide your own 'usedfor' in subclasses.
     #   usedfor = IWhatever
 
-    links = ['overview', 'bugs', 'support', 'specifications',
-             'translations', 'branches', 'calendar']
+    links = ['overview', 'branches', 'bugs', 'specifications', 'translations',
+        'support']
 
     enable_only = ['overview', 'bugs', 'specifications',
                    'translations', 'calendar']
@@ -90,9 +85,17 @@ class StandardLaunchpadFacets(FacetMenu):
     def _filterLink(self, name, link):
         if link.site is None:
             if name == 'specifications':
-                link.site = 'blueprint'
+                link.site = 'blueprints'
+            elif name == 'branches':
+                link.site = 'code'
+            elif name == 'translations':
+                link.site = 'translations'
+            elif name == 'support':
+                link.site = 'answers'
+            elif name == 'bugs':
+                link.site = 'bugs'
             else:
-                link.site = 'launchpad'
+                link.site = 'mainsite'
         return link
 
     def overview(self):
@@ -120,8 +123,8 @@ class StandardLaunchpadFacets(FacetMenu):
 
     def specifications(self):
         target = '+specs'
-        text = 'Specifications'
-        summary = 'Feature Specifications and Plans'
+        text = 'Features'
+        summary = 'Feature specifications and plans'
         return Link(target, text, summary)
 
     def bounties(self):
@@ -140,7 +143,7 @@ class StandardLaunchpadFacets(FacetMenu):
         # this is disabled by default, because relatively few objects have
         # branch views
         target = '+branches'
-        text = 'Branches'
+        text = 'Code'
         summary = 'View related branches of code'
         return Link(target, text, summary=summary)
 

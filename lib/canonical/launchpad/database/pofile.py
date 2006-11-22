@@ -4,7 +4,8 @@ __metaclass__ = type
 __all__ = [
     'POFile',
     'DummyPOFile',
-    'POFileSet'
+    'POFileSet',
+    'POFileTranslator',
     ]
 
 import StringIO
@@ -21,8 +22,6 @@ from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLObjectNotFound, SQLMultipleJoin
     )
 
-from canonical.cachedproperty import cachedproperty
-
 from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, sqlvalues)
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -35,8 +34,9 @@ import canonical.launchpad
 from canonical.launchpad import helpers
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.interfaces import (
-    IPOFileSet, IPOFile, IPOTemplateExporter, ILibraryFileAliasSet,
-    ILaunchpadCelebrities, ZeroLengthPOExportError, NotFoundError)
+    IPersonSet, IPOFileSet, IPOFile, IPOTemplateExporter,
+    ILibraryFileAliasSet, ILaunchpadCelebrities, IPOFileTranslator,
+    ZeroLengthPOExportError, NotFoundError)
 
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
@@ -51,7 +51,6 @@ from canonical.launchpad.components.poparser import (
     POSyntaxError, POHeader, POInvalidInputError)
 from canonical.librarian.interfaces import ILibrarianClient
 
-from canonical.launchpad.webapp.snapshot import Snapshot
 
 def _check_translation_perms(permission, translators, person):
     """Return True or False dependening on whether the person is part of the
@@ -99,6 +98,7 @@ def _check_translation_perms(permission, translators, person):
 
     # ok, thats all we can check, and so we must assume the answer is no
     return False
+
 
 def _can_edit_translations(pofile, person):
     """Say if a person is able to edit existing translations.
@@ -189,8 +189,6 @@ class POFile(SQLBase, RosettaStats):
     owner = ForeignKey(foreignKey='Person',
                        dbName='owner',
                        notNull=True)
-    pluralforms = IntCol(dbName='pluralforms',
-                         notNull=True)
     variant = StringCol(dbName='variant',
                         notNull=False,
                         default=None)
@@ -203,8 +201,7 @@ class POFile(SQLBase, RosettaStats):
     exporttime = UtcDateTimeCol(dbName='exporttime',
                                 notNull=False,
                                 default=None)
-    datecreated = UtcDateTimeCol(notNull=True,
-        default=UTC_NOW)
+    datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
     latestsubmission = ForeignKey(foreignKey='POSubmission',
         dbName='latestsubmission', notNull=False, default=None)
@@ -230,25 +227,17 @@ class POFile(SQLBase, RosettaStats):
             translator = group.query_translator(self.language)
             if translator is not None:
                 translators.add(translator)
-        return sorted(list(translators),
-            key=lambda x: x.translator.name)
+        return sorted(list(translators), key=lambda x: x.translator.name)
 
     @property
     def translationpermission(self):
         """See IPOFile."""
         return self.potemplate.translationpermission
 
-    @cachedproperty
+    @property
     def contributors(self):
         """See IPOFile."""
-        from canonical.launchpad.database.person import Person
-
-        return list(Person.select("""
-            POSubmission.person = Person.id AND
-            POSubmission.pomsgset = POMsgSet.id AND
-            POMsgSet.pofile = %d""" % self.id,
-            clauseTables=('POSubmission', 'POMsgSet'),
-            distinct=True))
+        return getUtility(IPersonSet).getPOFileContributors(self)
 
     def canEditTranslations(self, person):
         """See IPOFile."""
@@ -528,9 +517,8 @@ class POFile(SQLBase, RosettaStats):
 
     def createMessageSetFromText(self, text):
         """See IPOFile."""
-        try:
-            potmsgset = self.potemplate[text]
-        except KeyError:
+        potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(text, only_current=False)
+        if potmsgset is None:
             potmsgset = self.potemplate.createMessageSetFromText(text)
 
         return self.createMessageSetFromMessageSet(potmsgset)
@@ -566,7 +554,6 @@ class POFile(SQLBase, RosettaStats):
         self.topcomment = new_header.commentText
         self.header = new_header.msgstr
         self.fuzzyheader = 'fuzzy' in new_header.flags
-        self.pluralforms = new_header.nplurals
 
     def isPORevisionDateOlder(self, header):
         """See IPOFile."""
@@ -842,7 +829,6 @@ class DummyPOFile(RosettaStats):
         self.language = language
         self.variant = variant
         self.latestsubmission = None
-        self.pluralforms = language.pluralforms
         self.lasttranslator = None
         self.contributors = []
 
@@ -862,7 +848,7 @@ class DummyPOFile(RosettaStats):
             return pomsgset
 
     def messageCount(self):
-        return len(self.potemplate)
+        return self.potemplate.messageCount()
 
     @property
     def title(self):
@@ -1032,3 +1018,15 @@ class POFileSet:
                 POTemplate.sourcepackagename = %s''' % sqlvalues(
                     path, distrorelease.id, sourcepackagename.id),
                 clauseTables=['POTemplate'])
+
+
+class POFileTranslator(SQLBase):
+    """See IPOFileTranslator."""
+    implements(IPOFileTranslator)
+    pofile = ForeignKey(foreignKey='POFile', dbName='pofile', notNull=True)
+    person = ForeignKey(foreignKey='Person', dbName='person', notNull=True)
+    latest_posubmission = ForeignKey(foreignKey='POSubmission',
+        dbName='latest_posubmission', notNull=True)
+    date_last_touched = UtcDateTimeCol(dbName='date_last_touched',
+        notNull=False, default=None)
+

@@ -6,7 +6,7 @@ This tests checks if the files stored in Librarian releated to Soyuz
 application (BinaryPackageFiles and SourcePackageFiles mostly) are
 sane.
 
- >>> from zope.interface.verify import verifyObject 
+ >>> from zope.interface.verify import verifyObject
  >>> from zope.component import getUtility
 
 Importing related content classes and interfaces:
@@ -21,12 +21,12 @@ Importing related content classes and interfaces:
 
 
 First let's select a convenient sourcepackagerelease, Evolution-1.0,
-which has files in the sampledata. 
+which has files in the sampledata.
 
 XXX cprov 20050923:
- selectBy(version) is easy, but might generate errors in future
+ selectFirstBy(version) is easy, but might generate errors in future
 
- >>> src = SourcePackageRelease.selectOneBy(version='1.0')
+ >>> src = SourcePackageRelease.selectFirstBy(version='1.0', orderBy='id')
  >>> src.name
  u'evolution'
 

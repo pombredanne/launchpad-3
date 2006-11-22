@@ -256,8 +256,8 @@
     />
 
   <vocabulary
-    name="Schema"
-    factory="canonical.launchpad.vocabularies.SchemaVocabulary"
+    name="RevisionControlSystems"
+    factory="canonical.launchpad.vocabularies.RevisionControlSystemsVocabulary"
     />
 
   <vocabulary
@@ -321,8 +321,18 @@
     />
 
   <vocabulary
+    name="TicketAction"
+    factory="canonical.launchpad.vocabularies.TicketActionVocabulary"
+    />
+
+  <vocabulary
     name="TicketPriority"
     factory="canonical.launchpad.vocabularies.TicketPriorityVocabulary"
+    />
+
+  <vocabulary
+    name="TicketSort"
+    factory="canonical.launchpad.vocabularies.TicketSortVocabulary"
     />
 
   <vocabulary
@@ -343,6 +353,11 @@
   <vocabulary
     name="TranslationPermission"
     factory="canonical.launchpad.vocabularies.TranslationPermissionVocabulary"
+    />
+
+  <vocabulary
+    name="UpstreamFileType"
+    factory="canonical.launchpad.vocabularies.UpstreamFileTypeVocabulary"
     />
 
   <vocabulary

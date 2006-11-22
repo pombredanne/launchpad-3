@@ -155,7 +155,11 @@ def construct_email_notification(bug_notifications):
     msg['Sender'] = config.bounce_address
     msg['Date'] = formatdate(rfc822.mktime_tz(email_date.utctimetuple() + (0,)))
     msg['Message-Id'] = msgid
-    msg['Subject'] = "[Bug %d] %s" % (bug.id, subject)
+    subject_prefix = "[Bug %d]" % bug.id
+    if subject_prefix in subject:
+        msg['Subject'] = subject
+    else:
+        msg['Subject'] = "%s %s" % (subject_prefix, subject)
 
     # Add X-Launchpad-Bug headers.
     for bugtask in bug.bugtasks:

@@ -13,6 +13,7 @@
     <include file="bountysubscription.zcml" />
     <include file="bounty.zcml" />
     <include file="branch.zcml" />
+    <include file="branchref.zcml" />
     <include file="branchsubscription.zcml" />
     <include file="bugactivity.zcml" />
     <include file="bugattachment.zcml" />
@@ -20,6 +21,7 @@
     <include file="bugcomment.zcml" />
     <include file="bugcve.zcml" />
     <include file="bugextref.zcml" />
+    <include file="buglinktarget.zcml" />
     <include file="buginfestation.zcml" />
     <include file="bugmessage.zcml" />
     <include file="bugnotification.zcml" />

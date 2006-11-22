@@ -10,7 +10,6 @@
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-calendar" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
@@ -20,25 +19,21 @@
   <tal:maintained-packages condition="context/latestMaintainedPackages">
     <h2>Maintained packages</h2>
 
-    <ul>
-        <tal:block define="
-            table_id string:maintained;
-            sourcepackagereleases context/latestMaintainedPackages">
-          <div metal:use-macro="template/macros/sourcepackagerelease-table" />
-        </tal:block>
-    </ul>
+    <tal:block define="
+        table_id string:maintained;
+        sourcepackagereleases context/latestMaintainedPackages">
+      <div metal:use-macro="template/macros/sourcepackagerelease-table" />
+    </tal:block>
   </tal:maintained-packages>
 
   <tal:uploaded-packages condition="context/latestUploadedButNotMaintainedPackages">
     <h2>Uploaded packages</h2>
 
-    <ul>
-        <tal:block define="
-            table_id string:uploaded;
-            sourcepackagereleases context/latestUploadedButNotMaintainedPackages">
-          <div metal:use-macro="template/macros/sourcepackagerelease-table" />
-        </tal:block>
-    </ul>
+    <tal:block define="
+        table_id string:uploaded;
+        sourcepackagereleases context/latestUploadedButNotMaintainedPackages">
+      <div metal:use-macro="template/macros/sourcepackagerelease-table" />
+    </tal:block>
   </tal:uploaded-packages>
 
 </div>

@@ -18,6 +18,11 @@
                             security_contact upload_admin upload_sender
                             mirror_admin"
             />
+        <!-- ITicketTarget -->
+        <allow attributes="getTicket searchTickets findSimilarTickets
+              support_contacts" />
+        <require permission="launchpad.AnyPerson"
+            attributes="newTicket addSupportContact removeSupportContact" />
     </content>
 
     <browser:defaultView
@@ -60,11 +65,27 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IDistribution"
+        name="+archivemirrors-rss"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.DistributionArchiveMirrorsRSSView"
+        template="../templates/distribution-mirrors-rss.pt"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IDistribution"
         facet="overview"
         class="canonical.launchpad.browser.DistributionReleaseMirrorsView"
         permission="zope.Public"
         name="+cdmirrors"
         template="../templates/distribution-mirrors.pt" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IDistribution"
+        name="+cdmirrors-rss"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.DistributionReleaseMirrorsRSSView"
+        template="../templates/distribution-mirrors-rss.pt"
+        />
 
     <browser:page
         for="canonical.launchpad.interfaces.IDistribution"
@@ -92,11 +113,11 @@
             owner displayname description speed country content
             http_base_url ftp_base_url rsync_base_url official_candidate"
         keyword_arguments="
-            owner displayname description speed country content 
+            owner displayname description speed country content
             http_base_url ftp_base_url rsync_base_url official_candidate"
         permission="launchpad.AnyPerson"
         template="../templates/distribution-newmirror.pt">
-        <browser:widget 
+        <browser:widget
             field="owner"
             class="canonical.widgets.HiddenUserWidget" />
     </browser:generalform>
@@ -130,12 +151,6 @@
             lp:url="/distros/$Distribution.name/+members"
             />
         <browser:page
-            name="+cve"
-            facet="bugs"
-            template="../templates/distribution-cvereport.pt"
-            lp:url="/distros/$Distribution.name/+cve"
-            />
-        <browser:page
             name="+translations"
             facet="translations"
             template="../templates/distribution-translations.pt"
@@ -163,6 +178,14 @@
         lp:url="/distros/$Distribution.name/+allpackages"
         />
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IDistribution"
+        class="canonical.launchpad.browser.CVEReportView"
+        permission="zope.Public"
+        name="+cve"
+        facet="bugs"
+        template="../templates/distribution-cvereport.pt" />
+
     <browser:pages
         for="canonical.launchpad.interfaces.IDistribution"
         permission="zope.Public" >
@@ -188,8 +211,7 @@
             lp:url="/distros/$Distribution.name/+portlet-bounties" />
         <browser:page
             name="+portlet-aboutcve"
-            template="../templates/distribution-portlet-aboutcve.pt"
-            lp:url="/distros/$Distribution.name/+portlet-aboutcve" />
+            template="../templates/portlet-aboutcve.pt" />
     </browser:pages>
 
     <browser:pages
@@ -253,15 +275,12 @@
         template="../templates/distribution-edit.pt"
         lp:url="/distros/$Distribution.name/+edit" />
 
-    <browser:editform
+    <browser:page
         name="+launchpad"
         for="canonical.launchpad.interfaces.IDistribution"
-        class="canonical.launchpad.browser.DistributionEditView"
-        schema="canonical.launchpad.interfaces.IDistribution"
+        class="canonical.launchpad.browser.DistributionLaunchpadUsageEditView"
         facet="overview"
-        fields="official_rosetta official_malone"
         permission="launchpad.Edit"
-        label="Describe Launchpad usage"
         template="../templates/object-launchpadusage.pt"
         />
 
@@ -435,8 +454,8 @@
         module="canonical.launchpad.browser.distribution"
         classes="
             DistributionFacets DistributionOverviewMenu DistributionBugsMenu
-            DistributionSupportMenu DistributionBountiesMenu
-            DistributionSpecificationsMenu DistributionTranslationsMenu
+            DistributionBountiesMenu DistributionSpecificationsMenu
+            DistributionTranslationsMenu
             "
             />
 

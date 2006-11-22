@@ -7,7 +7,7 @@ from urlparse import urlunparse
 
 import transaction
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implements, providedBy
 from zope.event import notify
 
 from canonical.config import config
@@ -31,6 +31,8 @@ from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectCreatedEvent)
 from canonical.launchpad.event.interfaces import (
     ISQLObjectModifiedEvent, ISQLObjectCreatedEvent)
+
+from canonical.lp.dbschema import TicketStatus
 
 
 def get_main_body(signed_msg):
@@ -141,7 +143,7 @@ class MaloneHandler:
             return []
         # First extract all commands from the email.
         command_names = emailcommands.names()
-        for line in content.splitlines():  
+        for line in content.splitlines():
             # All commands have to be indented.
             if line.startswith(' ') or line.startswith('\t'):
                 command_string = line.strip()
@@ -276,26 +278,63 @@ class SupportTrackerHandler:
     def process(self, signed_msg, to_addr, filealias=None, log=None):
         """See IMailHandler."""
         match = self._ticket_address.match(to_addr)
-        if match:
-            ticket_id = int(match.group('id'))
-            ticket = getUtility(ITicketSet).get(ticket_id)
-            if ticket is None:
-                # No such ticket, don't process the email.
-                return False
-
-            unmodified_ticket = Snapshot(ticket, providing=ITicket)
-            messageset = getUtility(IMessageSet)
-            message = messageset.fromEmail(
-                signed_msg.parsed_string,
-                owner=getUtility(ILaunchBag).user,
-                filealias=filealias,
-                parsed_message=signed_msg)
-            ticket.linkMessage(message)
-            notify(SQLObjectModifiedEvent(
-                ticket, unmodified_ticket, ['messages']))
-            return True
-        else:
+        if not match:
             return False
+
+        ticket_id = int(match.group('id'))
+        ticket = getUtility(ITicketSet).get(ticket_id)
+        if ticket is None:
+            # No such ticket, don't process the email.
+            return False
+
+        messageset = getUtility(IMessageSet)
+        message = messageset.fromEmail(
+            signed_msg.parsed_string,
+            owner=getUtility(ILaunchBag).user,
+            filealias=filealias,
+            parsed_message=signed_msg)
+
+        if message.owner == ticket.owner:
+            self.processOwnerMessage(ticket, message)
+        else:
+            self.processUserMessage(ticket, message)
+        return True
+
+    def processOwnerMessage(self, ticket, message):
+        """Choose the right workflow action for a message coming from
+        the ticket owner.
+
+        When the ticket status is OPEN or NEEDINFO,
+        the message is a GIVEINFO action; when the status is ANSWERED
+        or EXPIRED, we interpret the message as a reopenening request;
+        otherwise it's a comment.
+        """
+        if ticket.status in [
+            TicketStatus.OPEN, TicketStatus.NEEDSINFO]:
+            ticket.giveInfo(message)
+        elif ticket.status in [
+            TicketStatus.ANSWERED, TicketStatus.EXPIRED]:
+            ticket.reopen(message)
+        else:
+            ticket.addComment(message.owner, message)
+
+    def processUserMessage(self, ticket, message):
+        """Choose the right workflow action for a message coming from a user
+        that is not the ticket owner.
+
+        When the ticket status is OPEN, NEEDSINFO, or ANSWERED, we interpret
+        the message as containing an answer. (If it was really a request for
+        more information, the owner will still be able to answer it while
+        reopening the request.)
+
+        In the other status, the message is a comment without status change.
+        """
+        if ticket.status in [
+            TicketStatus.OPEN, TicketStatus.NEEDSINFO, TicketStatus.ANSWERED]:
+            ticket.giveAnswer(message.owner, message)
+        else:
+            # In the other states, only a comment can be added.
+            ticket.addComment(message.owner, message)
 
 
 class SpecificationHandler:
@@ -370,7 +409,7 @@ class SpecificationHandler:
                 notification_addresses = spec.notificationRecipientAddresses()
                 if log is not None:
                     log.debug(
-                        'Sending notification to: %s' % 
+                        'Sending notification to: %s' %
                             ', '.join(notification_addresses))
                 sendmail(signed_msg, to_addrs=notification_addresses)
 

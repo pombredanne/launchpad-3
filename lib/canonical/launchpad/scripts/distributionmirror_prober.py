@@ -1,19 +1,29 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
 import httplib
+import itertools
 import logging
 import os
+import urllib2
 import urlparse
 
+from zope.component import getUtility
+
 from twisted.internet import defer, protocol, reactor
+from twisted.internet.defer import DeferredSemaphore
 from twisted.web.http import HTTPClient
 from twisted.python.failure import Failure
 
 from canonical.config import config
-from canonical.launchpad.interfaces import IDistroArchRelease, IDistroRelease
+from canonical.launchpad.interfaces import (
+    IDistroArchRelease, IDistroRelease, ILaunchpadCelebrities,
+    UnableToFetchCDImageFileList)
 from canonical.lp.dbschema import MirrorStatus
 
 MAX_REDIRECTS = 3
+
+PER_HOST_REQUESTS = 1
+host_semaphores = {}
 
 
 class ProberProtocol(HTTPClient):
@@ -141,7 +151,13 @@ class ProberFactory(protocol.ClientFactory):
             path = url
         else:
             scheme, host, port, path = self._parse(url)
-        if scheme != 'http':
+        # XXX: We don't actually know how to handle FTP responses, but we
+        # expect to be behind a squid HTTP proxy with the patch at
+        # http://www.squid-cache.org/bugs/show_bug.cgi?id=1758 applied. So, if
+        # you encounter any problems with FTP URLs you'll probably have to nag
+        # the sysadmins to fix squid for you.
+        # -- Guilherme Salgado, 2006-09-19
+        if scheme not in ('http', 'ftp'):
             raise UnknownURLScheme(scheme)
         if scheme and host:
             self.scheme = scheme
@@ -186,7 +202,7 @@ class ProberTimeout(ProberError):
         ProberError.__init__(self, *args)
 
     def __str__(self):
-        return ("Getting %s took longer than %s seconds"
+        return ("HEAD request on %s took longer than %s seconds"
                 % (self.url, self.timeout))
 
 
@@ -382,3 +398,129 @@ class MirrorCDImageProberCallbacks(object):
         self.log_file.write(
             "Failed %s: %s\n" % (url, failure.getErrorMessage()))
         return failure
+
+
+def _get_cdimage_file_list():
+    url = config.distributionmirrorprober.releases_file_list_url
+    try:
+        return urllib2.urlopen(url)
+    except urllib2.URLError, e:
+        raise UnableToFetchCDImageFileList(
+            'Unable to fetch %s: %s' % (url, e))
+
+
+def get_expected_cdimage_paths():
+    """Get all paths where we can find CD image files on a release mirror.
+
+    Return a list containing, for each Ubuntu DistroRelease and flavour, a
+    list of CD image file paths for that DistroRelease and flavour.
+
+    This list is read from a file located at http://releases.ubuntu.com,
+    so if something goes wrong while reading that file, an
+    UnableToFetchCDImageFileList exception will be raised.
+    """
+    d = {}
+    for line in _get_cdimage_file_list().readlines():
+        flavour, releasename, path, size = line.split('\t')
+        paths = d.setdefault((flavour, releasename), [])
+        paths.append(path)
+
+    ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+    paths = []
+    for key, value in d.items():
+        flavour, releasename = key
+        release = ubuntu.getRelease(releasename)
+        paths.append((release, flavour, value))
+    return paths
+
+
+def checkComplete(result, key, unchecked_keys):
+    """Check if we finished probing all mirrors, and call reactor.stop()."""
+    unchecked_keys.remove(key)
+    if not len(unchecked_keys):
+        reactor.callLater(0, reactor.stop)
+    # This is added to the deferred with addBoth(), which means it'll be
+    # called if something goes wrong in the end of the callback chain, and in
+    # that case we shouldn't swallow the error.
+    return result
+
+
+def probe_archive_mirror(mirror, logfile, unchecked_mirrors, logger,
+                         host_semaphores=host_semaphores):
+    """Probe an archive mirror for its contents and freshness.
+
+    First we issue a set of HTTP HEAD requests on some key files to find out
+    what is mirrored there, then we check if some packages that we know the
+    publishing time are available on that mirror, giving us an idea of when it
+    was last synced to the main archive.
+    """
+    packages_paths = mirror.getExpectedPackagesPaths()
+    sources_paths = mirror.getExpectedSourcesPaths()
+    all_paths = itertools.chain(packages_paths, sources_paths)
+    for release, pocket, component, path in all_paths:
+        url = "%s/%s" % (mirror.base_url, path)
+        callbacks = MirrorProberCallbacks(
+            mirror, release, pocket, component, url, logfile)
+        unchecked_mirrors.append(url)
+        prober = ProberFactory(url)
+
+        # Use one semaphore per host, to limit the numbers of simultaneous
+        # connections on a given host. Note that we don't have an overall
+        # limit of connections, since the per-host limit should be enough.
+        # If we ever need an overall limit, we can use Andrews's suggestion
+        # on https://launchpad.net/bugs/54791 to implement it.
+        semaphore = host_semaphores.setdefault(
+            prober.host, DeferredSemaphore(PER_HOST_REQUESTS))
+        deferred = semaphore.run(prober.probe)
+        deferred.addCallbacks(
+            callbacks.ensureMirrorRelease, callbacks.deleteMirrorRelease)
+
+        deferred.addCallback(callbacks.updateMirrorStatus)
+        deferred.addErrback(logger.error)
+
+        deferred.addBoth(checkComplete, url, unchecked_mirrors)
+
+
+def probe_release_mirror(mirror, logfile, unchecked_mirrors, logger,
+                         host_semaphores=host_semaphores):
+    """Probe a release or release mirror for its contents.
+    
+    This is done by checking the list of files for each flavour and release
+    returned by get_expected_cdimage_paths(). If a mirror contains all
+    files for a given release and flavour, then we consider that mirror is
+    actually mirroring that release and flavour.
+    """
+    try:
+        cdimage_paths = get_expected_cdimage_paths()
+    except UnableToFetchCDImageFileList, e:
+        logger.error(e)
+        return
+
+    for release, flavour, paths in cdimage_paths:
+        callbacks = MirrorCDImageProberCallbacks(
+            mirror, release, flavour, logfile)
+
+        mirror_key = (release, flavour)
+        unchecked_mirrors.append(mirror_key)
+        deferredList = []
+        for path in paths:
+            url = '%s/%s' % (mirror.base_url, path)
+            # Use a RedirectAwareProberFactory because CD mirrors are allowed
+            # to redirect, and we need to cope with that.
+            prober = RedirectAwareProberFactory(url)
+            # Use one semaphore per host, to limit the numbers of simultaneous
+            # connections on a given host. Note that we don't have an overall
+            # limit of connections, since the per-host limit should be enough.
+            # If we ever need an overall limit, we can use Andrews's
+            # suggestion on https://launchpad.net/bugs/54791 to implement it.
+            semaphore = host_semaphores.setdefault(
+                prober.host, DeferredSemaphore(PER_HOST_REQUESTS))
+            deferred = semaphore.run(prober.probe)
+            deferred.addErrback(callbacks.logMissingURL, url)
+            deferredList.append(deferred)
+
+        deferredList = defer.DeferredList(deferredList, consumeErrors=True)
+        deferredList.addCallback(callbacks.ensureOrDeleteMirrorCDImageRelease)
+        deferredList.addCallback(checkComplete, mirror_key, unchecked_mirrors)
+
+

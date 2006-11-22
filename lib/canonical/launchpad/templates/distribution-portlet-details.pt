@@ -1,7 +1,7 @@
 <div class="portlet">
 
-  <h4><span tal:replace="context/displayname">Ubuntu
-      </span> distribution details:</h4>
+  <h2><span tal:replace="context/displayname">Ubuntu
+      </span> distribution details</h2>
 
   <div class="portletBody portletContent">
 
@@ -29,7 +29,7 @@
     <b>Security contact:</b><br />
     <span tal:condition="context/security_contact">
       <img alt="" src="/@@/user" />
-      <a tal:attributes="href string:${context/fmt:url}/+securitycontact"
+      <a tal:attributes="href context/security_contact/fmt:url"
          tal:content="context/security_contact/browsername">sample person</a>
     </span>
     <span tal:condition="not:context/security_contact">

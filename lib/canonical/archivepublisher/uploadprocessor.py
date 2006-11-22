@@ -147,7 +147,7 @@ class UploadProcessor:
                     some_rejected = True
                 else:
                     some_accepted = True
-            except KeyboardInterrupt:
+            except (KeyboardInterrupt, SystemExit):
                 raise
             except:
                 self.log.error("Unhandled exception from processing an upload",
@@ -204,7 +204,8 @@ class UploadProcessor:
         
         See nascentupload.py for the gory details.
 
-        Returns a value from UploadStatusEnum.
+        Returns a value from UploadStatusEnum, or re-raises an exception
+        from NascentUpload.
         """
         # Cache original value of self.options.distro, from command-line
         options_distro = self.options.distro
@@ -240,12 +241,23 @@ class UploadProcessor:
                               "%s " % e)
                 self.log.debug("UploadPolicyError escaped upload.process",
                                exc_info=True)
-                result = UploadStatusEnum.FAILED
             except UploadError, e:
                 upload.reject("UploadError escaped upload.process: %s" % e)
                 self.log.debug("UploadError escaped upload.process",
                                exc_info=True)
-                result = UploadStatusEnum.FAILED
+            except (KeyboardInterrupt, SystemExit):
+                raise
+            except Exception, e:
+                # In case of unexpected unhandled exception, we'll
+                # *try* to reject the upload. This may fail and cause
+                # a further exception, depending on the state of the
+                # nascentupload objects. In that case, we've lost nothing,
+                # the new exception will be handled by the caller just like
+                # the one we caught would have been, by failing the upload
+                # with no email.
+                self.log.exception("Unhandled exception processing upload")
+                upload.reject("Unhandled exception processing upload: %s" % e)
+                                
             if upload.rejected:
                 result = UploadStatusEnum.REJECTED
                 mails = upload.do_reject()
