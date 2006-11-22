@@ -631,6 +631,7 @@ Same thing if the logged in user didn't have any preferred languages
 set:
 
     >>> login('test@canonical.com')
+    >>> view = UserSupportLanguagesView(None, request)
     >>> sorted(language.code for language in view.user_support_languages)
     [u'af', u'en', u'fr', u'st', u'xh', u'zu']
 
@@ -638,6 +639,7 @@ But when the user has some preferred languages set, these will be used
 instead of the ones inferred from the request:
 
     >>> login('carlos@canonical.com')
+    >>> view = UserSupportLanguagesView(None, request)
     >>> sorted(language.code for language in view.user_support_languages)
     [u'ca', u'en', u'es']
 
@@ -645,6 +647,7 @@ English variants included in the user's preferred languages are
 excluded:
 
     >>> login('daf@canonical.com')
+    >>> view = UserSupportLanguagesView(None, request)
     >>> sorted(language.code for language in view.user_support_languages)
     [u'cy', u'en', u'ja']
 

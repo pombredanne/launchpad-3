@@ -15,31 +15,32 @@ __all__ = [
     'UserSupportLanguagesMixin',
     ]
 
+from operator import attrgetter
 from urllib import urlencode
 
-from zope.component import getUtility
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import DropdownWidget
 from zope.app.pagetemplate import ViewPageTemplateFile
+from zope.component import getUtility
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad import _
 from canonical.launchpad.helpers import request_languages
+from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IDistribution, IManageSupportContacts, ILanguageSet, ISearchTicketsForm,
+    IDistribution, ILanguageSet, IManageSupportContacts, ISearchTicketsForm,
     ITicketTarget, NotFoundError)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, redirection, stepthrough,
     ApplicationMenu, GeneralFormView, LaunchpadFormView, Link)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import TicketStatus
-from canonical.widgets import LaunchpadRadioWidget, LabeledMultiCheckBoxWidget
+from canonical.widgets import LabeledMultiCheckBoxWidget
 
 
 class UserSupportLanguagesMixin:
     """Mixin for views that needs to get the set of user support languages."""
 
-    @property
+    @cachedproperty
     def user_support_languages(self):
         """The set of user support languages.
 
@@ -56,7 +57,7 @@ class UserSupportLanguagesMixin:
         return languages
 
 
-class TicketTargetLatestTicketsView:
+class TicketTargetLatestTicketsView(UserSupportLanguagesMixin):
     """View used to display the latest support requests on a ticket target."""
 
     @cachedproperty
@@ -64,11 +65,11 @@ class TicketTargetLatestTicketsView:
         """Return <quantity> latest tickets created for this target. This
         is used by the +portlet-latesttickets view.
         """
-        english = getUtility(ILanguageSet)['en']
-        return self.context.searchTickets(language=english)[:quantity]
+        return self.context.searchTickets(
+            language=self.user_support_languages)[:quantity]
 
 
-class SearchTicketsView(LaunchpadFormView):
+class SearchTicketsView(UserSupportLanguagesMixin, LaunchpadFormView):
     """View that can filter the target's ticket in a batched listing.
 
     This view provides a search form to filter the displayed tickets.
@@ -79,7 +80,6 @@ class SearchTicketsView(LaunchpadFormView):
     custom_widget('status', LabeledMultiCheckBoxWidget,
                   orientation='horizontal')
     custom_widget('sort', DropdownWidget, cssClass='inlined-widget')
-    custom_widget('language', LaunchpadRadioWidget)
 
     template = ViewPageTemplateFile('../templates/ticket-listing.pt')
 
@@ -193,6 +193,27 @@ class SearchTicketsView(LaunchpadFormView):
         else:
             return self.getDefaultFilter().get('status', set())
 
+    @property
+    def all_languages_shown(self):
+        """Return whether all the used languages displayed."""
+        if self.request.form.get('all_languages'):
+            return True
+        return self.context.ticket_languages.issubset(
+            self.user_support_languages)
+
+    @property
+    def displayed_languages(self):
+        """Return the ticket languages displayed ordered by language name."""
+        displayed_languages = self.user_support_languages.intersection(
+            self.context.ticket_languages)
+        return sorted(displayed_languages, key=attrgetter('englishname'))
+
+    @property
+    def show_all_languages_checkbox(self):
+        """Whether to show the 'Search all languages' checkbox or not."""
+        return not self.context.ticket_languages.issubset(
+            self.user_support_languages)
+
     @action(_('Search'))
     def search_action(self, action, data):
         """Action executed when the user clicked the search button.
@@ -207,18 +228,19 @@ class SearchTicketsView(LaunchpadFormView):
         """Return the tickets corresponding to the search."""
         if self.search_params is None:
             # Search button wasn't clicked.
-            search_criteria = dict(self.getDefaultFilter())
+            self.search_params = dict(self.getDefaultFilter())
+
+        if self.request.form.get('all_languages'):
+            self.search_params['language'] = None
         else:
-            search_criteria = dict(self.search_params)
+            self.search_params['language'] = self.user_support_languages
 
-        search_criteria['language'] = getUtility(ILanguageSet)['en']
-
-        # The search criteria used is defined by the union of the fields
+        # The search parameters used is defined by the union of the fields
         # present in ISearchTicketsForm (search_text, status, sort) and the
         # ones defined in getDefaultFilter() which varies based on the
         # concrete view class.
         return BatchNavigator(
-            self.context.searchTickets(**search_criteria), self.request)
+            self.context.searchTickets(**self.search_params),self.request)
 
     def displaySourcePackageColumn(self):
         """We display the source package column only on distribution."""
@@ -274,8 +296,6 @@ class TicketTargetSearchMyTicketsView(SearchTicketsView):
             return _('Support requests you made for ${context}',
                      mapping={'context': self.context.displayname})
 
-    # XXX: Must add the languages to these messages.
-    # -- Guilherme Salgado, 2006-10-20
     @property
     def empty_listing_message(self):
         """See SearchTicketsView."""
