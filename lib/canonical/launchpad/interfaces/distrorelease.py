@@ -236,6 +236,31 @@ class IDistroRelease(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
         """Create an uploads SourcePackageRelease
 
         Set this distrorelease set to be the uploadeddistrorelease.
+
+        All arguments are mandatory, they are extracted/built when
+        processing and uploaded source package:
+
+         * dateuploaded: timestamp, usually UTC_NOW
+         * sourcepackagename: ISourcePackageName
+         * version: string, a debian valid version
+         * maintainer: IPerson designed as package maintainer
+         * creator: IPerson, package uploader
+         * component: IComponent
+         * section: ISection
+         * urgency: dbschema.SourcePackageUrgency
+         * manifest: IManifest
+         * dscsigningkey: IGPGKey used to sign the DSC file
+         * dsc: string, original content of the dsc file
+         * changelog: string, changelog extracted from the changesfile
+         * architecturehintlist: string, DSC architectures
+         * builddepends: string, DSC build dependencies
+         * builddependsindep: string, DSC architecture independent build
+           dependencies.
+         * dsc_maintainer_rfc822: string, DSC maintainer field
+         * dsc_standards_version: string, DSC standards version field
+         * dsc_format: string, DSC format version field
+         * dsc_binaries:  string, DSC binaries field
+
         """
 
     def getComponentByName(name):

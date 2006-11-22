@@ -180,7 +180,7 @@ class TestNativeArchiveIndexes(LaunchpadZopelessTestCase):
              u'Standards-Version: 3.6.2',
              u'Format: 1.0',
              u'Directory: pool/main/f/foo',
-             u'Files: ',
+             u'Files:',
              u' 3e47b75000b0924b6c9ba5759a7cf15d 7 foo.dsc'],
             pub_source.getIndexStanza().splitlines())
 
@@ -207,6 +207,55 @@ class TestNativeArchiveIndexes(LaunchpadZopelessTestCase):
              u' it does nothing, though'],
             pub_binary.getIndexStanza().splitlines())
 
+    def testBinaryStanzaDescription(self):
+        """ Check the description field.
+
+        The description field should formated as:
+
+        Description: <single line synopsis>
+         <extended description over several lines>
+
+        The extended description should allow the following formatting
+        actions supported by the dpkg-friend tools:
+
+         * lines to be wraped should start with a space.
+         * lines to be preserved empty should start with single space followed
+           by a single full stop (DOT).
+         * lines to be presented in Verbatim should start with two or
+           more spaces.
+
+        We just want to check if the original description uploaded and stored
+        in the system is preserved when we build the archive index.
+        """
+        description = (
+            "Normal\nNormal"
+            "\n.\n.\n."
+            "\n xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+        pub_binary = self.getPubBinary(
+            description=description)
+
+        self.assertEqual(
+            [u'Package: foo-bin',
+             u'Priority: Standard',
+             u'Section: base',
+             u'Installed-Size: 100',
+             u'Maintainer: Foo Bar <foo@bar.com>',
+             u'Architecture: i386',
+             u'Version: 666',
+             u'Filename: foo-bin.deb',
+             u'Size: 18',
+             u'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
+             u'Description: Foo app is great',
+             u' Normal',
+             u' Normal',
+             u' .',
+             u' .',
+             u' .',
+             (u'  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+              u'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+             ],
+            pub_binary.getIndexStanza().splitlines())
 
     def testIndexStanzaFields(self):
         """Check how this auxiliary class works...
@@ -222,11 +271,9 @@ class TestNativeArchiveIndexes(LaunchpadZopelessTestCase):
         fields.append('breakfast', 'coffee')
         fields.append('lunch', 'beef')
         fields.append('dinner', 'fish')
-        # IndexStanzaFields has an internal index, appended to the
-        # (name, value). It is auto-incremented on each append.
-        self.assertEqual(3, fields.index)
-        self.assertTrue(('dinner', 'fish', 2) in fields.fields)
-        # the internal index is the ordering base, FIFO.
+
+        self.assertEqual(3, len(fields.fields))
+        self.assertTrue(('dinner', 'fish') in fields.fields)
         self.assertEqual(
             ['breakfast: coffee', 'lunch: beef', 'dinner: fish',
              ], fields.makeOutput().splitlines())
@@ -239,6 +286,16 @@ class TestNativeArchiveIndexes(LaunchpadZopelessTestCase):
         self.assertEqual(
             ['one: um', 'three: tres', 'two: dois',
              ], fields.makeOutput().splitlines())
+
+        # special treatment for field named 'Files'
+        # do not add a space between <name>:<value>
+        # <value> will always start with a new line.
+        fields = IndexStanzaFields()
+        fields.append('one', 'um')
+        fields.append('Files', '<no_sep>')
+
+        self.assertEqual(
+            ['one: um', 'Files:<no_sep>'], fields.makeOutput().splitlines())
 
 
 def test_suite():

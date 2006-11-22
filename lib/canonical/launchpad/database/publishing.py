@@ -36,11 +36,10 @@ from canonical.lp.dbschema import (
 # XXX cprov 20060818: move it away, perhaps archivepublisher/pool.py
 def makePoolPath(source_name, component_name):
     """Return the pool path for a given source name and component name."""
-    from canonical.archivepublisher.diskpool import Poolifier
+    from canonical.archivepublisher.diskpool import poolify
     import os
-    pool= Poolifier()
     return os.path.join(
-        'pool', pool.poolify(source_name, component_name))
+        'pool', poolify(source_name, component_name))
 
 
 class ArchiveFilePublisherBase:
@@ -347,17 +346,14 @@ class IndexStanzaFields:
     """Store and format ordered Index Stanza fields."""
 
     def __init__(self):
-        self.index = 0
         self.fields = []
 
     def append(self, name, value):
         """Append an (field, value) tuple to the internal list.
 
-        It also append an internally incremented index to the tuple,
-        then we can use the FIFO-lik behaviour in makeOutput().
+        Then we can use the FIFO-like behaviour in makeOutput().
         """
-        self.fields.append((name, value, self.index))
-        self.index += 1
+        self.fields.append((name, value))
 
     def makeOutput(self):
         """Return a line-by-line aggregation of appended fields.
@@ -366,13 +362,14 @@ class IndexStanzaFields:
         The output order will preserve the insertion order, FIFO.
         """
         output_lines = []
-        ordered_fields = self.fields
-        ordered_fields.sort(key=operator.itemgetter(2))
-
-        for name, value, index in ordered_fields:
+        for name, value in self.fields:
             if not value:
                 continue
-            output_lines.append('%s: %s' % (name, value))
+            # do not add separation space for the special field 'Files'
+            if name != 'Files':
+                value = ' %s' % value
+
+            output_lines.append('%s:%s' % (name, value))
 
         return '\n'.join(output_lines)
 
