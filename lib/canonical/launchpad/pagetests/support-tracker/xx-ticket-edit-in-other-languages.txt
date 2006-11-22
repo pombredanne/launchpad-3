@@ -1,5 +1,20 @@
 == Editing a Ticket using a non-English Language ==
 
+Register a new support contact to change the list of supported languages.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, IPersonSet)
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> login('salgado@ubuntu.com')
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> salgado = getUtility(IPersonSet).getByEmail('salgado@ubuntu.com')
+    >>> ubuntu.addSupportContact(salgado)
+    True
+    >>> flush_database_updates()
+    >>> logout()
+
 A user can change the language a request was written, either because
 the language was wrongly set, or because he decided to rewrite the
 request in a language he speaks better.
@@ -33,7 +48,7 @@ support contacts, a warning is displayed:
     a language spoken by any support contacts in this community. If you
     go ahead and make a support request in that language, no support
     contacts will be able to read it. Currently, the languages spoken
-    by at least one support contact are: English.
+    by at least one support contact are: English, Portuguese (Brazil).
 
 If he changes the language to another unsupported language, he will
 get another warning.
@@ -49,7 +64,7 @@ get another warning.
     a language spoken by any support contacts in this community. If you
     go ahead and make a support request in that language, no support
     contacts will be able to read it. Currently, the languages spoken
-    by at least one support contact are: English.
+    by at least one support contact are: English, Portuguese (Brazil).
 
 If even after the warning he decides to go ahead, the unsupported
 language is accepted.
