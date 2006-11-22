@@ -53,7 +53,7 @@
   <adapter
     for="canonical.launchpad.interfaces.ITicket"
     provides="canonical.launchpad.interfaces.ITicketTarget"
-    factory="canonical.launchpad.components.ticket.TicketTargetAdapter" />
+    factory="canonical.launchpad.components.ticket.ticket_to_tickettarget" />
 
   <browser:menus
       module="canonical.launchpad.browser"

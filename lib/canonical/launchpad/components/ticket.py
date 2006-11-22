@@ -4,15 +4,7 @@
 __metaclass__ = type
 __all__ = ['TicketTargetAdapter']
 
-from canonical.launchpad.interfaces import ITicket, ITicketTarget
-from canonical.lp import decorates
-
-
-class TicketTargetAdapter:
+def ticket_to_tickettarget(ticket):
     """Adapts an ITicket to its ITicketTarget."""
-
-    decorates(ITicketTarget)
-
-    def __init__(self, context):
-        self.context = context.target
+    return ticket.target
 
