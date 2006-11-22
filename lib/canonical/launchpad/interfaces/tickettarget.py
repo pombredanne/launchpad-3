@@ -138,7 +138,7 @@ class ITicketTarget(Interface):
 
     ticket_languages = Set(
         title=_("Ticket Languages"),
-        description=_( "The ILanguage used by all of this target's tickets."),
+        description=_("The ILanguage used by all of this target's tickets."),
         value_type=Object(schema=ILanguage))
 
 
