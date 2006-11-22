@@ -194,7 +194,7 @@ class SearchTicketsView(UserSupportLanguagesMixin, LaunchpadFormView):
 
     @property
     def all_languages_shown(self):
-        """Return whether all the used languages displayed."""
+        """Return whether all the used languages are displayed."""
         if self.request.form.get('all_languages'):
             return True
         return self.context.ticket_languages.issubset(
@@ -209,7 +209,7 @@ class SearchTicketsView(UserSupportLanguagesMixin, LaunchpadFormView):
 
     @property
     def show_all_languages_checkbox(self):
-        """Whether to show the 'Search all languages' checkbox or not."""
+        """Whether to show the 'All Languages' checkbox or not."""
         return not self.context.ticket_languages.issubset(
             self.user_support_languages)
 
@@ -226,7 +226,6 @@ class SearchTicketsView(UserSupportLanguagesMixin, LaunchpadFormView):
     def searchResults(self):
         """Return the tickets corresponding to the search."""
         if self.search_params is None:
-            # Search button wasn't clicked.
             # Search button wasn't clicked, use the default filter.
             # Copy it so that it doesn't get mutated accidently.
             self.search_params = dict(self.getDefaultFilter())
@@ -241,7 +240,7 @@ class SearchTicketsView(UserSupportLanguagesMixin, LaunchpadFormView):
         # ones defined in getDefaultFilter() which varies based on the
         # concrete view class.
         return BatchNavigator(
-            self.context.searchTickets(**self.search_params),self.request)
+            self.context.searchTickets(**self.search_params), self.request)
 
     def displaySourcePackageColumn(self):
         """We display the source package column only on distribution."""

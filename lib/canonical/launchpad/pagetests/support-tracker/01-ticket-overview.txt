@@ -11,8 +11,7 @@ Products
 The product page displays the latest support requests in a portlet.
 
   >>> browser.open('http://launchpad.dev/products/firefox')
-  >>> from BeautifulSoup import BeautifulSoup
-  >>> portlet = find_portlet(
+  >>> find_portlet(
   ...    browser.contents, 'Latest Mozilla Firefox support requests')
   <div class="portlet">
     <h2> Latest Mozilla Firefox support requests </h2>
@@ -30,6 +29,7 @@ Users can request support by going to the 'Support' facet.
 
 That page shows all the currently open support requests for the product.
 
+  >>> from BeautifulSoup import BeautifulSoup
   >>> soup = BeautifulSoup(browser.contents)
   >>> print soup.first('h1').renderContents()
   Support requests for Mozilla Firefox

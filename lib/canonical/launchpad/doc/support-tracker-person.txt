@@ -143,19 +143,21 @@ language
 --------
 
 By default, tickets in all languages are included in the results. It is
-possible to filter tickets by the language they were written. One or a
-list of ILanguage object should be passed in the language parameter to
+possible to filter tickets by the language they were writtenin . One or
+a list of ILanguage object should be passed in the language parameter to
 specify the language filter.
 
     >>> from canonical.launchpad.interfaces import ILanguageSet
     >>> spanish = getUtility(ILanguageSet)['es']
     >>> english = getUtility(ILanguageSet)['en']
 
-    # Foo bar doesn't have any tickets written in Spanish.
+Foo bar doesn't have any tickets written in Spanish.
+
     >>> for ticket in foo_bar.searchTickets(language=spanish):
     ...     print ticket.title
 
-    # But carlos has one.
+But carlos has one.
+
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
     >>> for ticket in carlos.searchTickets(
     ...     language=[english, spanish]):
@@ -184,7 +186,7 @@ IPerson also defines a ticket_languages attribute which contains the set
 of languages used by all of the tickets in which this person is
 involved.
 
-    >>> sorted([language.code for language in foo_bar.ticket_languages])
+    >>> sorted(language.code for language in foo_bar.ticket_languages)
     [u'en']
 
 This includes tickets which the person owns. But also, tickets that the
@@ -196,7 +198,7 @@ user subscribed to.
     >>> pt_BR_ticket.subscribe(foo_bar)
     <TicketSubscription...>
 
-    >>> sorted([language.code for language in foo_bar.ticket_languages])
+    >>> sorted(language.code for language in foo_bar.ticket_languages)
     [u'en', u'pt_BR']
 
 And also tickets for which he's the answerer.
@@ -205,7 +207,7 @@ And also tickets for which he's the answerer.
     >>> es_ticket.reject(foo_bar, 'Reject ticket.')
     <TicketMessage...>
 
-    >>> sorted([language.code for language in foo_bar.ticket_languages])
+    >>> sorted(language.code for language in foo_bar.ticket_languages)
     [u'en', u'es', u'pt_BR']
 
 As well, as ticket which are assigned to the user.
@@ -214,7 +216,7 @@ As well, as ticket which are assigned to the user.
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
-    >>> sorted([language.code for language in carlos.ticket_languages])
+    >>> sorted(language.code for language in carlos.ticket_languages)
     [u'es', u'pt_BR']
 
 And tickets on which the user commented:
@@ -224,7 +226,7 @@ And tickets on which the user commented:
     >>> en_ticket.addComment(carlos, 'A simple comment.')
     <TicketMessage...>
 
-    >>> sorted([language.code for language in carlos.ticket_languages])
+    >>> sorted(language.code for language in carlos.ticket_languages)
     [u'en', u'es', u'pt_BR']
 
 
