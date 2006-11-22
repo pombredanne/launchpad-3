@@ -22,6 +22,7 @@ from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.event import notify
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     ILaunchBag, IDistribution, IDistroRelease, IDistroReleaseSet,
@@ -92,7 +93,7 @@ class FileBugViewBase(LaunchpadFormView):
                         # releases.
                         packagename_error = (
                             '"%s" does not exist in %s. Please choose a '
-                            "different package. If you're unsure, please"
+                            "different package. If you're unsure, please "
                             'select "I don\'t know"' % (
                                 packagename, distribution.displayname))
                         self.setFieldError("packagename", packagename_error)
@@ -255,10 +256,8 @@ class FileBugGuidedView(FileBugViewBase):
     _MATCHING_BUGS_LIMIT = 10
     _SEARCH_FOR_DUPES = ViewPageTemplateFile(
         "../templates/bugtarget-filebug-search.pt")
-    _DISPLAY_DUPES = ViewPageTemplateFile(
-        "../templates/bugtarget-filebug-search-results.pt")
     _FILEBUG_FORM = ViewPageTemplateFile(
-        "../templates/bugtarget-filebug-simple.pt")
+        "../templates/bugtarget-filebug-submit-bug.pt")
 
     template = _SEARCH_FOR_DUPES
 
@@ -289,19 +288,8 @@ class FileBugGuidedView(FileBugViewBase):
     @action("Continue", name="search", validator="validate_search")
     def search_action(self, action, data):
         """Search for similar bug reports."""
-        self.similar_bugs = self.getSimilarBugs()
-        self.most_common_bugs = self.getMostCommonBugs()
-
-        # Jump straight to the bug filing page if there are no
-        # similar or duplicate bugs.
-        if self.similar_bugs or self.most_common_bugs:
-            self.current_step = "check_for_similar"
-            return self._DISPLAY_DUPES()
-        else:
-            self.current_step = "filebug"
-            self.request.response.addNotification(
-                'No bugs matching "%s" were found' % self.getSearchText())
-            return self.showFileBugForm()
+        self.current_step = "filebug"
+        return self.showFileBugForm()
 
     def getSteps(self):
         steps = []
@@ -311,7 +299,8 @@ class FileBugGuidedView(FileBugViewBase):
                 dict(selected=is_current_step, title=step_title))
         return steps
 
-    def getSimilarBugs(self):
+    @cachedproperty
+    def similar_bugs(self):
         """Return the similar bugs based on the user search."""
         matching_bugs = []
         title = self.getSearchText()
@@ -324,10 +313,16 @@ class FileBugGuidedView(FileBugViewBase):
 
         return matching_bugs
 
-    def getMostCommonBugs(self):
+    @cachedproperty
+    def most_common_bugs(self):
         """Return a list of the most duplicated bugs."""
         return self.context.getMostCommonBugs(
             self.user, limit=self._MATCHING_BUGS_LIMIT)
+
+    @property
+    def found_possible_duplicates(self):
+        return self.similar_bugs or self.most_common_bugs
+
 
     def getSearchText(self):
         """Return the search string entered by the user."""
@@ -347,12 +342,6 @@ class FileBugGuidedView(FileBugViewBase):
 
     def validate_no_dupe_found(self, action, data):
         return ()
-
-    @action("Continue", name="no_dupe_found",
-            validator="validate_no_dupe_found")
-    def no_dupe_found_action(self, action, data):
-        """Show the simple bug form."""
-        return self.showFileBugForm()
 
     @action("Continue", name="continue",
             validator="validate_no_dupe_found")

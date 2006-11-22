@@ -24,10 +24,6 @@
         enctype="multipart/form-data"
         accept-charset="UTF-8">
 
-    <div tal:condition="view/shouldShowSteps" style="float: right">
-      <div metal:use-macro="context/@@+filebug-steps/steps" />
-    </div>
-
     <div style="margin-top: 1em"
          tal:define="error python:view.getWidgetError('title')">
       <p>Please describe the bug in a few words, for example,

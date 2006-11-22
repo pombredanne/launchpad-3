@@ -191,8 +191,6 @@ bugtarget_filebug_advanced = ContextTitle('Report a bug about %s')
 
 bugtarget_filebug_search = ContextTitle('Is your bug already reported in %s?')
 
-bugtarget_filebug_search_results = bugtarget_filebug_search
-
 def bugtarget_filebug_simple(context, view):
     if hasattr(context, "title"):
         # We're generating a title for a contextual bug filing page.
@@ -201,6 +199,8 @@ def bugtarget_filebug_simple(context, view):
         # We're generating a title for a top-level, contextless bug
         # filing page.
         return 'Report a bug'
+
+bugtarget_filebug_submit_bug = bugtarget_filebug_simple
 
 bugtask_backport_fixing = BugTaskBackportingTitle()
 
