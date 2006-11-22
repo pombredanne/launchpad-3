@@ -73,7 +73,7 @@ class RosettaApplicationNavigation(Navigation):
 
     newlayer = canonical.launchpad.layers.RosettaLayer
 
-    # Support bookmarks to the old rosetta prefs page.
+    # DEPRECATED: Support bookmarks to the old rosetta prefs page.
     redirection('prefs', '/+editmylanguages', status=httplib.MOVED_PERMANENTLY)
 
     @stepto('groups')
