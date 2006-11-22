@@ -177,3 +177,54 @@ by each criteria:
         for Mozilla                             Open
     Newly installed plug-in doesn't seem to be
         used                                    Open
+
+== ticket_languages ==
+
+IPerson also defines a ticket_languages attribute which contains the set
+of languages used by all of the tickets in which this person is
+involved.
+
+    >>> sorted([language.code for language in foo_bar.ticket_languages])
+    [u'en']
+
+This includes tickets which the person owns. But also, tickets that the
+user subscribed to.
+
+    >>> from canonical.launchpad.interfaces import ITicketSet
+    >>> pt_BR_ticket = getUtility(ITicketSet).get(13)
+    >>> login('foo.bar@canonical.com')
+    >>> pt_BR_ticket.subscribe(foo_bar)
+    <TicketSubscription...>
+
+    >>> sorted([language.code for language in foo_bar.ticket_languages])
+    [u'en', u'pt_BR']
+
+And also tickets for which he's the answerer.
+
+    >>> es_ticket = getUtility(ITicketSet).get(12)
+    >>> es_ticket.reject(foo_bar, 'Reject ticket.')
+    <TicketMessage...>
+
+    >>> sorted([language.code for language in foo_bar.ticket_languages])
+    [u'en', u'es', u'pt_BR']
+
+As well, as ticket which are assigned to the user.
+
+    >>> pt_BR_ticket.assignee = carlos
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+
+    >>> sorted([language.code for language in carlos.ticket_languages])
+    [u'es', u'pt_BR']
+
+And tickets on which the user commented:
+
+    >>> en_ticket = getUtility(ITicketSet).get(1)
+    >>> login('carlos@canonical.com')
+    >>> en_ticket.addComment(carlos, 'A simple comment.')
+    <TicketMessage...>
+
+    >>> sorted([language.code for language in carlos.ticket_languages])
+    [u'en', u'es', u'pt_BR']
+
+

@@ -24,6 +24,7 @@ from canonical.database.sqlbase import (
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database import postgresql
+from canonical.launchpad.database.language import Language
 from canonical.launchpad.helpers import shortlist, contactEmailAddresses
 from canonical.launchpad.event.karma import KarmaAssignedEvent
 
@@ -374,6 +375,22 @@ class Person(SQLBase):
     def searchTickets(self, **search_criteria):
         """See IPerson."""
         return TicketPersonSearch(person=self, **search_criteria).getResults()
+
+    @property
+    def ticket_languages(self):
+        """See ITicketTarget."""
+        return set(Language.select(
+            '''Language.id = language AND Ticket.id IN (
+            SELECT id FROM Ticket
+                     WHERE owner = %(personID)s OR answerer = %(personID)s OR
+                           assignee = %(personID)s
+            UNION SELECT ticket FROM TicketSubscription
+                  WHERE person = %(personID)s
+            UNION SELECT ticket
+                    FROM TicketMessage JOIN Message ON (message = Message.id)
+                   WHERE owner = %(personID)s
+            )''' % sqlvalues(personID=self.id),
+            clauseTables=['Ticket'], distinct=True))
 
     @property
     def branches(self):
@@ -863,7 +880,7 @@ class Person(SQLBase):
         history = POFileTranslator.select(
             "POFileTranslator.person = %d" % self.id,
             prejoins=[
-                "pofile", 
+                "pofile",
                 "pofile.potemplate",
                 "latest_posubmission",
                 "latest_posubmission.pomsgset.potmsgset.primemsgid_",
