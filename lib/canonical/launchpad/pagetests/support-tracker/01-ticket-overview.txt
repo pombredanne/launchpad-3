@@ -14,12 +14,10 @@ The product page displays the latest support requests in a portlet.
   >>> from BeautifulSoup import BeautifulSoup
   >>> portlet = find_portlet(
   ...    browser.contents, 'Latest Mozilla Firefox support requests')
-  >>> for link in portlet.fetch('a'):
-  ...    print link.renderContents()
-  Newly installed plug-in doesn't seem to be used
-  Firefox loses focus and gets stuck
-  Problem showing the SVG demo on W3C site
-  Firefox cannot render Bank Site
+  <div class="portlet">
+    <h2> Latest Mozilla Firefox support requests </h2>
+    ...
+  </div>
 
 Users can request support by going to the 'Support' facet.
 

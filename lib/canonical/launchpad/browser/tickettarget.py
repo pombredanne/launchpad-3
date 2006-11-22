@@ -57,7 +57,7 @@ class UserSupportLanguagesMixin:
         return languages
 
 
-class TicketTargetLatestTicketsView(UserSupportLanguagesMixin):
+class TicketTargetLatestTicketsView:
     """View used to display the latest support requests on a ticket target."""
 
     @cachedproperty
@@ -65,8 +65,7 @@ class TicketTargetLatestTicketsView(UserSupportLanguagesMixin):
         """Return <quantity> latest tickets created for this target. This
         is used by the +portlet-latesttickets view.
         """
-        return self.context.searchTickets(
-            language=self.user_support_languages)[:quantity]
+        return self.context.searchTickets()[:quantity]
 
 
 class SearchTicketsView(UserSupportLanguagesMixin, LaunchpadFormView):

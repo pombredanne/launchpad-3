@@ -1,9 +1,26 @@
-This test if we can access the Tickets index page
+= Support Tracker Introduction Page =
 
-  >>> print http(r"""
-  ... GET /support HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...<h1>Tech support</h1>...
-  ...
+The support tracker main page lists the 10 latest support requests
+across Launchpad. The support requests are displayed whatever their
+status or languages.
+
+    >>> anon_browser.open('http://launchpad.dev/support')
+    >>> print anon_browser.title
+    Launchpad tech support system
+
+    >>> content = find_main_content(anon_browser.contents)
+    >>> print content.first('h2').renderContents()
+    Latest support requests
+    >>> for row in content.fetch('tr', 'noted'):
+    ...     row.first('a').renderContents()
+    'Problemas de Impress\xc3\xa3o no Firefox'
+    'Problema al recompilar kernel con soporte smp (doble-n\xc3\xbacleo)'
+    'Continue playing after shutdown'
+    'Play DVDs in Totem'
+    'mailto: problem in webpage'
+    'Installation of Java Runtime Environment for Mozilla'
+    'Slow system'
+    "Newly installed plug-in doesn't seem to be used"
+    'Installation failed'
+    'Firefox loses focus and gets stuck'
+
