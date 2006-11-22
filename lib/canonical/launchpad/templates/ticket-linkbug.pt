@@ -36,6 +36,19 @@
     </div>
   </div>
 </div>
+
+<metal:help fill-slot="help">
+  <p>You can link a bug to a support request. You
+    should do this, if the problem described in the support request is related
+    to a bug already filed. The link to the bug report will appear on the
+    support request page, and a link to the support request will appear on
+    the target bug page.
+  </p>
+  <p>You need to know the bug number that you want to link to. You will
+    probably want to use the search page to locate the bug, if you don't
+    know its ID.
+  </p>
+</metal:help>
 </body>
 </html>
 

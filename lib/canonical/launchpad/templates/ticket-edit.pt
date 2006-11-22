@@ -34,5 +34,24 @@
   </div>
 
 </div>
+
+<metal:help fill-slot="help">
+  <p>Use this page to edit the request's <strong>title</strong> or
+    <strong>description</strong>. If you are not the user who posted the
+    request, try to only do edits that clarify the request or describes it
+    better.
+  </p>
+
+  <p>In distribution, you may want to set the
+    <strong>source package</strong> to which this support request is related.
+    This will help people familiar with that application find the request.
+  </p>
+
+  <p>You can use the <strong>status whiteboard</strong> to leave a transient
+    note that will be displayed on the support request page.
+  </p>
+
+</metal:help>
+
 </body>
 </html>

@@ -711,7 +711,7 @@ class RedirectToEditLanguagesView(LaunchpadView):
     for non logged in users that will require them to login and them send
     them straight to the page they want to go.
     """
-
+    
     def initialize(self):
         self.request.response.redirect(
             '%s/+editlanguages' % canonical_url(self.user))
