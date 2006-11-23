@@ -189,13 +189,15 @@ bugtarget_filebug = ContextTitle('Report a bug about %s')
 
 bugtask_backport_fixing = BugTaskBackportingTitle()
 
-bugtask_confirm_unlinked = LaunchbagBugID('Bug #%d - Request a fix')
+bugtask_choose_affected_product = LaunchbagBugID('Bug #%d - Request a fix')
 
 bugtask_edit = BugTaskPageTitle()
 
 bugtask_index = BugTaskPageTitle()
 
-bugtask_requestfix = bugtask_confirm_unlinked
+bugtask_requestfix = LaunchbagBugID('Bug #%d - Request a fix')
+
+bugtask_requestfix_upstream = LaunchbagBugID('Bug #%d - Request a fix')
 
 bugtask_view = BugTaskPageTitle()
 

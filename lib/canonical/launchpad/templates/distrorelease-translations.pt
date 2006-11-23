@@ -28,15 +28,7 @@
 
   <ul>
     <li class="edit">
-      <a tal:condition="request/lp:person"
-         tal:attributes="href string:${request/lp:person/fmt:url}/+editlanguages">
-        Customize displayed languages
-      </a>
-
-      <a tal:condition="not: request/lp:person"
-         tal:attributes="href string:${request/URL}/+login">
-        Login to customize displayed languages
-      </a>
+      <a href="/+editmylanguages">Customize displayed languages</a>
     </li>
   </ul>
 
