@@ -73,6 +73,11 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
     title = StringCol(notNull=True)
     summary = StringCol(notNull=True)
     description = StringCol(notNull=True)
+    homepage_content = StringCol(default=None)
+    emblem = ForeignKey(
+        dbName='emblem', foreignKey='LibraryFileAlias', default=None)
+    gotchi = ForeignKey(
+        dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
     domainname = StringCol(notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     bugcontact = ForeignKey(

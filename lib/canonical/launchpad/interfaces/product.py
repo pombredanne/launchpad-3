@@ -10,7 +10,7 @@ __all__ = [
     'IProductLaunchpadUsageForm',
     ]
 
-from zope.schema import Bool, Choice, Int, Text, TextLine
+from zope.schema import Bool, Bytes, Choice, Int, Text, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
@@ -20,7 +20,8 @@ from canonical.launchpad.interfaces import (
     IHasOwner, IHasDrivers, IBugTarget, ISpecificationTarget,
     IHasSecurityContact, IKarmaContext, PillarNameField)
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces.validation import valid_webref
+from canonical.launchpad.interfaces.validation import (
+    valid_emblem, valid_hackergotchi, valid_webref)
 
 
 class ProductNameField(PillarNameField):
@@ -159,6 +160,30 @@ class IProduct(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
     freshmeatproject = TextLine(title=_('Freshmeat Project'),
         required=False, description=_("""The Freshmeat project name for
             this product, if it is in freshmeat."""))
+
+    homepage_content = Text(
+        title=_("Homepage Content"), required=False,
+        description=_(
+            "The content of this product's home page. Edit this and it will "
+            "be displayed for all the world to see. It is NOT a wiki "
+            "so you cannot undo changes."))
+
+    emblem = Bytes(
+        title=_("Emblem"), required=False,
+        description=_(
+            "A small image, max 16x16 pixels and 8k in file size, that can "
+            "be used to refer to this product."),
+        constraint=valid_emblem)
+
+    # XXX: Should probably rename valid_hackergotchi to valid_gotchi or
+    # something like that. -- Salgado, 2006-11-23
+    gotchi = Bytes(
+        title=_("Gotchi"), required=False,
+        description=_(
+            "An image, maximum 150x150 pixels, that will be displayed on "
+            "this product's home page. It should be no bigger than 50k in "
+            "size. "),
+        constraint=valid_hackergotchi)
 
     translationgroup = Choice(
         title = _("Translation group"),
