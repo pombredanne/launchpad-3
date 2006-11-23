@@ -2,7 +2,7 @@ Minimizing Duplicate Bug Reports
 ================================
 
 Malone does its best to discourage duplicate bug report filing. The
-default filebug workfow, for example, guides the user through a search
+default filebug workflow, for example, guides the user through a search
 for duplicate bugs before allowing the bug to actually be filed.
 
 IBugTarget has a getMostCommonBugs() method which returns a list of bugs
@@ -54,7 +54,7 @@ If we ask for just one bug, we get only one.
     Firefox install instructions should be complete, 2
 
 getMostCommonBugs() is also privacy aware. If bug one is marked private,
-we will no longer see it in the results, because no-priv, is not
+we will no longer see it in the results, because no-priv is not
 subscribed to the bug.
 
     >>> print current_user.name
