@@ -545,7 +545,7 @@
       for="canonical.launchpad.interfaces.IPersonSet"
       class="canonical.launchpad.browser.PersonAddView"
       permission="launchpad.Admin"
-      template="../templates/foaf-newperson.pt" />
+      template="../templates/people-newperson.pt" />
 
   <browser:addform
       name="+newteam"
@@ -555,7 +555,7 @@
               defaultmembershipperiod defaultrenewalperiod subscriptionpolicy"
       class="canonical.launchpad.browser.TeamAddView"
       permission="launchpad.AnyPerson"
-      template="../templates/foaf-newteam.pt"
+      template="../templates/people-newteam.pt"
       lp:url="/people/+newteam">
       <browser:widget
           field="teamdescription"
@@ -570,7 +570,7 @@
       class="canonical.launchpad.browser.PeopleListView">
       <browser:page
           name="+peoplelist"
-          template="../templates/foaf-peoplelist.pt"
+          template="../templates/people-list.pt"
           lp:url="/people/+peoplelist" />
   </browser:pages>
 
@@ -580,7 +580,7 @@
       class="canonical.launchpad.browser.TeamListView">
       <browser:page
           name="+teamlist"
-          template="../templates/foaf-peoplelist.pt"
+          template="../templates/people-list.pt"
           lp:url="/people/+teamlist" />
   </browser:pages>
 
@@ -590,7 +590,7 @@
       class="canonical.launchpad.browser.UbunteroListView">
       <browser:page
           name="+ubunterolist"
-          template="../templates/foaf-peoplelist.pt"
+          template="../templates/people-list.pt"
           lp:url="/people/+ubunterolist" />
   </browser:pages>
 
@@ -600,7 +600,7 @@
       class="canonical.launchpad.browser.FOAFSearchView">
       <browser:page
           name="+index"
-          template="../templates/foaf-index.pt"
+          template="../templates/people-index.pt"
           lp:url="/people" />
       <browser:page
         name="+portlet-stats"
@@ -614,7 +614,7 @@
       fields="dupeaccount"
       class="canonical.launchpad.browser.RequestPeopleMergeView"
       permission="launchpad.AnyPerson"
-      template="../templates/foaf-requestmerge.pt"
+      template="../templates/people-requestmerge.pt"
       lp:url="/people/+requestmerge">
   </browser:addform>
 
@@ -624,7 +624,7 @@
       class="canonical.launchpad.browser.AdminRequestPeopleMergeView">
       <browser:page
           name="+adminrequestmerge"
-          template="../templates/foaf-adminrequestmerge.pt"
+          template="../templates/people-adminrequestmerge.pt"
           lp:url="/people/+adminrequestmerge" />
   </browser:pages>
 
@@ -634,7 +634,7 @@
       class="canonical.launchpad.browser.RequestPeopleMergeMultipleEmailsView">
       <browser:page
           name="+requestmerge-multiple"
-          template="../templates/foaf-requestmerge-multiple.pt"
+          template="../templates/people-requestmerge-multiple.pt"
           lp:url="/people/+requestmerge-multiple" />
   </browser:pages>
 
@@ -644,7 +644,7 @@
       class="canonical.launchpad.browser.FinishedPeopleMergeRequestView">
       <browser:page
           name="+mergerequest-sent"
-          template="../templates/foaf-mergerequest-sent.pt"
+          template="../templates/people-mergerequest-sent.pt"
           lp:url="/people/+mergerequest-sent" />
   </browser:pages>
 

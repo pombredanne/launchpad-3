@@ -368,8 +368,8 @@ def validate_new_team_email(email):
     if email is not None:
         raise LaunchpadValidationError(_(
             '%s is already registered in Launchpad and is associated with '
-            '<a href="%s">%s</a>.'),
-            email, canonical_url(email.person), email.person.browsername)
+            '<a href="%s">%s</a>.'), email.email,
+            canonical_url(email.person), email.person.browsername)
     return True
 
 
@@ -389,8 +389,7 @@ def validate_new_person_email(email):
     if owner is not None:
         raise LaunchpadValidationError(_(
             "The profile you're trying to create already exists: "
-            '<a href="%s">%s</a>.'),
-            canonical_url(owner), owner.browsername)
+            '<a href="%s">%s</a>.'), canonical_url(owner), owner.browsername)
     return True
 
 
