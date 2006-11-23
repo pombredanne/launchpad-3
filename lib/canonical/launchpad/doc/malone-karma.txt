@@ -135,6 +135,14 @@ Create a new bug task on a product:
     >>> notify(SQLObjectCreatedEvent(evolution_task))
     Karma added: action=bugtaskcreated, product=evolution
 
+Create a new bug task on a product series:
+
+    >>> evolution_trunk = evolution.getSeries('trunk')
+    >>> evolution_trunk_task = getUtility(IBugTaskSet).createTask(
+    ...     bug, productseries=evolution_trunk, owner=foo_bar)
+    >>> notify(SQLObjectCreatedEvent(evolution_trunk_task))
+    Karma added: action=bugtaskcreated, product=evolution
+
 Create a new bug task on a distrorelease:
 
     >>> debian_woody = debian.getRelease("woody")
@@ -153,6 +161,17 @@ Accept a distro release task.
     >>> notify(SQLObjectModifiedEvent(debian_woody_task, old_bugtask, ['status']))
     Karma added: action=bugaccepted, distribution=debian
 
+Accept a productseries task.
+
+    >>> evolution_trunk_task.transitionToStatus(BugTaskStatus.UNCONFIRMED)
+    >>> from canonical.launchpad.interfaces import IProductSeriesBugTask
+    >>> old_bugtask = Snapshot(
+    ...     evolution_trunk_task, providing=IProductSeriesBugTask)
+    >>> evolution_trunk_task.transitionToStatus(BugTaskStatus.CONFIRMED)
+    >>> notify(SQLObjectModifiedEvent(
+    ...     evolution_trunk_task, old_bugtask, ['status']))
+    Karma added: action=bugaccepted, product=evolution
+
 Mark a bug as a duplicate:
 
     >>> bug_one = getUtility(IBugSet).get(1)
@@ -164,6 +183,7 @@ Mark a bug as a duplicate:
     be actual contributions to all bugtasks of that bug)
     >>> notify(SQLObjectModifiedEvent(bug, old_bug, ['duplicateof']))
     Karma added: action=bugmarkedasduplicate, product=evolution
+    Karma added: action=bugmarkedasduplicate, product=evolution
     Karma added: action=bugmarkedasduplicate, distribution=debian
     Karma added: action=bugmarkedasduplicate, distribution=debian
 
@@ -173,6 +193,7 @@ Adding a comment generates a karma event, but gives no points:
     >>> comment = getUtility(IBugMessageSet).createMessage(
     ...     subject="foo", bug=bug, owner=foo_bar, content="bar")
     >>> notify(SQLObjectCreatedEvent(comment))
+    Karma added: action=bugcommentadded, product=evolution
     Karma added: action=bugcommentadded, product=evolution
     Karma added: action=bugcommentadded, distribution=debian
     Karma added: action=bugcommentadded, distribution=debian

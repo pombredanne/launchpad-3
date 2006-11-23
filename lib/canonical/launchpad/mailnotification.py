@@ -17,8 +17,8 @@ from zope.security.proxy import isinstance as zope_isinstance
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IDistroBugTask, IDistroReleaseBugTask, ISpecification,
-    IUpstreamBugTask, ITeamMembershipSet)
+    IDistroBugTask, IDistroReleaseBugTask, IProductSeriesBugTask,
+    ISpecification, ITeamMembershipSet, IUpstreamBugTask)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.components.bug import BugDelta
@@ -611,8 +611,10 @@ def get_task_delta(old_task, new_task):
     old_task and new_task.
     """
     changes = {}
-    if (IUpstreamBugTask.providedBy(old_task) and
-        IUpstreamBugTask.providedBy(new_task)):
+    if ((IUpstreamBugTask.providedBy(old_task) and
+         IUpstreamBugTask.providedBy(new_task)) or
+        (IProductSeriesBugTask.providedBy(old_task) and
+         IProductSeriesBugTask.providedBy(new_task))):
         if old_task.product != new_task.product:
             changes["product"] = {}
             changes["product"]["old"] = old_task.product

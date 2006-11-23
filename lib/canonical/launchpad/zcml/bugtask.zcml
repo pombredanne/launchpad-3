@@ -319,6 +319,21 @@
     </browser:generalform>
 
     <browser:generalform
+        name="+editstatus-page"
+        for="canonical.launchpad.interfaces.IProductSeriesBugTask"
+        class="canonical.launchpad.browser.bugtask.BugTaskEditView"
+        schema="canonical.launchpad.interfaces.IProductSeriesBugTask"
+        fields="milestone status importance assignee bugwatch
+                statusexplanation"
+        label="Edit fix request"
+        permission="launchpad.Edit"
+        template="../templates/bugtask-edit.pt">
+        <browser:widget
+          field="assignee"
+          class="canonical.widgets.bugtask.BugTaskAssigneeWidget" />
+    </browser:generalform>
+
+    <browser:generalform
         name="+edit-form"
         for="canonical.launchpad.interfaces.IProductSeriesBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
