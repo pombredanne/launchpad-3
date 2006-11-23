@@ -337,11 +337,11 @@ class ChooseAffectedProductView(LaunchpadFormView, BugAlsoReportInBaseView):
                     sourcepackage = distrorelease.getSourcePackage(
                         bugtask.sourcepackagename)
                     self.request.response.addInfoNotification(
-                        'There is no packaging information for'
-                        " %(full_package_name)s and that's why you need"
-                        ' to choose a product manually. To fix that,'
-                        ' <a href="%(package_url)s/+packaging">update'
-                        ' packaging information for %(full_package_name)s</a>',
+                        'Please select the appropriate upstream product.'
+                        ' This step can be avoided by'
+                        ' <a href="%(package_url)s/+packaging">updating'
+                        ' the packaging information for'
+                        ' %(full_package_name)s</a>.',
                         full_package_name=bugtask.targetname,
                         package_url=canonical_url(sourcepackage))
             else:
@@ -426,11 +426,12 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
                     canonical_url(self.context),
                     urllib.quote(product_name)))
             return u''
-        #XXX: It doesn't work to assign self.continue_action.label directly.
-        #     -- Bjorn Tillenius, 2006-10-09
-        action = self.continue_action
-        action.label = u'Indicate bug in %s' % cgi.escape(product.displayname)
-        self.continue_action = action
+        # self.continue_action is a descriptor that returns a "bound
+        # action", so we need to assign it to itself in order for the
+        # label change to stick around.
+        self.continue_action = self.continue_action
+        self.continue_action.label = (
+            u'Indicate bug in %s' % cgi.escape(product.displayname))
         return self.render()
 
     def render_distrotask(self):

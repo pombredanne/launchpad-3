@@ -5,6 +5,10 @@ the URL of the remote bug.
     ...    'http://launchpad.dev/products/firefox/+bug/4/+choose-affected-product')
     >>> user_browser.getControl('Product').value = 'gnome-terminal'
     >>> user_browser.getControl('Continue').click()
+    >>> user_browser.url
+    'http://launchpad.dev/products/firefox/+bug/4/+add-affected-product?field.product=gnome-terminal'
+
+
     >>> user_browser.getControl('URL').value = (
     ...     u'http://bugzilla.gnome.org/bugs/show_bug.cgi?id=42')
     >>> user_browser.getControl('Indicate bug in GNOME Terminal').click()
@@ -27,6 +31,9 @@ tracker type it is), an error message is displayed.
     ...    'http://launchpad.dev/products/firefox/+bug/4/+choose-affected-product')
     >>> user_browser.getControl('Product').value = 'alsa-utils'
     >>> user_browser.getControl('Continue').click()
+    >>> user_browser.url
+    'http://launchpad.dev/products/firefox/+bug/4/+add-affected-product?field.product=alsa-utils'
+
     >>> user_browser.getControl('URL').value = u'http://bugs.unknown/42'
     >>> user_browser.getControl('Indicate bug in alsa-utils').click()
     >>> user_browser.url
