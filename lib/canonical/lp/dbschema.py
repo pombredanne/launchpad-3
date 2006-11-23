@@ -1860,6 +1860,10 @@ class TicketStatus(DBSchema):
     """The current status of a Support Request
 
     This enum tells us the current status of the support ticket.
+
+    The lifecycle of a support request is documented in
+    https://help.launchpad.net/SupportRequestLifeCycle, so remember
+    to update that document for any pertinent changes.
     """
 
     OPEN = Item(10, """
