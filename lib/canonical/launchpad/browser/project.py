@@ -269,7 +269,7 @@ class ProjectAddProductView(LaunchpadFormView):
                    'wikiurl', 'screenshotsurl', 'downloadurl',
                    'programminglang']
     custom_widget('homepageurl', TextWidget, displayWidth=30)
-    custom_widget('screenshoturl', TextWidget, displayWidth=30)
+    custom_widget('screenshotsurl', TextWidget, displayWidth=30)
     custom_widget('wikiurl', TextWidget, displayWidth=30)
     custom_widget('downloadurl', TextWidget, displayWidth=30)
 
