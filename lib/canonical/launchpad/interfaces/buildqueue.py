@@ -28,8 +28,8 @@ class IBuildQueue(Interface):
     """
 
     id = Attribute("Job identifier")
-    build = Attribute("The Build record that originated this job")
-    builder = Attribute("The builder processing this job")
+    build = Attribute("The IBuild record that originated this job")
+    builder = Attribute("The IBuilder instance processing this job")
     created = Attribute("The datetime that the queue entry was created")
     buildstart = Attribute("The datetime of the last build attempt")
     logtail = Attribute("The current tail of the log of the build")
@@ -38,22 +38,25 @@ class IBuildQueue(Interface):
 
     # properties inherited from related Content classes.
     archrelease = Attribute(
-        "DistroArchRelease target of the Build in context.")
+        "DistroArchRelease target of the IBuild releated to this job.")
     name = Attribute(
-        "Name of the SourcePackageRelease in context.")
+        "Name of the ISourcePackageRelease releated to this job.")
     version = Attribute(
-        "Version of the SourcePackageRelease in context.")
+        "Version of the ISourcePackageRelease releated to this job.")
     files = Attribute(
-        "Collection of files related to the SourcePackageRelease in context.")
+        "Collection of files related to the ISourcePackageRelease "
+        "releated to this job.")
     component_name = Attribute(
-        "Component name where the SourcePackageRelease in context "
-        "got published in.")
+        "Component name where the ISourcePackageRelease releated to "
+        "this job got published in.")
     urgency = Attribute(
-        "Urgency of the SourcePackageRelease in context.")
+        "Urgency of the ISourcePackageRelease releated to this job.")
     archhintlist = Attribute(
-        "architecturehintlist of the SourcePackageRelease in context.")
+        "architecturehintlist of the ISourcePackageRelease releated "
+        "to this job.")
     builddependsindep = Attribute(
-        "builddependsindep of the SourcePackageRelease in context.")
+        "builddependsindep of the ISourcePackageRelease releated to "
+        "this job.")
     buildduration = Attribute(
         "Durarion of the job, calculated on-the-fly based on buildstart.")
 
