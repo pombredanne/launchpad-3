@@ -1816,16 +1816,13 @@ class TicketAction(DBSchema):
         was changed.
         """)
 
+# Enumeration covered by bug 66633:
+#   Need way to define enumerations outside of dbschema
 class TicketSort(DBSchema):
     """An enumeration of the valid ticket search sort order.
 
     This enumeration is part of the ITicketTarget.searchTickets() API. The
     titles are formatted for nice display in browser code.
-
-    XXX flacoste 2006/08/29 This has nothing to do with database code and
-    is really part of the ITicketTarget definitions. We should find a way
-    to define enumerations in interface code and generate easily,
-    when required, the database implementation code.
     """
 
     RELEVANCY = Item(5, """
