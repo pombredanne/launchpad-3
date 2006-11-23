@@ -143,7 +143,6 @@ class DtdFile (LocalizableFile):
 
 class PropertyFile (LocalizableFile):
     """Class for reading translatable messages from a .properties file.
-
     It behaves as an iterator over messages in the file, indexed by keys
     from the .properties file.
     """
@@ -232,6 +231,7 @@ class MozillaSupport:
 
         else:
             # It's not en-US.xpi, so it's a translation
+            # Lets strip ".xpi" off the name
             language = self.getRosettaLanguageForXpiLanguage(
                 os.path.basename(self.basepath)[:-4])
 

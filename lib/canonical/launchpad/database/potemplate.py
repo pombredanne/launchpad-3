@@ -39,7 +39,7 @@ from canonical.launchpad.database.translationimportqueue import (
 
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.components.poimport import import_po
-from canonical.launchpad.components.xpiimport import import_xpi
+#from canonical.launchpad.components.xpiimport import import_xpi
 from canonical.launchpad.components.poparser import (POSyntaxError,
     POInvalidInputError)
 
@@ -557,7 +557,7 @@ class POTemplate(SQLBase, RosettaStats):
         file = librarian_client.getFileByAlias(entry_to_import.content.id)
 
         try:
-            import_xpi(self, file, entry_to_import.importer)
+            import_po(self, file, entry_to_import.importer)
         except (POSyntaxError, POInvalidInputError):
             # The import failed, we mark it as failed so we could review it
             # later in case it's a bug in our code.
