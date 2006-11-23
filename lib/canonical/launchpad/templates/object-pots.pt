@@ -73,9 +73,11 @@
         <div tal:replace="structure potemplate/@@+preferred-chart" />
 
         <div align="right">
-          [ <a href="/rosetta/prefs">Choose Preferred Languages...</a> 
-	  &mdash; <a tal:attributes="href potemplate/fmt:url">View Template 
-	  &amp; All Languages...</a> ]
+          [ <a href="/+editmylanguages">Choose Preferred Languages...</a> 
+            &mdash;
+            <a tal:attributes="href potemplate/fmt:url">
+              View Template &amp; All Languages...</a> 
+          ]
         </div>
 
       </div>
