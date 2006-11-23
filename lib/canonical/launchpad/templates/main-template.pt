@@ -246,6 +246,7 @@
         </tal:block> |
         <tal:block tal:replace="CONTEXTS/menu:selectedfacetname" />
       </div>
+    </div>
     <div id="menupreload">
       <ul class="menu" lpm:mid="root" lpm:midbase="/$$/+menudata">
         <li class="item"><a href="/products">Products</a></li>
