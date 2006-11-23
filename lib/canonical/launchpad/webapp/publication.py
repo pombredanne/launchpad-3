@@ -24,7 +24,7 @@ from zope.app.security.interfaces import IUnauthenticatedPrincipal
 
 from canonical.launchpad.interfaces import (
     IOpenLaunchBag, ILaunchpadRoot, AfterTraverseEvent, BeforeTraverseEvent,
-    IShipItApplication, IPersonSet, IPerson, ITeam, ILaunchpadCelebrities)
+    IPersonSet, IPerson, ITeam, ILaunchpadCelebrities)
 import canonical.launchpad.layers as layers
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 import canonical.launchpad.webapp.adapter as da
@@ -35,10 +35,8 @@ from sqlos.interfaces import IConnectionName
 
 __all__ = [
     'LoginRoot',
-    'LaunchpadBrowserPublication',
-    'MainLaunchpadPublication',
-    'BlueprintPublication',
-    'ShipItPublication']
+    'LaunchpadBrowserPublication'
+    ]
 
 
 class LoginRoot:
@@ -270,18 +268,4 @@ class LaunchpadBrowserPublication(
         superclass = zope.app.publication.browser.BrowserPublication
         superclass.endRequest(self, request, object)
         da.clear_request_started()
-
-
-class MainLaunchpadPublication(LaunchpadBrowserPublication):
-    """The publication used for the main Launchpad site."""
-
-
-class BlueprintPublication(LaunchpadBrowserPublication):
-    """The publication used for the Blueprint site."""
-
-
-class ShipItPublication(LaunchpadBrowserPublication):
-    """The publication used for the ShipIt sites."""
-
-    root_object_interface = IShipItApplication
 
