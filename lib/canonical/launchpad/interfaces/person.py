@@ -33,7 +33,8 @@ from canonical.launchpad.interfaces.specificationtarget import (
 from canonical.launchpad.interfaces.tickettarget import (
     TICKET_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.validation import (
-    valid_emblem, valid_hackergotchi, valid_unregistered_email)
+    valid_emblem, valid_hackergotchi, validate_new_team_email,
+    validate_new_person_email)
 
 from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, TeamMembershipStatus, PersonCreationRationale)
@@ -76,7 +77,7 @@ class INewPerson(Interface):
 
     emailaddress = StrippedTextLine(
         title=_('Email address'), required=True,
-        constraint=valid_unregistered_email)
+        constraint=validate_new_person_email)
     displayname = StrippedTextLine(title=_('Display name'), required=True)
     creation_comment = Text(
         title=_('Creation reason'), required=True,
@@ -823,5 +824,5 @@ class ITeamCreation(ITeam):
             "this team will be sent to all team members. After finishing the "
             "team creation, a new message will be sent to this address with "
             "instructions on how to finish its registration."),
-        constraint=valid_unregistered_email)
+        constraint=validate_new_team_email)
 
