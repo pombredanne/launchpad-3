@@ -108,10 +108,6 @@ class FileBugViewBase(LaunchpadFormView):
             self.widgets["packagename"].onKeyPress = (
                 "selectWidget('choose', event)")
 
-    def shouldShowSteps(self):
-        """Should we show the steps to report a bug?"""
-        return True
-
     def contextUsesMalone(self):
         """Does the context use Malone as its official bugtracker?"""
         return self.getProductOrDistroFromContext().official_malone
@@ -263,15 +259,6 @@ class FileBugGuidedView(FileBugViewBase):
 
     focused_element_id = 'field.title'
 
-    # The steps in the filebug workflow, which are displayed on each
-    # page of the process.
-    _FILEBUG_STEPS = [
-        ("search", "Describe the bug in brief"),
-        ("check_for_similar", "Search for similar bugs"),
-        ("filebug", "Describe the bug in more detail")]
-
-    current_step = "search"
-
     @property
     def field_names(self):
         """Return the list of field names to display."""
@@ -288,16 +275,7 @@ class FileBugGuidedView(FileBugViewBase):
     @action("Continue", name="search", validator="validate_search")
     def search_action(self, action, data):
         """Search for similar bug reports."""
-        self.current_step = "filebug"
         return self.showFileBugForm()
-
-    def getSteps(self):
-        steps = []
-        for step_name, step_title in self._FILEBUG_STEPS:
-            is_current_step = step_name == self.current_step
-            steps.append(
-                dict(selected=is_current_step, title=step_title))
-        return steps
 
     @cachedproperty
     def similar_bugs(self):
@@ -350,7 +328,6 @@ class FileBugGuidedView(FileBugViewBase):
         return self.showFileBugForm()
 
     def showFileBugForm(self):
-        self.current_step = "filebug"
         return self._FILEBUG_FORM()
 
 
