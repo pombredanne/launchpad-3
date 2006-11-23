@@ -49,7 +49,7 @@
 </tal:similar-bugs>
 
 <tal:most-common-bugs condition="view/most_common_bugs">
-  <h2 style="clear: both">Common Bugs</h2>
+  <h2 style="clear: both">Most Frequently Reported Bugs</h2>
 
   <table class="listing" id="most-common-bugs">
     <thead>
@@ -129,7 +129,7 @@
 
   <div style="margin-top: 1em">
     <label tal:attributes="for view/widgets/comment/name">
-      Further information, steps to reproduce, etc.
+      Further information, steps to reproduce, version information, etc.
     </label>
     <div tal:content="structure view/widgets/comment" />
   </div>

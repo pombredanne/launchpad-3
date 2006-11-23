@@ -189,7 +189,7 @@ bugtarget_filebug = ContextTitle('Report a bug about %s')
 
 bugtarget_filebug_advanced = ContextTitle('Report a bug about %s')
 
-bugtarget_filebug_search = ContextTitle('Is your bug already reported in %s?')
+bugtarget_filebug_search = ContextTitle('Report a bug about %s')
 
 def bugtarget_filebug_simple(context, view):
     if hasattr(context, "title"):

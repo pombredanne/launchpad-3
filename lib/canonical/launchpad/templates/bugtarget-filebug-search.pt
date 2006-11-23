@@ -25,19 +25,11 @@
         accept-charset="UTF-8">
 
     <div style="margin-top: 1em"
-         tal:define="error python:view.getWidgetError('title')">
+         tal:define="widget nocall:view/widgets/title">
       <p>Please describe the bug in a few words, for example,
       "weather applet crashes on logout":</p>
 
-      <div tal:attributes="class python:error and 'error' or None">
-        <tal:widget replace="structure view/widgets/title" />
-
-        <div tal:condition="error"
-             class="message"
-             tal:content="structure error"
-            >An error message.
-        </div>
-      </div>
+      <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_row" />
     </div>
 
     <div class="actions">
@@ -50,7 +42,8 @@
   <br />
   <span class="discreet">
     <small>
-      You may prefer the
+      This guided form will try to help you find out whether your bug
+      has already been reported. You may prefer the
       <a href="#" tal:attributes="href string:${context/fmt:url}/+filebug-advanced">complicated bug filing form</a>.
     </small>
   </span>
