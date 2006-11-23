@@ -32,16 +32,18 @@ from canonical.launchpad.interfaces import (
     IIrcIDSet, ISSHKeySet, IJabberIDSet, IWikiNameSet, IGPGKeySet,
     ISSHKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner,
     IBugTaskSet, UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
-    ILaunchpadStatisticSet, ShipItConstants, ILaunchpadCelebrities)
+    ITranslationGroupSet, ILaunchpadStatisticSet, ShipItConstants,
+    ILaunchpadCelebrities,
+    )
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
+from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.karma import KarmaTotalCache
 from canonical.launchpad.database.logintoken import LoginToken
-from canonical.launchpad.database.pofile import POFile
+from canonical.launchpad.database.pofile import POFileTranslator
 from canonical.launchpad.database.karma import KarmaAction, Karma
-from canonical.launchpad.database.potemplate import POTemplateSet
 from canonical.launchpad.database.packagebugcontact import PackageBugContact
 from canonical.launchpad.database.shipit import ShippingRequest
 from canonical.launchpad.database.sourcepackagerelease import (
@@ -53,8 +55,7 @@ from canonical.launchpad.database.specificationsubscription import (
     SpecificationSubscription)
 from canonical.launchpad.database.teammembership import (
     TeamMembership, TeamParticipation, TeamMembershipSet)
-
-from canonical.launchpad.database.branch import Branch
+from canonical.launchpad.database.ticket import TicketSet
 
 from canonical.lp.dbschema import (
     EnumCol, SSHKeyType, EmailAddressStatus, TeamSubscriptionPolicy,
@@ -68,7 +69,7 @@ from canonical.cachedproperty import cachedproperty
 
 class ValidPersonOrTeamCache(SQLBase):
     """Flags if a Person or Team is active and usable in Launchpad.
-    
+
     This is readonly, as the underlying table is maintained using
     database triggers.
     """
@@ -136,9 +137,9 @@ class Person(SQLBase):
         orderBy='id')
     reviewerBounties = SQLMultipleJoin('Bounty', joinColumn='reviewer',
         orderBy='id')
-    # XXX: matsubara 2006-03-06: Is this really needed? There's no attribute 
-    # 'claimant' in the Bounty database class or interface, but the column 
-    # exists in the database. 
+    # XXX: matsubara 2006-03-06: Is this really needed? There's no attribute
+    # 'claimant' in the Bounty database class or interface, but the column
+    # exists in the database.
     # https://launchpad.net/products/launchpad/+bug/33935
     claimedBounties = MultipleJoin('Bounty', joinColumn='claimant',
         orderBy='id')
@@ -156,16 +157,6 @@ class Person(SQLBase):
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
     timezone = StringCol(dbName='timezone', default='UTC')
-
-    answered_tickets = SQLMultipleJoin('Ticket', joinColumn='answerer',
-        orderBy='-datecreated')
-    assigned_tickets = SQLMultipleJoin('Ticket', joinColumn='assignee',
-        orderBy='-datecreated')
-    created_tickets = SQLMultipleJoin('Ticket', joinColumn='owner',
-        orderBy='-datecreated')
-    subscribed_tickets = SQLRelatedJoin('Ticket', joinColumn='person',
-        otherColumn='ticket', intermediateTable='TicketSubscription',
-        orderBy='-datecreated')
 
     def _init(self, *args, **kw):
         """Marks the person as a team when created or fetched from database."""
@@ -275,9 +266,9 @@ class Person(SQLBase):
                 completeness = True
         if completeness is False:
             filter.append(SpecificationFilter.INCOMPLETE)
-        
+
         # defaults for acceptance: in this case we have nothing to do
-        # because specs are not accepted/declined against a person 
+        # because specs are not accepted/declined against a person
 
         # defaults for informationalness: we don't have to do anything
         # because the default if nothing is said is ANY
@@ -340,7 +331,7 @@ class Person(SQLBase):
                          (SELECT Product.id FROM Product
                           WHERE Product.active IS FALSE))
                 """
-        
+
         base = base % {'my_id': self.id}
 
         query = base
@@ -380,13 +371,10 @@ class Person(SQLBase):
             limit=quantity, prejoins=['assignee', 'approver', 'drafter'])
         return results
 
-    def tickets(self, quantity=None):
-        ret = self.created_tickets
-        ret = ret.union(self.answered_tickets)
-        ret = ret.union(self.assigned_tickets)
-        ret = ret.union(self.subscribed_tickets)
-        ret = ret.orderBy("-datecreated")
-        return ret[:quantity]
+    # ITicketActor implementation
+    def searchTickets(self, **kwargs):
+        # See ITicketActor
+        return TicketSet.searchByPerson(person=self, **kwargs)
 
     @property
     def branches(self):
@@ -690,7 +678,7 @@ class Person(SQLBase):
         if person.isTeam():
             assert not self.hasParticipationEntryFor(person), (
                 "Team '%s' is a member of '%s'. As a consequence, '%s' can't "
-                "be added as a member of '%s'" 
+                "be added as a member of '%s'"
                 % (self.name, person.name, person.name, self.name))
 
         if person in self.activemembers:
@@ -708,17 +696,11 @@ class Person(SQLBase):
                             comment=None):
         """See IPerson."""
         tm = TeamMembership.selectOneBy(person=person, team=self)
-
-        # XXX: Do we need this assert?
-        #      -- SteveAlexander, 2005-04-23
         assert tm is not None
 
-        now = datetime.now(pytz.timezone('UTC'))
-        if expires is not None and expires <= now:
-            status = TeamMembershipStatus.EXPIRED
-            # XXX: This is a workaround while 
-            # https://launchpad.net/products/launchpad/+bug/30649 isn't fixed.
-            expires = now
+        if expires is not None:
+            now = datetime.now(pytz.timezone('UTC'))
+            assert expires > now, expires
 
         tm.setStatus(status, reviewer, comment)
         tm.dateexpires = expires
@@ -755,7 +737,7 @@ class Person(SQLBase):
         """See IPerson."""
         return self.browsername
 
-    @property 
+    @property
     def allmembers(self):
         """See IPerson."""
         query = ('Person.id = TeamParticipation.person AND '
@@ -828,7 +810,7 @@ class Person(SQLBase):
     def myactivememberships(self):
         """See IPerson."""
         return TeamMembership.select("""
-            TeamMembership.person = %s AND status in %s AND 
+            TeamMembership.person = %s AND status in %s AND
             Person.id = TeamMembership.team
             """ % sqlvalues(self.id, [TeamMembershipStatus.APPROVED,
                                       TeamMembershipStatus.ADMIN]),
@@ -876,40 +858,24 @@ class Person(SQLBase):
             return None
 
     @property
-    def touched_pofiles(self):
-        results = POFile.select('''
-            POSubmission.person = %s AND
-            POSubmission.pomsgset = POMsgSet.id AND
-            POMsgSet.pofile = POFile.id
-            ''' % sqlvalues(self.id),
-            orderBy=['POFile.datecreated'],
-            prejoins=['language', 'potemplate'],
-            clauseTables=['POMsgSet', 'POFile', 'POSubmission'],
-            distinct=True)
-        # XXX: Because of a template reference to
-        # pofile.potemplate.displayname, it would be ideal to also
-        # prejoin above:
-        #   potemplate.potemplatename
-        #   potemplate.productseries
-        #   potemplate.productseries.product
-        #   potemplate.distrorelease
-        #   potemplate.distrorelease.distribution
-        #   potemplate.sourcepackagename
-        # However, a list this long may be actually suggesting that
-        # displayname be cached in a table field; particularly given the
-        # fact that it won't be altered very often. At any rate, the
-        # code below works around this by caching all the templates in
-        # one shot. The list() ensures that we materialize the query
-        # before passing it on to avoid reissuing it; the template code
-        # only hits this callsite once and iterates over all the results
-        # anyway. When we have deep prejoining we can just ditch all of
-        # this and either use cachedproperty or cache in the view code.
-        #   -- kiko, 2006-03-17
-        results = list(results)
-        ids = set(pofile.potemplate.id for pofile in results)
-        if ids:
-            list(POTemplateSet().getByIDs(ids))
-        return results
+    def translation_history(self):
+        """See IPerson."""
+        # Note that we can't use selectBy here because of the prejoins.
+        history = POFileTranslator.select(
+            "POFileTranslator.person = %d" % self.id,
+            prejoins=[
+                "pofile", 
+                "pofile.potemplate",
+                "latest_posubmission",
+                "latest_posubmission.pomsgset.potmsgset.primemsgid_",
+                "latest_posubmission.potranslation"],
+            orderBy="-date_last_touched")
+        return history
+
+    @property
+    def translation_groups(self):
+        """See IPerson."""
+        return getUtility(ITranslationGroupSet).getByPerson(self)
 
     def validateAndEnsurePreferredEmail(self, email):
         """See IPerson."""
@@ -921,8 +887,11 @@ class Person(SQLBase):
         # comparison oddity
         assert email.person.id == self.id, 'Wrong person! %r, %r' % (
             email.person, self)
-        assert self.preferredemail != email, 'Wrong prefemail! %r, %r' % (
-            self.preferredemail, email)
+
+        # This email is already validated and is this person's preferred
+        # email, so we have nothing to do.
+        if self.preferredemail == email:
+            return
 
         if self.preferredemail is None:
             # This branch will be executed only in the first time a person
@@ -1047,7 +1016,7 @@ class Person(SQLBase):
                        sourcepackagerelease.id
                   FROM sourcepackagerelease
                  WHERE %s
-              ORDER BY uploaddistrorelease, sourcepackagename, 
+              ORDER BY uploaddistrorelease, sourcepackagename,
                        dateuploaded DESC
               )
               """ % extra
@@ -1224,10 +1193,10 @@ class PersonSet:
             orderBy = SQLConstant("person_sort_key(displayname, name)")
         text = text.lower()
         # Teams may not have email addresses, so we need to either use a LEFT
-        # OUTER JOIN or do a UNION between two queries. Using a UNION makes 
+        # OUTER JOIN or do a UNION between two queries. Using a UNION makes
         # it a lot faster than with a LEFT OUTER JOIN.
         email_query = """
-            EmailAddress.person = Person.id AND 
+            EmailAddress.person = Person.id AND
             lower(EmailAddress.email) LIKE %s || '%%'
             """ % quote_like(text)
         results = Person.select(email_query, clauseTables=['EmailAddress'])
@@ -1249,7 +1218,7 @@ class PersonSet:
             # ORed.
             email_query = ("%s AND lower(EmailAddress.email) LIKE %s || '%%'"
                            % (base_query, quote_like(text)))
-            name_query = ('%s AND Person.fti @@ ftq(%s)' 
+            name_query = ('%s AND Person.fti @@ ftq(%s)'
                           % (base_query, quote(text)))
             results = Person.select(email_query, clauseTables=clauseTables)
             results = results.union(
@@ -1266,16 +1235,16 @@ class PersonSet:
             orderBy = SQLConstant("person_sort_key(displayname, name)")
         text = text.lower()
         # Teams may not have email addresses, so we need to either use a LEFT
-        # OUTER JOIN or do a UNION between two queries. Using a UNION makes 
+        # OUTER JOIN or do a UNION between two queries. Using a UNION makes
         # it a lot faster than with a LEFT OUTER JOIN.
         email_query = """
-            Person.teamowner IS NOT NULL AND 
-            EmailAddress.person = Person.id AND 
+            Person.teamowner IS NOT NULL AND
+            EmailAddress.person = Person.id AND
             lower(EmailAddress.email) LIKE %s || '%%'
             """ % quote_like(text)
         results = Person.select(email_query, clauseTables=['EmailAddress'])
         name_query = """
-             Person.teamowner IS NOT NULL AND 
+             Person.teamowner IS NOT NULL AND
              Person.fti @@ ftq(%s)
             """ % quote(text)
         return results.union(Person.select(name_query), orderBy=orderBy)
@@ -1310,6 +1279,37 @@ class PersonSet:
                     SignedCodeOfConduct.q.datecreated>=lastdate)
 
         return Person.select(query, distinct=True, orderBy=orderBy)
+
+    def getPOFileContributors(self, pofile):
+        """See IPersonSet."""
+        contributors = Person.select("""
+            POFileTranslator.person = Person.id AND
+            POFileTranslator.pofile = %s""" % quote(pofile),
+            clauseTables=["POFileTranslator"],
+            distinct=True,
+            # XXX: we can't use Person.sortingColumns because this is a
+            # distinct query. To use it we'd need to add the sorting
+            # function to the column results and then ignore it -- just
+            # like selectAlso does, ironically.
+            #   -- kiko, 2006-10-19
+            orderBy=["Person.displayname", "Person.name"])
+        return contributors
+
+    def getPOFileContributorsByDistroRelease(self, distrorelease, language):
+        """See IPersonSet."""
+        contributors = Person.select("""
+            POFileTranslator.person = Person.id AND
+            POFileTranslator.pofile = POFile.id AND
+            POFile.language = %s AND
+            POFile.potemplate = POTemplate.id AND
+            POTemplate.distrorelease = %s"""
+                % sqlvalues(language, distrorelease),
+            clauseTables=["POFileTranslator", "POFile", "POTemplate"],
+            distinct=True,
+            # See comment in getPOFileContributors about how we can't
+            # use Person.sortingColumns.
+            orderBy=["Person.displayname", "Person.name"])
+        return contributors
 
     def merge(self, from_person, to_person):
         """Merge a person into another.
@@ -1486,7 +1486,7 @@ class PersonSet:
             WHERE person=%(from_id)d AND bounty NOT IN
                 (
                 SELECT bounty
-                FROM BountySubscription 
+                FROM BountySubscription
                 WHERE person = %(to_id)d
                 )
             ''' % vars())
@@ -1532,7 +1532,7 @@ class PersonSet:
             WHERE person=%(from_id)d AND ticket NOT IN
                 (
                 SELECT ticket
-                FROM TicketSubscription 
+                FROM TicketSubscription
                 WHERE person = %(to_id)d
                 )
             ''' % vars())
@@ -1551,7 +1551,7 @@ class PersonSet:
 
         # Update the SpecificationFeedback entries that will not conflict
         # and trash the rest.
-        
+
         # First we handle the reviewer.
         cur.execute('''
             UPDATE SpecificationFeedback
@@ -1608,7 +1608,7 @@ class PersonSet:
             WHERE attendee=%(from_id)d AND sprint NOT IN
                 (
                 SELECT sprint
-                FROM SprintAttendance 
+                FROM SprintAttendance
                 WHERE attendee = %(to_id)d
                 )
             ''' % vars())
@@ -1660,6 +1660,11 @@ class PersonSet:
             ''' % vars())
         skip.append(('posubmission', 'person'))
 
+        # Handle the POFileTranslator cache by doing nothing. As it is
+        # maintained by triggers, the data migration has already been done
+        # for us when we updated the source tables.
+        skip.append(('pofiletranslator', 'person'))
+
         # Update only the TranslationImportQueueEntry that will not conflict
         # and trash the rest
         cur.execute('''
@@ -1706,7 +1711,7 @@ class PersonSet:
         approved = TeamMembershipStatus.APPROVED
         admin = TeamMembershipStatus.ADMIN
         cur.execute('SELECT team, status FROM TeamMembership WHERE person = %s '
-                    'AND status IN (%s,%s)' 
+                    'AND status IN (%s,%s)'
                     % sqlvalues(from_person.id, approved, admin))
         for team_id, status in cur.fetchall():
             cur.execute('SELECT status FROM TeamMembership WHERE person = %s '

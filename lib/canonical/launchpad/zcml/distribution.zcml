@@ -19,7 +19,7 @@
                             mirror_admin"
             />
         <!-- ITicketTarget -->
-        <allow attributes="tickets getTicket searchTickets findSimilarTickets
+        <allow attributes="getTicket searchTickets findSimilarTickets
               support_contacts" />
         <require permission="launchpad.AnyPerson"
             attributes="newTicket addSupportContact removeSupportContact" />
@@ -62,6 +62,14 @@
         permission="zope.Public"
         name="+archivemirrors"
         template="../templates/distribution-mirrors.pt" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IDistribution"
+        name="+archivemirrors-rss"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.DistributionArchiveMirrorsRSSView"
+        template="../templates/distribution-mirrors-rss.pt"
+        />
 
     <browser:page
         for="canonical.launchpad.interfaces.IDistribution"
@@ -446,8 +454,8 @@
         module="canonical.launchpad.browser.distribution"
         classes="
             DistributionFacets DistributionOverviewMenu DistributionBugsMenu
-            DistributionSupportMenu DistributionBountiesMenu
-            DistributionSpecificationsMenu DistributionTranslationsMenu
+            DistributionBountiesMenu DistributionSpecificationsMenu
+            DistributionTranslationsMenu
             "
             />
 

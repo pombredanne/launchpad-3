@@ -5,22 +5,10 @@ especially the auto-reconnect on ztm.begin() (but not at any other time).
 Make a TCP proxy to postgres. Note we have to match the version of
 twisted we use with our version of Python.
 
-    >>> import os, sys
-    >>> import canonical.lp
-    >>> from canonical.database.ftests import (
-    ...     getDBHost, wait_until_proxy_is_ready, wait_until_proxy_is_stopped)
-    >>> dbhost = getDBHost()
-    >>> ver = sys.version[:3]
-    >>> cmd = ('mktap%s portforward --port 5555 --dest_port 5432 '
-    ...        '--host %s' % (ver, dbhost))
-    >>> os.system(cmd)
-    0
-    >>> os.system('twistd%s -of portforward.tap' % ver)
-    0
-
-Wait for the proxy to start.
-
-    >>> wait_until_proxy_is_ready()
+    >>> import os
+    >>> from canonical.database.ftests import PortForwardTestSetup
+    >>> portforward = PortForwardTestSetup()
+    >>> portforward.setUp()
 
 Init Zopeless via the proxy, with implicit begin disabled.
 
@@ -63,12 +51,7 @@ Start a new transaction, to show that everything will recover smoothly.
 
 Break the connection by stopping the proxy.
 
-    >>> os.system('kill `cat twistd.pid`')
-    0
-
-Wait for the proxy to stop.
-
-    >>> wait_until_proxy_is_stopped()
+    >>> portforward.tearDown()
 
 Executing a query now blocks until the database connection can be
 reestablished.
@@ -99,9 +82,7 @@ established:
 
 Restart the proxy:
 
-    >>> os.system('twistd%s -of portforward.tap' % ver)
-    0
-    >>> wait_until_proxy_is_ready()
+    >>> portforward.setUp()
 
 Now, our blocked thread should've finished successfully.
 
@@ -137,9 +118,6 @@ if implicitBegin was enabled):
 
 Clean up the proxy.
 
-    >>> os.system('kill `cat twistd.pid`')
-    0
-    >>> wait_until_proxy_is_stopped()
-    >>> os.remove('twistd.log')
-    >>> os.remove('portforward.tap')
+    >>> portforward.tearDown()
+    >>> os.remove(portforward.logfile)
 
