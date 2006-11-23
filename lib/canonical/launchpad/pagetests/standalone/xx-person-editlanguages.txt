@@ -1,6 +1,5 @@
-
-The Rosetta Preferences Page
-----------------------------
+A person's +editlanguages page
+------------------------------
 
 Carlos is a translator who translates things into Spanish with Rosetta.
 He is on Rosetta About page and wants to change his preferred languages.
@@ -10,12 +9,12 @@ He is on Rosetta About page and wants to change his preferred languages.
   >>> browser.url
   'http://launchpad.dev/rosetta/+about'
 
-So, he looks for 'Select Languages...' link, and clicks on that which 
-should take him to Rosetta Preferences page.
+So, he looks for the 'Select Languages...' link, and clicks on that which 
+should take him to his +editlanguages page.
 
   >>> browser.getLink('Select Languages...').click()
   >>> browser.url
-  'http://launchpad.dev/rosetta/prefs'
+  'http://launchpad.dev/people/carlos/+editlanguages'
 
 So far, he has Spanish selected as one of his preferred languages, but not 
 Welsh. 
@@ -33,8 +32,8 @@ Spanish will no longer be selected, and Welsh will.
   >>> browser.getControl('Welsh').selected = True
   >>> browser.getControl('Save').click()
 
-After he submits the form, he should again be redirected back to About page,
-and it should contain notices about the changes he made.
+After he submits the form, he should again be redirected back to Rosetta's
+About page, and it should contain notices about the changes he made.
 
   >>> browser.url
   'http://launchpad.dev/rosetta/+about'
@@ -43,18 +42,27 @@ and it should contain notices about the changes he made.
   ...Added Welsh to your preferred languages...
   ...Removed Spanish from your preferred languages...
 
-And finally, lets revisit the preferences page to check if languages
+And finally, lets revisit the +editlanguages page to check if the languages
 have been properly selected.
 
-  >>> browser.open('http://launchpad.dev/rosetta/prefs')
+  >>> browser.open('http://launchpad.dev/people/carlos/+editlanguages')
   >>> browser.url
-  'http://launchpad.dev/rosetta/prefs'
+  'http://launchpad.dev/people/carlos/+editlanguages'
   >>> browser.getControl('Spanish').selected
   False
   >>> browser.getControl('Welsh').selected
   True
 
 
+When a user doesn't have a preferred language set, we determine it from the
+user's browser headers. If his browser send us any non-utf8 encoded string in 
+the Accept-Language header, we won't consider that as a valid language code.
+
+  >>> from zope.testbrowser.testing import Browser
+  >>> browser = Browser()
+  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser.addHeader('Accept-Language', 'pt_br, Espa\xf1ol')
+  >>> browser.open('http://launchpad.dev/people/name12/+editlanguages')
 
   >>> from BeautifulSoup import BeautifulSoup
   >>> def print_languages(rosetta_pref_page, portlet='preferred'):
@@ -62,7 +70,6 @@ have been properly selected.
   ...     languages portlet.
   ...
   ...     portlet keyword argument can be 'preferred' or 'browser'
-  ...
   ...     """
   ...     soup = BeautifulSoup(rosetta_pref_page)
   ...     lang_portlet = soup.fetchText(
@@ -70,12 +77,5 @@ have been properly selected.
   ...     for lang in lang_portlet('li', {'class': 'languages'}):
   ...         print lang.string
 
-When a user doesn't have a preferred language set, we determine it from the
-user's browser headers. If his browser send us any non-utf8 encoded string in 
-the Accept-Language header, we won't consider that as a valid language code.
-
-  >>> user_browser.addHeader('Accept-Language', 'pt_br, Espa\xf1ol')
-  >>> user_browser.open('http://launchpad.dev/rosetta/prefs')
-
-  >>> print_languages(user_browser.contents, portlet='browser')
+  >>> print_languages(browser.contents, portlet='browser')
   Portuguese (Brazil)

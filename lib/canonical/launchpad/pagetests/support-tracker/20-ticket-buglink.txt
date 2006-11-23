@@ -126,9 +126,10 @@ have access to:
     >>> browser.getLink('Link Existing Bug').click()
     >>> browser.getControl('Bug ID').value = '6'
     >>> browser.getControl('Link').click()
-    >>> soup = BeautifulSoup(browser.contents)
-    >>> soup.first('div', 'error').first('div', 'message')
-    <div class="message">You are not allowed to link to private bug #6.</div>
+    >>> for tag in find_tags_by_class(browser.contents, 'message'):
+    ...     print tag.renderContents()
+    There is 1 error.
+    You are not allowed to link to private bug #6.
 
 An administrator (or another user having access to the bug) should be
 able to link to that bug.
