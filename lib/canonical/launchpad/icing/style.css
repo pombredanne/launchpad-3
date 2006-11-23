@@ -348,6 +348,10 @@ ul#applicationchooser {
   background-repeat: no-repeat;
   background-position: top right;
 }
+div#noapplicationchooser {
+  clear: both;
+  margin-bottom: 18px;
+}
 ul#applicationchooser li {
   float: left;
   display: block;
@@ -490,7 +494,7 @@ ul#applicationchooser li#applicationchooser_selected {
   width: 192px;
   overflow: hidden;
   margin: 3px 0px 0px 0px;
-  padding: 4px;
+  padding: 4px 4px 0 4px;
   list-style: none;
 }
 #actions li {

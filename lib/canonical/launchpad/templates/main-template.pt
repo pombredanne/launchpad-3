@@ -73,6 +73,7 @@
     <div
       id="structuralobject"
       tal:define="structuralobject CONTEXTS/lp:structuralobject"
+      tal:condition="not:contextless|nothing"
     >
       <tal:header
         condition="structuralobject"
@@ -105,6 +106,8 @@
               <div class="x">
                 <div class="y">
                   <div class="z">
+                    <tal:onlyincontexts condition="not:contextless|nothing">
+
                     <ul
                       id="applicationchooser"
                       tal:define="facetmenu CONTEXTS/menu:facet"
@@ -145,6 +148,13 @@
                         />
                       </tal:facet>
                     </ul>
+
+                    </tal:onlyincontexts>
+                    <div
+                      tal:condition="contextless|nothing"
+                      id="noapplicationchooser"
+                    >&nbsp;</div>
+
                     <br class="clear" />
 
                     <div id="container">
