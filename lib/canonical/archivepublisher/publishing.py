@@ -58,7 +58,7 @@ class Publisher(object):
     the processing of each DistroRelease and DistroArchRelease in question
     """
 
-    def __init__(self, log, config, diskpool, distribution,
+    def __init__(self, log, config, diskpool, distribution, archive,
                  allowed_suites=None, library=None):
         """Initialise a publisher.
 
@@ -71,6 +71,7 @@ class Publisher(object):
         self.log = log
         self._config = config
         self.distro = distribution
+        self.archive = archive
         self.allowed_suites = allowed_suites
 
         if not os.path.isdir(config.poolroot):
@@ -113,7 +114,7 @@ class Publisher(object):
                     continue
 
                 more_dirt = distrorelease.publish(
-                    self._diskpool, self.log, pocket,
+                    self._diskpool, self.log, self.archive, pocket,
                     is_careful=force_publishing)
 
                 self.dirty_pockets.update(more_dirt)
@@ -121,7 +122,7 @@ class Publisher(object):
     def B_dominate(self, force_domination):
         """Second step in publishing: domination."""
         self.log.debug("* Step B: dominating packages")
-        judgejudy = Dominator(self.log)
+        judgejudy = Dominator(self.log, self.archive)
         for distrorelease in self.distro:
             for pocket in PackagePublishingPocket.items:
                 if not force_domination:

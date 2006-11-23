@@ -1712,12 +1712,14 @@ class DistroRelease(SQLBase, BugTargetBase):
         # Request the translation copy.
         self._copy_active_translations(cur)
 
-    def publish(self, diskpool, log, pocket, is_careful=False):
+    def publish(self, diskpool, log, archive, pocket, is_careful=False):
         """See IPublishing."""
         dirty_pockets = set()
-        log.debug("Publishing %s-%s" % (self.title, pocket.name))
+        log.debug(
+            "Publishing %s-%s" % (self.title, pocket.name))
 
-        queries = ['distrorelease = %s' % sqlvalues(self)]
+        queries = [
+            'distrorelease=%s AND archive=%s' % sqlvalues(self, archive)]
 
         # careful publishing should include all PUBLISHED rows, normal run
         # only includes PENDING ones.
@@ -1748,7 +1750,7 @@ class DistroRelease(SQLBase, BugTargetBase):
 
         # propagate publication request to each distroarchrelease.
         for dar in self.architectures:
-            more_dirt = dar.publish(diskpool, log, is_careful)
+            more_dirt = dar.publish(diskpool, log, archive, pocket, is_careful)
             dirty_pockets.update(more_dirt)
 
         return dirty_pockets

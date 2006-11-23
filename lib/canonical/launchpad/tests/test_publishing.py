@@ -4,6 +4,7 @@
 from unittest import TestLoader
 import os
 import shutil
+import tempfile
 from StringIO import StringIO
 
 from zope.component import getUtility
@@ -20,7 +21,7 @@ from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, SecureSourcePackagePublishingHistory)
 from canonical.launchpad.interfaces import (
     ILibraryFileAliasSet, IDistributionSet, IPersonSet, ISectionSet,
-    IComponentSet, ISourcePackageNameSet, IGPGKeySet)
+    IComponentSet, ISourcePackageNameSet, IGPGKeySet, IArchiveSet)
 
 from canonical.librarian.client import LibrarianClient
 
@@ -62,7 +63,7 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
                      filecontent="I do not care about sources.",
                      status=PackagePublishingStatus.PENDING,
                      pocket=PackagePublishingPocket.RELEASE,
-                     distrorelease=None):
+                     distrorelease=None, archive=None):
         """Return a mock source publishing record."""
 
         alias = self.addMockFile(filename, filecontent)
@@ -75,6 +76,8 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
 
         if distrorelease is None:
             distrorelease = self.breezy_autotest
+        if archive is None:
+            archive = self.breezy_autotest.main_archive
 
         spr = distrorelease.createUploadedSourcePackageRelease(
             sourcepackagename=spn,
@@ -105,7 +108,7 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
             datecreated=UTC_NOW,
             pocket=pocket,
             embargo=False,
-            archive=self.breezy_autotest.main_archive
+            archive=archive
             )
 
         # SPPH and SSPPH IDs are the same, since they are SPPH is a SQLVIEW
@@ -232,6 +235,28 @@ class TestNativePublishing(TestNativePublishingBase):
         self.assertEqual(
             pub_source3.status, PackagePublishingStatus.PENDING)
 
+    def testPublishInAnotherArchive(self):
+        """Publication in another archive
+
+        Basically test if publishing records target to other archive
+        than Distribution.main_archive work as expected
+        """
+        test_archive = getUtility(IArchiveSet).new(tag='test archive')
+        test_pool_dir = tempfile.mkdtemp()
+        test_disk_pool = DiskPool(test_pool_dir, self.logger)
+
+        pub_source = self.getPubSource(
+            "foo", "main", "foo.dsc", filecontent='Am I a PPA Record ?',
+            archive=test_archive)
+        pub_source.publish(test_disk_pool, self.logger)
+        LaunchpadZopelessTestSetup.txn.commit()
+
+        self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
+        foo_name = "%s/main/f/foo/foo.dsc" % test_pool_dir
+        self.assertEqual(open(foo_name).read().strip(), 'Am I a PPA Record ?')
+
+        # remove locally created dir
+        shutil.rmtree(test_pool_dir)
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

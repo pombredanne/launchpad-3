@@ -94,8 +94,11 @@ def getPublisher(options, log):
     # Set the diskpool's log level to INFO to suppress debug output
     dp.logger.setLevel(20)
 
+    # lock the process into the distribution main_archive
+    archive = distro.main_archive
+
     log.debug("Preparing publisher.")
-    return Publisher(log, pubconf, dp, distro, allowed_suites)
+    return Publisher(log, pubconf, dp, distro, archive, allowed_suites)
 
 
 def main():

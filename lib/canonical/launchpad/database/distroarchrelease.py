@@ -232,7 +232,7 @@ class DistroArchRelease(SQLBase):
             packagepublishingstatus=PackagePublishingStatus.PUBLISHED,
             orderBy=['-id'])
 
-    def publish(self, diskpool, log, is_careful=False):
+    def publish(self, diskpool, log, archive, pocket, is_careful=False):
         """See IPublishing."""
         # XXX: this method shares exactly the same pattern as
         # DistroRelease.publish(); they could be factored if API was
@@ -243,18 +243,29 @@ class DistroArchRelease(SQLBase):
 
         dirty_pockets = set()
         queries = ["distroarchrelease=%s AND archive = %s" %
-                   sqlvalues(self, self.main_archive)]
+                   sqlvalues(self, archive)]
 
         target_status = [PackagePublishingStatus.PENDING]
         if is_careful:
             target_status.append(PackagePublishingStatus.PUBLISHED)
         queries.append("status in %s" % sqlvalues(target_status))
 
-        is_unstable = self.distrorelease.isUnstable()
+        # restrict to a specific pocket if it is given.
+        if pocket is not None:
+            queries.append('pocket = %s' % sqlvalues(pocket))
+
+        # exclude RELEASE pocket if the distrorelease was already released,
+        # since it should not change.
+        if not self.distrorelease.isUnstable():
+            queries.append(
+                'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
+
         publications = BinaryPackagePublishingHistory.select(
                     " AND ".join(queries), orderBy=["-id"])
+
         for bpph in publications:
-            if not is_careful and self.distrorelease.checkLegalPocket(bpph, log):
+            if not is_careful and self.distrorelease.checkLegalPocket(
+                bpph, log):
                 continue
             bpph.publish(diskpool, log)
             dirty_pockets.add((self.distrorelease.name, bpph.pocket))
