@@ -9,6 +9,8 @@ __all__ = [
     'RosettaApplicationNavigation'
     ]
 
+import httplib
+
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
@@ -17,7 +19,7 @@ from canonical.launchpad.interfaces import (
     ITranslationImportQueue)
 from canonical.launchpad import helpers
 import canonical.launchpad.layers
-from canonical.launchpad.webapp import Navigation, stepto
+from canonical.launchpad.webapp import Navigation, redirection, stepto
 
 
 class RosettaApplicationView:
@@ -70,6 +72,9 @@ class RosettaApplicationNavigation(Navigation):
     usedfor = IRosettaApplication
 
     newlayer = canonical.launchpad.layers.RosettaLayer
+
+    # DEPRECATED: Support bookmarks to the old rosetta prefs page.
+    redirection('prefs', '/+editmylanguages', status=httplib.MOVED_PERMANENTLY)
 
     @stepto('groups')
     def groups(self):
