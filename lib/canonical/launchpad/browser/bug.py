@@ -34,7 +34,7 @@ from zope.security.interfaces import Unauthorized
 from canonical.launchpad.interfaces import (
     IAddBugTaskForm, IBug, IBugSet, IBugTaskSet, IBugWatchSet,
     ICanonicalUrlData, IDistributionSourcePackage, IDistroBugTask,
-    IDistroReleaseBugTask, ILaunchBag, IUpstreamBugTask,
+    IDistroReleaseBugTask, ILaunchBag, ILaunchpadCelebrities, IUpstreamBugTask,
     NoBugTrackerFound, NotFoundError, UnrecognizedBugTrackerURL,
     valid_distrotask, valid_upstreamtask)
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -471,13 +471,28 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
                 return
         elif distribution:
             target = distribution
-            try:
-                valid_distrotask(
-                    self.context.bug, distribution, sourcepackagename,
-                    on_create=True)
-            except WidgetsError, errors:
-                for error in errors:
-                    self.setFieldError('sourcepackagename', error.snippet())
+            entered_package = self.request.form.get(
+                self.widgets['sourcepackagename'].name)
+            if sourcepackagename is None and entered_package:
+                # The entered package doesn't exist.
+                filebug_url = "%s/+filebug" % canonical_url(
+                    getUtility(ILaunchpadCelebrities).launchpad)
+                self.setFieldError(
+                    'sourcepackagename',
+                    'There is no package in %s named "%s". If it should'
+                    ' be here, <a href="%s">report this as a bug</a>.' % (
+                        cgi.escape(distribution.displayname),
+                        cgi.escape(entered_package),
+                        cgi.escape(filebug_url)))
+            else:
+                try:
+                    valid_distrotask(
+                        self.context.bug, distribution, sourcepackagename,
+                        on_create=True)
+                except WidgetsError, errors:
+                    for error in errors:
+                        self.setFieldError(
+                            'sourcepackagename', error.snippet())
         else:
             # Validation failed for either the product or distribution,
             # no point in trying to validate further.

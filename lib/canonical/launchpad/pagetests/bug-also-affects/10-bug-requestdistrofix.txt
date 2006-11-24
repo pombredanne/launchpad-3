@@ -181,3 +181,24 @@ redirected to the bug page.
     <...
     ...>evolution (Debian)</a>...
     ...
+
+If we enter a source package which doesn't exist, we get an error
+message saying so.
+
+    >>> browser.getLink(url='+distrotask').click()
+    >>> browser.getControl('Distribution').value = ['ubuntu']
+    >>> browser.getControl('Source Package Name').value = 'no-such-package'
+    >>> browser.getControl('Continue').click()
+    >>> browser.url
+    'http://localhost/distros/debian/+source/evolution/+bug/1/+distrotask'
+    >>> for message_tag in find_tags_by_class(browser.contents, 'message'):
+    ...     print message_tag.renderContents()
+    There is 1 error.
+    There is no package in Ubuntu named "no-such-package". If it should
+    be here, <a href="...">report this as a bug</a>.
+
+The link in the error page links to the Launchpad filebug page.
+
+    >>> browser.getLink('report this as a bug').click()
+    >>> browser.title
+    'Report a bug about Launchpad'
