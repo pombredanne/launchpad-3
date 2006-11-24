@@ -205,6 +205,9 @@ COMMENT ON COLUMN Product.security_contact IS 'The person or team who handles se
 COMMENT ON COLUMN Product.driver IS 'This is a driver for the overall product. This driver will be able to approve nominations of bugs and specs to any series in the product, including backporting to old stable series. You want the smallest group of "overall drivers" here, because you can add specific drivers to each series individually.';
 /*COMMENT ON COLUMN Product.bugtracker IS 'The external bug tracker that is used to track bugs primarily for this product, if it\'s different from the project bug tracker.'; */
 COMMENT ON COLUMN Product.development_focus IS 'The product series that is the current focus of development.';
+COMMENT ON COLUMN Product.homepage_content IS 'A home page for this product in the Launchpad.';
+COMMENT ON COLUMN Product.emblem IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an emblem whenever we are referring to a product.';
+COMMENT ON COLUMN Product.gotchi IS 'The library file alias of a gotchi image to display as the icon of a product, on its home page.';
 
 -- ProductRelease
 
@@ -310,6 +313,9 @@ language) to the completely closed (only designated translators can make any
 changes at all).';
 COMMENT ON COLUMN Project.calendar IS 'The calendar associated with this project.';
 /* COMMENT ON COLUMN Project.bugtracker IS 'The external bug tracker that is used to track bugs primarily for products within this project.'; */
+COMMENT ON COLUMN Project.homepage_content IS 'A home page for this project in the Launchpad.';
+COMMENT ON COLUMN Project.emblem IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an emblem whenever we are referring to a project.';
+COMMENT ON COLUMN Project.gotchi IS 'The library file alias of a gotchi image to display as the icon of a project, on its home page.';
 
 
 -- ProjectRelationship
@@ -416,6 +422,9 @@ message set.';
 COMMENT ON TABLE Sprint IS 'A meeting, sprint or conference. This is a convenient way to keep track of a collection of specs that will be discussed, and the people that will be attending.';
 COMMENT ON COLUMN Sprint.driver IS 'The driver (together with the registrant or owner) is responsible for deciding which topics will be accepted onto the agenda of the sprint.';
 COMMENT ON COLUMN Sprint.time_zone IS 'The timezone of the sprint, stored in text format from the Olsen database names, like "US/Eastern".';
+COMMENT ON COLUMN Sprint.homepage_content IS 'A home page for this sprint in the Launchpad.';
+COMMENT ON COLUMN Sprint.emblem IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an emblem whenever we are referring to a sprint.';
+COMMENT ON COLUMN Sprint.gotchi IS 'The library file alias of a gotchi image to display as the icon of a sprint, on its home page.';
 
 
 /* SprintAttendance */
@@ -914,6 +923,9 @@ COMMENT ON COLUMN Distribution.domainname IS 'The domain name of the distributio
 COMMENT ON COLUMN Distribution.owner IS 'The person in launchpad who is in ultimate-charge of this distribution within launchpad.';
 COMMENT ON COLUMN Distribution.upload_sender IS 'The email address (and name) of the default sender used by the upload processor. If NULL, we fall back to the default sender in the launchpad config.';
 COMMENT ON COLUMN Distribution.upload_admin IS 'Person foreign key which have access to modify the queue ui. If NULL, we fall back to launchpad admin members';
+COMMENT ON COLUMN Distribution.homepage_content IS 'A home page for this distribution in the Launchpad.';
+COMMENT ON COLUMN Distribution.emblem IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an emblem whenever we are referring to a distribution.';
+COMMENT ON COLUMN Distribution.gotchi IS 'The library file alias of a gotchi image to display as the icon of a distribution, on its home page.';
 
 -- DistroRelease
 
