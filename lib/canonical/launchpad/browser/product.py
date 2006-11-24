@@ -131,7 +131,7 @@ class ProductFacets(TicketTargetFacetMixin, StandardLaunchpadFacets):
         return Link(target, text, summary)
 
     def branches(self):
-        target = '+branches'
+        target = ''
         text = 'Code'
         summary = 'Branches for %s' % self.context.displayname
         return Link(target, text, summary)
