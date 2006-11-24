@@ -98,21 +98,25 @@ class IPerson(IHasSpecifications):
             title=_('Karma'), readonly=False,
             description=_('The cached total karma for this person.')
             )
-    homepage_content = Text(title=_("Homepage Content"), required=False,
-        description=_("The content of your home page. Edit this and it "
-        "will be displayed for all the world to see. It is NOT a wiki "
-        "so you cannot undo changes."))
+    homepage_content = Text(
+        title=_("Homepage Content"), required=False,
+        description=_(
+            "The content of your home page. Edit this and it will be "
+            "displayed for all the world to see. It is NOT a wiki so you "
+            "cannot undo changes."))
     emblem = Bytes(
-        title=_("Emblem"), required=False, description=_("A small image, "
-        "max 16x16 pixels and 8k in file size, that can be used to refer "
-        "to this team."),
+        title=_("Emblem"), required=False,
+        description=_(
+            "A small image, max 16x16 pixels and 8k in file size, that can "
+            "be used to refer to this team."),
         constraint=valid_emblem)
-    hackergotchi = Bytes(
-        title=_("Hackergotchi"), required=False, description=_("An image, "
-        "maximum 150x150 pixels, that will be displayed on your home page. "
-        "It should be no bigger than 50k in size. "
-        "Traditionally this is a great big grinning image of your mug. "
-        "Make the most of it."),
+    gotchi = Bytes(
+        title=_("Hackergotchi"), required=False,
+        description=_(
+            "An image, maximum 150x150 pixels, that will be displayed on "
+            "your home page. It should be no bigger than 50k in size. "
+            "Traditionally this is a great big grinning image of your mug. "
+            "Make the most of it."),
         constraint=valid_hackergotchi)
 
     addressline1 = TextLine(

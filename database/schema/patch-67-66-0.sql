@@ -59,4 +59,7 @@ CREATE INDEX sprint__emblem__idx ON Sprint(emblem)
 CREATE INDEX sprint__gotchi__idx ON Sprint(gotchi)
     WHERE gotchi IS NOT NULL;
 
+ALTER TABLE Person RENAME COLUMN hackergotchi TO gotchi;
+-- XXX: need a constraint to not allow people to have emblems
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (67, 66, 0);
