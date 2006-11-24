@@ -124,10 +124,11 @@ Need to update our saved date_status_changed to detect if it changes now.
 
     >>> previous_date_status_changed = entry.date_status_changed
 
-Do the new upload.
+Do the new upload. It will be a published upload.
 
+    >>> published = True
     >>> po_sr_entry = translationimportqueue.addOrUpdateEntry(
-    ...     u'po/sr.po', 'foo', True, rosetta_expert,
+    ...     u'po/sr.po', 'foo', published, rosetta_expert,
     ...      distrorelease=hoary_distrorelease,
     ...      sourcepackagename=evolution_sourcepackagename)
 
@@ -153,11 +154,13 @@ First, we import a new .pot file.
     ...      distrorelease=hoary_distrorelease,
     ...      sourcepackagename=evolution_sourcepackagename)
 
-Change the pofile.path value to prevent that we find it by path in next test.
+Change pofile.path value to a value that will help to prepare next test.
+Basically, we prevent that it's found by its path.
 
     >>> pofile = po_sr_entry.getGuessedPOFile()
-    >>> if pofile is not None:
-    ...     pofile.path = u'po/sr-old.po'
+    >>> pofile.path
+    u'po/sr.po'
+    >>> pofile.path = u'po/sr-old.po'
 
 Reset any pofile/potemplate information we have for the po_sr_entry.
 
@@ -183,8 +186,25 @@ to be imported.
 But if that entry is imported, the guessing algorithm works.
 
     >>> pot_entry.status = RosettaImportStatus.IMPORTED
-    >>> po_sr_entry.getGuessedPOFile() is None
+    >>> guessed_pofile = po_sr_entry.getGuessedPOFile()
+    >>> guessed_pofile is None
     False
+
+We can see that we got the same POFile as before:
+
+    >>> guessed_pofile == pofile
+    True
+
+And because it's a publised upload, the IPOFile in our database got
+its path changed to the one noted by this upload instead of having the one
+we set a couple of lines ago (u'po/sr-old.pot'):
+
+    >>> po_sr_entry.is_published
+    True
+    >>> pofile.path == po_sr_entry.path
+    True
+    >>> pofile.path
+    u'po/sr.po'
 
 getGuessedPOFile with KDE
 -------------------------

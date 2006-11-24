@@ -241,9 +241,9 @@ class IEditTranslationImportQueueEntry(Interface):
 
     potemplatename = Choice(
         title=_("Template Name"),
-        description=_("The name of this PO template, for example "
-            "'evolution-2.2'. Each translation template has a "
-            "unique name in its package."),
+        description=_("The name of this PO template, for example"
+            " 'evolution-2.2'. Each translation template's name"
+            " is unique within its package"),
         required=True,
         vocabulary="POTemplateName")
 
@@ -262,7 +262,7 @@ class IEditTranslationImportQueueEntry(Interface):
     variant = TextLine(
         title=_("Variant"),
         description=_(
-            "Language variant, usually, it's used to note the script used to"
+            "Language variant, usually used to note the script used to"
             " write the translations (like 'Latn' for Latin)"),
         required=False)
 

@@ -114,8 +114,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
         self.field_names = ['sourcepackagename', 'potemplatename', 'path',
                             'language', 'variant']
 
-        if (self.context.productseries is not None and
-            'sourcepackagename' in self.field_names):
+        if self.context.productseries is not None:
             # We are handling an entry for a productseries, this field is not
             # useful here.
             self.field_names.remove('sourcepackagename')
@@ -123,10 +122,8 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
         if self.context.path.endswith('.pot'):
             # It's template file, we don't need to choose the language and
             # variant.
-            if 'language' in self.field_names:
-                self.field_names.remove('language')
-            if 'variant' in self.field_names:
-                self.field_names.remove('variant')
+            self.field_names.remove('language')
+            self.field_names.remove('variant')
 
         # Execute default initialisation.
         LaunchpadFormView.initialize(self)
@@ -199,7 +196,9 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                 # import it as a .pot file, we update the path changing the
                 # file extension from .po to .pot to reflect this fact.
                 self.context.path = '%st' % self.context.path
-            if (self.context.sourcepackagename.id !=
+            if (self.context.sourcepackagename is not None and
+                potemplate.sourcepackagename is not None and
+                self.context.sourcepackagename.id !=
                 potemplate.sourcepackagename.id):
                 # We got the template from a different package than the one
                 # selected by the user where the import should done, so we
@@ -214,7 +213,9 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                 pofile = potemplate.newPOFile(
                     language.code, variant, self.context.importer)
             self.context.pofile = pofile
-            if (self.context.sourcepackagename.id !=
+            if (self.context.sourcepackagename is not None and
+                potemplate.sourcepackagename is not None and
+                self.context.sourcepackagename.id !=
                 pofile.potemplate.sourcepackagename.id):
                 # We got the template from a different package than the one
                 # selected by the user where the import should done, so we
