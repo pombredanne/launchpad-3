@@ -1,4 +1,4 @@
-.XXXdemo {background-color: #fff;} /* turned off for the demo */
+.demo {background-color: #fee;} /* turned off for the demo */
 
 body {
   position: relative;
@@ -197,6 +197,9 @@ hr, #globalheader label {
   padding-top: 10px;
   padding-bottom: 20px;
 }
+#globalfooter.extraspacing {
+  padding-top: 50px;
+}
 #colophon {
   float: left;
   width: 45%;
@@ -348,6 +351,10 @@ ul#applicationchooser {
   background-repeat: no-repeat;
   background-position: top right;
 }
+div#noapplicationchooser {
+  clear: both;
+  margin-bottom: 18px;
+}
 ul#applicationchooser li {
   float: left;
   display: block;
@@ -490,7 +497,7 @@ ul#applicationchooser li#applicationchooser_selected {
   width: 192px;
   overflow: hidden;
   margin: 3px 0px 0px 0px;
-  padding: 4px;
+  padding: 4px 4px 0 4px;
   list-style: none;
 }
 #actions li {
@@ -1082,6 +1089,7 @@ div.bordered {
   padding-top: 1em;
 }
 #application-footer {
+  clear: both;
   text-align: center;
 }
 
@@ -1116,7 +1124,10 @@ div.right div.section {
   border-width: 1px 0 0 1px;
   padding: 0.75em 0 0.75em 0.75em;
 }
-
+div.three.column {width: 33%;}
+div.three.column.left, div.three.column.center, div.three.column.right {
+  float: left;
+}
 
 table {
   border-collapse: collapse;
