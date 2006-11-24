@@ -189,13 +189,15 @@ bugtarget_filebug = ContextTitle('Report a bug about %s')
 
 bugtask_backport_fixing = BugTaskBackportingTitle()
 
-bugtask_confirm_unlinked = LaunchbagBugID('Bug #%d - Request a fix')
+bugtask_choose_affected_product = LaunchbagBugID('Bug #%d - Request a fix')
 
 bugtask_edit = BugTaskPageTitle()
 
 bugtask_index = BugTaskPageTitle()
 
-bugtask_requestfix = bugtask_confirm_unlinked
+bugtask_requestfix = LaunchbagBugID('Bug #%d - Request a fix')
+
+bugtask_requestfix_upstream = LaunchbagBugID('Bug #%d - Request a fix')
 
 bugtask_view = BugTaskPageTitle()
 
@@ -519,6 +521,9 @@ person_edit = ContextDisplayName(smartquote("%s's details"))
 
 person_editemails = ContextDisplayName(smartquote("%s's e-mail addresses"))
 
+person_editlanguages = ContextDisplayName(
+    smartquote("%s's preferred languages"))
+
 person_editpgpkeys = ContextDisplayName(smartquote("%s's OpenPGP keys"))
 
 person_edithomepage = ContextDisplayName(smartquote("%s's home page"))
@@ -715,8 +720,6 @@ root_index = 'Launchpad'
 rosetta_about = 'About Rosetta'
 
 rosetta_index = 'Rosetta'
-
-rosetta_preferences = 'Rosetta: Preferences'
 
 product_branch_add = ContextDisplayName('Register a new %s branch')
 

@@ -270,6 +270,7 @@ class NoneFormatter:
         'nl_to_br',
         'nice_pre',
         'breadcrumbs',
+        'break-long-words',
         'date',
         'time',
         'datetime',
@@ -800,6 +801,10 @@ class FormattersAPI:
         """Quote HTML characters, then replace newlines with <br /> tags."""
         return cgi.escape(self._stringtoformat).replace('\n','<br />\n')
 
+    def break_long_words(self):
+        """Add manual word breaks to long words."""
+        return break_long_words(cgi.escape(self._stringtoformat))
+
     @staticmethod
     def _substitute_matchgroup_for_spaces(match):
         """Return a string made up of '&nbsp;' for each character in the
@@ -1047,6 +1052,8 @@ class FormattersAPI:
     def traverse(self, name, furtherPath):
         if name == 'nl_to_br':
             return self.nl_to_br()
+        elif name == 'break-long-words':
+            return self.break_long_words()
         elif name == 'text-to-html':
             return self.text_to_html()
         elif name == 'nice_pre':

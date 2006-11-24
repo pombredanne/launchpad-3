@@ -85,7 +85,7 @@ class BazaarApplicationNavigation(Navigation):
 
     usedfor = IBazaarApplication
 
-    newlayer = canonical.launchpad.layers.BazaarLayer
+    newlayer = canonical.launchpad.layers.CodeLayer
 
     @stepto('series')
     def series(self):

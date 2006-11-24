@@ -4,7 +4,13 @@ Adding BugTasks
 If a bug occurs in more than one place, you can request a fix in some
 other software. You can request a fix in either a product or a
 distribution. Let's start with a product, this is done using
-+upstreamtask.
++choose-affected-product, where you choose the actual product the bug
+affects. The task gets added later on, on another page,
++add-affected-product. The reason for this split is so that we can
+display contextual information about the product before adding it.
++choose-affected-product uses packaging links to automatically choose
+the right product and redirect to +add-affected-product, so most of the
+time the user will go directly to the latter page.
 
     >>> login('test@canonical.com')
     >>> from zope.component import getView
@@ -22,31 +28,132 @@ the index template.
 
     >>> def get_and_setup_view(context, name, form):
     ...     view = getView(context, name, LaunchpadTestRequest(form=form))
-    ...     view.index = lambda: ''
+    ...     view.index = lambda: u''
+    ...     view.upstream_page = lambda: u''
     ...     return view
     >>> add_task_view = get_and_setup_view(
-    ...     firefox_task, '+upstreamtask', form={})
+    ...     firefox_task, '+choose-affected-product', form={})
 
-We haven't posted the form, so we'll see one button. In order to set
-everything up correctly, we have to call render_upstreamtask().
+We haven't posted the form, so we'll see one button.
 
-    >>> add_task_view.render_upstreamtask()
-    ''
     >>> [action.label for action in add_task_view.actions]
     [u'Continue']
+
+Since we gave the view an upstream product as its context, it can't
+guess which product we want to add, so it didn't redirect us.
+
+    >>> add_task_view.request.response.getHeader('Location') is None
+    True
+
+It also didn't add any notification prompting us to add packaging
+information.
+
+    >>> add_task_view.request.response.notifications
+    []
+
 
 If we POST the form without entering any information, it will complain
 that product is required:
 
     >>> form = {
-    ...     'field.actions.request_fix': '', 'field.product': '',
-    ...     'field.bug_url': ''}
-    >>> add_task_view = get_and_setup_view(firefox_task, '+upstreamtask', form)
-    >>> add_task_view.render_upstreamtask()
-    ''
+    ...     'field.actions.continue': '', 'field.product': ''}
+    >>> add_task_view = get_and_setup_view(
+    ...     firefox_task, '+choose-affected-product', form)
+    >>> add_task_view.initialize()
     >>> add_task_view.getWidgetError('product')
     u'Required input is missing.'
 
+
+If we supply a valid product, it will redirect us to
++add-affected-product.
+
+    >>> form = {
+    ...     'field.actions.continue': '', 'field.product': 'evolution'}
+    >>> add_task_view = get_and_setup_view(
+    ...     firefox_task, '+choose-affected-product', form)
+    >>> add_task_view.initialize()
+    >>> add_task_view.request.response.getHeader('Location')
+    'http://.../+add-affected-product?field.product=evolution'
+
+
+If the validation fails, an error will be displayed.
+
+    >>> form = {
+    ...     'field.actions.continue': '', 'field.product': 'firefox'}
+    >>> add_task_view = get_and_setup_view(
+    ...     firefox_task, '+choose-affected-product', form)
+    >>> add_task_view.initialize()
+    >>> add_task_view.getWidgetError('product')
+    u'A fix for this bug has already been requested for Mozilla Firefox'
+
+
+When adding a product from an upstream task, we always have to choose
+the product manually, since it's hard to guess which product that is
+most likely to get added. Let's take a look how it works for packages,
+which can have packaging links that helps us choose the product.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     CreateBugParams, IDistributionSet)
+    >>> owner = getUtility(ILaunchBag).user
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> ubuntu_firefox = ubuntu.getSourcePackage('mozilla-firefox')
+    >>> create_params = CreateBugParams(
+    ...     owner, "Upstream bug", comment="An upstream bug.")
+    >>> firefox_bug = ubuntu_firefox.createBug(create_params)
+    >>> ubuntu_firefox_task = firefox_bug.bugtasks[0]
+
+
+If we go to +choose-affected-product from the newly created bug task,
+we immediately get directed to +add-affected-product with the correct
+upstream selected.
+
+    >>> add_task_view = get_and_setup_view(
+    ...     ubuntu_firefox_task, '+choose-affected-product', form={})
+    >>> add_task_view.initialize()
+    >>> add_task_view.request.response.getHeader('Location')
+    'http://.../+add-affected-product?field.product=firefox'
+
+If some package doesn't have a packaging link, a product will have to
+be chosen manually, and a notification will be displayed, explaining
+why the product wasn't chosen automatically.
+
+    >>> ubuntu_thunderbird = ubuntu.getSourcePackage('thunderbird')
+    >>> thunderbird_bug = ubuntu_thunderbird.createBug(create_params)
+    >>> ubuntu_thunderbird_task = thunderbird_bug.bugtasks[0]
+
+    >>> add_task_view = get_and_setup_view(
+    ...     ubuntu_thunderbird_task, '+choose-affected-product', form={})
+    >>> add_task_view.initialize()
+    >>> add_task_view.request.response.getHeader('Location') is None
+    True
+
+    >>> len(add_task_view.request.response.notifications)
+    1
+    >>> for notification in add_task_view.request.response.notifications:
+    ...     print notification.message
+    Please select the appropriate upstream product. This step...
+
+Sometimes the distribution won't have any release, though. In that
+case, we won't prompt the user to add a link, since he can't actually
+add one.
+
+    >>> gentoo = getUtility(IDistributionSet).getByName('gentoo')
+    >>> gentoo.currentrelease is None
+    True
+    >>> gentoo_thunderbird = gentoo.getSourcePackage('thunderbird')
+    >>> thunderbird_bug = gentoo_thunderbird.createBug(create_params)
+    >>> gentoo_thunderbird_task = thunderbird_bug.bugtasks[0]
+
+    >>> add_task_view = get_and_setup_view(
+    ...     gentoo_thunderbird_task, '+choose-affected-product', form={})
+    >>> add_task_view.initialize()
+    >>> add_task_view.request.response.getHeader('Location') is None
+    True
+
+    >>> len(add_task_view.request.response.notifications)
+    0
+
+Let's take a look at the page that add the task, +add-affected-product.
 In order to show that all the events get fired off, let's create an
 event listener and register it:
 
@@ -61,19 +168,48 @@ event listener and register it:
     ...     Interface, ISQLObjectCreatedEvent, on_created_event)
 
 
+If an invalid product is specified, or a product that fails the
+validation (for example, a bugtask for that product already exists),
+the user will be redirect to the choose product page, which will
+display the error message.
+
+    >>> form = {'field.product': 'no-such-product'}
+    >>> add_task_view = get_and_setup_view(
+    ...     firefox_task, '+add-affected-product', form)
+    >>> add_task_view.render_upstreamtask()
+    u''
+    >>> add_task_view.request.response.getHeader('Location')
+    'http://.../+choose-affected-product?field.product=no-such-product'
+
+    >>> form = {'field.product': 'firefox'}
+    >>> add_task_view = get_and_setup_view(
+    ...     firefox_task, '+add-affected-product', form)
+    >>> add_task_view.render_upstreamtask()
+    u''
+    >>> add_task_view.request.response.getHeader('Location')
+    'http://.../+choose-affected-product?field.product=firefox'
+
 If we specify a valid product, no errors will occur, and a bugtask will
 be created:
 
-    >>> form['field.product'] = u'evolution'
-    >>> add_task_view = get_and_setup_view(firefox_task, '+upstreamtask', form)
+    >>> form = {
+    ...     'field.actions.request_fix': '', 'field.product': 'evolution'}
+    >>> add_task_view = get_and_setup_view(
+    ...     firefox_task, '+add-affected-product', form)
     >>> add_task_view.render_upstreamtask()
     SQLObjectCreatedEvent: <BugTask at ...>
-    ''
+    u''
 
     >>> for bugtask in bug_four.bugtasks:
     ...     print bugtask.targetname
     evolution (upstream)
     firefox (upstream)
+
+The button includes the product name.
+
+    >>> for action in add_task_view.actions:
+    ...     print action.label
+    Indicate bug in Evolution
 
 This worked without any problems since Evolution does use Malone as its
 offical bug tracker.
@@ -86,12 +222,10 @@ If we try to add a task for ALSA, which doesn't use Malone, it won't go
 as smoothly as above.
 
     >>> form['field.product'] = u'alsa-utils'
-    >>> request = LaunchpadTestRequest(
-    ...     form={'FORM_SUBMIT': '', 'field.product': 'alsa-utils',
-    ...           'field.bug_url': ''})
-    >>> add_task_view = get_and_setup_view(firefox_task, '+upstreamtask', form)
+    >>> add_task_view = get_and_setup_view(
+    ...     firefox_task, '+add-affected-product', form)
     >>> add_task_view.render_upstreamtask()
-    ''
+    u''
 
     >>> for bugtask in bug_four.bugtasks:
     ...     print bugtask.targetname
@@ -115,10 +249,11 @@ If the user confirms, a bugtask will be added to the bug.
 
     >>> del form['field.actions.request_fix']
     >>> form['field.actions.confirm'] = u''
-    >>> add_task_view = get_and_setup_view(firefox_task, '+upstreamtask', form)
+    >>> add_task_view = get_and_setup_view(
+    ...     firefox_task, '+add-affected-product', form)
     >>> add_task_view.render_upstreamtask()
     SQLObjectCreatedEvent: <BugTask at ...>
-    ''
+    u''
     >>> add_task_view._confirm_new_task
     False
     >>> add_task_view.next_url is not None
@@ -145,12 +280,13 @@ On the same form, we can add a bug watch, by specifying the remote bug
 URL. If we don't enter a valid URL, we get an error message.
 
     >>> del form['field.actions.confirm']
-    >>> form['field.product'] = u'alsa-utils'
+    >>> form['field.product'] = u'gnome-terminal'
     >>> form['field.actions.request_fix'] = u''
     >>> form['field.bug_url'] = u'not-a-url'
-    >>> add_task_view = get_and_setup_view(firefox_task, '+upstreamtask', form)
+    >>> add_task_view = get_and_setup_view(
+    ...     firefox_task, '+add-affected-product', form)
     >>> add_task_view.render_upstreamtask()
-    ''
+    u''
     >>> print add_task_view.getWidgetError('bug_url')
     Launchpad doesn't know what kind of bug tracker this URL is pointing at.
 
@@ -163,13 +299,15 @@ that got added earlier are now gone:
 If we specify a valid URL, both the task and the bug watch will be added
 without any confirmation needee:
 
+    >>> form['field.product'] = u'alsa-utils'
     >>> form['field.bug_url'] = (
     ...     u'http://bugzilla.gnome.org/bugs/show_bug.cgi?id=84')
-    >>> add_task_view = get_and_setup_view(firefox_task, '+upstreamtask', form)
+    >>> add_task_view = get_and_setup_view(
+    ...     firefox_task, '+add-affected-product', form)
     >>> add_task_view.render_upstreamtask()
     SQLObjectCreatedEvent: <BugWatch at ...>
     SQLObjectCreatedEvent: <BugTask at ...>
-    ''
+    u''
 
     >>> add_task_view._confirm_new_task
     False
@@ -201,31 +339,16 @@ the bug watch's status later.
     'Unknown'
 
 
-If we try to add a bug watch together with a product which does use
-Malone, an error will occur.
-
-    >>> form['field.product'] = u'evolution'
-    >>> form['field.bugtracker'] = u'1'
-    >>> form['field.bug_url'] = (
-    ...     u'http://bugzilla.gnome.org/bugs/show_bug.cgi?id=168')
-    >>> add_task_view = get_and_setup_view(firefox_task, '+upstreamtask', form)
-    >>> add_task_view.render_upstreamtask()
-    ''
-    >>> add_task_view.form_wide_errors
-    [u'Bug watches can not be added for Evolution, as it uses Malone as
-       its official bug tracker. Alternatives are to add a watch for
-       another product, or a comment containing a URL to the related bug
-       report.']
-
 There's a method for easily retrieving the target display name for use
 on the confirmation page. If we request a fix in an upstream product,
 its display name is returned:
 
     >>> form['field.bug_url'] = u''
     >>> form['field.product'] = u'alsa-utils'
-    >>> add_task_view = get_and_setup_view(firefox_task, '+upstreamtask', form)
+    >>> add_task_view = get_and_setup_view(
+    ...     firefox_task, '+add-affected-product', form)
     >>> add_task_view.render_upstreamtask()
-    ''
+    u''
     >>> add_task_view.getBugTargetName()
     u'alsa-utils'
 
@@ -237,7 +360,7 @@ name is returned.
     >>> form['field.sourcepackagename'] = u'evolution'
     >>> add_task_view = get_and_setup_view(firefox_task, '+distrotask', form)
     >>> add_task_view.render_distrotask()
-    ''
+    u''
     >>> add_task_view.getBugTargetName()
     u'Debian'
 

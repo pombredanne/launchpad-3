@@ -19,6 +19,7 @@ from canonical.launchpad.webapp.publisher import (
     )
 from canonical.launchpad.webapp.uri import InvalidURIError, URI
 from canonical.config import config
+from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 class structured:
@@ -178,11 +179,9 @@ class MenuBase(UserAttributeCache):
 
     def _rootUrlForSite(self, site):
         """Return the root URL for the given site."""
-        if site == 'launchpad':
-            return URI(config.launchpad.root_url)
-        elif site == 'blueprint':
-            return URI(config.launchpad.blueprint_root_url)
-        else:
+        try:
+            return URI(allvhosts.configs[site].rooturl)
+        except KeyError:
             raise AssertionError('unknown site', site)
 
     def iterlinks(self, requesturi=None):
