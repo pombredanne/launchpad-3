@@ -44,7 +44,7 @@ class TranslationImportQueueEntryNavigation(GetitemNavigation):
 class TranslationImportQueueEntryURL:
     implements(ICanonicalUrlData)
 
-    rootsite = 'launchpad'
+    rootsite = 'mainsite'
 
     def __init__(self, context):
         self.context = context

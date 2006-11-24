@@ -19,7 +19,7 @@ import rfc822
 
 from canonical import encoding
 
-from canonical.archivepublisher.diskpool import Poolifier
+from canonical.archivepublisher.diskpool import poolify
 from canonical.launchpad.scripts.gina.changelog import parse_changelog
 
 from canonical.database.constants import nowUTC
@@ -30,9 +30,6 @@ from canonical.launchpad.scripts import log
 from canonical.launchpad.scripts.gina import call
 
 from canonical.launchpad.validators.version import valid_debian_version
-
-# Stash a reference to the poolifier method
-poolify = Poolifier().poolify
 
 # Keep a licence_cache around to avoid needing to unpack the source
 # twice.
