@@ -13,6 +13,7 @@ import math
 import os.path
 import re
 import rfc822
+from xml.sax.saxutils import unescape as xml_unescape
 
 from zope.interface import Interface, Attribute, implements
 from zope.component import getUtility, queryAdapter
@@ -837,10 +838,10 @@ class FormattersAPI:
             title = cgi.escape(title, quote=True)
             return '<a href="%s" title="%s">%s</a>' % (url, title, text)
         elif match.group('url') is not None:
-            # The text will already have been cgi escaped.
-            # We still need to escape quotes for the url.
-            url = match.group('url')
-            # Search for punctuation to strip off the end of the URL
+            # The text will already have been cgi escaped.  We temporarily
+            # unescape it so that we can strip common trailing characters
+            # that aren't part of the URL.
+            url = xml_unescape(match.group('url'))
             match = FormattersAPI._re_url_trailers.search(url)
             if match:
                 trailers = match.group(1)
@@ -848,8 +849,9 @@ class FormattersAPI:
             else:
                 trailers = ''
             return '<a rel="nofollow" href="%s">%s</a>%s' % (
-                url.replace('"', '&quot;'), add_word_breaks(url),
-                trailers)
+                cgi.escape(url, quote=True),
+                add_word_breaks(cgi.escape(url)),
+                cgi.escape(trailers))
         elif match.group('oops') is not None:
             text = match.group('oops')
 
@@ -974,7 +976,7 @@ class FormattersAPI:
 
     # a pattern to match common trailing punctuation for URLs that we
     # don't want to include in the link.
-    _re_url_trailers = re.compile(r'((?:[,\.\?:\);]|&gt;)+)$')
+    _re_url_trailers = re.compile(r'([,.?:);>]+)$')
 
     def text_to_html(self):
         """Quote text according to DisplayingParagraphsOfText."""
