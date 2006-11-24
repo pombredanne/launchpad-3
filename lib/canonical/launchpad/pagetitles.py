@@ -191,13 +191,15 @@ bugtarget_advanced_search = ContextTitle("Search bugs in %s")
 
 bugtarget_filebug = ContextTitle('Report a bug about %s')
 
-bugtask_confirm_unlinked = LaunchbagBugID('Bug #%d - Request a fix')
+bugtask_choose_affected_product = LaunchbagBugID('Bug #%d - Request a fix')
 
 bugtask_edit = BugTaskPageTitle()
 
 bugtask_index = BugTaskPageTitle()
 
-bugtask_requestfix = bugtask_confirm_unlinked
+bugtask_requestfix = LaunchbagBugID('Bug #%d - Request a fix')
+
+bugtask_requestfix_upstream = LaunchbagBugID('Bug #%d - Request a fix')
 
 bugtask_view = BugTaskPageTitle()
 
@@ -379,15 +381,17 @@ errorservice_tbentry = 'Traceback entry'
 
 faq = 'Launchpad Frequently Asked Questions'
 
-foaf_adminrequestmerge = 'Merge Launchpad accounts'
+people_adminrequestmerge = 'Merge Launchpad accounts'
 
-foaf_mergerequest_sent = 'Merge request sent'
+people_mergerequest_sent = 'Merge request sent'
 
-foaf_newteam = 'Register a new team in Launchpad'
+people_newperson = 'Create a new Launchpad profile'
 
-foaf_requestmerge_multiple = 'Merge Launchpad accounts'
+people_newteam = 'Register a new team in Launchpad'
 
-foaf_requestmerge = 'Merge Launchpad accounts'
+people_requestmerge_multiple = 'Merge Launchpad accounts'
+
+people_requestmerge = 'Merge Launchpad accounts'
 
 karmaaction_index = 'Karma actions'
 
@@ -520,6 +524,9 @@ person_codesofconduct = ContextDisplayName(smartquote("%s's code of conduct sign
 person_edit = ContextDisplayName(smartquote("%s's details"))
 
 person_editemails = ContextDisplayName(smartquote("%s's e-mail addresses"))
+
+person_editlanguages = ContextDisplayName(
+    smartquote("%s's preferred languages"))
 
 person_editpgpkeys = ContextDisplayName(smartquote("%s's OpenPGP keys"))
 
@@ -717,8 +724,6 @@ root_index = 'Launchpad'
 rosetta_about = 'About Rosetta'
 
 rosetta_index = 'Rosetta'
-
-rosetta_preferences = 'Rosetta: Preferences'
 
 product_branch_add = ContextDisplayName('Register a new %s branch')
 

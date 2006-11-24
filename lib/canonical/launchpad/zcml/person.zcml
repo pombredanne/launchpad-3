@@ -74,6 +74,14 @@
       template="../templates/person-changepassword.pt">
   </browser:page>
 
+  <browser:page
+      name="+editlanguages"
+      for="canonical.launchpad.interfaces.IPerson"
+      class="canonical.launchpad.browser.PersonLanguagesView"
+      permission="launchpad.Edit"
+      template="../templates/person-editlanguages.pt">
+  </browser:page>
+
   <browser:editform
       name="+edit"
       for="canonical.launchpad.interfaces.IPerson"
@@ -146,11 +154,6 @@
           template="../templates/person-karma.pt"
           lp:url="/people/$Person.name/+karma" />
       <browser:page
-          name="+translations"
-          facet="translations"
-          template="../templates/person-translations.pt"
-          lp:url="/people/$Person.name/+translations" />
-      <browser:page
           name="+sshkeys"
           attribute="showSSHKeys"
           lp:url="/people/$Person.name/+sshkeys" />
@@ -185,6 +188,14 @@
     class="canonical.launchpad.browser.PersonSpecWorkLoadView"
     template="../templates/person-table-specworkload.pt"
     lp:url="/people/$Person.name/+table-specworkload" />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    name="+translations"
+    facet="translations"
+    class="canonical.launchpad.browser.PersonTranslationView"
+    permission="zope.Public"
+    template="../templates/person-translations.pt" />
 
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
@@ -529,6 +540,13 @@
       classes="PersonSetNavigation"
       />
 
+  <browser:page
+      name="+newperson"
+      for="canonical.launchpad.interfaces.IPersonSet"
+      class="canonical.launchpad.browser.PersonAddView"
+      permission="launchpad.Admin"
+      template="../templates/people-newperson.pt" />
+
   <browser:addform
       name="+newteam"
       for="canonical.launchpad.interfaces.IPersonSet"
@@ -537,7 +555,7 @@
               defaultmembershipperiod defaultrenewalperiod subscriptionpolicy"
       class="canonical.launchpad.browser.TeamAddView"
       permission="launchpad.AnyPerson"
-      template="../templates/foaf-newteam.pt"
+      template="../templates/people-newteam.pt"
       lp:url="/people/+newteam">
       <browser:widget
           field="teamdescription"
@@ -596,7 +614,7 @@
       fields="dupeaccount"
       class="canonical.launchpad.browser.RequestPeopleMergeView"
       permission="launchpad.AnyPerson"
-      template="../templates/foaf-requestmerge.pt"
+      template="../templates/people-requestmerge.pt"
       lp:url="/people/+requestmerge">
   </browser:addform>
 
@@ -606,7 +624,7 @@
       class="canonical.launchpad.browser.AdminRequestPeopleMergeView">
       <browser:page
           name="+adminrequestmerge"
-          template="../templates/foaf-adminrequestmerge.pt"
+          template="../templates/people-adminrequestmerge.pt"
           lp:url="/people/+adminrequestmerge" />
   </browser:pages>
 
@@ -616,7 +634,7 @@
       class="canonical.launchpad.browser.RequestPeopleMergeMultipleEmailsView">
       <browser:page
           name="+requestmerge-multiple"
-          template="../templates/foaf-requestmerge-multiple.pt"
+          template="../templates/people-requestmerge-multiple.pt"
           lp:url="/people/+requestmerge-multiple" />
   </browser:pages>
 
@@ -626,7 +644,7 @@
       class="canonical.launchpad.browser.FinishedPeopleMergeRequestView">
       <browser:page
           name="+mergerequest-sent"
-          template="../templates/foaf-mergerequest-sent.pt"
+          template="../templates/people-mergerequest-sent.pt"
           lp:url="/people/+mergerequest-sent" />
   </browser:pages>
 

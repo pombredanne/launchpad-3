@@ -15,7 +15,8 @@ __all__ = [
     'valid_cve_sequence',
     'valid_emblem',
     'valid_hackergotchi',
-    'valid_unregistered_email',
+    'validate_new_team_email',
+    'validate_new_person_email',
     'validate_distribution_mirror_schema',
     'validate_shipit_recipientdisplayname',
     'validate_shipit_phone',
@@ -365,24 +366,48 @@ def valid_emblem(emblem):
 def valid_hackergotchi(hackergotchi):
     return _valid_image(hackergotchi, 54000, (150,150))
 
-# XXX: matsubara 2005-12-08 This validator shouldn't be used in an editform,
-# because editing an already registered e-mail would fail if this constraint
-# is used.
-def valid_unregistered_email(email):
-    """Check that the given email is valid and that isn't registered to
-    another user."""
 
-    from canonical.launchpad.interfaces import IEmailAddressSet
-    if valid_email(email):
-        emailset = getUtility(IEmailAddressSet)
-        if emailset.getByEmail(email) is not None:
-            raise LaunchpadValidationError(_(dedent("""
-                %s is already taken.""" % email)))
-        else:
-            return True
-    else:
+def _validate_email(email):
+    if not valid_email(email):
         raise LaunchpadValidationError(_(dedent("""
             %s isn't a valid email address.""" % email)))
+
+
+def validate_new_team_email(email):
+    """Check that the given email is valid and not registered to
+    another launchpad account.
+    """
+    from canonical.launchpad.webapp import canonical_url
+    from canonical.launchpad.interfaces import IEmailAddressSet
+    _validate_email(email)
+    email = getUtility(IEmailAddressSet).getByEmail(email)
+    if email is not None:
+        raise LaunchpadValidationError(_(
+            '%s is already registered in Launchpad and is associated with '
+            '<a href="%s">%s</a>.'), email.email,
+            canonical_url(email.person), email.person.browsername)
+    return True
+
+
+def validate_new_person_email(email):
+    """Check that the given email is valid and not registered to
+    another launchpad account.
+    
+    This validator is supposed to be used only when creating a new profile
+    using the /people/+newperson page, as the message will say clearly to the
+    user that the profile he's trying to create already exists, so there's no
+    need to create another one.
+    """
+    from canonical.launchpad.webapp import canonical_url
+    from canonical.launchpad.interfaces import IPersonSet
+    _validate_email(email)
+    owner = getUtility(IPersonSet).getByEmail(email)
+    if owner is not None:
+        raise LaunchpadValidationError(_(
+            "The profile you're trying to create already exists: "
+            '<a href="%s">%s</a>.'), canonical_url(owner), owner.browsername)
+    return True
+
 
 def validate_distribution_mirror_schema(form_values):
     """Perform schema validation according to IDistributionMirror constraints.
