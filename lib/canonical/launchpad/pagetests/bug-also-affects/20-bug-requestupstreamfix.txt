@@ -82,10 +82,39 @@ We get a nice error message.
   >>> 'Required input is missing' in user_browser.contents
   True
 
+If we enter a product that doesn't exist, we also get a nice error
+message.
+
+    >>> user_browser.getControl('Product').value = 'no-such-product'
+    >>> user_browser.getControl('Continue').click()
+    >>> user_browser.url
+    'http://launchpad.dev/distros/debian/+source/mozilla-firefox/+bug/3/+choose-affected-product'
+    >>> for message_tag in find_tags_by_class(user_browser.contents, 'message'):
+    ...     print message_tag.renderContents()
+    There is 1 error.
+    There is no product in Launchpad named "no-such-product". If it
+    should be here, <a href="...">please register it</a>.
+
+If we follow the link we get to the page where we can register a new
+product.
+
+    >>> user_browser.getLink('please register it').click()
+    >>> user_browser.title
+    'Register a product in the Launchpad'
+
+The name is already pre-filled with the value the user provided.
+
+    >>> import re
+    >>> user_browser.getControl(name='field.name').value
+    'no-such-product'
+
 Now we add an upstream task, while adding this new bugtask we can also
 specify a bug watch. If we inadvertently left some leading or trailing white
 space in the bug URL it will be stripped.
 
+  >>> user_browser.open(
+  ...     'http://launchpad.dev/distros/debian/+source/mozilla-firefox/'
+  ...     '+bug/3/+choose-affected-product')
   >>> user_browser.getControl('Product').value = 'alsa-utils'
   >>> user_browser.getControl('Continue').click()
 

@@ -34,9 +34,9 @@ from zope.security.interfaces import Unauthorized
 from canonical.launchpad.interfaces import (
     IAddBugTaskForm, IBug, IBugSet, IBugTaskSet, IBugWatchSet,
     ICanonicalUrlData, IDistributionSourcePackage, IDistroBugTask,
-    IDistroReleaseBugTask, ILaunchBag, ILaunchpadCelebrities, IUpstreamBugTask,
-    NoBugTrackerFound, NotFoundError, UnrecognizedBugTrackerURL,
-    valid_distrotask, valid_upstreamtask)
+    IDistroReleaseBugTask, ILaunchBag, ILaunchpadCelebrities, IProductSet,
+    IUpstreamBugTask, NoBugTrackerFound, NotFoundError,
+    UnrecognizedBugTrackerURL, valid_distrotask, valid_upstreamtask)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import check_permission
@@ -358,6 +358,21 @@ class ChooseAffectedProductView(LaunchpadFormView, BugAlsoReportInBaseView):
     def validate(self, data):
         if data.get('product'):
             self.validateProduct(data['product'])
+        else:
+            # If the user entered a product, provide a more useful error
+            # message than "Invalid value".
+            entered_product = self.request.form.get(
+                self.widgets['product'].name)
+            if entered_product:
+                new_product_url = "%s/+new?field.name=%s" % (
+                    canonical_url(getUtility(IProductSet)),
+                    urllib.quote(entered_product.encode('utf-8')))
+                self.setFieldError(
+                    'product',
+                    'There is no product in Launchpad named "%s". If it'
+                    ' should be here, <a href="%s">please register it</a>.' % (
+                        cgi.escape(entered_product),
+                        cgi.escape(new_product_url, quote=True)))
 
     @action(u'Continue', name='continue')
     def continue_action(self, action, data):
