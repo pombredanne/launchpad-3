@@ -498,7 +498,7 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
                     ' be here, <a href="%s">report this as a bug</a>.' % (
                         cgi.escape(distribution.displayname),
                         cgi.escape(entered_package),
-                        cgi.escape(filebug_url)))
+                        cgi.escape(filebug_url, quote=True)))
             else:
                 try:
                     valid_distrotask(
