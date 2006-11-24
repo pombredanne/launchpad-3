@@ -74,6 +74,14 @@
       template="../templates/person-changepassword.pt">
   </browser:page>
 
+  <browser:page
+      name="+editlanguages"
+      for="canonical.launchpad.interfaces.IPerson"
+      class="canonical.launchpad.browser.PersonLanguagesView"
+      permission="launchpad.Edit"
+      template="../templates/person-editlanguages.pt">
+  </browser:page>
+
   <browser:editform
       name="+edit"
       for="canonical.launchpad.interfaces.IPerson"
