@@ -19,7 +19,7 @@ from sqlobject import SQLObjectNotFound
 import canonical
 from canonical.config import config
 from canonical.lp.dbschema import PackagePublishingPocket
-from canonical.launchpad.webapp.url import Url
+from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.database import DistributionMirror, DistroRelease
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
@@ -369,9 +369,9 @@ class TestProbeFunctionSemaphores(LaunchpadZopelessTestCase):
         probe_archive_mirror.
         """
         host_semaphores = {}
-        mirror1_host = Url(mirror1.base_url).hostname
-        mirror2_host = Url(mirror2.base_url).hostname
-        mirror3_host = Url(mirror3.base_url).hostname
+        mirror1_host = URI(mirror1.base_url).host
+        mirror2_host = URI(mirror2.base_url).host
+        mirror3_host = URI(mirror3.base_url).host
 
         probe_function(
             mirror1, StringIO(), [], logging, host_semaphores=host_semaphores)
