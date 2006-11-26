@@ -10,8 +10,61 @@ __all__ = [
     'possible_uri_re']
 
 import re
-import socket
 
+
+# Default port numbers for different URI schemes
+# The registered URI schemes comes from
+#    http://www.iana.org/assignments/uri-schemes.html
+# The default ports come from the relevant RFCs
+
+_default_port = {
+    # Official schemes
+    'acap': '674',
+    'dav': '80',
+    'dict': '2628',
+    'dns': '53',
+    'ftp': '21',
+    'go': '1096',
+    'gopher': '70',
+    'h323': '1720',
+    'http': '80',
+    'https': '443',
+    'imap': '143',
+    'ipp': '631',
+    'iris.beep': '702',
+    'ldap': '389',
+    'mtqp': '1038',
+    'mupdate': '3905',
+    'nfs': '2049',
+    'nntp': '119',
+    'pop': '110',
+    'rtsp': '554',
+    'sip': '5060',
+    'sips': '5061',
+    'snmp': '161',
+    'soap.beep': '605',
+    'soap.beeps': '605',
+    'telnet': '23',
+    'tftp': '69',
+    'tip': '3372',
+    'vemmi': '575',
+    'xmlrpc.beep': '602',
+    'xmlrpc.beeps': '602',
+    'z39.50r': '210',
+    'z39.50s': '210',
+
+    # Historical schemes
+    'prospero': '1525',
+    'wais': '210',
+
+    # Common but unregistered schemes
+    'bzr+ssh': '22',
+    'irc': '6667',
+    'sftp': '22',
+    'ssh': '22',
+    'svn': '3690',
+    'svn+ssh': '22',
+    }    
 
 # Regular expressions adapted from the ABNF in the RFC
 
@@ -199,13 +252,8 @@ class URI:
         if self.port == '':
             self.port = None
         elif self.port is not None:
-            try:
-                defaultport = socket.getservbyname(self.scheme)
-            except socket.error:
-                defaultport = None
-            if self.port == str(defaultport):
+            if self.port == _default_port.get(self.scheme):
                 self.port = None
-
         if self.host is not None and self.path == '':
             self.path = '/'
         self.path = normalise_unreserved(remove_dot_segments(self.path))
