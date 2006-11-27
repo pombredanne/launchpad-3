@@ -68,7 +68,7 @@
 
     <p>If you would like to install the newest version of
     <span tal:replace="flavour_name">Ubuntu</span> you should instead choose
-    one of the options below.</p>
+    the first of the options below.</p>
     
     <div id="chooseLinks">
       <div>

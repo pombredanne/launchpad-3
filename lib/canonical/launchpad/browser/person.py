@@ -43,6 +43,9 @@ __all__ = [
     'ObjectReassignmentView',
     'TeamReassignmentView',
     'RedirectToAssignedBugsView',
+    'PersonAddView',
+    'PersonLanguagesView',
+    'RedirectToEditLanguagesView',
     'PersonLatestTicketsView',
     'PersonSearchTicketsView',
     'PersonSupportMenu',
@@ -51,7 +54,6 @@ __all__ = [
     'SearchCommentedTicketsView',
     'SearchCreatedTicketsView',
     'SearchSubscribedTicketsView',
-    'PersonLanguagesView',
     ]
 
 import cgi
@@ -59,6 +61,7 @@ import urllib
 from StringIO import StringIO
 
 from zope.event import notify
+from zope.app.form.browser import TextAreaWidget
 from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
 from zope.app.content_types import guess_content_type
@@ -72,7 +75,8 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
-    TeamSubscriptionPolicy, SpecificationFilter, TicketParticipation)
+    TeamSubscriptionPolicy, SpecificationFilter, TicketParticipation,
+    PersonCreationRationale)
 
 from canonical.widgets import PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
@@ -86,7 +90,7 @@ from canonical.launchpad.interfaces import (
     IAdminRequestPeopleMerge, NotFoundError, UNRESOLVED_BUGTASK_STATUSES,
     IPersonChangePassword, GPGKeyNotFoundError, UnexpectedFormData,
     ILanguageSet, IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet,
-    ILaunchpadRoot)
+    ILaunchpadRoot, INewPerson)
 
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.specificationtarget import (
@@ -653,6 +657,30 @@ class FOAFSearchView:
         return BatchNavigator(results, self.request)
 
 
+class PersonAddView(LaunchpadFormView):
+    """The page where users can create new Launchpad profiles."""
+
+    label = "Create a new Launchpad profile"
+    schema = INewPerson
+    custom_widget('creation_comment', TextAreaWidget, height=5, width=60)
+
+    @action(_("Create Profile"), name="create")
+    def create_action(self, action, data):
+        emailaddress = data['emailaddress']
+        displayname = data['displayname']
+        creation_comment = data['creation_comment']
+        person, email = getUtility(IPersonSet).createPersonAndEmail(
+            emailaddress, PersonCreationRationale.USER_CREATED,
+            displayname=displayname, comment=creation_comment,
+            registrant=self.user)
+        self.next_url = canonical_url(person)
+        logintokenset = getUtility(ILoginTokenSet)
+        token = logintokenset.new(
+            requester=self.user, requesteremail=self.user.preferredemail.email,
+            email=emailaddress, tokentype=LoginTokenType.NEWPROFILE)
+        token.sendProfileCreatedEmail(person, creation_comment)
+
+
 class PersonClaimView(LaunchpadFormView):
     """The page where a user can claim an unvalidated profile."""
 
@@ -716,6 +744,21 @@ class PersonClaimView(LaunchpadFormView):
             "An email message was sent to '%(email)s'. Follow the "
             "instructions in that message to finish claiming this "
             "profile."), email=email)
+
+
+class RedirectToEditLanguagesView(LaunchpadView):
+    """Redirect the logged in user to his +editlanguages page.
+
+    This view should always be registered with a launchpad.AnyPerson
+    permission, to make sure the user is logged in. It exists so that
+    we can keep the /rosetta/prefs link working and also provide a link
+    for non logged in users that will require them to login and them send
+    them straight to the page they want to go.
+    """
+    
+    def initialize(self):
+        self.request.response.redirect(
+            '%s/+editlanguages' % canonical_url(self.user))
 
 
 class PersonRdfView:
@@ -2501,6 +2544,7 @@ class SearchSubscribedTicketsView(SearchTicketsView):
         return _('No support requests subscribed to by $name found with the '
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
+
 
 class PersonSupportMenu(ApplicationMenu):
 
