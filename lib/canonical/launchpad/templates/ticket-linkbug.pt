@@ -25,7 +25,7 @@
     <div metal:fill-slot="extra_info">
       <p i18n:translate="">Enter the number or nickname of the Malone bug report
         that should be linked to ticket #<tal:id i18n:name="id" replace="context/id" />
-        &quote;<tal:title i18n:name="title" replace="context/title"/>&quote;.
+        &ldquo;<tal:title i18n:name="title" replace="context/title"/>&rdquo;.
       </p>
 
       <p i18n:translate="">If you don't know the bug number, you can search for it

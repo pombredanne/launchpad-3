@@ -121,6 +121,8 @@ class Person(SQLBase):
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     creation_rationale = EnumCol(schema=PersonCreationRationale, default=None)
     creation_comment = StringCol(default=None)
+    registrant = ForeignKey(
+        dbName='registrant', foreignKey='Person', default=None)
     hide_email_addresses = BoolCol(notNull=True, default=False)
 
     # SQLRelatedJoin gives us also an addLanguage and removeLanguage for free
@@ -1106,7 +1108,7 @@ class PersonSet:
     def createPersonAndEmail(
             self, email, rationale, comment=None, name=None,
             displayname=None, password=None, passwordEncrypted=False,
-            hide_email_addresses=False):
+            hide_email_addresses=False, registrant=None):
         """See IPersonSet."""
         if name is None:
             try:
@@ -1124,13 +1126,13 @@ class PersonSet:
             displayname = name.capitalize()
         person = self._newPerson(
             name, displayname, hide_email_addresses, rationale=rationale,
-            comment=comment, password=password)
+            comment=comment, password=password, registrant=registrant)
 
         email = getUtility(IEmailAddressSet).new(email, person)
         return person, email
 
     def _newPerson(self, name, displayname, hide_email_addresses,
-                   rationale, comment=None, password=None):
+                   rationale, comment=None, password=None, registrant=None):
         """Create and return a new Person with the given attributes.
 
         Also generate a wikiname for this person that's not yet used in the
@@ -1140,7 +1142,7 @@ class PersonSet:
         person = Person(
             name=name, displayname=displayname, password=password,
             creation_rationale=rationale, creation_comment=comment,
-            hide_email_addresses=hide_email_addresses)
+            hide_email_addresses=hide_email_addresses, registrant=registrant)
 
         wikinameset = getUtility(IWikiNameSet)
         wikiname = nickname.generate_wikiname(
@@ -1148,13 +1150,15 @@ class PersonSet:
         wikinameset.new(person, UBUNTU_WIKI_URL, wikiname)
         return person
 
-    def ensurePerson(self, email, displayname, rationale, comment=None):
+    def ensurePerson(self, email, displayname, rationale, comment=None,
+                     registrant=None):
         """See IPersonSet."""
         person = self.getByEmail(email)
         if person:
             return person
         person, dummy = self.createPersonAndEmail(
-            email, rationale, comment=comment, displayname=displayname)
+            email, rationale, comment=comment, displayname=displayname,
+            registrant=registrant)
         return person
 
     def getByName(self, name, ignore_merged=True):

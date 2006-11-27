@@ -15,6 +15,7 @@ __all__ = [
     'ITeamCreation',
     'IPersonChangePassword',
     'IPersonClaim',
+    'INewPerson',
     ]
 
 
@@ -32,7 +33,8 @@ from canonical.launchpad.interfaces.specificationtarget import (
 from canonical.launchpad.interfaces.tickettarget import (
     TICKET_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.validation import (
-    valid_emblem, valid_hackergotchi, valid_unregistered_email)
+    valid_emblem, valid_hackergotchi, validate_new_team_email,
+    validate_new_person_email)
 
 from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, TeamMembershipStatus, PersonCreationRationale)
@@ -68,6 +70,18 @@ class IPersonClaim(Interface):
     """The schema used by IPerson's +claim form."""
 
     emailaddress = TextLine(title=_('Email address'), required=True)
+
+
+class INewPerson(Interface):
+    """The schema used by IPersonSet's +newperson form."""
+
+    emailaddress = StrippedTextLine(
+        title=_('Email address'), required=True,
+        constraint=validate_new_person_email)
+    displayname = StrippedTextLine(title=_('Display name'), required=True)
+    creation_comment = Text(
+        title=_('Creation reason'), required=True,
+        description=_("The reason why you're creating this profile."))
 
 
 class IPerson(IHasSpecifications):
@@ -168,8 +182,14 @@ class IPerson(IHasSpecifications):
             "This comment may be displayed verbatim in a web page, so it "
             "has to follow some structural constraints, that is, it must "
             "be of the form: 'when %(action_details)s' (e.g 'when the "
-            "foo package was imported into Ubuntu Breezy')."),
+            "foo package was imported into Ubuntu Breezy'). The only "
+            "exception to this is when we allow users to create Launchpad "
+            "profiles through the /people/+newperson page."),
         required=False, readonly=False)
+    # XXX: We can't use a Choice field here because we don't have a vocabulary
+    # which contains valid people but not teams, and we don't really need one
+    # appart from here. -- Guilherme Salgado, 2006-11-10
+    registrant = Attribute('The user who created this profile.')
     # bounty relations
     ownedBounties = Attribute('Bounties issued by this person.')
     reviewerBounties = Attribute('Bounties reviewed by this person.')
@@ -605,7 +625,7 @@ class IPersonSet(Interface):
     def createPersonAndEmail(
             email, rationale, comment=None, name=None, displayname=None,
             password=None, passwordEncrypted=False,
-            hide_email_addresses=False):
+            hide_email_addresses=False, registrant=None):
         """Create a new Person and an EmailAddress with the given email.
 
         The comment must be of the following form: "when %(action_details)s"
@@ -619,7 +639,8 @@ class IPersonSet(Interface):
         NEW) for the new Person.
         """
 
-    def ensurePerson(email, displayname, rationale, comment=None):
+    def ensurePerson(email, displayname, rationale, comment=None,
+                     registrant=None):
         """Make sure that there is a person in the database with the given
         email address. If necessary, create the person, using the
         displayname given.
@@ -811,5 +832,5 @@ class ITeamCreation(ITeam):
             "this team will be sent to all team members. After finishing the "
             "team creation, a new message will be sent to this address with "
             "instructions on how to finish its registration."),
-        constraint=valid_unregistered_email)
+        constraint=validate_new_team_email)
 
