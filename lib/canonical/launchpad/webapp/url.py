@@ -5,7 +5,6 @@
 __metaclass__ = type
 __all__ = ['Url', 'urlappend', 'urlparse', 'urlsplit']
 
-import urllib
 import urlparse as urlparse_module
 from  urlparse import (
     urljoin, urlparse as original_urlparse, urlsplit as original_urlsplit)
@@ -83,26 +82,20 @@ _enable_sftp_in_urlparse()
 
 
 def urlappend(baseurl, path):
-    r"""Append the given path to baseurl.
+    """Append the given path to baseurl.
 
     The path must not start with a slash, but a slash is added to baseurl
     (before appending the path), in case it doesn't end with a slash.
-
-    Unicode path segments are converted to URL and properly encoded.
 
     >>> urlappend('http://foo.bar', 'spam/eggs')
     'http://foo.bar/spam/eggs'
     >>> urlappend('http://localhost:11375/foo', 'bar/baz')
     'http://localhost:11375/foo/bar/baz'
-    >>> urlappend('http://foo.bar', u'\N{YIN YANG}')
-    'http://foo.bar/%E2%98%AF'
-    >>> urlappend('https://foo.bar', '~foo/+this')
-    'https://foo.bar/~foo/+this'
     """
     assert not path.startswith('/')
     if not baseurl.endswith('/'):
         baseurl += '/'
-    return urljoin(baseurl, urllib.quote(path.encode('UTF-8'), "~+/"))
+    return urljoin(baseurl, path)
 
 
 def urlparse(url, scheme='', allow_fragments=True):
