@@ -16,7 +16,17 @@ from canonical.launchpad import _
 
 class IPersonalPackageArchive(Interface):
     """A PersonalPackageArchive interface"""
-    id = Attribute("The archive ID.")
+    id = Attribute("The personal package archive ID.")
+    archive = Attribute("The archive for this PPA")
+    person = Attribute("The person related with this PPA.(owner)")
+
+    def getPubConfig(distribution):
+        """Return an overridden Publisher Configuration instance.
+
+        The original publisher configuration based on the distribution is
+        modified according local context, it basically fixes the archive
+        paths to cope with PPA publication workflow.
+        """
 
 class IPersonalPackageArchiveSet(Interface):
     """Interface for PersonalPackageArchiveSet"""
