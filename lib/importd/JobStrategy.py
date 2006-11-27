@@ -446,7 +446,7 @@ class SVNStrategy(CSCVSStrategy):
             'http://opensvn.csie.org/srb2d6',
             'http://www.eigenheimstrasse.de/svn/josm',
             'http://www2.cs.tum.edu/repos/cup/develop',
-            'https://svn.sourceforge.net/svnroot/aptoncd',
+            'https://svn.sourceforge.net/svnroot/aptoncd/0.1',
             'https://svn.sourceforge.net/svnroot/comix',
             'https://svn.sourceforge.net/svnroot/jubler/src',
             'https://svn.sourceforge.net/svnroot/listengnome/releases/0.5.x',
