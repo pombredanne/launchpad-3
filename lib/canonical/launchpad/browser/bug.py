@@ -437,9 +437,12 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
         self.setUpLabelAndWidgets(
             "Add affected source package to bug",
             ['distribution', 'sourcepackagename'])
-        if IDistributionSourcePackage.providedBy(self.context.target):
-            self.widgets['sourcepackagename'].setRenderedValue(
-                self.context.sourcepackagename)
+        for bugtask in IBug(self.context).bugtasks:
+            if (IDistributionSourcePackage.providedBy(bugtask.target) and
+                bugtask.sourcepackagename):
+                self.widgets['sourcepackagename'].setRenderedValue(
+                    bugtask.sourcepackagename)
+                break
         return self.render()
 
     def getBugTargetName(self):

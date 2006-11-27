@@ -1,12 +1,23 @@
 Source packages often share names across distributions, especially
-Debian and Ubuntu. So when you are in a distribution context and want
-to indicate that the bug affects another distribution, the source
-package field is pre-filled with the current source package.
+Debian and Ubuntu. So when you want to indicate that the bug affects
+another distribution, the source package field is pre-filled with the
+first source package found in the "Affects" list.
 
     >>> user_browser.open(
-    ...     'http://launchpad.dev/distros/debian/+source/evolution/+bug/7')
+    ...     'http://launchpad.dev/products/ubuntu-product/+bug/2')
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> affects_table = soup.first('table', {'class': 'listing'})
+    >>> [tr.td.a.renderContents()
+    ...  for tr in affects_table.tbody.findAll('tr', recursive=False)]
+    ['ubuntu (upstream)', 'Choose&hellip;',
+     'Ubuntu', 'Choose&hellip;',
+     'mozilla-firefox (Debian)', 'Choose&hellip;',
+     'mozilla-firefox (Debian Woody)', 'Choose&hellip;']
+
     >>> user_browser.getLink(url='+distrotask').click()
     >>> user_browser.url
-    'http://launchpad.dev/distros/debian/+source/evolution/+bug/7/+distrotask'
+    'http://launchpad.dev/products/ubuntu-product/+bug/2/+distrotask'
     >>> user_browser.getControl('Source Package').value
-    'evolution'
+    'mozilla-firefox'
+
