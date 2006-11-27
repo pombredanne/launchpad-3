@@ -26,7 +26,7 @@ from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
-from zope.interface import implements, providedBy
+from zope.interface import alsoProvides, implements, providedBy
 from zope.schema import Choice
 from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
@@ -44,6 +44,7 @@ from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
     GeneralFormView, LaunchpadView, action, LaunchpadFormView,
     LaunchpadEditFormView, custom_widget)
+from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lp.dbschema import TicketAction, TicketStatus
 
@@ -446,6 +447,11 @@ class TicketWorkflowView(LaunchpadFormView):
 
     # Do not autofocus the message widget.
     initial_focus_widget = None
+
+    def setUpWidgets(self):
+        """See LaunchpadFormView."""
+        LaunchpadFormView.setUpWidgets(self)
+        alsoProvides(self.widgets['message'], IAlwaysSubmittedWidget)
 
     def validate(self, data):
         """Form validatation hook.
