@@ -85,13 +85,13 @@ Let's delete the tags we added.
 If we look at a bug having tags, the displayed tags are links, linking
 to the list of all bugs having that tag in this context.
 
-    >>> anon_browser.open('http://launchpad.dev/distros/ubuntu/+bug/2')
+    >>> anon_browser.open('http://launchpad.dev/ubuntu/+bug/2')
     >>> anon_browser.url
-    'http://launchpad.dev/distros/ubuntu/+bug/2'
+    'http://launchpad.dev/ubuntu/+bug/2'
 
     >>> anon_browser.getLink('dataloss').click()
     >>> anon_browser.url
-    'http://launchpad.dev/distros/ubuntu/+bugs?field.tag=dataloss'
+    'http://launchpad.dev/ubuntu/+bugs?field.tag=dataloss'
 
     >>> from BeautifulSoup import BeautifulSoup
     >>> def print_bugtasks(text):

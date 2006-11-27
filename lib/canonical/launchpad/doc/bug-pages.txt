@@ -228,7 +228,7 @@ duplicate link remains in the current context.
     >>> getUtility(IOpenLaunchBag).add(bug_five_in_firefox)
 
     >>> print bug_page_view.getDupeBugLink(bug_six)
-    http://.../products/firefox/+bug/6
+    http://.../firefox/+bug/6
 
 Bug 2 is not reported in Firefox. Let's mark bug 2 as a dupe of bug 5,
 and see how the returned link changes.

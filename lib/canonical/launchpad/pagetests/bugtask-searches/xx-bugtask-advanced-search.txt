@@ -3,7 +3,7 @@
   invalid assignee, we'll get a nice error message.
 
   >>> print http(r"""
-  ... GET /distros/debian/+bugs?advanced=1&field.searchtext=&search=Search+bugs+in+Debian&orderby=-importance&field.status:list=Unconfirmed&field.status:list=Needs+Info&field.status:list=Confirmed&field.status:list=In+Progress&assignee_option=choose&field.assignee=invalid-assignee&field.owner=&field.component-empty-marker=1&field.omit_dupes.used=&field.omit_dupes=on&field.has_patch.used= HTTP/1.1
+  ... GET /debian/+bugs?advanced=1&field.searchtext=&search=Search+bugs+in+Debian&orderby=-importance&field.status:list=Unconfirmed&field.status:list=Needs+Info&field.status:list=Confirmed&field.status:list=In+Progress&assignee_option=choose&field.assignee=invalid-assignee&field.owner=&field.component-empty-marker=1&field.omit_dupes.used=&field.omit_dupes=on&field.has_patch.used= HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -14,7 +14,7 @@
   The same with an invalid reporter.
 
   >>> print http(r"""
-  ... GET /distros/debian/+bugs?advanced=1&field.searchtext=&search=Search+bugs+in+Debian&orderby=-importance&field.status:list=Unconfirmed&field.status:list=Needs+Info&field.status:list=Confirmed&field.status:list=In+Progress&assignee_option=choose&field.assignee=&field.owner=invalid-reporter&field.component-empty-marker=1&field.omit_dupes.used=&field.omit_dupes=on&field.has_patch.used= HTTP/1.1
+  ... GET /debian/+bugs?advanced=1&field.searchtext=&search=Search+bugs+in+Debian&orderby=-importance&field.status:list=Unconfirmed&field.status:list=Needs+Info&field.status:list=Confirmed&field.status:list=In+Progress&assignee_option=choose&field.assignee=&field.owner=invalid-reporter&field.component-empty-marker=1&field.omit_dupes.used=&field.omit_dupes=on&field.has_patch.used= HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -25,7 +25,7 @@
   We get the search results when we use a valid assignee.
 
   >>> print http(r"""
-  ... GET /distros/debian/+bugs?field.searchtext=&search=Search+bugs+in+Debian&orderby=-importance&field.status:list=Unconfirmed&field.status:list=Needs+Info&field.status:list=Confirmed&field.status:list=In+Progress&assignee_option=choose&field.assignee=name12&field.owner=&field.component-empty-marker=1&field.omit_dupes.used=&field.omit_dupes=on&field.has_patch.used= HTTP/1.1
+  ... GET /debian/+bugs?field.searchtext=&search=Search+bugs+in+Debian&orderby=-importance&field.status:list=Unconfirmed&field.status:list=Needs+Info&field.status:list=Confirmed&field.status:list=In+Progress&assignee_option=choose&field.assignee=name12&field.owner=&field.component-empty-marker=1&field.omit_dupes.used=&field.omit_dupes=on&field.has_patch.used= HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...

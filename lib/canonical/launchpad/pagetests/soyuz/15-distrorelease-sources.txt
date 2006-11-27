@@ -4,11 +4,11 @@ This page is inside a DistroRelease context.
 We'll just go straight to the page this time, as the path to click
 here is a bit involved.
 
-  >>> browser.open('http://localhost/distros/ubuntu/warty/+source/mozilla-firefox')
+  >>> browser.open('http://localhost/ubuntu/warty/+source/mozilla-firefox')
 
 Check the changelog link and page.
 
   >>> browser.getLink("Change Log").click()
   >>> browser.url
-  'http://localhost/distros/ubuntu/warty/+source/mozilla-firefox/+changelog'
+  'http://localhost/ubuntu/warty/+source/mozilla-firefox/+changelog'
 

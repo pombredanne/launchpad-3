@@ -15,7 +15,7 @@ Let's add a normal text file...
 And a patch...
 
     >>> user_browser.open(
-    ...     "http://launchpad.dev/distros/debian/+source/mozilla-firefox"
+    ...     "http://launchpad.dev/debian/+source/mozilla-firefox"
     ...     "/+bug/2/+addcomment")
 
     >>> user_browser.getControl("Include attachment").selected = True

@@ -79,7 +79,7 @@ For a distribution bug contact.
 
     >>> user_sees_importance_widget(
     ...     user=no_priv,
-    ...     url="http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus")
+    ...     url="http://localhost:9000/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus")
     True
 
 For a distribution owner.
@@ -91,7 +91,7 @@ For a distribution owner.
 
     >>> user_sees_importance_widget(
     ...     user=sabdfl,
-    ...     url="http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus")
+    ...     url="http://localhost:9000/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus")
     True
 
 For someone else, on Ubuntu.
@@ -103,5 +103,5 @@ For someone else, on Ubuntu.
 
     >>> user_sees_importance_widget(
     ...     user=no_priv,
-    ...     url="http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus")
+    ...     url="http://localhost:9000/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus")
     False

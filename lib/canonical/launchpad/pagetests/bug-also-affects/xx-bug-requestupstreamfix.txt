@@ -2,16 +2,16 @@ If we try to add an upstream task without specifying a product:
 
     >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
     >>> browser.open(
-    ...     'http://localhost/distros/debian/+source/mozilla-firefox/+bug/3')
+    ...     'http://localhost/debian/+source/mozilla-firefox/+bug/3')
     >>> browser.getLink(url='+upstreamtask').click()
     >>> browser.url
-    'http://localhost/distros/debian/+source/mozilla-firefox/+bug/3/+upstreamtask'
+    'http://localhost/debian/+source/mozilla-firefox/+bug/3/+upstreamtask'
 
     >>> browser.getControl('Product').value
     ''
     >>> browser.getControl('Continue').click()
     >>> browser.url
-    'http://localhost/distros/debian/+source/mozilla-firefox/+bug/3/+upstreamtask'
+    'http://localhost/debian/+source/mozilla-firefox/+bug/3/+upstreamtask'
 
 We get a nice error message.
 
@@ -30,7 +30,7 @@ space in the bug URL it will be stripped.
 Redirected to the newly created bugtask page
 
   >>> browser.url
-  'http://localhost/products/alsa-utils/+bug/3'
+  'http://localhost/alsa-utils/+bug/3'
 
   >>> print browser.contents
   <...
@@ -46,12 +46,12 @@ And now we try to add the same upstream again.
 
     >>> browser.getLink(url='+upstreamtask').click()
     >>> browser.url
-    'http://localhost/products/alsa-utils/+bug/3/+upstreamtask'
+    'http://localhost/alsa-utils/+bug/3/+upstreamtask'
 
     >>> browser.getControl('Product').value = 'alsa-utils'
     >>> browser.getControl('Continue').click()
     >>> browser.url
-    'http://localhost/products/alsa-utils/+bug/3/+upstreamtask'
+    'http://localhost/alsa-utils/+bug/3/+upstreamtask'
 
 We get a nice error message.
 
@@ -63,18 +63,18 @@ We can add another upstream to the bug.
     >>> browser.getControl('Product').value = 'evolution'
     >>> browser.getControl('Continue').click()
     >>> browser.url
-    'http://localhost/products/evolution/+bug/3'
+    'http://localhost/evolution/+bug/3'
 
 But if we try to change it to the target of an existing upstream bugtask,
 our validator springs into action.
 
     >>> browser.getLink("evolution (upstream)").click()
     >>> browser.url
-    'http://localhost/products/evolution/+bug/3/+editstatus'
+    'http://localhost/evolution/+bug/3/+editstatus'
     >>> browser.getControl('Product').value = 'alsa-utils'
     >>> browser.getControl('Save Changes').click()
     >>> browser.url
-    'http://localhost/products/evolution/+bug/3/+editstatus'
+    'http://localhost/evolution/+bug/3/+editstatus'
     >>> print browser.contents
     <...
     ...Please fix them and try again...

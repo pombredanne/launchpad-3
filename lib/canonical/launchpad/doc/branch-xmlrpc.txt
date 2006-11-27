@@ -4,7 +4,7 @@ IBranchSetAPI
     >>> import xmlrpclib
     >>> from canonical.functional import XMLRPCTestTransport
     >>> branchset_api = xmlrpclib.ServerProxy(
-    ...     'http://foo.bar@canonical.com:test@xmlrpc.launchpad.dev/bazaar/',
+    ...     'http://foo.bar@canonical.com:test@xmlrpc.launchpad.dev/+code/',
     ...     transport=XMLRPCTestTransport())
 
 register_branch(branch_url, branch_name, branch_title,

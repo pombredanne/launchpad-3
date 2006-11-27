@@ -4,7 +4,7 @@ Exporting Single PO Files through the Web
 Not logged in users can't access the +export page.
 
   >>> anon_browser.open(
-  ...     'http://launchpad.dev/distros/ubuntu/hoary'
+  ...     'http://launchpad.dev/ubuntu/hoary'
   ...     '/+source/evolution/+pots/evolution-2.2/es/')
   >>> anon_browser.getLink('Download').click()
   Traceback (most recent call last):
@@ -15,12 +15,12 @@ Logged in as a regular user, the +export page is accessible.
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
   >>> browser.open(
-  ...     'http://launchpad.dev/distros/ubuntu/hoary'
+  ...     'http://launchpad.dev/ubuntu/hoary'
   ...     '/+source/evolution/+pots/evolution-2.2/es')
   >>> browser.getLink('Download').click()
 
   >>> browser.url
-  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+export'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+export'
 
   >>> browser.title
   'Spanish (es) translation of evolution-2.2 in Ubuntu Hoary
@@ -37,7 +37,7 @@ If we POST the page, it should add the request to the queue.
   >>> browser.getControl('Confirm Export').click()
 
   >>> browser.url
-  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es'
 
   >>> for tag in find_tags_by_class(browser.contents, 'informational'):
   ...     tag.renderContents()
