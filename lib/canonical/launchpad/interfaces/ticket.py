@@ -13,15 +13,14 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-
 from zope.schema import (
      Bool, Choice, Datetime,  Int, List, Object, Text, TextLine)
 
+from canonical.launchpad import _
 from canonical.launchpad.interfaces import IHasOwner, IMessageTarget
 from canonical.launchpad.interfaces.ticketmessage import ITicketMessage
 from canonical.lp.dbschema import TicketStatus, TicketPriority
 
-from canonical.launchpad import _
 
 
 class InvalidTicketStateError(Exception):
@@ -30,6 +29,7 @@ class InvalidTicketStateError(Exception):
     Error raised when a workflow action cannot be executed because the
     ticket is in an invalid state.
     """
+
 
 class ITicket(IHasOwner):
     """A single support request, or trouble ticket."""
