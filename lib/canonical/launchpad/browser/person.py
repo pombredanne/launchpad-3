@@ -2284,7 +2284,7 @@ class ObjectReassignmentView:
     def isValidOwner(self, newOwner):
         """Check whether the new owner is acceptable for the context object.
 
-        If it not acceptable, return False and assign an error message to
+        If it's not acceptable, return False and assign an error message to
         self.errormessage to inform the user.
         """
         return True
