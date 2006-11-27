@@ -1,0 +1,12 @@
+Source packages often share names across distributions, especially
+Debian and Ubuntu. So when you are in a distribution context and want
+to indicate that the bug affects another distribution, the source
+package field is pre-filled with the current source package.
+
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/distros/debian/+source/evolution/+bug/7')
+    >>> user_browser.getLink(url='+distrotask').click()
+    >>> user_browser.url
+    'http://launchpad.dev/distros/debian/+source/evolution/+bug/7/+distrotask'
+    >>> user_browser.getControl('Source Package').value
+    'evolution'
