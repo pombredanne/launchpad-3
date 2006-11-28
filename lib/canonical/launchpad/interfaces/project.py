@@ -16,7 +16,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import Summary, Title
 from canonical.launchpad.interfaces import (
         IHasOwner, IBugTarget, IHasSpecifications, PillarNameField,
-        valid_emblem, valid_hackergotchi, valid_webref)
+        valid_emblem, valid_gotchi, valid_webref)
 from canonical.launchpad.validators.name import name_validator
 
 
@@ -132,15 +132,13 @@ class IProject(IHasOwner, IBugTarget, IHasSpecifications):
             "be used to refer to this project."),
         constraint=valid_emblem)
 
-    # XXX: Should probably rename valid_hackergotchi to valid_gotchi or
-    # something like that. -- Salgado, 2006-11-23
     gotchi = Bytes(
         title=_("Gotchi"), required=False,
         description=_(
             "An image, maximum 150x150 pixels, that will be displayed on "
             "this project's home page. It should be no bigger than 50k in "
             "size. "),
-        constraint=valid_hackergotchi)
+        constraint=valid_gotchi)
 
     translationgroup = Choice(
         title = _("Translation group"),

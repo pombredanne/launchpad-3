@@ -33,7 +33,7 @@ from canonical.launchpad.interfaces.specificationtarget import (
 from canonical.launchpad.interfaces.tickettarget import (
     TICKET_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.validation import (
-    valid_emblem, valid_hackergotchi, validate_new_team_email,
+    valid_emblem, valid_gotchi, validate_new_team_email,
     validate_new_person_email)
 
 from canonical.lp.dbschema import (
@@ -131,7 +131,7 @@ class IPerson(IHasSpecifications):
             "your home page. It should be no bigger than 50k in size. "
             "Traditionally this is a great big grinning image of your mug. "
             "Make the most of it."),
-        constraint=valid_hackergotchi)
+        constraint=valid_gotchi)
 
     addressline1 = TextLine(
             title=_('Address'), required=True, readonly=False,

@@ -21,7 +21,7 @@ from canonical.launchpad.interfaces import (
     IHasSecurityContact, IKarmaContext, PillarNameField)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.validation import (
-    valid_emblem, valid_hackergotchi, valid_webref)
+    valid_emblem, valid_gotchi, valid_webref)
 
 
 class ProductNameField(PillarNameField):
@@ -175,15 +175,13 @@ class IProduct(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
             "be used to refer to this product."),
         constraint=valid_emblem)
 
-    # XXX: Should probably rename valid_hackergotchi to valid_gotchi or
-    # something like that. -- Salgado, 2006-11-23
     gotchi = Bytes(
         title=_("Gotchi"), required=False,
         description=_(
             "An image, maximum 150x150 pixels, that will be displayed on "
             "this product's home page. It should be no bigger than 50k in "
             "size. "),
-        constraint=valid_hackergotchi)
+        constraint=valid_gotchi)
 
     translationgroup = Choice(
         title = _("Translation group"),
