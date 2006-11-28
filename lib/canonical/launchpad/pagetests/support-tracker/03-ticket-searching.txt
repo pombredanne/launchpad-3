@@ -330,6 +330,14 @@ The exact request he was searching for is displayed!
     ...     print ticket.first('a').renderContents()
     mailto: problem in webpage
 
+If the user didn't make any support requests on the product, a message
+informing him of this fact is displayed.
+
+    >>> user_browser.open('http://launchpad.dev/products/gnomebaker/+tickets')
+    >>> user_browser.getLink('My Requests').click()
+    >>> print find_main_content(
+    ...     user_browser.contents).first('p').renderContents()
+    You didn't make any support requests for gnomebaker.
 
 Person Reports
 --------------
