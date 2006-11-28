@@ -83,22 +83,6 @@
       <h3 tal:condition="not:view/userIsReleaseManager">Nominate</h3>      
     </div>
 
-    <div metal:fill-slot="widgets"
-         tal:define="widget python:view.widgets['nominatable_releases']">
-      <div tal:attributes="class python:error and 'error' or None"
-           tal:define="launchpadform modules/canonical/launchpad/webapp/launchpadform;
-                       error python:launchpadform.getWidgetError(view, widget)"
-           style="padding-left: 1em">
-        <div tal:content="structure widget">
-          <input type="text" style="width:100%"/>
-        </div>
-
-        <div tal:condition="error"
-             class="message"
-             tal:content="structure error"
-          >An error message.</div>
-      </div>
-    </div>
   </div>
 
 </div>
