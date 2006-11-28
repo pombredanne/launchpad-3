@@ -396,18 +396,18 @@ Most recent published history row:
    >>> spph.section.name
    u'web'
 
-The changesfile for this sourcepackagerelease:
+The changesfile attribute contains the package changelog. It is provided as
+an ILibraryFileAlias:
 
    >>> firefox_srcrel =  warty.getSourcePackage(
    ...    'mozilla-firefox').currentrelease
    >>> firefox_srcrel.title
    u'mozilla-firefox 0.9 (source) in ubuntu warty'
 
-Changesfile is provided as a LibraryFileAlias instance or None if not
-available:
-
    >>> firefox_srcrel.changesfile
    <LibraryFileAlias at ...>
+
+If the package changelog is not available, that attribute is None:
 
    >>> netapplet_srcrel.changesfile is None
    True

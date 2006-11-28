@@ -1,44 +1,49 @@
 = Soyuz Files =
 
 Soyuz keeps a collection of source and binary packages classified as
-SourcePackageRelease and BinaryPackageRelease, respectively.
+SourcePackageRelease and BinaryPackageRelease, respectively, each of
+those records may contain one or more files according its type.
 
-Each of those records may containone or more files according its type:
+Those files are stored in the Librarian and related to its parent
+object via an BinaryPackageFile or SourcePackageReleaseFile.
 
- * Sources contains
-
-   * An '.orig.tar.gz'
-   * An '.diff.tar.gz'
-   * An '.dsc'
-
- * Binaries contain:
-
-   * An '.deb'
-
-Those files are stored in Librarian and related to its parent object by
-BinaryPackageFile and SourcePackageReleaseFile.
-
-The parents provide an SQLMultipleJoin attribute called 'files' which
-returns a group of respective ISourcePackageReleaseFile or
-IBinaryPackageFile instances.
+SourcePackageReleaseFile or BinaryPackageFile are available via the
+'files' attribute on its parent.
 
  >>> from zope.interface.verify import verifyObject
  >>> from zope.component import getUtility
 
  >>> from canonical.launchpad.interfaces import (
- ...    IDistributionSet, ILibraryFileAlias)
+ ...    IDistributionSet, ILibraryFileAlias,
+ ...    ISourcePackageReleaseFile, IBinaryPackageFile)
 
  >>> warty = getUtility(IDistributionSet)['ubuntu']['warty']
+
+
+== Source Files ==
+
+An ISourcePackageRelease contains the file that make up the source
+package for that release:
+
+   * An '.orig.tar.gz' file containing the upstream source distribution.
+   * A '.diff.tar.gz' file containing the patches applied to the
+     upstream source.
+   * A '.dsc' package description file.
 
 First let's select a convenient IDistroReleaseSourcePackageRelease,
 which has files in the sampledata.
 
- >>> src = warty.getSourcePackage('mozilla-firefox').currentrelease
+ >>> warty_firefox_srcpkg = warty.getSourcePackage(
+ ...     'mozilla-firefox').currentrelease
 
 Use the property 'files' to retrieve a list of files related to this
 IDistroReleaseSourcePackageRelease,
 
- >>> file = src.files[0]
+ >>> file = warty_firefox_srcpkg.files[0]
+
+ >>> verifyObject(ISourcePackageReleaseFile, file)
+ True
+
  >>> verifyObject(ILibraryFileAlias, file.libraryfile)
  True
 
@@ -50,19 +55,35 @@ Check if ILibraryFileAlias is returning sane data:
  >>> file.libraryfile.url
  'http://localhost:58000/3/firefox-0.9.2.tar.gz'
 
-Perform similar tests for IDistroArchReleaseBinaryPackageRelease:
 
- >>> bin = warty['i386'].getBinaryPackage('mozilla-firefox').currentrelease
+== Binary Files ==
 
- >>> bin.name
+An IBinaryPackageRelease contains only one file which is the
+instalable debian-format file:
+
+   * An '.deb'
+
+As we did for an ISourcePackageRelease, let's select a useful
+IDistroArchReleaseBinaryPackage from sampledata:
+
+ >>> warty_i386_firefox_binpkg = warty['i386'].getBinaryPackage(
+ ...    'mozilla-firefox').currentrelease
+
+ >>> warty_i386_firefox_binpkg.name
  u'mozilla-firefox'
 
 Use the property 'files' to retrieve a list of files related to this
 IDistroArchReleaseBinaryPackageRelease,
 
- >>> file = bin.files[0]
+ >>> file = warty_i386_firefox_binpkg.files[0]
+
+ >>> verifyObject(IBinaryPackageFile, file)
+ True
+
  >>> verifyObject(ILibraryFileAlias, file.libraryfile)
  True
+
+Check if ILibraryFileAlias is returning sane data:
 
  >>> file.libraryfile.filename
  u'mozilla-firefox_0.9_i386.deb'

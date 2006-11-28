@@ -20,9 +20,9 @@ class IBinaryPackageFile(Interface):
     id = Int(
             title=_('ID'), required=True, readonly=True,
             )
-    binarypackage = Int(
-            title=_('The binary package being published'), required=True,
-            readonly=False,
+    binarypackagerelease = Int(
+            title=_('The binarypackagerelease being published'),
+            required=True, readonly=False,
             )
 
     libraryfile = Int(

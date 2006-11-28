@@ -8,12 +8,15 @@ __all__ = [
     'IDistroReleaseSourcePackageRelease',
     ]
 
+from zope.schema import Object
 from zope.interface import Attribute
 
-
+from canonical.launchpad import _
 from canonical.launchpad.interfaces.sourcepackagerelease import (
-    ISourcePackageRelease
-    )
+    ISourcePackageRelease)
+from canonical.launchpad.interfaces.librarian import (
+    ILibraryFileAlias)
+
 
 class IDistroReleaseSourcePackageRelease(ISourcePackageRelease):
     """This is a SourcePackageRelease-In-A-DistroRelease. It represents a
@@ -56,7 +59,8 @@ class IDistroReleaseSourcePackageRelease(ISourcePackageRelease):
     current_published = Attribute("is last SourcePackagePublishing record "
                                   "that is in PUBLISHED status.")
 
-    changesfile = Attribute("Correspondent changesfile.")
+    changesfile = Object(
+        title=_("Correspondent changesfile."), schema=ILibraryFileAlias)
 
     def changeOverride(new_component=None, new_section=None):
         """Change the component and/or section.
