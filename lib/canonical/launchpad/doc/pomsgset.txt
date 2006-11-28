@@ -61,8 +61,12 @@ And the fuzzy flags should also be disabled
 
 Let's add a fuzzy translation.
 
+  >>> import datetime
+  >>> import pytz
+  >>> UTC = pytz.timezone('UTC')
   >>> upstream_pomsgset.updateTranslationSet(
-  ...     carlos, {0: u'foo'}, fuzzy=True, published=True)
+  ...     carlos, {0: u'foo'}, fuzzy=True, published=True,
+  ...     lock_timestamp=datetime.datetime.now(UTC))
 
 Now it should appear as active and as published.
 
@@ -81,7 +85,8 @@ And also, the fuzzy flag should be set in both cases.
 Now let's think that upstream removed that translation completely...
 
   >>> upstream_pomsgset.updateTranslationSet(
-  ...     carlos, {0: u''}, fuzzy=False, published=True)
+  ...     carlos, {0: u''}, fuzzy=False, published=True,
+  ...     lock_timestamp=datetime.datetime.now(UTC))
 
 The active text should still have it as we never remove anything from Rosetta
 if upstream does it
@@ -118,7 +123,8 @@ editor for this POFile.
 
   >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
   >>> pomsgset.updateTranslationSet(
-  ...     no_priv, {0: u'test string'}, fuzzy=False, published=False)
+  ...     no_priv, {0: u'test string'}, fuzzy=False, published=False,
+  ...     lock_timestamp=datetime.datetime.now(UTC))
 
 Now, we should have one extra suggestion.
 
@@ -146,9 +152,11 @@ Now, Foo Bar, a translator with permissions, is going to approve that new
 suggestion.
 
   >>> pomsgset.updateTranslationSet(
-  ...     foobar, {0: u'test string'}, fuzzy=False, published=False)
+  ...     foobar, {0: u'test string'}, fuzzy=False, published=False,
+  ...     lock_timestamp=datetime.datetime.now(UTC))
 
 We don't have any suggestion newer than the new active translation
+
   >>> suggested = pomsgset.getSuggestedSubmissions(0)
   >>> suggested.count()
   0

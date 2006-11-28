@@ -194,6 +194,7 @@ Now we do the submit.
     >>> request = LaunchpadTestRequest(
     ...     SERVER_URL=SERVER_URL,
     ...     form={
+    ...         'lock_timestamp': '2006-11-28 13:00:00 UTC',
     ...         'alt': None,
     ...         'msgset_1': None,
     ...         'msgset_1_es_translation_0': 'Foo',
@@ -223,6 +224,7 @@ considered?
     >>> request = LaunchpadTestRequest(
     ...     SERVER_URL=SERVER_URL,
     ...     form={
+    ...         'lock_timestamp': '2006-11-28 13:00:00 UTC',
     ...         'alt': None,
     ...         'msgset_2': None,
     ...         'msgset_2_es_translation_0': 'Foo',

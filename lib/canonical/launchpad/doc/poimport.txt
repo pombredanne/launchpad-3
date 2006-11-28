@@ -14,6 +14,9 @@ Here are some imports we need to get this test running.
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> from canonical.launchpad.interfaces import IPOTemplateNameSet
     >>> from canonical.launchpad.database import POTemplateSubset
+    >>> import datetime
+    >>> import pytz
+    >>> UTC = pytz.timezone('UTC')
 
 We need this for the Librarian to work properly.
 
@@ -65,10 +68,11 @@ getLastTranslator() function of components/poimport.py.
     ... "Last-Translator: Baz <baz@canonical.com>\n"
     ... "Content-Type: text/plain; charset=UTF-8\n"
     ... "Plural-Forms: nplurals=4; plural=n==1) ? 0 : n==2 ? 1 : (n != 8 || n != 11) ? 2 : 3;\n"
+    ... "X-Rosetta-Export-Date: %s\n"
     ...
     ... msgid "foo"
     ... msgstr "blah"
-    ... '''
+    ... ''' % datetime.datetime.now(UTC).isoformat()
     >>> parser.write(pofile_content)
     >>> parser.finish()
     >>> potemplates = getUtility(IPOTemplateSet).getAllByName('evolution-2.2')
@@ -113,6 +117,7 @@ This is the file that'll get imported.
     ... "POT-Creation-Date: 2004-07-11 16:16+0900\n"
     ... "Content-Type: text/plain; charset=CHARSET\n"
     ... "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+    ... "X-Rosetta-Export-Date: %s\n"
     ...
     ... msgid "foo"
     ... msgstr ""
@@ -125,15 +130,15 @@ This is the file that'll get imported.
     ... msgstr ""
     ...
     ... #, c-format
-    ... msgid "Foo %s"
+    ... msgid "Foo %%s"
     ... msgstr ""
     ...
     ... #, c-format
-    ... msgid "Singular %d"
-    ... msgid_plural "Plural %d"
+    ... msgid "Singular %%d"
+    ... msgid_plural "Plural %%d"
     ... msgstr[0] ""
     ... msgstr[1] ""
-    ... '''
+    ... ''' % datetime.datetime.now(UTC).isoformat()
 
 Attach the import to the translations import queue:
 
@@ -209,6 +214,7 @@ It has some validation errros.
     ... "Last-Translator: Carlos Perello Marin <carlos@canonical.com>\n"
     ... "Content-Type: text/plain; charset=UTF-8\n"
     ... "Plural-Forms: nplurals=4; plural=n==1) ? 0 : n==2 ? 1 : (n != 8 || n != 11) ? 2 : 3;\n"
+    ... "X-Rosetta-Export-Date: %s\n"
     ...
     ... msgid "foo"
     ... msgstr "blah"
@@ -221,17 +227,17 @@ It has some validation errros.
     ... msgstr "blah"
     ...
     ... #, c-format
-    ... msgid "Foo %s"
-    ... msgstr "blah %i"
+    ... msgid "Foo %%s"
+    ... msgstr "blah %%i"
     ...
     ... #, c-format
-    ... msgid "Singular %d"
-    ... msgid_plural "Plural %d"
-    ... msgstr[0] "Foos %d"
-    ... msgstr[1] "Bars %d"
-    ... msgstr[2] "Welsh power! %d"
-    ... msgstr[3] "We have four! %d"
-    ... '''
+    ... msgid "Singular %%d"
+    ... msgid_plural "Plural %%d"
+    ... msgstr[0] "Foos %%d"
+    ... msgstr[1] "Bars %%d"
+    ... msgstr[2] "Welsh power! %%d"
+    ... msgstr[3] "We have four! %%d"
+    ... ''' % datetime.datetime.now(UTC).isoformat()
 
 This is the dbschema that controls the validation of a translation.
     >>> from canonical.lp.dbschema import TranslationValidationStatus
@@ -375,10 +381,11 @@ Here are the contents of another file we'll be importing. It has no errors.
     ... "Last-Translator: Foo <no-priv@canonical.com>\n"
     ... "Content-Type: text/plain; charset=UTF-8\n"
     ... "Plural-Forms: nplurals=4; plural=n==1) ? 0 : n==2 ? 1 : (n != 8 || n != 11) ? 2 : 3;\n"
+    ... "X-Rosetta-Export-Date: %s\n"
     ...
     ... msgid "foo"
     ... msgstr "blah"
-    ... '''
+    ... ''' % datetime.datetime.now(UTC).isoformat()
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     pofile.path, pofile_without_errors, True, rosetta_experts,
     ...     productseries=series, potemplate=potemplate)
@@ -460,6 +467,7 @@ The header should be the old one as this one does not have any:
     POT-Creation-Date: 2004-07-11 16:16+0900
     Content-Type: text/plain; charset=CHARSET
     Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;
+    X-Rosetta-Export-Date: ...
 
 
 Another test, try to import a .po file that is older than previous import...
@@ -475,10 +483,11 @@ Another test, try to import a .po file that is older than previous import...
     ... "Last-Translator: Carlos Perello Marin <carlos@canonical.com>\n"
     ... "Content-Type: text/plain; charset=UTF-8\n"
     ... "Plural-Forms: nplurals=4; plural=n==1) ? 0 : n==2 ? 1 : (n != 8 || n != 11) ? 2 : 3;\n"
+    ... "X-Rosetta-Export-Date: %s\n"
     ...
     ... msgid "foo"
     ... msgstr "blah"
-    ... '''
+    ... ''' % datetime.datetime.now(UTC).isoformat()
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     pofile.path, pofile_contents, True, person,
     ...     productseries=series, potemplate=potemplate)
@@ -533,13 +542,14 @@ the msgid
     ... "Last-Translator: Foo <no-priv@canonical.com>\n"
     ... "Content-Type: text/plain; charset=UTF-8\n"
     ... "Plural-Forms: nplurals=2; plural=n==1 ? 0;\n"
+    ... "X-Rosetta-Export-Date: %s\n"
     ...
     ... #, c-format
-    ... msgid "Singular %d"
-    ... msgid_plural "Plurals %d"
+    ... msgid "Singular %%d"
+    ... msgid_plural "Plurals %%d"
     ... msgstr[0] ""
     ... msgstr[1] ""
-    ... '''
+    ... ''' % datetime.datetime.now(UTC).isoformat()
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     pofile.path, pofile_content, True, rosetta_experts,
     ...     productseries=series, potemplate=potemplate)
@@ -620,10 +630,11 @@ following the order the users uploaded them.
     ... "PO-Revision-Date: 2005-06-04 20:41+0100\n"
     ... "Last-Translator: Foo <no-priv@canonical.com>\n"
     ... "Content-Type: text/plain; charset=UTF-8\n"
+    ... "X-Rosetta-Export-Date: %s\n"
     ...
     ... msgid "Foo"
     ... msgstr "Bar"
-    ... '''
+    ... ''' % datetime.datetime.now(UTC).isoformat()
 
     >>> second_pofile_content = r'''
     ... msgid ""
@@ -631,10 +642,11 @@ following the order the users uploaded them.
     ... "PO-Revision-Date: 2005-06-04 21:41+0100\n"
     ... "Last-Translator: Jordi Mallach <jordi@canonical.com>\n"
     ... "Content-Type: text/plain; charset=UTF-8\n"
+    ... "X-Rosetta-Export-Date: %s\n"
     ...
     ... msgid "Foo"
     ... msgstr "Bars"
-    ... '''
+    ... ''' % datetime.datetime.now(UTC).isoformat()
 
 We flush the entry contents.
 
