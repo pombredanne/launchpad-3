@@ -897,7 +897,7 @@ sprintspecification_decide = 'Consider spec for sprint agenda'
 
 sprintspecification_admin = 'Approve specification for sprint agenda'
 
-tickets_index = 'Launchpad tech support system'
+tickets_index = 'Launchpad support tracker'
 
 ticket_add = ContextDisplayName('Request support with %s')
 

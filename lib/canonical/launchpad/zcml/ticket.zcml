@@ -185,16 +185,13 @@
     for="canonical.launchpad.interfaces.ITicketSet"
     name="+index" />
 
-  <browser:pages
+  <browser:page
+    name="+index"
     for="canonical.launchpad.interfaces.ITicketSet"
-    permission="zope.Public">
-    <browser:page
-      name="+index"
-      template="../templates/tickets-index.pt" />
-    <browser:page
-      name="+portlet-details"
-      template="../templates/tickets-portlet-details.pt" />
-  </browser:pages>
+    class="canonical.launchpad.browser.TicketSetView"
+    permission="zope.Public"
+    template="../templates/tickets-index.pt"
+    />
 
 </facet>
 </configure>
