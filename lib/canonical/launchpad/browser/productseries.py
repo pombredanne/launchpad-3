@@ -76,7 +76,7 @@ class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin):
 class ProductSeriesFacets(StandardLaunchpadFacets):
 
     usedfor = IProductSeries
-    enable_only = ['overview', 'specifications', 'translations']
+    enable_only = ['overview', 'bugs', 'specifications', 'translations']
 
 
 class ProductSeriesOverviewMenu(ApplicationMenu):

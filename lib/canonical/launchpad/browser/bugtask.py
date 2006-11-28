@@ -1207,26 +1207,24 @@ class BugTaskSearchListingView(LaunchpadView):
     def columns_to_show(self):
         """Returns a sequence of column names to be shown in the listing."""
         upstream_context = self._upstreamContext()
+        productseries_context = self._productSeriesContext()
         project_context = self._projectContext()
         distribution_context = self._distributionContext()
         distrorelease_context = self._distroReleaseContext()
         distrosourcepackage_context = self._distroSourcePackageContext()
         sourcepackage_context = self._sourcePackageContext()
 
-        assert (
-            upstream_context or project_context or distribution_context or
-            distrorelease_context or distrosourcepackage_context or
-            sourcepackage_context), (
-            "Unrecognized context; don't know which report "
-            "columns to show.")
-
-        if (upstream_context or distrosourcepackage_context or
-            sourcepackage_context):
+        if (upstream_context or productseries_context or
+            distrosourcepackage_context or sourcepackage_context):
             return ["id", "summary", "importance", "status"]
         elif distribution_context or distrorelease_context:
             return ["id", "summary", "packagename", "importance", "status"]
         elif project_context:
             return ["id", "summary", "productname", "importance", "status"]
+        else:
+            raise AssertionError(
+                "Unrecognized context; don't know which report "
+                "columns to show.")
 
     def validate_search_params(self):
         """Validate the params passed for the search.
@@ -1535,6 +1533,13 @@ class BugTaskSearchListingView(LaunchpadView):
         Return the IProduct if yes, otherwise return None.
         """
         return IProduct(self.context, None)
+
+    def _productSeriesContext(self):
+        """Is this page being viewed in a product series context?
+
+        Return the IProductSeries if yes, otherwise return None.
+        """
+        return IProductSeries(self.context, None)
 
     def _projectContext(self):
         """Is this page being viewed in a project context?
