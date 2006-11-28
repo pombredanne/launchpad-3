@@ -103,15 +103,8 @@
         <div class="two column section">
           <tal:latestbugs replace="structure context/@@+portlet-latestbugs" />
         </div>
-        <div class="demo two column section">
-          <h2>Latest proposed features</h2>
-          <ul class="specification">
-            <li>ClamAV Security Updates</li>
-            <li>ClamAV Security Updates</li>
-            <li>ClamAV Security Updates</li>
-            <li>ClamAV Security Updates</li>
-            <li>ClamAV Security Updates</li>
-          </ul>
+        <div class="two column section">
+          <tal:latestspecs replace="structure context/@@+portlet-latestspecs" />
         </div>
       </div>
     </div>

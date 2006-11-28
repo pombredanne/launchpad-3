@@ -5,7 +5,7 @@
       <p tal:condition="not: view/latestBugTasks">
         No bugs have been reported for <span tal:replace="context/displayname" />.
       </p>
-      <table tal:condition="view/latestBugTasks" class="latest">
+      <table tal:condition="view/latestBugTasks" class="latest invisiblelink">
         <tbody>
           <tr tal:repeat="bugtask view/latestBugTasks">
             <td class="icon left" tal:content="structure bugtask/fmt:icon" />

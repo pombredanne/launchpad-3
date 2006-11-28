@@ -1165,11 +1165,11 @@ th.icon.right, td.icon.right {
 .title {
   font-weight: bold;
 }
-.title a:link, .title a:visited {
+.invisiblelink a:link, .invisiblelink a:visited {
   color: #656565 !important;
 }
 ul {
-  margin-left: 16px;
+  margin-left: 24px;
   padding-left: 0;
 }
 ul.buttons {
@@ -1186,6 +1186,13 @@ ul.cross-reference {
 li {
   margin-bottom: 0.75em;
 }
+
+/* Various custom list formats: */
+
+ul.spec>li, li.spec {
+  list-style-image: url(/@@/spec);
+}
+
 .bug-summary {
   font-weight: bold;
 }
