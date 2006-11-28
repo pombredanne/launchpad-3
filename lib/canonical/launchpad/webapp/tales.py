@@ -717,24 +717,36 @@ def re_substitute(pattern, replace_match, replace_nomatch, string):
     return ''.join(parts)
 
 
-def split_chars(word, nchars):
-    """Return the first num characters of the word, plus the remainder.
+def next_word_chunk(word, pos, minlen, maxlen):
+    """Return the next chunk of the word of length between minlen and maxlen.
+
+    Shorter word chunks are preferred, preferably ending in a non
+    alphanumeric character.  The index of the end of the chunk is also
+    returned.
 
     This function treats HTML entities in the string as single
     characters.  The string should not include HTML tags.
     """
-    chars = []
-    while word and len(chars) < nchars:
-        if word[0] == '&':
+    nchars = 0
+    endpos = pos
+    while endpos < len(word):
+        # advance by one character
+        if word[endpos] == '&':
             # make sure we grab the entity as a whole
-            pos = word.find(';')
-            assert pos >= 0, 'badly formed entity: %r' % word
-            chars.append(word[:pos+1])
-            word = word[pos+1:]
+            semicolon = word.find(';', endpos)
+            assert semicolon >= 0, 'badly formed entity: %r' % word[endpos:]
+            endpos = semicolon + 1
         else:
-            chars.append(word[0])
-            word = word[1:]
-    return ''.join(chars), word
+            endpos += 1
+        nchars += 1
+        if nchars >= maxlen:
+            # stop if we've reached the maximum chunk size
+            break
+        if nchars >= minlen and not word[endpos-1].isalnum():
+            # stop if we've reached the minimum chunk size and the last
+            # character wasn't alphanumeric.
+            break
+    return word[pos:endpos], endpos
 
 
 def add_word_breaks(word):
@@ -747,20 +759,11 @@ def add_word_breaks(word):
     preferably after puctuation.
     """
     broken = []
-    while word:
-        chars, word = split_chars(word, 7)
-        broken.append(chars)
-        # If the leading characters don't end with puctuation, grab
-        # more characters.
-        if chars[-1].isalnum() and word != '':
-            for i in range(8):
-                chars, word = split_chars(word, 1)
-                broken.append(chars)
-                if not (chars[-1].isalnum() and word != ''):
-                    break
-        if word != '':
-            broken.append('<wbr></wbr>')
-    return ''.join(broken)
+    pos = 0
+    while pos < len(word):
+        chunk, pos = next_word_chunk(word, pos, 7, 15)
+        broken.append(chunk)
+    return '<wbr></wbr>'.join(broken)
 
 
 break_text_pat = re.compile(r'''
