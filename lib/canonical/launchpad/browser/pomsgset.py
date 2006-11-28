@@ -12,12 +12,15 @@ __all__ = [
     'BaseTranslationView',
     ]
 
+import datetime
 import re
 import operator
 import gettextpo
+import pytz
 from math import ceil
 from xml.sax.saxutils import escape as xml_escape
 
+from zope.app import datetimeutils
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.utility import setUpWidgets
 from zope.app.form.browser import DropdownWidget
@@ -30,7 +33,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     UnexpectedFormData, IPOMsgSet, TranslationConstants, NotFoundError,
-    ILanguageSet, IPOFileAlternativeLanguage, IPOMsgSetSuggestions)
+    ILanguageSet, IPOFileAlternativeLanguage, IPOMsgSetSuggestions,
+    RosettaTranslationLocked)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ApplicationMenu, Link, LaunchpadView,
     canonical_url)
@@ -398,15 +402,34 @@ class BaseTranslationView(LaunchpadView):
         self.start = self.batchnav.start
         self.size = self.batchnav.currentBatch().size
 
-        if (self.request.method == 'POST' and 
-            self.request.form.get("submit_translations") and
-            self.user is not None):
-            # Check if this is really the form we are listening for..
-            if self._submitTranslations():
-                # .. and if no errors occurred, adios. Otherwise, we
-                # need to set up the subviews for error display and
-                # correction.
-                return
+        if (self.request.method == 'POST'):
+            try:
+                # Try to get the timestamp when the submitted form was
+                # created. We use it to detect whether someone else updated
+                # the translation we are working on in the elapsed time
+                # between the form loading and its later submission.
+                self.lock_timestamp = datetimeutils.parseDatetimetz(
+                    self.request.form.get('lock_timestamp', u''))
+            except (datetimeutils.SyntaxError, datetimeutils.DateError,
+                    datetimeutils.DateTimeError, ValueError):
+                # invalid format. Either we don't have the timestamp in the
+                # submitted form or it has the wrong format.
+                raise UnexpectedFormData, (
+                    'We didn\'t find the timestamp that tells us when was'
+                    ' generated the submitted form.')
+
+            if (self.request.form.get("submit_translations") and
+                self.user is not None):
+                # Check if this is really the form we are listening for..
+                if self._submitTranslations():
+                    # .. and if no errors occurred, adios. Otherwise, we
+                    # need to set up the subviews for error display and
+                    # correction.
+                    return
+        else:
+            # It's not a POST, so we should generate lock_timestamp.
+            UTC = pytz.timezone('UTC')
+            self.lock_timestamp = datetime.datetime.now(UTC)
 
         # Slave view initialization depends on _submitTranslations being
         # called, because the form data needs to be passed in to it --
@@ -459,12 +482,19 @@ class BaseTranslationView(LaunchpadView):
         is_fuzzy = self.form_posted_needsreview.get(pomsgset, False)
 
         try:
-            pomsgset.updateTranslationSet(person=self.user,
-                new_translations=translations, fuzzy=is_fuzzy, published=False)
+            pomsgset.updateTranslationSet(
+                person=self.user, new_translations=translations,
+                fuzzy=is_fuzzy, published=False,
+                lock_timestamp=self.lock_timestamp)
+        except RosettaTranslationLocked:
+            return (
+                u'Someone changed this translation, yours has been added as'
+                 ' a suggestion, please, review current value and select'
+                 ' yours again if you prefer it.')
         except gettextpo.error, e:
             # Save the error message gettext gave us to show it to the
             # user.
-            return str(e)
+            return unicode(e)
         else:
             return None
 
@@ -473,7 +503,8 @@ class BaseTranslationView(LaunchpadView):
         # XXX: it would be nice if we could easily check if
         # this is being called in the right order, after
         # _storeTranslations(). -- kiko, 2006-09-27
-        if self.form_posted_translations.has_key(pomsgset):
+        if (self.form_posted_translations.has_key(pomsgset) and
+            not self.context.isNewer(self.lock_timestamp)):
             translations = self.form_posted_translations[pomsgset]
         else:
             translations = pomsgset.active_texts

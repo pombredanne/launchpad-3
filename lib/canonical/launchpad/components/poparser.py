@@ -571,6 +571,22 @@ class POHeader(dict, POMessage):
 
         return (date_string, date)
 
+    def getRosettaExportDate(self):
+        """See IPOHeader."""
+
+        date_string = self.get('X-Rosetta-Export-Date', None)
+        if date_string is None:
+            date = None
+        else:
+            try:
+                date = datetimeutils.parseDatetimetz(date_string)
+            except (datetimeutils.SyntaxError, datetimeutils.DateError,
+                    datetimeutils.DateTimeError, ValueError):
+                # invalid date format
+                date = None
+
+        return date
+
     def getPluralFormExpression(self):
         """See IPOHeader."""
         plural = self.get('Plural-Forms')

@@ -131,6 +131,8 @@
                    tal:attributes="value view/start" />
             <input type="hidden" name="batch" value=""
                    tal:attributes="value view/size" />
+            <input type="hidden" name="lock_timestamp" value=""
+                   tal:attributes="value view/lock_timestamp/fmt:datetime" />
             <table class="listing" style="margin-top: 0.5em;">
               <thead>
                 <tr class="results">

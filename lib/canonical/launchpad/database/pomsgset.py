@@ -15,7 +15,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.lp.dbschema import (RosettaTranslationOrigin,
     TranslationValidationStatus)
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces import IPOMsgSet
+from canonical.launchpad.interfaces import IPOMsgSet, RosettaTranslationLocked
 from canonical.launchpad.database.poselection import POSelection
 from canonical.launchpad.database.posubmission import POSubmission
 from canonical.launchpad.database.potranslation import POTranslation
@@ -151,6 +151,18 @@ class POMsgSet(SQLBase):
                 translations.append(None)
         return translations
 
+    def isNewer(self, timestamp):
+        """See IPOMsgSet."""
+        for plural_index in range(self.pluralforms):
+            selection = self.getSelection(plural_index)
+            # This sync is needed to help tests to avoid cache problems.
+            if selection is not None:
+                selection.sync()
+                if (selection.activesubmission is not None and
+                    selection.date_reviewed > timestamp):
+                    return True
+        return False
+
     def getSelection(self, pluralform):
         """See IPOMsgSet."""
         return POSelection.selectOne(
@@ -175,8 +187,8 @@ class POMsgSet(SQLBase):
                """ % sqlvalues(self.id, pluralform),
                clauseTables=['POSelection'])
 
-    def updateTranslationSet(self, person, new_translations, fuzzy,
-        published, ignore_errors=False, force_edition_rights=False):
+    def updateTranslationSet(self, person, new_translations, fuzzy, published,
+        lock_timestamp, ignore_errors=False, force_edition_rights=False):
         """See IPOMsgSet."""
         # Is the person allowed to edit translations?
         is_editor = (force_edition_rights or
@@ -189,6 +201,10 @@ class POMsgSet(SQLBase):
 
         # By default all translations are correct.
         validation_status = TranslationValidationStatus.OK
+
+        # And we allow changes to translations by default, we don't force
+        # submissions as suggestions.
+        read_only = False
 
         # Fix the trailing and leading whitespaces
         fixed_new_translations = {}
@@ -219,11 +235,16 @@ class POMsgSet(SQLBase):
                     # outside this method.
                     raise
 
+        if not published and not fuzzy and self.isNewer(lock_timestamp):
+            # Latest active submission in self is newer than 'lock_timestamp'
+            # and we try to change it.
+            read_only = True
+
         # keep track of whether or not this msgset is complete. We assume
         # it's complete and then flag it during the process if it is not
         complete = True
         new_translation_count = len(fixed_new_translations)
-        if new_translation_count < self.pluralforms:
+        if new_translation_count < self.pluralforms and not read_only:
             # it's definitely not complete if it has too few translations
             complete = False
             # And we should reset the selection for the non updated plural
@@ -259,10 +280,16 @@ class POMsgSet(SQLBase):
                 pluralform=index,
                 published=published,
                 validation_status=validation_status,
-                force_edition_rights=is_editor)
+                force_edition_rights=is_editor,
+                force_suggestion=read_only)
 
             # Flush the database cache
             flush_database_updates()
+
+        if read_only:
+            # We are done for the read only mode. Raise the exception to
+            # notify that the DB was changed.
+            raise RosettaTranslationLocked
 
         # We set the fuzzy flag first, and completeness flags as needed:
         if is_editor:
@@ -282,7 +309,7 @@ class POMsgSet(SQLBase):
                     # also the same.
                     self.isfuzzy = self.publishedfuzzy
                     self.iscomplete = self.publishedcomplete
-            else:
+            elif not read_only:
                 self.isfuzzy = fuzzy
                 self.iscomplete = complete
 
@@ -291,7 +318,7 @@ class POMsgSet(SQLBase):
 
     def _makeSubmission(self, person, text, pluralform, published,
             validation_status=TranslationValidationStatus.UNKNOWN,
-            force_edition_rights=False):
+            force_edition_rights=False, force_suggestion=False):
         """Record a translation submission by the given person.
 
         If "published" then this is a submission noticed in the published po
@@ -360,7 +387,8 @@ class POMsgSet(SQLBase):
             if published:
                 selection.publishedsubmission = None
             elif (is_editor and
-                  validation_status == TranslationValidationStatus.OK):
+                  validation_status == TranslationValidationStatus.OK and
+                  not force_suggestion):
                 # activesubmission is updated only if the translation is
                 # valid and it's an editor.
                 selection.activesubmission = None
@@ -501,14 +529,15 @@ class POMsgSet(SQLBase):
                         distribution=potemplate.distribution,
                         sourcepackagename=potemplate.sourcepackagename)
 
-            # Now that we assigned all karma, is time to update the active
-            # submission, the person that reviewed it and when it was done.
-            selection.activesubmission = submission
-            selection.reviewer = person
-            selection.date_reviewed = UTC_NOW
+            if not force_suggestion:
+                # Now that we assigned all karma, is time to update the active
+                # submission, the person that reviewed it and when it was done.
+                selection.activesubmission = submission
+                selection.reviewer = person
+                selection.date_reviewed = UTC_NOW
 
-            # And this is the latest submission that this IPOFile got.
-            self.pofile.latestsubmission = submission
+                # And this is the latest submission that this IPOFile got.
+                self.pofile.latestsubmission = submission
 
         # return the submission we have just made
         return submission

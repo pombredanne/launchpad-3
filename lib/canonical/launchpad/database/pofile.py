@@ -577,6 +577,7 @@ class POFile(SQLBase, RosettaStats):
 
     def getNextToImport(self):
         """See IPOFile."""
+        flush_database_updates()
         return TranslationImportQueueEntry.selectFirstBy(
                 pofile=self,
                 status=RosettaImportStatus.APPROVED,

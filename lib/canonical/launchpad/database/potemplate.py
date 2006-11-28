@@ -537,6 +537,7 @@ class POTemplate(SQLBase, RosettaStats):
 
     def getNextToImport(self):
         """See IPOTemplate."""
+        flush_database_updates()
         return TranslationImportQueueEntry.selectFirstBy(
                 potemplate=self,
                 status=RosettaImportStatus.APPROVED,
