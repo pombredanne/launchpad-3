@@ -73,7 +73,7 @@ h1 {
 }
 h2 {
   font-weight: bold;
-  margin: 0;
+  margin: 0 0 0.75em;
   padding: 0;
   color: #000000;
   font-size: 1.4em;
@@ -1132,6 +1132,9 @@ div.three.column.left, div.three.column.center, div.three.column.right {
 table {
   border-collapse: collapse;
 }
+table.latest th, table.latest td {
+  padding-bottom: 2em;
+}
 table.summary {
   margin: 0 auto;
 }
@@ -1144,6 +1147,26 @@ table.summary td {
 }
 th {
   text-align: right;
+}
+th, td {
+  padding: 0.25em;
+}
+th.icon, td.icon {
+  vertical-align: top;
+  white-space: nowrap;
+  width: 1px;
+}
+th.icon.left, td.icon.left {
+  padding-right: 0;
+}
+th.icon.right, td.icon.right {
+  padding-left: 0;
+}
+.title {
+  font-weight: bold;
+}
+.title a:link, .title a:visited {
+  color: #656565 !important;
 }
 ul {
   margin-left: 16px;

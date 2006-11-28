@@ -100,26 +100,8 @@
           tal:content="structure context/@@+portlet-details"
           class="two column section"
         />
-        <div class="demo two column section">
-          <h2>Latest bugs</h2>
-          <ul class="bug">
-            <li>
-              <div class="bug-summary">56592. Wrong Spanish translations</div>
-              <div>network-manager (Ubuntu), reported by David Prieto</div>
-            </li>
-            <li>
-              <div class="bug-summary">56592. Wrong Spanish translations</div>
-              <div>network-manager (Ubuntu), reported by David Prieto</div>
-            </li>
-            <li>
-              <div class="bug-summary">56592. Wrong Spanish translations</div>
-              <div>network-manager (Ubuntu), reported by David Prieto</div>
-            </li>
-            <li>
-              <div class="bug-summary">56592. Wrong Spanish translations</div>
-              <div>network-manager (Ubuntu), reported by David Prieto</div>
-            </li>
-          </ul>
+        <div class="two column section">
+          <tal:latestbugs replace="structure context/@@+portlet-latestbugs" />
         </div>
         <div class="demo two column section">
           <h2>Latest proposed features</h2>
