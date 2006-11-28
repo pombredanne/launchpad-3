@@ -118,7 +118,8 @@ class IBugNominationSet(Interface):
 
 class IBugNominationForm(Interface):
     """The browser form for nominating bugs for releases."""
+
     nominatable_releases = Set(
-        title=_("Releases that can be nominated"), required=False,
+        title=_("Releases that can be nominated"), required=True,
         value_type=Choice(vocabulary="BugNominatableReleases"),
         constraint=can_be_nominated_for_releases)
