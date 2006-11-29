@@ -1,54 +1,23 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['BinaryPackageFile', 'SourcePackageReleaseFile', 'DownloadURL']
-
-from urllib2 import URLError
+__all__ = ['BinaryPackageFile', 'SourcePackageReleaseFile']
 
 from zope.interface import implements
-from zope.component import getUtility
 
 from sqlobject import ForeignKey
 from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.interfaces import (
-    IBinaryPackageFile, ISourcePackageReleaseFile, IDownloadURL, ISoyuzFile)
-
-from canonical.librarian.interfaces import ILibrarianClient
-
+    IBinaryPackageFile, ISourcePackageReleaseFile)
 from canonical.lp.dbschema import EnumCol
 from canonical.lp.dbschema import (
     BinaryPackageFileType, SourcePackageFileType)
 
 
-class DownloadURL:
-    """See IDownloadURL."""
-    implements(IDownloadURL)
-
-    def __init__(self, filename, fileurl):
-        self.filename = filename
-        self.fileurl = fileurl
-
-
-class SoyuzFile:
-    """Base class with special attributes for LFA instance in Soyuz world"""
-    @property
-    def url(self):
-        """See ISoyuzFile."""
-        downloader = getUtility(ILibrarianClient)
-        try:
-            url = downloader.getURLForAlias(self.libraryfile.id)
-        except URLError:
-            # librarian not runnig or file not avaiable
-            return None
-        else:
-            name = self.libraryfile.filename
-            return DownloadURL(name, url)
-
-
-class BinaryPackageFile(SQLBase, SoyuzFile):
+class BinaryPackageFile(SQLBase):
     """See IBinaryPackageFile """
-    implements(IBinaryPackageFile, ISoyuzFile)
+    implements(IBinaryPackageFile)
     _table = 'BinaryPackageFile'
 
     binarypackagerelease = ForeignKey(dbName='binarypackagerelease',
@@ -60,10 +29,10 @@ class BinaryPackageFile(SQLBase, SoyuzFile):
                        schema=BinaryPackageFileType)
 
 
-class SourcePackageReleaseFile(SQLBase, SoyuzFile):
+class SourcePackageReleaseFile(SQLBase):
     """See ISourcePackageFile"""
 
-    implements(ISourcePackageReleaseFile, ISoyuzFile)
+    implements(ISourcePackageReleaseFile)
 
     sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
                                       dbName='sourcepackagerelease')
