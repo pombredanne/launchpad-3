@@ -521,7 +521,7 @@ class TicketSearch:
         if zope_isinstance(status, Item):
             self.status = [status]
         else:
-            self.status = status
+            self.status = list(status)
 
         self.sort = sort
 
