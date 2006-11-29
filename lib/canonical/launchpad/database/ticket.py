@@ -544,7 +544,7 @@ class TicketSearch:
             if self.sourcepackagename:
                 constraints.append(
                     'Ticket.sourcepackagename = %s' % sqlvalues(
-                    self.sourcepackagename))
+                        self.sourcepackagename))
 
         return constraints
 
