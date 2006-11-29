@@ -204,13 +204,15 @@ bugtarget_filebug_submit_bug = bugtarget_filebug_simple
 
 bugtask_backport_fixing = BugTaskBackportingTitle()
 
-bugtask_confirm_unlinked = LaunchbagBugID('Bug #%d - Request a fix')
+bugtask_choose_affected_product = LaunchbagBugID('Bug #%d - Request a fix')
 
 bugtask_edit = BugTaskPageTitle()
 
 bugtask_index = BugTaskPageTitle()
 
-bugtask_requestfix = bugtask_confirm_unlinked
+bugtask_requestfix = LaunchbagBugID('Bug #%d - Request a fix')
+
+bugtask_requestfix_upstream = LaunchbagBugID('Bug #%d - Request a fix')
 
 bugtask_view = BugTaskPageTitle()
 
@@ -392,15 +394,17 @@ errorservice_tbentry = 'Traceback entry'
 
 faq = 'Launchpad Frequently Asked Questions'
 
-foaf_adminrequestmerge = 'Merge Launchpad accounts'
+people_adminrequestmerge = 'Merge Launchpad accounts'
 
-foaf_mergerequest_sent = 'Merge request sent'
+people_mergerequest_sent = 'Merge request sent'
 
-foaf_newteam = 'Register a new team in Launchpad'
+people_newperson = 'Create a new Launchpad profile'
 
-foaf_requestmerge_multiple = 'Merge Launchpad accounts'
+people_newteam = 'Register a new team in Launchpad'
 
-foaf_requestmerge = 'Merge Launchpad accounts'
+people_requestmerge_multiple = 'Merge Launchpad accounts'
+
+people_requestmerge = 'Merge Launchpad accounts'
 
 karmaaction_index = 'Karma actions'
 
