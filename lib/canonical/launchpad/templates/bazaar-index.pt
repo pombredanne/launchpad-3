@@ -40,6 +40,32 @@
                         <abbr>CVS</abbr>, <abbr>SVN</abbr>, and git projects,
                         so you can use Bazaar with those too.
                       </p>
+                      <ul class="buttons">
+                        <li>
+                          <a href="+tour">
+                            <img
+                              alt="Take a tour"
+                              src="/+icing/but_lrg_takeatour.gif"
+                            />
+                          </a>
+                        </li>
+                        <li>
+                          <a href="+addbranch">
+                            <img
+                              alt="Register a branch"
+                              src="/+icing/but_lrg_registerabranch.gif"
+                            />
+                          </a>
+                        </li>
+                        <li>
+                          <a href="+import">
+                            <img
+                              alt="Import your project"
+                              src="/+icing/but_lrg_importyourproject.gif"
+                            />
+                          </a>
+                        </li>
+                      </ul>
                       <div class="columns">
                         <div class="three column left">
                           <h2>Recent imports</h2>
