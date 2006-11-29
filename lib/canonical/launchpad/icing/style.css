@@ -1189,6 +1189,9 @@ li {
 ul.spec>li, li.spec {
   list-style-image: url(/@@/spec);
 }
+ul.webref>li, li.webref, ul.external.link li, li.external.link {
+  list-style-image: url(/@@/link);
+}
 
 .bug-summary {
   font-weight: bold;

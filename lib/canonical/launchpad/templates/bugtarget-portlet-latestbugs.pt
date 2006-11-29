@@ -21,7 +21,9 @@
               </a>
             </div>
             <div>
-              <tal:product replace="bugtask/product/name" />,
+              <tal:product condition="bugtask/product">
+                <tal:productname replace="bugtask/product/name" />,
+              </tal:product>
               reported by <tal:reporter replace="bugtask/bug/owner/displayname" />
             </div>
 
