@@ -236,3 +236,66 @@ as well!)
     ...
   UnexpectedFormData: You specified...
 
+Let's see what happens when we do a submission with a lock_timestamp older
+than the review date for current translation.
+
+  >>> browser.open(
+  ...     'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/'
+  ...     '+pots/evolution-2.2/es/14/+translate')
+  >>> browser.url
+  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate'
+
+Current value is:
+
+  >>> print browser.getControl(name='msgset_143_es_translation_0').value
+  <BLANKLINE>
+  La ubicación y jerarquía de las carpetas de contactos de Evolution ha cambiado desde Evolution 1.x.
+  ...
+
+And its review date is:
+
+  >>> from canonical.launchpad.database import POTMsgSet
+  >>> from canonical.launchpad.interfaces import TranslationConstants
+  >>> potmsgset = POTMsgSet.get(143)
+  >>> pomsgset = potmsgset.getPOMsgSet('es')
+  >>> selection = pomsgset.getSelection(TranslationConstants.SINGULAR_FORM)
+  >>> selection.date_reviewed.isoformat()
+  '2005-05-06T21:12:13.908028+00:00'
+
+Let's update the timestamp we got from the system to simulate a conflict,
+setting it to a previous date than the date when it was reviewed.
+
+  >>> browser.getControl(name='lock_timestamp').value = u'2003-01-01T00:00+00:00'
+
+First, we check that the translation we are going to add is not yet in the
+form, so we can check later that it's added as a suggestion:
+
+  >>> 'foo!!' in browser.contents
+  False
+
+Now, we update the translation.
+
+  >>> browser.getControl(name='msgset_143_es_translation_0').value = 'foo!!'
+
+We submit it
+
+  >>> browser.getControl(name='submit_translations').click()
+  >>> browser.url
+  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate'
+
+And finally, we see the error message:
+
+  >>> 'Someone changed this translation, yours has been added as a suggestion' in browser.contents
+  True
+
+Also, we should still have previous translation:
+
+  >>> print browser.getControl(name='msgset_143_es_translation_0').value
+  <BLANKLINE>
+  La ubicación y jerarquía de las carpetas de contactos de Evolution ha cambiado desde Evolution 1.x.
+  ...
+
+But also, the new one should appear in the form.
+
+  >>> 'foo!!' in browser.contents
+  True

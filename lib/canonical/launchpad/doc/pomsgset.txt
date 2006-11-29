@@ -226,3 +226,22 @@ We can guess the pluralforms for this language thru ILanguage.pluralforms:
   3
   >>> ru_dummypomsgset.active_texts
   [None, None, None]
+
+
+POMsgSet.isNewer
+----------------
+
+This method tells us whether the active translation was reviewed after the
+given timestamp.
+
+  >>> from datetime import datetime
+  >>> from pytz import UTC
+  >>> from canonical.launchpad.interfaces import TranslationConstants
+  >>> pomsgset = POMsgSet.get(2)
+  >>> selection = pomsgset.getSelection(TranslationConstants.SINGULAR_FORM)
+  >>> selection.date_reviewed.isoformat()
+  '2005-04-07T13:19:17.601068+00:00'
+  >>> pomsgset.isNewer(datetime(2004, 11, 30, 7, 0, 0, tzinfo=UTC))
+  True
+  >>> pomsgset.isNewer(datetime(2006, 11, 30, 7, 0, 0, tzinfo=UTC))
+  False
