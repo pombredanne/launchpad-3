@@ -12,6 +12,11 @@ UPDATE potmsgset SET alternative_msgid=NULL;
 
 CREATE INDEX potmsgset_alternative_msgid_idx ON potmsgset USING btree (alternative_msgid);
 
+ALTER TABLE ONLY potmsgset
+    DROP CONSTRAINT potmsgset_potemplate_key;
+ALTER TABLE ONLY potmsgset
+    ADD CONSTRAINT potmsgset_potemplate_key UNIQUE (potemplate, primemsgid, alternative_msgid);
+
 ALTER TABLE translationimportqueueentry
     ADD COLUMN format INTEGER DEFAULT 1 NOT NULL;
 

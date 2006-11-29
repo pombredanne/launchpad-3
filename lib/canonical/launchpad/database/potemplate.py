@@ -393,10 +393,10 @@ class POTemplate(SQLBase, RosettaStats):
         else:
             pofile.rosettaCount()
 
-    def hasMessageID(self, messageID):
+    def hasMessageID(self, messageID, altKey=None):
         """See IPOTemplate."""
         results = POTMsgSet.selectBy(
-            potemplate=self, primemsgid_=messageID)
+            potemplate=self, primemsgid_=messageID, alternative_msgid_=altKey)
         return results.count() > 0
 
     def hasPluralMessage(self):
@@ -536,7 +536,7 @@ class POTemplate(SQLBase, RosettaStats):
             # with the given text in this template.
             messageID = POMsgID(msgid=text)
         else:
-            assert not self.hasMessageID(messageID), (
+            assert not self.hasMessageID(messageID, altKey), (
                 "There is already a message set for this template, file and"
                 " primary msgid")
 

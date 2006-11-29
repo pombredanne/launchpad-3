@@ -2,7 +2,10 @@
 
 from UserDict import DictMixin
 from StringIO import StringIO
+
 from zope.interface import implements
+from zope.component import getUtility
+
 from canonical.librarian.interfaces import ILibrarianClient
 #from canonical.launchpad.database import LibraryFileAlias
 from canonical.launchpad.interfaces import ITranslationImport
@@ -113,11 +116,13 @@ class MozillaDtdConsumer (xmldtd.WFCDTD):
         if not self.started: return
         if self.messages.has_key(name):
             print >>sys.stderr, "Warning: there is already a message with key '%s'." % name
-            self.messages[name]['sourcerefs'].append(self.filename)
+            self.messages[name]['sourcerefs'].append("%s(%s)" % (self.filename,
+                                                                 name) )
             if self.lastcomment:
                 self.messages[name]['comments'].append(self.lastcomment)
         else:
-            self.messages[name] = { 'sourcerefs' : [ self.filename ],
+            self.messages[name] = { 'sourcerefs' : [ "%s(%s)" % (self.filename,
+                                                                 name) ],
                                     'content' : value,
                                     'order' : self.started,
                                     'comments' : [ ] }
@@ -183,12 +188,14 @@ class PropertyFile (LocalizableFile):
 
             if self._data.has_key(key):
                 print >>sys.stderr, "Warning: there is already a message with key '%s'." % name
-                self._data[key]['sourcerefs'].append(filename)
+                self._data[key]['sourcerefs'].append("%s(%s)" % (self.filename,
+                                                                 key) )
                 if lastcomment:
                     self._data[key]['comments'].append(lastcomment)
             else:
                 count += 1
-                self._data[key] = { 'sourcerefs' : [ filename ],
+                self._data[key] = { 'sourcerefs' : [ "%s(%s)" % (self.filename,
+                                                                 key) ],
                                     'content' : value,
                                     'order' : count,
                                     'comments' : [] }
@@ -223,12 +230,13 @@ class MozillaSupport:
             # Add entry to librarian in the form of
             # productseries-distrorelease-sourcepackagename.en-US.xpi
             # XXX: will this not expire right away?
+            librarian_client = getUtility(ILibrarianClient)
             #librarian_client.addFile(
             #    '%s-%s-%s.en-US.xpi' % (self.productseries,
             #                            self.distrorelease,
             #                            self.sourcepackagename),
             #    len(content),
-            #    self.file,
+            #    content,
             #    None)
             language = None
 
@@ -249,9 +257,55 @@ class MozillaSupport:
         return entries
 
     def getTemplate(self, path):
-        file = librarian_client.getFileByAlias(self.content)
+        mozimport = MozillaZipFile(StringIO(self.file.read()))
+
+        messages = []
+        for alt_msgid in mozimport:
+            msg = {}
+            xpimsg = mozimport[alt_msgid]
+            msg['alt_msgid'] = alt_msgid
+            msg['msgid'] = xpimsg['content']
+            msg['msgid_plural'] = None
+
+            msg['comment'] = None
+            msg['filerefs'] = None
+            msg['flags'] = []
+            msg['obsolete'] = False
+            msg['msgstr'] = None
+            msg['sourcecomment'] = None
+
+            # Special case accesskeys and commandkeys:
+            # these are single letter messages and lets display
+            # their alternative msgid as the msgid instead
+            if (alt_msgid.endswith('.accesskey')
+                or alt_msgid.endswith('.commandkey')):
+                msg['msgid'] = alt_msgid
+                msg['sourcecomment'] = ( u"Default key in en_US: %s" %
+                                         ( xpimsg['content'] ) )
+
+            if xpimsg['sourcerefs'] and len(xpimsg['sourcerefs']):
+                msg['filerefs'] = u" ".join(xpimsg['sourcerefs'])
+
+            # Add source comments
+            if xpimsg['comments'] and len(xpimsg['comments']):
+                sourcecomment = u"\n".join(xpimsg['comments'])
+                if sourcecomment and msg['sourcecomment']:
+                    sourcecomment = msg['sourcecomment'] + "\n" + sourcecomment
+                elif not sourcecomment:
+                    sourceccomment = None
+                msg['sourcecomment'] = sourcecomment
+            messages.append(msg)
+
+        return {
+            "revisiondate" : None,
+            "lasttranslatoremail" : None,
+            "lasttranslatorname" : None,
+            "header" : None,
+            "messages" : messages,
+            }
 
     def getTranslation(self, path, language):
+        file = librarian_client.getFileByAlias(self.content)
         LibraryFileAlias()
 
     def getRosettaLanguageForXpiLanguage(self, xpilang):

@@ -170,7 +170,8 @@ class TranslationImportQueueEntry(SQLBase):
         if self.pofile is not None:
             # The entry has an IPOFile associated where it should be imported.
             return self.pofile
-        elif self.potemplate is not None and self.path.endswith('.pot'):
+        elif (self.potemplate is not None and
+              (self.path.endswith('.pot') or self.path == 'en-US.xpi')):
             # The entry has an IPOTemplate associated where it should be
             # imported.
             return self.potemplate

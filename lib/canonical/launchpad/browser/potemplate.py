@@ -220,7 +220,8 @@ class POTemplateView(LaunchpadView):
 
         translation_import_queue = getUtility(ITranslationImportQueue)
 
-        if filename.endswith('.pot') or filename.endswith('.po'):
+        if (filename.endswith('.pot') or filename.endswith('.po')
+            or filename=='en-US.xpi'):
             # Add it to the queue.
             translation_import_queue.addOrUpdateEntry(
                 self.context.path, content, True, self.user,
