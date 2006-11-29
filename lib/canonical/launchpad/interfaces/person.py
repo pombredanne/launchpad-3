@@ -21,7 +21,7 @@ __all__ = [
 
 from zope.schema import (
     Choice, Datetime, Int, Text, TextLine, Bytes, Bool)
-from zope.interface import Interface, Attribute
+from zope.interface import Attribute, Interface, Invalid, invariant
 from zope.component import getUtility
 
 from canonical.launchpad import _
@@ -362,6 +362,11 @@ class IPerson(IHasSpecifications):
 
     browsername = Attribute(
         'Return a textual name suitable for display in a browser.')
+
+    @invariant
+    def personCannotHaveEmblem(person):
+        if person.emblem is not None and not person.isTeam():
+            raise Invalid('Only teams can have an emblem.')
 
     def getBugContactPackages():
         """Return a list of packages for which this person is a bug contact.
