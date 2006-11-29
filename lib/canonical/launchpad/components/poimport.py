@@ -19,7 +19,7 @@ class OldPOImported(Exception):
     """Raised when an older PO file is imported."""
 
 
-def getPersonForEmail(pofile, email, name=None):
+def getPersonByEmail(pofile, email, name=None):
     """Return the person for given email.
 
     If the person is unknown in launchpad, the account will be created.

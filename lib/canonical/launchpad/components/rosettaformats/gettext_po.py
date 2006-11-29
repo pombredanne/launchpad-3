@@ -90,6 +90,7 @@ class PoSupport:
             message['filerefs'] = pomessage.fileReferences
             message['flags'] = pomessage.flags
             message['obsolete'] = pomessage.obsolete
+            message['msgstr'] = None
 
             msgs.append(message)
 

@@ -612,9 +612,11 @@ class POFile(SQLBase, RosettaStats):
                     sourcepackagename=entry_to_import.sourcepackagename,
                     is_published=entry_to_import.is_published,
                     file=file)
-            translation_import(self,
-                               importer.getTemplate(entry_to_import.path),
-                               entry_to_import.importer)
+            newtranslation = importer.getTranslation(entry_to_import.
+                                                     path,
+                                                     self.language)
+            errors = translation_import(self, newtranslation,
+                                        entry_to_import.importer)
         except (POSyntaxError, POInvalidInputError):
             # The import failed, we mark it as failed so we could review it
             # later in case it's a bug in our code.
