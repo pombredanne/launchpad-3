@@ -1,10 +1,11 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 """Test native archive index generation for Soyuz."""
 
-from unittest import TestLoader
+import email
 import os
 import shutil
 from StringIO import StringIO
+from unittest import TestLoader
 
 from zope.component import getUtility
 
@@ -171,6 +172,7 @@ class TestNativeArchiveIndexes(LaunchpadZopelessTestCase):
         the package in question.
         """
         pub_source = self.getPubSource()
+
         self.assertEqual(
             [u'Package: foo',
              u'Binary: foo-bin',
@@ -230,8 +232,7 @@ class TestNativeArchiveIndexes(LaunchpadZopelessTestCase):
         description = (
             "Normal\nNormal"
             "\n.\n.\n."
-            "\n xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-            "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+            "\n %s" % ('x' * 100))
         pub_binary = self.getPubBinary(
             description=description)
 
@@ -252,10 +253,66 @@ class TestNativeArchiveIndexes(LaunchpadZopelessTestCase):
              u' .',
              u' .',
              u' .',
-             (u'  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
-              u'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+             u'  %s' % ('x' * 100)
              ],
             pub_binary.getIndexStanza().splitlines())
+
+    def testBinaryStanzaWithNonAscii(self):
+        """Check how will be a stanza with non-ascii content
+
+        Only 'Maintainer' (IPerson.displayname) and 'Description'
+        (IBinaryPackageRelease.{summary, description}) can possibly
+        contain non-ascii stuff.
+        The encoding should be preserved and able to be encoded in
+        'utf-8' for disk writing.
+        """
+        description = u'Using non-ascii as: \xe7\xe3\xe9\xf3'
+        pub_binary = self.getPubBinary(
+            description=description)
+
+        self.assertEqual(
+            [u'Package: foo-bin',
+             u'Priority: Standard',
+             u'Section: base',
+             u'Installed-Size: 100',
+             u'Maintainer: Foo Bar <foo@bar.com>',
+             u'Architecture: i386',
+             u'Version: 666',
+             u'Filename: foo-bin.deb',
+             u'Size: 18',
+             u'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
+             u'Description: Foo app is great',
+             u' Using non-ascii as: \xe7\xe3\xe9\xf3',
+             ],
+            pub_binary.getIndexStanza().splitlines())
+
+        self.assertTrue(pub_binary.getIndexStanza().encode('utf-8'))
+
+
+    def testBinaryStanzaWithApt(self):
+        """Check a binary stanza with APT parser."""
+        import os
+        import tempfile
+        import apt_pkg
+        apt_pkg.InitSystem()
+
+        pub_binary = self.getPubBinary()
+
+        index_filename = tempfile.mktemp()
+        index_file = open(index_filename, 'w')
+        index_file.write(pub_binary.getIndexStanza().encode('utf-8'))
+        index_file.close()
+
+        parser = apt_pkg.ParseTagFile(open(index_filename))
+
+        parser.Step()
+
+        self.assertEqual(parser.Section.get('Package'), 'foo-bin')
+        self.assertEqual(
+            parser.Section.get('Description').splitlines(),
+            ['Foo app is great', ' Well ...', ' it does nothing, though'])
+
+        os.remove(index_filename)
 
     def testIndexStanzaFields(self):
         """Check how this auxiliary class works...
