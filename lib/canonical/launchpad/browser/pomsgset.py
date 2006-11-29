@@ -504,7 +504,7 @@ class BaseTranslationView(LaunchpadView):
         # this is being called in the right order, after
         # _storeTranslations(). -- kiko, 2006-09-27
         if (self.form_posted_translations.has_key(pomsgset) and
-            not self.context.isNewer(self.lock_timestamp)):
+            not pomsgset.isNewer(self.lock_timestamp)):
             translations = self.form_posted_translations[pomsgset]
         else:
             translations = pomsgset.active_texts
