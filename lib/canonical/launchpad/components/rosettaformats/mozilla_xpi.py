@@ -6,6 +6,9 @@ from zope.interface import implements
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.database import LibraryFileAlias
 from canonical.launchpad.interfaces import ITranslationImport
+from canonical.lp.dbschema import RosettaImportStatus
+
+import os
 
 class LocalizableFile (DictMixin):
     """Class for reading translatable messages from different files.
@@ -195,8 +198,8 @@ class PropertyFile (LocalizableFile):
 class MozillaSupport:
     implements(ITranslationImport)
 
-    def __init__(self, path, productseries, distrorelease, sourcepackagename,
-                 is_published, file):
+    def __init__(self, path, productseries=None, distrorelease=None,
+                 sourcepackagename=None, is_published=False, file=None):
         self.basepath = path
         self.productseries = productseries
         self.distrorelease = distrorelease
@@ -220,13 +223,13 @@ class MozillaSupport:
             # Add entry to librarian in the form of
             # productseries-distrorelease-sourcepackagename.en-US.xpi
             # XXX: will this not expire right away?
-            librarian_client.addFile(
-                '%s-%s-%s.en-US.xpi' % (self.productseries,
-                                        self.distrorelease,
-                                        self.sourcepackagename),
-                len(content),
-                self.file,
-                None)
+            #librarian_client.addFile(
+            #    '%s-%s-%s.en-US.xpi' % (self.productseries,
+            #                            self.distrorelease,
+            #                            self.sourcepackagename),
+            #    len(content),
+            #    self.file,
+            #    None)
             language = None
 
         else:

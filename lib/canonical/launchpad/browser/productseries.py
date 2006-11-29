@@ -46,6 +46,8 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
+from canonical.launchpad.components.rosettaformats import *
+
 from canonical.launchpad import _
 
 
@@ -351,11 +353,11 @@ class ProductSeriesView(LaunchpadView):
             filename=='en-US.xpi'):
             # Add it to the queue.
             if filename == 'en-US.xpi':
-                newimport = MozillaSupport(basepath=filename,
+                newimport = MozillaSupport(path=filename,
                                            productseries=self.context,
                                            file=file)
             else:
-                newimport = PoSupport(basepath=filename,
+                newimport = PoSupport(path=filename,
                                       productseries=self.context,
                                       file=file)
             entries = newimport.allentries
@@ -366,18 +368,6 @@ class ProductSeriesView(LaunchpadView):
 
             self.request.response.addInfoNotification(
                 'Thank (really) you for your upload. The file content will be'
-                ' reviewed soon by an admin and then imported into Rosetta.'
-                ' You can track its status from the <a href="%s">Translation'
-                ' Import Queue</a>' %
-                    canonical_url(translation_import_queue_set))
-        elif filename == 'en-US.xpi':
-            # Add it to the queue.
-            translation_import_queue_set.addOrUpdateEntry(
-                filename, content, True, self.user,
-                productseries=self.context)
-
-            self.request.response.addInfoNotification(
-                'Thank you for your upload. The file content will be'
                 ' reviewed soon by an admin and then imported into Rosetta.'
                 ' You can track its status from the <a href="%s">Translation'
                 ' Import Queue</a>' %

@@ -39,7 +39,6 @@ from canonical.launchpad.database.translationimportqueue import (
 
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.components.poimport import import_po
-#from canonical.launchpad.components.xpiimport import import_xpi
 from canonical.launchpad.components.poparser import (POSyntaxError,
     POInvalidInputError)
 
@@ -264,6 +263,16 @@ class POTemplate(SQLBase, RosettaStats):
 
         return POTMsgSet.selectOne(query +
             (' AND primemsgid = %s' % sqlvalues(pomsgid.id)))
+
+    def getPOTMsgSetByAlternativeMsgID(self, key, only_current=False):
+        """See IPOTemplate."""
+        query = 'potemplate = %s' % sqlvalues(self.id)
+        if only_current:
+            query += ' AND sequence > 0'
+
+        # Find a message set with the given alternative message ID.
+        return POTMsgSet.selectOne(query +
+            (' AND alternative_msgid = %s' % quote(key)))
 
     def getPOTMsgSetBySequence(self, sequence):
         """See IPOTemplate."""
@@ -557,7 +566,25 @@ class POTemplate(SQLBase, RosettaStats):
         file = librarian_client.getFileByAlias(entry_to_import.content.id)
 
         try:
-            import_po(self, file, entry_to_import.importer)
+            if entry_to_import.path.lower().endswith('.xpi'):
+                importer = MozillaSupport(
+                    path=entry_to_import.path,
+                    productseries=entry_to_import.productseries,
+                    distrorelease=entry_to_import.distrorelease,
+                    sourcepackagename=entry_to_import.sourcepackagename,
+                    is_published=entry_to_import.is_published,
+                    file=file)
+            else:
+                importer = PoSupport(
+                    path=entry_to_import.path,
+                    productseries=entry_to_import.productseries,
+                    distrorelease=entry_to_import.distrorelease,
+                    sourcepackagename=entry_to_import.sourcepackagename,
+                    is_published=entry_to_import.is_published,
+                    file=file)
+            translation_import(self,
+                               importer.getTemplate(entry_to_import.path),
+                               entry_to_import.importer)
         except (POSyntaxError, POInvalidInputError):
             # The import failed, we mark it as failed so we could review it
             # later in case it's a bug in our code.
