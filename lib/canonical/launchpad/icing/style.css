@@ -742,6 +742,11 @@ a.open, a.closed {
 #help_panel.closed a.open-close, a.closed {
   background-image: url(help_ttl_closed.gif);
 }
+
+/* === Tab-specific style === */
+
+#application-footer strong {font-weight: normal;}
+
 /* tab-overview */
 body.tab-overview #mainarea div.x {
   background-image: url(mainarea_top.gif);
@@ -869,7 +874,7 @@ body.tab-bugs #mainarea #portlets .portlet.active div {
 }
 body.tab-bugs #actions {background-color: #fee;}
 body.tab-bugs #actions h2 {background-color: #c03;}
-.tab-bugs h1, .tab-bugs h2, .tab-bugs h3,
+.tab-bugs h1, .tab-bugs h2, .tab-bugs h3, .tab-bugs #application-footer strong,
 .tab-bugs #maincontent :link, .tab-bugs #maincontent :visited {
   background: none;
   color: #c03;
@@ -1078,18 +1083,13 @@ body {
 div.bordered {
   padding: 2em 4em;
 }
-#application-summary {
-  background: none;
+#application-summary, #application-footer {
   border-top: 1px dotted #999;
-  color: #999;
+  clear: both;
   font-size: 1.5em;
+  line-height: 1.5em;
   padding-top: 1em;
   width: 50%;
-}
-#application-footer {
-  clear: both;
-  padding-top: 2em;
-  text-align: center;
 }
 
 /* -- Other pages -- */

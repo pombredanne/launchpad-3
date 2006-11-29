@@ -110,7 +110,10 @@
                           <h2>Recently fixed</h2>
                         </div>
                       </div><!--columns-->
-                      <div class="clear"></div>
+                      <div
+                        id="application-footer"
+                        tal:content="structure context/@@+portlet-stats"
+                      />
                     </div><!--z-->
                   </div><!--y-->
                 </div><!--x-->
