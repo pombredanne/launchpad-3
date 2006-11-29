@@ -363,7 +363,8 @@ class ITicket(IHasOwner):
 
     def getIndirectSubscribers():
         """Return the set of persons who are implicitely subscribed to this
-        ticket. That will be the ticket's target support contact list.
+        ticket. That will be include the support contacts for the ticket's
+        target as well as the ticket's assignee.
         """
 
 

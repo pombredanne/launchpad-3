@@ -32,10 +32,11 @@ notification looks like:
     ...    "I insert the install CD in the CD-ROM drive, but it won't boot.")
     >>> notify(SQLObjectCreatedEvent(ubuntu_ticket))
 
-The notifications get sent to the ticket's subscribers and the ticket's
-target support contacts. Initially, only the submitter, Sample Person,
-is subscribed to the ticket and there is no support contact registered
-on Ubuntu, so only 1 notification is sent:
+The notifications get sent to the ticket's subscribers, the ticket's
+target support contacts as well as to the ticket's assignee. Initially,
+only the submitter, Sample Person, is subscribed to the ticket and there
+ is no support contact registered on Ubuntu, so only 1 notification is
+sent:
 
     >>> ubuntu.support_contacts
     []
@@ -69,6 +70,12 @@ notified about the changes as well:
     >>> ubuntu.addSupportContact(ubuntu_team)
     True
 
+And assign this ticket to Foo Bar, so that he will also receives
+notifications:
+
+    >>> login('foo.bar@canonical.com')
+    >>> ubuntu_ticket.assignee = getUtility(ILaunchBag).user
+
 Edit Notifications
 ------------------
 
@@ -91,12 +98,12 @@ sent.
     >>> notify(SQLObjectModifiedEvent(
     ...     ubuntu_ticket, unmodified_ticket, ['title', 'description']))
 
-Two copies of the notification got sent, one to Sample Person, and
-one to Ubuntu Team:
+Three copies of the notification got sent, one to Sample Person, one to
+Foo Bar, and one to Ubuntu Team:
 
     >>> notifications = pop_notifications()
-    >>> len(notifications)
-    2
+    >>> [notification['To'] for notification in notifications]
+    ['foo.bar@canonical.com', 'support@ubuntu.com', 'test@canonical.com']
 
     >>> edit_notification = notifications[0]
     >>> notification_body = edit_notification.get_payload(decode=True)
@@ -129,6 +136,10 @@ notifying about was made, no notification is sent:
     >>> len(notifications)
     0
 
+After receiving that notification, Foo Bar unassigned himself:
+
+    >>> login('foo.bar@canonical.com')
+    >>> ubuntu_ticket.assignee = None
 
 Bug Linking and Unlinking Notifications
 ---------------------------------------
@@ -138,6 +149,7 @@ bug that has been linked to the request:
 
     >>> from canonical.launchpad.interfaces import CreateBugParams
 
+    >>> login('no-priv@canonical.com')
     >>> unmodified_ticket = Snapshot(
     ...     ubuntu_ticket, providing=providedBy(ubuntu_ticket))
     >>> params = CreateBugParams(

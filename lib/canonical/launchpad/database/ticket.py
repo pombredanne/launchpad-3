@@ -371,13 +371,16 @@ class Ticket(SQLBase, BugLinkTargetMixin):
 
     def getIndirectSubscribers(self):
         """See ITicket."""
-        support_contacts = set(self.target.support_contacts)
+        subscribers = set(self.target.support_contacts)
         if self.sourcepackagename:
             source_package = self.target.getSourcePackage(
                 self.sourcepackagename.name)
-            support_contacts.update(source_package.support_contacts)
+            subscribers.update(source_package.support_contacts)
 
-        return sorted(support_contacts, key=operator.attrgetter('name'))
+        if self.assignee:
+            subscribers.add(self.assignee)
+
+        return sorted(subscribers, key=operator.attrgetter('name'))
 
     def _newMessage(self, owner, content, action, new_status, subject=None,
                     datecreated=None, update_ticket_dates=True):
