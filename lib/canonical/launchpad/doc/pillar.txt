@@ -36,3 +36,24 @@ Traceback (most recent call last):
 ...
 NotFoundError: 'fnord'
 
+We can also use PillarSet to do a search across some of our pillars. Right now
+this search is done across Products, Projects and Distributions.
+
+>>> for row in pillar_set.search('mozilla'):
+...     type, id, name, title, description, rank = row
+...     print "%s: %s (%s) [relevance: %s]" % (type, title, name, rank)
+project: The Mozilla Project (mozilla) [relevance: 0.80327]
+product: Mozilla Firefox (firefox) [relevance: 0.686029]
+product: Mozilla Thunderbird (thunderbird) [relevance: 0.686029]
+
+>>> for row in pillar_set.search('ubuntu'):
+...     type, id, name, title, description, rank = row
+...     print "%s: %s (%s) [relevance: %s]" % (type, title, name, rank)
+project: The Ubuntu Project (ubuntu-project) [relevance: 0.800838]
+distribution: Ubuntu Linux (ubuntu) [relevance: 0.796959]
+product: Ubuntu (ubuntu-product) [relevance: 0.793159]
+distribution: Ubuntu Test (ubuntutest) [relevance: 0.280322]
+product: The Evolution Groupware Application (evolution) [relevance: 0.121585]
+distribution: GuadaLinex: Linux for Andalucia (guadalinex) [relevance: 0.0607927]
+product: The Gnome Panel Applets (applets) [relevance: 0.0607927]
+

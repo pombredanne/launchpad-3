@@ -10,6 +10,7 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.interface import Interface
 
+from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.fields import BlacklistableContentNameField
 from canonical.launchpad.interfaces import NotFoundError
@@ -24,6 +25,18 @@ class IPillarSet(Interface):
 
     def __getitem__(name):
         """Get a pillar by its name."""
+
+    def search(text, limit=config.launchpad.default_batch_size):
+        """Return at most limit+1 Products/Projects/Distros matching :text:.
+
+        The return value is a sequence of tuples, where each tuple
+        contain the name of the object it represents (one of 'product',
+        'project' or 'distribution'), that object's id, name, title,
+        description and the rank of that object on this specific search, in
+        this specific order.
+
+        The results are ordered descending by rank.
+        """
 
 
 class PillarNameField(BlacklistableContentNameField):
