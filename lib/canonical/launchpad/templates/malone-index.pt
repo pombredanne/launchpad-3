@@ -77,8 +77,22 @@
                         between software teams on bug reports and fixes.
                       </p>
                       <ul class="buttons">
-                        <li class="tour"><a href="+tour">Take a tour</a></li>
-                        <li class="reportbug"><a href="+filebug">Report a bug</a></li>
+                        <li>
+                          <a href="+tour">
+                            <img
+                              alt="Take a tour"
+                              src="/+icing/but_lrg_takeatour_o.gif"
+                            />
+                          </a>
+                        </li>
+                        <li>
+                          <a href="+filebug">
+                            <img
+                              alt="Report a bug"
+                              src="/+icing/but_lrg_reportabug.gif"
+                            />
+                          </a>
+                        </li>
                       </ul>
                       <div class="columns">
                         <div class="two column left">

@@ -71,11 +71,21 @@
             </li>
           </ul>
           <ul class="buttons">
-            <li class="report-bug">
-              <a href="+filebug">Report a bug</a>
+            <li>
+              <a href="+filebug">
+                <img
+                  alt="Report a bug"
+                  src="/+icing/but_sml_reportabug_o.gif"
+                />
+              </a>
             </li>
-            <li class="request-support">
-              <a href="+addticket">Request support</a>
+            <li>
+              <a href="+addticket">
+                <img
+                  alt="Request support"
+                  src="/+icing/but_sml_requestsupport.gif"
+                />
+              </a>
             </li>
           </ul>
         </div><!-- two column right -->
