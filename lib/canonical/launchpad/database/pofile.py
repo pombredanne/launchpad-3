@@ -46,8 +46,7 @@ from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
 
 from canonical.launchpad.components.rosettastats import RosettaStats
-from canonical.launchpad.components.poimport import import_po, OldPOImported
-#from canonical.launchpad.components.xpiimport import import_xpi, OldXPIImported
+from canonical.launchpad.components.poimport import translation_import, OldPOImported
 from canonical.launchpad.components.poparser import (
     POSyntaxError, POHeader, POInvalidInputError)
 from canonical.librarian.interfaces import ILibrarianClient
@@ -596,10 +595,25 @@ class POFile(SQLBase, RosettaStats):
         file = librarian_client.getFileByAlias(entry_to_import.content.id)
 
         try:
-            #errors = import_xpi(self, file, entry_to_import.importer,
-            #                    entry_to_import.is_published)
-            errors = import_po(self, file, entry_to_import.importer,
-                               entry_to_import.is_published)
+            if entry_to_import.path.lower().endswith('.xpi'):
+                importer = MozillaSupport(
+                    path=entry_to_import.path,
+                    productseries=entry_to_import.productseries,
+                    distrorelease=entry_to_import.distrorelease,
+                    sourcepackagename=entry_to_import.sourcepackagename,
+                    is_published=entry_to_import.is_published,
+                    file=file)
+            else:
+                importer = PoSupport(
+                    path=entry_to_import.path,
+                    productseries=entry_to_import.productseries,
+                    distrorelease=entry_to_import.distrorelease,
+                    sourcepackagename=entry_to_import.sourcepackagename,
+                    is_published=entry_to_import.is_published,
+                    file=file)
+            translation_import(self,
+                               importer.getTemplate(entry_to_import.path),
+                               entry_to_import.importer)
         except (POSyntaxError, POInvalidInputError):
             # The import failed, we mark it as failed so we could review it
             # later in case it's a bug in our code.

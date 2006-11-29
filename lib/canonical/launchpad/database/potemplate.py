@@ -39,6 +39,7 @@ from canonical.launchpad.database.translationimportqueue import (
 
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.components.poimport import translation_import
+from canonical.launchpad.components.rosettaformats import *
 from canonical.launchpad.components.poparser import (POSyntaxError,
     POInvalidInputError)
 

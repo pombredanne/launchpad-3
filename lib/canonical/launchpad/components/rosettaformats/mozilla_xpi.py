@@ -4,7 +4,7 @@ from UserDict import DictMixin
 from StringIO import StringIO
 from zope.interface import implements
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.launchpad.database import LibraryFileAlias
+#from canonical.launchpad.database import LibraryFileAlias
 from canonical.launchpad.interfaces import ITranslationImport
 from canonical.lp.dbschema import RosettaImportStatus
 

@@ -1,7 +1,11 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
+import datetime
+import pytz
+from email.Utils import parseaddr
 from zope.interface import implements
 from canonical.launchpad.interfaces import ITranslationImport
+from canonical.launchpad.components.poparser import POParser
 
 class PoSupport:
     implements(ITranslationImport)
@@ -81,7 +85,6 @@ class PoSupport:
             message['alt_msgid'] = None
             message['msgid'] = pomessage.msgid
             message['msgid_plural'] = pomessage.msgidPlural
-            count += 1
             message['comment'] = pomessage.commentText
             message['sourcecomment'] = pomessage.sourceComment
             message['filerefs'] = pomessage.fileReferences
@@ -94,7 +97,7 @@ class PoSupport:
             "revisiondate" : None,
             "lasttranslatoremail" : translator_email,
             "lasttranslatorname" : translator_name,
-            "header" : parser.header.msgstr,
+            "header" : parser.header,
             "messages" : msgs,
             }
 
@@ -141,7 +144,7 @@ class PoSupport:
             "revisiondate" : None,
             "lasttranslatoremail" : translator_email,
             "lasttranslatorname" : translator_name,
-            "header" : parser.header.msgstr,
+            "header" : parser.header,
             "messages" : msgs,
             }
 
