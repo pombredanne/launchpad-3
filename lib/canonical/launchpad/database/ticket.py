@@ -564,14 +564,18 @@ class TicketSearch:
 
     def getPrejoins(self):
         """Return a list of tables that should be prejoined on this search."""
-        prejoins = []
-        if self.product:
-            prejoins.append('product')
+        # The idea is to prejoin all dependant tables, except if the
+        # object will be the same in all rows because it is used as a
+        # search criteria.
+        if self.product or self.sourcepackagename:
+            # Will always be the same product or sourcepackage.
+            return ['owner']
         elif self.distribution:
-            prejoins.append('distribution')
-            if self.sourcepackagename:
-                prejoins.append('sourcepackagename')
-        return prejoins
+            # Same distribution, sourcepackagename will vary.
+            return ['owner', 'sourcepackagename']
+        else:
+            # TicketTarget will vary.
+            return ['owner', 'product', 'distribution', 'sourcepackagename']
 
     def getOrderByClause(self):
         """Return the ORDER BY clause to use to order this search's results."""
@@ -634,6 +638,14 @@ class TicketTargetSearch(TicketSearch):
             constraints.append('Ticket.owner = %s' % self.owner.id)
 
         return constraints
+
+    def getPrejoins(self):
+        """See TicketSearch."""
+        prejoins = TicketSearch.getPrejoins(self)
+        if self.owner and 'owner' in prejoins:
+            # Since it is constant, no need to prefetch it.
+            prejoins.remove('owner')
+        return prejoins
 
 
 class SimilarTicketsSearch(TicketSearch):
@@ -707,8 +719,3 @@ class TicketPersonSearch(TicketSearch):
 
         constraints.extend(TicketSearch.getConstraints(self))
         return constraints
-
-    def getPrejoins(self):
-        """See TicketSearch."""
-        return ['product', 'distribution', 'sourcepackagename']
-
