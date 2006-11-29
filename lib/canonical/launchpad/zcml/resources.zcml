@@ -108,9 +108,9 @@
     <resource name="retry" file="../images/retry.png" />
     <resource name="search" file="../images/search.png" />
     <resource name="sorry-closed" file="../images/sorry-closed.png" />
-    <resource name="spec" file="../images/topic_icon.gif" />
+    <resource name="spec" file="../images/specification.png" />
     <resource name="stop" file="../images/stop.png" />
-    <resource name="sprint" file="../images/backtalk.gif" />
+    <resource name="sprint" file="../images/meeting.png" />
     <resource name="subscriber-essential" file="../images/subscriber-essential.png" />
     <resource name="subscriber-inessential" file="../images/subscriber-inessential.png" />
     <resource name="team" file="../images/nyet.png" />
@@ -118,7 +118,7 @@
     <resource name="team-heading" file="../images/nyet-heading.png" />
     <resource name="team-mugshot" file="../images/nyet-mugshot.png" />
     <resource name="ticket" file="../images/ticket.png" />
-    <resource name="topic" file="../images/topic_icon.gif" />
+    <resource name="topic" file="../images/specification.png" />
     <resource name="translation-file" file="../images/translation-file.png" />
     <resource name="translation-newline" file="../images/translation-newline.png" />
     <resource name="translation-space" file="../images/translation-space.png" />
