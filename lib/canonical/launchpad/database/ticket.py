@@ -532,17 +532,19 @@ class TicketSearch:
     def getTargetConstraints(self):
         """Return the constraints related to the ITicketTarget context."""
         if self.sourcepackagename:
-            assert self.distribution is not None
+            assert self.distribution is not None, (
+                "Distribution must be specified if sourcepackage is not None")
 
         constraints = []
         if self.product:
-            constraints.append('Ticket.product = %s' % self.product.id)
+            constraints.append('Ticket.product = %s' % sqlvalues(self.product))
         elif self.distribution:
             constraints.append(
-                'Ticket.distribution = %s' % self.distribution.id)
+                'Ticket.distribution = %s' % sqlvalues(self.distribution))
             if self.sourcepackagename:
                 constraints.append(
-                    'Ticket.sourcepackagename = %s' % self.sourcepackagename.id)
+                    'Ticket.sourcepackagename = %s' % sqlvalues(
+                    self.sourcepackagename))
 
         return constraints
 
@@ -556,8 +558,7 @@ class TicketSearch:
                 'Ticket.fti @@ ftq(%s)' % quote(self.search_text))
 
         if self.status:
-            constraints.append(
-                'Ticket.status IN (%s)' % ', '.join(sqlvalues(*self.status)))
+            constraints.append('Ticket.status IN %s' % sqlvalues(self.status))
 
         return constraints
 
