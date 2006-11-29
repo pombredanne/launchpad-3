@@ -222,11 +222,11 @@ and the objects it is inside of (or in other words, hierarchically below).
     >>> canonical_url(town_instance)
     u'http://launchpad.dev/countries/England/+towns/London'
 
-We can see that this is the root_url as configured in launchpad.conf.
+We can see that this is the mainsite rooturl as configured in launchpad.conf.
 
-    >>> from canonical.config import config
-    >>> config.launchpad.root_url
-    'http://launchpad.dev/'
+    >>> from canonical.launchpad.webapp.vhosts import allvhosts
+    >>> print allvhosts.configs['mainsite'].rooturl
+    http://launchpad.dev/
 
 If anywhere in the chain we have an object that cannot be adapted to
 ICanonicalUrlData, a NoCanonicalUrl error is raised.

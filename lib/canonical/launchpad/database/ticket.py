@@ -148,6 +148,10 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         return user.inTeam(self.target.owner) or user.inTeam(admin)
 
     # Workflow methods
+
+    # The lifecycle of a support request is documented in
+    # https://help.launchpad.net/SupportRequestLifeCycle, so remember
+    # to update that document for any pertinent changes.
     @notify_ticket_modified()
     def setStatus(self, user, new_status, comment, datecreated=None):
         """See ITicket."""
