@@ -54,8 +54,8 @@ Now that the bug contact is set, there's a link to him on the
 distribution page.
 
   >>> browser.getLink(
-  ...   url='http://launchpad.dev/people/carlos').url
-  'http://launchpad.dev/people/carlos'
+  ...   url='http://launchpad.dev/~carlos').url
+  'http://launchpad.dev/~carlos'
 
 When the bug contact doesn't have an email address, the displayname is
 shown instead in the feedback message.

@@ -4,16 +4,16 @@ Editing Tickets
 To edit the title and description of ticket, one uses the 'Edit Request'
 menu item. You need to be logged in to perform that action:
 
-  >>> anon_browser.open('http://launchpad.dev/products/firefox/+ticket/2')
+  >>> anon_browser.open('http://launchpad.dev/firefox/+ticket/2')
   >>> anon_browser.getLink('Edit Request').click()
   Traceback (most recent call last):
     ...
   Unauthorized...
 
-  >>> user_browser.open('http://launchpad.dev/products/firefox/+ticket/2')
+  >>> user_browser.open('http://launchpad.dev/firefox/+ticket/2')
   >>> user_browser.getLink('Edit Request').click()
   >>> user_browser.url
-  '.../products/firefox/+ticket/2/+edit'
+  '.../firefox/+ticket/2/+edit'
 
 When we post the form, we should be redirected back to the ticket page.
 
@@ -26,7 +26,7 @@ When we post the form, we should be redirected back to the ticket page.
   >>> user_browser.getControl('Continue').click()
 
   >>> user_browser.url
-  '.../products/firefox/+ticket/2'
+  '.../firefox/+ticket/2'
 
 And viewing that page should show the updated information.
 
@@ -41,7 +41,7 @@ And viewing that page should show the updated information.
 You can even modify the title and description of 'Answered' and
 'Invalid' tickets:
 
-  >>> user_browser.open('http://launchpad.dev/distros/ubuntu/+ticket/3')
+  >>> user_browser.open('http://launchpad.dev/ubuntu/+ticket/3')
   >>> from BeautifulSoup import BeautifulSoup
   >>> soup = BeautifulSoup(user_browser.contents)
   >>> soup.first('b', text='Status:').next.strip()
@@ -57,7 +57,7 @@ Distribution tickets can have a source package associated with them. Any
 logged in user can change the ticket source package on the 'Edit Request'
 page.
 
-  >>> user_browser.open('http://launchpad.dev/distros/ubuntu/+ticket/5')
+  >>> user_browser.open('http://launchpad.dev/ubuntu/+ticket/5')
   >>> user_browser.getLink('Edit Request').click()
   >>> user_browser.getControl('Source Package').value = 'linux-source-2.6.15'
   >>> user_browser.getControl('Continue').click()
@@ -68,7 +68,7 @@ page.
 
 Of course, that item doesn't appear on the product tickets:
 
-  >>> user_browser.open('http://launchpad.dev/products/firefox/+ticket/2')
+  >>> user_browser.open('http://launchpad.dev/firefox/+ticket/2')
   >>> user_browser.getLink('Edit Request').click()
   >>> user_browser.getControl('Source Package')
   Traceback (most recent call last):
@@ -84,7 +84,7 @@ edit the Status Whiteboard using the 'Edit Request' page.
 
   >>> browser.addHeader(
   ...   'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')
-  >>> browser.open('http://localhost/distros/ubuntu/+ticket/5')
+  >>> browser.open('http://localhost/ubuntu/+ticket/5')
   >>> browser.getLink('Edit Request').click()
 
   >>> browser.getControl('Priority').value = ['Wishlist']
@@ -102,7 +102,7 @@ edit the Status Whiteboard using the 'Edit Request' page.
 
 These fields cannot be modified by a non-privileged user:
 
-  >>> user_browser.open('http://localhost/distros/ubuntu/+ticket/5')
+  >>> user_browser.open('http://localhost/ubuntu/+ticket/5')
   >>> user_browser.getLink('Edit Request').click()
   >>> user_browser.getControl('Priority')
   Traceback (most recent call last):

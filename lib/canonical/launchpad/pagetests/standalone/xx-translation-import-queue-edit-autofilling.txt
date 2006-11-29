@@ -14,7 +14,7 @@ to do file uploads.
   ...     'pagetests/standalone/xx-translation-import-queue-edit-autofilling.tar.gz')
   >>> tarball = open(test_file_name)
   >>> print http(r"""
-  ... POST /products/alsa-utils/trunk/+translations-upload HTTP/1.1
+  ... POST /alsa-utils/trunk/+translations-upload HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... Content-Length: 530
   ... Content-Type: multipart/form-data; boundary=---------------------------428463014358220843450431786
@@ -37,7 +37,7 @@ Let's check the values we get by default from the .pot file. As we can see,
 the form is completely empty.
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
-  >>> browser.open('http://localhost/rosetta/imports/2')
+  >>> browser.open('http://localhost/translations/imports/2')
   >>> browser.url
   'http://localhost/rosetta/imports/2'
   >>> browser.getControl(name='field.potemplatename').value

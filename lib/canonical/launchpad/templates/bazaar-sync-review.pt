@@ -39,7 +39,7 @@
               <li tal:repeat="product products">
                 <div>
                   <a
-                    tal:attributes="href string:/products/${product/name}/+review"
+                    tal:attributes="href string:/${product/name}/+review"
                     tal:content="product/title"
                   >Product Title</a>
                 </div>
@@ -50,7 +50,7 @@
                   <tal:block repeat="series multipleseries">
                     <dt tal:condition="series/needsSyncReview">
                       <dfn><a
-                        tal:attributes="href string:/products/${product/name}/${series/name}/+sourceadmin"
+                        tal:attributes="href string:/${product/name}/${series/name}/+sourceadmin"
                         tal:content="series/name"
                       >series</a></dfn>
                     </dt>

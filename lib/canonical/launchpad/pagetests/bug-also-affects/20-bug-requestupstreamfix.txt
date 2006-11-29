@@ -8,17 +8,17 @@ If we add go to the page from an Ubuntu evolution task, we get
 redirected to +add-affected-product directly.
 
     >>> user_browser.open(
-    ...  'http://launchpad.dev/distros/ubuntu/+source/evolution/+bug/6')
+    ...  'http://launchpad.dev/ubuntu/+source/evolution/+bug/6')
     >>> user_browser.getLink(url='+choose-affected-product').click()
     >>> user_browser.url
-    'http://launchpad.dev/distros/ubuntu/+source/evolution/+bug/6/+add-affected-product?field.product=evolution'
+    'http://launchpad.dev/ubuntu/+source/evolution/+bug/6/+add-affected-product?field.product=evolution'
 
 If this wasn't what we intended, we can go back to choose another
 product.
 
     >>> user_browser.getLink('Choose another product').click()
     >>> user_browser.url
-    'http://launchpad.dev/distros/ubuntu/+source/evolution/+bug/6/+choose-affected-product?field.product=evolution'
+    'http://launchpad.dev/ubuntu/+source/evolution/+bug/6/+choose-affected-product?field.product=evolution'
 
     >>> user_browser.getControl('Product').value
     'evolution'
@@ -37,7 +37,7 @@ bug watch.
 
     >>> user_browser.getControl('Indicate bug in Mozilla Thunderbird').click()
     >>> user_browser.url
-    'http://launchpad.dev/distros/ubuntu/+source/evolution/+bug/6/+add-affected-product'
+    'http://launchpad.dev/ubuntu/+source/evolution/+bug/6/+add-affected-product'
 
     >>> for notification in find_tags_by_class(user_browser.contents, 'message'):
     ...     print notification.renderContents()
@@ -47,20 +47,20 @@ Let's confirm adding the task.
 
     >>> user_browser.getControl('Yes').click()
     >>> user_browser.url
-    'http://launchpad.dev/products/thunderbird/+bug/6'
+    'http://launchpad.dev/thunderbird/+bug/6'
 
 Let's add the evolution task as well.
 
     >>> user_browser.open(
-    ...  'http://launchpad.dev/distros/ubuntu/+source/evolution/+bug/6')
+    ...  'http://launchpad.dev/ubuntu/+source/evolution/+bug/6')
     >>> user_browser.getLink(url='+choose-affected-product').click()
     >>> user_browser.url
-    'http://launchpad.dev/distros/ubuntu/+source/evolution/+bug/6/+add-affected-product?field.product=evolution'
+    'http://launchpad.dev/ubuntu/+source/evolution/+bug/6/+add-affected-product?field.product=evolution'
 
     >>> user_browser.getControl('Indicate bug in Evolution').click()
 
     >>> user_browser.url
-    'http://launchpad.dev/products/evolution/+bug/6'
+    'http://launchpad.dev/evolution/+bug/6'
 
 If we try to add an upstream task without specifying a product:
 

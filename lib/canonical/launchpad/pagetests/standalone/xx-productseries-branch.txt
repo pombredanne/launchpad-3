@@ -3,7 +3,7 @@ a Branch displays a link to the branch's page and the branch's
 URL on the Supermirror.
 
 >>> print http(r"""
-... GET /products/evolution/trunk HTTP/1.1
+... GET /evolution/trunk HTTP/1.1
 ... """)
 HTTP/1.1 200 Ok
 .../people/vcs-imports/+branch/evolution/main...

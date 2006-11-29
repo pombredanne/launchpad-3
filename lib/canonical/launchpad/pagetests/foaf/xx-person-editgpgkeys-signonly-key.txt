@@ -15,7 +15,7 @@ Setup the stub KeyServer
 
 Sign only keys are registered on the standard +editpgpkeys page.
 
-  >>> user_browser.open('http://localhost/people/name12/+editpgpkeys')
+  >>> user_browser.open('http://localhost/~name12/+editpgpkeys')
   >>> user_browser.title
   "Sample Person's OpenPGP keys"
 
@@ -174,7 +174,7 @@ the key:
 On success, redirect to Sample Person's home page.
 
   >>> user_browser.url
-  'http://localhost/people/name12'
+  'http://localhost/~name12'
 
   >>> '1024D/17B05A8F' in user_browser.contents
   True

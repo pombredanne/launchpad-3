@@ -38,7 +38,7 @@
   Again, we'll get a nice error message if we enter a invalid reporter.
 
   >>> print http(r"""
-  ... GET /people/name12/+assignedbugs?advanced=1&field.searchtext=&search=Search+bugs+assigned+to+Sample+Person&orderby=-importance&field.status:list=Unconfirmed&field.status:list=Needs+Info&field.status:list=Confirmed&field.status:list=In+Progress&field.owner=invalid-reporter&field.omit_dupes.used=&field.omit_dupes=on&field.has_patch.used= HTTP/1.1
+  ... GET /~name12/+assignedbugs?advanced=1&field.searchtext=&search=Search+bugs+assigned+to+Sample+Person&orderby=-importance&field.status:list=Unconfirmed&field.status:list=Needs+Info&field.status:list=Confirmed&field.status:list=In+Progress&field.owner=invalid-reporter&field.omit_dupes.used=&field.omit_dupes=on&field.has_patch.used= HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -49,7 +49,7 @@
 Using a valid one we get the correct search results, most important first.
 
   >>> print http(r"""
-  ... GET /people/name12/+assignedbugs?field.searchtext=&search=Search+bugs+assigned+to+Sample+Person&orderby=-importance&field.status:list=Unconfirmed&field.status:list=Needs+Info&field.status:list=Confirmed&field.status:list=In+Progress&field.owner=name12&field.omit_dupes.used=&field.omit_dupes=on&field.has_patch.used= HTTP/1.1
+  ... GET /~name12/+assignedbugs?field.searchtext=&search=Search+bugs+assigned+to+Sample+Person&orderby=-importance&field.status:list=Unconfirmed&field.status:list=Needs+Info&field.status:list=Confirmed&field.status:list=In+Progress&field.owner=name12&field.omit_dupes.used=&field.omit_dupes=on&field.has_patch.used= HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -64,7 +64,7 @@ Using a valid one we get the correct search results, most important first.
   Now with an invalid assignee 
 
   >>> print http(r"""
-  ... GET /people/name12/+reportedbugs?advanced=1&field.searchtext=&search=Search+bugs+reported+by+Sample+Person&orderby=-importance&field.status:list=Unconfirmed&field.status:list=Needs+Info&field.status:list=Confirmed&field.status:list=In+Progress&assignee_option=choose&field.assignee=invalid-assignee&field.omit_dupes.used=&field.omit_dupes=on&field.has_patch.used= HTTP/1.1
+  ... GET /~name12/+reportedbugs?advanced=1&field.searchtext=&search=Search+bugs+reported+by+Sample+Person&orderby=-importance&field.status:list=Unconfirmed&field.status:list=Needs+Info&field.status:list=Confirmed&field.status:list=In+Progress&assignee_option=choose&field.assignee=invalid-assignee&field.omit_dupes.used=&field.omit_dupes=on&field.has_patch.used= HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -73,7 +73,7 @@ Using a valid one we get the correct search results, most important first.
   ...
 
   >>> print http(r"""
-  ... GET /people/name12/+reportedbugs?field.searchtext=&search=Search+bugs+reported+by+Sample+Person&orderby=-importance&field.status:list=Unconfirmed&field.status:list=Needs+Info&field.status:list=Confirmed&field.status:list=In+Progress&assignee_option=choose&field.assignee=sabdfl&field.omit_dupes.used=&field.omit_dupes=on&field.has_patch.used= HTTP/1.1
+  ... GET /~name12/+reportedbugs?field.searchtext=&search=Search+bugs+reported+by+Sample+Person&orderby=-importance&field.status:list=Unconfirmed&field.status:list=Needs+Info&field.status:list=Confirmed&field.status:list=In+Progress&assignee_option=choose&field.assignee=sabdfl&field.omit_dupes.used=&field.omit_dupes=on&field.has_patch.used= HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...

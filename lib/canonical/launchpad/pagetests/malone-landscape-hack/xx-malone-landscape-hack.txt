@@ -33,7 +33,7 @@ A bug filed on Landscape is always forced to be private.
 
     >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
 
-    >>> browser.open("http://launchpad.dev/products/landscape/+filebug")
+    >>> browser.open("http://launchpad.dev/landscape/+filebug")
 
     >>> browser.getControl(name="field.title").value = "a test summary"
     >>> browser.getControl(name="field.comment").value = (

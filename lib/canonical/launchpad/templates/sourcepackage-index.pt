@@ -63,7 +63,7 @@
       <li><b>Product:</b>
          <a tal:condition="series/product"
             tal:content="series/product/displayname"
-            tal:attributes="href string:/products/${series/product/name}">
+            tal:attributes="href string:/${series/product/name}">
          Product</a>
       </li>
       <li><b>Branch: </b>

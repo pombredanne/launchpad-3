@@ -2,10 +2,10 @@ In the bug page, you could request a fix for an upstream or
 distribution.
 
     >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
-    >>> browser.open("http://localhost/products/firefox/+bug/6")
+    >>> browser.open("http://localhost/firefox/+bug/6")
     >>> browser.getLink(url='+distrotask').click()
     >>> browser.url
-    'http://localhost/products/firefox/+bug/6/+distrotask'
+    'http://localhost/firefox/+bug/6/+distrotask'
 
 On this page we can add distribution task. We start by adding an Ubuntu
 task. Since Ubuntu uses Malone as its bug tracker, the task gets added
@@ -82,10 +82,10 @@ Now let's add a Debian task to bug 1. Since Debian doesn't use Malone,
 we add a bug watch as well.
 
     >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
-    >>> browser.open('http://localhost/products/firefox/+bug/1')
+    >>> browser.open('http://localhost/firefox/+bug/1')
     >>> browser.getLink(url='+distrotask').click()
     >>> browser.url
-    'http://localhost/products/firefox/+bug/1/+distrotask'
+    'http://localhost/firefox/+bug/1/+distrotask'
     >>> browser.getControl(name='field.distribution').value
     ['debian']
     >>> browser.getControl("Source Package Name").value = "alsa-utils"

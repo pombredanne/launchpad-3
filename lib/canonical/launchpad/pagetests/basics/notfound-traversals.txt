@@ -79,9 +79,9 @@ spider -- StuartBishop 20050822
 >>> check("/projects/+all")
 >>> check("/projects/+syncreview", auth=True)
 >>> check("/projects/+review", auth=True)
->>> check("/projects/mozilla")
->>> check("/projects/mozilla/firefox")
->>> check("/projects/mozilla/+branches")
+>>> check("/mozilla")
+>>> check("/mozilla/firefox")
+>>> check("/mozilla/+branches")
 
 >>> check("/products")
 >>> check("/products/+all")
@@ -128,7 +128,7 @@ spider -- StuartBishop 20050822
 >>> check("/ubuntu/hoary/+cve")
 >>> check("/ubuntu/hoary/+source/pmount")
 >>> check("/ubuntu/hoary/+source/libstdc++")
->>> check("/ubuntu/hpackage/pmount")
+>>> check("/ubuntu/hoary/+package/pmount")
 >>> check("/ubuntu/hoary/i386/pmount/0.1-1")
 >>> check("/ubuntu/warty/i386/pmount/0.1-1")
 >>> check("/debian/woody/i386/pmount")
@@ -190,10 +190,10 @@ Test the DARBPR page for a REMOVED package:
 >>> check_redirect("/bugs/bugs/1")
 >>> check_redirect("/bugs/1")
 >>> check("/bugs/distros")
->>> check("/bugs/distros/ubuntu")
+>>> check("/bugs/ubuntu")
 >>> check("/bugs/projects")
 >>> check("/bugs/products")
->>> check("/bugs/products/firefox")
+>>> check("/bugs/firefox")
 >>> check("/bugs/bugtrackers")
 >>> check("/bugs/cve/1999-8979")
 
@@ -228,9 +228,9 @@ been reported.
 Check a bug is traversable by nickname:
 
 >>> check_redirect("/bugs/blackhole")
->>> check_redirect("/malone/bugs/blackhole")
+>>> check_redirect("/bugs/blackhole")
 >>> check("/ubuntu-product/+bug/blackhole")
->>> check_not_found("/malone/bugs/invalid-nickname")
+>>> check_not_found("/bugs/invalid-nickname")
 >>> check_not_found("bugs/invalid-nickname")
 
 Viewing a bug in the context of a distribution where the bug has not
@@ -359,10 +359,10 @@ sabdfl owns many packages, so he's a better test for some pages:
 >>> check("/~sabdfl/+packagebugs")
 >>> check("/~sabdfl/+packages")
 
->>> check("/bazaar")
->>> check("/bazaar/+portlet-importstats")
->>> check("/bazaar/series", auth=True)
->>> check("/bazaar/series/+bazaar-index", auth=True)
+>>> check("/+code")
+>>> check("/+code/+portlet-importstats")
+>>> check("/+code/series", auth=True)
+>>> check("/+code/series/+bazaar-index", auth=True)
 
 >>> check("/+builds/bob/")
 >>> check("/+builds/+build/7/")
@@ -377,9 +377,9 @@ sabdfl owns many packages, so he's a better test for some pages:
 
 >>> check("/@@")
 >>> check("//@@")
->>> check("/rosetta/@@")
->>> check("//rosetta/@@")
->>> check_not_found("/rosetta/groups/testing-translation-team/pt_br")
+>>> check("/translations/@@")
+>>> check("//translations/@@")
+>>> check_not_found("/translations/groups/testing-translation-team/pt_br")
 
 >>> check_not_found("/@@/launchpad_brokenlink.png")
 >>> check_not_found("//@@/launchpad_brokenlink.png")

@@ -1,7 +1,7 @@
 If you try to file a bug on a product which doesn't use Malone as its
 bug tracker, you will be told so.
 
-  >>> user_browser.open("http://launchpad.dev/products/alsa-utils/+filebug")
+  >>> user_browser.open("http://launchpad.dev/alsa-utils/+filebug")
   >>> print user_browser.contents
   <!DOCTYPE...
   ...alsa-utils...does not use Malone as its bug tracker.
@@ -12,7 +12,7 @@ bug tracker, you will be told so.
 The same if you try to file a bug on a distribution which doesn't use
 Malone.
 
-  >>> user_browser.open("http://launchpad.dev/distros/debian/+filebug")
+  >>> user_browser.open("http://launchpad.dev/debian/+filebug")
   >>> print user_browser.contents
   <!DOCTYPE...
   ...Debian...
@@ -26,7 +26,7 @@ It's also not possible to file a bug on any of the distribution's
 source package.
 
   >>> user_browser.open(
-  ...     "http://launchpad.dev/distros/debian/+source/mozilla-firefox/"
+  ...     "http://launchpad.dev/debian/+source/mozilla-firefox/"
   ...     "+filebug")
   >>> print user_browser.contents
   <!DOCTYPE...

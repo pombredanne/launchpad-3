@@ -28,7 +28,7 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     ICalendarOwner, IPerson, IProduct, IProductSet, IProject, IProjectSet,
-    ILaunchpadRoot)
+    ILaunchpadRoot, NotFoundError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin

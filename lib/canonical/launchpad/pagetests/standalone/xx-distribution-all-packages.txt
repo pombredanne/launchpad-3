@@ -1,6 +1,6 @@
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/+allpackages HTTP/1.1
+  ... GET /ubuntu/+allpackages HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
