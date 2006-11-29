@@ -69,23 +69,23 @@
                           </ul>
                         </div>
                       </div>
+                      <div class="clear"></div>
                       <div id="application-footer">
                         <div>
-                          <tal:branches replace="nothing">12345</tal:branches>
+                          <strong class="demo">12345</strong>
                           branches registered in
-                          <tal:products replace="nothing">1234</tal:products>
+                          <strong class="demo">1234</strong>
                           products
                         </div>
                         <div>
-                          <tal:imports replace="view/import_count"
-                          >123</tal:imports> imported branches
+                          <strong tal:content="view/import_count">123</strong>
+                          imported branches
                         </div>
                         <div>
-                          <tal:buglinks replace="nothing">12</tal:buglinks>
+                          <strong class="demo">12</strong>
                           branches associated with bug reports
                         </div>
                       </div>
-                      <div class="clear"></div>
                     </div><!--z-->
                   </div><!--y-->
                 </div><!--x-->
@@ -149,4 +149,4 @@
   </body>
 </html>
 </tal:layout>
-<!-- 1-0 inprogress high-priority for 1.0 -->
+<!-- 1-0 inprogress Needs recent imports, registered, and changed lists -->

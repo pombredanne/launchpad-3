@@ -830,6 +830,7 @@ body.tab-branches #mainarea #portlets .portlet.active div {
 body.tab-branches #actions {background-color: #ffc;}
 body.tab-branches #actions h2 {background-color: #f3cb00;}
 .tab-branches h1, .tab-branches h2, .tab-branches h3,
+.tab-branches #application-footer strong,
 .tab-branches #maincontent :link, .tab-branches #maincontent :visited {
   background: none;
   color: #f3cb00; /* "it fits nicely with the Bazaar logo" -- sabdfl */
@@ -1091,6 +1092,7 @@ div.bordered {
   padding-top: 1em;
   width: 50%;
 }
+#application-footer {margin-top: 2em;}
 
 /* -- Other pages -- */
 
