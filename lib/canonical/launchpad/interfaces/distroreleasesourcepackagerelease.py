@@ -60,7 +60,8 @@ class IDistroReleaseSourcePackageRelease(ISourcePackageRelease):
                                   "that is in PUBLISHED status.")
 
     changesfile = Object(
-        title=_("Correspondent changesfile."), schema=ILibraryFileAlias)
+        title=_("Correspondent changesfile."), schema=ILibraryFileAlias,
+        readonly=True)
 
     def changeOverride(new_component=None, new_section=None):
         """Change the component and/or section.

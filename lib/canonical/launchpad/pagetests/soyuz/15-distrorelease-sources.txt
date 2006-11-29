@@ -31,7 +31,7 @@ We get a list of all published packages:
 
   >>> browser.getLink("List All Packages").click()
 
-Click on the respective name to get in the DistributionSourcePackagePackage:
+Click on the respective name to get in the DistributionSourcePackage:
 
   >>> browser.getLink("mozilla-firefox").click()
 
@@ -200,14 +200,14 @@ And also download the files contained in this source, like '.orig',
     </ul>
   </div>
 
-Let's check how the page behaves if we have no files to present:
+Let's check how the page behaves if we no files are present:
 
   >>> browser.open(
   ...     'http://launchpad.dev/distros/ubuntu/hoary/+source/cnews')
   >>> browser.getLink("cnews cr.g7-37").click()
 
-A string is presented in both, 'changesfile' and 'files' sections,
-warning the user that not file is available:
+A string is presented in both 'changesfile' and 'files' sections,
+warning the user that no file is available:
 
   >>> print find_tag_by_id(browser.contents, 'changesfile')
   <div id="changesfile">

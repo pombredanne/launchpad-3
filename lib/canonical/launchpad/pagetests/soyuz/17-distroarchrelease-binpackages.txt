@@ -13,7 +13,7 @@ through a DistroRelease and SourceName. The URL schema is:
 $LP/distros/ubuntu/$DISTRORELEASE/+source/$BINARYNAME
 
 This specific page is not properly integrated in the navigation
-system, so it's impossible to get there if not by typing the entire
+system, so it's impossible to get there except by typing the entire
 URL:
 
   >>> browser.open(
@@ -70,8 +70,7 @@ Now we are able to use the search box in this page:
   >>> browser.getControl(name="text").value = "moz"
   >>> browser.getControl("Search Packages").click()
 
-Click on the respective name to get in the
-DistroArchReleaseBinaryPackageRelease:
+Click on the wanted name to get on the DistroArchReleaseBinaryPackageRelease:
 
   >>> browser.getLink("mozilla-firefox").click()
   >>> browser.url
@@ -109,8 +108,8 @@ Let's check how the page behaves if we have no files to present:
   ...     'http://launchpad.dev/distros/ubuntu/hoary/i386/pmount')
   >>> browser.getLink("0.1-1").click()
 
-A string is presented in 'files' section , warning the
-user that not file is available:
+A string is presented in 'files' section, warning the user that no
+file is available:
 
   >>> print find_tag_by_id(browser.contents, 'files')
   <div id="files">

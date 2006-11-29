@@ -1,11 +1,11 @@
 = Soyuz Files =
 
 Soyuz keeps a collection of source and binary packages classified as
-SourcePackageRelease and BinaryPackageRelease, respectively, each of
+SourcePackageRelease and BinaryPackageRelease respectively, each of
 those records may contain one or more files according its type.
 
-Those files are stored in the Librarian and related to its parent
-object via an BinaryPackageFile or SourcePackageReleaseFile.
+Those files are stored in the Librarian and related to their parent
+object via a BinaryPackageFile or SourcePackageReleaseFile.
 
 SourcePackageReleaseFile or BinaryPackageFile are available via the
 'files' attribute on its parent.
@@ -30,30 +30,22 @@ package for that release:
      upstream source.
    * A '.dsc' package description file.
 
-First let's select a convenient IDistroReleaseSourcePackageRelease,
-which has files in the sampledata.
-
  >>> warty_firefox_srcpkg = warty.getSourcePackage(
  ...     'mozilla-firefox').currentrelease
 
-Use the property 'files' to retrieve a list of files related to this
-IDistroReleaseSourcePackageRelease,
+ >>> srcfile = warty_firefox_srcpkg.files[0]
 
- >>> file = warty_firefox_srcpkg.files[0]
-
- >>> verifyObject(ISourcePackageReleaseFile, file)
+ >>> verifyObject(ISourcePackageReleaseFile, srcfile)
  True
 
- >>> verifyObject(ILibraryFileAlias, file.libraryfile)
+ >>> verifyObject(ILibraryFileAlias, srcfile.libraryfile)
  True
 
-Check if ILibraryFileAlias is returning sane data:
+ >>> srcfile.libraryfile.filename
+ u'firefox-0.9.2.orig.tar.gz'
 
- >>> file.libraryfile.filename
- u'firefox-0.9.2.tar.gz'
-
- >>> file.libraryfile.url
- 'http://localhost:58000/3/firefox-0.9.2.tar.gz'
+ >>> srcfile.libraryfile.url
+ 'http://localhost:58000/3/firefox-0.9.2.orig.tar.gz'
 
 
 == Binary Files ==
@@ -63,30 +55,22 @@ instalable debian-format file:
 
    * An '.deb'
 
-As we did for an ISourcePackageRelease, let's select a useful
-IDistroArchReleaseBinaryPackage from sampledata:
-
  >>> warty_i386_firefox_binpkg = warty['i386'].getBinaryPackage(
  ...    'mozilla-firefox').currentrelease
 
  >>> warty_i386_firefox_binpkg.name
  u'mozilla-firefox'
 
-Use the property 'files' to retrieve a list of files related to this
-IDistroArchReleaseBinaryPackageRelease,
+ >>> debfile = warty_i386_firefox_binpkg.files[0]
 
- >>> file = warty_i386_firefox_binpkg.files[0]
-
- >>> verifyObject(IBinaryPackageFile, file)
+ >>> verifyObject(IBinaryPackageFile, debfile)
  True
 
- >>> verifyObject(ILibraryFileAlias, file.libraryfile)
+ >>> verifyObject(ILibraryFileAlias, debfile.libraryfile)
  True
 
-Check if ILibraryFileAlias is returning sane data:
-
- >>> file.libraryfile.filename
+ >>> debfile.libraryfile.filename
  u'mozilla-firefox_0.9_i386.deb'
 
- >>> file.libraryfile.url
+ >>> debfile.libraryfile.url
  'http://localhost:58000/40/mozilla-firefox_0.9_i386.deb'
