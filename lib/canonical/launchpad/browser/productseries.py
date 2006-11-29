@@ -46,7 +46,7 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
-from canonical.launchpad.components.rosettaformats import *
+from canonical.launchpad.components.rosettaformats import MozillaSupport
 
 from canonical.launchpad import _
 

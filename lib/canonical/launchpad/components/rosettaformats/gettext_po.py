@@ -1,10 +1,6 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
-from UserDict import DictMixin
-from StringIO import StringIO
 from zope.interface import implements
-from canonical.librarian.interfaces import ILibrarianClient
-from canonical.launchpad.database import LibraryFileAlias
 from canonical.launchpad.interfaces import ITranslationImport
 
 class PoSupport:
@@ -95,7 +91,7 @@ class PoSupport:
             msgs.append(message)
 
         return {
-            "revisiondate" : None
+            "revisiondate" : None,
             "lasttranslatoremail" : translator_email,
             "lasttranslatorname" : translator_name,
             "header" : parser.header.msgstr,
@@ -142,7 +138,7 @@ class PoSupport:
             msgs.append(message)
 
         return {
-            "revisiondate" : None
+            "revisiondate" : None,
             "lasttranslatoremail" : translator_email,
             "lasttranslatorname" : translator_name,
             "header" : parser.header.msgstr,
