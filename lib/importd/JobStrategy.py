@@ -459,6 +459,7 @@ class SVNStrategy(CSCVSStrategy):
             'svn://svnanon.samba.org/samba/branches/SAMBA_4_0/source/lib/talloc',
             'https://numexp.org/svn/numexp-core',
             'svn://svn.berlios.de/sax/sax-head',
+            'http://codespeak.net/svn/pypy/dist',
          ])
 
     def getSVNDirPath(self, aJob, dir):
