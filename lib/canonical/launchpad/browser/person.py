@@ -31,6 +31,7 @@ __all__ = [
     'SubscribedBugTaskSearchListingView',
     'PersonRdfView',
     'PersonView',
+    'PersonTranslationView',
     'PersonGPGView',
     'TeamJoinView',
     'TeamLeaveView',
@@ -42,6 +43,9 @@ __all__ = [
     'ObjectReassignmentView',
     'TeamReassignmentView',
     'RedirectToAssignedBugsView',
+    'PersonAddView',
+    'PersonLanguagesView',
+    'RedirectToEditLanguagesView',
     'PersonLatestTicketsView',
     'PersonSearchTicketsView',
     'PersonSupportMenu',
@@ -57,6 +61,7 @@ import urllib
 from StringIO import StringIO
 
 from zope.event import notify
+from zope.app.form.browser import TextAreaWidget
 from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
 from zope.app.content_types import guess_content_type
@@ -69,20 +74,22 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
-    TeamSubscriptionPolicy, SpecificationFilter, TicketParticipation)
+    TeamSubscriptionPolicy, SpecificationFilter, TicketParticipation,
+    PersonCreationRationale)
 
 from canonical.widgets import PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
-    ISSHKeySet, IPersonSet, IEmailAddressSet, IWikiNameSet,
+    ISSHKeySet, IPersonSet, IEmailAddressSet, IWikiNameSet, ICountry,
     IJabberIDSet, IIrcIDSet, ILaunchBag, ILoginTokenSet, IPasswordEncryptor,
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, UBUNTU_WIKI_URL,
     ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
     IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet, IPollSet,
     IAdminRequestPeopleMerge, NotFoundError, UNRESOLVED_BUGTASK_STATUSES,
     IPersonChangePassword, GPGKeyNotFoundError, UnexpectedFormData,
-    IPersonClaim)
+    ILanguageSet, IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet,
+    INewPerson)
 
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.specificationtarget import (
@@ -400,14 +407,21 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     usedfor = IPerson
     facet = 'overview'
     links = ['karma', 'edit', 'common_edithomepage', 'editemailaddresses',
-             'editwikinames', 'editircnicknames', 'editjabberids',
-             'editpassword', 'edithackergotchi', 'editsshkeys', 'editpgpkeys',
-             'codesofconduct', 'administer', 'common_packages',]
+             'editlanguages', 'editwikinames', 'editircnicknames',
+             'editjabberids', 'editpassword', 'edithackergotchi',
+             'editsshkeys', 'editpgpkeys', 'codesofconduct', 'administer',
+             'common_packages']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         target = '+edit'
         text = 'Personal Details'
+        return Link(target, text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def editlanguages(self):
+        target = '+editlanguages'
+        text = 'Preferred Languages'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -624,6 +638,30 @@ class FOAFSearchView:
         return BatchNavigator(results, self.request)
 
 
+class PersonAddView(LaunchpadFormView):
+    """The page where users can create new Launchpad profiles."""
+
+    label = "Create a new Launchpad profile"
+    schema = INewPerson
+    custom_widget('creation_comment', TextAreaWidget, height=5, width=60)
+
+    @action(_("Create Profile"), name="create")
+    def create_action(self, action, data):
+        emailaddress = data['emailaddress']
+        displayname = data['displayname']
+        creation_comment = data['creation_comment']
+        person, email = getUtility(IPersonSet).createPersonAndEmail(
+            emailaddress, PersonCreationRationale.USER_CREATED,
+            displayname=displayname, comment=creation_comment,
+            registrant=self.user)
+        self.next_url = canonical_url(person)
+        logintokenset = getUtility(ILoginTokenSet)
+        token = logintokenset.new(
+            requester=self.user, requesteremail=self.user.preferredemail.email,
+            email=emailaddress, tokentype=LoginTokenType.NEWPROFILE)
+        token.sendProfileCreatedEmail(person, creation_comment)
+
+
 class PersonClaimView(LaunchpadFormView):
     """The page where a user can claim an unvalidated profile."""
 
@@ -687,6 +725,21 @@ class PersonClaimView(LaunchpadFormView):
             "An email message was sent to '%(email)s'. Follow the "
             "instructions in that message to finish claiming this "
             "profile."), email=email)
+
+
+class RedirectToEditLanguagesView(LaunchpadView):
+    """Redirect the logged in user to his +editlanguages page.
+
+    This view should always be registered with a launchpad.AnyPerson
+    permission, to make sure the user is logged in. It exists so that
+    we can keep the /rosetta/prefs link working and also provide a link
+    for non logged in users that will require them to login and them send
+    them straight to the page they want to go.
+    """
+    
+    def initialize(self):
+        self.request.response.redirect(
+            '%s/+editlanguages' % canonical_url(self.user))
 
 
 class PersonRdfView:
@@ -1041,6 +1094,69 @@ class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
         return canonical_url(self.context) + "/+subscribedbugs"
 
 
+class PersonLanguagesView(LaunchpadView):
+
+    def initialize(self):
+        request = self.request
+        if (request.method == "POST" and "SAVE-LANGS" in request.form):
+            self.submitLanguages()
+
+    def requestCountry(self):
+        return ICountry(self.request, None)
+
+    def browserLanguages(self):
+        return IRequestPreferredLanguages(self.request).getPreferredLanguages()
+
+    def visible_checked_languages(self):
+        return self.user.languages
+
+    def visible_unchecked_languages(self):
+        common_languages = getUtility(ILanguageSet).common_languages
+        return sorted(set(common_languages) - set(self.user.languages),
+                      key=lambda x: x.englishname)
+
+    def getRedirectionURL(self):
+        request = self.request
+        referrer = request.getHeader('referer')
+        if referrer and referrer.startswith(request.getApplicationURL()):
+            return referrer
+        else:
+            return ''
+
+    def submitLanguages(self):
+        '''Process a POST request to the language preference form.
+
+        This list of languages submitted is compared to the the list of
+        languages the user has, and the latter is matched to the former.
+        '''
+
+        all_languages = getUtility(ILanguageSet)
+        old_languages = self.user.languages
+        new_languages = []
+
+        for key in all_languages.keys():
+            if self.request.has_key(key) and self.request.get(key) == u'on':
+                new_languages.append(all_languages[key])
+
+        # Add languages to the user's preferences.
+        for language in set(new_languages) - set(old_languages):
+            self.user.addLanguage(language)
+            self.request.response.addInfoNotification(
+                "Added %(language)s to your preferred languages." %
+                {'language' : language.englishname})
+
+        # Remove languages from the user's preferences.
+        for language in set(old_languages) - set(new_languages):
+            self.user.removeLanguage(language)
+            self.request.response.addInfoNotification(
+                "Removed %(language)s from your preferred languages." % 
+                {'language' : language.englishname})
+
+        redirection_url = self.request.get('redirection_url')
+        if redirection_url:
+            self.request.response.redirect(redirection_url)
+
+
 class PersonView(LaunchpadView):
     """A View class used in almost all Person's pages."""
 
@@ -1391,6 +1507,42 @@ class PersonView(LaunchpadView):
         comment = sshkey.comment
         sshkey.destroySelf()
         self.info_message = 'Key "%s" removed' % comment
+
+
+class PersonTranslationView(LaunchpadView):
+    """View for translation-related Person pages."""
+    @cachedproperty
+    def batchnav(self):
+        batchnav = BatchNavigator(self.context.translation_history,
+                                  self.request)
+        # XXX: See bug 60320. Because of a template reference to
+        # pofile.potemplate.displayname, it would be ideal to also
+        # prejoin inside translation_history:
+        #   potemplate.potemplatename
+        #   potemplate.productseries
+        #   potemplate.productseries.product
+        #   potemplate.distrorelease
+        #   potemplate.distrorelease.distribution
+        #   potemplate.sourcepackagename
+        # However, a list this long may be actually suggesting that
+        # displayname be cached in a table field; particularly given the
+        # fact that it won't be altered very often. At any rate, the
+        # code below works around this by caching all the templates in
+        # one shot. The list() ensures that we materialize the query
+        # before passing it on to avoid reissuing it. Note also that the
+        # fact that we iterate over currentBatch() here means that the
+        # translation_history query is issued again. Tough luck.
+        #   -- kiko, 2006-03-17
+        ids = set(record.pofile.potemplate.id
+                  for record in batchnav.currentBatch())
+        if ids:
+            cache = list(getUtility(IPOTemplateSet).getByIDs(ids))
+        return batchnav
+
+    @cachedproperty
+    def translation_groups(self):
+        """Return translation groups a person is a member of."""
+        return list(self.context.translation_groups)
 
 
 class PersonGPGView(LaunchpadView):
@@ -2129,7 +2281,7 @@ class ObjectReassignmentView:
     def isValidOwner(self, newOwner):
         """Check whether the new owner is acceptable for the context object.
 
-        If it not acceptable, return False and assign an error message to
+        If it's not acceptable, return False and assign an error message to
         self.errormessage to inform the user.
         """
         return True
@@ -2373,6 +2525,7 @@ class SearchSubscribedTicketsView(SearchTicketsView):
         return _('No support requests subscribed to by $name found with the '
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
+
 
 class PersonSupportMenu(ApplicationMenu):
 

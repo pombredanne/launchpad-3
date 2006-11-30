@@ -55,7 +55,7 @@
     for="canonical.launchpad.interfaces.ISpecification"
     path_expression="string:+spec/${name}"
     attribute_to_parent="target"
-    rootsite="blueprint"
+    rootsite="blueprints"
     />
 
   <subscriber
@@ -423,7 +423,7 @@
     for="canonical.launchpad.interfaces.ISpecificationSet"
     path_expression="string:"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
-    rootsite="blueprint"
+    rootsite="blueprints"
     />
 
   <browser:defaultView
