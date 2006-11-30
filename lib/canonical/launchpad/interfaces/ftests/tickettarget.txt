@@ -106,15 +106,13 @@ owned by sample_person.
 For more variety, we will set the status of the last to INVALID and the
 fourth one to ANSWERED.
 
-    >>> from canonical.lp.dbschema import TicketStatus
-
-    # Need an admin to change to an arbitrary status.
     >>> login('foo.bar@canonical.com')
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
-    >>> message = tickets[-1].setStatus(
-    ...     foo_bar, TicketStatus.INVALID, 'Status change.')
-    >>> message = tickets[3].setStatus(
-    ...     foo_bar, TicketStatus.ANSWERED, 'Status change.')
+    >>> message = tickets[-1].reject(
+    ...     foo_bar, 'Invalid ticket.', datecreated=now+timedelta(hours=1))
+    >>> message = tickets[3].giveAnswer(
+    ...     sample_person, 'This is your answer.',
+    ...     datecreated=now+timedelta(hours=1))
 
     # Flush those changes to the database.
     >>> from canonical.database.sqlbase import flush_database_updates
@@ -153,6 +151,7 @@ word appears in the title.)
 
 The searchTickets() method can also filter tickets by status:
 
+    >>> from canonical.lp.dbschema import TicketStatus
     >>> for t in target.searchTickets(status=TicketStatus.OPEN):
     ...     print t.title
     Another ticket
@@ -238,6 +237,37 @@ parameter.
     Ticket title3
     Ticket title1
 
+=== needs_attention_from ===
+
+You can also search among the tickets that needs the attention of
+somebody. A ticket needs the attention of a user if he owns the ticket
+and that ticket is in the NEEDSINFO or ANSWERED state. Ticket that the
+user answered or ask info on and that received a reply are also
+included.
+
+    # One of Sample Person's ticket gets to need attention from Foo Bar.
+    >>> login('foo.bar@canonical.com')
+    >>> message = tickets[0].requestInfo(
+    ...     foo_bar, 'Do you have a clue?',
+    ...     datecreated=now+timedelta(hours=1))
+    >>> login('test@canonical.com')
+    >>> message = tickets[0].giveInfo(
+    ... 'I do, now please help me.', datecreated=now+timedelta(hours=2))
+
+    # Another one of Foo Bar's ticket needs attention.
+    >>> message = tickets[1].requestInfo(
+    ...     sample_person, 'And you, do you have a clue?',
+    ...     datecreated=now+timedelta(hours=1))
+
+    # Flush those changes to the database.
+    >>> flush_database_updates()
+    >>> login(ANONYMOUS)
+
+    >>> for t in target.searchTickets(needs_attention_from=foo_bar):
+    ...     print t.status.title, t.title, t.owner.displayname
+    Answered Ticket title3 Foo Bar
+    Needs information Ticket title1 Foo Bar
+    Open Ticket title0 Sample Person
 
 == findSimilarTickets() ==
 

@@ -514,8 +514,8 @@ class TicketSearch:
     """
 
     def __init__(self, search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-                 sort=None, product=None, distribution=None,
-                 sourcepackagename=None):
+                 sort=None, needs_attention_from=None,
+                product=None, distribution=None, sourcepackagename=None):
         self.search_text = search_text
 
         if zope_isinstance(status, Item):
@@ -524,6 +524,7 @@ class TicketSearch:
             self.status = status
 
         self.sort = sort
+        self.needs_attention_from = needs_attention_from
 
         self.product = product
         self.distribution = distribution
@@ -560,6 +561,19 @@ class TicketSearch:
         if self.status:
             constraints.append('Ticket.status IN %s' % sqlvalues(
                 list(self.status)))
+
+        if self.needs_attention_from:
+            constraints.append('''Ticket.id IN (
+            SELECT DISTINCT t.id FROM Ticket t
+                JOIN TicketMessage tm ON (Ticket.id = tm.ticket)
+                JOIN Message m ON (tm.message = m.id)
+                WHERE (t.owner = %(person)s AND t.status IN %(owner_status)s)
+                      OR (t.owner != %(person)s AND
+                          t.status = %(open_status)s AND m.owner = %(person)s)
+            )''' % sqlvalues(
+                person=self.needs_attention_from,
+                owner_status=[TicketStatus.NEEDSINFO, TicketStatus.ANSWERED],
+                open_status=TicketStatus.OPEN))
 
         return constraints
 
@@ -618,12 +632,13 @@ class TicketTargetSearch(TicketSearch):
     """
 
     def __init__(self, search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-                 sort=None, owner=None, product=None, distribution=None,
-                 sourcepackagename=None):
+                 sort=None, owner=None, needs_attention_from=None,
+                 product=None, distribution=None, sourcepackagename=None):
         assert product is not None or distribution is not None, (
             "Missing a product or distribution context.")
         TicketSearch.__init__(
             self, search_text=search_text, status=status, sort=sort,
+            needs_attention_from=needs_attention_from,
             product=product, distribution=distribution,
             sourcepackagename=sourcepackagename)
 
