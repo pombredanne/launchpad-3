@@ -110,6 +110,9 @@ def translation_import(pofile_or_potemplate, file, importer, published=True):
         if pomsg['alt_msgid']:
             potmsgset = potemplate.getPOTMsgSetByAlternativeMsgID(
                 pomsg['alt_msgid'])
+            if not potmsgset:
+                continue
+            pomsg['msgid'] = potmsgset.getPOMsgIDs()[0].msgid
         else:
             potmsgset = potemplate.getPOTMsgSetByMsgIDText(pomsg['msgid'])
 

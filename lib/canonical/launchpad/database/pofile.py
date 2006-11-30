@@ -526,6 +526,9 @@ class POFile(SQLBase, RosettaStats):
 
     def updateHeader(self, new_header):
         """See IPOFile."""
+        if not new_header:
+            return
+
         # check that the plural forms info is valid
         new_plural_form = new_header.get('Plural-Forms', None)
         if new_plural_form is None:

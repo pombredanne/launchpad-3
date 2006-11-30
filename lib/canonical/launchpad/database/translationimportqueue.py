@@ -518,11 +518,16 @@ class TranslationImportQueue:
         size = len(content)
         file = StringIO(content)
         client = getUtility(ILibrarianClient)
+        if filename.endswith('.xpi'):
+            # using "application/x-xpinstall" would trigger installation in ff
+            ctype = 'application/zip'
+        else:
+            ctype = 'application/x-po'
         alias = client.addFile(
             name=filename,
             size=size,
             file=file,
-            contentType='application/x-po')
+            contentType=ctype)
 
         # Check if we got already this request from this user.
         if sourcepackagename is not None:

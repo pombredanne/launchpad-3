@@ -187,7 +187,7 @@ class PropertyFile (LocalizableFile):
             value = value.encode('unicode_escape').decode('unicode_escape')
 
             if self._data.has_key(key):
-                print >>sys.stderr, "Warning: there is already a message with key '%s'." % name
+                # XXX: there is already a message with key 'name'?
                 self._data[key]['sourcerefs'].append("%s(%s)" % (self.filename,
                                                                  key) )
                 if lastcomment:
@@ -305,8 +305,32 @@ class MozillaSupport:
             }
 
     def getTranslation(self, path, language):
-        file = librarian_client.getFileByAlias(self.content)
-        LibraryFileAlias()
+        mozimport = MozillaZipFile(StringIO(self.file.read()))
+
+        messages = []
+        for alt_msgid in mozimport:
+            msg = {}
+            xpimsg = mozimport[alt_msgid]
+            msg['alt_msgid'] = alt_msgid
+            msg['msgid'] = None
+            msg['msgid_plural'] = None
+            msg['msgstr'] = { 0: xpimsg['content'] }
+
+            msg['comment'] = None
+            msg['filerefs'] = None
+            msg['flags'] = []
+            msg['obsolete'] = False
+            msg['sourcecomment'] = None
+
+            messages.append(msg)
+
+        return {
+            "revisiondate" : None,
+            "lasttranslatoremail" : None,
+            "lasttranslatorname" : None,
+            "header" : None,
+            "messages" : messages,
+            }
 
     def getRosettaLanguageForXpiLanguage(self, xpilang):
         langdata = self.languagePackData(xpilang)
