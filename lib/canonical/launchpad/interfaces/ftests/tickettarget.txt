@@ -1,5 +1,4 @@
-ITicketTarget Interface
-=======================
+= ITicketTarget Interface =
 
 Launchpad includes a support request tracker. Tickets are associated to
 objects implementing ITicketTarget. This file documents that interface
@@ -9,8 +8,8 @@ variable which is defined outside of this file, usually by a
 LaunchpadFunctionalTestCase. This instance shouldn't have any tickets
 associated with it at the start of the test.)
 
-    (Some parts of the ITicketTarget interface are only accessible
-    to a registered user.)
+    # Some parts of the ITicketTarget interface are only accessible
+    # to a registered user.
     >>> login('no-priv@canonical.com')
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import ITicketTarget
@@ -19,8 +18,7 @@ associated with it at the start of the test.)
     True
 
 
-newTicket()
------------
+== newTicket() ==
 
 Tickets are always owned by a registered user.
 
@@ -33,7 +31,7 @@ with the target. It takes as parameters the ticket's owner, title and
 description. It also takes an optional parameter 'datecreated' parameter
 which defaults to UTC_NOW.
 
-    (Let's define now to a know value.)
+    # Let's define now to a know value.
     >>> from datetime import datetime, timedelta
     >>> from pytz import UTC
     >>> now = datetime.now(UTC)
@@ -68,8 +66,7 @@ Anonymous users cannot use newTicket():
     Unauthorized...
 
 
-getTicket()
------------
+== getTicket() ==
 
 The getTicket() method is used to retrieve a ticket by id for a
 particular target.
@@ -86,8 +83,7 @@ method must return None.
     True
 
 
-Creating some additional tickets
--------------------------------
+== Creating some additional tickets ==
 
 For the following methods, we will require some more tickets. Create five
 new tickets. Odd tickets will be owned by foo_bar and even tickets will be
@@ -112,7 +108,7 @@ fourth one to ANSWERED.
 
     >>> from canonical.lp.dbschema import TicketStatus
 
-    (Need an admin to change to an arbitrary status)
+    # Need an admin to change to an arbitrary status.
     >>> login('foo.bar@canonical.com')
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
     >>> message = tickets[-1].setStatus(
@@ -120,7 +116,7 @@ fourth one to ANSWERED.
     >>> message = tickets[3].setStatus(
     ...     foo_bar, TicketStatus.ANSWERED, 'Status change.')
 
-    (Flush those changes to the database)
+    # Flush those changes to the database.
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
@@ -134,8 +130,7 @@ description.
     >>> login(ANONYMOUS)
 
 
-searchTickets()
----------------
+== searchTickets() ==
 
 The searchTickets() method is used to search for tickets.
 
@@ -232,8 +227,7 @@ parameter.
     Ticket title1
 
 
-findSimilarTickets()
---------------------
+== findSimilarTickets() ==
 
 The method findSimilarTickets() can be use to find tickets similar to a
 sentence. The tickets don't have to contain all the words of the sentence,
@@ -249,8 +243,7 @@ all other words in the sentence are either common ('ticket', 'title') or stop
 words ('with', 'a').
 
 
-Support contacts
-----------------
+== Support contacts ==
 
 Target can have support contacts. The list of support contacts for a
 target is available through the support_contacts attribute.
