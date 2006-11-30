@@ -12,6 +12,7 @@ __all__ = [
     'LaunchpadRootNavigation',
     'MaloneApplicationNavigation',
     'SoftTimeoutView',
+    'SearchProjectsView',
     ]
 
 import cgi
@@ -28,14 +29,14 @@ import canonical.launchpad.layers
 from canonical.config import config
 from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.interfaces import (
-    ILaunchBag, ILaunchpadRoot, IRosettaApplication,
-    IMaloneApplication, IProductSet, IShipItApplication, IPersonSet,
-    IDistributionSet, ISourcePackageNameSet, IBinaryPackageNameSet,
-    IProjectSet, ILoginTokenSet, IKarmaActionSet, IPOTemplateNameSet,
+    ILaunchBag, ILaunchpadRoot, IRosettaApplication, IPillarSet,
+    IMaloneApplication, IProductSet, IPersonSet, IDistributionSet,
+    ISourcePackageNameSet, IBinaryPackageNameSet, IProjectSet,
+    ILoginTokenSet, IKarmaActionSet, IPOTemplateNameSet,
     IBazaarApplication, ICodeOfConductSet, IRegistryApplication,
     ISpecificationSet, ISprintSet, ITicketSet, IBuilderSet, IBountySet,
     ILaunchpadCelebrities, IBugSet, IBugTrackerSet, ICveSet,
-    ITranslationImportQueue, ITranslationGroupSet)
+    ITranslationImportQueue, ITranslationGroupSet, NotFoundError)
 from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView, Navigation,
@@ -448,3 +449,39 @@ class SoftTimeoutView(LaunchpadView):
         return (
             'Soft timeout threshold is set to %s ms. This page took'
             ' %s ms to render.' % (soft_timeout, time_to_generate_page))
+
+
+class SearchProjectsView(LaunchpadView):
+    """The page where people can search for Projects/Products/Distros."""
+
+    results = None
+    search_string = ""
+    max_results_to_display = config.launchpad.default_batch_size
+
+    def initialize(self):
+        form = self.request.form
+        self.search_string = form.get('q')
+        if not self.search_string:
+            return
+
+        search_string = self.search_string.lower()
+        if form.get('go') is not None:
+            try:
+                pillar = getUtility(IPillarSet)[search_string]
+            except NotFoundError:
+                pass
+            else:
+                self.request.response.redirect(canonical_url(pillar))
+                # No need to do the search, since we're going to teleport the
+                # user.
+                return
+
+        self.results = getUtility(IPillarSet).search(
+            search_string, limit=self.max_results_to_display)
+
+    def tooManyResultsFound(self):
+        if len(self.results) > self.max_results_to_display:
+            return True
+        else:
+            return False
+

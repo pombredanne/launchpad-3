@@ -1,0 +1,34 @@
+
+Launchpad provides a way for people to search across products, projects and
+distributions. This is done at the /+search page.
+
+    >>> browser.open('http://launchpad.dev/+search')
+    >>> browser.getControl(name='q').value = 'ubuntu'
+    >>> browser.getControl('Search').click()
+    >>> browser.url
+    'http://launchpad.dev/+search?q=ubuntu&search=Search'
+
+We'll only show up to config.launchpad.default_batch_size results; if there
+are more results than that, we'll show an informational message and ask the
+user to refine his search.
+
+    >>> tags = find_tags_by_class(browser.contents, "informational message")
+    >>> for tag in tags:
+    ...   print tag.renderContents()
+    More than 5 projects
+    were found, so we're displaying only the ones that are most relevant
+    to your search terms.
+    If the project you are looking for is not on the list below, please
+    do another search with more search terms.
+    
+    >>> print browser.contents
+    <...
+    ...<a href="/ubuntu">
+    ...Ubuntu Linux...
+    ...(distribution)...
+    ...<a href="/ubuntu-product">
+    ...Ubuntu...
+    ...(product)...
+    ...<a href="/ubuntu-project">
+    ...The Ubuntu Project...
+    ...(project)...

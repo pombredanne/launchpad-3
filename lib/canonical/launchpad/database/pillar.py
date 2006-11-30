@@ -12,6 +12,7 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor, sqlvalues
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
         NotFoundError, IPillarSet, IDistributionSet, IProductSet, IProjectSet
         )
@@ -93,7 +94,7 @@ class PillarSet:
 
             UNION ALL
 
-            SELECT 'distro' AS otype, id, name, title, description,
+            SELECT 'distribution' AS otype, id, name, title, description,
                 9999999 AS rank
             FROM distribution 
             WHERE name = lower(%(text)s) OR lower(title) = lower(%(text)s)
@@ -118,5 +119,10 @@ class PillarSet:
         query = "%s LIMIT %d" % (base_query, limit + 1)
         cur = cursor()
         cur.execute(query)
-        return cur.fetchall()
+        keys = ['type', 'id', 'name', 'title', 'description', 'rank']
+        # People shouldn't be calling this method with too big limits
+        longest_expected = 2 * config.launchpad.default_batch_size
+        return shortlist(
+            [dict(zip(keys, values)) for values in cur.fetchall()],
+            longest_expected=longest_expected)
 
