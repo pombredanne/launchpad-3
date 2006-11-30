@@ -7,7 +7,8 @@ bugs.
 
     >>> user_browser.open("http://launchpad.dev/products/firefox/+filebug")
 
-    >>> user_browser.getControl(name="field.title").value = "svg"
+    >>> user_browser.getControl(name="field.title").value = (
+    ...     "SVG images aren't displayed")
     >>> user_browser.getControl("Continue").click()
 
 The form is self-posting, so the user is still at +filebug. This makes

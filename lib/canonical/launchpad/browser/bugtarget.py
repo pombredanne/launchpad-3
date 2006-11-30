@@ -25,7 +25,7 @@ from zope.event import notify
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IDistribution, IDistroRelease, IDistroReleaseSet,
+    IBugTaskSet, ILaunchBag, IDistribution, IDistroRelease, IDistroReleaseSet,
     IProduct, IDistributionSourcePackage, NotFoundError, CreateBugParams,
     IBugAddForm, BugTaskSearchParams, ILaunchpadCelebrities)
 from canonical.launchpad.webapp import (
@@ -282,8 +282,19 @@ class FileBugGuidedView(FileBugViewBase):
         """Return the similar bugs based on the user search."""
         matching_bugs = []
         title = self.getSearchText()
-        params = BugTaskSearchParams(self.user, searchtext=title)
-        for bugtask in self.context.searchTasks(params):
+        search_context = self.getProductOrDistroFromContext()
+        if IProduct.providedBy(search_context):
+            context_params = {'product': search_context}
+        else:
+            assert IDistribution.providedBy(search_context), (
+                'Unknown search context: %r' % search_context)
+            context_params = {'distribution': search_context}
+            if IDistributionSourcePackage.providedBy(self.context):
+                context_params['sourcepackagename'] = (
+                    self.context.sourcepackagename)
+        matching_bugtasks = getUtility(IBugTaskSet).findSimilar(
+            self.user, title, **context_params)
+        for bugtask in matching_bugtasks:
             if not bugtask.bug in matching_bugs:
                 matching_bugs.append(bugtask.bug)
                 if len(matching_bugs) >= self._MATCHING_BUGS_LIMIT:
