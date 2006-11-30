@@ -16,7 +16,7 @@ in the series task.
     True
 
 However, if we reject the Trunk task, it means that the bug is deferred
-to the next release. In that case, the general Firefox task will keep
+to the next release. In that case, the general Firefox task will stay
 open, while the series task is rejected.
 
     >>> user_browser.getLink(url=firefox_trunk_edit_url).click()
@@ -52,7 +52,7 @@ the distribution task won't be editable.
     True
 
 It's worth noting that only a rejection causes the conjoined bugtasks
-from being separated, if the task gets changed to Fix Released, it
+from being separated, if the task gets changed to Fix Released, the
 general distribution task will remain uneditable.
 
     >>> user_browser.getLink(url=firefox_trunk_edit_url).click()
