@@ -70,6 +70,8 @@ class PillarSet:
                    rank(fti, ftq(%(text)s)) AS rank
             FROM distribution
             WHERE fti @@ ftq(%(text)s)
+                AND name != lower(%(text)s)
+                AND lower(title) != lower(%(text)s)
 
             UNION ALL
 
@@ -77,6 +79,8 @@ class PillarSet:
                 rank(fti, ftq(%(text)s)) AS rank
             FROM product
             WHERE fti @@ ftq(%(text)s)
+                AND name != lower(%(text)s)
+                AND lower(title) != lower(%(text)s)
 
             UNION ALL
 
@@ -84,6 +88,29 @@ class PillarSet:
                 rank(fti, ftq(%(text)s)) AS rank
             FROM project
             WHERE fti @@ ftq(%(text)s)
+                AND name != lower(%(text)s)
+                AND lower(title) != lower(%(text)s)
+
+            UNION ALL
+
+            SELECT 'distro' AS otype, id, name, title, description,
+                9999999 AS rank
+            FROM distribution 
+            WHERE name = lower(%(text)s) OR lower(title) = lower(%(text)s)
+
+            UNION ALL
+
+            SELECT 'project' AS otype, id, name, title, description,
+                9999999 AS rank
+            FROM project
+            WHERE name = lower(%(text)s) OR lower(title) = lower(%(text)s)
+
+            UNION ALL
+
+            SELECT 'product' AS otype, id, name, title, description,
+                9999999 AS rank
+            FROM product
+            WHERE name = lower(%(text)s) OR lower(title) = lower(%(text)s)
 
             ORDER BY rank DESC
             """ % sqlvalues(text=text)
