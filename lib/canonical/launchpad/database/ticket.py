@@ -521,7 +521,7 @@ class TicketSearch:
         if zope_isinstance(status, Item):
             self.status = [status]
         else:
-            self.status = list(status)
+            self.status = status
 
         self.sort = sort
 
@@ -558,7 +558,8 @@ class TicketSearch:
                 'Ticket.fti @@ ftq(%s)' % quote(self.search_text))
 
         if self.status:
-            constraints.append('Ticket.status IN %s' % sqlvalues(self.status))
+            constraints.append('Ticket.status IN %s' % sqlvalues(
+                list(self.status)))
 
         return constraints
 
