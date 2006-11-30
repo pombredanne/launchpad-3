@@ -282,6 +282,8 @@ class FileBugGuidedView(FileBugViewBase):
         """Return the similar bugs based on the user search."""
         matching_bugs = []
         title = self.getSearchText()
+        if not title:
+            return []
         params = BugTaskSearchParams(self.user, searchtext=title)
         for bugtask in self.context.searchTasks(params):
             if not bugtask.bug in matching_bugs:
@@ -304,7 +306,10 @@ class FileBugGuidedView(FileBugViewBase):
 
     def getSearchText(self):
         """Return the search string entered by the user."""
-        return self.widgets['title'].getInputValue()
+        try:
+            return self.widgets['title'].getInputValue()
+        except InputErrors:
+            return None
 
     def validate_search(self, action, data):
         """Make sure some keywords are provided."""
