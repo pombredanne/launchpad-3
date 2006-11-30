@@ -88,7 +88,7 @@ bug. Let's take a look at each type.
     A task that says this bug must be fixed in a certain distro. Because no
     specific release is specified, the developer will assume that the fix
     belongs in the current development release. For backporting a fix to a
-    specific distro release, see 2.2.
+    specific distro release, see 3.2.
 
     >>> from canonical.launchpad.interfaces import IBugTaskSet
     >>> debian = getUtility(IDistributionSet).get(3)
