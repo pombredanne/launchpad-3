@@ -101,6 +101,7 @@
     <include file="sourcepackagepublishinghistory.zcml" />
     <include file="sourcepackagerelease.zcml" />
     <include file="specification.zcml" />
+    <include file="specificationbranch.zcml" />
     <include file="specificationdependency.zcml" />
     <include file="specificationfeedback.zcml" />
     <include file="specificationgoal.zcml" />

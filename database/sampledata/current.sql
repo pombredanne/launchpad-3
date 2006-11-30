@@ -8673,6 +8673,14 @@ INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter,
 ALTER TABLE specification ENABLE TRIGGER ALL;
 
 
+ALTER TABLE specificationbranch DISABLE TRIGGER ALL;
+
+INSERT INTO specificationbranch (id, datecreated, specification, branch, summary) VALUES (1, '2006-11-02 09:07:48.389829', 6, 20, 'This branch should fix the issue');
+
+
+ALTER TABLE specificationbranch ENABLE TRIGGER ALL;
+
+
 ALTER TABLE specificationbug DISABLE TRIGGER ALL;
 
 INSERT INTO specificationbug (id, specification, bug) VALUES (1, 3, 1);
