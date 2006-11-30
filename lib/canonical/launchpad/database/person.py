@@ -418,7 +418,7 @@ class Person(SQLBase):
         # import here to work around a circular import problem
         from canonical.launchpad.database import Product
 
-        if product_name is None:
+        if product_name is None or product_name == '+junk':
             return Branch.selectOne(
                 'owner=%d AND product is NULL AND name=%s'
                 % (self.id, quote(branch_name)))

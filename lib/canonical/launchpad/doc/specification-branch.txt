@@ -1,4 +1,4 @@
-= Secification Branch Links =
+= Specification Branch Links =
 
 A specification can be linked to a number of branches.  For example,
 the Ubuntu media-integrity-check specifcation has a branch link:

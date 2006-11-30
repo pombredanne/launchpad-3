@@ -67,10 +67,7 @@ class SpecificationNavigation(Navigation):
         if person is None:
             raise NotFoundError
 
-        if product_name == '+junk':
-            branch = person.getBranch(None, branch_name)
-        else:
-            branch = person.getBranch(product_name, branch_name)
+        branch = person.getBranch(product_name, branch_name)
 
         if not branch:
             raise NotFoundError
