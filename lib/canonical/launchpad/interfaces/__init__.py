@@ -119,6 +119,7 @@ from canonical.launchpad.interfaces.sourcepackage import *
 from canonical.launchpad.interfaces.sourcepackagename import *
 from canonical.launchpad.interfaces.sourcepackagerelease import *
 from canonical.launchpad.interfaces.specification import *
+from canonical.launchpad.interfaces.specificationbranch import *
 from canonical.launchpad.interfaces.specificationbug import *
 from canonical.launchpad.interfaces.specificationdependency import *
 from canonical.launchpad.interfaces.specificationfeedback import *
