@@ -15,6 +15,7 @@ __all__ = [
     'ITeamCreation',
     'IPersonChangePassword',
     'IPersonClaim',
+    'INewPerson',
     ]
 
 
@@ -32,7 +33,8 @@ from canonical.launchpad.interfaces.specificationtarget import (
 from canonical.launchpad.interfaces.tickettarget import (
     TICKET_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.validation import (
-    valid_emblem, valid_hackergotchi, valid_unregistered_email)
+    valid_emblem, valid_hackergotchi, validate_new_team_email,
+    validate_new_person_email)
 
 from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, TeamMembershipStatus, PersonCreationRationale)
@@ -68,6 +70,18 @@ class IPersonClaim(Interface):
     """The schema used by IPerson's +claim form."""
 
     emailaddress = TextLine(title=_('Email address'), required=True)
+
+
+class INewPerson(Interface):
+    """The schema used by IPersonSet's +newperson form."""
+
+    emailaddress = StrippedTextLine(
+        title=_('Email address'), required=True,
+        constraint=validate_new_person_email)
+    displayname = StrippedTextLine(title=_('Display name'), required=True)
+    creation_comment = Text(
+        title=_('Creation reason'), required=True,
+        description=_("The reason why you're creating this profile."))
 
 
 class IPerson(IHasSpecifications):
@@ -168,8 +182,14 @@ class IPerson(IHasSpecifications):
             "This comment may be displayed verbatim in a web page, so it "
             "has to follow some structural constraints, that is, it must "
             "be of the form: 'when %(action_details)s' (e.g 'when the "
-            "foo package was imported into Ubuntu Breezy')."),
+            "foo package was imported into Ubuntu Breezy'). The only "
+            "exception to this is when we allow users to create Launchpad "
+            "profiles through the /people/+newperson page."),
         required=False, readonly=False)
+    # XXX: We can't use a Choice field here because we don't have a vocabulary
+    # which contains valid people but not teams, and we don't really need one
+    # appart from here. -- Guilherme Salgado, 2006-11-10
+    registrant = Attribute('The user who created this profile.')
     # bounty relations
     ownedBounties = Attribute('Bounties issued by this person.')
     reviewerBounties = Attribute('Bounties reviewed by this person.')
@@ -326,8 +346,12 @@ class IPerson(IHasSpecifications):
             "this is set to None, then this Person has not been merged "
             "into another and is still valid"))
 
-    touched_pofiles = Attribute(
-        "The set of pofiles which the person has worked on in some way.")
+    translation_history = Attribute(
+        "The set of POFileTranslator objects that represent work done "
+        "by this translator.")
+
+    translation_groups = Attribute(
+        "The set of TranslationGroup objects this person is a member of.")
 
     # title is required for the Launchpad Page Layout main template
     title = Attribute('Person Page Title')
@@ -429,15 +453,13 @@ class IPerson(IHasSpecifications):
 
         If this person doesn't have a preferred email, <email> will be set as
         this person's preferred one. Otherwise it'll be set as VALIDATED and
-        this person will keep its old preferred email. This is why this method
-        can't be called with person's preferred email as argument.
+        this person will keep their old preferred email.
 
         This method is meant to be the only one to change the status of an
         email address, but as we all know the real world is far from ideal and
         we have to deal with this in one more place, which is the case when
         people explicitly want to change their preferred email address. On
-        that case, though, all we have to do is assign the new preferred email
-        to person.preferredemail.
+        that case, though, all we have to do is use person.setPreferredEmail().
         """
 
     def hasMembershipEntryFor(team):
@@ -595,7 +617,7 @@ class IPersonSet(Interface):
     def createPersonAndEmail(
             email, rationale, comment=None, name=None, displayname=None,
             password=None, passwordEncrypted=False,
-            hide_email_addresses=False):
+            hide_email_addresses=False, registrant=None):
         """Create a new Person and an EmailAddress with the given email.
 
         The comment must be of the following form: "when %(action_details)s"
@@ -609,7 +631,8 @@ class IPersonSet(Interface):
         NEW) for the new Person.
         """
 
-    def ensurePerson(email, displayname, rationale, comment=None):
+    def ensurePerson(email, displayname, rationale, comment=None,
+                     registrant=None):
         """Make sure that there is a person in the database with the given
         email address. If necessary, create the person, using the
         displayname given.
@@ -653,6 +676,12 @@ class IPersonSet(Interface):
         If no orderBy is specified the results will be ordered using the
         default ordering specified in Person._defaultOrder.
         """
+
+    def getPOFileContributors(pofile):
+        """Return people that have contributed to the specified POFile."""
+
+    def getPOFileContributorsByDistroRelease(self, distrorelease, language):
+        """Return people who translated strings in distroRelease to language."""
 
     def getAllPersons(orderBy=None):
         """Return all Persons, ignoring the merged ones.
@@ -795,5 +824,5 @@ class ITeamCreation(ITeam):
             "this team will be sent to all team members. After finishing the "
             "team creation, a new message will be sent to this address with "
             "instructions on how to finish its registration."),
-        constraint=valid_unregistered_email)
+        constraint=validate_new_team_email)
 

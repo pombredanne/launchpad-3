@@ -65,6 +65,14 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IDistribution"
+        name="+archivemirrors-rss"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.DistributionArchiveMirrorsRSSView"
+        template="../templates/distribution-mirrors-rss.pt"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IDistribution"
         facet="overview"
         class="canonical.launchpad.browser.DistributionReleaseMirrorsView"
         permission="zope.Public"
@@ -384,11 +392,6 @@
         for="canonical.launchpad.interfaces.IDistributionSet"
         name="+index" />
 
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IDistributionSet"
-        layer="canonical.launchpad.layers.MaloneLayer"
-        name="+bugs" />
-
     <browser:navigation
         module="canonical.launchpad.browser"
         classes="DistributionSetNavigation"
@@ -400,8 +403,6 @@
         parent_utility="canonical.launchpad.interfaces.IDistributionSet"
         />
 
-    <!-- XXX: WTF is distros-index hooked onto +bugs for
-              kiko, 2005-09-09 -->
     <browser:pages
         for="canonical.launchpad.interfaces.IDistributionSet"
         permission="zope.Public"
@@ -411,10 +412,6 @@
             name="+index"
             template="../templates/distros-index.pt"
             lp:url="/distros/" />
-        <browser:page
-            name="+bugs"
-            template="../templates/distros-index.pt"
-            lp:url="/distros/+bugs" />
     </browser:pages>
 
     <browser:pages

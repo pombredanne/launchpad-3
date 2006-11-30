@@ -147,7 +147,7 @@
     <browser:page
         for="canonical.launchpad.interfaces.IBugTask"
         name="+portlet-subscribers"
-        class="canonical.launchpad.browser.BugSubscriberPortletView"
+        class="canonical.launchpad.browser.BugView"
         template="../templates/bug-portlet-subscribers.pt"
         permission="zope.Public" />
 
@@ -263,12 +263,18 @@
         name="+index" />
 
     <browser:page
-        name="+upstreamtask"
+        name="+choose-affected-product"
+        for="canonical.launchpad.interfaces.IBugTask"
+        class="canonical.launchpad.browser.bug.ChooseAffectedProductView"
+        permission="launchpad.AnyPerson"
+        template="../templates/bugtask-choose-affected-product.pt" />
+
+    <browser:page
+        name="+add-affected-product"
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.bug.BugAlsoReportInView"
         permission="launchpad.AnyPerson"
-        attribute="render_upstreamtask"
-        lp:url="malone/bugs/$Bug.id/+upstreamtask">
+        attribute="render_upstreamtask">
     </browser:page>
 
     <browser:page

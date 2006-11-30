@@ -54,7 +54,7 @@
   </tal:no-results>
 
   <tal:block condition="tickets/batch">
-    <div class="lesser" tal:content="structure tickets/@@+navigation-links" />
+    <div class="lesser" tal:content="structure tickets/@@+navigation-links-upper" />
     <table class="listing" id="ticket-listing">
       <thead>
         <tr>
@@ -69,7 +69,8 @@
         </tr>
       </thead>
       <tbody>
-        <tr tal:repeat="ticket tickets/batch">
+        <tr tal:repeat="ticket tickets/batch"
+            tal:attributes="title ticket/description/fmt:shorten/300">
           <td class="icon right">
             <img alt="Open" title="Open" src="/@@/ticket"
                  tal:attributes="alt ticket/status/title;
@@ -105,8 +106,20 @@
         </tr>
       </tbody>
     </table>
-    <div class="lesser" tal:content="structure tickets/@@+navigation-links" />
+    <div class="lesser" tal:content="structure tickets/@@+navigation-links-lower" />
   </tal:block>
 </div>
+
+<metal:help fill-slot="help">
+  <p>This listing displays the support requests matching the selected
+    criteria in this context (distribution, product, person, sourcepackage).
+  </p>
+  <p>The search criteria for the current listing can be modified directly at
+    the top of the page.
+  </p>
+  <p>If you hover the mouse over a support request, the beginning of its
+    description will pop-up after a few seconds.
+  </p>
+</metal:help>
 </body>
 </html>
