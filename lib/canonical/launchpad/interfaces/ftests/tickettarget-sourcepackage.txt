@@ -1,5 +1,4 @@
-ITicketTarget for SourcePackage
-===============================
+= ITicketTarget for SourcePackage =
 
 The ITicketTarget implementation contain one some small differences with
 the other ones. (See tickettarget.txt for the generic interface

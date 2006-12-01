@@ -595,10 +595,21 @@ accessed through the conjoined_master and conjoined_slave properties.
     >>> current_release_netapplet_task.conjoined_master is None
     True
 
+    >>> generic_netapplet_task.conjoined_slave is None
+    True
+    >>> generic_netapplet_task.conjoined_master == (
+    ...     current_release_netapplet_task)
+    True
+
     >>> current_release_ubuntu_task.conjoined_slave == (
     ...     generic_ubuntu_task)
     True
     >>> current_release_ubuntu_task.conjoined_master is None
+    True
+    >>> generic_ubuntu_task.conjoined_master == (
+    ...     current_release_ubuntu_task)
+    True
+    >>> generic_ubuntu_task.conjoined_slave is None
     True
 
     >>> devel_focus_alsa_utils_task.conjoined_slave == (
@@ -607,16 +618,37 @@ accessed through the conjoined_master and conjoined_slave properties.
     >>> devel_focus_alsa_utils_task.conjoined_master is None
     True
 
-    >>> generic_netapplet_task.conjoined_slave is None
-    True
-    >>> generic_netapplet_task.conjoined_master == (
-    ...     current_release_netapplet_task)
-    True
-
     >>> generic_alsa_utils_task.conjoined_slave is None
     True
     >>> generic_alsa_utils_task.conjoined_master == (
     ...     devel_focus_alsa_utils_task)
+    True
+
+A distrorelease/productseries task that isn't the current development
+focus, doesn't have any conjoined masters or slaves.
+
+    >>> alsa_utils_stable = alsa_utils.newSeries(
+    ...     launchbag.user, 'stable', 'The stable series.')
+    >>> alsa_utils.development_focus == alsa_utils_stable
+    False
+    >>> stable_netapplet_task = bugtaskset.createTask(
+    ...     bug=ubuntu_netapplet_bug, owner=launchbag.user,
+    ...     productseries=alsa_utils_stable)
+    >>> stable_netapplet_task.conjoined_master is None
+    True
+    >>> stable_netapplet_task.conjoined_slave is None
+    True
+
+    >>> warty = ubuntu.getRelease('warty')
+    >>> warty == ubuntu.currentrelease
+    False
+    >>> warty_netapplet_task = bugtaskset.createTask(
+    ...     bug=ubuntu_netapplet_bug, owner=launchbag.user,
+    ...     distrorelease=warty,
+    ...     sourcepackagename=ubuntu_netapplet.sourcepackagename)
+    >>> warty_netapplet_task.conjoined_master is None
+    True
+    >>> warty_netapplet_task.conjoined_slave is None
     True
 
 Now the attributes are kept in sync. Here are examples of each:
