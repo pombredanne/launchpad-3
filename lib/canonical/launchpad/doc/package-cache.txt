@@ -64,10 +64,11 @@ table, including:
 
   >>> warty_caches = DistroReleasePackageCache.selectBy(distrorelease=warty)
   >>> warty_caches.count()
-  4
+  5
   >>> for cache in warty_caches.orderBy('name'):
   ...     print cache.name
   at
+  foobar
   linux-2.6.12
   mozilla-firefox
   pmount
@@ -92,6 +93,10 @@ The cache update procedure is done by cronscripts/update-pkgcache.py,
 which removes obsolete records, update existing ones and add new
 records during the scanning of all the publishing records. This
 scripts runs periodically in our infrastructure.
+
+
+= Source Caches =
+
 
 A SourcePackage is present in the sampledata as REVOVED and still part
 of the caches:
@@ -121,7 +126,7 @@ Let's use a fake logger object:
   ...         print 'DEBUG: %s' % msg
 
   >>> ubuntu.removeOldCacheItems(log=TestLog())
-  DEBUG: Removing cache for 'foobar' (10)
+  DEBUG: Removing source cache for 'foobar' (10)
 
   >>> transaction.commit()
 
@@ -134,7 +139,7 @@ Let's use a fake logger object:
   >>> foobar_cache is None
   True
 
-Also, the sampledata provides a published cache which is not present
+Also, the sampledata provides a published source which is not present
 in the caches:
 
   >>> cdrkit_in_ubuntu = ubuntu.getSourcePackage('cdrkit')
@@ -156,12 +161,11 @@ We can invoke the cache updater directly on IDistrorelease:
 
   >>> ubuntu.updateCompleteSourcePackageCache(
   ...    ztm=transaction, log=TestLog())
-  DEBUG: Considering 'mozilla-firefox'
+  DEBUG: Considering source 'mozilla-firefox'
   ...
-  DEBUG: Considering 'cdrkit'
-  DEBUG: Creating new cache entry.
-  DEBUG: Considering version 1.0
-
+  DEBUG: Considering source 'cdrkit'
+  DEBUG: Creating new source cache entry.
+  ...
 
 The current transaction should be committed again, to catch the
 partial batches (less than 50 sources considered) and also updates
@@ -186,4 +190,43 @@ via searches:
 
   >>> cdrkit_cache.id
   11L
+
+
+= Dealing with Binary Caches =
+
+
+A BinaryPackage is present in the sampledata as REVOVED and still part
+of the caches:
+
+  >>> foobar_bin_in_warty = warty.getBinaryPackage('foobar')
+  >>> foobar_bin_rel = foobar_in_ubuntu.releases[0]
+  >>> foobar_bin_pub = foobar_rel.publishing_history[0]
+  >>> foobar_bin_pub.status.name
+  'REMOVED'
+
+  >>> len(warty.searchPackages('foobar'))
+  1
+
+  >>> foobar_bin_cache = DistroReleasePackageCache.selectOneBy(
+  ...     distrorelease=warty, name='foobar')
+
+  >>> foobar_bin_cache.id
+  8
+
+Binaries cache updates are driven by distrorelease, IDistroRelease
+instance offers a method for removing obsolete records in cache:
+
+  >>> warty.removeOldCacheItems(log=TestLog())
+  DEBUG: Removing binary cache for 'foobar' (8)
+
+  >>> transaction.commit()
+
+  >>> len(warty.searchPackages('foobar'))
+  0
+
+  >>> foobar_bin_cache = DistroReleasePackageCache.selectOneBy(
+  ...     distrorelease=warty, name='foobar')
+
+  >>> foobar_bin_cache is None
+  True
 

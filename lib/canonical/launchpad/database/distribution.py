@@ -575,7 +575,8 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         for cache in self.source_package_caches:
             if cache.sourcepackagename not in spns:
                 log.debug(
-                    "Removing cache for '%s' (%s)" % (cache.name, cache.id))
+                    "Removing source cache for '%s' (%s)"
+                    % (cache.name, cache.id))
                 cache.destroySelf()
 
     def updateCompleteSourcePackageCache(self, log, ztm):
@@ -598,12 +599,12 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         # Now update, committing every 50 packages.
         counter = 0
         for spn in spns:
-            log.debug("Considering '%s'" % spn.name)
+            log.debug("Considering source '%s'" % spn.name)
             self.updateSourcePackageCache(spn, log)
             counter += 1
             if counter > 49:
                 counter = 0
-                logger.debug("Committing")
+                log.debug("Committing")
                 ztm.commit()
 
     def updateSourcePackageCache(self, sourcepackagename, log):
@@ -625,7 +626,7 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
             distinct=True))
 
         if len(sprs) == 0:
-            log.debug("No releases found.")
+            log.debug("No sources releases found.")
             return
 
         # Find or create the cache entry.
@@ -634,7 +635,7 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
             sourcepackagename = %s
             """ % sqlvalues(self.id, sourcepackagename.id))
         if cache is None:
-            log.debug("Creating new cache entry.")
+            log.debug("Creating new source cache entry.")
             cache = DistributionSourcePackageCache(
                 distribution=self,
                 sourcepackagename=sourcepackagename)
@@ -647,7 +648,7 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         binpkgsummaries = set()
         binpkgdescriptions = set()
         for spr in sprs:
-            log.debug("Considering version %s" % spr.version)
+            log.debug("Considering source version %s" % spr.version)
             binpkgs = BinaryPackageRelease.select("""
                 BinaryPackageRelease.build = Build.id AND
                 Build.sourcepackagerelease = %s

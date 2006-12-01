@@ -727,7 +727,7 @@ class DistroRelease(SQLBase, BugTargetBase):
             return section
         raise NotFoundError(name)
 
-    def removeOldCacheItems(self):
+    def removeOldCacheItems(self, log):
         """See IDistroRelease."""
 
         # get the set of package names that should be there
@@ -749,9 +749,12 @@ class DistroRelease(SQLBase, BugTargetBase):
         # remove the cache entries for binary packages we no longer want
         for cache in self.binary_package_caches:
             if cache.binarypackagename not in bpns:
+                log.debug(
+                    "Removing binary cache for '%s' (%s)"
+                    % (cache.name, cache.id))
                 cache.destroySelf()
 
-    def updateCompletePackageCache(self, ztm=None):
+    def updateCompletePackageCache(self, log, ztm):
         """See IDistroRelease."""
 
         # get the set of package names to deal with
@@ -774,15 +777,17 @@ class DistroRelease(SQLBase, BugTargetBase):
         # packages
         counter = 0
         for bpn in bpns:
-            self.updatePackageCache(bpn)
+            log.debug("Considering binary '%s'" % bpn.name)
+            self.updatePackageCache(bpn, log)
             counter += 1
             if counter > 99:
                 counter = 0
                 if ztm is not None:
+                    log.debug("Committing")
                     ztm.commit()
 
 
-    def updatePackageCache(self, binarypackagename):
+    def updatePackageCache(self, binarypackagename, log):
         """See IDistroRelease."""
 
         # get the set of published binarypackagereleases
@@ -801,6 +806,7 @@ class DistroRelease(SQLBase, BugTargetBase):
                           'DistroArchRelease'],
             distinct=True)
         if bprs.count() == 0:
+            log.debug("No binary releases found.")
             return
 
         # find or create the cache entry
@@ -809,6 +815,7 @@ class DistroRelease(SQLBase, BugTargetBase):
             binarypackagename = %s
             """ % sqlvalues(self.id, binarypackagename.id))
         if cache is None:
+            log.debug("Creating new binary cache entry.")
             cache = DistroReleasePackageCache(
                 distrorelease=self,
                 binarypackagename=binarypackagename)
@@ -824,6 +831,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         summaries = set()
         descriptions = set()
         for bpr in bprs:
+            log.debug("Considering binary version %s" % bpr.version)
             summaries.add(bpr.summary)
             descriptions.add(bpr.description)
 
