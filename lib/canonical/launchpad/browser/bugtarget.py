@@ -114,9 +114,6 @@ class FileBugViewBase(LaunchpadFormView):
 
     def shouldSelectPackageName(self):
         """Should the radio button to select a package be selected?"""
-        # XXX, Brad Bollenbach, 2006-07-13: We also call _renderedValueSet() in
-        # case there is a default value in the widget, i.e., a value that was
-        # set outside the request. See https://launchpad.net/bugs/52912.
         return (
             self.request.form.get("field.packagename") or
             self.initial_values.get("packagename"))
