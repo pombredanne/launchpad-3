@@ -1,5 +1,6 @@
-Person and the Support Tracker
-==============================
+= Person and the Support Tracker =
+
+== searchTickets() ==
 
 IPerson defines a searchTickets() method which can be used to
 select all or a subset of the support requests in which the person is
@@ -12,8 +13,7 @@ participation type.
     >>> personset = getUtility(IPersonSet)
     >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
 
-search_text
-~~~~~~~~~~~
+=== search_text ===
 
 The search_text parameter will limit the tickets to those matching
 the query using the regular full text algorithm.
@@ -24,8 +24,7 @@ the query using the regular full text algorithm.
     mailto: problem in webpage                      Solved
     Newly installed plug-in doesn't seem to be used Open
 
-Sort Order
-~~~~~~~~~~
+=== sort ===
 
 When using the search_text criteria, the default is to sort the results
 by relevancy. One can use the sort parameter to change that. It takes
@@ -52,8 +51,7 @@ TicketSort.NEWEST_FIRST.
     Newly installed plug-in doesn't seem to be used         Open
     Firefox loses focus and gets stuck                      Open
 
-status
-------
+=== status ===
 
 The last searches showed that by default, not all statuses are searched
 for by default (they excluded expired and invalid tickets). The status
@@ -72,8 +70,7 @@ The status parameter can also take a list of statuses.
     mailto: problem in webpage                  Solved
     Firefox is slow and consumes too much RAM   Invalid
 
-participation
--------------
+=== participation ===
 
 By default, any types of relationship to a ticket is considered by
 searchTickets. This can customized through the participation parameter.
@@ -139,8 +136,7 @@ will be selected:
     Firefox loses focus and gets stuck
     Firefox is slow and consumes too much RAM
 
-Combination
-~~~~~~~~~~~
+=== Combination ===
 
 The returned sets of tickets is the intersection of the sets delimited
 by each criteria:
@@ -149,10 +145,8 @@ by each criteria:
     ...         search_text='firefox OR Java', status=TicketStatus.OPEN,
     ...         participation=TicketParticipation.COMMENTER):
     ...     print ticket.title, ticket.status.title
-    Installation of Java Runtime Environment
-        for Mozilla                             Open
-    Newly installed plug-in doesn't seem to be
-        used                                    Open
+    Installation of Java Runtime Environment for Mozilla    Open
+    Newly installed plug-in doesn't seem to be used         Open
 
 == getSupportedLanguages() ==
 
