@@ -16,19 +16,16 @@ In this case, there are no similar matching bugs.
     >>> similar_bugs_table is None
     True
 
+    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+    ...     print message.renderContents()
+    No similar bugs were found.
+
 And no duplicated bugs in this package.
 
     >>> most_common_bugs_table = find_tag_by_id(
     ...     user_browser.contents, "most-common-bugs")
     >>> most_common_bugs_table is None
     True
-
-The user got taken to the bug submit form directly.
-
-    >>> user_browser.getControl("Continue")
-    Traceback (most recent call last):
-      ...
-    LookupError: ...
 
 The filebug form looks similar to the normal distro form, but the
 package name is prepopulated.
