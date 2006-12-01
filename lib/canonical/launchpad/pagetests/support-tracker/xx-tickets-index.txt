@@ -3,7 +3,7 @@
 The support tracker main page present a short introduction to the
 application.
 
-    >>> anon_browser.open('http://launchpad.dev/support')
+    >>> anon_browser.open('http://answers.launchpad.dev/')
     >>> print anon_browser.title
     Launchpad support tracker
 
@@ -12,7 +12,7 @@ displaying the number of requests tracked by the system.
 
     >>> print find_tag_by_id(
     ...     anon_browser.contents, 'requests-count').renderContents()
-    11 requests made
+    The support tracker contains 11 requests.
 
 It also shows the 10 latest requests made:
 
