@@ -88,9 +88,12 @@ ALTER TABLE Person ADD COLUMN gotchi_heading integer;
 ALTER TABLE Person ADD CONSTRAINT person__gotchi_heading__fk
                        FOREIGN KEY (gotchi_heading)
                        REFERENCES LibraryFileAlias(id);
-ALTER TABLE Person ADD CONSTRAINT people_have_no_emblems
-    CHECK (emblem IS NULL OR teamowner IS NOT NULL);
 CREATE INDEX person__gotchi_heading__idx ON Person(gotchi_heading)
     WHERE gotchi_heading IS NOT NULL;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (67, 66, 0);
+UPDATE Person SET emblem = NULL 
+    WHERE teamowner IS NULL AND emblem IS NOT NULL;
+ALTER TABLE Person ADD CONSTRAINT people_have_no_emblems
+    CHECK (emblem IS NULL OR teamowner IS NOT NULL);
+
+INSERT INTO LaunchpadDatabaseRevision VALUES (67, 34, 0);
