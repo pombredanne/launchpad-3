@@ -184,6 +184,9 @@ class BugTask(SQLBase, BugTaskMixin):
         conjoined_slave = None
         if IDistroReleaseBugTask.providedBy(self):
             distribution = self.distrorelease.distribution
+            if self.distrorelease != distribution.currentrelease:
+                # Only current release tasks are conjoined.
+                return None
             sourcepackagename = self.sourcepackagename
             for bt in shortlist(self.bug.bugtasks):
                 if (bt.distribution == distribution and
@@ -192,6 +195,9 @@ class BugTask(SQLBase, BugTaskMixin):
                     break
         elif IProductSeriesBugTask.providedBy(self):
             product = self.productseries.product
+            if self.productseries != product.development_focus:
+                # Only developement focus tasks are conjoined.
+                return None
             for bt in shortlist(self.bug.bugtasks):
                 if bt.product == product:
                     conjoined_slave = bt
@@ -284,8 +290,9 @@ class BugTask(SQLBase, BugTaskMixin):
     def _syncFromConjoinedSlave(self):
         """Ensure the conjoined master is synched from its slave.
 
-        This method should be used only directly after the bugtask
-        entered a conjoined relationship.
+        This method should be used only directly after when the
+        conjoined master has been created after the slave, to ensure
+        that they are in sync from the beginning.
         """
         conjoined_slave = self.conjoined_slave
 
