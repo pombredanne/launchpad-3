@@ -46,6 +46,11 @@ also be retrieved via the distribution.
 The support contacts of a SourcePackage contain all the support contacts
 from its containing distribution.
 
+    >>> list(ubuntu.support_contacts)
+    []
+    >>> list(firefox.support_contacts)
+    []
+
     >>> ubuntu.addSupportContact(sample_person)
     True
     >>> [person.name for person in firefox.support_contacts]
