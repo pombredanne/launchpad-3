@@ -84,13 +84,6 @@
         problem more in detail.
       </p>
 
-      <div tal:condition="view/widgets/distribution|nothing">
-        <label tal:attributes="for view/widgets/distribution/name">
-          Distribution
-        </label>
-        <div tal:content="structure view/widgets/distribution" />
-      </div>
-
     <table class="form">
 
       <tr tal:condition="view/widgets/packagename|nothing">
