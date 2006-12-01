@@ -39,6 +39,7 @@ from canonical.launchpad.interfaces.bugtracker import *
 from canonical.launchpad.interfaces.bugwatch import *
 from canonical.launchpad.interfaces.build import *
 from canonical.launchpad.interfaces.builder import *
+from canonical.launchpad.interfaces.buildqueue import *
 from canonical.launchpad.interfaces.codeofconduct import *
 from canonical.launchpad.interfaces.component import *
 from canonical.launchpad.interfaces.country import *
@@ -118,6 +119,7 @@ from canonical.launchpad.interfaces.sourcepackage import *
 from canonical.launchpad.interfaces.sourcepackagename import *
 from canonical.launchpad.interfaces.sourcepackagerelease import *
 from canonical.launchpad.interfaces.specification import *
+from canonical.launchpad.interfaces.specificationbranch import *
 from canonical.launchpad.interfaces.specificationbug import *
 from canonical.launchpad.interfaces.specificationdependency import *
 from canonical.launchpad.interfaces.specificationfeedback import *

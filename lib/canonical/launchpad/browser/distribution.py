@@ -16,6 +16,7 @@ __all__ = [
     'DistributionArchiveMirrorsView',
     'DistributionReleaseMirrorsView',
     'DistributionReleaseMirrorsRSSView',
+    'DistributionArchiveMirrorsRSSView',
     'DistributionDisabledMirrorsView',
     'DistributionUnofficialMirrorsView',
     'DistributionLaunchpadUsageEditView',
@@ -33,7 +34,7 @@ from zope.security.interfaces import Unauthorized
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IPerson, IPublishedPackageSet,
-    NotFoundError, ILaunchBag)
+    ILaunchBag)
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -487,8 +488,8 @@ class DistributionReleaseMirrorsView(DistributionMirrorsView):
         return self._groupMirrorsByCountry(self.context.release_mirrors)
 
 
-class DistributionReleaseMirrorsRSSView(LaunchpadView):
-    """The RSS feed for release mirrors."""
+class DistributionMirrorsRSSBaseView(LaunchpadView):
+    """A base class for RSS feeds of distribution mirrors."""
 
     def initialize(self):
         self.now = datetime.utcnow()
@@ -498,6 +499,26 @@ class DistributionReleaseMirrorsRSSView(LaunchpadView):
             'content-type', 'text/xml;charset=utf-8')
         body = LaunchpadView.render(self)
         return body.encode('utf-8')
+
+
+class DistributionArchiveMirrorsRSSView(DistributionMirrorsRSSBaseView):
+    """The RSS feed for archive mirrors."""
+
+    heading = 'Archive Mirrors'
+
+    @property
+    def mirrors(self):
+        return self.context.archive_mirrors
+
+
+class DistributionReleaseMirrorsRSSView(DistributionMirrorsRSSBaseView):
+    """The RSS feed for release mirrors."""
+
+    heading = 'CD Mirrors'
+
+    @property
+    def mirrors(self):
+        return self.context.release_mirrors
 
 
 class DistributionMirrorsAdminView(DistributionMirrorsView):

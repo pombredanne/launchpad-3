@@ -34,6 +34,7 @@ __all__ = [
     'KarmaCategoryVocabulary',
     'LanguageVocabulary',
     'MilestoneVocabulary',
+    'NonMergedPeopleAndTeamsVocabulary',
     'PackageReleaseVocabulary',
     'PersonAccountToMergeVocabulary',
     'PersonActiveMembershipVocabulary',
@@ -550,6 +551,33 @@ class TranslationGroupVocabulary(NamedSQLObjectVocabulary):
 
     def toTerm(self, obj):
         return SimpleTerm(obj, obj.name, obj.title)
+
+
+class NonMergedPeopleAndTeamsVocabulary(
+        BasePersonVocabulary, SQLObjectVocabularyBase):
+    """The set of all non-merged people and teams.
+    
+    If you use this vocabulary you need to make sure that any code which uses
+    the people provided by it know how to deal with people which don't have
+    a preferred email address, that is, unvalidated person profiles.
+    """
+    implements(IHugeVocabulary)
+
+    _orderBy = ['displayname']
+    displayname = 'Select a Person or Team'
+
+    def __contains__(self, obj):
+        return obj in self._select()
+
+    def _select(self, text=""):
+        return getUtility(IPersonSet).find(text)
+
+    def search(self, text):
+        """Return people/teams whose fti or email address match :text."""
+        if not text:
+            return self.emptySelectResults()
+
+        return self._select(text.lower())
 
 
 class PersonAccountToMergeVocabulary(
