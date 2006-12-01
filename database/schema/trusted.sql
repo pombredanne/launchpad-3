@@ -287,7 +287,7 @@ BEGIN
     IF TG_OP = 'INSERT' THEN
         INSERT INTO PillarName (name, product, active)
         VALUES (NEW.name, NEW.id, NEW.active);
-    ELSIF NEW.name != OLD.name THEN
+    ELSIF NEW.name != OLD.name OR NEW.active != OLD.active THEN
         UPDATE PillarName SET name=NEW.name, active=NEW.active
         WHERE product=NEW.id;
     END IF;
@@ -305,7 +305,7 @@ BEGIN
     IF TG_OP = 'INSERT' THEN
         INSERT INTO PillarName (name, project, active)
         VALUES (NEW.name, NEW.id, NEW.active);
-    ELSIF NEW.name != OLD.name THEN
+    ELSIF NEW.name != OLD.name or NEW.active != OLD.active THEN
         UPDATE PillarName SET name=NEW.name, active=NEW.active
         WHERE project=NEW.id;
     END IF;

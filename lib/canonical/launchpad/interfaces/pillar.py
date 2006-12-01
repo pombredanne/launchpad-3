@@ -25,6 +25,7 @@ class IPillarName(Interface):
     product = Attribute('The project that has this name, or None')
     project = Attribute('The project that has this name, or None')
     distribution = Attribute('The distribution that has this name, or None')
+    active = Attribute('The pillar is active')
 
 
 class IPillarNameSet(Interface):

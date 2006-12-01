@@ -10,7 +10,7 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.interface import implements
 
-from sqlobject import ForeignKey, StringCol
+from sqlobject import ForeignKey, StringCol, BoolCol
 
 from canonical.database.sqlbase import cursor, SQLBase
 from canonical.launchpad.interfaces import (
@@ -75,4 +75,6 @@ class PillarName(SQLBase):
     product = ForeignKey(foreignKey='Product', dbName='product')
     project = ForeignKey(foreignKey='Project', dbName='project')
     distribution = ForeignKey(foreignKey='Distribution', dbName='distribution')
+    active = BoolCol(dbName='active', notNull=True, default=True)
+
 

@@ -1339,6 +1339,9 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
 
     def toTerm(self, obj):
         if IPillarName.providedBy(obj):
+            assert obj.active, 'Inactive object %s %d' % (
+                    obj.__class__.__name__, obj.id
+                    )
             if obj.product is not None:
                 obj = obj.product
             elif obj.distribution is not None:
@@ -1357,11 +1360,13 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
 
 class DistributionOrProductVocabulary(PillarVocabularyBase):
     displayname = 'Select a distribution or product'
-    _filter = OR(
+    _filter = AND(OR(
             PillarName.q.distributionID != None,
             PillarName.q.productID != None
-            )
+            ), PillarName.q.active == True)
 
 class DistributionOrProductOrProjectVocabulary(PillarVocabularyBase):
     displayname = 'Select a distribution, product or project'
+    _filter = PillarName.q.active == True
+
 
