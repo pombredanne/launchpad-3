@@ -131,12 +131,12 @@ class IManageSupportContacts(Interface):
 class ISearchTicketsForm(Interface):
     """Schema for the search ticket form."""
 
-    search_text = TextLine(title=_('Search text:'), required=False)
+    search_text = TextLine(title=_('Search text'), required=False)
 
-    sort = Choice(title=_('Sort order:'), required=True,
+    sort = Choice(title=_('Sort order'), required=True,
                   vocabulary='TicketSort',
                   default=TicketSort.RELEVANCY)
 
-    status = Set(title=_('Status:'), required=False,
+    status = Set(title=_('Status'), required=False,
                  value_type=Choice(vocabulary='TicketStatus'),
                  default=sets.Set(TICKET_STATUS_DEFAULT_SEARCH))

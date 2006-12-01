@@ -68,6 +68,14 @@ To "<pre>" format a string, use fmt:nice_pre:
     ['<pre style="white-space: -moz-pre-wrap;white-space: -o-pre-wrap;word-',
      'wrap: break-word;">hello &amp; goodbye</pre>']
 
+Add manual word breaks to long words in a string
+
+    >>> test_tales('foo/fmt:break-long-words', foo='short words')
+    'short words'
+    >>> test_tales('foo/fmt:break-long-words',
+    ...     foo='<http://launchpad.net/products/launchpad>')
+    '&lt;http:/<wbr></wbr>/launchpad.<wbr></wbr>net/products/<wbr></wbr>launchpad&gt;'
+
 
 == Test the 'fmt:' namespace where the context is a dict. ==
 
@@ -145,6 +153,8 @@ do with 'None/fmt:foo'.
     >>> test_tales('foo/fmt:nl_to_br', foo=None)
     ''
     >>> test_tales('foo/fmt:nice_pre', foo=None)
+    ''
+    >>> test_tales('foo/fmt:break-long-words', foo=None)
     ''
     >>> test_tales('foo/fmt:breadcrumbs', foo=None)
     ''

@@ -711,6 +711,7 @@ COMMENT ON COLUMN Person.emblem IS 'The library file alias to a small image (16x
 COMMENT ON COLUMN Person.hackergotchi IS 'The library file alias of a hackergotchi image to display as the "face" of a person, on their home page.';
 COMMENT ON COLUMN Person.creation_rationale IS 'The rationale for the creation of this person -- a dbschema value.';
 COMMENT ON COLUMN Person.creation_comment IS 'A text comment for the creation of this person.';
+COMMENT ON COLUMN Person.registrant IS 'The user who created this profile.';
 
 COMMENT ON TABLE ValidPersonOrTeamCache IS 'A materialized view listing the Person.ids of all valid people and teams.';
 
@@ -854,6 +855,11 @@ COMMENT ON TABLE SpecificationFeedback IS 'A table representing a review request
 COMMENT ON COLUMN SpecificationFeedback.reviewer IS 'The person who has been asked to do the review.';
 COMMENT ON COLUMN SpecificationFeedback.requester IS 'The person who made the request.';
 COMMENT ON COLUMN SpecificationFeedback.queuemsg IS 'An optional text message for the reviewer, from the requester.';
+
+-- SpecificationBranch
+COMMENT ON TABLE SpecificationBranch IS 'A branch related to a specification, most likely a branch for implementing the specification.  It is possible to have multiple branches for a given specification especially in the situation where the specification requires modifying multiple products.';
+COMMENT ON COLUMN SpecificationBranch.specification IS 'The specification associated with this branch.';
+COMMENT ON COLUMN SpecificationBranch.branch IS 'The branch associated to the specification.';
 
 -- SpecificationBug
 COMMENT ON TABLE SpecificationBug IS 'A table linking a specification and a bug. This is used to provide for easy navigation from bugs to related specs, and vice versa.';

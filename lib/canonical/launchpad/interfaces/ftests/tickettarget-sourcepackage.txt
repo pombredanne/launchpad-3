@@ -1,4 +1,4 @@
-== ITicketTarget for SourcePackage ==
+= ITicketTarget for SourcePackage =
 
 The implementation of ITicketTarget by SourcePackage and
 DistributionSourcePackage contain some small differences with
