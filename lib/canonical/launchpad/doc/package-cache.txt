@@ -96,7 +96,7 @@ scripts runs periodically in our infrastructure. See usage at the end
 of the file.
 
 
-= Source Caches =
+== Dealing with Source Caches ==
 
 
 A SourcePackage is present in the sampledata as REVOVED and still part
@@ -193,7 +193,7 @@ via searches:
   11L
 
 
-= Dealing with Binary Caches =
+== Dealing with Binary Caches ==
 
 
 A BinaryPackage is present in the sampledata as REVOVED and still part
@@ -282,7 +282,6 @@ via searches:
 
 
 == Package Counters ==
-
 
 We also store counters for Sources and Binaries published in a
 DistroRelease pocket RELEASE:
