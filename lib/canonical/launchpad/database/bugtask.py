@@ -176,6 +176,9 @@ class BugTask(SQLBase, BugTaskMixin):
         """See IBugTask."""
         if IDistroReleaseBugTask.providedBy(self):
             distribution = self.distrorelease.distribution
+            if self.distrorelease != distribution.currentrelease:
+                # Only current release tasks are conjoined.
+                return None
             sourcepackagename = self.sourcepackagename
             for bt in shortlist(self.bug.bugtasks):
                 if (bt.distribution == distribution and
@@ -183,6 +186,9 @@ class BugTask(SQLBase, BugTaskMixin):
                     return bt
         elif IProductSeriesBugTask.providedBy(self):
             product = self.productseries.product
+            if self.productseries != product.development_focus:
+                # Only developement focus tasks are conjoined.
+                return None
             for bt in shortlist(self.bug.bugtasks):
                 if bt.product == product:
                     return bt
