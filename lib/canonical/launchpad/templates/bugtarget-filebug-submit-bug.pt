@@ -94,7 +94,8 @@
       </tr>
 
       <tr tal:condition="view/widgets/packagename|nothing">
-        <td style="padding-bottom: 1.5em" colspan="2" tal:attributes="class python:view.widget_errors.get('packagename') and 'error' or ''">
+        <td style="padding-bottom: 1.5em" colspan="2"
+            tal:attributes="class view/getPackageNameFieldCSSClass">
           <ul style="list-style: none"
               tal:define="select_packagename view/shouldSelectPackageName">
             <li>
