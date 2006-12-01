@@ -92,20 +92,20 @@ one of the constant defined in the TicketSort enumeration.
     >>> from canonical.lp.dbschema import TicketSort
     >>> for ticket in ticket_set.searchTickets(
     ...         search_text='firefox', sort=TicketSort.OLDEST_FIRST):
-    ...     print ticket.title, ticket.target.displayname
-    Firefox cannot render Bank Site             Mozilla Firefox
-    Problem showing the SVG demo on W3C site    Mozilla Firefox
-    Firefox loses focus and gets stuck          Mozilla Firefox
-    Newly installed plug-in doesn't seem to be used Mozilla Firefox
-    mailto: problem in webpage                  Ubuntu
+    ...     print ticket.id, ticket.title, ticket.target.displayname
+    1 Firefox cannot render Bank Site             Mozilla Firefox
+    2 Problem showing the SVG demo on W3C site    Mozilla Firefox
+    4 Firefox loses focus and gets stuck          Mozilla Firefox
+    6 Newly installed plug-in doesn't seem to be used Mozilla Firefox
+    9 mailto: problem in webpage                  Ubuntu
 
 When no text search is done, the default sort order is
 TicketSort.NEWEST_FIRST.
 
     >>> for ticket in ticket_set.searchTickets(status=TicketStatus.OPEN)[:5]:
-    ...     print ticket.title, ticket.target.displayname
-    Continue playing after shutdown                         Ubuntu
-    Play DVDs in Totem                                      Ubuntu
-    Installation of Java Runtime Environment for Mozilla    Ubuntu
-    Slow system                                             Ubuntu
-    Newly installed plug-in doesn't seem to be used         Mozilla Firefox
+    ...     print ticket.id, ticket.title, ticket.target.displayname
+    11 Continue playing after shutdown                      Ubuntu
+    10 Play DVDs in Totem                                   Ubuntu
+     8 Installation of Java Runtime Environment for Mozilla Ubuntu
+     7 Slow system                                          Ubuntu
+     6 Newly installed plug-in doesn't seem to be used      Mozilla Firefox
