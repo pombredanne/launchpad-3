@@ -285,10 +285,11 @@ LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS
 $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
-        INSERT INTO PillarName (name, product)
-        VALUES (NEW.name, NEW.id);
+        INSERT INTO PillarName (name, product, active)
+        VALUES (NEW.name, NEW.id, NEW.active);
     ELSIF NEW.name != OLD.name THEN
-        UPDATE PillarName SET name=NEW.name WHERE product=NEW.id;
+        UPDATE PillarName SET name=NEW.name, active=NEW.active
+        WHERE product=NEW.id;
     END IF;
     RETURN NULL; -- Ignored - this is an AFTER trigger
 END;
@@ -302,10 +303,11 @@ CREATE OR REPLACE FUNCTION mv_pillarname_project() RETURNS TRIGGER
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
-        INSERT INTO PillarName (name, project)
-        VALUES (NEW.name, NEW.id);
+        INSERT INTO PillarName (name, project, active)
+        VALUES (NEW.name, NEW.id, NEW.active);
     ELSIF NEW.name != OLD.name THEN
-        UPDATE PillarName SET name=NEW.name WHERE project=NEW.id;
+        UPDATE PillarName SET name=NEW.name, active=NEW.active
+        WHERE project=NEW.id;
     END IF;
     RETURN NULL; -- Ignored - this is an AFTER trigger
 END;
