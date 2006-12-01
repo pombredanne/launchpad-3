@@ -44,5 +44,18 @@
       </table>
     </div>
   </div>
-</body>
+
+  <metal:help fill-slot="help">
+    <p>This page gives you a quick overview of the recent
+    activity in the Launchpad support tracker.
+    </p>
+    <p>To post a new support request, navigate to the product or distribution
+      you are having a problem with and use the <emph>Request Support</emph>
+      menu item.
+    </p>
+    <p><a href="https://help.launchpad.net/SupportTrackerDocumentation">Extensive
+        documention</a> for the support tracker application is available in the
+      Help wiki.</p>
+  </metal:help>
+  </body>
 </html>
