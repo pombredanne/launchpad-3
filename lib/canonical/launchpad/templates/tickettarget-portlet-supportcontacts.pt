@@ -3,7 +3,7 @@
   <h2>Support contacts for <span tal:replace="context/displayname"/></h2>
 
   <div class="portletBody portletContent"
-       tal:define="support_contacts context/registered_support_contacts">
+       tal:define="support_contacts context/direct_support_contacts">
 
     <ul class="people" tal:condition="support_contacts">
       <li tal:repeat="support_contact support_contacts">

@@ -101,12 +101,13 @@ class ITicketTarget(Interface):
     support_contacts = List(
         title=_("Support Contacts"),
         description=_(
-            "Persons that will be automatically subscribed to new support"
-            " requests."),
+            "Persons that are willing to provide support for this target. "
+            "They receive email notifications about each new request as "
+            "well as for changes to any requests related to this target."),
         value_type=Choice(vocabulary="ValidPersonOrTeam"))
 
-    registered_support_contacts = List(
-        title=_("Registered Support Contacts"),
+    direct_support_contacts = List(
+        title=_("Direct Support Contacts"),
         description=_(
             "IPersons that registered as support contacts explicitely on "
             "this target. (support_contacts may include support contacts "

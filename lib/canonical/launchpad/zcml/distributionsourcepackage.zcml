@@ -23,7 +23,7 @@
 
     <!-- ITicketTarget -->
     <allow attributes="getTicket searchTickets findSimilarTickets
-              support_contacts registered_support_contacts" />
+              support_contacts direct_support_contacts" />
     <require permission="launchpad.AnyPerson"
       attributes="newTicket addSupportContact removeSupportContact" />
   </content>

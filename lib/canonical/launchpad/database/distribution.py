@@ -494,7 +494,7 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
             key=attrgetter('displayname'))
 
     @property
-    def registered_support_contacts(self):
+    def direct_support_contacts(self):
         """See ITicketTarget."""
         return self.support_contacts
 

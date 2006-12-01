@@ -112,12 +112,12 @@ class SourcePackageTicketTargetMixin:
     def support_contacts(self):
         """See ITicketTarget."""
         support_contacts = set()
-        support_contacts.update(self.registered_support_contacts)
+        support_contacts.update(self.direct_support_contacts)
         support_contacts.update(self.distribution.support_contacts)
         return sorted(support_contacts, key=attrgetter('displayname'))
 
     @property
-    def registered_support_contacts(self):
+    def direct_support_contacts(self):
         """See ITicketTarget."""
         support_contacts = SupportContact.selectBy(
             distribution=self.distribution,
