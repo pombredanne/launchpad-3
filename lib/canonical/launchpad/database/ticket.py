@@ -460,11 +460,6 @@ class TicketSet:
         """See ITicketSet."""
         self.title = 'Launchpad'
 
-    @property
-    def latest_tickets(self):
-        """See ITicketSet."""
-        return Ticket.select(orderBy='-datecreated')[:10]
-
     def findExpiredTickets(self, days_before_expiration):
         """See ITicketSet."""
         return Ticket.select(
@@ -477,6 +472,12 @@ class TicketSet:
             """ % sqlvalues(
                 TicketStatus.OPEN, TicketStatus.NEEDSINFO,
                 days_before_expiration, days_before_expiration))
+
+    def searchTickets(self, search_text=None,
+                      status=TICKET_STATUS_DEFAULT_SEARCH, sort=None):
+        """See ITicketSet"""
+        return TicketSearch(
+            search_text=search_text, status=status, sort=sort).getResults()
 
     @staticmethod
     def new(title=None, description=None, owner=None,
