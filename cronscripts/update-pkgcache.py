@@ -78,9 +78,9 @@ def main(argv):
                 for arch in distrorelease.architectures:
                     arch.updatePackageCount()
                     ztm.commit()
-            distro.removeOldCacheItems()
+            distro.removeOldCacheItems(log=logger_object)
             ztm.commit()
-            distro.updateCompleteSourcePackageCache(ztm=ztm)
+            distro.updateCompleteSourcePackageCache(ztm=ztm, log=logger_object)
             ztm.commit()
             logger_object.info('%s done' % distro.name)
         ztm.commit()

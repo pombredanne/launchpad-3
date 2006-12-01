@@ -553,7 +553,7 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         return getUtility(IBuildSet).getBuildsByArchIds(
             arch_ids, status, name, pocket)
 
-    def removeOldCacheItems(self):
+    def removeOldCacheItems(self, log):
         """See IDistribution."""
 
         # Get the set of source package names to deal with.
@@ -574,11 +574,12 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         # Remove the cache entries for packages we no longer publish.
         for cache in self.source_package_caches:
             if cache.sourcepackagename not in spns:
+                log.debug(
+                    "Removing cache for '%s' (%s)" % (cache.name, cache.id))
                 cache.destroySelf()
 
-    def updateCompleteSourcePackageCache(self, ztm=None):
+    def updateCompleteSourcePackageCache(self, log, ztm):
         """See IDistribution."""
-
         # Get the set of source package names to deal with.
         spns = list(SourcePackageName.select("""
             SourcePackagePublishingHistory.distrorelease =
@@ -597,14 +598,15 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         # Now update, committing every 50 packages.
         counter = 0
         for spn in spns:
-            self.updateSourcePackageCache(spn)
+            log.debug("Considering '%s'" % spn.name)
+            self.updateSourcePackageCache(spn, log)
             counter += 1
             if counter > 49:
                 counter = 0
-                if ztm is not None:
-                    ztm.commit()
+                logger.debug("Committing")
+                ztm.commit()
 
-    def updateSourcePackageCache(self, sourcepackagename):
+    def updateSourcePackageCache(self, sourcepackagename, log):
         """See IDistribution."""
 
         # Get the set of published sourcepackage releases.
@@ -614,14 +616,16 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
                 SourcePackagePublishingHistory.sourcepackagerelease AND
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
-            SourcePackagePublishingHistory.status != %s AND
-            DistroRelease.distribution = %s
-            """ % sqlvalues(sourcepackagename.id, self.id,
+            DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.status != %s
+            """ % sqlvalues(sourcepackagename, self,
                             PackagePublishingStatus.REMOVED),
             orderBy='id',
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
             distinct=True))
+
         if len(sprs) == 0:
+            log.debug("No releases found.")
             return
 
         # Find or create the cache entry.
@@ -630,6 +634,7 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
             sourcepackagename = %s
             """ % sqlvalues(self.id, sourcepackagename.id))
         if cache is None:
+            log.debug("Creating new cache entry.")
             cache = DistributionSourcePackageCache(
                 distribution=self,
                 sourcepackagename=sourcepackagename)
@@ -642,12 +647,14 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         binpkgsummaries = set()
         binpkgdescriptions = set()
         for spr in sprs:
+            log.debug("Considering version %s" % spr.version)
             binpkgs = BinaryPackageRelease.select("""
                 BinaryPackageRelease.build = Build.id AND
                 Build.sourcepackagerelease = %s
                 """ % sqlvalues(spr.id),
                 clauseTables=['Build'])
             for binpkg in binpkgs:
+                log.debug("Considering binary '%s'" % binpkg.name)
                 binpkgnames.add(binpkg.name)
                 binpkgsummaries.add(binpkg.summary)
                 binpkgdescriptions.add(binpkg.description)
