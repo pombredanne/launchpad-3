@@ -4,9 +4,9 @@ easier to use and to shorten some of our URLs. Currently, the objects that
 share their name namespace are Product, Project and Distribution.
 
 >>> from canonical.launchpad.interfaces import (
-...     IPillarSet, IProduct, IProject, IDistribution
+...     IPillarNameSet, IProduct, IProject, IDistribution
 ...     )
->>> pillar_set = getUtility(IPillarSet)
+>>> pillar_set = getUtility(IPillarNameSet)
 
 >>> 'ubuntu' in pillar_set
 True

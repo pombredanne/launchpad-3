@@ -35,7 +35,8 @@ from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.database.supportcontact import SupportContact
-from canonical.launchpad.database.ticket import Ticket, TicketSet
+from canonical.launchpad.database.ticket import (
+    SimilarTicketsSearch, Ticket, TicketTargetSearch, TicketSet)
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner,
@@ -242,17 +243,14 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
             return None
         return ticket
 
-    def searchTickets(self, search_text=None,
-                      status=TICKET_STATUS_DEFAULT_SEARCH, owner=None,
-                      sort=None):
+    def searchTickets(self, **search_criteria):
         """See ITicketTarget."""
-        return TicketSet.search(
-            product=self, search_text=search_text, status=status,
-            owner=owner, sort=sort)
+        return TicketTargetSearch(
+            product=self, **search_criteria).getResults()
 
     def findSimilarTickets(self, title):
         """See ITicketTarget."""
-        return TicketSet.findSimilar(title, product=self)
+        return SimilarTicketsSearch(title, product=self).getResults()
 
     def addSupportContact(self, person):
         """See ITicketTarget."""

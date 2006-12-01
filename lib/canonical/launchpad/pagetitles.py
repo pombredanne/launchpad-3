@@ -855,7 +855,11 @@ specification_subscription = 'Subscribe to specification'
 
 specification_queue = 'Queue specification for review'
 
+specification_linkbranch = 'Link branch to specification'
+
 specifications_index = ContextTitle('%s')
+
+specificationbranch_status = 'Edit specification branch status'
 
 specificationgoal_specs = ContextTitle('List goals for %s')
 
@@ -970,6 +974,8 @@ template_edit = 'EXAMPLE EDIT TITLE'
 template_index = '%EXAMPLE TITLE'
 
 template_new = 'EXAMPLE NEW TITLE'
+
+temporaryblobstorage_storeblob = 'Store a BLOB temporarily in Launchpad'
 
 def ticket_listing(context, view):
     return view.pagetitle
