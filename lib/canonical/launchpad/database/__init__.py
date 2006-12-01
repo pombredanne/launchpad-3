@@ -82,6 +82,7 @@ from canonical.launchpad.database.message import *
 from canonical.launchpad.database.queue import *
 from canonical.launchpad.database.country import *
 from canonical.launchpad.database.specification import *
+from canonical.launchpad.database.specificationbranch import *
 from canonical.launchpad.database.specificationbug import *
 from canonical.launchpad.database.specificationdependency import *
 from canonical.launchpad.database.specificationfeedback import *
@@ -101,6 +102,7 @@ from canonical.launchpad.database.vpoexport import *
 from canonical.launchpad.database.vpotexport import *
 from canonical.launchpad.database.karma import *
 from canonical.launchpad.database.teammembership import *
+from canonical.launchpad.database.temporaryblobstorage import *
 from canonical.launchpad.database.ticket import *
 from canonical.launchpad.database.ticketbug import *
 from canonical.launchpad.database.ticketmessage import *

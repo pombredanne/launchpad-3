@@ -35,7 +35,8 @@ from canonical.launchpad.database.sourcepackagerelease import (
 from canonical.launchpad.database.sourcepackage import (
     SourcePackage, SourcePackageTicketTargetMixin)
 from canonical.launchpad.database.supportcontact import SupportContact
-from canonical.launchpad.database.ticket import Ticket, TicketSet
+from canonical.launchpad.database.ticket import (
+    SimilarTicketsSearch, Ticket, TicketTargetSearch, TicketSet)
 from canonical.launchpad.helpers import shortlist
 
 
