@@ -21,7 +21,8 @@ from canonical.launchpad.database.bug import (
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import Specification
-from canonical.launchpad.database.ticket import Ticket, TicketSet
+from canonical.launchpad.database.ticket import (
+    SimilarTicketsSearch, Ticket, TicketTargetSearch, TicketSet)
 from canonical.launchpad.database.distrorelease import DistroRelease
 from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.binarypackagename import (
@@ -452,16 +453,14 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
             return None
         return ticket
 
-    def searchTickets(self, search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-                      owner=None, sort=None):
+    def searchTickets(self, **search_criteria):
         """See ITicketTarget."""
-        return TicketSet.search(
-            distribution=self, search_text=search_text, status=status,
-            owner=owner, sort=sort)
+        return TicketTargetSearch(
+            distribution=self, **search_criteria).getResults()
 
     def findSimilarTickets(self, title):
         """See ITicketTarget."""
-        return TicketSet.findSimilar(title, distribution=self)
+        return SimilarTicketsSearch(title, distribution=self).getResults()
 
     def addSupportContact(self, person):
         """See ITicketTarget."""

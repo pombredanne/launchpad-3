@@ -257,7 +257,7 @@ class IBugTaskSearch(IBugTaskSearchBase):
         title=_('Status Upstream'), required=False,
         vocabulary="AdvancedBugTaskUpstreamStatus")
     tag = List(
-        title=_("Tags (separated by whitespace)"),
+        title=_("Tags"), description=_("Separated by whitespace."),
         value_type=Tag(), required=False)
 
 
