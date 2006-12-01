@@ -1,4 +1,4 @@
-= Package Cache =
+= Package Cache System =
 
   >>> import transaction
 
@@ -92,7 +92,8 @@ partial term searching.
 The cache update procedure is done by cronscripts/update-pkgcache.py,
 which removes obsolete records, update existing ones and add new
 records during the scanning of all the publishing records. This
-scripts runs periodically in our infrastructure.
+scripts runs periodically in our infrastructure. See usage at the end
+of the file.
 
 
 = Source Caches =
@@ -116,7 +117,7 @@ of the caches:
   >>> foobar_cache.id
   10
 
-Sources cache updates are driven by distribution, IDistribution
+Source cache updates are driven by distribution, IDistribution
 instance offers a method for removing obsolete records in cache:
 
 Let's use a fake logger object:
@@ -213,7 +214,7 @@ of the caches:
   >>> foobar_bin_cache.id
   8
 
-Binaries cache updates are driven by distrorelease, IDistroRelease
+Binary cache updates are driven by distrorelease, IDistroRelease
 instance offers a method for removing obsolete records in cache:
 
   >>> warty.removeOldCacheItems(log=TestLog())
@@ -229,4 +230,95 @@ instance offers a method for removing obsolete records in cache:
 
   >>> foobar_bin_cache is None
   True
+
+We have a published binary which is not present in the caches:
+
+  >>> cdrkit_bin_in_warty = warty.getBinaryPackage('cdrkit')
+  >>> cdrkit_bin_pub = cdrkit_bin_in_warty.current_publishings[0]
+  >>> cdrkit_bin_pub.status.name
+  'PUBLISHED'
+
+  >>> len(warty.searchPackages('cdrkit'))
+  0
+
+  >>> cdrkit_bin_cache = DistroReleasePackageCache.selectOneBy(
+  ...     distrorelease=warty, name='cdrkit')
+
+  >>> cdrkit_bin_cache is None
+  True
+
+We can invoke the cache updater directly on IDistrorelease:
+
+  >>> warty.updateCompletePackageCache(
+  ...    ztm=transaction, log=TestLog())
+  DEBUG: Considering binary 'mozilla-firefox'
+  ...
+  DEBUG: Considering binary 'cdrkit'
+  DEBUG: Creating new binary cache entry.
+  ...
+
+Transaction behaves exactly the same as for Source Caches, except that
+it commits full batches of 100 elements.
+
+XXX cprov 20061201: it can be considered a bug (same than Source
+cache interface)
+
+  >>> transaction.commit()
+
+  >>> from canonical.database.sqlbase import flush_database_updates
+  >>> flush_database_updates()
+
+Now we the 'cdrkit' binary is part of the caches and can be reached
+via searches:
+
+  >>> len(warty.searchPackages('cdrkit'))
+  1
+
+  >>> cdrkit_bin_cache = DistroReleasePackageCache.selectOneBy(
+  ...     distrorelease=warty, name='cdrkit')
+
+  >>> cdrkit_bin_cache.id
+  9L
+
+
+== Package Counters ==
+
+
+We also store counters for Sources and Binaries published in a
+DistroRelease pocket RELEASE:
+
+  >>> warty.sourcecount
+  3
+  >>> warty.binarycount
+  4
+
+Since we have modified the publication list for warty in order to test
+the caching system, we expect similar changes in the
+counters. IDistroRelease provides a method to update its own cache:
+
+  >>> warty.updatePackageCount()
+
+New values were stored:
+
+  >>> warty.sourcecount
+  4
+  >>> warty.binarycount
+  5
+
+A similar mechanism is offered by IDistroArchRelease, but only for
+binaries (of course):
+
+  >>> warty_i386 = warty['i386']
+
+  >>> warty_i386.package_count
+  5
+
+Invoke the counter updater on this architecture:
+
+  >>> warty_i386.updatePackageCount()
+
+New values were stored:
+
+  >>> warty_i386.package_count
+  6
 

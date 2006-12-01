@@ -71,9 +71,10 @@ def main(argv):
                 logger_object.info('%s starting' % distrorelease.name)
                 distrorelease.updatePackageCount()
                 ztm.commit()
-                distrorelease.removeOldCacheItems()
+                distrorelease.removeOldCacheItems(log=logger_object)
                 ztm.commit()
-                distrorelease.updateCompletePackageCache(ztm=ztm)
+                distrorelease.updateCompletePackageCache(
+                    ztm=ztm, log=logger_object)
                 ztm.commit()
                 for arch in distrorelease.architectures:
                     arch.updatePackageCount()
