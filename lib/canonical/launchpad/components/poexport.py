@@ -498,7 +498,7 @@ def export_rows(rows, pofile_output, force_utf8=False):
             # modifications.
             UTC = pytz.timezone('UTC')
             dt = datetime.datetime.now(UTC)
-            header['X-Rosetta-Export-Date'] = dt.isoformat()
+            header['X-Rosetta-Export-Date'] = dt.strftime('%F %R+%z')
 
             # Create the new PO file.
 

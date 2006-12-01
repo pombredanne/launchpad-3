@@ -15,7 +15,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.lp.dbschema import (RosettaTranslationOrigin,
     TranslationValidationStatus)
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces import IPOMsgSet, RosettaTranslationLocked
+from canonical.launchpad.interfaces import IPOMsgSet, TranslationConflict
 from canonical.launchpad.database.poselection import POSelection
 from canonical.launchpad.database.posubmission import POSubmission
 from canonical.launchpad.database.potranslation import POTranslation
@@ -151,12 +151,13 @@ class POMsgSet(SQLBase):
                 translations.append(None)
         return translations
 
-    def isNewer(self, timestamp):
+    def isNewerThan(self, timestamp):
         """See IPOMsgSet."""
         for plural_index in range(self.pluralforms):
             selection = self.getSelection(plural_index)
-            # This sync is needed to help tests to avoid cache problems.
             if selection is not None:
+                # XXX: CarlosPerelloMarin 20061201: This sync is needed to help
+                # tests to avoid cache problems. See bug #74025 for more info.
                 selection.sync()
                 if (selection.activesubmission is not None and
                     selection.date_reviewed > timestamp):
@@ -204,7 +205,7 @@ class POMsgSet(SQLBase):
 
         # And we allow changes to translations by default, we don't force
         # submissions as suggestions.
-        read_only = False
+        force_suggestion = False
 
         # Fix the trailing and leading whitespaces
         fixed_new_translations = {}
@@ -235,16 +236,16 @@ class POMsgSet(SQLBase):
                     # outside this method.
                     raise
 
-        if not published and not fuzzy and self.isNewer(lock_timestamp):
+        if not published and not fuzzy and self.isNewerThan(lock_timestamp):
             # Latest active submission in self is newer than 'lock_timestamp'
             # and we try to change it.
-            read_only = True
+            force_suggestion = True
 
         # keep track of whether or not this msgset is complete. We assume
         # it's complete and then flag it during the process if it is not
         complete = True
         new_translation_count = len(fixed_new_translations)
-        if new_translation_count < self.pluralforms and not read_only:
+        if new_translation_count < self.pluralforms and not force_suggestion:
             # it's definitely not complete if it has too few translations
             complete = False
             # And we should reset the selection for the non updated plural
@@ -281,15 +282,18 @@ class POMsgSet(SQLBase):
                 published=published,
                 validation_status=validation_status,
                 force_edition_rights=is_editor,
-                force_suggestion=read_only)
+                force_suggestion=force_suggestion)
 
             # Flush the database cache
             flush_database_updates()
 
-        if read_only:
-            # We are done for the read only mode. Raise the exception to
-            # notify that the DB was changed.
-            raise RosettaTranslationLocked
+        if force_suggestion:
+            # We already stored the suggestions, so we don't have anything
+            # else to do. Raise a TranslationConflict exception to notify
+            # that the changes were saved as suggestions only.
+            raise TranslationConflict(
+                'The new translations were saved as suggestions to avoid '
+                'possible conflicts. Please review them.') 
 
         # We set the fuzzy flag first, and completeness flags as needed:
         if is_editor:
@@ -309,7 +313,7 @@ class POMsgSet(SQLBase):
                     # also the same.
                     self.isfuzzy = self.publishedfuzzy
                     self.iscomplete = self.publishedcomplete
-            elif not read_only:
+            else:
                 self.isfuzzy = fuzzy
                 self.iscomplete = complete
 

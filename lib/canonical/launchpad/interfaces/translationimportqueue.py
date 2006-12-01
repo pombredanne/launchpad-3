@@ -114,6 +114,13 @@ class ITranslationImportQueueEntry(Interface):
         The returned entries will be only .pot entries.
         """
 
+    def getElapsedTimeText():
+        """Return a string representing the elapsed time since we got the file.
+
+        The returned string is like:
+            '2 days 3 hours 10 minutes ago' or 'just requested'
+        """
+
 
 class ITranslationImportQueue(Interface):
     """A set of files to be imported into Rosetta."""

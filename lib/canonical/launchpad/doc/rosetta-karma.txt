@@ -3,7 +3,6 @@ Rosetta gives Karma to the users that do some kind of actions.
 This test documents when and why Rosetta does it.
 
     >>> import transaction
-    >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.interfaces import (
     ...     IKarmaActionSet, IPersonSet, ITranslationImportQueue,
     ...     ILaunchpadCelebrities)
@@ -80,7 +79,6 @@ Let's do the same import as the Foo Bar user.
 Do the import.
 
     >>> potemplate = POTemplate.get(1)
-    >>> translation_import_queue = getUtility(ITranslationImportQueue)
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     potemplate.path, potemplate_contents, comes_from_upstream,
     ...     foo_bar, productseries=potemplate.productseries,
@@ -135,7 +133,6 @@ of karma to that user.
 
 Do the import.
 
-    >>> translation_import_queue = getUtility(ITranslationImportQueue)
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     pofile.path, pofile_contents, comes_from_upstream,
     ...     rosetta_expert, productseries=potemplate.productseries,
@@ -161,7 +158,6 @@ will give karma only for the upload action.
 
     >>> potemplate = POTemplate.get(1)
     >>> pofile = potemplate.getPOFileByLang('es')
-    >>> translation_import_queue = getUtility(ITranslationImportQueue)
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     pofile.path, pofile_contents, comes_from_upstream, foo_bar,
     ...     productseries=potemplate.productseries, potemplate=potemplate,
@@ -197,7 +193,6 @@ We attach the new file as not comming from upstream.
 
     >>> potemplate = POTemplate.get(1)
     >>> pofile = potemplate.getPOFileByLang('es')
-    >>> translation_import_queue = getUtility(ITranslationImportQueue)
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     pofile.path, pofile_contents, not comes_from_upstream, foo_bar,
     ...     productseries=potemplate.productseries, potemplate=potemplate,
@@ -219,7 +214,6 @@ approved.
     >>> pofile = potemplate.getPOFileByLang('es')
     >>> pofile.importFromQueue()
     Karma added: action=translationsuggestionapproved, product=evolution
-    >>> flush_database_updates()
     >>> transaction.commit()
 
 Let's try the case when a file is uploaded, but no translation is changed.
@@ -229,7 +223,6 @@ We import it again without changes and see that we don't get karma changes.
 
     >>> potemplate = POTemplate.get(1)
     >>> pofile = potemplate.getPOFileByLang('es')
-    >>> translation_import_queue = getUtility(ITranslationImportQueue)
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     pofile.path, pofile_contents, not comes_from_upstream, foo_bar,
     ...     productseries=potemplate.productseries, potemplate=potemplate,
@@ -298,7 +291,6 @@ But now, he will provide a new suggestion.
 
 At this moment, karma is assigned and thus is printed here.
 
-    >>> personset = getUtility(IPersonSet)
     >>> no_priv = personset.getByEmail('no-priv@canonical.com')
     >>> potemplate = POTemplate.get(1)
     >>> pofile = potemplate.getPOFileByLang('es')
@@ -312,7 +304,6 @@ At this moment, karma is assigned and thus is printed here.
 Now, a reviewer for the Spanish team is going to review that translation and
 do other translations.
 
-    >>> personset = getUtility(IPersonSet)
     >>> kurem = personset.getByEmail('kurem@debian.cz')
 
 Now, he will approve a suggestion.  This will give him karma for reviewing the
@@ -333,7 +324,6 @@ being approved.
 Finally, this reviewer, is going to add a new translation directly. He should
 get karma for his autoapproved translation.
 
-    >>> personset = getUtility(IPersonSet)
     >>> kurem = personset.getByEmail('kurem@debian.cz')
     >>> potemplate = POTemplate.get(1)
     >>> pofile = potemplate.getPOFileByLang('es')

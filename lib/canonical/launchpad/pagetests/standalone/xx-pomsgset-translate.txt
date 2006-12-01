@@ -239,63 +239,67 @@ as well!)
 Let's see what happens when we do a submission with a lock_timestamp older
 than the review date for current translation.
 
-  >>> browser.open(
+First, we get a browser instance that will be the last one submitting the
+changes.
+
+  >>> from zope.testbrowser.testing import Browser
+  >>> slow_submission = Browser()
+  >>> slow_submission.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+  >>> slow_submission.open(
   ...     'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/'
   ...     '+pots/evolution-2.2/es/14/+translate')
-  >>> browser.url
+  >>> slow_submission.url
+  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate'
+  >>> import transaction
+  >>> transaction.commit()
+
+Now, we get another instance that will be submitted before 'slow_submission'.
+
+  >>> fast_submission = Browser()
+  >>> fast_submission.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+  >>> fast_submission.open(
+  ...     'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/'
+  ...     '+pots/evolution-2.2/es/14/+translate')
+  >>> fast_submission.url
   'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate'
 
-Current value is:
+Let's change the translation.
 
-  >>> print browser.getControl(name='msgset_143_es_translation_0').value
-  <BLANKLINE>
-  La ubicación y jerarquía de las carpetas de contactos de Evolution ha cambiado desde Evolution 1.x.
-  ...
+  >>> fast_submission.getControl(name='msgset_143_es_translation_0').value = u'\nblah'
 
-And its review date is:
+And submit it.
 
-  >>> from canonical.launchpad.database import POTMsgSet
-  >>> from canonical.launchpad.interfaces import TranslationConstants
-  >>> potmsgset = POTMsgSet.get(143)
-  >>> pomsgset = potmsgset.getPOMsgSet('es')
-  >>> selection = pomsgset.getSelection(TranslationConstants.SINGULAR_FORM)
-  >>> selection.date_reviewed.isoformat()
-  '2005-05-06T21:12:13.908028+00:00'
+  >>> fast_submission.getControl(name='submit_translations').click()
+  >>> fast_submission.url
+  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/15/+translate'
 
-Let's update the timestamp we got from the system to simulate a conflict,
-setting it to a previous date than the date when it was reviewed.
-
-  >>> browser.getControl(name='lock_timestamp').value = u'2003-01-01T00:00+00:00'
-
-First, we check that the translation we are going to add is not yet in the
+Now, we check that the translation we are going to add is not yet in the
 form, so we can check later that it's added as a suggestion:
 
-  >>> 'foo!!' in browser.contents
+  >>> 'foo!!' in fast_submission.contents
   False
 
-Now, we update the translation.
+Now, we update the translation in slow_submission.
 
-  >>> browser.getControl(name='msgset_143_es_translation_0').value = 'foo!!'
+  >>> slow_submission.getControl(name='msgset_143_es_translation_0').value = u'foo!!'
 
 We submit it
 
-  >>> browser.getControl(name='submit_translations').click()
-  >>> browser.url
+  >>> slow_submission.getControl(name='submit_translations').click()
+  >>> slow_submission.url
   'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate'
 
-And finally, we see the error message:
+And, as expected, we see the error message:
 
-  >>> 'Someone changed this translation, yours has been added as a suggestion' in browser.contents
+  >>> 'Somebody else changed this translation since you started.' in slow_submission.contents
   True
 
 Also, we should still have previous translation:
 
-  >>> print browser.getControl(name='msgset_143_es_translation_0').value
-  <BLANKLINE>
-  La ubicación y jerarquía de las carpetas de contactos de Evolution ha cambiado desde Evolution 1.x.
-  ...
+  >>> slow_submission.getControl(name='msgset_143_es_translation_0').value == u'\nblah'
+  True
 
 But also, the new one should appear in the form.
 
-  >>> 'foo!!' in browser.contents
+  >>> 'foo!!' in slow_submission.contents
   True

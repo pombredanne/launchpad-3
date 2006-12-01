@@ -8,11 +8,11 @@ __metaclass__ = type
 __all__ = [
     'IPOMsgSet',
     'IPOMsgSetSuggestions',
-    'RosettaTranslationLocked',
+    'TranslationConflict',
 ]
 
 
-class RosettaTranslationLocked(Exception):
+class TranslationConflict(Exception):
     """Someone updated the translation we are trying to update."""
 
 
@@ -74,7 +74,7 @@ class IPOMsgSet(Interface):
     submissions = Attribute(
         """All IPOSubmissions associated with this IPOMsgSet.""")
 
-    def isNewer(timestamp):
+    def isNewerThan(timestamp):
         """Whether the active translations are newer than the given timestamp.
 
         :arg timestamp: A DateTime object with a timestamp.

@@ -10,7 +10,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
         IPOTemplate, IPOFile, IPersonSet, TranslationConstants,
-        RosettaTranslationLocked)
+        TranslationConflict)
 from canonical.launchpad.components.poparser import POParser
 from canonical.lp.dbschema import PersonCreationRationale
 from canonical.launchpad.webapp import canonical_url
@@ -255,19 +255,19 @@ def import_po(pofile_or_potemplate, file, importer, published=True):
             # just suggestions.
             is_editor = pofile.canEditTranslations(importer)
             try:
-                pomsgset.updateTranslationSet(last_translator,
-                                              translations,
-                                              fuzzy, published, lock_timestamp,
-                                              force_edition_rights=is_editor)
-            except RosettaTranslationLocked:
+                pomsgset.updateTranslationSet(
+                    last_translator, translations, fuzzy, published,
+                    lock_timestamp, force_edition_rights=is_editor)
+            except TranslationConflict:
                 error = {
                     'pomsgset': pomsgset,
                     'pomessage': pomessage,
                     'error-message': (
-                        "This message was updated by someone else after you got"
-                        " the .po file. This translation is now stored as a"
-                        " suggestion, if you want to set it as the used one,"
-                        " go to %s/+translate and approve it." % canonical_url(pomsgset))
+                        "This message was updated by someone else after you"
+                        " got the .po file.\n This translation is now stored"
+                        " as a suggestion, if you want to set it\n as the"
+                        " used one, go to\n %s/+translate\n and"
+                        " approve it." % canonical_url(pomsgset))
                 }
 
                 errors.append(error)
@@ -275,11 +275,10 @@ def import_po(pofile_or_potemplate, file, importer, published=True):
                 # We got an error, so we submit the translation again but
                 # this time asking to store it as a translation with
                 # errors.
-                pomsgset.updateTranslationSet(last_translator,
-                                              translations,
-                                              fuzzy, published, lock_timestamp,
-                                              ignore_errors=True,
-                                              force_edition_rights=is_editor)
+                pomsgset.updateTranslationSet(
+                    last_translator, translations, fuzzy, published,
+                    lock_timestamp, ignore_errors=True,
+                    force_edition_rights=is_editor)
 
                 # Add the pomsgset to the list of pomsgsets with errors.
                 error = {

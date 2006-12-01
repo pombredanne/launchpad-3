@@ -34,7 +34,7 @@ from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     UnexpectedFormData, IPOMsgSet, TranslationConstants, NotFoundError,
     ILanguageSet, IPOFileAlternativeLanguage, IPOMsgSetSuggestions,
-    RosettaTranslationLocked)
+    TranslationConflict)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ApplicationMenu, Link, LaunchpadView,
     canonical_url)
@@ -410,21 +410,19 @@ class BaseTranslationView(LaunchpadView):
                 # between the form loading and its later submission.
                 self.lock_timestamp = datetimeutils.parseDatetimetz(
                     self.request.form.get('lock_timestamp', u''))
-            except (datetimeutils.SyntaxError, datetimeutils.DateError,
-                    datetimeutils.DateTimeError, ValueError):
+            except datetimeutils.DateTimeError:
                 # invalid format. Either we don't have the timestamp in the
                 # submitted form or it has the wrong format.
                 raise UnexpectedFormData, (
                     'We didn\'t find the timestamp that tells us when was'
                     ' generated the submitted form.')
 
+            # Check if this is really the form we are listening for..
             if (self.request.form.get("submit_translations") and
                 self.user is not None):
-                # Check if this is really the form we are listening for..
                 if self._submitTranslations():
-                    # .. and if no errors occurred, adios. Otherwise, we
-                    # need to set up the subviews for error display and
-                    # correction.
+                    # No errors occurred, adios. Otherwise, we need to set up
+                    # the subviews for error display and correction.
                     return
         else:
             # It's not a POST, so we should generate lock_timestamp.
@@ -486,11 +484,12 @@ class BaseTranslationView(LaunchpadView):
                 person=self.user, new_translations=translations,
                 fuzzy=is_fuzzy, published=False,
                 lock_timestamp=self.lock_timestamp)
-        except RosettaTranslationLocked:
+        except TranslationConflict:
             return (
-                u'Someone changed this translation, yours has been added as'
-                 ' a suggestion, please, review current value and select'
-                 ' yours again if you prefer it.')
+                u'Somebody else changed this translation since you started.'
+                u' To avoid accidentally reverting work done by others, we'
+                u' added your translations as suggestions, so please review'
+                u' current values.')
         except gettextpo.error, e:
             # Save the error message gettext gave us to show it to the
             # user.
@@ -504,7 +503,7 @@ class BaseTranslationView(LaunchpadView):
         # this is being called in the right order, after
         # _storeTranslations(). -- kiko, 2006-09-27
         if (self.form_posted_translations.has_key(pomsgset) and
-            not pomsgset.isNewer(self.lock_timestamp)):
+            not pomsgset.isNewerThan(self.lock_timestamp)):
             translations = self.form_posted_translations[pomsgset]
         else:
             translations = pomsgset.active_texts

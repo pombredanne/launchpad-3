@@ -46,9 +46,11 @@ from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
 
 from canonical.launchpad.components.rosettastats import RosettaStats
-from canonical.launchpad.components.poimport import import_po, OldPOImported
+from canonical.launchpad.components.poimport import (
+    import_po, OldPOImported, NotExportedFromRosetta)
 from canonical.launchpad.components.poparser import (
     POSyntaxError, POHeader, POInvalidInputError)
+from canonical.launchpad.webapp import canonical_url
 from canonical.librarian.interfaces import ILibrarianClient
 
 
@@ -595,69 +597,54 @@ class POFile(SQLBase, RosettaStats):
 
         file = librarian_client.getFileByAlias(entry_to_import.content.id)
 
+        errors = None
         try:
             errors = import_po(self, file, entry_to_import.importer,
                                entry_to_import.is_published)
-        except (POSyntaxError, POInvalidInputError):
-            # The import failed, we mark it as failed so we could review it
-            # later in case it's a bug in our code.
-            # XXX Carlos Perello Marin 2005-06-22: We should intregrate this
-            # kind of error with the new TranslationValidation feature.
-            entry_to_import.status = RosettaImportStatus.FAILED
+        except NotExportedFromRosetta:
+            # We got a file that was not exported from Rosetta as a non
+            # published upload. We log it and select the email template.
             if logger:
                 logger.warning(
                     'Error importing %s' % self.title, exc_info=1)
-            return
+            template_mail = 'poimport-not-exported-from-rosetta.txt'
+        except (POSyntaxError, POInvalidInputError):
+            # The import failed with a format error. We log it and select the
+            # email template.
+            if logger:
+                logger.warning(
+                    'Error importing %s' % self.title, exc_info=1)
+            template_mail = 'poimport-syntax-error.txt'
         except OldPOImported:
             # The attached file is older than the last imported one, we ignore
-            # it.
-            # XXX Carlos Perello Marin 2005-06-22: We should intregrate this
-            # kind of error with the new TranslationValidation feature.
-            entry_to_import.status = RosettaImportStatus.FAILED
+            # it. We also log this problem and select the email template.
             if logger:
                 logger.warning('Got an old version for %s' % self.title)
-            return
-
-        # Request a sync of 'self' as we need to use real datetime values.
-        self.sync()
+            template_mail = 'poimport-got-old-version.txt'
 
         # Prepare the mail notification.
-
         msgsets_imported = POMsgSet.select(
-            'sequence > 0 AND pofile=%s' % (sqlvalues(self.id))).count()
-
-        UTC = pytz.timezone('UTC')
-        # XXX: Carlos Perello Marin 2005-06-29 This code should be using the
-        # solution defined by PresentingLengthsOfTime spec when it's
-        # implemented.
-        elapsedtime = (
-            datetime.datetime.now(UTC) - entry_to_import.dateimported)
-        elapsedtime_text = ''
-        hours = elapsedtime.seconds / 3600
-        minutes = (elapsedtime.seconds % 3600) / 60
-        if elapsedtime.days > 0:
-            elapsedtime_text += '%d days ' % elapsedtime.days
-        if hours > 0:
-            elapsedtime_text += '%d hours ' % hours
-        if minutes > 0:
-            elapsedtime_text += '%d minutes ' % minutes
-
-        if len(elapsedtime_text) > 0:
-            elapsedtime_text += 'ago'
-        else:
-            elapsedtime_text = 'just requested'
+                'sequence > 0 AND pofile=%s' % (sqlvalues(self.id))).count()
 
         replacements = {
             'importer': entry_to_import.importer.displayname,
             'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
-            'elapsedtime': elapsedtime_text,
-            'numberofmessages': msgsets_imported,
+            'elapsedtime': entry_to_import.getElapsedTimeText(),
             'language': self.language.displayname,
-            'template': self.potemplate.displayname
+            'template': self.potemplate.displayname,
+            'file_link': canonical_url(entry_to_import),
+            'numberofmessages': msgsets_imported,
+            'import_title': '%s translations for %s' % (
+                self.language.displayname, self.potemplate.displayname)
             }
 
-        if len(errors):
-            # There were errors.
+        if errors is None:
+            # We got an error that prevented us to import any translation, we
+            # need to notify the user.
+            subject = 'Import problem - %s - %s' % (
+                self.language.displayname, self.potemplate.displayname)
+        elif len(errors):
+            # There were some errors with translations.
             errorsdetails = ''
             for error in errors:
                 pomsgset = error['pomsgset']
@@ -675,10 +662,11 @@ class POFile(SQLBase, RosettaStats):
             replacements['numberofcorrectmessages'] = (msgsets_imported -
                 len(errors))
 
-            template_mail = 'poimport-error.txt'
+            template_mail = 'poimport-with-errors.txt'
             subject = 'Translation problems - %s - %s' % (
                 self.language.displayname, self.potemplate.displayname)
         else:
+            # The import was successful.
             template_mail = 'poimport-confirmation.txt'
             subject = 'Translation import - %s - %s' % (
                 self.language.displayname, self.potemplate.displayname)
@@ -694,6 +682,12 @@ class POFile(SQLBase, RosettaStats):
         toaddress = helpers.contactEmailAddresses(entry_to_import.importer)
 
         simple_sendmail(fromaddress, toaddress, subject, message)
+
+        if errors is None:
+            # There were no imports at all and the user needs to review that
+            # file, we tag it as FAILED.
+            entry_to_import.status = RosettaImportStatus.FAILED
+            return
 
         # The import has been done, we mark it that way.
         entry_to_import.status = RosettaImportStatus.IMPORTED

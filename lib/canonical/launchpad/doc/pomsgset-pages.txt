@@ -259,7 +259,7 @@ than when last active translation was submitted.
 
 We can see here that translation in pomsgset is newer than old_timestamp.
 
-    >>> pomsgset.isNewer(old_timestamp)
+    >>> pomsgset.isNewerThan(old_timestamp)
     True
 
 And current value
@@ -280,12 +280,17 @@ We do the submission with that lock_timestamp.
     >>> request.method = 'POST'
     >>> pomsgset_page_view = getView(pomsgset, "+translate", request)
     >>> pomsgset_page_view.initialize()
+    >>> for notification in pomsgset_page_view.request.notifications:
+    ...     notification.message
+    'There is an error in the translation you provided. Please correct it before continuing.'
+    >>> pomsgset_page_view.error
+    u'Somebody else changed this translation since you started. To avoid accidentally reverting work done by others, we added your translations as suggestions, so please review current values.'
     >>> transaction.commit()
 
 This submission is not saved because there is another modification, this
 means that timestamps remain unchanged.
 
-    >>> pomsgset.isNewer(old_timestamp)
+    >>> pomsgset.isNewerThan(old_timestamp)
     True
 
 And active text too

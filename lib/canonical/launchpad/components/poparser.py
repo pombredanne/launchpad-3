@@ -564,8 +564,7 @@ class POHeader(dict, POMessage):
         else:
             try:
                 date = datetimeutils.parseDatetimetz(date_string)
-            except (datetimeutils.SyntaxError, datetimeutils.DateError,
-                    datetimeutils.DateTimeError, ValueError):
+            except datetimeutils.DateTimeError:
                 # invalid date format
                 date = None
 
@@ -580,8 +579,7 @@ class POHeader(dict, POMessage):
         else:
             try:
                 date = datetimeutils.parseDatetimetz(date_string)
-            except (datetimeutils.SyntaxError, datetimeutils.DateError,
-                    datetimeutils.DateTimeError, ValueError):
+            except datetimeutils.DateTimeError:
                 # invalid date format
                 date = None
 
