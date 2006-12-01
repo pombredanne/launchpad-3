@@ -479,7 +479,7 @@ class TicketSet:
     def searchTickets(self, search_text=None,
                       status=TICKET_STATUS_DEFAULT_SEARCH, sort=None):
         """See ITicketSet"""
-        return TicketSetSearch(
+        return TicketSearch(
             search_text=search_text, status=status, sort=sort).getResults()
 
     @staticmethod
@@ -533,17 +533,19 @@ class TicketSearch:
     def getTargetConstraints(self):
         """Return the constraints related to the ITicketTarget context."""
         if self.sourcepackagename:
-            assert self.distribution is not None
+            assert self.distribution is not None, (
+                "Distribution must be specified if sourcepackage is not None")
 
         constraints = []
         if self.product:
-            constraints.append('Ticket.product = %s' % self.product.id)
+            constraints.append('Ticket.product = %s' % sqlvalues(self.product))
         elif self.distribution:
             constraints.append(
-                'Ticket.distribution = %s' % self.distribution.id)
+                'Ticket.distribution = %s' % sqlvalues(self.distribution))
             if self.sourcepackagename:
                 constraints.append(
-                    'Ticket.sourcepackagename = %s' % self.sourcepackagename.id)
+                    'Ticket.sourcepackagename = %s' % sqlvalues(
+                        self.sourcepackagename))
 
         return constraints
 
@@ -557,21 +559,25 @@ class TicketSearch:
                 'Ticket.fti @@ ftq(%s)' % quote(self.search_text))
 
         if self.status:
-            constraints.append(
-                'Ticket.status IN (%s)' % ', '.join(sqlvalues(*self.status)))
+            constraints.append('Ticket.status IN %s' % sqlvalues(
+                list(self.status)))
 
         return constraints
 
     def getPrejoins(self):
         """Return a list of tables that should be prejoined on this search."""
-        prejoins = []
-        if self.product:
-            prejoins.append('product')
+        # The idea is to prejoin all dependant tables, except if the
+        # object will be the same in all rows because it is used as a
+        # search criteria.
+        if self.product or self.sourcepackagename:
+            # Will always be the same product or sourcepackage.
+            return ['owner']
         elif self.distribution:
-            prejoins.append('distribution')
-            if self.sourcepackagename:
-                prejoins.append('sourcepackagename')
-        return prejoins
+            # Same distribution, sourcepackagename will vary.
+            return ['owner', 'sourcepackagename']
+        else:
+            # TicketTarget will vary.
+            return ['owner', 'product', 'distribution', 'sourcepackagename']
 
     def getOrderByClause(self):
         """Return the ORDER BY clause to use to order this search's results."""
@@ -606,17 +612,6 @@ class TicketSearch:
                              orderBy=self.getOrderByClause())
 
 
-class TicketSetSearch(TicketSearch):
-    """Search tickets in any context.
-
-    Used to implement ITicketSet.searchTickets().
-    """
-
-    def getPrejoins(self):
-        """Prejoin all possible context."""
-        return ['product', 'distribution', 'sourcepackagename']
-
-
 class TicketTargetSearch(TicketSearch):
     """Search tickets in an ITicketTarget context.
 
@@ -645,6 +640,14 @@ class TicketTargetSearch(TicketSearch):
             constraints.append('Ticket.owner = %s' % self.owner.id)
 
         return constraints
+
+    def getPrejoins(self):
+        """See TicketSearch."""
+        prejoins = TicketSearch.getPrejoins(self)
+        if self.owner and 'owner' in prejoins:
+            # Since it is constant, no need to prefetch it.
+            prejoins.remove('owner')
+        return prejoins
 
 
 class SimilarTicketsSearch(TicketSearch):
@@ -718,8 +721,3 @@ class TicketPersonSearch(TicketSearch):
 
         constraints.extend(TicketSearch.getConstraints(self))
         return constraints
-
-    def getPrejoins(self):
-        """See TicketSearch."""
-        return ['product', 'distribution', 'sourcepackagename']
-
