@@ -1,7 +1,6 @@
 
 It is possible for anybody to upload a BLOB to Launchpad which will be
-stored for a short period of time, and deleted if unused. It can be used by
-other parts of the system.
+stored for a short period of time, and deleted if unused.
 
     >>> anon_browser.open('http://launchpad.dev/+storeblob')
     >>> anon_browser.url
@@ -13,7 +12,7 @@ middle of the data so we can ensure binary data is handled correctly.
     >>> from cStringIO import StringIO
     >>> blob_file = StringIO('abcd\0efg')
     >>> anon_browser.getControl('BLOB').add_file(
-    ...     blob_file, 'arbitrary/mimetype', 'ignored.filename'
+    ...     blob_file, 'ignored/mimetype', 'ignored.filename'
     ...     )
     >>> anon_browser.getControl('Continue').click()
 

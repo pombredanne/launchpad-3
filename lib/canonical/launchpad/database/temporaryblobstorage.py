@@ -14,7 +14,7 @@ import sha
 import time
 import thread
 
-from pytz import UTC
+from pytz import utc
 from sqlobject import StringCol, ForeignKey
 from zope.component import getUtility
 from zope.interface import implements
@@ -63,7 +63,7 @@ class TemporaryStorageManager:
     def new(self, blob, expires=None):
         """See ITemporaryStorageManager."""
         if expires is None:
-            expires = datetime.utcnow().replace(tzinfo=UTC)
+            expires = datetime.utcnow().replace(tzinfo=utc)
 
         # At this stage we could do some sort of throttling if we were
         # concerned about abuse of the temporary storage facility. For
@@ -82,14 +82,13 @@ class TemporaryStorageManager:
 
         # create the BLOB and return the UUID
 
-        new_uuid = str(uuid.generate_uuid())
+        new_uuid = uuid.generate_uuid()
 
         # We use a random filename, so only things that can look up the
-        # secret can retrieve the original data.
-        secret = sha.new("%s%s%s%s%s" % (
-            time.time(), random.random(), thread.get_ident(),
-            new_uuid, expires
-            )).hexdigest()
+        # secret can retrieve the original data (which is why we don't use
+        # the UUID we return to the user as the filename, nor the filename
+        # of the object they uploaded).
+        secret = uuid.generate_uuid()
 
         file_alias = getUtility(ILibraryFileAliasSet).create(
                 secret, len(blob), StringIO(blob),

@@ -20,6 +20,7 @@ class BlobTooLarge(Exception):
     """
     pass
 
+
 class ITemporaryBlobStorage(Interface):
     """A blob which we will store in the database temporarily."""
 
@@ -28,6 +29,7 @@ class ITemporaryBlobStorage(Interface):
     date_created = Datetime(title=_('Date created'),
         required=True, readonly=True)
     filealias = Attribute("Link to actual storage of blob")
+
 
 class ITemporaryStorageManager(Interface):
     """A tool to create temporary blobs."""

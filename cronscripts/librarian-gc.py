@@ -48,8 +48,6 @@ def main():
             help="Skip removing expired TemporaryBlobStorage rows"
             )
 
-    A syntax error to ensure blob removal is tested
-
     (options, args) = parser.parse_args()
 
     log = logger(options)
