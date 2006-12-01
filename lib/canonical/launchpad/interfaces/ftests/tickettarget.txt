@@ -134,6 +134,12 @@ description.
 
 The searchTickets() method is used to search for tickets.
 
+=== search_text ===
+
+The search_text parameter will select the tickets that contain the
+passed in text. (The standard text searching algorithm is used, see
+textsearching.txt.)
+
     >>> for t in target.searchTickets(search_text='new'):
     ...     print t.title
     New ticket
@@ -142,6 +148,8 @@ The searchTickets() method is used to search for tickets.
 The results here are sorted by relevancy. (In the last tickets, 'New'
 appeared in the description which makes it less relevant than when the
 word appears in the title.)
+
+=== status ===
 
 The searchTickets() method can also filter tickets by status:
 
@@ -171,6 +179,8 @@ OPEN and INVALID tickets with the word 'index'
     Ticket title2
     Ticket title1
     Ticket title0
+
+=== sort ===
 
 You can control the sort order by passing one of the constants defined
 in TicketSort. (We already saw the NEWEST_FIRST and RELEVANCY sort
@@ -217,6 +227,8 @@ the tickets will be sorted NEWEST_FIRST.
 
 ('Ticket title4' is not shown in this case because it has INVALID as
 its status.)
+
+=== owner ===
 
 You can also find ticket owner by a particular user by using the owner
 parameter.
