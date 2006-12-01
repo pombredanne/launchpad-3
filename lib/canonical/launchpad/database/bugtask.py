@@ -273,8 +273,9 @@ class BugTask(SQLBase, BugTaskMixin):
     def _syncFromConjoinedSlave(self):
         """Ensure the conjoined master is synched from its slave.
 
-        This method should be used only directly after the bugtask
-        entered a conjoined relationship.
+        This method should be used only directly after when the
+        conjoined master has been created after the slave, to ensure
+        that they are in sync from the beginning.
         """
         conjoined_slave = self.conjoined_slave
 
