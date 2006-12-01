@@ -516,6 +516,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 ALTER TABLE archconfig DISABLE TRIGGER ALL;
 
 
@@ -2963,36 +2966,36 @@ ALTER TABLE personlanguage ENABLE TRIGGER ALL;
 
 ALTER TABLE pillarname DISABLE TRIGGER ALL;
 
-INSERT INTO pillarname (id, name, product, project, distribution) VALUES (1, 'ubuntu', NULL, NULL, 1);
-INSERT INTO pillarname (id, name, product, project, distribution) VALUES (2, 'redhat', NULL, NULL, 2);
-INSERT INTO pillarname (id, name, product, project, distribution) VALUES (3, 'debian', NULL, NULL, 3);
-INSERT INTO pillarname (id, name, product, project, distribution) VALUES (4, 'gentoo', NULL, NULL, 4);
-INSERT INTO pillarname (id, name, product, project, distribution) VALUES (5, 'kubuntu', NULL, NULL, 5);
-INSERT INTO pillarname (id, name, product, project, distribution) VALUES (6, 'guadalinex', NULL, NULL, 7);
-INSERT INTO pillarname (id, name, product, project, distribution) VALUES (7, 'ubuntutest', NULL, NULL, 8);
-INSERT INTO pillarname (id, name, product, project, distribution) VALUES (8, 'ubuntu-product', 1, NULL, NULL);
-INSERT INTO pillarname (id, name, product, project, distribution) VALUES (9, 'unassigned', 2, NULL, NULL);
-INSERT INTO pillarname (id, name, product, project, distribution) VALUES (10, 'arch-mirrors', 3, NULL, NULL);
-INSERT INTO pillarname (id, name, product, project, distribution) VALUES (11, 'firefox', 4, NULL, NULL);
-INSERT INTO pillarname (id, name, product, project, distribution) VALUES (12, 'evolution', 5, NULL, NULL);
-INSERT INTO pillarname (id, name, product, project, distribution) VALUES (13, 'gnome-terminal', 6, NULL, NULL);
-INSERT INTO pillarname (id, name, product, project, distribution) VALUES (14, 'iso-codes', 7, NULL, NULL);
-INSERT INTO pillarname (id, name, product, project, distribution) VALUES (15, 'thunderbird', 8, NULL, NULL);
-INSERT INTO pillarname (id, name, product, project, distribution) VALUES (16, 'applets', 9, NULL, NULL);
-INSERT INTO pillarname (id, name, product, project, distribution) VALUES (17, 'python-gnome2-dev', 10, NULL, NULL);
-INSERT INTO pillarname (id, name, product, project, distribution) VALUES (18, 'netapplet', 11, NULL, NULL);
-INSERT INTO pillarname (id, name, product, project, distribution) VALUES (19, 'a52dec', 12, NULL, NULL);
-INSERT INTO pillarname (id, name, product, project, distribution) VALUES (20, 'gnomebaker', 13, NULL, NULL);
-INSERT INTO pillarname (id, name, product, project, distribution) VALUES (21, 'bazaar', 14, NULL, NULL);
-INSERT INTO pillarname (id, name, product, project, distribution) VALUES (22, 'alsa-utils', 15, NULL, NULL);
-INSERT INTO pillarname (id, name, product, project, distribution) VALUES (23, 'iso-codes-project', NULL, 6, NULL);
-INSERT INTO pillarname (id, name, product, project, distribution) VALUES (24, 'ubuntu-project', NULL, 1, NULL);
-INSERT INTO pillarname (id, name, product, project, distribution) VALUES (25, 'do-not-use-info-imports', NULL, 2, NULL);
-INSERT INTO pillarname (id, name, product, project, distribution) VALUES (26, 'launchpad-mirrors', NULL, 3, NULL);
-INSERT INTO pillarname (id, name, product, project, distribution) VALUES (27, 'mozilla', NULL, 4, NULL);
-INSERT INTO pillarname (id, name, product, project, distribution) VALUES (28, 'gnome', NULL, 5, NULL);
-INSERT INTO pillarname (id, name, product, project, distribution) VALUES (29, 'aaa', NULL, 7, NULL);
-INSERT INTO pillarname (id, name, product, project, distribution) VALUES (30, 'gimp', NULL, 8, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (1, 'ubuntu', NULL, NULL, 1, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (2, 'redhat', NULL, NULL, 2, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (3, 'debian', NULL, NULL, 3, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (4, 'gentoo', NULL, NULL, 4, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (5, 'kubuntu', NULL, NULL, 5, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (6, 'guadalinex', NULL, NULL, 7, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (7, 'ubuntutest', NULL, NULL, 8, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (8, 'ubuntu-product', 1, NULL, NULL, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (9, 'unassigned', 2, NULL, NULL, false);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (10, 'arch-mirrors', 3, NULL, NULL, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (11, 'firefox', 4, NULL, NULL, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (12, 'evolution', 5, NULL, NULL, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (13, 'gnome-terminal', 6, NULL, NULL, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (14, 'iso-codes', 7, NULL, NULL, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (15, 'thunderbird', 8, NULL, NULL, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (16, 'applets', 9, NULL, NULL, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (17, 'python-gnome2-dev', 10, NULL, NULL, false);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (18, 'netapplet', 11, NULL, NULL, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (19, 'a52dec', 12, NULL, NULL, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (20, 'gnomebaker', 13, NULL, NULL, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (21, 'bazaar', 14, NULL, NULL, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (22, 'alsa-utils', 15, NULL, NULL, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (23, 'iso-codes-project', NULL, 6, NULL, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (24, 'ubuntu-project', NULL, 1, NULL, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (25, 'do-not-use-info-imports', NULL, 2, NULL, false);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (26, 'launchpad-mirrors', NULL, 3, NULL, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (27, 'mozilla', NULL, 4, NULL, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (28, 'gnome', NULL, 5, NULL, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (29, 'aaa', NULL, 7, NULL, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (30, 'gimp', NULL, 8, NULL, true);
 
 
 ALTER TABLE pillarname ENABLE TRIGGER ALL;
@@ -8635,12 +8638,12 @@ ALTER TABLE sourcepackagerelease ENABLE TRIGGER ALL;
 
 ALTER TABLE sourcepackagereleasefile DISABLE TRIGGER ALL;
 
+INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (14, 3, 6, 6);
 INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (15, 4, 1, 2);
 INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (16, 2, 1, 1);
 INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (23, 39, 3, 4);
 INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (24, 38, 3, 3);
 INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (25, 43, 3, 5);
-INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (14, 3, 6, 6);
 
 
 ALTER TABLE sourcepackagereleasefile ENABLE TRIGGER ALL;
