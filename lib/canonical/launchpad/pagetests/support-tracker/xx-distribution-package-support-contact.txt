@@ -36,7 +36,7 @@ and another one listing those of the distribution.
     Sample Person
 
 To register himself as support contact, the user clicks on the
-'Support Contact' link. He needs to be login to access that function.
+'Support Contact' link. He needs to login to access that function.
 
     >>> anon_browser.getLink('Support Contact').click()
     Traceback (most recent call last):
