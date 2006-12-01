@@ -595,22 +595,27 @@ accessed through the conjoined_master and conjoined_slave properties.
     >>> current_release_netapplet_task.conjoined_master is None
     True
 
+    >>> generic_netapplet_task.conjoined_slave is None
+    True
+    >>> generic_netapplet_task.conjoined_master == (
+    ...     current_release_netapplet_task)
+    True
+
     >>> current_release_ubuntu_task.conjoined_slave == (
     ...     generic_ubuntu_task)
     True
     >>> current_release_ubuntu_task.conjoined_master is None
+    True
+    >>> generic_ubuntu_task.conjoined_master == (
+    ...     current_release_ubuntu_task)
+    True
+    >>> generic_ubuntu_task.conjoined_slave is None
     True
 
     >>> devel_focus_alsa_utils_task.conjoined_slave == (
     ...     generic_alsa_utils_task)
     True
     >>> devel_focus_alsa_utils_task.conjoined_master is None
-    True
-
-    >>> generic_netapplet_task.conjoined_slave is None
-    True
-    >>> generic_netapplet_task.conjoined_master == (
-    ...     current_release_netapplet_task)
     True
 
     >>> generic_alsa_utils_task.conjoined_slave is None
