@@ -84,27 +84,20 @@
         problem more in detail.
       </p>
 
-    <table class="form">
+      <table class="form">
 
         <metal:basic_filebug_widgets
             metal:use-macro="context/@@+filebug-macros/basic_filebug_widgets" />
 
-    </table>
+      </table>
 
-  <!--div style="margin-top: 1em">
-    <label tal:attributes="for view/widgets/comment/name">
-      Further information, steps to reproduce, version information, etc.
-    </label>
-    <div tal:content="structure view/widgets/comment" />
-  </div-->
+    </metal:widgets>
 
-  </metal:widgets>
+    <div class="actions" metal:fill-slot="buttons">
+      <input tal:replace="structure view/actions/field.actions.submit_bug/render" />
+    </div>
 
-  <div class="actions" metal:fill-slot="buttons">
-    <input tal:replace="structure view/actions/field.actions.submit_bug/render" />
   </div>
-
-</div>
 
 </div>
 
