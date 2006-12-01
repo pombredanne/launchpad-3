@@ -17,8 +17,8 @@ import SCM
 from canonical.launchpad.webapp.url import Url
 
 
-class ImportSafetyError(Exception):
-    """Raised when an import fails safety checks."""
+class ImportSanityError(Exception):
+    """Raised when an import fails sanity checks."""
 
 
 class JobStrategy:
@@ -91,7 +91,7 @@ class CSCVSStrategy(JobStrategy):
         self.aJob = aJob
         self.dir = dir
         self.logger = logger
-        self._checkSafety()
+        self._checkSanity()
         target_manager = aJob.makeTargetManager()
         working_dir = self.getWorkingDir(aJob, dir)
         target_path = target_manager.createImportTarget(working_dir)
@@ -105,11 +105,11 @@ class CSCVSStrategy(JobStrategy):
         # must start on revision 43. -- David Allouche 2006-10-31
         self._importIncrementally(target_path)
 
-    def _checkSafety(self):
-        """Run safety checks to avoid putting excessive load on server.
+    def _checkSanity(self):
+        """Run sanity checks to avoid putting excessive load on server.
 
         By default do no check. Subclasses may override this. If the import is
-        deemed unsafe, this method must raise ImportSafetyError.
+        deemed unsafe, this method must raise ImportSanityError.
         """
 
     def sync(self, aJob, dir, logger):
@@ -494,21 +494,25 @@ class SVNStrategy(CSCVSStrategy):
             self._tree = SCM.tree(self.sourceDir())
         return self._tree
 
-    def _checkSafety(self):
-        """Run safety checks to avoid putting excessive load on server."""
-        if self._safetyIsOverridden():
+    def _checkSanity(self):
+        """Run sanity checks to avoid putting excessive load on server."""
+        if self._sanityIsOverridden():
             return
         url = self.job.repository
         if Url(url).path.endswith('/'):
-            raise ImportSafetyError(
+            # Non-canonicalized URLs will cause old unpatched svn servers to
+            # crash. We should also canonicalize the URLs to catch duplicates,
+            # but this provides belt-and-suspenders to avoid harming remote
+            # servers.
+            raise ImportSanityError(
                 'URL ends with a slash: %s' % url)
         if '/trunk/' in Url(url).pathslash:
             return
-        raise ImportSafetyError(
+        raise ImportSanityError(
             'URL does not appear to be a SVN trunk: %s' % url)
 
-    def _safetyIsOverridden(self):
-        """Whether the safety check for this import has been overridden.
+    def _sanityIsOverridden(self):
+        """Whether the sanity check for this import has been overridden.
 
         At the moment, that just checks that the svn url is in an hardcoded
         while-list. Eventually, that will check for a flag set by the operator
