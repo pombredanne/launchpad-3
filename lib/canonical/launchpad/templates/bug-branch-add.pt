@@ -32,7 +32,27 @@
 
   </div>
 
-</div>
+</div><tal:comment condition="nothing"><!-- end main slot --></tal:comment>
+
+<metal:block fill-slot="help">
+
+  <p>Launchpad is integrated with the <a
+    href="http://bazaar-vcs.org/">Bazaar</a> version control system. (<a
+    href="http://bazaar-vcs.org/WhyUseBzr">Why use Bazaar?</a>).</p>
+
+  <p>Post this form to associate this bug to a Bazaar branch that is already
+    known to Launchpad. This allows quickly locating branches that contain work
+    to fix this bug.<p>
+
+  <p>To specify the branch, you can paste its unique name (of the form
+    ~owner/product/branch), its URL on <code>bazaar.launchpad.net</code>, or
+    its external URL in the case of a mirror branch. You can also click on
+    "Choose..." to search for a branch.</p>
+
+  <p>Each bug-branch association has a status, initially "Fix In Progress" and a
+    whiteboard that can be used to write short comments.</p>
+
+</metal:block><tal:comment condition="nothing"><!-- end help slot --></tal:comment>
 </body>
 
 </html>

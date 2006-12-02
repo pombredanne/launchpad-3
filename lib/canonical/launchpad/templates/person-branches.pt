@@ -101,9 +101,9 @@
 
 <metal:block fill-slot="help">
 
-  <p>Launchpad can act as a registry of branches for the <a
-    href="http://bazaar-vcs.org/">Bazaar</a>distributed version control
-    system.</p>
+  <p>Launchpad is integrated with the <a
+    href="http://bazaar-vcs.org/">Bazaar</a> version control system. (<a
+    href="http://bazaar-vcs.org/WhyUseBzr">Why use Bazaar?</a>).</p>
 
   <p>This page lists all the branches which are related to a person or team.
     A person or team can be related to a branch in several ways:</p>

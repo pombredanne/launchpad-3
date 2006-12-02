@@ -70,7 +70,7 @@ displayed.
     >>> soup = BeautifulSoup(user_browser.contents)
     >>> soup.first('table', {'id': 'similar-tickets'})
     <table id="similar-tickets">
-    ...<a...href=".../distros/ubuntu/+ticket/8"...>Installation of Java
+    ...<a...href=".../mozilla-firefox/+ticket/8"...>Installation of Java
     Runtime Environment for Mozilla</a>...
     </table>
 
@@ -130,9 +130,9 @@ redirect the user to the ticket page.
     ... "crashes.\n")
     >>> user_browser.getControl('Add').click()
     >>> user_browser.url
-    '.../distros/ubuntu/+ticket/...'
+    '.../distros/ubuntu/+source/mozilla-firefox/+ticket/...'
     >>> user_browser.title
-    'Ubuntu support request #...Visiting a web page...'
+    'mozilla-firefox in ubuntu support request #...Visiting a web page...'
     >>> soup = BeautifulSoup(user_browser.contents)
     >>> soup.first('div', 'highlighted')
     <div class="highlighted">
