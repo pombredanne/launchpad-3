@@ -36,15 +36,11 @@ At this point we'll present any similar tickets (in any language) /and/
 a warning message explaining that the chosen language is not understood
 by any member of the support community.
 
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> soup = BeautifulSoup(browser.contents)
-    >>> soup.first('table', {'id': 'similar-tickets'})
-    <table id="similar-tickets">
-    ...<a...href=".../distros/ubuntu/+ticket/8"...>Installation of Java
-    Runtime Environment for Mozilla</a>...
-    ...<a...href=".../distros/ubuntu/+ticket/9"...>mailto: problem in
-    webpage</a>...
-    </table>
+    >>> similar_tickets = find_tag_by_id(browser.contents, 'similar-tickets')
+    >>> for row in similar_tickets.findAll('tr', 'noted'):
+    ...     print row.first('a').renderContents()
+    Installation of Java Runtime Environment for Mozilla
+    mailto: problem in webpage
 
     >>> for tag in find_tags_by_class(browser.contents, 'warning message'):
     ...     print tag.renderContents()
@@ -77,6 +73,8 @@ from making a request in the language of his choice.
     '.../distros/ubuntu/+ticket/...'
     >>> browser.title
     'Ubuntu support request #...Abrir uma pagina que requer...'
+
+    >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(browser.contents)
     >>> print soup.find('b', text='Language:').next.strip()
     Portuguese (Brazil)

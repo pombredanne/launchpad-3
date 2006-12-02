@@ -94,8 +94,10 @@
           </td>
           <td class="ticket-target"
               tal:condition="view/displayTargetColumn"
-              tal:content="structure python:view.formatTarget(ticket)"
-              >Firefox</td>
+              ><a href="#"
+                  tal:define="target ticket/target"
+                  tal:attributes="href string:${target/fmt:url}/+tickets"
+                  tal:content="target/displayname">Firefox</a></td>
           <td tal:condition="view/displaySourcePackageColumn"
               tal:content="structure python:view.formatSourcePackageName(ticket)"
               >mozilla-firefox</td>

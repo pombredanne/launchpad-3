@@ -519,6 +519,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 ALTER TABLE archconfig DISABLE TRIGGER ALL;
 
 
@@ -2697,6 +2700,7 @@ INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rf
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (20, '2006-07-20 20:52:07.054216', 'Re: Installation of Java Runtime Environment for Mozilla', 16, NULL, NULL, '<20060720205207.13277.68582.lptickets@Bourdieu.Contre.COM>', '''re'':1B ''java'':4B ''instal'':2B ''runtim'':5B ''environ'':6B ''mozilla'':8B', NULL);
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (21, '2006-07-20 20:53:53.684848', 'Re: Play DVDs in Totem', 16, NULL, NULL, '<20060720205354.13277.37000.lptickets@Bourdieu.Contre.COM>', '''re'':1B ''dvds'':3B ''play'':2B ''totem'':5B', NULL);
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (22, '2006-07-20 20:56:35.442839', 'Re: mailto: problem in webpage', 12, NULL, NULL, '<20060720205635.13277.87295.lptickets@Bourdieu.Contre.COM>', '''re'':1B ''mailto'':2B ''webpag'':5B ''problem'':3B', NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (23, '2006-07-20 23:11:24.975495', 'Re: Continue playing after shutdown', 12, NULL, NULL, '<20061201222020.597.97888.lptickets@Huxley.Contre.COM>', '''re'':1B ''play'':3B ''continu'':2B ''shutdown'':5B', NULL);
 
 
 ALTER TABLE message ENABLE TRIGGER ALL;
@@ -2749,6 +2753,7 @@ Install libdvdcss2.
 
 After this open totem with command ''totem dvd://'' either form terminal or from ''Run'' dialog (Alt + F2)', NULL, '''f2'':29C ''alt'':28C ''dvd'':20C ''run'':26C ''form'':22C ''open'':15C ''page'':7C ''wiki'':6C ''pleas'':1C ''refer'':2C ''totem'':16C,19C ''dialog'':27C ''either'':21C ''instal'':11C ''termin'':23C ''command'':18C ''libdvdcss2'':12C ''help.ubuntu.com'':9C ''restrictedformat'':5C ''/restrictedformats'':10C ''help.ubuntu.com/restrictedformats'':8C');
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (22, 22, 1, 'Problem is solved. Thanks very much. Firefox now works after the changes were made in system ->preferences', NULL, '''made'':14C ''much'':6C ''solv'':3C ''work'':9C ''chang'':12C ''thank'':4C ''prefer'':17C ''system'':16C ''firefox'':7C ''problem'':1C');
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (23, 23, 1, 'What plugin does that? And how can I install it?', NULL, '''instal'':9C ''plugin'':2C');
 
 
 ALTER TABLE messagechunk ENABLE TRIGGER ALL;
@@ -9235,6 +9240,13 @@ INSERT INTO teamparticipation (id, team, person) VALUES (102, 65, 65);
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;
 
 
+ALTER TABLE temporaryblobstorage DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE temporaryblobstorage ENABLE TRIGGER ALL;
+
+
 ALTER TABLE ticket DISABLE TRIGGER ALL;
 
 INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (1, 11, 'Firefox cannot render Bank Site', 'Hello, I''m trying to access http://www.citibank.com/ and the page is not rendering correctly. Is there a setting I can use to get it right? Thanks.', NULL, NULL, 4, NULL, NULL, 10, 10, '2005-09-05 18:46:07.392021', '2005-09-05 18:46:07.392021', NULL, NULL, NULL, NULL, NULL, NULL, '''m'':8B ''get'':28B ''set'':23B ''tri'':9B ''use'':26B ''bank'':4A ''page'':15B ''site'':5A ''hello'':6B ''right'':30B ''thank'':31B ''access'':11B ''cannot'':2A ''render'':3A,18B ''correct'':19B ''firefox'':1A ''www.citibank.com'':12B', NULL, 119);
@@ -9242,8 +9254,8 @@ INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product
 INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (3, 16, 'Firefox is slow and consumes too much RAM', 'I''m running on a 486 with 32 MB ram. And Firefox is slow! What should I do?', NULL, 16, NULL, 1, 1, 30, 10, '2005-09-05 19:46:22.786269', '2005-09-05 19:46:22.786269', NULL, NULL, '2005-09-05 20:00:58.913139', '2005-09-05 20:00:58.913139', '2005-09-05 20:00:58.913139', NULL, '''m'':10B ''32'':16B ''mb'':17B ''486'':14B ''ram'':8A,18B ''run'':11B ''much'':7A ''slow'':3A,22B ''consum'':5A ''firefox'':1A,20B', NULL, 119);
 INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (4, 16, 'Firefox loses focus and gets stuck', 'Every now and then I can''t type anything in the fields on a web form, and I have to click my mouse in the URL bar. Is that normal?', NULL, NULL, 4, NULL, NULL, 10, 10, '2005-09-05 20:03:10.967079', '2005-09-05 20:03:10.967079', NULL, NULL, NULL, NULL, NULL, NULL, '''bar'':33B ''get'':5A ''url'':32B ''web'':21B ''form'':22B ''lose'':2A ''mous'':29B ''type'':14B ''anyth'':15B ''click'':27B ''everi'':7B ''field'':18B ''focus'':3A ''stuck'':6A ''normal'':36B ''firefox'':1A', NULL, 119);
 INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (5, 12, 'Installation failed', 'I can''t install Ubuntu, it fails to find my CD-ROM drive.', NULL, NULL, NULL, 1, NULL, 10, 10, '2005-10-13 09:08:27.006633', '2005-10-13 09:08:27.006633', NULL, NULL, NULL, NULL, NULL, NULL, '''cd'':14B ''rom'':15B ''fail'':2A,9B ''find'':11B ''drive'':16B ''cd-rom'':13B ''instal'':1A,6B ''ubuntu'':7B', NULL, 119);
-INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (6, 12, 'Newly installed plug-in doesn''t seem to be used', 'I''ve installed a new plug-in in Firefox, but it doesn''t seem to be used.', NULL, NULL, 4, NULL, NULL, 10, 10, '2005-10-14 12:24:14.271257', '2005-10-14 12:24:14.271257', NULL, NULL, '2005-10-14 12:25:21.508923', NULL, NULL, NULL, '''ve'':13B ''new'':16B ''use'':11A,29B ''plug'':4A,18B ''seem'':8A,26B ''doesn'':6A,24B ''newli'':1A ''instal'':2A,14B ''firefox'':21B ''plug-in'':3A,17B', NULL, 119);
-INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (7, 16, 'Slow system', 'I get really poor hard drive performance.', NULL, NULL, NULL, 1, NULL, 10, 10, '2005-10-14 13:27:35.664194', '2005-10-14 13:27:35.664194', NULL, NULL, '2005-10-14 13:28:11.554476', NULL, NULL, NULL, '''get'':4B ''hard'':7B ''poor'':6B ''slow'':1A ''drive'':8B ''realli'':5B ''system'':2A ''perform'':9B', NULL, 119);
+INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (6, 12, 'Newly installed plug-in doesn''t seem to be used', 'I''ve installed a new plug-in in Firefox, but it doesn''t seem to be used.', NULL, NULL, 4, NULL, NULL, 18, 10, '2005-10-14 12:24:14.271257', '2005-10-14 12:24:14.271257', NULL, NULL, '2005-10-14 12:25:21.508923', NULL, NULL, NULL, '''ve'':13B ''new'':16B ''use'':11A,29B ''plug'':4A,18B ''seem'':8A,26B ''doesn'':6A,24B ''newli'':1A ''instal'':2A,14B ''firefox'':21B ''plug-in'':3A,17B', NULL, 119);
+INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (7, 16, 'Slow system', 'I get really poor hard drive performance.', NULL, NULL, NULL, 1, NULL, 15, 10, '2005-10-14 13:27:35.664194', '2005-10-14 13:27:35.664194', NULL, NULL, '2005-10-14 13:28:11.554476', NULL, NULL, NULL, '''get'':4B ''hard'':7B ''poor'':6B ''slow'':1A ''drive'':8B ''realli'':5B ''system'':2A ''perform'':9B', NULL, 119);
 INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (8, 12, 'Installation of Java Runtime Environment for Mozilla', 'When opening http://www.gotomypc.com/ with Mozilla, a java run time ennvironment plugin is requested.
 
 1) The plugin finder service indicates that JRE is available
@@ -9251,14 +9263,14 @@ INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product
 3) clicking on "manual install" open java web site.......
 
 Question: what after?
-.......I have downloaded two available linux files "linux (self extracting)" and "linux RPM (self extracting)".', NULL, NULL, NULL, 1, 1, 10, 10, '2006-07-20 20:21:38.853569', '2006-07-20 20:21:38.853569', NULL, NULL, '2006-07-20 20:52:07.054216', NULL, NULL, NULL, '''1'':21B ''2'':31B ''3'':42B ''jre'':28B,35B ''rpm'':66B ''run'':15B ''two'':57B ''web'':49B ''file'':60B ''java'':3A,14B,48B ''next'':32B ''open'':9B,47B ''self'':62B,67B ''site'':50B ''time'':16B ''avail'':30B,37B,58B ''click'':43B ''indic'':26B,34B ''linux'':59B,61B,65B ''finder'':24B ''instal'':1A,41B,46B ''manual'':40B,45B ''plugin'':18B,23B ''runtim'':4A ''screen'':33B ''servic'':25B ''environ'':5A ''extract'':63B,68B ''mozilla'':7A,12B ''request'':20B,39B ''download'':56B ''ennviron'':17B ''question'':51B ''www.gotomypc.com'':10B', NULL, 119);
+.......I have downloaded two available linux files "linux (self extracting)" and "linux RPM (self extracting)".', NULL, NULL, NULL, 1, 1, 18, 10, '2006-07-20 20:21:38.853569', '2006-07-20 20:21:38.853569', NULL, NULL, '2006-07-20 20:52:07.054216', NULL, NULL, NULL, '''1'':21B ''2'':31B ''3'':42B ''jre'':28B,35B ''rpm'':66B ''run'':15B ''two'':57B ''web'':49B ''file'':60B ''java'':3A,14B,48B ''next'':32B ''open'':9B,47B ''self'':62B,67B ''site'':50B ''time'':16B ''avail'':30B,37B,58B ''click'':43B ''indic'':26B,34B ''linux'':59B,61B,65B ''finder'':24B ''instal'':1A,41B,46B ''manual'':40B,45B ''plugin'':18B,23B ''runtim'':4A ''screen'':33B ''servic'':25B ''environ'':5A ''extract'':63B,68B ''mozilla'':7A,12B ''request'':20B,39B ''download'':56B ''ennviron'':17B ''question'':51B ''www.gotomypc.com'':10B', NULL, 119);
 INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (9, 12, 'mailto: problem in webpage', 'I am not able to open my email client if i click on a mailto: link in a webpage in Firefox 1.5.0.4 (ubuntu dapper).
 
 Earlier I could do this but since balsa was installed and then uninstalled, things have not been the same. balsa used to start when a mailto: link was clicked on a webpage. balsa is an email client bundled with dapper.
 
-I am using thunderbird as the default email client or wish that it becomes default again.', NULL, 16, NULL, 1, 1, 20, 10, '2006-07-20 20:24:52.3877', '2006-07-20 20:56:35.442839', NULL, NULL, '2006-07-20 20:49:47.551344', '2006-07-20 20:56:35.442839', NULL, NULL, '''abl'':8B ''use'':49B,71B ''link'':20B,55B ''open'':10B ''sinc'':35B ''wish'':79B ''balsa'':36B,48B,61B ''becom'':82B ''bundl'':66B ''click'':16B,57B ''could'':31B ''email'':12B,64B,76B ''start'':51B ''thing'':42B ''client'':13B,65B,77B ''dapper'':28B,68B ''instal'':38B ''mailto'':1A,19B,54B ''ubuntu'':27B ''webpag'':4A,23B,60B ''1.5.0.4'':26B ''default'':75B,83B ''earlier'':29B ''firefox'':25B ''problem'':2A ''uninstal'':41B ''thunderbird'':72B', NULL, 119);
-INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (10, 12, 'Play DVDs in Totem', 'How do you play DVDs in Totem..........?', NULL, NULL, NULL, 1, NULL, 10, 10, '2006-07-20 20:34:29.635511', '2006-07-20 20:34:29.635511', NULL, NULL, '2006-07-20 20:53:53.684848', NULL, NULL, NULL, '''dvds'':2A,9B ''play'':1A,8B ''totem'':4A,11B', NULL, 119);
-INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (11, 12, 'Continue playing after shutdown', 'I want to be able to shut down and start a mp3 where I left off, because some mp3s are 16++ hours long.', NULL, NULL, NULL, 1, NULL, 10, 10, '2006-07-20 20:40:50.467875', '2006-07-20 20:40:50.467875', NULL, NULL, '2006-07-20 20:48:24.975495', NULL, NULL, NULL, '''16'':25B ''abl'':9B ''mp3'':16B ''hour'':26B ''left'':19B ''long'':27B ''mp3s'':23B ''play'':2A ''shut'':11B ''want'':6B ''start'':14B ''continu'':1A ''shutdown'':4A', NULL, 119);
+I am using thunderbird as the default email client or wish that it becomes default again.', NULL, 16, NULL, 1, 1, 20, 10, '2006-07-20 20:24:52.3877', '2006-07-20 20:56:35.442839', NULL, NULL, '2006-07-20 20:49:47.551344', '2006-07-20 20:56:35.442839', NULL, NULL, '''abl'':8B ''use'':49B,71B ''link'':20B,55B ''open'':10B ''sinc'':35B ''wish'':79B ''balsa'':36B,48B,61B ''becom'':82B ''bundl'':66B ''click'':16B,57B ''could'':31B ''email'':12B,64B,76B ''start'':51B ''thing'':42B ''client'':13B,65B,77B ''dapper'':28B,68B ''instal'':38B ''mailto'':1A,19B,54B ''ubuntu'':27B ''webpag'':4A,23B,60B ''1.5.0.4'':26B ''default'':75B,83B ''earlier'':29B ''firefox'':25B ''problem'':2A ''uninstal'':41B ''thunderbird'':72B', 4, 119);
+INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (10, 12, 'Play DVDs in Totem', 'How do you play DVDs in Totem..........?', NULL, NULL, NULL, 1, NULL, 18, 10, '2006-07-20 20:34:29.635511', '2006-07-20 20:34:29.635511', NULL, NULL, '2006-07-20 20:53:53.684848', NULL, NULL, NULL, '''dvds'':2A,9B ''play'':1A,8B ''totem'':4A,11B', NULL, 119);
+INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (11, 12, 'Continue playing after shutdown', 'I want to be able to shut down and start a mp3 where I left off, because some mp3s are 16++ hours long.', NULL, NULL, NULL, 1, NULL, 10, 10, '2006-07-20 20:40:50.467875', '2006-07-20 23:11:24.975495', NULL, NULL, '2006-07-20 20:48:24.975495', NULL, NULL, NULL, '''16'':25B ''abl'':9B ''mp3'':16B ''hour'':26B ''left'':19B ''long'':27B ''mp3s'':23B ''play'':2A ''shut'':11B ''want'':6B ''start'':14B ''continu'':1A ''shutdown'':4A', NULL, 119);
 
 
 ALTER TABLE ticket ENABLE TRIGGER ALL;
@@ -9273,13 +9285,14 @@ ALTER TABLE ticketbug ENABLE TRIGGER ALL;
 
 ALTER TABLE ticketmessage DISABLE TRIGGER ALL;
 
-INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (1, 6, 12, 30, 10);
-INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (2, 7, 13, 30, 10);
-INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (3, 11, 18, 30, 10);
-INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (4, 9, 19, 30, 10);
-INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (5, 8, 20, 30, 10);
-INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (6, 10, 21, 30, 10);
-INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (7, 9, 22, 30, 10);
+INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (1, 6, 12, 35, 18);
+INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (2, 7, 13, 10, 15);
+INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (3, 11, 18, 35, 18);
+INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (4, 9, 19, 35, 18);
+INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (5, 8, 20, 35, 18);
+INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (6, 10, 21, 35, 18);
+INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (7, 9, 22, 40, 20);
+INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (8, 11, 23, 80, 10);
 
 
 ALTER TABLE ticketmessage ENABLE TRIGGER ALL;
