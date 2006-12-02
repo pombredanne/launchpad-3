@@ -22,7 +22,7 @@ the query using the regular full text algorithm.
     ...     print ticket.title, ticket.status.title
     Firefox loses focus and gets stuck              Open
     mailto: problem in webpage                      Solved
-    Newly installed plug-in doesn't seem to be used Open
+    Newly installed plug-in doesn't seem to be used Answered
 
 === sort ===
 
@@ -32,24 +32,24 @@ one of the constant defined in the TicketSort enumeration.
 
     >>> from canonical.lp.dbschema import TicketSort
     >>> for ticket in foo_bar.searchTickets(
-    ...         search_text='firefox', sort=TicketSort.NEWEST_FIRST):
-    ...     print ticket.title, ticket.status.title
-    mailto: problem in webpage                      Solved
-    Newly installed plug-in doesn't seem to be used Open
-    Firefox loses focus and gets stuck              Open
+    ...         search_text='firefox', sort=TicketSort.OLDEST_FIRST):
+    ...     print ticket.id, ticket.title, ticket.status.title
+    4 Firefox loses focus and gets stuck              Open
+    6 Newly installed plug-in doesn't seem to be used Answered
+    9 mailto: problem in webpage                      Solved
 
 When no text search is done, the default sort order is
 TicketSort.NEWEST_FIRST.
 
     >>> for ticket in foo_bar.searchTickets():
-    ...     print ticket.title, ticket.status.title
-    Continue playing after shutdown                         Open
-    Play DVDs in Totem                                      Open
-    mailto: problem in webpage                              Solved
-    Installation of Java Runtime Environment for Mozilla    Open
-    Slow system                                             Open
-    Newly installed plug-in doesn't seem to be used         Open
-    Firefox loses focus and gets stuck                      Open
+    ...     print ticket.id, ticket.title, ticket.status.title
+    11 Continue playing after shutdown                      Open
+    10 Play DVDs in Totem                                   Answered
+     9 mailto: problem in webpage                           Solved
+     8 Installation of Java Runtime Environment for Mozilla Answered
+     7 Slow system                                          Needs information
+     6 Newly installed plug-in doesn't seem to be used      Answered
+     4 Firefox loses focus and gets stuck                   Open
 
 === status ===
 
@@ -142,8 +142,8 @@ The returned sets of tickets is the intersection of the sets delimited
 by each criteria:
 
     >>> for ticket in foo_bar.searchTickets(
-    ...         search_text='firefox OR Java', status=TicketStatus.OPEN,
+    ...         search_text='firefox OR Java', status=TicketStatus.ANSWERED,
     ...         participation=TicketParticipation.COMMENTER):
     ...     print ticket.title, ticket.status.title
-    Installation of Java Runtime Environment for Mozilla    Open
-    Newly installed plug-in doesn't seem to be used         Open
+    Installation of Java Runtime Environment for Mozilla    Answered
+    Newly installed plug-in doesn't seem to be used         Answered
