@@ -325,7 +325,7 @@ informing him of this fact is displayed.
     ...     user_browser.contents).first('p').renderContents()
     You didn't make any support requests for gnomebaker.
 
-=== Need Attention ====
+=== Need Attention ===
 
 A user can often forget which support requests need his attention. For
 this purpose, there is a 'Need Attention' report which displays the
@@ -488,7 +488,7 @@ requests made by the person.
     Slow system
     Firefox loses focus and gets stuck
 
-=== Need Attention ====
+=== Need Attention ===
 
 The 'Need Attention' link displays all the support requests that need
 the attention of that person.
