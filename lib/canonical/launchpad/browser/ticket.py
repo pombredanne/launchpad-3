@@ -15,6 +15,7 @@ __all__ = [
     'TicketSetContextMenu',
     'TicketSetNavigation',
     'TicketRejectView',
+    'TicketSetView',
     'TicketSubscriptionView',
     'TicketWorkflowView',
     ]
@@ -39,11 +40,34 @@ from canonical.launchpad.webapp import (
     LaunchpadEditFormView, custom_widget)
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.lp.dbschema import TicketAction, TicketStatus
+from canonical.lp.dbschema import TicketAction, TicketStatus, TicketSort
 
 class TicketSetNavigation(Navigation):
 
     usedfor = ITicketSet
+
+
+class TicketSetView:
+    """View for the support tracker index page."""
+
+    @property
+    def requests_count(self):
+        """Return the number of requests in the system."""
+        return self.context.searchTickets(status=None).count()
+
+    @property
+    def latest_requests_made(self):
+        """Return the 10 latest requests made."""
+        return self.context.searchTickets(
+            status=TicketStatus.OPEN, sort=TicketSort.NEWEST_FIRST)[:10]
+
+    @property
+    def latest_requests_resolved(self):
+        """Return the 10 latest requests solved."""
+        # XXX flacoste 2006/11/28 We should probably define a new
+        # TicketSort value allowing us to sort on dateanswered descending.
+        return self.context.searchTickets(
+            status=TicketStatus.SOLVED, sort=TicketSort.NEWEST_FIRST)[:10]
 
 
 class TicketSubscriptionView(LaunchpadView):
