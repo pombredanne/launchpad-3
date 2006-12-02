@@ -329,9 +329,9 @@ informing him of this fact is displayed.
 
 A user can often forget which support requests need his attention. For
 this purpose, there is a 'Need Attention' report which displays the
-support requests made by the user which requires a reply. It also lists
+support requests made by the user which require a reply. It also lists
 the requests on which he provided an answer or requested for more
-information and that are now back in the 'Open' status.
+information and that are now back in the 'Open' state.
 
 He needs to login to access that page:
 

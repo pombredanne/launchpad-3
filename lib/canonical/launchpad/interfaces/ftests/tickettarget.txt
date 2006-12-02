@@ -240,10 +240,10 @@ parameter.
 === needs_attention_from ===
 
 You can also search among the tickets that needs the attention of
-somebody. A ticket needs the attention of a user if he owns the ticket
-and that ticket is in the NEEDSINFO or ANSWERED state. Ticket that the
-user answered or ask info on and that received a reply are also
-included.
+somebody. A ticket needs the attention of a user if he owns it and that
+it is in the NEEDSINFO or ANSWERED state. Tickets on which the user gave
+an answer or requested for more information and that are back in the
+OPEN state are also included.
 
     # One of Sample Person's ticket gets to need attention from Foo Bar.
     >>> login('foo.bar@canonical.com')

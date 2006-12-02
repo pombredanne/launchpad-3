@@ -64,11 +64,11 @@ class ITicketTarget(Interface):
 
         :owner: The IPerson that created the ticket.
 
-        :needs_attention_from: Selects tickets that needs attention from an
-        IPerson. These are the tickets in the NEEDSINFO and ANSWERED states
+        :needs_attention_from: Selects tickets that nee attention from an
+        IPerson. These are the tickets in the NEEDSINFO or ANSWERED state
         owned by the person. The tickets not owned by the person but on which
-        the person requested more information or gave an answer and that are
-        back in the OPEN state are also included.
+        the person requested for more information or gave an answer and that
+        are back in the OPEN state are also included.
 
         :sort:  An attribute of TicketSort. If None, a default value is used.
         When there is a search_text value, the default is to sort by RELEVANCY,
