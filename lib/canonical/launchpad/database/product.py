@@ -5,6 +5,9 @@
 __metaclass__ = type
 __all__ = ['Product', 'ProductSet']
 
+
+from operator import attrgetter
+
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -282,11 +285,14 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
     def support_contacts(self):
         """See ITicketTarget."""
         support_contacts = SupportContact.selectBy(product=self)
+        return sorted(
+            [support_contact.person for support_contact in support_contacts],
+            key=attrgetter('displayname'))
 
-        return shortlist([
-            support_contact.person for support_contact in support_contacts
-            ],
-            longest_expected=100)
+    @property
+    def direct_support_contacts(self):
+        """See ITicketTarget."""
+        return self.support_contacts
 
     @property
     def ticket_languages(self):

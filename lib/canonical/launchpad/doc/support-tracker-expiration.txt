@@ -1,5 +1,4 @@
-Support Requests Expiration
-===========================
+= Support Requests Expiration =
 
 It is not productive to have support requests lying around forever in
 the support tracker. That's why we have a script which runs daily to
@@ -22,7 +21,7 @@ Only tickets in the OPEN or NEEDSINFO state are subject to expiration.
     >>> from canonical.lp.dbschema import TicketStatus
     >>> Ticket.select('status IN (%i,%i)' % (
     ...     TicketStatus.OPEN.value, TicketStatus.NEEDSINFO.value)).count()
-    11
+    8
 
     # By default, all open and needs info ticket should expire. Make
     # sure that no new tickets were recently added and will make this
@@ -97,8 +96,8 @@ Only tickets in the OPEN or NEEDSINFO state are subject to expiration.
     INFO    creating lockfile
     INFO    Expiring OPEN and NEEDSINFO tickets without activity for the
             last 15 days.
-    INFO    Found 9 tickets to expire.
-    INFO    Expired 9 tickets.
+    INFO    Found 6 tickets to expire.
+    INFO    Expired 6 tickets.
     INFO    Finished expiration run.
     <BLANKLINE>
     >>> print out

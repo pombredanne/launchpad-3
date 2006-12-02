@@ -774,13 +774,13 @@ no results are found based on the selected search filter:
 It works also with user submitted values:
 
     >>> search_view_harness.submit('search', {
-    ...     'field.status': ['Answered'],
+    ...     'field.status': ['Expired'],
     ...     'field.search_text': '',
     ...     'field.sort': 'by relevancy'})
     >>> print translate(search_view_harness.view.pageheading)
-    Answered support requests for Ubuntu
+    Expired support requests for Ubuntu
     >>> print translate(search_view_harness.view.empty_listing_message)
-    There are no answered support requests for Ubuntu.
+    There are no expired support requests for Ubuntu.
 
     >>> search_view_harness.submit('search', {
     ...     'field.status': ['Open', 'Answered'],
