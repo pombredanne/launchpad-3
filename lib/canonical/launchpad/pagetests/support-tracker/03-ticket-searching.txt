@@ -236,7 +236,6 @@ recent requests on Mozilla Firefox.
     >>> tickets = find_tag_by_id(browser.contents, 'ticket-listing')
     >>> for ticket in tickets.fetch('td', 'ticket'):
     ...     print ticket.first('a').renderContents()
-    Newly installed plug-in doesn't seem to be used
     Firefox loses focus and gets stuck
     Problem showing the SVG demo on W3C site
     Firefox cannot render Bank Site
@@ -250,7 +249,6 @@ problems:
     >>> tickets = find_tag_by_id(browser.contents, 'ticket-listing')
     >>> for ticket in tickets.fetch('td', 'ticket'):
     ...     print ticket.first('a').renderContents()
-    Newly installed plug-in doesn't seem to be used
     Problem showing the SVG demo on W3C site
 
 Answered Requests
@@ -270,16 +268,18 @@ support requests.)
     >>> tickets = find_tag_by_id(browser.contents, 'ticket-listing')
     >>> for ticket in tickets.fetch('td', 'ticket'):
     ...     print ticket.first('a').renderContents()
+    Play DVDs in Totem
     mailto: problem in webpage
+    Installation of Java Runtime Environment for Mozilla
 
-This report is also searchable. He's having a problem with Java, so he
-enters 'Java' as a keyword and hits the search button.
+This report is also searchable. He's having a problem with Evolution, so he
+enters 'Evolution' as a keyword and hits the search button.
 
-    >>> browser.getControl(name='field.search_text').value = 'Java'
+    >>> browser.getControl(name='field.search_text').value = 'Evolution'
     >>> browser.getControl('Search').click()
 
     >>> print find_main_content(browser.contents).first('p').renderContents()
-    There are no answered support requests about "Java" for Ubuntu.
+    There are no answered support requests about "Evolution" for Ubuntu.
 
 My Requests
 ~~~~~~~~~~~
