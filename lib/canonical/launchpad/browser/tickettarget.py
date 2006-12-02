@@ -10,7 +10,7 @@ __all__ = [
     'TicketTargetFacetMixin',
     'TicketTargetLatestTicketsView',
     'TicketTargetSearchMyTicketsView',
-    'TicketTargetSearchNeedsAttentionView',
+    'TicketTargetSearchNeedAttentionView',
     'TicketTargetTraversalMixin',
     'TicketTargetSupportMenu',
     ]
@@ -250,8 +250,8 @@ class TicketTargetSearchMyTicketsView(SearchTicketsView):
                 'status': set(TicketStatus.items)}
 
 
-class TicketTargetSearchNeedsAttentionView(SearchTicketsView):
-    """SearchTicketsView specialization for the 'Needs Attention' report.
+class TicketTargetSearchNeedAttentionView(SearchTicketsView):
+    """SearchTicketsView specialization for the 'Need Attention' report.
 
     It displays and searches the support requests needing attention from the
     logged in user in a tickettarget context.
@@ -378,7 +378,7 @@ class TicketTargetSupportMenu(ApplicationMenu):
 
     usedfor = ITicketTarget
     facet = 'support'
-    links = ['open', 'answered', 'myrequests', 'needs_attention', 'new',
+    links = ['open', 'answered', 'myrequests', 'need_attention', 'new',
              'support_contact']
 
     def makeSearchLink(self, statuses):
@@ -402,9 +402,9 @@ class TicketTargetSupportMenu(ApplicationMenu):
         text = 'My Requests'
         return Link('+mytickets', text, icon='ticket')
 
-    def needs_attention(self):
-        text = 'Needs Attention'
-        return Link('+needs-attention', text, icon='ticket')
+    def need_attention(self):
+        text = 'Need Attention'
+        return Link('+need-attention', text, icon='ticket')
 
     def new(self):
         text = 'Request Support'

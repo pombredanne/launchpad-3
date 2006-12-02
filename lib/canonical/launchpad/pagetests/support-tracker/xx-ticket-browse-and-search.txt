@@ -325,10 +325,10 @@ informing him of this fact is displayed.
     ...     user_browser.contents).first('p').renderContents()
     You didn't make any support requests for gnomebaker.
 
-=== Needs Attention ====
+=== Need Attention ====
 
-A user can often forget which support requests needs his attention. For
-this purpose, there is a 'Needs Attention' report which displays the
+A user can often forget which support requests need his attention. For
+this purpose, there is a 'Need Attention' report which displays the
 support requests made by the user which requires a reply. It also lists
 the requests on which he provided an answer or requested for more
 information and that are now back in the 'Open' status.
@@ -336,13 +336,13 @@ information and that are now back in the 'Open' status.
 He needs to login to access that page:
 
     >>> anon_browser.open('http://launchpad.dev/distros/ubuntu/+tickets')
-    >>> anon_browser.getLink('Needs Attention').click()
+    >>> anon_browser.getLink('Need Attention').click()
     Traceback (most recent call last):
       ...
     Unauthorized...
 
     >>> user_browser.open('http://launchpad.dev/distros/ubuntu/+tickets')
-    >>> user_browser.getLink('Needs Attention').click()
+    >>> user_browser.getLink('Need Attention').click()
     >>> print user_browser.title
     Support requests needing your attention for Ubuntu
     >>> tickets = find_tag_by_id(user_browser.contents, 'ticket-listing')
@@ -365,7 +365,7 @@ If the there is no support requests needing the user's attention,
 a message informing him of this fact is displayed.
 
     >>> user_browser.open('http://launchpad.dev/products/gnomebaker/+tickets')
-    >>> user_browser.getLink('Needs Attention').click()
+    >>> user_browser.getLink('Need Attention').click()
     >>> print find_main_content(
     ...     user_browser.contents).first('p').renderContents()
     No support requests need your attention for gnomebaker.

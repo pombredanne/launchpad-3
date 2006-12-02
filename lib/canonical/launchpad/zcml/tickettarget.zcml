@@ -21,8 +21,8 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.ITicketTarget"
-    class="canonical.launchpad.browser.TicketTargetSearchNeedsAttentionView"
-    name="+needs-attention"
+    class="canonical.launchpad.browser.TicketTargetSearchNeedAttentionView"
+    name="+need-attention"
     permission="launchpad.AnyPerson" />
 
   <browser:page
