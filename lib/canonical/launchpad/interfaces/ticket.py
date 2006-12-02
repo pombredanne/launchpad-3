@@ -97,8 +97,7 @@ class ITicket(IHasOwner):
     whiteboard = Text(title=_('Status Whiteboard'), required=False,
         description=_('Up-to-date notes on the status of the request.'))
     # other attributes
-    target = Attribute('The product or distribution to which this ticket '
-        'belongs.')
+    target = Attribute('The ITicketTarget that is associated to this ticket.')
 
     # joins
     subscriptions = Attribute('The set of subscriptions to this ticket.')

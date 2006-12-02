@@ -176,7 +176,7 @@ He clicks on the link to read the ticket description.
 
     >>> browser.getLink('Firefox is slow').click()
     >>> browser.title
-    'Ubuntu support request #3:...Firefox is slow...'
+    'mozilla-firefox in ubuntu support request #3:...Firefox is slow...'
 
 
 Controlling the Sort Order

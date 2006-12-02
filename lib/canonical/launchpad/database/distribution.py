@@ -3,6 +3,8 @@
 __metaclass__ = type
 __all__ = ['Distribution', 'DistributionSet']
 
+from operator import attrgetter
+
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -448,8 +450,8 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
             ticket = Ticket.get(ticket_id)
         except SQLObjectNotFound:
             return None
-        # Now verify that that ticket is actually for this target.
-        if ticket.target != self:
+        # Now verify that that ticket is actually for this distribution.
+        if ticket.distribution != self:
             return None
         return ticket
 
@@ -487,10 +489,14 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         support_contacts = SupportContact.select(
             """distribution = %d AND sourcepackagename IS NULL""" % self.id)
 
-        return shortlist([
-            support_contact.person for support_contact in support_contacts
-            ],
-            longest_expected=100)
+        return sorted(
+            [support_contact.person for support_contact in support_contacts],
+            key=attrgetter('displayname'))
+
+    @property
+    def direct_support_contacts(self):
+        """See ITicketTarget."""
+        return self.support_contacts
 
     def ensureRelatedBounty(self, bounty):
         """See IDistribution."""

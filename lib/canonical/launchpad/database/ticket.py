@@ -132,7 +132,11 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         """See ITicket."""
         if self.product:
             return self.product
-        return self.distribution
+        elif self.sourcepackagename:
+            return self.distribution.getSourcePackage(
+                self.sourcepackagename.name)
+        else:
+            return self.distribution
 
     @property
     def followup_subject(self):
@@ -146,11 +150,6 @@ class Ticket(SQLBase, BugLinkTargetMixin):
 
     def isSubscribed(self, person):
         return bool(TicketSubscription.selectOneBy(ticket=self, person=person))
-
-    def _isTargetOwnerOrAdmin(self, user):
-        """Check whether user is a target owner or admin."""
-        admin = getUtility(ILaunchpadCelebrities).admin
-        return user.inTeam(self.target.owner) or user.inTeam(admin)
 
     # Workflow methods
 
@@ -299,7 +298,11 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         for contact in self.target.support_contacts:
             if user.inTeam(contact):
                 return True
-        return self._isTargetOwnerOrAdmin(user)
+        admin = getUtility(ILaunchpadCelebrities).admin
+        # self.target can return a source package, we want the
+        # pillar target.
+        context = self.product or self.distribution
+        return user.inTeam(context.owner) or user.inTeam(admin)
 
     @notify_ticket_modified()
     def reject(self, user, comment, datecreated=None):
@@ -376,13 +379,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
 
     def getIndirectSubscribers(self):
         """See ITicket."""
-        support_contacts = set(self.target.support_contacts)
-        if self.sourcepackagename:
-            source_package = self.target.getSourcePackage(
-                self.sourcepackagename.name)
-            support_contacts.update(source_package.support_contacts)
-
-        return sorted(support_contacts, key=operator.attrgetter('name'))
+        return self.target.support_contacts
 
     def _newMessage(self, owner, content, action, new_status, subject=None,
                     datecreated=None, update_ticket_dates=True):
