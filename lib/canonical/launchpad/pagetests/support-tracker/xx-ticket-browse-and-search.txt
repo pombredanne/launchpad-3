@@ -488,6 +488,20 @@ requests made by the person.
     Slow system
     Firefox loses focus and gets stuck
 
+=== Need Attention ====
+
+The 'Need Attention' link displays all the support requests that need
+the attention of that person.
+
+    >>> browser.getLink('Need Attention').click()
+    >>> print browser.title
+    Support requests needing Foo Bar attention
+    >>> tickets = find_tag_by_id(browser.contents, 'ticket-listing')
+    >>> for ticket in tickets.fetch('td', 'ticket'):
+    ...     print ticket.first('a').renderContents()
+    Continue playing after shutdown
+    Slow system
+
 === Subscribed ===
 
 Foo Bar can find all the support requests to which he is subscribed by
