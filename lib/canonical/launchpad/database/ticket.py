@@ -522,6 +522,9 @@ class TicketSearch:
             self.status = status
 
         self.sort = sort
+        if needs_attention_from is not None:
+            assert IPerson.providedBy(needs_attention_from), (
+                "expected IPerson, got %r" % needs_attention_from)
         self.needs_attention_from = needs_attention_from
 
         self.product = product
@@ -691,9 +694,15 @@ class TicketPersonSearch(TicketSearch):
 
     def __init__(self, person, search_text=None,
                  status=TICKET_STATUS_DEFAULT_SEARCH,
-                 participation=None, sort=None):
+                 participation=None, needs_attention=False, sort=None):
+        if needs_attention:
+            needs_attention_from = person
+        else:
+            needs_attention_from = None
+
         TicketSearch.__init__(
-            self, search_text=search_text, status=status, sort=sort)
+            self, search_text=search_text, status=status,
+            needs_attention_from=needs_attention_from, sort=sort)
 
         assert IPerson.providedBy(person), "expected IPerson, got %r" % person
         self.person = person

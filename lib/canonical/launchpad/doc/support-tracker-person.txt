@@ -136,6 +136,19 @@ will be selected:
     Firefox loses focus and gets stuck
     Firefox is slow and consumes too much RAM
 
+=== needs_attention ===
+
+The method accept a parameter called needs_attention which only selects
+the tickets that needs attention from the person. This includes tickets
+owned by the person in the ANSWERED or NEEDSINFO state. It also includes
+tickets on which the person requested for more information or gave an
+answer and that are back in the OPEN state.
+
+    >>> for ticket in foo_bar.searchTickets(needs_attention=True):
+    ...     print ticket.status.title, ticket.owner.displayname, ticket.title
+    Open              Sample Person Continue playing after shutdown
+    Needs information Foo Bar       Slow system
+
 === Combination ===
 
 The returned sets of tickets is the intersection of the sets delimited
