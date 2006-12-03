@@ -146,7 +146,12 @@ But first, let's see current values.
     >>> pofile_es.rosettaCount()
     0
 
-Now we do the submit
+Now we do a submission with new translations:
+
+ - msgset_*_new are the translations we are adding.
+ - msgset_*_new_checkbox are the flags to tell us whether the translation
+   submitted in its corresponding msgset_*_new variable should be taken in
+   consideration (if True) or just ignored (False).
 
     >>> request = LaunchpadTestRequest(form={
     ...     'batch': '10',

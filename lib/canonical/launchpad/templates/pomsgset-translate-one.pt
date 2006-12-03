@@ -119,7 +119,9 @@
 </tr>
 <tal:language-code
   define="language_code context/pofile/language/code">
-  <tal:plural-forms repeat="plural_index view/pluralform_indices">
+  <tal:translations-tuple
+       repeat="translations_tuple view/translations_tuples">
+  <tal:plural-form define="plural_index translations_tuple/plural_index">
     <tr class="secondary">
       <th colspan="3">
         <label class="language-code">Current
@@ -129,19 +131,20 @@
                        tal:condition="view/is_plural">[0]</span>:
         </label>
       </th>
-      <tal:with-content condition="python:view.getActiveTranslation(plural_index)">
+      <tal:with-content
+           condition="translations_tuple/active_translation">
         <td>
           <input type="image" src="/@@/copy" title="Copy text"
             tal:attributes="
               name string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_copy"
           />
         </td>
-        <td tal:content="structure python:view.getActiveTranslation(plural_index)">
+        <td tal:content="structure translations_tuple/active_translation">
           current translation
         </td>
       </tal:with-content>
       <tal:without-content
-        condition="python:view.getActiveTranslation(plural_index) is None">
+        condition="not: translations_tuple/active_translation">
         <td />
         <td>
           (no translation yet)
@@ -149,7 +152,7 @@
       </tal:without-content>
     </tr>
     <tal:selection
-      define="selection python:view.context.getSelection(plural_index)"
+      define="selection translations_tuple/selection"
       condition="selection">
       <tr class="discreet secondary"
           tal:condition="selection/activesubmission">
@@ -180,20 +183,23 @@
         </td>
       </tr>
     </tal:selection>
-    <tal:suggestion_block define="suggestion_block python:view.suggestion_blocks[plural_index]">
+    <tal:suggestion_block define="suggestion_block translations_tuple/suggestion_block">
       <tal:suggestions repeat="suggestions suggestion_block">
         <div tal:replace="structure suggestions/@@+display" />
       </tal:suggestions>
     </tal:suggestion_block>
     <tr class="discreet secondary">
       <th colspan="3">
-        <label>New suggestion:</label>
+        <label
+         tal:attributes="
+            for string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_checkbox;
+            " >New suggestion:</label>
       </th>
       <td>
         <input
           type="checkbox"
           tal:attributes="
-            checked python:view.store_flags[plural_index];
+            checked translations_tuple/store_flag;
             name string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_checkbox;
             id string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_checkbox;
             onClick string:javascript:setFocusByName('msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new');
@@ -201,7 +207,7 @@
       </td>
       <td>
         <tal:with-content
-          condition="python:view.getTranslation(plural_index)">
+          condition="translations_tuple/translation">
           <textarea
             style="width: 100%;"
             rows=6
@@ -209,12 +215,13 @@
               name string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new;
               lang context/pofile/language/dashedcode;
               dir context/pofile/language/abbreviated_text_dir;
-              onFocus string:javascript:checkCheckBox('msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_checkbox');
+              onKeyPress string:javascript:selectWidget('msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_checkbox', event);
+              onChange string:javascript:selectWidget('msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_checkbox', event);
             ">
-<tal:content replace="python:view.getTranslation(plural_index)" /></textarea>
+<tal:content replace="translations_tuple/translation" /></textarea>
         </tal:with-content>
         <tal:without-content
-          condition="python: not view.getTranslation(plural_index)">
+          condition="not: translations_tuple/translation">
           <textarea
             style="width: 100%;"
             rows=6
@@ -222,12 +229,14 @@
               name string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new;
               lang context/pofile/language/dashedcode;
               dir context/pofile/language/abbreviated_text_dir;
-              onFocus string:javascript:checkCheckBox('msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_checkbox');
+              onKeyPress string:javascript:selectWidget('msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_checkbox', event);
+              onChange string:javascript:selectWidget('msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_checkbox', event);
             "></textarea>
         </tal:without-content>
       </td>
     </tr>
-  </tal:plural-forms>
+  </tal:plural-form>
+  </tal:translations-tuple>
   <tr class="secondary">
     <td colspan="4" />
     <td>

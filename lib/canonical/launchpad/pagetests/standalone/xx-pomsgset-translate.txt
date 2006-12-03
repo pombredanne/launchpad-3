@@ -116,8 +116,18 @@ Now, we are going to check a message submission.
 
 Check that the message #13 is without translation.
 
+First what we represent in the form when there is no translation:
+
   >>> '(no translation yet)' in browser.contents
   True
+
+And now its database value:
+
+  >>> from canonical.launchpad.database import POTMsgSet
+  >>> potmsgset = POTMsgSet.get(142)
+  >>> pomsgset = potmsgset.getPOMsgSet('es')
+  >>> pomsgset.active_texts
+  [None]
 
 And also, we don't get anyone as the Last translator because there is no
 translation at all ;-)
@@ -137,11 +147,12 @@ Let's submit an invalid value for this message #13.
   >>> "format specifications in 'msgid' and 'msgstr' for argument 1 are not the same" in browser.contents
   True
 
-XXX: CarlosPerelloMarin 20060824: The test has an extra '\n' char as the first
-character to workaround bug #47511.
+The message is still without translation:
 
   >>> '(no translation yet)' in browser.contents
   True
+  >>> pomsgset.active_texts
+  [None]
 
 And now a good submit.
 
@@ -168,6 +179,8 @@ Check that the message #13 has the new value we submitted.
   False
   >>> 'foo %s' in browser.contents
   True
+  >>> pomsgset.active_texts
+  [u'foo %s']
 
 And now, we get someone as the Translator and also, we have a reviewer (in
 this case, it's the same):

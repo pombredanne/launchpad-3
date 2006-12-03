@@ -6,7 +6,7 @@ the ids between 130 and 151 and, by default, the batch are of 10 items.
 
 We define first a function we are going to use in this test.
 
-  >>> def print_shown_translations(browser):
+  >>> def print_shown_messages(browser):
   ...     """Print the id/value of all shown translations on the page."""
   ...     from canonical.launchpad.database import POTMsgSet
   ...
@@ -34,7 +34,7 @@ first batch of entries:
   >>> browser.url
   'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=untranslated'
 
-  >>> print_shown_translations(browser)
+  >>> print_shown_messages(browser)
   (133, None)
   (135, None)
   (136, None)
@@ -53,7 +53,7 @@ The set of messages that are untranslated in the second batch:
   >>> browser.url
   'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=untranslated&start=10'
 
-  >>> print_shown_translations(browser)
+  >>> print_shown_messages(browser)
   (149, None)
   (150, None)
   (151, None)
@@ -65,7 +65,7 @@ Now, we are going to select the amount of entries that need to be reviewed.
   >>> browser.url
   'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=need_review'
 
-  >>> print_shown_translations(browser)
+  >>> print_shown_messages(browser)
   (132, u'tiene ')
   (146, u'%d foo')
 

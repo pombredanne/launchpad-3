@@ -12,7 +12,7 @@ class IPOSubmissionSet(Interface):
     """The set of submissions we have in our database."""
 
     def getPOSubmissionByID(id):
-        """Return the IPOsubmission with the given id.
+        """Return the IPOsubmission with the given id or None.
 
         :arg id: IPOSubmission.id
         """

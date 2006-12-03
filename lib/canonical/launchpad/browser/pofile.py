@@ -380,46 +380,6 @@ class POFileTranslateView(BaseTranslationView):
         self._redirectToNextPage()
         return True
 
-    def _submitCopyRequest(self):
-        """See BaseTranslationView._submitCopyRequest."""
-        search_pattern = 'msgset_(\d+)_(singular|plural'
-        for plural_index in range(self.pofile.language.pluralforms):
-            search_pattern = '%s|(%s_translation_%d)' % (
-                search_pattern, self.context.language.code, plural_index)
-            search_pattern = '%s|((\S+)_suggestion_(\d+)_%d)' % (
-                search_pattern, plural_index)
-        search_pattern = '%s)_copy\.(x|y)' % search_pattern
-        found_copy = False
-        for key in self.request.form:
-            match = re.match(search_pattern, key)
-            if match is not None and not found_copy:
-                # group #1 is the potmsgset.id
-                potmsgset_id = int(match.group(1))
-                potmsgset = self.pofile.potemplate.getPOTMsgSetByID(
-                    potmsgset_id)
-                pomsgset = potmsgset.getPOMsgSet(
-                    self.pofile.language.code, self.pofile.variant)
-                if pomsgset is None:
-                    pomsgset = self.pofile.createMessageSetFromMessageSet(
-                        potmsgset)
-                self._copyTranslation(pomsgset, key)
-                found_copy = True
-            else:
-                # Let's extract the field values so the user doesn't lose any other
-                # change in the form. This will not modify our database, we use them
-                # just to display their changes again in the web UI.
-                match = re.match('msgset_(\d+)', key)
-                if match is not None:
-                    potmsgset_id = int(match.group(1))
-                    potmsgset = self.pofile.potemplate.getPOTMsgSetByID(
-                        potmsgset_id)
-                    pomsgset = potmsgset.getPOMsgSet(
-                        self.pofile.language.code, self.pofile.variant)
-                    if pomsgset is None:
-                        pomsgset = self.pofile.createMessageSetFromMessageSet(
-                            potmsgset)
-                    self._extractFormPostedTranslations(pomsgset)
-
     def _buildRedirectParams(self):
         parameters = BaseTranslationView._buildRedirectParams(self)
         if self.show and self.show != self.DEFAULT_SHOW:

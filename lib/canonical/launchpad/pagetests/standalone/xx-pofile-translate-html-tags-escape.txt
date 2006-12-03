@@ -13,7 +13,8 @@ We need to do a copy so we fill the textarea.
   >>> print user_browser.contents
   <!DOCTYPE html PUBLIC...
                       name="msgset_67_hr_translation_0_new"
-                      dir="ltr">
+                      dir="ltr"
+                      onkeypress="javascript:selectWidget('msgset_67_hr_translation_0_new_checkbox', event)">
   Upotreba:
   
   %s [opcije] &lt;uređaj&gt; [&lt;etiketa&gt;]

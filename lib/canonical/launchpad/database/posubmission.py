@@ -8,7 +8,7 @@ __all__ = [
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey, IntCol, SQLMultipleJoin
+from sqlobject import ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
@@ -19,13 +19,17 @@ from canonical.lp.dbschema import (EnumCol, RosettaTranslationOrigin,
 
 from canonical.launchpad.interfaces import IPOSubmission, IPOSubmissionSet
 
+
 class POSubmissionSet:
 
     implements(IPOSubmissionSet)
 
     def getPOSubmissionByID(self, id):
         """See IPOSubmissionSet."""
-        return POSubmission.get(id)
+        try:
+            return POSubmission.get(id)
+        except SQLObjectNotFound:
+            return None
 
 
 class POSubmission(SQLBase):

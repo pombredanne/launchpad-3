@@ -32,9 +32,9 @@ answer should have exactly those strings.
   >>> soup = BeautifulSoup(browser.contents)
   >>> soup.find(attrs={"name" : "msgset_149_es_translation_0_new"})
   <textarea ... name="msgset_149_es_translation_0_new" ...>
-  
+
   foo
-  
+
   </textarea>
 
 And finally, a line that does not start with a new line so we are sure we
