@@ -38,7 +38,7 @@
                        define="project product/project">
         <b>Project:</b>
           <a tal:content="project/displayname"
-             tal:attributes="href string:/projects/${project/name}/" /><br />
+             tal:attributes="href string:/${project/name}/" /><br />
         <tal:has_proj_translationgrp condition="project/translationgroup">
           <b>Project translation group:</b><br />
           <a tal:content="project/translationgroup/title"

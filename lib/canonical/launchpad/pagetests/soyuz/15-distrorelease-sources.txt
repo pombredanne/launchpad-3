@@ -75,13 +75,13 @@ Product and Branches:
   <ul id="upstreams">
     <li>
       <b>Project:</b>
-      <a href="/projects/mozilla">the Mozilla Project</a>
+      <a href="/mozilla">the Mozilla Project</a>
     </li>
     <li><b>Product:</b>
-      <a href="/products/firefox">Mozilla Firefox</a>
+      <a href="/firefox">Mozilla Firefox</a>
     </li>
     <li><b>Branch: </b>
-      <a href="http://localhost/products/firefox/trunk">trunk</a><br />
+      <a href="http://localhost/firefox/trunk">trunk</a><br />
     </li>
     <small>(<a href="http://localhost/ubuntu/warty/+source/mozilla-firefox/+packaging">update</a>)</small>
   </ul>

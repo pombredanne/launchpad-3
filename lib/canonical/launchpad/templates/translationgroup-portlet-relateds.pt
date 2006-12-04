@@ -30,7 +30,7 @@
                   <a href="#"
                      tal:content="project/displayname"
                      tal:attributes="href
-                     string:/projects/${project/name}">Gnome</a>
+                     string:/${project/name}">Gnome</a>
                 </li>
             </ul>
 
