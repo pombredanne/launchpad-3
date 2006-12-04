@@ -225,7 +225,7 @@ but that is just for the needs of the demonstration.
   >>> user_browser.getControl('Product').value = 'firefox'
   >>> user_browser.getControl('Change Branch').click()
   >>> user_browser.url
-  'http://launchpad.dev/~name12/+branch/gnome-terminal/main/+edit'
+  'http://launchpad.dev/%7Ename12/+branch/gnome-terminal/main/+edit'
 
 This should have displayed an error message next to the name field.
 
@@ -249,7 +249,7 @@ branch, and changing the product and the branch name at the same time.
   >>> user_browser.getControl('Name').value = 'junk.dev'
   >>> user_browser.getControl('Change Branch').click()
   >>> user_browser.url
-  'http://launchpad.dev/~name12/+branch/gnome-terminal/main/+edit'
+  'http://launchpad.dev/%7Ename12/+branch/gnome-terminal/main/+edit'
   >>> from BeautifulSoup import BeautifulSoup
   >>> soup = BeautifulSoup(user_browser.contents)
   >>> print soup('div', {'class': 'message'})[0].renderContents()
@@ -266,7 +266,7 @@ combinations of changing name and product that can cause an error.
   >>> user_browser.getControl('Name').value = '2.6'
   >>> user_browser.getControl('Change Branch').click()
   >>> user_browser.url
-  'http://launchpad.dev/~name12/+branch/gnome-terminal/main/+edit'
+  'http://launchpad.dev/%7Ename12/+branch/gnome-terminal/main/+edit'
   >>> from BeautifulSoup import BeautifulSoup
   >>> soup = BeautifulSoup(user_browser.contents)
   >>> print soup('div', {'class': 'message'})[0].renderContents()
