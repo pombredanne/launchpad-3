@@ -165,7 +165,7 @@ same error message.
   >>> user_browser.getControl('Branch URL').value = 'http://example.com/gnome-terminal/main-dup'
   >>> user_browser.getControl('Add Branch').click()
   >>> user_browser.url
-  'http://launchpad.dev/~name12/+addbranch'
+  'http://launchpad.dev/%7Ename12/+addbranch'
   >>> user_browser.getControl('Name').value = 'main'
   >>> user_browser.getControl('Product').value = 'gnome-terminal'
   >>> user_browser.getControl('Add Branch').click()
