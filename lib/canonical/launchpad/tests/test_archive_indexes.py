@@ -1,10 +1,12 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 """Test native archive index generation for Soyuz."""
 
+import apt_pkg
 import email
 import os
 import shutil
 from StringIO import StringIO
+import tempfile
 from unittest import TestLoader
 
 from zope.component import getUtility
@@ -44,6 +46,7 @@ class TestNativeArchiveIndexes(LaunchpadZopelessTestCase):
         self.signingkey = getUtility(IGPGKeySet).get(1)
         self.section = getUtility(ISectionSet)['base']
         self.component = getUtility(IComponentSet)['main']
+        apt_pkg.InitSystem()
 
     def addMockFile(self, filename, content='nothing'):
         """Add a mock file in Librarian.
@@ -286,16 +289,8 @@ class TestNativeArchiveIndexes(LaunchpadZopelessTestCase):
              ],
             pub_binary.getIndexStanza().splitlines())
 
-        self.assertTrue(pub_binary.getIndexStanza().encode('utf-8'))
-
-
     def testBinaryStanzaWithApt(self):
         """Check a binary stanza with APT parser."""
-        import os
-        import tempfile
-        import apt_pkg
-        apt_pkg.InitSystem()
-
         pub_binary = self.getPubBinary()
 
         index_filename = tempfile.mktemp()
@@ -311,6 +306,25 @@ class TestNativeArchiveIndexes(LaunchpadZopelessTestCase):
         self.assertEqual(
             parser.Section.get('Description').splitlines(),
             ['Foo app is great', ' Well ...', ' it does nothing, though'])
+
+        os.remove(index_filename)
+
+    def testSourceStanzaWithApt(self):
+        """Check a source stanza with APT parser."""
+        pub_source = self.getPubSource()
+
+        index_filename = tempfile.mktemp()
+        index_file = open(index_filename, 'w')
+        index_file.write(pub_source.getIndexStanza().encode('utf-8'))
+        index_file.close()
+
+        parser = apt_pkg.ParseTagFile(open(index_filename))
+
+        parser.Step()
+
+        self.assertEqual(parser.Section.get('Package'), 'foo')
+        self.assertEqual(
+            parser.Section.get('Maintainer'), 'Foo Bar <foo@bar.com>')
 
         os.remove(index_filename)
 
