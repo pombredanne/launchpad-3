@@ -4,7 +4,8 @@
 </div>
 <div>
   including <strong tal:content="context/bugwatch_count">5</strong> links
-  to <strong tal:content="context/bugtracker_count">5</strong> bug trackers
+  to <strong tal:content="context/bugtracker_count">5</strong>
+  <a href="/malone/bugtrackers">bug trackers</a>
 </div>
 <div>
   and <strong class="demo">XXX</strong> CVE references

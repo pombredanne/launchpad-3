@@ -1,4 +1,7 @@
-.demo {background-color: #fee;} /* turned off for the demo */
+.demo {background-color: #fee;}
+
+/* Stuff browsers should do but don't: */
+tr {vertical-align: top;}
 
 body {
   position: relative;
@@ -1145,6 +1148,11 @@ table.summary tr {
 }
 table.summary td {
   padding-left: 0.5em;
+}
+table.summary ul, table.summary ul li {
+  list-style-position: inside;
+  margin: 0;
+  padding: 0;
 }
 th {
   text-align: right;
