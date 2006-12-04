@@ -16,7 +16,7 @@
         interface="canonical.launchpad.layers.LaunchpadLayer"/>
     <browser:skin
         name="rosetta"
-        interface="canonical.launchpad.layers.RosettaLayer"/>
+        interface="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:skin
         name="shipit"
         interface="canonical.launchpad.layers.ShipItLayer"/>

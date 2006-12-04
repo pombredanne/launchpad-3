@@ -39,7 +39,7 @@ the form is completely empty.
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
   >>> browser.open('http://localhost/translations/imports/2')
   >>> browser.url
-  'http://localhost/rosetta/imports/2'
+  'http://localhost/translations/imports/2'
   >>> browser.getControl(name='field.potemplatename').value
   ''
   >>> browser.getControl(name='field.path').value
@@ -50,14 +50,14 @@ Let's fill the information.
   >>> browser.getControl(name='field.potemplatename').value = 'alsa-utils'
   >>> browser.getControl(name='FORM_SUBMIT').click()
   >>> browser.url
-  'http://localhost/rosetta/imports'
+  'http://localhost/translations/imports'
 
 Now, as we already know the potemplatename, a new form load should
 give us that field with information.
 
-  >>> browser.open('http://localhost/rosetta/imports/2')
+  >>> browser.open('http://localhost/translations/imports/2')
   >>> browser.url
-  'http://localhost/rosetta/imports/2'
+  'http://localhost/translations/imports/2'
   >>> browser.getControl(name='field.potemplatename').value
   'alsa-utils'
 
@@ -65,9 +65,9 @@ Let's move to the .po file. By default, we don't know anything about it,
 but we can guess the language. As it's a guessed value, we warn the user so
 he checks that it's ok.
 
-  >>> browser.open('http://localhost/rosetta/imports/1')
+  >>> browser.open('http://localhost/translations/imports/1')
   >>> browser.url
-  'http://localhost/rosetta/imports/1'
+  'http://localhost/translations/imports/1'
   >>> browser.getControl(name='field.potemplatename').value
   ''
   >>> browser.getControl(name='field.path').value
@@ -82,13 +82,13 @@ Let's add the potemplatename information and confirm the language selection.
   >>> browser.getControl(name='field.potemplatename').value = 'alsa-utils'
   >>> browser.getControl(name='FORM_SUBMIT').click()
   >>> browser.url
-  'http://localhost/rosetta/imports'
+  'http://localhost/translations/imports'
 
 And reloading the form, we should get all that information.
 
-  >>> browser.open('http://localhost/rosetta/imports/1')
+  >>> browser.open('http://localhost/translations/imports/1')
   >>> browser.url
-  'http://localhost/rosetta/imports/1'
+  'http://localhost/translations/imports/1'
   >>> browser.getControl(name='field.potemplatename').value
   'alsa-utils'
   >>> browser.getControl(name='field.path').value

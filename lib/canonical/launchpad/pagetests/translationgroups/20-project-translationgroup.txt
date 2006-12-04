@@ -94,7 +94,7 @@ the relevant portlet.
   ...Translation Group:...
   ..."/@@/languages"...
   <BLANKLINE>
-              <a href="/rosetta/groups/polyglot/">The PolyGlot Translation Group</a><br />
+              <a href="/translations/groups/polyglot/">The PolyGlot Translation Group</a><br />
   <BLANKLINE>
   <BLANKLINE>
               <b>Translation Perms:</b><br />

@@ -404,6 +404,7 @@ class LaunchpadRootNavigation(Navigation):
         'specs': ISpecificationSet,
         'sprints': ISprintSet,
         'support': ITicketSet,
+        'translations': IRosettaApplication,
         '+builds': IBuilderSet,
         'bounties': IBountySet,
         '+code': IBazaarApplication,

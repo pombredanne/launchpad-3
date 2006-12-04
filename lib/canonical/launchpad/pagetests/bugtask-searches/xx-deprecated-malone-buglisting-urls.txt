@@ -8,7 +8,7 @@ The new URL path for bugs on a distro is:
 The old URL path for distro bugs still works, for now:
 
   >>> print http(r"""
-  ... GET /bugs/distros/debian HTTP/1.1
+  ... GET /bugs/debian HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -20,7 +20,7 @@ The URL path for bugs on a distro release is:
 The old URL path for distro release bugs still works, for now:
 
   >>> print http(r"""
-  ... GET /bugs/distros/debian/sid HTTP/1.1
+  ... GET /bugs/debian/sid HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
