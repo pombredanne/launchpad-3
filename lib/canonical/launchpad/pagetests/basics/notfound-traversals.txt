@@ -77,7 +77,6 @@ spider -- StuartBishop 20050822
 
 >>> check("/projects")
 >>> check("/projects/+all")
->>> check("/projects/+syncreview", auth=True)
 >>> check("/projects/+review", auth=True)
 >>> check("/projects/mozilla")
 >>> check("/projects/mozilla/firefox")
