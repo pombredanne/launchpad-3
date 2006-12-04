@@ -10,19 +10,22 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.sqlbase import cursor
+from sqlobject import ForeignKey, StringCol, BoolCol
+
+from canonical.database.sqlbase import cursor, SQLBase
 from canonical.launchpad.interfaces import (
-        NotFoundError, IPillarSet, IDistributionSet, IProductSet, IProjectSet
+        NotFoundError, IPillarNameSet, IPillarName,
+        IDistributionSet, IProductSet, IProjectSet,
         )
 
-__all__ = ['PillarSet']
+__all__ = ['PillarNameSet', 'PillarName']
 
 
-class PillarSet:
-    implements(IPillarSet)
+class PillarNameSet:
+    implements(IPillarNameSet)
 
     def __contains__(self, name):
-        """See IPillarSet."""
+        """See IPillarNameSet."""
         cur = cursor()
         cur.execute("SELECT TRUE FROM PillarName WHERE name=%(name)s", vars())
         if cur.fetchone() is None:
@@ -31,7 +34,7 @@ class PillarSet:
             return True
 
     def __getitem__(self, name):
-        """See IPillarSet."""
+        """See IPillarNameSet."""
         # We could attempt to do this in a single database query, but I
         # expect that doing two queries will be faster that OUTER JOINing
         # the Project, Product and Distribution tables (and this approach
@@ -61,4 +64,17 @@ class PillarSet:
             return getUtility(IProjectSet).get(project)
         else:
             return getUtility(IDistributionSet).get(distribution)
+
+
+class PillarName(SQLBase):
+    implements(IPillarName)
+
+    _table = 'PillarName'
+
+    name = StringCol(dbName='name', notNull=True, unique=True, alternateID=True)
+    product = ForeignKey(foreignKey='Product', dbName='product')
+    project = ForeignKey(foreignKey='Project', dbName='project')
+    distribution = ForeignKey(foreignKey='Distribution', dbName='distribution')
+    active = BoolCol(dbName='active', notNull=True, default=True)
+
 

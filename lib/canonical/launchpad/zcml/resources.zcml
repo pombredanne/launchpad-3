@@ -143,11 +143,11 @@
     <resource name="ubuntu-header-image4.png" file="../images/ubuntu-header-image4.png" />
 
     <!-- Shipit KUbuntu images (from www.kubuntu.org) -->
-    <resource name="kubuntu-header-bg-dapper.png"
-        file="../images/kubuntu-header-bg-dapper.png" />
-    <resource name="kubuntu-footer-bg-dapper.jpg"
-        file="../images/kubuntu-footer-bg-dapper.jpg" />
-    <resource name="kubuntu-header.png" file="../images/kubuntu-header.png" />
+    <resource name="kubuntu-header-bg"
+        file="../images/kubuntu-header-bg.png" />
+    <resource name="kubuntu-footer-bg"
+        file="../images/kubuntu-footer-bg.png" />
+    <resource name="kubuntu-header" file="../images/kubuntu-header.png" />
     <resource name="kubuntu-tab_off_ns1.gif" file="../images/kubuntu-tab_off_ns1.gif" />
     <resource name="kubuntu-tab_off_ns2.gif" file="../images/kubuntu-tab_off_ns2.gif" /> 
     <resource name="kubuntu-tab_on_ns2.gif" file="../images/kubuntu-tab_on_ns2.gif" />

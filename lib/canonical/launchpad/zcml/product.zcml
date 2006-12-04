@@ -33,7 +33,8 @@
         />
         <!-- ITicketTarget -->
         <allow attributes="getTicket searchTickets findSimilarTickets
-              support_contacts" />
+              support_contacts direct_support_contacts"
+              />
         <require permission="launchpad.AnyPerson"
             attributes="newTicket addSupportContact removeSupportContact" />
     </content>
@@ -45,6 +46,11 @@
         for="canonical.launchpad.interfaces.IProduct"
         name="+specs"
         layer="canonical.launchpad.layers.BlueprintLayer"
+        />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProduct"
+        name="+branches"
+        layer="canonical.launchpad.layers.CodeLayer"
         />
 
     <browser:defaultView
