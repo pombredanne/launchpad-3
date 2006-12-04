@@ -1,5 +1,11 @@
 = Package Cache System =
 
+First we do some needed initializations.
+
+  >>> from canonical.launchpad.ftests.harness import (
+  ...     LaunchpadZopelessTestSetup)
+  >>> LaunchpadZopelessTestSetup(dbuser='statistician').setUp()
+
   >>> import transaction
 
   >>> from canonical.launchpad.database import (
@@ -321,3 +327,6 @@ New values were stored:
   >>> warty_i386.package_count
   6
 
+Kill local transaction.
+
+  >>> LaunchpadZopelessTestSetup().tearDown()
