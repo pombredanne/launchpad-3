@@ -74,6 +74,8 @@ As well as limiting it to a specific source package:
     >>> similar_bugs.count()
     0
 
+== Private bugs ==
+
 Only bugs that the user has access to view will be searched. If we set
 the Firefox bug to private, and repeat the search as a user who isn't
 allowed to view it, only the Thunderbird bug will be returned this time.
@@ -96,3 +98,35 @@ allowed to view it, only the Thunderbird bug will be returned this time.
     >>> for bugtask in similar_bugs:
     ...     print bugtask.bug.title
     Thunderbird crashes
+
+    >>> login('test@canonical.com')
+    >>> firefox_svg_bug.private = False
+    >>> syncUpdate(firefox_svg_bug)
+
+== Ordering of search results ==
+
+Since the search uses OR to match bugs against the entered phrase, many
+bugs will be returned by a search. Since we usually want to display on
+a few number of bugs to the user, it's important that the results are
+ordered in a way that the bugs matching the phrase best are first in the
+list.
+
+When searching for similar bugs, the results are ordered by ranking the
+results of the fulltext search on the Bug table, so bugs that have a
+summary or description that match the phrase will be displayed first.
+
+    >>> similar_bugs = getUtility(IBugTaskSet).findSimilar(
+    ...     sample_person, "Another test bug for Thunderbird",
+    ...     distribution=ubuntu)
+    >>> for bugtask in similar_bugs:
+    ...     print bugtask.bug.title
+    another test bug
+    Thunderbird crashes
+
+    >>> similar_bugs = getUtility(IBugTaskSet).findSimilar(
+    ...     sample_person, "Another Thunderbird crash",
+    ...     distribution=ubuntu)
+    >>> for bugtask in similar_bugs:
+    ...     print bugtask.bug.title
+    Thunderbird crashes
+    another test bug
