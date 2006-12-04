@@ -228,7 +228,8 @@ class POTemplateView(LaunchpadView):
                 sourcepackagename=self.context.sourcepackagename,
                 distrorelease=self.context.distrorelease,
                 productseries=self.context.productseries,
-                potemplate=self.context)
+                potemplate=self.context,
+                format=RosettaFileFormat.XPI)
 
             self.request.response.addInfoNotification(
                 'Thank you for your upload. The file content will be imported'

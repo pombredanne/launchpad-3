@@ -9,7 +9,7 @@ from zope.component import getUtility
 from canonical.librarian.interfaces import ILibrarianClient
 #from canonical.launchpad.database import LibraryFileAlias
 from canonical.launchpad.interfaces import ITranslationImport
-from canonical.lp.dbschema import RosettaImportStatus
+from canonical.lp.dbschema import RosettaImportStatus, RosettaFileFormat
 
 import os
 
@@ -329,6 +329,7 @@ class MozillaSupport:
             "lasttranslatoremail" : None,
             "lasttranslatorname" : None,
             "header" : None,
+            "format" : RosettaFileFormat.XPI,
             "messages" : messages,
             }
 

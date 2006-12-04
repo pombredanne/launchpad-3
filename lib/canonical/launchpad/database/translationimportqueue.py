@@ -495,7 +495,7 @@ class TranslationImportQueue:
 
     def addOrUpdateEntry(self, path, content, is_published, importer,
         sourcepackagename=None, distrorelease=None, productseries=None,
-        potemplate=None, pofile=None):
+        potemplate=None, pofile=None, format=RosettaFileFormat.PO):
         """See ITranslationImportQueue."""
         if ((sourcepackagename is not None or distrorelease is not None) and
             productseries is not None):
@@ -582,7 +582,7 @@ class TranslationImportQueue:
                 importer=importer, sourcepackagename=sourcepackagename,
                 distrorelease=distrorelease, productseries=productseries,
                 is_published=is_published, potemplate=potemplate,
-                pofile=pofile)
+                pofile=pofile, format=format)
             return entry
 
     def addOrUpdateEntriesFromTarball(self, content, is_published, importer,
