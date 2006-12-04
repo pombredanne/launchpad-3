@@ -20,7 +20,8 @@
             />
         <!-- ITicketTarget -->
         <allow attributes="getTicket searchTickets findSimilarTickets
-              support_contacts" />
+              support_contacts direct_support_contacts"
+              />
         <require permission="launchpad.AnyPerson"
             attributes="newTicket addSupportContact removeSupportContact" />
     </content>
@@ -62,6 +63,14 @@
         permission="zope.Public"
         name="+archivemirrors"
         template="../templates/distribution-mirrors.pt" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IDistribution"
+        name="+archivemirrors-rss"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.DistributionArchiveMirrorsRSSView"
+        template="../templates/distribution-mirrors-rss.pt"
+        />
 
     <browser:page
         for="canonical.launchpad.interfaces.IDistribution"
@@ -384,11 +393,6 @@
         for="canonical.launchpad.interfaces.IDistributionSet"
         name="+index" />
 
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IDistributionSet"
-        layer="canonical.launchpad.layers.MaloneLayer"
-        name="+bugs" />
-
     <browser:navigation
         module="canonical.launchpad.browser"
         classes="DistributionSetNavigation"
@@ -400,8 +404,6 @@
         parent_utility="canonical.launchpad.interfaces.IDistributionSet"
         />
 
-    <!-- XXX: WTF is distros-index hooked onto +bugs for
-              kiko, 2005-09-09 -->
     <browser:pages
         for="canonical.launchpad.interfaces.IDistributionSet"
         permission="zope.Public"
@@ -411,10 +413,6 @@
             name="+index"
             template="../templates/distros-index.pt"
             lp:url="/distros/" />
-        <browser:page
-            name="+bugs"
-            template="../templates/distros-index.pt"
-            lp:url="/distros/+bugs" />
     </browser:pages>
 
     <browser:pages

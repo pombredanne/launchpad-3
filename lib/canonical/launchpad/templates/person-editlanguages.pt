@@ -1,4 +1,3 @@
-<tal:do-this-first tal:condition="view/processForm" />
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
@@ -7,26 +6,25 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-countrylangs" />
-    <div tal:replace="structure context/@@+portlet-browserlangs" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-preflangs" />
+  <div tal:replace="structure context/@@+portlet-countrylangs" />
+  <div tal:replace="structure context/@@+portlet-browserlangs" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main" >
 
   <h1>Your language preferences</h1>
 
-  <p>
-    Select the languages that you&#8217;re interested in translating into,
-    or that you want to keep track of the status of.
+  <p class="documentDescription">
+    Your preferred languages will be used for translations and support
+    requests.
   </p>
 
   <form action="" method="post">
     <input name="redirection_url" type="hidden" 
-    	   tal:attributes="value view/getRedirectionURL" />
+           tal:attributes="value view/getRedirectionURL" />
     <div class="listbox">
       <div tal:repeat="language view/visible_checked_languages">
         <label>

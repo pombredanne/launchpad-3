@@ -1582,7 +1582,10 @@ class DistroRelease(SQLBase, BugTargetBase):
             # only situation when we could have POSelection rows to update.
             logger_object.info('Updating POSelection table...')
             cur.execute('''
-                UPDATE POSelection SET activesubmission = ps2.id
+                UPDATE POSelection
+                    SET activesubmission = ps2.id,
+                        reviewer = psel1.reviewer,
+                        date_reviewed = psel1.date_reviewed
                     FROM
                         POTemplate AS pt1
                         JOIN POFile AS pf1 ON pf1.potemplate = pt1.id
@@ -1635,12 +1638,15 @@ class DistroRelease(SQLBase, BugTargetBase):
         logger_object.info('Filling POSelection table...')
         cur.execute('''
             INSERT INTO POSelection (
-                pomsgset, pluralform, activesubmission, publishedsubmission)
+                pomsgset, pluralform, activesubmission, publishedsubmission,
+                reviewer, date_reviewed)
             SELECT
                 pms2.id AS pomsgset,
                 psel1.pluralform AS pluralform,
                 psactive2.id AS activesubmission,
-                %s AS publishedsubmission
+                %s AS publishedsubmission,
+                psel1.reviewer AS reviewer,
+                psel1.date_reviewed AS date_reviewed
             FROM
                 POTemplate AS pt1
                 JOIN POFile AS pf1 ON pf1.potemplate = pt1.id

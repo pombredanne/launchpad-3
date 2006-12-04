@@ -372,6 +372,22 @@ Most recent published history row:
    >>> spph.section.name
    u'web'
 
+The changesfile attribute contains the package changelog. It is provided as
+an ILibraryFileAlias:
+
+   >>> firefox_srcrel =  warty.getSourcePackage(
+   ...    'mozilla-firefox').currentrelease
+   >>> firefox_srcrel.title
+   u'mozilla-firefox 0.9 (source) in ubuntu warty'
+
+   >>> firefox_srcrel.changesfile
+   <LibraryFileAlias at ...>
+
+If the package changelog is not available, that attribute is None:
+
+   >>> netapplet_srcrel.changesfile is None
+   True
+
 Perform `post publication` override:
 
    >>> new_section = getUtility(ISectionSet)['base']

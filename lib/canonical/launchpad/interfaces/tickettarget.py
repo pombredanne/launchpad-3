@@ -101,8 +101,17 @@ class ITicketTarget(Interface):
     support_contacts = List(
         title=_("Support Contacts"),
         description=_(
-            "Persons that will be automatically subscribed to new support"
-            " requests."),
+            "Persons that are willing to provide support for this target. "
+            "They receive email notifications about each new request as "
+            "well as for changes to any requests related to this target."),
+        value_type=Choice(vocabulary="ValidPersonOrTeam"))
+
+    direct_support_contacts = List(
+        title=_("Direct Support Contacts"),
+        description=_(
+            "IPersons that registered as support contacts explicitely on "
+            "this target. (support_contacts may include support contacts "
+            "inherited from other context.)"),
         value_type=Choice(vocabulary="ValidPersonOrTeam"))
 
 
@@ -123,12 +132,12 @@ class IManageSupportContacts(Interface):
 class ISearchTicketsForm(Interface):
     """Schema for the search ticket form."""
 
-    search_text = TextLine(title=_('Search text:'), required=False)
+    search_text = TextLine(title=_('Search text'), required=False)
 
-    sort = Choice(title=_('Sort order:'), required=True,
+    sort = Choice(title=_('Sort order'), required=True,
                   vocabulary='TicketSort',
                   default=TicketSort.RELEVANCY)
 
-    status = Set(title=_('Status:'), required=False,
+    status = Set(title=_('Status'), required=False,
                  value_type=Choice(vocabulary='TicketStatus'),
                  default=sets.Set(TICKET_STATUS_DEFAULT_SEARCH))

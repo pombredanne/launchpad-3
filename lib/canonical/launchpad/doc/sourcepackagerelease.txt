@@ -180,7 +180,7 @@ It also offers an easy way of checking the number of tickets open on the
 package in the distribution:
 
    >>> print spr.open_ticket_count
-   1
+   0
 
 Nobody's having trouble with firefox!
 

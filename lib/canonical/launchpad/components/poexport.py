@@ -23,12 +23,13 @@ See IPOTemplateExporter and IDistroReleasePOExporter.
 __metaclass__ = type
 
 import datetime
+import gettextpo
+import logging
 import os
 import subprocess
 import tarfile
 import time
-import logging
-import gettextpo
+import pytz
 from StringIO import StringIO
 
 from zope.component import getUtility
@@ -490,6 +491,14 @@ def export_rows(rows, pofile_output, force_utf8=False):
                 # There is no plural forms here but we have a 'Plural-Forms'
                 # header, we remove it because it's not needed.
                 del header['Plural-Forms']
+
+            # We need to tag every export from Rosetta so we know whether a
+            # later upload should change every translation in our database or
+            # that we got a change between the export and the upload with
+            # modifications.
+            UTC = pytz.timezone('UTC')
+            dt = datetime.datetime.now(UTC)
+            header['X-Rosetta-Export-Date'] = dt.strftime('%F %R%z')
 
             # Create the new PO file.
 

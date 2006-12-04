@@ -146,7 +146,7 @@ class SearchTicketsView(LaunchpadFormView):
     def search_text(self):
         """Search text used by the filter."""
         if self.search_params:
-            return self.search_params['search_text']
+            return self.search_params.get('search_text')
         else:
             return self.getDefaultFilter().get('search_text')
 
@@ -154,9 +154,9 @@ class SearchTicketsView(LaunchpadFormView):
     def status_filter(self):
         """Set of statuses to filter the search with."""
         if self.search_params:
-            return set(self.search_params['status'])
+            return set(self.search_params.get('status', []))
         else:
-            return self.getDefaultFilter().get('status', set())
+            return set(self.getDefaultFilter().get('status', []))
 
     def setUpWidgets(self):
         """See LaunchpadFormView."""
@@ -181,8 +181,9 @@ class SearchTicketsView(LaunchpadFormView):
     def searchResults(self):
         """Return the tickets corresponding to the search."""
         if self.search_params is None:
-            # Search button wasn't clicked.
-            self.search_params = self.getDefaultFilter()
+            # Search button wasn't clicked, use the default filter.
+            # Copy it so that it doesn't get mutated accidently.
+            self.search_params = dict(self.getDefaultFilter())
 
         # The search parameters used is defined by the union of the fields
         # present in ISearchTicketsForm (search_text, status, sort) and the
@@ -209,21 +210,6 @@ class SearchTicketsView(LaunchpadFormView):
                 ticket.sourcepackagename)
             return '<a href="%s/+tickets">%s</a>' % (
                 canonical_url(sourcepackage), ticket.sourcepackagename.name)
-
-    def formatTarget(self, ticket):
-        """Return an hyperlink to the ticket's target.
-
-        When there is a sourcepackagename associated to the ticket, link to
-        that source package tickets instead of the ticket target.
-        """
-        if ticket.sourcepackagename:
-            target = ticket.distribution.getSourcePackage(
-                ticket.sourcepackagename)
-        else:
-            target = ticket.target
-
-        return '<a href="%s/+tickets">%s</a>' % (
-                canonical_url(target), target.displayname)
 
 
 class TicketTargetSearchMyTicketsView(SearchTicketsView):
@@ -276,7 +262,7 @@ class ManageSupportContactView(GeneralFormView):
     @property
     def initial_values(self):
         user = self.user
-        support_contacts = self.context.support_contacts
+        support_contacts = self.context.direct_support_contacts
         user_teams = [
             membership.team for membership in user.myactivememberships]
         support_contact_teams = set(support_contacts).intersection(user_teams)
