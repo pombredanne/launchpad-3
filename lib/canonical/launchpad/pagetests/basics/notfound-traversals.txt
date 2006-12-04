@@ -105,7 +105,6 @@ spider -- StuartBishop 20050822
 >>> check("/firefox/+branches")
 
 >>> check("/distros")
->>> check("/distros/+bugs")
 >>> check("/distros/+add", auth=True)
 
 >>> check("/ubuntu")

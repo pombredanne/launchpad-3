@@ -17,8 +17,10 @@ from zope.schema import (
     Datetime, Bool, Int, Choice, Text, TextLine, List, Object)
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import IHasOwner, IMessageTarget
+from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.ticketmessage import ITicketMessage
+from canonical.launchpad.interfaces.tickettarget import (
+        TICKET_STATUS_DEFAULT_SEARCH)
 from canonical.lp.dbschema import TicketStatus, TicketPriority
 
 
@@ -95,8 +97,7 @@ class ITicket(IHasOwner):
     whiteboard = Text(title=_('Status Whiteboard'), required=False,
         description=_('Up-to-date notes on the status of the request.'))
     # other attributes
-    target = Attribute('The product or distribution to which this ticket '
-        'belongs.')
+    target = Attribute('The ITicketTarget that is associated to this ticket.')
 
     # joins
     subscriptions = Attribute('The set of subscriptions to this ticket.')
@@ -373,9 +374,6 @@ class ITicketSet(Interface):
 
     title = Attribute('Title')
 
-    latest_tickets = Attribute("The 10 most recently created support "
-        "requests in Launchpad.")
-
     def get(ticket_id, default=None):
         """Return the ticket with the given id.
 
@@ -389,6 +387,23 @@ class ITicketSet(Interface):
         state that didn't receive any new comments in the last
         <days_before_expiration> days.
         """
+
+    def searchTickets(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
+                      sort=None):
+        """Search tickets in any context.
+
+        :search_text: A string that is matched against the ticket
+        title and description. If None, the search_text is not included as
+        a filter criteria.
+
+        :status: A sequence of TicketStatus Items. If None or an empty
+        sequence, the status is not included as a filter criteria.
+
+        :sort:  An attribute of TicketSort. If None, a default value is used.
+        When there is a search_text value, the default is to sort by RELEVANCY,
+        otherwise results are sorted NEWEST_FIRST.
+        """
+
 
 # These schemas are only used by browser/ticket.py and should really live
 # there. See Bug #66950.

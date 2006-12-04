@@ -139,10 +139,7 @@ class BranchTraversalMixin:
         product_name = stepstogo.consume()
         branch_name = stepstogo.consume()
         if product_name is not None and branch_name is not None:
-            if product_name == '+junk':
-                return self.context.getBranch(None, branch_name)
-            else:
-                return self.context.getBranch(product_name, branch_name)
+            return self.context.getBranch(product_name, branch_name)
         raise NotFoundError
 
 
@@ -2300,7 +2297,7 @@ class ObjectReassignmentView:
     def isValidOwner(self, newOwner):
         """Check whether the new owner is acceptable for the context object.
 
-        If it not acceptable, return False and assign an error message to
+        If it's not acceptable, return False and assign an error message to
         self.errormessage to inform the user.
         """
         return True
