@@ -1,10 +1,7 @@
 <div class="portlet" tal:condition="view/getTopFiveContributors">
-
-  <h2>Top five contributors</h2>
-
+  <h2>Top contributors</h2>
   <div class="portletBody portletContent">
-
-    <ul class="people">
+    <ul class="person">
       <li tal:repeat="contributor view/getTopFiveContributors">
         <a tal:content="contributor/person/browsername"
            tal:attributes="href contributor/person/fmt:url">Guilherme Salgado</a>

@@ -9,14 +9,13 @@
     </metal:portlets>
     <div metal:fill-slot="main">
       <h1 tal:content="context/title">Mozilla</h1>
-      <img alt="" class="mugshot" src="/@@/nyet-mugshot"
-      />
+      <img alt="" class="mugshot" src="/@@/nyet-mugshot" />
       <div tal:content="context/summary">
         This is the project Summary, which should be a single paragraph
         summarising the project's purpose.
       </div>
 
-    <div tal:content="structure context/description/fmt:text-to-html">
+    <div tal:replace="structure context/description/fmt:text-to-html">
     This is the Project Description,
     which is a much more substantial description of the project. It should
     be several paragraphs long, and give you a very clear insight into the
@@ -38,9 +37,24 @@
         </li>
       </ul>
       <ul class="buttons">
-        <li class="reportbug"><a href="+filebug">Report a bug</a></li>
-        <li class="requestsupport"><a href="+addticket">Request support</a></li>
-        <li class="helptranslate"><a href="+translations">Help translate</a></li>
+        <li>
+          <a href="+filebug">
+            <img alt="Report a bug" src="/+icing/but_sml_reportabug.gif" />
+          </a>
+        </li>
+        <li>
+          <a href="+addticket">
+            <img
+              alt="Request support"
+              src="/+icing/but_sml_requestsupport.gif"
+            />
+          </a>
+        </li>
+        <li>
+          <a href="+translations">
+            <img alt="Help translate" src="/+icing/but_sml_helptranslate.gif" />
+          </a>
+        </li>
       </ul>
       <div class="left">
         <div class="two column section">

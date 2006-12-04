@@ -1189,11 +1189,14 @@ li {
 }
 
 /* Various custom list formats: */
-
-ul.spec>li, li.spec {
-  list-style-image: url(/@@/spec);
+ul.architecture, li.architecture     {list-style-image: url(/@@/architecture);}
+ul.distrorelease, li.distrorelease   {list-style-image: url(/@@/distribution);}
+ul.package-binary, li.package-binary {
+  list-style-image: url(/@@/package-binary);
 }
-ul.webref>li, li.webref, ul.external.link li, li.external.link {
+ul.person, li.person                 {list-style-image: url(/@@/person);}
+ul.spec, li.spec                     {list-style-image: url(/@@/spec);}
+ul.webref, li.webref, ul.external.link, li.external.link {
   list-style-image: url(/@@/link);
 }
 
