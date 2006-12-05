@@ -70,7 +70,7 @@ notified about the changes as well:
     >>> ubuntu.addSupportContact(ubuntu_team)
     True
 
-And assign this ticket to Foo Bar, so that he will also receives
+And assign this ticket to Foo Bar, so that he will also receive
 notifications:
 
     >>> login('foo.bar@canonical.com')
@@ -101,7 +101,8 @@ sent.
 Three copies of the notification got sent, one to Sample Person, one to
 Foo Bar, and one to Ubuntu Team:
 
-    >>> notifications = pop_notifications()
+    >>> from operator import itemgetter
+    >>> notifications = sorted(pop_notifications(), key=itemgetter('To'))
     >>> [notification['To'] for notification in notifications]
     ['foo.bar@canonical.com', 'support@ubuntu.com', 'test@canonical.com']
 
