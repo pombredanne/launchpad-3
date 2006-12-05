@@ -94,8 +94,10 @@
           </td>
           <td class="ticket-target"
               tal:condition="view/displayTargetColumn"
-              tal:content="structure python:view.formatTarget(ticket)"
-              >Firefox</td>
+              ><a href="#"
+                  tal:define="target ticket/target"
+                  tal:attributes="href string:${target/fmt:url}/+tickets"
+                  tal:content="target/displayname">Firefox</a></td>
           <td tal:condition="view/displaySourcePackageColumn"
               tal:content="structure python:view.formatSourcePackageName(ticket)"
               >mozilla-firefox</td>
@@ -109,5 +111,17 @@
     <div class="lesser" tal:content="structure tickets/@@+navigation-links-lower" />
   </tal:block>
 </div>
+
+<metal:help fill-slot="help">
+  <p>This listing displays the support requests matching the selected
+    criteria in this context (distribution, product, person, sourcepackage).
+  </p>
+  <p>The search criteria for the current listing can be modified directly at
+    the top of the page.
+  </p>
+  <p>If you hover the mouse over a support request, the beginning of its
+    description will pop-up after a few seconds.
+  </p>
+</metal:help>
 </body>
 </html>
