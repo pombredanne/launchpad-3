@@ -379,15 +379,17 @@ errorservice_tbentry = 'Traceback entry'
 
 faq = 'Launchpad Frequently Asked Questions'
 
-foaf_adminrequestmerge = 'Merge Launchpad accounts'
+people_adminrequestmerge = 'Merge Launchpad accounts'
 
-foaf_mergerequest_sent = 'Merge request sent'
+people_mergerequest_sent = 'Merge request sent'
 
-foaf_newteam = 'Register a new team in Launchpad'
+people_newperson = 'Create a new Launchpad profile'
 
-foaf_requestmerge_multiple = 'Merge Launchpad accounts'
+people_newteam = 'Register a new team in Launchpad'
 
-foaf_requestmerge = 'Merge Launchpad accounts'
+people_requestmerge_multiple = 'Merge Launchpad accounts'
+
+people_requestmerge = 'Merge Launchpad accounts'
 
 karmaaction_index = 'Karma actions'
 
@@ -851,7 +853,11 @@ specification_subscription = 'Subscribe to specification'
 
 specification_queue = 'Queue specification for review'
 
+specification_linkbranch = 'Link branch to specification'
+
 specifications_index = ContextTitle('%s')
+
+specificationbranch_status = 'Edit specification branch status'
 
 specificationgoal_specs = ContextTitle('List goals for %s')
 
@@ -895,7 +901,7 @@ sprintspecification_decide = 'Consider spec for sprint agenda'
 
 sprintspecification_admin = 'Approve specification for sprint agenda'
 
-tickets_index = 'Launchpad tech support system'
+tickets_index = 'Launchpad support tracker'
 
 ticket_add = ContextDisplayName('Request support with %s')
 
@@ -966,6 +972,8 @@ template_edit = 'EXAMPLE EDIT TITLE'
 template_index = '%EXAMPLE TITLE'
 
 template_new = 'EXAMPLE NEW TITLE'
+
+temporaryblobstorage_storeblob = 'Store a BLOB temporarily in Launchpad'
 
 def ticket_listing(context, view):
     return view.pagetitle

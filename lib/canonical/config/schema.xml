@@ -171,19 +171,33 @@
                 puller to use, not for public URLs.
             </description>
         </key>
-        <section name="*" type="virtual_hosts" attribute="vhosts" required="no" />
+        <key name="default_blob_expiry" datatype="integer" default="10800">
+            <description>
+                Number of seconds a blob stored in the temporary blob storage
+                must remain before it may be garbage collected.
+            </description>
+        </key>
+        <key name="max_blob_size" datatype="integer" default="0">
+            <description>
+                Maximum size of blobs that can be stored in the temporary
+                blob storage. Set to 0 for unlimited.
+            </description>
+        </key>
+        <section name="*" type="virtual_hosts" attribute="vhosts" required="no"
+            />
         <key name="restrict_to_team" datatype="string" default="">
             <description>
-            If this is provided, only members of the given team, and launchpad admins,
-            may access the site.  Anonymous access is not allowed.
-            If this is provided, but not a known team name, only launchpad admins may
-            access the site.
+            If this is provided, only members of the given team, and
+            launchpad admins, may access the site.  Anonymous access is
+            not allowed.  If this is provided, but not a known team name,
+            only launchpad admins may access the site.
             </description>
         </key>
         <section name="*" type="launchpad_session" attribute="session"
             required="no" />
         <section name="*" type="launchpad_errorreports" attribute="errorreports"
-            required="no" /> </sectiontype>
+            required="no" />
+    </sectiontype>
     <sectiontype name="gina_target">
         <description>
             Gina will run against the target specified on the command line.

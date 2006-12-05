@@ -3,6 +3,8 @@
 __metaclass__ = type
 __all__ = ['Distribution', 'DistributionSet']
 
+from operator import attrgetter
+
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -21,7 +23,8 @@ from canonical.launchpad.database.bug import (
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import Specification
-from canonical.launchpad.database.ticket import Ticket, TicketSet
+from canonical.launchpad.database.ticket import (
+    SimilarTicketsSearch, Ticket, TicketTargetSearch, TicketSet)
 from canonical.launchpad.database.distrorelease import DistroRelease
 from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.binarypackagename import (
@@ -450,21 +453,19 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
             ticket = Ticket.get(ticket_id)
         except SQLObjectNotFound:
             return None
-        # Now verify that that ticket is actually for this target.
-        if ticket.target != self:
+        # Now verify that that ticket is actually for this distribution.
+        if ticket.distribution != self:
             return None
         return ticket
 
-    def searchTickets(self, search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-                      owner=None, sort=None):
+    def searchTickets(self, **search_criteria):
         """See ITicketTarget."""
-        return TicketSet.search(
-            distribution=self, search_text=search_text, status=status,
-            owner=owner, sort=sort)
+        return TicketTargetSearch(
+            distribution=self, **search_criteria).getResults()
 
     def findSimilarTickets(self, title):
         """See ITicketTarget."""
-        return TicketSet.findSimilar(title, distribution=self)
+        return SimilarTicketsSearch(title, distribution=self).getResults()
 
     def addSupportContact(self, person):
         """See ITicketTarget."""
@@ -491,10 +492,14 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         support_contacts = SupportContact.select(
             """distribution = %d AND sourcepackagename IS NULL""" % self.id)
 
-        return shortlist([
-            support_contact.person for support_contact in support_contacts
-            ],
-            longest_expected=100)
+        return sorted(
+            [support_contact.person for support_contact in support_contacts],
+            key=attrgetter('displayname'))
+
+    @property
+    def direct_support_contacts(self):
+        """See ITicketTarget."""
+        return self.support_contacts
 
     def ensureRelatedBounty(self, bounty):
         """See IDistribution."""
