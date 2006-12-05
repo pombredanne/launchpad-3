@@ -1202,7 +1202,7 @@ class TicketUnsupportedLanguageNotification(TicketNotification):
     def getBody(self):
         """See TicketNotification."""
         ticket = self.ticket
-        return get_email_template('ticket_unsupported_languages_added.txt') % {
+        return get_email_template('ticket-unsupported-languages-added.txt') % {
             'target_name': ticket.target.displayname,
             'ticket_id': ticket.id,
             'ticket_url': canonical_url(ticket),
