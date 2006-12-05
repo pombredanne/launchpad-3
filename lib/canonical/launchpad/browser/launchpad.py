@@ -29,7 +29,7 @@ import canonical.launchpad.layers
 from canonical.config import config
 from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.interfaces import (
-    ILaunchBag, ILaunchpadRoot, IRosettaApplication, IPillarSet,
+    ILaunchBag, ILaunchpadRoot, IRosettaApplication, IPillarNameSet,
     IMaloneApplication, IProductSet, IPersonSet, IDistributionSet,
     ISourcePackageNameSet, IBinaryPackageNameSet, IProjectSet,
     ILoginTokenSet, IKarmaActionSet, IPOTemplateNameSet,
@@ -467,7 +467,7 @@ class SearchProjectsView(LaunchpadView):
         search_string = self.search_string.lower()
         if form.get('go') is not None:
             try:
-                pillar = getUtility(IPillarSet)[search_string]
+                pillar = getUtility(IPillarNameSet)[search_string]
             except NotFoundError:
                 pass
             else:
@@ -476,7 +476,7 @@ class SearchProjectsView(LaunchpadView):
                 # user.
                 return
 
-        self.results = getUtility(IPillarSet).search(
+        self.results = getUtility(IPillarNameSet).search(
             search_string, limit=self.max_results_to_display)
 
     def tooManyResultsFound(self):

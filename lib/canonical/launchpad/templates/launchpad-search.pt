@@ -46,6 +46,7 @@
   </tal:non-empty-search-string>
 
   <tal:results repeat="result view/results">
+    <br />
     <a tal:attributes="href string:/${result/name}">
       <span tal:replace="result/title">Ubuntu Linux</span>
     </a> (<span tal:replace="result/type">distribution</span>)
@@ -54,7 +55,6 @@
          tal:content="result/description">
       Description of Ubuntu Linux
     </div>
-    <br />
   </tal:results>
 </div>
 

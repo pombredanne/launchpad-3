@@ -32,3 +32,36 @@ user to refine his search.
     ...<a href="/ubuntu-project">
     ...The Ubuntu Project...
     ...(project)...
+
+
+On that same page it's also possible to enter a product/distribution/project
+name and go straight to its Launchpad page.
+
+    >>> browser.open('http://launchpad.dev/+search')
+    >>> browser.getControl(name='q').value = 'ubuntu'
+    >>> browser.getControl('Go').click()
+    >>> browser.url
+    'http://launchpad.dev/distros/ubuntu'
+
+If there's no product/distribution/project whose name exactly matches the
+given string, we'll then display a list of results and a message explaining
+that no exact match was found.
+
+    >>> browser.open('http://launchpad.dev/+search')
+    >>> browser.getControl(name='q').value = 'foo'
+    >>> browser.getControl('Go').click()
+
+    >>> tags = find_tags_by_class(browser.contents, "informational message")
+    >>> for tag in tags:
+    ...   print tag.renderContents()
+    We couldn't find an exact match for your search term. Below you can see
+    some projects that are likely to be what you are looking for.
+
+    >>> print browser.contents
+    <...
+    ...<a href="/iso-codes">
+    ...The iso-codes...
+    ...(product)...
+    ...<a href="/iso-codes-project">
+    ...iso-codes...
+    ...(project)...
