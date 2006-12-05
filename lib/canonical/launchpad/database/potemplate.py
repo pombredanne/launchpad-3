@@ -13,7 +13,8 @@ from zope.component import getUtility
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import SQLMultipleJoin, SQLObjectNotFound
 
-from canonical.lp.dbschema import RosettaImportStatus
+from canonical.lp.dbschema import RosettaImportStatus, EnumCol
+from canonical.lp.dbschema import RosettaFileFormat
 
 from canonical.database.sqlbase import (
     SQLBase, quote, flush_database_updates, sqlvalues)
@@ -78,6 +79,10 @@ class POTemplate(SQLBase, RosettaStats):
     license = IntCol(dbName='license', notNull=False, default=None)
     datecreated = UtcDateTimeCol(dbName='datecreated', default=DEFAULT)
     path = StringCol(dbName='path', notNull=False, default=None)
+    source_file = ForeignKey(foreignKey='LibraryFileAlias',
+        dbName='source_file', notNull=False, default=None)
+    source_file_format = EnumCol(dbName='source_file_format',
+        schema=RosettaFileFormat, default=RosettaFileFormat.PO, notNull=True)
     iscurrent = BoolCol(dbName='iscurrent', notNull=True, default=True)
     messagecount = IntCol(dbName='messagecount', notNull=True, default=0)
     owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
