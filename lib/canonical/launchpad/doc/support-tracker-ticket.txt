@@ -121,18 +121,16 @@ ticket target are part of the indirect subscribers list.
     []
     >>> firefox.addSupportContact(no_priv)
     True
-    >>> import operator
-    >>> notified = sorted(firefox_ticket.getIndirectSubscribers(),
-    ...                   key=operator.attrgetter('displayname'))
-    >>> [person.displayname for person in notified]
+    >>> [person.displayname
+    ...  for person in firefox_ticket.getIndirectSubscribers()]
     [u'No Privileges Person']
 
 There is a special case for when the ticket's is associated to a source
 package. The support contacts for both the distribution and the source
 package are part of the indirect subscribers list.
 
-    (Let's register some support contacts for the distribution and
-    the package.)
+    # Let's register some support contacts for the distribution and
+    # the package.
     >>> list(ubuntu.support_contacts)
     []
     >>> list(firefox_package.support_contacts)
@@ -147,18 +145,16 @@ package are part of the indirect subscribers list.
     ...     "The FnordsHighlighter theme doesn't work after upgrade.")
     >>> [s.person.displayname for s in package_ticket.subscriptions]
     [u'Sample Person']
-    >>> notified = sorted(package_ticket.getIndirectSubscribers(),
-    ...                   key=operator.attrgetter('displayname'))
-    >>> [person.displayname for person in notified]
+    >>> [person.displayname
+    ...  for person in package_ticket.getIndirectSubscribers()]
     [u'No Privileges Person', u'Ubuntu Team']
 
 The ticket's assignee is also part of the indirect subscription list:
 
     >>> login('foo.bar@canonical.com')
     >>> package_ticket.assignee = getUtility(IPersonSet).getByName('name16')
-    >>> notified = sorted(package_ticket.getIndirectSubscribers(),
-    ...                   key=operator.attrgetter('displayname'))
-    >>> [person.displayname for person in notified]
+    >>> [person.displayname
+    ...  for person in package_ticket.getIndirectSubscribers()]
     [u'Foo Bar', u'No Privileges Person', u'Ubuntu Team']
 
 Notifications are sent to the list of direct and indirect subscribers.
@@ -166,9 +162,7 @@ The notification recipients list can be obtained by using the
 getSubscribers() method.
 
     >>> login('no-priv@canonical.com')
-    >>> notified = sorted(firefox_ticket.getSubscribers(),
-    ...                   key=operator.attrgetter('displayname'))
-    >>> [person.displayname for person in notified]
+    >>> [person.displayname for person in firefox_ticket.getSubscribers()]
     [u'No Privileges Person', u'Sample Person']
 
 (More documentation on the ticket notifications can be found in
