@@ -6,6 +6,7 @@ from email.Utils import parseaddr
 from zope.interface import implements
 from canonical.launchpad.interfaces import ITranslationImport
 from canonical.launchpad.components.poparser import POParser
+from canonical.lp.dbschema import RosettaFileFormat
 
 class PoSupport:
     implements(ITranslationImport)
@@ -40,7 +41,8 @@ class PoSupport:
                       'template' : self.sourcepackagename,
                       'language' : language,
                       'importer' : None,
-                      'state' : RosettaImportStatus.NEEDS_REVIEW } ]
+                      'state' : RosettaImportStatus.NEEDS_REVIEW,
+                      'format' : RosettaFileFormat.PO } ]
         return entries
 
     def getLastTranslator(self, parser):
@@ -100,6 +102,7 @@ class PoSupport:
             "lasttranslatorname" : translator_name,
             "header" : parser.header,
             "messages" : msgs,
+            "format" : RosettaFileFormat.PO
             }
 
     def getTranslation(self, path, language):
@@ -147,6 +150,7 @@ class PoSupport:
             "lasttranslatorname" : translator_name,
             "header" : parser.header,
             "messages" : msgs,
+            "format" : RosettaFileFormat.PO
             }
 
 

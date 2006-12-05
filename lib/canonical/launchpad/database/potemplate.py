@@ -580,6 +580,8 @@ class POTemplate(SQLBase, RosettaStats):
                     sourcepackagename=entry_to_import.sourcepackagename,
                     is_published=entry_to_import.is_published,
                     file=file)
+                self.source_file = entry_to_import.content
+                self.source_file_format = entry_to_import.format
             else:
                 importer = PoSupport(
                     path=entry_to_import.path,

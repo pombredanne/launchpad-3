@@ -364,7 +364,8 @@ class ProductSeriesView(LaunchpadView):
             for entry in entries:
                 translation_import_queue_set.addOrUpdateEntry(
                     entry['path'], content, True, self.user,
-                    productseries=entry['productseries'])
+                    productseries=entry['productseries'],
+                    format=entry['format'])
 
             self.request.response.addInfoNotification(
                 'Thank (really) you for your upload. The file content will be'

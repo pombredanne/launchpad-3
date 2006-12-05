@@ -226,18 +226,6 @@ class MozillaSupport:
 
         if os.path.basename(self.basepath) == 'en-US.xpi':
             # We need PO template entry
-
-            # Add entry to librarian in the form of
-            # productseries-distrorelease-sourcepackagename.en-US.xpi
-            # XXX: will this not expire right away?
-            librarian_client = getUtility(ILibrarianClient)
-            #librarian_client.addFile(
-            #    '%s-%s-%s.en-US.xpi' % (self.productseries,
-            #                            self.distrorelease,
-            #                            self.sourcepackagename),
-            #    len(content),
-            #    content,
-            #    None)
             language = None
 
         else:
@@ -253,7 +241,8 @@ class MozillaSupport:
                           'is_published' : self.is_published,
                           'template' : self.sourcepackagename,
                           'language' : language,
-                          'state' : RosettaImportStatus.NEEDS_REVIEW } )
+                          'state' : RosettaImportStatus.NEEDS_REVIEW,
+                          'format' : RosettaFileFormat.XPI } )
         return entries
 
     def getTemplate(self, path):
@@ -301,6 +290,7 @@ class MozillaSupport:
             "lasttranslatoremail" : None,
             "lasttranslatorname" : None,
             "header" : None,
+            "format" : RosettaFileFormat.XPI,
             "messages" : messages,
             }
 
