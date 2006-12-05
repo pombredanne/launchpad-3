@@ -655,23 +655,20 @@ the request is in a language spoken by none of the support contacts:
     "[Support #...]: Impossible d'installer Ubuntu"
 
     # Define a function that will replace non-ascii character with
-    # its UTF-8 encoded value.
-    # Effectively replace u'\xe9' by '\xc3\xa9'.
+    # its unicoded encoded value.
+    # Effectively replace u'\xe9' by '\\e9'.
     >>> import re
     >>> def escape_utf8_payload(message):
     ...     charset = message.get_content_charset()
     ...     content = unicode(message.get_payload(decode=True), charset)
-    ...     def encode_utf8(match):
-    ...         utf8_string = match.group(0).encode('utf-8')
-    ...         return repr(utf8_string)[1:-1]
-    ...     return str(re.sub(r'[^\x00-\x7F]', encode_utf8, content))
+    ...     return content.encode('us-ascii', 'backslashreplace')
 
     >>> notification_body = escape_utf8_payload(notifications[-1])
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     New support request #... on Ubuntu:
     http://.../distros/ubuntu/+ticket/...
     <BLANKLINE>
-    Le CD ne semble pas fonctionn\xc3\xa9.
+    Le CD ne semble pas fonctionn\xe9.
     <BLANKLINE>
     _______________________________________________________________________
     WARNING: This support request is filed in a language (French)
@@ -697,7 +694,7 @@ warning appended to it.
     http://.../distros/ubuntu/+ticket/...
     <BLANKLINE>
     Summary changed to:
-    CD d'Ubuntu ne d\xc3\xa9marre pas
+    CD d'Ubuntu ne d\xe9marre pas
     <BLANKLINE>
     _______________________________________________________________________
     WARNING: This support request is filed in a language (French)
