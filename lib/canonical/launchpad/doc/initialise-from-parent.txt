@@ -93,7 +93,6 @@ against its parent, ubuntu/hoary:
   >>> len(foobuntu_i386_pmount_pubs) == len(hoary_i386_pmount_pubs)
   True
 
-
 Check how the publication records behave in a just-initialise distrorelease.
 First we get a binarypackagerelease published in foobuntu:
 

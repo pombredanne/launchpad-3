@@ -19,9 +19,11 @@ from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory, SourcePackagePublishingHistory)
+from canonical.launchpad.database.queue import PackageUpload
 from canonical.launchpad.interfaces import (
     IDistroReleaseSourcePackageRelease, NotFoundError)
-from canonical.lp.dbschema import PackagePublishingStatus
+from canonical.lp.dbschema import (
+    PackagePublishingStatus, PackageUploadStatus)
 
 class DistroReleaseSourcePackageRelease:
     """This is a "Magic SourcePackageRelease in Distro Release". It is not
@@ -152,6 +154,28 @@ class DistroReleaseSourcePackageRelease:
         return BinaryPackageRelease.select(
                 query, prejoinClauseTables=['Build'],
                 clauseTables=clauseTables)
+
+    @property
+    def changesfile(self):
+        """See IDistroReleaseSourcePackageRelease."""
+        clauseTables = [
+            'PackageUpload',
+            'PackageUploadSource',
+            ]
+        query = """
+        PackageUpload.id = PackageUploadSource.packageupload AND
+        PackageUpload.distrorelease = %s AND
+        PackageUploadSource.sourcepackagerelease = %s AND
+        PackageUpload.status = %s
+        """ % sqlvalues(self.distrorelease, self.sourcepackagerelease,
+                        PackageUploadStatus.DONE)
+        queue_record = PackageUpload.selectOne(
+            query, clauseTables=clauseTables)
+
+        if not queue_record:
+            return None
+
+        return queue_record.changesfile
 
     @property
     def builddepends(self):

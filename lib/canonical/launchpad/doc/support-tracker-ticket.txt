@@ -204,29 +204,3 @@ When the link is removed, the owner is unsubscribed:
     <TicketBug...>
     >>> bug7.isSubscribed(firefox_ticket.owner)
     False
-
-ITicketSet
-----------
-
-ITicketSet can be used to get a ticket with a specific id:
-
-    >>> from canonical.launchpad.interfaces import ITicketSet
-    >>> ticket_set = getUtility(ITicketSet)
-    >>> verifyObject(ITicketSet, ticket_set)
-    True
-
-    >>> ticket_one = ticket_set.get(1)
-    >>> ticket_one.title
-    u'Firefox cannot render Bank Site'
-
-If no ticket exists, a default value is returned:
-
-    >>> default = object()
-    >>> ticket_nonexistant = ticket_set.get(123456, default=default)
-    >>> ticket_nonexistant is default
-    True
-
-If no default value is given, None is returned:
-
-    >>> ticket_set.get(123456) is None
-    True
