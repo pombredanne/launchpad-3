@@ -364,14 +364,16 @@ class ChooseAffectedProductView(LaunchpadFormView, BugAlsoReportInBaseView):
             entered_product = self.request.form.get(
                 self.widgets['product'].name)
             if entered_product:
-                new_product_url = "%s/+new?field.name=%s" % (
-                    canonical_url(getUtility(IProductSet)),
-                    urllib.quote(entered_product.encode('utf-8')))
+                new_product_url = "%s/+new" % (
+                    canonical_url(getUtility(IProductSet)))
+                search_url = self.widgets['product'].popupHref()
                 self.setFieldError(
                     'product',
-                    'There is no product in Launchpad named "%s". If it'
-                    ' should be here, <a href="%s">please register it</a>.' % (
+                    'There is no product in Launchpad named "%s". You may'
+                    ' want to <a href="%s">search for it</a>, or'
+                    ' <a href="%s">register it</a> if you can\'t find it.' % (
                         cgi.escape(entered_product),
+                        cgi.escape(search_url, quote=True),
                         cgi.escape(new_product_url, quote=True)))
 
     @action(u'Continue', name='continue')
