@@ -934,9 +934,9 @@ class TicketNotification:
             if person == self.ticket.owner:
                 recipients.add(person)
             elif not person.preferredemail:
-                # When the team doesn't have an email address, proces
-                # each of its members individually.
-                subscribers.update(person.activemembers)
+                # When the team doesn't have an email address, process
+                # each of the non-processed member individually.
+                subscribers |= set(person.activemembers) - recipients
             elif ticket_language in person.getSupportedLanguages():
                 recipients.add(person)
         return recipients
