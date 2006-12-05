@@ -24,7 +24,8 @@ from canonical.database.sqlbase import (
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database import postgresql
-from canonical.launchpad.helpers import shortlist, contactEmailAddresses
+from canonical.launchpad.helpers import (
+    contactEmailAddresses, is_english_variant, shortlist)
 from canonical.launchpad.event.karma import KarmaAssignedEvent
 
 from canonical.launchpad.interfaces import (
@@ -379,19 +380,19 @@ class Person(SQLBase):
 
     def getSupportedLanguages(self):
         """See IPerson."""
-        langs = set()
+        languages = set()
         known_languages = shortlist(self.languages)
         if len(known_languages):
             for lang in known_languages:
                 # Ignore English and all its variants since we assume English
                 # is supported
-                if not lang.code.startswith('en'):
-                    langs.add(lang)
+                if not is_english_variant(lang):
+                    languages.add(lang)
         elif ITeam.providedBy(self):
             for member in self.activemembers:
-                langs |= member.getSupportedLanguages()
-        langs.add(getUtility(ILanguageSet)['en'])
-        return langs
+                languages |= member.getSupportedLanguages()
+        languages.add(getUtility(ILanguageSet)['en'])
+        return languages
 
     @property
     def branches(self):
