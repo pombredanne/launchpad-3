@@ -2979,7 +2979,7 @@ INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (6, 'guadalinex', NULL, NULL, 7, true);
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (7, 'ubuntutest', NULL, NULL, 8, true);
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (8, 'ubuntu-product', 1, NULL, NULL, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (9, 'unassigned', 2, NULL, NULL, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (9, 'unassigned', 2, NULL, NULL, false);
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (10, 'arch-mirrors', 3, NULL, NULL, true);
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (11, 'firefox', 4, NULL, NULL, true);
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (12, 'evolution', 5, NULL, NULL, true);
@@ -2987,7 +2987,7 @@ INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (14, 'iso-codes', 7, NULL, NULL, true);
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (15, 'thunderbird', 8, NULL, NULL, true);
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (16, 'applets', 9, NULL, NULL, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (17, 'python-gnome2-dev', 10, NULL, NULL, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (17, 'python-gnome2-dev', 10, NULL, NULL, false);
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (18, 'netapplet', 11, NULL, NULL, true);
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (19, 'a52dec', 12, NULL, NULL, true);
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (20, 'gnomebaker', 13, NULL, NULL, true);
@@ -2995,7 +2995,7 @@ INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (22, 'alsa-utils', 15, NULL, NULL, true);
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (23, 'iso-codes-project', NULL, 6, NULL, true);
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (24, 'ubuntu-project', NULL, 1, NULL, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (25, 'do-not-use-info-imports', NULL, 2, NULL, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (25, 'do-not-use-info-imports', NULL, 2, NULL, false);
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (26, 'launchpad-mirrors', NULL, 3, NULL, true);
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (27, 'mozilla', NULL, 4, NULL, true);
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (28, 'gnome', NULL, 5, NULL, true);
