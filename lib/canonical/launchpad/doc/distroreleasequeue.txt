@@ -160,6 +160,7 @@ Iterating over IPackageUploads via iPackageUploadSet:
   9
   10
   11
+  12
 
 Retrieving an IPackageUpload by its id:
 
@@ -172,7 +173,7 @@ Retrieving an IPackageUpload by its id:
 Counter, optionally by status (informally named "queue") and or distrorelease:
 
   >>> qset.count()
-  11
+  12
 
   >>> qset.count(PackageUploadStatus.ACCEPTED)
   1
@@ -391,7 +392,7 @@ Check if association of status and pocket arguments works well:
   0
 
   >>> breezy_autotest.getQueueItems(
-  ...      [DistroReleaseQueueStatus.NEW, DistroReleaseQueueStatus.UNAPPROVED],
+  ...      [PackageUploadStatus.NEW, PackageUploadStatus.UNAPPROVED],
   ...      pocket=PackagePublishingPocket.UPDATES).count()
   1
 
@@ -476,7 +477,7 @@ Check how we treat source upload duplications in UNAPPROVED queue (NEW
 has a similar behaviour):
 
   >>> dups = breezy_autotest.getQueueItems(
-  ...     DistroReleaseQueueStatus.UNAPPROVED, name='cnews')
+  ...     PackageUploadStatus.UNAPPROVED, name='cnews')
   >>> dups.count()
   2
   >>> dup_one, dup_two = list(dups)
@@ -490,7 +491,7 @@ The upload admin can not accept both since we check unique
 (name, version) accross distribution:
 
   >>> dup_one.setAccepted()
-  >>> dup_one.status == DistroReleaseQueueStatus.ACCEPTED
+  >>> dup_one.status == PackageUploadStatus.ACCEPTED
   True
 
 The database modification needs to be realised in the DB, otherwise
@@ -525,7 +526,7 @@ test after the former accepted item was published (DONE queue)
   'UNAPPROVED'
 
   >>> dup_one.setDone()
-  >>> dup_one.status == DistroReleaseQueueStatus.DONE
+  >>> dup_one.status == PackageUploadStatus.DONE
   True
   >>> dup_one.syncUpdate()
 

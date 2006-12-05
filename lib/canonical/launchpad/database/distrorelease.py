@@ -1114,12 +1114,12 @@ class DistroRelease(SQLBase, BugTargetBase):
                 datepublished, pocket, embargo)
             SELECT bpph.binarypackagerelease, %s as distroarchrelease,
                    bpph.status, bpph.component, bpph.section, bpph.priority,
-                   bpph.archive, %s as datecreated, %s as datepublished,
+                   %s as archive, %s as datecreated, %s as datepublished,
                    %s as pocket, false as embargo
             FROM BinaryPackagePublishingHistory AS bpph
             WHERE bpph.distroarchrelease = %s AND bpph.status in (%s, %s) AND
                   bpph.pocket = %s and bpph.archive = %s
-            ''' % sqlvalues(arch.id, UTC_NOW, UTC_NOW,
+            ''' % sqlvalues(arch.id, self.main_archive, UTC_NOW, UTC_NOW,
                             PackagePublishingPocket.RELEASE,
                             parent_arch.id,
                             PackagePublishingStatus.PENDING,
@@ -1140,13 +1140,13 @@ class DistroRelease(SQLBase, BugTargetBase):
                 sourcepackagerelease, distrorelease, status, component,
                 section, archive, datecreated, datepublished, pocket, embargo)
             SELECT spph.sourcepackagerelease, %s as distrorelease,
-                   spph.status, spph.component, spph.section, spph.archive,
+                   spph.status, spph.component, spph.section, %s as archive,
                    %s as datecreated, %s as datepublished,
                    %s as pocket, false as embargo
             FROM SourcePackagePublishingHistory AS spph
             WHERE spph.distrorelease = %s AND spph.status in (%s, %s) AND
                   spph.pocket = %s and spph.archive = %s
-            ''' % sqlvalues(self.id, UTC_NOW, UTC_NOW,
+            ''' % sqlvalues(self.id, self.main_archive, UTC_NOW, UTC_NOW,
                             PackagePublishingPocket.RELEASE,
                             self.parentrelease.id,
                             PackagePublishingStatus.PENDING,
