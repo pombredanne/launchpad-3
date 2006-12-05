@@ -2,7 +2,6 @@
 """Test native archive index generation for Soyuz."""
 
 import apt_pkg
-import email
 import os
 import shutil
 from StringIO import StringIO
