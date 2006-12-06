@@ -438,7 +438,8 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
             "Add affected source package to bug",
             ['distribution', 'sourcepackagename'])
         for bugtask in IBug(self.context).bugtasks:
-            if IDistributionSourcePackage.providedBy(bugtask.target):
+            if (IDistributionSourcePackage.providedBy(bugtask.target) and
+                (not self.widgets['sourcepackagename'].hasInput())):
                 self.widgets['sourcepackagename'].setRenderedValue(
                     bugtask.sourcepackagename)
                 break
