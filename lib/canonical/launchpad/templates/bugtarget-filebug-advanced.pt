@@ -22,88 +22,49 @@
 
   <tal:uses_malone tal:condition="view/contextUsesMalone">
 
-  <p class="error message" tal:condition="view/errors"
-    >Please fix the problems below and try again.</p>
+    <div metal:use-macro="context/@@launchpad_form/form">
 
-  <form action="."
-        tal:attributes="action request/URL"
-        method="post"
-        enctype="multipart/form-data">
+      <table class="form" metal:fill-slot="widgets">
 
-  <div tal:condition="view/widgets/packagename|nothing"
-       tal:attributes="class view/getPackageNameFieldCSSClass"
-       style="margin-top: 1em">
-    <label tal:attributes="for view/widgets/packagename/name">
-      In what package did you find this bug?
-    </label>
-    <ul style="list-style: none"
-        tal:define="select_packagename view/shouldSelectPackageName">
-      <li>
-        <input type="radio" name="packagename_option" value="none"
-               id="no-package"
-               tal:attributes="checked not:select_packagename"/>
-        <label style="font-weight: normal" for="no-package">
-          I don't know
-        </label>
-      </li>
-      <li style="margin-top: 4px">
-        <input type="radio" name="packagename_option" value="choose"
-               id="choose"
-               tal:attributes="checked select_packagename"/>
-        <span tal:content="structure view/widgets/packagename" />
-      </li>
-    </ul>
-    <div
-      tal:condition="view/widget_errors/packagename|nothing"
-      class="message"
-      tal:content="view/widget_errors/packagename"
-    >An error on package name.</div>
-  </div>
+        <metal:basic_filebug_widgets
+            metal:use-macro="context/@@+filebug-macros/basic_filebug_widgets" />
 
-  <div style="margin-top: 1em">
-    <label tal:content="structure view/widgets/title/label"
-           tal:attributes="for view/widgets/title/name" />
-    <div tal:content="structure view/widgets/title" />
-  </div>
+        <tr tal:define="product_or_distro view/getProductOrDistroFromContext">
+          <td colspan="2" width="100%"
+              tal:define="widget nocall: view/widgets/security_related">
+            <input type="checkbox" tal:replace="structure widget" />
+            <label tal:attributes="for widget/name">
+              This bug is a security vulnerability
+            </label>
+            <div tal:define="security_contact product_or_distro/security_contact">
+              <i tal:condition="security_contact">
+                The security contact for
+                <span tal:content="product_or_distro/displayname" />,
+                <a href="#"
+                    tal:content="security_contact/displayname"
+                    tal:attributes="href security_contact/fmt:url" />,
+                will be notified.
+              </i>
+              <i tal:condition="not:security_contact"
+                 tal:define="maintainer product_or_distro/owner">
+                The maintainer of
+                <span tal:content="product_or_distro/displayname">Mozilla Firefox</span>,
+                <a href="" tal:attributes="href maintainer/fmt:url"
+                           tal:content="maintainer/displayname">Sample Person</a>,
+                will be notified.
+              </i>
+            </div>
 
-  <div style="margin-top: 1em">
-    <label tal:attributes="for view/widgets/comment/name">
-      Further information, steps to reproduce, etc.
-    </label>
-    <div tal:content="structure view/widgets/comment" />
-  </div>
+          </td>
+        </tr>
 
-  <div style="margin-top: 1em"
-       tal:define="product_or_distro view/getProductOrDistroFromContext">
-    <span tal:content="structure view/widgets/security_related" />
-    <label tal:attributes="for view/widgets/security_related/name">
-      This bug is a security vulnerability
-    </label>
-    <div tal:define="security_contact product_or_distro/security_contact">
-      <i tal:condition="security_contact">
-        The security contact for
-        <span tal:content="product_or_distro/displayname" />,
-        <a href="#"
-            tal:content="security_contact/displayname"
-            tal:attributes="href security_contact/fmt:url" />,
-        will be notified.
-      </i>
-      <i tal:condition="not:security_contact"
-         tal:define="maintainer product_or_distro/owner">
-        The maintainer of
-        <span tal:content="product_or_distro/displayname">Mozilla Firefox</span>,
-        <a href="" tal:attributes="href maintainer/fmt:url"
-                   tal:content="maintainer/displayname">Sample Person</a>,
-        will be notified.
-      </i>
+      </table>
+
+      <div class="actions" metal:fill-slot="buttons">
+        <input tal:replace="structure view/actions/field.actions.submit_bug/render" />
+      </div>
+
     </div>
-  </div>
-
-  <div class="actions">
-    <input tal:replace="structure view/actions/field.actions.submit_bug/render" />
-  </div>
-
-  </form>
 
   </tal:uses_malone>
 

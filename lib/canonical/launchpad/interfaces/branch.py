@@ -199,6 +199,9 @@ class IBranch(IHasOwner):
         "The bugs related to this branch, likely branches on which "
         "some work has been done to fix this bug.")
 
+    # Specification attributes
+    spec_links = Attribute("Specifications linked to this branch")
+
     # Joins
     revision_history = Attribute("The sequence of revisions in that branch.")
     revision_count = Attribute("The number of revisions in that branch.")

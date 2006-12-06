@@ -114,9 +114,6 @@ class FileBugViewBase(LaunchpadFormView):
 
     def shouldSelectPackageName(self):
         """Should the radio button to select a package be selected?"""
-        # XXX, Brad Bollenbach, 2006-07-13: We also call _renderedValueSet() in
-        # case there is a default value in the widget, i.e., a value that was
-        # set outside the request. See https://launchpad.net/bugs/52912.
         return (
             self.request.form.get("field.packagename") or
             self.initial_values.get("packagename"))
@@ -282,6 +279,8 @@ class FileBugGuidedView(FileBugViewBase):
         """Return the similar bugs based on the user search."""
         matching_bugs = []
         title = self.getSearchText()
+        if not title:
+            return []
         search_context = self.getProductOrDistroFromContext()
         if IProduct.providedBy(search_context):
             context_params = {'product': search_context}
@@ -315,7 +314,10 @@ class FileBugGuidedView(FileBugViewBase):
 
     def getSearchText(self):
         """Return the search string entered by the user."""
-        return self.widgets['title'].getInputValue()
+        try:
+            return self.widgets['title'].getInputValue()
+        except InputErrors:
+            return None
 
     def validate_search(self, action, data):
         """Make sure some keywords are provided."""

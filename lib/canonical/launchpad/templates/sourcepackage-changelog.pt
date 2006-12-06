@@ -12,10 +12,10 @@
     <tal:block condition="context/changelog">
       <p>This is the latest changelog we have on file for this source
       package:</p>
-    
-<pre>
-<span tal:replace="structure view/linkified_changelog" />
-</pre>
+
+    <pre id="changelog">
+        <span tal:replace="structure view/linkified_changelog" />
+    </pre>
     </tal:block>
 
     <p tal:condition="not: context/changelog" class="informational message">

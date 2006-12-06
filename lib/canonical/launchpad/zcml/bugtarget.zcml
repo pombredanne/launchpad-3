@@ -45,6 +45,12 @@
         template="../templates/buglisting-default.pt"/>
 
     <browser:page
+        for="*"
+        name="+filebug-macros"
+        permission="zope.Public"
+        template="../templates/bugtarget-macros-filebug.pt" />
+
+    <browser:page
         name="+filebug"
         for="canonical.launchpad.interfaces.IBugTarget"
         class="canonical.launchpad.browser.FileBugGuidedView"
