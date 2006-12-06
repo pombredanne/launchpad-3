@@ -15,7 +15,7 @@ from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
 from canonical.database.sqlbase import quote, quote_like, SQLBase, sqlvalues
 
-from canonical.launchpad.components.bugtarget import BugTargetBase
+from canonical.launchpad.database.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.bug import (
@@ -191,6 +191,10 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
     def bugtargetname(self):
         """See IBugTarget."""
         return self.displayname
+
+    def _getBugTaskContextWhereClause(self):
+        """See BugTargetBase."""
+        return "BugTask.distribution = %d" % self.id
 
     def searchTasks(self, search_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
