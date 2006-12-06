@@ -24,7 +24,8 @@ from canonical.database.sqlbase import (
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database import postgresql
-from canonical.launchpad.helpers import shortlist, contactEmailAddresses
+from canonical.launchpad.helpers import (
+    contactEmailAddresses, is_english_variant, shortlist)
 from canonical.launchpad.event.karma import KarmaAssignedEvent
 
 from canonical.launchpad.interfaces import (
@@ -33,7 +34,7 @@ from canonical.launchpad.interfaces import (
     ISSHKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner,
     IBugTaskSet, UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
     ITranslationGroupSet, ILaunchpadStatisticSet, ShipItConstants,
-    ILaunchpadCelebrities,
+    ILaunchpadCelebrities, ILanguageSet
     )
 
 from canonical.launchpad.database.cal import Calendar
@@ -376,6 +377,22 @@ class Person(SQLBase):
     def searchTickets(self, **search_criteria):
         """See IPerson."""
         return TicketPersonSearch(person=self, **search_criteria).getResults()
+
+    def getSupportedLanguages(self):
+        """See IPerson."""
+        languages = set()
+        known_languages = shortlist(self.languages)
+        if len(known_languages):
+            for lang in known_languages:
+                # Ignore English and all its variants since we assume English
+                # is supported
+                if not is_english_variant(lang):
+                    languages.add(lang)
+        elif ITeam.providedBy(self):
+            for member in self.activemembers:
+                languages |= member.getSupportedLanguages()
+        languages.add(getUtility(ILanguageSet)['en'])
+        return languages
 
     @property
     def branches(self):
@@ -865,7 +882,7 @@ class Person(SQLBase):
         history = POFileTranslator.select(
             "POFileTranslator.person = %d" % self.id,
             prejoins=[
-                "pofile", 
+                "pofile",
                 "pofile.potemplate",
                 "latest_posubmission",
                 "latest_posubmission.pomsgset.potmsgset.primemsgid_",

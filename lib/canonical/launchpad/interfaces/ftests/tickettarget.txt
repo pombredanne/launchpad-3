@@ -378,4 +378,3 @@ because we ignore all English variants.
     >>> [lang.code for lang in sorted(target.getSupportedLanguages(),
     ...                               key=operator.attrgetter('code'))]
     [u'ca', u'cy', u'en', u'es', u'ja']
-

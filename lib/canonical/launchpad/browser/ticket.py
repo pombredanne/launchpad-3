@@ -32,10 +32,10 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 import zope.security
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.helpers import request_languages
 from canonical.launchpad import _
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
+from canonical.launchpad.helpers import is_english_variant, request_languages
 from canonical.launchpad.interfaces import (
     CreateBugParams, ILanguageSet, ITicket, ITicketAddMessageForm,
     ITicketChangeStatusForm, ITicketSet, ITicketTarget, UnexpectedFormData)
@@ -138,8 +138,7 @@ class TicketLanguageVocabularyFactory:
     def __call__(self, context):
         languages = set()
         for lang in request_languages(self.request):
-            # Ignore English and all its variants.
-            if not lang.code.startswith('en'):
+            if not is_english_variant(lang):
                 languages.add(lang)
         if (context is not None and ITicket.providedBy(context) and
             context.language.code != 'en'):

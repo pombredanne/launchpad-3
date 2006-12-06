@@ -33,12 +33,7 @@ def get_supported_languages(ticket_target):
     assert ITicketTarget.providedBy(ticket_target)
     langs = set()
     for contact in ticket_target.support_contacts:
-        for lang in contact.languages:
-            # Ignore English and all its variants since we assume English is
-            # supported (and thus we'll include it later) and we don't want to
-            # confuse people by displayng a bunch of entries named English.
-            if not lang.code.startswith('en'):
-                langs.add(lang)
+        langs |= contact.getSupportedLanguages()
     langs.add(getUtility(ILanguageSet)['en'])
     return langs
 

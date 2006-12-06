@@ -577,6 +577,14 @@ class IPerson(IHasSpecifications):
         If the given language is not present, nothing  will happen.
         """
 
+    def getSupportedLanguages():
+        """Return a set containing the languages in which support is provided.
+
+        For a person, this is equal to the list of known languages.
+        For a team that doesn't have any explicit known languages set, this
+        will be equal to union of all the languages known by its members.
+        """
+
     def searchTickets(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
                       participation=None, sort=None):
         """Search the person's tickets.
