@@ -1,3 +1,5 @@
+= Default values on the +distrotask form =
+
 Source packages often share names across distributions, especially
 Debian and Ubuntu. So when you want to indicate that the bug affects
 another distribution, the source package field is pre-filled with the
