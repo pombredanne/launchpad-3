@@ -512,7 +512,7 @@ possible_uri_re = r'''
 ''' % {'unreserved': "-a-zA-Z0-9._~%!$&'()*+,;="}
 
 possible_uri_pat = re.compile(possible_uri_re, re.IGNORECASE | re.VERBOSE)
-uri_trailers_pat = re.compile(r'((?:[,\.\?:\);]|&gt;)+)$')
+uri_trailers_pat = re.compile(r'([,.?:);>]+)$')
 
 def find_uris_in_text(text):
     """Scan a block of text for URIs, and yield the ones found."""
