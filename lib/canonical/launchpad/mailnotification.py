@@ -919,7 +919,8 @@ class TicketNotification:
         Default to the ticket's subscribers that speaks the request languages.
         If the ticket owner is subscribed, he's always consider to speak the
         language. When a subscriber is a team and it doesn't have an email
-        set, only contacts the members that speaks the supported language.
+        set nor supported languages, only contacts the members that speaks
+        the supported language.
         """
         # Optimize the English case.
         english = getUtility(ILanguageSet)['en']
@@ -928,16 +929,20 @@ class TicketNotification:
             return self.ticket.getSubscribers()
 
         recipients = set()
+        skipped = set()
         subscribers = set(self.ticket.getSubscribers())
         while subscribers:
             person = subscribers.pop()
             if person == self.ticket.owner:
                 recipients.add(person)
-            elif not person.preferredemail:
-                # When the team doesn't have an email address, process
-                # each of the non-processed member individually.
-                subscribers |= set(person.activemembers) - recipients
-            elif ticket_language in person.getSupportedLanguages():
+            elif ticket_language not in person.getSupportedLanguages():
+               skipped.add(person)
+            elif not person.preferredemail and not list(person.languages):
+                # For teams without an email address nor a set of supported
+                # languages, only notify the members that actually speak the
+                # language.
+                subscribers |= set(person.activemembers) - recipients - skipped
+            else:
                 recipients.add(person)
         return recipients
 
