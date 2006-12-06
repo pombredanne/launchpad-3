@@ -5,6 +5,9 @@
 __metaclass__ = type
 __all__ = ['Product', 'ProductSet']
 
+
+from operator import attrgetter
+
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -22,7 +25,7 @@ from canonical.lp.dbschema import (
     EnumCol, TranslationPermission, SpecificationSort, SpecificationFilter,
     SpecificationStatus)
 from canonical.launchpad.database.branch import Branch
-from canonical.launchpad.components.bugtarget import BugTargetBase
+from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
@@ -35,7 +38,8 @@ from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.database.supportcontact import SupportContact
-from canonical.launchpad.database.ticket import Ticket, TicketSet
+from canonical.launchpad.database.ticket import (
+    SimilarTicketsSearch, Ticket, TicketTargetSearch, TicketSet)
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner,
@@ -102,6 +106,10 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
 
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
+
+    def _getBugTaskContextWhereClause(self):
+        """See BugTargetBase."""
+        return "BugTask.product = %d" % self.id
 
     def getExternalBugTracker(self):
         """See IProduct."""
@@ -242,17 +250,14 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
             return None
         return ticket
 
-    def searchTickets(self, search_text=None,
-                      status=TICKET_STATUS_DEFAULT_SEARCH, owner=None,
-                      sort=None):
+    def searchTickets(self, **search_criteria):
         """See ITicketTarget."""
-        return TicketSet.search(
-            product=self, search_text=search_text, status=status,
-            owner=owner, sort=sort)
+        return TicketTargetSearch(
+            product=self, **search_criteria).getResults()
 
     def findSimilarTickets(self, title):
         """See ITicketTarget."""
-        return TicketSet.findSimilar(title, product=self)
+        return SimilarTicketsSearch(title, product=self).getResults()
 
     def addSupportContact(self, person):
         """See ITicketTarget."""
@@ -276,11 +281,14 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
     def support_contacts(self):
         """See ITicketTarget."""
         support_contacts = SupportContact.selectBy(product=self)
+        return sorted(
+            [support_contact.person for support_contact in support_contacts],
+            key=attrgetter('displayname'))
 
-        return shortlist([
-            support_contact.person for support_contact in support_contacts
-            ],
-            longest_expected=100)
+    @property
+    def direct_support_contacts(self):
+        """See ITicketTarget."""
+        return self.support_contacts
 
     @property
     def translatable_packages(self):

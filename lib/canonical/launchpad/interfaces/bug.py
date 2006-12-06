@@ -115,8 +115,8 @@ class IBug(IMessageTarget):
         title=_('Date Last Updated'), required=True, readonly=True)
     name = BugNameField(
         title=_('Nickname'), required=False,
-        description=_("""A short and unique name for this bug.
-        Add a nickname only if you often need to retype the URL
+        description=_("""A short and unique name.
+        Add one only if you often need to retype the URL
         but have trouble remembering the bug number."""),
         constraint=name_validator)
     title = Title(
@@ -175,7 +175,7 @@ class IBug(IMessageTarget):
         "Branches associated with this bug, usually "
         "branches on which this bug is being fixed.")
     tags = List(
-        title=_("Tags (separated by whitespace)"),
+        title=_("Tags"), description=_("Separated by whitespace."),
         value_type=Tag(), required=False)
 
 
@@ -390,9 +390,10 @@ class IBugAddForm(IBug):
                 "tracker."),
             vocabulary="DistributionUsingMalone")
     owner = Int(title=_("Owner"), required=True)
-    comment = Text(title=_('Description'), required=True,
-            description=_("""A detailed description of the problem you are
-            seeing."""))
+    comment = Text(
+        title=_('Further information, steps to reproduce,'
+                ' version information, etc.'),
+        required=True)
 
 
 class IBugSet(Interface):
