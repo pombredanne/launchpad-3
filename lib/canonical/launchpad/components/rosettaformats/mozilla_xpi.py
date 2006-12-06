@@ -170,12 +170,22 @@ class PropertyFile (LocalizableFile):
         udata = data.decode('utf-8')
 
         count = 0
-        lastcomment = 0
+        lastcomment = None
 
         lines = udata.split("\n")
         for line in lines:
             # Ignore empty and comment lines
             if not len(line.strip()) or line[0]=='#' or line[0]=='!':
+                if len(line.strip()) and line[0] in ('#', '!'):
+                    if lastcomment:
+                        lastcomment += ' ' + line[1:].strip()
+                        if 'END LICENSE BLOCK' in lastcomment:
+                            lastcomment = None
+                    else:
+                        lastcomment = line[1:].strip()
+                else:
+                    # reset comment on empty lines
+                    lastcomment = None
                 continue
             (key, value) = line.split('=', 1)
 
@@ -201,6 +211,7 @@ class PropertyFile (LocalizableFile):
                                     'comments' : [] }
                 if lastcomment:
                     self._data[key]['comments'] = [ lastcomment]
+            lastcomment = None
 
 class MozillaSupport:
     implements(ITranslationImport)
