@@ -438,6 +438,7 @@ This View send the event appropriate to send out a notification:
     >>> notifications = pop_notifications()
     >>> len(notifications)
     1
+
     >>> print notifications[0].get_payload(decode=True)
     Your support request #3...
     ...
@@ -583,6 +584,68 @@ by the previous rules.
     # Clean up.
     >>> ticket_three.language = getUtility(ILanguageSet)['en']
 
+== UserSupportLanguagesMixin ==
+
+The UserSupportLanguagesMixin can be used by views that needs to
+retrieve the set of languages in which the user is assumed to be
+interested.
+
+    >>> from canonical.launchpad.webapp import LaunchpadView
+    >>> from canonical.launchpad.browser import UserSupportLanguagesMixin
+
+    >>> class UserSupportLanguagesView(UserSupportLanguagesMixin,
+    ...                                LaunchpadView):
+    ...     """View to test UserSupportLanguagesMixin."""
+
+The set of languages to use for support is defined in the
+'user_support_languages' attribute.
+
+Like all operations involving languages in the support tracker, we
+assume that the user is always interested in English and we ignore
+all other English variants.
+
+When the user is not logged in, or didn't define his preferred
+languages, the set will be initialized from the request. That's the
+languages configured in the browswer, plus other inferred from the
+GeoIP database.
+
+    >>> request = LaunchpadTestRequest(
+    ...     HTTP_ACCEPT_LANGUAGE='fr, en_CA')
+
+    >>> login(ANONYMOUS)
+    >>> view = UserSupportLanguagesView(None, request)
+
+For this request, the set of support languages contain English
+(default), French (from the request), and the languages spoken
+in South Africa (inferred from the GeoIP location of the request).
+
+    >>> sorted(language.code for language in view.user_support_languages)
+    [u'af', u'en', u'fr', u'st', u'xh', u'zu']
+
+Same thing if the logged in user didn't have any preferred languages
+set:
+
+    >>> login('test@canonical.com')
+    >>> view = UserSupportLanguagesView(None, request)
+    >>> sorted(language.code for language in view.user_support_languages)
+    [u'af', u'en', u'fr', u'st', u'xh', u'zu']
+
+But when the user has some preferred languages set, these will be used
+instead of the ones inferred from the request:
+
+    >>> login('carlos@canonical.com')
+    >>> view = UserSupportLanguagesView(None, request)
+    >>> sorted(language.code for language in view.user_support_languages)
+    [u'ca', u'en', u'es']
+
+English variants included in the user's preferred languages are
+excluded:
+
+    >>> login('daf@canonical.com')
+    >>> view = UserSupportLanguagesView(None, request)
+    >>> sorted(language.code for language in view.user_support_languages)
+    [u'cy', u'en', u'ja']
+
 SearchTicketsView
 -----------------
 
@@ -642,7 +705,7 @@ can tweak the search and filter the results:
     >>> search_view_harness.submit('search', {
     ...     'field.status': ['Solved', 'Open'],
     ...     'field.search_text': 'firefox',
-    ...     'field.sort': 'by relevancy',})
+    ...     'field.sort': 'by relevancy'})
     >>> search_view = search_view_harness.view
     >>> tickets = search_view.searchResults()
     >>> for ticket in tickets.batch:

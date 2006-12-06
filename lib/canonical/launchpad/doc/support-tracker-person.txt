@@ -136,6 +136,31 @@ will be selected:
     Firefox loses focus and gets stuck
     Firefox is slow and consumes too much RAM
 
+=== language ===
+
+By default, tickets in all languages are included in the results. It is
+possible to filter tickets by the language they were writtenin . One or
+a list of ILanguage object should be passed in the language parameter to
+specify the language filter.
+
+    >>> from canonical.launchpad.interfaces import ILanguageSet
+    >>> spanish = getUtility(ILanguageSet)['es']
+    >>> english = getUtility(ILanguageSet)['en']
+
+Foo bar doesn't have any tickets written in Spanish.
+
+    >>> for ticket in foo_bar.searchTickets(language=spanish):
+    ...     print ticket.title
+
+But carlos has one.
+
+    >>> carlos = getUtility(IPersonSet).getByName('carlos')
+    >>> for ticket in carlos.searchTickets(
+    ...     language=[english, spanish]):
+    ...     [ticket.title, ticket.language.code]
+    [u'Problema al recompilar kernel con soporte smp (doble-n\xfacleo)',
+     u'es']
+
 === Combination ===
 
 The returned sets of tickets is the intersection of the sets delimited
@@ -235,3 +260,52 @@ languages of the Ubuntu Team that will be used.
     >>> ubuntu_team.removeLanguage(esperanto)
     >>> language_codes(guadamen_team.getSupportedLanguages())
     ['en', 'es']
+
+== getTicketLanguages() ==
+
+IPerson also defines a getTicketLanguages() attribute which contains the set
+of languages used by all of the tickets in which this person is
+involved.
+
+    >>> sorted(language.code for language in foo_bar.getTicketLanguages())
+    [u'en']
+
+This includes tickets which the person owns. But also, tickets that the
+user subscribed to.
+
+    >>> from canonical.launchpad.interfaces import ITicketSet
+    >>> pt_BR_ticket = getUtility(ITicketSet).get(13)
+    >>> login('foo.bar@canonical.com')
+    >>> pt_BR_ticket.subscribe(foo_bar)
+    <TicketSubscription...>
+
+    >>> sorted(language.code for language in foo_bar.getTicketLanguages())
+    [u'en', u'pt_BR']
+
+And also tickets for which he's the answerer.
+
+    >>> es_ticket = getUtility(ITicketSet).get(12)
+    >>> es_ticket.reject(foo_bar, 'Reject ticket.')
+    <TicketMessage...>
+
+    >>> sorted(language.code for language in foo_bar.getTicketLanguages())
+    [u'en', u'es', u'pt_BR']
+
+As well, as ticket which are assigned to the user.
+
+    >>> pt_BR_ticket.assignee = carlos
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+
+    >>> sorted(language.code for language in carlos.getTicketLanguages())
+    [u'es', u'pt_BR']
+
+And tickets on which the user commented:
+
+    >>> en_ticket = getUtility(ITicketSet).get(1)
+    >>> login('carlos@canonical.com')
+    >>> en_ticket.addComment(carlos, 'A simple comment.')
+    <TicketMessage...>
+
+    >>> sorted(language.code for language in carlos.getTicketLanguages())
+    [u'en', u'es', u'pt_BR']

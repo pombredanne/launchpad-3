@@ -11,7 +11,8 @@
         <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
         <!-- ITicketTarget -->
         <allow attributes="getTicket searchTickets findSimilarTickets
-            support_contacts direct_support_contacts getSupportedLanguages" 
+            support_contacts direct_support_contacts getSupportedLanguages
+	    getTicketLanguages"
 	    />
         <require permission="launchpad.AnyPerson"
             attributes="newTicket addSupportContact removeSupportContact" />

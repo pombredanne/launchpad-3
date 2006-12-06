@@ -39,6 +39,7 @@ from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
+from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.sourcepackagename import (
     SourcePackageName)
 from canonical.launchpad.database.sourcepackagerelease import (
@@ -506,6 +507,13 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
     def direct_support_contacts(self):
         """See ITicketTarget."""
         return self.support_contacts
+
+    def getTicketLanguages(self):
+        """See ITicketTarget."""
+        return set(Language.select(
+            'Language.id = language AND distribution = %s AND '
+            'sourcepackagename IS NULL' % sqlvalues(self),
+            clauseTables=['Ticket'], distinct=True))
 
     def ensureRelatedBounty(self, bounty):
         """See IDistribution."""

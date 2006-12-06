@@ -20,7 +20,7 @@ __all__ = [
 
 
 from zope.schema import (
-    Choice, Datetime, Int, Text, TextLine, Bytes, Bool)
+    Bool, Bytes, Choice, Datetime, Int, Text, TextLine)
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 
@@ -586,7 +586,7 @@ class IPerson(IHasSpecifications):
         """
 
     def searchTickets(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-                      participation=None, sort=None):
+                      language=None, participation=None, sort=None):
         """Search the person's tickets.
 
         :search_text: A string that is matched against the ticket
@@ -596,6 +596,10 @@ class IPerson(IHasSpecifications):
         :status: A sequence of TicketStatus Items. If None or an empty
         sequence, the status is not included as a filter criteria.
 
+        :language: An ILanguage or a sequence of ILanguage objects to match
+        against the ticket's language. If None or an empty sequence,
+        the language is not included as a filter criteria.
+
         :participation: A list of TicketParticipation that defines the set
         of relationship to tickets that will be searched. If None or an empty
         sequence, all relationships are considered.
@@ -604,6 +608,11 @@ class IPerson(IHasSpecifications):
         When there is a search_text value, the default is to sort by RELEVANCY,
         otherwise results are sorted NEWEST_FIRST.
 
+        """
+
+    def getTicketLanguages():
+        """Return a set of ILanguage used by the tickets in which this person "
+        is involved.
         """
 
 

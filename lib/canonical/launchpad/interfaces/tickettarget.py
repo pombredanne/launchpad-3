@@ -67,22 +67,25 @@ class ITicketTarget(Interface):
         """
 
     def searchTickets(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-                      owner=None, sort=None):
+                      language=None, owner=None, sort=None):
         """Search the object's tickets.
 
         :search_text: A string that is matched against the ticket
         title and description. If None, the search_text is not included as
         a filter criteria.
 
-        :status: A sequence of TicketStatus Items. If None or an empty
+        :status: One or a sequence of TicketStatus Items. If None or an empty
         sequence, the status is not included as a filter criteria.
+
+        :language: An ILanguage or a sequence of ILanguage objects to match
+        against the ticket's language. If None or an empty sequence,
+        the language is not included as a filter criteria.
 
         :owner: The IPerson that created the ticket.
 
         :sort:  An attribute of TicketSort. If None, a default value is used.
         When there is a search_text value, the default is to sort by RELEVANCY,
         otherwise results are sorted NEWEST_FIRST.
-
         """
 
     def findSimilarTickets(title):
@@ -120,6 +123,9 @@ class ITicketTarget(Interface):
         A support contact is considered to speak a given language if that
         language is listed as one of his preferred languages.
         """
+
+    def getTicketLanguages():
+        """Return the set of ILanguage used by all of this target's tickets."""
 
     support_contacts = List(
         title=_("Support Contacts"),

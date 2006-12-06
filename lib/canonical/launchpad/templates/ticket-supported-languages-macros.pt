@@ -14,11 +14,12 @@
       contacts in this community. If you go ahead and make a support request
       in that language, no support contacts will be able to read it.
       Currently, the languages spoken by at least one support contact are:
-      <tal:langs tal:repeat="lang view/ticket_target/getSupportedLanguages"
-                i18n:name="languages">
-        <span tal:replace="lang/englishname"
-        /><span tal:condition="not: repeat/lang/end">,</span>
-      </tal:langs>.
+      <tal:languages i18n:name="languages">
+        <tal:language_loop repeat="lang view/supported_languages">
+          <span tal:replace="lang/englishname"
+            /><tal:comma condition="not: repeat/lang/end">,</tal:comma>
+        </tal:language_loop>
+      </tal:languages>.
     </p>
     <input type="hidden" name="chosen_language" value="en"
             tal:attributes="value view/chosen_language/code" />

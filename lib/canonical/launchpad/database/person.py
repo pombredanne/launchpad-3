@@ -24,9 +24,10 @@ from canonical.database.sqlbase import (
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database import postgresql
+from canonical.launchpad.database.language import Language
+from canonical.launchpad.event.karma import KarmaAssignedEvent
 from canonical.launchpad.helpers import (
     contactEmailAddresses, is_english_variant, shortlist)
-from canonical.launchpad.event.karma import KarmaAssignedEvent
 
 from canonical.launchpad.interfaces import (
     IPerson, ITeam, IPersonSet, IEmailAddress, IWikiName, IIrcID, IJabberID,
@@ -393,6 +394,21 @@ class Person(SQLBase):
                 languages |= member.getSupportedLanguages()
         languages.add(getUtility(ILanguageSet)['en'])
         return languages
+
+    def getTicketLanguages(self):
+        """See ITicketTarget."""
+        return set(Language.select(
+            '''Language.id = language AND Ticket.id IN (
+            SELECT id FROM Ticket
+                     WHERE owner = %(personID)s OR answerer = %(personID)s OR
+                           assignee = %(personID)s
+            UNION SELECT ticket FROM TicketSubscription
+                  WHERE person = %(personID)s
+            UNION SELECT ticket
+                    FROM TicketMessage JOIN Message ON (message = Message.id)
+                   WHERE owner = %(personID)s
+            )''' % sqlvalues(personID=self.id),
+            clauseTables=['Ticket'], distinct=True))
 
     @property
     def branches(self):

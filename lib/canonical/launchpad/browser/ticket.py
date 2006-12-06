@@ -20,6 +20,8 @@ __all__ = [
     'TicketWorkflowView',
     ]
 
+from operator import attrgetter
+
 from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
@@ -185,6 +187,13 @@ class TicketSupportLanguageMixin:
     def ticket_target(self):
         """Return the ITicketTarget related to the context."""
         return ITicketTarget(self.context)
+
+    @cachedproperty
+    def supported_languages(self):
+        """Return the list of supported languages ordered by name."""
+        return sorted(
+            self.ticket_target.getSupportedLanguages(),
+            key=attrgetter('englishname'))
 
     def createLanguageField(self):
         """Create a field to edit a ticket language using a special vocabulary.
