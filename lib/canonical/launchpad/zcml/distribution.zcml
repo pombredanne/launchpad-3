@@ -20,7 +20,8 @@
             />
         <!-- ITicketTarget -->
         <allow attributes="getTicket searchTickets findSimilarTickets
-              support_contacts" />
+              support_contacts direct_support_contacts"
+              />
         <require permission="launchpad.AnyPerson"
             attributes="newTicket addSupportContact removeSupportContact" />
     </content>
@@ -243,28 +244,6 @@
             class="canonical.widgets.HiddenUserWidget" />
     </browser:addform>
 
-    <browser:generalform
-        name="+filebug"
-        for="canonical.launchpad.interfaces.IDistribution"
-        schema="canonical.launchpad.interfaces.IBugAddForm"
-        label="Report a bug"
-        fields="packagename title comment security_related"
-        class="canonical.launchpad.browser.FileBugView"
-        facet="bugs"
-        keyword_arguments="packagename title comment security_related"
-        permission="launchpad.AnyPerson"
-        template="../templates/bugtarget-filebug.pt"
-        lp:url="/distros/$Distribution.name/+filebug">
-        <browser:widget
-           field="title"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="50" />
-        <browser:widget
-           field="comment"
-           class="zope.app.form.browser.TextAreaWidget"
-           width="62" />
-    </browser:generalform>
-
     <browser:editform
         for="canonical.launchpad.interfaces.IDistribution"
         permission="launchpad.Edit"
@@ -392,11 +371,6 @@
         for="canonical.launchpad.interfaces.IDistributionSet"
         name="+index" />
 
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IDistributionSet"
-        layer="canonical.launchpad.layers.MaloneLayer"
-        name="+bugs" />
-
     <browser:navigation
         module="canonical.launchpad.browser"
         classes="DistributionSetNavigation"
@@ -408,8 +382,6 @@
         parent_utility="canonical.launchpad.interfaces.IDistributionSet"
         />
 
-    <!-- XXX: WTF is distros-index hooked onto +bugs for
-              kiko, 2005-09-09 -->
     <browser:pages
         for="canonical.launchpad.interfaces.IDistributionSet"
         permission="zope.Public"
@@ -419,10 +391,6 @@
             name="+index"
             template="../templates/distros-index.pt"
             lp:url="/distros/" />
-        <browser:page
-            name="+bugs"
-            template="../templates/distros-index.pt"
-            lp:url="/distros/+bugs" />
     </browser:pages>
 
     <browser:pages
