@@ -24,8 +24,8 @@ from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.helpers import request_languages
 from canonical.launchpad import _
+from canonical.launchpad.helpers import is_english_variant, request_languages
 from canonical.launchpad.interfaces import (
     IDistribution, ILanguageSet, IManageSupportContacts, ISearchTicketsForm,
     ITicketTarget, NotFoundError)
@@ -52,7 +52,7 @@ class UserSupportLanguagesMixin:
         """
         languages = set(
             language for language in request_languages(self.request)
-            if not language.code.startswith('en'))
+            if not is_english_variant(language))
         languages.add(getUtility(ILanguageSet)['en'])
         return languages
 
