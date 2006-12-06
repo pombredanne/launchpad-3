@@ -1,56 +1,58 @@
 <div class="portlet">
-  <table class="summary">
-    <tbody>
-      <tr>
-        <th>Project status:</th>
-        <td tal:condition="context/reviewed">Reviewed</td>
-        <td tal:condition="context/active">Active</td>
-        <td tal:condition="not: context/active">Disabled</td>
-      </tr>
-      <tr>
-        <th>Maintainer:</th>
-        <td>
-          <a
-            tal:content="context/owner/browsername"
-            tal:attributes="href context/owner/fmt:url"
-          >ownername</a>
-        </td>
-      </tr>
-      <tr>
-        <th>Driver:</th>
-        <td tal:condition="not:context/driver">Not yet assigned</td>
-        <td tal:condition="context/driver">
-          <a
-            tal:content="context/driver/browsername"
-            tal:attributes="href context/driver/fmt:url"
-          >Carlos Perello</a>
-        </td>
-      </tr>
-      <tr>
-        <th>Translation group:</th>
-        <td tal:condition="not: context/translationgroup">Not assigned</td>
-        <td tal:condition="context/translationgroup">
-          <a tal:attributes="
-            href string:/rosetta/groups/${context/translationgroup/name}/"
-            tal:content="context/translationgroup/title"
-          >Group</a>
-        </td>
-      </tr>
-      <tr>
-        <th>Bug tracker:</th>
-        <td>
-          <a
-            tal:condition="context/bugtracker"
-            tal:content="context/bugtracker/title"
-            al:attributes="href context/bugtracker/fmt:url"
-          >tracker title</a>
-          <tal:none condition="not:context/bugtracker">None specified</tal:none>
-        </td>
-      </tr>
-      <tr>
-        <th>Translations:</th>
-        <td tal:content="context/translationpermission/title">Open</td>
-      </tr>
-    </tbody>
-  </table>
+  <div class="portletBody portletContent">
+    <table class="summary">
+      <tbody>
+        <tr>
+          <th>Project status:</th>
+          <td tal:condition="context/reviewed">Reviewed</td>
+          <td tal:condition="context/active">Active</td>
+          <td tal:condition="not: context/active">Disabled</td>
+        </tr>
+        <tr>
+          <th>Maintainer:</th>
+          <td>
+            <a
+              tal:content="context/owner/browsername"
+              tal:attributes="href context/owner/fmt:url"
+            >ownername</a>
+          </td>
+        </tr>
+        <tr>
+          <th>Driver:</th>
+          <td tal:condition="not:context/driver">Not yet assigned</td>
+          <td tal:condition="context/driver">
+            <a
+              tal:content="context/driver/browsername"
+              tal:attributes="href context/driver/fmt:url"
+            >Carlos Perello</a>
+          </td>
+        </tr>
+        <tr>
+          <th>Translation group:</th>
+          <td tal:condition="not: context/translationgroup">Not assigned</td>
+          <td tal:condition="context/translationgroup">
+            <a tal:attributes="
+              href string:/rosetta/groups/${context/translationgroup/name}/"
+              tal:content="context/translationgroup/title"
+            >Group</a>
+          </td>
+        </tr>
+        <tr>
+          <th>Bug tracker:</th>
+          <td>
+            <a
+              tal:condition="context/bugtracker"
+              tal:content="context/bugtracker/title"
+              al:attributes="href context/bugtracker/fmt:url"
+            >tracker title</a>
+            <tal:none condition="not:context/bugtracker">None specified</tal:none>
+          </td>
+        </tr>
+        <tr>
+          <th>Translations:</th>
+          <td tal:content="context/translationpermission/title">Open</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 </div>

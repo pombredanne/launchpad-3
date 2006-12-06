@@ -40,6 +40,32 @@
                         <abbr>CVS</abbr>, <abbr>SVN</abbr>, and git projects,
                         so you can use Bazaar with those too.
                       </p>
+                      <ul class="buttons">
+                        <li>
+                          <a href="+tour">
+                            <img
+                              alt="Take a tour"
+                              src="/+icing/but_lrg_takeatour.gif"
+                            />
+                          </a>
+                        </li>
+                        <li>
+                          <a href="+addbranch">
+                            <img
+                              alt="Register a branch"
+                              src="/+icing/but_lrg_registerabranch.gif"
+                            />
+                          </a>
+                        </li>
+                        <li>
+                          <a href="+import">
+                            <img
+                              alt="Import your project"
+                              src="/+icing/but_lrg_importyourproject.gif"
+                            />
+                          </a>
+                        </li>
+                      </ul>
                       <div class="columns">
                         <div class="three column left">
                           <h2>Recent imports</h2>
@@ -69,23 +95,23 @@
                           </ul>
                         </div>
                       </div>
+                      <div class="clear"></div>
                       <div id="application-footer">
                         <div>
-                          <tal:branches replace="nothing">12345</tal:branches>
+                          <strong class="demo">12345</strong>
                           branches registered in
-                          <tal:products replace="nothing">1234</tal:products>
+                          <strong class="demo">1234</strong>
                           products
                         </div>
                         <div>
-                          <tal:imports replace="view/import_count"
-                          >123</tal:imports> imported branches
+                          <strong tal:content="view/import_count">123</strong>
+                          imported branches
                         </div>
                         <div>
-                          <tal:buglinks replace="nothing">12</tal:buglinks>
+                          <strong class="demo">12</strong>
                           branches associated with bug reports
                         </div>
                       </div>
-                      <div class="clear"></div>
                     </div><!--z-->
                   </div><!--y-->
                 </div><!--x-->
@@ -149,4 +175,4 @@
   </body>
 </html>
 </tal:layout>
-<!-- 1-0 inprogress high-priority for 1.0 -->
+<!-- 1-0 inprogress Needs recent imports, registered, and changed lists -->

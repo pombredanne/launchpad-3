@@ -207,6 +207,10 @@
             template="../templates/distribution-portlet-details.pt"
             lp:url="/distros/$Distribution.name/+portlet-details" />
         <browser:page
+            name="+portlet-lifecycle"
+            template="../templates/distribution-portlet-lifecycle.pt"
+            lp:url="/distros/$Distribution.name/+portlet-lifecycle" />
+        <browser:page
             name="+portlet-releases"
             template="../templates/distribution-portlet-releases.pt"
             lp:url="/distros/$Distribution.name/+portlet-releases" />
@@ -214,6 +218,10 @@
             name="+portlet-milestones"
             template="../templates/object-portlet-milestones.pt"
             lp:url="/distros/$Distribution.name/+portlet-milestones" />
+        <browser:page
+            name="+portlet-translations"
+            template="../templates/distribution-portlet-translations.pt"
+            lp:url="/distros/$Distribution.name/+portlet-translations" />
         <browser:page
             name="+portlet-uploaders"
             template="../templates/distribution-portlet-uploaders.pt"

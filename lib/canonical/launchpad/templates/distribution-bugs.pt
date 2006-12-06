@@ -7,6 +7,7 @@
   <body>
     <div metal:fill-slot="main" class="tab-bugs">
       <h1>Bugs in Ubuntu</h1>
+      <p class="demo">Search form missing here</p>
       <xmetal:search
         use-macro="context/@@+bugtarget-macros-search/simple-search-form"
       />
@@ -25,7 +26,7 @@
                   <a
                     tal:condition="context/driver"
                     tal:attributes="href context/driver/fmt:url"
-                    tal:content="context/driver/name"
+                    tal:content="context/driver/displayname"
                   >John Smith</a>
                 </td>
               </tr>
@@ -37,7 +38,7 @@
                   <a
                     tal:condition="context/bugcontact"
                     tal:attributes="href context/bugcontact/fmt:url"
-                    tal:content="context/bugcontact/name"
+                    tal:content="context/bugcontact/displayname"
                   >Bob Johnson</a>
                 </td>
               </tr>
@@ -49,7 +50,7 @@
                   <a
                     tal:condition="context/security_contact"
                     tal:attributes="href context/security_contact/fmt:url"
-                    tal:content="context/security_contact/name"
+                    tal:content="context/security_contact/displayname"
                   >Billy Anderson</a>
                 </td>
               </tr>
@@ -70,11 +71,21 @@
             </li>
           </ul>
           <ul class="buttons">
-            <li class="report-bug">
-              <a href="+filebug">Report a bug</a>
+            <li>
+              <a href="+filebug">
+                <img
+                  alt="Report a bug"
+                  src="/+icing/but_sml_reportabug_o.gif"
+                />
+              </a>
             </li>
-            <li class="request-support">
-              <a href="+addticket">Request support</a>
+            <li>
+              <a href="+addticket">
+                <img
+                  alt="Request support"
+                  src="/+icing/but_sml_requestsupport.gif"
+                />
+              </a>
             </li>
           </ul>
         </div><!-- two column right -->
@@ -85,4 +96,4 @@
     </div><!-- main -->
   </body>
 </html>
-<!-- 1-0 in-progress Needs form traversal, pie chart, and canned searches. -->
+<!-- 1-0 in-progress Needs search form, pie chart, "Recently reported", "Recently touched". -->
