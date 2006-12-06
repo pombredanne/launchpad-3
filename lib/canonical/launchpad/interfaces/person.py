@@ -601,6 +601,9 @@ class IPerson(IHasSpecifications):
 
         """
 
+    def archiveWithTag(tag):
+        """Return the archive owned by this person with the given tag."""
+
 
 class ITeam(IPerson):
     """ITeam extends IPerson.

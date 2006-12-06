@@ -55,12 +55,13 @@ When initially constructing a NascentUpload instance, it verifies that
 the changes file specified exists, raising FileNotFound if it does not.
 
   >>> NascentUpload(buildd_policy, datadir(""), "DOES-NOT-EXIST",
-  ...     MockLogger())
+  ...     MockLogger(), ubuntu.main_archive)
   Traceback (most recent call last):
   ...
-  FileNotFound: DOES-NOT-EXIST
+  FileNotFound: ...DOES-NOT-EXIST
   >>> ed_upload = NascentUpload(findPolicyByName('insecure'),
-  ...     datadir(''), "ed_0.2-20_i386.changes", MockLogger())
+  ...     datadir(''), "ed_0.2-20_i386.changes", MockLogger(),
+  ...     ubuntu.main_archive)
   >>> ed_upload.changes_filename == datadir("ed_0.2-20_i386.changes")
   True
   >>> ed_upload.policy.setOptions(MockOptions())
@@ -129,7 +130,7 @@ The nascent upload can tell us if it is sourceful or not, (ditto binaryful)
 
   >>> ed_source_upload = NascentUpload(buildd_policy,
   ...     datadir(''), "ed_0.2-20_i386.source-only-unsigned-changes",
-  ...     MockLogger())
+  ...     MockLogger(), ubuntu.main_archive)
   >>> ed_source_upload.sourceful
   True
   >>> ed_source_upload.binaryful
@@ -137,7 +138,7 @@ The nascent upload can tell us if it is sourceful or not, (ditto binaryful)
 
   >>> ed_binary_upload = NascentUpload(buildd_policy,
   ...     datadir(''), "ed_0.2-20_i386.binary-only-unsigned-changes",
-  ...     MockLogger())
+  ...     MockLogger(), ubuntu.main_archive)
   >>> ed_binary_upload.sourceful
   False
   >>> ed_binary_upload.binaryful
@@ -152,7 +153,7 @@ If the Architecture line does not match then we get an exception.
 
   >>> ed_mismatched_upload = NascentUpload(buildd_policy,
   ...     datadir(''), "ed_0.2-20_i386.mismatched-arch-unsigned-changes",
-  ...     MockLogger())
+  ...     MockLogger(), ubuntu.main_archive)
   >>> ed_mismatched_upload.sourceful
   True
   >>> ed_mismatched_upload.rejection_message
@@ -161,7 +162,8 @@ If the Architecture line does not match then we get an exception.
 We can distinguish between the arch-indep and arch-dep binary uploads.
 
   >>> quodlibet = NascentUpload(buildd_policy,
-  ...     datadir(''), "quodlibet_0.13.1-1_i386.changes", MockLogger())
+  ...     datadir(''), "quodlibet_0.13.1-1_i386.changes",
+  ...     MockLogger(), ubuntu.main_archive)
   >>> quodlibet.sourceful
   False
   >>> quodlibet.binaryful
@@ -270,6 +272,8 @@ Finally we can ask the upload to process itself.
   DEBUG: Adding recipient: 'Daniel Silverstone <daniel.silverstone@canonical.com>'
   DEBUG: Build ... created
   DEBUG: Creating a New queue entry
+  DEBUG: Leaving status as NEW
+
   >>> print success
   True
   >>> for msg in msgs:
@@ -384,7 +388,7 @@ First up, construct an upload of just the ed source...
 
   >>> ed_src = NascentUpload(findPolicyByName('sync'), 
   ...          datadir('split-upload-test'), "ed_0.2-20_source.changes", 
-  ...          MockMunchyLogger())
+  ...          MockMunchyLogger(), ubuntu.main_archive)
   >>> ed_src.policy.setOptions(MockOptions())
   >>> ed_src.process()
   >>> ed_src.rejected
@@ -420,7 +424,7 @@ and sourcepackageversion for the distrorelease in question.
 
   >>> ed_src = NascentUpload(findPolicyByName('sync'),
   ...          datadir('split-upload-test'), "ed_0.2-20_source.changes",
-  ...          MockMunchyLogger())
+  ...          MockMunchyLogger(), ubuntu.main_archive)
   >>> ed_src.policy.setOptions(MockOptions())
   >>> ed_src.process()
   >>> ed_src.rejected
@@ -462,7 +466,7 @@ case, see further info in bug #55774.
 
   >>> ed_bin = NascentUpload(findPolicyByName('sync'), 
   ...          datadir('split-upload-test'), "ed_0.2-20_i386.changes", 
-  ...          MockMunchyLogger())
+  ...          MockMunchyLogger(), ubuntu.main_archive)
   >>> ed_bin.policy.setOptions(MockOptions())
   >>> ed_bin.policy.can_upload_binaries = True
   >>> ed_bin.process()
@@ -487,7 +491,7 @@ to upload to -UPDATES in a DEVELOPMENT release.
 
   >>> ed_src = NascentUpload(findPolicyByName('sync'), 
   ...          datadir('updates-upload-test'), "ed_0.2-20_source.changes", 
-  ...          MockMunchyLogger())
+  ...          MockMunchyLogger(), ubuntu.main_archive)
   >>> ed_src.policy.setOptions(MockOptions())
   >>> ed_src.policy.distrorelease = None # Override this by the changes
   >>> ed_src.process()
@@ -517,7 +521,7 @@ bug # 30741.
 
   >>> ed21_src = NascentUpload(findPolicyByName('sync'),
   ...          datadir('ed-0.2-21'), "ed_0.2-21_source.changes",
-  ...          MockMunchyLogger())
+  ...          MockMunchyLogger(), ubuntu.main_archive)
   >>> ed21_src.policy.setOptions(MockOptions())
   >>> ed21_src.process()
   >>> ed21_src.rejected
@@ -543,7 +547,7 @@ This time the upload should fail because the ACLs don't let person 26 upload
 
   >>> ed_src = NascentUpload(findPolicyByName('insecure'), 
   ...          datadir(''), "ed_0.2-20_i386.changes", 
-  ...          MockMunchyLogger())
+  ...          MockMunchyLogger(), ubuntu.main_archive)
   >>> ed_src.policy.setOptions(MockOptions())
   >>> ed_src.policy.can_upload_binaries = True
   >>> ed_src.policy.can_upload_mixed = True

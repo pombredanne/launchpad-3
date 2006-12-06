@@ -77,7 +77,8 @@ We are going to import the pmount build.
 Do the upload into the system.
 
   >>> pmount_upload = NascentUpload(findPolicyByName('buildd'),
-  ...     datadir(''), "pmount_0.9.7-2ubuntu2_amd64.changes", MockLogger())
+  ...     datadir(''), "pmount_0.9.7-2ubuntu2_amd64.changes",
+  ...     MockLogger(), archive=ubuntu.main_archive)
 
 
   >>> pmount_upload.changes_filename == datadir("pmount_0.9.7-2ubuntu2_amd64.changes")
@@ -115,6 +116,7 @@ It was not rejected.
   DEBUG: Changes file is unsigned, adding changer as recipient
   DEBUG: Build ... found
   DEBUG: Creating a New queue entry
+  DEBUG: Leaving status as NEW
 
 And all things worked.
 

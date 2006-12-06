@@ -30,7 +30,7 @@ First, test the rejection of a missapplied changesfile name:
 
   >>> upload = NascentUpload(findPolicyByName('sync'),
   ...     datadir(''), "dist-upgrader_20060302.0120.changes",
-  ...     logging.getLogger())
+  ...     logging.getLogger(), archive=ubuntutest.main_archive)
   >>> mock_options = MockOptions()
   >>> upload.policy.setOptions(mock_options)
 
@@ -50,7 +50,7 @@ Now do a proper upload into the system.
 
   >>> upload = NascentUpload(findPolicyByName('insecure'),
   ...     datadir(''), "dist-upgrader_20060302.0120_all.changes",
-  ...     MockLogger())
+  ...     MockLogger(), archive=ubuntutest.main_archive)
 
 
   >>> upload.changes_filename == datadir(

@@ -9,7 +9,9 @@ they may have come from a build.
 
 Within an upload, we may find no changes file, one, or several. One is
 the usual number. To process the upload, we process each changes file
-in turn.
+in turn. These changes files may be within a structure of sub-directories,
+in which case we extract information from the names of these, to calculate
+which distribution and which PPA are being uploaded to.
 
 To process a changes file, we make checks such as that the other files
 referenced by it are present, formatting is valid, signatures are correct,
@@ -48,12 +50,15 @@ __metaclass__ = type
 import os
 from email import message_from_string
 
+from zope.component import getUtility
+
 from canonical.launchpad.mail import sendmail
 from canonical.encoding import ascii_smash
 from canonical.archivepublisher.nascentupload import (
     NascentUpload, UploadError)
 from canonical.archivepublisher.uploadpolicy import (
     findPolicyByOptions, UploadPolicyError)
+from canonical.launchpad.interfaces import IDistributionSet, IPersonSet
 
 from contrib.glock import GlobalLock
 
@@ -62,7 +67,7 @@ __all__ = ['UploadProcessor']
 
 class UploadStatusEnum:
     """Possible results from processing an upload.
-    
+
     ACCEPTED: all goes well, we commit nascentupload's changes to the db
     REJECTED: nascentupload gives a well-formed rejection error,
               we send a rejection email and rollback.
@@ -75,7 +80,7 @@ class UploadStatusEnum:
 
 class UploadProcessor:
     """Responsible for processing uploads. See module docstring."""
-    
+
     def __init__(self, options, ztm, log):
         self.options = options
         self.ztm = ztm
@@ -83,7 +88,7 @@ class UploadProcessor:
 
     def processUploadQueue(self):
         """Search for uploads, and process them.
-        
+
 	Uploads are searched for in the 'incoming' directory inside the
         base_fsroot.
 
@@ -98,7 +103,7 @@ class UploadProcessor:
                 if not os.path.exists(full_subdir):
                     self.log.debug("Creating directory %s" % full_subdir)
                     os.mkdir(full_subdir)
-                
+
             fsroot = os.path.join(self.options.base_fsroot, "incoming")
             uploads_to_process = self.locateDirectories(fsroot)
             self.log.debug("Checked in %s, found %s"
@@ -110,7 +115,7 @@ class UploadProcessor:
         finally:
             self.log.debug("Rolling back any remaining transactions.")
             self.ztm.abort()
-            
+
     def processUpload(self, fsroot, upload):
         """Process an upload's changes files, and move it to a new directory.
 
@@ -129,14 +134,14 @@ class UploadProcessor:
                 upload, self.options.leafname))
             return
 
-        upload_path = os.path.join(fsroot, upload)        
+        upload_path = os.path.join(fsroot, upload)
         changes_files = self.locateChangesFiles(upload_path)
 
         # Keep track of the various results
         some_failed = False
         some_rejected = False
         some_accepted = False
-        
+
         for changes_file in changes_files:
             self.log.debug("Considering changefile %s" % changes_file)
             try:
@@ -153,7 +158,7 @@ class UploadProcessor:
                 self.log.error("Unhandled exception from processing an upload",
                                exc_info=True)
                 some_failed = True
-                
+
         if some_failed:
             destination = "failed"
         elif some_rejected:
@@ -186,54 +191,54 @@ class UploadProcessor:
     def locateChangesFiles(self, upload_path):
         """Locate .changes files in the given upload directory.
 
-        Return .changes files sorted with *_source.changes first.
+        Return .changes files sorted with *_source.changes first. This
+        is important to us, as in an upload containing several changes files,
+        it's possible the binary ones will depend on the source ones, so
+        the source ones should always be considered first.
         """
         changes_files = []
-        for filename in self.orderFilenames(os.listdir(upload_path)):
-            if filename.endswith(".changes"):
-                changes_files.append(filename)
-        return changes_files
-                
+        for dirpath, dirnames, filenames in os.walk(upload_path):
+            relative_path = dirpath[len(upload_path)+1:]
+            for filename in filenames:
+                if filename.endswith(".changes"):
+                    changes_files.append(os.path.join(relative_path, filename))
+        return self.orderFilenames(changes_files)
+
     def processChangesFile(self, upload_path, changes_file):
         """Process a single changes file.
 
-        This is done by obtaining the appropriate upload policy (according
-        to command-line options and the value in the .distro file beside
-        the upload, if present), creating a NascentUpload object and calling
-        its process method.
-        
-        See nascentupload.py for the gory details.
+        This is done by creating an upload policy object and a
+        NascentUpload object, and then activating them. See nascentupload.py
+        and uploadpolicy.py.
+
+        We obtain the context for this processing from the relative path,
+        within the upload folder, of this changes file. This influences
+        our creation both of upload policy and the NascentUpload object.
 
         Returns a value from UploadStatusEnum, or re-raises an exception
         from NascentUpload.
         """
-        # Cache original value of self.options.distro, from command-line
-        options_distro = self.options.distro
+        # Calculate the distribution from the path within the upload
+        relative_path = os.path.dirname(changes_file)
+        (distro, archive) = self.getDistributionAndArchive(relative_path)
+        self.options.distro = distro.name
 
-        # Override self.options.distro from .distro file, if present
-        distro_filename = upload_path + ".distro"
-        if os.path.isfile(distro_filename):
-            distro_file = open(distro_filename)
-            self.options.distro = distro_file.read()
-            distro_file.close()
-            self.log.debug("Overriding distribution: %s" %
-                           self.options.distro)
-
-        # Get the policy, using the overriden options
         self.log.debug("Finding fresh policy")
         policy = findPolicyByOptions(self.options)
 
-        # Restore original value for self.options.distro
-        self.options.distro = options_distro
-        
-        upload = NascentUpload(policy, upload_path, changes_file, self.log)
+        # The path we want for NascentUpload is the path to the folder
+        # containing the changes file (and the other files referenced by it).
+        changes_dir = os.path.join(upload_path, relative_path)
+        changes_file = os.path.basename(changes_file)
+        upload = NascentUpload(
+            policy, changes_dir, changes_file, self.log, archive)
 
         try:
             self.ztm.begin()
             self.log.info("Processing upload %s" % upload.changes_filename)
 
             result = UploadStatusEnum.ACCEPTED
-            
+
             try:
                 upload.process()
             except UploadPolicyError, e:
@@ -257,7 +262,7 @@ class UploadProcessor:
                 # with no email.
                 self.log.exception("Unhandled exception processing upload")
                 upload.reject("Unhandled exception processing upload: %s" % e)
-                                
+
             if upload.rejected:
                 result = UploadStatusEnum.REJECTED
                 mails = upload.do_reject()
@@ -271,7 +276,7 @@ class UploadProcessor:
                                   "Aborting partial accept.")
                     self.ztm.abort()
                 self.sendMails(mails)
-                
+
             if self.options.dryrun:
                 self.log.info("Dry run, aborting transaction.")
                 self.ztm.abort()
@@ -291,7 +296,7 @@ class UploadProcessor:
         This includes moving the given upload directory and moving the
         matching .distro file, if it exists.
         """
-        
+
         if self.options.keep or self.options.dryrun:
             self.log.debug("Keeping contents untouched")
             return
@@ -311,7 +316,7 @@ class UploadProcessor:
             self.log.debug("Moving distro file %s to %s" % (distro_filename,
                                                             target_path))
             os.rename(distro_filename, target_path)
-                
+
     def sendMails(self, mails):
         """Send the mails provided using the launchpad mail infrastructure."""
         for mail_text in mails:
@@ -329,7 +334,7 @@ class UploadProcessor:
             else:
                 sendmail(mail_message)
                 logger("Sent a mail:")
-                
+
             logger("   Subject: %s" % mail_message['Subject'])
             logger("   Recipients: %s" % mail_message['To'])
             logger("   Body:")
@@ -346,3 +351,41 @@ class UploadProcessor:
 
         return sorted(fnames, key=sourceFirst)
 
+    def getDistributionAndArchive(self, relative_path):
+        """Locate the distribution and archive for the upload.
+
+        We do this by analysing the path to which the user has uploaded,
+        ie. the relative path within the upload folder to the changes file.
+
+        The valid paths are:
+        / - default distro, ubuntu
+        /<distroname> - given distribution
+        /<distroname>/~<personname>/<archivetag> - given distro and ppa.
+
+        Returns a tuple of distribution, archive. Returns
+        """
+        distribution_set = getUtility(IDistributionSet)
+        person_set = getUtility(IPersonSet)
+        default_distro_name = "ubuntu"
+        parts = relative_path.split(os.path.sep)
+
+        if len(parts) == 1:
+            # Distribution name only, or nothing
+            distro_name = parts[0]
+            if not distro_name:
+                distro_name = default_distro_name
+            distro = distribution_set.getByName(distro_name)
+
+            return (distro, distro.main_archive)
+
+        elif len(parts) == 3:
+            distro_name = parts[0]
+            distro = distribution_set.getByName(distro_name)
+
+            person_name = parts[1][1:] # Skip over ~
+            person = person_set.getByName(person_name)
+
+            archive_tag = parts[2]
+            archive = person.archiveWithTag(archive_tag)
+
+            return (distro, archive)

@@ -301,12 +301,13 @@ class NascentUpload:
     insert into the database as a queued upload to be processed.
     """
 
-    def __init__(self, policy, fsroot, changes_filename, logger):
+    def __init__(self, policy, fsroot, changes_filename, logger, archive):
         self.fsroot = fsroot
         self.policy = policy
+        self.archive = archive
         self.changes_filename = os.path.join(fsroot, changes_filename)
         if not os.path.exists(self.changes_filename):
-            raise FileNotFound(changes_filename)
+            raise FileNotFound(self.changes_filename)
         self.changes_basename = changes_filename
         self.sender = "%s <%s>" % (
             config.uploader.default_sender_name,
@@ -427,7 +428,7 @@ class NascentUpload:
         # As a result, we use the think_* variables as a screen. If the
         # files_X value is true then think_X must also be true. However nothing
         # useful can be said of the other cases.
- 
+
         for uploaded_file in self.files:
             if uploaded_file.custom or uploaded_file.section == "byhand":
                 files_binaryful = True
@@ -756,7 +757,7 @@ class NascentUpload:
         except NotFoundError:
             raise UploadError(
                 "Unable to find distrorelease: %s" % changes["distribution"])
-            
+
     @cachedproperty
     def distro(self):
         """Simply propogate the distro of the policy."""
@@ -1529,7 +1530,7 @@ class NascentUpload:
         # that the upload is a lower version than can be found in backports,
         # unless the upload is going to backports.
         # See bug 34089.
-        
+
         if target_pocket is not PackagePublishingPocket.BACKPORTS:
             exclude_pocket = PackagePublishingPocket.BACKPORTS
             pocket = None
@@ -1879,7 +1880,7 @@ class NascentUpload:
                     summary.append("     -> Component: %s Section: %s" % (
                         uploaded_file.component,
                         uploaded_file.section))
-                
+
         return "\n".join(summary)
 
     def is_new(self):
@@ -1891,6 +1892,16 @@ class NascentUpload:
 
     def insert_source_into_db(self):
         """Insert the source into the database and inform the policy."""
+        component_name = self._find_dsc().component
+        section_name = self._find_dsc().section
+        # rebuild the changes author line as specified in bug # 30621,
+        # new line containing:
+        # ' -- <CHANGED-BY>  <DATE>'
+        changes_author = (
+            '\n -- %s   %s' %
+            (self.changes['changed-by'], self.changes['date']))
+        changes_content = self.changes['changes'] + changes_author
+
         arg_sourcepackagename = self.spn
         arg_version = self.changes['version']
         arg_maintainer = self.dsc_maintainer['person']
@@ -1901,23 +1912,16 @@ class NascentUpload:
             self.dsc_contents.get('build-depends-indep', ''))
         arg_architecturehintlist = guess_encoding(
             self.dsc_contents.get('architecture', ''))
-        component_name = self._find_dsc().component
         arg_component = getUtility(IComponentSet)[component_name]
-        section_name = self._find_dsc().section
         arg_section = getUtility(ISectionSet)[section_name]
         arg_creator = self.changed_by['person'].id
         arg_urgency = urgency_map[self.changes['urgency'].lower()]
-        # rebuild the changes author line as specified in bug # 30621,
-        # new line containing:
-        # ' -- <CHANGED-BY>  <DATE>'
-        changes_author = ('\n -- %s   %s' % (self.changes['changed-by'],
-                                             self.changes['date']))
-        changes_content = self.changes['changes'] + changes_author
         arg_changelog = guess_encoding(changes_content)
 
         arg_dsc = guess_encoding(self.dsc_contents['filecontents'])
         arg_dscsigningkey = self.dsc_signing_key
         arg_manifest = None
+
         self.policy.sourcepackagerelease = (
             self.distrorelease.createUploadedSourcePackageRelease(
             sourcepackagename=arg_sourcepackagename,
@@ -1934,7 +1938,7 @@ class NascentUpload:
             dsc=arg_dsc,
             dscsigningkey=arg_dscsigningkey,
             section=arg_section,
-            manifest=arg_manifest
+            manifest=arg_manifest,
             ))
 
         for uploaded_file in self.dsc_files:
@@ -2056,7 +2060,7 @@ class NascentUpload:
         # create an upload entry in new state
         self.logger.debug("Creating a New queue entry")
         queue_root = self.distrorelease.createQueueEntry(self.policy.pocket,
-            self.changes_basename, self.changes["filecontents"])
+            self.changes_basename, self.changes["filecontents"], self.archive)
 
         # Next, if we're sourceful, add a source to the queue
         if self.sourceful:
@@ -2084,7 +2088,13 @@ class NascentUpload:
 
         # if it is known (already overridden properly), move it
         # to ACCEPTED state automatically
-        if not self.is_new():
+        if self.is_new():
+            if self.policy.autoApproveNew(self):
+                self.logger.debug("Setting it to ACCEPTED")
+                queue_root.setAccepted()
+            else:
+                self.logger.debug("Leaving status as NEW")
+        else:
             if self.policy.autoApprove(self):
                 self.logger.debug("Setting it to ACCEPTED")
                 queue_root.setAccepted()
