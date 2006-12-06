@@ -181,6 +181,11 @@
     />
 
   <vocabulary
+    name="NonMergedPeopleAndTeams"
+    factory="canonical.launchpad.vocabularies.NonMergedPeopleAndTeamsVocabulary"
+    />
+
+  <vocabulary
     name="PackagePublishingPocket"
     factory="canonical.launchpad.vocabularies.PackagePublishingPocketVocabulary"
     />
@@ -256,8 +261,8 @@
     />
 
   <vocabulary
-    name="Schema"
-    factory="canonical.launchpad.vocabularies.SchemaVocabulary"
+    name="RevisionControlSystems"
+    factory="canonical.launchpad.vocabularies.RevisionControlSystemsVocabulary"
     />
 
   <vocabulary
@@ -321,6 +326,11 @@
     />
 
   <vocabulary
+    name="TicketAction"
+    factory="canonical.launchpad.vocabularies.TicketActionVocabulary"
+    />
+
+  <vocabulary
     name="TicketPriority"
     factory="canonical.launchpad.vocabularies.TicketPriorityVocabulary"
     />
@@ -348,6 +358,11 @@
   <vocabulary
     name="TranslationPermission"
     factory="canonical.launchpad.vocabularies.TranslationPermissionVocabulary"
+    />
+
+  <vocabulary
+    name="UpstreamFileType"
+    factory="canonical.launchpad.vocabularies.UpstreamFileTypeVocabulary"
     />
 
   <vocabulary
@@ -388,6 +403,16 @@
   <vocabulary
     name="ProcessorFamily"
     factory="canonical.launchpad.vocabularies.ProcessorFamilyVocabulary"
+    />
+
+  <vocabulary
+    name="DistributionOrProduct"
+    factory="canonical.launchpad.vocabularies.DistributionOrProductVocabulary"
+    />
+
+  <vocabulary
+    name="DistributionOrProductOrProject"
+    factory="canonical.launchpad.vocabularies.DistributionOrProductOrProjectVocabulary"
     />
 
   <!-- Define the widget used by Choice fields that use huge vocabularies -->

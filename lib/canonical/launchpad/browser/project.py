@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'ProjectNavigation',
     'ProjectSetNavigation',
-    'ProjectView',
     'ProjectEditView',
     'ProjectAddProductView',
     'ProjectSetView',
@@ -18,24 +17,23 @@ __all__ = [
 from urllib import quote as urlquote
 
 from zope.component import getUtility
-from zope.app.form.browser.add import AddView
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
+from zope.app.form.browser import TextWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IPerson, IProject, IProjectSet, IProductSet, ICalendarOwner)
+    ICalendarOwner, IPerson, IProduct, IProductSet, IProject, IProjectSet)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, canonical_url, ApplicationMenu,
-    structured, GetitemNavigation, Navigation, ContextMenu,
-    enabled_with_permission)
-
-
+    action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
+    enabled_with_permission, GetitemNavigation, LaunchpadFormView,
+    LaunchpadEditFormView, Link, Navigation, StandardLaunchpadFacets,
+    structured)
 
 
 class ProjectNavigation(Navigation, CalendarTraversalMixin):
@@ -83,7 +81,7 @@ class ProjectFacets(StandardLaunchpadFacets):
 
     usedfor = IProject
 
-    enable_only = ['overview', 'bugs', 'calendar', 'specifications']
+    enable_only = ['overview', 'bugs', 'specifications']
 
     def calendar(self):
         target = '+calendar'
@@ -162,140 +160,53 @@ class ProjectSpecificationsMenu(ApplicationMenu):
         return Link('+assignments', text, icon='info')
 
 
-class ProjectView(object):
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.form = self.request.form
-
-    def edit(self):
-        """
-        Update the contents of a Project. This method is called by a
-        tal:dummy element in a page template. It checks to see if a
-        form has been submitted that has a specific element, and if
-        so it continues to process the form, updating the fields of
-        the database as it goes.
-        """
-        # check that we are processing the correct form, and that
-        # it has been POST'ed
-        if not self.form.get("Update", None)=="Update Project":
-            return
-        if not self.request.method == "POST":
-            return
-        # Extract details from the form and update the project
-        self.context.displayname = self.form['displayname']
-        self.context.title = self.form['title']
-        self.context.summary = self.form['summary']
-        self.context.description = self.form['description']
-        self.context.homepageurl = self.form['homepageurl']
-        # now redirect to view the project
-        self.request.response.redirect(self.request.URL[-1])
-
-    #
-    # XXX: this code is broken -- see bug 47769
-    #
-    def hasProducts(self):
-        return len(list(self.context.products())) > 0
-
-    #
-    # XXX: this code is broken -- see bug 47769
-    #
-    def productTranslationStats(self):
-        for product in self.context.products():
-            total = 0
-            currentCount = 0
-            rosettaCount = 0
-            updatesCount = 0
-            for language in helpers.request_languages(self.request):
-                total += product.messageCount()
-                currentCount += product.currentCount(language.code)
-                rosettaCount += product.rosettaCount(language.code)
-                updatesCount += product.updatesCount(language.code)
-
-            nonUpdatesCount = currentCount - updatesCount
-            translated = currentCount  + rosettaCount
-            untranslated = total - translated
-            try:
-                currentPercent = float(currentCount) / total * 100
-                rosettaPercent = float(rosettaCount) / total * 100
-                updatesPercent = float(updatesCount) / total * 100
-                nonUpdatesPercent = float (nonUpdatesCount) / total * 100
-                translatedPercent = float(translated) / total * 100
-                untranslatedPercent = float(untranslated) / total * 100
-            except ZeroDivisionError:
-                # XXX: I think we will see only this case when we don't have
-                # anything to translate.
-                currentPercent = 0
-                rosettaPercent = 0
-                updatesPercent = 0
-                nonUpdatesPercent = 0
-                translatedPercent = 0
-                untranslatedPercent = 100
-
-            # NOTE: To get a 100% value:
-            # 1.- currentPercent + rosettaPercent + untranslatedPercent
-            # 2.- translatedPercent + untranslatedPercent
-            # 3.- rosettaPercent + updatesPercent + nonUpdatesPercent +
-            # untranslatedPercent
-            retdict = {
-                'name': product.name,
-                'title': product.title,
-                'poLen': total,
-                'poCurrentCount': currentCount,
-                'poRosettaCount': rosettaCount,
-                'poUpdatesCount' : updatesCount,
-                'poNonUpdatesCount' : nonUpdatesCount,
-                'poTranslated': translated,
-                'poUntranslated': untranslated,
-                'poCurrentPercent': currentPercent,
-                'poRosettaPercent': rosettaPercent,
-                'poUpdatesPercent' : updatesPercent,
-                'poNonUpdatesPercent' : nonUpdatesPercent,
-                'poTranslatedPercent': translatedPercent,
-                'poUntranslatedPercent': untranslatedPercent,
-            }
-
-            yield retdict
-
-    def languages(self):
-        return helpers.request_languages(self.request)
-
-
-class ProjectEditView(ProjectView, SQLObjectEditView):
+class ProjectEditView(LaunchpadEditFormView):
     """View class that lets you edit a Project object."""
 
-    def __init__(self, context, request):
-        ProjectView.__init__(self, context, request)
-        SQLObjectEditView.__init__(self, context, request)
+    schema = IProject
+    field_names = [
+        'name', 'displayname', 'title', 'summary', 'description',
+        'homepageurl', 'bugtracker', 'sourceforgeproject',
+        'freshmeatproject', 'wikiurl']
 
-    def changed(self):
-        # If the name changed the URL will have changed
+    @action('Change Details', name='change')
+    def edit(self, action, data):
+        self.updateContextFromData(data)
+
+    @property
+    def next_url(self):
         if self.context.active:
-            self.request.response.redirect(canonical_url(self.context))
+            return canonical_url(self.context)
         else:
-            projectset = getUtility(IProjectSet)
-            self.request.response.redirect(canonical_url(projectset))
+            # If the project is inactive, we can't traverse to it
+            # anymore.
+            return canonical_url(getUtility(IProjectSet))
 
 
-class ProjectAddProductView(AddView):
+class ProjectAddProductView(LaunchpadFormView):
 
-    __used_for__ = IProject
+    schema = IProduct
+    field_names = ['name', 'displayname', 'title', 'summary', 'description',
+                   'homepageurl', 'sourceforgeproject', 'freshmeatproject',
+                   'wikiurl', 'screenshotsurl', 'downloadurl',
+                   'programminglang']
+    custom_widget('homepageurl', TextWidget, displayWidth=30)
+    custom_widget('screenshotsurl', TextWidget, displayWidth=30)
+    custom_widget('wikiurl', TextWidget, displayWidth=30)
+    custom_widget('downloadurl', TextWidget, displayWidth=30)
 
-    def __init__(self, context, request):
-        self.request = request
-        self.context = context
-        AddView.__init__(self, context, request)
+    label = "Register a product in this project"
+    product = None
 
-    def createAndAdd(self, data):
+    @action(_('Add'), name='add')
+    def add_action(self, action, data):
         # add the owner information for the product
-        owner = IPerson(self.request.principal, None)
-        if not owner:
+        if not self.user:
             raise Unauthorized(
                 "Need to have an authenticated user in order to create a bug"
                 " on a product")
         # create the product
-        product = getUtility(IProductSet).createProduct(
+        self.product = getUtility(IProductSet).createProduct(
             name=data['name'],
             title=data['title'],
             summary=data['summary'],
@@ -305,18 +216,17 @@ class ProjectAddProductView(AddView):
             downloadurl=data['downloadurl'],
             screenshotsurl=data['screenshotsurl'],
             wikiurl=data['wikiurl'],
-            programminglang=data['programminglang'],
             freshmeatproject=data['freshmeatproject'],
             sourceforgeproject=data['sourceforgeproject'],
+            programminglang=data['programminglang'],
             project=self.context,
-            owner=owner)
-        notify(ObjectCreatedEvent(product))
-        return product
+            owner=self.user)
+        notify(ObjectCreatedEvent(self.product))
 
-    def nextURL(self):
-        # Always redirect to the project's page
-        return '.'
- 
+    @property
+    def next_url(self):
+        assert self.product is not None, 'No product has been created'
+        return canonical_url(self.product)
 
 
 class ProjectSetView(object):
@@ -358,33 +268,32 @@ class ProjectSetView(object):
         return self.results
 
 
-class ProjectAddView(AddView):
+class ProjectAddView(LaunchpadFormView):
 
-    _nextURL = '.'
+    schema = IProject
+    field_names = ['name', 'displayname', 'title', 'summary',
+                   'description', 'homepageurl']
+    custom_widget('homepageurl', TextWidget, displayWidth=30)
+    label = _('Register a project with Launchpad')
+    project = None
 
-    def createAndAdd(self, data):
-        """
-        Create the new Project instance if a form with details
-        was submitted.
-        """
-        owner = IPerson(self.request.principal)
-        self.name = data['name'].lower()
-
-        # Now create a new project in the db
-        project = getUtility(IProjectSet).new(
-            name=self.name,
+    @action(_('Add'), name='add')
+    def add_action(self, action, data):
+        """Create the new Project from the form details."""
+        self.project = getUtility(IProjectSet).new(
+            name=data['name'].lower(),
             displayname=data['displayname'],
             title=data['title'],
             homepageurl=data['homepageurl'],
             summary=data['summary'],
             description=data['description'],
-            owner=owner)
-        notify(ObjectCreatedEvent(project))
-        self._nextURL = canonical_url(project)
-        return project
+            owner=self.user)
+        notify(ObjectCreatedEvent(self.project))
 
-    def nextURL(self):
-        return self._nextURL
+    @property
+    def next_url(self):
+        assert self.project is not None, 'No project has been created'
+        return canonical_url(self.project)
 
 
 class ProjectRdfView(object):

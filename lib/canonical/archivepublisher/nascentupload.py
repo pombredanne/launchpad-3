@@ -37,9 +37,9 @@ from canonical.archivepublisher.utils import (
 from canonical.librarian.utils import copy_and_close, filechunks
 
 from canonical.lp.dbschema import (
-    SourcePackageUrgency, PackagePublishingPriority,
-    DistroReleaseQueueCustomFormat, BinaryPackageFormat,
-    BuildStatus, DistroReleaseQueueStatus, PackagePublishingPocket)
+    SourcePackageUrgency, PackagePublishingPriority, PersonCreationRationale,
+    DistroReleaseQueueCustomFormat, BinaryPackageFormat, BuildStatus,
+    DistroReleaseQueueStatus, PackagePublishingPocket)
 
 from canonical.launchpad.interfaces import (
     IGPGHandler, GPGVerificationError, IGPGKeySet, IPersonSet,
@@ -651,7 +651,19 @@ class NascentUpload:
             raise UploadError(str(e))
 
         if self.policy.create_people:
-            person = getUtility(IPersonSet).ensurePerson(email, name)
+            package = self.changes['source']
+            # XXX: The distrorelease property may raise an UploadError in case
+            # there's no distrorelease with a name equal to
+            # self.changes['distribution'] or even a raw Exception in some
+            # tests, but we don't want the upload to fail at this point nor
+            # catch the exception here, so we'll hardcode the distro here for
+            # now and leave the rationale without a specific release.
+            # -- Guilherme Salgado, 2006-10-03
+            release = 'Ubuntu'
+            person = getUtility(IPersonSet).ensurePerson(
+                email, name, PersonCreationRationale.SOURCEPACKAGEUPLOAD,
+                comment=('when the %s package was uploaded to %s'
+                         % (package, release)))
         else:
             person = getUtility(IPersonSet).getByEmail(email)
 
@@ -739,8 +751,12 @@ class NascentUpload:
         # here we ask the policy to initialise itself given our changes file.
         # This has the side-effect of checking that the distrorelease is valid
         # and causing a reject nice and early if it isn't.
-        self.policy.setDistroReleaseAndPocket(changes["distribution"])
-
+        try:
+            self.policy.setDistroReleaseAndPocket(changes["distribution"])
+        except NotFoundError:
+            raise UploadError(
+                "Unable to find distrorelease: %s" % changes["distribution"])
+            
     @cachedproperty
     def distro(self):
         """Simply propogate the distro of the policy."""
@@ -852,9 +868,6 @@ class NascentUpload:
         if depends == '':
             self.reject("%s: Depends field present and empty." % (
                 uploaded_file.filename))
-
-        # XXX cprov 20060118: For god sake ! the next statement is such a
-        # piece of crap, I'm sorry.
 
         # Check the section & priority match those in the .changes Files entry
         control_component, control_section = split_section(
@@ -1217,7 +1230,9 @@ class NascentUpload:
             self.reject("%s: invalid version %s" % (
                 dsc_file.filename, dsc['version']))
 
-        # XXX cprov 20051207: assume DSC "1.0" format for missing value
+        # If format is not present, assume 1.0. At least one tool in
+        # the wild generates dsc files with format missing, and we need
+        # to accept them.
         if 'format' not in dsc.keys():
             dsc['format'] = "1.0"
 
@@ -1416,8 +1431,8 @@ class NascentUpload:
                     except SystemError, e:
                         # If we can't find a data.tar.gz,
                         # look for data.tar.bz2 instead.
-                        if not re.match(r"Cannot f[ui]nd chunk data.tar.gz$",
-                                        str(e)):
+                        if not re.search(r"Cannot f[ui]nd chunk data.tar.gz$",
+                                         str(e)):
                             raise
                         deb_file.seek(0)
                         apt_inst.debExtract(deb_file,tar_checker.callback,
@@ -1503,9 +1518,18 @@ class NascentUpload:
         """Return the published sources (parents) for a given file."""
         sourcename = getUtility(ISourcePackageNameSet).getOrCreateByName(
             uploaded_file.package)
-        # XXX cprov 20060309: exclude BACKPORTS records for non-BACKPORTS
-        # uploads and in other hand include only BACKPORTS records for
-        # BACKPORTS uploads. See bug 34089
+        # When looking for published sources, to verify that an uploaded
+        # file has a usable version number, we must consider the special
+        # case of the backports pocket.
+        # Across the release, security and uploads pockets, we have one
+        # sequence of versions, and any new upload must have a higher
+        # version than the currently highest version across these pockets.
+        # Backports has its own version sequence, all higher than the
+        # highest we'll ever see in other pockets. So, it's not a problem
+        # that the upload is a lower version than can be found in backports,
+        # unless the upload is going to backports.
+        # See bug 34089.
+        
         if target_pocket is not PackagePublishingPocket.BACKPORTS:
             exclude_pocket = PackagePublishingPocket.BACKPORTS
             pocket = None
@@ -1537,9 +1561,8 @@ class NascentUpload:
                 "%s: Unable to find arch: %s" % (uploaded_file.package,
                                                  archtag))
             return None
-        # XXX cprov 20060309: exclude BACKPORTS records for non-BACKPORTS
-        # uploads and in other hand include only BACKPORTS records for
-        # BACKPORTS uploads. See bug 34089
+        # Once again, consider the special case of backports. See comment
+        # in _getPublishedSources and bug 34089.
         if target_pocket is not PackagePublishingPocket.BACKPORTS:
             exclude_pocket = PackagePublishingPocket.BACKPORTS
             pocket = None
@@ -1563,7 +1586,18 @@ class NascentUpload:
         return candidates
 
     def _checkSourceBackports(self, uploaded_file):
-        """ """
+        """Reject source upload if it is newer than that in BACKPORTS.
+
+        If the proposed source version is newer than the newest version
+        of the same source in BACKPORTS, the upload will be rejected.
+
+        It must not be called for uploads in BACKPORTS pocket itself,
+
+        It does nothing BACKPORTS does not contain any version of the
+        proposed source.
+        """
+        assert self.pocket != PackagePublishingPocket.BACKPORTS
+
         backports = self._getPublishedSources(
             uploaded_file, PackagePublishingPocket.BACKPORTS)
 
@@ -1580,7 +1614,18 @@ class NascentUpload:
 
 
     def _checkBinaryBackports(self, uploaded_file, archtag):
-        """ """
+        """Reject binary upload if it is newer than that in BACKPORTS.
+
+        If the proposed binary version is newer than the newest version
+        of the same binary in BACKPORTS, the upload will be rejected.
+
+        It must not be called for uploads in BACKPORTS pocket itself,
+
+        It does nothing BACKPORTS does not contain any version of the
+        proposed binary.
+        """
+        assert self.pocket != PackagePublishingPocket.BACKPORTS
+
         backports = self._getPublishedBinaries(
             uploaded_file, archtag, PackagePublishingPocket.BACKPORTS)
 
@@ -1645,7 +1690,8 @@ class NascentUpload:
                         uploaded_file.package))
                     uploaded_file.new = True
 
-                self._checkSourceBackports(uploaded_file)
+                if self.pocket != PackagePublishingPocket.BACKPORTS:
+                    self._checkSourceBackports(uploaded_file)
 
             elif not uploaded_file.is_source:
                 self.logger.debug("getPublishedReleases()")
@@ -1687,7 +1733,8 @@ class NascentUpload:
                         uploaded_file.package))
                     uploaded_file.new = True
 
-                self._checkBinaryBackports(uploaded_file, archtag)
+                if self.pocket != PackagePublishingPocket.BACKPORTS:
+                    self._checkBinaryBackports(uploaded_file, archtag)
 
     def verify_acl(self):
         """Verify that the uploaded files are okay for their named components
@@ -1925,8 +1972,8 @@ class NascentUpload:
                 build.buildstate = BuildStatus.FULLYBUILT
             else:
                 # No luck. Make one.
-                build = spr.createBuild(dar, status=BuildStatus.FULLYBUILT,
-                                        pocket=self.pocket)
+                build = spr.createBuild(
+                    dar, self.pocket, status=BuildStatus.FULLYBUILT)
                 self.logger.debug("Build %s created" % build.id)
             self.policy.build = build
         else:
@@ -1939,9 +1986,7 @@ class NascentUpload:
                 build.pocket != self.pocket):
                 raise UploadError("Attempt to upload binaries specifying "
                                   "build %s, where they don't fit" % build_id)
-                
             self.policy.build = build
-            
             self.logger.debug("Build %s found" % self.policy.build.id)
 
         return self.policy.build
@@ -1974,7 +2019,7 @@ class NascentUpload:
                 component=component,
                 section=section,
                 priority=uploaded_file.priority,
-                # XXX: dsilvers: 20051014: erm, need to work this out
+                # XXX: dsilvers: 20051014: erm, need to work shlibdeps out
                 # bug 3160
                 shlibdeps='',
                 depends=guess_encoding(control.get('Depends', '')),

@@ -2,79 +2,49 @@
 Adding a Product to a Project
 -----------------------------
 
-Let's add an Eye of GNOME product to the GNOME project.
+Let's add an Eye of GNOME product to the GNOME project.  There is a
+link at the bottom of the project page to add a new product:
 
-  >>> print http(r"""
-  ... POST /projects/gnome/+newproduct HTTP/1.1
-  ... Content-Length: 1763
-  ... Content-Type: multipart/form-data; boundary=---------------------------20506544121103416222450339027
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... Referer: http://localhost:9000/projects/gnome/+newproduct
-  ... 
-  ... -----------------------------20506544121103416222450339027
-  ... Content-Disposition: form-data; name="field.name"
-  ... 
-  ... eog
-  ... -----------------------------20506544121103416222450339027
-  ... Content-Disposition: form-data; name="field.displayname"
-  ... 
-  ... Eye of GNOME
-  ... -----------------------------20506544121103416222450339027
-  ... Content-Disposition: form-data; name="field.title"
-  ... 
-  ... Eye of GNOME
-  ... -----------------------------20506544121103416222450339027
-  ... Content-Disposition: form-data; name="field.summary"
-  ... 
-  ... Blah blah.
-  ... -----------------------------20506544121103416222450339027
-  ... Content-Disposition: form-data; name="field.description"
-  ... 
-  ... Blah blah blah.
-  ... -----------------------------20506544121103416222450339027
-  ... Content-Disposition: form-data; name="field.homepageurl"
-  ... 
-  ... http://homepage
-  ... -----------------------------20506544121103416222450339027
-  ... Content-Disposition: form-data; name="field.sourceforgeproject"
-  ... 
-  ... eog
-  ... -----------------------------20506544121103416222450339027
-  ... Content-Disposition: form-data; name="field.freshmeatproject"
-  ... 
-  ... eog
-  ... -----------------------------20506544121103416222450339027
-  ... Content-Disposition: form-data; name="field.wikiurl"
-  ... 
-  ... http://wiki
-  ... -----------------------------20506544121103416222450339027
-  ... Content-Disposition: form-data; name="field.screenshotsurl"
-  ... 
-  ... http://screenshots
-  ... -----------------------------20506544121103416222450339027
-  ... Content-Disposition: form-data; name="field.downloadurl"
-  ... 
-  ... http://download
-  ... -----------------------------20506544121103416222450339027
-  ... Content-Disposition: form-data; name="field.programminglang"
-  ... 
-  ... C
-  ... -----------------------------20506544121103416222450339027
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... -----------------------------20506544121103416222450339027--
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  Location: .
-  ...
+  >>> user_browser.open('http://launchpad.dev/projects/gnome')
+  >>> user_browser.getLink('Register another product').click()
+  >>> print user_browser.url
+  http://launchpad.dev/projects/gnome/+newproduct
 
-Now let's get the page for that product to make sure it's there.
+Now we'll fill in the product details and add it.  This will bring us
+back to the project page:
 
-  >>> print http(r"""
-  ... GET /projects/gnome/eog HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Eye of GNOME...
+  >>> user_browser.getControl('Name', index=0).value = 'eog'
+  >>> user_browser.getControl('Display Name').value = 'Eye of GNOME'
+  >>> user_browser.getControl('Title').value = 'Eye of GNOME'
+  >>> user_browser.getControl('Summary').value = 'An image viewer for GNOME'
+  >>> user_browser.getControl('Description').value = 'Blah blah blah'
+  >>> user_browser.getControl('Homepage URL').value = 'http://homepage'
+  >>> user_browser.getControl('Sourceforge Project').value = 'eog'
+  >>> user_browser.getControl('Freshmeat Project').value = 'eog'
+  >>> user_browser.getControl('Wiki URL').value = 'http://wiki'
+  >>> user_browser.getControl('Screenshots URL').value = 'http://screenshots'
+  >>> user_browser.getControl('Download URL').value = 'http://download'
+  >>> user_browser.getControl('Programming Language').value = 'C'
+
+  >>> user_browser.getControl('Add').click()
+  >>> print user_browser.url
+  http://launchpad.dev/products/eog
+
+
+Now let's get the page for that product to make sure it's there.  It
+is accessible both under "/products" and under the project URL:
+
+  >>> anon_browser.open('http://launchpad.dev/products/eog')
+  >>> 'Eye of GNOME' in anon_browser.contents
+  True
+
+  >>> anon_browser.open('http://launchpad.dev/projects/gnome/eog')
+  >>> 'Eye of GNOME' in anon_browser.contents
+  True
+
+A default product series named "trunk" was created for the new
+product:
+
+  >>> anon_browser.open('http://launchpad.dev/products/eog/trunk')
+  >>> 'Series overview' in anon_browser.contents
+  True

@@ -5,14 +5,12 @@
 
 __metaclass__ = type
 
-from optparse import OptionParser
 import os
 import shutil
 import sys
-from tempfile import mkdtemp, mkstemp
+from tempfile import mkdtemp
+import traceback
 import unittest
-
-from contrib.glock import GlobalLock
 
 
 class MockOptions:
@@ -26,9 +24,17 @@ class MockLogger:
     def __init__(self):
         self.lines = []
 
-    def debug(self, s):
+    def debug(self, s, exc_info=False):
         self.lines.append(s)
+        if exc_info:
+            self.lines.append(traceback.format_exception(*sys.exc_info()))
 
+    info = debug
+    error = debug
+
+    def exception(self, s):
+        self.debug(s, exc_info=True)
+        
 
 class TestUploadProcessor(unittest.TestCase):
     """Tests for uploadprocessor.py."""

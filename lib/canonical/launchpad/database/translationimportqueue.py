@@ -9,6 +9,7 @@ __all__ = [
 import tarfile
 import os.path
 import datetime
+import re
 from StringIO import StringIO
 from zope.interface import implements
 from zope.component import getUtility
@@ -26,30 +27,6 @@ from canonical.lp.dbschema import RosettaImportStatus, EnumCol
 # Number of days when the DELETED and IMPORTED entries are removed from the
 # queue.
 DAYS_TO_KEEP = 3
-
-def _get_language_and_variant_from_string(language_string):
-    """Return the ILanguage and variant that language_string represents."""
-    if language_string is None:
-        return (None, None)
-
-    if u'@' in language_string:
-        # Seems like this entry is using a variant entry.
-        language_code, language_variant = language_string.split(u'@')
-    else:
-        language_code = language_string
-        language_variant = None
-
-    language_set = getUtility(ILanguageSet)
-
-    try:
-        language = language_set[language_code]
-    except NotFoundError:
-        # We don't have such language in our database so we cannot
-        # guess it using this method.
-        return (None, None)
-
-    return (language, language_variant)
-
 
 class TranslationImportQueueEntry(SQLBase):
     implements(ITranslationImportQueueEntry)
@@ -172,81 +149,16 @@ class TranslationImportQueueEntry(SQLBase):
             sourcepackagename=self.sourcepackagename)
 
     @property
-    def guessed_language_and_variant(self):
+    def guessed_language(self):
         """See ITranslationImportQueueEntry."""
         filename = os.path.basename(self.path)
-        guessed_language, file_ext = filename.split(u'.', 1)
-        if file_ext != 'po':
+        guessed_language, file_ext = os.path.splitext(filename)
+        if file_ext != '.po':
             # The filename does not follows the pattern 'LANGCODE.po'
             # so we cannot guess its language.
-            return (None, None)
+            return None
 
-        (language, variant) = _get_language_and_variant_from_string(
-            guessed_language)
-
-        if language is None or not language.visible:
-            # Either we don't know the language or the language is hidden by
-            # default what means that we got a bad import and that should be
-            # reviewed by someone before importing. The 'visible' check is to
-            # prevent the import of languages like 'es_ES' or 'fr_FR' instead
-            # of just 'es' or 'fr'.
-            return (None, None)
-
-        return (language, variant)
-
-    @property
-    def guessed_pofile(self):
-        """See ITranslationImportQueueEntry."""
-        assert self.path.endswith('.po'), (
-            "We cannot handle the file %s here." % self.path)
-        if self.potemplate is None:
-            # We don't have the IPOTemplate object associated with this entry.
-            # Try to guess it from the file path.
-            pofile = self._guessed_pofile_from_path
-            if pofile is not None:
-                # We were able to guess an IPOFile.
-                return pofile
-
-            # KDE layout is a special case, they have the .pot files inside
-            # the right sourcepackages, but the .po files, the translations
-            # are splitted across their own language packs so we cannot match
-            # .po files with .pot files as they are on different
-            # sourcepackages.
-            pofile = self._guess_kde_pofile()
-            if pofile is not None:
-                # This entry is a KDE .po file and we found a place where it
-                # should be imported.
-                return pofile
-
-            # We were not able to find an IPOFile based on the path, try
-            # to guess an IPOTemplate before giving up.
-            potemplate = self._guessed_potemplate_for_pofile_from_path
-            if potemplate is None:
-                # No way to guess anything...
-                return None
-            # We got the potemplate, try to guess the language from
-            # the info we have.
-            self.potemplate = potemplate
-
-        # We know the IPOTemplate associated with this entry so we can try to
-        # detect the right IPOFile.
-        # Let's try to guess the language.
-        (language, language_variant) = self.guessed_language_and_variant
-
-        if language is None:
-            # We were not able to guess the language, fallback to get it based
-            # on the path.
-            return self._guessed_pofile_from_path
-
-        # Get or create an IPOFile based on the info we guess.
-        pofile = self.potemplate.getPOFileByLang(
-            language.code, variant=language_variant)
-        if pofile is None:
-            pofile = self.potemplate.newPOFile(
-                language.code, variant=language_variant,
-                requester=self.importer)
-
-        return pofile
+        return guessed_language
 
     @property
     def import_into(self):
@@ -262,54 +174,22 @@ class TranslationImportQueueEntry(SQLBase):
             # We don't know where this entry should be imported.
             return None
 
-    def _guess_kde_pofile(self):
-        """Return an IPOFile that we think is related to this entry or None.
+    def _get_pofile_from_language(self, lang_code, translation_domain,
+        sourcepackagename=None):
+        """Return an IPOFile for the given language and domain.
 
-        KDE has a non standard layout where the .pot files are stored inside
-        the sourcepackage with the binaries that will use it and the
-        translations are stored in external packages following the same
-        language pack ideas that we use with Ubuntu.
-        This layout breaks completely Rosetta because we don't have a way
-        to link the .po and .pot files coming from different packages.
-        This property uses some extra information to get that link between
-        different sourcepackages.
-
-        The info we use is:
-            - The sourcepackagename: All KDE language packs have
-              the sourcepackagename following this pattern:
-              kde-i18n-LANGCODE. We get from here the language where the .po
-              files belong.
-            - The .po filename: All .po files are stored using the translation
-              domain as its filename. This information helps us to get the
-              IPOTemplate where we should associate this .po file.
-
+        :arg lang_code: The language code we are interested on.
+        :arg translation_domain: The translation domain for the given
+            language.
+        :arg sourcepackagename: The ISourcePackageName that uses this
+            translation or None if we don't know it.
         """
-        assert self.path.endswith('.po'), (
-            "We cannot handle the file %s here." % self.path)
+        assert (lang_code is not None and translation_domain is not None) , (
+            "lang_code and translation_domain cannot be None")
 
-        if self.productseries is not None:
-            # This method only works for sourcepackages. It makes no sense use
-            # it with productseries.
-            return None
-
-        if not self.sourcepackagename.name.startswith('kde-i18n-'):
-            # We only know about kde-i18n-* packages, the others are ignored.
-            return None
-
-        # Here we have the set of language codes that have special meanings.
-        lang_mapping = {
-            'engb': 'en_GB',
-            'ptbr': 'pt_BR',
-            'srlatn': 'sr@Latn',
-            'zhcn': 'zh_CN',
-            'zhtw': 'zh_TW',
-            }
-
-        lang_code = self.sourcepackagename.name[len('kde-i18n-'):]
-        if lang_code in lang_mapping:
-            lang_code = lang_mapping[lang_code]
-
-        (language, variant) = _get_language_and_variant_from_string(lang_code)
+        language_set = getUtility(ILanguageSet)
+        (language, variant) = language_set.getLanguageAndVariantFromString(
+            lang_code)
 
         if language is None or not language.visible:
             # Either we don't know the language or the language is hidden by
@@ -319,14 +199,27 @@ class TranslationImportQueueEntry(SQLBase):
             # of just 'es' or 'fr'.
             return None
 
-        translation_domain, file_ext = os.path.basename(
-            self.path).split(u'.', 1)
-
         potemplateset = getUtility(IPOTemplateSet)
+
+        # Let's try first the sourcepackagename or productseries where the
+        # translation comes from.
         potemplate_subset = potemplateset.getSubset(
-            distrorelease=self.distrorelease)
+            distrorelease=self.distrorelease,
+            sourcepackagename=self.sourcepackagename,
+            productseries=self.productseries)
         potemplate = potemplate_subset.getPOTemplateByTranslationDomain(
             translation_domain)
+
+        if (potemplate is None and (sourcepackagename is None or
+            self.sourcepackagename.name != sourcepackagename.name)):
+            # The source package from where this translation doesn't have the
+            # template that this translation needs it, and thus, we look for
+            # it in a different source package as a second try. To do it, we
+            # need to get a subset of all packages in current distro release.
+            potemplate_subset = potemplateset.getSubset(
+                distrorelease=self.distrorelease)
+            potemplate = potemplate_subset.getPOTemplateByTranslationDomain(
+                translation_domain)
 
         if potemplate is None:
             # The potemplate is not yet imported, we cannot attach this .po
@@ -339,10 +232,206 @@ class TranslationImportQueueEntry(SQLBase):
             pofile = potemplate.newPOFile(
                 language.code, variant=variant, requester=self.importer)
 
-        # We need to note the sourcepackagename from where this entry came.
-        pofile.from_sourcepackagename = self.sourcepackagename
+        if (sourcepackagename is None and
+            potemplate.sourcepackagename is not None):
+            # We didn't know the sourcepackagename when we called this method,
+            # but know, we know it.
+            sourcepackagename = potemplate.sourcepackagename
+
+        if (self.sourcepackagename is not None and
+            self.sourcepackagename.name != sourcepackagename.name):
+            # We need to note the sourcepackagename from where this entry came
+            # because it's different from the place where we are going to
+            # import it.
+            pofile.from_sourcepackagename = self.sourcepackagename
 
         return pofile
+
+    def getGuessedPOFile(self):
+        """See ITranslationImportQueueEntry."""
+        assert self.path.endswith('.po'), (
+            "We cannot handle the file %s here." % self.path)
+        if self.potemplate is None:
+            # We don't have the IPOTemplate object associated with this entry.
+            # Try to guess it from the file path.
+            pofile = self._guessed_pofile_from_path
+            if pofile is not None:
+                # We were able to guess an IPOFile.
+                return pofile
+
+            # Multi directory trees layout are non standard layouts where the
+            # .pot file and its .po files are stored in different directories.
+            pofile = self._guess_multiple_directories_with_pofile()
+            if pofile is not None:
+                # This entry is fits our multi directory trees layout and we
+                # found a place where it should be imported.
+                return pofile
+
+            # We were not able to find an IPOFile based on the path, try
+            # to guess an IPOTemplate before giving up.
+            potemplate = self._guessed_potemplate_for_pofile_from_path
+            if potemplate is None:
+                # No way to guess anything...
+                return None
+            # We got the potemplate, try to guess the language from
+            # the info we have.
+            self.potemplate = potemplate
+
+        # We know the IPOTemplate associated with this entry so we can try to
+        # detect the right IPOFile.
+        # Let's try to guess the language.
+        filename = os.path.basename(self.path)
+        guessed_language, file_ext = os.path.splitext(filename)
+        if file_ext != '.po':
+            # The filename does not follows the pattern 'LANGCODE.po'
+            # so we cannot guess it as a language, fallback to get it based
+            # on the path.
+            return self._guessed_pofile_from_path
+
+        return self._get_pofile_from_language(guessed_language,
+            self.potemplate.potemplatename.translationdomain,
+            sourcepackagename=self.potemplate.sourcepackagename)
+
+    def _guess_multiple_directories_with_pofile(self):
+        """Return an IPOFile that we think is related to this entry or None.
+
+        Multi directory trees layout are non standard layouts where the .pot
+        file and its .po files are stored in different directories
+
+        The know layouts are:
+
+        DIRECTORY/TRANSLATION_DOMAIN.pot
+        DIRECTORY/LANG_CODE/TRANSLATION_DOMAIN.po
+
+        or
+
+        DIRECTORY/TRANSLATION_DOMAIN.pot
+        DIRECTORY/LANG_CODE/messages/TRANSLATION_DOMAIN.po
+
+        or
+
+        DIRECTORY/TRANSLATION_DOMAIN.pot
+        DIRECTORY/LANG_CODE/LC_MESSAGES/TRANSLATION_DOMAIN.po
+
+        or
+
+        DIRECTORY/TRANSLATION_DOMAIN.pot
+        DIRECTORY/LANG_CODE/LANG_CODE.po
+
+        where DIRECTORY would be any path, even '', LANG_CODE is a language
+        code and TRANSLATION_DOMAIN the translation domain is the one used for
+        that .po file.
+
+        If this isn't enough, there are some packages that have a non standard
+        layout where the .pot files are stored inside the sourcepackage with
+        the binaries that will use it and the translations are stored in
+        external packages following the same language pack ideas that we use
+        with Ubuntu.
+
+        This layout breaks completely Rosetta because we don't have a way
+        to link the .po and .pot files coming from different packages. The
+        solution we take is to look for the translation domain across the
+        whole distro release. In the concrete case of KDE language packs, they
+        have the sourcepackagename following the pattern 'kde-i18n-LANGCODE'.
+        """
+        assert self.path.endswith('.po'), (
+            "We cannot handle the file %s here." % self.path)
+
+        if self.productseries is not None:
+            # This method only works for sourcepackages. It makes no sense use
+            # it with productseries.
+            return None
+
+        if self.sourcepackagename.name.startswith('kde-i18n-'):
+            # We need to extract the language information from the package
+            # name
+
+            # Here we have the set of language codes that have special meanings.
+            lang_mapping = {
+                'engb': 'en_GB',
+                'ptbr': 'pt_BR',
+                'srlatn': 'sr@Latn',
+                'zhcn': 'zh_CN',
+                'zhtw': 'zh_TW',
+                }
+
+            lang_code = self.sourcepackagename.name[len('kde-i18n-'):]
+            if lang_code in lang_mapping:
+                lang_code = lang_mapping[lang_code]
+        elif (self.sourcepackagename.name == 'koffice-l10n' and
+              self.path.startswith('koffice-i18n-')):
+            # This package has the language information included as part of a
+            # directory: koffice-i18n-LANG_CODE-VERSION
+            # Let's get the root directory that has the language information.
+            lang_directory = self.path.split('/')[0]
+            # Extract the language information.
+            match = re.match('koffice-i18n-(\S+)-(\S+)', self.path)
+            if match is None:
+                # No idea what to do with this.
+                return None
+            lang_code = match.group(1)
+        else:
+            # In this case, we try to get the language information from the
+            # path name.
+            dir_path = os.path.dirname(self.path)
+            dir_name = os.path.basename(dir_path)
+
+            if dir_name == 'messages' or dir_name == 'LC_MESSAGES':
+                # We have another directory between the language code directory
+                # and the filename (second and third case).
+                dir_path = os.path.dirname(dir_path)
+                lang_code = os.path.basename(dir_path)
+            else:
+                # The .po file is stored inside the directory with the language
+                # code as its name or an unsupported layout.
+                lang_code = dir_name
+
+            if lang_code is None:
+                return None
+
+        basename = os.path.basename(self.path)
+        filename, file_ext = os.path.splitext(basename)
+
+        # Let's check if whether the filename is a valid language.
+        language_set = getUtility(ILanguageSet)
+        (language, variant) = language_set.getLanguageAndVariantFromString(
+            filename)
+
+        if language is None:
+            # The filename is not a valid language, so let's try it as a
+            # translation domain.
+            translation_domain = filename
+        elif filename == lang_code:
+            # The filename is a valid language so we need to look for the
+            # template nearest to this pofile to link with it.
+            potemplateset = getUtility(IPOTemplateSet)
+            potemplate_subset = potemplateset.getSubset(
+                distrorelease=self.distrorelease,
+                sourcepackagename=self.sourcepackagename)
+            potemplate = potemplate_subset.getClosestPOTemplate(self.path)
+            if potemplate is None:
+                # We were not able to find such template, someone should
+                # review it manually.
+                return None
+            translation_domain = potemplate.potemplatename.translationdomain
+        else:
+            # The guessed language from the directory doesn't math the
+            # language from the filename. Leave it for an admin.
+            return None
+
+        if (self.sourcepackagename.name in ('k3b-i18n', 'koffice-l10n') or
+            self.sourcepackagename.name.startswith('kde-i18n-')):
+            # K3b and official KDE packages store translations and code in
+            # different packages, so we don't know the sourcepackagename that
+            # use the translations.
+            return self._get_pofile_from_language(
+                lang_code, translation_domain)
+        else:
+            # We assume that translations and code are together in the same
+            # package.
+            return self._get_pofile_from_language(
+                lang_code, translation_domain,
+                sourcepackagename=self.sourcepackagename)
 
     def getFileContent(self):
         """See ITranslationImportQueueEntry."""
@@ -389,7 +478,7 @@ class TranslationImportQueue:
 
         return entry
 
-    def __len__(self):
+    def entryCount(self):
         """See ITranslationImportQueue."""
         return TranslationImportQueueEntry.select().count()
 
@@ -572,7 +661,7 @@ class TranslationImportQueue:
                 # We don't have a place to import this entry. Try to guess it.
                 if entry.path.endswith('.po'):
                     # Check if we can guess where it should be imported.
-                    guess = entry.guessed_pofile
+                    guess = entry.getGuessedPOFile()
                     if guess is None:
                         # We were not able to guess a place to import it,
                         # leave the status of this entry as
@@ -604,7 +693,7 @@ class TranslationImportQueue:
 
         return there_are_entries_approved
 
-    def executeOptimisticBlock(self):
+    def executeOptimisticBlock(self, ztm=None):
         """See ITranslationImportQueue."""
         num_blocked = 0
         for entry in self.iterNeedsReview():
@@ -633,6 +722,9 @@ class TranslationImportQueue:
                 # are blocked, so we can block it too.
                 entry.status = RosettaImportStatus.BLOCKED
                 num_blocked += 1
+                if ztm is not None:
+                    # Do the commit to save the changes.
+                    ztm.commit()
 
         return num_blocked
 

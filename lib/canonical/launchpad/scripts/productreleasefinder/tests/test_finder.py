@@ -7,10 +7,12 @@ import tempfile
 import unittest
 
 from zope.component import getUtility
+from zope.interface.verify import verifyObject
+from zope.schema import getFields
 
 from canonical.config import config
 from canonical.testing import LaunchpadZopelessLayer, reset_logging
-from canonical.launchpad.interfaces import IProductSet
+from canonical.launchpad.interfaces import IProductSet, IProductReleaseFile
 from canonical.lp.dbschema import UpstreamFileType
 from canonical.launchpad.scripts.productreleasefinder.filter import (
     FilterPattern)
@@ -27,13 +29,7 @@ class FindReleasesTestCase(unittest.TestCase):
 
             def __init__(self):
                 ProductReleaseFinder.__init__(self, None, None)
-                self.cache.save = self.saveCache
                 self.seen_products = []
-
-            cache_save_called = False
-
-            def saveCache(self):
-                self.cache_save_called = True
 
             def getFilters(self):
                 return [('product1', ['filter1', 'filter2']),
@@ -42,13 +38,6 @@ class FindReleasesTestCase(unittest.TestCase):
             def handleProduct(self, product_name, filters):
                 self.seen_products.append((product_name, filters))
 
-            # fake cache element
-            class cache:
-                save_called = False
-                @classmethod
-                def save(cls):
-                    cls.save_called = True
-
         prf = DummyProductReleaseFinder()
         prf.findReleases()
         self.assertEqual(len(prf.seen_products), 2)
@@ -56,7 +45,6 @@ class FindReleasesTestCase(unittest.TestCase):
                          ('product1', ['filter1', 'filter2']))
         self.assertEqual(prf.seen_products[1],
                          ('product2', ['filter3', 'filter4']))
-        self.assertEqual(prf.cache_save_called, True)
 
 
 class GetFiltersTestCase(unittest.TestCase):
@@ -72,46 +60,25 @@ class GetFiltersTestCase(unittest.TestCase):
 
         evolution = getUtility(IProductSet).getByName('evolution')
         trunk = evolution.getSeries('trunk')
-        trunk.releaseroot = ('http://ftp.gnome.org/pub/GNOME/sources/'
-                             'evolution/2.7/')
-        trunk.releasefileglob = 'evolution-*.tar.gz'
-
-        # a product without a release root set for the series
-        firefox = getUtility(IProductSet).getByName('firefox')
-        firefox.releaseroot = ('http://releases.mozilla.org/pub/'
-                               'mozilla.org/firefox/releases/')
-        onezero = firefox.getSeries('1.0')
-        onezero.releaseroot = None
-        onezero.releasefileglob = '1.0*/source/firefox-1.0*-source.tar.bz2'
-
+        trunk.releasefileglob = ('http://ftp.gnome.org/pub/GNOME/sources/'
+                                 'evolution/2.7/evolution-*.tar.gz')
         ztm.commit()
 
         logging.basicConfig(level=logging.CRITICAL)
         prf = ProductReleaseFinder(ztm, logging.getLogger())
         # get the filters for evolution and firefox
         for product_name, filters in prf.getFilters():
-            if product_name == 'firefox':
-                firefox_filters = filters
-            elif product_name == 'evolution':
+            if product_name == 'evolution':
                 evo_filters = filters
-
-        self.assertEqual(len(firefox_filters), 1)
-        self.failUnless(isinstance(firefox_filters[0], FilterPattern))
-        self.assertEqual(firefox_filters[0].key, '1.0')
-        self.assertEqual(firefox_filters[0].base_url,
-            'http://releases.mozilla.org/pub/mozilla.org/firefox/releases/')
-        self.assertEqual(firefox_filters[0].glob,
-            '1.0*/source/firefox-1.0*-source.tar.bz2')
-        self.failUnless(firefox_filters[0].match(
-            'http://releases.mozilla.org/pub/mozilla.org/firefox/releases/'
-            '1.0.8/source/firefox-1.0.8-source.tar.bz2'))
 
         self.assertEqual(len(evo_filters), 1)
         self.failUnless(isinstance(evo_filters[0], FilterPattern))
         self.assertEqual(evo_filters[0].key, 'trunk')
         self.assertEqual(evo_filters[0].base_url,
             'http://ftp.gnome.org/pub/GNOME/sources/evolution/2.7/')
-        self.assertEqual(evo_filters[0].glob, 'evolution-*.tar.gz')
+        self.assertEqual(evo_filters[0].urlglob,
+            'http://ftp.gnome.org/pub/GNOME/sources/evolution/2.7/'
+            'evolution-*.tar.gz')
         self.failUnless(evo_filters[0].match(
             'http://ftp.gnome.org/pub/GNOME/sources/evolution/2.7/'
             'evolution-2.7.1.tar.gz'))
@@ -120,22 +87,12 @@ class GetFiltersTestCase(unittest.TestCase):
 class HandleProductTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.root = tempfile.mkdtemp()
-
-        # fake cache path
-        self._old_cache_path = config.productreleasefinder.cache_path
-        cache_path = os.path.join(self.root, 'cache')
-        os.mkdir(cache_path)
-        config.productreleasefinder.cache_path = cache_path
-
         # path for release tree
-        self.release_root = os.path.join(self.root, 'releases')
+        self.release_root = tempfile.mkdtemp()
         self.release_url = 'file://' + self.release_root
-        os.mkdir(self.release_root)
 
     def tearDown(self):
-        config.productreleasefinder.cache_path = self._old_cache_path
-        shutil.rmtree(self.root, ignore_errors=True)
+        shutil.rmtree(self.release_root, ignore_errors=True)
         reset_logging()
 
     def test_handleProduct(self):
@@ -169,10 +126,10 @@ class HandleProductTestCase(unittest.TestCase):
         prf = DummyProductReleaseFinder(None, logging.getLogger())
 
         filters = [
-            FilterPattern('series1', self.release_url + '/product/1',
-                          'product-1.*.tar.gz'),
-            FilterPattern('series2', self.release_url + '/product/2',
-                          'product-2.*.tar.gz'),
+            FilterPattern('series1', self.release_url +
+                          '/product/1/product-1.*.tar.gz'),
+            FilterPattern('series2', self.release_url +
+                          '/product/2/product-2.*.tar.gz'),
             ]
 
         
@@ -208,7 +165,7 @@ class HandleReleaseTestCase(unittest.TestCase):
 
         # create a release tarball
         fp = open(os.path.join(
-            self.release_root, 'evolution-42.0.tar.gz'), 'w')
+            self.release_root, 'evolution-42.0.orig.tar.gz'), 'w')
         fp.write('foo')
         fp.close()
 
@@ -216,7 +173,7 @@ class HandleReleaseTestCase(unittest.TestCase):
                          False)
 
         prf.handleRelease('evolution', 'trunk',
-                          self.release_url + '/evolution-42.0.tar.gz')
+                          self.release_url + '/evolution-42.0.orig.tar.gz')
 
         self.assertEqual(prf.hasReleaseTarball('evolution', 'trunk', '42.0'),
                          True)
@@ -230,7 +187,13 @@ class HandleReleaseTestCase(unittest.TestCase):
         fileinfo = release.files[0]
         self.assertEqual(fileinfo.filetype, UpstreamFileType.CODETARBALL)
         self.assertEqual(fileinfo.libraryfile.filename,
-                         'evolution-42.0.tar.gz')
+                         'evolution-42.0.orig.tar.gz')
+
+        # verify that the fileinfo object is sane
+        self.failUnless(verifyObject(IProductReleaseFile, fileinfo))
+        for field in getFields(IProductReleaseFile).values():
+            bound = field.bind(fileinfo)
+            bound.validate(bound.get(fileinfo))
 
     def test_handleReleaseWithExistingRelease(self):
         # Test that handleRelease() can add a file release to an

@@ -67,6 +67,7 @@ Let's check the notification content:
   Content-Type: text/plain; charset="utf-8"
   MIME-Version: 1.0
   Content-Transfer-Encoding: quoted-printable
+  X-Creator-Recipient: mark@hbd.com
   X-Launchpad-Build-State: FAILEDTOBUILD
   To: mark@hbd.com
   From: Launchpad Buildd System <noreply@launchpad.net>
@@ -90,7 +91,7 @@ Let's check the notification content:
   contact a member of the Launchpad Buildd Administrators team.
   <BLANKLINE>
   --
-  i386 build of pmount 0.1-1 in ubuntu breezy-autotest
+  i386 build of pmount 0.1-1 in ubuntu breezy-autotest RELEASE
   http://launchpad.dev/+builds/+build/17
   <BLANKLINE>
 
@@ -139,6 +140,7 @@ Check the notification content:
   Content-Type: text/plain; charset="utf-8"
   MIME-Version: 1.0
   Content-Transfer-Encoding: quoted-printable
+  X-Creator-Recipient: mark@hbd.com
   X-Launchpad-Build-State: NEEDSBUILD
   To: mark@hbd.com
   From: Launchpad Buildd System <noreply@launchpad.net>
@@ -162,7 +164,7 @@ Check the notification content:
   contact a member of the Launchpad Buildd Administrators team.
   <BLANKLINE>
   --
-  i386 build of alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary
+  i386 build of alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE
   http://launchpad.dev/+builds/+build/11
   <BLANKLINE>
 
@@ -212,6 +214,7 @@ Check the notification content:
   Content-Type: text/plain; charset="utf-8"
   MIME-Version: 1.0
   Content-Transfer-Encoding: quoted-printable
+  X-Creator-Recipient: mark@hbd.com
   X-Launchpad-Build-State: BUILDING
   To: mark@hbd.com
   From: Launchpad Buildd System <noreply@launchpad.net>
@@ -235,7 +238,7 @@ Check the notification content:
   contact a member of the Launchpad Buildd Administrators team.
   <BLANKLINE>
   --
-  i386 build of mozilla-firefox 0.9 in ubuntu hoary
+  i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
   http://launchpad.dev/+builds/+build/8
   <BLANKLINE>
 
@@ -284,6 +287,7 @@ Check the notification content:
   Content-Type: text/plain; charset="utf-8"
   MIME-Version: 1.0
   Content-Transfer-Encoding: quoted-printable
+  X-Creator-Recipient: mark@hbd.com
   X-Launchpad-Build-State: SUPERSEDED
   To: mark@hbd.com
   From: Launchpad Buildd System <noreply@launchpad.net>
@@ -307,7 +311,7 @@ Check the notification content:
   contact a member of the Launchpad Buildd Administrators team.
   <BLANKLINE>
   --
-  i386 build of at 0.00 in ubuntu warty
+  i386 build of at 0.00 in ubuntu warty RELEASE
   http://launchpad.dev/+builds/+build/15
   <BLANKLINE>
 

@@ -21,11 +21,14 @@
           5a. didn't try to register last time
           5b. just tried to register and failed.
       The usual case is 4 + 5.
+
+      See also launchpad-restictedlogin.pt, which also uses
+      these numbers in comments.
     </tal:comment>
     <div metal:fill-slot="main">
-    
+
       <!-- 1. already logged in and shouldn't be here: -->
-      <div tal:condition="request/lp:person" tal:omit-tag>
+      <tal:block condition="request/lp:person">
 
         <!-- 2. just logged in successfully: -->
         <p tal:condition="view/login_success">
@@ -33,7 +36,7 @@
           tal:content="request/lp:person/browsername">Person Name</strong>.
         </p>
 
-        <div tal:condition="not: view/login_success" tal:omit-tag>        
+        <tal:block condition="not: view/login_success">
           <h1>You&#8217;re already logged in</h1>
           <p>
             You are already logged in as
@@ -41,13 +44,13 @@
             name</strong>.  If this is not you, please
             <a href="/+logout">log out now</a>.
           </p>
-        </div>
-      </div>
-      
-      <div tal:condition="not: request/lp:person" tal:omit-tag>
-              
-        <div tal:condition="not: view/login_success" tal:omit-tag>
-        
+        </tal:block>
+      </tal:block>
+
+      <tal:block condition="not: request/lp:person">
+
+        <tal:block condition="not: view/login_success">
+
           <!-- 3. just registered successfully: -->
           <tal:registered condition="view/registration_success">
             <h1>Registration mail sent</h1>
@@ -89,7 +92,7 @@
             </div>
           </tal:registered>
 
-          <div tal:condition="not: view/registration_success" tal:omit-tag>
+          <tal:block condition="not: view/registration_success">
             <!-- 4a. didn't try to log in last time: -->
             <h1 tal:condition="not: view/login_error">
               Already registered?
@@ -97,7 +100,7 @@
             <!-- 4b. just tried to log in and failed: -->
             <div tal:condition="view/login_error">
               <h1>Your login was unsuccessful</h1>
-              <p class="error" tal:content="view/login_error" />
+              <p class="error message" tal:content="view/login_error" />
             </div>
             <!-- 4. might want to log in: -->
             <p>
@@ -155,14 +158,11 @@
               Not registered yet? 
             </h1>
             <!-- 5b. just tried to register and failed: -->
-            <div
-              tal:condition="view/registration_error"
-              tal:omit-tag
-            >
+            <tal:block condition="view/registration_error">
               <h1>Your registration was unsuccessful</h1>
-              <p class="error"
+              <p class="error message"
                  tal:content="structure view/registration_error" />
-            </div>
+            </tal:block>
             <!-- 5. might want to register: -->
             <p>
               Launchpad will e-mail you to check your address
@@ -179,10 +179,11 @@
               <table>
                 <tr>
                   <th>
-                    <label for="email">E-mail address:</label>
+                    <label for="registeremail">E-mail address:</label>
                   </th>
                   <td>
                     <input type="text" size="30" name="loginpage_email"
+                      id="registeremail"
                       tal:attributes="value view/email|nothing"
                     />
                   </td>
@@ -200,9 +201,9 @@
               <!-- Preserve extra query parameters as hidden fields. -->
               <tal:replacement tal:replace="structure view/preserve_query" />
             </form>
-          </div>
-        </div>
-      </div>
+          </tal:block>
+        </tal:block>
+      </tal:block>
     </div>
   </body>
 </html>

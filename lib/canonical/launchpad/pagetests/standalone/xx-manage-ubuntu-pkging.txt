@@ -62,7 +62,6 @@ OK, if that worked, we better set it back to where it was so we restore balance 
   ...
 
 
-
 Now lets make sure we can create a new ubuntu package relationship where
 none existed previously. First make sure none exists, by viewing the form,
 it should have an empty field for ubuntupkg.
@@ -75,6 +74,24 @@ it should have an empty field for ubuntupkg.
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
+  ...
+            <input type="text" name="ubuntupkg" size="30"
+                   value="" />
+  ...
+
+
+Trying to add a Source Package with an non-existent name should fail graciously.
+
+  >>> print http(r"""
+  ... POST /products/thunderbird/trunk/+ubuntupkg HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Content-Length: 37
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... ubuntupkg=moz&set_ubuntu_pkg=Update""")
+  HTTP/1.1 200 Ok
+  ...
+  ...<div class="error message">Invalid source package name moz</div>...
   ...
             <input type="text" name="ubuntupkg" size="30"
                    value="" />

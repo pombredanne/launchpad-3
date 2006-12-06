@@ -15,11 +15,11 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.interfaces import (
-    ILoginToken, ILoginTokenSet, IGPGHandler, NotFoundError
-    )
+    ILoginToken, ILoginTokenSet, IGPGHandler, NotFoundError, IPersonSet)
 from canonical.lp.dbschema import LoginTokenType, EnumCol
 from canonical.launchpad.validators.email import valid_email
 
@@ -74,7 +74,7 @@ class LoginToken(SQLBase):
         subject = "Launchpad: Validate your email address"
         simple_sendmail(fromaddress, str(self.email), subject, message)
 
-    def sendGPGValidationRequest(self, appurl, key):
+    def sendGPGValidationRequest(self, key):
         """See ILoginToken."""
         formatted_uids = ''
         for email in key.emails:
@@ -86,13 +86,12 @@ class LoginToken(SQLBase):
         template = get_email_template('validate-gpg.txt')
         fromaddress = format_address("Launchpad OpenPGP Key Confirmation",
                                      config.noreply_from_address)
-        replacements = {'longstring': self.token,
-                        'requester': self.requester.browsername,
+        replacements = {'requester': self.requester.browsername,
                         'requesteremail': self.requesteremail,
                         'displayname': key.displayname, 
                         'fingerprint': key.fingerprint,
                         'uids': formatted_uids,
-                        'appurl': appurl}
+                        'token_url': canonical_url(self)}
         message = template % replacements
 
         # encrypt message if requested
@@ -104,26 +103,86 @@ class LoginToken(SQLBase):
         subject = "Launchpad: Confirm your OpenPGP Key"
         simple_sendmail(fromaddress, str(self.email), subject, message)
 
-    def sendPasswordResetEmail(self, appurl):
+    def sendPasswordResetEmail(self):
         """See ILoginToken."""
         template = get_email_template('forgottenpassword.txt')
         fromaddress = format_address("Launchpad", config.noreply_from_address)
-        replacements = {'longstring': self.token,
-                        'toaddress': self.email, 
-                        'appurl': appurl}
+        replacements = {'toaddress': self.email, 
+                        'token_url': canonical_url(self)}
         message = template % replacements
 
         subject = "Launchpad: Forgotten Password"
         simple_sendmail(fromaddress, str(self.email), subject, message)
 
-    def sendNewUserEmail(self, appurl):
+    def sendNewUserEmail(self):
         """See ILoginToken."""
         template = get_email_template('newuser-email.txt')
-        replacements = {'longstring': self.token, 'appurl': appurl}
+        replacements = {'token_url': canonical_url(self)}
         message = template % replacements
 
         fromaddress = format_address("Launchpad", config.noreply_from_address)
         subject = "Finish your Launchpad registration"
+        simple_sendmail(fromaddress, str(self.email), subject, message)
+
+    def sendProfileCreatedEmail(self, profile, comment):
+        """See ILoginToken."""
+        template = get_email_template('profile-created.txt')
+        replacements = {'token_url': canonical_url(self),
+                        'requester': self.requester.browsername,
+                        'comment': comment,
+                        'profile_url': canonical_url(profile)}
+        message = template % replacements
+
+        headers = {'Reply-To': self.requester.preferredemail.email}
+        fromaddress = format_address("Launchpad", config.noreply_from_address)
+        subject = "Launchpad profile"
+        simple_sendmail(
+            fromaddress, str(self.email), subject, message, headers=headers)
+
+    def sendMergeRequestEmail(self):
+        """See ILoginToken."""
+        template = get_email_template('request-merge.txt')
+        fromaddress = format_address(
+            "Launchpad Account Merge", config.noreply_from_address)
+
+        dupe = getUtility(IPersonSet).getByEmail(self.email)
+        replacements = {'dupename': "%s (%s)" % (dupe.browsername, dupe.name),
+                        'requester': self.requester.name,
+                        'requesteremail': self.requesteremail,
+                        'toaddress': self.email,
+                        'token_url': canonical_url(self)}
+        message = template % replacements
+
+        subject = "Launchpad: Merge of Accounts Requested"
+        simple_sendmail(fromaddress, str(self.email), subject, message)
+
+    def sendTeamEmailAddressValidationEmail(self, user):
+        """See ILoginToken."""
+        template = get_email_template('validate-teamemail.txt')
+
+        fromaddress = format_address(
+            "Launchpad Email Validator", config.noreply_from_address)
+        subject = "Launchpad: Validate your team's contact email address"
+        replacements = {'team': self.requester.browsername,
+                        'requester': '%s (%s)' % (user.browsername, user.name),
+                        'toaddress': self.email,
+                        'admin_email': config.admin_address,
+                        'token_url': canonical_url(self)}
+        message = template % replacements
+        simple_sendmail(fromaddress, str(self.email), subject, message)
+
+    def sendClaimProfileEmail(self):
+        """See ILoginToken."""
+        template = get_email_template('claim-profile.txt')
+        fromaddress = format_address("Launchpad", config.noreply_from_address)
+        profile = getUtility(IPersonSet).getByEmail(self.email)
+        replacements = {'profile_name': (
+                            "%s (%s)" % (profile.browsername, profile.name)),
+                        'email': self.email, 
+                        'token_url': canonical_url(self)}
+        message = template % replacements
+
+        subject = "Launchpad: Claim Profile"
         simple_sendmail(fromaddress, str(self.email), subject, message)
 
 

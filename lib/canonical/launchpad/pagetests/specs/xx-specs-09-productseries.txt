@@ -7,7 +7,7 @@ want to target one of these specs to the 1.0 series. We will use the "e4x"
 specification.
 
 First we load the page to target to the series. We can see two potential
-series candidates, the "milestones" and the "1.0" series.
+series candidates, the "trunk" and the "1.0" series.
 
   >>> print http(r"""
   ... GET /products/firefox/+spec/e4x/+setseries HTTP/1.1
@@ -17,7 +17,7 @@ series candidates, the "milestones" and the "1.0" series.
   ...
   <option value="">(no value)</option>
   <option value="2">firefox 1.0</option>
-  <option value="1">firefox milestones</option>
+  <option value="1">firefox trunk</option>
   ...
 
 
@@ -111,7 +111,7 @@ Now, we will accept one of them, the svg-support one. We expect to be told
 that 1 was accepted.
 
   >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
-  >>> browser.open('http://features.launchpad.dev/products/firefox/1.0/+setgoals')
+  >>> browser.open('http://blueprints.launchpad.dev/products/firefox/1.0/+setgoals')
   >>> 'Support Native SVG' in browser.contents
   True
   >>> browser.getControl('Support Native SVG').selected = True
@@ -124,7 +124,7 @@ We will now decline the remaining one. We expect to be redirected, since
 there are none left in the queue.
 
   >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
-  >>> browser.open('http://features.launchpad.dev/products/firefox/1.0/+setgoals')
+  >>> browser.open('http://blueprints.launchpad.dev/products/firefox/1.0/+setgoals')
   >>> browser.getControl('Support E4X').selected = True
   >>> browser.getControl('Decline').click()
   >>> 'Declined 1 specification(s)' in browser.contents
@@ -150,7 +150,7 @@ listing.
 
 
 Now, lets make sure that automatic approval works. We will move the accepted
-spec to the "milestones" series, where it will be automatically approved
+spec to the "trunk" series, where it will be automatically approved
 because we are an admin, then we will move it back.
 
   >>> print http(r"""
@@ -184,12 +184,12 @@ because we are an admin, then we will move it back.
 
 OK, lets see if it was immediately accepted:
 
-  >>> print http(r"""
-  ... GET /products/firefox/+spec/svg-support HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...products/firefox/milestones...
-  ...Accepted...
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/products/firefox/+spec/svg-support')
+    >>> 'products/firefox/trunk' in anon_browser.contents
+    True
+    >>> 'Accepted' in anon_browser.contents
+    True
 
 And lets put it back:
 
@@ -223,10 +223,9 @@ And lets put it back:
 
 And again, it should be accepted automatically.
 
-  >>> print http(r"""
-  ... GET /products/firefox/+spec/svg-support HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...products/firefox/1.0...
-  ...Accepted...
-
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/products/firefox/+spec/svg-support')
+    >>> 'products/firefox/1.0' in anon_browser.contents
+    True
+    >>> 'Accepted' in anon_browser.contents
+    True

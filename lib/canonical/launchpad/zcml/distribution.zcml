@@ -19,8 +19,9 @@
                             mirror_admin"
             />
         <!-- ITicketTarget -->
-        <allow attributes="tickets getTicket searchTickets findSimilarTickets
-              support_contacts" />
+        <allow attributes="getTicket searchTickets findSimilarTickets
+              support_contacts direct_support_contacts"
+              />
         <require permission="launchpad.AnyPerson"
             attributes="newTicket addSupportContact removeSupportContact" />
     </content>
@@ -65,11 +66,27 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IDistribution"
+        name="+archivemirrors-rss"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.DistributionArchiveMirrorsRSSView"
+        template="../templates/distribution-mirrors-rss.pt"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IDistribution"
         facet="overview"
         class="canonical.launchpad.browser.DistributionReleaseMirrorsView"
         permission="zope.Public"
         name="+cdmirrors"
         template="../templates/distribution-mirrors.pt" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IDistribution"
+        name="+cdmirrors-rss"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.DistributionReleaseMirrorsRSSView"
+        template="../templates/distribution-mirrors-rss.pt"
+        />
 
     <browser:page
         for="canonical.launchpad.interfaces.IDistribution"
@@ -135,12 +152,6 @@
             lp:url="/distros/$Distribution.name/+members"
             />
         <browser:page
-            name="+cve"
-            facet="bugs"
-            template="../templates/distribution-cvereport.pt"
-            lp:url="/distros/$Distribution.name/+cve"
-            />
-        <browser:page
             name="+translations"
             facet="translations"
             template="../templates/distribution-translations.pt"
@@ -168,6 +179,14 @@
         lp:url="/distros/$Distribution.name/+allpackages"
         />
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IDistribution"
+        class="canonical.launchpad.browser.CVEReportView"
+        permission="zope.Public"
+        name="+cve"
+        facet="bugs"
+        template="../templates/distribution-cvereport.pt" />
+
     <browser:pages
         for="canonical.launchpad.interfaces.IDistribution"
         permission="zope.Public" >
@@ -193,8 +212,7 @@
             lp:url="/distros/$Distribution.name/+portlet-bounties" />
         <browser:page
             name="+portlet-aboutcve"
-            template="../templates/distribution-portlet-aboutcve.pt"
-            lp:url="/distros/$Distribution.name/+portlet-aboutcve" />
+            template="../templates/portlet-aboutcve.pt" />
     </browser:pages>
 
     <browser:pages
@@ -258,15 +276,12 @@
         template="../templates/distribution-edit.pt"
         lp:url="/distros/$Distribution.name/+edit" />
 
-    <browser:editform
+    <browser:page
         name="+launchpad"
         for="canonical.launchpad.interfaces.IDistribution"
-        class="canonical.launchpad.browser.DistributionEditView"
-        schema="canonical.launchpad.interfaces.IDistribution"
+        class="canonical.launchpad.browser.DistributionLaunchpadUsageEditView"
         facet="overview"
-        fields="official_rosetta official_malone"
         permission="launchpad.Edit"
-        label="Describe Launchpad usage"
         template="../templates/object-launchpadusage.pt"
         />
 
@@ -378,11 +393,6 @@
         for="canonical.launchpad.interfaces.IDistributionSet"
         name="+index" />
 
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IDistributionSet"
-        layer="canonical.launchpad.layers.MaloneLayer"
-        name="+bugs" />
-
     <browser:navigation
         module="canonical.launchpad.browser"
         classes="DistributionSetNavigation"
@@ -394,8 +404,6 @@
         parent_utility="canonical.launchpad.interfaces.IDistributionSet"
         />
 
-    <!-- XXX: WTF is distros-index hooked onto +bugs for
-              kiko, 2005-09-09 -->
     <browser:pages
         for="canonical.launchpad.interfaces.IDistributionSet"
         permission="zope.Public"
@@ -405,10 +413,6 @@
             name="+index"
             template="../templates/distros-index.pt"
             lp:url="/distros/" />
-        <browser:page
-            name="+bugs"
-            template="../templates/distros-index.pt"
-            lp:url="/distros/+bugs" />
     </browser:pages>
 
     <browser:pages
@@ -440,8 +444,8 @@
         module="canonical.launchpad.browser.distribution"
         classes="
             DistributionFacets DistributionOverviewMenu DistributionBugsMenu
-            DistributionSupportMenu DistributionBountiesMenu
-            DistributionSpecificationsMenu DistributionTranslationsMenu
+            DistributionBountiesMenu DistributionSpecificationsMenu
+            DistributionTranslationsMenu
             "
             />
 

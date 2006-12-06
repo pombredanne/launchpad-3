@@ -9,23 +9,20 @@ import random
 import time
 import unittest
 
-import pytz
-
 from bzrlib.bzrdir import BzrDir
 from bzrlib.revision import NULL_REVISION
 from bzrlib.uncommit import uncommit
-
+import pytz
 from zope.component import getUtility
 
-from importd.tests.helpers import WebserverHelper
 from canonical.config import config
-from canonical.testing import ZopelessLayer
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
-
-from canonical.launchpad.interfaces import IBranchSet
 from canonical.launchpad.database import (
     Revision, RevisionNumber, RevisionParent, RevisionAuthor)
+from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
+from canonical.launchpad.interfaces import IBranchSet
 from canonical.launchpad.scripts.bzrsync import BzrSync, RevisionModifiedError
+from canonical.launchpad.scripts.tests.webserver_helper import WebserverHelper
+from canonical.testing import ZopelessLayer
 
 
 class BzrSyncTestCase(unittest.TestCase):
@@ -269,7 +266,7 @@ class TestBzrSyncModified(BzrSyncTestCase):
     def test_revision_modified(self):
         # test that modifications to the list of parents get caught.
         class FakeRevision:
-            revision_id = ['rev42']
+            revision_id = 'rev42'
             parent_ids = ['rev1', 'rev2']
             committer = self.AUTHOR
             message = self.LOG

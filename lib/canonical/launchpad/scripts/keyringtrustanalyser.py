@@ -1,6 +1,5 @@
 # Copyright 2005 Canonical Ltd.  All rights reserved.
 
-from zope.interface import implements
 from zope.component import getUtility
 
 import gpgme
@@ -10,6 +9,7 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces import (
     IGPGHandler, IPersonSet, IEmailAddressSet)
 from canonical.launchpad.validators.email import valid_email
+from canonical.lp.dbschema import PersonCreationRationale
 
 __metaclass__ = type
 
@@ -146,7 +146,8 @@ def _mergeOrAddEmails(personset, emailset, cluster, logger):
     else:
         # no person? create it.
         # We should have the display name from a key here ...
-        person, email = personset.createPersonAndEmail(cluster.pop())
+        person, email = personset.createPersonAndEmail(
+            cluster.pop(), PersonCreationRationale.KEYRINGTRUSTANALYZER)
 
     # We now have one person.  Now add the missing addresses:
     existing = set(email.email for email in emailset.getByPerson(person))

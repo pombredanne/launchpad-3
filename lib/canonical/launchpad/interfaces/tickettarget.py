@@ -1,43 +1,31 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2006 Canonical Ltd.  All rights reserved.
 
 """Interfaces for things which have Tickets."""
 
 __metaclass__ = type
 
 __all__ = [
-    'IHasTickets',
     'ITicketTarget',
     'IManageSupportContacts',
+    'ISearchTicketsForm',
     'TICKET_STATUS_DEFAULT_SEARCH',
     ]
 
+import sets
+
 from zope.interface import Interface
-from zope.schema import Bool, Choice, List
+from zope.schema import Bool, Choice, List, Set, TextLine
 
 from canonical.launchpad import _
-from canonical.lp.dbschema import TicketStatus
+from canonical.lp.dbschema import TicketSort, TicketStatus
 
 
-class IHasTickets(Interface):
-    """An object that has tickets attached to it.
-
-    Thus far, this is true of people, distros, products.
-    """
-
-    def tickets(quantity=None):
-        """Support tickets for this source package, sorted newest first.
-
-        :quantity: An integer.
-
-        If needed, you can limit the number of tickets returned by passing a
-        number to the "quantity" parameter.
-        """
+TICKET_STATUS_DEFAULT_SEARCH = (
+    TicketStatus.OPEN, TicketStatus.NEEDSINFO, TicketStatus.ANSWERED,
+    TicketStatus.SOLVED)
 
 
-TICKET_STATUS_DEFAULT_SEARCH = (TicketStatus.OPEN, TicketStatus.ANSWERED)
-
-
-class ITicketTarget(IHasTickets):
+class ITicketTarget(Interface):
     """An object that can have a new ticket created for  it."""
 
     def newTicket(owner, title, description, datecreated=None):
@@ -64,7 +52,7 @@ class ITicketTarget(IHasTickets):
         """
 
     def searchTickets(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-                      sort=None):
+                      owner=None, sort=None):
         """Search the object's tickets.
 
         :search_text: A string that is matched against the ticket
@@ -74,9 +62,12 @@ class ITicketTarget(IHasTickets):
         :status: A sequence of TicketStatus Items. If None or an empty
         sequence, the status is not included as a filter criteria.
 
+        :owner: The IPerson that created the ticket.
+
         :sort:  An attribute of TicketSort. If None, a default value is used.
         When there is a search_text value, the default is to sort by RELEVANCY,
         otherwise results are sorted NEWEST_FIRST.
+
         """
 
     def findSimilarTickets(title):
@@ -110,11 +101,22 @@ class ITicketTarget(IHasTickets):
     support_contacts = List(
         title=_("Support Contacts"),
         description=_(
-            "Persons that will be automatically subscribed to new support"
-            " requests."),
+            "Persons that are willing to provide support for this target. "
+            "They receive email notifications about each new request as "
+            "well as for changes to any requests related to this target."),
+        value_type=Choice(vocabulary="ValidPersonOrTeam"))
+
+    direct_support_contacts = List(
+        title=_("Direct Support Contacts"),
+        description=_(
+            "IPersons that registered as support contacts explicitely on "
+            "this target. (support_contacts may include support contacts "
+            "inherited from other context.)"),
         value_type=Choice(vocabulary="ValidPersonOrTeam"))
 
 
+# These schemas are only used by browser/tickettarget.py and should really
+# live there. See Bug #66950.
 class IManageSupportContacts(Interface):
     """Schema for managing support contacts."""
 
@@ -125,3 +127,17 @@ class IManageSupportContacts(Interface):
         title=_("Team support contacts"),
         value_type=Choice(vocabulary="PersonActiveMembership"),
         required=False)
+
+
+class ISearchTicketsForm(Interface):
+    """Schema for the search ticket form."""
+
+    search_text = TextLine(title=_('Search text'), required=False)
+
+    sort = Choice(title=_('Sort order'), required=True,
+                  vocabulary='TicketSort',
+                  default=TicketSort.RELEVANCY)
+
+    status = Set(title=_('Status'), required=False,
+                 value_type=Choice(vocabulary='TicketStatus'),
+                 default=sets.Set(TICKET_STATUS_DEFAULT_SEARCH))

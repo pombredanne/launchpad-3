@@ -10,8 +10,9 @@
         <allow interface="canonical.launchpad.interfaces.ISourcePackage" />
         <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
         <!-- ITicketTarget -->
-        <allow attributes="tickets getTicket searchTickets findSimilarTickets
-              support_contacts" />
+        <allow attributes="getTicket searchTickets findSimilarTickets
+              support_contacts direct_support_contacts"
+              />
         <require permission="launchpad.AnyPerson"
             attributes="newTicket addSupportContact removeSupportContact" />
     </content>

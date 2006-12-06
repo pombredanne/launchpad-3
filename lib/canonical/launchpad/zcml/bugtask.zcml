@@ -34,14 +34,18 @@
             attributes="product sourcepackagename distribution
                         distrorelease milestone status statusexplanation
                         importance assignee bugwatch age owner targetname
-                        title related_tasks statusdisplayhtml statuselsewhere
-                        asEmailHeaderValue
+                        title related_tasks asEmailHeaderValue
                         target_uses_malone bugtask_branches" />
         <require
             permission="launchpad.Edit"
             attributes="setStatusFromDebbugs setImportanceFromDebbugs
                         updateTargetNameCache transitionToStatus
                         transitionToAssignee" />
+
+        <!-- XXX, Brad Bollenbach, 2006-09-29: The permission checking for
+        milestone and importance is further restricted in the browser view code
+        (BugTaskEditView). This is bad. See https://launchpad.net/bugs/63000 .
+        -->
         <require
             permission="launchpad.Edit"
             set_attributes="product sourcepackagename distribution
@@ -259,12 +263,18 @@
         name="+index" />
 
     <browser:page
-        name="+upstreamtask"
+        name="+choose-affected-product"
+        for="canonical.launchpad.interfaces.IBugTask"
+        class="canonical.launchpad.browser.bug.ChooseAffectedProductView"
+        permission="launchpad.AnyPerson"
+        template="../templates/bugtask-choose-affected-product.pt" />
+
+    <browser:page
+        name="+add-affected-product"
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.bug.BugAlsoReportInView"
         permission="launchpad.AnyPerson"
-        attribute="render_upstreamtask"
-        lp:url="malone/bugs/$Bug.id/+upstreamtask">
+        attribute="render_upstreamtask">
     </browser:page>
 
     <browser:page
@@ -313,6 +323,13 @@
         permission="launchpad.View"
         template="../templates/bugtask-view.pt"
         lp:url="malone/tasks/$BugTask.id/+index">
+    </browser:page>
+
+    <browser:page
+        name="+listing-view"
+        for="canonical.launchpad.interfaces.IBugTask"
+        class="canonical.launchpad.browser.BugTaskListingView"
+        permission="launchpad.View">
     </browser:page>
 
     <browser:defaultView

@@ -1,0 +1,182 @@
+Helper Routines for Page Tests
+==============================
+
+When analysing the page content in a page test, it is often desirable
+to check for certain content in a subsection of the page.
+
+To help with this, a number of helper functions are made available to
+page tests in the starting namespace.
+
+  >>> from canonical.launchpad.ftests.test_pages import (
+  ...     find_tag_by_id, find_tags_by_class, find_portlet,
+  ...     find_main_content)
+
+Each of these functions returns a BeautifulSoup "Tag" instance (or a
+list of such instances in the case of find_tags_by_class).  Printing
+the result will give the corresponding HTML.  The return value can be
+further disected with the find() or findall() methods.
+
+In page tests it is recommended that you print return value and match
+the result (possibly with sections elided) rather than doing
+True/False style tests.  These produce better errors in the case of
+test failures.
+
+
+find_tag_by_id()
+----------------
+
+This routine will return the tag with the given id:
+
+  >>> content = '''
+  ... <html>
+  ...   <head><title>Foo</title></head>
+  ...   <body>
+  ...     <p id="para-1">Paragraph 1</p>
+  ...     <p id="para-2">Paragraph <B>2</B></p>
+  ...   </body>
+  ... </html>
+  ... '''
+
+  >>> print find_tag_by_id(content, 'para-1')
+  <p id="para-1">Paragraph 1</p>
+
+  >>> print find_tag_by_id(content, 'para-2')
+  <p id="para-2">Paragraph <b>2</b></p>
+
+If an unknown ID is used, None is returned:
+
+  >>> print find_tag_by_id(content, 'para-3')
+  None
+
+
+find_tags_by_class()
+--------------------
+
+Sometimes it we want to find tags that match a particular class.  The
+find_tags_by_class() returns a list of Tag objects matching the given
+class:
+
+  >>> content = '''
+  ... <html>
+  ...   <head><title>Foo</title</head>
+  ...   <body>
+  ...     <p class="message">Message</p>
+  ...     <p class="error message">Error message</p>
+  ...     <p class="warning message">Warning message</p>
+  ...     <p class="error">Error</p>
+  ...     <p class="warning">
+  ...       Warning (outer)
+  ...       <em class="warning">Warning (inner)</em>
+  ...     </p>
+  ...   </body>
+  ... </html>
+  ... '''
+
+  >>> for tag in find_tags_by_class(content, 'message'):
+  ...     print tag
+  <p class="message">Message</p>
+  <p class="error message">Error message</p>
+  <p class="warning message">Warning message</p>
+
+  >>> for tag in find_tags_by_class(content, 'error'):
+  ...     print tag
+  <p class="error message">Error message</p>
+  <p class="error">Error</p>
+
+  >>> for tag in find_tags_by_class(content, 'warning'):
+  ...     print tag
+  <p class="warning message">Warning message</p>
+  <p class="warning">
+    Warning (outer)
+    <em class="warning">Warning (inner)</em>
+  </p>
+  <em class="warning">Warning (inner)</em>
+
+If no tags have the given class, then an empty list is returned:
+
+  >>> find_tags_by_class(content, 'no-such-class')
+  []
+
+
+find_portlet()
+--------------
+
+Many pages on Launchpad make use of portlets, so it is useful to be
+able to examine the contents of a portlet.  The find_portlet()
+function can find a portlet by its title and return it:
+
+  >>> content = '''
+  ... <html>
+  ...   <head><title>Foo</title</head>
+  ...   <body>
+  ...     <div class="portlet">
+  ...       <h2>Portlet 1</h2>
+  ...       <div class="portletBody portletContent">
+  ...         Contents of portlet 1
+  ...       </div>
+  ...     </div>
+  ...     <div class="portlet">
+  ...       <h2>Portlet 2</h2>
+  ...       <div class="portletBody portletContent">
+  ...         Contents of portlet 2
+  ...       </div>
+  ...     </div>
+  ...     <div class="portlet">
+  ...       <h2>Portlet 3</h2>
+  ...       <div class="portletBody portletContent">
+  ...         Contents of portlet 3
+  ...       </div>
+  ...     </div>
+  ...     <div class="portlet">
+  ...       <h2> Portlet
+  ...           with title broken
+  ...           on multiple lines </h2>
+  ...       <div class="portletBody portletContent">
+  ...         Contents of the portlet.
+  ...       </div>
+  ...     </div>
+  ...     <div id="region-content">
+  ...       Main content area
+  ...     </div>
+  ...   </body>
+  ... </html>
+  ... '''
+
+  >>> print find_portlet(content, 'Portlet 1')
+  <div...
+  ...Contents of portlet 1...
+
+  >>> print find_portlet(content, 'Portlet 2')
+  <div class="portlet">
+    <h2>Portlet 2</h2>
+    <div class="portletBody portletContent">
+      Contents of portlet 2
+    </div>
+  </div>
+
+When looking for a portlet to match, any two sequences of whitespace are
+considered equivalent. Whitespace at the beginning or end of the title
+is also ignored.
+
+  >>> print find_portlet(
+  ...     content, 'Portlet with  title broken on multiple lines  ')
+    <div class="portlet">
+      <h2> Portlet with title...
+
+If the portlet doesn't exist, then None is returned:
+
+  >>> print find_portlet(content, 'No such portlet')
+  None
+
+
+find_main_content
+-----------------
+
+Sometimes we want to check that a particular piece of content appears
+in the main content of the page.  The find_main_content() method can
+be used to do this:
+
+  >>> print find_main_content(content)
+  <...
+  Main content area
+  ...

@@ -3,15 +3,15 @@
 __metaclass__ = type
 __all__ = ['Distribution', 'DistributionSet']
 
+from operator import attrgetter
+
 from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
     BoolCol, ForeignKey, SQLMultipleJoin, SQLRelatedJoin, StringCol,
     SQLObjectNotFound)
-from sqlobject.sqlbuilder import AND, OR
-
-from canonical.cachedproperty import cachedproperty
+from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
 from canonical.database.sqlbase import quote, quote_like, SQLBase, sqlvalues
 
@@ -23,7 +23,8 @@ from canonical.launchpad.database.bug import (
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import Specification
-from canonical.launchpad.database.ticket import Ticket, TicketSet
+from canonical.launchpad.database.ticket import (
+    SimilarTicketsSearch, Ticket, TicketTargetSearch, TicketSet)
 from canonical.launchpad.database.distrorelease import DistroRelease
 from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.binarypackagename import (
@@ -31,7 +32,6 @@ from canonical.launchpad.database.binarypackagename import (
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.distributionbounty import DistributionBounty
-from canonical.launchpad.database.cve import CveSet
 from canonical.launchpad.database.distributionmirror import DistributionMirror
 from canonical.launchpad.database.distributionsourcepackage import (
     DistributionSourcePackage)
@@ -51,11 +51,9 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.url import urlparse
 
 from canonical.lp.dbschema import (
-    EnumCol, BugTaskStatus,
-    DistributionReleaseStatus, MirrorContent,
-    TranslationPermission, SpecificationSort,
-    SpecificationFilter, SpecificationStatus,
-    MirrorPulseType, PackagePublishingStatus, TicketStatus)
+    EnumCol, BugTaskStatus, DistributionReleaseStatus, MirrorContent,
+    TranslationPermission, SpecificationSort, SpecificationFilter,
+    SpecificationStatus, PackagePublishingStatus)
 
 from canonical.launchpad.interfaces import (
     IBuildSet, IDistribution, IDistributionSet, IHasBuildRecords,
@@ -137,7 +135,8 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
     def disabled_mirrors(self):
         """See canonical.launchpad.interfaces.IDistribution."""
         return DistributionMirror.selectBy(
-            distribution=self, enabled=False)
+            distribution=self, official_approved=True,
+            official_candidate=True, enabled=False)
 
     @property
     def unofficial_mirrors(self):
@@ -212,9 +211,8 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         return DistributionMirror.selectOneBy(distribution=self, name=name)
 
     def newMirror(self, owner, speed, country, content, displayname=None,
-                  pulse_type=MirrorPulseType.PUSH, description=None,
-                  http_base_url=None, ftp_base_url=None, pulse_source=None,
-                  rsync_base_url=None, file_list=None, official_candidate=False,
+                  description=None, http_base_url=None, ftp_base_url=None,
+                  rsync_base_url=None, official_candidate=False,
                   enabled=False):
         """See IDistribution."""
         # NB this functionality is only available to distributions that have
@@ -224,8 +222,9 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         if not self.full_functionality:
             return None
 
-        url = http_base_url or ftp_base_url or rsync_base_url
-        assert url is not None
+        url = http_base_url or ftp_base_url
+        assert url is not None, (
+            "A mirror must provide either an HTTP or FTP URL (or both).")
         dummy, host, dummy, dummy, dummy, dummy = urlparse(url)
         name = sanitize_name('%s-%s' % (host, content.name.lower()))
 
@@ -237,27 +236,15 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
 
         return DistributionMirror(
             distribution=self, owner=owner, name=name, speed=speed,
-            country=country, content=content, pulse_type=pulse_type,
-            displayname=displayname, description=description,
-            http_base_url=http_base_url, ftp_base_url=ftp_base_url,
-            rsync_base_url=rsync_base_url, file_list=file_list,
-            official_candidate=official_candidate, enabled=enabled,
-            pulse_source=pulse_source)
+            country=country, content=content, displayname=displayname,
+            description=description, http_base_url=http_base_url,
+            ftp_base_url=ftp_base_url, rsync_base_url=rsync_base_url,
+            official_candidate=official_candidate, enabled=enabled)
 
     def createBug(self, bug_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
         bug_params.setBugTarget(distribution=self)
         return BugSet().createBug(bug_params)
-
-    @cachedproperty
-    def open_cve_bugtasks(self):
-        """See IDistribution."""
-        return list(CveSet().getOpenBugTasks(distribution=self))
-
-    @cachedproperty
-    def resolved_cve_bugtasks(self):
-        """See IDistribution."""
-        return list(CveSet().getResolvedBugTasks(distribution=self))
 
     @property
     def currentrelease(self):
@@ -450,15 +437,6 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         """See ISpecificationTarget."""
         return Specification.selectOneBy(distribution=self, name=name)
 
-    def tickets(self, quantity=None):
-        """See ITicketTarget."""
-        return Ticket.select("""
-            Ticket.distribution = %s
-            """ % sqlvalues(self.id),
-            orderBy='-Ticket.datecreated',
-            prejoins=['distribution', 'owner', 'sourcepackagename'],
-            limit=quantity)
-
     def newTicket(self, owner, title, description, datecreated=None):
         """See ITicketTarget."""
         return TicketSet.new(
@@ -472,20 +450,19 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
             ticket = Ticket.get(ticket_id)
         except SQLObjectNotFound:
             return None
-        # Now verify that that ticket is actually for this target.
-        if ticket.target != self:
+        # Now verify that that ticket is actually for this distribution.
+        if ticket.distribution != self:
             return None
         return ticket
 
-    def searchTickets(self, search_text=None,
-                      status=TICKET_STATUS_DEFAULT_SEARCH, sort=None):
+    def searchTickets(self, **search_criteria):
         """See ITicketTarget."""
-        return TicketSet.search(search_text=search_text, status=status,
-                                sort=sort, distribution=self)
+        return TicketTargetSearch(
+            distribution=self, **search_criteria).getResults()
 
     def findSimilarTickets(self, title):
         """See ITicketTarget."""
-        return TicketSet.findSimilar(title, distribution=self)
+        return SimilarTicketsSearch(title, distribution=self).getResults()
 
     def addSupportContact(self, person):
         """See ITicketTarget."""
@@ -512,10 +489,14 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         support_contacts = SupportContact.select(
             """distribution = %d AND sourcepackagename IS NULL""" % self.id)
 
-        return shortlist([
-            support_contact.person for support_contact in support_contacts
-            ],
-            longest_expected=100)
+        return sorted(
+            [support_contact.person for support_contact in support_contacts],
+            key=attrgetter('displayname'))
+
+    @property
+    def direct_support_contacts(self):
+        """See ITicketTarget."""
+        return self.support_contacts
 
     def ensureRelatedBounty(self, bounty):
         """See IDistribution."""
@@ -692,10 +673,8 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
             (fti @@ ftq(%s) OR
              DistributionSourcePackageCache.name ILIKE '%%' || %s || '%%')
             """ % (quote(self.id), quote(text), quote_like(text)),
-            selectAlso='rank(fti, ftq(%s)) AS rank' % sqlvalues(text),
-            orderBy=['-rank'],
-            prejoins=["sourcepackagename"],
-            distinct=True)
+            orderBy=[SQLConstant('rank(fti, ftq(%s)) DESC' % quote(text))],
+            prejoins=["sourcepackagename"])
         return [dspc.distributionsourcepackage for dspc in dspcaches]
 
     def guessPackageNames(self, pkgname):
@@ -710,8 +689,9 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         if self.currentrelease is None:
             # Distribution with no releases can't have anything
             # published in it.
-            raise NotFoundError('Distribution has no releases; %r was never '
-                                'published in it' % pkgname)
+            raise NotFoundError('%s has no releases; %r was never '
+                                'published in it'
+                                % (self.displayname, pkgname))
 
         # The way this method works is that is tries to locate a pair of
         # packages related to that name. If it locates a binary package,
@@ -743,38 +723,46 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
                     binarypackagename=binarypackagename.name,
                     distribution=self,
                     orderBy=['-id'])
-                if publishing is None:
-                    # Yes, it's a binary package name, but it has never been
-                    # publishing in this distro.
-                    raise NotFoundError('Unpublished binary package: %s' % pkgname)
-            sourcepackagename = SourcePackageName.byName(publishing.sourcepackagename)
-        else:
-            sourcepackagename = SourcePackageName.selectOneBy(name=pkgname)
-            if sourcepackagename is None:
-                # Not a binary package name, not a source package name,
-                # game over!
+            if publishing is not None:
+                sourcepackagename = SourcePackageName.byName(
+                                        publishing.sourcepackagename)
+                return (sourcepackagename, binarypackagename)
+
+        sourcepackagename = SourcePackageName.selectOneBy(name=pkgname)
+        if sourcepackagename is None:
+            # Not a binary package name, not a source package name,
+            # game over!
+            if binarypackagename:
+                raise NotFoundError('Binary package %s not published in %s'
+                                    % (pkgname, self.displayname))
+            else:
                 raise NotFoundError('Unknown package: %s' % pkgname)
 
-            # Note that in the source package case, we don't restrict
-            # the search to the distribution release, making a best
-            # effort to find a package.
-            publishing = SourcePackagePublishingHistory.selectFirst('''
-                SourcePackagePublishingHistory.distrorelease =
-                    DistroRelease.id AND
-                DistroRelease.distribution = %s AND
-                SourcePackagePublishingHistory.sourcepackagerelease =
-                    SourcePackageRelease.id AND
-                SourcePackageRelease.sourcepackagename = %s AND
-                SourcePackagePublishingHistory.status = %s
-                ''' % sqlvalues(self, sourcepackagename,
-                                PackagePublishingStatus.PUBLISHED),
-                clauseTables=['SourcePackageRelease', 'DistroRelease'],
-                distinct=True,
-                orderBy="id")
-            if publishing is None:
-                raise NotFoundError('Unpublished source package: %s' % pkgname)
+        # Note that in the source package case, we don't restrict
+        # the search to the distribution release, making a best
+        # effort to find a package.
+        publishing = SourcePackagePublishingHistory.selectFirst('''
+            SourcePackagePublishingHistory.distrorelease =
+                DistroRelease.id AND
+            DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.sourcepackagerelease =
+                SourcePackageRelease.id AND
+            SourcePackageRelease.sourcepackagename = %s AND
+            SourcePackagePublishingHistory.status = %s
+            ''' % sqlvalues(self, sourcepackagename,
+                            PackagePublishingStatus.PUBLISHED),
+            clauseTables=['SourcePackageRelease', 'DistroRelease'],
+            distinct=True,
+            orderBy="id")
 
-        return (sourcepackagename, binarypackagename)
+        if publishing is None:
+            raise NotFoundError('Package %s not published in %s'
+                                % (pkgname, self.displayname))
+
+        # Note the None here: if no source package was published for the
+        # the binary package we found above, assume we ran into a red
+        # herring and just ignore the binary package name hit.
+        return (sourcepackagename, None)
 
 
 class DistributionSet:

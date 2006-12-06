@@ -49,6 +49,40 @@ Login as an admin to be able to do changes to the import queue.
 
     >>> login('carlos@canonical.com')
 
+When importing a POFile, it may be necessary to create new Person entries,
+to represent the last translators of that POFile. This is done by the
+getLastTranslator() function of components/poimport.py.
+
+    >>> from canonical.launchpad.components.poimport import getLastTranslator
+    >>> from canonical.launchpad.components.poparser import POParser
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILanguageSet, IPOFileSet, IPOTemplateSet)
+    >>> parser = POParser()
+    >>> pofile_content = r'''
+    ... msgid ""
+    ... msgstr ""
+    ... "PO-Revision-Date: 2005-06-03 20:41+0100\n"
+    ... "Last-Translator: Baz <baz@canonical.com>\n"
+    ... "Content-Type: text/plain; charset=UTF-8\n"
+    ... "Plural-Forms: nplurals=4; plural=n==1) ? 0 : n==2 ? 1 : (n != 8 || n != 11) ? 2 : 3;\n"
+    ...
+    ... msgid "foo"
+    ... msgstr "blah"
+    ... '''
+    >>> parser.write(pofile_content)
+    >>> parser.finish()
+    >>> potemplates = getUtility(IPOTemplateSet).getAllByName('evolution-2.2')
+    >>> aa = getUtility(ILanguageSet)['aa']
+    >>> potemplate = potemplates[0]
+    >>> potemplate.displayname
+    u'evolution-2.2 in Evolution trunk'
+    >>> pofile = getUtility(IPOFileSet).getDummy(potemplates[0], aa)
+    >>> person = getLastTranslator(parser, pofile)
+    >>> person.creation_rationale.name
+    'POFILEIMPORT'
+    >>> person.creation_comment
+    u'when importing the Afar (aa) translation of evolution-2.2 in Evolution trunk'
+
 Now, is time to create the new potemplate
 
     >>> from canonical.launchpad.database import ProductRelease
@@ -213,12 +247,12 @@ template. Remember, we need to tell the system that this po file is a
 
 The guess IPOFile should be the same we already had.
 
-    >>> entry.guessed_pofile.id == pofile.id
+    >>> entry.getGuessedPOFile().id == pofile.id
     True
 
 Set it as the place where the entry should be imported.
 
-    >>> entry.pofile = entry.guessed_pofile
+    >>> entry.pofile = entry.getGuessedPOFile()
 
 We must approve the entry to be able to import it.
 
@@ -309,12 +343,12 @@ Now, is time to check the notification email.
     ['mark@hbd.com']
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
-    'Translation problems - Welsh (cy) - firefox in Mozilla Firefox\n\tmilestones'
+    'Translation problems - Welsh (cy) - firefox in Mozilla Firefox trunk'
     >>> print msg.get_payload(decode=True)
     Hello Mark Shuttleworth,
     <BLANKLINE>
     On ... (just requested), you uploaded 5
-    Welsh (cy) translations for firefox in Mozilla Firefox milestones in Rosetta.
+    Welsh (cy) translations for firefox in Mozilla Firefox trunk in Rosetta.
     <BLANKLINE>
     There were problems with 1 of these translations.
     <BLANKLINE>
@@ -352,12 +386,12 @@ Here are the contents of another file we'll be importing. It has no errors.
 
 The guess IPOFile should be the same we already had.
 
-    >>> entry.guessed_pofile.id == pofile.id
+    >>> entry.getGuessedPOFile().id == pofile.id
     True
 
 Set it as the place where the entry should be imported.
 
-    >>> entry.pofile = entry.guessed_pofile
+    >>> entry.pofile = entry.getGuessedPOFile()
 
 We must approve the entry to be able to import it.
 
@@ -392,7 +426,7 @@ Check the notification email about the success of this import without errors.
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
-    'Translation import - Welsh (cy) - firefox in Mozilla Firefox\n\tmilestones'
+    'Translation import - Welsh (cy) - firefox in Mozilla Firefox trunk'
     >>> print msg.get_payload(decode=True)
     Hello Rosetta Administrators,
     <BLANKLINE>
@@ -411,7 +445,7 @@ Now, is time to test a .pot import when we don't have any header.
     >>> entry.status = RosettaImportStatus.APPROVED
     >>> flush_database_updates()
     >>> potemplate.importFromQueue(FakeLogger())
-    log> We got an error importing %s Template "firefox" in Mozilla Firefox milestones
+    log> We got an error importing %s Template "firefox" in Mozilla Firefox trunk
     ...
     log> POSyntaxError: No header found in this pofile
 
@@ -452,12 +486,12 @@ Another test, try to import a .po file that is older than previous import...
 
 The guess IPOFile should be the same we already had.
 
-    >>> entry.guessed_pofile.id == pofile.id
+    >>> entry.getGuessedPOFile().id == pofile.id
     True
 
 Set it as the place where the entry should be imported.
 
-    >>> entry.pofile = entry.guessed_pofile
+    >>> entry.pofile = entry.getGuessedPOFile()
 
 We must approve the entry to be able to import it.
 
@@ -467,7 +501,7 @@ We must approve the entry to be able to import it.
 We do the import.
 
     >>> pofile.importFromQueue(FakeLogger())
-    log> Got an old version for Welsh (cy) translation of firefox in Mozilla Firefox milestones
+    log> Got an old version for Welsh (cy) translation of firefox in Mozilla Firefox trunk
 
 The status is now FAILED
 
@@ -510,7 +544,7 @@ the msgid
     ...     pofile.path, pofile_content, True, rosetta_experts,
     ...     productseries=series, potemplate=potemplate)
     >>> transaction.commit()
-    >>> entry.pofile = entry.guessed_pofile
+    >>> entry.pofile = entry.getGuessedPOFile()
     >>> entry.status = RosettaImportStatus.APPROVED
     >>> flush_database_updates()
     >>> pofile.importFromQueue(FakeLogger())
@@ -527,7 +561,7 @@ Now, is time to check the notification email.
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
-    'Translation problems - Welsh (cy) - firefox in Mozilla Firefox\n\tmilestones'
+    'Translation problems - Welsh (cy) - firefox in Mozilla Firefox trunk'
     >>> print msg.get_payload(decode=True)
     Hello Rosetta Administrators,
     <BLANKLINE>
@@ -567,12 +601,12 @@ And run the cronscript.
     ...     )
     >>> (output, empty) = process.communicate()
     >>> print output
-    INFO    Importing: Template "firefox" in Mozilla Firefox milestones
-    WARNING We got an error importing Template "firefox" in Mozilla Firefox milestones
+    INFO    Importing: Template "firefox" in Mozilla Firefox trunk
+    WARNING We got an error importing Template "firefox" in Mozilla Firefox trunk
      -> http://localhost:58000/... (No header found in this pofile)
-    INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox milestones
-    WARNING Got an old version for Welsh (cy) translation of firefox in Mozilla Firefox milestones
-    INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox milestones
+    INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
+    WARNING Got an old version for Welsh (cy) translation of firefox in Mozilla Firefox trunk
+    INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
     <BLANKLINE>
 
 It's time to test the import queue.
@@ -606,7 +640,7 @@ We flush the entry contents.
 
     >>> for entry in translation_import_queue:
     ...     translation_import_queue.remove(entry)
-    >>> len(translation_import_queue)
+    >>> translation_import_queue.entryCount()
     0
 
 Attach the first version of the file.
@@ -620,7 +654,7 @@ Attach the first version of the file.
 
 It's in the queue now.
 
-    >>> len(translation_import_queue)
+    >>> translation_import_queue.entryCount()
     1
 
 For the second version, we need a new importer, in this case, Jordi.
@@ -638,7 +672,7 @@ Attach the second version of the file.
 
 It's in the queue now.
 
-    >>> len(translation_import_queue)
+    >>> translation_import_queue.entryCount()
     2
 
 Do the final import.
@@ -663,8 +697,8 @@ We need to run again the script to get those approved entries imported.
     ...     )
     >>> (output, empty) = process.communicate()
     >>> print output
-    INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox milestones
-    INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox milestones
+    INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
+    INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
     <BLANKLINE>
     >>> transaction.commit()
 

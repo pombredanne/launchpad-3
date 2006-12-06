@@ -4,27 +4,25 @@ __metaclass__ = type
 
 __all__ = ['DistributionMirrorEditView', 'DistributionMirrorFacets',
            'DistributionMirrorOverviewMenu', 'DistributionMirrorAddView',
-           'DistributionMirrorUploadFileListView', 'DistributionMirrorView',
-           'DistributionMirrorOfficialApproveView']
+           'DistributionMirrorView', 'DistributionMirrorOfficialApproveView',
+           'DistributionMirrorReassignmentView']
 
-from StringIO import StringIO
-
-from zope.component import getUtility
 from zope.app.event.objectevent import ObjectCreatedEvent
-from zope.app.content_types import guess_content_type
 from zope.event import notify
 
 from sourcerer.deb.version import Version
 
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp import (
     canonical_url, StandardLaunchpadFacets, Link, ApplicationMenu, 
     enabled_with_permission)
 from canonical.launchpad.interfaces import (
-    IDistributionMirror, validate_distribution_mirror_schema,
-    ILibraryFileAliasSet)
+    IDistributionMirror, validate_distribution_mirror_schema)
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.person import ObjectReassignmentView
+from canonical.cachedproperty import cachedproperty
 
 
 class DistributionMirrorFacets(StandardLaunchpadFacets):
@@ -37,11 +35,22 @@ class DistributionMirrorOverviewMenu(ApplicationMenu):
 
     usedfor = IDistributionMirror
     facet = 'overview'
-    links = ['edit', 'admin']
+    links = ['proberlogs', 'edit', 'admin', 'reassign']
 
+    @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Edit Details'
         return Link('+edit', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def proberlogs(self):
+        text = 'Prober logs'
+        return Link('+prober-logs', text, icon='info')
+
+    @enabled_with_permission('launchpad.Admin')
+    def reassign(self):
+        text = 'Change Owner'
+        return Link('+reassign', text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
     def admin(self):
@@ -60,6 +69,10 @@ class _FlavoursByDistroRelease:
 
 
 class DistributionMirrorView(LaunchpadView):
+
+    @cachedproperty
+    def probe_records(self):
+        return BatchNavigator(self.context.all_probe_records, self.request)
 
     def getSummarizedMirroredSourceReleases(self):
         mirrors = self.context.getSummarizedMirroredSourceReleases()
@@ -125,16 +138,9 @@ class DistributionMirrorEditView(SQLObjectEditView):
         validate_distribution_mirror_schema(form_values)
 
 
-class DistributionMirrorUploadFileListView(GeneralFormView):
+class DistributionMirrorReassignmentView(ObjectReassignmentView):
 
-    def process(self, file_list=None):
-        if file_list is not None:
-            filename = self.request.get('field.file_list').filename
-            content_type, encoding = guess_content_type(
-                name=filename, body=file_list)
-            library_file = getUtility(ILibraryFileAliasSet).create(
-                name=filename, size=len(file_list),
-                file=StringIO(file_list), contentType=content_type)
-            self.context.file_list = library_file
-        self._nextURL = canonical_url(self.context)
+    @property
+    def contextName(self):
+        return self.context.title
 

@@ -1,6 +1,6 @@
 <div class="portlet" tal:condition="context/duplicates">
 
-  <h4>Duplicates of this bug:</h4>
+  <h2>Duplicates of this bug</h2>
 
   <div class="portletBody">
     <div class="portletContent">

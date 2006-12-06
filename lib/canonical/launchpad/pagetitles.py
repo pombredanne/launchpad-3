@@ -189,13 +189,15 @@ bugtarget_filebug = ContextTitle('Report a bug about %s')
 
 bugtask_backport_fixing = BugTaskBackportingTitle()
 
-bugtask_confirm_unlinked = LaunchbagBugID('Bug #%d - Request a fix')
+bugtask_choose_affected_product = LaunchbagBugID('Bug #%d - Request a fix')
 
 bugtask_edit = BugTaskPageTitle()
 
 bugtask_index = BugTaskPageTitle()
 
-bugtask_requestfix = bugtask_confirm_unlinked
+bugtask_requestfix = LaunchbagBugID('Bug #%d - Request a fix')
+
+bugtask_requestfix_upstream = LaunchbagBugID('Bug #%d - Request a fix')
 
 bugtask_view = BugTaskPageTitle()
 
@@ -217,7 +219,7 @@ build_changes = ContextTitle('Changes in %s')
 
 build_index = ContextTitle('Build details for %s')
 
-build_reset = ContextTitle('Reset %s')
+build_retry = ContextTitle('Retry %s')
 
 build_rescore = ContextTitle('Rescore %s')
 
@@ -232,6 +234,8 @@ builder_cancel = ContextTitle(smartquote('Cancel job for "%s"'))
 builder_mode = ContextTitle(smartquote('Change mode for "%s"'))
 
 builder_admin = ContextTitle(smartquote('Administer "%s" builder'))
+
+builder_history = ContextTitle(smartquote('Build History for "%s"'))
 
 calendar_index = ContextTitle('%s')
 
@@ -276,11 +280,11 @@ default_editform = 'Default "Edit" Page'
 
 distributionmirror_edit = ContextTitle('Edit mirror %s')
 
-distributionmirror_mark_official = ContextTitle('Mark mirror %s as official')
-
 distributionmirror_index = ContextTitle('Mirror %s')
 
-distributionmirror_uploadfilelist = ContextTitle('Upload File List for %s')
+distributionmirror_mark_official = ContextTitle('Mark mirror %s as official')
+
+distributionmirror_prober_logs = ContextTitle('%s mirror prober logs')
 
 distribution_allpackages = ContextTitle('All packages in %s')
 
@@ -375,15 +379,17 @@ errorservice_tbentry = 'Traceback entry'
 
 faq = 'Launchpad Frequently Asked Questions'
 
-foaf_adminrequestmerge = 'Merge Launchpad accounts'
+people_adminrequestmerge = 'Merge Launchpad accounts'
 
-foaf_mergerequest_sent = 'Merge request sent'
+people_mergerequest_sent = 'Merge request sent'
 
-foaf_newteam = 'Register a new team in Launchpad'
+people_newperson = 'Create a new Launchpad profile'
 
-foaf_requestmerge_multiple = 'Merge Launchpad accounts'
+people_newteam = 'Register a new team in Launchpad'
 
-foaf_requestmerge = 'Merge Launchpad accounts'
+people_requestmerge_multiple = 'Merge Launchpad accounts'
+
+people_requestmerge = 'Merge Launchpad accounts'
 
 karmaaction_index = 'Karma actions'
 
@@ -433,6 +439,8 @@ launchpad_unexpectedformdata = 'Error: Unexpected form data'
 launchpad_librarianfailure = "Sorry, you can't do this right now"
 
 # launchpad_widget_macros doesn't need a title.
+
+logintoken_claimprofile = 'Claim Launchpad profile'
 
 logintoken_index = 'Launchpad: redirect to the logintoken page'
 
@@ -507,11 +515,16 @@ def person_bugs(context, view):
 
 person_changepassword = 'Change your password'
 
+person_claim = 'Claim account'
+
 person_codesofconduct = ContextDisplayName(smartquote("%s's code of conduct signatures"))
 
 person_edit = ContextDisplayName(smartquote("%s's details"))
 
 person_editemails = ContextDisplayName(smartquote("%s's e-mail addresses"))
+
+person_editlanguages = ContextDisplayName(
+    smartquote("%s's preferred languages"))
 
 person_editpgpkeys = ContextDisplayName(smartquote("%s's OpenPGP keys"))
 
@@ -623,6 +636,8 @@ product_branches = ContextDisplayName(
 
 product_distros = ContextDisplayName('%s packages: Comparison of distributions')
 
+product_cvereport = ContextTitle('CVE reports for %s')
+
 product_edit = ContextTitle('%s in Launchpad')
 
 product_index = ContextTitle('%s in Launchpad')
@@ -651,13 +666,13 @@ productseries_packaging = ContextDisplayName('Packaging of %s in distributions')
 
 productseries_source = 'Import product series'
 
-productseries_sourceadmin = 'Add source import'
-
 productseries_translations = ContextTitle('Translation templates for %s')
 
 productseries_translations_upload = 'Request new translations upload'
 
 productseries_ubuntupkg = 'Ubuntu source package'
+
+project_add = 'Register a project with Launchpad'
 
 project_index = ContextTitle('%s in Launchpad')
 
@@ -708,8 +723,6 @@ rosetta_about = 'About Rosetta'
 
 rosetta_index = 'Rosetta'
 
-rosetta_preferences = 'Rosetta: Preferences'
-
 product_branch_add = ContextDisplayName('Register a new %s branch')
 
 def productseries_edit(context, view):
@@ -722,6 +735,8 @@ securitycontact_edit = ContextDisplayName("Edit %s security contact")
 shipit_adminrequest = 'ShipIt admin request'
 
 shipit_index = 'ShipIt'
+
+shipit_index_new = 'ShipIt'
 
 shipit_exports = 'ShipIt exports'
 
@@ -752,8 +767,6 @@ signedcodeofconduct_acknowledge = 'Acknowledge code of conduct signature'
 signedcodeofconduct_activate = ContextDisplayName('Activating %s')
 
 signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
-
-sourcepackage_index = ContextTitle('%s')
 
 sourcepackage_bugs = ContextDisplayName('Bugs in %s')
 
@@ -840,7 +853,11 @@ specification_subscription = 'Subscribe to specification'
 
 specification_queue = 'Queue specification for review'
 
+specification_linkbranch = 'Link branch to specification'
+
 specifications_index = ContextTitle('%s')
+
+specificationbranch_status = 'Edit specification branch status'
 
 specificationgoal_specs = ContextTitle('List goals for %s')
 
@@ -884,13 +901,17 @@ sprintspecification_decide = 'Consider spec for sprint agenda'
 
 sprintspecification_admin = 'Approve specification for sprint agenda'
 
-tickets_index = 'Launchpad tech support system'
+tickets_index = 'Launchpad support tracker'
 
 ticket_add = ContextDisplayName('Request support with %s')
 
 ticket_add_search = ContextDisplayName('Request support with %s')
 
 ticket_bug = ContextId('Link support request #%s to a bug report')
+
+ticket_change_status = ContextId('Change status of support request #%s')
+
+ticket_confirm_answer = ContextId('Confirm an answer to support request #%s')
 
 ticket_edit = ContextId('Edit support request #%s details')
 
@@ -910,12 +931,7 @@ ticket_reject = ContextId('Reject support request #%s')
 
 ticket_unlinkbugs = ContextId('Remove bug links from request #%s')
 
-ticket_reopen = ContextId('Reopen request #%s')
-
 ticket_subscription = ContextId('Subscription to request #%s')
-
-def tickettarget_tickets(context, view):
-    return view.title
 
 standardshipitrequests_index = 'Standard ShipIt options'
 
@@ -957,7 +973,10 @@ template_index = '%EXAMPLE TITLE'
 
 template_new = 'EXAMPLE NEW TITLE'
 
-ticket_listing = ContextDisplayName("Support requests for %s")
+temporaryblobstorage_storeblob = 'Store a BLOB temporarily in Launchpad'
+
+def ticket_listing(context, view):
+    return view.pagetitle
 
 tickettarget_manage_supportcontacts = ContextTitle("Support contact for %s")
 
