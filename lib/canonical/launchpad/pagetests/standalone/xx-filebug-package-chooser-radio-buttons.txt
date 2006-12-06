@@ -19,10 +19,11 @@ the bug summary and description are required.
     >>> print user_browser.url
     http://launchpad.dev/distros/ubuntu/+filebug-advanced
 
-    >>> print user_browser.contents
-    <!DOCTYPE...
-    ...Please fix the problems below...
-    ...
+    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+    ...     print message.renderContents()
+    There are 2 errors.
+    Required input is missing.
+    Required input is missing.
 
 ("I don't know" remains selected.)
 

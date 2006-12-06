@@ -15,7 +15,8 @@ If no title is entered, the user is asked to supply one.
 
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...     print message.renderContents()
-    Required input is missing.
+    There is 1 error.
+    A summary is required.
 
 The user fills in some keywords, and clicks a button to search existing
 bugs.
