@@ -848,9 +848,10 @@ class AdminTicket(AdminByAdminsTeam):
     usedfor = ITicket
 
     def checkAuthenticated(self, user):
-        """Allow only admins and ticket target owners"""
+        """Allow only admins and owners of the ticket pillar target."""
+        context = self.obj.product or self.obj.distribution
         return (AdminByAdminsTeam.checkAuthenticated(self, user) or
-                user.inTeam(self.obj.target.owner))
+                user.inTeam(context.owner))
 
 
 class ModerateTicket(AdminTicket):
