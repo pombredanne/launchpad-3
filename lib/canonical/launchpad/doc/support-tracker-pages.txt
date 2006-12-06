@@ -397,19 +397,22 @@ TicketEditView
 
 TicketEditView available through '+edit' is used to edit most ticket
 fields. It can be used to edit the ticket title and description and also
-its metadata like priority, assignee, source package and whiteboard.
+its metadata like language, priority, assignee, source package and
+whiteboard.
 
     >>> login('test@canonical.com')
     >>> ticket_three.sourcepackagename = None
     >>> request = LaunchpadTestRequest(form={
     ...     'field.actions.change': 'Continue',
     ...     'field.title': 'Better Title',
+    ...     'field.language': 'en',
     ...     'field.description': 'A better description.',
     ...     'field.sourcepackagename': 'mozilla-firefox',
     ...     'field.assignee': 'name16',
     ...     'field.whiteboard': 'Some note',
     ...     'field.priority': 'Wishlist'})
     >>> request.method = 'POST'
+
     >>> view = getView(ticket_three, '+edit', request)
     >>> view.initialize()
     >>> ticket_three.title
@@ -445,13 +448,13 @@ This View send the event appropriate to send out a notification:
     A better description.
     <BLANKLINE>
 
-<<<<<<< TREE
 If the user has the required permission, the assignee, whiteboard and
 priority fields will be updated:
 
     >>> login('foo.bar@canonical.com')
     >>> request = LaunchpadTestRequest(form={
     ...     'field.actions.change': 'Continue',
+    ...     'field.language': 'en',
     ...     'field.title': 'Better Title',
     ...     'field.description': 'A better description.',
     ...     'field.sourcepackagename': 'mozilla-firefox',
@@ -473,6 +476,7 @@ a distribution ticket:
 
     >>> request = LaunchpadTestRequest(form={
     ...     'field.actions.change': 'Continue',
+    ...     'field.language': 'en',
     ...     'field.title': 'Better Title',
     ...     'field.description': 'A better description.',
     ...     'field.sourcepackagename': 'mozilla-firefox',
@@ -482,12 +486,102 @@ a distribution ticket:
     >>> request.method = 'POST'
     >>> view = getView(firefox_ticket, '+edit', request)
     >>> view.initialize()
+    >>> view.errors
+    []
     >>> firefox_ticket.sourcepackagename is None
     True
 
     (Clear out the pending notifications.)
     >>> notifications = pop_notifications()
 
+The TicketLanguage vocabulary
+-----------------------------
+
+The TicketLanguageVocabularyFactory is an IContextSourceBinder which
+is used in browser forms to create a vocabulary containing only the
+languages that are likely to interest the user.
+
+When the user has not configured his preferred languages, the vocabulary
+will contain 'English' (the default choice) and the most likely
+interesting languages based on GeoIP information and the request's
+languages.
+
+For example, if the user doesn't log in and his browser is configured
+to accept brazilian Portuguese, the vocabulary will contain 'English'
+plus the languages spoken in South Africa (because the 127.0.0.1 IP
+address is mapped to South Africa in the tests).
+.
+    >>> login(ANONYMOUS)
+    >>> request = LaunchpadTestRequest(
+    ...     HTTP_ACCEPT_LANGUAGE='pt_BR')
+    >>> from canonical.launchpad.browser.ticket import (
+    ...     TicketLanguageVocabularyFactory)
+    >>> vocab = TicketLanguageVocabularyFactory(request)(None)
+    >>> languages = [term.value for term in vocab]
+    >>> languages[0].code
+    u'en'
+    >>> sorted([lang.code for lang in languages[1:]])
+    [u'af', u'pt_BR', u'st', u'xh', u'zu']
+
+If the user logs in but didn't configure his preferred languages, the
+same logic is used to find the languages:
+
+    >>> login('foo.bar@canonical.com')
+    >>> user = getUtility(ILaunchBag).user
+    >>> user.languages.count()
+    0
+
+    >>> vocab = TicketLanguageVocabularyFactory(request)(None)
+    >>> languages = [term.value for term in vocab]
+    >>> languages[0].code
+    u'en'
+    >>> sorted(lang.code for lang in languages[1:])
+    [u'af', u'pt_BR', u'st', u'xh', u'zu']
+
+But if the user configured his preferred languages, only these
+are used (plus English):
+
+    >>> login('carlos@canonical.com')
+    >>> user = getUtility(ILaunchBag).user
+    >>> sorted(lang.code for lang in user.languages)
+    [u'ca', u'es']
+
+    >>> vocab = TicketLanguageVocabularyFactory(request)(None)
+    >>> languages = [term.value for term in vocab]
+    >>> languages[0].code
+    u'en'
+    >>> sorted(lang.code for lang in languages[1:])
+    [u'ca', u'es']
+
+Note that all variants of English are always excluded from the
+vocabulary (since we don't want to confuse people by providing multiple
+English options).
+
+    >>> login('daf@canonical.com')
+    >>> user = getUtility(ILaunchBag).user
+    >>> sorted(lang.code for lang in user.languages)
+    [u'cy', u'en_GB', u'ja']
+
+    >>> vocab = TicketLanguageVocabularyFactory(request)(None)
+    >>> languages = [term.value for term in vocab]
+    >>> languages[0].code
+    u'en'
+    >>> sorted(lang.code for lang in languages[1:])
+    [u'cy', u'ja']
+
+Note also that the vocabulary will always contain the current ticket's
+language in the vocabulary, even if this language would not be selected
+by the previous rules.
+
+    >>> from canonical.launchpad.interfaces import ILanguageSet
+    >>> afar = getUtility(ILanguageSet)['aa_DJ']
+    >>> ticket_three.language = afar
+    >>> vocab = TicketLanguageVocabularyFactory(request)(ticket_three)
+    >>> afar in vocab
+    True
+
+    # Clean up.
+    >>> ticket_three.language = getUtility(ILanguageSet)['en']
 
 SearchTicketsView
 -----------------

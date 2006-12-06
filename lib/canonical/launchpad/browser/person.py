@@ -1149,7 +1149,7 @@ class PersonLanguagesView(LaunchpadView):
         for language in set(old_languages) - set(new_languages):
             self.user.removeLanguage(language)
             self.request.response.addInfoNotification(
-                "Removed %(language)s from your preferred languages." % 
+                "Removed %(language)s from your preferred languages." %
                 {'language' : language.englishname})
 
         redirection_url = self.request.get('redirection_url')

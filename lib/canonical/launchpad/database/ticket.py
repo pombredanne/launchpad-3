@@ -21,8 +21,9 @@ from sqlobject import (
 from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.launchpad.interfaces import (
-    IBugLinkTarget, InvalidTicketStateError, ILaunchpadCelebrities, IMessage,
-    IPerson, ITicket, ITicketSet, TICKET_STATUS_DEFAULT_SEARCH)
+    IBugLinkTarget, InvalidTicketStateError, ILanguageSet,
+    ILaunchpadCelebrities, IMessage, IPerson, ITicket, ITicketSet,
+    TICKET_STATUS_DEFAULT_SEARCH)
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -88,14 +89,16 @@ class Ticket(SQLBase, BugLinkTargetMixin):
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     title = StringCol(notNull=True)
     description = StringCol(notNull=True)
+    language = ForeignKey(
+        dbName='language', notNull=True, foreignKey='Language')
     status = EnumCol(
         schema=TicketStatus, notNull=True, default=TicketStatus.OPEN)
-    priority = EnumCol(schema=TicketPriority, notNull=True,
-        default=TicketPriority.NORMAL)
-    assignee = ForeignKey(dbName='assignee', notNull=False,
-        foreignKey='Person', default=None)
-    answerer = ForeignKey(dbName='answerer', notNull=False,
-        foreignKey='Person', default=None)
+    priority = EnumCol(
+        schema=TicketPriority, notNull=True, default=TicketPriority.NORMAL)
+    assignee = ForeignKey(
+        dbName='assignee', notNull=False, foreignKey='Person', default=None)
+    answerer = ForeignKey(
+        dbName='answerer', notNull=False, foreignKey='Person', default=None)
     answer = ForeignKey(dbName='answer', notNull=False,
         foreignKey='TicketMessage', default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
@@ -103,12 +106,14 @@ class Ticket(SQLBase, BugLinkTargetMixin):
     datelastquery = UtcDateTimeCol(notNull=True, default=DEFAULT)
     datelastresponse = UtcDateTimeCol(notNull=False, default=None)
     dateanswered = UtcDateTimeCol(notNull=False, default=None)
-    product = ForeignKey(dbName='product', foreignKey='Product',
+    product = ForeignKey(
+        dbName='product', foreignKey='Product', notNull=False, default=None)
+    distribution = ForeignKey(
+        dbName='distribution', foreignKey='Distribution', notNull=False,
+        default=None)
+    sourcepackagename = ForeignKey(
+        dbName='sourcepackagename', foreignKey='SourcePackageName',
         notNull=False, default=None)
-    distribution = ForeignKey(dbName='distribution',
-        foreignKey='Distribution', notNull=False, default=None)
-    sourcepackagename = ForeignKey(dbName='sourcepackagename',
-        foreignKey='SourcePackageName', notNull=False, default=None)
     whiteboard = StringCol(notNull=False, default=None)
 
     # useful joins
@@ -488,13 +493,15 @@ class TicketSet:
     @staticmethod
     def new(title=None, description=None, owner=None,
             product=None, distribution=None, sourcepackagename=None,
-            datecreated=None):
+            datecreated=None, language=None):
         """Common implementation for ITicketTarget.newTicket()."""
         if datecreated is None:
             datecreated = UTC_NOW
+        if language is None:
+            language = getUtility(ILanguageSet)['en']
         ticket = Ticket(
             title=title, description=description, owner=owner,
-            product=product, distribution=distribution,
+            product=product, distribution=distribution, language=language,
             sourcepackagename=sourcepackagename, datecreated=datecreated)
 
         # Subscribe the submitter
