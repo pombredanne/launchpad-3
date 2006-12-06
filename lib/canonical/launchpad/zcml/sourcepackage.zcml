@@ -12,7 +12,7 @@
         <!-- ITicketTarget -->
         <allow attributes="getTicket searchTickets findSimilarTickets
             support_contacts direct_support_contacts getSupportedLanguages
-	    ticket_languages" 
+	    getTicketLanguages"
 	    />
         <require permission="launchpad.AnyPerson"
             attributes="newTicket addSupportContact removeSupportContact" />

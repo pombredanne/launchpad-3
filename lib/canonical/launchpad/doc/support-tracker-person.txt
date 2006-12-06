@@ -173,13 +173,13 @@ by each criteria:
     Installation of Java Runtime Environment for Mozilla    Answered
     Newly installed plug-in doesn't seem to be used         Answered
 
-== ticket_languages ==
+== getTicketLanguages() ==
 
-IPerson also defines a ticket_languages attribute which contains the set
+IPerson also defines a getTicketLanguages() attribute which contains the set
 of languages used by all of the tickets in which this person is
 involved.
 
-    >>> sorted(language.code for language in foo_bar.ticket_languages)
+    >>> sorted(language.code for language in foo_bar.getTicketLanguages())
     [u'en']
 
 This includes tickets which the person owns. But also, tickets that the
@@ -191,7 +191,7 @@ user subscribed to.
     >>> pt_BR_ticket.subscribe(foo_bar)
     <TicketSubscription...>
 
-    >>> sorted(language.code for language in foo_bar.ticket_languages)
+    >>> sorted(language.code for language in foo_bar.getTicketLanguages())
     [u'en', u'pt_BR']
 
 And also tickets for which he's the answerer.
@@ -200,7 +200,7 @@ And also tickets for which he's the answerer.
     >>> es_ticket.reject(foo_bar, 'Reject ticket.')
     <TicketMessage...>
 
-    >>> sorted(language.code for language in foo_bar.ticket_languages)
+    >>> sorted(language.code for language in foo_bar.getTicketLanguages())
     [u'en', u'es', u'pt_BR']
 
 As well, as ticket which are assigned to the user.
@@ -209,7 +209,7 @@ As well, as ticket which are assigned to the user.
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
-    >>> sorted(language.code for language in carlos.ticket_languages)
+    >>> sorted(language.code for language in carlos.getTicketLanguages())
     [u'es', u'pt_BR']
 
 And tickets on which the user commented:
@@ -219,6 +219,6 @@ And tickets on which the user commented:
     >>> en_ticket.addComment(carlos, 'A simple comment.')
     <TicketMessage...>
 
-    >>> sorted(language.code for language in carlos.ticket_languages)
+    >>> sorted(language.code for language in carlos.getTicketLanguages())
     [u'en', u'es', u'pt_BR']
 

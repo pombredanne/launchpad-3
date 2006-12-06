@@ -132,8 +132,7 @@ class SourcePackageTicketTargetMixin:
         """See ITicketTarget."""
         return get_supported_languages(self)
 
-    @property
-    def ticket_languages(self):
+    def getTicketLanguages(self):
         """See ITicketTarget."""
         return set(Language.select(
             'Language.id = language AND distribution = %s AND '

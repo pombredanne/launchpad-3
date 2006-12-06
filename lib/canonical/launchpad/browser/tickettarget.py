@@ -192,25 +192,30 @@ class SearchTicketsView(UserSupportLanguagesMixin, LaunchpadFormView):
         else:
             return set(self.getDefaultFilter().get('status', []))
 
+    @cachedproperty
+    def context_ticket_languages(self):
+        """Return the set of ILanguages used by this context's tickets."""
+        return self.context.getTicketLanguages()
+
     @property
     def all_languages_shown(self):
         """Return whether all the used languages are displayed."""
         if self.request.form.get('all_languages'):
             return True
-        return self.context.ticket_languages.issubset(
+        return self.context_ticket_languages.issubset(
             self.user_support_languages)
 
     @property
     def displayed_languages(self):
         """Return the ticket languages displayed ordered by language name."""
         displayed_languages = self.user_support_languages.intersection(
-            self.context.ticket_languages)
+            self.context_ticket_languages)
         return sorted(displayed_languages, key=attrgetter('englishname'))
 
     @property
     def show_all_languages_checkbox(self):
         """Whether to show the 'All Languages' checkbox or not."""
-        return not self.context.ticket_languages.issubset(
+        return not self.context_ticket_languages.issubset(
             self.user_support_languages)
 
     @action(_('Search'))

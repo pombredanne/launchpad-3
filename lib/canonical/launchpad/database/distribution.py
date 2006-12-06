@@ -504,8 +504,7 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         """See ITicketTarget."""
         return self.support_contacts
 
-    @property
-    def ticket_languages(self):
+    def getTicketLanguages(self):
         """See ITicketTarget."""
         return set(Language.select(
             'Language.id = language AND distribution = %s AND '

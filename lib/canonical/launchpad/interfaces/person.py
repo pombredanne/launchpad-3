@@ -20,7 +20,7 @@ __all__ = [
 
 
 from zope.schema import (
-    Bool, Bytes, Choice, Datetime, Int, Object, Set, Text, TextLine)
+    Bool, Bytes, Choice, Datetime, Int, Text, TextLine)
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 
@@ -28,7 +28,6 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     BlacklistableContentNameField, PasswordField, StrippedTextLine)
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces.language import ILanguage
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.tickettarget import (
@@ -603,12 +602,10 @@ class IPerson(IHasSpecifications):
 
         """
 
-    ticket_languages = Set(
-        title=_("Ticket Languages"),
-        description=_(
-            "The set of ILanguage used by the tickets in which this person "
-            "is involved."),
-        value_type=Object(schema=ILanguage))
+    def getTicketLanguages():
+        """Return a set of ILanguage used by the tickets in which this person "
+        is involved.
+        """
 
 
 class ITeam(IPerson):

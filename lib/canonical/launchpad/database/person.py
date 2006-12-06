@@ -378,8 +378,7 @@ class Person(SQLBase):
         """See IPerson."""
         return TicketPersonSearch(person=self, **search_criteria).getResults()
 
-    @property
-    def ticket_languages(self):
+    def getTicketLanguages(self):
         """See ITicketTarget."""
         return set(Language.select(
             '''Language.id = language AND Ticket.id IN (
