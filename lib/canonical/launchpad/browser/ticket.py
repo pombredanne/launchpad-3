@@ -189,7 +189,7 @@ class TicketSupportLanguageMixin:
         """Return the ITicketTarget related to the context."""
         return ITicketTarget(self.context)
 
-    @property
+    @cachedproperty
     def supported_languages(self):
         """Return the list of supported languages ordered by name."""
         return sorted(
