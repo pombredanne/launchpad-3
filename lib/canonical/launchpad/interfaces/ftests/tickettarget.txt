@@ -263,6 +263,16 @@ target is available through the support_contacts attribute.
     >>> list(target.support_contacts)
     []
 
+There is also a direct_support_contacts which includes only the
+support contacts registered explicitely on the ticket target. (In
+general, it will be equal to support_contacts attribute, but some
+ITicketTarget implementations may inherit support contacts
+from other context. In these cases, that attribute would only contain
+the support contacts defined in the current ITicketTarget context.)
+
+    >>> list(target.direct_support_contacts)
+    []
+
 You add a support contact by using the addSupportContact method. This
 is only available to registered users.
 
@@ -278,7 +288,9 @@ False when it was already on the list:
 
     >>> target.addSupportContact(name18)
     True
-    >>> list([p.name for p in target.support_contacts])
+    >>> [p.name for p in target.support_contacts]
+    [u'name18']
+    >>> [p.name for p in target.direct_support_contacts]
     [u'name18']
     >>> target.addSupportContact(name18)
     False
@@ -291,6 +303,8 @@ list.
     >>> target.removeSupportContact(name18)
     True
     >>> list(target.support_contacts)
+    []
+    >>> list(target.direct_support_contacts)
     []
     >>> target.removeSupportContact(name18)
     False
