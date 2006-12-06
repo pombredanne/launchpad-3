@@ -55,7 +55,7 @@ from canonical.launchpad.database.specificationsubscription import (
     SpecificationSubscription)
 from canonical.launchpad.database.teammembership import (
     TeamMembership, TeamParticipation, TeamMembershipSet)
-from canonical.launchpad.database.ticket import TicketSet
+from canonical.launchpad.database.ticket import TicketPersonSearch
 
 from canonical.lp.dbschema import (
     EnumCol, SSHKeyType, EmailAddressStatus, TeamSubscriptionPolicy,
@@ -373,10 +373,9 @@ class Person(SQLBase):
             limit=quantity, prejoins=['assignee', 'approver', 'drafter'])
         return results
 
-    # ITicketActor implementation
-    def searchTickets(self, **kwargs):
-        # See ITicketActor
-        return TicketSet.searchByPerson(person=self, **kwargs)
+    def searchTickets(self, **search_criteria):
+        """See IPerson."""
+        return TicketPersonSearch(person=self, **search_criteria).getResults()
 
     @property
     def branches(self):

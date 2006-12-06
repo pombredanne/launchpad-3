@@ -1,0 +1,110 @@
+= Support Tracker Utility: ITicketSet =
+
+There is an ITicketSet utility that can be use to retrieve and search
+for ticket whatever the target they were created in.
+
+    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.interfaces import ITicketSet
+    >>> ticket_set = getUtility(ITicketSet)
+    >>> verifyObject(ITicketSet, ticket_set)
+    True
+
+== get() ==
+
+The get() method can be used to get a ticket with a specific id:
+
+    >>> ticket_one = ticket_set.get(1)
+    >>> ticket_one.title
+    u'Firefox cannot render Bank Site'
+
+If no ticket exists, a default value is returned:
+
+    >>> default = object()
+    >>> ticket_nonexistant = ticket_set.get(123456, default=default)
+    >>> ticket_nonexistant is default
+    True
+
+If no default value is given, None is returned:
+
+    >>> ticket_set.get(123456) is None
+    True
+
+== searchTickets() ==
+
+ITicketSet also defines a searchTickets() method that can be used to
+search for tickets defined in any products or distributions (in fact,
+in any context that allows tickets to be defined). Two search criteria
+are defined search_text and status.
+
+=== search_text ===
+
+The search_text parameter will limit the tickets to those matching
+the query using the regular full text algorithm.
+
+    >>> for ticket in ticket_set.searchTickets(search_text='firefox'):
+    ...     print ticket.title, ticket.target.displayname
+    Firefox loses focus and gets stuck          Mozilla Firefox
+    Firefox cannot render Bank Site             Mozilla Firefox
+    mailto: problem in webpage                  mozilla-firefox in ubuntu
+    Newly installed plug-in doesn't seem to be used Mozilla Firefox
+    Problem showing the SVG demo on W3C site    Mozilla Firefox
+
+=== status ===
+
+By default, expired and invalid support requests are not searched for.
+The status parameter can be used to select the tickets in the status
+you are interested in.
+
+    >>> from canonical.lp.dbschema import TicketStatus
+    >>> for ticket in ticket_set.searchTickets(status=TicketStatus.INVALID):
+    ...     print ticket.title, ticket.status.title, ticket.target.displayname
+    Firefox is slow and consumes too much RAM Invalid mozilla-firefox in ubuntu
+
+The status parameter can also take a list of statuses.
+
+    >>> for ticket in ticket_set.searchTickets(
+    ...         status=[TicketStatus.SOLVED, TicketStatus.INVALID]):
+    ...     print ticket.title, ticket.status.title, ticket.target.displayname
+    mailto: problem in webpage                Solved mozilla-firefox in ubuntu
+    Firefox is slow and consumes too much RAM Invalid mozilla-firefox in ubuntu
+
+=== Combination ===
+
+The returned sets of tickets is the intersection of the sets delimited
+by each criteria:
+
+    >>> for ticket in ticket_set.searchTickets(
+    ...         search_text='firefox',
+    ...         status=[TicketStatus.OPEN, TicketStatus.INVALID]):
+    ...     print ticket.title, ticket.status.title, ticket.target.displayname
+    Firefox is slow and consumes too much RAM  Invalid mozilla-firefox in ubuntu
+    Firefox loses focus and gets stuck         Open    Mozilla Firefox
+    Firefox cannot render Bank Site            Open    Mozilla Firefox
+    Problem showing the SVG demo on W3C site   Open    Mozilla Firefox
+
+=== Sort Order ===
+
+When using the search_text criteria, the default is to sort the results
+by relevancy. One can use the sort parameter to change that. It takes
+one of the constant defined in the TicketSort enumeration.
+
+    >>> from canonical.lp.dbschema import TicketSort
+    >>> for ticket in ticket_set.searchTickets(
+    ...         search_text='firefox', sort=TicketSort.OLDEST_FIRST):
+    ...     print ticket.id, ticket.title, ticket.target.displayname
+    1 Firefox cannot render Bank Site             Mozilla Firefox
+    2 Problem showing the SVG demo on W3C site    Mozilla Firefox
+    4 Firefox loses focus and gets stuck          Mozilla Firefox
+    6 Newly installed plug-in doesn't seem to be used Mozilla Firefox
+    9 mailto: problem in webpage                  mozilla-firefox in ubuntu
+
+When no text search is done, the default sort order is
+TicketSort.NEWEST_FIRST.
+
+    >>> for ticket in ticket_set.searchTickets(status=TicketStatus.OPEN)[:5]:
+    ...     print ticket.id, ticket.title, ticket.target.displayname
+    11 Continue playing after shutdown          Ubuntu
+     5 Installation failed                      Ubuntu
+     4 Firefox loses focus and gets stuck       Mozilla Firefox
+     2 Problem showing the SVG demo on W3C site Mozilla Firefox
+     1 Firefox cannot render Bank Site          Mozilla Firefox
