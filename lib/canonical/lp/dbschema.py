@@ -2642,6 +2642,14 @@ class BranchLifecycleStatus(DBSchema):
         recommend it to others for inclusion in their work.
         """, sortkey=10)
 
+    VINTAGE = Item(60, """
+        Vintage
+
+        This branch has been mature for some time, and is now possibly
+        out of date or no longer supported.  No further development is
+        anticipated on the branch.
+        """, sortkey=35)
+
     MERGED = Item(70, """
         Merged
 

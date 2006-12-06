@@ -135,6 +135,7 @@ class IBranch(IHasOwner):
         " Development: useful work that is expected to be merged eventually."
         " Experimental: not recommended for merging yet, and maybe ever."
         " Merged: integrated into mainline, of historical interest only."
+        " Vintage: was once mature, now deprecated."
         " Abandoned: no longer considered relevant by the author."
         " New: unspecified maturity."))
 
