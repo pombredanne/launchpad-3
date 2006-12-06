@@ -119,7 +119,7 @@
                           id="application-footer"
                           tal:content="structure context/@@+portlet-stats"
                         />
-                      </div>
+                      </div><!--container-->
                     </div><!--z-->
                   </div><!--y-->
                 </div><!--x-->
@@ -145,4 +145,4 @@
   </body>
 </html>
 </tal:layout>
-<!-- 1-0 inprogress Needs top border fix, "Recently fixed" list -->
+<!-- 1-0 inprogress Needs "Recently fixed" list, CVE count -->
