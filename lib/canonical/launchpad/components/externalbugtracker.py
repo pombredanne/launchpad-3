@@ -343,15 +343,23 @@ class Bugzilla(ExternalBugTracker):
             raise UnparseableBugData('Failed to parse XML description for '
                 '%s bugs %s: %s' % (self.baseurl, bug_ids, e))
 
-        bug_nodes = document.getElementsByTagName(bug_tag)
         self.remote_bug_status = {}
+        bug_nodes = document.getElementsByTagName(bug_tag)
         for bug_node in bug_nodes:
             bug_id_nodes = bug_node.getElementsByTagName(id_tag)
-            assert len(bug_id_nodes) == 1, "Should be only one id node."
+            if not bug_id_nodes:
+                # Something in the output is really weird; this will
+                # show up as a bug not found, but we can catch that
+                # later in the error logs.
+                continue
             bug_id_node = bug_id_nodes[0]
             assert len(bug_id_node.childNodes) == 1, (
                 "id node should contain a non-empty text string.")
             bug_id = str(bug_id_node.childNodes[0].data)
+            # This assertion comes in late so we can at least tell what
+            # bug caused this crash.
+            assert len(bug_id_nodes) == 1, \
+                "Should be only one id node, but %s had %s." % (bug_id, len(bug_id_nodes))
 
             status_nodes = bug_node.getElementsByTagName(status_tag)
             if not status_nodes:

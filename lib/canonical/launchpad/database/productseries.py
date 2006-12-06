@@ -19,7 +19,12 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import (
     SQLBase, quote, sqlvalues)
-from canonical.launchpad.components.bugtarget import BugTargetBase
+
+from canonical.launchpad.database.bugtarget import BugTargetBase
+from canonical.launchpad.interfaces import (
+    IProductSeries, IProductSeriesSet, IProductSeriesSourceAdmin,
+    NotFoundError)
+
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtask import BugTaskSet
