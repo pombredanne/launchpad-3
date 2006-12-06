@@ -31,7 +31,7 @@
              tal:content="context/product/displayname">Mozilla Firefox</a><br />
         </tal:has_product>
 
-        <b>Lifecycle Status:</b><br />
+        <b>Status:</b><br />
         <span tal:content="context/lifecycle_status/title"
               tal:attributes="
                 class string:branchstatus${context/lifecycle_status/name}"
