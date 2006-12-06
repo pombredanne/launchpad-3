@@ -71,7 +71,7 @@
         </tal:language_loop>
       </tal:languages>
     are displayed. To see support requests in other languages, either
-    <a href="/people/+editlanguages">change your preferred</a> languages
+    <a href="/+editmylanguages">change your preferred</a> languages
     or select the &ldquo;All Languages&rdquo; option.
   </p>
 

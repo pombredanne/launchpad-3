@@ -28,7 +28,7 @@ is displayed to that effect.
     ...     print message.renderContents()
     Only support requests in English are displayed. To see support
     requests in other languages, either
-    <a href="/people/+editlanguages">change your preferred</a> languages
+    <a href="/+editmylanguages">change your preferred</a> languages
     or select the &ldquo;All Languages&rdquo; option.
 
 If the user selects the 'All Languages' option, then all support
