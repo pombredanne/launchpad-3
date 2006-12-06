@@ -11,6 +11,8 @@ __all__ = [
 
 import operator
 
+from canonical.lp.dbschema import BranchLifecycleStatus
+
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import IPerson, IProduct
 from canonical.launchpad.webapp import LaunchpadView
@@ -21,12 +23,38 @@ from canonical.launchpad.webapp import LaunchpadView
 
 class BranchTargetView(LaunchpadView):
 
+    # The default set of statum to show
+    CURRENT = set([BranchLifecycleStatus.NEW,
+                   BranchLifecycleStatus.EXPERIMENTAL,
+                   BranchLifecycleStatus.DEVELOPMENT,
+                   BranchLifecycleStatus.MATURE])
+                  
+
+    def initialize(self):
+        self.show = self.request.get('show', 'current').upper()
+
     @cachedproperty
     def branches(self):
         """All branches related to this target, sorted for display."""
         # A cache to avoid repulling data from the database, which can be
         # particularly expensive
         branches = self.context.branches
+        return sorted(branches, key=operator.attrgetter('sort_key'))
+
+    @cachedproperty
+    def visible_branches(self):
+        """The branches that should be visible to the user."""
+        # short circuit trivial case
+        if self.show == 'ALL':
+            return self.branches
+        try:
+            show_status = BranchLifecycleStatus.items[self.show]
+            branches = [b for b in self.context.branches
+                        if b.lifecycle_status == show_status]
+        except KeyError:
+            # no point erroring out, just show the default set
+            branches = [b for b in self.context.branches
+                        if b.lifecycle_status in self.CURRENT]
         return sorted(branches, key=operator.attrgetter('sort_key'))
 
     def context_relationship(self):
