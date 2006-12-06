@@ -22,6 +22,48 @@ class URIWidget(TextWidget):
     cssClass = 'urlTextType'
 
     def _toFieldValue(self, input):
+        """Convert the form input value to a field value.
+
+        This method differs from the standard TextWidget behaviour in
+        the following ways:
+         * whitespace is stripped from the input value
+         * invalid URIs cause a ConversionError
+         * if the field requires (or forbids) a trailing slash on the URI,
+           then the widget ensures that the widget ends in a slash (or
+           doesn't end in a slash).
+         * the URI is canonicalised.
+
+        Extra validation is left to the field implementation.
+
+          >>> from zope.publisher.browser import TestRequest
+          >>> from canonical.launchpad.fields import URIField
+          >>> field = URIField(__name__='foo', title=u'Foo')
+          >>> widget = URIWidget(field, TestRequest())
+
+        Whitespace is stripped from the value:
+          >>> widget._toFieldValue('  http://www.ubuntu.com/   ')
+          u'http://www.ubuntu.com/'
+
+        Invalid URIs cause a ConversionError:
+          >>> widget._toFieldValue('not-a-uri')
+          Traceback (most recent call last):
+            ...
+          ConversionError: ('"not-a-uri" is not a valid URI', None)
+
+        Trailing slashes are added or removed if necessary:
+          >>> field.trailing_slash = True
+          >>> widget._toFieldValue('http://www.ubuntu.com/ubuntu?action=raw')
+          u'http://www.ubuntu.com/ubuntu/?action=raw'
+
+          >>> field.trailing_slash = False
+          >>> widget._toFieldValue('http://www.ubuntu.com/ubuntu/?action=edit')
+          u'http://www.ubuntu.com/ubuntu?action=edit'
+          >>> field.trailing_slash = None
+
+        URIs are canonicalised:
+          >>> widget._toFieldValue('HTTP://People.Ubuntu.COM:80/%7Ejamesh/')
+          u'http://people.ubuntu.com/~jamesh/'
+        """
         if isinstance(input, list):
             raise ConversionError('Only a single value is expected')
         input = input.strip()
@@ -33,10 +75,8 @@ class URIWidget(TextWidget):
             # If there is a policy 
             if self.context.trailing_slash is not None:
                 if self.context.trailing_slash:
-                    if not uri.path.endswith('/'):
-                        uri = uri.replace(path=uri.path + '/')
+                    uri = uri.ensureSlash()
                 else:
-                    uri = uri.replace(path=uri.path.rstrip('/'))
-                    
+                    uri = uri.ensureNoSlash()
             input = str(uri)
         return TextWidget._toFieldValue(self, input)

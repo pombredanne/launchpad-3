@@ -364,12 +364,12 @@ class URIField(TextLine):
         if self.trailing_slash is not None:
             has_slash = uri.path.endswith('/')
             if self.trailing_slash:
-                if uri.path.endswith('/'):
+                if not has_slash:
                     raise LaunchpadValidationError(
                         'The URI must end with a slash.')
             else:
                 # Empty paths are normalised to a single slash, so
                 # allow that.
-                if uri.path != '/' and uri.path.endswith('/'):
+                if uri.path != '/' and has_slash:
                     raise LaunchpadValidationError(
                         'The URI must not end with a slash.')

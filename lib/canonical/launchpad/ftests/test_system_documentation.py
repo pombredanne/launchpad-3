@@ -258,6 +258,9 @@ special = {
             setUp=setUp, tearDown=tearDown, optionflags=default_optionflags,
             layer=LaunchpadZopelessLayer
             ),
+    'uri.txt': DocFileSuite(
+            '../doc/uri.txt', optionflags=default_optionflags
+            ),
     }
 
 
