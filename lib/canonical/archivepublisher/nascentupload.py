@@ -315,6 +315,7 @@ class NascentUpload:
             "%s <%s>" % (config.uploader.default_recipient_name,
                          config.uploader.default_recipient_address))
         self.recipients = []
+        self.dsc_signing_key = None
 
         self.logger = logger
         self.rejection_message = ""
@@ -1069,7 +1070,6 @@ class NascentUpload:
             self.reject("%s: changes file doesn't list 'source' in "
                         "Architecture field." % (uploaded_file.filename))
 
-        self.dsc_signing_key=None
         if uploaded_file.type == 'dsc' and not self.policy.unsigned_dsc_ok:
             try:
                 who, key, sig = self.verify_sig(uploaded_file.full_filename)
