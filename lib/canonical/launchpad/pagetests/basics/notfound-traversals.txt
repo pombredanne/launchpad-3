@@ -188,11 +188,6 @@ Test the DARBPR page for a REMOVED package:
 >>> check_not_found("/bugs/bugs")
 >>> check_redirect("/bugs/bugs/1")
 >>> check_redirect("/bugs/1")
->>> check("/bugs/distros")
->>> check("/bugs/ubuntu")
->>> check("/bugs/projects")
->>> check("/bugs/products")
->>> check("/bugs/firefox")
 >>> check("/bugs/bugtrackers")
 >>> check("/bugs/cve/1999-8979")
 
