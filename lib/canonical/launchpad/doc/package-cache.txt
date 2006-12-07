@@ -1,21 +1,5 @@
 = Package Cache System =
 
-First we do some needed initializations.
-
-  >>> from canonical.launchpad.ftests.harness import (
-  ...     LaunchpadZopelessTestSetup)
-  >>> LaunchpadZopelessTestSetup(dbuser='statistician').setUp()
-
-  >>> import transaction
-
-  >>> from canonical.launchpad.database import (
-  ...    DistributionSourcePackageCache,
-  ...    DistroReleasePackageCache)
-
-  >>> from canonical.launchpad.interfaces import IDistributionSet
-  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-  >>> warty = ubuntu['warty']
-
 Launchpad caches published packages (sources and binaries) details in
 order to get better performance on searches.
 
@@ -34,6 +18,11 @@ DistributionSourcePackageCache table, including:
  * fti, a tsvector generated on insert or update with the text indexes
    for name, binpkgnames, binpkgsummaries and binpkgdescriptions.
 
+  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> from canonical.launchpad.database import (
+  ...    DistributionSourcePackageCache)
+
+  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
 
   >>> ubuntu_caches = DistributionSourcePackageCache.selectBy(
   ...     distribution=ubuntu)
@@ -67,7 +56,10 @@ table, including:
  * fti, a tsvector generated on insert or update with the text indexes
    for name, summary, description, summaries and descriptions.
 
+  >>> from canonical.launchpad.database import (
+  ...      DistroReleasePackageCache)
 
+  >>> warty = ubuntu['warty']
   >>> warty_caches = DistroReleasePackageCache.selectBy(distrorelease=warty)
   >>> warty_caches.count()
   5
@@ -98,15 +90,14 @@ partial term searching.
 The cache update procedure is done by cronscripts/update-pkgcache.py,
 which removes obsolete records, update existing ones and add new
 records during the scanning of all the publishing records. This
-scripts runs periodically in our infrastructure. See usage at the end
-of the file.
+scripts runs periodically in our infrastructure. See usage at
+package-cache-script.txt.
 
 
 == Dealing with Source Caches ==
 
-
-A SourcePackage is present in the sampledata as REVOVED and still part
-of the caches:
+A SourcePackage that has the status REMOVED will be deleted from the
+cache when it's updated.
 
   >>> foobar_in_ubuntu = ubuntu.getSourcePackage('foobar')
   >>> foobar_rel = foobar_in_ubuntu.releases[0]
@@ -120,8 +111,8 @@ of the caches:
   >>> foobar_cache = DistributionSourcePackageCache.selectOneBy(
   ...     distribution=ubuntu, name='foobar')
 
-  >>> foobar_cache.id
-  10
+  >>> foobar_cache is not None
+  True
 
 Source cache updates are driven by distribution, IDistribution
 instance offers a method for removing obsolete records in cache:
@@ -135,6 +126,7 @@ Let's use a fake logger object:
   >>> ubuntu.removeOldCacheItems(log=TestLog())
   DEBUG: Removing source cache for 'foobar' (10)
 
+  >>> import transaction
   >>> transaction.commit()
 
   >>> len(ubuntu.searchSourcePackages('foobar'))
@@ -146,8 +138,8 @@ Let's use a fake logger object:
   >>> foobar_cache is None
   True
 
-Also, the sampledata provides a published source which is not present
-in the caches:
+A source package that has the status PUBLISHED will be added to the
+cache when it's updated the next time.
 
   >>> cdrkit_in_ubuntu = ubuntu.getSourcePackage('cdrkit')
   >>> cdrkit_rel = cdrkit_in_ubuntu.releases[0]
@@ -174,20 +166,22 @@ We can invoke the cache updater directly on IDistrorelease:
   DEBUG: Creating new source cache entry.
   ...
 
-The current transaction should be committed again, to catch the
-partial batches (less than 50 sources considered) and also updates
-should be flushed since the 'name' (among other texts) are set after
-the row creation:
-
-XXX cprov 20061201: it can be considered a bug.
+The current transaction should be committed since the script only
+commits full batches of 50 elements:
 
   >>> transaction.commit()
+
+Also updates should be flushed since the 'name' (among other texts)
+are set after the row creation:
+
+XXX cprov 20061201: flush_database_updates should not be required
+after issuing a commit(), bug #3989
 
   >>> from canonical.database.sqlbase import flush_database_updates
   >>> flush_database_updates()
 
-Now we the 'cdrkit' source is part of the caches and can be reached
-via searches:
+Now we see that the 'cdrkit' source is part of the caches and can be
+reached via searches:
 
   >>> len(ubuntu.searchSourcePackages('cdrkit'))
   1
@@ -195,15 +189,14 @@ via searches:
   >>> cdrkit_cache = DistributionSourcePackageCache.selectOneBy(
   ...     distribution=ubuntu, name='cdrkit')
 
-  >>> cdrkit_cache.id
-  11L
+  >>> cdrkit_cache is not None
+  True
 
 
 == Dealing with Binary Caches ==
 
-
-A BinaryPackage is present in the sampledata as REVOVED and still part
-of the caches:
+A BinaryPackage that has the status REMOVED will be deleted from the
+cache when it's updated.
 
   >>> foobar_bin_in_warty = warty.getBinaryPackage('foobar')
   >>> foobar_bin_rel = foobar_in_ubuntu.releases[0]
@@ -217,8 +210,8 @@ of the caches:
   >>> foobar_bin_cache = DistroReleasePackageCache.selectOneBy(
   ...     distrorelease=warty, name='foobar')
 
-  >>> foobar_bin_cache.id
-  8
+  >>> foobar_bin_cache is not None
+  True
 
 Binary cache updates are driven by distrorelease, IDistroRelease
 instance offers a method for removing obsolete records in cache:
@@ -237,7 +230,8 @@ instance offers a method for removing obsolete records in cache:
   >>> foobar_bin_cache is None
   True
 
-We have a published binary which is not present in the caches:
+A binary package that has been published since the last update of the
+cache will be added to it.
 
   >>> cdrkit_bin_in_warty = warty.getBinaryPackage('cdrkit')
   >>> cdrkit_bin_pub = cdrkit_bin_in_warty.current_publishings[0]
@@ -266,16 +260,15 @@ We can invoke the cache updater directly on IDistrorelease:
 Transaction behaves exactly the same as for Source Caches, except that
 it commits full batches of 100 elements.
 
-XXX cprov 20061201: it can be considered a bug (same than Source
-cache interface)
-
   >>> transaction.commit()
+
+XXX cprov 20061201: see above, same than Source cache interface), bug #3989
 
   >>> from canonical.database.sqlbase import flush_database_updates
   >>> flush_database_updates()
 
-Now we the 'cdrkit' binary is part of the caches and can be reached
-via searches:
+Now we see that the 'cdrkit' binary is part of the caches and can be
+reached via searches:
 
   >>> len(warty.searchPackages('cdrkit'))
   1
@@ -283,14 +276,14 @@ via searches:
   >>> cdrkit_bin_cache = DistroReleasePackageCache.selectOneBy(
   ...     distrorelease=warty, name='cdrkit')
 
-  >>> cdrkit_bin_cache.id
-  9L
+  >>> cdrkit_bin_cache is not None
+  True
 
 
 == Package Counters ==
 
-We also store counters for Sources and Binaries published in a
-DistroRelease pocket RELEASE:
+We also store counters for the number of Sources and Binaries
+published in a DistroRelease pocket RELEASE:
 
   >>> warty.sourcecount
   3
@@ -326,7 +319,3 @@ New values were stored:
 
   >>> warty_i386.package_count
   6
-
-Kill local transaction.
-
-  >>> LaunchpadZopelessTestSetup().tearDown()
