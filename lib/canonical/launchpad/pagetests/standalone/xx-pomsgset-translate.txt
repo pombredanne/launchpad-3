@@ -36,7 +36,7 @@ When we are on the first message, we should be 100% sure that the 'First' and
   >>> next
   <Link text='Next' url='http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/2/+translate'>
   >>> browser.getLink('Last')
-  <Link text='Last\xa0\xbb' url='http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate'>
+  <Link text='Last\xc2\xa0\xc2\xbb' url='http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate'>
 
 And the link to the IPOFile view should be there too:
 
@@ -50,14 +50,14 @@ when we choose the next entry, all links should appear.
   'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/2/+translate'
 
   >>> browser.getLink('First')
-  <Link text='\xab\xa0First' url='http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate'>
+  <Link text='\xc2\xab\xc2\xa0First' url='http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate'>
   >>> browser.getLink('Previous')
   <Link text='Previous' url='http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate'>
   >>> browser.getLink('Next')
   <Link text='Next' url='http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/3/+translate'>
   >>> last = browser.getLink('Last')
   >>> last
-  <Link text='Last\xa0\xbb' url='http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate'>
+  <Link text='Last\xc2\xa0\xc2\xbb' url='http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate'>
 
 And the link to the IPOFile view should be there too:
 
@@ -71,7 +71,7 @@ And the last one.
   'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate'
 
   >>> browser.getLink('First')
-  <Link text='\xab\xa0First' url='http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate'>
+  <Link text='\xc2\xab\xc2\xa0First' url='http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate'>
   >>> prev = browser.getLink('Previous')
   >>> prev
   <Link text='Previous' url='http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/21/+translate'>
@@ -98,13 +98,13 @@ Let's test the ones at the end of the form.
   'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/21/+translate'
 
   >>> browser.getLink('First')
-  <Link text='\xab\xa0First' url='http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate'>
+  <Link text='\xc2\xab\xc2\xa0First' url='http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate'>
   >>> browser.getLink('Previous')
   <Link text='Previous' url='http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/20/+translate'>
   >>> browser.getLink('Next')
   <Link text='Next' url='http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate'>
   >>> browser.getLink('Last')
-  <Link text='Last\xa0\xbb' url='http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate'>
+  <Link text='Last\xc2\xa0\xc2\xbb' url='http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate'>
 
 Now, we are going to check a message submission.
 
