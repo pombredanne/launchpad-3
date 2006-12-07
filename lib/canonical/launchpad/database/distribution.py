@@ -15,7 +15,7 @@ from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
 from canonical.database.sqlbase import quote, quote_like, SQLBase, sqlvalues
 
-from canonical.launchpad.components.bugtarget import BugTargetBase
+from canonical.launchpad.database.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.bug import (
@@ -39,6 +39,7 @@ from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
+from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.sourcepackagename import (
     SourcePackageName)
 from canonical.launchpad.database.sourcepackagerelease import (
@@ -58,7 +59,7 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.interfaces import (
     IBuildSet, IDistribution, IDistributionSet, IHasBuildRecords,
     ILaunchpadCelebrities, ISourcePackageName, ITicketTarget, NotFoundError,
-    TICKET_STATUS_DEFAULT_SEARCH)
+    TICKET_STATUS_DEFAULT_SEARCH, get_supported_languages)
 
 from sourcerer.deb.version import Version
 
@@ -191,6 +192,10 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
     def bugtargetname(self):
         """See IBugTarget."""
         return self.displayname
+
+    def _getBugTaskContextWhereClause(self):
+        """See BugTargetBase."""
+        return "BugTask.distribution = %d" % self.id
 
     def searchTasks(self, search_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
@@ -437,11 +442,16 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         """See ISpecificationTarget."""
         return Specification.selectOneBy(distribution=self, name=name)
 
-    def newTicket(self, owner, title, description, datecreated=None):
+    def getSupportedLanguages(self):
+        """See ITicketTarget."""
+        return get_supported_languages(self)
+
+    def newTicket(self, owner, title, description, language=None,
+                  datecreated=None):
         """See ITicketTarget."""
         return TicketSet.new(
             title=title, description=description, owner=owner,
-            distribution=self, datecreated=datecreated)
+            distribution=self, datecreated=datecreated, language=language)
 
     def getTicket(self, ticket_id):
         """See ITicketTarget."""
@@ -497,6 +507,13 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
     def direct_support_contacts(self):
         """See ITicketTarget."""
         return self.support_contacts
+
+    def getTicketLanguages(self):
+        """See ITicketTarget."""
+        return set(Language.select(
+            'Language.id = language AND distribution = %s AND '
+            'sourcepackagename IS NULL' % sqlvalues(self),
+            clauseTables=['Ticket'], distinct=True))
 
     def ensureRelatedBounty(self, bounty):
         """See IDistribution."""

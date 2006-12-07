@@ -467,6 +467,16 @@ class IBugTaskSet(Interface):
         if the user doesn't have the permission to view this bug.
         """
 
+    def findSimilar(user, summary, product=None, distribution=None,
+                    sourcepackagename=None):
+        """Find bugs similar to the given summary.
+
+        The search is limited to the given product or distribution
+        (together with an optional source package).
+
+        Only BugTasks that the user has access to will be returned.
+    """
+
     def search(params):
         """Return a set of IBugTasks.
 
