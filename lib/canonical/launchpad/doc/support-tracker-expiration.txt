@@ -13,7 +13,8 @@ defaults to 15 days.
     >>> config.tickettracker.days_before_expiration
     15
 
-Only tickets in the OPEN or NEEDSINFO state are subject to expiration.
+Only tickets in the OPEN or NEEDSINFO state which aren't assigned to
+somebody are subject to expiration.
 
     # Sanity check in case somebody modifies the ticket sampledata and
     # forget to update this script.
@@ -46,12 +47,15 @@ Only tickets in the OPEN or NEEDSINFO state are subject to expiration.
 
     >>> ticketset = getUtility(ITicketSet)
 
-    # A question was asked on that one a while ago.
-    >>> old_needs_info_ticket = ticketset.get(1)
-    >>> old_needs_info_ticket.requestInfo(
-    ...         no_priv, 'What Java version is installed?',
-    ...         datecreated=a_month_ago)
-    <TicketMessage...>
+    # An old ticket in NEEDSINFO the state.
+    >>> old_needs_info_ticket = ticketset.get(7)
+    >>> print old_needs_info_ticket.status.title
+    Needs information
+
+    # An open ticket assigned to somebody.
+    >>> login('foo.bar@canonical.com')
+    >>> old_assigned_open_ticket = ticketset.get(1)
+    >>> old_assigned_open_ticket.assignee = getUtility(ILaunchBag).user
 
     # This one got an update from its owner recently.
     >>> login('test@canonical.com')
@@ -96,8 +100,8 @@ Only tickets in the OPEN or NEEDSINFO state are subject to expiration.
     INFO    creating lockfile
     INFO    Expiring OPEN and NEEDSINFO tickets without activity for the
             last 15 days.
-    INFO    Found 6 tickets to expire.
-    INFO    Expired 6 tickets.
+    INFO    Found 5 tickets to expire.
+    INFO    Expired 5 tickets.
     INFO    Finished expiration run.
     <BLANKLINE>
     >>> print out
@@ -117,6 +121,11 @@ wasn't modified by the script:
     Open
     >>> print recent_needsinfo_ticket.status.title
     Needs information
+
+Neither the old one which was assigned to Foo Bar:
+
+    >>> print old_assigned_open_ticket.status.title
+    Open
 
 But the other ones status was changed to 'Expired':
 
