@@ -3,6 +3,8 @@
 __metaclass__ = type
 __all__ = ['Distribution', 'DistributionSet']
 
+from operator import attrgetter
+
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -13,7 +15,7 @@ from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
 from canonical.database.sqlbase import quote, quote_like, SQLBase, sqlvalues
 
-from canonical.launchpad.components.bugtarget import BugTargetBase
+from canonical.launchpad.database.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.bug import (
@@ -21,7 +23,8 @@ from canonical.launchpad.database.bug import (
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import Specification
-from canonical.launchpad.database.ticket import Ticket, TicketSet
+from canonical.launchpad.database.ticket import (
+    SimilarTicketsSearch, Ticket, TicketTargetSearch, TicketSet)
 from canonical.launchpad.database.distrorelease import DistroRelease
 from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.binarypackagename import (
@@ -36,6 +39,7 @@ from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
+from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.sourcepackagename import (
     SourcePackageName)
 from canonical.launchpad.database.sourcepackagerelease import (
@@ -55,7 +59,7 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.interfaces import (
     IBuildSet, IDistribution, IDistributionSet, IHasBuildRecords,
     ILaunchpadCelebrities, ISourcePackageName, ITicketTarget, NotFoundError,
-    TICKET_STATUS_DEFAULT_SEARCH)
+    TICKET_STATUS_DEFAULT_SEARCH, get_supported_languages)
 
 from sourcerer.deb.version import Version
 
@@ -188,6 +192,10 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
     def bugtargetname(self):
         """See IBugTarget."""
         return self.displayname
+
+    def _getBugTaskContextWhereClause(self):
+        """See BugTargetBase."""
+        return "BugTask.distribution = %d" % self.id
 
     def searchTasks(self, search_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
@@ -434,11 +442,16 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         """See ISpecificationTarget."""
         return Specification.selectOneBy(distribution=self, name=name)
 
-    def newTicket(self, owner, title, description, datecreated=None):
+    def getSupportedLanguages(self):
+        """See ITicketTarget."""
+        return get_supported_languages(self)
+
+    def newTicket(self, owner, title, description, language=None,
+                  datecreated=None):
         """See ITicketTarget."""
         return TicketSet.new(
             title=title, description=description, owner=owner,
-            distribution=self, datecreated=datecreated)
+            distribution=self, datecreated=datecreated, language=language)
 
     def getTicket(self, ticket_id):
         """See ITicketTarget."""
@@ -447,21 +460,19 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
             ticket = Ticket.get(ticket_id)
         except SQLObjectNotFound:
             return None
-        # Now verify that that ticket is actually for this target.
-        if ticket.target != self:
+        # Now verify that that ticket is actually for this distribution.
+        if ticket.distribution != self:
             return None
         return ticket
 
-    def searchTickets(self, search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-                      owner=None, sort=None):
+    def searchTickets(self, **search_criteria):
         """See ITicketTarget."""
-        return TicketSet.search(
-            distribution=self, search_text=search_text, status=status,
-            owner=owner, sort=sort)
+        return TicketTargetSearch(
+            distribution=self, **search_criteria).getResults()
 
     def findSimilarTickets(self, title):
         """See ITicketTarget."""
-        return TicketSet.findSimilar(title, distribution=self)
+        return SimilarTicketsSearch(title, distribution=self).getResults()
 
     def addSupportContact(self, person):
         """See ITicketTarget."""
@@ -488,10 +499,21 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         support_contacts = SupportContact.select(
             """distribution = %d AND sourcepackagename IS NULL""" % self.id)
 
-        return shortlist([
-            support_contact.person for support_contact in support_contacts
-            ],
-            longest_expected=100)
+        return sorted(
+            [support_contact.person for support_contact in support_contacts],
+            key=attrgetter('displayname'))
+
+    @property
+    def direct_support_contacts(self):
+        """See ITicketTarget."""
+        return self.support_contacts
+
+    def getTicketLanguages(self):
+        """See ITicketTarget."""
+        return set(Language.select(
+            'Language.id = language AND distribution = %s AND '
+            'sourcepackagename IS NULL' % sqlvalues(self),
+            clauseTables=['Ticket'], distinct=True))
 
     def ensureRelatedBounty(self, bounty):
         """See IDistribution."""

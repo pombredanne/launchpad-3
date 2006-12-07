@@ -187,6 +187,21 @@ bugtarget_advanced_search = ContextTitle("Search bugs in %s")
 
 bugtarget_filebug = ContextTitle('Report a bug about %s')
 
+bugtarget_filebug_advanced = ContextTitle('Report a bug about %s')
+
+bugtarget_filebug_search = ContextTitle('Report a bug about %s')
+
+def bugtarget_filebug_simple(context, view):
+    if hasattr(context, "title"):
+        # We're generating a title for a contextual bug filing page.
+        ContextTitle('Report a bug about %s')
+    else:
+        # We're generating a title for a top-level, contextless bug
+        # filing page.
+        return 'Report a bug'
+
+bugtarget_filebug_submit_bug = bugtarget_filebug_simple
+
 bugtask_backport_fixing = BugTaskBackportingTitle()
 
 bugtask_choose_affected_product = LaunchbagBugID('Bug #%d - Request a fix')
@@ -853,7 +868,11 @@ specification_subscription = 'Subscribe to specification'
 
 specification_queue = 'Queue specification for review'
 
+specification_linkbranch = 'Link branch to specification'
+
 specifications_index = ContextTitle('%s')
+
+specificationbranch_status = 'Edit specification branch status'
 
 specificationgoal_specs = ContextTitle('List goals for %s')
 
@@ -897,7 +916,7 @@ sprintspecification_decide = 'Consider spec for sprint agenda'
 
 sprintspecification_admin = 'Approve specification for sprint agenda'
 
-tickets_index = 'Launchpad tech support system'
+tickets_index = 'Launchpad support tracker'
 
 ticket_add = ContextDisplayName('Request support with %s')
 
@@ -968,6 +987,8 @@ template_edit = 'EXAMPLE EDIT TITLE'
 template_index = '%EXAMPLE TITLE'
 
 template_new = 'EXAMPLE NEW TITLE'
+
+temporaryblobstorage_storeblob = 'Store a BLOB temporarily in Launchpad'
 
 def ticket_listing(context, view):
     return view.pagetitle

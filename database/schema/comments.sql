@@ -447,6 +447,7 @@ COMMENT ON COLUMN Ticket.dateaccepted IS 'The date we "confirmed" or "accepted" 
 COMMENT ON COLUMN Ticket.datedue IS 'The date this ticket is "due", if such a date can be established. Usually this will be set automatically on the basis of a support contract SLA commitment.';
 COMMENT ON COLUMN Ticket.dateanswered IS 'The date this ticket was last "answered", in the sense of receiving a comment from someone other than the requester that they considered sufficient to close the ticket.';
 COMMENT ON COLUMN Ticket.dateclosed IS 'The date the requester marked this ticket CLOSED.';
+COMMENT ON COLUMN Ticket.language IS 'The language of the ticket''s title and description.';
 COMMENT ON COLUMN Ticket.whiteboard IS 'A general status whiteboard. This is a scratch space to which arbitrary data can be added (there is only one constant whiteboard with no history). It is displayed at the top of the ticket. So its a useful way for projects to add their own semantics or metadata to the support tracker.';
 
 /* TicketBug */
@@ -855,6 +856,11 @@ COMMENT ON TABLE SpecificationFeedback IS 'A table representing a review request
 COMMENT ON COLUMN SpecificationFeedback.reviewer IS 'The person who has been asked to do the review.';
 COMMENT ON COLUMN SpecificationFeedback.requester IS 'The person who made the request.';
 COMMENT ON COLUMN SpecificationFeedback.queuemsg IS 'An optional text message for the reviewer, from the requester.';
+
+-- SpecificationBranch
+COMMENT ON TABLE SpecificationBranch IS 'A branch related to a specification, most likely a branch for implementing the specification.  It is possible to have multiple branches for a given specification especially in the situation where the specification requires modifying multiple products.';
+COMMENT ON COLUMN SpecificationBranch.specification IS 'The specification associated with this branch.';
+COMMENT ON COLUMN SpecificationBranch.branch IS 'The branch associated to the specification.';
 
 -- SpecificationBug
 COMMENT ON TABLE SpecificationBug IS 'A table linking a specification and a bug. This is used to provide for easy navigation from bugs to related specs, and vice versa.';
