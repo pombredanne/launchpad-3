@@ -598,7 +598,27 @@ COMMENT ON COLUMN BinaryPackageRelease.architecturespecific IS 'This field indic
 
 
 -- SourcePackageRelease
+COMMENT ON COLUMN SourcePackageRelease.creator IS 'The person who issued the upload';
+COMMENT ON COLUMN SourcePackageRelease.version IS 'Debian-like version string for this release. Indexed with debversion_sort_key and validated with valid_debian_version constraint.';
+COMMENT ON COLUMN SourcePackageRelease.dateuploaded IS 'Creation timestamp.';
+COMMENT ON COLUMN SourcePackageRelease.urgency IS 'SourcePackageUrgency constant';
+COMMENT ON COLUMN SourcePackageRelease.dscsigningkey IS 'Reference to the GPGKey used to sign the DSC.';
+COMMENT ON COLUMN SourcePackageRelease.component IS 'The original component to where this source was submitted.';
+COMMENT ON COLUMN SourcePackageRelease.changelog IS 'Changelog text section extracted from the changesfile.';
+COMMENT ON COLUMN SourcePackageRelease.builddepends IS 'DSC builddepends line section.';
+COMMENT ON COLUMN SourcePackageRelease.builddependsindep IS 'DSC builddependsindep line section.';
+COMMENT ON COLUMN SourcePackageRelease.architecturehintlist IS 'DSC arch line';
+COMMENT ON COLUMN SourcePackageRelease.dsc IS 'Original DSC text.';
 COMMENT ON COLUMN SourcePackageRelease.section IS 'This integer field references the Section which the source package claims to be in';
+COMMENT ON COLUMN SourcePackageRelease.manifest IS 'Reference to a manifest record.';
+COMMENT ON COLUMN SourcePackageRelease.maintainer IS 'Reference to the person noted as source package maintainer in the DSC.';
+COMMENT ON COLUMN SourcePackageRelease.sourcepackagename IS 'Reference to a SourcePackageName.';
+COMMENT ON COLUMN SourcePackageRelease.uploaddistrorelease IS 'DistroRelease to where the source was originally uploaded.';
+COMMENT ON COLUMN SourcePackageRelease.format IS 'Source package format constant, SourcePackageReleaseFormat.';
+COMMENT ON COLUMN SourcePackageRelease.dsc_maintainer_rfc822 IS 'The original maintainer line in RFC-822 format, to be used in archive indexes.';
+COMMENT ON COLUMN SourcePackageRelease.dsc_standards_version IS 'DSC standards version (such as "3.6.2", "3.5.9", etc) used to build this source.';
+COMMENT ON COLUMN SourcePackageRelease.dsc_format IS 'DSC format version (such as "1.0").';
+COMMENT ON COLUMN SourcePackageRelease.dsc_binaries IS 'DSC binary line, claimed binary-names produce by this source.';
 
 /* SourcePackagePublishing and BinaryPackagePublishing */
 
