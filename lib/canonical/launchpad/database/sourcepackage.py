@@ -24,7 +24,7 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.interfaces import (
     ISourcePackage, IHasBuildRecords, ITicketTarget,
     TICKET_STATUS_DEFAULT_SEARCH)
-from canonical.launchpad.components.bugtarget import BugTargetBase
+from canonical.launchpad.database.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.bug import get_bug_tags_open_count
 from canonical.launchpad.database.bugtask import BugTaskSet

@@ -25,7 +25,7 @@ from canonical.lp.dbschema import (
     EnumCol, TranslationPermission, SpecificationSort, SpecificationFilter,
     SpecificationStatus)
 from canonical.launchpad.database.branch import Branch
-from canonical.launchpad.components.bugtarget import BugTargetBase
+from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
@@ -106,6 +106,10 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
 
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
+
+    def _getBugTaskContextWhereClause(self):
+        """See BugTargetBase."""
+        return "BugTask.product = %d" % self.id
 
     def getExternalBugTracker(self):
         """See IProduct."""

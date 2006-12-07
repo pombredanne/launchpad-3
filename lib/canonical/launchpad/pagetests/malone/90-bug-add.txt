@@ -7,11 +7,12 @@ redirected to the bug page.
     >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
     >>> browser.open("http://localhost:9000/bugs/bugs/+package")
     >>> browser.getControl(name="field.distribution").value = ["ubuntu"]
+    >>> browser.getControl(name='packagename_option').value = ['choose']
     >>> browser.getControl(name="field.packagename").value = "mozilla-firefox"
     >>> browser.getControl(name="field.title").value = "A brief bug title"
     >>> browser.getControl(name="field.comment").value = (
     ...     "A really brief bug description.")
-    >>> browser.getControl("Continue").click()
+    >>> browser.getControl("Submit Bug Report").click()
     >>> print browser.url
     http://localhost:9000/ubuntu/+source/mozilla-firefox/+bug/11
 
@@ -21,11 +22,12 @@ description has a special comment appended to it.
 
     >>> browser.open("http://localhost:9000/bugs/bugs/+package")
     >>> browser.getControl(name="field.distribution").value = ["gentoo"]
+    >>> browser.getControl(name='packagename_option').value = ['choose']
     >>> browser.getControl(name="field.packagename").value = "mozilla-firefox"
     >>> browser.getControl(name="field.title").value = "A brief bug title"
     >>> browser.getControl(name="field.comment").value = (
     ...     "A really brief bug description.")
-    >>> browser.getControl("Continue").click()
+    >>> browser.getControl("Submit Bug Report").click()
     >>> print browser.url
     http://localhost:9000/gentoo/+bug/12
 

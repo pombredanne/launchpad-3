@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -437,6 +437,12 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
         self.setUpLabelAndWidgets(
             "Add affected source package to bug",
             ['distribution', 'sourcepackagename'])
+        for bugtask in IBug(self.context).bugtasks:
+            if (IDistributionSourcePackage.providedBy(bugtask.target) and
+                (not self.widgets['sourcepackagename'].hasInput())):
+                self.widgets['sourcepackagename'].setRenderedValue(
+                    bugtask.sourcepackagename)
+                break
         return self.render()
 
     def getBugTargetName(self):

@@ -100,6 +100,20 @@ edit the Status Whiteboard using the 'Edit Request' page.
   >>> print soup.first('b', text='Priority:').next.strip()
   Wishlist
 
+Since the assignee is notified of changes to the ticket, his name also
+appears under the 'Also notified' list in the 'Subscribers' portlet:
+
+    >>> portlet = soup.first('div', id='ticket-subscribers')
+    >>> also_notified = portlet.first('b')
+    >>> also_notified
+    <b>Also notified:</b>
+    >>> also_notified.findNextSibling('ul')
+    <ul class="people">
+      <li>
+        <a href=".../people/name16">Foo Bar</a>
+      </li>
+    </ul>
+
 These fields cannot be modified by a non-privileged user:
 
   >>> user_browser.open('http://localhost/ubuntu/+ticket/5')
