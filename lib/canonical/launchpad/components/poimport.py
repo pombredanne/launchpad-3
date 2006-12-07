@@ -108,9 +108,8 @@ def import_po(pofile_or_potemplate, file, importer, published=True):
 
             # Expire old messages
             pofile.expireAllMessages()
-            if published:
-                # Update the header
-                pofile.updateHeader(parser.header)
+            # Update the header
+            pofile.updateHeader(parser.header)
             # Get last translator.
             last_translator = getLastTranslator(parser, pofile)
             if last_translator is None:

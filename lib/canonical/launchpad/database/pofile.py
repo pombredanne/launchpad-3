@@ -597,7 +597,7 @@ class POFile(SQLBase, RosettaStats):
 
         file = librarian_client.getFileByAlias(entry_to_import.content.id)
 
-        errors = None
+        import_rejected = False
         try:
             errors = import_po(self, file, entry_to_import.importer,
                                entry_to_import.is_published)
@@ -608,6 +608,7 @@ class POFile(SQLBase, RosettaStats):
                 logger.warning(
                     'Error importing %s' % self.title, exc_info=1)
             template_mail = 'poimport-not-exported-from-rosetta.txt'
+            import_rejected = True
         except (POSyntaxError, POInvalidInputError):
             # The import failed with a format error. We log it and select the
             # email template.
@@ -615,16 +616,18 @@ class POFile(SQLBase, RosettaStats):
                 logger.warning(
                     'Error importing %s' % self.title, exc_info=1)
             template_mail = 'poimport-syntax-error.txt'
+            import_rejected = True
         except OldPOImported:
             # The attached file is older than the last imported one, we ignore
             # it. We also log this problem and select the email template.
             if logger:
                 logger.warning('Got an old version for %s' % self.title)
             template_mail = 'poimport-got-old-version.txt'
+            import_rejected = True
 
         # Prepare the mail notification.
         msgsets_imported = POMsgSet.select(
-                'sequence > 0 AND pofile=%s' % (sqlvalues(self.id))).count()
+            'sequence > 0 AND pofile=%s' % (sqlvalues(self.id))).count()
 
         replacements = {
             'importer': entry_to_import.importer.displayname,
@@ -632,13 +635,13 @@ class POFile(SQLBase, RosettaStats):
             'elapsedtime': entry_to_import.getElapsedTimeText(),
             'language': self.language.displayname,
             'template': self.potemplate.displayname,
-            'file_link': canonical_url(entry_to_import),
+            'file_link': entry_to_import.content.url,
             'numberofmessages': msgsets_imported,
             'import_title': '%s translations for %s' % (
                 self.language.displayname, self.potemplate.displayname)
             }
 
-        if errors is None:
+        if import_rejected:
             # We got an error that prevented us to import any translation, we
             # need to notify the user.
             subject = 'Import problem - %s - %s' % (
@@ -672,18 +675,15 @@ class POFile(SQLBase, RosettaStats):
                 self.language.displayname, self.potemplate.displayname)
 
         # Send the email.
-        template_file = os.path.join(
-            os.path.dirname(canonical.launchpad.__file__),
-            'emailtemplates', template_mail)
-        template = open(template_file).read()
+        template = helpers.get_email_template(template_mail)
         message = template % replacements
 
-        fromaddress = 'Rosetta SWAT Team <rosetta@ubuntu.com>'
+        fromaddress = 'Rosetta SWAT Team <rosetta@launchpad.net>'
         toaddress = helpers.contactEmailAddresses(entry_to_import.importer)
 
         simple_sendmail(fromaddress, toaddress, subject, message)
 
-        if errors is None:
+        if import_rejected:
             # There were no imports at all and the user needs to review that
             # file, we tag it as FAILED.
             entry_to_import.status = RosettaImportStatus.FAILED

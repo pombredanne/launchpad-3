@@ -5,9 +5,10 @@ On %(dateimport)s (%(elapsedtime)s), you uploaded a file with
 
 We didn't import it because we found errors in the file format.
 
-Please fix those errors and upload it again. If you check the file
-and you don't find any error in it, please, contact us to help you
-with this problem.
+You can check this file with the 'msgfmt' command. Please fix any
+error raised by that tool and upload the file again. If you check
+the file and you don't find any error in it, please, contact us to
+help you with this problem.
 
 For your convenience, you can get the file you uploaded at:
 %(file_link)s

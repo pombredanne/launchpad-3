@@ -570,25 +570,22 @@ class POTemplate(SQLBase, RosettaStats):
             template_mail = 'poimport-syntax-error.txt'
 
             replacements = {
-            'importer': entry_to_import.importer.displayname,
-            'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
-            'elapsedtime': entry_to_import.getElapsedTimeText(),
-            'file_link': canonical_url(entry_to_import),
-            'import_title': self.displayname
-            }
+                'importer': entry_to_import.importer.displayname,
+                'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
+                'elapsedtime': entry_to_import.getElapsedTimeText(),
+                'file_link': entry_to_import.content.url,
+                'import_title': self.displayname
+                }
 
             # We got an error that prevented us to import the template, we
             # need to notify the user and set the status to FAILED.
             subject = 'Import problem - %s' % self.displayname
 
             # Send the email.
-            template_file = os.path.join(
-                os.path.dirname(canonical.launchpad.__file__),
-                'emailtemplates', template_mail)
-            template = open(template_file).read()
+            template = helpers.get_email_template(template_mail)
             message = template % replacements
 
-            fromaddress = 'Rosetta SWAT Team <rosetta@ubuntu.com>'
+            fromaddress = 'Rosetta SWAT Team <rosetta@launchpad.net>'
             toaddress = helpers.contactEmailAddresses(entry_to_import.importer)
 
             simple_sendmail(fromaddress, toaddress, subject, message)

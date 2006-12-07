@@ -34,7 +34,9 @@ class ITranslationImportQueueEntry(Interface):
             "The person that imported this file in Rosetta."),
         vocabulary="ValidOwner")
 
-    dateimported = Attribute('The timestamp when this file was imported.')
+    dateimported = Datetime(
+        title=_("The timestamp when this file was imported."),
+        required=True)
 
     productseries = Choice(
         title=_("Product Branch or Series"),

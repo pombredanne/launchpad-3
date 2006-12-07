@@ -14,7 +14,8 @@ import logging
 import doctest
 import unittest
 
-from canonical.launchpad.interfaces import IPOMessage, IPOHeader, IPOParser
+from canonical.launchpad.interfaces import (
+    IPOMessage, IPOHeader, IPOParser, EXPORT_DATE_HEADER)
 from zope.interface import implements
 from zope.app import datetimeutils
 
@@ -573,7 +574,7 @@ class POHeader(dict, POMessage):
     def getRosettaExportDate(self):
         """See IPOHeader."""
 
-        date_string = self.get('X-Rosetta-Export-Date', None)
+        date_string = self.get(EXPORT_DATE_HEADER, None)
         if date_string is None:
             date = None
         else:
