@@ -1,12 +1,10 @@
-The Launchpad Ticket Tracker
-============================
+= The Launchpad Ticket Tracker =
 
 Launchpad has a "tech support request tracker" built in to it. So you
 can have your community provide technical support using Launchpad for
 any upstream application, or any distribution.
 
-Products
---------
+== Products ==
 
 The product page displays the latest support requests in a portlet.
 
@@ -59,8 +57,7 @@ page.
   >>> print BeautifulSoup(browser.contents).first('h1').renderContents()
   Problem showing the SVG demo on W3C site
 
-Distributions
--------------
+== Distributions ==
 
 Distributions also have the 'Support' link and a section showing the
 'Latest support requests'.
@@ -91,8 +88,7 @@ On that facet, we will find the same common listings:
   >>> browser.getLink('My Requests').url
   '.../distros/ubuntu/+mytickets'
 
-Distroreleases
---------------
+== Distroreleases ==
 
 On a distrorelease there is a "Request Support" link, but note that it
 points at its distro, not itself. Support tickets are linked to distro,
@@ -102,8 +98,7 @@ and optionally source package too.
   >>> browser.getLink('Request Support').url
   '.../distros/ubuntu/+addticket'
 
-Source packages
----------------
+== Source packages ==
 
 On a source package, the 'Request Support' link is accessible through
 the Support facet.
@@ -144,8 +139,7 @@ page:
   >>> browser.getLink('My Requests').url
   '.../distros/ubuntu/+source/mozilla-firefox/+mytickets'
 
-Persons
--------
+== Persons ==
 
 On the page about a person, there is a porlet showing the latest ticket
 opened by that person.
