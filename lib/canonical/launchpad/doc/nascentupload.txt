@@ -545,9 +545,9 @@ Ensure that the key is attached to the database to be used in tests:
 When using 'insecure' policy, NascentUpload instace stores the DSC
 sigining key reference as an IGPGKey:
 
-  >>> ed_ok = NascentUpload(findPolicyByName('insecure'),
-  ...          datadir(''), "ed_0.2-20_i386.changes",
-  ...          MockMunchyLogger())
+  >>> ed_ok = NascentUpload(
+  ...     findPolicyByName('insecure'), datadir(''),
+  ...     "ed_0.2-20_i386.changes", MockMunchyLogger())
   >>> ed_ok.policy.setOptions(MockOptions())
 
 XXX cprov 20061206: ok, by lack of better sample-packages we will
@@ -570,15 +570,15 @@ Let's modify the current ACL rules for ubuntu, moving the upload
 rights to all commponents from 'ubuntu-team' to 'sabdfl':
 
   >>> new_uploader = getUtility(IPersonSet).getByName('sabdfl')
-  >>> for dcu in ubuntu.uploaders:
-  ...     dcu.uploader = new_uploader
+  >>> for distro_component in ubuntu.uploaders:
+  ...     distro_component.uploader = new_uploader
 
 This time the upload should fail because the ACLs don't let
 "kinnison", the key owner,  upload a package.
 
-  >>> ed_failed = NascentUpload(findPolicyByName('insecure'),
-  ...          datadir(''), "ed_0.2-20_i386.changes",
-  ...          MockMunchyLogger())
+  >>> ed_failed = NascentUpload(
+  ...     findPolicyByName('insecure'), datadir(''),
+  ...     "ed_0.2-20_i386.changes", MockMunchyLogger())
   >>> ed_failed.policy.setOptions(MockOptions())
 
 XXX cprov 20061206: ok, by lack of better sample-packages we will
