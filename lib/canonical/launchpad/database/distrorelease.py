@@ -37,7 +37,7 @@ from canonical.launchpad.interfaces import (
     ISourcePackage, ISourcePackageNameSet,
     IHasQueueItems, IPublishing)
 
-from canonical.launchpad.components.bugtarget import BugTargetBase
+from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.launchpad.database.binarypackagename import (
     BinaryPackageName)
