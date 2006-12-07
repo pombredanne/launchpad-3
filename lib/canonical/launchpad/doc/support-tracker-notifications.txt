@@ -32,16 +32,16 @@ notification looks like:
     ...    "I insert the install CD in the CD-ROM drive, but it won't boot.")
     >>> notify(SQLObjectCreatedEvent(ubuntu_ticket))
 
-The notifications get sent to the ticket's subscribers and the ticket's
-target support contacts. Initially, only the submitter, Sample Person,
-is subscribed to the ticket and there is no support contact registered
-on Ubuntu, so only 1 notification is sent:
+The notifications get sent to the ticket's subscribers, the ticket's
+target support contacts as well as to the ticket's assignee. Initially,
+only the submitter, Sample Person, is subscribed to the ticket and there
+ is no support contact registered on Ubuntu, so only 1 notification is
+sent:
 
     >>> ubuntu.support_contacts
     []
     >>> [sub.person.displayname for sub in ubuntu_ticket.subscriptions]
     [u'Sample Person']
-
     >>> notifications = pop_notifications()
     >>> len(notifications)
     1
@@ -69,6 +69,12 @@ notified about the changes as well:
     >>> ubuntu.addSupportContact(ubuntu_team)
     True
 
+And assign this ticket to Foo Bar, so that he will also receive
+notifications:
+
+    >>> login('foo.bar@canonical.com')
+    >>> ubuntu_ticket.assignee = getUtility(ILaunchBag).user
+
 Edit Notifications
 ------------------
 
@@ -91,12 +97,13 @@ sent.
     >>> notify(SQLObjectModifiedEvent(
     ...     ubuntu_ticket, unmodified_ticket, ['title', 'description']))
 
-Two copies of the notification got sent, one to Sample Person, and
-one to Ubuntu Team:
+Three copies of the notification got sent, one to Sample Person, one to
+Foo Bar, and one to Ubuntu Team:
 
-    >>> notifications = pop_notifications()
-    >>> len(notifications)
-    2
+    >>> from operator import itemgetter
+    >>> notifications = sorted(pop_notifications(), key=itemgetter('To'))
+    >>> [notification['To'] for notification in notifications]
+    ['foo.bar@canonical.com', 'support@ubuntu.com', 'test@canonical.com']
 
     >>> edit_notification = notifications[0]
     >>> notification_body = edit_notification.get_payload(decode=True)
@@ -129,6 +136,10 @@ notifying about was made, no notification is sent:
     >>> len(notifications)
     0
 
+After receiving that notification, Foo Bar unassigned himself:
+
+    >>> login('foo.bar@canonical.com')
+    >>> ubuntu_ticket.assignee = None
 
 Bug Linking and Unlinking Notifications
 ---------------------------------------
@@ -138,6 +149,7 @@ bug that has been linked to the request:
 
     >>> from canonical.launchpad.interfaces import CreateBugParams
 
+    >>> login('no-priv@canonical.com')
     >>> unmodified_ticket = Snapshot(
     ...     ubuntu_ticket, providing=providedBy(ubuntu_ticket))
     >>> params = CreateBugParams(
@@ -573,3 +585,243 @@ Notification received by the owner:
     Foo Bar changed the request status:
     The rejection was a mistake.
     <BLANKLINE>
+
+== Notifications and Localized Requests ==
+
+In general, only subscribers speaking the language of the ticket will
+receive notifications related to it.
+
+    # Register salgado as support, this makes the pt_BR language
+    # supported in Ubuntu.
+    >>> salgado = getUtility(IPersonSet).getByName('salgado')
+    >>> ubuntu.addSupportContact(salgado)
+    True
+    >>> sorted([lang.code for lang in ubuntu.getSupportedLanguages()])
+    [u'en', u'pt_BR']
+
+    >>> from canonical.launchpad.interfaces import ILanguageSet
+    >>> login('test@canonical.com')
+    >>> pt_BR_ticket = ubuntu.newTicket(
+    ...     sample_person, title=(
+    ...     u"Abrir uma p\xe1gina que requer java quebra o firefox"),
+    ...     description=(
+    ...         u'Eu uso Ubuntu em um AMD64 e instalei o plugin java '
+    ...         u'blackdown. O plugin \xe9 exibido em about:plugins e '
+    ...         u'quando eu abro a pagina '
+    ...         u'http://java.com/en/download/help/testvm.xml, ela carrega '
+    ...         u'corretamente e mostra a minha versao do java. No entanto, '
+    ...         u'mover o mouse na pagina faz com que o firefox quebre.'),
+    ...     language=getUtility(ILanguageSet)['pt_BR'])
+    >>> notify(SQLObjectCreatedEvent(pt_BR_ticket))
+    >>> notifications = pop_notifications()
+    >>> [email_msg['To'] for email_msg in notifications]
+    ['guilherme.salgado@canonical.com', 'test@canonical.com']
+
+    >>> from email.Header import decode_header, make_header
+    >>> unicode(make_header(decode_header(notifications[0]['Subject'])))
+    u'[Support #...]: Abrir uma p\xe1gina que requer java quebra o firefox'
+
+Similarly, when a ticket in a non-English language is modified or its
+status changed, only the subscribers speaking that language will receive
+the notifications.
+
+    >>> pt_BR_ticket.giveInfo("Veja o screenshot: http://tinyurl.com/y8jq8z")
+    <TicketMessage...>
+    >>> notifications = pop_notifications()
+    >>> [email_msg['To'] for email_msg in notifications]
+    ['guilherme.salgado@canonical.com', 'test@canonical.com']
+
+The exception to these general rules is that when a request is created
+in language spoken by none of the support contacts, each support
+contact will receive an email notifying them that a request was posted
+in an unsupported language.
+
+For example, the French language is not spoken by any Ubuntu support
+contacts. So after posting a request in French, a notification will be
+sent to the support list about that request:
+
+    >>> french = getUtility(ILanguageSet)['fr']
+    >>> french_ticket = ubuntu.newTicket(
+    ...     sample_person, title="Impossible d'installer Ubuntu",
+    ...     description=u"Le CD ne semble pas fonctionn\xe9.",
+    ...     language=french)
+    >>> notify(SQLObjectCreatedEvent(french_ticket))
+    >>> notifications = pop_notifications()
+    >>> [email_msg['To'] for email_msg in notifications]
+    ['guilherme.salgado@canonical.com', 'support@ubuntu.com',
+     'test@canonical.com']
+
+    >>> notifications[0]['Subject']
+    "[Support #...]: (French) Impossible d'installer Ubuntu"
+
+    >>> notification_body = notifications[0].get_payload(decode=True)
+    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    A support request was filed in a language (French) spoken by
+    none of the registered Ubuntu support contacts.
+    <BLANKLINE>
+    http://.../distros/ubuntu/+ticket/...
+
+The notification received by the ticket owner contain a warning that
+the request is in a language spoken by none of the support contacts:
+
+    >>> notifications[-1]['Subject']
+    "[Support #...]: Impossible d'installer Ubuntu"
+
+    # Define a function that will replace non-ascii character with
+    # its unicoded encoded value.
+    # Effectively replace u'\xe9' by '\\e9'.
+    >>> import re
+    >>> def escape_utf8_payload(message):
+    ...     charset = message.get_content_charset()
+    ...     content = unicode(message.get_payload(decode=True), charset)
+    ...     return content.encode('us-ascii', 'backslashreplace')
+
+    >>> notification_body = escape_utf8_payload(notifications[-1])
+    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    New support request #... on Ubuntu:
+    http://.../distros/ubuntu/+ticket/...
+    <BLANKLINE>
+    Le CD ne semble pas fonctionn\xe9.
+    <BLANKLINE>
+    _______________________________________________________________________
+    WARNING: This support request is filed in a language (French)
+    spoken by none of the registered Ubuntu support contacts.
+    <BLANKLINE>
+
+No notification will be sent to the support contacts when this ticket is
+modified. Only the owner will receive a modification notification with a
+warning appended to it.
+
+    >>> unmodified_ticket = Snapshot(
+    ...     french_ticket, providing=providedBy(french_ticket))
+    >>> french_ticket.title = u"CD d'Ubuntu ne d\xe9marre pas"
+    >>> notify(SQLObjectModifiedEvent(
+    ...     french_ticket, unmodified_ticket, ['title']))
+
+    >>> notifications = pop_notifications()
+    >>> [email_msg['To'] for email_msg in notifications]
+    ['test@canonical.com']
+
+    >>> notification_body = escape_utf8_payload(notifications[0])
+    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    Your support request #... on Ubuntu changed:
+    http://.../distros/ubuntu/+ticket/...
+    <BLANKLINE>
+    Summary changed to:
+    CD d'Ubuntu ne d\xe9marre pas
+    <BLANKLINE>
+    _______________________________________________________________________
+    WARNING: This support request is filed in a language (French)
+    spoken by none of the registered Ubuntu support contacts.
+    <BLANKLINE>
+
+=== Localized Support Requests and Teams ===
+
+There are some tricky issues when sending notifications to teams about a
+support request. There are some cases to consider.
+
+First, when the team has an explicit email address (which will be a
+mailing list usually), we will notify the team only if the support
+request language is in one of the team spoken languages. The team spoken
+languages is either the list of languages associated to the team or
+the list of the languages spoken by the team members.
+
+For example, the rosetta admins team doesn't have any languages
+configured. But among its members, Carlos speaks Spanish. So, the team
+will be notified if a Spanish support request is created.
+
+    >>> rosetta_admins = getUtility(IPersonSet).getByName('rosetta-admins')
+    >>> [lang.code for lang in rosetta_admins.languages]
+    []
+    >>> carlos = getUtility(IPersonSet).getByName('carlos')
+    >>> carlos.inTeam(rosetta_admins)
+    True
+    >>> spanish = getUtility(ILanguageSet)['es']
+    >>> spanish in carlos.languages
+    True
+
+    >>> ubuntu.addSupportContact(rosetta_admins)
+    True
+    >>> spanish_ticket = ubuntu.newTicket(
+    ...     sample_person, title="Necesidad ayuda con Firefox",
+    ...     description="No puedo acceso al Internet en Firefox.",
+    ...     language=spanish)
+    >>> notify(SQLObjectCreatedEvent(spanish_ticket))
+    >>> notifications = pop_notifications()
+    >>> [email_msg['To'] for email_msg in notifications]
+    ['rosetta@launchpad.net', 'test@canonical.com']
+
+But if the team languages attribute is set, this set of languages will
+be used. So, if the team only officially speaks French, it will only
+receives notifications about French (and English) requests.
+
+    >>> rosetta_admins.addLanguage(french)
+    >>> notify(SQLObjectCreatedEvent(french_ticket))
+    >>> notifications = pop_notifications()
+    >>> [email_msg['To'] for email_msg in notifications]
+    ['rosetta@launchpad.net', 'test@canonical.com']
+
+The second case to consider is when the team doesn't use an explicit
+address. When the team has configured its supported languages, all
+team members will be contacted if the ticket language is supported.
+For example, the Launchpad Developers team doesn't have any preferred
+email address set. Its only member, Foo Bar will receive a notification
+if the team supported languages includes the ticket language:
+
+    >>> launchpad_devs = getUtility(IPersonSet).getByName('launchpad')
+    >>> list(launchpad_devs.languages)
+    []
+    >>> [member.name for member in launchpad_devs.activemembers]
+    [u'name16']
+    >>> launchpad_devs.addLanguage(spanish)
+    >>> ubuntu.addSupportContact(launchpad_devs)
+    True
+
+    >>> notify(SQLObjectCreatedEvent(spanish_ticket))
+    >>> notifications = pop_notifications()
+    >>> [email_msg['To'] for email_msg in notifications]
+    ['foo.bar@canonical.com', 'test@canonical.com']
+
+But when the team didn't configured its supported language set, only the
+team members that speaks the language of the request will be notified.
+For example, Carlos is a member of the admins team which doesn't have
+a preferred address. So, he'll be the only member of the admin team
+to be notified when a request in Spanish is posted.
+
+    >>> admins = getUtility(IPersonSet).getByName('admins')
+    >>> list(admins.languages)
+    []
+    >>> carlos.inTeam(admins)
+    True
+    >>> ubuntu.addSupportContact(admins)
+    True
+
+    >>> notify(SQLObjectCreatedEvent(spanish_ticket))
+    >>> notifications = pop_notifications()
+    >>> [email_msg['To'] for email_msg in notifications]
+    ['carlos@canonical.com', 'foo.bar@canonical.com',
+     'test@canonical.com']
+
+When a team is a member of a team with no email address, these rules
+are applied recursively. So, if we make GuadaMen team a member of the
+admin team, its notification will be computed according to that
+team settings. That is a notification will be sent to its preferred
+address if Spanish is among its preferred languages:
+
+    >>> guadamen = getUtility(IPersonSet).getByName('guadamen')
+    >>> list(guadamen.languages)
+    []
+    >>> admins.addMember(guadamen)
+
+    >>> guadamen.addLanguage(spanish)
+
+    >>> from canonical.launchpad.interfaces import IEmailAddressSet
+    >>> guadamen_email = getUtility(IEmailAddressSet).new(
+    ...     'maintainers@guadalinex.com', guadamen)
+    >>> guadamen.validateAndEnsurePreferredEmail(guadamen_email)
+
+    >>> notify(SQLObjectCreatedEvent(spanish_ticket))
+    >>> notifications = pop_notifications()
+    >>> [email_msg['To'] for email_msg in notifications]
+    ['carlos@canonical.com', 'foo.bar@canonical.com',
+     'maintainers@guadalinex.com', 'test@canonical.com']
