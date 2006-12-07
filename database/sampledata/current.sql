@@ -542,6 +542,8 @@ INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) 
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (16, 42, 1, 4);
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (17, 45, 3, 3);
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (18, 37, 1, 2);
+INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (20, 55, 1, 5);
+INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (21, 56, 1, 6);
 
 
 ALTER TABLE binarypackagefile ENABLE TRIGGER ALL;
@@ -2503,6 +2505,10 @@ INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_acc
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (47, 47, 'non-existent-mirrorprober-logfile.txt', 'text/plain', NULL, '2006-05-24 16:15:32.440132');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (51, 51, 'x4cWPgneBxsZOM21ZzpRPxsZXod.msg', 'message/rfc822', NULL, '2006-07-14 16:41:34.028627');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (52, 52, 'mozilla-firefox_0.9_i386.changes', 'text/plain', NULL, '2006-07-31 15:41:34.028627');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (53, 53, 'cdrkit-1.0.dsc', 'application/dsc', NULL, '2006-12-01 15:41:34.028627');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (54, 54, 'foobar-1.0.dsc', 'application/dsc', NULL, '2006-12-01 15:41:34.028627');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (55, 55, 'cdrkit_1.0_all.deb', 'application/deb', NULL, '2006-12-01 15:41:34.028627');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (56, 56, 'foobar_1.0_all.deb', 'application/deb', NULL, '2006-12-01 15:41:34.028627');
 
 
 ALTER TABLE libraryfilealias ENABLE TRIGGER ALL;
@@ -2558,6 +2564,10 @@ INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, d
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (47, '2006-05-24 09:31:29.606407', NULL, 2, 'cabf42e197a6a7f222db0f1978c7cb232b87c5ee', false, 'whatever                        ');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (51, '2006-07-14 16:41:34.028627', NULL, 716, '86d537a0d8b5b346d02752a853cc6ea648a0ebd7', false, 'eeb4c1e00a2e17a1eb51bd8b92fa5437');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (52, '2006-05-24 09:31:29.606407', NULL, 2, 'cabf42e197a6a7f222db0f1978c7cb232b87c5ee', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (53, '2006-12-01 16:41:34.028627', NULL, 716, '86d537a0d8b5b346d02752a853cc6ea648a0ebd7', false, 'eeb4c1e00a2e17a1eb51bd8b92fa5437');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (54, '2006-12-01 16:41:34.028627', NULL, 716, '86d537a0d8b5b346d02752a853cc6ea648a0ebd7', false, 'eeb4c1e00a2e17a1eb51bd8b92fa5437');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (55, '2006-12-01 16:41:34.028627', NULL, 716, '86d537a0d8b5b346d02752a853cc6ea648a0ebd7', false, 'eeb4c1e00a2e17a1eb51bd8b92fa5437');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (56, '2006-12-01 16:41:34.028627', NULL, 716, '86d537a0d8b5b346d02752a853cc6ea648a0ebd7', false, 'eeb4c1e00a2e17a1eb51bd8b92fa5437');
 
 
 ALTER TABLE libraryfilecontent ENABLE TRIGGER ALL;
@@ -8666,6 +8676,8 @@ INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetyp
 INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (23, 39, 3, 4);
 INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (24, 38, 3, 3);
 INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (25, 43, 3, 5);
+INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (32, 53, 3, 7);
+INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (33, 54, 3, 8);
 
 
 ALTER TABLE sourcepackagereleasefile ENABLE TRIGGER ALL;

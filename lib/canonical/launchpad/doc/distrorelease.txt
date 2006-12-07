@@ -127,7 +127,7 @@ BinaryPackagePublishingHistory objects for the DistroRelease:
     >>> warty = DistroRelease.get(1)
     >>> bpph = warty.getBinaryPackagePublishing()
     >>> print bpph.count()
-    5
+    6
     >>> 'mozilla-firefox' in set(
     ...     pkgpub.binarypackagerelease.binarypackagename.name
     ...     for pkgpub in bpph)
@@ -720,7 +720,7 @@ publication in question:
    ...     PackagePublishingStatus.PUBLISHED,
    ...     PackagePublishingPocket.RELEASE)
 
-   >>> warty_pub_source = warty_pub_sources[2]
+   >>> warty_pub_source = warty_pub_sources[3]
    >>> warty_pub_source.sourcepackagerelease.name
    u'mozilla-firefox'
    >>> warty_pub_source.sourcepackagerelease.version

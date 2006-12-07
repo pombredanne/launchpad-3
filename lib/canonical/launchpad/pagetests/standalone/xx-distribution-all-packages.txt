@@ -11,9 +11,9 @@
   ...
           <strong>1</strong>
           &rarr;
-          <strong>8</strong>
+          <strong>9</strong>
           of
-          8 results
+          9 results
   ...
         <a href="...">alsa-utils</a>
   <BLANKLINE>
