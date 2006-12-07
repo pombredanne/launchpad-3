@@ -147,7 +147,11 @@ The count and IDs used here Just Work<tm>.
   ...         dsc=None,
   ...         changelog=None,
   ...         manifest=16+count,
-  ...         dscsigningkey=None)
+  ...         dscsigningkey=None,
+  ...         dsc_format="1.0",
+  ...         dsc_maintainer_rfc822="mark <mark@mark.com>",
+  ...         dsc_standards_version="3.6.9",
+  ...         dsc_binaries="%s" % name.name)
   ...     srcfile = SourcePackageReleaseFile(
   ...         sourcepackagerelease=srcpkgrel,
   ...         libraryfile=1,
