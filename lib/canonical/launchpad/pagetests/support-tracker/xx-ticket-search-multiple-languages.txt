@@ -1,4 +1,4 @@
-== Searching Support Requests in Multiple Languages ==
+= Searching Support Requests in Multiple Languages =
 
 By default, only support requests written in English or one of the
 user preferred languages are listed and searched.
@@ -81,7 +81,7 @@ will appear:
     'Slow system'
     'Installation failed'
 
-== Multiple Request Languages in Latest Support Requests ==
+= Multiple Request Languages in Latest Support Requests =
 
 The portlet that lists the latest support requests on the product or
 distribution displays all the requests, whatever the user preferred

@@ -1,9 +1,8 @@
-Support Tracker Email Notifications
-===================================
+= Support Tracker Email Notifications =
 
-    (Let's define a helper function which commits the transaction, so
-    that the notifications are queued in stub.test_emails and pops these
-    notifications from the queue.)
+    # Let's define a helper function which commits the transaction, so
+    # that the notifications are queued in stub.test_emails and pops these
+    # notifications from the queue.
     >>> from canonical.launchpad.mail import stub
     >>> import email
     >>> import transaction
@@ -75,8 +74,7 @@ notifications:
     >>> login('foo.bar@canonical.com')
     >>> ubuntu_ticket.assignee = getUtility(ILaunchBag).user
 
-Edit Notifications
-------------------
+== Edit Notifications ==
 
 If we edit the title and description of the request, a notification will be
 sent.
@@ -141,8 +139,7 @@ After receiving that notification, Foo Bar unassigned himself:
     >>> login('foo.bar@canonical.com')
     >>> ubuntu_ticket.assignee = None
 
-Bug Linking and Unlinking Notifications
----------------------------------------
+== Bug Linking and Unlinking Notifications ==
 
 If we create a bug from the support request, it will be reported as a
 bug that has been linked to the request:
@@ -197,8 +194,7 @@ And if we remove the link again, we get:
         http://.../bugs/11
     <BLANKLINE>
 
-Workflow Notifications
-----------------------
+== Workflow Notifications ==
 
 Notifications are also sent when workflow actions are done on tickets.
 The content of the notification will be different depending on the
@@ -280,8 +276,7 @@ giveInfo() transitions, let's see the other ones.
     >>> ubuntu_ticket.subscribe(sample_person)
     <TicketSubscription ...>
 
-Notifications for expireTicket()
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== Notifications for expireTicket() ===
 
     >>> login('no-priv@canonical.com')
     >>> message = ubuntu_ticket.expireTicket(
@@ -323,8 +318,7 @@ Notification received by the owner:
     http://.../distros/ubuntu/+ticket/...
     <BLANKLINE>
 
-Notifications for reopen()
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== Notifications for reopen() ===
 
 (This example will also show that comments are wrapped for 72 columns
 display)
@@ -370,8 +364,7 @@ Notification received by the owner:
     Please provide some help to a newbie.
     <BLANKLINE>
 
-Notifications for giveAnswer()
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== Notifications for giveAnswer() ===
 
     >>> login('no-priv@canonical.com')
     >>> answer_message = ubuntu_ticket.giveAnswer(
@@ -431,8 +424,7 @@ Notification received by the owner:
     http://.../distros/ubuntu/+ticket/...
     <BLANKLINE>
 
-Notifications for confirm()
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== Notifications for confirm() ===
 
     >>> login('test@canonical.com')
     >>> message = ubuntu_ticket.confirmAnswer(
@@ -469,8 +461,7 @@ Notification received by the owner:
     I've installed BootX and the installer CD is now booting. Thanks!
     <BLANKLINE>
 
-Notifications for addComment()
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== Notifications for addComment() ===
 
     >>> login('no-priv@canonical.com')
     >>> message = ubuntu_ticket.addComment(
@@ -505,8 +496,7 @@ Notification received by the owner:
     be very slow.
     <BLANKLINE>
 
-Notifications for reject()
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== Notifications for reject() ===
 
     >>> login('foo.bar@canonical.com')
     >>> foo_bar = getUtility(ILaunchBag).user
@@ -548,8 +538,7 @@ Notification received by the owner:
     the following page:
     http://.../distros/ubuntu/+ticket/...
 
-Notifications for setStatus()
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== Notifications for setStatus() ===
 
     >>> from canonical.lp.dbschema import TicketStatus
     >>> login('foo.bar@canonical.com')
