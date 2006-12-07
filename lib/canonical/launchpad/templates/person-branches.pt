@@ -32,7 +32,7 @@
 
   <form method="get" name="filter" action="">
     <span>Show branches with status</span>
-    <div tal:content="structure view/widgets/show_filter"/>
+    <div tal:replace="structure view/widgets/show_filter"/>
     <input type="submit" value="Filter"/>
   </form>
   <table class="listing sortable" id="branchtable">

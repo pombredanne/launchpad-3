@@ -17,8 +17,8 @@ from canonical.lp.dbschema import (BranchLifecycleStatus,
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (IPerson, IProduct,
                                             IBranchLifecycleFilter)
-from canonical.launchpad.webapp import LaunchpadFormView
-
+from canonical.launchpad.webapp import LaunchpadFormView, custom_widget
+from canonical.widgets import LaunchpadDropdownWidget
 # XXX This stuff was initially cargo-culted from ITicketTarget, some of it
 # could be factored out. See bug 4011. -- David Allouche 2005-09-09
 
@@ -26,7 +26,8 @@ from canonical.launchpad.webapp import LaunchpadFormView
 class BranchTargetView(LaunchpadFormView):
     schema = IBranchLifecycleFilter
     field_names = ['show_filter']
-    
+    custom_widget('show_filter', LaunchpadDropdownWidget)
+
     # The default set of statum to show
     CURRENT_SET = set([BranchLifecycleStatus.NEW,
                        BranchLifecycleStatus.EXPERIMENTAL,

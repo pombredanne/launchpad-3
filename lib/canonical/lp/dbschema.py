@@ -2714,16 +2714,16 @@ class BranchLifecycleStatusFilter(DBSchema):
         """, sortkey=50)
 
     CURRENT = Item(90, """
-        Current
+        New, Experimental, Development or Mature
 
         Show the currently active branches.
-        """, sortkey=5)
+        """)
 
     ALL = Item(100, """
-        All
+        Any Status
 
         Show all the branches.
-        """, sortkey=5)
+        """)
 
 
 
