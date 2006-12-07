@@ -10,5 +10,5 @@ ALTER TABLE SourcePackageRelease ADD COLUMN dsc_standards_version text;
 ALTER TABLE SourcePackageRelease ADD COLUMN dsc_format text;
 ALTER TABLE SourcePackageRelease ADD COLUMN dsc_binaries text;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (67, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (67, 35, 0);
 
