@@ -21,8 +21,9 @@ from sqlobject import (
 from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.launchpad.interfaces import (
-    IBugLinkTarget, InvalidTicketStateError, ILaunchpadCelebrities, IMessage,
-    IPerson, ITicket, ITicketSet, TICKET_STATUS_DEFAULT_SEARCH)
+    IBugLinkTarget, InvalidTicketStateError, ILanguage, ILanguageSet,
+    ILaunchpadCelebrities, IMessage, IPerson, ITicket, ITicketSet,
+    TICKET_STATUS_DEFAULT_SEARCH)
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -88,14 +89,16 @@ class Ticket(SQLBase, BugLinkTargetMixin):
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     title = StringCol(notNull=True)
     description = StringCol(notNull=True)
+    language = ForeignKey(
+        dbName='language', notNull=True, foreignKey='Language')
     status = EnumCol(
         schema=TicketStatus, notNull=True, default=TicketStatus.OPEN)
-    priority = EnumCol(schema=TicketPriority, notNull=True,
-        default=TicketPriority.NORMAL)
-    assignee = ForeignKey(dbName='assignee', notNull=False,
-        foreignKey='Person', default=None)
-    answerer = ForeignKey(dbName='answerer', notNull=False,
-        foreignKey='Person', default=None)
+    priority = EnumCol(
+        schema=TicketPriority, notNull=True, default=TicketPriority.NORMAL)
+    assignee = ForeignKey(
+        dbName='assignee', notNull=False, foreignKey='Person', default=None)
+    answerer = ForeignKey(
+        dbName='answerer', notNull=False, foreignKey='Person', default=None)
     answer = ForeignKey(dbName='answer', notNull=False,
         foreignKey='TicketMessage', default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
@@ -103,12 +106,14 @@ class Ticket(SQLBase, BugLinkTargetMixin):
     datelastquery = UtcDateTimeCol(notNull=True, default=DEFAULT)
     datelastresponse = UtcDateTimeCol(notNull=False, default=None)
     dateanswered = UtcDateTimeCol(notNull=False, default=None)
-    product = ForeignKey(dbName='product', foreignKey='Product',
+    product = ForeignKey(
+        dbName='product', foreignKey='Product', notNull=False, default=None)
+    distribution = ForeignKey(
+        dbName='distribution', foreignKey='Distribution', notNull=False,
+        default=None)
+    sourcepackagename = ForeignKey(
+        dbName='sourcepackagename', foreignKey='SourcePackageName',
         notNull=False, default=None)
-    distribution = ForeignKey(dbName='distribution',
-        foreignKey='Distribution', notNull=False, default=None)
-    sourcepackagename = ForeignKey(dbName='sourcepackagename',
-        foreignKey='SourcePackageName', notNull=False, default=None)
     whiteboard = StringCol(notNull=False, default=None)
 
     # useful joins
@@ -488,13 +493,15 @@ class TicketSet:
     @staticmethod
     def new(title=None, description=None, owner=None,
             product=None, distribution=None, sourcepackagename=None,
-            datecreated=None):
+            datecreated=None, language=None):
         """Common implementation for ITicketTarget.newTicket()."""
         if datecreated is None:
             datecreated = UTC_NOW
+        if language is None:
+            language = getUtility(ILanguageSet)['en']
         ticket = Ticket(
             title=title, description=description, owner=owner,
-            product=product, distribution=distribution,
+            product=product, distribution=distribution, language=language,
             sourcepackagename=sourcepackagename, datecreated=datecreated)
 
         # Subscribe the submitter
@@ -518,7 +525,7 @@ class TicketSearch:
     """
 
     def __init__(self, search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-                 sort=None, product=None, distribution=None,
+                 language=None, sort=None, product=None, distribution=None,
                  sourcepackagename=None):
         self.search_text = search_text
 
@@ -526,6 +533,11 @@ class TicketSearch:
             self.status = [status]
         else:
             self.status = status
+
+        if ILanguage.providedBy(language):
+            self.language = [language]
+        else:
+            self.language = language
 
         self.sort = sort
 
@@ -540,6 +552,7 @@ class TicketSearch:
                 "Distribution must be specified if sourcepackage is not None")
 
         constraints = []
+
         if self.product:
             constraints.append('Ticket.product = %s' % sqlvalues(self.product))
         elif self.distribution:
@@ -564,6 +577,11 @@ class TicketSearch:
         if self.status:
             constraints.append('Ticket.status IN %s' % sqlvalues(
                 list(self.status)))
+
+        if self.language:
+            constraints.append(
+                'Ticket.language IN (%s)'
+                    % ', '.join(sqlvalues(*self.language)))
 
         return constraints
 
@@ -622,13 +640,13 @@ class TicketTargetSearch(TicketSearch):
     """
 
     def __init__(self, search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-                 sort=None, owner=None, product=None, distribution=None,
-                 sourcepackagename=None):
+                 language=None, sort=None, owner=None, product=None,
+                 distribution=None, sourcepackagename=None):
         assert product is not None or distribution is not None, (
             "Missing a product or distribution context.")
         TicketSearch.__init__(
-            self, search_text=search_text, status=status, sort=sort,
-            product=product, distribution=distribution,
+            self, search_text=search_text, status=status, language=language,
+            sort=sort, product=product, distribution=distribution,
             sourcepackagename=sourcepackagename)
 
         if owner:
@@ -681,10 +699,11 @@ class TicketPersonSearch(TicketSearch):
     """
 
     def __init__(self, person, search_text=None,
-                 status=TICKET_STATUS_DEFAULT_SEARCH,
+                 status=TICKET_STATUS_DEFAULT_SEARCH, language=None,
                  participation=None, sort=None):
         TicketSearch.__init__(
-            self, search_text=search_text, status=status, sort=sort)
+            self, search_text=search_text, status=status, language=language,
+            sort=sort)
 
         assert IPerson.providedBy(person), "expected IPerson, got %r" % person
         self.person = person

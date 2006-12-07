@@ -42,12 +42,13 @@ The search_text parameter will limit the tickets to those matching
 the query using the regular full text algorithm.
 
     >>> for ticket in ticket_set.searchTickets(search_text='firefox'):
-    ...     print ticket.title, ticket.target.displayname
-    Firefox loses focus and gets stuck          Mozilla Firefox
-    Firefox cannot render Bank Site             Mozilla Firefox
-    mailto: problem in webpage                  mozilla-firefox in ubuntu
-    Newly installed plug-in doesn't seem to be used Mozilla Firefox
-    Problem showing the SVG demo on W3C site    Mozilla Firefox
+    ...     print repr(ticket.title), ticket.target.displayname
+    u'Problemas de Impress\xe3o no Firefox'        Mozilla Firefox
+    u'Firefox loses focus and gets stuck'          Mozilla Firefox
+    u'Firefox cannot render Bank Site'             Mozilla Firefox
+    u'mailto: problem in webpage'                  mozilla-firefox in ubuntu
+    u"Newly installed plug-in doesn't seem to be used" Mozilla Firefox
+    u'Problem showing the SVG demo on W3C site'    Mozilla Firefox
 
 === status ===
 
@@ -76,11 +77,13 @@ by each criteria:
     >>> for ticket in ticket_set.searchTickets(
     ...         search_text='firefox',
     ...         status=[TicketStatus.OPEN, TicketStatus.INVALID]):
-    ...     print ticket.title, ticket.status.title, ticket.target.displayname
-    Firefox is slow and consumes too much RAM  Invalid mozilla-firefox in ubuntu
-    Firefox loses focus and gets stuck         Open    Mozilla Firefox
-    Firefox cannot render Bank Site            Open    Mozilla Firefox
-    Problem showing the SVG demo on W3C site   Open    Mozilla Firefox
+    ...     print repr(ticket.title), ticket.status.title, (
+    ...           ticket.target.displayname)
+    u'Problemas de Impress\xe3o no Firefox'     Open    Mozilla Firefox
+    u'Firefox is slow and consumes too much RAM' Invalid mozilla-firefox in ubuntu
+    u'Firefox loses focus and gets stuck'       Open    Mozilla Firefox
+    u'Firefox cannot render Bank Site'          Open    Mozilla Firefox
+    u'Problem showing the SVG demo on W3C site' Open    Mozilla Firefox
 
 === Sort Order ===
 
@@ -91,20 +94,21 @@ one of the constant defined in the TicketSort enumeration.
     >>> from canonical.lp.dbschema import TicketSort
     >>> for ticket in ticket_set.searchTickets(
     ...         search_text='firefox', sort=TicketSort.OLDEST_FIRST):
-    ...     print ticket.id, ticket.title, ticket.target.displayname
-    1 Firefox cannot render Bank Site             Mozilla Firefox
-    2 Problem showing the SVG demo on W3C site    Mozilla Firefox
-    4 Firefox loses focus and gets stuck          Mozilla Firefox
-    6 Newly installed plug-in doesn't seem to be used Mozilla Firefox
-    9 mailto: problem in webpage                  mozilla-firefox in ubuntu
+    ...     print ticket.id, repr(ticket.title), ticket.target.displayname
+    1 u'Firefox cannot render Bank Site'           Mozilla Firefox
+    2 u'Problem showing the SVG demo on W3C site'  Mozilla Firefox
+    4 u'Firefox loses focus and gets stuck'        Mozilla Firefox
+    6 u"Newly installed plug-in doesn't seem to be used" Mozilla Firefox
+    9 u'mailto: problem in webpage'                mozilla-firefox in ubuntu
+    13 u'Problemas de Impress\xe3o no Firefox'     Mozilla Firefox
 
 When no text search is done, the default sort order is
 TicketSort.NEWEST_FIRST.
 
     >>> for ticket in ticket_set.searchTickets(status=TicketStatus.OPEN)[:5]:
-    ...     print ticket.id, ticket.title, ticket.target.displayname
-    11 Continue playing after shutdown          Ubuntu
-     5 Installation failed                      Ubuntu
-     4 Firefox loses focus and gets stuck       Mozilla Firefox
-     2 Problem showing the SVG demo on W3C site Mozilla Firefox
-     1 Firefox cannot render Bank Site          Mozilla Firefox
+    ...     print ticket.id, repr(ticket.title), ticket.target.displayname
+    13 u'Problemas de Impress\xe3o no Firefox'   Mozilla Firefox
+    12 u'Problema al recompilar kernel con soporte smp (doble-n\xfacleo)' Ubuntu
+    11 u'Continue playing after shutdown'          Ubuntu
+     5 u'Installation failed'                      Ubuntu
+     4 u'Firefox loses focus and gets stuck'       Mozilla Firefox
