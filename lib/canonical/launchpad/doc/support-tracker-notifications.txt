@@ -686,6 +686,7 @@ the request is in a language spoken by none of the support contacts:
     _______________________________________________________________________
     WARNING: This support request is filed in a language (French)
     spoken by none of the registered Ubuntu support contacts.
+    <BLANKLINE>
 
 No notification will be sent to the support contacts when this ticket is
 modified. Only the owner will receive a modification notification with a
@@ -712,6 +713,7 @@ warning appended to it.
     _______________________________________________________________________
     WARNING: This support request is filed in a language (French)
     spoken by none of the registered Ubuntu support contacts.
+    <BLANKLINE>
 
 === Localized Support Requests and Teams ===
 
