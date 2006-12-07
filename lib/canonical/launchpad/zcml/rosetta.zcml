@@ -26,13 +26,6 @@
         classes="RosettaApplicationNavigation"
         />
 
-    <browser:page
-        for="canonical.launchpad.interfaces.IRosettaApplication"
-        name="prefs"
-        facet="translations"
-        permission="launchpad.AnyPerson"
-        class="canonical.launchpad.browser.RedirectToEditLanguagesView" />
-
     <browser:pages
         for="canonical.launchpad.interfaces.IRosettaApplication"
         facet="translations"

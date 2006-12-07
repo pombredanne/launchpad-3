@@ -306,7 +306,6 @@ Test /people traversals.
 >>> check("/people/+requestmerge", auth=True)
 >>> check_redirect("/people/+mergerequest-sent", auth=True)
 >>> check("/people/+portlet-about")
->>> check_redirect("/people/+editlanguages", auth=True)
 
 This is for a team:
 
@@ -382,7 +381,6 @@ sabdfl owns many packages, so he's a better test for some pages:
 >>> check("//@@")
 >>> check("/rosetta/@@")
 >>> check("//rosetta/@@")
->>> check_redirect("/rosetta/prefs", auth=True)
 >>> check_not_found("/rosetta/groups/testing-translation-team/pt_br")
 
 >>> check_not_found("/@@/launchpad_brokenlink.png")
