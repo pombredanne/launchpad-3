@@ -1,8 +1,8 @@
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 
-from zope.schema import Choice, Field, Int, Text, TextLine, Password
+from zope.schema import Bytes, Choice, Field, Int, Text, TextLine, Password
 from zope.schema.interfaces import IPassword, IText, ITextLine, IField, IInt
-from zope.interface import implements, Attribute
+from zope.interface import implements
 
 from canonical.database.sqlbase import cursor
 from canonical.launchpad import _
@@ -307,3 +307,16 @@ class ProductBugTracker(Choice):
             ob.official_malone = False
             ob.bugtracker = value
 
+
+class ImageUpload(Bytes):
+    
+    keep_image_marker = object()
+    default_image_resource = '/@@nyet-mugshot'
+
+#     def get(self, object):
+#         # We always want to have the 'Keep' radio button selected.
+#         return self.keep_image_marker
+
+    def set(self, object, value):
+        if value is not self.keep_image_marker:
+            Bytes.set(self, object, value)

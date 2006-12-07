@@ -1,0 +1,136 @@
+Image widget
+============
+
+In Launchpad we have images associated with people, products, distributions,
+etc, and we want to allow people to have full control over their images. That
+is, they must be able to upload a new image and delete (or keep) an existing 
+one. For this we created this widget, which can be embeded into any form we 
+want.
+
+Let's use salgado as an example here, since he hasn't uploaded a hackergotchi
+yet.
+
+    >>> from canonical.launchpad.interfaces import IPerson, IPersonSet
+    >>> salgado = getUtility(IPersonSet).getByName('salgado')
+    >>> salgado.hackergotchi is None
+    True
+
+Since he has no hackergotchi, the widget will display the default
+no-hackergotchi image and the 'Keep' radio button will be selected.
+
+    >>> from zope.publisher.browser import TestRequest
+    >>> from canonical.widgets.image import ImageWidget
+    >>> person_gotchi = IPerson['hackergotchi'].bind(salgado)
+    >>> widget = ImageWidget(person_gotchi, TestRequest())
+
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> html = widget()
+    >>> print BeautifulSoup(html).find('img').get('src')
+    /@@nyet-mugshot
+
+    >>> def print_radio_items(html):
+    ...     soup = BeautifulSoup(html)
+    ...     for input in soup('input'):
+    ...         if input.get('type') != 'radio':
+    ...             continue
+    ...         item = input.get('value')
+    ...         if input.get('checked'):
+    ...             item += ': SELECTED'
+    ...         else:
+    ...             item += ': NOT SELECTED'
+    ...         print item
+    >>> print_radio_items(html)
+    keep: SELECTED
+    delete: NOT SELECTED
+    change: NOT SELECTED
+
+
+If we set any random file as salgado's hackergotchi, we'll see it there.
+
+    >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
+    >>> login('guilherme.salgado@canonical.com')
+    >>> mugshot = getUtility(ILibraryFileAliasSet)[53]
+    >>> salgado.hackergotchi = mugshot
+
+    >>> html = widget()
+    >>> mugshot.url == BeautifulSoup(html).find('img').get('src')
+    True
+
+    >>> print_radio_items(html)
+    keep: SELECTED
+    delete: NOT SELECTED
+    change: NOT SELECTED
+
+
+Now we'll stuff values in our request to simulate a user playing with the
+widget. Let's see how it reacts.
+
+First, let's tell it to keep the existing image.
+
+    >>> form = {'field.hackergotchi.action': 'keep'}
+    >>> widget = ImageWidget(person_gotchi, TestRequest(form=form))
+    >>> widget.getInputValue() == widget.context.keep_image_marker
+    True
+
+Then we tell it to delete the existing one.
+
+    >>> form = {'field.hackergotchi.action': 'delete'}
+    >>> widget = ImageWidget(person_gotchi, TestRequest(form=form))
+    >>> widget.getInputValue() is None
+    True
+
+And now we change it to a random image.
+
+    >>> import canonical.launchpad
+    >>> import os
+    >>> from StringIO import StringIO
+    >>> mugshot_file_name = os.path.join(
+    ...     os.path.dirname(canonical.launchpad.__file__),
+    ...     'pagetests/standalone/mypng.png')
+    >>> mugshot = StringIO(open(mugshot_file_name, 'r').read())
+    >>> mugshot.filename = 'mypng.png'
+    >>> form = {'field.hackergotchi.action': 'change',
+    ...         'field.hackergotchi.image': mugshot}
+    >>> widget = ImageWidget(person_gotchi, TestRequest(form=form))
+    >>> len(widget.getInputValue()) == mugshot.len
+    True
+
+If we try to change but we don't specify the new image, we'll get an error.
+    
+    >>> form = {'field.hackergotchi.action': 'change'}
+    >>> widget = ImageWidget(person_gotchi, TestRequest(form=form))
+    >>> widget.getInputValue()
+    Traceback (most recent call last):
+    ...
+    MissingInputError: ...
+
+
+Note that since this is a special widget which returns a special object
+(keep_image_marker) to indicate that the image should be kept, we need to use
+a custom field (ImageUpload) together with it.
+
+If we pass that special object to ImageUpload's set() method, the current
+image will be kept.
+
+    >>> existing_img = salgado.hackergotchi
+    >>> existing_img is None
+    False
+
+    >>> person_gotchi.set(salgado, person_gotchi.keep_image_marker)
+    >>> salgado.hackergotchi == existing_img
+    True
+
+On the other hand, if we pass None, the current image will be removed.
+
+    >>> person_gotchi.set(salgado, None)
+    >>> salgado.hackergotchi is None
+    True
+
+Similarly, passing any file of the type expected (LibraryFileAlias) will
+change the current image to the given file.
+
+    >>> person_gotchi.set(salgado, getUtility(ILibraryFileAliasSet)[1])
+    >>> salgado.hackergotchi is None
+    False
+    >>> salgado.hackergotchi == existing_img
+    False
