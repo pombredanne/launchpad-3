@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'IBranch',
     'IBranchSet',
+    'IBranchLifecycleFilter'
     ]
 
 from zope.interface import Interface, Attribute
@@ -15,7 +16,8 @@ from zope.component import getUtility
 from zope.schema import Bool, Int, Choice, Text, TextLine, Datetime
 
 from canonical.config import config
-from canonical.lp.dbschema import BranchLifecycleStatus
+from canonical.lp.dbschema import (BranchLifecycleStatus,
+                                   BranchLifecycleStatusFilter)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Title, Summary, Whiteboard
@@ -135,7 +137,6 @@ class IBranch(IHasOwner):
         " Development: useful work that is expected to be merged eventually."
         " Experimental: not recommended for merging yet, and maybe ever."
         " Merged: integrated into mainline, of historical interest only."
-        " Vintage: was once mature, now deprecated."
         " Abandoned: no longer considered relevant by the author."
         " New: unspecified maturity."))
 
@@ -289,3 +290,20 @@ class IBranchSet(Interface):
 
     def getBranchesToScan():
         """Return an iterator for the branches that need to be scanned."""
+
+
+class IBranchLifecycleFilter(Interface):
+    """A helper interface to render lifecycle filter choice."""
+
+    # Stats and status attributes
+    show_filter = Choice(
+        title=_('Filter'), vocabulary='BranchLifecycleStatusFilter',
+        default=BranchLifecycleStatusFilter.CURRENT,
+        description=_(
+        "The author's assessment of the branch's maturity. "
+        " Mature: recommend for production use."
+        " Development: useful work that is expected to be merged eventually."
+        " Experimental: not recommended for merging yet, and maybe ever."
+        " Merged: integrated into mainline, of historical interest only."
+        " Abandoned: no longer considered relevant by the author."
+        " New: unspecified maturity."))

@@ -33,6 +33,7 @@ __all__ = (
 'BountyStatus',
 'BranchRelationships',
 'BranchLifecycleStatus',
+'BranchLifecycleStatusFilter',
 'BranchReviewStatus',
 'BugBranchStatus',
 'BugTaskStatus',
@@ -2642,13 +2643,61 @@ class BranchLifecycleStatus(DBSchema):
         recommend it to others for inclusion in their work.
         """, sortkey=10)
 
-    VINTAGE = Item(60, """
-        Vintage
+    MERGED = Item(70, """
+        Merged
 
-        This branch has been mature for some time, and is now possibly
-        out of date or no longer supported.  No further development is
-        anticipated on the branch.
-        """, sortkey=35)
+        This code has successfully been merged into its target branch(es),
+        and no further development is anticipated on the branch.
+        """, sortkey=40)
+
+    ABANDONED = Item(80, """
+        Abandoned
+
+        This branch contains work which the author has abandoned, likely
+        because it did not prove fruitful.
+        """, sortkey=50)
+
+
+# has copies of BranchLifecycleStatus until I find a better
+# way of extending an existing list
+class BranchLifecycleStatusFilter(DBSchema):
+    """Branch Lifecycle Status Filter
+
+    Used to populate the branch lifecycle status filter widget.
+    UI only.
+    """
+
+    NEW = Item(1, """
+        New
+
+        This branch has just been created, and we know nothing else about
+        it.
+        """, sortkey=60)
+
+    EXPERIMENTAL = Item(10, """
+        Experimental
+
+        This branch contains code that is considered experimental. It is
+        still under active development and should not be merged into
+        production infrastructure.
+        """, sortkey=30)
+
+    DEVELOPMENT = Item(30, """
+        Development
+
+        This branch contains substantial work that is shaping up nicely, but
+        is not yet ready for merging or production use. The work is
+        incomplete, or untested.
+        """, sortkey=20)
+
+    MATURE = Item(50, """
+        Mature
+
+        The developer considers this code mature. That means that it
+        completely addresses the issues it is supposed to, that it is tested,
+        and that it has been found to be stable enough for the developer to
+        recommend it to others for inclusion in their work.
+        """, sortkey=10)
 
     MERGED = Item(70, """
         Merged
@@ -2663,6 +2712,19 @@ class BranchLifecycleStatus(DBSchema):
         This branch contains work which the author has abandoned, likely
         because it did not prove fruitful.
         """, sortkey=50)
+
+    CURRENT = Item(90, """
+        Current
+
+        Show the currently active branches.
+        """, sortkey=5)
+
+    ALL = Item(100, """
+        All
+
+        Show all the branches.
+        """, sortkey=5)
+
 
 
 class BranchReviewStatus(DBSchema):
