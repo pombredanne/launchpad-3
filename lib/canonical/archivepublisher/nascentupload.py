@@ -316,6 +316,7 @@ class NascentUpload:
             "%s <%s>" % (config.uploader.default_recipient_name,
                          config.uploader.default_recipient_address))
         self.recipients = []
+        self.dsc_signing_key = None
 
         self.logger = logger
         self.rejection_message = ""
@@ -1070,7 +1071,6 @@ class NascentUpload:
             self.reject("%s: changes file doesn't list 'source' in "
                         "Architecture field." % (uploaded_file.filename))
 
-        self.dsc_signing_key=None
         if uploaded_file.type == 'dsc' and not self.policy.unsigned_dsc_ok:
             try:
                 who, key, sig = self.verify_sig(uploaded_file.full_filename)
@@ -1921,6 +1921,15 @@ class NascentUpload:
         arg_dsc = guess_encoding(self.dsc_contents['filecontents'])
         arg_dscsigningkey = self.dsc_signing_key
         arg_manifest = None
+        # extra fields required to generate archive indexes in future.
+        arg_dsc_maintainer_rfc822 = guess_encoding(
+            self.dsc_contents['maintainer'])
+        arg_dsc_standards_version = guess_encoding(
+            self.dsc_contents['standards-version'])
+        arg_dsc_format = guess_encoding(
+            self.dsc_contents['format'])
+        arg_dsc_binaries = guess_encoding(
+            self.dsc_contents['binary'])
 
         self.policy.sourcepackagerelease = (
             self.distrorelease.createUploadedSourcePackageRelease(
@@ -1939,6 +1948,10 @@ class NascentUpload:
             dscsigningkey=arg_dscsigningkey,
             section=arg_section,
             manifest=arg_manifest,
+            dsc_maintainer_rfc822=arg_dsc_maintainer_rfc822,
+            dsc_standards_version=arg_dsc_standards_version,
+            dsc_format=arg_dsc_format,
+            dsc_binaries=arg_dsc_binaries,
             ))
 
         for uploaded_file in self.dsc_files:

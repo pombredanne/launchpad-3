@@ -71,10 +71,23 @@ class SourcePackageRelease(SQLBase):
     uploadarchive = ForeignKey(foreignKey='Archive', dbName='uploadarchive',
         notNull=True)
 
+    # XXX cprov 20060926: Those fields are set as notNull and required in
+    # ISourcePackageRelease, however they can't be not NULL in DB since old
+    # records doesn't satisfy this condition. We will sort it before using
+    # landing 'NoMoreAptFtparchive' implementation for main archive. For
+    # PPA (primary target) we don't need populate old records.
+    dsc_maintainer_rfc822 = StringCol(
+        dbName='dsc_maintainer_rfc822', notNull=True)
+    dsc_standards_version = StringCol(
+        dbName='dsc_standards_version', notNull=True)
+    dsc_format = StringCol(dbName='dsc_format', notNull=True)
+    dsc_binaries = StringCol(dbName='dsc_binaries', notNull=True)
+
+    # MultipleJoins
     builds = SQLMultipleJoin('Build', joinColumn='sourcepackagerelease',
                              orderBy=['-datecreated'])
     files = SQLMultipleJoin('SourcePackageReleaseFile',
-        joinColumn='sourcepackagerelease')
+        joinColumn='sourcepackagerelease', orderBy="libraryfile")
     publishings = SQLMultipleJoin('SourcePackagePublishingHistory',
         joinColumn='sourcepackagerelease', orderBy="-datecreated")
 

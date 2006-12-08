@@ -252,10 +252,6 @@
             name="+review"
             template="../templates/registry-review.pt"
             lp:url="/projects/+review" />
-        <browser:page
-            name="+syncreview"
-            template="../templates/bazaar-sync-review.pt"
-            lp:url="/projects/+syncreview" />
     </browser:pages>
 
 </configure>
