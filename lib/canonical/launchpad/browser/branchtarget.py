@@ -56,17 +56,17 @@ class BranchTargetView(LaunchpadFormView):
     @cachedproperty
     def visible_branches(self):
         """The branches that should be visible to the user."""
-        # short circuit trivial case
         if self.show == BranchLifecycleStatusFilter.ALL:
-            return self.branches
-        try:
-            show_status = BranchLifecycleStatus.items[self.show.value]
-            branches = [b for b in self.context.branches
-                        if b.lifecycle_status == show_status]
-        except KeyError:
-            # no point erroring out, just show the default set
-            branches = [b for b in self.context.branches
-                        if b.lifecycle_status in self.CURRENT_SET]
+            branches = self.branches
+        else:
+            try:
+                show_status = BranchLifecycleStatus.items[self.show.value]
+                branches = [b for b in self.context.branches
+                            if b.lifecycle_status == show_status]
+            except KeyError:
+                # no point erroring out, just show the default set
+                branches = [b for b in self.context.branches
+                            if b.lifecycle_status in self.CURRENT_SET]
         return sorted(branches, key=operator.attrgetter('sort_key'))
 
     def context_relationship(self):
