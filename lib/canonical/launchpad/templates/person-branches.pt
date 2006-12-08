@@ -30,11 +30,23 @@
 
   <tal:branchlist condition="branchset">
 
-  <form method="get" name="filter" action="">
-    <span>Show branches with status</span>
+  <form method="get" name="filter" action="" id="filter_form">
+    <span class="lesser">Show branches with status of</span>
     <div tal:replace="structure view/widgets/show_filter"/>
-    <input type="submit" value="Filter"/>
   </form>
+
+<script type="text/javascript">
+function submit_filter()
+{
+  var f = document.getElementById('filter_form');
+  f.submit()
+}
+
+var field = document.getElementById('field.show_filter');
+field.onchange = submit_filter;
+field.focus();
+</script>
+
   <table class="listing sortable" id="branchtable">
     <thead>
       <tr>
