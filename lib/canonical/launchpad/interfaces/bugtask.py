@@ -244,7 +244,7 @@ class IBugTaskSearch(IBugTaskSearchBase):
         title=_('Status Upstream'), required=False,
         vocabulary="AdvancedBugTaskUpstreamStatus")
     tag = List(
-        title=_("Tags (separated by whitespace)"),
+        title=_("Tags"), description=_("Separated by whitespace."),
         value_type=Tag(), required=False)
 
 
@@ -466,6 +466,16 @@ class IBugTaskSet(Interface):
         matching the given id. Raise a zope.security.interfaces.Unauthorized
         if the user doesn't have the permission to view this bug.
         """
+
+    def findSimilar(user, summary, product=None, distribution=None,
+                    sourcepackagename=None):
+        """Find bugs similar to the given summary.
+
+        The search is limited to the given product or distribution
+        (together with an optional source package).
+
+        Only BugTasks that the user has access to will be returned.
+    """
 
     def search(params):
         """Return a set of IBugTasks.

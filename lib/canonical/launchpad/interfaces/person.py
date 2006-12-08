@@ -15,11 +15,12 @@ __all__ = [
     'ITeamCreation',
     'IPersonChangePassword',
     'IPersonClaim',
+    'INewPerson',
     ]
 
 
 from zope.schema import (
-    Choice, Datetime, Int, Text, TextLine, Bytes, Bool)
+    Bool, Bytes, Choice, Datetime, Int, Text, TextLine)
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 
@@ -32,7 +33,8 @@ from canonical.launchpad.interfaces.specificationtarget import (
 from canonical.launchpad.interfaces.tickettarget import (
     TICKET_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.validation import (
-    valid_emblem, valid_hackergotchi, valid_unregistered_email)
+    valid_emblem, valid_hackergotchi, validate_new_team_email,
+    validate_new_person_email)
 
 from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, TeamMembershipStatus, PersonCreationRationale)
@@ -68,6 +70,18 @@ class IPersonClaim(Interface):
     """The schema used by IPerson's +claim form."""
 
     emailaddress = TextLine(title=_('Email address'), required=True)
+
+
+class INewPerson(Interface):
+    """The schema used by IPersonSet's +newperson form."""
+
+    emailaddress = StrippedTextLine(
+        title=_('Email address'), required=True,
+        constraint=validate_new_person_email)
+    displayname = StrippedTextLine(title=_('Display name'), required=True)
+    creation_comment = Text(
+        title=_('Creation reason'), required=True,
+        description=_("The reason why you're creating this profile."))
 
 
 class IPerson(IHasSpecifications):
@@ -168,8 +182,14 @@ class IPerson(IHasSpecifications):
             "This comment may be displayed verbatim in a web page, so it "
             "has to follow some structural constraints, that is, it must "
             "be of the form: 'when %(action_details)s' (e.g 'when the "
-            "foo package was imported into Ubuntu Breezy')."),
+            "foo package was imported into Ubuntu Breezy'). The only "
+            "exception to this is when we allow users to create Launchpad "
+            "profiles through the /people/+newperson page."),
         required=False, readonly=False)
+    # XXX: We can't use a Choice field here because we don't have a vocabulary
+    # which contains valid people but not teams, and we don't really need one
+    # appart from here. -- Guilherme Salgado, 2006-11-10
+    registrant = Attribute('The user who created this profile.')
     # bounty relations
     ownedBounties = Attribute('Bounties issued by this person.')
     reviewerBounties = Attribute('Bounties reviewed by this person.')
@@ -557,8 +577,16 @@ class IPerson(IHasSpecifications):
         If the given language is not present, nothing  will happen.
         """
 
+    def getSupportedLanguages():
+        """Return a set containing the languages in which support is provided.
+
+        For a person, this is equal to the list of known languages.
+        For a team that doesn't have any explicit known languages set, this
+        will be equal to union of all the languages known by its members.
+        """
+
     def searchTickets(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-                      participation=None, sort=None):
+                      language=None, participation=None, sort=None):
         """Search the person's tickets.
 
         :search_text: A string that is matched against the ticket
@@ -568,6 +596,10 @@ class IPerson(IHasSpecifications):
         :status: A sequence of TicketStatus Items. If None or an empty
         sequence, the status is not included as a filter criteria.
 
+        :language: An ILanguage or a sequence of ILanguage objects to match
+        against the ticket's language. If None or an empty sequence,
+        the language is not included as a filter criteria.
+
         :participation: A list of TicketParticipation that defines the set
         of relationship to tickets that will be searched. If None or an empty
         sequence, all relationships are considered.
@@ -576,6 +608,11 @@ class IPerson(IHasSpecifications):
         When there is a search_text value, the default is to sort by RELEVANCY,
         otherwise results are sorted NEWEST_FIRST.
 
+        """
+
+    def getTicketLanguages():
+        """Return a set of ILanguage used by the tickets in which this person "
+        is involved.
         """
 
 
@@ -597,7 +634,7 @@ class IPersonSet(Interface):
     def createPersonAndEmail(
             email, rationale, comment=None, name=None, displayname=None,
             password=None, passwordEncrypted=False,
-            hide_email_addresses=False):
+            hide_email_addresses=False, registrant=None):
         """Create a new Person and an EmailAddress with the given email.
 
         The comment must be of the following form: "when %(action_details)s"
@@ -611,7 +648,8 @@ class IPersonSet(Interface):
         NEW) for the new Person.
         """
 
-    def ensurePerson(email, displayname, rationale, comment=None):
+    def ensurePerson(email, displayname, rationale, comment=None,
+                     registrant=None):
         """Make sure that there is a person in the database with the given
         email address. If necessary, create the person, using the
         displayname given.
@@ -803,5 +841,5 @@ class ITeamCreation(ITeam):
             "this team will be sent to all team members. After finishing the "
             "team creation, a new message will be sent to this address with "
             "instructions on how to finish its registration."),
-        constraint=valid_unregistered_email)
+        constraint=validate_new_team_email)
 

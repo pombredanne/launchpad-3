@@ -43,6 +43,7 @@ __all__ = [
     'ObjectReassignmentView',
     'TeamReassignmentView',
     'RedirectToAssignedBugsView',
+    'PersonAddView',
     'PersonLanguagesView',
     'RedirectToEditLanguagesView',
     'PersonLatestTicketsView',
@@ -60,6 +61,7 @@ import urllib
 from StringIO import StringIO
 
 from zope.event import notify
+from zope.app.form.browser import TextAreaWidget
 from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
 from zope.app.content_types import guess_content_type
@@ -72,7 +74,8 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
-    TeamSubscriptionPolicy, SpecificationFilter, TicketParticipation)
+    TeamSubscriptionPolicy, SpecificationFilter, TicketParticipation,
+    PersonCreationRationale)
 
 from canonical.widgets import PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
@@ -85,7 +88,8 @@ from canonical.launchpad.interfaces import (
     IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet, IPollSet,
     IAdminRequestPeopleMerge, NotFoundError, UNRESOLVED_BUGTASK_STATUSES,
     IPersonChangePassword, GPGKeyNotFoundError, UnexpectedFormData,
-    ILanguageSet, IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet)
+    ILanguageSet, IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet,
+    INewPerson)
 
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.specificationtarget import (
@@ -132,10 +136,7 @@ class BranchTraversalMixin:
         product_name = stepstogo.consume()
         branch_name = stepstogo.consume()
         if product_name is not None and branch_name is not None:
-            if product_name == '+junk':
-                return self.context.getBranch(None, branch_name)
-            else:
-                return self.context.getBranch(product_name, branch_name)
+            return self.context.getBranch(product_name, branch_name)
         raise NotFoundError
 
 
@@ -637,6 +638,30 @@ class FOAFSearchView:
         return BatchNavigator(results, self.request)
 
 
+class PersonAddView(LaunchpadFormView):
+    """The page where users can create new Launchpad profiles."""
+
+    label = "Create a new Launchpad profile"
+    schema = INewPerson
+    custom_widget('creation_comment', TextAreaWidget, height=5, width=60)
+
+    @action(_("Create Profile"), name="create")
+    def create_action(self, action, data):
+        emailaddress = data['emailaddress']
+        displayname = data['displayname']
+        creation_comment = data['creation_comment']
+        person, email = getUtility(IPersonSet).createPersonAndEmail(
+            emailaddress, PersonCreationRationale.USER_CREATED,
+            displayname=displayname, comment=creation_comment,
+            registrant=self.user)
+        self.next_url = canonical_url(person)
+        logintokenset = getUtility(ILoginTokenSet)
+        token = logintokenset.new(
+            requester=self.user, requesteremail=self.user.preferredemail.email,
+            email=emailaddress, tokentype=LoginTokenType.NEWPROFILE)
+        token.sendProfileCreatedEmail(person, creation_comment)
+
+
 class PersonClaimView(LaunchpadFormView):
     """The page where a user can claim an unvalidated profile."""
 
@@ -1124,7 +1149,7 @@ class PersonLanguagesView(LaunchpadView):
         for language in set(old_languages) - set(new_languages):
             self.user.removeLanguage(language)
             self.request.response.addInfoNotification(
-                "Removed %(language)s from your preferred languages." % 
+                "Removed %(language)s from your preferred languages." %
                 {'language' : language.englishname})
 
         redirection_url = self.request.get('redirection_url')
@@ -2256,7 +2281,7 @@ class ObjectReassignmentView:
     def isValidOwner(self, newOwner):
         """Check whether the new owner is acceptable for the context object.
 
-        If it not acceptable, return False and assign an error message to
+        If it's not acceptable, return False and assign an error message to
         self.errormessage to inform the user.
         """
         return True

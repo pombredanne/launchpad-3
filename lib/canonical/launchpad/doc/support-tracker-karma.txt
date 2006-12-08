@@ -1,5 +1,4 @@
-Support Tracker Karma
-=====================
+= Support Tracker Karma =
 
 To promote community contributions to support requests in Launchpad, it's
 very important that we acknowledge their work and give them some karma
@@ -49,8 +48,8 @@ to order our messages.
     ...         yield now
     >>> now = timegenerator(datetime.now(UTC))
 
-Karma Actions
--------------
+== Karma Actions ==
+
 - Creating a ticket
 
     >>> login('test@canonical.com')
@@ -187,7 +186,6 @@ been tested.
     >>> karma_helper.added_karma_actions == set(support_karma_actions)
     True
 
-
-    (Unregister the event listener to make sure we won't interfere in
-    other tests.)
+    # Unregister the event listener to make sure we won't interfere in
+    # other tests.
     >>> karma_helper.unregister_listener()

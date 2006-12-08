@@ -24,8 +24,10 @@ from canonical.database.sqlbase import (
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database import postgresql
-from canonical.launchpad.helpers import shortlist, contactEmailAddresses
+from canonical.launchpad.database.language import Language
 from canonical.launchpad.event.karma import KarmaAssignedEvent
+from canonical.launchpad.helpers import (
+    contactEmailAddresses, is_english_variant, shortlist)
 
 from canonical.launchpad.interfaces import (
     IPerson, ITeam, IPersonSet, IEmailAddress, IWikiName, IIrcID, IJabberID,
@@ -33,7 +35,7 @@ from canonical.launchpad.interfaces import (
     ISSHKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner,
     IBugTaskSet, UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
     ITranslationGroupSet, ILaunchpadStatisticSet, ShipItConstants,
-    ILaunchpadCelebrities,
+    ILaunchpadCelebrities, ILanguageSet
     )
 
 from canonical.launchpad.database.cal import Calendar
@@ -55,7 +57,7 @@ from canonical.launchpad.database.specificationsubscription import (
     SpecificationSubscription)
 from canonical.launchpad.database.teammembership import (
     TeamMembership, TeamParticipation, TeamMembershipSet)
-from canonical.launchpad.database.ticket import TicketSet
+from canonical.launchpad.database.ticket import TicketPersonSearch
 
 from canonical.lp.dbschema import (
     EnumCol, SSHKeyType, EmailAddressStatus, TeamSubscriptionPolicy,
@@ -121,6 +123,8 @@ class Person(SQLBase):
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     creation_rationale = EnumCol(schema=PersonCreationRationale, default=None)
     creation_comment = StringCol(default=None)
+    registrant = ForeignKey(
+        dbName='registrant', foreignKey='Person', default=None)
     hide_email_addresses = BoolCol(notNull=True, default=False)
 
     # SQLRelatedJoin gives us also an addLanguage and removeLanguage for free
@@ -371,10 +375,40 @@ class Person(SQLBase):
             limit=quantity, prejoins=['assignee', 'approver', 'drafter'])
         return results
 
-    # ITicketActor implementation
-    def searchTickets(self, **kwargs):
-        # See ITicketActor
-        return TicketSet.searchByPerson(person=self, **kwargs)
+    def searchTickets(self, **search_criteria):
+        """See IPerson."""
+        return TicketPersonSearch(person=self, **search_criteria).getResults()
+
+    def getSupportedLanguages(self):
+        """See IPerson."""
+        languages = set()
+        known_languages = shortlist(self.languages)
+        if len(known_languages):
+            for lang in known_languages:
+                # Ignore English and all its variants since we assume English
+                # is supported
+                if not is_english_variant(lang):
+                    languages.add(lang)
+        elif ITeam.providedBy(self):
+            for member in self.activemembers:
+                languages |= member.getSupportedLanguages()
+        languages.add(getUtility(ILanguageSet)['en'])
+        return languages
+
+    def getTicketLanguages(self):
+        """See ITicketTarget."""
+        return set(Language.select(
+            '''Language.id = language AND Ticket.id IN (
+            SELECT id FROM Ticket
+                     WHERE owner = %(personID)s OR answerer = %(personID)s OR
+                           assignee = %(personID)s
+            UNION SELECT ticket FROM TicketSubscription
+                  WHERE person = %(personID)s
+            UNION SELECT ticket
+                    FROM TicketMessage JOIN Message ON (message = Message.id)
+                   WHERE owner = %(personID)s
+            )''' % sqlvalues(personID=self.id),
+            clauseTables=['Ticket'], distinct=True))
 
     @property
     def branches(self):
@@ -419,7 +453,7 @@ class Person(SQLBase):
         # import here to work around a circular import problem
         from canonical.launchpad.database import Product
 
-        if product_name is None:
+        if product_name is None or product_name == '+junk':
             return Branch.selectOne(
                 'owner=%d AND product is NULL AND name=%s'
                 % (self.id, quote(branch_name)))
@@ -864,7 +898,7 @@ class Person(SQLBase):
         history = POFileTranslator.select(
             "POFileTranslator.person = %d" % self.id,
             prejoins=[
-                "pofile", 
+                "pofile",
                 "pofile.potemplate",
                 "latest_posubmission",
                 "latest_posubmission.pomsgset.potmsgset.primemsgid_",
@@ -1090,7 +1124,7 @@ class PersonSet:
     def createPersonAndEmail(
             self, email, rationale, comment=None, name=None,
             displayname=None, password=None, passwordEncrypted=False,
-            hide_email_addresses=False):
+            hide_email_addresses=False, registrant=None):
         """See IPersonSet."""
         if name is None:
             try:
@@ -1108,13 +1142,13 @@ class PersonSet:
             displayname = name.capitalize()
         person = self._newPerson(
             name, displayname, hide_email_addresses, rationale=rationale,
-            comment=comment, password=password)
+            comment=comment, password=password, registrant=registrant)
 
         email = getUtility(IEmailAddressSet).new(email, person)
         return person, email
 
     def _newPerson(self, name, displayname, hide_email_addresses,
-                   rationale, comment=None, password=None):
+                   rationale, comment=None, password=None, registrant=None):
         """Create and return a new Person with the given attributes.
 
         Also generate a wikiname for this person that's not yet used in the
@@ -1124,7 +1158,7 @@ class PersonSet:
         person = Person(
             name=name, displayname=displayname, password=password,
             creation_rationale=rationale, creation_comment=comment,
-            hide_email_addresses=hide_email_addresses)
+            hide_email_addresses=hide_email_addresses, registrant=registrant)
 
         wikinameset = getUtility(IWikiNameSet)
         wikiname = nickname.generate_wikiname(
@@ -1132,13 +1166,15 @@ class PersonSet:
         wikinameset.new(person, UBUNTU_WIKI_URL, wikiname)
         return person
 
-    def ensurePerson(self, email, displayname, rationale, comment=None):
+    def ensurePerson(self, email, displayname, rationale, comment=None,
+                     registrant=None):
         """See IPersonSet."""
         person = self.getByEmail(email)
         if person:
             return person
         person, dummy = self.createPersonAndEmail(
-            email, rationale, comment=comment, displayname=displayname)
+            email, rationale, comment=comment, displayname=displayname,
+            registrant=registrant)
         return person
 
     def getByName(self, name, ignore_merged=True):

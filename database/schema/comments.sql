@@ -447,6 +447,7 @@ COMMENT ON COLUMN Ticket.dateaccepted IS 'The date we "confirmed" or "accepted" 
 COMMENT ON COLUMN Ticket.datedue IS 'The date this ticket is "due", if such a date can be established. Usually this will be set automatically on the basis of a support contract SLA commitment.';
 COMMENT ON COLUMN Ticket.dateanswered IS 'The date this ticket was last "answered", in the sense of receiving a comment from someone other than the requester that they considered sufficient to close the ticket.';
 COMMENT ON COLUMN Ticket.dateclosed IS 'The date the requester marked this ticket CLOSED.';
+COMMENT ON COLUMN Ticket.language IS 'The language of the ticket''s title and description.';
 COMMENT ON COLUMN Ticket.whiteboard IS 'A general status whiteboard. This is a scratch space to which arbitrary data can be added (there is only one constant whiteboard with no history). It is displayed at the top of the ticket. So its a useful way for projects to add their own semantics or metadata to the support tracker.';
 
 /* TicketBug */
@@ -597,7 +598,27 @@ COMMENT ON COLUMN BinaryPackageRelease.architecturespecific IS 'This field indic
 
 
 -- SourcePackageRelease
+COMMENT ON COLUMN SourcePackageRelease.creator IS 'The person who issued the upload';
+COMMENT ON COLUMN SourcePackageRelease.version IS 'Debian-like version string for this release. Indexed with debversion_sort_key and validated with valid_debian_version constraint.';
+COMMENT ON COLUMN SourcePackageRelease.dateuploaded IS 'Creation timestamp.';
+COMMENT ON COLUMN SourcePackageRelease.urgency IS 'SourcePackageUrgency constant';
+COMMENT ON COLUMN SourcePackageRelease.dscsigningkey IS 'Reference to the GPGKey used to sign the DSC.';
+COMMENT ON COLUMN SourcePackageRelease.component IS 'The original component to where this source was submitted.';
+COMMENT ON COLUMN SourcePackageRelease.changelog IS 'Changelog text section extracted from the changesfile.';
+COMMENT ON COLUMN SourcePackageRelease.builddepends IS 'DSC builddepends line section.';
+COMMENT ON COLUMN SourcePackageRelease.builddependsindep IS 'DSC builddependsindep line section.';
+COMMENT ON COLUMN SourcePackageRelease.architecturehintlist IS 'DSC arch line';
+COMMENT ON COLUMN SourcePackageRelease.dsc IS 'Original DSC text.';
 COMMENT ON COLUMN SourcePackageRelease.section IS 'This integer field references the Section which the source package claims to be in';
+COMMENT ON COLUMN SourcePackageRelease.manifest IS 'Reference to a manifest record.';
+COMMENT ON COLUMN SourcePackageRelease.maintainer IS 'Reference to the person noted as source package maintainer in the DSC.';
+COMMENT ON COLUMN SourcePackageRelease.sourcepackagename IS 'Reference to a SourcePackageName.';
+COMMENT ON COLUMN SourcePackageRelease.uploaddistrorelease IS 'DistroRelease to where the source was originally uploaded.';
+COMMENT ON COLUMN SourcePackageRelease.format IS 'Source package format constant, SourcePackageReleaseFormat.';
+COMMENT ON COLUMN SourcePackageRelease.dsc_maintainer_rfc822 IS 'The original maintainer line in RFC-822 format, to be used in archive indexes.';
+COMMENT ON COLUMN SourcePackageRelease.dsc_standards_version IS 'DSC standards version (such as "3.6.2", "3.5.9", etc) used to build this source.';
+COMMENT ON COLUMN SourcePackageRelease.dsc_format IS 'DSC format version (such as "1.0").';
+COMMENT ON COLUMN SourcePackageRelease.dsc_binaries IS 'DSC binary line, claimed binary-names produce by this source.';
 
 /* SourcePackagePublishing and BinaryPackagePublishing */
 
@@ -711,6 +732,7 @@ COMMENT ON COLUMN Person.emblem IS 'The library file alias to a small image (16x
 COMMENT ON COLUMN Person.hackergotchi IS 'The library file alias of a hackergotchi image to display as the "face" of a person, on their home page.';
 COMMENT ON COLUMN Person.creation_rationale IS 'The rationale for the creation of this person -- a dbschema value.';
 COMMENT ON COLUMN Person.creation_comment IS 'A text comment for the creation of this person.';
+COMMENT ON COLUMN Person.registrant IS 'The user who created this profile.';
 
 COMMENT ON TABLE ValidPersonOrTeamCache IS 'A materialized view listing the Person.ids of all valid people and teams.';
 
@@ -854,6 +876,11 @@ COMMENT ON TABLE SpecificationFeedback IS 'A table representing a review request
 COMMENT ON COLUMN SpecificationFeedback.reviewer IS 'The person who has been asked to do the review.';
 COMMENT ON COLUMN SpecificationFeedback.requester IS 'The person who made the request.';
 COMMENT ON COLUMN SpecificationFeedback.queuemsg IS 'An optional text message for the reviewer, from the requester.';
+
+-- SpecificationBranch
+COMMENT ON TABLE SpecificationBranch IS 'A branch related to a specification, most likely a branch for implementing the specification.  It is possible to have multiple branches for a given specification especially in the situation where the specification requires modifying multiple products.';
+COMMENT ON COLUMN SpecificationBranch.specification IS 'The specification associated with this branch.';
+COMMENT ON COLUMN SpecificationBranch.branch IS 'The branch associated to the specification.';
 
 -- SpecificationBug
 COMMENT ON TABLE SpecificationBug IS 'A table linking a specification and a bug. This is used to provide for easy navigation from bugs to related specs, and vice versa.';
