@@ -8,10 +8,11 @@ __all__ = [
     'QueueItemsView',
     ]
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces import (
     IHasQueueItems, IDistroReleaseQueueSet, QueueInconsistentStateError,
-    UnexpectedFormData)
+    UnexpectedFormData, ILaunchpadCelebrities)
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import DistroReleaseQueueStatus
@@ -30,6 +31,28 @@ class QueueItemsView(LaunchpadView):
     view classes.
     """
     __used_for__ = IHasQueueItems
+
+    def hasUploadAdminRights(self):
+        """Whether or not the authenticate user has UploadAdmin rights."""
+        admins = getUtility(ILaunchpadCelebrities).admin
+        if self.user.inTeam(admins):
+            return True
+        if self.user.inTeam(self.context.distribution.upload_admin):
+            return True
+        return False
+
+    def _checkQueuePermission(self):
+        """Check overall permission to view the current queue.
+
+        Basically reproduce the permission checks for IDistroReleaseQueue.
+        Raises Unauthorized if non-priviledged user access UNAPROVED queue.
+        """
+        if self.hasUploadAdminRights():
+            return
+        if self.state != DistroReleaseQueueStatus.UNAPPROVED:
+            return
+
+        raise Unauthorized("User don't have permission to see this queue.")
 
     def setupQueueList(self):
         """Setup a batched queue list.
@@ -53,6 +76,8 @@ class QueueItemsView(LaunchpadView):
                 'No suitable status found for value "%s"' % state_value
                 )
 
+        self._checkQueuePermission()
+
         valid_states = [
             DistroReleaseQueueStatus.NEW,
             DistroReleaseQueueStatus.ACCEPTED,
@@ -61,7 +86,7 @@ class QueueItemsView(LaunchpadView):
             DistroReleaseQueueStatus.UNAPPROVED,
             ]
 
-        if not check_permission('launchpad.Edit', self.context):
+        if not self.hasUploadAdminRights():
             # Omit the UNAPPROVED status, which the user is unable to
             # view anyway. If he hand-hacks the URL, all he will get is
             # a Forbidden which is enforced by the security wrapper for
@@ -98,8 +123,7 @@ class QueueItemsView(LaunchpadView):
 
         # return actions only for supported states and require
         # edit permission
-        if (self.state in mutable_states and
-            check_permission('launchpad.Edit', self.context)):
+        if self.state in mutable_states and self.hasUploadAdminRights():
             return ['Accept', 'Reject']
 
         # no actions for unsupported states

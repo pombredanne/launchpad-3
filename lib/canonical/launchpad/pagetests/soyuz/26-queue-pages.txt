@@ -68,9 +68,18 @@ Check if non-admin are denied to see UNAPPROVED queue:
   ...     "+queue?queue_state=1")
   Traceback (most recent call last):
   ...
-  Unauthorized: ...
+  Unauthorized: User don't have permission to see this queue.
 
-And allowed for upload manager and admins as well:
+Page access denied also for empty queues (bug #74965):
+
+  >>> user_browser.open(
+  ...     "http://localhost/distros/ubuntu/warty/"
+  ...     "+queue?queue_state=1")
+  Traceback (most recent call last):
+  ...
+  Unauthorized: User don't have permission to see this queue.
+
+Allow access from upload managers and admins:
 
   >>> upload_manager_browser.open(
   ...     "http://localhost/distros/ubuntu/breezy-autotest/+queue")
