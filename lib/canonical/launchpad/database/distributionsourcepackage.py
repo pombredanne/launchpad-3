@@ -18,7 +18,7 @@ from canonical.lp.dbschema import PackagePublishingStatus
 from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, ITicketTarget, DuplicateBugContactError,
     DeleteBugContactError, TICKET_STATUS_DEFAULT_SEARCH)
-from canonical.launchpad.components.bugtarget import BugTargetBase
+from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.bug import BugSet, get_bug_tags_open_count
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
@@ -278,6 +278,12 @@ class DistributionSourcePackage(BugTargetBase,
     def __ne__(self, other):
         """See IDistributionSourcePackage."""
         return not self.__eq__(other)
+
+    def _getBugTaskContextWhereClause(self):
+        """See BugTargetBase."""
+        return (
+            "BugTask.distribution = %d AND BugTask.sourcepackagename = %d" % (
+            self.distribution.id, self.sourcepackagename.id))
 
     def searchTasks(self, search_params):
         """See IBugTarget."""

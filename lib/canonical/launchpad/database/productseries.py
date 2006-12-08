@@ -18,7 +18,7 @@ from sqlobject import (
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
-from canonical.launchpad.components.bugtarget import BugTargetBase
+from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.interfaces import (
     IProductSeries, IProductSeriesSet, IProductSeriesSourceAdmin,
     NotFoundError)

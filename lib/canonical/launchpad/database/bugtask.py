@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = [
@@ -13,6 +13,7 @@ import datetime
 
 from sqlobject import (
     ForeignKey, StringCol, SQLObjectNotFound)
+from sqlobject.sqlbuilder import SQLConstant
 
 import pytz
 
@@ -24,6 +25,7 @@ from canonical.lp import dbschema
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.nl_search import nl_phrase_search
 from canonical.launchpad.searchbuilder import any, NULL, not_equals
 from canonical.launchpad.components.bugtask import BugTaskMixin
 from canonical.launchpad.interfaces import (
@@ -433,6 +435,36 @@ class BugTaskSet:
                                 str(task_id))
         return bugtask
 
+    def findSimilar(self, user, summary, product=None, distribution=None,
+                    sourcepackagename=None):
+        """See canonical.launchpad.interfaces.IBugTaskSet."""
+        # Avoid circular imports.
+        from canonical.launchpad.database.bug import Bug
+        search_params = BugTaskSearchParams(user)
+        constraint_clauses = ['BugTask.bug = Bug.id']
+        if product:
+            search_params.setProduct(product)
+            constraint_clauses.append(
+                'BugTask.product = %s' % sqlvalues(product))
+        elif distribution:
+            search_params.setDistribution(distribution)
+            constraint_clauses.append(
+                'BugTask.distribution = %s' % sqlvalues(distribution))
+            if sourcepackagename:
+                search_params.sourcepackagename = sourcepackagename
+                constraint_clauses.append(
+                    'BugTask.sourcepackagename = %s' % sqlvalues(
+                        sourcepackagename))
+        else:
+            raise AssertionError('Need either a product or distribution.')
+
+        if not summary:
+            return BugTask.select('1 = 2')
+
+        search_params.searchtext = nl_phrase_search(
+            summary, Bug, ' AND '.join(constraint_clauses), ['BugTask'])
+        return self.search(search_params)
+
     def search(self, params):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
         assert isinstance(params, BugTaskSearchParams)
@@ -512,6 +544,13 @@ class BugTaskSet:
                 "((Bug.fti @@ ftq(%s) OR BugTask.fti @@ ftq(%s)) OR"
                 " (BugTask.targetnamecache ILIKE '%%' || %s || '%%'))" % (
                 searchtext_quoted, searchtext_quoted, searchtext_like_quoted))
+            if params.orderby is None:
+                # Unordered search results aren't useful, so sort by relevance
+                # instead.
+                params.orderby = [
+                    SQLConstant("-rank(Bug.fti, ftq(%s))" % searchtext_quoted),
+                    SQLConstant(
+                        "-rank(BugTask.fti, ftq(%s))" % searchtext_quoted)]
 
         if params.subscriber is not None:
             clauseTables.append('BugSubscription')
@@ -608,7 +647,7 @@ class BugTaskSet:
                         AND RelatedBugTask.id != BugTask.id
                         AND ((
                             RelatedBugTask.bugwatch IS NOT NULL AND
-                            RelatedBugTask.status %s) 
+                            RelatedBugTask.status %s)
                             OR (
                             RelatedBugTask.product IS NOT NULL AND
                             RelatedBugTask.bugwatch IS NULL AND
@@ -734,7 +773,7 @@ class BugTaskSet:
             "Bug.datecreated",
             "Bug.date_last_updated"])
         # Bug ID is unique within bugs on a product or source package.
-        if (params.product or 
+        if (params.product or
             (params.distribution and params.sourcepackagename) or
             (params.distrorelease and params.sourcepackagename)):
             in_unique_context = True
@@ -748,6 +787,9 @@ class BugTaskSet:
         # strings.
         ambiguous = True
         for orderby_col in orderby:
+            if isinstance(orderby_col, SQLConstant):
+                orderby_arg.append(orderby_col)
+                continue
             if orderby_col.startswith("-"):
                 col_name = self.getOrderByColumnDBName(orderby_col[1:])
                 order_clause = "-" + col_name
