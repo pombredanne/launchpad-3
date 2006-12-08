@@ -592,8 +592,6 @@ class BugTaskSet:
             raise NotFoundError("BugTask with ID %s does not exist" %
                                 str(task_id))
         return bugtask
-<<<<<<< TREE
-=======
 
     def findSimilar(self, user, summary, product=None, distribution=None,
                     sourcepackagename=None):
@@ -624,7 +622,6 @@ class BugTaskSet:
         search_params.searchtext = nl_phrase_search(
             summary, Bug, ' AND '.join(constraint_clauses), ['BugTask'])
         return self.search(search_params)
->>>>>>> MERGE-SOURCE
 
     def search(self, params):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
