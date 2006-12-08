@@ -346,7 +346,13 @@ class Bugzilla(ExternalBugTracker):
         self.remote_bug_status = {}
         bug_nodes = document.getElementsByTagName(bug_tag)
         for bug_node in bug_nodes:
-            bug_id_nodes = bug_node.getElementsByTagName(id_tag)
+            # We use manual iteration to pick up id_tags instead of
+            # getElementsByTagName because the latter does a recursive
+            # search, and in some documents we've found the id_tag to
+            # appear under other elements (such as "has_duplicates") in
+            # the document hierarchy.
+            bug_id_nodes = [node for node in bug_node.childNodes if
+                            node.nodeName == id_tag]
             if not bug_id_nodes:
                 # Something in the output is really weird; this will
                 # show up as a bug not found, but we can catch that
