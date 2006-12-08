@@ -301,17 +301,29 @@ class IDistroRelease(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
         According status and pocket.
         """
 
-    def removeOldCacheItems():
-        """Delete any records that are no longer applicable."""
+    def removeOldCacheItems(log):
+        """Delete any records that are no longer applicable.
 
-    def updateCompletePackageCache():
-        """Update the package cache for all binary package names published
-        in this distro release.
+        Consider all binarypackages marked as REMOVED.
+        'log' is required, it should be a logger object able to print
+        DEBUG level messages.
         """
 
-    def updatePackageCache(name):
-        """Update the package cache for the binary packages with the given
-        name.
+    def updateCompletePackageCache(log, ztm):
+        """Update the binary package cache
+
+        Consider all binary package names published in this distro release.
+        'log' is required, it should be a logger object able to print
+        DEBUG level messages.
+        """
+
+    def updatePackageCache(name, log):
+        """Update the package cache for a given IBinaryPackageName
+
+        'log' is required, it should be a logger object able to print
+        DEBUG level messages.
+        'ztm' is the current trasaction manager used for partial commits
+        (in full batches of 100 elements)
         """
 
     def searchPackages(text):
