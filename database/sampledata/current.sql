@@ -542,7 +542,7 @@ INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) 
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (16, 42, 1, 4);
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (17, 45, 3, 3);
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (18, 37, 1, 2);
-INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (20, 55, 1, 5);
+INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (6, 55, 1, 5);
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (21, 56, 1, 6);
 
 
