@@ -56,7 +56,7 @@
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProduct"
-        layer="canonical.launchpad.layers.MaloneLayer"
+        layer="canonical.launchpad.layers.BugsLayer"
         name="+bugs" />
 
     <browser:menus
