@@ -85,7 +85,11 @@ def determineArchitecturesToBuild(pubrec, legal_archreleases,
         assert nominated_arch in legal_archreleases
         package_tags = set([nominated_arch.architecturetag])
     else:
-        my_archs = set(hint_string.split())
+        my_archs = hint_string.split()
+        # Allow any-foo or linux-foo to mean foo. See bug 73761.
+        my_archs = [arch.replace("any-", "") for arch in my_archs]
+        my_archs = [arch.replace("linux-", "") for arch in my_archs]
+        my_archs = set(my_archs)
         package_tags = my_archs.intersection(legal_arch_tags)
 
     if pas_verify:

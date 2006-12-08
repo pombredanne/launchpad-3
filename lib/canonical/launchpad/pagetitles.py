@@ -187,6 +187,21 @@ bugtarget_advanced_search = ContextTitle("Search bugs in %s")
 
 bugtarget_filebug = ContextTitle('Report a bug about %s')
 
+bugtarget_filebug_advanced = ContextTitle('Report a bug about %s')
+
+bugtarget_filebug_search = ContextTitle('Report a bug about %s')
+
+def bugtarget_filebug_simple(context, view):
+    if hasattr(context, "title"):
+        # We're generating a title for a contextual bug filing page.
+        ContextTitle('Report a bug about %s')
+    else:
+        # We're generating a title for a top-level, contextless bug
+        # filing page.
+        return 'Report a bug'
+
+bugtarget_filebug_submit_bug = bugtarget_filebug_simple
+
 bugtask_backport_fixing = BugTaskBackportingTitle()
 
 bugtask_choose_affected_product = LaunchbagBugID('Bug #%d - Request a fix')

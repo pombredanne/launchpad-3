@@ -27,9 +27,11 @@
   <div metal:use-macro="context/@@launchpad_generalform/generalform">
 
     <p metal:fill-slot="extra_info">
-    A <em>support contact</em> is implictely subscribed to new
-    support requests. By checking the box below, you will receive changes
-    related to all support requests opened on <span
+    A <em>support contact</em> is implicitely subscribed to new
+    support requests. By checking the box below, you will receive changes 
+    related to all support requests (written in English or one of your <a
+    tal:attributes="href string:${request/lp:person/fmt:url}/+editlanguages"
+    >preferred languages</a>) opened on <span
     tal:replace="context/displayname">Mozilla Firefox</span>, and thus
     receive mail notifications about them.
     </p>
