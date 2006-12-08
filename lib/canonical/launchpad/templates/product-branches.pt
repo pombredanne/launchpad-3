@@ -17,7 +17,7 @@
 </metal:heading>
 
 <div metal:fill-slot="main"
-     tal:define="branchviewset view/branches;
+     tal:define="branchviewset view/visible_branches;
                  branchset view/branches">
 
   <tal:comment condition="nothing">
@@ -28,8 +28,26 @@
   branchset). - David Allouche 2005-04-21 -->
   </tal:comment>
 
-  <table class="listing sortable" id="branchtable"
-         tal:condition="branchset">
+  <tal:branchlist condition="branchset">
+
+  <form method="get" name="filter" action="" id="filter_form">
+    <span class="lesser">Show branches with status of</span>
+    <div tal:replace="structure view/widgets/show_filter"/>
+  </form>
+
+<script type="text/javascript">
+function submit_filter()
+{
+  var f = document.getElementById('filter_form');
+  f.submit()
+}
+
+var field = document.getElementById('field.show_filter');
+field.onchange = submit_filter;
+field.focus();
+</script>
+
+  <table class="listing sortable" id="branchtable">
     <thead>
       <tr>
         <th>Name</th>
@@ -63,15 +81,17 @@
         </td>
       </tr>
       <tr tal:condition="not:branchviewset">
-        <td rowspan="4">
+        <td colspan="4">
           <i>There are branches registered for
             <span tal:replace="context/name">firefox</span> but none of them
-            match the current filter criteria for this page. try clicking on
-            the "Show All" action.</i>
+            match the current filter criteria for this page.  Try filtering on
+            "Any Status".</i>
         </td>
       </tr>
     </tbody>
   </table>
+
+  </tal:branchlist>
 
   <p tal:condition="not:branchset">
     There are no branches registered for

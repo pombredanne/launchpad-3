@@ -100,8 +100,8 @@ field.focus();
         <td colspan="6">
           <i>There are branches registered for
             <span tal:replace="context/name">James Jiggler</span> but none of them
-            match the current filter criteria for this page. try clicking on
-            the "Show All" action.</i>
+            match the current filter criteria for this page.  Try filtering on
+            "Any Status".</i>
         </td>
       </tr>
     </tbody>
