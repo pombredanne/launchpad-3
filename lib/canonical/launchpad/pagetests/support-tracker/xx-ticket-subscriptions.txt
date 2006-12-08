@@ -69,3 +69,36 @@ the ticket, doesn't appear anymore in the subscribers portlet:
       <i>No subscribers.</i>
     </p>
 
+== Subscribing While Posting A Message ==
+
+It is also possible to subscribe at the same time than posting a message
+on an existing ticket. The user can simply check the 'E-mail me future
+discussion about this request' checkbox:
+
+    >>> user_browser.open('http://launchpad.dev/products/firefox/+ticket/6')
+    >>> user_browser.getControl('Message').value = (
+    ...     "I restarted Firefox and the plug-in still doesn't work.")
+    >>> user_browser.getControl(
+    ...     'E-mail me future discussion about this request').selected = True
+    >>> user_browser.getControl("I'm Still Having This Problem").click()
+
+A notification message is displayed notifying of the subscription:
+
+    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+    ...     print message.renderContents()
+    Your request was reopened.
+    You have subscribed to this request.
+
+    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> portlet = soup.first('div', id='ticket-subscribers')
+    >>> for subscriber_link in portlet.findAll('a'):
+    ...     print subscriber_link.renderContents()
+    Sample Person
+
+When the person is already subscribed to the request, the checkbox
+doesn't appear on the page:
+
+    >>> user_browser.getControl('E-mail me future')
+    Traceback (most recent call last):
+      ...
+    LookupError: ...

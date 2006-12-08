@@ -471,6 +471,12 @@ class TicketWorkflowView(LaunchpadFormView):
     # Do not autofocus the message widget.
     initial_focus_widget = None
 
+    def setUpFields(self):
+        """See LaunchpadFormView."""
+        LaunchpadFormView.setUpFields(self)
+        if self.context.isSubscribed(self.user):
+            self.form_fields = self.form_fields.omit('subscribe_me')
+
     def setUpWidgets(self):
         """See LaunchpadFormView."""
         LaunchpadFormView.setUpWidgets(self)
@@ -511,6 +517,7 @@ class TicketWorkflowView(LaunchpadFormView):
         """Add a comment to a resolved ticket."""
         self.context.addComment(self.user, data['message'])
         self.request.response.addNotification(_('Thanks for your comment.'))
+        self.handlePossibleSubscription(data)
         self.next_url = canonical_url(self.context)
 
     def canAddAnswer(self, action):
@@ -524,6 +531,7 @@ class TicketWorkflowView(LaunchpadFormView):
         """Add an answer to the ticket."""
         self.context.giveAnswer(self.user, data['message'])
         self.request.response.addNotification(_('Thanks for your answer.'))
+        self.handlePossibleSubscription(data)
         self.next_url = canonical_url(self.context)
 
     def canSelfAnswer(self, action):
@@ -538,6 +546,7 @@ class TicketWorkflowView(LaunchpadFormView):
         self.context.giveAnswer(self.user, data['message'])
         self.request.response.addNotification(
             _('Thanks for sharing your solution.'))
+        self.handlePossibleSubscription(data)
         self.next_url = canonical_url(self.context)
 
     def canRequestInfo(self, action):
@@ -553,6 +562,7 @@ class TicketWorkflowView(LaunchpadFormView):
         self.context.requestInfo(self.user, data['message'])
         self.request.response.addNotification(
             _('Thanks for your information request.'))
+        self.handlePossibleSubscription(data)
         self.next_url = canonical_url(self.context)
 
     def canGiveInfo(self, action):
@@ -567,6 +577,7 @@ class TicketWorkflowView(LaunchpadFormView):
         self.context.giveInfo(data['message'])
         self.request.response.addNotification(
             _('Thanks for adding more information to your request.'))
+        self.handlePossibleSubscription(data)
         self.next_url = canonical_url(self.context)
 
     def validateConfirmAnswer(self, data):
@@ -600,6 +611,7 @@ class TicketWorkflowView(LaunchpadFormView):
             data['message'] = 'User confirmed that the request is solved.'
         self.context.confirmAnswer(data['message'], answer=data['answer'])
         self.request.response.addNotification(_('Thanks for your feedback.'))
+        self.handlePossibleSubscription(data)
         self.next_url = canonical_url(self.context)
 
     def canReopen(self, action):
@@ -614,7 +626,15 @@ class TicketWorkflowView(LaunchpadFormView):
         information about it."""
         self.context.reopen(data['message'])
         self.request.response.addNotification(_('Your request was reopened.'))
+        self.handlePossibleSubscription(data)
         self.next_url = canonical_url(self.context)
+
+    def handlePossibleSubscription(self, data):
+        """Subscribe the user if he checked the 'E-mail me...' checkbox."""
+        if data.get('subscribe_me'):
+            self.context.subscribe(self.user)
+            self.request.response.addNotification(
+                    _("You have subscribed to this request."))
 
 
 class TicketConfirmAnswerView(TicketWorkflowView):
