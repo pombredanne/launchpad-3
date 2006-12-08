@@ -248,21 +248,24 @@ class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
         """Return a (distrorelease,pocket) tuple which is the given textual
         distroreleasename in this distribution."""
 
-    def removeOldCacheItems():
-        """Delete any cache records that are no longer needed for this
-        distribution, perhaps because all of the binary packages have been
-        removed from the archives.
+    def removeOldCacheItems(log):
+        """Delete any cache records for removed packages."""
+
+    def updateCompleteSourcePackageCache(log, ztm):
+        """Update the source package cache.
+
+        Consider every non-REMOVED sourcepackage.
+        'log' is required an only prints debug level information.
+        'ztm' is required for partial commits, every chunk of 50 updates
+        are committed.
         """
 
-    def updateCompleteSourcePackageCache():
-        """Update the source package cache, for all source packages in the
-        distribution.
-        """
+    def updateSourcePackageCache(log, sourcepackagename):
+        """Update cached source package details.
 
-    def updateSourcePackageCache(name):
-        """Update the cached source package details that are stored in
-        DistributionSourcePackageDetailsCache, for the source package with
-        name given as 'name'.
+        Update cache details for a given ISourcePackageName, including
+        generated binarypackage names, summary and description fti.
+        'log' is required and only prints debug level information.
         """
 
     def searchSourcePackages(text):

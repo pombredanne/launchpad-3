@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -31,6 +31,7 @@ from zope.event import notify
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
+from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.interfaces import (
     IAddBugTaskForm, IBug, IBugSet, IBugTaskSet, IBugWatchSet,
     ICanonicalUrlData, IDistributionSourcePackage, IDistroBugTask,
@@ -39,7 +40,6 @@ from canonical.launchpad.interfaces import (
     valid_distrotask, valid_upstreamtask)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import SQLObjectCreatedEvent
-from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.webapp import (
     custom_widget, action, canonical_url, ContextMenu,
     LaunchpadFormView, LaunchpadView,LaunchpadEditFormView, stepthrough,
@@ -79,9 +79,9 @@ class BugSetNavigation(Navigation):
 class BugContextMenu(ContextMenu):
     usedfor = IBug
     links = ['editdescription', 'markduplicate', 'visibility', 'addupstream',
-             'adddistro', 'subscription',
-             'addsubscriber', 'addcomment', 'addbranch', 'linktocve',
-             'unlinkcve', 'filebug', 'activitylog', 'backportfix']
+             'adddistro', 'subscription', 'addsubscriber', 'addcomment',
+             'nominate', 'addbranch', 'linktocve', 'unlinkcve', 'filebug',
+             'activitylog']
 
     def __init__(self, context):
         # Always force the context to be the current bugtask, so that we don't
@@ -134,6 +134,16 @@ class BugContextMenu(ContextMenu):
         text = 'Subscribe Someone Else'
         return Link('+addsubscriber', text, icon='add')
 
+    def nominate(self):
+        launchbag = getUtility(ILaunchBag)
+        target = launchbag.product or launchbag.distribution
+        if check_permission("launchpad.Driver", target):
+            text = "Target to Release"
+        else:
+            text = 'Nominate for Release'
+
+        return Link('+nominate', text, icon='milestone')
+
     def addcomment(self):
         text = 'Comment/Attach File'
         return Link('+addcomment', text, icon='add')
@@ -164,13 +174,6 @@ class BugContextMenu(ContextMenu):
     def activitylog(self):
         text = 'Activity Log'
         return Link('+activity', text, icon='list')
-
-    def backportfix(self):
-        enabled = (
-            IDistroBugTask.providedBy(self.context) or
-            IDistroReleaseBugTask.providedBy(self.context))
-        text = 'Backport Fix to Releases'
-        return Link('+backport', text, icon='bug', enabled=enabled)
 
 
 
@@ -212,28 +215,6 @@ class BugView:
         'current' is determined by simply looking in the ILaunchBag utility.
         """
         return getUtility(ILaunchBag).bugtask
-
-    def taskLink(self, bugtask):
-        """Return the proper link to the bugtask whether it's editable"""
-        user = getUtility(ILaunchBag).user
-        if check_permission('launchpad.Edit', user):
-            return canonical_url(bugtask) + "/+editstatus"
-        else:
-            return canonical_url(bugtask) + "/+viewstatus"
-
-    def getFixRequestRowCSSClassForBugTask(self, bugtask):
-        """Return the fix request row CSS class for the bugtask.
-
-        The class is used to style the bugtask's row in the "fix requested for"
-        table on the bug page.
-        """
-        if bugtask == self.currentBugTask():
-            # The "current" bugtask is highlighted.
-            return 'highlight'
-        else:
-            # Anything other than the "current" bugtask gets no
-            # special row styling.
-            return ''
 
     @property
     def subscription(self):
@@ -437,6 +418,12 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
         self.setUpLabelAndWidgets(
             "Add affected source package to bug",
             ['distribution', 'sourcepackagename'])
+        for bugtask in IBug(self.context).bugtasks:
+            if (IDistributionSourcePackage.providedBy(bugtask.target) and
+                (not self.widgets['sourcepackagename'].hasInput())):
+                self.widgets['sourcepackagename'].setRenderedValue(
+                    bugtask.sourcepackagename)
+                break
         return self.render()
 
     def getBugTargetName(self):

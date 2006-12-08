@@ -28,6 +28,17 @@ COMMENT ON COLUMN BugBranch.revision_hint IS 'An optional revision at which this
 COMMENT ON COLUMN BugBranch.status IS 'The status of the bugfix in this branch.';
 COMMENT ON COLUMN BugBranch.whiteboard IS 'Additional information about the status of the bugfix in this branch.';
 
+/* BugNomination */
+COMMENT ON TABLE BugNomination IS 'A bug nominated for fixing in a distrorelease or productseries';
+COMMENT ON COLUMN BugNomination.bug IS 'The bug being nominated.';
+COMMENT ON COLUMN BugNomination.distrorelease IS 'The distrorelease for which the bug is nominated.';
+COMMENT ON COLUMN BugNomination.productseries IS 'The productseries for which the bug is nominated.';
+COMMENT ON COLUMN BugNomination.status IS 'The status of the nomination.';
+COMMENT ON COLUMN BugNomination.date_created IS 'The date the nomination was submitted.';
+COMMENT ON COLUMN BugNomination.date_decided IS 'The date the nomination was approved or declined.';
+COMMENT ON COLUMN BugNomination.owner IS 'The person that submitted the nomination';
+COMMENT ON COLUMN BugNomination.decider IS 'The person who approved or declined the nomination';
+
 /* BugTag */
 COMMENT ON TABLE BugTag IS 'Attaches simple text tags to a bug.';
 COMMENT ON COLUMN BugTag.bug IS 'The bug the tags is attached to.';
@@ -39,6 +50,7 @@ COMMENT ON TABLE BugTask IS 'Links a given Bug to a particular (sourcepackagenam
 COMMENT ON COLUMN BugTask.targetnamecache IS 'A cached value of the target name of this bugtask, to make it easier to sort and search on the target name.';
 COMMENT ON COLUMN BugTask.bug IS 'The bug that is assigned to this (sourcepackagename, distro) or product.';
 COMMENT ON COLUMN BugTask.product IS 'The product in which this bug shows up.';
+COMMENT ON COLUMN BugTask.productseries IS 'The product series to which the bug is targeted';
 COMMENT ON COLUMN BugTask.sourcepackagename IS 'The name of the sourcepackage in which this bug shows up.';
 COMMENT ON COLUMN BugTask.distribution IS 'The distro of the named sourcepackage.';
 COMMENT ON COLUMN BugTask.status IS 'The general health of the bug, e.g. Accepted, Rejected, etc.';
@@ -459,6 +471,7 @@ COMMENT ON COLUMN Ticket.dateaccepted IS 'The date we "confirmed" or "accepted" 
 COMMENT ON COLUMN Ticket.datedue IS 'The date this ticket is "due", if such a date can be established. Usually this will be set automatically on the basis of a support contract SLA commitment.';
 COMMENT ON COLUMN Ticket.dateanswered IS 'The date this ticket was last "answered", in the sense of receiving a comment from someone other than the requester that they considered sufficient to close the ticket.';
 COMMENT ON COLUMN Ticket.dateclosed IS 'The date the requester marked this ticket CLOSED.';
+COMMENT ON COLUMN Ticket.language IS 'The language of the ticket''s title and description.';
 COMMENT ON COLUMN Ticket.whiteboard IS 'A general status whiteboard. This is a scratch space to which arbitrary data can be added (there is only one constant whiteboard with no history). It is displayed at the top of the ticket. So its a useful way for projects to add their own semantics or metadata to the support tracker.';
 
 /* TicketBug */
@@ -609,7 +622,27 @@ COMMENT ON COLUMN BinaryPackageRelease.architecturespecific IS 'This field indic
 
 
 -- SourcePackageRelease
+COMMENT ON COLUMN SourcePackageRelease.creator IS 'The person who issued the upload';
+COMMENT ON COLUMN SourcePackageRelease.version IS 'Debian-like version string for this release. Indexed with debversion_sort_key and validated with valid_debian_version constraint.';
+COMMENT ON COLUMN SourcePackageRelease.dateuploaded IS 'Creation timestamp.';
+COMMENT ON COLUMN SourcePackageRelease.urgency IS 'SourcePackageUrgency constant';
+COMMENT ON COLUMN SourcePackageRelease.dscsigningkey IS 'Reference to the GPGKey used to sign the DSC.';
+COMMENT ON COLUMN SourcePackageRelease.component IS 'The original component to where this source was submitted.';
+COMMENT ON COLUMN SourcePackageRelease.changelog IS 'Changelog text section extracted from the changesfile.';
+COMMENT ON COLUMN SourcePackageRelease.builddepends IS 'DSC builddepends line section.';
+COMMENT ON COLUMN SourcePackageRelease.builddependsindep IS 'DSC builddependsindep line section.';
+COMMENT ON COLUMN SourcePackageRelease.architecturehintlist IS 'DSC arch line';
+COMMENT ON COLUMN SourcePackageRelease.dsc IS 'Original DSC text.';
 COMMENT ON COLUMN SourcePackageRelease.section IS 'This integer field references the Section which the source package claims to be in';
+COMMENT ON COLUMN SourcePackageRelease.manifest IS 'Reference to a manifest record.';
+COMMENT ON COLUMN SourcePackageRelease.maintainer IS 'Reference to the person noted as source package maintainer in the DSC.';
+COMMENT ON COLUMN SourcePackageRelease.sourcepackagename IS 'Reference to a SourcePackageName.';
+COMMENT ON COLUMN SourcePackageRelease.uploaddistrorelease IS 'DistroRelease to where the source was originally uploaded.';
+COMMENT ON COLUMN SourcePackageRelease.format IS 'Source package format constant, SourcePackageReleaseFormat.';
+COMMENT ON COLUMN SourcePackageRelease.dsc_maintainer_rfc822 IS 'The original maintainer line in RFC-822 format, to be used in archive indexes.';
+COMMENT ON COLUMN SourcePackageRelease.dsc_standards_version IS 'DSC standards version (such as "3.6.2", "3.5.9", etc) used to build this source.';
+COMMENT ON COLUMN SourcePackageRelease.dsc_format IS 'DSC format version (such as "1.0").';
+COMMENT ON COLUMN SourcePackageRelease.dsc_binaries IS 'DSC binary line, claimed binary-names produce by this source.';
 
 /* SourcePackagePublishing and BinaryPackagePublishing */
 
@@ -868,6 +901,11 @@ COMMENT ON TABLE SpecificationFeedback IS 'A table representing a review request
 COMMENT ON COLUMN SpecificationFeedback.reviewer IS 'The person who has been asked to do the review.';
 COMMENT ON COLUMN SpecificationFeedback.requester IS 'The person who made the request.';
 COMMENT ON COLUMN SpecificationFeedback.queuemsg IS 'An optional text message for the reviewer, from the requester.';
+
+-- SpecificationBranch
+COMMENT ON TABLE SpecificationBranch IS 'A branch related to a specification, most likely a branch for implementing the specification.  It is possible to have multiple branches for a given specification especially in the situation where the specification requires modifying multiple products.';
+COMMENT ON COLUMN SpecificationBranch.specification IS 'The specification associated with this branch.';
+COMMENT ON COLUMN SpecificationBranch.branch IS 'The branch associated to the specification.';
 
 -- SpecificationBug
 COMMENT ON TABLE SpecificationBug IS 'A table linking a specification and a bug. This is used to provide for easy navigation from bugs to related specs, and vice versa.';

@@ -174,8 +174,7 @@ class IProject(IHasOwner, IBugTarget, IHasSpecifications):
         vocabulary='BugTracker',
         description=_("The bug tracker the products in this project use."))
 
-    def products():
-        """Return Products for this Project."""
+    products = Attribute(_("An iterator over the Products for this project."))
 
     def getProduct(name):
         """Get a product with name `name`."""

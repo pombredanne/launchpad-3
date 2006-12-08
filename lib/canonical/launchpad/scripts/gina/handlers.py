@@ -548,6 +548,7 @@ class SourcePackageHandler:
 
         componentID = self.distro_handler.getComponentByName(src.component).id
         sectionID = self.distro_handler.ensureSection(src.section).id
+        maintainer_line = "%s <%s>" % (displayname, emailaddress)
         name = self.ensureSourcePackageName(src.package)
         spr = SourcePackageRelease(
                                    section=sectionID,
@@ -566,8 +567,12 @@ class SourcePackageHandler:
                                    builddependsindep=src.build_depends_indep,
                                    architecturehintlist=src.architecture,
                                    format=SourcePackageFormat.DPKG,
-                                   uploaddistrorelease=distrorelease.id)
-        log.info('Source Package Release %s (%s) created' % 
+                                   uploaddistrorelease=distrorelease.id,
+                                   dsc_format=src.format,
+                                   dsc_maintainer_rfc822=maintainer_line,
+                                   dsc_standards_version=src.standards_version,
+                                   dsc_binaries=" ".join(src.binaries))
+        log.info('Source Package Release %s (%s) created' %
                  (name.name, src.version))
 
         # Insert file into the library and create the
