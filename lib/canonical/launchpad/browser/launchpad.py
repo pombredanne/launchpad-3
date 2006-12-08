@@ -53,7 +53,7 @@ class MaloneApplicationNavigation(Navigation):
 
     usedfor = IMaloneApplication
 
-    newlayer = canonical.launchpad.layers.MaloneLayer
+    newlayer = canonical.launchpad.layers.BugsLayer
 
     @stepto('bugs')
     def bugs(self):
