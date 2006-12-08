@@ -96,7 +96,6 @@ spider -- StuartBishop 20050822
 >>> check("/products/firefox/+rdf")
 >>> check("/products/firefox/1.0/+rdf")
 >>> check("/products/firefox/+bugs")
->>> check_not_found("/products/firefox/1.0/+bugs")
 >>> check("/products/firefox/+cve")
 
 >>> check_not_found("/products/firefox/+milestone")
@@ -222,6 +221,7 @@ been reported.
 >>> check("/products/netapplet/+bug/1")
 >>> check_not_found("/products/netapplet/+bug/1/+viewstatus")
 >>> check_not_found("/products/netapplet/+bug/1/+editstatus")
+>>> check_not_found("/products/netapplet/+bug/1/+nominate")
 
 Check a bug is traversable by nickname:
 
@@ -237,6 +237,7 @@ yet been reported.
 >>> check_redirect("/distros/ubuntu/+bug")
 >>> check_not_found("/distros/ubuntu/+bug/3/+viewstatus")
 >>> check_not_found("/distros/ubuntu/+bug/3/+editstatus")
+>>> check_not_found("/distros/ubuntu/+bug/3/+nominate")
 
 Viewing a bug in the context of a distorelease where the bug has not
 yet been reported.
