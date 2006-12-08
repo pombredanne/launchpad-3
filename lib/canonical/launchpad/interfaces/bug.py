@@ -355,9 +355,10 @@ class IBugAddForm(IBug):
                 "tracker."),
             vocabulary="DistributionUsingMalone")
     owner = Int(title=_("Owner"), required=True)
-    comment = Text(title=_('Description'), required=True,
-            description=_("""A detailed description of the problem you are
-            seeing."""))
+    comment = Text(
+        title=_('Further information, steps to reproduce,'
+                ' version information, etc.'),
+        required=True)
 
 
 class IBugSet(Interface):

@@ -25,7 +25,7 @@ from canonical.lp.dbschema import (
     EnumCol, TranslationPermission, SpecificationSort, SpecificationFilter,
     SpecificationStatus)
 from canonical.launchpad.database.branch import Branch
-from canonical.launchpad.components.bugtarget import BugTargetBase
+from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
@@ -34,6 +34,7 @@ from canonical.launchpad.database.productbounty import ProductBounty
 from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.bugtask import BugTaskSet
+from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import Specification
@@ -43,7 +44,8 @@ from canonical.launchpad.database.ticket import (
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner,
-    ITicketTarget, NotFoundError, TICKET_STATUS_DEFAULT_SEARCH)
+    ITicketTarget, NotFoundError, TICKET_STATUS_DEFAULT_SEARCH,
+    get_supported_languages)
 
 
 class Product(SQLBase, BugTargetBase, KarmaContextMixin):
@@ -106,6 +108,10 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
 
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
+
+    def _getBugTaskContextWhereClause(self):
+        """See BugTargetBase."""
+        return "BugTask.product = %d" % self.id
 
     def getExternalBugTracker(self):
         """See IProduct."""
@@ -229,10 +235,16 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
         bug_params.setBugTarget(product=self)
         return BugSet().createBug(bug_params)
 
-    def newTicket(self, owner, title, description, datecreated=None):
+    def getSupportedLanguages(self):
+        """See ITicketTarget."""
+        return get_supported_languages(self)
+
+    def newTicket(self, owner, title, description, language=None,
+                  datecreated=None):
         """See ITicketTarget."""
         return TicketSet.new(title=title, description=description,
-            owner=owner, product=self, datecreated=datecreated)
+            owner=owner, product=self, datecreated=datecreated,
+            language=language)
 
     def getTicket(self, ticket_id):
         """See ITicketTarget."""
@@ -285,6 +297,12 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
     def direct_support_contacts(self):
         """See ITicketTarget."""
         return self.support_contacts
+
+    def getTicketLanguages(self):
+        """See ITicketTarget."""
+        return set(Language.select(
+            'Language.id = language AND product = %s' % sqlvalues(self),
+            clauseTables=['Ticket'], distinct=True))
 
     @property
     def translatable_packages(self):
