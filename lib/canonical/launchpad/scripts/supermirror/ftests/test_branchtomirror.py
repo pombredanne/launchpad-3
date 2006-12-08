@@ -17,7 +17,7 @@ import bzrlib.branch
 import bzrlib.bzrdir
 import bzrlib.errors
 from bzrlib.revision import NULL_REVISION
-from bzrlib.tests import TestCaseInTempDir
+from bzrlib.tests import TestCaseInTempDir, TestCaseWithMemoryTransport
 from bzrlib.tests.repository_implementations.test_repository import (
             TestCaseWithRepository)
 from bzrlib.transport import get_transport
@@ -122,15 +122,15 @@ class TestBranchToMirrorFormats(TestCaseWithRepository):
     def tearDown(self):
         self.authserver.tearDown()
         super(TestBranchToMirrorFormats, self).tearDown()
-        test_root = TestCaseInTempDir.TEST_ROOT
+        test_root = TestCaseWithMemoryTransport.TEST_ROOT
         if test_root is not None and os.path.exists(test_root):
             shutil.rmtree(test_root)
-        # Set the TEST_ROOT back to None, to tell TestCaseInTempDir we need it
-        # to create a new root when the next test is run.
-        # The TestCaseInTempDir is part of bzr's test infrastructure and the
-        # bzr test runner normally does this cleanup, but here we have to do
-        # that ourselves.
-        TestCaseInTempDir.TEST_ROOT = None
+        # Set the TEST_ROOT back to None, to tell TestCaseWithMemoryTransport
+        # we need it to create a new root when the next test is run.
+        # The TestCaseWithMemoryTransport is part of bzr's test infrastructure
+        # and the bzr test runner normally does this cleanup, but here we have
+        # to do that ourselves.
+        TestCaseWithMemoryTransport.TEST_ROOT = None
 
     def testMirrorKnitAsKnit(self):
         # Create a source branch in knit format, and check that the mirror is in
@@ -221,15 +221,15 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
     def tearDown(self):
         self.authserver.tearDown()
         TestCaseInTempDir.tearDown(self)
-        test_root = TestCaseInTempDir.TEST_ROOT
+        test_root = TestCaseWithMemoryTransport.TEST_ROOT
         if test_root is not None and os.path.exists(test_root):
             shutil.rmtree(test_root)
-        # Set the TEST_ROOT back to None, to tell TestCaseInTempDir we need it
-        # to create a new root when the next test is run.
-        # The TestCaseInTempDir is part of bzr's test infrastructure and the
-        # bzr test runner normally does this cleanup, but here we have to do
-        # that ourselves.
-        TestCaseInTempDir.TEST_ROOT = None
+        # Set the TEST_ROOT back to None, to tell TestCaseWithMemoryTransport
+        # we need it to create a new root when the next test is run.
+        # The TestCaseWithMemoryTransport is part of bzr's test infrastructure
+        # and the bzr test runner normally does this cleanup, but here we have
+        # to do that ourselves.
+        TestCaseWithMemoryTransport.TEST_ROOT = None
 
     def testUnopenableSourceDoesNotCreateMirror(self):
         non_existant_branch = "nonsensedir"
@@ -332,7 +332,7 @@ class TestErrorHandling(unittest.TestCase):
     def testUnknownFormatError(self):
         self.errors = []
         def stubOpenSourceBranch():
-            raise UnknownFormatError('Some junk')
+            raise UnknownFormatError(format='Some junk')
         self.branch._openSourceBranch = stubOpenSourceBranch
         expected_msg = 'Unknown branch format:'
         self._runMirrorAndCheckError(expected_msg)
@@ -340,7 +340,7 @@ class TestErrorHandling(unittest.TestCase):
         self.errors = []
         def stubOpenSourceBranch():
             raise UnknownFormatError(
-                'Loads of junk\n with two or more\n newlines.')
+                format='Loads of junk\n with two or more\n newlines.')
         self.branch._openSourceBranch = stubOpenSourceBranch
         expected_msg = 'Not a branch'
         self._runMirrorAndCheckError(expected_msg)

@@ -134,10 +134,10 @@ class BranchToMirror:
             self._mirrorFailed(logger, msg)
 
         except bzrlib.errors.UnknownFormatError, e:
-            if e.args[0].count('\n') >= 2:
+            if e.format.count('\n') >= 2:
                 msg = 'Not a branch'
             else:
-                msg = 'Unknown branch format: %s' % e.args[0]
+                msg = 'Unknown branch format: %s' % e.format
             self._mirrorFailed(logger, msg)
 
         except bzrlib.errors.ParamikoNotPresent, e:

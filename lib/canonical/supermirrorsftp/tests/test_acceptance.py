@@ -12,7 +12,7 @@ import shutil
 import gc
 
 import bzrlib.branch
-from bzrlib.tests import TestCaseInTempDir
+from bzrlib.tests import TestCaseInTempDir, TestCaseWithMemoryTransport
 from bzrlib.tests.repository_implementations.test_repository import (
     TestCaseWithRepository)
 from bzrlib.errors import NoSuchFile, NotBranchError, PermissionDenied
@@ -129,8 +129,8 @@ class SFTPTestCase(TestCaseWithRepository):
         # XXX spiv 2006-04-28: as the comment bzrlib.tests.run_suite says, this
         # is "a little bogus".  Because we aren't using the bzr test runner, we
         # have to manually clean up the test????.tmp dirs.
-        shutil.rmtree(TestCaseInTempDir.TEST_ROOT)
-        TestCaseInTempDir.TEST_ROOT = None
+        shutil.rmtree(TestCaseWithMemoryTransport.TEST_ROOT)
+        TestCaseWithMemoryTransport.TEST_ROOT = None
 
 
 class AcceptanceTests(SFTPTestCase):
