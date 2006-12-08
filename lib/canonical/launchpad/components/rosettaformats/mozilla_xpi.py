@@ -1,5 +1,11 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
+__metaclass__ = type
+
+__all__ = [
+    'MozillaSupport'
+    ]
+
 from UserDict import DictMixin
 from StringIO import StringIO
 
@@ -7,7 +13,6 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from canonical.librarian.interfaces import ILibrarianClient
-#from canonical.launchpad.database import LibraryFileAlias
 from canonical.launchpad.interfaces import ITranslationImport
 from canonical.lp.dbschema import RosettaImportStatus, RosettaFileFormat
 

@@ -29,7 +29,6 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ApplicationMenu, Link, canonical_url,
     LaunchpadView, Navigation)
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.database.pomsgset import DummyPOMsgSet
 from canonical.launchpad.browser.pomsgset import (
     BaseTranslationView, POMsgSetView)
 
@@ -350,7 +349,6 @@ class POFileTranslateView(BaseTranslationView):
             msgid_text = potmsgset.primemsgid_.msgid
             pomsgset = self.pofile.getPOMsgSetFromPOTMsgSet(potmsgset,
                                                             only_current=False)
-            #pomsgset = DummyPOMsgSet(self.pofile, potmsgset)
             if pomsgset is None:
                 pomsgset = self.pofile.createMessageSetFromMessageSet(potmsgset)
 

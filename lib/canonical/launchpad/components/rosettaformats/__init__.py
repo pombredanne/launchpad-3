@@ -3,5 +3,13 @@
 """
 Unified support for different Rosetta import and export formats.
 """
-from canonical.launchpad.components.rosettaformats.gettext_po import *
-from canonical.launchpad.components.rosettaformats.mozilla_xpi import *
+__metaclass__ = type
+
+__all__ = [
+    'PoSupport',
+    'MozillaSupport'
+    ]
+
+from canonical.launchpad.components.rosettaformats.gettext_po import PoSupport
+from canonical.launchpad.components.rosettaformats.mozilla_xpi import  (
+    MozillaSupport )

@@ -1,5 +1,11 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
+__metaclass__ = type
+
+__all__ = [
+    'PoSupport'
+    ]
+
 import datetime
 import pytz
 from email.Utils import parseaddr

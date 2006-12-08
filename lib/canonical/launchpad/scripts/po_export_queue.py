@@ -5,7 +5,10 @@ __metaclass__ = type
 import logging
 import tempfile
 import textwrap
+import os.path
 from StringIO import StringIO
+from zipfile import ZipFile
+from xml.parsers.xmlproc.xmldtd import load_dtd_string
 
 from zope.component import getUtility
 
@@ -122,9 +125,173 @@ class MOFormatHandler(Handler):
                 contentType='application/octet-stream')
             return alias.url
 
+
+
+class XPIFormatHandler(Handler):
+    """Export handler for Mozilla XPI format exports."""
+
+    def get_filename(self):
+        """Return a filename for the file being exported."""
+
+        if is_potemplate(self.obj):
+            return 'en-US.xpi'
+        else:
+            return os.path.basename(self.obj.path)
+
+    def get_contents(self):
+        """Return the contents of the exported file."""
+
+        if is_potemplate(self.obj):
+            return self.obj.source_file.read()
+        else:
+            template = StringIO(self.obj.source_file.read())
+            mozexport = MozillaZipFile(template, self.obj)
+            return mozexport.get_contents()
+
+    def get_librarian_url(self):
+        """Return a Librarian URL from which the exported file can be
+        downloaded.
+        """
+
+        if is_potemplate(self.obj):
+            return self.obj.source_file.url
+        else:
+            xpi_contents = self.get_contents()
+            alias_set = getUtility(ILibraryFileAliasSet)
+            alias = alias_set.create(
+                name=self.get_filename(),
+                size=len(xpi_contents),
+                file=StringIO(xpi_contents),
+                contentType='application/zip')
+            return alias.url
+
+class MozillaLocalizableFile:
+    """Class for updating translatable messages in different files.
+
+    It expects `_file' to be a StringIO (i.e. provide getvalue() method).
+    """
+
+    def __init__(self):
+        self._file = None
+
+    def get_contents(self):
+        if self._file:
+            return self._file.getvalue()
+        else:
+            return None
+
+    def get_pofile_translation(pofile, key):
+        if not key: return None
+
+        potmsgset = pofile.potemplate.getPOTMsgSetByAlternativeMsgID(key)
+        pomsgset = potmsgset.getPOMsgSet(
+            pofile.language.code, pofile.variant)
+        if pomsgset is None:
+            return None
+        return pomsgset.getTranslation(0)
+
+class MozillaZipFile (MozillaLocalizableFile):
+    """Class for updating translatable messages in Mozilla XPI/JAR files.
+
+    It expects `file' parameter to be a StringIO class.
+    """
+
+    def __init__(self, file, pofile):
+        MozillaLocalizableFile.__init__(self)
+        self._file = file
+        self._pofile = pofile
+
+        # XXX (Danilo): ZIP seems to double in size with simple
+        # .writestr()s.  We probably need to clear previous entries
+        # in the ZIP file first: it seems to only way to do this
+        # is to create entirely new ZIP file.
+        zip = ZipFile(self._file, 'a')
+        for file in zip.namelist():
+            if file.endswith('.properties'):
+                data = zip.read(file)
+                pf = MozillaPropertyFile(file=StringIO(data), pofile=pofile)
+                zip.writestr(zip.getinfo(file), pf.get_contents())
+                pass
+            elif file.endswith('.dtd'):
+                data = zip.read(file)
+                dtdf = MozillaDtdFile(file=StringIO(data), pofile=pofile)
+                zip.writestr(zip.getinfo(file), dtdf.get_contents())
+            elif file.endswith('.jar'):
+                data = zip.read(file)
+                jarf = MozillaZipFile(file=StringIO(data), pofile=pofile)
+                zip.writestr(zip.getinfo(file), jarf.get_contents())
+            elif file == 'install.rdf':
+                data = zip.read(file)
+                #zip.writestr(zip.getinfo(file), "blablabla")
+                # XXX (Danilo): need to implement install.rdf updater
+                pass
+        zip.close()
+
+
+
+class MozillaDtdFile (MozillaLocalizableFile):
+    """Class for updating translatable messages in a .dtd file.
+
+    `file' should be a file-like object.
+    """
+    def __init__(self, file, pofile):
+        # XXX (Danilo): This is not the best way, but we don't have
+        # a proper DTD editing library. I'll probably go with regex
+        # parsing instead.
+        self._file = file
+        dtd = load_dtd_string(self._file.read())
+        rdata = ""
+        for entity in dtd.get_general_entities():
+            if entity in ['amp', 'lt', 'gt', 'apos', 'quot']:
+                continue
+            oldvalue = dtd.resolve_ge(entity).value
+            translation = self.get_pofile_translation(pofile, entity)
+            if not translation:
+                translation = oldvalue
+
+            rdata += ("""<!ENTITY %s "%s">\n""" %
+                      (entity.encode('utf-8'), translation.encode('utf-8')));
+
+        self._file = StringIO(rdata)
+
+
+
+class MozillaPropertyFile (MozillaLocalizableFile):
+    """Class for updating translatable messages in a .properties file.
+
+    `file' should be a file-like object.
+    """
+
+    def __init__(self, file, pofile):
+        """Constructs a dictionary from a .properties file.
+
+        It expects a file-like object "file".
+        "filename" is used for source code references.
+        """
+        self._file = file
+        data = file.read()
+
+        # .properties files are defined to be unicode-escaped, but
+        # also allow direct UTF-8
+        udata = data.decode('utf-8')
+        rdata = ""
+
+        lines = udata.split("\n")
+        for line in lines:
+            # Ignore empty and comment lines
+            if not len(line.strip()) or line[0]=='#' or line[0]=='!':
+                rdata += line.encode('utf-8') + "\n"
+                continue
+            (key, value) = line.split('=', 1)
+            rdata += "%s=%s\n" % (key.encode('utf-8'),
+                                  (self.get_pofile_translation(pofile, key)
+                                   .encode('unicode_escape')))
+        self._file = StringIO(rdata)
+
 format_handlers = {
     RosettaFileFormat.PO: POFormatHandler,
     RosettaFileFormat.MO: MOFormatHandler,
+    RosettaFileFormat.XPI: XPIFormatHandler,
 }
 
 class UnsupportedExportObject(Exception):
