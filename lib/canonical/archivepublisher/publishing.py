@@ -189,6 +189,7 @@ class Publisher(object):
         all_architectures = set()
         all_files = set()
         for component, architectures in release_files_needed[full_name].items():
+
             all_components.add(component)
             for architecture in architectures:
                 # XXX malcc 2006-09-20: We don't like the way we build this
@@ -205,7 +206,9 @@ class Publisher(object):
         else:
             drsummary += pocket.name.capitalize()
 
-        f = open(os.path.join(self._config.distsroot, full_name, "Release"), "w")
+        f = open(os.path.join(
+            self._config.distsroot, full_name, "Release"), "w")
+
         stanza = DISTRORELEASE_STANZA % (
                     self.distro.displayname,
                     self.distro.displayname,
@@ -293,4 +296,3 @@ class Publisher(object):
         length = len(contents)
         checksum = sum_form(contents).hexdigest()
         out_file.write(" %s % 16d %s\n" % (checksum, length, file_name))
-

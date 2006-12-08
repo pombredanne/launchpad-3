@@ -16,6 +16,7 @@ from canonical.launchpad.database.bugbranch import *
 from canonical.launchpad.database.bugcve import *
 from canonical.launchpad.database.bugwatch import *
 from canonical.launchpad.database.bugsubscription import *
+from canonical.launchpad.database.bugtarget import *
 from canonical.launchpad.database.bugmessage import *
 from canonical.launchpad.database.bugtask import *
 from canonical.launchpad.database.bugactivity import *

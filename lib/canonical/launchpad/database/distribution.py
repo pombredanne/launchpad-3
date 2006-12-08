@@ -15,7 +15,7 @@ from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
 from canonical.database.sqlbase import quote, quote_like, SQLBase, sqlvalues
 
-from canonical.launchpad.components.bugtarget import BugTargetBase
+from canonical.launchpad.database.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.bug import (
@@ -39,6 +39,7 @@ from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
+from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.sourcepackagename import (
     SourcePackageName)
 from canonical.launchpad.database.sourcepackagerelease import (
@@ -58,7 +59,7 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.interfaces import (
     IBuildSet, IDistribution, IDistributionSet, IHasBuildRecords,
     ILaunchpadCelebrities, ISourcePackageName, ITicketTarget, NotFoundError,
-    TICKET_STATUS_DEFAULT_SEARCH)
+    TICKET_STATUS_DEFAULT_SEARCH, get_supported_languages)
 
 from sourcerer.deb.version import Version
 
@@ -194,6 +195,10 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
     def bugtargetname(self):
         """See IBugTarget."""
         return self.displayname
+
+    def _getBugTaskContextWhereClause(self):
+        """See BugTargetBase."""
+        return "BugTask.distribution = %d" % self.id
 
     def searchTasks(self, search_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
@@ -440,11 +445,16 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         """See ISpecificationTarget."""
         return Specification.selectOneBy(distribution=self, name=name)
 
-    def newTicket(self, owner, title, description, datecreated=None):
+    def getSupportedLanguages(self):
+        """See ITicketTarget."""
+        return get_supported_languages(self)
+
+    def newTicket(self, owner, title, description, language=None,
+                  datecreated=None):
         """See ITicketTarget."""
         return TicketSet.new(
             title=title, description=description, owner=owner,
-            distribution=self, datecreated=datecreated)
+            distribution=self, datecreated=datecreated, language=language)
 
     def getTicket(self, ticket_id):
         """See ITicketTarget."""
@@ -500,6 +510,13 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
     def direct_support_contacts(self):
         """See ITicketTarget."""
         return self.support_contacts
+
+    def getTicketLanguages(self):
+        """See ITicketTarget."""
+        return set(Language.select(
+            'Language.id = language AND distribution = %s AND '
+            'sourcepackagename IS NULL' % sqlvalues(self),
+            clauseTables=['Ticket'], distinct=True))
 
     def ensureRelatedBounty(self, bounty):
         """See IDistribution."""
@@ -561,7 +578,7 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         return getUtility(IBuildSet).getBuildsByArchIds(
             arch_ids, status, name, pocket)
 
-    def removeOldCacheItems(self):
+    def removeOldCacheItems(self, log):
         """See IDistribution."""
 
         # Get the set of source package names to deal with.
@@ -584,11 +601,13 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         # Remove the cache entries for packages we no longer publish.
         for cache in self.source_package_caches:
             if cache.sourcepackagename not in spns:
+                log.debug(
+                    "Removing source cache for '%s' (%s)"
+                    % (cache.name, cache.id))
                 cache.destroySelf()
 
-    def updateCompleteSourcePackageCache(self, ztm=None):
+    def updateCompleteSourcePackageCache(self, log, ztm):
         """See IDistribution."""
-
         # Get the set of source package names to deal with.
         spns = list(SourcePackageName.select("""
             SourcePackagePublishingHistory.distrorelease =
@@ -609,14 +628,15 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         # Now update, committing every 50 packages.
         counter = 0
         for spn in spns:
-            self.updateSourcePackageCache(spn)
+            log.debug("Considering source '%s'" % spn.name)
+            self.updateSourcePackageCache(spn, log)
             counter += 1
             if counter > 49:
                 counter = 0
-                if ztm is not None:
-                    ztm.commit()
+                log.debug("Committing")
+                ztm.commit()
 
-    def updateSourcePackageCache(self, sourcepackagename):
+    def updateSourcePackageCache(self, sourcepackagename, log):
         """See IDistribution."""
 
         # Get the set of published sourcepackage releases.
@@ -626,15 +646,17 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
                 SourcePackagePublishingHistory.sourcepackagerelease AND
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
+            DistroRelease.distribution = %s AND
             SourcePackagePublishingHistory.archive = %s AND
-            SourcePackagePublishingHistory.status != %s AND
-            DistroRelease.distribution = %s
+            SourcePackagePublishingHistory.status != %s
             """ % sqlvalues(sourcepackagename, self, self.main_archive,
                             PackagePublishingStatus.REMOVED),
             orderBy='id',
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
             distinct=True))
+
         if len(sprs) == 0:
+            log.debug("No sources releases found.")
             return
 
         # Find or create the cache entry.
@@ -643,6 +665,7 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
             sourcepackagename = %s
             """ % sqlvalues(self.id, sourcepackagename.id))
         if cache is None:
+            log.debug("Creating new source cache entry.")
             cache = DistributionSourcePackageCache(
                 distribution=self,
                 sourcepackagename=sourcepackagename)
@@ -655,12 +678,14 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         binpkgsummaries = set()
         binpkgdescriptions = set()
         for spr in sprs:
+            log.debug("Considering source version %s" % spr.version)
             binpkgs = BinaryPackageRelease.select("""
                 BinaryPackageRelease.build = Build.id AND
                 Build.sourcepackagerelease = %s
                 """ % sqlvalues(spr.id),
                 clauseTables=['Build'])
             for binpkg in binpkgs:
+                log.debug("Considering binary '%s'" % binpkg.name)
                 binpkgnames.add(binpkg.name)
                 binpkgsummaries.add(binpkg.summary)
                 binpkgdescriptions.add(binpkg.description)

@@ -13,7 +13,8 @@ bugtasks. Here are some examples, using Debian mozilla-firefox:
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IDistributionSet
 
-    >>> debian = getUtility(IDistributionSet).getByName("debian")
+    >>> distroset = getUtility(IDistributionSet)
+    >>> debian = distroset.getByName("debian")
     >>> debian_firefox = debian.getSourcePackage("mozilla-firefox")
 
 Open bugtasks:
