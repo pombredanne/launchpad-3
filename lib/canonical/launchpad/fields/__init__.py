@@ -311,7 +311,7 @@ class ProductBugTracker(Choice):
 class ImageUpload(Bytes):
     
     keep_image_marker = object()
-    default_image_resource = '/@@nyet-mugshot'
+    default_image_resource = '/@@/nyet-mugshot'
 
 #     def get(self, object):
 #         # We always want to have the 'Keep' radio button selected.

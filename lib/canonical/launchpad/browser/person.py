@@ -61,7 +61,7 @@ import urllib
 from StringIO import StringIO
 
 from zope.event import notify
-from zope.app.form.browser import TextAreaWidget
+from zope.app.form.browser import TextAreaWidget, SelectWidget
 from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
 from zope.app.content_types import guess_content_type
@@ -77,7 +77,7 @@ from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, SpecificationFilter, TicketParticipation,
     PersonCreationRationale)
 
-from canonical.widgets import PasswordChangeWidget
+from canonical.widgets import ImageUploadWidget, PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
@@ -94,7 +94,6 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
-from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.tickettarget import SearchTicketsView
 
@@ -108,7 +107,8 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
     enabled_with_permission, Navigation, stepto, stepthrough, smartquote,
-    GeneralFormView, LaunchpadFormView, action, custom_widget)
+    GeneralFormView, LaunchpadEditFormView, LaunchpadFormView, action,
+    custom_widget)
 
 from canonical.launchpad.event.team import JoinTeamRequestEvent
 
@@ -1750,15 +1750,23 @@ class PersonChangePasswordView(LaunchpadFormView):
             "Password changed successfully"))
 
 
-class PersonEditView(SQLObjectEditView):
+class PersonEditView(LaunchpadEditFormView):
 
-    def changed(self):
-        """Redirect to the person page.
+    schema = IPerson
+    field_names = ['displayname', 'name', 'hide_email_addresses', 'timezone',
+                   'hackergotchi']
+    custom_widget('timezone', SelectWidget, size=15)
+    custom_widget('hackergotchi', ImageUploadWidget)
 
-        We need this because people can now change their names, and this will
-        make their canonical_url to change too.
-        """
-        self.request.response.redirect(canonical_url(self.context))
+    def showOptionalMarker(self, field_name):
+        if field_name == 'hackergotchi':
+            return False
+        return True
+
+    @action(_("Save"), name="save")
+    def action_save(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context)
 
 
 class PersonEmblemView(GeneralFormView):
