@@ -19,7 +19,9 @@ from canonical.launchpad.interfaces import (
     IShippingRun, ISpecification, ITicket, ITranslationImportQueueEntry,
     ITranslationImportQueue, IDistributionMirror, IHasBug,
     IBazaarApplication, IPackageUpload, IBuilderSet,
-    IBuilder, IBuild, ISpecificationSubscription, IHasDrivers)
+    IBuilder, IBuild, ISpecificationSubscription, IHasDrivers,
+    IBugNomination)
+
 
 from canonical.lp.dbschema import PackageUploadStatus
 
@@ -49,6 +51,14 @@ class AdminByAdminsTeam(AuthorizationBase):
     def checkAuthenticated(self, user):
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(admins)
+
+
+class EditBugNominationStatus(AuthorizationBase):
+    permission = 'launchpad.Driver'
+    usedfor = IBugNomination
+
+    def checkAuthenticated(self, user):
+        return check_permission("launchpad.Driver", self.obj.target)
 
 
 class EditByOwnersOrAdmins(AuthorizationBase):
@@ -485,6 +495,11 @@ class EditBugTask(AuthorizationBase):
     usedfor = IHasBug
 
     def checkAuthenticated(self, user):
+        if self.obj.conjoined_master is not None:
+            # It's never allowed to edit this bugtask directly, it
+            # should be edited through conjoined_master.
+            return False
+
         admins = getUtility(ILaunchpadCelebrities).admin
 
         if user.inTeam(admins):
