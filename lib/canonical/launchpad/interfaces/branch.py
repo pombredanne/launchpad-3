@@ -296,8 +296,8 @@ class IBranchLifecycleFilter(Interface):
     """A helper interface to render lifecycle filter choice."""
 
     # Stats and status attributes
-    show_filter = Choice(
-        title=_('Filter'), vocabulary='BranchLifecycleStatusFilter',
+    lifecycle = Choice(
+        title=_('Lifecycle Filter'), vocabulary='BranchLifecycleStatusFilter',
         default=BranchLifecycleStatusFilter.CURRENT,
         description=_(
         "The author's assessment of the branch's maturity. "

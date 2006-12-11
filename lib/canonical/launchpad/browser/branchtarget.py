@@ -25,8 +25,8 @@ from canonical.widgets import LaunchpadDropdownWidget
 
 class BranchTargetView(LaunchpadFormView):
     schema = IBranchLifecycleFilter
-    field_names = ['show_filter']
-    custom_widget('show_filter', LaunchpadDropdownWidget)
+    field_names = ['lifecycle']
+    custom_widget('lifecycle', LaunchpadDropdownWidget)
 
     # The default set of statum to show
     CURRENT_SET = set([BranchLifecycleStatus.NEW,
@@ -35,15 +35,21 @@ class BranchTargetView(LaunchpadFormView):
                        BranchLifecycleStatus.MATURE])
                   
 
+    @property
+    def initial_values(self):
+        return {
+            'lifecycle': BranchLifecycleStatusFilter.CURRENT
+            }
+
     def initialize(self):
         LaunchpadFormView.initialize(self)
         
-        widget = self.widgets['show_filter']
+        widget = self.widgets['lifecycle']
 
         if widget.hasValidInput():
-          self.show = widget.getInputValue()
+            self.show = widget.getInputValue()
         else:
-          self.show = BranchLifecycleStatusFilter.CURRENT
+            self.show = BranchLifecycleStatusFilter.CURRENT
 
     @cachedproperty
     def branches(self):

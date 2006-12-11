@@ -30,10 +30,13 @@
 
   <tal:branchlist condition="branchset">
 
-  <form method="get" name="filter" action="" id="filter_form">
+  <form method="get" name="filter" id="filter_form"
+        tal:attributes="action request/URL">
     <span class="lesser">Show branches with status of</span>
-    <div tal:replace="structure view/widgets/show_filter"/>
-    <input type="submit" value="Filter" id="filter_submit"/>
+    <div tal:replace="structure view/widgets/lifecycle"/>
+    <noscript>
+      <input type="submit" value="Filter"/>
+    </noscript>
   </form>
 
 <script type="text/javascript">
@@ -43,8 +46,7 @@ function submit_filter()
   f.submit()
 }
 
-document.getElementById('filter_submit').style.display = "None";
-var field = document.getElementById('field.show_filter');
+var field = document.getElementById('field.lifecycle');
 field.onchange = submit_filter;
 field.focus();
 </script>
