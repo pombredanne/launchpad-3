@@ -33,6 +33,7 @@
   <form method="get" name="filter" action="" id="filter_form">
     <span class="lesser">Show branches with status of</span>
     <div tal:replace="structure view/widgets/show_filter"/>
+    <input type="submit" value="Filter" id="filter_submit"/>
   </form>
 
 <script type="text/javascript">
@@ -42,6 +43,7 @@ function submit_filter()
   f.submit()
 }
 
+document.getElementById('filter_submit').style.display = "None";
 var field = document.getElementById('field.show_filter');
 field.onchange = submit_filter;
 field.focus();

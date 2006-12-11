@@ -2667,6 +2667,18 @@ class BranchLifecycleStatusFilter(DBSchema):
     UI only.
     """
 
+    CURRENT = Item(-1, """
+        New, Experimental, Development or Mature
+
+        Show the currently active branches.
+        """)
+
+    ALL = Item(0, """
+        Any Status
+
+        Show all the branches.
+        """)
+
     NEW = Item(1, """
         New
 
@@ -2712,18 +2724,6 @@ class BranchLifecycleStatusFilter(DBSchema):
         This branch contains work which the author has abandoned, likely
         because it did not prove fruitful.
         """, sortkey=50)
-
-    CURRENT = Item(90, """
-        New, Experimental, Development or Mature
-
-        Show the currently active branches.
-        """)
-
-    ALL = Item(100, """
-        Any Status
-
-        Show all the branches.
-        """)
 
 
 
