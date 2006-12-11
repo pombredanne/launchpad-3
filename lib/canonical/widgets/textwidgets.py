@@ -45,6 +45,13 @@ class LocalDateTimeWidget(TextWidget):
           >>> widget.timeZoneName = 'Australia/Perth'
           >>> print widget._toFieldValue('2006-01-01 12:00:00')
           2006-01-01 12:00:00+08:00
+
+        Invalid dates result in a ConversionError:
+
+          >>> print widget._toFieldValue('not a date')
+          Traceback (most recent call last):
+            ...
+          ConversionError: ('Invalid date value', ...)
         """
         if input == self._missing:
             return self.context.missing_value
@@ -79,7 +86,7 @@ class LocalDateTimeWidget(TextWidget):
           >>> widget._toFormValue(dt)
           '2006-01-01 12:00:00'
 
-        If the date value will be converted to the widget's time zone
+        The date value will be converted to the widget's time zone
         before being displayed:
 
           >>> widget.timeZoneName = 'Australia/Perth'

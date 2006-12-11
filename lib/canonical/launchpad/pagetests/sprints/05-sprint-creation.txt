@@ -72,7 +72,7 @@ for the new sprint.
   'http://launchpad.dev/sprints/ltsponsteroids'
 
 Since the sprint's timezone was set to UTC, the dates are displayed in
-the that time zone:
+that time zone:
 
   >>> print find_portlet(user_browser.contents, 'Meeting details')
   <...
