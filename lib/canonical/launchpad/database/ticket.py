@@ -584,12 +584,14 @@ class TicketSearch:
 
         if self.needs_attention_from:
             constraints.append('''Ticket.id IN (
-            SELECT DISTINCT t.id FROM Ticket t
-                JOIN TicketMessage tm ON (Ticket.id = tm.ticket)
-                JOIN Message m ON (tm.message = m.id)
-                WHERE (t.owner = %(person)s AND t.status IN %(owner_status)s)
-                      OR (t.owner != %(person)s AND
-                          t.status = %(open_status)s AND m.owner = %(person)s)
+                SELECT DISTINCT t.id FROM Ticket t
+                    JOIN TicketMessage tm ON (Ticket.id = tm.ticket)
+                    JOIN Message m ON (tm.message = m.id)
+                    WHERE (t.owner = %(person)s AND
+                           t.status IN %(owner_status)s)
+                        OR (t.owner != %(person)s AND
+                            t.status = %(open_status)s AND
+                            m.owner = %(person)s)
             )''' % sqlvalues(
                 person=self.needs_attention_from,
                 owner_status=[TicketStatus.NEEDSINFO, TicketStatus.ANSWERED],
