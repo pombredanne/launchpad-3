@@ -11,11 +11,12 @@ first source package found in the "Affects" list.
     >>> soup = BeautifulSoup(user_browser.contents)
     >>> affects_table = soup.first('table', {'class': 'listing'})
     >>> [tr.td.a.renderContents()
-    ...  for tr in affects_table.tbody.findAll('tr', recursive=False)]
+    ...  for tr in affects_table.tbody.findAll('tr', recursive=False)
+    ...  if tr.td.a]
     ['ubuntu (upstream)', 'Choose&hellip;',
-     'Ubuntu', 'Choose&hellip;',
+     'Hoary', 'Choose&hellip;',
      'mozilla-firefox (Debian)', 'Choose&hellip;',
-     'mozilla-firefox (Debian Woody)', 'Choose&hellip;']
+     'Woody', 'Choose&hellip;']
 
     >>> user_browser.getLink(url='+distrotask').click()
     >>> user_browser.url

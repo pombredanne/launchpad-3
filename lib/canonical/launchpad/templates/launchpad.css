@@ -549,6 +549,13 @@ ins {
     font-weight: normal;
 }
 
+.discreet a {
+    color: #76797c;
+    text-decoration: none;
+    border-bottom: 1px dotted #76797c;
+    font-weight: normal;
+}
+
 .suggestion {
     color: #76797c;
     font-size: 50%;

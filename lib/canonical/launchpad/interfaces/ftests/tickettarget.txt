@@ -19,7 +19,6 @@ associated with it at the start of the test.)
     >>> verifyObject(ITicketTarget, target)
     True
 
-
 == newTicket() ==
 
 Tickets are always owned by a registered user.
@@ -86,7 +85,6 @@ Anonymous users cannot use newTicket():
       ...
     Unauthorized...
 
-
 == getTicket() ==
 
 The getTicket() method is used to retrieve a ticket by id for a
@@ -102,7 +100,6 @@ method must return None.
     True
     >>> target.getTicket(12345) is None
     True
-
 
 == Creating some additional tickets ==
 
@@ -149,7 +146,6 @@ description.
     ...     'Another new ticket that is actually very new.',
     ...     datecreated=now+timedelta(hours=1))
     >>> login(ANONYMOUS)
-
 
 == searchTickets() ==
 
@@ -294,7 +290,6 @@ In this case, it returned the same results than with the search 'new' because
 all other words in the sentence are either common ('ticket', 'title') or stop
 words ('with', 'a').
 
-
 == Support contacts ==
 
 Target can have support contacts. The list of support contacts for a
@@ -357,8 +352,7 @@ Only registered users can remove a support contact:
       ...
     Unauthorized...
 
-Supported Languages
--------------------
+== Supported Languages ==
 
 The supported languages for a given ITicketTarget are given by
 getSupportedLanguages(). The supported languages of a ticket target
