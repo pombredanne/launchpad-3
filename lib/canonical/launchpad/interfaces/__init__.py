@@ -31,6 +31,7 @@ from canonical.launchpad.interfaces.bugbranch import *
 from canonical.launchpad.interfaces.bugcve import *
 from canonical.launchpad.interfaces.buglink import *
 from canonical.launchpad.interfaces.bugmessage import *
+from canonical.launchpad.interfaces.bugnomination import *
 from canonical.launchpad.interfaces.bugnotification import *
 from canonical.launchpad.interfaces.bugsubscription import *
 from canonical.launchpad.interfaces.bugtask import *
@@ -131,6 +132,7 @@ from canonical.launchpad.interfaces.sprintspecification import *
 from canonical.launchpad.interfaces.ssh import *
 from canonical.launchpad.interfaces.supportcontact import *
 from canonical.launchpad.interfaces.teammembership import *
+from canonical.launchpad.interfaces.temporaryblobstorage import *
 from canonical.launchpad.interfaces.ticket import *
 from canonical.launchpad.interfaces.ticketbug import *
 from canonical.launchpad.interfaces.ticketmessage import *

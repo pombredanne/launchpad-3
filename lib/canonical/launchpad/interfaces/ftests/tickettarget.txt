@@ -1,5 +1,4 @@
-ITicketTarget Interface
-=======================
+= ITicketTarget Interface =
 
 Launchpad includes a support request tracker. Tickets are associated to
 objects implementing ITicketTarget. This file documents that interface
@@ -9,18 +8,18 @@ variable which is defined outside of this file, usually by a
 LaunchpadFunctionalTestCase. This instance shouldn't have any tickets
 associated with it at the start of the test.)
 
-    (Some parts of the ITicketTarget interface are only accessible
-    to a registered user.)
+    # Some parts of the ITicketTarget interface are only accessible
+    # to a registered user.
     >>> login('no-priv@canonical.com')
+
+    >>> from zope.component import getUtility
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import ITicketTarget
 
     >>> verifyObject(ITicketTarget, target)
     True
 
-
-newTicket()
------------
+== newTicket() ==
 
 Tickets are always owned by a registered user.
 
@@ -33,7 +32,7 @@ with the target. It takes as parameters the ticket's owner, title and
 description. It also takes an optional parameter 'datecreated' parameter
 which defaults to UTC_NOW.
 
-    (Let's define now to a know value.)
+    # Let's define now to a know value.
     >>> from datetime import datetime, timedelta
     >>> from pytz import UTC
     >>> now = datetime.now(UTC)
@@ -58,6 +57,25 @@ subscribed to the ticket.
     >>> sample_person in [s.person for s in ticket.subscriptions]
     True
 
+Ticket can be written in any languages supported in Launchpad. The
+language of the request is available in the 'language' attribute. By
+default, requests are assumed to be written in English:
+
+    >>> print ticket.language.code
+    en
+
+It is possible to create ticket in another language than English. One
+just need to pass the language in which the ticket is written in the
+language parameter.
+
+    >>> from canonical.launchpad.interfaces import ILanguageSet
+    >>> french = getUtility(ILanguageSet)['fr']
+    >>> ticket = target.newTicket(sample_person, "De l'aide S.V.P.",
+    ...     "Pouvez-vous m'aider?", language=french,
+    ...     datecreated=now + timedelta(seconds=30))
+    >>> print ticket.language.code
+    fr
+
 Anonymous users cannot use newTicket():
 
     >>> login(ANONYMOUS)
@@ -67,9 +85,7 @@ Anonymous users cannot use newTicket():
       ...
     Unauthorized...
 
-
-getTicket()
------------
+== getTicket() ==
 
 The getTicket() method is used to retrieve a ticket by id for a
 particular target.
@@ -85,9 +101,7 @@ method must return None.
     >>> target.getTicket(12345) is None
     True
 
-
-Creating some additional tickets
--------------------------------
+== Creating some additional tickets ==
 
 For the following methods, we will require some more tickets. Create five
 new tickets. Odd tickets will be owned by foo_bar and even tickets will be
@@ -105,14 +119,14 @@ owned by sample_person.
     ...         'This request index is %d.') % (num, num)
     ...     tickets.append(target.newTicket(
     ...         owner, 'Ticket title%d' % num, description,
-    ...         datecreated=now+timedelta(seconds=num+1)))
+    ...         datecreated=now+timedelta(minutes=num+1)))
 
 For more variety, we will set the status of the last to INVALID and the
 fourth one to ANSWERED.
 
     >>> from canonical.lp.dbschema import TicketStatus
 
-    (Need an admin to change to an arbitrary status)
+    # Need an admin to change to an arbitrary status.
     >>> login('foo.bar@canonical.com')
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
     >>> message = tickets[-1].setStatus(
@@ -120,7 +134,7 @@ fourth one to ANSWERED.
     >>> message = tickets[3].setStatus(
     ...     foo_bar, TicketStatus.ANSWERED, 'Status change.')
 
-    (Flush those changes to the database)
+    # Flush those changes to the database.
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
@@ -133,11 +147,15 @@ description.
     ...     datecreated=now+timedelta(hours=1))
     >>> login(ANONYMOUS)
 
-
-searchTickets()
----------------
+== searchTickets() ==
 
 The searchTickets() method is used to search for tickets.
+
+=== search_text ===
+
+The search_text parameter will select the tickets that contain the
+passed in text. (The standard text searching algorithm is used, see
+textsearching.txt.)
 
     >>> for t in target.searchTickets(search_text='new'):
     ...     print t.title
@@ -148,6 +166,8 @@ The results here are sorted by relevancy. (In the last tickets, 'New'
 appeared in the description which makes it less relevant than when the
 word appears in the title.)
 
+=== status ===
+
 The searchTickets() method can also filter tickets by status:
 
     >>> for t in target.searchTickets(status=TicketStatus.OPEN):
@@ -156,6 +176,7 @@ The searchTickets() method can also filter tickets by status:
     Ticket title2
     Ticket title1
     Ticket title0
+    De l'aide S.V.P.
     New ticket
 
 In this previous example, because there is no sort text, the
@@ -176,6 +197,8 @@ OPEN and INVALID tickets with the word 'index'
     Ticket title2
     Ticket title1
     Ticket title0
+
+=== sort ===
 
 You can control the sort order by passing one of the constants defined
 in TicketSort. (We already saw the NEWEST_FIRST and RELEVANCY sort
@@ -218,10 +241,13 @@ the tickets will be sorted NEWEST_FIRST.
     Ticket title2
     Ticket title1
     Ticket title0
+    De l'aide S.V.P.
     New ticket
 
 ('Ticket title4' is not shown in this case because it has INVALID as
 its status.)
+
+=== owner ===
 
 You can also find ticket owner by a particular user by using the owner
 parameter.
@@ -231,9 +257,25 @@ parameter.
     Ticket title3
     Ticket title1
 
+The language criteria can be used to select only tickets written in a
+particular language.
 
-findSimilarTickets()
---------------------
+    >>> english = getUtility(ILanguageSet)['en']
+    >>> for t in target.searchTickets(language=french):
+    ...     print t.title
+    De l'aide S.V.P.
+
+    >>> for t in target.searchTickets(language=[english, french]):
+    ...     print t.title
+    Another ticket
+    Ticket title3
+    Ticket title2
+    Ticket title1
+    Ticket title0
+    De l'aide S.V.P.
+    New ticket
+
+== findSimilarTickets() ==
 
 The method findSimilarTickets() can be use to find tickets similar to a
 sentence. The tickets don't have to contain all the words of the sentence,
@@ -248,14 +290,22 @@ In this case, it returned the same results than with the search 'new' because
 all other words in the sentence are either common ('ticket', 'title') or stop
 words ('with', 'a').
 
-
-Support contacts
-----------------
+== Support contacts ==
 
 Target can have support contacts. The list of support contacts for a
 target is available through the support_contacts attribute.
 
     >>> list(target.support_contacts)
+    []
+
+There is also a direct_support_contacts which includes only the
+support contacts registered explicitely on the ticket target. (In
+general, it will be equal to support_contacts attribute, but some
+ITicketTarget implementations may inherit support contacts
+from other context. In these cases, that attribute would only contain
+the support contacts defined in the current ITicketTarget context.)
+
+    >>> list(target.direct_support_contacts)
     []
 
 You add a support contact by using the addSupportContact method. This
@@ -273,7 +323,9 @@ False when it was already on the list:
 
     >>> target.addSupportContact(name18)
     True
-    >>> list([p.name for p in target.support_contacts])
+    >>> [p.name for p in target.support_contacts]
+    [u'name18']
+    >>> [p.name for p in target.direct_support_contacts]
     [u'name18']
     >>> target.addSupportContact(name18)
     False
@@ -287,6 +339,8 @@ list.
     True
     >>> list(target.support_contacts)
     []
+    >>> list(target.direct_support_contacts)
+    []
     >>> target.removeSupportContact(name18)
     False
 
@@ -297,3 +351,49 @@ Only registered users can remove a support contact:
     Traceback (most recent call last):
       ...
     Unauthorized...
+
+== Supported Languages ==
+
+The supported languages for a given ITicketTarget are given by
+getSupportedLanguages(). The supported languages of a ticket target
+include English plus all languages spoken by at least one of its support
+contacts (with the exception of all English variations).
+
+    >>> [lang.code for lang in target.getSupportedLanguages()]
+    [u'en']
+
+Let's add some support contacts which speak different languages.
+
+    >>> login('daf@canonical.com')
+    >>> daf = getUtility(IPersonSet).getByName('daf')
+    >>> target.addSupportContact(daf)
+    True
+
+    >>> login('carlos@canonical.com')
+    >>> carlos = getUtility(IPersonSet).getByName('carlos')
+    >>> target.addSupportContact(carlos)
+    True
+
+    >>> [lang.code for lang in carlos.languages]
+    [u'ca', u'es']
+
+Note that daf has en_GB as one of his preferred languages...
+
+    >>> [lang.code for lang in daf.languages]
+    [u'en_GB', u'ja', u'cy']
+
+... but en_GB is not included in the target's supported languages,
+because we ignore all English variants.
+
+    >>> import operator
+    >>> [lang.code for lang in sorted(target.getSupportedLanguages(),
+    ...                               key=operator.attrgetter('code'))]
+    [u'ca', u'cy', u'en', u'es', u'ja']
+
+== getTicketLanguages() ==
+
+The getTicketLanguages() method returns the set of languages used by all
+of the target's tickets.
+
+    >>> sorted([language.code for language in target.getTicketLanguages()])
+    [u'en', u'fr']

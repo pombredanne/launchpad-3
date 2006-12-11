@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'can_be_nominated_for_releases',
     'validate_url',
     'valid_http_url',
     'valid_ftp_url',
@@ -13,7 +14,7 @@ __all__ = [
     'valid_bug_number',
     'valid_cve_sequence',
     'valid_emblem',
-    'valid_hackergotchi',
+    'valid_gotchi',
     'validate_new_team_email',
     'validate_new_person_email',
     'validate_distribution_mirror_schema',
@@ -50,10 +51,25 @@ from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.cve import valid_cve
 from canonical.launchpad.validators.url import valid_absolute_url
 
+def can_be_nominated_for_releases(releases):
+    """Can the bug be nominated for these releases?"""
+    current_bug = getUtility(ILaunchBag).bug
+    unnominatable_releases = []
+    for release in releases:
+        if not current_bug.canBeNominatedFor(release):
+            unnominatable_releases.append(release.name.capitalize())
+
+    if unnominatable_releases:
+        raise LaunchpadValidationError(_(
+            "This bug has already been nominated for these releases: %s" %
+                ", ".join(unnominatable_releases)))
+
+    return True
+
 
 def _validate_ascii_printable_text(text):
     """Check if the given text contains only printable ASCII characters.
-    
+
     >>> print _validate_ascii_printable_text(u'no non-ascii characters')
     None
     >>> print _validate_ascii_printable_text(
@@ -347,8 +363,8 @@ def _valid_image(image, max_size, max_dimensions):
 def valid_emblem(emblem):
     return _valid_image(emblem, 9000, (16,16))
 
-def valid_hackergotchi(hackergotchi):
-    return _valid_image(hackergotchi, 54000, (150,150))
+def valid_gotchi(gotchi):
+    return _valid_image(gotchi, 54000, (150,150))
 
 
 def _validate_email(email):

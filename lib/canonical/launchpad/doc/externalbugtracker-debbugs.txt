@@ -98,7 +98,7 @@ And the linked bugtasks got updated:
     ...     print bugtask.bug.id, bugtask.targetname, bugtask.status.title,
     ...     print bugtask.importance.title
     1 mozilla-firefox (Debian) Unconfirmed Unknown
-    3 mozilla-firefox (Debian) Unconfirmed Unknown
+    3 mozilla-firefox (Debian Sarge) Unconfirmed Unknown
     7 evolution (Debian) Fix Released Unknown
 
 Sometimes the severity field is missing in the bug summary. That will

@@ -20,8 +20,8 @@ __all__ = [
 
 
 from zope.schema import (
-    Choice, Datetime, Int, Text, TextLine, Bytes, Bool)
-from zope.interface import Interface, Attribute
+    Bool, Bytes, Choice, Datetime, Int, Text, TextLine)
+from zope.interface import Attribute, Interface, Invalid, invariant
 from zope.component import getUtility
 
 from canonical.launchpad import _
@@ -34,7 +34,7 @@ from canonical.launchpad.interfaces.specificationtarget import (
 from canonical.launchpad.interfaces.tickettarget import (
     TICKET_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.validation import (
-    valid_emblem, valid_hackergotchi, validate_new_team_email,
+    valid_emblem, valid_gotchi, validate_new_team_email,
     validate_new_person_email)
 
 from canonical.lp.dbschema import (
@@ -113,22 +113,26 @@ class IPerson(IHasSpecifications):
             title=_('Karma'), readonly=False,
             description=_('The cached total karma for this person.')
             )
-    homepage_content = Text(title=_("Homepage Content"), required=False,
-        description=_("The content of your home page. Edit this and it "
-        "will be displayed for all the world to see. It is NOT a wiki "
-        "so you cannot undo changes."))
+    homepage_content = Text(
+        title=_("Homepage Content"), required=False,
+        description=_(
+            "The content of your home page. Edit this and it will be "
+            "displayed for all the world to see. It is NOT a wiki so you "
+            "cannot undo changes."))
     emblem = Bytes(
-        title=_("Emblem"), required=False, description=_("A small image, "
-        "max 16x16 pixels and 8k in file size, that can be used to refer "
-        "to this team."),
+        title=_("Emblem"), required=False,
+        description=_(
+            "A small image, max 16x16 pixels and 8k in file size, that can "
+            "be used to refer to this team."),
         constraint=valid_emblem)
-    hackergotchi = ImageUpload(
-        title=_("Hackergotchi"), required=False, description=_("An image, "
-        "maximum 150x150 pixels, that will be displayed on your home page. "
-        "It should be no bigger than 50k in size. "
-        "Traditionally this is a great big grinning image of your mug. "
-        "Make the most of it."),
-        constraint=valid_hackergotchi)
+    gotchi = ImageUpload(
+        title=_("Hackergotchi"), required=False,
+        description=_(
+            "An image, maximum 150x150 pixels, that will be displayed on "
+            "your home page. It should be no bigger than 50k in size. "
+            "Traditionally this is a great big grinning image of your mug. "
+            "Make the most of it."),
+        constraint=valid_gotchi)
 
     addressline1 = TextLine(
             title=_('Address'), required=True, readonly=False,
@@ -360,6 +364,11 @@ class IPerson(IHasSpecifications):
     browsername = Attribute(
         'Return a textual name suitable for display in a browser.')
 
+    @invariant
+    def personCannotHaveEmblem(person):
+        if person.emblem is not None and not person.isTeam():
+            raise Invalid('Only teams can have an emblem.')
+
     def getBugContactPackages():
         """Return a list of packages for which this person is a bug contact.
 
@@ -578,8 +587,16 @@ class IPerson(IHasSpecifications):
         If the given language is not present, nothing  will happen.
         """
 
+    def getSupportedLanguages():
+        """Return a set containing the languages in which support is provided.
+
+        For a person, this is equal to the list of known languages.
+        For a team that doesn't have any explicit known languages set, this
+        will be equal to union of all the languages known by its members.
+        """
+
     def searchTickets(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-                      participation=None, sort=None):
+                      language=None, participation=None, sort=None):
         """Search the person's tickets.
 
         :search_text: A string that is matched against the ticket
@@ -589,6 +606,10 @@ class IPerson(IHasSpecifications):
         :status: A sequence of TicketStatus Items. If None or an empty
         sequence, the status is not included as a filter criteria.
 
+        :language: An ILanguage or a sequence of ILanguage objects to match
+        against the ticket's language. If None or an empty sequence,
+        the language is not included as a filter criteria.
+
         :participation: A list of TicketParticipation that defines the set
         of relationship to tickets that will be searched. If None or an empty
         sequence, all relationships are considered.
@@ -597,6 +618,11 @@ class IPerson(IHasSpecifications):
         When there is a search_text value, the default is to sort by RELEVANCY,
         otherwise results are sorted NEWEST_FIRST.
 
+        """
+
+    def getTicketLanguages():
+        """Return a set of ILanguage used by the tickets in which this person "
+        is involved.
         """
 
 

@@ -1,5 +1,4 @@
-Rejecting Tickets
-=================
+= Rejecting Tickets =
 
 Support contacts and administrators can reject a support request.
 This should be done when the request isn't an actual support request,
@@ -8,8 +7,8 @@ for example, if the request is a duplicate or spam.
 No Privileges Pesron isn't a support contact or administrator, so he
 doesn't have access to that feature.
 
-    (XXX flacoste 2006/10/19 Bug 52077 user_browser should be no-priv
-    We can't use user_browser here because he is Firefox's registrant.)
+    # XXX flacoste 2006/10/19 Bug 52077 user_browser should be no-priv
+    # We can't use user_browser here because he is Firefox's registrant.
     >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/products/firefox/+ticket/2')
     >>> browser.getLink('Reject Request')
@@ -62,8 +61,7 @@ and the rejection message is added to the ticket board.
     >>> print soup.fetch('div', 'boardCommentBody')[-1].renderContents()
     <p>Rejecting because it's a duplicate of <a...>bug #1</a>.</p>
 
-Changing the Ticket Status
-==========================
+= Changing the Ticket Status =
 
 In the previous example, that rejection was clearly a mistake: you
 shouldn't reject a request because it is related to a bug, for these
