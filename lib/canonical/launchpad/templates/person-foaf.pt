@@ -6,8 +6,8 @@
     <foaf:Person tal:condition="not:context/isTeam">
         <foaf:name tal:content="context/displayname">Display Name</foaf:name>
         <foaf:nick tal:content="context/name">Nick name</foaf:nick>
-        <foaf:img tal:condition="context/hackergotchi"
-                  tal:attributes="rdf:resource context/hackergotchi/url" />
+        <foaf:img tal:condition="context/gotchi"
+                  tal:attributes="rdf:resource context/gotchi/url" />
         <foaf:mbox_sha1sum
             tal:condition="context/preferredemail"
             tal:content="context/preferredemail_sha1"

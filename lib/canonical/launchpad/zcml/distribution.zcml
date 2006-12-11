@@ -16,7 +16,7 @@
                             driver members owner bugcontact
                             official_malone official_rosetta
                             security_contact upload_admin upload_sender
-                            mirror_admin"
+                            mirror_admin homepage_content emblem gotchi"
             />
         <!-- ITicketTarget -->
         <allow attributes="getTicket searchTickets findSimilarTickets
@@ -38,7 +38,7 @@
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistribution"
-        layer="canonical.launchpad.layers.MaloneLayer"
+        layer="canonical.launchpad.layers.BugsLayer"
         name="+bugs" />
 
     <browser:navigation

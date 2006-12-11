@@ -1779,17 +1779,17 @@ class PersonEmblemView(GeneralFormView):
 
 class PersonHackergotchiView(GeneralFormView):
 
-    def process(self, hackergotchi=None):
+    def process(self, gotchi=None):
         # XXX use Bjorn's nice file upload widget when he writes it
-        if hackergotchi is not None:
-            filename = self.request.get('field.hackergotchi').filename
+        if gotchi is not None:
+            filename = self.request.get('field.gotchi').filename
             content_type, encoding = guess_content_type(
-                name=filename, body=hackergotchi)
+                name=filename, body=gotchi)
             hkg = getUtility(ILibraryFileAliasSet).create(
-                name=filename, size=len(hackergotchi),
-                file=StringIO(hackergotchi),
+                name=filename, size=len(gotchi),
+                file=StringIO(gotchi),
                 contentType=content_type)
-            self.context.hackergotchi = hkg
+            self.context.gotchi = hkg
         self._nextURL = canonical_url(self.context)
         return 'Success'
 

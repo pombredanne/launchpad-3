@@ -1,6 +1,4 @@
-
-Submitting New Support Requests
-===============================
+= Submitting New Support Requests =
 
 There are two paths available to a user to make new support requests.
 The first one involes three steps. First, go to the product or
@@ -23,9 +21,7 @@ Making a new support requests requires logging in:
     >>> user_browser.title
     'Request support with Ubuntu'
 
-
-Get Help Online
----------------
+== Get Help Online ==
 
 The other way is by using the 'Get Help Online' menu item that is found
 in all GTK2 applications packaged for Ubuntu (and soon in QT
@@ -42,9 +38,7 @@ associated with the source package of the used application.
     >>> user_browser.title
     'Request support with Hoary mozilla-firefox'
 
-
-Searching for Similar Tickets
------------------------------
+== Searching for Similar Tickets ==
 
 Making a new support request is a two-step process. In the first step,
 the user enters a summary of his problem. Using that summary, a search
@@ -89,9 +83,7 @@ left over the ticket's title.
     &quot;manual install&quot;
     3) clicking on &quot;manual install&quot; open java web site.......
 
-
-Creating a New Ticket
----------------------
+== Creating a New Ticket ==
 
 If the shown tickets don't help the user, he may post a new support
 ticket by filling in the 'Description' field. He may also edit the

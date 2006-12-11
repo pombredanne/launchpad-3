@@ -1,4 +1,4 @@
-== Editing a Ticket using a non-English Language ==
+= Editing a Ticket using a non-English Language =
 
 Register a new support contact to change the list of supported languages.
 
