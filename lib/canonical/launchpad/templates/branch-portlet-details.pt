@@ -32,7 +32,8 @@
         </tal:has_product>
 
         <b>Status:</b><br />
-        <span tal:content="context/lifecycle_status/title"
+        <span id="branch-details-status-value"
+              tal:content="context/lifecycle_status/title"
               tal:attributes="
                 class string:branchstatus${context/lifecycle_status/name}"
                 >Experimental</span>
