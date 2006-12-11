@@ -1,7 +1,5 @@
-In this test, we are going to test only that when we use copy buttons, we
-don't lose anything else in other messages. The copy functionality itself is
-already tested in xx-pomsgset-copy.txt. The code is shared for pofile
-translation form so we don't need to test it here again.
+Here, we are going to see that when we use copy buttons, we don't lose
+anything else added in other messages.
 
 XXX CarlosPerelloMarin 20061202: textarea values gets extra '\n' char when
 reading its value due a bug in our test infrastructure. For more info
@@ -16,15 +14,18 @@ you can see bug #47511.
 We are going to add a new translation to the message #130, it should remain
 in the form once we do the copy.
 
-Firts, check that the message we are going to translate is empty
+Firts, we see that the message we are going to translate is empty.
 
-  >>> user_browser.getControl(name='msgset_130_es_translation_0_new').value == ''
-  True
+  >>> user_browser.getControl(name='msgset_130_es_translation_0_new').value
+  ''
 
 And now, we change it.
 
-  >>> user_browser.getControl(name='msgset_130_es_translation_0_new').value = 'You will not erase me!'
-  >>> user_browser.getControl(name='msgset_130_es_translation_0_new_checkbox').value = True
+  >>> user_browser.getControl(
+  ...     name='msgset_130_es_translation_0_new').value = (
+  ...         u'You will not erase me!')
+  >>> user_browser.getControl(
+  ...     name='msgset_130_es_translation_0_new_checkbox').value = True
 
 Now, we are going to do a copy submission using current translation for
 another message in the form.
@@ -40,12 +41,14 @@ And now, the new translation textarea has current translation:
 
 Its checkbox is set
 
-  >>> user_browser.getControl(name='msgset_134_es_translation_0_new_checkbox').value
+  >>> user_browser.getControl(
+  ...     name='msgset_134_es_translation_0_new_checkbox').value
   True
 
 And also, the translation we added by hand, is still there.
 
-  >>> user_browser.getControl(name='msgset_130_es_translation_0_new').value == '\nYou will not erase me!'
-  True
-  >>> user_browser.getControl(name='msgset_130_es_translation_0_new_checkbox').value
+  >>> user_browser.getControl(name='msgset_130_es_translation_0_new').value
+  '\nYou will not erase me!'
+  >>> user_browser.getControl(
+  ...     name='msgset_130_es_translation_0_new_checkbox').value
   True

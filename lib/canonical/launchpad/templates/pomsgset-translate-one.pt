@@ -119,9 +119,9 @@
 </tr>
 <tal:language-code
   define="language_code context/pofile/language/code">
-  <tal:translations-tuple
-       repeat="translations_tuple view/translations_tuples">
-  <tal:plural-form define="plural_index translations_tuple/plural_index">
+  <tal:translation-dictionaries
+       repeat="translation_dictionary view/translation_dictionaries">
+  <tal:plural-form define="plural_index translation_dictionary/plural_index">
     <tr class="secondary">
       <th colspan="3">
         <label class="language-code">Current
@@ -132,19 +132,19 @@
         </label>
       </th>
       <tal:with-content
-           condition="translations_tuple/active_translation">
+           condition="translation_dictionary/active_translation">
         <td>
           <input type="image" src="/@@/copy" title="Copy text"
             tal:attributes="
               name string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_copy"
           />
         </td>
-        <td tal:content="structure translations_tuple/active_translation">
+        <td tal:content="structure translation_dictionary/active_translation">
           current translation
         </td>
       </tal:with-content>
       <tal:without-content
-        condition="not: translations_tuple/active_translation">
+        condition="not: translation_dictionary/active_translation">
         <td />
         <td>
           (no translation yet)
@@ -152,7 +152,7 @@
       </tal:without-content>
     </tr>
     <tal:selection
-      define="selection translations_tuple/selection"
+      define="selection translation_dictionary/selection"
       condition="selection">
       <tr class="discreet secondary"
           tal:condition="selection/activesubmission">
@@ -183,7 +183,8 @@
         </td>
       </tr>
     </tal:selection>
-    <tal:suggestion_block define="suggestion_block translations_tuple/suggestion_block">
+    <tal:suggestion_block
+         define="suggestion_block translation_dictionary/suggestion_block">
       <tal:suggestions repeat="suggestions suggestion_block">
         <div tal:replace="structure suggestions/@@+display" />
       </tal:suggestions>
@@ -199,7 +200,7 @@
         <input
           type="checkbox"
           tal:attributes="
-            checked translations_tuple/store_flag;
+            checked translation_dictionary/store_flag;
             name string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_checkbox;
             id string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_checkbox;
             onClick string:javascript:setFocusByName('msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new');
@@ -207,7 +208,7 @@
       </td>
       <td>
         <tal:with-content
-          condition="translations_tuple/translation">
+          condition="translation_dictionary/translation">
           <textarea
             style="width: 100%;"
             rows=6
@@ -218,10 +219,10 @@
               onKeyPress string:javascript:selectWidget('msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_checkbox', event);
               onChange string:javascript:selectWidget('msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_checkbox', event);
             ">
-<tal:content replace="translations_tuple/translation" /></textarea>
+<tal:content replace="translation_dictionary/translation" /></textarea>
         </tal:with-content>
         <tal:without-content
-          condition="not: translations_tuple/translation">
+          condition="not: translation_dictionary/translation">
           <textarea
             style="width: 100%;"
             rows=6
@@ -236,7 +237,7 @@
       </td>
     </tr>
   </tal:plural-form>
-  </tal:translations-tuple>
+  </tal:translation-dictionaries>
   <tr class="secondary">
     <td colspan="4" />
     <td>
