@@ -101,18 +101,17 @@ As we didn't submit the form, the getTranslation method will return None.
     >>> subview.getTranslation(0) is None
     True
 
-If we request a plural form that is not valid, we can see that we raise
-an IndexError exception.
+If we request a plural form that is not valid, we get an AssertionError.
 
     >>> subview.getActiveTranslation(1)
     Traceback (most recent call last):
     ...
-    IndexError: There is no plural form #1 for Spanish (es) language
+    AssertionError: There is no plural form #1 for Spanish (es) language
 
     >>> subview.getTranslation(1)
     Traceback (most recent call last):
     ...
-    IndexError: There is no plural form #1 for Spanish (es) language
+    AssertionError: There is no plural form #1 for Spanish (es) language
 
 
 Web presentation

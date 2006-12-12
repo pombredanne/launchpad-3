@@ -8,7 +8,7 @@ We define first a function we are going to use in this test.
 
   >>> def print_shown_messages(browser):
   ...     """Print the id/value of all shown translations on the page."""
-  ...     from canonical.launchpad.database import POTMsgSet
+  ...     from BeautifulSoup import BeautifulSoup
   ...
   ...     for msgset_id in range(130, 152):
   ...         try:
@@ -17,13 +17,26 @@ We define first a function we are going to use in this test.
   ...         except LookupError:
   ...             pass
   ...         else:
-  ...             potmsgset = POTMsgSet.get(msgset_id)
-  ...             pomsgset = potmsgset.getPOMsgSet('es')
-  ...             if pomsgset is None:
-  ...                 translation = None
+  ...             translation_form_soup = BeautifulSoup(browser.contents)
+  ...             translation_tbody = translation_form_soup.findAll('tbody')[1]
+  ...             translation_tbody_content = translation_tbody.renderContents()
+  ...             translation_table_soup = BeautifulSoup(translation_tbody_content)
+  ...             tr_list = translation_table_soup.findAll('tr')
+  ...             msgset_searched = '"msgset_%d"' % msgset_id
+  ...             if msgset_id in (137, 142):
+  ...                 translation_index = 1
+  ...             elif msgset_id == 151:
+  ...                 translation_index = 3
+  ...             elif msgset_id < 149:
+  ...                 translation_index = 2
   ...             else:
-  ...                 translation = pomsgset.active_texts[0]
-  ...             print (msgset_id, translation)
+  ...                 translation_index = 4
+  ...             for index in range(len(tr_list)):
+  ...                 if msgset_searched in str(tr_list[index]):
+  ...                     tr_translation = tr_list[index + translation_index]
+  ...                     td_ignore, td_translation = tr_translation('td')
+  ...                     print (msgset_id, td_translation.renderContents())
+  ...                     break
 
 Let's see the list of untranslated messsages that the pofile has with the
 first batch of entries:
@@ -35,17 +48,16 @@ first batch of entries:
   'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=untranslated'
 
   >>> print_shown_messages(browser)
-  (133, None)
-  (135, None)
-  (136, None)
-  (137, None)
-  (138, None)
-  (139, None)
-  (140, None)
-  (141, None)
-  (142, None)
-  (148, None)
-
+  (133, '\n          (no translation yet)\n        ')
+  (135, '\n          (no translation yet)\n        ')
+  (136, '\n          (no translation yet)\n        ')
+  (137, '\n          (no translation yet)\n        ')
+  (138, '\n          (no translation yet)\n        ')
+  (139, '\n          (no translation yet)\n        ')
+  (140, '\n          (no translation yet)\n        ')
+  (141, '\n          (no translation yet)\n        ')
+  (142, '\n          (no translation yet)\n        ')
+  (148, '\n          (no translation yet)\n        ')
 
 The set of messages that are untranslated in the second batch:
 
@@ -54,9 +66,9 @@ The set of messages that are untranslated in the second batch:
   'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=untranslated&start=10'
 
   >>> print_shown_messages(browser)
-  (149, None)
-  (150, None)
-  (151, None)
+  (149, '\n          (no translation yet)\n        ')
+  (150, '\n          (no translation yet)\n        ')
+  (151, '\n          (no translation yet)\n        ')
 
 Now, we are going to select the amount of entries that need to be reviewed.
 
@@ -66,8 +78,8 @@ Now, we are going to select the amount of entries that need to be reviewed.
   'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=need_review'
 
   >>> print_shown_messages(browser)
-  (132, u'tiene ')
-  (146, u'%d foo')
+  (132, 'tiene ')
+  (146, '%d foo')
 
 We are now at the end of this template. Let's try the form submission
 to be sure that we don't redirect to a broken URL but to the first batch.

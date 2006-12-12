@@ -4,22 +4,58 @@ extra new line characters with text areas when you get the value with
 getControl(...).value. For more information, please, read bug #47511.
 
   >>> from BeautifulSoup import BeautifulSoup
-  >>> from canonical.launchpad.database import POTMsgSet
 
-First, we check that the message is not translated.
+First, we need to define a function to see that the message we are
+interested on doesn't have any translation.
 
-  >>> potmsgset = POTMsgSet.get(149)
-  >>> pomsgset = potmsgset.getPOMsgSet('es')
-  >>> pomsgset is not None
-  True
-  >>> pomsgset.active_texts
-  [None]
+  >>> def getMessageValues(content, message):
+  ...     """Return english string and translation for the first message."""
+  ...
+  ...     translation_form_soup = BeautifulSoup(content)
+  ...     translation_tbody = translation_form_soup.findAll('tbody')[1]
+  ...     translation_tbody_content = translation_tbody.renderContents()
+  ...     translation_table_soup = BeautifulSoup(translation_tbody_content)
+  ...     tr_list = translation_table_soup.findAll('tr')
+  ...     tr_english_msgid = tr_list[0]
+  ...     td_ignore, td_id, td_ignore, td_msgid = (
+  ...         tr_english_msgid('td'))
+  ...
+  ...     if message == 20:
+  ...         translation_index = 4
+  ...     elif message == 23:
+  ...         translation_index = 2
+  ...     else:
+  ...         translation_index = 3
+  ...
+  ...     tr_translation = tr_list[translation_index]
+  ...     td_ignore, td_translation = tr_translation('td')
+  ...
+  ...     return (td_id.renderContents(), td_msgid.renderContents(),
+  ...             td_translation.renderContents())
+
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
   >>> browser.open(
   ...     'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=19&batch=1')
   >>> browser.url
   'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=19&batch=1'
+
+We can see that the message we are interested on is not translated.
+
+  >>> (msgid_number, msgid, translation) = getMessageValues(
+  ...     browser.contents, 20)
+  >>> print msgid_number
+  <BLANKLINE>
+      20.
+      <a name="20">
+    <input type="hidden" name="msgset_149" />
+    </a>
+  >>> print msgid
+  Please select a key size in bits.  The cipher you have chosen...
+  >>> print translation
+  <BLANKLINE>
+            (no translation yet)
+  <BLANKLINE>
 
 Now, we submit some text with new lines before and after the text, the
 answer should have exactly those strings.
@@ -74,12 +110,19 @@ Get previous page to check that the save translation is the right one.
 
 And, as we can see, we get the trailing new line char
 
-  >>> potmsgset = POTMsgSet.get(165)
-  >>> pomsgset = potmsgset.getPOMsgSet('es')
-  >>> pomsgset is not None
-  True
-  >>> pomsgset.active_texts
-  [u'%s: la opcion \xab%s\xbb es ambigua\n']
+  >>> (msgid_number, msgid, translation) = getMessageValues(browser.contents, 23)
+  >>> print msgid_number
+  <BLANKLINE>
+      23.
+      <a name="23">
+    <input type="hidden" name="msgset_165" />
+    </a>
+  >>> print msgid
+  <code>%s</code>: option `<code>%s</code>' is ambiguous...
+  <BLANKLINE>
+  >>> print translation
+  %s: la opcion «%s» es ambigua
+  <BLANKLINE>
 
 Now, we do the right submit, with one trailing new line...
 
@@ -100,12 +143,19 @@ Get previous page to check that the save translation is the right one.
 
 And, as we can see, we get the same output, just one trailing new line char
 
-  >>> potmsgset = POTMsgSet.get(165)
-  >>> pomsgset = potmsgset.getPOMsgSet('es')
-  >>> pomsgset is not None
-  True
-  >>> pomsgset.active_texts
-  [u'%s: la opcion \xab%s\xbb es ambigua\n']
+  >>> (msgid_number, msgid, translation) = getMessageValues(browser.contents, 23)
+  >>> print msgid_number
+  <BLANKLINE>
+      23.
+      <a name="23">
+    <input type="hidden" name="msgset_165" />
+    </a>
+  >>> print msgid
+  <code>%s</code>: option `<code>%s</code>' is ambiguous...
+  <BLANKLINE>
+  >>> print translation
+  %s: la opcion «%s» es ambigua
+  <BLANKLINE>
 
 Last check, the user sends two new line chars instead of just one...
 
@@ -126,9 +176,16 @@ Get previous page to check that the save translation is the right one.
 
 And Rosetta comes to the rescue and stores just one!.
 
-  >>> potmsgset = POTMsgSet.get(165)
-  >>> pomsgset = potmsgset.getPOMsgSet('es')
-  >>> pomsgset is not None
-  True
-  >>> pomsgset.active_texts
-  [u'%s: la opcion \xab%s\xbb es ambigua\n']
+  >>> (msgid_number, msgid, translation) = getMessageValues(browser.contents, 23)
+  >>> print msgid_number
+  <BLANKLINE>
+      23.
+      <a name="23">
+    <input type="hidden" name="msgset_165" />
+    </a>
+  >>> print msgid
+  <code>%s</code>: option `<code>%s</code>' is ambiguous...
+  <BLANKLINE>
+  >>> print translation
+  %s: la opcion «%s» es ambigua
+  <BLANKLINE>

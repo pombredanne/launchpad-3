@@ -1,6 +1,35 @@
 Here we are going to check the basic behaviour of the translation form when we
 render just one message with all available information for it.
 
+First, we need to define a function to see that the message we are
+interested on doesn't have any translation.
+
+  >>> def getMessageValues(content, has_errors=False):
+  ...     """Return english string and translation for the first message."""
+  ...
+  ...     from BeautifulSoup import BeautifulSoup
+  ...     translation_form_soup = BeautifulSoup(content)
+  ...     translation_tbody = translation_form_soup.findAll('tbody')[1]
+  ...     translation_tbody_content = translation_tbody.renderContents()
+  ...     translation_table_soup = BeautifulSoup(translation_tbody_content)
+  ...     tr_list = translation_table_soup.findAll('tr')
+  ...     tr_english_msgid = tr_list[0]
+  ...     td_ignore, td_id, td_ignore, td_msgid = (
+  ...         tr_english_msgid('td'))
+  ...
+  ...     if has_errors:
+  ...         # There is a 'tr' tag to show an error.
+  ...         tr_translation_index = 2
+  ...     else:
+  ...         tr_translation_index = 1
+  ...
+  ...     tr_translation = tr_list[tr_translation_index]
+  ...     td_ignore, td_translation = tr_translation('td')
+  ...
+  ...     return (td_id.renderContents(), td_msgid.renderContents(),
+  ...             td_translation.renderContents())
+
+
 Let's identify us first.
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
@@ -118,16 +147,19 @@ Check that the message #13 is without translation.
 
 First what we represent in the form when there is no translation:
 
-  >>> '(no translation yet)' in browser.contents
-  True
-
-And now its database value:
-
-  >>> from canonical.launchpad.database import POTMsgSet
-  >>> potmsgset = POTMsgSet.get(142)
-  >>> pomsgset = potmsgset.getPOMsgSet('es')
-  >>> pomsgset.active_texts
-  [None]
+  >>> (msgid_number, msgid, translation) = getMessageValues(browser.contents)
+  >>> print msgid_number
+  <BLANKLINE>
+      13.
+      <a name="13">
+  <input type="hidden" name="msgset_142" />
+  </a>
+  >>> print msgid
+  Migrating `<code>%s</code>':
+  >>> print translation
+  <BLANKLINE>
+            (no translation yet)
+  <BLANKLINE>
 
 And also, we don't get anyone as the Last translator because there is no
 translation at all ;-)
@@ -142,17 +174,36 @@ Let's submit an invalid value for this message #13.
   >>> browser.getControl(name='submit_translations').click()
   >>> browser.url
   'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/13/+translate'
-  >>> 'There is an error in the translation you provided' in browser.contents
-  True
-  >>> "format specifications in 'msgid' and 'msgstr' for argument 1 are not the same" in browser.contents
-  True
+  >>> for tag in find_tags_by_class(browser.contents, 'error'):
+  ...     print tag
+  <div class="error message">There is an error in the translation you provided. Please correct it before continuing.</div>
+  <tr class="error">
+  <th colspan="3">
+  <strong>Error in Translation:</strong>
+  </th>
+  <td>
+  </td><td>
+  <div>
+          format specifications in 'msgid' and 'msgstr' for argument 1 are not the same
+        </div>
+  </td>
+  </tr>
 
 The message is still without translation:
 
-  >>> '(no translation yet)' in browser.contents
-  True
-  >>> pomsgset.active_texts
-  [None]
+  >>> (msgid_number, msgid, translation) = getMessageValues(browser.contents, has_errors=True)
+  >>> print msgid_number
+  <BLANKLINE>
+      13.
+      <a name="13">
+  <input type="hidden" name="msgset_142" />
+  </a>
+  >>> print msgid
+  Migrating `<code>%s</code>':
+  >>> print translation
+  <BLANKLINE>
+            (no translation yet)
+  <BLANKLINE>
 
 And now a good submit.
 
@@ -175,12 +226,17 @@ Now, it has the submitted value.
 
 Check that the message #13 has the new value we submitted.
 
-  >>> '(no translation yet)' in browser.contents
-  False
-  >>> 'foo %s' in browser.contents
-  True
-  >>> pomsgset.active_texts
-  [u'foo %s']
+  >>> (msgid_number, msgid, translation) = getMessageValues(browser.contents)
+  >>> print msgid_number
+  <BLANKLINE>
+      13.
+      <a name="13">
+  <input type="hidden" name="msgset_142" />
+  </a>
+  >>> print msgid
+  Migrating `<code>%s</code>':
+  >>> print translation
+  foo %s
 
 And now, we get someone as the Translator and also, we have a reviewer (in
 this case, it's the same):

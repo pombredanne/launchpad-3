@@ -1028,18 +1028,18 @@ class POMsgSetView(LaunchpadView):
 
     def getActiveTranslation(self, index):
         """Return the active translation for the pluralform 'index'."""
-        if index in self.pluralform_indices:
-            translation = self.context.active_texts[index]
-            # We store newlines as '\n', '\r' or '\r\n', depending on the
-            # msgid but forms should have them as '\r\n' so we need to change
-            # them before showing them.
-            if translation is not None:
-                return convert_newlines_to_web_form(translation)
-            else:
-                return None
-        else:
-            raise IndexError('There is no plural form #%d for %s language' % (
+        assert index in self.pluralform_indices, (
+            'There is no plural form #%d for %s language' % (
                 index, self.context.pofile.language.displayname))
+
+        translation = self.context.active_texts[index]
+        # We store newlines as '\n', '\r' or '\r\n', depending on the
+        # msgid but forms should have them as '\r\n' so we need to change
+        # them before showing them.
+        if translation is not None:
+            return convert_newlines_to_web_form(translation)
+        else:
+            return None
 
     def getTranslation(self, index):
         """Return the translation submitted for the pluralform 'index'.
@@ -1048,18 +1048,18 @@ class POMsgSetView(LaunchpadView):
             - A copied value depending on the copy button the user selected.
             - A translation added by the user before submitting the form.
         """
-        if index in self.pluralform_indices:
-            translation = self.translations[index]
-            # We store newlines as '\n', '\r' or '\r\n', depending on the
-            # msgid but forms should have them as '\r\n' so we need to change
-            # them before showing them.
-            if translation is not None:
-                return convert_newlines_to_web_form(translation)
-            else:
-                return None
-        else:
-            raise IndexError('There is no plural form #%d for %s language' % (
+        assert index in self.pluralform_indices, (
+            'There is no plural form #%d for %s language' % (
                 index, self.context.pofile.language.displayname))
+
+        translation = self.translations[index]
+        # We store newlines as '\n', '\r' or '\r\n', depending on the
+        # msgid but forms should have them as '\r\n' so we need to change
+        # them before showing them.
+        if translation is not None:
+            return convert_newlines_to_web_form(translation)
+        else:
+            return None
 
     #
     # Display-related methods

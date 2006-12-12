@@ -1,5 +1,4 @@
-POSubmissionSet
-===============
+= POSubmissionSet =
 
 This class represents the set of POSubmission objects in our database.
 We use it to get a concrete submission when we know its ID.
@@ -10,8 +9,7 @@ Let's do some imports we will need to test this class.
   >>> from canonical.launchpad.interfaces import IPOSubmissionSet
   >>> posubmissionset = getUtility(IPOSubmissionSet)
 
-getPOSubmissionByID
--------------------
+== getPOSubmissionByID ==
 
 With this method, we can get the POSubmission object that has the given
 id as argument or None when it doesn't exist.
@@ -31,13 +29,11 @@ And we get None when there isn't any POSubmission with the given ID.
   True
 
 
-POSubmission
-============
+= POSubmission =
 
 This class links the translations submitted by a translator with the associated.
 
-destroySelf
------------
+== destroySelf ==
 
 With this method, we allow to remove a submission, it comes from SQLObject,
 but we test it here to be sure it appears in our public interfaces.

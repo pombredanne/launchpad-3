@@ -44,7 +44,10 @@ active one.
   ...     name='msgset_134_es_translation_0_new_checkbox').value
   True
 
-Next step, copy original English string.
+Many translators find more easy to copy the English string and then,
+modify/translate it, than type everything by hand. That's used often so
+they don't forget the '%s' like format strings.
+Let's copy original English string.
 
   >>> user_browser.getControl(name='msgset_134_singular_copy').click()
   >>> user_browser.url
