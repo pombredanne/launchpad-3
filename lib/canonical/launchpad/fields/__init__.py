@@ -1,6 +1,7 @@
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 
 from StringIO import StringIO
+from textwrap import dedent
 
 from zope.app.content_types import guess_content_type
 from zope.component import getUtility
@@ -313,13 +314,54 @@ class ProductBugTracker(Choice):
             ob.bugtracker = value
 
 
-class ImageUpload(Bytes):
-    
-    keep_image_marker = object()
+class BaseImageUpload(Bytes):
+    """Base class for ImageUpload fields.
+
+    Any subclass of this one must be used in conjunction with
+    ImageUploadWidget and must define the following attributes:
+    - max_dimensions: the maximun dimension of the image; a tuple of the
+      form (width, height).
+    - max_size: the maximun size of the image, in bytes.
+    - default_image_resource: the zope3 resource of the image that should be
+      used when the user hasn't yet provided one; should be a string of the
+      form /@@/<resource-name>
+    """
+
+    max_dimensions = None
+    max_size = None
     default_image_resource = '/@@/nyet-mugshot'
+
+    keep_image_marker = object()
+
+    def _valid_image(self, image):
+        """Check that the given image is under the given constraints."""
+        # No global import to avoid hard dependency on PIL being installed
+        import PIL.Image
+        if len(image) > self.max_size:
+            raise LaunchpadValidationError(_(dedent("""
+                This file exceeds the maximum allowed size in bytes.""")))
+        try:
+            image = PIL.Image.open(StringIO(image))
+        except IOError:
+            # cannot identify image type
+            raise LaunchpadValidationError(_(dedent("""
+                The file uploaded was not recognized as an image; please
+                check the file and retry.""")))
+        if image.size > self.max_dimensions:
+            raise LaunchpadValidationError(_(dedent("""
+                This image exceeds the maximum allowed width or height in
+                pixels.""")))
+        return True
+
+    def validate(self, value):
+        value.seek(0)
+        content = value.read()
+        Bytes.validate(self, content)
+        self._valid_image(content)
 
     def set(self, object, value):
         if value is not self.keep_image_marker and value is not None:
+            value.seek(0)
             content = value.read()
             filename = value.filename
             type, dummy = guess_content_type(name=filename, body=content)
@@ -332,3 +374,11 @@ class ImageUpload(Bytes):
         else:
             # Nothing to do; user wants to keep the existing image.
             pass
+
+
+class LargeImageUpload(BaseImageUpload):
+
+    max_dimensions = (200, 200)
+    max_size = 512*1024
+    default_image_resource = '/@@/nyet-mugshot'
+

@@ -2,7 +2,7 @@
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.widget import SimpleInputWidget
 from zope.app.form.browser import FileWidget
-from zope.app.form.interfaces import WidgetInputError
+from zope.app.form.interfaces import ValidationError, WidgetInputError
 from zope.formlib import form
 from zope.schema import Bytes, Choice
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
@@ -48,6 +48,8 @@ class ImageUploadWidget(SimpleInputWidget):
             # This widget is meant to be used only by fields which expect an
             # object implementing ILibraryFileAlias as their values.
             assert ILibraryFileAlias.providedBy(img)
+            # XXX: Need to use img.secure_url here. This branch shouldn't land
+            # without this changed. -- Guilherme Salgado, 2006-12-12
             url = img.url
         else:
             url = self.context.default_image_resource
@@ -83,7 +85,13 @@ class ImageUploadWidget(SimpleInputWidget):
         if action == "keep":
             return self.context.keep_image_marker
         elif action == "change":
-            return form.get(self.image_widget.name)
+            image = form.get(self.image_widget.name)
+            try:
+                self.context.validate(image)
+            except ValidationError, v:
+                self._error = WidgetInputError(self.name, self.label, v)
+                raise self._error
+            return image
         elif action == "delete":
             return None
 

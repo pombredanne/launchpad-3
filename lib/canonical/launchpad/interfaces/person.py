@@ -26,7 +26,7 @@ from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    BlacklistableContentNameField, ImageUpload, PasswordField,
+    BlacklistableContentNameField, LargeImageUpload, PasswordField,
     StrippedTextLine)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.specificationtarget import (
@@ -125,11 +125,11 @@ class IPerson(IHasSpecifications):
             "A small image, max 16x16 pixels and 8k in file size, that can "
             "be used to refer to this team."),
         constraint=valid_emblem)
-    gotchi = ImageUpload(
+    gotchi = LargeImageUpload(
         title=_("Hackergotchi"), required=False,
         description=_(
-            "An image, maximum 150x150 pixels, that will be displayed on "
-            "your home page. It should be no bigger than 50k in size. "
+            "An image, maximum 170x170 pixels, that will be displayed on "
+            "your home page. It should be no bigger than 500k in size. "
             "Traditionally this is a great big grinning image of your mug. "
             "Make the most of it."),
         constraint=valid_gotchi)
