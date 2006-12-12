@@ -26,17 +26,26 @@ Launchpad currently.
     ...     print "%s: %s" % (bug.id, bug.title)
     8: Printing doesn't work
 
-If we fix a few other bugs, these will turn up first in the list. It
-doesn't matter which bugtask that gets fixed.
-
-    >>> from canonical.launchpad.interfaces import IBugSet
-    >>> from canonical.launchpad.ftests import syncUpdate
+Let's reopen it and close it again, to ensure that the date closed isn't
+in the future.
 
     >>> login('test@canonical.com')
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> bug_eight = getUtility(IBugSet).get(8)
+    >>> len(bug_eight.bugtasks)
+    1
+    >>> bug_eight.bugtasks[0].transitionToStatus(BugTaskStatus.CONFIRMED)
     >>> def fix_bug(bug_id, bugtask_index=0):
     ...     bugtask = getUtility(IBugSet).get(bug_id).bugtasks[bugtask_index]
     ...     bugtask.transitionToStatus(BugTaskStatus.FIXRELEASED)
     ...     syncUpdate(bugtask)
+    >>> fix_bug(8)
+
+If we fix a few other bugs, these will turn up first in the list. It
+doesn't matter which bugtask that gets fixed.
+
+
     >>> fix_bug(1)
     >>> fix_bug(2)
     >>> fix_bug(3)
