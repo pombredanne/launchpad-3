@@ -52,6 +52,26 @@ def projectSetUp(test):
     test.globs['filebug'] = project_filebug
 
 
+def productseries_filebug(productseries, summary):
+    """File a bug on a product series.
+
+    Since it's not possible to file a bug on a product series directly,
+    the bug will first be filed on its product, then a release task will
+    be created.
+    """
+    bug = bugtarget_filebug(productseries.product, summary)
+    getUtility(IBugTaskSet).createTask(
+        bug, getUtility(ILaunchBag).user, productseries=productseries)
+    return bug
+
+
+def productSeriesSetUp(test):
+    setUp(test)
+    firefox = getUtility(IProductSet).getByName('firefox')
+    test.globs['bugtarget'] = firefox.getSeries('trunk')
+    test.globs['filebug'] = productseries_filebug
+
+
 def distributionSetUp(test):
     setUp(test)
     test.globs['bugtarget'] = getUtility(IDistributionSet).getByName('ubuntu')
@@ -107,6 +127,7 @@ def test_suite():
 
     bugtargets = [
         ('product', productSetUp),
+        ('productseries', productSetUp),
         ('project', projectSetUp),
         ('distribution', distributionSetUp),
         ('distribution-source-package', distributionSourcePackageSetUp),
