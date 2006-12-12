@@ -1,3 +1,5 @@
+== Launchpad pillars ==
+
 A few of the PillarsOfLaunchpad (tm) share a namespace to allow their name
 to unambiguously refer to it. This allows us to make email interfaces
 easier to use and to shorten some of our URLs. Currently, the objects that
@@ -36,23 +38,37 @@ Traceback (most recent call last):
 ...
 NotFoundError: 'fnord'
 
-We can also use PillarSet to do a search across some of our pillars. Right now
-this search is done across Products, Projects and Distributions.
+
+== Searching for Pillars ==
+
+We can also use PillarNameSet to do a search across some of our pillars.
+Right now this search is done across Products, Projects and Distributions.
+
+>>> def get_meaningful_rank(row):
+...     rank = row['rank']
+...     if rank >= 1.0:
+...         return 'perfect'
+...     elif rank > 0.5 and rank < 1.0:
+...         return 'high'
+...     else:
+...         return 'low'
 
 >>> for row in pillar_set.search('mozilla'):
+...     rank = get_meaningful_rank(row)
 ...     print ("%s: %s (%s) [relevance: %s]"
-...            % (row['type'], row['title'], row['name'], row['rank']))
-project: The Mozilla Project (mozilla) [relevance: 10000000.0]
-product: Mozilla Firefox (firefox) [relevance: 0.686029]
-product: Mozilla Thunderbird (thunderbird) [relevance: 0.686029]
+...            % (row['type'], row['title'], row['name'], rank))
+project: The Mozilla Project (mozilla) [relevance: perfect]
+product: Mozilla Firefox (firefox) [relevance: high]
+product: Mozilla Thunderbird (thunderbird) [relevance: high]
 
 >>> for row in pillar_set.search('ubuntu'):
+...     rank = get_meaningful_rank(row)
 ...     print ("%s: %s (%s) [relevance: %s]"
-...            % (row['type'], row['title'], row['name'], row['rank']))
-distribution: Ubuntu Linux (ubuntu) [relevance: 10000000.0]
-product: Ubuntu (ubuntu-product) [relevance: 10000000.0]
-project: The Ubuntu Project (ubuntu-project) [relevance: 0.800838]
-distribution: Ubuntu Test (ubuntutest) [relevance: 0.280322]
-product: The Evolution Groupware Application (evolution) [relevance: 0.121585]
-distribution: GuadaLinex: Linux for Andalucia (guadalinex) [relevance: 0.0607927]
+...            % (row['type'], row['title'], row['name'], rank))
+distribution: Ubuntu Linux (ubuntu) [relevance: perfect]
+product: Ubuntu (ubuntu-product) [relevance: perfect]
+project: The Ubuntu Project (ubuntu-project) [relevance: high]
+distribution: Ubuntu Test (ubuntutest) [relevance: low]
+product: The Evolution Groupware Application (evolution) [relevance: low]
+distribution: GuadaLinex: Linux for Andalucia (guadalinex) [relevance: low]
 

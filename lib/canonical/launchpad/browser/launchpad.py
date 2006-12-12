@@ -476,8 +476,11 @@ class SearchProjectsView(LaunchpadView):
                 # user.
                 return
 
-        self.results = getUtility(IPillarNameSet).search(
-            search_string, limit=self.max_results_to_display)
+        # We use a limit bigger than self.max_results_to_display so that we
+        # know when we had too many results and we can tell the user that some
+        # of them are not being displayed.
+        limit = self.max_results_to_display + 1
+        self.results = getUtility(IPillarNameSet).search(search_string, limit)
 
     def tooManyResultsFound(self):
         if len(self.results) > self.max_results_to_display:

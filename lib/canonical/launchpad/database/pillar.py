@@ -67,8 +67,10 @@ class PillarNameSet:
         else:
             return getUtility(IDistributionSet).get(distribution)
 
-    def search(self, text, limit=config.launchpad.default_batch_size):
+    def search(self, text, limit):
         """See IPillarSet."""
+        if limit is None:
+            limit = config.launchpad.default_batch_size
         base_query = """
             SELECT 'distribution' AS otype, id, name, title, description,
                    rank(fti, ftq(%(text)s)) AS rank
@@ -119,7 +121,7 @@ class PillarNameSet:
             ORDER BY rank DESC
             """ % sqlvalues(text=text)
         count_query = "SELECT COUNT(*) FROM (%s) AS TMP_COUNT" % base_query
-        query = "%s LIMIT %d" % (base_query, limit + 1)
+        query = "%s LIMIT %d" % (base_query, limit)
         cur = cursor()
         cur.execute(query)
         keys = ['type', 'id', 'name', 'title', 'description', 'rank']
