@@ -1,4 +1,4 @@
-== Adding tickets in languages other than English ==
+= Adding tickets in languages other than English =
 
 It is possible to create support requests in a language other than
 English. The 'Request Support' page has a pop-up where the user
