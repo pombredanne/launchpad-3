@@ -17,12 +17,6 @@ Let's instantiate the view for +queue as normal user:
   >>> request = TestRequest(form={})
   >>> queue_view = queryView(breezy_autotest, "+queue", request)
 
-This has a local method to check if the current authenticated user has
-special privileges within this Distribution:
-
-  >>> queue_view.hasUploadAdminRights()
-  False
-
 View parameters need to be set properly before start:
 
   >>> queue_view.setupQueueList()
@@ -70,14 +64,11 @@ Normal user doesn't have access to UNAPPROVED queue:
   ...
   Unauthorized: User don't have permission to see this queue.
 
-
 Now, let's instantiate the view for +queue as a privileged user:
 
   >>> login('foo.bar@canonical.com')
 
   >>> queue_view = queryView(breezy_autotest, "+queue", request)
-  >>> queue_view.hasUploadAdminRights()
-  True
   >>> queue_view.setupQueueList()
   >>> queue_view.availableActions()
   ['Accept', 'Reject']
