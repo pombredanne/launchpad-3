@@ -27,6 +27,7 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, enabled_with_permission,
     GetitemNavigation, Navigation, LaunchpadView)
+from canonical.lp.dbschema import RosettaFileFormat
 
 
 class POTemplateNavigation(Navigation):
