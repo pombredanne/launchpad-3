@@ -20,7 +20,7 @@ from canonical.launchpad.components.poexport import (
     MOCompiler, RosettaWriteTarFile)
 from canonical.launchpad.interfaces import (
     IPOExportRequestSet, IPOTemplate, IPOFile, ILibraryFileAliasSet,
-    ILaunchpadCelebrities)
+    ILaunchpadCelebrities, IPOSubmission)
 
 def is_potemplate(obj):
     """Return True if the object is a PO template."""
@@ -140,12 +140,26 @@ class XPIFormatHandler(Handler):
 
     def get_contents(self):
         """Return the contents of the exported file."""
+        import sys
 
         if is_potemplate(self.obj):
-            return self.obj.source_file.read()
+            try:
+                return self.obj.source_file.read()
+            except:
+                print >>sys.stderr, "Unexpected error:", sys.exc_info()
+                raise
+
         else:
-            template = StringIO(self.obj.source_file.read())
-            mozexport = MozillaZipFile(template, self.obj)
+            try:
+                template = StringIO(self.obj.potemplate.source_file.read())
+                print >>sys.stderr, "Evo me ovde: prevod!"
+                mozexport = MozillaZipFile(template, self.obj)
+            except:
+                import traceback
+                err = sys.exc_info()
+                print >>sys.stderr, "Unexpected error in:", err[0]
+                print >>sys.stderr, traceback.print_tb(err[2])
+                raise
             return mozexport.get_contents()
 
     def get_librarian_url(self):
@@ -180,15 +194,25 @@ class MozillaLocalizableFile:
         else:
             return None
 
-    def get_pofile_translation(pofile, key):
+    def get_pofile_translation(self, pofile, key):
         if not key: return None
-
         potmsgset = pofile.potemplate.getPOTMsgSetByAlternativeMsgID(key)
         pomsgset = potmsgset.getPOMsgSet(
             pofile.language.code, pofile.variant)
         if pomsgset is None:
             return None
-        return pomsgset.getTranslation(0)
+        submission = pomsgset.getActiveSubmission(0)
+        if submission is None:
+            submission = pomsgset.getPublishedSubmission(0)
+        if submission is None:
+            return None
+        import sys
+        if IPOSubmission.providedBy(submission):
+            print >>sys.stderr, submission.id
+            print >>sys.stderr, submission.potranslation.id
+            return submission.potranslation.translation
+        else:
+            return None
 
 class MozillaZipFile (MozillaLocalizableFile):
     """Class for updating translatable messages in Mozilla XPI/JAR files.
@@ -199,29 +223,28 @@ class MozillaZipFile (MozillaLocalizableFile):
     def __init__(self, file, pofile):
         MozillaLocalizableFile.__init__(self)
         self._file = file
-        self._pofile = pofile
 
         # XXX (Danilo): ZIP seems to double in size with simple
         # .writestr()s.  We probably need to clear previous entries
         # in the ZIP file first: it seems to only way to do this
         # is to create entirely new ZIP file.
         zip = ZipFile(self._file, 'a')
-        for file in zip.namelist():
-            if file.endswith('.properties'):
-                data = zip.read(file)
+        for filename in zip.namelist():
+            if filename.endswith('.properties'):
+                data = zip.read(filename)
                 pf = MozillaPropertyFile(file=StringIO(data), pofile=pofile)
-                zip.writestr(zip.getinfo(file), pf.get_contents())
+                zip.writestr(zip.getinfo(filename), pf.get_contents())
                 pass
-            elif file.endswith('.dtd'):
-                data = zip.read(file)
+            elif filename.endswith('.dtd'):
+                data = zip.read(filename)
                 dtdf = MozillaDtdFile(file=StringIO(data), pofile=pofile)
-                zip.writestr(zip.getinfo(file), dtdf.get_contents())
-            elif file.endswith('.jar'):
-                data = zip.read(file)
+                zip.writestr(zip.getinfo(filename), dtdf.get_contents())
+            elif filename.endswith('.jar'):
+                data = zip.read(filename)
                 jarf = MozillaZipFile(file=StringIO(data), pofile=pofile)
-                zip.writestr(zip.getinfo(file), jarf.get_contents())
-            elif file == 'install.rdf':
-                data = zip.read(file)
+                zip.writestr(zip.getinfo(filename), jarf.get_contents())
+            elif filename == 'install.rdf':
+                data = zip.read(filename)
                 #zip.writestr(zip.getinfo(file), "blablabla")
                 # XXX (Danilo): need to implement install.rdf updater
                 pass
@@ -282,10 +305,12 @@ class MozillaPropertyFile (MozillaLocalizableFile):
             if not len(line.strip()) or line[0]=='#' or line[0]=='!':
                 rdata += line.encode('utf-8') + "\n"
                 continue
-            (key, value) = line.split('=', 1)
+            (key, oldvalue) = line.split('=', 1)
+            translation = self.get_pofile_translation(pofile, key)
+            if not translation:
+                translation = oldvalue
             rdata += "%s=%s\n" % (key.encode('utf-8'),
-                                  (self.get_pofile_translation(pofile, key)
-                                   .encode('unicode_escape')))
+                                  translation.encode('unicode_escape'))
         self._file = StringIO(rdata)
 
 format_handlers = {
