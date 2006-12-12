@@ -22,6 +22,7 @@ from datetime import timedelta, datetime
 
 from zope.app.datetimeutils import parseDatetimetz, tzinfo, DateTimeError
 from zope.component import getUtility
+from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
 
 import canonical.launchpad.layers
@@ -418,6 +419,15 @@ class LaunchpadRootNavigation(Navigation):
     def traverse(self, name):
         if name in self.stepto_utilities:
             return getUtility(self.stepto_utilities[name])
+
+        # Dapper and Edgy shipped with https://launchpad.net/bazaar hard coded
+        # into the Bazaar Launchpad plugin (part of Bazaar core). So in theory
+        # we need to support this URL until 2011 (although I suspect the API
+        # will break much sooner than that) or updates sent to
+        # {dapper,edgy}-updates. Probably all irrelevant, as I suspect the
+        # number of people using the plugin in edgy and dapper is 0.
+        if IXMLRPCRequest.providedBy(self.request) and name == 'bazaar':
+            return getUtility(IBazaarApplication)
 
         # Allow traversal to ~foo for People
         if name.startswith('~'):
