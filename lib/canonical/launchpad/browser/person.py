@@ -24,7 +24,6 @@ __all__ = [
     'PersonChangePasswordView',
     'PersonEditView',
     'PersonEmblemView',
-    'PersonHackergotchiView',
     'PersonAssignedBugTaskSearchListingView',
     'ReportedBugTaskSearchListingView',
     'BugContactPackageBugsSearchListingView',
@@ -408,9 +407,8 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     facet = 'overview'
     links = ['karma', 'edit', 'common_edithomepage', 'editemailaddresses',
              'editlanguages', 'editwikinames', 'editircnicknames',
-             'editjabberids', 'editpassword', 'edithackergotchi',
-             'editsshkeys', 'editpgpkeys', 'codesofconduct', 'administer',
-             'common_packages']
+             'editjabberids', 'editpassword', 'editsshkeys', 'editpgpkeys',
+             'codesofconduct', 'administer', 'common_packages']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -477,12 +475,6 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         text = 'OpenPGP Keys'
         summary = 'Used for the Supermirror, and when maintaining packages'
         return Link(target, text, summary, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def edithackergotchi(self):
-        target = '+edithackergotchi'
-        text = 'Hackergotchi'
-        return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def codesofconduct(self):
@@ -1754,12 +1746,12 @@ class PersonEditView(LaunchpadEditFormView):
 
     schema = IPerson
     field_names = ['displayname', 'name', 'hide_email_addresses', 'timezone',
-                   'hackergotchi']
+                   'gotchi']
     custom_widget('timezone', SelectWidget, size=15)
-    custom_widget('hackergotchi', ImageUploadWidget)
+    custom_widget('gotchi', ImageUploadWidget)
 
     def showOptionalMarker(self, field_name):
-        if field_name == 'hackergotchi':
+        if field_name == 'gotchi':
             return False
         return True
 
@@ -1780,23 +1772,6 @@ class PersonEmblemView(GeneralFormView):
             self.context.emblem = getUtility(ILibraryFileAliasSet).create(
                 name=filename, size=len(emblem), file=StringIO(emblem),
                 contentType=content_type)
-        self._nextURL = canonical_url(self.context)
-        return 'Success'
-
-
-class PersonHackergotchiView(GeneralFormView):
-
-    def process(self, gotchi=None):
-        # XXX use Bjorn's nice file upload widget when he writes it
-        if gotchi is not None:
-            filename = self.request.get('field.gotchi').filename
-            content_type, encoding = guess_content_type(
-                name=filename, body=gotchi)
-            hkg = getUtility(ILibraryFileAliasSet).create(
-                name=filename, size=len(gotchi),
-                file=StringIO(gotchi),
-                contentType=content_type)
-            self.context.gotchi = hkg
         self._nextURL = canonical_url(self.context)
         return 'Success'
 

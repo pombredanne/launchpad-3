@@ -2,10 +2,13 @@
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.widget import SimpleInputWidget
 from zope.app.form.browser import FileWidget
+from zope.app.form.interfaces import WidgetInputError
 from zope.formlib import form
 from zope.schema import Bytes, Choice
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
+from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.launchpad import _
 
@@ -29,36 +32,58 @@ class ImageUploadWidget(SimpleInputWidget):
         fields['action'].custom_widget = CustomWidgetFactory(
             LaunchpadRadioWidget)
         fields['image'].custom_widget = CustomWidgetFactory(
-            LaunchpadFileWidget)
-        self.widgets = form.setUpWidgets(
+            LaunchpadFileWidget, displayWidth=15)
+        widgets = form.setUpWidgets(
             fields, self.name, context, request, ignore_request=False,
             data={'action': 'keep'})
+        self.action_widget = widgets['action']
+        self.image_widget = widgets['image']
+
+    def _getCurrentImage(self):
+        return getattr(self.context.context, self.context.__name__, None)
 
     def __call__(self):
-        img = getattr(self.context.context, self.context.__name__, None)
+        img = self._getCurrentImage()
         if img is not None:
-            # XXX: Assuming the image has a 'url' attribute is not a good
-            # idea. What are the alternatives?
+            # This widget is meant to be used only by fields which expect an
+            # object implementing ILibraryFileAlias as their values.
+            assert ILibraryFileAlias.providedBy(img)
             url = img.url
         else:
             url = self.context.default_image_resource
         html = ('<div><img src="%s" alt="%s" /></div>\n'
                 % (url, self.context.title))
-        html += "%s\n%s" % (self.widgets['action'](), self.widgets['image']())
+        html += "%s\n%s" % (self.action_widget(), self.image_widget())
         return html
 
+    def hasInput(self):
+        return self.action_widget.hasInput()
+
     def _getActionsVocabulary(self):
-        action_names = [
-            ('keep', 'Keep'), ('delete', 'Delete'), ('change', 'Change to')]
+        if self._getCurrentImage() is not None:
+            action_names = [('keep', 'Keep your selected image'),
+                            ('delete', 'Change back to default image'),
+                            ('change', 'Change to')]
+        else:
+            action_names = [('keep', 'Leave as default image'),
+                            ('change', 'Change to')]
         terms = [SimpleTerm(name, name, label) for name, label in action_names]
         return SimpleVocabulary(terms)
 
     def getInputValue(self):
-        action = self.widgets['action'].getInputValue()
+        self._error = None
+        action = self.action_widget.getInputValue()
+        form = self.request.form
+        if action == 'change' and not form.get(self.image_widget.name):
+            self._error = WidgetInputError(
+                self.name, self.label,
+                LaunchpadValidationError(
+                    _('You need to specify the image you want to use.')))
+            raise self._error
         if action == "keep":
             return self.context.keep_image_marker
         elif action == "change":
-            return self.widgets['image'].getInputValue()
+            return form.get(self.image_widget.name)
         elif action == "delete":
             return None
 

@@ -1,5 +1,9 @@
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 
+from StringIO import StringIO
+
+from zope.app.content_types import guess_content_type
+from zope.component import getUtility
 from zope.schema import Bytes, Choice, Field, Int, Text, TextLine, Password
 from zope.schema.interfaces import IPassword, IText, ITextLine, IField, IInt
 from zope.interface import implements
@@ -8,6 +12,7 @@ from canonical.database.sqlbase import cursor
 from canonical.launchpad import _
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 
 
 # Field Interfaces
@@ -313,10 +318,17 @@ class ImageUpload(Bytes):
     keep_image_marker = object()
     default_image_resource = '/@@/nyet-mugshot'
 
-#     def get(self, object):
-#         # We always want to have the 'Keep' radio button selected.
-#         return self.keep_image_marker
-
     def set(self, object, value):
-        if value is not self.keep_image_marker:
-            Bytes.set(self, object, value)
+        if value is not self.keep_image_marker and value is not None:
+            content = value.read()
+            filename = value.filename
+            type, dummy = guess_content_type(name=filename, body=content)
+            img = getUtility(ILibraryFileAliasSet).create(
+                name=filename, size=len(content), file=StringIO(content),
+                contentType=type)
+            Bytes.set(self, object, img)
+        elif value is None:
+            Bytes.set(self, object, None)
+        else:
+            # Nothing to do; user wants to keep the existing image.
+            pass
