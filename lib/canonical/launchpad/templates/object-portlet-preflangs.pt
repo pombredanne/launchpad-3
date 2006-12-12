@@ -14,7 +14,9 @@
       </ul>
 
       <ul style="text-align: right;">
-        <li class="add"><a href="/rosetta/prefs">Select Languages...</a></li>
+        <li class="add">
+          <a href="/+editmylanguages">Select Languages...</a>
+        </li>
       </ul>
 
     </div>

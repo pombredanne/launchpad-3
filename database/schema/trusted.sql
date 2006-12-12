@@ -285,10 +285,11 @@ LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS
 $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
-        INSERT INTO PillarName (name, product)
-        VALUES (NEW.name, NEW.id);
-    ELSIF NEW.name != OLD.name THEN
-        UPDATE PillarName SET name=NEW.name WHERE product=NEW.id;
+        INSERT INTO PillarName (name, product, active)
+        VALUES (NEW.name, NEW.id, NEW.active);
+    ELSIF NEW.name != OLD.name OR NEW.active != OLD.active THEN
+        UPDATE PillarName SET name=NEW.name, active=NEW.active
+        WHERE product=NEW.id;
     END IF;
     RETURN NULL; -- Ignored - this is an AFTER trigger
 END;
@@ -302,10 +303,11 @@ CREATE OR REPLACE FUNCTION mv_pillarname_project() RETURNS TRIGGER
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
-        INSERT INTO PillarName (name, project)
-        VALUES (NEW.name, NEW.id);
-    ELSIF NEW.name != OLD.name THEN
-        UPDATE PillarName SET name=NEW.name WHERE project=NEW.id;
+        INSERT INTO PillarName (name, project, active)
+        VALUES (NEW.name, NEW.id, NEW.active);
+    ELSIF NEW.name != OLD.name or NEW.active != OLD.active THEN
+        UPDATE PillarName SET name=NEW.name, active=NEW.active
+        WHERE project=NEW.id;
     END IF;
     RETURN NULL; -- Ignored - this is an AFTER trigger
 END;
@@ -473,6 +475,108 @@ RETURNS TRIGGER LANGUAGE plpythonu VOLATILE SECURITY DEFINER AS $$
 $$;
 
 COMMENT ON FUNCTION mv_validpersonorteamcache_emailaddress() IS 'A trigger for maintaining the ValidPersonOrTeamCache eager materialized view when changes are made to the EmailAddress table';
+
+
+CREATE OR REPLACE FUNCTION mv_pofiletranslator_posubmission() RETURNS TRIGGER
+VOLATILE SECURITY DEFINER AS $$
+DECLARE
+    v_pofile INTEGER;
+    v_trash_old BOOLEAN;
+BEGIN
+    -- If we are deleting a row, we need to remove the existing
+    -- POFileTranslator row and reinsert the historical data if it exists.
+    -- We also treat UPDATEs that change the key (person, pofile) the same
+    -- as deletes. UPDATEs that don't change these columns are treated like
+    -- INSERTs below.
+    IF TG_OP = 'INSERT' THEN
+        v_trash_old := FALSE;
+    ELSIF TG_OP = 'DELETE' THEN
+        v_trash_old := TRUE;
+    ELSE -- UPDATE
+        v_trash_old = (
+            OLD.person != NEW.person OR OLD.pomsgset != NEW.pomsgset
+            );
+    END IF;
+
+    IF v_trash_old THEN
+
+        -- Delete the old record.
+        DELETE FROM POFileTranslator USING POMsgSet
+        WHERE POFileTranslator.pofile = POMsgSet.pofile
+            AND POFileTranslator.person = OLD.person
+            AND POMsgSet.id = OLD.pomsgset;
+
+        -- Insert a past record if there is one.
+        INSERT INTO POFileTranslator (
+            person, pofile, latest_posubmission, date_last_touched
+            )
+            SELECT DISTINCT ON (POSubmission.person, POMsgSet.pofile)
+                POSubmission.person, POMsgSet.pofile,
+                POSubmission.id, POSubmission.datecreated
+            FROM POSubmission, POMsgSet
+            WHERE POSubmission.pomsgset = POMsgSet.id
+                AND POSubmission.pomsgset = OLD.pomsgset
+                AND POSubmission.person = OLD.person
+            ORDER BY
+                POSubmission.person, POMsgSet.pofile,
+                POSubmission.datecreated DESC, POSubmission.id DESC;
+
+        -- No NEW with DELETE, so we can short circuit and leave.
+        IF TG_OP = 'DELETE' THEN
+            RETURN NULL; -- Ignored because this is an AFTER trigger
+        END IF;
+    END IF;
+
+    -- Get our new pofile id
+    SELECT INTO v_pofile POMsgSet.pofile FROM POMsgSet
+    WHERE POMsgSet.id = NEW.pomsgset;
+
+    -- Standard 'upsert' loop to avoid race conditions.
+    LOOP
+        UPDATE POFileTranslator
+            SET
+                date_last_touched = CURRENT_TIMESTAMP AT TIME ZONE 'UTC',
+                latest_posubmission = NEW.id
+            WHERE
+                person = NEW.person
+                AND pofile = v_pofile;
+        IF found THEN
+            RETURN NULL; -- Return value ignored as this is an AFTER trigger
+        END IF;
+
+        BEGIN
+            INSERT INTO POFileTranslator (person, pofile, latest_posubmission)
+            VALUES (NEW.person, v_pofile, NEW.id);
+            RETURN NULL; -- Return value ignored as this is an AFTER trigger
+        EXCEPTION WHEN unique_violation THEN
+            -- do nothing
+        END;
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION mv_pofiletranslator_posubmission() IS
+    'Trigger maintaining the POFileTranslator table';
+
+
+CREATE OR REPLACE FUNCTION mv_pofiletranslator_pomsgset() RETURNS TRIGGER
+VOLATILE SECURITY INVOKER AS $$
+BEGIN
+    IF TG_OP = 'DELETE' THEN
+        RAISE EXCEPTION
+            'Deletions from POMsgSet not supported by the POFileTranslator materialized view';
+    ELSIF TG_OP = 'UPDATE' THEN
+        IF OLD.pofile != NEW.pofile THEN
+            RAISE EXCEPTION
+                'Changing POMsgSet.pofile not supported by the POFileTranslator materialized view';
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION mv_pofiletranslator_pomsgset() IS
+    'Trigger enforing no POMsgSet deletions or POMsgSet.pofile changes';
 
 
 CREATE OR REPLACE FUNCTION person_sort_key(displayname text, name text)

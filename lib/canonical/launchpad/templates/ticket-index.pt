@@ -79,6 +79,20 @@
     </div>
   </tal:not-logged-in>
 </div>
+
+  <metal:help fill-slot="help">
+    <p>The support request and the following discussion is displayed on this
+      page.
+    </p>
+    <p>If you are the person who posted that support request, consult the
+      <a href="https://help.launchpad.net/GettingSupportInLaunchpad">Getting
+        Support in Launchpad</a> document for help on how to follow-up on your
+      request.</p>
+    <p>If you want to help the user, consult the
+      <a href="https://help.launchpad.net/ProvidingSupportThroughLaunchpad">
+        Providing Support Through Launchpad</a> document.
+    </p>
+  </metal:help>
 </body>
 </html>
 
