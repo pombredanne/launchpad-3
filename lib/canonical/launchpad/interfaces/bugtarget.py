@@ -9,7 +9,6 @@ __all__ = [
     'IBugTarget',
     'BugDistroReleaseTargetDetails']
 
-
 from zope.interface import Interface, Attribute
 
 
@@ -39,6 +38,13 @@ class IBugTarget(Interface):
 
         Note: milestone is currently ignored for all IBugTargets
         except IProduct.
+        """
+
+    def getMostCommonBugs(user, limit=10):
+        """Return the list of most commonly-reported bugs.
+
+        This is the list of bugs that have the most dupes, ordered from
+        most to least duped.
         """
 
     def createBug(bug_params):

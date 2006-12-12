@@ -4,39 +4,42 @@
 
 https://launchpad.canonical.com/LaunchpadTitles
 
-** IMPORTANT ** (Brad Bollenbach, 2006-07-20) This module should not be put in
-webapp, because webapp is not domain-specific, and should not be put in browser,
-because this would make webapp depend on browser. SteveA has a plan to fix this
-overall soon.
+** IMPORTANT ** (Brad Bollenbach, 2006-07-20) This module should not be
+put in webapp, because webapp is not domain-specific, and should not be
+put in browser, because this would make webapp depend on browser. SteveA
+has a plan to fix this overall soon.
 
-This module contains string or unicode literals assigned to names, or functions
-such as this one:
+This module contains string or unicode literals assigned to names, or
+functions such as this one:
 
   def bug_index(context, view):
       return 'Bug %s: %s' % (context.id, context.title)
 
 The names of string or unicode literals and functions are the names of
-the page templates, but with hyphens changed to underscores.  So, the function
-bug_index given about is for the page template bug-index.pt.
+the page templates, but with hyphens changed to underscores.  So, the
+function bug_index given about is for the page template bug-index.pt.
 
-If the function needs to include details from the request, this is available
-from view.request.  However, these functions should not access view.request.
-Instead, the view class should make a function or attribute available that
-provides the required information.
+If the function needs to include details from the request, this is
+available from view.request.  However, these functions should not access
+view.request.  Instead, the view class should make a function or
+attribute available that provides the required information.
 
-If the function returns None, it means that the default page title for the
-whole of Launchpad should be used.  This is defined in the variable
+If the function returns None, it means that the default page title for
+the whole of Launchpad should be used.  This is defined in the variable
 DEFAULT_LAUNCHPAD_TITLE.
 
-There are shortcuts for some common substitutions at the top of this module.
+There are shortcuts for some common substitutions at the top of this
+module.
 
-The strings and functions for page titles are arranged in alphabetical order
-after the helpers.
+The strings and functions for page titles are arranged in alphabetical
+order after the helpers.
 
 """
 __metaclass__ = type
 
 from zope.component import getUtility
+
+from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import smartquote
 
@@ -48,12 +51,6 @@ class BugTaskPageTitle:
     def __call__(self, context, view):
         return smartquote('Bug #%d in %s: "%s"') % (
             context.bug.id, context.targetname, context.bug.title)
-
-
-class BugTaskBackportingTitle:
-    def __call__(self, context, view):
-        return "Bug #%d in %s - Backport fix to releases" % (
-            context.bug.id, context.targetname)
 
 
 class SubstitutionHelper:
@@ -148,6 +145,9 @@ def bug_extref_edit(context, view):
 
 bug_mark_as_duplicate = ContextId('Bug #%d - Mark as duplicate')
 
+def bug_nominate_for_release(context, view):
+    return view.label
+
 bug_removecve = LaunchbagBugID("Bug #%d - Remove CVE reference")
 
 bug_secrecy = ContextId('Bug #%d - Set visibility')
@@ -169,6 +169,10 @@ buglisting_advanced = ContextTitle("Bugs in %s")
 
 buglisting_default = ContextTitle("Bugs in %s")
 
+def bugnomination_edit(context, view):
+    return 'Manage nomination for bug #%d in %s' % (
+        context.bug.id, context.target.bugtargetname)
+
 def bugwatch_editform(context, view):
     return 'Bug #%d - Edit external bug watch (%s in %s)' % (
         context.bug.id, context.remotebug, context.bugtracker.title)
@@ -187,7 +191,20 @@ bugtarget_advanced_search = ContextTitle("Search bugs in %s")
 
 bugtarget_filebug = ContextTitle('Report a bug about %s')
 
-bugtask_backport_fixing = BugTaskBackportingTitle()
+bugtarget_filebug_advanced = ContextTitle('Report a bug about %s')
+
+bugtarget_filebug_search = ContextTitle('Report a bug about %s')
+
+def bugtarget_filebug_simple(context, view):
+    if hasattr(context, "title"):
+        # We're generating a title for a contextual bug filing page.
+        ContextTitle('Report a bug about %s')
+    else:
+        # We're generating a title for a top-level, contextless bug
+        # filing page.
+        return 'Report a bug'
+
+bugtarget_filebug_submit_bug = bugtarget_filebug_simple
 
 bugtask_choose_affected_product = LaunchbagBugID('Bug #%d - Request a fix')
 

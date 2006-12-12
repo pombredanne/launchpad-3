@@ -21,6 +21,12 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.ITicketTarget"
+    class="canonical.launchpad.browser.TicketTargetSearchNeedAttentionView"
+    name="+need-attention"
+    permission="launchpad.AnyPerson" />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITicketTarget"
     class="canonical.launchpad.browser.TicketTargetLatestTicketsView"
     name="+portlet-latesttickets"
     permission="zope.Public"

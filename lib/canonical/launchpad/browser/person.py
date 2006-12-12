@@ -53,6 +53,7 @@ __all__ = [
     'SearchAssignedTicketsView',
     'SearchCommentedTicketsView',
     'SearchCreatedTicketsView',
+    'SearchNeedAttentionTicketsView',
     'SearchSubscribedTicketsView',
     ]
 
@@ -736,7 +737,7 @@ class RedirectToEditLanguagesView(LaunchpadView):
     for non logged in users that will require them to login and them send
     them straight to the page they want to go.
     """
-    
+
     def initialize(self):
         self.request.response.redirect(
             '%s/+editlanguages' % canonical_url(self.user))
@@ -1149,7 +1150,7 @@ class PersonLanguagesView(LaunchpadView):
         for language in set(old_languages) - set(new_languages):
             self.user.removeLanguage(language)
             self.request.response.addInfoNotification(
-                "Removed %(language)s from your preferred languages." % 
+                "Removed %(language)s from your preferred languages." %
                 {'language' : language.englishname})
 
         redirection_url = self.request.get('redirection_url')
@@ -1778,17 +1779,17 @@ class PersonEmblemView(GeneralFormView):
 
 class PersonHackergotchiView(GeneralFormView):
 
-    def process(self, hackergotchi=None):
+    def process(self, gotchi=None):
         # XXX use Bjorn's nice file upload widget when he writes it
-        if hackergotchi is not None:
-            filename = self.request.get('field.hackergotchi').filename
+        if gotchi is not None:
+            filename = self.request.get('field.gotchi').filename
             content_type, encoding = guess_content_type(
-                name=filename, body=hackergotchi)
+                name=filename, body=gotchi)
             hkg = getUtility(ILibraryFileAliasSet).create(
-                name=filename, size=len(hackergotchi),
-                file=StringIO(hackergotchi),
+                name=filename, size=len(gotchi),
+                file=StringIO(gotchi),
                 contentType=content_type)
-            self.context.hackergotchi = hkg
+            self.context.gotchi = hkg
         self._nextURL = canonical_url(self.context)
         return 'Success'
 
@@ -2504,6 +2505,28 @@ class SearchCreatedTicketsView(SearchTicketsView):
                  mapping=dict(name=self.context.displayname))
 
 
+class SearchNeedAttentionTicketsView(SearchTicketsView):
+    """View used to search and display tickets needing an IPerson attention."""
+
+    displayTargetColumn = True
+
+    def getDefaultFilter(self):
+        """See SearchTicketsView."""
+        return dict(needs_attention=True)
+
+    @property
+    def pageheading(self):
+        """See SearchTicketsView."""
+        return _('Support requests needing $name attention',
+                 mapping=dict(name=self.context.displayname))
+
+    @property
+    def empty_listing_message(self):
+        """See SearchTicketsView."""
+        return _('No support requests need $name attention.',
+                 mapping=dict(name=self.context.displayname))
+
+
 class SearchSubscribedTicketsView(SearchTicketsView):
     """View used to search and display tickets subscribed to by an IPerson."""
 
@@ -2531,7 +2554,8 @@ class PersonSupportMenu(ApplicationMenu):
 
     usedfor = IPerson
     facet = 'support'
-    links = ['answered', 'assigned', 'created', 'commented', 'subscribed']
+    links = ['answered', 'assigned', 'created', 'commented', 'need_attention',
+             'subscribed']
 
     def answered(self):
         summary = 'Support requests answered by %s' % self.context.displayname
@@ -2549,6 +2573,12 @@ class PersonSupportMenu(ApplicationMenu):
         summary = 'Support requests commented on by %s' % (
             self.context.displayname)
         return Link('+commentedtickets', 'Commented', summary, icon='ticket')
+
+    def need_attention(self):
+        summary = 'Support requests needing %s attention' % (
+            self.context.displayname)
+        return Link('+needattentiontickets', 'Need Attention', summary,
+                    icon='ticket')
 
     def subscribed(self):
         text = 'Subscribed'

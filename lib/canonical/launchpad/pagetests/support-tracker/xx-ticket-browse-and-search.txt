@@ -325,6 +325,51 @@ informing him of this fact is displayed.
     ...     user_browser.contents).first('p').renderContents()
     You didn't make any support requests for gnomebaker.
 
+=== Need Attention ===
+
+A user can often forget which support requests need his attention. For
+this purpose, there is a 'Need Attention' report which displays the
+support requests made by the user which require a reply. It also lists
+the requests on which he provided an answer or requested for more
+information and that are now back in the 'Open' state.
+
+He needs to login to access that page:
+
+    >>> anon_browser.open('http://launchpad.dev/distros/ubuntu/+tickets')
+    >>> anon_browser.getLink('Need Attention').click()
+    Traceback (most recent call last):
+      ...
+    Unauthorized...
+
+    >>> user_browser.open('http://launchpad.dev/distros/ubuntu/+tickets')
+    >>> user_browser.getLink('Need Attention').click()
+    >>> print user_browser.title
+    Support requests needing your attention for Ubuntu
+    >>> tickets = find_tag_by_id(user_browser.contents, 'ticket-listing')
+    >>> for ticket in tickets.fetch('td', 'ticket'):
+    ...     print ticket.first('a').renderContents()
+    Play DVDs in Totem
+    Installation of Java Runtime Environment for Mozilla
+
+Like all other report, this one is searchable:
+
+    >>> user_browser.getControl(name='field.search_text').value = 'evolution'
+    >>> user_browser.getControl('Search').click()
+    >>> print user_browser.title
+    Support requests about "evolution" needing your attention for Ubuntu
+    >>> print find_main_content(
+    ...     user_browser.contents).first('p').renderContents()
+    No support requests about "evolution" need your attention for Ubuntu.
+
+If there is no support requests needing the user's attention,
+a message informing him of this fact is displayed.
+
+    >>> user_browser.open('http://launchpad.dev/products/gnomebaker/+tickets')
+    >>> user_browser.getLink('Need Attention').click()
+    >>> print find_main_content(
+    ...     user_browser.contents).first('p').renderContents()
+    No support requests need your attention for gnomebaker.
+
 == Person Reports ==
 
 The Support facet on on person also contains various searchable
@@ -442,6 +487,20 @@ requests made by the person.
     ...     print ticket.first('a').renderContents()
     Slow system
     Firefox loses focus and gets stuck
+
+=== Need Attention ===
+
+The 'Need Attention' link displays all the support requests that need
+the attention of that person.
+
+    >>> browser.getLink('Need Attention').click()
+    >>> print browser.title
+    Support requests needing Foo Bar attention
+    >>> tickets = find_tag_by_id(browser.contents, 'ticket-listing')
+    >>> for ticket in tickets.fetch('td', 'ticket'):
+    ...     print ticket.first('a').renderContents()
+    Continue playing after shutdown
+    Slow system
 
 === Subscribed ===
 
