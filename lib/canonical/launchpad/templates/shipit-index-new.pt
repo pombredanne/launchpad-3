@@ -47,7 +47,7 @@
   <div metal:fill-slot="body">
   <tal:block define="flavour_name view/flavour/title">
   
-    <h1>Ordering free CDs from ShipIt</h1>
+    <h1>Requesting free CDs from ShipIt</h1>
 
     <p>There are now <strong>two versions of
     <span tal:replace="flavour_name">Ubuntu</span>
@@ -60,7 +60,7 @@
 
     <p>ShipIt remains committed to providing <strong>free CDs of 
     <span tal:replace="flavour_name">Ubuntu</span> 6.06 LTS</strong>. 
-    You can order these CDs here. Please note that <strong>these CDs will NOT
+    You can request these CDs here. Please note that <strong>these CDs will NOT
     be the latest version</strong> of
     <span tal:replace="flavour_name">Ubuntu</span>, they are
     <span tal:replace="flavour_name">Ubuntu</span> 6.06 LTS, also known
@@ -68,17 +68,17 @@
 
     <p>If you would like to install the newest version of
     <span tal:replace="flavour_name">Ubuntu</span> you should instead choose
-    one of the options below.</p>
+    the first of the options below.</p>
     
     <div id="chooseLinks">
       <div>
-      <a href="http://www.ubuntu.com/products/GetUbuntu">
+      <a tal:attributes="href view/download_or_buy_link">
         I want to <span>download or buy the <strong>newest</strong>
         version </span> of <span tal:replace="flavour_name">Ubuntu</span></a>
       </div>
       <div>
       <a href="login">
-        I want to <span>order free CDs of the <strong>older</strong>
+        I want to <span>request free CDs of the <strong>older</strong>
         <span tal:replace="flavour_name">Ubuntu</span> 6.06 LTS</span>
         release</a>
       </div>
@@ -93,15 +93,16 @@
       option that best  fits your needs.</p>
 
       <ul id="downloadOptions">
-        <li><a href="http://www.ubuntu.com/products/GetUbuntu/download"
+        <li><a tal:attributes="href view/download_link"
           >Download a copy of the CD for free</a></li>
-        <li><a href="http://www.ubuntu.com/products/GetUbuntu"
+        <li><a href="http://www.ubuntu.com/products/GetUbuntu#localdistrib" 
           >Purchase a CD from one of our world-wide distributors</a></li>
-        <li><a href="http://www.ubuntu.com/products/GetUbuntu"
+        <li><a href="http://www.ubuntu.com/products/GetUbuntu#bulk" 
           >Buy CDs in large quantities</a></li>
-        <li><a href="http://www.ubuntu.com/products/GetUbuntu"
-          >Purchase DVDs from online retailers</a></li>
-        <li><a href="login">Order free CDs of older, but fully supported,
+        <li tal:condition="not: view/flavour/enumvalue:EDUBUNTU">
+          <a href="http://www.ubuntu.com/products/GetUbuntu#buycurrent"
+            >Purchase DVDs from online retailers</a></li>
+        <li><a href="login">Request free CDs of older, but fully supported,
           <span tal:replace="flavour_name">Ubuntu</span> LTS from ShipIt</a>
         </li>
       </ul>

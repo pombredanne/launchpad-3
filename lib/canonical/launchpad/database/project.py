@@ -29,7 +29,7 @@ from canonical.launchpad.database.projectbounty import ProjectBounty
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.specification import Specification
-from canonical.launchpad.components.bugtarget import BugTargetBase
+from canonical.launchpad.database.bugtarget import BugTargetBase
 
 
 class Project(SQLBase, BugTargetBase):
@@ -51,6 +51,11 @@ class Project(SQLBase, BugTargetBase):
     driver = ForeignKey(
         foreignKey="Person", dbName="driver", notNull=False, default=None)
     homepageurl = StringCol(dbName='homepageurl', notNull=False, default=None)
+    homepage_content = StringCol(default=None)
+    emblem = ForeignKey(
+        dbName='emblem', foreignKey='LibraryFileAlias', default=None)
+    gotchi = ForeignKey(
+        dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
     wikiurl = StringCol(dbName='wikiurl', notNull=False, default=None)
     sourceforgeproject = StringCol(dbName='sourceforgeproject', notNull=False,
         default=None)

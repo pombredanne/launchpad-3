@@ -16,13 +16,12 @@
      tal:define="batchnav view/getAllBatched;
                  batch batchnav/currentBatch">
 
-  <tal:navigation replace="structure batchnav/@@+navigation-links" />
+  <tal:navigation replace="structure batchnav/@@+navigation-links-upper" />
 
   <div tal:repeat="cve batch"
        tal:replace="structure cve/@@+listing-detailed" />
 
-  <tal:navigation condition="batch"
-                  replace="structure batchnav/@@+navigation-links" />
+  <tal:navigation replace="structure batchnav/@@+navigation-links-lower" />
 
 </div>
 </body>

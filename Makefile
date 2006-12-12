@@ -44,7 +44,7 @@ check_merge: check_not_a_ui_merge build check importdcheck hctcheck
 	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
-check_edge_merge: check_no_dbupdates check_merge
+check_merge_edge: check_no_dbupdates check_merge
 	# Allow the merge if there are no database updates, including
 	# database patches or datamigration scripts (which should live
 	# in database/schema/pending. Used for maintaining the
@@ -112,16 +112,22 @@ ftest_inplace: inplace
 	env PYTHONPATH=$(PYTHONPATH) \
 	    $(PYTHON) test.py -f $(TESTFLAGS) $(TESTOPTS)
 
-run: inplace stop
+run: inplace stop bzr_version_info
 	rm -f thread*.request
 	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
 		 $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE)
+
+bzr_version_info:
+	rm -f bzr-version-info.py bzr-version-info.pyc
+	if which bzr > /dev/null  && test -x `which bzr`; \
+		then PYTHONPATH= bzr version-info --format=python > bzr-version-info.py 2>/dev/null; \
+	fi
 
 # Run as a daemon - hack using nohup until we move back to using zdaemon
 # properly. We also should really wait until services are running before 
 # exiting, as running 'make stop' too soon after running 'make start'
 # will not work as expected.
-start: inplace stop
+start: inplace stop bzr_version_info
 	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
 		 nohup $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE) \
 		 > ${LPCONFIG}-nohup.out 2>&1 &
@@ -169,10 +175,10 @@ launchpad.pot:
 	    -o locales
 
 TAGS:
-	ctags -e -R lib sourcecode
+	ctags -e -R lib
 
 tags:
-	ctags -R lib sourcecode
+	ctags -R lib
 
 .PHONY: check tags TAGS zcmldocs realclean clean debug stop start run \
 		ftest_build ftest_inplace test_build test_inplace pagetests \

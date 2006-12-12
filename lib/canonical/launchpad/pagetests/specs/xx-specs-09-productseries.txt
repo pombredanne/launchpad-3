@@ -111,7 +111,7 @@ Now, we will accept one of them, the svg-support one. We expect to be told
 that 1 was accepted.
 
   >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
-  >>> browser.open('http://features.launchpad.dev/products/firefox/1.0/+setgoals')
+  >>> browser.open('http://blueprints.launchpad.dev/products/firefox/1.0/+setgoals')
   >>> 'Support Native SVG' in browser.contents
   True
   >>> browser.getControl('Support Native SVG').selected = True
@@ -124,7 +124,7 @@ We will now decline the remaining one. We expect to be redirected, since
 there are none left in the queue.
 
   >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
-  >>> browser.open('http://features.launchpad.dev/products/firefox/1.0/+setgoals')
+  >>> browser.open('http://blueprints.launchpad.dev/products/firefox/1.0/+setgoals')
   >>> browser.getControl('Support E4X').selected = True
   >>> browser.getControl('Decline').click()
   >>> 'Declined 1 specification(s)' in browser.contents
