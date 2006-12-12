@@ -420,13 +420,10 @@ class LaunchpadRootNavigation(Navigation):
             return getUtility(self.stepto_utilities[name])
 
         # Allow traversal to ~foo for People
-        # XXX: Needs page test -- StuartBishop 20060922
         if name.startswith('~'):
             person = getUtility(IPersonSet).getByName(name[1:].lower())
             return person
 
-        # XXX: Needs page tests for these three cases, plus 404.
-        # -- StuartBishop 20060922
         try:
             return getUtility(IPillarNameSet)[name.lower()]
         except NotFoundError:
