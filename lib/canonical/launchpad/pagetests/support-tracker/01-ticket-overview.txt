@@ -167,5 +167,9 @@ involving that person.
   Support requests involving Foo Bar
   >>> browser.getLink('Slow system').url
   '.../distros/ubuntu/+ticket/7'
+
+  # One of them is not on this batch, so we'll have to first go to the next
+  # batch.
+  >>> browser.getLink('Next').click()
   >>> browser.getLink('Firefox loses focus').url
   '.../products/firefox/+ticket/4'
