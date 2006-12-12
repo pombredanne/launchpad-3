@@ -45,14 +45,13 @@ in the future.
 If we fix a few other bugs, these will turn up first in the list. It
 doesn't matter which bugtask that gets fixed.
 
-
     >>> fix_bug(1)
     >>> fix_bug(2)
-    >>> fix_bug(3)
+    >>> fix_bug(4)
 
     >>> for bug in bugs_view.getMostRecentlyFixedBugs():
     ...     print "%s: %s" % (bug.id, bug.title)
-    3: Bug Title Test
+    4: Reflow problems with complex page layouts
     2: Blackhole Trash folder
     1: Firefox does not support SVG
     8: Printing doesn't work
@@ -66,7 +65,7 @@ simply appear on the top of the list.
     >>> for bug in bugs_view.getMostRecentlyFixedBugs():
     ...     print "%s: %s" % (bug.id, bug.title)
     1: Firefox does not support SVG
-    3: Bug Title Test
+    4: Reflow problems with complex page layouts
     2: Blackhole Trash folder
     8: Printing doesn't work
 
@@ -84,7 +83,7 @@ he's not subscribed to it.
     >>> for bug in bugs_view.getMostRecentlyFixedBugs():
     ...     print "%s: %s" % (bug.id, bug.title)
     1: Firefox does not support SVG
-    3: Bug Title Test
+    4: Reflow problems with complex page layouts
     8: Printing doesn't work
 
 If Sample Person get subscribed to bug #2, he can see it in the list.
@@ -100,7 +99,7 @@ If Sample Person get subscribed to bug #2, he can see it in the list.
     >>> for bug in bugs_view.getMostRecentlyFixedBugs():
     ...     print "%s: %s" % (bug.id, bug.title)
     1: Firefox does not support SVG
-    3: Bug Title Test
+    4: Reflow problems with complex page layouts
     2: Blackhole Trash folder
     8: Printing doesn't work
 
