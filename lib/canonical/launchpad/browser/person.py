@@ -69,6 +69,7 @@ from zope.app.form.interfaces import (
         IInputWidget, ConversionError, WidgetInputError)
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
@@ -127,11 +128,11 @@ class BranchTraversalMixin:
 
         For example:
 
-        * '/people/ddaa/+branch/bazaar/devel' points to the branch whose owner
+        * '/~ddaa/+branch/bazaar/devel' points to the branch whose owner
           name is 'ddaa', whose product name is 'bazaar', and whose branch name
           is 'devel'.
 
-        * '/people/sabdfl/+branch/+junk/junkcode' points to the branch whose
+        * '/~sabdfl/+branch/+junk/junkcode' points to the branch whose
           owner name is 'sabdfl', with no associated product, and whose branch
           name is 'junkcode'.
         """
@@ -191,14 +192,17 @@ class PersonSetNavigation(RedirectionNavigation):
         # Redirect to /~name
         return RedirectionNavigation.traverse(self, '~' + name)
             
-
     @stepto('+me')
     def me(self):
-        target = urlappend(
-                self.redirection_root_url,
-                '~' + getUtility(ILaunchBag).user.name
-                )
-        return RedirectionView(target, self.request, 301)
+        me = getUtility(ILaunchBag).user
+        if me is None:
+            raise Unauthorized("You need to be logged in to view this URL.")
+        try:
+            # Not a permanent redirect, as it depends on who is logged in
+            self.redirection_status = 303
+            return RedirectionNavigation.traverse(self, '~' + me.name)
+        finally:
+            self.redirection_status = 301
 
 
 class PeopleContextMenu(ContextMenu):
