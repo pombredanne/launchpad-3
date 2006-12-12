@@ -35,7 +35,7 @@ from canonical.launchpad.interfaces import (
     IBazaarApplication, ICodeOfConductSet, IRegistryApplication,
     ISpecificationSet, ISprintSet, ITicketSet, IBuilderSet, IBountySet,
     ILaunchpadCelebrities, IBugSet, IBugTrackerSet, ICveSet, NotFoundError,
-    ITranslationImportQueue, ITranslationGroupSet)
+    ITranslationImportQueue, ITranslationGroupSet, IPillarNameSet)
 from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView, Navigation,
@@ -423,32 +423,14 @@ class LaunchpadRootNavigation(Navigation):
         # XXX: Needs page test -- StuartBishop 20060922
         if name.startswith('~'):
             person = getUtility(IPersonSet).getByName(name[1:].lower())
-            if person is None:
-                raise NotFoundError(name)
-            else:
-                return person
+            return person
 
         # XXX: Needs page tests for these three cases, plus 404.
         # -- StuartBishop 20060922
-        distro_set = getUtility(IDistributionSet)
         try:
-            return distro_set[name.lower()]
+            return getUtility(IPillarNameSet)[name.lower()]
         except NotFoundError:
-            pass
-
-        product_set = getUtility(IProductSet)
-        try:
-            return product_set[name.lower()]
-        except NotFoundError:
-            pass
-
-        project_set = getUtility(IProjectSet)
-        try:
-            return project_set[name.lower()]
-        except NotFoundError:
-            pass
-
-        return None
+            return None
 
     @stepto('calendar')
     def calendar(self):
