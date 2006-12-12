@@ -112,7 +112,6 @@ from canonical.launchpad.webapp import (
     enabled_with_permission, Navigation, RedirectionNavigation,
     stepto, stepthrough, smartquote,
     GeneralFormView, LaunchpadFormView, action, custom_widget)
-from canonical.launchpad.webapp.publisher import RedirectionView
 
 from canonical.launchpad.event.team import JoinTeamRequestEvent
 

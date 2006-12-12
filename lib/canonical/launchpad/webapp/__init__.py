@@ -16,7 +16,8 @@ __all__ = ['Link', 'FacetMenu', 'ApplicationMenu', 'ContextMenu',
            'urlappend', 'urlparse', 'urlsplit',
            'GeneralFormView', 'GeneralFormViewFactory',
            'Utf8PreferredCharsets', 'LaunchpadFormView',
-           'LaunchpadEditFormView', 'action', 'custom_widget']
+           'LaunchpadEditFormView', 'action', 'custom_widget',
+           'RedirectionNavigation', 'RedirectionView']
 
 import re
 

@@ -60,7 +60,6 @@ from canonical.launchpad.webapp import (
     LaunchpadEditFormView, LaunchpadFormView, Link, Navigation,
     RedirectionNavigation, StandardLaunchpadFacets, stepto, stepthrough,
     structured)
-from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.widgets.product import ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
