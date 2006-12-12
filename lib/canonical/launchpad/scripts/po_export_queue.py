@@ -6,6 +6,7 @@ import logging
 import tempfile
 import textwrap
 import os.path
+import psycopg
 from StringIO import StringIO
 from zipfile import ZipFile
 from xml.parsers.xmlproc.xmldtd import load_dtd_string
@@ -197,19 +198,18 @@ class MozillaLocalizableFile:
     def get_pofile_translation(self, pofile, key):
         if not key: return None
         potmsgset = pofile.potemplate.getPOTMsgSetByAlternativeMsgID(key)
+        if not potmsgset:
+            return None
         pomsgset = potmsgset.getPOMsgSet(
             pofile.language.code, pofile.variant)
         if pomsgset is None:
             return None
+        # Prefer Rosetta/active submission
         submission = pomsgset.getActiveSubmission(0)
         if submission is None:
+            # If there is no active submission, upstream/published one will do
             submission = pomsgset.getPublishedSubmission(0)
-        if submission is None:
-            return None
-        import sys
-        if IPOSubmission.providedBy(submission):
-            print >>sys.stderr, submission.id
-            print >>sys.stderr, submission.potranslation.id
+        if submission is not None and IPOSubmission.providedBy(submission):
             return submission.potranslation.translation
         else:
             return None
@@ -249,7 +249,6 @@ class MozillaZipFile (MozillaLocalizableFile):
                 # XXX (Danilo): need to implement install.rdf updater
                 pass
         zip.close()
-
 
 
 class MozillaDtdFile (MozillaLocalizableFile):
