@@ -263,6 +263,7 @@ class MozillaSupport:
 
     def getTemplate(self, path):
         mozimport = MozillaZipFile(StringIO(self.file.read()))
+        import sys
 
         messages = []
         for alt_msgid in mozimport:
@@ -307,7 +308,7 @@ class MozillaSupport:
             "lasttranslatorname" : None,
             "header" : None,
             "format" : RosettaFileFormat.XPI,
-            "messages" : messages,
+            "messages" : messages
             }
 
     def getTranslation(self, path, language):

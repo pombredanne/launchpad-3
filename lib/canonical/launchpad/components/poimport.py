@@ -7,6 +7,8 @@ import datetime
 import pytz
 from email.Utils import parseaddr
 from zope.component import getUtility
+from sqlobject import SQLObjectNotFound
+from canonical.launchpad.database.pomsgid import POMsgID
 
 from canonical.launchpad.interfaces import (
         IPOTemplate, IPOFile, IPersonSet, TranslationConstants
@@ -105,6 +107,7 @@ def translation_import(pofile_or_potemplate, file, importer, published=True):
     count = 0
 
     errors = []
+    import sys
     for pomsg in messages:
         # Add the English msgid.
         if pomsg['alt_msgid']:
@@ -112,22 +115,35 @@ def translation_import(pofile_or_potemplate, file, importer, published=True):
                 pomsg['alt_msgid'])
             if pofile and not potmsgset:
                 continue
-            if potmsgset:
+            if potmsgset and not pomsg['msgid']:
                 pomsg['msgid'] = potmsgset.getPOMsgIDs()[0].msgid
-            else:
-                pomsg['msgid'] = ''
         else:
             potmsgset = potemplate.getPOTMsgSetByMsgIDText(pomsg['msgid'])
 
         if potmsgset is None:
             # It's the first time we see this msgid.
+            if not pomsg['msgid']:
+                continue
             potmsgset = potemplate.createMessageSetFromText(pomsg['msgid'],
                                                             pomsg['alt_msgid'])
         else:
+            # XXX: set fuzzy marker if primemsgid actually changes
             # Note that we saw it.
-            potmsgset.makeMessageIDSighting(
-                pomsg['msgid'], TranslationConstants.SINGULAR_FORM,
-                update=True)
+            if pomsg['msgid']:
+                if pomsg['msgid'] != potmsgset.primemsgid_.msgid:
+                    try:
+                        messageID = POMsgID.byMsgid(pomsg['msgid'])
+                    except SQLObjectNotFound:
+                        # If there are no existing message ids,
+                        # create a new one.
+                        messageID = POMsgID(msgid=text)
+                    potmsgset.primemsgid_ = messageID
+                    if not 'fuzzy' in pomsg['flags']:
+                        pomsg['flags'].append('fuzzy')
+
+                potmsgset.makeMessageIDSighting(
+                    pomsg['msgid'], TranslationConstants.SINGULAR_FORM,
+                    update=True)
 
         # Add the English plural form.
         if pomsg['msgid_plural']:
