@@ -20,18 +20,14 @@ bugs (i.e bugs that have been recently modified/created).
 If we have three bugs with a recent date_last_updated set, they will
 appear in the top of the list.
 
-    >>> from canonical.launchpad.interfaces import CreateBugParams
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> login('test@canonical.com')
     >>> sample_person = getUtility(ILaunchBag).user
-    >>> bug_a = bugtarget.createBug(CreateBugParams(
-    ...     sample_person, 'Bug A', comment='Bug A.'))
+    >>> bug_a = filebug(bugtarget, 'Bug A')
     >>> set_date_updated(bug_a, 1)
-    >>> bug_b = bugtarget.createBug(CreateBugParams(
-    ...     sample_person, 'Bug B', comment='Bug B.'))
+    >>> bug_b = filebug(bugtarget, 'Bug B')
     >>> set_date_updated(bug_b, 2)
-    >>> bug_c = bugtarget.createBug(CreateBugParams(
-    ...     sample_person, 'Bug C', comment='Bug C.'))
+    >>> bug_c = filebug(bugtarget, 'Bug C')
     >>> set_date_updated(bug_c, 3)
 
     >>> for bugtask in portlet_view.getMostRecentlyUpdatedBugTasks()[:3]:
@@ -97,8 +93,7 @@ By default only five bugs will be returned, but it's possible to specify
 a custom limit.
 
     >>> for index in range(6):
-    ...     bug = bugtarget.createBug(CreateBugParams(
-    ...         sample_person, 'Bug %s' % index, comment='Bug %s.' % index))
+    ...     bug = filebug(bugtarget, 'Bug %s' % index)
     >>> portlet_view.getMostRecentlyUpdatedBugTasks().count()
     5
 
