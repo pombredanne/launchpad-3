@@ -28,7 +28,7 @@ Testing the upload of a 16x16 image.
   ... 
   ... 
   ... -----------------------------75081443203208152087282358
-  ... Content-Disposition: form-data; name="field.hackergotchi"; filename="gnome-dev-floppy.png"
+  ... Content-Disposition: form-data; name="field.gotchi"; filename="gnome-dev-floppy.png"
   ... Content-Type: image/png
   ... 
   ... %s^M
@@ -81,7 +81,7 @@ Testing the upload of a big 21239 bytes image file.
   ... 
   ... 
   ... -----------------------------75081443203208152087282358
-  ... Content-Disposition: form-data; name="field.hackergotchi"; filename="gnome-dev-floppy.png"
+  ... Content-Disposition: form-data; name="field.gotchi"; filename="gnome-dev-floppy.png"
   ... Content-Type: image/png
   ... 
   ... %s^M
@@ -112,7 +112,7 @@ Testing the upload of a wide 192x192 image file.
   ... Content-Type: multipart/form-data; boundary=---------------------------191893153320867125371338229898
   ... 
   ... -----------------------------191893153320867125371338229898
-  ... Content-Disposition: form-data; name="field.hackergotchi"; filename="wide.png"
+  ... Content-Disposition: form-data; name="field.gotchi"; filename="wide.png"
   ... Content-Type: image/png
   ... 
   ... %s
@@ -139,7 +139,7 @@ Testing the upload of a file that is not a image.
   ... Content-Type: multipart/form-data; boundary=---------------------------10224279862908137151495771256
   ... 
   ... -----------------------------10224279862908137151495771256
-  ... Content-Disposition: form-data; name="field.hackergotchi"; filename="msg.txt"
+  ... Content-Disposition: form-data; name="field.gotchi"; filename="msg.txt"
   ... Content-Type: text/plain
   ... 
   ... -----BEGIN PGP MESSAGE-----
