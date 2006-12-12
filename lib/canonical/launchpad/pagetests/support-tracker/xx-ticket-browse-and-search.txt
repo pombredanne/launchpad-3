@@ -3,11 +3,6 @@
 This story describes some common use cases about using the browsing and
 searching features of the support tracker.
 
-    # We want 5 items per page for these tests.
-    >>> from canonical.config import config
-    >>> original_default_batch_size = config.launchpad.default_batch_size
-    >>> config.launchpad.default_batch_size = 5
-
 == When Nobody Uses the Support Tracker ==
 
 Average Joe has recently installed Kubuntu. He has a problem with his
@@ -514,8 +509,3 @@ visiting the 'Subscribed' link in the support facet.
     >>> for ticket in tickets.fetch('td', 'ticket'):
     ...     print ticket.first('a').renderContents()
     Slow system
-
-== Cleanup ==
-
-    # Restore the original batch size for subsequent tests.
-    >>> config.launchpad.default_batch_size = original_default_batch_size
