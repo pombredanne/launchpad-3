@@ -31,15 +31,15 @@ from zope.event import notify
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
+from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.interfaces import (
-    IAddBugTaskForm, IBug, IBugSet, IBugTaskSet, IBugWatchSet,
-    ICanonicalUrlData, IDistributionSourcePackage, IDistroBugTask,
-    IDistroReleaseBugTask, ILaunchBag, IUpstreamBugTask,
+    BugTaskSearchParams, IAddBugTaskForm, IBug, IBugSet, IBugTaskSet,
+    IBugWatchSet, ICanonicalUrlData, IDistributionSourcePackage,
+    IDistroBugTask, IDistroReleaseBugTask, ILaunchBag, IUpstreamBugTask,
     NoBugTrackerFound, NotFoundError, UnrecognizedBugTrackerURL,
     valid_distrotask, valid_upstreamtask)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import SQLObjectCreatedEvent
-from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.webapp import (
     custom_widget, action, canonical_url, ContextMenu,
     LaunchpadFormView, LaunchpadView,LaunchpadEditFormView, stepthrough,
@@ -79,9 +79,9 @@ class BugSetNavigation(Navigation):
 class BugContextMenu(ContextMenu):
     usedfor = IBug
     links = ['editdescription', 'markduplicate', 'visibility', 'addupstream',
-             'adddistro', 'subscription',
-             'addsubscriber', 'addcomment', 'addbranch', 'linktocve',
-             'unlinkcve', 'filebug', 'activitylog', 'backportfix']
+             'adddistro', 'subscription', 'addsubscriber', 'addcomment',
+             'nominate', 'addbranch', 'linktocve', 'unlinkcve', 'filebug',
+             'activitylog']
 
     def __init__(self, context):
         # Always force the context to be the current bugtask, so that we don't
@@ -134,6 +134,16 @@ class BugContextMenu(ContextMenu):
         text = 'Subscribe Someone Else'
         return Link('+addsubscriber', text, icon='add')
 
+    def nominate(self):
+        launchbag = getUtility(ILaunchBag)
+        target = launchbag.product or launchbag.distribution
+        if check_permission("launchpad.Driver", target):
+            text = "Target to Release"
+        else:
+            text = 'Nominate for Release'
+
+        return Link('+nominate', text, icon='milestone')
+
     def addcomment(self):
         text = 'Comment/Attach File'
         return Link('+addcomment', text, icon='add')
@@ -165,21 +175,11 @@ class BugContextMenu(ContextMenu):
         text = 'Activity Log'
         return Link('+activity', text, icon='list')
 
-    def backportfix(self):
-        enabled = (
-            IDistroBugTask.providedBy(self.context) or
-            IDistroReleaseBugTask.providedBy(self.context))
-        text = 'Backport Fix to Releases'
-        return Link('+backport', text, icon='bug', enabled=enabled)
-
 
 
 class MaloneView(LaunchpadView):
-    """The default view for /malone.
+    """The Bugs front page."""
 
-    Essentially, this exists only to allow forms to post IDs here and be
-    redirected to the right place.
-    """
     # Test: standalone/xx-slash-malone-slash-bugs.txt
     error_message = None
     def initialize(self):
@@ -195,6 +195,19 @@ class MaloneView(LaunchpadView):
             self.error_message = "Bug %r is not registered." % bug_id
         else:
             return self.request.response.redirect(canonical_url(bug))
+
+    def getMostRecentlyFixedBugs(self, limit=10):
+        """Return the ten most recently fixed bugs."""
+        fixed_bugs = []
+        search_params = BugTaskSearchParams(
+            self.user, status=BugTaskStatus.FIXRELEASED,
+            orderby='-date_closed')
+        for bugtask in getUtility(IBugTaskSet).search(search_params):
+            if bugtask.bug not in fixed_bugs:
+                fixed_bugs.append(bugtask.bug)
+                if len(fixed_bugs) >= limit:
+                    break
+        return fixed_bugs
 
 
 
@@ -212,28 +225,6 @@ class BugView:
         'current' is determined by simply looking in the ILaunchBag utility.
         """
         return getUtility(ILaunchBag).bugtask
-
-    def taskLink(self, bugtask):
-        """Return the proper link to the bugtask whether it's editable"""
-        user = getUtility(ILaunchBag).user
-        if check_permission('launchpad.Edit', user):
-            return canonical_url(bugtask) + "/+editstatus"
-        else:
-            return canonical_url(bugtask) + "/+viewstatus"
-
-    def getFixRequestRowCSSClassForBugTask(self, bugtask):
-        """Return the fix request row CSS class for the bugtask.
-
-        The class is used to style the bugtask's row in the "fix requested for"
-        table on the bug page.
-        """
-        if bugtask == self.currentBugTask():
-            # The "current" bugtask is highlighted.
-            return 'highlight'
-        else:
-            # Anything other than the "current" bugtask gets no
-            # special row styling.
-            return ''
 
     @property
     def subscription(self):
