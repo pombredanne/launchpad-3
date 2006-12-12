@@ -1,5 +1,5 @@
 <div class="portlet"
-     tal:define="recently_updated_bugtasks view/recentlyUpdatedBugTasks"
+     tal:define="recently_updated_bugtasks view/getMostRecentlyUpdatedBugTasks"
      tal:condition="recently_updated_bugtasks">
 
   <h2>Recently touched bugs in <span tal:replace="context/displayname" /></h2>
