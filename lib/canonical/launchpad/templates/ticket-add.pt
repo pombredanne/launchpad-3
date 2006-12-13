@@ -19,7 +19,8 @@
   <metal:form use-macro="context/@@launchpad_form/form">
 
     <metal:extra_info fill-slot="extra_info">
-      <div tal:condition="view/searchResults">
+      <div>
+      <tal:similar-tickets condition="view/searchResults">
         <p i18n:translate="">These other requests seems similar to your
           support request. You may want to take a look at them.</p>
 
@@ -37,9 +38,9 @@
                             i18n:name="displayname">Product</tal:displayName>
           support community, so they can help you resolve the issue.
         </p>
-      </div>
+      </tal:similar-tickets>
 
-      <div tal:condition="not: view/searchResults">
+      <tal:no-similar-tickets condition="not: view/searchResults">
         <p i18n:translate="">There are no existing support requests similar to
           the summary you entered.
         </p>
@@ -48,6 +49,19 @@
                             i18n:name="displayname">Product</tal:displayName>
           support community, so they can help you resolve the issue.
         </p>
+      </tal:no-similar-tickets>
+
+      <tal:comment replace="nothing">
+        This link should appear in the appropriate widget description,
+        but cannot because of bug #72730.
+      </tal:comment>
+      <p><a href="/+editmylanguages">Change your
+        preferred languages</a> to modify the list of languages available
+        for writing the request.
+      </p>
+
+      <metal:unsupported_languages_warning
+         use-macro="view/unsupported_languages_warning" />
       </div>
     </metal:extra_info>
 

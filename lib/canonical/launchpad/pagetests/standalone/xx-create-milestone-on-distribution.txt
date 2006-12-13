@@ -4,7 +4,7 @@ add a milestone to the Ubuntu/hoary distrorelease, which is owned by the Ubuntu
 Team (ubuntu-team).
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+addmilestone HTTP/1.1
+  ... GET /ubuntu/hoary/+addmilestone HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 403 Forbidden
@@ -15,7 +15,7 @@ Let's make the sample user an owner of Ubuntu for this test. The owner
 of the distribution should be able to add milestones for it, of course!
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/+reassign HTTP/1.1
+  ... POST /ubuntu/+reassign HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ...
   ... field.owner=name12&existing=existing&CHANGE_OWNER=Change+Owner""")
@@ -29,7 +29,7 @@ of the distribution should be able to add milestones for it, of course!
 Now let's go back and try the add milestone page again. It works:
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+addmilestone HTTP/1.1
+  ... GET /ubuntu/hoary/+addmilestone HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -40,7 +40,7 @@ Now, if we post to that form, we should see a success, and the page should
 redirect to the Ubuntu page showing the milestone we added.
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/hoary/+addmilestone HTTP/1.1
+  ... POST /ubuntu/hoary/+addmilestone HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 434
   ... Content-Type: multipart/form-data; boundary=---------------------------114216684419655310401202000685
@@ -69,7 +69,7 @@ redirect to the Ubuntu page showing the milestone we added.
 Let's see if it does show the sounder01 milestone.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/ HTTP/1.1
+  ... GET /ubuntu/ HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...<li class="milestone">...sounder01...
@@ -87,7 +87,7 @@ database ID for the milestone, so we find the ID:
   ...     assert False, 'Milestone not found'
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
+  ... POST /ubuntu/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------3354718323763093901439946724
   ... 
@@ -144,13 +144,13 @@ database ID for the milestone, so we find the ID:
   HTTP/1.1 303 See Other
   Content-Length: 0
   ...
-  Location: http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/+bug/1
+  Location: http://localhost:9000/ubuntu/+source/mozilla-firefox/+bug/1
 
 
 Verify that the bug now has the milestone set on the view page:
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/+source/mozilla-firefox/+bug/1/+viewstatus HTTP/1.1
+  ... GET /ubuntu/+source/mozilla-firefox/+bug/1/+viewstatus HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...

@@ -6,13 +6,13 @@ can easily see which remote bugs a Launchpad bug watches by looking at
 the "Remote Bug Watches" portlet on the bug's page.
 
 To see what Launchpad bugs are watching a particular remote bug, we
-use a URL of the form /malone/bugtrackers/$bugtrackername/$remotebug.
+use a URL of the form /bugs/bugtrackers/$bugtrackername/$remotebug.
 
 If there are multiple Launchpad bugs watching a particular remote bug,
 then a list of the relevant Launchpad bugs:
 
   >>> print http(r"""
-  ... GET /malone/bugtrackers/mozilla.org/42 HTTP/1.1
+  ... GET /bugs/bugtrackers/mozilla.org/42 HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
@@ -30,7 +30,7 @@ If there is only a single bug watching the remote bug, then we skip
 the list page and redirect the user directly to that bug's page:
 
   >>> print http(r"""
-  ... GET /malone/bugtrackers/mozilla.org/2000 HTTP/1.1
+  ... GET /bugs/bugtrackers/mozilla.org/2000 HTTP/1.1
   ... """)
   HTTP/1.1 303 See Other
   Content-Length: ...
@@ -43,7 +43,7 @@ If there are no bug watches for a particular remote bug, then a Not
 Found page is generated:
 
   >>> print http(r"""
-  ... GET /malone/bugtrackers/mozilla.org/99999 HTTP/1.1
+  ... GET /bugs/bugtrackers/mozilla.org/99999 HTTP/1.1
   ... """)
   HTTP/1.1 404 Not Found
   Content-Length: ...
@@ -59,20 +59,20 @@ particular remote bug, we do not expose the title of the remote bug.
 
 Mark bug 1 as private:
 
-  >>> user_browser.open('http://launchpad.dev/products/firefox/+bug/1')
+  >>> user_browser.open('http://launchpad.dev/firefox/+bug/1')
   >>> user_browser.getLink('Visibility/Security').click()
   >>> user_browser.url
-  'http://launchpad.dev/products/firefox/+bug/1/+secrecy'
+  'http://launchpad.dev/firefox/+bug/1/+secrecy'
   >>> user_browser.getControl('Keep bug confidential').selected = True
   >>> user_browser.getControl('Change').click()
   >>> user_browser.url
-  'http://launchpad.dev/products/firefox/+bug/1'
+  'http://launchpad.dev/firefox/+bug/1'
 
 
 List Launchpad bugs watching Mozilla bug 42:
 
   >>> print http(r"""
-  ... GET /malone/bugtrackers/mozilla.org/42 HTTP/1.1
+  ... GET /bugs/bugtrackers/mozilla.org/42 HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
@@ -89,7 +89,7 @@ List Launchpad bugs watching Mozilla bug 42:
 The bug title is still provided if the user can view the private bug:
 
   >>> print http(r"""
-  ... GET /malone/bugtrackers/mozilla.org/42 HTTP/1.1
+  ... GET /bugs/bugtrackers/mozilla.org/42 HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -109,7 +109,7 @@ remote bug, we still perform a redirect (which will lead to a page
 telling the user they are unauthorised to view the bug):
 
   >>> print http(r"""
-  ... GET /malone/bugtrackers/mozilla.org/2000 HTTP/1.1
+  ... GET /bugs/bugtrackers/mozilla.org/2000 HTTP/1.1
   ... """)
   HTTP/1.1 303 See Other
   Content-Length: 0
@@ -120,11 +120,11 @@ telling the user they are unauthorised to view the bug):
 
 Set the bug back to public:
 
-  >>> user_browser.open('http://launchpad.dev/products/firefox/+bug/1')
+  >>> user_browser.open('http://launchpad.dev/firefox/+bug/1')
   >>> user_browser.getLink('Visibility/Security').click()
   >>> user_browser.url
-  'http://launchpad.dev/products/firefox/+bug/1/+secrecy'
+  'http://launchpad.dev/firefox/+bug/1/+secrecy'
   >>> user_browser.getControl('Keep bug confidential').selected = False
   >>> user_browser.getControl('Change').click()
   >>> user_browser.url
-  'http://launchpad.dev/products/firefox/+bug/1'
+  'http://launchpad.dev/firefox/+bug/1'

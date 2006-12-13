@@ -22,7 +22,6 @@ shouldn't have any bugs linked to it at the start of the test.)
     >>> verifyObject(IBugLinkTarget, target)
     True
 
-
 == linkBug() ==
 
     >>> from canonical.launchpad.interfaces import IBugSet
@@ -94,7 +93,6 @@ if he is an administrator:
     >>> login('foo.bar@canonical.com')
     >>> private_link = target.linkBug(private_bug)
 
-
 == bugs ==
 
 The list of bugs linked to the target should be available in the bugs
@@ -103,7 +101,6 @@ attributes:
     >>> [bug.id for bug in target.bugs]
     [1, 2, 6]
 
-
 == bug_links ==
 
 The IBugLink objects available on the target should be available in the
@@ -111,7 +108,6 @@ bug_links attribute:
 
     >>> [link.bug.id for link in target.bug_links]
     [1, 2, 6]
-
 
 == unlinkBug() ==
 
@@ -164,7 +160,6 @@ the bug or if he is an administrator.
     >>> login('foo.bar@canonical.com')
     >>> target.unlinkBug(private_bug) == private_link
     True
-
 
 == Cleanup ==
 

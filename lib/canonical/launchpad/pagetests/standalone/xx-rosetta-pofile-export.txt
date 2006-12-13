@@ -4,7 +4,7 @@ Exporting Single PO Files through the Web
 Not logged in users can't access the +export page.
 
   >>> anon_browser.open(
-  ...     'http://launchpad.dev/distros/ubuntu/hoary'
+  ...     'http://launchpad.dev/ubuntu/hoary'
   ...     '/+source/evolution/+pots/evolution-2.2/es/')
   >>> anon_browser.getLink('Download').click()
   Traceback (most recent call last):
@@ -15,12 +15,12 @@ Logged in as a regular user, the +export page is accessible.
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
   >>> browser.open(
-  ...     'http://launchpad.dev/distros/ubuntu/hoary'
+  ...     'http://launchpad.dev/ubuntu/hoary'
   ...     '/+source/evolution/+pots/evolution-2.2/es')
   >>> browser.getLink('Download').click()
 
   >>> browser.url
-  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+export'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+export'
 
   >>> browser.title
   'Spanish (es) translation of evolution-2.2 in Ubuntu Hoary
@@ -37,7 +37,7 @@ If we POST the page, it should add the request to the queue.
   >>> browser.getControl('Confirm Export').click()
 
   >>> browser.url
-  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es'
 
   >>> for tag in find_tags_by_class(browser.contents, 'informational'):
   ...     tag.renderContents()
@@ -53,17 +53,17 @@ No Privileges Person.
   ...     'Authorization', 'Basic no-priv@canonical.com:test')
 
   >>> no_priv_browser.open(
-  ...    'http://launchpad.dev/products/evolution/trunk/+pots/evolution-2.2/cy/')
+  ...    'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/cy/')
 
   >>> no_priv_browser.getLink('Download').click()
   >>> no_priv_browser.url
-  'http://launchpad.dev/products/evolution/trunk/+pots/evolution-2.2/cy/+export'
+  'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/cy/+export'
 
   >>> no_priv_browser.getControl('Format').value = ['PO']
   >>> no_priv_browser.getControl('Confirm Export').click()
 
   >>> no_priv_browser.url
-  'http://launchpad.dev/products/evolution/trunk/+pots/evolution-2.2/cy'
+  'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/cy'
 
   >>> for tag in find_tags_by_class(browser.contents, 'informational'):
   ...     tag.renderContents()
@@ -73,7 +73,7 @@ Since no-privileges person isn't a valid translator for Welsh (cy) language, the
 ownership of the newly created pofile is set to Rosetta Admins.
 
   >>> browser.open(
-  ...     'http://launchpad.dev/products/evolution'
+  ...     'http://launchpad.dev/evolution'
   ...     '/trunk/+pots/evolution-2.2/cy')
   >>> translation_portlet = find_portlet(
   ...     browser.contents, 'Translation file details')
@@ -85,14 +85,14 @@ We test using the Swedish (sv) language which doesn't have a pofile for
 evolution yet; it will be created at the moment the export is requested.
 
   >>> browser.open(
-  ...     'http://launchpad.dev/products/evolution/trunk/+pots/evolution-2.2/sv')
+  ...     'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/sv')
   >>> browser.getLink('Download').click()
 
   >>> browser.getControl('Format').value = ['PO']
   >>> browser.getControl('Confirm Export').click()
 
   >>> browser.url
-  'http://launchpad.dev/products/evolution/trunk/+pots/evolution-2.2/sv'
+  'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/sv'
 
   >>> for tag in find_tags_by_class(browser.contents, 'informational'):
   ...     tag.renderContents()
@@ -105,7 +105,7 @@ evolution yet; it will be created at the moment the export is requested.
   u'Carlos Perell\xf3 Mar\xedn'
 
 Request the same pofile again won't crash. (See bug
-https://launchpad.net/products/rosetta/+bug/1558).
+https://launchpad.net/rosetta/+bug/1558).
 
   >>> browser.getLink('Download').click()
 
@@ -113,7 +113,7 @@ https://launchpad.net/products/rosetta/+bug/1558).
   >>> browser.getControl('Confirm Export').click()
 
   >>> browser.url
-  'http://launchpad.dev/products/evolution/trunk/+pots/evolution-2.2/sv'
+  'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/sv'
 
   >>> for tag in find_tags_by_class(browser.contents, 'informational'):
   ...     tag.renderContents()

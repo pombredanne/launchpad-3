@@ -6,7 +6,7 @@ Malone provides an XML-RPC interface for filing bugs.
     >>> import xmlrpclib
     >>> from canonical.functional import XMLRPCTestTransport
     >>> filebug_api = xmlrpclib.ServerProxy(
-    ...     'http://test@canonical.com:test@xmlrpc.launchpad.dev/malone/',
+    ...     'http://test@canonical.com:test@xmlrpc.launchpad.dev/bugs/',
     ...     transport=XMLRPCTestTransport())
 
 The filebug API

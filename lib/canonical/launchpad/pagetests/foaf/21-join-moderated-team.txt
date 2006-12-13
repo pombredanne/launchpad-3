@@ -1,12 +1,12 @@
   Now, 'myemail' is a MODERATED team, and 'salgado' will join again.
 
-  Workaround while https://launchpad.net/products/launchpad/+bug/39016 is not
+  Workaround while https://launchpad.net/launchpad/+bug/39016 is not
   fixed.
   >>> from canonical.launchpad.mail import stub
   >>> stub.test_emails[:] = []
 
   >>> print http(r"""
-  ... GET /people/myemail/+join HTTP/1.1
+  ... GET /~myemail/+join HTTP/1.1
   ... Authorization: Basic Z3VpbGhlcm1lLnNhbGdhZG9AY2Fub25pY2FsLmNvbTp6ZWNh
   ... """)
   HTTP/1.1 200 Ok
@@ -16,7 +16,7 @@
 
 
   >>> print http(r"""
-  ... POST /people/myemail/+join HTTP/1.1
+  ... POST /~myemail/+join HTTP/1.1
   ... Authorization: Basic Z3VpbGhlcm1lLnNhbGdhZG9AY2Fub25pY2FsLmNvbTp6ZWNh
   ... Content-Type: application/x-www-form-urlencoded
   ... 
@@ -30,7 +30,7 @@
 
 
   >>> print http(r"""
-  ... GET /people/myemail/ HTTP/1.1
+  ... GET /~myemail/ HTTP/1.1
   ... Authorization: Basic Z3VpbGhlcm1lLnNhbGdhZG9AY2Fub25pY2FsLmNvbTp6ZWNh
   ... """)
   HTTP/1.1 200 Ok
