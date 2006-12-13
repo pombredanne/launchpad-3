@@ -1,11 +1,9 @@
-Bug Links
-=========
+= Bug Links =
 
 Ticket can be linked to bugs. A user should do that when the problem
 exposed in the ticket is related to a bug report.
 
-Adding Links
-------------
+== Adding Links ==
 
 Ticket #2 in firefox is about a user which has trouble displaying the
 SVG demo on the W3C site. There is an existing Malone bug report (#1)
@@ -46,8 +44,8 @@ bug number.
     >>> user_browser.url
     '.../firefox/+bugs'
 
-    (We should use goBack() here but can't because of ZC #645:
-    zope.testbrowser truncates document content after goBack().)
+    # We should use goBack() here but can't because of ZC #645:
+    # zope.testbrowser truncates document content after goBack().
     #>>> user_browser.goBack()
     >>> user_browser.open(
     ...     'http://launchpad.dev/firefox/+ticket/2/+linkbug')
@@ -70,9 +68,7 @@ A notification is also displayed.
     <div class="informational message">Added link to bug #1:
     ...Firefox does not support SVG...</div>
 
-
-Removing Links
---------------
+== Removing Links ==
 
 To remove bug links, the user uses the 'Remove Bug Link' action.
 
@@ -97,14 +93,12 @@ message is displayed:
     >>> soup.first('div', {'id': 'portlet-related-bugs'}) is None
     True
 
+== Link to Private Bugs ==
 
-Link to Private Bugs
---------------------
-
-    (Let's mark bug #6 as private and only accessible by an
-    administrator.
-    XXX flacoste 2006/08/22 This should use a private bug in our
-    sample data, see bug #57307.)
+    # Let's mark bug #6 as private and only accessible by an
+    # administrator.
+    # XXX flacoste 2006/08/22 This should use a private bug in our
+    # sample data, see bug #57307.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.interfaces import IBugSet
@@ -118,10 +112,9 @@ Link to Private Bugs
 A regular user shouldn't be able to link to a private bug he doesn't
 have access to:
 
-    (We use the no-priv user here because sample person is subscribed
-    and thus has access to the private bug.)
-    >>> browser.addHeader('Authorization',
-    ...     'Basic no-priv@canonical.com:test')
+    # We use the no-priv user here because sample person is subscribed
+    # and thus has access to the private bug.
+    >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/firefox/+ticket/2')
     >>> browser.getLink('Link Existing Bug').click()
     >>> browser.getControl('Bug ID').value = '6'

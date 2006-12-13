@@ -53,6 +53,11 @@
       name="+specs"
       layer="canonical.launchpad.layers.BlueprintLayer"
       />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProductSeries"
+        layer="canonical.launchpad.layers.BugsLayer"
+        name="+bugs"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSeries"

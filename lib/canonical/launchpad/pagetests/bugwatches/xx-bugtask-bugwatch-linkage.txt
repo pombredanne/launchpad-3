@@ -94,15 +94,17 @@ From the edit page we can also create a new bug watch:
     >>> browser.url
     'http://localhost/debian/+source/mozilla-firefox/+bug/1'
 
-We can see that the Debian task is linked to the newly created bug
-watch.
+The Debian task is linked to the newly created bug watch.
 
     >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(browser.contents)
-    >>> debian_tr = soup.first('tr', {'class': 'highlight'})
+    >>> debian_link = soup.first(
+    ...     'a',
+    ...     {'href': 'http://localhost/distros/debian/+source/mozilla-firefox/+bug/1/+editstatus'})
+    >>> debian_tr = debian_link.parent.parent.parent
     >>> for td_tag in debian_tr('td'):
     ...     print td_tag
-    <td...> <a...>mozilla-firefox (Debian)</a> </td>
+    <td...>...<a...>mozilla-firefox (Debian)</a>...</td>
     ...
     <td...> <a...> debbugs #1 </a> </td>
 
@@ -136,4 +138,3 @@ created, instead the old one will be used.
     mozilla.org #42
     debbugs #1
     debbugs #304014
-

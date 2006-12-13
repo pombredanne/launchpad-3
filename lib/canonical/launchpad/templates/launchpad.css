@@ -549,6 +549,13 @@ ins {
     font-weight: normal;
 }
 
+.discreet a {
+    color: #76797c;
+    text-decoration: none;
+    border-bottom: 1px dotted #76797c;
+    font-weight: normal;
+}
+
 .listingBar {
     background-color: #dee7ec;
     border-color: #8cacbb;

@@ -32,8 +32,18 @@ We get a list of all published packages:
   >>> browser.getLink("List All Packages").click()
 
 Click on the respective name to get in the DistributionSourcePackage:
+Let's have a look at the firefox DistributionSourcePackage.
 
+  # But mozilla-firefox is not on the current batch of results
   >>> browser.getLink("mozilla-firefox").click()
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError
+
+  # Let's go to the next batch, where we can see it.
+  >>> browser.getLink("Next").click()
+  >>> browser.getLink("mozilla-firefox").click()
+
 
 There we can see the entire publishing history for the source and
 links to the pages with more specific (useful) information. By

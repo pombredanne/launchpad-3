@@ -21,8 +21,9 @@ from sqlobject import (
 from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.launchpad.interfaces import (
-    IBugLinkTarget, InvalidTicketStateError, ILaunchpadCelebrities, IMessage,
-    IPerson, ITicket, ITicketSet, TICKET_STATUS_DEFAULT_SEARCH)
+    IBugLinkTarget, InvalidTicketStateError, ILanguage, ILanguageSet,
+    ILaunchpadCelebrities, IMessage, IPerson, ITicket, ITicketSet,
+    TICKET_STATUS_DEFAULT_SEARCH)
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -88,14 +89,16 @@ class Ticket(SQLBase, BugLinkTargetMixin):
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     title = StringCol(notNull=True)
     description = StringCol(notNull=True)
+    language = ForeignKey(
+        dbName='language', notNull=True, foreignKey='Language')
     status = EnumCol(
         schema=TicketStatus, notNull=True, default=TicketStatus.OPEN)
-    priority = EnumCol(schema=TicketPriority, notNull=True,
-        default=TicketPriority.NORMAL)
-    assignee = ForeignKey(dbName='assignee', notNull=False,
-        foreignKey='Person', default=None)
-    answerer = ForeignKey(dbName='answerer', notNull=False,
-        foreignKey='Person', default=None)
+    priority = EnumCol(
+        schema=TicketPriority, notNull=True, default=TicketPriority.NORMAL)
+    assignee = ForeignKey(
+        dbName='assignee', notNull=False, foreignKey='Person', default=None)
+    answerer = ForeignKey(
+        dbName='answerer', notNull=False, foreignKey='Person', default=None)
     answer = ForeignKey(dbName='answer', notNull=False,
         foreignKey='TicketMessage', default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
@@ -103,12 +106,14 @@ class Ticket(SQLBase, BugLinkTargetMixin):
     datelastquery = UtcDateTimeCol(notNull=True, default=DEFAULT)
     datelastresponse = UtcDateTimeCol(notNull=False, default=None)
     dateanswered = UtcDateTimeCol(notNull=False, default=None)
-    product = ForeignKey(dbName='product', foreignKey='Product',
+    product = ForeignKey(
+        dbName='product', foreignKey='Product', notNull=False, default=None)
+    distribution = ForeignKey(
+        dbName='distribution', foreignKey='Distribution', notNull=False,
+        default=None)
+    sourcepackagename = ForeignKey(
+        dbName='sourcepackagename', foreignKey='SourcePackageName',
         notNull=False, default=None)
-    distribution = ForeignKey(dbName='distribution',
-        foreignKey='Distribution', notNull=False, default=None)
-    sourcepackagename = ForeignKey(dbName='sourcepackagename',
-        foreignKey='SourcePackageName', notNull=False, default=None)
     whiteboard = StringCol(notNull=False, default=None)
 
     # useful joins
@@ -475,6 +480,7 @@ class TicketSet:
                             current_timestamp -interval '%s days'))
                     AND
                     datelastquery  < (current_timestamp - interval '%s days')
+                    AND assignee IS NULL
             """ % sqlvalues(
                 TicketStatus.OPEN, TicketStatus.NEEDSINFO,
                 days_before_expiration, days_before_expiration))
@@ -488,13 +494,15 @@ class TicketSet:
     @staticmethod
     def new(title=None, description=None, owner=None,
             product=None, distribution=None, sourcepackagename=None,
-            datecreated=None):
+            datecreated=None, language=None):
         """Common implementation for ITicketTarget.newTicket()."""
         if datecreated is None:
             datecreated = UTC_NOW
+        if language is None:
+            language = getUtility(ILanguageSet)['en']
         ticket = Ticket(
             title=title, description=description, owner=owner,
-            product=product, distribution=distribution,
+            product=product, distribution=distribution, language=language,
             sourcepackagename=sourcepackagename, datecreated=datecreated)
 
         # Subscribe the submitter
@@ -518,8 +526,8 @@ class TicketSearch:
     """
 
     def __init__(self, search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-                 sort=None, product=None, distribution=None,
-                 sourcepackagename=None):
+                 language=None, needs_attention_from=None, sort=None,
+                 product=None, distribution=None, sourcepackagename=None):
         self.search_text = search_text
 
         if zope_isinstance(status, Item):
@@ -527,7 +535,16 @@ class TicketSearch:
         else:
             self.status = status
 
+        if ILanguage.providedBy(language):
+            self.language = [language]
+        else:
+            self.language = language
+
         self.sort = sort
+        if needs_attention_from is not None:
+            assert IPerson.providedBy(needs_attention_from), (
+                "expected IPerson, got %r" % needs_attention_from)
+        self.needs_attention_from = needs_attention_from
 
         self.product = product
         self.distribution = distribution
@@ -540,6 +557,7 @@ class TicketSearch:
                 "Distribution must be specified if sourcepackage is not None")
 
         constraints = []
+
         if self.product:
             constraints.append('Ticket.product = %s' % sqlvalues(self.product))
         elif self.distribution:
@@ -564,6 +582,26 @@ class TicketSearch:
         if self.status:
             constraints.append('Ticket.status IN %s' % sqlvalues(
                 list(self.status)))
+
+        if self.needs_attention_from:
+            constraints.append('''Ticket.id IN (
+                SELECT DISTINCT t.id FROM Ticket t
+                    JOIN TicketMessage tm ON (Ticket.id = tm.ticket)
+                    JOIN Message m ON (tm.message = m.id)
+                    WHERE (t.owner = %(person)s AND
+                           t.status IN %(owner_status)s)
+                        OR (t.owner != %(person)s AND
+                            t.status = %(open_status)s AND
+                            m.owner = %(person)s)
+            )''' % sqlvalues(
+                person=self.needs_attention_from,
+                owner_status=[TicketStatus.NEEDSINFO, TicketStatus.ANSWERED],
+                open_status=TicketStatus.OPEN))
+
+        if self.language:
+            constraints.append(
+                'Ticket.language IN (%s)'
+                    % ', '.join(sqlvalues(*self.language)))
 
         return constraints
 
@@ -622,12 +660,14 @@ class TicketTargetSearch(TicketSearch):
     """
 
     def __init__(self, search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-                 sort=None, owner=None, product=None, distribution=None,
+                 language=None, owner=None,  needs_attention_from=None,
+                 sort=None, product=None, distribution=None,
                  sourcepackagename=None):
         assert product is not None or distribution is not None, (
             "Missing a product or distribution context.")
         TicketSearch.__init__(
-            self, search_text=search_text, status=status, sort=sort,
+            self, search_text=search_text, status=status, language=language,
+            needs_attention_from=needs_attention_from, sort=sort,
             product=product, distribution=distribution,
             sourcepackagename=sourcepackagename)
 
@@ -681,10 +721,16 @@ class TicketPersonSearch(TicketSearch):
     """
 
     def __init__(self, person, search_text=None,
-                 status=TICKET_STATUS_DEFAULT_SEARCH,
-                 participation=None, sort=None):
+                 status=TICKET_STATUS_DEFAULT_SEARCH, language=None,
+                 participation=None, needs_attention=False, sort=None):
+        if needs_attention:
+            needs_attention_from = person
+        else:
+            needs_attention_from = None
+
         TicketSearch.__init__(
-            self, search_text=search_text, status=status, sort=sort)
+            self, search_text=search_text, status=status, language=language,
+            needs_attention_from=needs_attention_from, sort=sort)
 
         assert IPerson.providedBy(person), "expected IPerson, got %r" % person
         self.person = person

@@ -1,6 +1,4 @@
-
-Ticket Subscriptions
-====================
+= Ticket Subscriptions =
 
 Users can subscribe to specific tickets. When they are subscribed they
 will receive notifications for any changes to the ticket.

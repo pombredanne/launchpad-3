@@ -14,7 +14,7 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 from zope.schema import (
-    Datetime, Bool, Int, Choice, Text, TextLine, List, Object)
+     Bool, Choice, Datetime,  Int, List, Object, Text, TextLine)
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import IHasOwner
@@ -22,6 +22,7 @@ from canonical.launchpad.interfaces.ticketmessage import ITicketMessage
 from canonical.launchpad.interfaces.tickettarget import (
         TICKET_STATUS_DEFAULT_SEARCH)
 from canonical.lp.dbschema import TicketStatus, TicketPriority
+
 
 
 class InvalidTicketStateError(Exception):
@@ -52,6 +53,11 @@ class ITicket(IHasOwner):
     priority = Choice(
         title=_('Priority'), vocabulary='TicketPriority',
         default=TicketPriority.NORMAL)
+    # XXX flacoste 2006/10/28 It should be more precise to define a new
+    # vocabulary that excludes the English variants.
+    language = Choice(
+        title=_('Language'), vocabulary='LanguageVocabulary',
+        description=_('The language in which this request is written.'))
     owner = Choice(title=_('Owner'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam')
     assignee = Choice(title=_('Assignee'), required=False,
@@ -369,7 +375,6 @@ class ITicket(IHasOwner):
         """
 
 
-# Interfaces for containers
 class ITicketSet(Interface):
     """A container for tickets."""
 
@@ -385,8 +390,8 @@ class ITicketSet(Interface):
         """Return the tickets that are expired.
 
         This should return all the tickets in the Open or Needs information
-        state that didn't receive any new comments in the last
-        <days_before_expiration> days.
+        state, without an assignee, that didn't receive any new comments in
+        the last <days_before_expiration> days.
         """
 
     def searchTickets(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,

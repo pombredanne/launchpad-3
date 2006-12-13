@@ -1,5 +1,4 @@
-Support Tracker System
-======================
+= Support Tracker System =
 
 Launchpad includes a tech support ticket tracker. Tickets are created
 and accessed using the ITicketTarget interface. This interface is
@@ -34,8 +33,7 @@ ITicketTarget attribute.
 (The complete ITicketTarget interface is documented in
 ../interfaces/ftests/tickettarget.txt.)
 
-ITicket
--------
+== ITicket ==
 
 Tickets are manipulated through the ITicket interface:
 
@@ -77,8 +75,13 @@ attribute:
     >>> firefox_ticket.target == firefox
     True
 
-Subscriptions and Notifications
--------------------------------
+It is also possible to adapt a ticket to its ITicketTarget.
+
+    >>> target = ITicketTarget(firefox_ticket)
+    >>> verifyObject(ITicketTarget, target)
+    True
+
+== Subscriptions and Notifications ==
 
 Whenever a ticket is created or changed, email notifications will be
 sent. To receive such notification, one can subscribe to the bug using
@@ -168,8 +171,7 @@ getSubscribers() method.
 (More documentation on the ticket notifications can be found in
 'support-tracker-notifications.txt'.)
 
-Workflow
---------
+== Workflow ==
 
 A ticket status should not be manipulated directly but through the
 workflow methods.
@@ -177,8 +179,7 @@ workflow methods.
 The complete ticket workflow is documented in
 'support-tracker-workflow.txt'.
 
-Bug Linking
------------
+== Bug Linking ==
 
 Ticket implements the IBugLinkTarget interface which makes it possible
 to link bug report to ticket.
