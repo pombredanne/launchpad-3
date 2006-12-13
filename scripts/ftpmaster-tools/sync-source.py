@@ -1036,6 +1036,10 @@ def add_source(pkg, Sources, previous_version, suite, requested_by,
     # Download the source
     files = Sources[pkg]["files"]
 
+    # local debug function to be passed to SyncSource
+    def local_debug(message):
+        print message
+
     # Use the SyncSource helper class.
     sync_source = SyncSource(
         files=files, origin=origin, debug=local_debug, error=dak_utils.fubar,
