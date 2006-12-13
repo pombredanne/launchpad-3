@@ -202,7 +202,16 @@ class MaloneView(LaunchpadView):
         search_params = BugTaskSearchParams(
             self.user, status=BugTaskStatus.FIXRELEASED,
             orderby='-date_closed')
-        for bugtask in getUtility(IBugTaskSet).search(search_params):
+        fixed_bugtasks = getUtility(IBugTaskSet).search(search_params) 
+        # XXX: We might end up returning less than :limit: bugs, but in
+        #      most cases we won't, and '4*limit' is here to prevent
+        #      this page from timing out in production. Later I'll fix
+        #      this properly by selecting bugs instead of bugtasks.
+        #      If fixed_bugtasks isn't sliced, it will take a long time
+        #      to iterate over it, even over just 10, because
+        #      Transaction.iterSelect() listifies the result.
+        #      -- Bjorn Tillenius, 2006-12-13
+        for bugtask in fixed_bugtasks[:4*limit]:
             if bugtask.bug not in fixed_bugs:
                 fixed_bugs.append(bugtask.bug)
                 if len(fixed_bugs) >= limit:
