@@ -597,6 +597,17 @@ class POFile(SQLBase, RosettaStats):
 
         file = librarian_client.getFileByAlias(entry_to_import.content.id)
 
+        # While importing a file, there are two kinds of errors:
+        #
+        # - Errors that prevent us to parse the file. That's a global error,
+        #   is handled with exceptions and will not change any data other than
+        #   the status of that file to note the fact that its import failed.
+        #
+        # - Errors in concrete messages included in the file to import. That's
+        #   a more localised error that doesn't affect the whole file being
+        #   imported. It allows us to accept other translations so we accept
+        #   everything but the messages with errors. We handle it returning a
+        #   list of faulty messages.
         import_rejected = False
         try:
             errors = import_po(self, file, entry_to_import.importer,

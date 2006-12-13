@@ -2,7 +2,7 @@ PO Import test with a .po file that has a PO-Revision-Date not updated
 ----------------------------------------------------------------------
 
 When we import a .po file with a 'PO-Revision-Date' that has an older value
-that the one stored in IPOFile.header, we should detect it and notify the user
+than the one stored in IPOFile.header, we should detect it and notify the user
 that they should update that field or we assume that such file is an old
 version that should not be imported. That way, they have a chance to fix it.
 
@@ -11,9 +11,8 @@ In this test, we are going to check that we detect and notify it.
 Here are some imports we need to get this test running.
 
   >>> from canonical.database.sqlbase import flush_database_updates
-  >>> from canonical.launchpad.interfaces import IPersonSet
-  >>> from canonical.launchpad.interfaces import IPOTemplateNameSet
-  >>> from canonical.launchpad.interfaces import ITranslationImportQueue
+  >>> from canonical.launchpad.interfaces import (
+  ...     IPersonSet, IPOTemplateNameSet, ITranslationImportQueue)
   >>> from canonical.launchpad.database import POTemplateSubset
   >>> import datetime
   >>> import pytz
@@ -102,9 +101,7 @@ just imported.
     PO-Revision-Date: 2005-05-03 20:41+0100
     ...
 
-And we sent an email with the notification of the error.
-
-We need to commit the transaction to get the email.
+We need to commit the transaction to get the notification email.
 
   >>> transaction.commit()
 
@@ -113,7 +110,9 @@ There is one email.
   >>> len(stub.test_emails)
   1
 
-Let's remove it from the queue.
+Let's remove it from the queue (We can ignore it completely as it's a
+successful notification that we are already aware of and the successful
+checks is outside the scope of this test).
 
   >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
 

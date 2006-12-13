@@ -820,7 +820,7 @@ Let's change the field with a date 2 days, 13 hours and 5 minutes ago.
     >>> import pytz
     >>> import datetime
     >>> UTC = pytz.timezone('UTC')
-    >>> delta = datetime.timedelta(days=2, hours = 13, minutes = 5)
+    >>> delta = datetime.timedelta(days=2, hours=13, minutes=5)
     >>> entry.dateimported = datetime.datetime.now(UTC) - delta
 
 And this method gets the right text.

@@ -1,12 +1,18 @@
 PO Import test with a .po file that lacks X-Rosetta-Export-Date header
 ----------------------------------------------------------------------
 
-When we import a .po file as not published, it needs to have a header
+When we import a .po file as not 'published', it needs to have a header
 named 'X-Rosetta-Export-Date' to be able to detect conflicts with other
 translations done for the same POFile while we do translations offline.
 Without that header, we cannot detect conflicts, so we don't accept that
 file. We should notify the user about that error so they have a chance to
 fix it.
+
+If the file being imported is 'published', we don't care about
+X-Rosetta-Export-Date header. That's because published translations don't
+change translations being used in Rosetta, it's just a reference of what
+upstream has and they only add active translations if there isn't one already
+so there aren't conflicts to solve.
 
 Let's check that we don't accept .po imports that aren't exported first from
 Rosetta.
@@ -138,7 +144,7 @@ There is one email and it's for the error we produced.
   The Rosetta SWAT Team
   <BLANKLINE>
 
-We should also be sure that we don't block any import 'published', that
+We should also be sure that we don't block any import 'published'. That
 kind of import is not blocked if they lack the 'X-Rosetta-Export-Date' header.
 
 We need to fetch again some SQLObjects because we did a transaction commit.
