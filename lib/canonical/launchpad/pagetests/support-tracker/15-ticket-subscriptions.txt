@@ -1,6 +1,4 @@
-
-Ticket Subscriptions
-====================
+= Ticket Subscriptions =
 
 Users can subscribe to specific tickets. When they are subscribed they
 will receive notifications for any changes to the ticket.
@@ -9,7 +7,7 @@ To subscribe, users use the 'Subscribe' link and then confirm that
 they want to subscribe by clicking on the 'Subscribe' button.
 
     >>> user_browser.open(
-    ...     'http://launchpad.dev/products/firefox/+ticket/2')
+    ...     'http://launchpad.dev/firefox/+ticket/2')
     >>> link = user_browser.getLink('Subscribe')
     >>> link.url
     '.../+ticket/2/+subscribe'
@@ -36,7 +34,7 @@ name appears in the 'Subscribers' portlet:
     >>> portlet.first('ul')
     <ul class="people">
       <li>
-        <a href="http://launchpad.dev/people/name12">Sample Person</a>
+        <a href="http://launchpad.dev/~name12">Sample Person</a>
       </li>
     </ul>
 

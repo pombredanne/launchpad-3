@@ -15,7 +15,7 @@ First we define a helper function.
   ...     form = {
   ...         'field.time_starts': time_starts,
   ...         'field.time_ends': time_ends,
-  ...         'FORM_SUBMIT': 'Continue'}
+  ...         'field.actions.register': 'Register'}
   ...     request = TestRequest(form=form)
   ...     request.method = 'POST'
   ...     view = getView(sprint, '+attend', request)
@@ -40,28 +40,25 @@ Choosing a starting date after the ending date returns a nice error message.
 
   >>> dates = ['2005-11-17', '2005-10-07']
   >>> sprint_attendance_view = create_sprint_attendence_view(ubz, dates)
-  >>> sprint_attendance_view.process_form()
-  u'Please fix the problems below and try again.'
-  >>> sprint_attendance_view.errors
-  LaunchpadValidationError: The end time must be after the start time.
+  >>> sprint_attendance_view.initialize()
+  >>> print sprint_attendance_view.getWidgetError('time_ends')
+  The end time must be after the start time.
 
 Choosing a starting date after the meeting's end returns an error message.
 
   >>> dates = ['2006-01-01', '2006-02-01']
   >>> sprint_attendance_view = create_sprint_attendence_view(ubz, dates)
-  >>> sprint_attendance_view.process_form()
-  u'Please fix the problems below and try again.'
-  >>> sprint_attendance_view.errors
-  LaunchpadValidationError: Choose an arrival time before the end of the meeting.
+  >>> sprint_attendance_view.initialize()
+  >>> print sprint_attendance_view.getWidgetError('time_starts')
+  Choose an arrival time before the end of the meeting.
 
 Choosing a ending date before the meeting's start returns an error message.
 
   >>> dates = ['2005-07-01', '2005-08-01']
   >>> sprint_attendance_view = create_sprint_attendence_view(ubz, dates)
-  >>> sprint_attendance_view.process_form()
-  u'Please fix the problems below and try again.'
-  >>> sprint_attendance_view.errors
-  LaunchpadValidationError: Choose a departure time after the start of the meeting.
+  >>> sprint_attendance_view.initialize()
+  >>> print sprint_attendance_view.getWidgetError('time_ends')
+  Choose a departure time after the start of the meeting.
 
 Entering a starting date before the meeting's start date and a finishing
 date after the meeting's end date works because we assume you wanted the
@@ -69,17 +66,16 @@ meeting's start and end dates respectively.
 
   >>> dates = ['2005-07-01', '2005-12-01']
   >>> sprint_attendance_view = create_sprint_attendence_view(ubz, dates)
-  >>> sprint_attendance = sprint_attendance_view.process_form()
-  >>> sprint_attendance.attendee.name
-  u'name12'
-  >>> sprint_attendance.sprint.name
-  u'ubz'
+  >>> sprint_attendance_view.initialize()
+  >>> sprint_attendance_view.errors
+  []
 
 Sample Person is now listed as an attendee.
 
   >>> ubz = getUtility(ISprintSet)['ubz']
   >>> [attendee.name for attendee in ubz.attendees]
   [u'name12']
+  >>> sprint_attendance = ubz.attendances[0]
 
   >>> ubz.time_starts == sprint_attendance.time_starts
   True

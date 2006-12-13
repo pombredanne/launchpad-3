@@ -4,7 +4,7 @@ A security contact can be set on a distribution.
 
     >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
 
-    >>> browser.open("http://localhost:9000/distros/ubuntu/+securitycontact")
+    >>> browser.open("http://localhost:9000/ubuntu/+securitycontact")
     >>> browser.getControl("Security Contact").value = "name16"
     >>> browser.getControl("Change").click()
     >>> print browser.contents
@@ -14,7 +14,7 @@ A security contact can be set on a distribution.
 
 Or on an upstream.
 
-    >>> browser.open("http://localhost:9000/products/firefox/+securitycontact")
+    >>> browser.open("http://localhost:9000/firefox/+securitycontact")
     >>> browser.getControl("Security Contact").value = "name21"
     >>> browser.getControl("Change").click()
     >>> print browser.contents

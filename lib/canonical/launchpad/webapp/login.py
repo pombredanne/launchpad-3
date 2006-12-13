@@ -11,6 +11,7 @@ from zope.component import getUtility
 from zope.app.session.interfaces import ISession
 from zope.event import notify
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad import _
 from canonical.launchpad.validators.email import valid_email
@@ -22,7 +23,8 @@ from canonical.launchpad.interfaces import (
     ILoginTokenSet, IPersonSet, UBUNTU_WIKI_URL, ShipItConstants)
 from canonical.launchpad.interfaces.validation import valid_password
 from canonical.lp.dbschema import LoginTokenType
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from canonical.config import config
+
 
 class UnauthorizedView(SystemErrorView):
 
@@ -86,6 +88,24 @@ class BasicLoginPage:
         return ''
 
 
+class RestrictedLoginInfo:
+    """On a team-restricted launchpad server, show who may access the server.
+
+    Otherwise, show that this is an unrestricted server.
+    """
+
+    def isTeamRestrictedServer(self):
+        return bool(config.launchpad.restrict_to_team)
+
+    def getAllowedTeamURL(self):
+        return 'https://launchpad.net/people/%s' % (
+            config.launchpad.restrict_to_team)
+
+    def getAllowedTeamDescription(self):
+        return getUtility(IPersonSet).getByName(
+            config.launchpad.restrict_to_team).title
+
+
 class LoginOrRegister:
     """Merges the former CookieLoginPage and JoinLaunchpadView classes
     to allow the two forms to appear on a single page.
@@ -119,12 +139,23 @@ class LoginOrRegister:
         'shipit-kubuntu': ShipItConstants.kubuntu_url,
         'ubuntuwiki': UBUNTU_WIKI_URL}
 
+    def process_restricted_form(self):
+        """Entry-point for the team-restricted login page.
+
+        If we're not running in team-restricted mode, then redirect to a
+        regular login page.  Otherwise, process_form as usual.
+        """
+        if config.launchpad.restrict_to_team:
+            self.process_form()
+        else:
+            self.request.response.redirect('/+login', temporary_if_possible=True)
+
     def process_form(self):
         """Determines whether this is the login form or the register
         form, and delegates to the appropriate function.
         """
         if self.request.method != "POST":
-            return 
+            return
 
         self.submitted = True
         if self.request.form.get(self.submit_login):
@@ -141,7 +172,7 @@ class LoginOrRegister:
     def getRedirectionURL(self):
         """Return the URL we should redirect the user to, after finishing a
         registration or password reset process.
-        
+
         If the request has an 'origin' query parameter, that means the user came
         from either the ubuntu wiki or shipit, and thus we return the URL for
         either shipit or the wiki. When there's no 'origin' query parameter, we
@@ -282,7 +313,7 @@ class LoginOrRegister:
             list(self.iter_form_items()), doseq=True)
         if query_string:
             target = '%s?%s' % (target, query_string)
-        self.request.response.redirect(target)
+        self.request.response.redirect(target, temporary_if_possible=True)
 
     def iter_form_items(self):
         """Iterate over keys and single values, excluding stuff we don't
@@ -310,7 +341,7 @@ class LoginOrRegister:
             L.append('<input type="hidden" name="%s" value="%s" />' % (
                 name, cgi.escape(value, quote=True)
                 ))
-                    
+
         return '\n'.join(L)
 
 

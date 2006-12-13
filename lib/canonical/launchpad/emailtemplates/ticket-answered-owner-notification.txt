@@ -3,7 +3,7 @@ Your support request #%(ticket_id)s on %(target_name)s changed:
 
 %(body)s
 
---
+_______________________________________________________________________
 If this answers your request, please go to the following page to let us
 know that it is solved:
 %(ticket_url)s/+confirm?answer_id=%(new_message_id)s

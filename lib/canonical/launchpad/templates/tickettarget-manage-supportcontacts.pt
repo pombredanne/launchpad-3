@@ -27,12 +27,13 @@
   <div metal:use-macro="context/@@launchpad_generalform/generalform">
 
     <p metal:fill-slot="extra_info">
-    A <em>support contact</em> gets automatically subscribed to new
-    support requests. By checking the box below, you will receive be
-    subscribed to all support requests opened on <span
+    A <em>support contact</em> is implicitely subscribed to new
+    support requests. By checking the box below, you will receive changes 
+    related to all support requests (written in English or one of your <a
+    tal:attributes="href string:${request/lp:person/fmt:url}/+editlanguages"
+    >preferred languages</a>) opened on <span
     tal:replace="context/displayname">Mozilla Firefox</span>, and thus
-    receive mail notifications about them. You will be subscribed
-    only to new support requests from now on, not to existing ones.
+    receive mail notifications about them.
     </p>
 
     <div metal:fill-slot="widgets">
@@ -43,14 +44,14 @@
           <div tal:replace="structure view/want_to_be_support_contact_widget" />
           <label style="font-weight: normal"
               tal:attributes="for view/want_to_be_support_contact_widget/name">
-            I want to be a support contact for 
+            I want to be a support contact for
             <span tal:replace="context/displayname">Mozilla Firefox</span>
           </label>
         </div>
 
       </div>
 
-      <div class="row" 
+      <div class="row"
            tal:condition="view/support_contact_teams_widget/vocabulary">
 
         <div class="field">
@@ -68,5 +69,20 @@
 
 </div>
 
+<metal:help fill-slot="help">
+  <p>Being a <em>support contact</em> is similar to being subscribed to
+    <strong>every</strong> support requests filed against the context
+    (product, distribution, or sourcepackage) you are a support contact of.
+    You will receive mail notifications about all changes to these requests,
+    as well as for every new request created.
+  </p>
+  <p>You can register yourself, or any of the teams you are a member of as
+    support contact. Simply check the appropriate checkbox.
+  </p>
+  <p>If you don't want to receive notifications anymore, simply remove
+    yourself and/or your teams as support contact by unchecking the
+    appropriate checkbox.
+  </p>
+</metal:help>
 </body>
 </html>
