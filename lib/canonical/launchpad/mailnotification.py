@@ -1278,3 +1278,8 @@ def notify_specification_modified(spec, event):
 
     for address in spec.notificationRecipientAddresses():
         simple_sendmail_from_person(event.user, address, subject, body)
+
+
+# def send_branch_revisions_updated(branch, ):
+def notify_branch_modified(branch, event):
+    "TODO: implement this"

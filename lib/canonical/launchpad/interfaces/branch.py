@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'IBranch',
     'IBranchSet',
+    'IBranchDelta'
     ]
 
 from zope.interface import Interface, Attribute
@@ -186,6 +187,10 @@ class IBranch(IHasOwner):
         title=_("Last scanned revision ID"), required=False,
         description=_("The head revision ID of the branch when last "
                       "successfully scanned."))
+    revision_count = Int(
+        title=_("The number of revisions in the branch"),
+        required=False)
+    tip_revision = Attribute("The current tip of the branch")
 
     cache_url = Attribute("Private mirror of the branch, for internal use.")
     warehouse_url = Attribute(
@@ -204,7 +209,6 @@ class IBranch(IHasOwner):
 
     # Joins
     revision_history = Attribute("The sequence of revisions in that branch.")
-    revision_count = Attribute("The number of revisions in that branch.")
     subscriptions = Attribute("BranchSubscriptions associated to this branch.")
     subscribers = Attribute("Persons subscribed to this branch.")
 
@@ -217,6 +221,14 @@ class IBranch(IHasOwner):
     def revisions_since(timestamp):
         """Revisions in the history that are more recent than timestamp."""
 
+    # event-related methods
+    def getDelta(old_branch, user):
+        """Returns a BranchDelta instance that encapsulates the changes.
+
+        This method is primarily used by event subscription code to
+        determine what has changed during an SQLObjectModifiedEvent.
+        """
+        
     # subscription-related methods
     def subscribe(person):
         """Subscribe this person to the branch.
@@ -288,3 +300,28 @@ class IBranchSet(Interface):
 
     def getBranchesToScan():
         """Return an iterator for the branches that need to be scanned."""
+
+class IBranchDelta(Interface):
+    """The quantitative changes made to a branch that was edited or altered."""
+
+    branch = Attribute("The IBranch, after it's been edited.")
+    user = Attribute("The IPerson that did the editing.")
+
+    # fields on the branch itself, we provide just the new changed value
+    name = Attribute("The branch name or None.")
+    title = Attribute("The branch title or None.")
+    summary = Attribute("The branch summary or None.")
+    url = Attribute("The branch URL or None.")
+    whiteboard = Attribute("The branch whiteboard or None.")
+    landing_target = Attribute("The branch landing target or None.")
+    tip_revision = Attribute("The branch tip revision or None.")
+
+    bugs_linked = Attribute("A list of new bugs linked to this branch.")
+    bugs_unlinked = Attribute("A list of bugs unlinked from this branch.")
+    specs_linked = Attribute("A list of new specs linked to this branch.")
+    specs_unlinked = Attribute("A list of specs unlinked from this branch.")
+
+    # items where we provide 'old' and 'new' values if they changed
+    lifecycle_status = Attribute("Old and new lifecycle status, or None.")
+    revision_count = Attribute("Old and new revision counts, or None.")
+    

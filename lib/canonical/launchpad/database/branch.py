@@ -74,6 +74,9 @@ class Branch(SQLBase):
 
     last_scanned = UtcDateTimeCol(default=None)
     last_scanned_id = StringCol(default=None)
+    revision_count = IntCol(default=None)
+    tip_revision = ForeignKey(dbName='revision', foreignKey='Revision',
+                              default=None)
 
     cache_url = StringCol(default=None)
 
@@ -145,10 +148,6 @@ class Branch(SQLBase):
         owner = self.owner.name
         return (product, status, author, name, owner)
 
-    def revision_count(self):
-        """See IBranch."""
-        return RevisionNumber.selectBy(branch=self).count()
-
     def latest_revisions(self, quantity=10):
         """See IBranch."""
         return RevisionNumber.selectBy(
@@ -214,6 +213,14 @@ class Branch(SQLBase):
 
         return did_something
 
+    def getDelta(self, old_branch, user):
+        """See IBranch.getDelta()"""
+        delta = ObjectDelta(old_branch, self)
+        delta.record_new_values(("name", "title", "summary", "url",
+                                 "whiteboard", "landing_target",
+                                 "tip_revision"))
+        delta.record_new_and_old(("lifecycle_status", "revision_count"))
+        delta.record_list_added_and_removed()
 
 
 class BranchSet:
