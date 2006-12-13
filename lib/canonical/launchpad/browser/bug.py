@@ -35,9 +35,9 @@ from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IAddBugTaskForm, IBug, IBugSet, IBugTaskSet,
     IBugWatchSet, ICanonicalUrlData, IDistributionSourcePackage,
-    IDistroBugTask, IDistroReleaseBugTask, ILaunchBag, IUpstreamBugTask,
-    NoBugTrackerFound, NotFoundError, UnrecognizedBugTrackerURL,
-    valid_distrotask, valid_upstreamtask)
+    IDistroBugTask, IDistroReleaseBugTask, ILaunchBag, ILaunchpadCelebrities,
+    IProductSet, IUpstreamBugTask, NoBugTrackerFound, NotFoundError,
+    UnrecognizedBugTrackerURL, valid_distrotask, valid_upstreamtask)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.webapp import (
@@ -358,6 +358,23 @@ class ChooseAffectedProductView(LaunchpadFormView, BugAlsoReportInBaseView):
     def validate(self, data):
         if data.get('product'):
             self.validateProduct(data['product'])
+        else:
+            # If the user entered a product, provide a more useful error
+            # message than "Invalid value".
+            entered_product = self.request.form.get(
+                self.widgets['product'].name)
+            if entered_product:
+                new_product_url = "%s/+new" % (
+                    canonical_url(getUtility(IProductSet)))
+                search_url = self.widgets['product'].popupHref()
+                self.setFieldError(
+                    'product',
+                    'There is no product in Launchpad named "%s". You may'
+                    ' want to <a href="%s">search for it</a>, or'
+                    ' <a href="%s">register it</a> if you can\'t find it.' % (
+                        cgi.escape(entered_product),
+                        cgi.escape(search_url, quote=True),
+                        cgi.escape(new_product_url, quote=True)))
 
     @action(u'Continue', name='continue')
     def continue_action(self, action, data):
@@ -477,13 +494,28 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
                 return
         elif distribution:
             target = distribution
-            try:
-                valid_distrotask(
-                    self.context.bug, distribution, sourcepackagename,
-                    on_create=True)
-            except WidgetsError, errors:
-                for error in errors:
-                    self.setFieldError('sourcepackagename', error.snippet())
+            entered_package = self.request.form.get(
+                self.widgets['sourcepackagename'].name)
+            if sourcepackagename is None and entered_package:
+                # The entered package doesn't exist.
+                filebug_url = "%s/+filebug" % canonical_url(
+                    getUtility(ILaunchpadCelebrities).launchpad)
+                self.setFieldError(
+                    'sourcepackagename',
+                    'There is no package in %s named "%s". If it should'
+                    ' be here, <a href="%s">report this as a bug</a>.' % (
+                        cgi.escape(distribution.displayname),
+                        cgi.escape(entered_package),
+                        cgi.escape(filebug_url, quote=True)))
+            else:
+                try:
+                    valid_distrotask(
+                        self.context.bug, distribution, sourcepackagename,
+                        on_create=True)
+                except WidgetsError, errors:
+                    for error in errors:
+                        self.setFieldError(
+                            'sourcepackagename', error.snippet())
         else:
             # Validation failed for either the product or distribution,
             # no point in trying to validate further.
