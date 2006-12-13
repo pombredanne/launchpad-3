@@ -480,6 +480,7 @@ class TicketSet:
                             current_timestamp -interval '%s days'))
                     AND
                     datelastquery  < (current_timestamp - interval '%s days')
+                    AND assignee IS NULL
             """ % sqlvalues(
                 TicketStatus.OPEN, TicketStatus.NEEDSINFO,
                 days_before_expiration, days_before_expiration))
