@@ -5,7 +5,7 @@ The first one involes three steps. First, go to the product or
 distribution for which support is desired. Then browse to the support
 facet and finally, use the 'Request support' action:
 
-    >>> browser.open('http://launchpad.dev/distros/ubuntu')
+    >>> browser.open('http://launchpad.dev/ubuntu')
     >>> browser.getLink('Support').click()
     >>> print browser.title
     Support requests for Ubuntu
@@ -16,7 +16,7 @@ Making a new support requests requires logging in:
     Traceback (most recent call last):
       ...
     Unauthorized...
-    >>> user_browser.open('http://launchpad.dev/distros/ubuntu/+tickets')
+    >>> user_browser.open('http://launchpad.dev/ubuntu/+tickets')
     >>> user_browser.getLink('Request Support').click()
     >>> user_browser.title
     'Request support with Ubuntu'
@@ -30,7 +30,7 @@ that will start the creation process. Tickets created this way will be
 associated with the source package of the used application.
 
     >>> user_browser.open(
-    ...     'http://launchpad.dev/distros/ubuntu/hoary/'
+    ...     'http://launchpad.dev/ubuntu/hoary/'
     ...     '+sources/mozilla-firefox/+gethelp')
     >>> user_browser.title
     'Help and support options for mozilla-firefox...'
@@ -122,7 +122,7 @@ redirect the user to the ticket page.
     ... "crashes.\n")
     >>> user_browser.getControl('Add').click()
     >>> user_browser.url
-    '.../distros/ubuntu/+source/mozilla-firefox/+ticket/...'
+    '.../ubuntu/+source/mozilla-firefox/+ticket/...'
     >>> user_browser.title
     'mozilla-firefox in ubuntu support request #...Visiting a web page...'
     >>> soup = BeautifulSoup(user_browser.contents)
@@ -135,6 +135,6 @@ The user automatically got subscribed to this new ticket.
 
     >>> soup.first('div', {'id': 'ticket-subscribers'})
     <div id="ticket-subscribers" class="portlet">
-    ...<a href=".../name12">Sample Person</a>...
+    ...<a href=".../~name12">Sample Person</a>...
     </div>
 

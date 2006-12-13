@@ -57,13 +57,13 @@
        <b>Project:</b>
          <a tal:define="project series/product/project"
           tal:content="project/displayname"
-          tal:attributes="href string:/projects/${project/name}">
+          tal:attributes="href string:/${project/name}">
           Project</a>
       </li>
       <li><b>Product:</b>
          <a tal:condition="series/product"
             tal:content="series/product/displayname"
-            tal:attributes="href string:/products/${series/product/name}">
+            tal:attributes="href string:/${series/product/name}">
          Product</a>
       </li>
       <li><b>Branch: </b>

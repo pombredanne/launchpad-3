@@ -543,7 +543,7 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
                     'bug_url',
                     "The bug tracker at %s isn't registered in Launchpad."
                     ' You need to'
-                    ' <a href="/malone/bugtrackers/+newbugtracker">register'
+                    ' <a href="/bugs/bugtrackers/+newbugtracker">register'
                     ' it</a> before you can link any bugs to it.' % (
                         cgi.escape(error.base_url)))
             except UnrecognizedBugTrackerURL:

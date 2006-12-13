@@ -2,7 +2,7 @@
 
 The ticket page shows a link to make the ticket into a bug.
 
-  >>> browser.open('http://launchpad.dev/products/firefox/+ticket/2')
+  >>> browser.open('http://launchpad.dev/firefox/+ticket/2')
   >>> createLink = browser.getLink('Create Bug Report')
   >>> createLink is not None
   True
@@ -24,7 +24,7 @@ Cancelling the request brings you back to the ticket page.
 
   >>> browser.getControl('Cancel').click()
   >>> browser.url
-  '.../products/firefox/+ticket/2'
+  '.../firefox/+ticket/2'
   >>> browser.title
   '...support request #2...'
   >>> createLink = browser.getLink('Create Bug Report')
@@ -53,7 +53,7 @@ and description and redirects the user to the bug page.
   ...     "Browsing to the W3C SVG demo results in a blank page.")
   >>> browser.getControl('Create').click()
   >>> browser.url
-  '.../products/firefox/+bug/...'
+  '.../firefox/+bug/...'
   >>> from BeautifulSoup import BeautifulSoup
   >>> soup = BeautifulSoup(browser.contents)
   >>> for tag in soup('h1'):
@@ -69,13 +69,13 @@ tickets' portlet:
   >>> soup('li', 'ticket')
   [<li class="ticket">
    ...Mozilla Firefox:
-   ...<a href=".../products/firefox/+ticket/2">Problem...
+   ...<a href=".../firefox/+ticket/2">Problem...
   </li>]
 
 A user can't create a bug report when a ticket has already a bug linked
 to it.
 
-  >>> browser.open('http://launchpad.dev/products/firefox/+ticket/2')
+  >>> browser.open('http://launchpad.dev/firefox/+ticket/2')
   >>> browser.contents
   '...<h2>Related bugs</h2>...'
   >>> browser.getLink('Create Bug Report')
@@ -85,12 +85,12 @@ to it.
 
 It works with distribution tickets as well.
 
-  >>> browser.open('http://launchpad.dev/distros/ubuntu/+ticket/5/+makebug')
+  >>> browser.open('http://launchpad.dev/ubuntu/+ticket/5/+makebug')
   >>> browser.getControl('Summary').value = (
   ...     "Ubuntu Installer can't find CDROM")
   >>> browser.getControl('Create Bug Report').click()
   >>> browser.url
-  '.../distros/ubuntu/+bug/...'
+  '.../ubuntu/+bug/...'
   >>> soup = BeautifulSoup(browser.contents)
   >>> for tag in soup('div', 'informational message'):
   ...   print tag.string
