@@ -1,9 +1,9 @@
 Test if a submit with a big msgid string breaks Rosetta
 
   >>> user_browser.open(
-  ...    'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=20')
+  ...    'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=20')
   >>> user_browser.url
-  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=20'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=20'
 
 We do the changes:
 
@@ -17,13 +17,13 @@ And do the submission:
 And we are forwarded to next translation form.
 
   >>> user_browser.url
-  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=0'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=0'
 
 Check that the previous submit was saved.
 
   >>> user_browser.getLink('Last').click()
   >>> user_browser.url
-  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=20'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=20'
   >>> print user_browser.contents
   <...
                           <td>Found <code>%i</code> invalid file.</td>

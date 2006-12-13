@@ -149,6 +149,7 @@
   request to not contain the name/value of the button.
   -->
   <form name="shipit" action="" method="post"
+        accept-charset="UTF-8"
         onsubmit="javascript: window.setTimeout('disableSubmitButton()', 1);">
 
   <table>

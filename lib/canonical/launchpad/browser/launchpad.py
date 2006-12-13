@@ -22,6 +22,7 @@ from datetime import timedelta, datetime
 
 from zope.app.datetimeutils import parseDatetimetz, tzinfo, DateTimeError
 from zope.component import getUtility
+from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
 
 import canonical.launchpad.layers
@@ -34,8 +35,8 @@ from canonical.launchpad.interfaces import (
     IProjectSet, ILoginTokenSet, IKarmaActionSet, IPOTemplateNameSet,
     IBazaarApplication, ICodeOfConductSet, IRegistryApplication,
     ISpecificationSet, ISprintSet, ITicketSet, IBuilderSet, IBountySet,
-    ILaunchpadCelebrities, IBugSet, IBugTrackerSet, ICveSet,
-    ITranslationImportQueue, ITranslationGroupSet)
+    ILaunchpadCelebrities, IBugSet, IBugTrackerSet, ICveSet, NotFoundError,
+    ITranslationImportQueue, ITranslationGroupSet, IPillarNameSet)
 from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView, Navigation,
@@ -53,7 +54,7 @@ class MaloneApplicationNavigation(Navigation):
 
     usedfor = IMaloneApplication
 
-    newlayer = canonical.launchpad.layers.MaloneLayer
+    newlayer = canonical.launchpad.layers.BugsLayer
 
     @stepto('bugs')
     def bugs(self):
@@ -398,23 +399,44 @@ class LaunchpadRootNavigation(Navigation):
         'token': ILoginTokenSet,
         'karmaaction': IKarmaActionSet,
         'potemplatenames': IPOTemplateNameSet,
-        'bazaar': IBazaarApplication,
         'codeofconduct': ICodeOfConductSet,
-        'malone': IMaloneApplication,
         'bugs': IMaloneApplication,
         'registry': IRegistryApplication,
-        'rosetta': IRosettaApplication,
         'specs': ISpecificationSet,
         'sprints': ISprintSet,
         'support': ITicketSet,
+        'translations': IRosettaApplication,
         '+builds': IBuilderSet,
         'bounties': IBountySet,
+        '+code': IBazaarApplication,
+        # These three have been renamed, and no redirects done, as the old
+        # urls now point to the product pages.
+        #'bazaar': IBazaarApplication,
+        #'malone': IMaloneApplication,
+        #'rosetta': IRosettaApplication,
         }
 
     def traverse(self, name):
         if name in self.stepto_utilities:
             return getUtility(self.stepto_utilities[name])
-        else:
+
+        # Allow traversal to ~foo for People
+        if name.startswith('~'):
+            person = getUtility(IPersonSet).getByName(name[1:].lower())
+            return person
+
+        # Dapper and Edgy shipped with https://launchpad.net/bazaar hard coded
+        # into the Bazaar Launchpad plugin (part of Bazaar core). So in theory
+        # we need to support this URL until 2011 (although I suspect the API
+        # will break much sooner than that) or updates sent to
+        # {dapper,edgy}-updates. Probably all irrelevant, as I suspect the
+        # number of people using the plugin in edgy and dapper is 0.
+        if name == 'bazaar' and IXMLRPCRequest.providedBy(self.request):
+            return getUtility(IBazaarApplication)
+
+        try:
+            return getUtility(IPillarNameSet)[name.lower()]
+        except NotFoundError:
             return None
 
     @stepto('calendar')

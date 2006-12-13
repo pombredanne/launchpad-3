@@ -3,9 +3,9 @@ Test to check that Rosetta is able to get translation errors.
 First, we get the form we are going to submit:
 
   >>> user_browser.open(
-  ...    'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=20')
+  ...    'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=20')
   >>> user_browser.url
-  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=20'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=20'
 
 We do the changes:
 
@@ -19,7 +19,7 @@ And do the submission:
 We are still in the same URL, because the system detected an error.
 
   >>> user_browser.url
-  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=20'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=20'
 
   >>> 'Error in Translation:' in user_browser.contents
   True
@@ -30,9 +30,9 @@ We are still in the same URL, because the system detected an error.
 Load the form again to be sure that previous submit was not saved.
 
   >>> user_browser.open(
-  ...    'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=20')
+  ...    'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=20')
   >>> user_browser.url
-  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=20'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=20'
   >>> print user_browser.contents
   <...
                         <td>Found <code>%i</code> invalid file.</td>

@@ -16,11 +16,13 @@
                             driver members owner bugcontact
                             official_malone official_rosetta
                             security_contact upload_admin upload_sender
-                            mirror_admin"
+                            mirror_admin homepage_content emblem gotchi"
             />
         <!-- ITicketTarget -->
         <allow attributes="getTicket searchTickets findSimilarTickets
-              support_contacts" />
+            support_contacts direct_support_contacts getSupportedLanguages
+	    getTicketLanguages"
+	    />
         <require permission="launchpad.AnyPerson"
             attributes="newTicket addSupportContact removeSupportContact" />
     </content>
@@ -36,7 +38,7 @@
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistribution"
-        layer="canonical.launchpad.layers.MaloneLayer"
+        layer="canonical.launchpad.layers.BugsLayer"
         name="+bugs" />
 
     <browser:navigation
@@ -243,28 +245,6 @@
             class="canonical.widgets.HiddenUserWidget" />
     </browser:addform>
 
-    <browser:generalform
-        name="+filebug"
-        for="canonical.launchpad.interfaces.IDistribution"
-        schema="canonical.launchpad.interfaces.IBugAddForm"
-        label="Report a bug"
-        fields="packagename title comment security_related"
-        class="canonical.launchpad.browser.FileBugView"
-        facet="bugs"
-        keyword_arguments="packagename title comment security_related"
-        permission="launchpad.AnyPerson"
-        template="../templates/bugtarget-filebug.pt"
-        lp:url="/distros/$Distribution.name/+filebug">
-        <browser:widget
-           field="title"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="50" />
-        <browser:widget
-           field="comment"
-           class="zope.app.form.browser.TextAreaWidget"
-           width="62" />
-    </browser:generalform>
-
     <browser:editform
         for="canonical.launchpad.interfaces.IDistribution"
         permission="launchpad.Edit"
@@ -400,7 +380,7 @@
     <browser:url
         for="canonical.launchpad.interfaces.IDistribution"
         path_expression="name"
-        parent_utility="canonical.launchpad.interfaces.IDistributionSet"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
         />
 
     <browser:pages

@@ -70,7 +70,7 @@ email address before), they /do/ have a preferred email and we need to handle
 this.
 
     (To see spiv's email we must be logged in, so we'll use user_browser)
-    >>> user_browser.open('http://launchpad.dev/people/spiv')
+    >>> user_browser.open('http://launchpad.dev/~spiv')
     >>> print user_browser.contents
     <...
     ...<a...Hey, I'm Andrew Bennetts</a>...
