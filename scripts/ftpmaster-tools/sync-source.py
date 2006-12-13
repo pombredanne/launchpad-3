@@ -21,7 +21,6 @@ import re
 import shutil
 import stat
 import string
-import sys
 import tempfile
 import time
 import urllib
@@ -29,15 +28,11 @@ import apt_pkg
 
 import _pythonpath
 
-from sqlobject import SQLObjectMoreThanOneResultError
 from zope.component import getUtility
 
-from canonical.database.sqlbase import (sqlvalues, cursor)
+from canonical.database.sqlbase import cursor
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts,logger, logger_options)
-from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.database.publishing import (
-    SourcePackageFilePublishing)
 from canonical.launchpad.interfaces import (
     IDistributionSet, IPersonSet)
 from canonical.librarian.client import LibrarianClient
@@ -854,27 +849,27 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
     # Add the .dsc itself to dsc_files so it's listed in the Files: field
     dsc_base_filename = os.path.basename(dsc_filename)
     dsc_files.setdefault(dsc_base_filename, {})
-    dsc_files[dsc_base_filename]["md5sum"] = SyncSource.aptMD5Sum(dsc_filename)
+    dsc_files[dsc_base_filename]["md5sum"] = SyncSource.generateMD5Sum(dsc_filename)
     dsc_files[dsc_base_filename]["size"] = os.stat(dsc_filename)[stat.ST_SIZE]
 
     (old_cwd, tmpdir) = extract_source(dsc_filename)
     
     # Get the upstream version
-    original_upstr_version = dak_utils.re_no_epoch.sub('', dsc["version"])
-    if re_strip_revision.search(upstr_version):
-        upstr_version = re_strip_revision.sub('', original_upstr_version)
+    sane_version = dak_utils.re_no_epoch.sub('', dsc["version"])
+    if re_strip_revision.search(sane_version):
+        version_minus_epoch = re_strip_revision.sub('', sane_version)
     else:
-        upstr_version = original_upstr_version
+        version_minus_epoch = sane_version
 
     # Ensure the changelog file exists
-    changelog_filename = "%s-%s/debian/changelog" % (dsc["source"], upstr_version)
+    changelog_filename = "%s-%s/debian/changelog" % (dsc["source"], version_minus_epoch)
 
     # Parse it and then adapt it for .changes
     (changelog, urgency, closes) = parse_changelog(changelog_filename, previous_version)
     changelog = fix_changelog(changelog)
 
     # Parse the control file
-    control_filename = "%s-%s/debian/control" % (dsc["source"], upstr_version)
+    control_filename = "%s-%s/debian/control" % (dsc["source"], version_minus_epoch)
     (section, priority, description) = parse_control(control_filename)
 
     cleanup_source(tmpdir, old_cwd, dsc)
@@ -886,7 +881,7 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
     # XXX Soyuz wants an unsigned changes
     #sign_changes(changes, dsc)
     output_filename = (
-        "%s_%s_source.changes" % (dsc["source"], original_upstr_version))
+        "%s_%s_source.changes" % (dsc["source"], sane_version))
 
     filehandle = open(output_filename, 'w')
     # XXX The additional '\n' is to work around a bug in parsing
@@ -1062,15 +1057,16 @@ def add_source(pkg, Sources, previous_version, suite, requested_by,
     else:
         signing_rules = -1
 
-    requires_orig = orig_filename is None
+    # if the orig was found in librarian, it got fetched on disk, but it's
+    # not necessary and won't be included in the changesfile, so
+    # it *can/should* be removed.
+    if orig_filename:
+        os.unlink(orig_filename)
 
+    requires_orig = orig_filename is None
     import_dsc(dsc_filename, suite, previous_version, signing_rules,
                requires_orig, requested_by, origin, current_sources,
                current_binaries)
-
-    # XXX cprov 20061212: why do we need this ?
-    if orig_filename:
-        os.unlink(orig_filename)
 
 ################################################################################
 
@@ -1246,11 +1242,11 @@ def objectize_options():
         dict([(c.name,c) for c in Options.target_suite.components]))
     if (Options.target_component and
         Options.target_component not in valid_components):
-            dak_utils.fubar(
-                "%s is not a valid component for %s/%s."
-                % (Options.target_component, Options.target_distro.name,
-                   Options.target_suite.name))
-        Options.target_component = valid_components[Options.target_component]
+        dak_utils.fubar(
+            "%s is not a valid component for %s/%s."
+            % (Options.target_component, Options.target_distro.name,
+               Options.target_suite.name))
+    Options.target_component = valid_components[Options.target_component]
 
     # Fix up Options.requestor
     if Options.requestor:

@@ -19,6 +19,7 @@ __all__ = [
 
 import apt_pkg
 import commands
+import md5
 import os
 import re
 import stat
@@ -979,9 +980,9 @@ class SyncSource:
         self.downloader = downloader
 
     @classmethod
-    def aptMD5Sum(self, filename):
+    def generateMD5Sum(self, filename):
         file_handle = open(filename)
-        md5sum = apt_pkg.md5sum(file_handle)
+        md5sum = md5.md5(file_handle.read()).hexdigest()
         file_handle.close()
         return md5sum
 
@@ -1032,7 +1033,7 @@ class SyncSource:
         """
         orig_filename = None
         for filename in self.files.keys():
-            if not self.fetchFileFromLibrarian(filename)
+            if not self.fetchFileFromLibrarian(filename):
                 continue
             # set the return code if an orig was, in fact,
             # fetched from Librarian
@@ -1074,7 +1075,7 @@ class SyncSource:
         If anything fails SyncSourceError will be raised.
         """
         for filename in self.files.keys():
-            actual_md5sum = self.aptMD5Sum(filename)
+            actual_md5sum = self.generateMD5Sum(filename)
             expected_md5sum = self.files[filename]["md5sum"]
             if actual_md5sum != expected_md5sum:
                 raise SyncSourceError(

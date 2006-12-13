@@ -45,7 +45,7 @@ class TestSyncSource(TestCase):
         cleanupLibrarianFiles()
         shutil.rmtree(self._jail)
 
-    def _listfiles(self):
+    def _listFiles(self):
         """Return a list of files present in jail."""
         return os.listdir(self._jail)
 
@@ -60,7 +60,7 @@ class TestSyncSource(TestCase):
         output.write('Slartibartfast')
         output.close()
 
-    def getSyncSource(self, files, origin):
+    def _getSyncSource(self, files, origin):
         """Return a SyncSource instance with the given parameters
 
         Uses the local_* methods to capture results so we can verify
@@ -76,7 +76,7 @@ class TestSyncSource(TestCase):
         files = {'foobar': {'size': 1}}
         origin = {'foobar': {'remote-location': 'nowhere'}}
 
-        sync_source = self.getSyncSource(files, origin)
+        sync_source = self._getSyncSource(files, origin)
 
         self.assertEqual(sync_source.files, files)
         self.assertEqual(sync_source.origin, origin)
@@ -86,7 +86,7 @@ class TestSyncSource(TestCase):
 
         sync_source.downloader('somewhere', 'foo')
         self.assertEqual(self.downloads, [('somewhere', 'foo')])
-        self.assertEqual(self._listfiles(), ['foo'])
+        self.assertEqual(self._listFiles(), ['foo'])
         self.assertEqual(open('foo').read(), 'Slartibartfast')
 
     def testCheckDownloadedFilesOK(self):
@@ -99,7 +99,7 @@ class TestSyncSource(TestCase):
             'foo': {'md5sum': 'dd21ab16f950f7ac4f9c78ef1498eee1', 'size': 15}
             }
         origin = {}
-        sync_source = self.getSyncSource(files, origin)
+        sync_source = self._getSyncSource(files, origin)
 
         test_file = open('foo', 'w')
         test_file.write('abcdefghijlmnop')
@@ -113,7 +113,7 @@ class TestSyncSource(TestCase):
             'foo': {'md5sum': 'duhhhhh', 'size': 15}
             }
         origin = {}
-        sync_source = self.getSyncSource(files, origin)
+        sync_source = self._getSyncSource(files, origin)
 
         test_file = open('foo', 'w')
         test_file.write('abcdefghijlmnop')
@@ -129,7 +129,7 @@ class TestSyncSource(TestCase):
             'foo': {'md5sum': 'dd21ab16f950f7ac4f9c78ef1498eee1', 'size': 10}
             }
         origin = {}
-        sync_source = self.getSyncSource(files, origin)
+        sync_source = self._getSyncSource(files, origin)
 
         test_file = open('foo', 'w')
         test_file.write('abcdefghijlmnop')
@@ -144,7 +144,7 @@ class TestSyncSource(TestCase):
         test_file = open('foo', 'w')
         test_file.write('abcdefghijlmnop')
         test_file.close()
-        md5 = SyncSource.aptMD5Sum('foo')
+        md5 = SyncSource.generateMD5Sum('foo')
         self.assertEqual(md5, 'dd21ab16f950f7ac4f9c78ef1498eee1')
 
     def testFetchSyncFiles(self):
@@ -160,7 +160,7 @@ class TestSyncSource(TestCase):
             }
         origin = {'url': 'http://somewhere/'}
 
-        sync_source = self.getSyncSource(files, origin)
+        sync_source = self._getSyncSource(files, origin)
 
         test_file = open('foo.diff.gz', 'w')
         test_file.write('nahhh')
@@ -189,12 +189,12 @@ class TestSyncSource(TestCase):
             'netapplet_1.0.1.diff.gz': {},
             }
         origin = {}
-        sync_source = self.getSyncSource(files, origin)
+        sync_source = self._getSyncSource(files, origin)
 
         orig_filename = sync_source.fetchLibrarianFiles()
 
         self.assertEqual(orig_filename, 'netapplet_1.0.0.orig.tar.gz')
-        self.assertEqual(self._listfiles(), ['netapplet_1.0.0.orig.tar.gz'])
+        self.assertEqual(self._listFiles(), ['netapplet_1.0.0.orig.tar.gz'])
         self.assertEqual(
             self.messages,
             ['\tnetapplet_1.0.0.orig.tar.gz: already in distro '
@@ -212,7 +212,7 @@ class TestSyncSource(TestCase):
             'foobar-1.0.diff.gz': {},
             }
         origin = {}
-        sync_source = self.getSyncSource(files, origin)
+        sync_source = self._getSyncSource(files, origin)
 
         self.assertRaises(
             SyncSourceError,
@@ -222,7 +222,7 @@ class TestSyncSource(TestCase):
             self.messages,
             ['\tfoobar-1.0.dsc: already in distro '
              '- downloading from librarian'])
-        self.assertEqual(self._listfiles(), ['foobar-1.0.dsc'])
+        self.assertEqual(self._listFiles(), ['foobar-1.0.dsc'])
 
 
 def test_suite():
