@@ -58,6 +58,25 @@ class BaseSprintAttendanceAddView(LaunchpadFormView):
                     self.context.time_ends,
                     time_ends + datetime.timedelta(days=1, seconds=-1))
 
+    def getDates(self, data):
+        time_starts = data['time_starts']
+        time_ends = data['time_ends']
+        if (time_ends.hour == 0 and time_ends.minute == 0 and
+            time_ends.second == 0):
+            # We assume the user entered just a date, which gives them
+            # midnight in the morning of that day, when they probably want
+            # the end of the day.
+            time_ends = time_ends + datetime.timedelta(days=1, seconds=-1)
+        if time_starts < self.context.time_starts:
+            # Can't arrive before the conference starts, we assume that you
+            # meant to say you will get there at the beginning
+            time_starts = self.context.time_starts
+        if time_ends > self.context.time_ends:
+            # Can't stay after the conference ends, we assume that you meant
+            # to say you will leave at the end.
+            time_ends = self.context.time_ends
+        return time_starts, time_ends
+
     @property
     def next_url(self):
         return canonical_url(self.context)
@@ -81,7 +100,8 @@ class SprintAttendanceAttendView(BaseSprintAttendanceAddView):
 
     @action(_('Register'), name='register')
     def register_action(self, action, data):
-        self.context.attend(self.user, data['time_starts'], data['time_ends'])
+        time_starts, time_ends = self.getDates(data)
+        self.context.attend(self.user, time_starts, time_ends)
 
 
 class SprintAttendanceRegisterView(BaseSprintAttendanceAddView):
@@ -94,6 +114,5 @@ class SprintAttendanceRegisterView(BaseSprintAttendanceAddView):
 
     @action(_('Register'), name='register')
     def register_action(self, action, data):
-        self.context.attend(data['attendee'],
-                            data['time_starts'],
-                            data['time_ends'])
+        time_starts, time_ends = self.getDates(data)
+        self.context.attend(data['attendee'], time_starts, time_ends)

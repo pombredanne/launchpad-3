@@ -48,7 +48,7 @@ class LocalDateTimeWidget(TextWidget):
 
         Invalid dates result in a ConversionError:
 
-          >>> print widget._toFieldValue('not a date')
+          >>> print widget._toFieldValue('not a date')  #doctest: +ELLIPSIS
           Traceback (most recent call last):
             ...
           ConversionError: ('Invalid date value', ...)

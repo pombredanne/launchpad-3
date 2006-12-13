@@ -80,13 +80,13 @@ Now, Sample Person should be listed as an attendee.
   Sample Person
 
 If we return to the "Register Yourself" form, the previously entered
-dates are prefilled:
+dates are prefilled (they have been clamped to the sprint duration):
 
   >>> browser.getLink('Register Yourself').click()
   >>> print browser.getControl('Starting At').value
   2006-01-10 10:30:00
   >>> print browser.getControl('Finishing At').value
-  2006-02-19 20:11:00
+  2006-02-12 17:00:00
 
 Also, it is possible to register someone else. Let's register Carlos.
 
