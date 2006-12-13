@@ -4,7 +4,7 @@ Exporting Files from PO Templates Through the Web
 Not logged in users can't access the +export page.
 
   >>> anon_browser.open(
-  ...     'http://launchpad.dev/distros/ubuntu/hoary'
+  ...     'http://launchpad.dev/ubuntu/hoary'
   ...     '/+source/evolution/+pots/evolution-2.2/')
   >>> anon_browser.getLink('Download').click()
   Traceback (most recent call last):
@@ -15,12 +15,12 @@ Logged in as a regular user, the +export page is accessible.
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
   >>> browser.open(
-  ...     'http://launchpad.dev/distros/ubuntu/hoary'
+  ...     'http://launchpad.dev/ubuntu/hoary'
   ...     '/+source/evolution/+pots/evolution-2.2')
   >>> browser.getLink('Download Translations').click()
 
   >>> browser.url
-  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+export'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+export'
 
   >>> browser.title
   'Export translations of \xe2\x80\x9cTemplate "evolution-2.2" in 
@@ -56,7 +56,7 @@ added to the export queue and individual requests are added for the PO files.
   >>> browser.getControl('Request Download').click()
 
   >>> browser.url
-  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2'
 
   >>> for tag in find_tags_by_class(browser.contents, 'informational'):
   ...     print tag
@@ -64,7 +64,7 @@ added to the export queue and individual requests are added for the PO files.
 
 We can also request only the PO Template. By doing this we're basically adding
 a duplicate request for the PO template to the export queue.
-This is a no-op: (See bug https://launchpad.net/products/rosetta/+bug/1558)
+This is a no-op: (See bug https://launchpad.net/rosetta/+bug/1558)
 
   >>> browser.getLink('Download Translations').click()
   >>> browser.getControl('Selected files:').selected = True
@@ -73,7 +73,7 @@ This is a no-op: (See bug https://launchpad.net/products/rosetta/+bug/1558)
   >>> browser.getControl('Request Download').click()
 
   >>> browser.url
-  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2'
 
   >>> for tag in find_tags_by_class(browser.contents, 'informational'):
   ...     print tag

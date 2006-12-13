@@ -6,7 +6,7 @@ redirected to it directly.
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/products/firefox
+  Location: http://localhost:9000/firefox
   <BLANKLINE>
 
 

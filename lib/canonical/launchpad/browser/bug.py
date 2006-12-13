@@ -33,9 +33,9 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.interfaces import (
-    IAddBugTaskForm, IBug, IBugSet, IBugTaskSet, IBugWatchSet,
-    ICanonicalUrlData, IDistributionSourcePackage, IDistroBugTask,
-    IDistroReleaseBugTask, ILaunchBag, IUpstreamBugTask,
+    BugTaskSearchParams, IAddBugTaskForm, IBug, IBugSet, IBugTaskSet,
+    IBugWatchSet, ICanonicalUrlData, IDistributionSourcePackage,
+    IDistroBugTask, IDistroReleaseBugTask, ILaunchBag, IUpstreamBugTask,
     NoBugTrackerFound, NotFoundError, UnrecognizedBugTrackerURL,
     valid_distrotask, valid_upstreamtask)
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -178,11 +178,8 @@ class BugContextMenu(ContextMenu):
 
 
 class MaloneView(LaunchpadView):
-    """The default view for /malone.
+    """The Bugs front page."""
 
-    Essentially, this exists only to allow forms to post IDs here and be
-    redirected to the right place.
-    """
     # Test: standalone/xx-slash-malone-slash-bugs.txt
     error_message = None
     def initialize(self):
@@ -198,6 +195,19 @@ class MaloneView(LaunchpadView):
             self.error_message = "Bug %r is not registered." % bug_id
         else:
             return self.request.response.redirect(canonical_url(bug))
+
+    def getMostRecentlyFixedBugs(self, limit=10):
+        """Return the ten most recently fixed bugs."""
+        fixed_bugs = []
+        search_params = BugTaskSearchParams(
+            self.user, status=BugTaskStatus.FIXRELEASED,
+            orderby='-date_closed')
+        for bugtask in getUtility(IBugTaskSet).search(search_params):
+            if bugtask.bug not in fixed_bugs:
+                fixed_bugs.append(bugtask.bug)
+                if len(fixed_bugs) >= limit:
+                    break
+        return fixed_bugs
 
 
 
@@ -501,7 +511,7 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
                     'bug_url',
                     "The bug tracker at %s isn't registered in Launchpad."
                     ' You need to'
-                    ' <a href="/malone/bugtrackers/+newbugtracker">register'
+                    ' <a href="/bugs/bugtrackers/+newbugtracker">register'
                     ' it</a> before you can link any bugs to it.' % (
                         cgi.escape(error.base_url)))
             except UnrecognizedBugTrackerURL:

@@ -5,7 +5,7 @@
   owner of the project nor a member of admins.
 
   >>> print http(r"""
-  ... GET /projects/mozilla/+reassign HTTP/1.1
+  ... GET /mozilla/+reassign HTTP/1.1
   ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 403 Forbidden
@@ -16,7 +16,7 @@
   so he can do everything.
 
   >>> print http(r"""
-  ... GET /projects/mozilla/+reassign HTTP/1.1
+  ... GET /mozilla/+reassign HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -30,7 +30,7 @@
   Here he changes the owner to himself.
 
   >>> print http(r"""
-  ... POST /projects/mozilla/+reassign HTTP/1.1
+  ... POST /mozilla/+reassign HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... 
   ... field.owner=sabdfl&existing=existing&CHANGE_OWNER=Change+Owner""")
@@ -43,7 +43,7 @@
   Here we see the new owner: Mark Shuttleworth
 
   >>> print http(r"""
-  ... GET /projects/mozilla/ HTTP/1.1
+  ... GET /mozilla/ HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok

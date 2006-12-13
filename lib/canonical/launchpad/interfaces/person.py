@@ -596,7 +596,8 @@ class IPerson(IHasSpecifications):
         """
 
     def searchTickets(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-                      language=None, participation=None, sort=None):
+                      language=None, participation=None,
+                      needs_attention=False, sort=None):
         """Search the person's tickets.
 
         :search_text: A string that is matched against the ticket
@@ -613,6 +614,13 @@ class IPerson(IHasSpecifications):
         :participation: A list of TicketParticipation that defines the set
         of relationship to tickets that will be searched. If None or an empty
         sequence, all relationships are considered.
+
+        :needs_attention: If this flag is true, only tickets needing attention
+        from the person will be included. Tickets needing attention are those
+        owned by the person in the ANSWERED or NEEDSINFO state, as well as,
+        those not owned by the person but on which the person requested for
+        more information or gave an answer and that are back in the OPEN
+        state.
 
         :sort:  An attribute of TicketSort. If None, a default value is used.
         When there is a search_text value, the default is to sort by RELEVANCY,

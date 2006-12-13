@@ -4,7 +4,7 @@ Foo Bar wants to check if his personal information is up to date in
 Launchpad.
 
     >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/people/name16')
+    >>> browser.open('http://launchpad.dev/~name16')
     >>> browser.getLink('Personal Details').click()
 
     >>> browser.getControl('Display Name').value
@@ -31,19 +31,18 @@ be stripped)
     >>> browser.getControl('Save').click()
 
     >>> browser.url
-    'http://launchpad.dev/people/foobar'
+    'http://launchpad.dev/~foobar'
 
-We can also change a person's time
 Now we check to make sure the displayname was changed and stripped.
 
-  >>> browser.open('http://launchpad.dev/people/foobar/+edit')
+  >>> browser.open('http://launchpad.dev/~foobar/+edit')
   >>> browser.getControl('Display Name').value
   'Foo Bar2'
 
 And the email addresses are not shown on Foo Bar's home page to any random
 user.
 
-  >>> user_browser.open('http://launchpad.dev/people/foobar/')
+  >>> user_browser.open('http://launchpad.dev/~foobar')
   >>> 'foo.bar@canonical.com' in user_browser.contents
   False
 

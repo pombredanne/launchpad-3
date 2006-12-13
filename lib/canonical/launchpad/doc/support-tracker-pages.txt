@@ -674,11 +674,6 @@ It also includes a widget to select the sort order.
 The tickets matching the search are available by using the
 searchResults() method. The returned results are batched.
 
-    # We want 5 items per page for these tests.
-    >>> from canonical.config import config
-    >>> original_default_batch_size = config.launchpad.default_batch_size
-    >>> config.launchpad.default_batch_size = 5
-
     >>> tickets = search_view.searchResults()
     >>> tickets
     <canonical.launchpad.webapp.batching.BatchNavigator ...>
@@ -781,8 +776,3 @@ It works also with user submitted values:
     >>> print translate(search_view_harness.view.empty_listing_message)
     There are no support requests about "evolution" for Ubuntu with the
     requested statuses.
-
-== Cleanup ==
-
-    # Restore original batch size.
-    >>> config.launchpad.default_batch_size = original_default_batch_size
