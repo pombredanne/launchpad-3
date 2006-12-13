@@ -12,8 +12,7 @@ Try to get the page when unauthenticated.
   ...
   <BLANKLINE>
 
-And now with valid credentials. (It's not available because we had to disable
-it while fixing bug #68014)
+And now with valid credentials.
 
   >>> print http(r"""
   ... GET /ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload HTTP/1.1
