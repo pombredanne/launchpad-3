@@ -91,6 +91,16 @@ The same for deactivating a membership.
 When creating a new team, the owner has his membership's status changed from
 approved to admin, but he won't get a notification of that.
 
+    >>> from canonical.launchpad.database import PersonSet
+    >>> team = PersonSet().newTeam(sabdfl, 'testteam', 'Test')
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    0
+
+    # Other tests expect an empty stub.test_emails, but if this one above
+    # fails, I don't want a non-empty stub.test_emails to cause the tests
+    # below to fail too.
+    >>> stub.test_emails = []
 
 If member named 'name16' has his membership's status changed for team
 'ubuntu-team', in which he's also an administrator, he'll only get one email

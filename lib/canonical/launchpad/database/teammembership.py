@@ -158,7 +158,11 @@ class TeamMembership(SQLBase):
             'new_status': new_status.title,
             'reviewer_line': reviewer_and_comment_line,
             'comment': comment}
-        simple_sendmail(from_addr, admins_emails, admins_subject, admins_msg)
+
+        if admins_emails:
+            # XXX: This is just a quick hack; I'll fix it before asking for a
+            # review.
+            simple_sendmail(from_addr, admins_emails, admins_subject, admins_msg)
 
         # The member can be a team without any members, and in this case we
         # won't have a single email address to send this notification to.
@@ -173,7 +177,7 @@ class TeamMembership(SQLBase):
                 'old_status': old_status.title,
                 'new_status': new_status.title,
                 'comment_line': comment_line.capitalize(),
-                'comment': self.reviewercomment}
+                'comment': comment}
             simple_sendmail(from_addr, member_email, member_subject, member_msg)
 
 

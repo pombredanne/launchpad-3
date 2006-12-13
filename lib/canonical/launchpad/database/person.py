@@ -1118,7 +1118,8 @@ class PersonSet:
                 defaultrenewalperiod=defaultrenewalperiod,
                 subscriptionpolicy=subscriptionpolicy)
         team.addMember(teamowner)
-        team.setMembershipStatus(teamowner, TeamMembershipStatus.ADMIN)
+        team.setMembershipStatus(
+            teamowner, TeamMembershipStatus.ADMIN, reviewer=teamowner)
         return team
 
     def createPersonAndEmail(
