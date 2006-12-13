@@ -37,10 +37,10 @@ interested on doesn't have any translation.
 
 
   >>> user_browser.open(
-  ...     "http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/"
+  ...     "http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/"
   ...     "evolution-2.2/es/+translate?start=20")
   >>> user_browser.url
-  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=20'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=20'
 
 We are going to change message #21, but first, we see that this messages
 has no translations at all.
@@ -82,7 +82,7 @@ submission and doesn't ignore it.
 We got an error, that means the url should be the same.
 
   >>> user_browser.url
-  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=20'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=20'
 
 And we can see the error.
 

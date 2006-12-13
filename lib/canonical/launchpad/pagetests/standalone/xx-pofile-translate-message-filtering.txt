@@ -43,9 +43,9 @@ first batch of entries:
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
   >>> browser.open(
-  ...     'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=untranslated')
+  ...     'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=untranslated')
   >>> browser.url
-  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=untranslated'
+  'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=untranslated'
 
   >>> print_shown_messages(browser)
   (133, '\n          (no translation yet)\n        ')
@@ -63,7 +63,7 @@ The set of messages that are untranslated in the second batch:
 
   >>> browser.getLink('Next').click()
   >>> browser.url
-  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=untranslated&start=10'
+  'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=untranslated&start=10'
 
   >>> print_shown_messages(browser)
   (149, '\n          (no translation yet)\n        ')
@@ -73,9 +73,9 @@ The set of messages that are untranslated in the second batch:
 Now, we are going to select the amount of entries that need to be reviewed.
 
   >>> browser.open(
-  ...     'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=need_review')
+  ...     'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=need_review')
   >>> browser.url
-  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=need_review'
+  'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=need_review'
 
   >>> print_shown_messages(browser)
   (132, 'tiene ')
@@ -86,4 +86,4 @@ to be sure that we don't redirect to a broken URL but to the first batch.
 
   >>> browser.getControl(name='submit_translations').click()
   >>> browser.url
-  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=need_review'
+  'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=need_review'

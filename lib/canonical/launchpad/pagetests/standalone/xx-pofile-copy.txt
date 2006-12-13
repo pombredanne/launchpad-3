@@ -6,10 +6,10 @@ reading its value due a bug in our test infrastructure. For more info
 you can see bug #47511.
 
   >>> user_browser.open(
-  ...     'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/'
+  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
   ...     '+pots/evolution-2.2/es/+translate')
   >>> user_browser.url
-  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate'
 
 We are going to add a new translation to the message #130, it should remain
 in the form once we do the copy.
@@ -32,7 +32,7 @@ another message in the form.
 
   >>> user_browser.getControl(name='msgset_134_es_translation_0_copy').click()
   >>> user_browser.url
-  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate'
 
 And now, the new translation textarea has current translation:
 

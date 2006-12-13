@@ -36,9 +36,9 @@ interested on doesn't have any translation.
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
   >>> browser.open(
-  ...     'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=19&batch=1')
+  ...     'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=19&batch=1')
   >>> browser.url
-  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=19&batch=1'
+  'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=19&batch=1'
 
 We can see that the message we are interested on is not translated.
 
@@ -64,7 +64,7 @@ answer should have exactly those strings.
   >>> browser.getControl(name='msgset_149_es_translation_0_new').value = '\r\nfoo\r\n\r\n'
   >>> browser.getControl(name='submit_translations').click()
   >>> browser.url
-  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate'
+  'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate'
   >>> soup = BeautifulSoup(browser.contents)
   >>> soup.find(attrs={"name" : "msgset_149_es_translation_0_new"})
   <textarea ... name="msgset_149_es_translation_0_new" ...>
@@ -81,7 +81,7 @@ change the test, to be 100% sure that the textarea content is the right one.
   >>> browser.getControl(name='msgset_149_es_translation_0_new').value = 'foo'
   >>> browser.getControl(name='submit_translations').click()
   >>> browser.url
-  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate'
+  'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate'
   >>> soup = BeautifulSoup(browser.contents)
   >>> soup.find(attrs={"name" : "msgset_149_es_translation_0_new"}) #doctest: -NORMALIZE_WHITESPACE
   <textarea ... name="msgset_149_es_translation_0_new" ...>
@@ -90,9 +90,9 @@ change the test, to be 100% sure that the textarea content is the right one.
 Now, Check that even though the user forgot the trailing new line char, Rosetta
 adds it automatically
 
-  >>> browser.open('http://localhost/products/evolution/trunk/+pots/evolution-2.2/es/+translate?start=21&batch=1')
+  >>> browser.open('http://localhost/evolution/trunk/+pots/evolution-2.2/es/+translate?start=21&batch=1')
   >>> browser.url
-  'http://localhost/products/evolution/trunk/+pots/evolution-2.2/es/+translate?start=21&batch=1'
+  'http://localhost/evolution/trunk/+pots/evolution-2.2/es/+translate?start=21&batch=1'
   >>> browser.getControl(name='msgset_165_es_translation_0_new_checkbox').value = True
   >>> browser.getControl(name='msgset_165_es_translation_0_new').value = '%s: la opcion \xc2\xab%s\xc2\xbb es ambigua'
   >>> browser.getControl(name='submit_translations').click()
@@ -100,13 +100,13 @@ adds it automatically
 We were redirected to the next form, the translation was accepted.
 
   >>> browser.url
-  'http://localhost/products/evolution/trunk/+pots/evolution-2.2/es/+translate?start=0&batch=1'
+  'http://localhost/evolution/trunk/+pots/evolution-2.2/es/+translate?start=0&batch=1'
 
 Get previous page to check that the save translation is the right one.
 
   >>> browser.getLink('Last').click()
   >>> browser.url
-  'http://localhost/products/evolution/trunk/+pots/evolution-2.2/es/+translate?start=21&batch=1'
+  'http://localhost/evolution/trunk/+pots/evolution-2.2/es/+translate?start=21&batch=1'
 
 And, as we can see, we get the trailing new line char
 
@@ -133,13 +133,13 @@ Now, we do the right submit, with one trailing new line...
 We were redirected to the next form, the translation was accepted.
 
   >>> browser.url
-  'http://localhost/products/evolution/trunk/+pots/evolution-2.2/es/+translate?start=0&batch=1'
+  'http://localhost/evolution/trunk/+pots/evolution-2.2/es/+translate?start=0&batch=1'
 
 Get previous page to check that the save translation is the right one.
 
   >>> browser.getLink('Last').click()
   >>> browser.url
-  'http://localhost/products/evolution/trunk/+pots/evolution-2.2/es/+translate?start=21&batch=1'
+  'http://localhost/evolution/trunk/+pots/evolution-2.2/es/+translate?start=21&batch=1'
 
 And, as we can see, we get the same output, just one trailing new line char
 
@@ -166,13 +166,13 @@ Last check, the user sends two new line chars instead of just one...
 We were redirected to the next form, the translation was accepted.
 
   >>> browser.url
-  'http://localhost/products/evolution/trunk/+pots/evolution-2.2/es/+translate?start=0&batch=1'
+  'http://localhost/evolution/trunk/+pots/evolution-2.2/es/+translate?start=0&batch=1'
 
 Get previous page to check that the save translation is the right one.
 
   >>> browser.getLink('Last').click()
   >>> browser.url
-  'http://localhost/products/evolution/trunk/+pots/evolution-2.2/es/+translate?start=21&batch=1'
+  'http://localhost/evolution/trunk/+pots/evolution-2.2/es/+translate?start=21&batch=1'
 
 And Rosetta comes to the rescue and stores just one!.
 

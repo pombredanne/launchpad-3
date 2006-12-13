@@ -7,10 +7,10 @@ reading its value due a bug in our test infrastructure. For more info
 you can see bug #47511.
 
   >>> user_browser.open(
-  ...     'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/'
+  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
   ...     '+pots/evolution-2.2/es/5/+translate')
   >>> user_browser.url
-  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/5/+translate'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/5/+translate'
 
 We can see that the translation field we are going to use, is empty before
 we start using copy buttons.
@@ -29,7 +29,7 @@ Now, we are going to do a copy submission using current translation.
 
   >>> user_browser.getControl(name='msgset_134_es_translation_0_copy').click()
   >>> user_browser.url
-  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/5/+translate'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/5/+translate'
 
 And now, the added translation has current translation.
 
@@ -51,7 +51,7 @@ Let's copy original English string.
 
   >>> user_browser.getControl(name='msgset_134_singular_copy').click()
   >>> user_browser.url
-  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/5/+translate'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/5/+translate'
 
 The added translation is the original English string.
 
@@ -69,7 +69,7 @@ Now, we are going to copy a suggestion.
   >>> user_browser.getControl(
   ...     name='msgset_134_es_suggestion_689_0_copy').click()
   >>> user_browser.url
-  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/5/+translate'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/5/+translate'
 
 The added translation is the suggestion content.
 
@@ -84,16 +84,16 @@ And its checkbox is set too.
 Let's move to a message set that has plural forms.
 
   >>> user_browser.open(
-  ...     'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/'
+  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/'
   ...     'evolution-2.2/es/15/+translate')
   >>> user_browser.url
-  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/15/+translate'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/15/+translate'
 
 And we select a copy of plural form.
 
   >>> user_browser.getControl(name='msgset_144_plural_copy').click()
   >>> user_browser.url
-  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/15/+translate'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/15/+translate'
 
 The added translation is the original English plural form.
 
