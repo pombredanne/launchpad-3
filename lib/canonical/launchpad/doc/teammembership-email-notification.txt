@@ -12,6 +12,8 @@ for the member.
     >>> from zope.event import notify
     >>> from canonical.launchpad.event.team import JoinTeamRequestEvent
     >>> from canonical.launchpad.mail import stub
+    >>> from canonical.launchpad.database import Person, TeamMembershipSet
+    >>> from canonical.lp.dbschema import TeamMembershipStatus
     >>> sabdfl = Person.byName('sabdfl')
     >>> ubuntu_team = Person.byName('ubuntu-team')
     >>> membership = TeamMembershipSet().getProposedMemberships(ubuntu_team)[0]
