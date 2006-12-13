@@ -120,6 +120,11 @@ class TeamMembership(SQLBase):
         admins_emails = self.team.getTeamAdminsEmailAddresses()
         # self.person might be a team, so we can't rely on its preferredemail.
         member_email = contactEmailAddresses(self.person)
+        # Make sure we don't send the same notification twice to anybody.
+        for email in member_email:
+            if email in admins_emails:
+                admins_emails.remove(email)
+
         team = self.team
         member = self.person
 

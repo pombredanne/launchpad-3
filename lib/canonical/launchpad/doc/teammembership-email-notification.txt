@@ -28,14 +28,13 @@ and team admins.
     >>> flush_database_updates()
     >>> transaction.commit()
 
-    >>> test_emails = list(stub.test_emails)
-    >>> test_emails.sort(by_to_addrs)
-    >>> len(test_emails)
+    >>> stub.test_emails.sort(by_to_addrs)
+    >>> len(stub.test_emails)
     2
-    >>> from_addr, to_addr, raw_message = test_emails.pop()
+    >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
     >>> print to_addr
     ['foo.bar@canonical.com', 'jeff.waugh@ubuntulinux.com', 'mark@hbd.com']
-    >>> from_addr, to_addr, raw_message = test_emails.pop()
+    >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
     >>> print to_addr
     ['andrew.bennetts@ubuntulinux.com']
     >>> flush_database_updates()
@@ -43,7 +42,6 @@ and team admins.
 The same will not happen when somebody propose itself as a team member. In
 this case we'll send notifications only to the team admins.
 
-    >>> stub.test_emails = []
     >>> membership.person.join(ubuntu_team)
     True
     >>> notify(JoinTeamRequestEvent(membership.person, membership.team))
@@ -58,18 +56,16 @@ this case we'll send notifications only to the team admins.
 Approving a proposed member should generate notifications for both the member
 and team admins.
     
-    >>> stub.test_emails = []
     >>> membership.setStatus(TeamMembershipStatus.APPROVED, reviewer=sabdfl)
     >>> flush_database_updates()
     >>> transaction.commit()
-    >>> test_emails = list(stub.test_emails)
-    >>> test_emails.sort(by_to_addrs)
-    >>> len(test_emails)
+    >>> stub.test_emails.sort(by_to_addrs)
+    >>> len(stub.test_emails)
     2
-    >>> from_addr, to_addr, raw_message = test_emails.pop()
+    >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
     >>> print to_addr
     ['foo.bar@canonical.com', 'jeff.waugh@ubuntulinux.com', 'mark@hbd.com']
-    >>> from_addr, to_addr, raw_message = test_emails.pop()
+    >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
     >>> print to_addr
     ['andrew.bennetts@ubuntulinux.com']
 
@@ -79,14 +75,13 @@ The same for deactivating a membership.
     >>> membership.setStatus(TeamMembershipStatus.DEACTIVATED, reviewer=sabdfl)
     >>> flush_database_updates()
     >>> transaction.commit()
-    >>> test_emails = list(stub.test_emails)
-    >>> test_emails.sort(by_to_addrs)
-    >>> len(test_emails)
+    >>> stub.test_emails.sort(by_to_addrs)
+    >>> len(stub.test_emails)
     2
-    >>> from_addr, to_addr, raw_message = test_emails.pop()
+    >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
     >>> print to_addr
     ['foo.bar@canonical.com', 'jeff.waugh@ubuntulinux.com', 'mark@hbd.com']
-    >>> from_addr, to_addr, raw_message = test_emails.pop()
+    >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
     >>> print to_addr
     ['andrew.bennetts@ubuntulinux.com']
 
@@ -101,6 +96,22 @@ If member named 'name16' has his membership's status changed for team
 'ubuntu-team', in which he's also an administrator, he'll only get one email
 notification.
 
+    >>> cprov = Person.byName('cprov')
+    >>> membership = TeamMembershipSet().getByPersonAndTeam(cprov, ubuntu_team)
+    >>> membership.setStatus(TeamMembershipStatus.ADMIN, reviewer=sabdfl)
+    >>> flush_database_updates()
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    2
+    >>> stub.test_emails.sort(by_to_addrs)
+    >>> cprov.preferredemail.email
+    u'celso.providelo@canonical.com'
+    >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
+    >>> print to_addr
+    ['foo.bar@canonical.com', 'jeff.waugh@ubuntulinux.com', 'mark@hbd.com']
+    >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
+    >>> print to_addr
+    ['celso.providelo@canonical.com']
 
 If member is actually a team, we should use a different email template because
 it doesn't make sense to talk about "your membership" or things like that.
