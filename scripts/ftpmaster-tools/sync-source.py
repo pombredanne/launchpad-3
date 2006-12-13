@@ -43,7 +43,8 @@ from canonical.launchpad.interfaces import (
 from canonical.librarian.client import LibrarianClient
 from canonical.lp import (dbschema, initZopeless)
 from contrib.glock import GlobalLock
-from canonical.launchpad.scripts.ftpmaster import SyncSource
+from canonical.launchpad.scripts.ftpmaster import (
+    SyncSource, SyncSourceError)
 
 import dak_utils
 
@@ -640,7 +641,7 @@ def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes, section,
     changes += changelog
     changes += "Files: \n"
     for filename in dsc_files:
-        if filename.endswith(".orig.tar.gz") and require_orig:
+        if filename.endswith(".orig.tar.gz") and requires_orig:
             continue
         changes += " %s %s %s %s %s\n" % (dsc_files[filename]["md5sum"],
                                           dsc_files[filename]["size"],
@@ -859,10 +860,12 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
     (old_cwd, tmpdir) = extract_source(dsc_filename)
     
     # Get the upstream version
-    upstr_version = dak_utils.re_no_epoch.sub('', dsc["version"])
+    original_upstr_version = dak_utils.re_no_epoch.sub('', dsc["version"])
     if re_strip_revision.search(upstr_version):
-        upstr_version = re_strip_revision.sub('', upstr_version)
- 
+        upstr_version = re_strip_revision.sub('', original_upstr_version)
+    else:
+        upstr_version = original_upstr_version
+
     # Ensure the changelog file exists
     changelog_filename = "%s-%s/debian/changelog" % (dsc["source"], upstr_version)
 
@@ -882,8 +885,8 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
 
     # XXX Soyuz wants an unsigned changes
     #sign_changes(changes, dsc)
-    output_filename = "%s_%s_source.changes" % (dsc["source"],
-                                                dak_utils.re_no_epoch.sub('', dsc["version"]))
+    output_filename = (
+        "%s_%s_source.changes" % (dsc["source"], original_upstr_version))
 
     filehandle = open(output_filename, 'w')
     # XXX The additional '\n' is to work around a bug in parsing
@@ -1042,12 +1045,15 @@ def add_source(pkg, Sources, previous_version, suite, requested_by,
 
     # Use the SyncSource helper class.
     sync_source = SyncSource(
-        files=files, origin=origin, debug=local_debug, error=dak_utils.fubar,
+        files=files, origin=origin, debug=local_debug,
         downloader=urllib.urlretrive)
 
-    orig_filename = sync_source.fetchLibrarianFiles()
-    dsc_filename = sync_source.fetchSyncFiles()
-    sync_source.checkDownloadedFiles()
+    try:
+        orig_filename = sync_source.fetchLibrarianFiles()
+        dsc_filename = sync_source.fetchSyncFiles()
+        sync_source.checkDownloadedFiles()
+    except SyncSourceError, info:
+        dak_utils.fubar(info)
 
     if origin["dsc"] == "must be signed and valid":
         signing_rules = 1
@@ -1179,11 +1185,11 @@ def options_setup():
 
     # Options controlling where to sync packages to:
 
-    parser.add_option("-c", "--in-component", dest="incomponent",
+    parser.add_option("-c", "--in-component", dest="target_component",
                       help="limit syncs to packages in COMPONENT")
-    parser.add_option("-d", "--to-distro", dest="todistro",
+    parser.add_option("-d", "--to-distro", dest="target_distro",
                       help="sync to DISTRO")
-    parser.add_option("-s", "--to-suite", dest="tosuite",
+    parser.add_option("-s", "--to-suite", dest="target_suite",
                       help="sync to SUITE (aka distrorelease)")
 
     # Options controlling where to sync packages from:
@@ -1227,33 +1233,27 @@ def options_setup():
 def objectize_options():
     """Parse given options.
 
-    Convert 'todistro', 'tosuite' and 'incomponent' to objects
+    Convert 'target_distro', 'target_suite' and 'target_component' to objects
     rather than strings.
     """
-    Options.todistro = getUtility(IDistributionSet)[Options.todistro]
+    Options.target_distro = getUtility(IDistributionSet)[Options.target_distro]
 
-    if not Options.tosuite:
-        Options.tosuite = Options.todistro.currentrelease.name
-    Options.tosuite = Options.todistro.getRelease(Options.tosuite)
+    if not Options.target_suite:
+        Options.target_suite = Options.target_distro.currentrelease.name
+    Options.target_suite = Options.target_distro.getRelease(Options.target_suite)
 
     valid_components = (
-        dict([(c.name,c) for c in Options.tosuite.components]))
-    if Options.incomponent:
-        if Options.incomponent not in valid_components:
+        dict([(c.name,c) for c in Options.target_suite.components]))
+    if (Options.target_component and
+        Options.target_component not in valid_components):
             dak_utils.fubar(
                 "%s is not a valid component for %s/%s."
-                % (Options.incomponent, Options.todistro.name,
-                   Options.tosuite.name))
-        Options.incomponent = valid_components[Options.incomponent]
+                % (Options.target_component, Options.target_distro.name,
+                   Options.target_suite.name))
+        Options.target_component = valid_components[Options.target_component]
 
     # Fix up Options.requestor
-    if not Options.requestor:
-        if Options.action and not Options.all:
-            dak_utils.fubar(
-                "Need -a/--all or an argument for -b/--requested-by.")
-        else:
-            Options.requestor = whoami
-    else:
+    if Options.requestor:
         PersonSet = getUtility(IPersonSet)
         person = PersonSet.getByName(Options.requestor)
         if not person:
@@ -1264,6 +1264,13 @@ def objectize_options():
         # XXX cprov 20061113: is it ensuring RFC-822 sentence is
         # ASCII ? Don't we support unicodes ?
         Options.requestor = str(Options.requestor)
+    else:
+        if Options.action and not Options.all:
+            dak_utils.fubar(
+                "Need -a/--all or an argument for -b/--requested-by.")
+        else:
+            Options.requestor = whoami
+
 
 ########################################
 
@@ -1311,8 +1318,9 @@ def main():
     origin["component"] = Options.fromcomponent
 
     Sources = read_Sources("Sources", origin)
-    Suite = read_current_source(Options.tosuite, Options.incomponent, arguments)
-    current_binaries = read_current_binaries(Options.tosuite)
+    Suite = read_current_source(
+        Options.target_suite, Options.target_component, arguments)
+    current_binaries = read_current_binaries(Options.target_suite)
     do_diff(Sources, Suite, origin, arguments, current_binaries)
 
 ################################################################################

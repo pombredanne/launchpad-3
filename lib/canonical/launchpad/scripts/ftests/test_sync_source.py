@@ -12,7 +12,8 @@ from canonical.librarian.ftests.harness import (
     fillLibrarianFile, cleanupLibrarianFiles)
 from canonical.testing import LaunchpadZopelessLayer
 
-from canonical.launchpad.scripts.ftpmaster import SyncSource
+from canonical.launchpad.scripts.ftpmaster import (
+    SyncSource, SyncSourceError)
 
 
 class TestSyncSource(TestCase):
@@ -31,8 +32,7 @@ class TestSyncSource(TestCase):
         self._home = os.path.abspath('')
         self._jail = tempfile.mkdtemp()
         os.chdir(self._jail)
-        self.debugs = []
-        self.errors = []
+        self.messages = []
         self.downloads = []
 
     def tearDown(self):
@@ -50,15 +50,11 @@ class TestSyncSource(TestCase):
         return os.listdir(self._jail)
 
     def local_debug(self, message):
-        """ """
-        self.debugs.append(message)
-
-    def local_error(self, message):
-        """ """
-        self.errors.append(message)
+        """Store debug messages for future inspection."""
+        self.messages.append(message)
 
     def local_downloader(self, url, filename):
-        """ """
+        """Store download requests for future inspections."""
         self.downloads.append((url, filename))
         output = open(filename, 'w')
         output.write('Slartibartfast')
@@ -67,11 +63,12 @@ class TestSyncSource(TestCase):
     def getSyncSource(self, files, origin):
         """Return a SyncSource instance with the given parameters
 
-        Pass the helper functions.
+        Uses the local_* methods to capture results so we can verify
+        them later.
         """
         sync_source = SyncSource(
             files=files, origin=origin, debug=self.local_debug,
-            error=self.local_error, downloader=self.local_downloader)
+            downloader=self.local_downloader)
         return sync_source
 
     def testInstantiate(self):
@@ -85,10 +82,7 @@ class TestSyncSource(TestCase):
         self.assertEqual(sync_source.origin, origin)
 
         sync_source.debug('opa')
-        self.assertEqual(self.debugs, ['opa'])
-
-        sync_source.error('oops')
-        self.assertEqual(self.errors, ['oops'])
+        self.assertEqual(self.messages, ['opa'])
 
         sync_source.downloader('somewhere', 'foo')
         self.assertEqual(self.downloads, [('somewhere', 'foo')])
@@ -112,10 +106,9 @@ class TestSyncSource(TestCase):
         test_file.close()
 
         sync_source.checkDownloadedFiles()
-        self.assertEqual(self.errors, [])
 
     def testCheckDownloadedFilesWrongMD5(self):
-        """Expect an error due the wrong MD5."""
+        """Expect SyncSourceError to be raised due the wrong MD5."""
         files = {
             'foo': {'md5sum': 'duhhhhh', 'size': 15}
             }
@@ -126,15 +119,12 @@ class TestSyncSource(TestCase):
         test_file.write('abcdefghijlmnop')
         test_file.close()
 
-        sync_source.checkDownloadedFiles()
-        self.assertEqual(
-            self.errors,
-            ['foo: md5sum check failed '
-             '(dd21ab16f950f7ac4f9c78ef1498eee1 [actual] '
-             'vs. duhhhhh [expected]).'])
+        self.assertRaises(
+            SyncSourceError,
+            sync_source.checkDownloadedFiles)
 
     def testCheckDownloadedFilesWrongSize(self):
-        """Expect an error due the wrong size."""
+        """Expect SyncSourceError to be raised due the wrong size."""
         files = {
             'foo': {'md5sum': 'dd21ab16f950f7ac4f9c78ef1498eee1', 'size': 10}
             }
@@ -145,13 +135,11 @@ class TestSyncSource(TestCase):
         test_file.write('abcdefghijlmnop')
         test_file.close()
 
-        sync_source.checkDownloadedFiles()
+        self.assertRaises(
+            SyncSourceError,
+            sync_source.checkDownloadedFiles)
 
-        self.assertEqual(
-            self.errors,
-            ['foo: size mismatch (15 [actual] vs. 10 [expected]).'])
-
-    def testSyncSourceClassMethod(self):
+    def testSyncSourceMD5SUm(self):
         """Probe the classmethod provided by SyncSource."""
         test_file = open('foo', 'w')
         test_file.write('abcdefghijlmnop')
@@ -163,7 +151,7 @@ class TestSyncSource(TestCase):
         """Probe fetchSyncFiles.
 
         It only downloads the files not present in current path, so the
-        so the test_file is skipped.
+        test_file is skipped.
         """
         files = {
             'foo.diff.gz': {'remote filename': 'xxx'},
@@ -187,7 +175,7 @@ class TestSyncSource(TestCase):
             [('http://somewhere/yyy', 'foo.dsc'),
              ('http://somewhere/zzz', 'foo.orig.gz')])
 
-        for url, filename in self.downloads:
+        for filename in files.keys():
             self.assertTrue(os.path.exists(filename))
 
     def testFetchLibrarianFilesOK(self):
@@ -208,15 +196,14 @@ class TestSyncSource(TestCase):
         self.assertEqual(orig_filename, 'netapplet_1.0.0.orig.tar.gz')
         self.assertEqual(self._listfiles(), ['netapplet_1.0.0.orig.tar.gz'])
         self.assertEqual(
-            self.debugs,
+            self.messages,
             ['\tnetapplet_1.0.0.orig.tar.gz: already in distro '
              '- downloading from librarian'])
-        self.assertEqual(self.errors, [])
 
     def testFetchLibrarianFilesGotDuplicatedDSC(self):
         """fetchLibrarianFiles fails for an already present version.
 
-        It should stop via 'errorback' when it find a DSC or DIFF already
+        It raises SyncSourceError when it find a DSC or DIFF already
         published, it means that the upload version is duplicated.
         """
         files = {
@@ -227,17 +214,15 @@ class TestSyncSource(TestCase):
         origin = {}
         sync_source = self.getSyncSource(files, origin)
 
-        orig_filename = sync_source.fetchLibrarianFiles()
+        self.assertRaises(
+            SyncSourceError,
+            sync_source.fetchLibrarianFiles)
 
-        self.assertEqual(orig_filename, None)
-        self.assertEqual(self._listfiles(), ['foobar-1.0.dsc'])
         self.assertEqual(
-            self.debugs,
+            self.messages,
             ['\tfoobar-1.0.dsc: already in distro '
              '- downloading from librarian'])
-        self.assertEqual(
-            self.errors,
-            ['Oops, only orig.tar.gz can be retrieved from librarian'])
+        self.assertEqual(self._listfiles(), ['foobar-1.0.dsc'])
 
 
 def test_suite():

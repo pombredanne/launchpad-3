@@ -14,6 +14,7 @@ __all__ = [
     'ChrootManager',
     'ChrootManagerError',
     'SyncSource',
+    'SyncSourceError',
     ]
 
 import apt_pkg
@@ -947,11 +948,22 @@ class ChrootManager:
         pocket_chroot.chroot.open()
         copy_and_close(pocket_chroot.chroot, local_file)
 
+class SyncSourceError(Exception):
+    """Raised when an critical error occurs inside SyncSource.
+
+    The entire procedure should be aborted in order to avoid unknown problems.
+    """
 
 class SyncSource:
-    """Sync Source procedure helper class."""
+    """Sync Source procedure helper class.
 
-    def __init__(self, files, origin, debug, error, downloader):
+    It provides the backend for retrieving files from Librarian or the
+    'sync source' location. Also provides a method to check the downloaded
+    files integrity.
+    'aptMD5Sum' is provided as a classmethod during the integration time.
+    """
+
+    def __init__(self, files, origin, debug, downloader):
         """Store local context.
 
         files: a dictionary where the keys are the filename and the
@@ -959,14 +971,11 @@ class SyncSource:
         origin: a dictionary similar to 'files' but where the values
                 contain information for download files to be synchronized
         debug: a debug function, 'debug(message)'
-        error: a error function (usually dak_utils.fubar, which prints on
-               stderr and call sys.exit), 'error(message)'
-        downloader: a function able to download, 'downloader(url, destination)'
+        downloader: a callable that fetchs URLs, 'downloader(url, destination)'
         """
         self.files = files
         self.origin = origin
         self.debug = debug
-        self.error = error
         self.downloader = downloader
 
     @classmethod
@@ -980,6 +989,8 @@ class SyncSource:
         """Fetch file from librarian.
 
         Store the contents in local path with the original filename.
+        Return the fetched filename if it was present in Librarian or None
+        if it wasn't.
         """
         clauseTables = ['SourcePackageFilePublishing', 'LibraryFileAlias']
         query = """
@@ -995,12 +1006,11 @@ class SyncSource:
             filepublish = SourcePackageFilePublishing.selectOne(
                 query, clauseTables=clauseTables)
         except SQLObjectMoreThanOneResultError:
-            self.error(
+            raise SyncSourceError(
                 "%s returns multiple Librarian IDs. Help?" % (filename))
-            return
 
         if filepublish is None:
-            return
+            return None
 
         self.debug(
             "\t%s: already in distro - downloading from librarian" %
@@ -1010,24 +1020,26 @@ class SyncSource:
         output_file = open(filename, 'w')
         libraryfilealias.open()
         copy_and_close(libraryfilealias, output_file)
+        return filename
 
     def fetchLibrarianFiles(self):
         """Try to fetch files from Librarian.
 
-        It explodes (dak_utils.fubar) if anything else then an
+        It raises SyncSourceError if anything else then an
         'orig.tar.gz' was found in Librarian.
         Return a boolean indicating whether or not the 'orig.tar.gz' is
         required in the upload.
         """
         orig_filename = None
         for filename in self.files.keys():
-            self.fetchFileFromLibrarian(filename)
-            if not os.path.exists(filename):
+            if not self.fetchFileFromLibrarian(filename)
                 continue
+            # set the return code if an orig was, in fact,
+            # fetched from Librarian
             if filename.endswith("orig.tar.gz"):
                 orig_filename = filename
             else:
-                self.error(
+                raise SyncSourceError(
                     'Oops, only orig.tar.gz can be retrieved from librarian')
 
         return orig_filename
@@ -1048,6 +1060,9 @@ class SyncSource:
                                     self.files[filename]["remote filename"]))
             sys.stdout.flush()
             self.downloader(download_f, filename)
+            # only set the dsc_filename if the DSC was really downloaded.
+            # this loop usually includes the other files for the upload,
+            # DIFF and ORIG.
             if filename.endswith(".dsc"):
                 dsc_filename = filename
 
@@ -1056,13 +1071,13 @@ class SyncSource:
     def checkDownloadedFiles(self):
         """Check md5sum and size match Source.
 
-        If anything fails, escape with dak_utils.fubar.
+        If anything fails SyncSourceError will be raised.
         """
         for filename in self.files.keys():
             actual_md5sum = self.aptMD5Sum(filename)
             expected_md5sum = self.files[filename]["md5sum"]
             if actual_md5sum != expected_md5sum:
-                self.error(
+                raise SyncSourceError(
                     "%s: md5sum check failed (%s [actual] "
                     "vs. %s [expected])."
                     % (filename, actual_md5sum, expected_md5sum))
@@ -1070,6 +1085,6 @@ class SyncSource:
             actual_size = os.stat(filename)[stat.ST_SIZE]
             expected_size = int(self.files[filename]["size"])
             if actual_size != expected_size:
-                self.error(
+                raise SyncSourceError(
                     "%s: size mismatch (%s [actual] vs. %s [expected])."
                     % (filename, actual_size, expected_size))
