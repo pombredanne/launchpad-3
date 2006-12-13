@@ -16,3 +16,4 @@ On the Bugs front page there is some statistics shown, showing:
   5 Bug Trackers
   0 Web links
   21 Bug Tasks
+  2 CVE Bug Links
