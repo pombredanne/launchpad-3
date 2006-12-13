@@ -337,23 +337,23 @@ class ProjectRdfView(object):
 
 
 class ProjectAddTicketView(TicketAddView):
-    """View that handles creation of ticket from an IProject context."""
+    """View that handles creation of a ticket from an IProject context."""
 
     search_field_names = ['product'] + TicketAddView.search_field_names
 
     def setUpFields(self):
         # Add a 'product' field to the beginning of the form.
         TicketAddView.setUpFields(self)
-
         self.form_fields = self.createProductField() + self.form_fields
 
     def createProductField(self):
-        """Create a Choice field to select one of the project's product."""
+        """Create a Choice field to select one of the project's products."""
         return form.Fields(
             Choice(
                 __name__='product', vocabulary='ProjectProducts',
                 title=_('Product'), description=_(
-                        'Choose the product for which you need support.')),
+                        'Choose the product for which you need support.'),
+                required=True),
                 render_context=self.render_context)
 
     @property
@@ -373,8 +373,8 @@ class ProjectAddTicketView(TicketAddView):
 
 # XXX flacoste 2006-12-13 This should be removed and the
 # TicketTargetLatestTicketsView used instead once we add a
-# searchTickets() method to IProject. This will happen with
-# fix to bug #4935 (/projects/whatever/+tickets returns NotFound error)
+# searchTickets() method to IProject. This will happen when
+# fixing bug #4935 (/projects/whatever/+tickets returns NotFound error)
 class ProjectLatestTicketsView:
     """Empty view to allow rendering of the default template used by
     TicketAddView.

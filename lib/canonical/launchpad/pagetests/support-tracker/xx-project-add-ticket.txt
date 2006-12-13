@@ -1,6 +1,6 @@
 = Creating a New Support Request from a Project =
 
-Even if project are not TicketTarget, it is still possible to create a
+Even if projects are not TicketTargets, it is still possible to create a
 support request from a project.
 
 The user most login to proceed:
@@ -61,7 +61,8 @@ An error will inform him that the summary is missing:
     You must enter a summary of your problem.
 
 The newly selected product is still selected, and when the user enters
-his problem again, similar against that product will be shown.
+his problem again, similar support requests against that product will be
+shown.
 
     >>> print user_browser.getControl('Product').displayValue
     ['Mozilla Thunderbird']
