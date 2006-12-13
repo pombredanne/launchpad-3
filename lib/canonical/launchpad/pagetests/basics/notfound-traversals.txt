@@ -96,7 +96,6 @@ spider -- StuartBishop 20050822
 >>> check("/firefox/+rdf")
 >>> check("/firefox/1.0/+rdf")
 >>> check("/firefox/+bugs")
->>> check_not_found("/firefox/1.0/+bugs")
 >>> check("/firefox/+cve")
 
 >>> check_not_found("/firefox/+milestone")
@@ -280,9 +279,9 @@ The bug filing pages.
 >>> check("/ubuntu/+filebug", auth=True)
 >>> check("/ubuntu/+source/mozilla-firefox/+filebug", auth=True)
 
->>> check("/products/firefox/+filebug-advanced", auth=True)
->>> check("/distros/ubuntu/+filebug-advanced", auth=True)
->>> check("/distros/ubuntu/+source/mozilla-firefox/+filebug-advanced", auth=True)
+>>> check("/firefox/+filebug-advanced", auth=True)
+>>> check("/ubuntu/+filebug-advanced", auth=True)
+>>> check("/ubuntu/+source/mozilla-firefox/+filebug-advanced", auth=True)
 
 Note that you should not be able to directly file a bug on a
 distrorelease or sourcepackage; an IBugTask reported against a

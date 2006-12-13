@@ -107,7 +107,7 @@ appears under the 'Also notified' list in the 'Subscribers' portlet:
     >>> also_notified.findNextSibling('ul')
     <ul class="people">
       <li>
-        <a href=".../people/name16">Foo Bar</a>
+        <a href=".../~name16">Foo Bar</a>
       </li>
     </ul>
 

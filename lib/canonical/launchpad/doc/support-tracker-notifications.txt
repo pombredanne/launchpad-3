@@ -648,7 +648,7 @@ sent to the support list about that request:
     A support request was filed in a language (French) spoken by
     none of the registered Ubuntu support contacts.
     <BLANKLINE>
-    http://.../distros/ubuntu/+ticket/...
+    http://.../ubuntu/+ticket/...
 
 The notification received by the ticket owner contain a warning that
 the request is in a language spoken by none of the support contacts:
@@ -668,7 +668,7 @@ the request is in a language spoken by none of the support contacts:
     >>> notification_body = escape_utf8_payload(notifications[-1])
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     New support request #... on Ubuntu:
-    http://.../distros/ubuntu/+ticket/...
+    http://.../ubuntu/+ticket/...
     <BLANKLINE>
     Le CD ne semble pas fonctionn\xe9.
     <BLANKLINE>
@@ -694,7 +694,7 @@ warning appended to it.
     >>> notification_body = escape_utf8_payload(notifications[0])
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     Your support request #... on Ubuntu changed:
-    http://.../distros/ubuntu/+ticket/...
+    http://.../ubuntu/+ticket/...
     <BLANKLINE>
     Summary changed to:
     CD d'Ubuntu ne d\xe9marre pas

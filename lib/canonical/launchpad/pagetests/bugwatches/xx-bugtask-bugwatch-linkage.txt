@@ -100,7 +100,7 @@ The Debian task is linked to the newly created bug watch.
     >>> soup = BeautifulSoup(browser.contents)
     >>> debian_link = soup.first(
     ...     'a',
-    ...     {'href': 'http://localhost/distros/debian/+source/mozilla-firefox/+bug/1/+editstatus'})
+    ...     {'href': 'http://localhost/debian/+source/mozilla-firefox/+bug/1/+editstatus'})
     >>> debian_tr = debian_link.parent.parent.parent
     >>> for td_tag in debian_tr('td'):
     ...     print td_tag
