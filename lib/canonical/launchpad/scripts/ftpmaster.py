@@ -13,16 +13,23 @@ __all__ = [
     'PubSourceChecker',
     'ChrootManager',
     'ChrootManagerError',
+    'SyncSource',
     ]
 
+import apt_pkg
 import commands
 import os
 import re
+import stat
+import sys
 import tempfile
-import apt_pkg
 
+from sqlobject import SQLObjectMoreThanOneResultError
 from zope.component import getUtility
 
+from canonical.database.sqlbase import sqlvalues
+from canonical.launchpad.database.publishing import (
+    SourcePackageFilePublishing)
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
     IBinaryPackageNameSet, IDistributionSet, IBinaryPackageReleaseSet,
@@ -939,3 +946,130 @@ class ChrootManager:
 
         pocket_chroot.chroot.open()
         copy_and_close(pocket_chroot.chroot, local_file)
+
+
+class SyncSource:
+    """Sync Source procedure helper class."""
+
+    def __init__(self, files, origin, debug, error, downloader):
+        """Store local context.
+
+        files: a dictionary where the keys are the filename and the
+               value another dictionary with the file informations.
+        origin: a dictionary similar to 'files' but where the values
+                contain information for download files to be synchronized
+        debug: a debug function, 'debug(message)'
+        error: a error function (usually dak_utils.fubar, which prints on
+               stderr and call sys.exit), 'error(message)'
+        downloader: a function able to download, 'downloader(url, destination)'
+        """
+        self.files = files
+        self.origin = origin
+        self.debug = debug
+        self.error = error
+        self.downloader = downloader
+
+    @classmethod
+    def aptMD5Sum(self, filename):
+        file_handle = open(filename)
+        md5sum = apt_pkg.md5sum(file_handle)
+        file_handle.close()
+        return md5sum
+
+    def fetchFileFromLibrarian(self, filename):
+        """Fetch file from librarian.
+
+        Store the contents in local path with the original filename.
+        """
+        clauseTables = ['SourcePackageFilePublishing', 'LibraryFileAlias']
+        query = """
+        SourcePackageFilePublishing.libraryfilealiasfilename = %s AND
+        SourcePackageFilePublishing.libraryfilealias =
+            LibraryFileAlias.id AND
+        LibraryFileAlias.id IN (
+          SELECT DISTINCT ON (content) id FROM LibraryFileAlias
+          WHERE filename = %s)
+        """ % sqlvalues(filename, filename)
+
+        try:
+            filepublish = SourcePackageFilePublishing.selectOne(
+                query, clauseTables=clauseTables)
+        except SQLObjectMoreThanOneResultError:
+            self.error(
+                "%s returns multiple Librarian IDs. Help?" % (filename))
+            return
+
+        if filepublish is None:
+            return
+
+        self.debug(
+            "\t%s: already in distro - downloading from librarian" %
+            filename)
+
+        libraryfilealias = filepublish.libraryfilealias
+        output_file = open(filename, 'w')
+        libraryfilealias.open()
+        copy_and_close(libraryfilealias, output_file)
+
+    def fetchLibrarianFiles(self):
+        """Try to fetch files from Librarian.
+
+        It explodes (dak_utils.fubar) if anything else then an
+        'orig.tar.gz' was found in Librarian.
+        Return a boolean indicating whether or not the 'orig.tar.gz' is
+        required in the upload.
+        """
+        orig_filename = None
+        for filename in self.files.keys():
+            self.fetchFileFromLibrarian(filename)
+            if not os.path.exists(filename):
+                continue
+            if filename.endswith("orig.tar.gz"):
+                orig_filename = filename
+            else:
+                self.error(
+                    'Oops, only orig.tar.gz can be retrieved from librarian')
+
+        return orig_filename
+
+    def fetchSyncFiles(self):
+        """Fetch files from the original sync source.
+
+        Return DSC filename, which should always come via this path.
+        """
+        dsc_filename = None
+        for filename in self.files.keys():
+            if os.path.exists(filename):
+                continue
+            self.debug(
+                "  - <%s: downloading from %s>" %
+                (filename, self.origin["url"]))
+            download_f = ("%s%s" % (self.origin["url"],
+                                    self.files[filename]["remote filename"]))
+            sys.stdout.flush()
+            self.downloader(download_f, filename)
+            if filename.endswith(".dsc"):
+                dsc_filename = filename
+
+        return dsc_filename
+
+    def checkDownloadedFiles(self):
+        """Check md5sum and size match Source.
+
+        If anything fails, escape with dak_utils.fubar.
+        """
+        for filename in self.files.keys():
+            actual_md5sum = self.aptMD5Sum(filename)
+            expected_md5sum = self.files[filename]["md5sum"]
+            if actual_md5sum != expected_md5sum:
+                self.error(
+                    "%s: md5sum check failed (%s [actual] "
+                    "vs. %s [expected])."
+                    % (filename, actual_md5sum, expected_md5sum))
+
+            actual_size = os.stat(filename)[stat.ST_SIZE]
+            expected_size = int(self.files[filename]["size"])
+            if actual_size != expected_size:
+                self.error(
+                    "%s: size mismatch (%s [actual] vs. %s [expected])."
+                    % (filename, actual_size, expected_size))

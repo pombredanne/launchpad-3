@@ -29,6 +29,7 @@ import apt_pkg
 
 import _pythonpath
 
+from sqlobject import SQLObjectMoreThanOneResultError
 from zope.component import getUtility
 
 from canonical.database.sqlbase import (sqlvalues, cursor)
@@ -42,6 +43,7 @@ from canonical.launchpad.interfaces import (
 from canonical.librarian.client import LibrarianClient
 from canonical.lp import (dbschema, initZopeless)
 from contrib.glock import GlobalLock
+from canonical.launchpad.scripts.ftpmaster import SyncSource
 
 import dak_utils
 
@@ -574,11 +576,6 @@ whoami = "Ubuntu Archive Auto-Sync <katie@jackass.ubuntu.com>"
 
 ################################################################################
 
-def md5sum_file(filename):
-    file_handle = open(filename)
-    md5sum = apt_pkg.md5sum(file_handle)
-    file_handle.close()
-    return md5sum
 
 ################################################################################
 
@@ -614,7 +611,7 @@ def sign_changes(changes, dsc):
 ################################################################################
 
 def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes, section,
-                     priority, description, have_orig_tar_gz, requested_by,
+                     priority, description, requires_orig, requested_by,
                      origin):
     """Generate a .changes as a string"""
 
@@ -643,7 +640,7 @@ def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes, section,
     changes += changelog
     changes += "Files: \n"
     for filename in dsc_files:
-        if filename.endswith(".orig.tar.gz") and have_orig_tar_gz:
+        if filename.endswith(".orig.tar.gz") and require_orig:
             continue
         changes += " %s %s %s %s %s\n" % (dsc_files[filename]["md5sum"],
                                           dsc_files[filename]["size"],
@@ -846,7 +843,7 @@ def check_dsc(dsc, current_sources, current_binaries):
 ########################################
 
 def import_dsc(dsc_filename, suite, previous_version, signing_rules,
-               have_orig_tar_gz, requested_by, origin, current_sources,
+               requires_orig, requested_by, origin, current_sources,
                current_binaries):
     dsc = dak_utils.parse_changes(dsc_filename, signing_rules)
     dsc_files = dak_utils.build_file_list(dsc, is_a_dsc=1)\
@@ -856,7 +853,7 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
     # Add the .dsc itself to dsc_files so it's listed in the Files: field
     dsc_base_filename = os.path.basename(dsc_filename)
     dsc_files.setdefault(dsc_base_filename, {})
-    dsc_files[dsc_base_filename]["md5sum"] = md5sum_file(dsc_filename)
+    dsc_files[dsc_base_filename]["md5sum"] = SyncSource.aptMD5Sum(dsc_filename)
     dsc_files[dsc_base_filename]["size"] = os.stat(dsc_filename)[stat.ST_SIZE]
 
     (old_cwd, tmpdir) = extract_source(dsc_filename)
@@ -880,7 +877,7 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
     cleanup_source(tmpdir, old_cwd, dsc)
 
     changes = generate_changes(dsc, dsc_files, suite, changelog, urgency, closes,
-                               section, priority, description, have_orig_tar_gz,
+                               section, priority, description, requires_orig,
                                requested_by, origin)
 
     # XXX Soyuz wants an unsigned changes
@@ -1028,7 +1025,6 @@ def read_Sources(filename, origin):
     return S
 
 ################################################################################
-
 def add_source(pkg, Sources, previous_version, suite, requested_by,
                origin, current_sources, current_binaries):
     print " * Trying to add %s..." % (pkg)
@@ -1037,90 +1033,17 @@ def add_source(pkg, Sources, previous_version, suite, requested_by,
     if not Sources.has_key(pkg):
         dak_utils.fubar("%s doesn't exist in the Sources file." % (pkg))
 
-    have_orig_tar_gz = False
-
     # Download the source
     files = Sources[pkg]["files"]
-    for filename in files:
-        clauseTables = [
-            'SourcePackageFilePublishing',
-            'LibraryFileAlias',
-            ]
-        query = """
-        SourcePackageFilePublishing.libraryfilealiasfilename = %s AND
-        SourcePackageFilePublishing.libraryfilealias =
-            LibraryFileAlias.id AND
-        LibraryFileAlias.id IN (
-          SELECT DISTINCT ON (content) id FROM LibraryFileAlias
-          WHERE filename = %s
-            )
-        """ % sqlvalues(filename, filename)
-        spfp_l = shortlist(SourcePackageFilePublishing.select(
-            query, clauseTables=clauseTables))
 
-        if spfp_l:
-            if not filename.endswith("orig.tar.gz"):
-                dak_utils.fubar(
-                    "%s (from %s) is in the DB but isn't an "
-                    "orig.tar.gz. Help?" % (filename, pkg))
+    # Use the SyncSource helper class.
+    sync_source = SyncSource(
+        files=files, origin=origin, debug=local_debug, error=dak_utils.fubar,
+        downloader=urllib.urlretrive)
 
-            if len(spfp_l) != 1:
-                for i in spfp_l:
-                    print "*****"
-                    print (
-                        "[%s]: %s" % (i.libraryfilealias.id,
-                                      i.libraryfilealiasfilename))
-                    l = i.libraryfilealias
-                    print ("sha1 & size: %s %s" % (
-                        l.content.sha1, l.content.filesize))
-                    print ("distrorelease: %s, component: %s, source: "
-                           "%s, status: %s" % (
-                        i.distroreleasename, i.componentname,
-                        i.sourcepackagename, i.publishingstatus))
-                    dak_utils.fubar(
-                        "%s (from %s) returns multiple IDs for "
-                        "orig.tar.gz.  Help?" % (filename, pkg))
-            spfp = spfp_l[0]
-            have_orig_tar_gz = filename
-            print ("  - <%s: already in distro - downloading from "
-                   "librarian>" % (filename))
-            output_file = open(filename, 'w')
-            librarian_input = Library.getFileByAlias(
-                spfp.libraryfilealias)
-            output_file.write(librarian_input.read())
-            output_file.close()
-            continue
-
-        # Download the file
-        download_f = ("%s%s" % (origin["url"],
-                                files[filename]["remote filename"]))
-        if not os.path.exists(filename):
-            print (
-                "  - <%s: downloading from %s>" % (
-                filename, origin["url"]))
-            sys.stdout.flush()
-            urllib.urlretrieve(download_f, filename)
-        else:
-            print "  - <%s: cached>" % (filename)
-
-        # Check md5sum and size match Source
-        actual_md5sum = md5sum_file(filename)
-        expected_md5sum = files[filename]["md5sum"]
-        if actual_md5sum != expected_md5sum:
-            dak_utils.fubar(
-                "%s: md5sum check failed (%s [actual] "
-                "vs. %s [expected])."
-                % (filename, actual_md5sum, expected_md5sum))
-        actual_size = os.stat(filename)[stat.ST_SIZE]
-        expected_size = int(files[filename]["size"])
-        if actual_size != expected_size:
-            dak_utils.fubar(
-                "%s: size mismatch (%s [actual] vs. %s [expected])."
-                % (filename, actual_size, expected_size)))
-
-        # Remember the name of the .dsc file
-        if filename.endswith(".dsc"):
-            dsc_filename = os.path.abspath(filename)
+    orig_filename = sync_source.fetchLibrarianFiles()
+    dsc_filename = sync_source.fetchSyncFiles()
+    sync_source.checkDownloadedFiles()
 
     if origin["dsc"] == "must be signed and valid":
         signing_rules = 1
@@ -1129,12 +1052,15 @@ def add_source(pkg, Sources, previous_version, suite, requested_by,
     else:
         signing_rules = -1
 
+    requires_orig = orig_filename is None
+
     import_dsc(dsc_filename, suite, previous_version, signing_rules,
-               have_orig_tar_gz, requested_by, origin, current_sources,
+               requires_orig, requested_by, origin, current_sources,
                current_binaries)
 
-    if have_orig_tar_gz:
-        os.unlink(have_orig_tar_gz)
+    # XXX cprov 20061212: why do we need this ?
+    if orig_filename:
+        os.unlink(orig_filename)
 
 ################################################################################
 
