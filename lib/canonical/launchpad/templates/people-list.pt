@@ -21,11 +21,11 @@
       <td>
         <a tal:condition="person/browsername"
            tal:content="string: ${person/browsername} (${person/name})"
-           tal:attributes="href person/name"></a>
+           tal:attributes="href person/fmt:url"></a>
 
         <a tal:condition="not: person/browsername"
            tal:content="person/name"
-           tal:attributes="href person/name"></a>
+           tal:attributes="href person/fmt:url"></a>
      </td>
     </tr>
     <tr>
