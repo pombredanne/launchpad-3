@@ -2,7 +2,7 @@ This check will be sure that we are escaping correctly html tags
 inside textareas.
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
-  >>> browser.open('http://localhost/distros/ubuntu/hoary/+source/pmount/+pots/pmount/hr/+translate')
+  >>> browser.open('http://localhost/ubuntu/hoary/+source/pmount/+pots/pmount/hr/+translate')
   >>> print browser.contents
   <!DOCTYPE html PUBLIC...
               <textarea style="width: 100%;" tabindex="1"

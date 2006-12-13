@@ -7,7 +7,7 @@ kinds of suggestions.
 
   >>> browser.addHeader("Authorization", "Basic carlos@canonical.com:test")
   >>> browser.open(
-  ...     "http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate")
+  ...     "http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate")
   >>> find_main_content(browser.contents)
   <...
   <label>Suggestion:</label>
@@ -38,7 +38,7 @@ kinds of suggestions.
 And now, a multiline suggestion:
 
   >>> browser.open(
-  ...     "http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=13&amp;batch=1")
+  ...     "http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=13&amp;batch=1")
   >>> find_main_content(browser.contents)
   <...
   <div lang="es" dir="ltr">This is a suggestion added by a non-editor for a multiline entry, and it happens to have a very long first line.

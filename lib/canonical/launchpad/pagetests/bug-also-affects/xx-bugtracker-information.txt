@@ -3,7 +3,7 @@ information about the product's bug tracker when adding an upstream
 task.
 
     >>> user_browser.open(
-    ...    'http://launchpad.dev/products/firefox/+bug/1/+add-affected-product'
+    ...    'http://launchpad.dev/firefox/+bug/1/+add-affected-product'
     ...    '?field.product=gnome-terminal')
     >>> print user_browser.contents
     <...GNOME Terminal uses
@@ -18,7 +18,7 @@ specified, it will simply say that it doesn't use Launchpad to track its
 bugs and prompt for a URL.
 
     >>> user_browser.open(
-    ...    'http://launchpad.dev/products/firefox/+bug/1/+add-affected-product'
+    ...    'http://launchpad.dev/firefox/+bug/1/+add-affected-product'
     ...    '?field.product=thunderbird')
     >>> print user_browser.contents
     <...Mozilla Thunderbird doesn't use Launchpad to track its bugs...
@@ -29,7 +29,7 @@ bugs and prompt for a URL.
 For products using Launchpad, there won't even be a URL widget.
 
     >>> user_browser.open(
-    ...    'http://launchpad.dev/products/firefox/+bug/1/+add-affected-product'
+    ...    'http://launchpad.dev/firefox/+bug/1/+add-affected-product'
     ...    '?field.product=evolution')
 
     >>> user_browser.getControl('URL')

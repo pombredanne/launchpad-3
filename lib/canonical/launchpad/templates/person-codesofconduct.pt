@@ -71,7 +71,7 @@
 
         <p>
           Once <dfn>Inactive</dfn>, a signature can only be reactivated by a
-          <a href="/people/admins">Launchpad Administrator<a>.
+          <a href="/~admins">Launchpad Administrator<a>.
         </p>
       <ul> 
          <li tal:repeat="sig context/inactivesignatures"
