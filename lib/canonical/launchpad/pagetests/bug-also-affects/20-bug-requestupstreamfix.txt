@@ -111,7 +111,9 @@ so let's extract the real URL and open it manually.
     ...     "popup_window\('([^']*)'", search_link.url).group(1)
     >>> search_link.url
     >>> search_url
-    >>> user_browser.open(search_url)
+    >>> user_browser.open(
+    ...  'http://launchpad.dev/distros/debian/+source/mozilla-firefox/+bug/3/'
+    ...   + search_url)
     >>> user_browser.title
     'Select a Product'
 
