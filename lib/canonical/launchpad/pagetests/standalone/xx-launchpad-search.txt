@@ -39,6 +39,13 @@ user to refine his search.
     ...The Ubuntu Project...
     ...(project)...
 
+We can follow one of these links to go straight to the
+Product/Project/Distribution.
+
+    >>> browser.getLink('The Ubuntu Project')
+    >>> browser.url
+    'http://launchpad.dev/ubuntu-project'
+
 
 On that same page it's also possible to enter a product/distribution/project
 name and go straight to its Launchpad page.
@@ -47,7 +54,7 @@ name and go straight to its Launchpad page.
     >>> browser.getControl(name='q').value = 'ubuntu'
     >>> browser.getControl('Go').click()
     >>> browser.url
-    'http://launchpad.dev/distros/ubuntu'
+    'http://launchpad.dev/ubuntu'
 
 If there's no product/distribution/project whose name exactly matches the
 given string, we'll then display a list of results and a message explaining

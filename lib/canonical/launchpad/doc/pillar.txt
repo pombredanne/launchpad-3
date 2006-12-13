@@ -53,7 +53,7 @@ Right now this search is done across Products, Projects and Distributions.
 ...     else:
 ...         return 'low'
 
->>> for row in pillar_set.search('mozilla'):
+>>> for row in pillar_set.search('mozilla', limit=3):
 ...     rank = get_meaningful_rank(row)
 ...     print ("%s: %s (%s) [relevance: %s]"
 ...            % (row['type'], row['title'], row['name'], rank))
@@ -61,7 +61,7 @@ project: The Mozilla Project (mozilla) [relevance: perfect]
 product: Mozilla Firefox (firefox) [relevance: high]
 product: Mozilla Thunderbird (thunderbird) [relevance: high]
 
->>> for row in pillar_set.search('ubuntu'):
+>>> for row in pillar_set.search('ubuntu', limit=6):
 ...     rank = get_meaningful_rank(row)
 ...     print ("%s: %s (%s) [relevance: %s]"
 ...            % (row['type'], row['title'], row['name'], rank))
