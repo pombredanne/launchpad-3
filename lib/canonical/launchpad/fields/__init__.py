@@ -339,14 +339,13 @@ class BaseImageUpload(Bytes):
         import PIL.Image
         if len(image) > self.max_size:
             raise LaunchpadValidationError(_(dedent("""
-                This file exceeds the maximum allowed size in bytes.""")))
+                This image exceeds the maximum allowed size in bytes.""")))
         try:
             image = PIL.Image.open(StringIO(image))
         except IOError:
-            # cannot identify image type
             raise LaunchpadValidationError(_(dedent("""
                 The file uploaded was not recognized as an image; please
-                check the file and retry.""")))
+                check it and retry.""")))
         if image.size > self.max_dimensions:
             raise LaunchpadValidationError(_(dedent("""
                 This image exceeds the maximum allowed width or height in

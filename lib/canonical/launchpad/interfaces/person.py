@@ -131,8 +131,7 @@ class IPerson(IHasSpecifications):
             "An image, maximum 170x170 pixels, that will be displayed on "
             "your home page. It should be no bigger than 500k in size. "
             "Traditionally this is a great big grinning image of your mug. "
-            "Make the most of it."),
-        constraint=valid_gotchi)
+            "Make the most of it."))
 
     addressline1 = TextLine(
             title=_('Address'), required=True, readonly=False,

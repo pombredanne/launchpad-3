@@ -80,7 +80,7 @@ class ImageUploadWidget(SimpleInputWidget):
             self._error = WidgetInputError(
                 self.name, self.label,
                 LaunchpadValidationError(
-                    _('You need to specify the image you want to use.')))
+                    _('Please specify the image you want to use.')))
             raise self._error
         if action == "keep":
             return self.context.keep_image_marker
