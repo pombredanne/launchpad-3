@@ -93,7 +93,7 @@ It is traditional for checkboxes to have their label to the right, so
 that's what we do for such widgets.  The launchpad usage form has such
 a widget.
 
-  >>> browser.open('http://launchpad.dev/products/evolution/+launchpad')
+  >>> browser.open('http://launchpad.dev/evolution/+launchpad')
   >>> content = find_main_content(browser.contents)
 
   >>> print content

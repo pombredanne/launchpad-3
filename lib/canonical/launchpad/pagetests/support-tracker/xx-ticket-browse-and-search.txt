@@ -1,24 +1,15 @@
-
-Browsing and Searching Tickets
-==============================
+= Browsing and Searching Tickets =
 
 This story describes some common use cases about using the browsing and
 searching features of the support tracker.
 
-    (We want 5 items per page for these tests.)
-    >>> from canonical.config import config
-    >>> original_default_batch_size = config.launchpad.default_batch_size
-    >>> config.launchpad.default_batch_size = 5
-
-
-When Nobody Uses the Support Tracker
-------------------------------------
+== When Nobody Uses the Support Tracker ==
 
 Average Joe has recently installed Kubuntu. He has a problem with his
 system and goes to the Kubuntu's support page in Launchpad to see if
 somebody had a similar problem.
 
-    >>> browser.open('http://launchpad.dev/distros/kubuntu')
+    >>> browser.open('http://launchpad.dev/kubuntu')
     >>> browser.getLink('Support').click()
 
 He discovers that there are no tickets on the Kubuntu support page:
@@ -30,14 +21,12 @@ He discovers that there are no tickets on the Kubuntu support page:
     >>> print find_main_content(browser.contents).first('p').renderContents()
     There are no support requests for Kubuntu with the requested statuses.
 
-
-Browsing Support Requests
--------------------------
+== Browsing Support Requests ==
 
 He realises that support for Kubuntu is probably going on in the Ubuntu
 support page and goes there to check.
 
-    >>> browser.open('http://launchpad.dev/distros/ubuntu/+tickets')
+    >>> browser.open('http://launchpad.dev/ubuntu/+tickets')
     >>> browser.title
     'Support requests for Ubuntu'
 
@@ -131,9 +120,7 @@ details of the ticket are available.
     <p>I get really poor hard drive performance.</p>
     </div>]
 
-
-Searching Support Requests
---------------------------
+== Searching Support Requests ==
 
 Browsing is fine when the number of tickets is small, but searching is
 more convenient as the number of tickets grow larger.
@@ -144,7 +131,7 @@ whenever he has Firefox open. Luckily for Average Joe, searching for
 similar support requests is easy: on the ticket listing page, he just
 enters his search key and hit the 'Search' button.
 
-    >>> browser.open('http://launchpad.dev/distros/ubuntu/+tickets')
+    >>> browser.open('http://launchpad.dev/ubuntu/+tickets')
     >>> browser.getControl(name='field.search_text').value = 'firefox is slow'
     >>> browser.getControl('Search').click()
 
@@ -176,11 +163,9 @@ He clicks on the link to read the ticket description.
 
     >>> browser.getLink('Firefox is slow').click()
     >>> browser.title
-    'Ubuntu support request #3:...Firefox is slow...'
+    'mozilla-firefox in ubuntu support request #3:...Firefox is slow...'
 
-
-Controlling the Sort Order
---------------------------
+== Controlling the Sort Order ==
 
 That ticket isn't exactly what Average Joe was looking for. Now, he'd
 like to see all the tickets that were related to the firefox package.
@@ -188,10 +173,10 @@ The ticket listing page for distribution displays the source package
 related to each ticket. The source package name is a link to the source
 package's ticket listing.
 
-    (We should use goBack() here but can't because of ZC #645:
-    zope.testbrowser truncates document content after goBack().)
+    # We should use goBack() here but can't because of ZC #645:
+    # zope.testbrowser truncates document content after goBack().
     #>>> browser.goBack()
-    >>> browser.open('http://launchpad.dev/distros/ubuntu/+tickets')
+    >>> browser.open('http://launchpad.dev/ubuntu/+tickets')
     >>> browser.getLink('mozilla-firefox').click()
     >>> browser.title
     'Support requests for mozilla-firefox in ubuntu'
@@ -218,25 +203,22 @@ selects the 'oldest first' sort order.
     ...mailto: problem in webpage...2006-07-20...
     </table>]
 
-Common Reports
---------------
+== Common Reports ==
 
 In the actions menu, we find links to some common reports.
 
-Open Requests
-~~~~~~~~~~~~~
+=== Open Requests ===
 
 Nice Guy likes helping others. He uses the 'Open' link to view the most
 recent requests on Mozilla Firefox.
 
-    >>> browser.open('http://launchpad.dev/products/firefox/+tickets')
+    >>> browser.open('http://launchpad.dev/firefox/+tickets')
     >>> browser.getLink('Open').click()
     >>> print browser.title
     Open support requests for Mozilla Firefox
     >>> tickets = find_tag_by_id(browser.contents, 'ticket-listing')
     >>> for ticket in tickets.fetch('td', 'ticket'):
     ...     print ticket.first('a').renderContents()
-    Newly installed plug-in doesn't seem to be used
     Firefox loses focus and gets stuck
     Problem showing the SVG demo on W3C site
     Firefox cannot render Bank Site
@@ -250,18 +232,16 @@ problems:
     >>> tickets = find_tag_by_id(browser.contents, 'ticket-listing')
     >>> for ticket in tickets.fetch('td', 'ticket'):
     ...     print ticket.first('a').renderContents()
-    Newly installed plug-in doesn't seem to be used
     Problem showing the SVG demo on W3C site
 
-Answered Requests
-~~~~~~~~~~~~~~~~~
+=== Answered Requests ===
 
 A random user has a problem with firefox in Ubuntu. He uses the
 'Answered' link on the support facet of the distribution to look for
 similar problems. (This listing includes both 'Answered' and 'Solved'
 support requests.)
 
-    >>> browser.open('http://launchpad.dev/distros/ubuntu/+tickets')
+    >>> browser.open('http://launchpad.dev/ubuntu/+tickets')
     >>> browser.getLink('Answered').click()
     >>> print browser.title
     Answered support requests for Ubuntu
@@ -270,19 +250,20 @@ support requests.)
     >>> tickets = find_tag_by_id(browser.contents, 'ticket-listing')
     >>> for ticket in tickets.fetch('td', 'ticket'):
     ...     print ticket.first('a').renderContents()
+    Play DVDs in Totem
     mailto: problem in webpage
+    Installation of Java Runtime Environment for Mozilla
 
-This report is also searchable. He's having a problem with Java, so he
-enters 'Java' as a keyword and hits the search button.
+This report is also searchable. He's having a problem with Evolution, so he
+enters 'Evolution' as a keyword and hits the search button.
 
-    >>> browser.getControl(name='field.search_text').value = 'Java'
+    >>> browser.getControl(name='field.search_text').value = 'Evolution'
     >>> browser.getControl('Search').click()
 
     >>> print find_main_content(browser.contents).first('p').renderContents()
-    There are no answered support requests about "Java" for Ubuntu.
+    There are no answered support requests about "Evolution" for Ubuntu.
 
-My Requests
-~~~~~~~~~~~
+=== My Requests ===
 
 Sample Person remembers posting a question on mozilla-firefox. He uses
 the 'My Requests' link on the distribution source package support facet
@@ -291,7 +272,7 @@ to list all the requests he ever made about that package.
 He needs to login to access that page:
 
     >>> anon_browser.open(
-    ...     'http://launchpad.dev/distros/ubuntu/+source/mozilla-firefox/'
+    ...     'http://launchpad.dev/ubuntu/+source/mozilla-firefox/'
     ...     '+tickets')
     >>> anon_browser.getLink('My Requests').click()
     Traceback (most recent call last):
@@ -299,7 +280,7 @@ He needs to login to access that page:
     Unauthorized...
 
     >>> user_browser.open(
-    ...     'http://launchpad.dev/distros/ubuntu/+source/mozilla-firefox/'
+    ...     'http://launchpad.dev/ubuntu/+source/mozilla-firefox/'
     ...     '+tickets')
     >>> user_browser.getLink('My Requests').click()
     >>> print user_browser.title
@@ -333,14 +314,58 @@ The exact request he was searching for is displayed!
 If the user didn't make any support requests on the product, a message
 informing him of this fact is displayed.
 
-    >>> user_browser.open('http://launchpad.dev/products/gnomebaker/+tickets')
+    >>> user_browser.open('http://launchpad.dev/gnomebaker/+tickets')
     >>> user_browser.getLink('My Requests').click()
     >>> print find_main_content(
     ...     user_browser.contents).first('p').renderContents()
     You didn't make any support requests for gnomebaker.
 
-Person Reports
---------------
+=== Need Attention ===
+
+A user can often forget which support requests need his attention. For
+this purpose, there is a 'Need Attention' report which displays the
+support requests made by the user which require a reply. It also lists
+the requests on which he provided an answer or requested for more
+information and that are now back in the 'Open' state.
+
+He needs to login to access that page:
+
+    >>> anon_browser.open('http://launchpad.dev/distros/ubuntu/+tickets')
+    >>> anon_browser.getLink('Need Attention').click()
+    Traceback (most recent call last):
+      ...
+    Unauthorized...
+
+    >>> user_browser.open('http://launchpad.dev/distros/ubuntu/+tickets')
+    >>> user_browser.getLink('Need Attention').click()
+    >>> print user_browser.title
+    Support requests needing your attention for Ubuntu
+    >>> tickets = find_tag_by_id(user_browser.contents, 'ticket-listing')
+    >>> for ticket in tickets.fetch('td', 'ticket'):
+    ...     print ticket.first('a').renderContents()
+    Play DVDs in Totem
+    Installation of Java Runtime Environment for Mozilla
+
+Like all other report, this one is searchable:
+
+    >>> user_browser.getControl(name='field.search_text').value = 'evolution'
+    >>> user_browser.getControl('Search').click()
+    >>> print user_browser.title
+    Support requests about "evolution" needing your attention for Ubuntu
+    >>> print find_main_content(
+    ...     user_browser.contents).first('p').renderContents()
+    No support requests about "evolution" need your attention for Ubuntu.
+
+If there is no support requests needing the user's attention,
+a message informing him of this fact is displayed.
+
+    >>> user_browser.open('http://launchpad.dev/products/gnomebaker/+tickets')
+    >>> user_browser.getLink('Need Attention').click()
+    >>> print find_main_content(
+    ...     user_browser.contents).first('p').renderContents()
+    No support requests need your attention for gnomebaker.
+
+== Person Reports ==
 
 The Support facet on on person also contains various searchable
 listings.
@@ -350,7 +375,7 @@ requests that the person was involved with. This includes requests that
 the person created, answered, is assigned to, is subscribed to, or
 commented.
 
-    >>> browser.open('http://launchpad.dev/people/name16')
+    >>> browser.open('http://launchpad.dev/~name16')
     >>> browser.getLink('Support').click()
     >>> print browser.title
     Support requests involving Foo Bar
@@ -389,8 +414,8 @@ These contexts are links to the context ticket listing.
 The listing is searchable and can restrict also the list of displayed
 requests to a particular status:
 
-    (goBack() doesn't work)
-    >>> browser.open('http://launchpad.dev/people/name16/+tickets')
+    # goBack() doesn't work.
+    >>> browser.open('http://launchpad.dev/~name16/+tickets')
     >>> browser.getControl(name='field.search_text').value = 'Firefox'
     >>> browser.getControl(name='field.status').value = ['Solved', 'Invalid']
     >>> browser.getControl('Search').click()
@@ -403,8 +428,7 @@ requests to a particular status:
 The actions menu contain list to listing that contain only a specific
 type of involvement.
 
-Assigned
-~~~~~~~~
+=== Assigned ===
 
 The assigned report only lists the support requests to which the person
 is assigned.
@@ -415,8 +439,7 @@ is assigned.
     >>> print find_main_content(browser.contents).first('p').renderContents()
     No support requests assigned to Foo Bar found with the requested statuses.
 
-Answered
-~~~~~~~~
+=== Answered ===
 
 The 'Answered' link displays all the support requests where the person
 is the answerer.
@@ -429,8 +452,7 @@ is the answerer.
     ...     print ticket.first('a').renderContents()
     mailto: problem in webpage
 
-Commented
-~~~~~~~~~
+=== Commented ===
 
 The report available under the 'Commented' link displays all the
 requests commented on by the person.
@@ -447,8 +469,7 @@ requests commented on by the person.
     Installation of Java Runtime Environment for Mozilla
     Newly installed plug-in doesn't seem to be used
 
-Created
-~~~~~~~
+=== Created ===
 
 The 'Created' link displays a listing containing all the support
 requests made by the person.
@@ -462,8 +483,21 @@ requests made by the person.
     Slow system
     Firefox loses focus and gets stuck
 
-Subscribed
-~~~~~~~~~~
+=== Need Attention ===
+
+The 'Need Attention' link displays all the support requests that need
+the attention of that person.
+
+    >>> browser.getLink('Need Attention').click()
+    >>> print browser.title
+    Support requests needing Foo Bar attention
+    >>> tickets = find_tag_by_id(browser.contents, 'ticket-listing')
+    >>> for ticket in tickets.fetch('td', 'ticket'):
+    ...     print ticket.first('a').renderContents()
+    Continue playing after shutdown
+    Slow system
+
+=== Subscribed ===
 
 Foo Bar can find all the support requests to which he is subscribed by
 visiting the 'Subscribed' link in the support facet.
@@ -475,9 +509,3 @@ visiting the 'Subscribed' link in the support facet.
     >>> for ticket in tickets.fetch('td', 'ticket'):
     ...     print ticket.first('a').renderContents()
     Slow system
-
-Cleanup
--------
-
-    (Restore the original batch size for subsequent tests)
-    >>> config.launchpad.default_batch_size = original_default_batch_size

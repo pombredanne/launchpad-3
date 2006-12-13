@@ -1,9 +1,9 @@
 
 Now Sample Person will deactivate his key...
 
-    >>> user_browser.open('http://launchpad.dev/people/name12/+editpgpkeys')
+    >>> user_browser.open('http://launchpad.dev/~name12/+editpgpkeys')
     >>> user_browser.url
-    'http://launchpad.dev/people/name12/+editpgpkeys'
+    'http://launchpad.dev/~name12/+editpgpkeys'
 
     >>> print user_browser.contents
     <...

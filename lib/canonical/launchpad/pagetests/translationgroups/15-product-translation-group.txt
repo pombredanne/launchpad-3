@@ -4,7 +4,7 @@ permissions on a product. We'll use the Netapplet product for this test.
 First make sure it has no translation group and permissions.
 
   >>> print http(r"""
-  ... GET /products/netapplet/ HTTP/1.1
+  ... GET /netapplet/ HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
@@ -18,7 +18,7 @@ Now let's make sure we can see the page to let us change translation group
 and permissions.
 
   >>> print http(r"""
-  ... GET /products/netapplet/+changetranslators HTTP/1.1
+  ... GET /netapplet/+changetranslators HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -30,7 +30,7 @@ and permissions.
 Now let's post to the form. We should be redirected to the product page.
 
   >>> print http(r"""
-  ... POST /products/netapplet/+changetranslators HTTP/1.1
+  ... POST /netapplet/+changetranslators HTTP/1.1
   ... Content-Length: 738
   ... Content-Type: multipart/form-data; boundary=---------------------------6923855761766169312285474874
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
@@ -60,12 +60,12 @@ Now let's post to the form. We should be redirected to the product page.
   HTTP/1.1 303 See Other
   Content-Length: 0
   ...
-  Location: http://.../products/netapplet
+  Location: http://.../netapplet
 
 Now these changes should show up in the product page.
 
   >>> print http(r"""
-  ... GET /products/netapplet HTTP/1.1
+  ... GET /netapplet HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -73,7 +73,7 @@ Now these changes should show up in the product page.
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-  ...href="/rosetta/groups/polyglot/"...The PolyGlot Translation Group...
+  ...href="/translations/groups/polyglot/"...The PolyGlot Translation Group...
   ...Open...
   ...
 

@@ -43,6 +43,9 @@ class LibrarianFormatter(logging.Formatter):
         not available.
         """
         traceback = logging.Formatter.formatException(self, ei)
+        # Uncomment this line to stop exception storage in the librarian.
+        # Useful for debugging tests.
+        # return traceback
         try:
             librarian = getUtility(ILibrarianClient)
         except LookupError:
