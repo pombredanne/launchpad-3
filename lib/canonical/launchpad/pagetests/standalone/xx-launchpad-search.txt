@@ -42,7 +42,7 @@ user to refine his search.
 We can follow one of these links to go straight to the
 Product/Project/Distribution.
 
-    >>> browser.getLink('The Ubuntu Project')
+    >>> browser.getLink('The Ubuntu Project').click()
     >>> browser.url
     'http://launchpad.dev/ubuntu-project'
 
