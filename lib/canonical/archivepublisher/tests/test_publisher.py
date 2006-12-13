@@ -155,6 +155,43 @@ class TestPublisher(TestNativePublishingBase):
         foo_path = "%s/main/f/foo/foo.dsc" % self.pool_dir
         self.assertEqual(open(foo_path).read().strip(), 'Hello world')
 
+    def testReleaseFile(self):
+        """Test release file writing.
+
+        The release file should contain the MD5, SHA1 and SHA256 for each
+        index created for a given distrorelease
+        """
+        from canonical.archivepublisher.publishing import Publisher
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool, self.ubuntutest)
+
+        pub_source = self.getPubSource(
+            "foo", "main", "foo.dsc", filecontent='Hello world',
+            status=PackagePublishingStatus.PENDING)
+
+        publisher.A_publish(False)
+        publisher.C_doFTPArchive(False)
+        publisher.D_writeReleaseFiles(False)
+
+        release_file = os.path.join(
+            self.config.distsroot, 'breezy-autotest', 'Release')
+        release_contents = open(release_file).read().splitlines()
+
+        self.assertTrue('MD5Sum:' in release_contents)
+        self.assertTrue(
+            (' 4059d198768f9f8dc9372dc1c54bc3c3               '
+             '14 universe/source/Sources.bz2') in release_contents)
+
+        self.assertTrue('SHA1:' in release_contents)
+        self.assertTrue(
+            (' 64a543afbb5f4bf728636bdcbbe7a2ed0804adc2               '
+             '14 universe/source/Sources.bz2') in release_contents)
+
+        self.assertTrue('SHA256:' in release_contents)
+        self.assertTrue(
+            (' d3dda84eb03b9738d118eb2be78e246106900493c0ae07819ad60815134a'
+             '8058               14 universe/source/Sources.bz2')
+            in release_contents)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
