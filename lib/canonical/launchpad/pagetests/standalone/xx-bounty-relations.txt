@@ -46,21 +46,21 @@ Just for fun we will check the reverse, we will check the bounties portlets
 on Ubuntu, Mozilla Firefox and the Mozilla Project.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/+portlet-bounties HTTP/1.1
+  ... GET /ubuntu/+portlet-bounties HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...foomatic-widgets...
 
 
   >>> print http(r"""
-  ... GET /products/firefox/+portlet-bounties HTTP/1.1
+  ... GET /firefox/+portlet-bounties HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...foomatic-widgets...
 
 
   >>> print http(r"""
-  ... GET /projects/mozilla/+portlet-bounties HTTP/1.1
+  ... GET /mozilla/+portlet-bounties HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...foomatic-widgets...

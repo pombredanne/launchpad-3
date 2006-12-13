@@ -10,6 +10,6 @@ Neither directly.
 
 Nor in a search listing.
 
-    >>> browser.open("http://launchpad.dev/distros/ubuntu/+bugs")
+    >>> browser.open("http://launchpad.dev/ubuntu/+bugs")
     >>> "a private bug" not in browser.contents
     True

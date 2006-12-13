@@ -121,7 +121,7 @@ Now let's take a look at what the notification looks like:
     -- 
     Specification Details:
       Support Native SVG Objects
-      http://.../products/firefox/+spec/svg-support
+      http://.../firefox/+spec/svg-support
     <BLANKLINE>
 
 Whiteboard change:
@@ -165,7 +165,7 @@ Whiteboard change:
     -- 
     Specification Details:
       Support Native SVG Objects
-      http://.../products/firefox/+spec/svg-support
+      http://.../firefox/+spec/svg-support
     <BLANKLINE>
 
 
@@ -204,7 +204,7 @@ Definition status and whiteboard change:
     -- 
     Specification Details:
       Support Native SVG Objects
-      http://.../products/firefox/+spec/svg-support
+      http://.../firefox/+spec/svg-support
     <BLANKLINE>
 
 Change priority:
@@ -238,7 +238,7 @@ Change priority:
     -- 
     Specification Details:
       Support Native SVG Objects
-      http://.../products/firefox/+spec/svg-support
+      http://.../firefox/+spec/svg-support
     <BLANKLINE>
 
 Change approver, assignee and drafter:
@@ -275,7 +275,7 @@ Change approver, assignee and drafter:
     -- 
     Specification Details:
       Support Native SVG Objects
-      http://.../products/firefox/+spec/svg-support
+      http://.../firefox/+spec/svg-support
     <BLANKLINE>
 
 If we do a change, which we don't yet support sending a notification
