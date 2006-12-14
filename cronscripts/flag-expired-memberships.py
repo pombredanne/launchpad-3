@@ -12,10 +12,9 @@ from canonical.config import config
 from canonical.lp import initZopeless
 from canonical.lp.dbschema import TeamMembershipStatus
 from canonical.launchpad.scripts import (
-        execute_zcml_for_scripts, logger_options, logger
-        )
+        execute_zcml_for_scripts, logger_options, logger)
 from canonical.launchpad.scripts.lockfile import LockFile
-from canonical.launchpad.interfaces import ITeamMembershipSet
+from canonical.launchpad.interfaces import IPersonSet, ITeamMembershipSet
 
 _default_lock_file = '/var/lock/launchpad-flag-expired-memberships.lock'
 
@@ -27,10 +26,12 @@ def flag_expired_memberships():
     ztm.begin()
     # XXX: Need to find out why this thing is not sending status change
     # notification emails.
-    # XXX: Should probably use a celebrity here to indicate that it's not a
-    # user who's flagging requests as expired.
+    # XXX: Need to use a celebrity here to indicate that it's not a
+    # user who's flagging requests as expired. This is now needed because
+    # setStatus' reviewer argument is not optional any longer.
+    reviewer = getUtility(IPersonSet).getByName('name16')
     for membership in getUtility(ITeamMembershipSet).getMembershipsToExpire():
-        membership.setStatus(TeamMembershipStatus.EXPIRED)
+        membership.setStatus(TeamMembershipStatus.EXPIRED, reviewer)
     ztm.commit()
 
 

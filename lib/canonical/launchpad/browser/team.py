@@ -212,8 +212,8 @@ class ProposedTeamMembersEditView:
             elif action == "hold":
                 continue
 
-            team.setMembershipStatus(person, status, expires,
-                                     reviewer=self.user)
+            team.setMembershipData(
+                person, status, expires, reviewer=self.user)
 
         # Need to flush all changes we made, so subsequent queries we make
         # with this transaction will see this changes and thus they'll be
@@ -260,8 +260,8 @@ class TeamMemberAddView(AddView):
 
         expires = team.defaultexpirationdate
         if newmember.hasMembershipEntryFor(team):
-            team.setMembershipStatus(newmember, approved, expires,
-                                     reviewer=self.user)
+            team.setMembershipData(
+                newmember, approved, expires, reviewer=self.user)
         else:
             team.addMember(newmember, approved, reviewer=self.user)
 

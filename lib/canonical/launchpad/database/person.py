@@ -638,8 +638,8 @@ class Person(SQLBase):
             # Ok, we're done. You are not an active member and still not being.
             return
 
-        team.setMembershipStatus(self, TeamMembershipStatus.DEACTIVATED,
-                                 tm.dateexpires)
+        team.setMembershipData(
+            self, TeamMembershipStatus.DEACTIVATED, self, tm.dateexpires)
 
     def join(self, team):
         """See IPerson."""
@@ -665,16 +665,16 @@ class Person(SQLBase):
         tm = TeamMembership.selectOneBy(person=self, team=team)
         expires = team.defaultexpirationdate
         if tm is None:
-            team.addMember(self, status)
+            team.addMember(self, reviewer=self, status=status)
         else:
             if (tm.status == declined and
                 team.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED):
                 # The user is a DECLINED member, we just have to change the
                 # status to PROPOSED.
-                team.setMembershipStatus(self, status, expires)
+                team.setMembershipData(self, status, self, expires)
             elif (tm.status in [expired, deactivated, declined] and
                   team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN):
-                team.setMembershipStatus(self, status, expires)
+                team.setMembershipData(self, status, self, expires)
             else:
                 return False
 
@@ -704,8 +704,8 @@ class Person(SQLBase):
             to_addrs.update(contactEmailAddresses(person))
         return sorted(to_addrs)
 
-    def addMember(self, person, status=TeamMembershipStatus.APPROVED,
-                  reviewer=None, comment=None):
+    def addMember(self, person, reviewer, status=TeamMembershipStatus.APPROVED,
+                  comment=None):
         """See IPerson."""
         assert self.teamowner is not None
 
@@ -726,8 +726,8 @@ class Person(SQLBase):
             person, self, status, dateexpires=expires, reviewer=reviewer,
             reviewercomment=comment)
 
-    def setMembershipStatus(self, person, status, expires=None, reviewer=None,
-                            comment=None):
+    def setMembershipData(self, person, status, reviewer, expires=None,
+                          comment=None):
         """See IPerson."""
         tm = TeamMembership.selectOneBy(person=person, team=self)
         assert tm is not None
@@ -736,8 +736,13 @@ class Person(SQLBase):
             now = datetime.now(pytz.timezone('UTC'))
             assert expires > now, expires
 
-        tm.setStatus(status, reviewer, comment)
         tm.dateexpires = expires
+        # Only call setStatus() if there was an actual status change.
+        if status != tm.status:
+            tm.setStatus(status, reviewer, reviewercomment=comment)
+        else:
+            tm.reviewer = reviewer
+            tm.comment = comment
 
         tm.syncUpdate()
 
@@ -1117,9 +1122,8 @@ class PersonSet:
                 defaultmembershipperiod=defaultmembershipperiod,
                 defaultrenewalperiod=defaultrenewalperiod,
                 subscriptionpolicy=subscriptionpolicy)
-        team.addMember(teamowner)
-        team.setMembershipStatus(
-            teamowner, TeamMembershipStatus.ADMIN, reviewer=teamowner)
+        team.addMember(
+            teamowner, reviewer=teamowner, status=TeamMembershipStatus.ADMIN)
         return team
 
     def createPersonAndEmail(

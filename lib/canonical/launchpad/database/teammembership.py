@@ -61,8 +61,9 @@ class TeamMembership(SQLBase):
         """See ITeamMembership"""
         return self.status == TeamMembershipStatus.EXPIRED
 
-    def setStatus(self, status, reviewer=None, reviewercomment=None):
+    def setStatus(self, status, reviewer, reviewercomment=None):
         """See ITeamMembership"""
+        assert status != self.status
         approved = TeamMembershipStatus.APPROVED
         admin = TeamMembershipStatus.ADMIN
         expired = TeamMembershipStatus.EXPIRED
@@ -102,12 +103,9 @@ class TeamMembership(SQLBase):
         elif status in [deactivated, expired]:
             _cleanTeamParticipation(self.person, self.team)
 
-        # Send status change notifications only if it wasn't the actual member
-        # who declined/proposed himself. In the case where the member is
-        # proposing himself, a more detailed notification is sent to the team
-        # admins (by a subscriber of JoinTeamRequestEvent), explaining that
-        # a new member is waiting for approval.
-        if self.person != self.reviewer and self.status != proposed:
+        # When a member proposes himself, a more detailed notification is
+        # sent to the team admins; that's why we don't send anything here.
+        if self.status != proposed:
             self._sendStatusChangeNotification(old_status)
 
     def _getStatusChangeNotificationSubject(self, to_admins=False):
@@ -133,7 +131,7 @@ class TeamMembership(SQLBase):
         member = self.person
         reviewer = self.reviewer
 
-        if reviewer is not None:
+        if reviewer != member:
             reviewer_name = '%s (%s)' % (reviewer.displayname, reviewer.name)
         else:
             # The user himself changed his membership.
@@ -158,13 +156,12 @@ class TeamMembership(SQLBase):
             admins_template = get_email_template(
                 'membership-statuschange-impersonal.txt')
             admins_msg = admins_template % replacements
-            #import pdb; pdb.set_trace()
             simple_sendmail(
                 from_addr, admins_emails, admins_subject, admins_msg)
 
         # The member can be a team without any members, and in this case we
         # won't have a single email address to send this notification to.
-        if member_email:
+        if member_email and self.reviewer != member:
             member_subject = self._getStatusChangeNotificationSubject()
             if member.isTeam():
                 template = 'membership-statuschange-impersonal.txt'
@@ -186,13 +183,15 @@ class TeamMembershipSet:
     def new(self, person, team, status, dateexpires=None, reviewer=None,
             reviewercomment=None):
         """See ITeamMembershipSet"""
-        assert status in [TeamMembershipStatus.APPROVED,
-                          TeamMembershipStatus.PROPOSED]
+        proposed = TeamMembershipStatus.PROPOSED
+        approved = TeamMembershipStatus.APPROVED
+        admin = TeamMembershipStatus.ADMIN
+        assert status in [proposed, approved, admin]
         tm = TeamMembership(
             person=person, team=team, status=status, dateexpires=dateexpires,
             reviewer=reviewer, reviewercomment=reviewercomment)
 
-        if status == TeamMembershipStatus.APPROVED:
+        if status in (approved, admin):
             _fillTeamParticipation(person, team)
 
         return tm

@@ -800,7 +800,8 @@ address if Spanish is among its preferred languages:
     >>> guadamen = getUtility(IPersonSet).getByName('guadamen')
     >>> list(guadamen.languages)
     []
-    >>> admins.addMember(guadamen)
+    >>> foobar = getUtility(IPersonSet).getByName('name16')
+    >>> admins.addMember(guadamen, reviewer=foobar)
 
     >>> guadamen.addLanguage(spanish)
 

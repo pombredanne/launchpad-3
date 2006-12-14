@@ -507,30 +507,30 @@ class IPerson(IHasSpecifications):
 
         Teams cannot call this method because they're not allowed to
         login and thus can't 'leave' another team. Instead, they have their
-        subscription deactivated (using the setMembershipStatus() method) by
+        subscription deactivated (using the setMembershipData() method) by
         a team administrator.
         """
 
-    def addMember(person, status=TeamMembershipStatus.APPROVED, reviewer=None,
+    def addMember(person, reviewer, status=TeamMembershipStatus.APPROVED,
                   comment=None):
         """Add person as a member of this team.
 
-        Make sure status is either APPROVED or PROPOSED and add a
-        TeamMembership entry for this person with the given status, reviewer,
-        and reviewer comment. This method is also responsible for filling
-        the TeamParticipation table in case the status is APPROVED.
+        Add a TeamMembership entry for this person with the given status,
+        reviewer, and reviewer comment. This method is also responsible for
+        filling the TeamParticipation table in case the status is APPROVED or
+        ADMIN.
         """
 
-    def setMembershipStatus(person, status, expires=None, reviewer=None,
-                            comment=None):
-        """Set the status of the person's membership on this team.
+    def setMembershipData(person, status, reviewer, expires=None,
+                          comment=None):
+        """Set the attributes of the person's membership on this team.
 
-        Also set all other attributes of TeamMembership, which are <comment>,
-        <reviewer> and <dateexpires>. This method will ensure that we only
-        allow the status transitions specified in the TeamMembership spec.
-        It's also responsible for filling/cleaning the TeamParticipation
-        table when the transition requires it and setting the expiration
-        date, reviewer and reviewercomment.
+        Set the status, dateexpires, reviewer and comment.
+        
+        This method will ensure that we only allow the status transitions
+        specified in the TeamMembership spec. It's also responsible for
+        filling/cleaning the TeamParticipation table when the transition
+        requires it.
         """
 
     def getTeamAdminsEmailAddresses():

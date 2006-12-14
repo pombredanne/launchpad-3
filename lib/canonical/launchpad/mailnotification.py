@@ -865,7 +865,7 @@ def notify_join_request(event):
     msg = get_email_template('pending-membership-approval.txt') % replacements
     subject = (
         "Launchpad: %s wants to be a member of %s" % (user.name, team.name))
-    from_addr = config.noreply_from_address
+    from_addr = format_address('Launchpad', config.noreply_from_address)
     headers = {"Reply-To": user.preferredemail.email}
     simple_sendmail(from_addr, to_addrs, subject, msg, headers=headers)
 

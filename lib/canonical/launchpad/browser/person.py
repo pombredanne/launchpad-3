@@ -72,7 +72,6 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
-from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.lp.dbschema import (
@@ -2385,18 +2384,11 @@ class TeamReassignmentView(ObjectReassignmentView):
         # only if they're inactive members. If they're either active or
         # proposed members they'll be made administrators of the team.
         if newOwner not in team.inactivemembers:
-            team.addMember(newOwner)
+            team.addMember(
+                newOwner, reviewer=oldOwner, status=TeamMembershipStatus.ADMIN)
         if oldOwner not in team.inactivemembers:
-            team.addMember(oldOwner)
-
-        # Need to flush all database updates, otherwise we won't see the
-        # updated membership statuses in the rest of this method.
-        flush_database_updates()
-        if newOwner not in team.inactivemembers:
-            team.setMembershipStatus(newOwner, TeamMembershipStatus.ADMIN)
-
-        if oldOwner not in team.inactivemembers:
-            team.setMembershipStatus(oldOwner, TeamMembershipStatus.ADMIN)
+            team.addMember(
+                oldOwner, reviewer=oldOwner, status=TeamMembershipStatus.ADMIN)
 
 
 class PersonLatestTicketsView(LaunchpadView):

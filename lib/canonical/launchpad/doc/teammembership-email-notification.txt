@@ -16,6 +16,7 @@ for the member.
     ...     transaction.commit()
 
     >>> import email
+    >>> from canonical.launchpad.mail import stub
     >>> def pop_notifications():
     ...     stub.test_emails.sort(by_to_addrs)
     ...     notifications = [
@@ -29,7 +30,6 @@ for the member.
     >>> from canonical.launchpad.event.team import JoinTeamRequestEvent
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, ITeamMembershipSet)
-    >>> from canonical.launchpad.mail import stub
     >>> from canonical.lp.dbschema import TeamMembershipStatus
     >>> personset = getUtility(IPersonSet)
     >>> membershipset = getUtility(ITeamMembershipSet)
@@ -75,6 +75,10 @@ Declining a proposed member should generate notifications for both the member
 and team admins.
 
     >>> stub.test_emails = []
+
+    # Need to be logged in as a team admin to be able to change memberships of
+    # that team.
+    >>> login('mark@hbd.com')
     >>> setStatus(membership, TeamMembershipStatus.DECLINED, reviewer=sabdfl)
     >>> len(stub.test_emails)
     2
@@ -223,8 +227,7 @@ approved to admin, but he won't get a notification of that.
     # below to fail too.
     >>> stub.test_emails = []
 
-If member named 'name16' has his membership's status changed for team
-'ubuntu-team', in which he's also an administrator, he'll only get one email
+If cprov is made an administrator of ubuntu_team, he'll only get one email
 notification.
 
     >>> cprov = personset.getByName('cprov')
@@ -238,14 +241,43 @@ notification.
     >>> member_notification['To']
     'celso.providelo@canonical.com'
 
-If member is actually a team, we should use a different email template because
-it doesn't make sense to talk about "your membership" or things like that.
+If a team admin changes his own membership, the notification sent will clearly
+say that the change was performed by the user himself, and it will only be
+sent to the team administrators.
+
+    >>> jdub = getUtility(IPersonSet).getByName('jdub')
+    >>> jdub_membership = membershipset.getByPersonAndTeam(jdub, ubuntu_team)
+    >>> setStatus(jdub_membership, TeamMembershipStatus.APPROVED,
+    ...           reviewer=jdub)
+    >>> len(stub.test_emails)
+    1
+    >>> [admins_notification] = pop_notifications()
+    >>> admins_notification['To']
+    'celso.providelo@canonical.com,foo.bar@canonical.com,mark@hbd.com'
+    >>> admins_notification['Subject']
+    'Launchpad: Membership change: jdub in ubuntu-team'
+    >>> print admins_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    Hello,
+    <BLANKLINE>
+    The membership status of Jeff Waugh (jdub)
+    in the team Ubuntu Team (ubuntu-team) was changed by
+    the user himself from Administrator to Approved.
+    <BLANKLINE>
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    <BLANKLINE>
+
+
+If member is actually a team, we use a different email template because in
+that case it wouldn't make sense to talk about "your membership" or things
+like that.
 
     >>> mirror_admins = personset.getByName('ubuntu-mirror-admins')
     >>> from canonical.launchpad.helpers import contactEmailAddresses
     >>> contactEmailAddresses(mirror_admins)
     set(['mark@hbd.com', 'karl@canonical.com'])
-    >>> ubuntu_team.addMember(mirror_admins)
+    >>> ubuntu_team.addMember(mirror_admins, reviewer=sabdfl)
     >>> mirror_admins_membership = membershipset.getByPersonAndTeam(
     ...     mirror_admins, ubuntu_team)
     >>> setStatus(mirror_admins_membership, TeamMembershipStatus.DEACTIVATED,
@@ -256,9 +288,9 @@ it doesn't make sense to talk about "your membership" or things like that.
     >>> admins_notification['To']
     'mark@hbd.com,karl@canonical.com'
 
-    >>> [email.strip() for email in member_notification['To'].split(',')]
-    ['celso.providelo@canonical.com', 'foo.bar@canonical.com',
-     'jeff.waugh@ubuntulinux.com']
+    >> [email.strip() for email in member_notification['To'].split(',')]
+    >>> member_notification['To']
+    'celso.providelo@canonical.com,foo.bar@canonical.com'
     >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
     Hello,
     <BLANKLINE>
@@ -271,5 +303,5 @@ it doesn't make sense to talk about "your membership" or things like that.
     The Launchpad team
     <BLANKLINE>
 
-When an expiration date is changed, we also need to use a separate template
-because the status wasn't actually changed.
+Need to check for notifications sent when a team admin adds somebody as a
+member of a given team. This sort of notification is not sent today.
