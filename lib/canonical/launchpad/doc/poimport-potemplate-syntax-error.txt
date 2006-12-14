@@ -104,7 +104,7 @@ There is one email and it's for the error we produced.
   help you with this problem.
   <BLANKLINE>
   For your convenience, you can get the file you uploaded at:
-  http://localhost:58000/53/firefox.pot
+  http://localhost:58000/.../firefox.pot
   <BLANKLINE>
   Thanks for using Rosetta.
   <BLANKLINE>

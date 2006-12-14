@@ -246,10 +246,10 @@ changes.
   >>> slow_submission = Browser()
   >>> slow_submission.addHeader('Authorization', 'Basic carlos@canonical.com:test')
   >>> slow_submission.open(
-  ...     'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/'
+  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
   ...     '+pots/evolution-2.2/es/14/+translate')
   >>> slow_submission.url
-  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate'
   >>> import transaction
   >>> transaction.commit()
 
@@ -258,10 +258,10 @@ Now, we get another instance that will be submitted before 'slow_submission'.
   >>> fast_submission = Browser()
   >>> fast_submission.addHeader('Authorization', 'Basic carlos@canonical.com:test')
   >>> fast_submission.open(
-  ...     'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/'
+  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
   ...     '+pots/evolution-2.2/es/14/+translate')
   >>> fast_submission.url
-  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate'
 
 Let's change the translation.
 
@@ -271,7 +271,7 @@ And submit it.
 
   >>> fast_submission.getControl(name='submit_translations').click()
   >>> fast_submission.url
-  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/15/+translate'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/15/+translate'
 
 Now, we check that the translation we are going to add is not yet in the
 form, so we can check later that it's added as a suggestion:
@@ -287,7 +287,7 @@ We submit it
 
   >>> slow_submission.getControl(name='submit_translations').click()
   >>> slow_submission.url
-  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate'
 
 And, as expected, we see the error message:
 

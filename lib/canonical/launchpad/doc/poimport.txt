@@ -519,8 +519,6 @@ And run the cronscript.
     >>> (output, empty) = process.communicate()
     >>> print output
     INFO    Importing: Template "firefox" in Mozilla Firefox trunk
-    WARNING We got an error importing Template "firefox" in Mozilla Firefox trunk
-     -> http://localhost:58000/... (No header found in this pofile)
     INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
     WARNING Got an old version for Welsh (cy) translation of firefox in Mozilla Firefox trunk
     INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
