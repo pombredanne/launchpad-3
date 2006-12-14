@@ -161,6 +161,7 @@ Now we do the submit
     ...     'batch': '10',
     ...     'start': '10',
     ...     'show': 'untranslated',
+    ...     'lock_timestamp': '2006-11-28 13:00:00 UTC',
     ...     'msgset_130': None,
     ...     'msgset_130_es_translation_0': 'Foo',
     ...     'msgset_138': None,
@@ -206,6 +207,7 @@ their sequence is 0.
     ...     'batch': '10',
     ...     'start': '0',
     ...     'show': 'untranslated',
+    ...     'lock_timestamp': '2006-11-28 13:00:00 UTC',
     ...     'msgset_161': None,
     ...     'msgset_161_es_translation_0': 'Foo',
     ...     'submit_translations': 'Save &amp; Continue'})

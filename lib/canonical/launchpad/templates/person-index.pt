@@ -154,7 +154,7 @@
         </p>
         <ul>
           <li tal:repeat="team subteams">
-            <a tal:attributes="href string:../${team/name}"
+            <a tal:attributes="href team/fmt:url"
                tal:content="team/browsername">name</a>
           </li>
         </ul>
@@ -170,7 +170,7 @@
         </p>
         <ul>
           <li tal:repeat="team superteams">
-            <a tal:attributes="href string:../${team/name}"
+            <a tal:attributes="href team/fmt:url"
                tal:content="team/browsername">name</a>
           </li>
         </ul>
