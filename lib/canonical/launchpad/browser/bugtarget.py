@@ -295,7 +295,7 @@ class FileBugGuidedView(FileBugViewBase):
             self.user, title, **context_params)
         # Remove all the prejoins, since we won't use them and they slow
         # down the query significantly.
-        matching_bugtasks = matching_bugtasks.prejoin(None)
+        matching_bugtasks = matching_bugtasks.prejoin([])
 
         # XXX: We might end up returning less than :limit: bugs, but in
         #      most cases we won't, and '4*limit' is here to prevent
