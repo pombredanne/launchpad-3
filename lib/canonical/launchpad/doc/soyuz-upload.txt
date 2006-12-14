@@ -675,10 +675,11 @@ Check if the package was moved properly to the component 'universe':
   ...
   END
 
-Check the contents of 'Release' file.
-It should contain a header section with information about the suite
-in question and a list of checksums for each index published in MD5,
-SHA1 and SHA256.
+== Release File ==
+
+The publish-distro.py script will write an appropriate Release file
+containing the suite in question and a list of checksums (MD5, SHA1
+and SHA256) for each index published.
 
 XXX cprov 20061213: trailing space on Architectures is a side-effect
 caused by the absence of published binaries in this suite. It should
