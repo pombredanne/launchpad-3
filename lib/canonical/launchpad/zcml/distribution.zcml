@@ -35,11 +35,16 @@
         name="+specs"
         layer="canonical.launchpad.layers.BlueprintLayer"
         />
-
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistribution"
         layer="canonical.launchpad.layers.BugsLayer"
-        name="+bugs" />
+        name="+bugs"
+        />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IDistribution"
+        layer="canonical.launchpad.layers.AnswersLayer"
+        name="+tickets"
+        />
 
     <browser:navigation
         module="canonical.launchpad.browser"

@@ -9,7 +9,6 @@ __all__ = [
     'ProductBranchAddView',
     'BranchContextMenu',
     'BranchEditView',
-    'BranchLifecycleView',
     'BranchReassignmentView',
     'BranchNavigation',
     'BranchInPersonView',
@@ -67,17 +66,12 @@ class BranchContextMenu(ContextMenu):
 
     usedfor = IBranch
     facet = 'branches'
-    links = ['edit', 'lifecycle', 'reassign', 'subscription']
+    links = ['edit', 'reassign', 'subscription']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Edit Branch Details'
         return Link('+edit', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def lifecycle(self):
-        text = 'Set Branch Status'
-        return Link('+lifecycle', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def reassign(self):
@@ -247,8 +241,8 @@ class BranchEditFormView(LaunchpadEditFormView):
 class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
 
     schema = IBranch
-    field_names = ['product', 'url', 'name', 'title', 'summary', 'whiteboard',
-                   'home_page', 'author']
+    field_names = ['product', 'url', 'name', 'title', 'summary',
+                   'lifecycle_status', 'whiteboard', 'home_page', 'author']
 
     custom_widget('url', BranchUrlWidget)
     custom_widget('home_page', BranchHomePageWidget)
@@ -265,12 +259,6 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             self.validate_branch_name(self.context.owner,
                                       data['product'],
                                       data['name'])
-
-
-class BranchLifecycleView(BranchEditFormView):
-
-    label = "Set branch status"
-    field_names = ['lifecycle_status', 'whiteboard']
 
 
 class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
