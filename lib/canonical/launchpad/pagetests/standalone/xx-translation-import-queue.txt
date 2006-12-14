@@ -8,7 +8,7 @@ An upstream maintainer can use Rosetta to submit their initial template uploads.
     >>> ff_owner = Browser()
     >>> ff_owner.addHeader('Authorization', 'Basic test@canonical.com:test')
     >>> ff_owner.open(
-    ...     'http://launchpad.dev/products/firefox/1.0/+translations-upload')
+    ...     'http://launchpad.dev/firefox/1.0/+translations-upload')
     >>> 'Upload either a single file' in ff_owner.contents
     True
 
@@ -26,7 +26,7 @@ Time to do the upload...
     >>> upload.add_file(tarball, 'application/x-gzip', test_file_name)
     >>> ff_owner.getControl('Request Upload').click()
     >>> ff_owner.url
-    'http://launchpad.dev/products/firefox/1.0/+translations-upload'
+    'http://launchpad.dev/firefox/1.0/+translations-upload'
     >>> 'Upload new translation resources' in ff_owner.contents
     True
     >>> 'Thank you for your upload. 1 files from the tarball will be reviewed' in ff_owner.contents
@@ -35,10 +35,9 @@ Time to do the upload...
 We check now that the upload is available from the translation import queue page
 and the status is static as we are not logged in.
 
-
-  >>> browser.open('http://launchpad.dev/rosetta/imports')
+  >>> browser.open('http://launchpad.dev/translations/imports')
   >>> browser.url
-  'http://launchpad.dev/rosetta/imports'
+  'http://launchpad.dev/translations/imports'
   >>> 'po/es.po' in browser.contents
   True
   >>> 'Mozilla Firefox Series' in browser.contents
@@ -50,9 +49,9 @@ As an admin, the same page should give us extra rights to edit imports and
 thus, the link should appear.
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
-  >>> browser.open('http://launchpad.dev/rosetta/imports')
+  >>> browser.open('http://launchpad.dev/translations/imports')
   >>> browser.url
-  'http://launchpad.dev/rosetta/imports'
+  'http://launchpad.dev/translations/imports'
   >>> 'po/es.po' in browser.contents
   True
   >>> 'Mozilla Firefox Series' in browser.contents
@@ -73,9 +72,9 @@ Also, we get a set of different status and the default one...
 
 Now, we attach a new file to an already existing translation resource.
 
-  >>> browser.open('http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload')
+  >>> browser.open('http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload')
   >>> browser.url
-  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload'
   >>> upload = browser.getControl('File')
   >>> upload
   <Control name='file' type='file'>
@@ -83,7 +82,7 @@ Now, we attach a new file to an already existing translation resource.
   >>> upload.add_file(cStringIO.StringIO('# foo\n'), 'text/x-gettext-translation-template', 'evolution.pot')
   >>> browser.getControl('Upload').click()
   >>> browser.url
-  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload'
   >>> 'Thank you for your upload. The file content will be imported soon' in browser.contents
   True
   >>> 'Upload a new version of Template "evolution-2.2" in Ubuntu Hoary package "evolution"' in browser.contents
@@ -93,9 +92,9 @@ Now the import queue should have two entries with the last upload as the last
 entry.
 
   >>> browser = Browser()
-  >>> browser.open('http://launchpad.dev/rosetta/imports')
+  >>> browser.open('http://launchpad.dev/translations/imports')
   >>> browser.url
-  'http://launchpad.dev/rosetta/imports'
+  'http://launchpad.dev/translations/imports'
   >>> print browser.contents
   <...
   ...po/es.po...
@@ -110,9 +109,9 @@ entry.
 Get the edit form for the first entry.
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
-  >>> browser.open('http://launchpad.dev/rosetta/imports/1')
+  >>> browser.open('http://launchpad.dev/translations/imports/1')
   >>> browser.url
-  'http://launchpad.dev/rosetta/imports/1'
+  'http://launchpad.dev/translations/imports/1'
   >>> '<label for="field.potemplatename">Template Name</label>' in browser.contents
   True
   >>> '<input type="text" name="field.potemplatename" onkeypress=""' in browser.contents
@@ -150,7 +149,7 @@ Is time to associate this import to the right IPOFile.
   >>> browser.getControl(name='field.language').value = ['es']
   >>> browser.getControl(name='field.actions.attach').click()
   >>> browser.url
-  'http://launchpad.dev/rosetta/imports'
+  'http://launchpad.dev/translations/imports'
 
 And we get that entry approved and with a place where it will be imported
 
@@ -170,9 +169,9 @@ Check the removal feature. For that, the user carlos is going to attach a new
 entry
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
-  >>> browser.open('http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload')
+  >>> browser.open('http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload')
   >>> browser.url
-  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload'
   >>> upload = browser.getControl(name='file')
   >>> upload.add_file(cStringIO.StringIO('#foo\n'), 'text/x-gettext-translation-template', 'evolution.pot')
   >>> browser.getControl(name='UPLOAD').click()
@@ -184,11 +183,11 @@ an Internal Server Error and that's fine as the user will not get a UI to do thi
 POST, if we get this POST is because it was created by hand or not using our forms.
 
   >>> print http(r"""
-  ... POST /rosetta/imports HTTP/1.1
+  ... POST /translations/imports HTTP/1.1
   ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 45
   ... Content-Type: application/x-www-form-urlencoded
-  ... Referer: http://localhost:9000/rosetta/imports
+  ... Referer: http://localhost:9000/translations/imports
   ... 
   ... status-2=DELETED&handle_queue=Change%20Status""")
   HTTP/1.1 500 Internal Server Error
@@ -199,13 +198,13 @@ POST, if we get this POST is because it was created by hand or not using our for
 But Jordi, a Rosetta expert, will be allowed to remove it.
 
   >>> browser.addHeader('Authorization', 'Basic jordi@canonical.com:test')
-  >>> browser.open('http://launchpad.dev/rosetta/imports')
+  >>> browser.open('http://launchpad.dev/translations/imports')
   >>> browser.url
-  'http://launchpad.dev/rosetta/imports'
+  'http://launchpad.dev/translations/imports'
   >>> browser.getControl(name='status-2').value = ['DELETED']
   >>> browser.getControl(name='handle_queue').click()
   >>> browser.url
-  'http://launchpad.dev/rosetta/imports/+index'
+  'http://launchpad.dev/translations/imports/+index'
 
   >>> print browser.contents
   <...
@@ -220,9 +219,9 @@ We need a new entry imported to check that a Launchpad admin is always allowed
 to remove it.
 
   >>> browser.addHeader('Authorization', 'Basic jordi@canonical.com:test')
-  >>> browser.open('http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload')
+  >>> browser.open('http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload')
   >>> browser.url
-  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload'
   >>> upload = browser.getControl(name='file')
   >>> upload.add_file(cStringIO.StringIO('#foo\n'), 'text/x-gettext-translation-template', 'evolution.pot')
   >>> browser.getControl(name='UPLOAD').click()
@@ -232,13 +231,13 @@ to remove it.
 Foo Bar Person is a launchpad admin and he's allowed to remove the entry.
 
   >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
-  >>> browser.open('http://launchpad.dev/rosetta/imports')
+  >>> browser.open('http://launchpad.dev/translations/imports')
   >>> browser.url
-  'http://launchpad.dev/rosetta/imports'
+  'http://launchpad.dev/translations/imports'
   >>> browser.getControl(name='status-2').value = ['DELETED']
   >>> browser.getControl(name='handle_queue').click()
   >>> browser.url
-  'http://launchpad.dev/rosetta/imports/+index'
+  'http://launchpad.dev/translations/imports/+index'
 
   >>> print browser.contents
   <...
@@ -255,7 +254,7 @@ to remove their own imports.
     >>> a52_owner = Browser()
     >>> a52_owner.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
     >>> a52_owner.open(
-    ...     'http://launchpad.dev/products/a52dec/trunk/+translations-upload')
+    ...     'http://launchpad.dev/a52dec/trunk/+translations-upload')
     >>> upload = a52_owner.getControl('File')
     >>> upload
     <Control name='file' type='file'>
@@ -264,7 +263,7 @@ to remove their own imports.
     ...     'a52dec.pot')
     >>> a52_owner.getControl('Request Upload').click()
     >>> a52_owner.url
-    'http://launchpad.dev/products/a52dec/trunk/+translations-upload'
+    'http://launchpad.dev/a52dec/trunk/+translations-upload'
     >>> print a52_owner.contents
     <...
     ...Upload new translation resources...
@@ -272,7 +271,7 @@ to remove their own imports.
 
 Now, removing it:
 
-    >>> a52_owner.open('http://launchpad.dev/rosetta/imports')
+    >>> a52_owner.open('http://launchpad.dev/translations/imports')
     >>> menu = a52_owner.getControl(name='status-3')
     >>> menu.value
     ['NEEDS_REVIEW']
@@ -296,7 +295,7 @@ Corner cases
 Let's check tar.bz2 uploads. They work ;-)
 
     >>> evo_owner = ff_owner
-    >>> evo_owner.open('http://launchpad.dev/products/evolution/trunk/+translations-upload')
+    >>> evo_owner.open('http://launchpad.dev/evolution/trunk/+translations-upload')
     >>> test_file_name = os.path.join(
     ...     os.path.dirname(canonical.launchpad.__file__),
     ...     'pagetests/standalone/xx-translation-import-queue.tar.bz2')
@@ -308,7 +307,7 @@ Let's check tar.bz2 uploads. They work ;-)
     >>> upload.add_file(tarball, 'application/x-bzip', test_file_name)
     >>> evo_owner.getControl('Request Upload').click()
     >>> evo_owner.url
-    'http://launchpad.dev/products/evolution/trunk/+translations-upload'
+    'http://launchpad.dev/evolution/trunk/+translations-upload'
     >>> print evo_owner.contents
     <...
     ...Thank you for your upload. 2 files from the tarball will be reviewed...
@@ -317,7 +316,7 @@ Let's try breaking the form by not supplying a file object. It give us a
 decent error message:
 
   >>> browser.addHeader('Authorization', 'Basic jordi@canonical.com:test')
-  >>> browser.open('http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload')
+  >>> browser.open('http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload')
   >>> browser.getControl(name='UPLOAD').click()
   >>> 'Your upload was ignored because you didn\'t select a file. Please select a file and try again.' in browser.contents
   True

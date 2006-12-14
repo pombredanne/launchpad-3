@@ -34,7 +34,9 @@ class ITranslationImportQueueEntry(Interface):
             "The person that imported this file in Rosetta."),
         vocabulary="ValidOwner")
 
-    dateimported = Attribute('The timestamp when this file was imported.')
+    dateimported = Datetime(
+        title=_("The timestamp when this file was imported."),
+        required=True)
 
     productseries = Choice(
         title=_("Product Branch or Series"),
@@ -112,6 +114,13 @@ class ITranslationImportQueueEntry(Interface):
         """Return import queue entries stored on the same directory as self.
 
         The returned entries will be only .pot entries.
+        """
+
+    def getElapsedTimeText():
+        """Return a string representing the elapsed time since we got the file.
+
+        The returned string is like:
+            '2 days 3 hours 10 minutes ago' or 'just requested'
         """
 
 

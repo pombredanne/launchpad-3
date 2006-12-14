@@ -1,0 +1,66 @@
+When a bug is targeted to the current development release, the general
+distribution task is no longer editable. Instead the status is tracked
+in the release task.
+
+    >>> user_browser.open('http://launchpad.dev/ubuntu/+bug/2')
+    >>> ubuntu_edit_url = (
+    ...     'http://launchpad.dev/ubuntu/+bug/2/+editstatus')
+    >>> user_browser.getLink(url=ubuntu_edit_url)
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError...
+
+    >>> ubuntu_hoary_edit_url = (
+    ...     'http://launchpad.dev/ubuntu/hoary/+bug/2/+editstatus')
+    >>> user_browser.getLink(url=ubuntu_hoary_edit_url) is not None
+    True
+
+However, if we reject the Hoary task, it means that the bug is deferred
+to the next release. In that case, the general Ubuntu task will keep
+open, while the release task is rejected.
+
+    >>> user_browser.getLink(url=ubuntu_hoary_edit_url).click()
+    >>> user_browser.getControl('Status').displayValue = ['Rejected']
+    >>> user_browser.getControl('Save Changes').click()
+
+Now both the general and release tasks are editable.
+
+    >>> user_browser.getLink(url=ubuntu_edit_url).click()
+    >>> user_browser.getControl('Status').displayValue
+    ['Unconfirmed']
+    >>> user_browser.getControl('Status').displayValue = ['Confirmed']
+    >>> user_browser.getControl('Save Changes').click()
+
+    >>> user_browser.getLink(url=ubuntu_hoary_edit_url).click()
+    >>> user_browser.getControl('Status').displayValue
+    ['Rejected']
+
+If the release task gets reopened, the tasks will be synced again, and
+the distribution task won't be editable.
+
+    >>> user_browser.getControl('Status').displayValue = ['Confirmed']
+    >>> user_browser.getControl('Save Changes').click()
+
+    >>> user_browser.getLink(url=ubuntu_edit_url)
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError...
+
+    >>> user_browser.getLink(url=ubuntu_hoary_edit_url) is not None
+    True
+
+It's worth noting that only a rejection causes the conjoined bugtasks
+from being separated, if the task gets changed to Fix Released, it
+general distribution task will remain uneditable.
+
+    >>> user_browser.getLink(url=ubuntu_hoary_edit_url).click()
+    >>> user_browser.getControl('Status').displayValue = ['Fix Released']
+    >>> user_browser.getControl('Save Changes').click()
+
+    >>> user_browser.getLink(url=ubuntu_edit_url)
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError...
+
+    >>> user_browser.getLink(url=ubuntu_hoary_edit_url) is not None
+    True

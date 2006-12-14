@@ -1,3 +1,6 @@
+(We will use the advanced filebug form in the examples below, to skip
+searching for dupes.)
+
 Filing a public bug on a distribution source package subscribes the bug
 reporter, the distribution contact, if there is one, and all the package
 bug contacts, if there are any.
@@ -5,7 +8,8 @@ bug contacts, if there are any.
     >>> browser.addHeader("Authorization", "Basic mark@hbd.com:test")
 
     >>> browser.open(
-    ...     "http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/+filebug")
+    ...     "http://localhost:9000/ubuntu/+source/mozilla-firefox/"
+    ...     "+filebug-advanced")
 
     >>> browser.getControl(name="field.title").value = "a public bug"
     >>> browser.getControl(name="field.comment").value = (
@@ -13,7 +17,7 @@ bug contacts, if there are any.
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> print browser.url
-    http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/+bug/13
+    http://localhost:9000/ubuntu/+source/mozilla-firefox/+bug/13
 
 We should have three subscribers now. The bug reporter (also a package
 contact), sabdfl, the distro contact, carlos, and the other package
@@ -48,8 +52,8 @@ Cc'd, because the Ubuntu distribution does not have a security contact.
     >>> logout()
 
     >>> browser.open(
-    ...     "http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/"
-    ...     "+filebug")
+    ...     "http://localhost:9000/ubuntu/+source/mozilla-firefox/"
+    ...     "+filebug-advanced")
     >>> browser.getControl(name="field.title").value = "a PRIVATE bug"
     >>> browser.getControl(name="field.comment").value = "top sekrit"
     >>> browser.getControl(
@@ -57,7 +61,7 @@ Cc'd, because the Ubuntu distribution does not have a security contact.
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> print browser.url
-    http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/+bug/14
+    http://localhost:9000/ubuntu/+source/mozilla-firefox/+bug/14
 
     >>> login("mark@hbd.com")
 

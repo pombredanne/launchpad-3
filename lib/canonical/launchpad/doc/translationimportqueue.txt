@@ -791,7 +791,7 @@ Now is time to check that we only have one item on the NeedsReview status.
     >>> entry1.path
     u'po/sr.po'
 
-This entry is form a productseries, and it's not blocked because the blocked
+This entry is for a productseries, and it's not blocked because the blocked
 .pot entry is for a distrorelease-sourcepackagename.
 
     >>> entry1.status == RosettaImportStatus.NEEDS_REVIEW
@@ -813,6 +813,45 @@ And the .pot entry is still blocked.
     u'po/evolution-2.2.pot'
     >>> entry3.status == RosettaImportStatus.BLOCKED
     True
+
+getElapsedTimeText
+------------------
+
+This method returns a string representing the elapsed time since the entry
+was added to the queue.
+
+We need to attach a new entry to play with:
+
+    >>> productseries = ProductSeries.get(1)
+    >>> entry = translationimportqueue.addOrUpdateEntry(
+    ...     'foo/bar.po', 'foo content', True,
+    ...     rosetta_expert, productseries=productseries)
+
+When we just import it, this method tells us that it's "just requested"
+
+    >>> entry.getElapsedTimeText()
+    'just requested'
+
+Now, we need to update the 'dateimported' field to check that we get a good
+value when takes more time since the import. We need to force the date here
+because doing it with sample data would be a time bomb.
+
+To edit this field, we need to have Edit permissions.
+
+    >>> login('carlos@canonical.com')
+
+Let's change the field with a date 2 days, 13 hours and 5 minutes ago.
+
+    >>> import pytz
+    >>> import datetime
+    >>> UTC = pytz.timezone('UTC')
+    >>> delta = datetime.timedelta(days=2, hours=13, minutes=5)
+    >>> entry.dateimported = datetime.datetime.now(UTC) - delta
+
+And this method gets the right text.
+
+    >>> entry.getElapsedTimeText()
+    '2 days 13 hours 5 minutes ago'
 
 
 TranslationImportQueue
