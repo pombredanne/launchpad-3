@@ -64,15 +64,15 @@ When we are on the first message, we should be 100% sure that the 'First' and
   LinkNotFoundError
 
   >>> next = browser.getLink('Next')
-  >>> next
-  <Link text='Next' url='http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/2/+translate'>
-  >>> browser.getLink('Last')
-  <Link text='Last\xc2\xa0\xc2\xbb' url='http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate'>
+  >>> print next.url
+  http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/2/+translate
+  >>> print browser.getLink('Last').url
+  http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate
 
 And the link to the IPOFile view should be there too:
 
-  >>> browser.getLink('Return to multiple messages view')
-  <Link text='Return to multiple messages view.[IMG]' url='http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=0'>
+  >>> print browser.getLink('Return to multiple messages view').url
+  http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=0
 
 when we choose the next entry, all links should appear.
 
@@ -80,20 +80,20 @@ when we choose the next entry, all links should appear.
   >>> browser.url
   'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/2/+translate'
 
-  >>> browser.getLink('First')
-  <Link text='\xc2\xab\xc2\xa0First' url='http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate'>
-  >>> browser.getLink('Previous')
-  <Link text='Previous' url='http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate'>
-  >>> browser.getLink('Next')
-  <Link text='Next' url='http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/3/+translate'>
+  >>> print browser.getLink('First').url
+  http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate
+  >>> print browser.getLink('Previous').url
+  http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate
+  >>> print browser.getLink('Next').url
+  http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/3/+translate
   >>> last = browser.getLink('Last')
-  >>> last
-  <Link text='Last\xc2\xa0\xc2\xbb' url='http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate'>
+  >>> print last.url
+  http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate
 
 And the link to the IPOFile view should be there too:
 
-  >>> browser.getLink('Return to multiple messages view')
-  <Link text='Return to multiple messages view.[IMG]' url='http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=1'>
+  >>> print browser.getLink('Return to multiple messages view').url
+  http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=1
 
 And the last one.
 
@@ -101,11 +101,11 @@ And the last one.
   >>> browser.url
   'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate'
 
-  >>> browser.getLink('First')
-  <Link text='\xc2\xab\xc2\xa0First' url='http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate'>
+  >>> print browser.getLink('First').url
+  http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate
   >>> prev = browser.getLink('Previous')
-  >>> prev
-  <Link text='Previous' url='http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/21/+translate'>
+  >>> print prev.url
+  http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/21/+translate
 
   >>> browser.getLink('Next')
   Traceback (most recent call last):
@@ -119,8 +119,8 @@ And the last one.
 
 And the link to the IPOFile view should be there too:
 
-  >>> browser.getLink('Return to multiple messages view')
-  <Link text='Return to multiple messages view.[IMG]' url='http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=21'>
+  >>> print browser.getLink('Return to multiple messages view').url
+  http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=21
 
 Let's test the ones at the end of the form.
 
@@ -128,14 +128,14 @@ Let's test the ones at the end of the form.
   >>> browser.url
   'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/21/+translate'
 
-  >>> browser.getLink('First')
-  <Link text='\xc2\xab\xc2\xa0First' url='http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate'>
-  >>> browser.getLink('Previous')
-  <Link text='Previous' url='http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/20/+translate'>
-  >>> browser.getLink('Next')
-  <Link text='Next' url='http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate'>
-  >>> browser.getLink('Last')
-  <Link text='Last\xc2\xa0\xc2\xbb' url='http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate'>
+  >>> print browser.getLink('First').url
+  http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate
+  >>> print browser.getLink('Previous').url
+  http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/20/+translate
+  >>> print browser.getLink('Next').url
+  http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate
+  >>> print browser.getLink('Last').url
+  http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate
 
 Now, we are going to check a message submission.
 
