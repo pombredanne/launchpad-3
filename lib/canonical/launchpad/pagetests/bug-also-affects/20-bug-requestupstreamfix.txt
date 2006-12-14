@@ -1,3 +1,5 @@
+= Forwarding bugs upstream =
+
 There are two pages that deal with adding an upstream task:
 +choose-affected-product and +add-affected-product. The former deals
 with choosing which product that is affected by the bug, and the latter
@@ -62,9 +64,10 @@ Let's add the evolution task as well.
     >>> user_browser.url
     'http://launchpad.dev/evolution/+bug/6'
 
+== Error messages ==
+
 If we try to add an upstream task without specifying a product:
 
-    >>> user_browser.addHeader('Authorization', 'Basic test@canonical.com:test')
     >>> user_browser.open(
     ...     'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/3')
     >>> user_browser.getLink(url='+choose-affected-product').click()
@@ -82,10 +85,80 @@ We get a nice error message.
   >>> 'Required input is missing' in user_browser.contents
   True
 
+If we enter a product name that doesn't exist, we inform the user
+about this and ask him to search for the product.
+
+    >>> user_browser.getControl('Product').value = 'no-such-product'
+    >>> user_browser.getControl('Continue').click()
+    >>> user_browser.url
+    'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/3/+choose-affected-product'
+    >>> for message_tag in find_tags_by_class(user_browser.contents, 'message'):
+    ...     print message_tag.renderContents()
+    There is 1 error.
+    There is no product in Launchpad named "no-such-product". You may
+    want to <a ...>search for it</a>, or <a ...>register it</a> if you
+    can't find it.
+
+    >>> search_link = user_browser.getLink('search for it')
+    >>> search_link.url
+    "javascript:popup_window('@@popup-window?vocabulary=Product&field=field.product','500','400')"
+
+Since the link is a javascript popup, we can't follow the link directly,
+so let's extract the real URL and open it manually.
+
+    >>> import re
+    >>> search_url = re.search(
+    ...     "popup_window\('([^']*)'", search_link.url).group(1)
+    >>> user_browser.open(
+    ...  'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/3/'
+    ...   + search_url)
+    >>> user_browser.title
+    'Select a Product'
+
+If we go back again, we see that we also give the user the possibility
+to register the product if he doesn't find it.
+
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/3/'
+    ...     '+choose-affected-product')
+    >>> user_browser.getControl('Product').value = 'no-such-product'
+    >>> user_browser.getControl('Continue').click()
+    >>> user_browser.url
+    'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/3/+choose-affected-product'
+
+    >>> user_browser.getLink('register it').click()
+    >>> user_browser.title
+    'Register a product in the Launchpad'
+
+Since we don't restrict the input, the user can write anything, so we
+need to make sure that everything is quoted before displaying the input.
+
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/3'
+    ...     '/+choose-affected-product')
+
+    >>> user_browser.getControl('Product').value = 'N\xc3\xb6 Such Product&<>'
+    >>> user_browser.getControl('Continue').click()
+    >>> user_browser.url
+    'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/3/+choose-affected-product'
+    >>> [message_tag.renderContents()
+    ...  for message_tag in find_tags_by_class(user_browser.contents, 'message')]
+    ['There is 1 error.',
+     'There is no product in Launchpad named
+      "N\xc3\xb6 Such Product&amp;&lt;&gt;". You may want to
+      <a ...>search for it</a>, or <a ...>register it</a> if you can\'t
+      find it.']
+
+
+== Linking to bug watches ==
+
 Now we add an upstream task, while adding this new bugtask we can also
 specify a bug watch. If we inadvertently left some leading or trailing white
 space in the bug URL it will be stripped.
 
+  >>> user_browser.open(
+  ...     'http://launchpad.dev/debian/+source/mozilla-firefox/'
+  ...     '+bug/3/+choose-affected-product')
   >>> user_browser.getControl('Product').value = 'alsa-utils'
   >>> user_browser.getControl('Continue').click()
 

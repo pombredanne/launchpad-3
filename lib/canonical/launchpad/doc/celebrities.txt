@@ -60,6 +60,12 @@ support requests.
   >>> celebs.support_tracker_janitor == support_tracker_janitor
   True
 
+The Launchpad product itself.
+
+  >>> from canonical.launchpad.interfaces import IProductSet
+  >>> launchpad = getUtility(IProductSet).getByName('launchpad')
+  >>> celebs.launchpad == launchpad
+  True
 
   TODO: add interface verification test.
         ask debonzi to add these in general.
