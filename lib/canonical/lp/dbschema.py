@@ -2658,8 +2658,9 @@ class BranchLifecycleStatus(DBSchema):
         """, sortkey=50)
 
 
-# has copies of BranchLifecycleStatus until I find a better
-# way of extending an existing list
+# XXX thumper 2006-12-15 Has copies of BranchLifecycleStatus
+# until I find a better way of extending an existing list.
+# The dbschema refactoring should make this all become simple.
 class BranchLifecycleStatusFilter(DBSchema):
     """Branch Lifecycle Status Filter
 
