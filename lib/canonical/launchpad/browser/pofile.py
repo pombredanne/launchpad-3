@@ -213,9 +213,6 @@ class POFileUploadView(POFileView):
             # The form was not submitted or the user is not logged in.
             return
 
-        if not helpers.check_permission('launchpad.Admin', self.context):
-            raise UnexpectedFormData('Only admins can use this form.')
-
         file = self.form['file']
 
         if not isinstance(file, FileUpload):
