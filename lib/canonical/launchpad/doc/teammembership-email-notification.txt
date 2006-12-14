@@ -87,9 +87,9 @@ and team admins.
     >>> print admins_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
     Hello,
     <BLANKLINE>
-    The membership status of Sample Person (name12) in the team
-    Ubuntu Team (ubuntu-team) was changed by Mark Shuttleworth (sabdfl)
-    from Proposed to Declined.
+    The membership status of Sample Person (name12)
+    in the team Ubuntu Team (ubuntu-team) was changed by
+    Mark Shuttleworth (sabdfl) from Proposed to Declined.
     <BLANKLINE>
     <BLANKLINE>
     Regards,
@@ -134,9 +134,9 @@ The same goes for approving a proposed member.
     >>> print admins_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
     Hello,
     <BLANKLINE>
-    The membership status of Dafydd Harries (daf) in the team
-    Ubuntu Team (ubuntu-team) was changed by Mark Shuttleworth (sabdfl)
-    from Proposed to Approved.
+    The membership status of Dafydd Harries (daf)
+    in the team Ubuntu Team (ubuntu-team) was changed by
+    Mark Shuttleworth (sabdfl) from Proposed to Approved.
     <BLANKLINE>
     Comment: =
     <BLANKLINE>
@@ -183,9 +183,9 @@ The same for deactivating a membership.
     >>> print admins_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
     Hello,
     <BLANKLINE>
-    The membership status of Dafydd Harries (daf) in the team
-    Ubuntu Team (ubuntu-team) was changed by Mark Shuttleworth (sabdfl)
-    from Approved to Deactivated.
+    The membership status of Dafydd Harries (daf)
+    in the team Ubuntu Team (ubuntu-team) was changed by
+    Mark Shuttleworth (sabdfl) from Approved to Deactivated.
     <BLANKLINE>
     <BLANKLINE>
     Regards,
@@ -241,6 +241,35 @@ notification.
 If member is actually a team, we should use a different email template because
 it doesn't make sense to talk about "your membership" or things like that.
 
+    >>> mirror_admins = personset.getByName('ubuntu-mirror-admins')
+    >>> from canonical.launchpad.helpers import contactEmailAddresses
+    >>> contactEmailAddresses(mirror_admins)
+    set(['mark@hbd.com', 'karl@canonical.com'])
+    >>> ubuntu_team.addMember(mirror_admins)
+    >>> mirror_admins_membership = membershipset.getByPersonAndTeam(
+    ...     mirror_admins, ubuntu_team)
+    >>> setStatus(mirror_admins_membership, TeamMembershipStatus.DEACTIVATED,
+    ...           reviewer=sabdfl)
+    >>> len(stub.test_emails)
+    2
+    >>> member_notification, admins_notification = pop_notifications()
+    >>> admins_notification['To']
+    'mark@hbd.com,karl@canonical.com'
+
+    >>> [email.strip() for email in member_notification['To'].split(',')]
+    ['celso.providelo@canonical.com', 'foo.bar@canonical.com',
+     'jeff.waugh@ubuntulinux.com']
+    >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    Hello,
+    <BLANKLINE>
+    The membership status of Mirror Administrators (ubuntu-mirror-admins)
+    in the team Ubuntu Team (ubuntu-team) was changed by
+    Mark Shuttleworth (sabdfl) from Approved to Deactivated.
+    <BLANKLINE>
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    <BLANKLINE>
 
 When an expiration date is changed, we also need to use a separate template
 because the status wasn't actually changed.
