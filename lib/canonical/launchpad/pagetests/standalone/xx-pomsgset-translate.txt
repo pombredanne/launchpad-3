@@ -17,7 +17,9 @@ interested on doesn't have any translation.
   ...     td_ignore, td_id, td_ignore, td_msgid = (
   ...         tr_english_msgid('td'))
   ...
-  ...     if has_errors:
+  ...     if 'msgset_143' in td_id.renderContents():
+  ...         tr_translation_index = 3
+  ...     elif has_errors:
   ...         # There is a 'tr' tag to show an error.
   ...         tr_translation_index = 2
   ...     else:
@@ -175,15 +177,15 @@ Let's submit an invalid value for this message #13.
   ...     print tag
   <div class="error message">There is an error in the translation you provided. Please correct it before continuing.</div>
   <tr class="error">
-  <th colspan="3">
-  <strong>Error in Translation:</strong>
-  </th>
-  <td>
-  </td><td>
-  <div>
-          format specifications in 'msgid' and 'msgstr' for argument 1 are not the same
-        </div>
-  </td>
+    <th colspan="3">
+      <strong>Error in Translation:</strong>
+    </th>
+    <td>
+    </td><td>
+      <div>
+        format specifications in 'msgid' and 'msgstr' for argument 1 are not the same
+      </div>
+    </td>
   </tr>
 
 The message is still without translation:
@@ -306,3 +308,96 @@ as well!)
     ...
   UnexpectedFormData: You specified...
 
+Let's see what happens when we do a submission with a lock_timestamp older
+than the review date for current translation.
+
+First, we get a browser instance that will be the last one submitting the
+changes.
+
+  >>> from zope.testbrowser.testing import Browser
+  >>> slow_submission = Browser()
+  >>> slow_submission.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+  >>> slow_submission.open(
+  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     '+pots/evolution-2.2/es/14/+translate')
+  >>> slow_submission.url
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate'
+  >>> import transaction
+  >>> transaction.commit()
+
+Now, we get another instance that will be submitted before 'slow_submission'.
+
+  >>> fast_submission = Browser()
+  >>> fast_submission.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+  >>> fast_submission.open(
+  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     '+pots/evolution-2.2/es/14/+translate')
+  >>> fast_submission.url
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate'
+
+Let's change the translation.
+
+  >>> fast_submission.getControl(
+  ...     name='msgset_143_es_translation_0_new_checkbox').value = True
+  >>> fast_submission.getControl(
+  ...     name='msgset_143_es_translation_0_new').value = u'blah'
+
+And submit it.
+
+  >>> fast_submission.getControl(name='submit_translations').click()
+  >>> fast_submission.url
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/15/+translate'
+
+Now, we check that the translation we are going to add is not yet in the
+form, so we can check later that it's added as a suggestion:
+
+  >>> 'foo!!' in fast_submission.contents
+  False
+
+Now, we update the translation in slow_submission.
+
+  >>> slow_submission.getControl(
+  ...     name='msgset_143_es_translation_0_new_checkbox').value = True
+  >>> slow_submission.getControl(
+  ...     name='msgset_143_es_translation_0_new').value = u'foo!!'
+
+We submit it
+
+  >>> slow_submission.getControl(name='submit_translations').click()
+  >>> slow_submission.url
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate'
+  >>> for tag in find_tags_by_class(slow_submission.contents, 'error'):
+  ...     print tag
+  <div class="error message">There is an error in the translation you provided. Please correct it before continuing.</div>
+  <tr class="error">
+    <th colspan="3">
+      <strong>Error in Translation:</strong>
+    </th>
+    <td>
+    </td><td>
+      <div>
+        Somebody else changed this translation since you started. To avoid
+        accidentally reverting work done by others, we added your translations
+        as suggestions, so please review current values.
+      </div>
+    </td>
+  </tr>
+
+Also, we should still have previous translation:
+
+  >>> (msgid_number, msgid, translation) = getMessageValues(
+  ...     slow_submission.contents, has_errors=True)
+  >>> print msgid_number
+  14.
+  <a name="14">
+    <input type="hidden" name="msgset_143" />
+  </a>
+  >>> print msgid
+  The location and hierarchy of the Evolution contact...
+  >>> translation
+  'blah'
+
+But also, the new one should appear in the form.
+
+  >>> 'foo!!' in slow_submission.contents
+  True

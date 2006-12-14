@@ -12,11 +12,14 @@ __all__ = [
     'BaseTranslationView',
     ]
 
+import datetime
 import re
 import operator
 import gettextpo
+import pytz
 from xml.sax.saxutils import escape as xml_escape
 
+from zope.app import datetimeutils
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.utility import setUpWidgets
 from zope.app.form.browser import DropdownWidget
@@ -30,7 +33,7 @@ from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     UnexpectedFormData, IPOMsgSet, TranslationConstants, NotFoundError,
     ILanguageSet, IPOFileAlternativeLanguage, IPOMsgSetSuggestions,
-    IPOSubmissionSet)
+    IPOSubmissionSet, TranslationConflict)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ApplicationMenu, Link, LaunchpadView,
     canonical_url)
@@ -388,7 +391,22 @@ class BaseTranslationView(LaunchpadView):
         self.start = self.batchnav.start
         self.size = self.batchnav.currentBatch().size
 
-        if self.request.method == 'POST' and self.user is not None:
+        if (self.request.method == 'POST'):
+            try:
+                # Try to get the timestamp when the submitted form was
+                # created. We use it to detect whether someone else updated
+                # the translation we are working on in the elapsed time
+                # between the form loading and its later submission.
+                self.lock_timestamp = datetimeutils.parseDatetimetz(
+                    self.request.form.get('lock_timestamp', u''))
+            except datetimeutils.DateTimeError:
+                # invalid format. Either we don't have the timestamp in the
+                # submitted form or it has the wrong format.
+                raise UnexpectedFormData, (
+                    'We didn\'t find the timestamp that tells us when was'
+                    ' generated the submitted form.')
+
+            # Check if this is really the form we are listening for..
             if self.request.form.get("submit_translations"):
                 # Check if this is really the form we are listening for..
                 if self._submitTranslations():
@@ -399,6 +417,10 @@ class BaseTranslationView(LaunchpadView):
             else:
                 # Check and do any copy request we got.
                 self._submitCopyRequest()
+        else:
+            # It's not a POST, so we should generate lock_timestamp.
+            UTC = pytz.timezone('UTC')
+            self.lock_timestamp = datetime.datetime.now(UTC)
 
         # Slave view initialization depends on _submitTranslations being
         # called, because the form data needs to be passed in to it --
@@ -509,12 +531,20 @@ class BaseTranslationView(LaunchpadView):
         is_fuzzy = self.form_posted_needsreview.get(pomsgset, False)
 
         try:
-            pomsgset.updateTranslationSet(person=self.user,
-                new_translations=translations, fuzzy=is_fuzzy, published=False)
+            pomsgset.updateTranslationSet(
+                person=self.user, new_translations=translations,
+                fuzzy=is_fuzzy, published=False,
+                lock_timestamp=self.lock_timestamp)
+        except TranslationConflict:
+            return (
+                u'Somebody else changed this translation since you started.'
+                u' To avoid accidentally reverting work done by others, we'
+                u' added your translations as suggestions, so please review'
+                u' current values.')
         except gettextpo.error, e:
             # Save the error message gettext gave us to show it to the
             # user.
-            return str(e)
+            return unicode(e)
         else:
             return None
 
