@@ -19,9 +19,7 @@ We define first a function we are going to use in this test.
   ...         else:
   ...             translation_form_soup = BeautifulSoup(browser.contents)
   ...             translation_tbody = translation_form_soup.findAll('tbody')[1]
-  ...             translation_tbody_content = translation_tbody.renderContents()
-  ...             translation_table_soup = BeautifulSoup(translation_tbody_content)
-  ...             tr_list = translation_table_soup.findAll('tr')
+  ...             tr_list = translation_tbody.findAll('tr')
   ...             msgset_searched = '"msgset_%d"' % msgset_id
   ...             if msgset_id in (137, 142):
   ...                 translation_index = 1
@@ -35,7 +33,8 @@ We define first a function we are going to use in this test.
   ...                 if msgset_searched in str(tr_list[index]):
   ...                     tr_translation = tr_list[index + translation_index]
   ...                     td_ignore, td_translation = tr_translation('td')
-  ...                     print (msgset_id, td_translation.renderContents())
+  ...                     print "%s: '%s'" % (msgset_id,
+  ...                         td_translation.renderContents().strip())
   ...                     break
 
 Let's see the list of untranslated messsages that the pofile has with the
@@ -43,47 +42,49 @@ first batch of entries:
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
   >>> browser.open(
-  ...     'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=untranslated')
+  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/'
+  ...     'evolution-2.2/es/+translate?show=untranslated')
   >>> browser.url
-  'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=untranslated'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=untranslated'
 
   >>> print_shown_messages(browser)
-  (133, '\n          (no translation yet)\n        ')
-  (135, '\n          (no translation yet)\n        ')
-  (136, '\n          (no translation yet)\n        ')
-  (137, '\n          (no translation yet)\n        ')
-  (138, '\n          (no translation yet)\n        ')
-  (139, '\n          (no translation yet)\n        ')
-  (140, '\n          (no translation yet)\n        ')
-  (141, '\n          (no translation yet)\n        ')
-  (142, '\n          (no translation yet)\n        ')
-  (148, '\n          (no translation yet)\n        ')
+  133: '(no translation yet)'
+  135: '(no translation yet)'
+  136: '(no translation yet)'
+  137: '(no translation yet)'
+  138: '(no translation yet)'
+  139: '(no translation yet)'
+  140: '(no translation yet)'
+  141: '(no translation yet)'
+  142: '(no translation yet)'
+  148: '(no translation yet)'
 
 The set of messages that are untranslated in the second batch:
 
   >>> browser.getLink('Next').click()
   >>> browser.url
-  'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=untranslated&start=10'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=untranslated&start=10'
 
   >>> print_shown_messages(browser)
-  (149, '\n          (no translation yet)\n        ')
-  (150, '\n          (no translation yet)\n        ')
-  (151, '\n          (no translation yet)\n        ')
+  149: '(no translation yet)'
+  150: '(no translation yet)'
+  151: '(no translation yet)'
 
 Now, we are going to select the amount of entries that need to be reviewed.
 
   >>> browser.open(
-  ...     'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=need_review')
+  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/'
+  ...     'evolution-2.2/es/+translate?show=need_review')
   >>> browser.url
-  'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=need_review'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=need_review'
 
   >>> print_shown_messages(browser)
-  (132, 'tiene ')
-  (146, '%d foo')
+  132: 'tiene'
+  146: '%d foo'
 
 We are now at the end of this template. Let's try the form submission
 to be sure that we don't redirect to a broken URL but to the first batch.
 
   >>> browser.getControl(name='submit_translations').click()
   >>> browser.url
-  'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=need_review'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=need_review'

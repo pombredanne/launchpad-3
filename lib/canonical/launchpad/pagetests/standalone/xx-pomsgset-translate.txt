@@ -149,17 +149,14 @@ First what we represent in the form when there is no translation:
 
   >>> (msgid_number, msgid, translation) = getMessageValues(browser.contents)
   >>> print msgid_number
-  <BLANKLINE>
-      13.
-      <a name="13">
-  <input type="hidden" name="msgset_142" />
+  13.
+  <a name="13">
+    <input type="hidden" name="msgset_142" />
   </a>
   >>> print msgid
   Migrating `<code>%s</code>':
   >>> print translation
-  <BLANKLINE>
-            (no translation yet)
-  <BLANKLINE>
+  (no translation yet)
 
 And also, we don't get anyone as the Last translator because there is no
 translation at all ;-)
@@ -193,17 +190,14 @@ The message is still without translation:
 
   >>> (msgid_number, msgid, translation) = getMessageValues(browser.contents, has_errors=True)
   >>> print msgid_number
-  <BLANKLINE>
-      13.
-      <a name="13">
-  <input type="hidden" name="msgset_142" />
+  13.
+  <a name="13">
+    <input type="hidden" name="msgset_142" />
   </a>
   >>> print msgid
   Migrating `<code>%s</code>':
   >>> print translation
-  <BLANKLINE>
-            (no translation yet)
-  <BLANKLINE>
+  (no translation yet)
 
 And now a good submit.
 
@@ -228,10 +222,9 @@ Check that the message #13 has the new value we submitted.
 
   >>> (msgid_number, msgid, translation) = getMessageValues(browser.contents)
   >>> print msgid_number
-  <BLANKLINE>
-      13.
-      <a name="13">
-  <input type="hidden" name="msgset_142" />
+  13.
+  <a name="13">
+    <input type="hidden" name="msgset_142" />
   </a>
   >>> print msgid
   Migrating `<code>%s</code>':

@@ -10,9 +10,7 @@ interested on doesn't have any translation.
   ...     from BeautifulSoup import BeautifulSoup
   ...     translation_form_soup = BeautifulSoup(content)
   ...     translation_tbody = translation_form_soup.findAll('tbody')[1]
-  ...     translation_tbody_content = translation_tbody.renderContents()
-  ...     translation_table_soup = BeautifulSoup(translation_tbody_content)
-  ...     tr_list = translation_table_soup.findAll('tr')
+  ...     tr_list = translation_tbody.findAll('tr')
   ...     tr_english_msgid = tr_list[0]
   ...     td_ignore, td_id, td_ignore, td_msgid = (
   ...         tr_english_msgid('td'))
@@ -48,21 +46,16 @@ has no translations at all.
   >>> (msgid_number, msgid, translation_singular, translation_plural) = (
   ...     getMessageValues(user_browser.contents))
   >>> print msgid_number
-  <BLANKLINE>
-      21.
-      <a name="21">
+  21.
+  <a name="21">
     <input type="hidden" name="msgset_150" />
-    </a>
+  </a>
   >>> print msgid
   Found <code>%i</code> invalid file.
   >>> print translation_singular
-  <BLANKLINE>
-            (no translation yet)
-  <BLANKLINE>
+  (no translation yet)
   >>> print translation_plural
-  <BLANKLINE>
-            (no translation yet)
-  <BLANKLINE>
+  (no translation yet)
 
 We are going to submit now translations for the singular and plural forms.
 We also need to set the checkbox to True so the submit takes care of that
@@ -128,18 +121,13 @@ Also, we can see that the message has no active translation yet:
   >>> (msgid_number, msgid, translation_singular, translation_plural) = (
   ...     getMessageValues(user_browser.contents, has_errors=True))
   >>> print msgid_number
-  <BLANKLINE>
-      21.
-      <a name="21">
+  21.
+  <a name="21">
     <input type="hidden" name="msgset_150" />
-    </a>
+  </a>
   >>> print msgid
   Found <code>%i</code> invalid file.
   >>> print translation_singular
-  <BLANKLINE>
-            (no translation yet)
-  <BLANKLINE>
+  (no translation yet)
   >>> print translation_plural
-  <BLANKLINE>
-            (no translation yet)
-  <BLANKLINE>
+  (no translation yet)
