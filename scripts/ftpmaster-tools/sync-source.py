@@ -855,21 +855,21 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
     (old_cwd, tmpdir) = extract_source(dsc_filename)
     
     # Get the upstream version
-    sane_version = dak_utils.re_no_epoch.sub('', dsc["version"])
-    if re_strip_revision.search(sane_version):
-        version_minus_epoch = re_strip_revision.sub('', sane_version)
+    version_minus_epoch = dak_utils.re_no_epoch.sub('', dsc["version"])
+    if re_strip_revision.search(version_minus_epoch):
+        base_version = re_strip_revision.sub('', version_minus_epoch)
     else:
-        version_minus_epoch = sane_version
+        base_version = version_minus_epoch
 
     # Ensure the changelog file exists
-    changelog_filename = "%s-%s/debian/changelog" % (dsc["source"], version_minus_epoch)
+    changelog_filename = "%s-%s/debian/changelog" % (dsc["source"], base_version)
 
     # Parse it and then adapt it for .changes
     (changelog, urgency, closes) = parse_changelog(changelog_filename, previous_version)
     changelog = fix_changelog(changelog)
 
     # Parse the control file
-    control_filename = "%s-%s/debian/control" % (dsc["source"], version_minus_epoch)
+    control_filename = "%s-%s/debian/control" % (dsc["source"], base_version)
     (section, priority, description) = parse_control(control_filename)
 
     cleanup_source(tmpdir, old_cwd, dsc)
@@ -881,7 +881,7 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
     # XXX Soyuz wants an unsigned changes
     #sign_changes(changes, dsc)
     output_filename = (
-        "%s_%s_source.changes" % (dsc["source"], sane_version))
+        "%s_%s_source.changes" % (dsc["source"], version_minus_epoch))
 
     filehandle = open(output_filename, 'w')
     # XXX The additional '\n' is to work around a bug in parsing
