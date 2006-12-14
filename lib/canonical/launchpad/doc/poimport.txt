@@ -194,7 +194,7 @@ By default, we got a safe path to prevent collisions with other IPOFile.
     >>> pofile.path
     u'po/firefox-cy.po'
 
-Let's override the default path with the one we know it's the good one.
+Let's override the default good path with one we know is the right one.
 
     >>> pofile.path = u'po/cy.po'
 
