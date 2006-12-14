@@ -33,3 +33,75 @@ branch registered for this product.
   <!DOCTYPE...
   ...There are no branches registered for...
 
+== Branch Filtering ==
+
+Branches shown for products are filterable in the same way that 
+branches for people are filterable (see xx-person-branches.txt).
+
+  >>> browser.open('http://launchpad.dev/products/gnome-terminal/+branches')
+  >>> from BeautifulSoup import BeautifulSoup
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> table = str(soup.find('table', { 'id':'branchtable' } ))
+  >>> status_values = ['New', 'Experimental', 'Development', 
+  ... 'Mature', 'Merged', 'Abandoned']
+  >>> for status in status_values:
+  ...   status in table
+  ...
+  True
+  True
+  True
+  True
+  False
+  False
+
+And to look at all branches, select 'Any Status'
+
+  >>> browser.getControl(name='field.lifecycle').displayValue = ['Any Status']
+  >>> browser.getControl('Filter').click()
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> table = str(soup.find('table', { 'id':'branchtable' } ))
+  >>> for status in status_values:
+  ...   status in table
+  ...
+  True
+  True
+  True
+  True
+  True
+  True
+
+Selecting an individual lifecycle status from the select control 
+will cause only branches with that status to be listed.
+
+  >>> browser.getControl(name='field.lifecycle').displayValue = ['Abandoned']
+  >>> browser.getControl('Filter').click()
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> table = str(soup.find('table', { 'id':'branchtable' } ))
+  >>> for status in status_values:
+  ...   status in table
+  ...
+  False
+  False
+  False
+  False
+  False
+  True
+
+
+http://code.launchpad.dev/products/firefox/+branches?field.lifecycle=Mature
+
+
+If the product does have branches, but they are not visible with
+the current filter, the table is shown, and a (hopefully)
+helpful message supplied.
+
+  >>> browser.open('http://code.launchpad.dev/'
+  ...   'products/firefox/+branches?field.lifecycle=Mature')
+  >>> browser.getControl(name='field.lifecycle').displayValue
+  ['Mature']
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> print str(soup.find('table', { 'id':'branchtable' } ))
+  <table...
+  ...There are branches registered for firefox but none of them match the
+  current filter criteria for this page. Try filtering on "Any Status"...
+  ...</table>

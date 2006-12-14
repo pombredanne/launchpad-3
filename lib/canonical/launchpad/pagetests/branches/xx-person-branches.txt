@@ -84,3 +84,110 @@ And we can load the subscribed branches page.
   >>> link.click()
   >>> browser.url
   'http://launchpad.dev/people/name12/+subscribedbranches'
+
+== Branch filtering ==
+
+When the branches for a person is first loaded, only the 'Current'
+branches are shown.  Current branches are those that have a 
+lifecycle status of New, Development, Experimental or Mature.
+Merged or Abandoned branches are not shown.
+
+  >>> browser.open('http://launchpad.dev/people/name12/+branches')
+  >>> from BeautifulSoup import BeautifulSoup
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> table = str(soup.find('table', { 'id':'branchtable' } ))
+  >>> status_values = ['New', 'Experimental', 'Development', 
+  ... 'Mature', 'Merged', 'Abandoned']
+  >>> for status in status_values:
+  ...   status in table
+  ...
+  True
+  True
+  True
+  True
+  False
+  False
+
+There is a select control that is used to define which
+subset of the branches are shown.
+  
+  >>> filter_control = browser.getControl(name='field.lifecycle')
+  >>> filter_control
+  <ListControl name='field.lifecycle' type='select'>
+  >>> filter_control.value
+  ['New, Experimental, Development or Mature']
+  >>> filter_control.displayOptions
+  ['New, Experimental, Development or Mature', 'Any Status', 'New', 'Experimental', 'Development', 'Mature', 'Merged', 'Abandoned']
+    
+Changing the value of the select control will (in a javascript
+enabled browser) cause the form to be submitted automatically.
+For browsers with javascript disabled, there is a form submit
+button.
+
+  >>> filter_control.displayValue = ['Any Status']
+  >>> browser.getControl('Filter').click()
+
+Now all types of branches should be shown.
+
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> table = str(soup.find('table', { 'id':'branchtable' } ))
+  >>> for status in status_values:
+  ...   status in table
+  ...
+  True
+  True
+  True
+  True
+  True
+  True
+
+Selecting an individual lifecycle status from the select control 
+will cause only branches with that status to be listed.
+
+  >>> browser.getControl(name='field.lifecycle').displayValue = ['Abandoned']
+  >>> browser.getControl('Filter').click()
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> table = str(soup.find('table', { 'id':'branchtable' } ))
+  >>> for status in status_values:
+  ...   status in table
+  ...
+  False
+  False
+  False
+  False
+  False
+  True
+
+If anyone tries to hack the URL, and put in an invalid
+status value, it will default to current branches.
+
+  >>> browser.open(
+  ...  'http://launchpad.dev/people/name12/+branches?field.lifecycle=Fubar')
+  >>> browser.getControl(name='field.lifecycle').displayValue
+  ['New, Experimental, Development or Mature']
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> table = str(soup.find('table', { 'id':'branchtable' } ))
+  >>> for status in status_values:
+  ...   status in table
+  ...
+  True
+  True
+  True
+  True
+  False
+  False
+
+If the user does have branches, but they are not visible with
+the current filter, the table is shown, and a (hopefully)
+helpful message supplied.
+
+  >>> browser.open('http://code.launchpad.dev/'
+  ...   'people/launchpad/+branches?field.lifecycle=Mature')
+  >>> browser.getControl(name='field.lifecycle').displayValue
+  ['Mature']
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> print str(soup.find('table', { 'id':'branchtable' } ))
+  <table...
+  ...There are branches registered for launchpad but none of them match the
+  current filter criteria for this page. Try filtering on "Any Status"...
+  ...</table>
