@@ -859,12 +859,12 @@ def notify_join_request(event):
     tm = getUtility(ITeamMembershipSet).getByPersonAndTeam(user, team)
     assert tm is not None
     to_addrs = team.getTeamAdminsEmailAddresses()
-    replacements = {'browsername': user.browsername,
-                    'name': user.name,
-                    'teamname': team.browsername,
+    replacements = {'person_name': "%s (%s)" % (user.browsername, user.name),
+                    'team_name': "%s (%s)" % (team.browsername, team.name),
                     'url': canonical_url(tm)}
     msg = get_email_template('pending-membership-approval.txt') % replacements
-    subject = "Launchpad: New %s member awaiting approval." % team.name
+    subject = (
+        "Launchpad: %s wants to be a member of %s" % (user.name, team.name))
     from_addr = config.noreply_from_address
     headers = {"Reply-To": user.preferredemail.email}
     simple_sendmail(from_addr, to_addrs, subject, msg, headers=headers)

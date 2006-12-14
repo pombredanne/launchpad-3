@@ -25,6 +25,10 @@ def flag_expired_memberships():
         dbuser=config.expiredmembershipsflagger.dbuser, implicitBegin=False)
 
     ztm.begin()
+    # XXX: Need to find out why this thing is not sending status change
+    # notification emails.
+    # XXX: Should probably use a celebrity here to indicate that it's not a
+    # user who's flagging requests as expired.
     for membership in getUtility(ITeamMembershipSet).getMembershipsToExpire():
         membership.setStatus(TeamMembershipStatus.EXPIRED)
     ztm.commit()

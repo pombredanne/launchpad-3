@@ -110,6 +110,10 @@ class TeamMembership(SQLBase):
         if self.person != self.reviewer and self.status != proposed:
             self._sendStatusChangeNotification(old_status)
 
+    def _getStatusChangeNotificationSubject(self, to_admins=False):
+        return ('Launchpad: Membership change: %(member)s in %(team)s'
+                % {'member': self.person.name, 'team': self.team.name})
+
     def _sendStatusChangeNotification(self, old_status):
         """Send a status change notification to all team admins and the
         member whose membership's status changed.
@@ -127,58 +131,49 @@ class TeamMembership(SQLBase):
 
         team = self.team
         member = self.person
+        reviewer = self.reviewer
 
-        reviewer_and_comment_line = ''
-        comment_line = ''
-        if self.reviewer:
-            reviewer_and_comment_line = (
-                'The change was made by %s' % self.reviewer.displayname)
-            if self.reviewercomment:
-                comment_line = 'the comment for it was:'
-                comment = self.reviewercomment
-            else:
-                comment_line = 'no comment was given for the change'
-                comment = ''
-            reviewer_and_comment_line += ' and %s' % comment_line
+        if reviewer is not None:
+            reviewer_name = '%s (%s)' % (reviewer.displayname, reviewer.name)
+        else:
+            # The user himself changed his membership.
+            reviewer_name = 'the user himself'
 
-        # self.reviewercomment may be None, and in that case we don't want to
-        # have it on the email.
-        comment = self.reviewercomment or ''
+        if self.reviewercomment:
+            comment = ("Comment: \n%s\n\n" % self.reviewercomment.strip())
+        else:
+            comment = ""
 
-        team_name = '"%s" (%s)' % (team.name, team.displayname)
-        admins_subject = (
-            'Launchpad: Membership status change on team %s'
-            % team.displayname)
-        admins_template = get_email_template(
-            'membership-statuschange-admins.txt')
-        admins_msg = admins_template % {
-            'member': member.displayname,
-            'team': team_name,
+        replacements = {
+            'member_name': '%s (%s)' % (member.displayname, member.name),
+            'team_name': '%s (%s)' % (team.displayname, team.name),
             'old_status': old_status.title,
             'new_status': new_status.title,
-            'reviewer_line': reviewer_and_comment_line,
+            'reviewer_name': reviewer_name,
             'comment': comment}
 
         if admins_emails:
-            # XXX: This is just a quick hack; I'll fix it before asking for a
-            # review.
-            simple_sendmail(from_addr, admins_emails, admins_subject, admins_msg)
+            admins_subject = self._getStatusChangeNotificationSubject(
+                to_admins=True)
+            admins_template = get_email_template(
+                'membership-statuschange-impersonal.txt')
+            admins_msg = admins_template % replacements
+            #import pdb; pdb.set_trace()
+            simple_sendmail(
+                from_addr, admins_emails, admins_subject, admins_msg)
 
         # The member can be a team without any members, and in this case we
         # won't have a single email address to send this notification to.
         if member_email:
-            member_subject = (
-                'Launchpad: Your membership status on team %s was changed'
-                % team.displayname)
-            member_template = get_email_template(
-                'membership-statuschange-member.txt')
-            member_msg = member_template % {
-                'team': team_name,
-                'old_status': old_status.title,
-                'new_status': new_status.title,
-                'comment_line': comment_line.capitalize(),
-                'comment': comment}
-            simple_sendmail(from_addr, member_email, member_subject, member_msg)
+            member_subject = self._getStatusChangeNotificationSubject()
+            if member.isTeam():
+                template = 'membership-statuschange-impersonal.txt'
+            else:
+                template = 'membership-statuschange-personal.txt'
+            member_template = get_email_template(template)
+            member_msg = member_template % replacements
+            simple_sendmail(
+                from_addr, member_email, member_subject, member_msg)
 
 
 class TeamMembershipSet:
