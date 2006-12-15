@@ -1929,10 +1929,10 @@ class NascentUpload:
             self.dsc_contents['binary'])
         # Standards version do not apply for installer uploads
         # see bug #75874 for further information.
-        try:
+        if self.dsc_contents.has_key('standards-version'):
             arg_dsc_standards_version = guess_encoding(
                 self.dsc_contents['standards-version'])
-        except KeyError:
+        else:
             arg_dsc_standards_version = None
 
         self.policy.sourcepackagerelease = (
