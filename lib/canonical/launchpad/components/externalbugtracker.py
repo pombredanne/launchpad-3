@@ -245,8 +245,9 @@ class Bugzilla(ExternalBugTracker):
         else:
             resolution = ''
 
-        if remote_status in ['ASSIGNED', 'ON_DEV', 'FAILS_QA']:
+        if remote_status in ['ASSIGNED', 'ON_DEV', 'FAILS_QA', 'STARTED']:
             # FAILS_QA, ON_DEV: bugzilla.redhat.com
+            # STARTED: OOO Issuezilla
            malone_status = BugTaskStatus.INPROGRESS
         elif remote_status in ['NEEDINFO', 'NEEDINFO_REPORTER',
                                'WAITING', 'SUSPENDED']:

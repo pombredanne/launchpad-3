@@ -556,6 +556,12 @@ ins {
     font-weight: normal;
 }
 
+.suggestion {
+    color: #76797c;
+    font-size: 50%;
+    font-weight: normal;
+}
+
 .listingBar {
     background-color: #dee7ec;
     border-color: #8cacbb;

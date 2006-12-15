@@ -155,30 +155,3 @@ convert_newlines_to_web_form
     u'foo\r\nbar'
     >>> convert_newlines_to_web_form(u'foo\rbar')
     u'foo\r\nbar'
-
-
-count_lines
------------
-
-    >>> from canonical.launchpad.browser.pomsgset import count_lines
-    >>> count_lines("foo")
-    1
-    >>> count_lines("123456789a123456789a123456789a1234566789a123456789a")
-    2
-    >>> count_lines("123456789a123456789a123456789a1234566789a123456789")
-    1
-    >>> count_lines("a\nb")
-    2
-    >>> count_lines("a\nb\n")
-    3
-    >>> count_lines("a\nb\nc")
-    3
-    >>> count_lines("123456789a123456789a123456789a\n1234566789a123456789a")
-    2
-    >>> count_lines("123456789a123456789a123456789a123456789a123456789a1\n1234566789a123456789a123456789a")
-    3
-    >>> count_lines("123456789a123456789a123456789a123456789a123456789a123456789a\n1234566789a123456789a123456789a")
-    3
-    >>> count_lines("foo bar\n")
-    2
-

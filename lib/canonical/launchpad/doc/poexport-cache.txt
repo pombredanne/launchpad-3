@@ -50,8 +50,12 @@ Now let's add a translation to the PO file.
     >>> msgset = pofile.getPOMsgSet(msgid)
     >>> print msgset.active_texts
     [None]
+
+    >>> import datetime
+    >>> import pytz
+    >>> UTC = pytz.timezone('UTC')
     >>> msgset.updateTranslationSet(person, {0: 'Blah.'}, fuzzy=False,
-    ...     published=False)
+    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
     >>> print msgset.active_texts
     [u'Blah.']
 
