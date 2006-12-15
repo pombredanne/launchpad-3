@@ -72,12 +72,9 @@ The set of things that should be hidden in this case are:
   >>> for tag in find_tags_by_class(browser.contents, 'fuzzy-checkbox'):
   ...     print tag
   <label class="fuzzy-checkbox">
-  <input type="checkbox" value="fuzzy" disabled="disabled" name="msgset_134_es_needsreview" />
-  <BLANKLINE>
-              Someone should review this translation
-  <BLANKLINE>
-  <BLANKLINE>
-          </label>
+    <input type="checkbox" value="fuzzy" disabled="disabled" name="msgset_134_es_needsreview" />
+    Someone should review this translation
+  </label>
 
 
 To be completely sure that previous test is working because the form is
@@ -112,12 +109,9 @@ And now, we can see that the tags exist:
   >>> for tag in find_tags_by_class(browser.contents, 'fuzzy-checkbox'):
   ...     print tag
   <label class="fuzzy-checkbox">
-  <input type="checkbox" value="fuzzy" name="msgset_134_es_needsreview" />
-  <BLANKLINE>
-              Someone should review this translation
-  <BLANKLINE>
-  <BLANKLINE>
-          </label>
+    <input type="checkbox" value="fuzzy" name="msgset_134_es_needsreview" />
+    Someone should review this translation
+  </label>
 
 
 Now, we are going to test common parts of the navigation.
