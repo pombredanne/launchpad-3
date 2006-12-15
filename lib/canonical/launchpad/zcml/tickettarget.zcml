@@ -7,25 +7,27 @@
 
 <facet facet="support">
 
-  <browser:pages
-    for="canonical.launchpad.interfaces.IHasTickets"
-    class="canonical.launchpad.browser.TicketTargetView"
-    permission="zope.Public">
-    <browser:page
-      name="+tickets"
-      template="../templates/tickettarget-tickets.pt" />
-  </browser:pages>
-
   <browser:page
     for="canonical.launchpad.interfaces.ITicketTarget"
     class="canonical.launchpad.browser.SearchTicketsView"
     name="+tickets"
-    permission="zope.Public"
-    template="../templates/ticket-listing.pt" />
+    permission="zope.Public" />
 
   <browser:page
-    for="canonical.launchpad.interfaces.IHasTickets"
-    class="canonical.launchpad.browser.TicketTargetView"
+    for="canonical.launchpad.interfaces.ITicketTarget"
+    class="canonical.launchpad.browser.TicketTargetSearchMyTicketsView"
+    name="+mytickets"
+    permission="launchpad.AnyPerson" />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITicketTarget"
+    class="canonical.launchpad.browser.TicketTargetSearchNeedAttentionView"
+    name="+need-attention"
+    permission="launchpad.AnyPerson" />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITicketTarget"
+    class="canonical.launchpad.browser.TicketTargetLatestTicketsView"
     name="+portlet-latesttickets"
     permission="zope.Public"
     template="../templates/tickettarget-portlet-latesttickets.pt"
@@ -49,6 +51,10 @@
     for="canonical.launchpad.interfaces.ITicketTarget"
     class="canonical.launchpad.browser.TicketAddView"
     permission="launchpad.AnyPerson" />
+
+  <browser:menus
+    module="canonical.launchpad.browser"
+    classes="TicketTargetSupportMenu" />
 
 </facet>
 

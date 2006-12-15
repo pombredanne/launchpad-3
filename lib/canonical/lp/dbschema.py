@@ -35,6 +35,7 @@ __all__ = (
 'BranchLifecycleStatus',
 'BranchReviewStatus',
 'BugBranchStatus',
+'BugNominationStatus',
 'BugTaskStatus',
 'BugAttachmentType',
 'BugTrackerType',
@@ -89,6 +90,8 @@ __all__ = (
 'SprintSpecificationStatus',
 'SSHKeyType',
 'TextDirection',
+'TicketAction',
+'TicketParticipation',
 'TicketPriority',
 'TicketSort',
 'TicketStatus',
@@ -356,6 +359,18 @@ class Item:
 
     def __hash__(self):
         return self.value
+
+    # These properties are provided as a way to get at the other
+    # schema items and name from a security wrapped Item instance when
+    # there are no security declarations for the DBSchema class.  They
+    # are used by the enumvalue TALES expression.
+    @property
+    def schema_items(self):
+        return self.schema.items
+
+    @property
+    def schema_name(self):
+        return self.schema.__name__
 
 # TODO: make a metaclass for dbschemas that looks for ALLCAPS attributes
 #       and makes the introspectible.
@@ -1655,6 +1670,45 @@ class SprintSpecificationStatus(DBSchema):
         """)
 
 
+# Enumeration covered by bug 66633:
+#   Need way to define enumerations outside of dbschema
+class TicketParticipation(DBSchema):
+    """The different ways a person can be involved in a ticket.
+
+    This enumeration is part of the ITicketActor.searchTickets() API.
+    """
+
+    OWNER = Item(10, """
+        Owner
+
+        The person created the ticket.
+        """)
+
+    SUBSCRIBER = Item(15, """
+        Subscriber
+
+        The person subscribed to the ticket.
+        """)
+
+    ASSIGNEE = Item(20, """
+        Assignee
+
+        The person is assigned to the ticket.
+        """)
+
+    COMMENTER = Item(25, """
+        Commenter
+
+        The person commented on the ticket.
+        """)
+
+    ANSWERER = Item(30, """
+        Answerer
+
+        The person answered the ticket.
+        """)
+
+
 class TicketPriority(DBSchema):
     """The Priority with a Support Request must be handled.
 
@@ -1696,16 +1750,80 @@ class TicketPriority(DBSchema):
         """)
 
 
+class TicketAction(DBSchema):
+    """An enumeration of the possible actions done on a ticket.
+
+    This enumeration is used to tag the action done by a user with
+    each TicketMessage. Most of these action indicates a status change
+    on the ticket.
+    """
+
+    REQUESTINFO = Item(10, """
+        Request for more information
+
+        This message asks for more information about the support
+        request.
+        """)
+
+    GIVEINFO = Item(20, """
+        Give more information
+
+        In this message, the submitter provides more information about the
+        request.
+        """)
+
+    COMMENT = Item(30, """
+        Comment
+
+        User commented on the message. This is use for example for messages
+        added to a ticket in the SOLVED state.
+        """)
+
+    ANSWER = Item(35, """
+        Answer
+
+        This message provides an answer to the support request.
+        """)
+
+    CONFIRM = Item(40, """
+        Confirm
+
+        This message confirms that an answer solved the problem.
+        """)
+
+    REJECT = Item(50, """
+        Reject
+
+        This message rejects a support request as invalid.
+        """)
+
+    EXPIRE = Item(70, """
+        Expire
+
+        Automatic message created when the ticket is expired.
+        """)
+
+    REOPEN = Item(80, """
+        Reopen
+
+        Message from the submitter that reopens the ticket with more
+        information concerning the request.
+        """)
+
+    SETSTATUS = Item(90, """
+        Change status
+
+        Message from an administrator that explain why the ticket status
+        was changed.
+        """)
+
+# Enumeration covered by bug 66633:
+#   Need way to define enumerations outside of dbschema
 class TicketSort(DBSchema):
-    """An enumveration of the valid ticket search sort order.
+    """An enumeration of the valid ticket search sort order.
 
     This enumeration is part of the ITicketTarget.searchTickets() API. The
     titles are formatted for nice display in browser code.
-
-    XXX flacoste 2006/08/29 This has nothing to do with database code and
-    is really part of the ITicketTarget definitions. We should find a way
-    to define enumerations in interface code and generate easily,
-    when required, the database implementation code.
     """
 
     RELEVANCY = Item(5, """
@@ -1717,7 +1835,8 @@ class TicketSort(DBSchema):
     STATUS = Item(10, """
     by status
 
-    Sort tickets by status: Open, Answered, Rejected.
+    Sort tickets by status: Open, Needs information, Answered, Solved,
+    Expired, Invalid.
 
     NEWEST_FIRST should be used as a secondary sort key.
     """)
@@ -1738,27 +1857,54 @@ class TicketSort(DBSchema):
 class TicketStatus(DBSchema):
     """The current status of a Support Request
 
-    This enum tells us the current status of the support ticket. The
-    request has a simple lifecycle, from open to answered or rejected.
+    This enum tells us the current status of the support ticket.
+
+    The lifecycle of a support request is documented in
+    https://help.launchpad.net/SupportRequestLifeCycle, so remember
+    to update that document for any pertinent changes.
     """
 
-    OPEN = Item(10,
-        """Open
+    OPEN = Item(10, """
+        Open
 
-        There might be someone that answered the support request, but
-        the submitter hasn't accepted the answer yet.
+        The request is waiting for an answer. This could be a new request
+        or a request where the given answer was refused by the submitter.
         """)
 
-    ANSWERED = Item(20,
-        """Answered
+    NEEDSINFO = Item(15, """
+        Needs information
 
-        The submitter of the support request has accepted an answer.
+        A user requested more information from the submitter. The request
+        will be moved back to the OPEN state once the submitter provides the
+        answer.
         """)
 
-    REJECTED = Item(30,
-        """Rejected
+    ANSWERED = Item(18, """
+        Answered
 
-        No acceptable answer was provided to the question.
+        An answer was given on this request. We assume that the answer
+        is the correct one. The user will post back changing the ticket's
+        status back to OPEN if that is not the case.
+        """)
+
+    SOLVED = Item(20, """
+        Solved
+
+        The submitter confirmed that an answer solved his problem.
+        """)
+
+    EXPIRED = Item(25, """
+        Expired
+
+        The ticket has been expired after 15 days without comments in the
+        OPEN or NEEDSINFO state.
+        """)
+
+    INVALID = Item(30, """
+        Invalid
+
+        This ticket isn't a support request. It could be a duplicate request,
+        spam or anything that should not appear in the support tracker.
         """)
 
 
@@ -2562,6 +2708,34 @@ class BranchReviewStatus(DBSchema):
         """)
 
 
+class BugNominationStatus(DBSchema):
+    """Bug Nomination Status
+
+    The status of the decision to fix a bug in a specific release.
+    """
+
+    PROPOSED = Item(10, """
+        Nominated
+
+        This nomination hasn't yet been reviewed, or is still under
+        review.
+        """)
+
+    APPROVED = Item(20, """
+        Approved
+
+        The release management team has approved fixing the bug for this
+        release.
+        """)
+
+    DECLINED = Item(30, """
+        Declined
+
+        The release management team has declined fixing the bug for this
+        release.
+        """)
+
+
 class BugTaskStatus(DBSchema):
     """Bug Task Status
 
@@ -2786,30 +2960,6 @@ class RevisionControlSystems(DBSchema):
         in the CVS design.
         """)
 
-    ARCH = Item(3, """
-        The Arch Revision Control System
-
-        An open source revision control system that combines truly
-        distributed branching with advanced merge algorithms. This
-        removes the scalability problems of centralised revision
-        control.
-        """)
-
-    PACKAGE = Item(4, """
-        Package
-
-        DEPRECATED DO NOT USE
-        """)
-
-
-    BITKEEPER = Item(5, """
-        Bitkeeper
-
-        A commercial revision control system that, like Arch, uses
-        distributed branches to allow for faster distributed
-        development.
-        """)
-
 
 class RosettaTranslationOrigin(DBSchema):
     """Rosetta Translation Origin
@@ -2964,6 +3114,15 @@ class LoginTokenType(DBSchema):
 
         A user has found an unvalidated profile in Launchpad and is trying
         to claim it.
+        """)
+
+    NEWPROFILE = Item(9, """
+        A user created a new Launchpad profile for another person.
+
+        Any Launchpad user can create new "placeholder" profiles to represent
+        people who don't use Launchpad. The person that a given profile
+        represents has to first use the token to finish the registration
+        process in order to be able to login with that profile.
         """)
 
 
@@ -3431,6 +3590,12 @@ class ShipItDistroRelease(DBSchema):
         The Dapper Drake lont-term-support release.
         """)
 
+    EDGY = Item(3, """
+        6.10 (Edgy Eft)
+
+        The Edgy Eft release.
+        """)
+
 
 class TextDirection(DBSchema):
     """The base text direction for a language."""
@@ -3481,7 +3646,7 @@ class PersonCreationRationale(DBSchema):
 
     POFILEIMPORT = Item(4, """
         This person was mentioned in a POFile imported into Rosetta.
-        
+
         When importing POFiles into Rosetta, we need to give credit for the
         translations on that POFile to its last translator, which may not
         exist in Launchpad, so we'd need to create it.
@@ -3532,3 +3697,11 @@ class PersonCreationRationale(DBSchema):
         Somebody went to the Ubuntu wiki and was directed to Launchpad to
         create an account.
         """)
+
+    USER_CREATED = Item(11, """
+        Created by a user to represent a person which does not uses Launchpad.
+
+        A user wanted to reference a person which is not a Launchpad user, so
+        he created this "placeholder" profile.
+        """)
+

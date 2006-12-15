@@ -180,7 +180,9 @@
 
 <metal:meta-master define-macro="meta-master">
 <metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
-
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"
+    tal:attributes="lang default_language|default;
+                    xml:lang default_language|default;">
 <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
     <!-- Launchpad style sheet -->
@@ -203,7 +205,7 @@
            <metal:logo define-slot="header-logo" />
            <div id="search">
             <tal:block condition="request/lp:person">
-              <form action="/+logout" class="login" method="POST">
+              <form action="/+logout" class="login" method="post">
                 Logged in as <span tal:replace="request/lp:person/displayname" />
                   &ndash;
                 <input type="submit" value="Log Out" />
@@ -212,7 +214,7 @@
 
             <tal:block condition="not: request/lp:person">
               Not logged in &#8212;
-              <a href="/">
+              <a href="/login">
                 Log In / Register
               </a>
             </tal:block>
@@ -238,4 +240,5 @@
     <metal:footer define-slot="footer" />
 
 </body>
+</html>
 </metal:meta-master>

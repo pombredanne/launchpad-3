@@ -23,6 +23,7 @@ Carlos is the one that will do the uploads.
   >>> from zope.component import getUtility
   >>> from canonical.launchpad.interfaces import IPersonSet
   >>> carlos = getUtility(IPersonSet).getByName('carlos')
+  >>> foobar = getUtility(IPersonSet).getByName('name16')
 
 Now find the po template.
 
@@ -60,8 +61,12 @@ And the fuzzy flags should also be disabled
 
 Let's add a fuzzy translation.
 
+  >>> import datetime
+  >>> import pytz
+  >>> UTC = pytz.timezone('UTC')
   >>> upstream_pomsgset.updateTranslationSet(
-  ...     carlos, { 0: u'foo' }, fuzzy=True, published=True)
+  ...     carlos, {0: u'foo'}, fuzzy=True, published=True,
+  ...     lock_timestamp=datetime.datetime.now(UTC))
 
 Now it should appear as active and as published.
 
@@ -80,7 +85,8 @@ And also, the fuzzy flag should be set in both cases.
 Now let's think that upstream removed that translation completely...
 
   >>> upstream_pomsgset.updateTranslationSet(
-  ...     carlos, { 0: u''}, fuzzy=False, published=True)
+  ...     carlos, {0: u''}, fuzzy=False, published=True,
+  ...     lock_timestamp=datetime.datetime.now(UTC))
 
 The active text should still have it as we never remove anything from Rosetta
 if upstream does it
@@ -117,7 +123,8 @@ editor for this POFile.
 
   >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
   >>> pomsgset.updateTranslationSet(
-  ...     no_priv, { 0: u'test string' }, fuzzy=False, published=False)
+  ...     no_priv, {0: u'test string'}, fuzzy=False, published=False,
+  ...     lock_timestamp=datetime.datetime.now(UTC))
 
 Now, we should have one extra suggestion.
 
@@ -135,12 +142,21 @@ And the active translation is not the one we suggested.
   >>> pomsgset.getActiveSubmission(0).potranslation.translation
   u'libreta de direcciones de Evolution'
 
-Now, carlos is going to approve that new suggestion.
+And previous reviewer was
+
+  >>> selection = pomsgset.getSelection(0)
+  >>> selection.reviewer.name
+  u'carlos'
+
+Now, Foo Bar, a translator with permissions, is going to approve that new
+suggestion.
 
   >>> pomsgset.updateTranslationSet(
-  ...     carlos, { 0: u'test string' }, fuzzy=False, published=False)
+  ...     foobar, {0: u'test string'}, fuzzy=False, published=False,
+  ...     lock_timestamp=datetime.datetime.now(UTC))
 
 We don't have any suggestion newer than the new active translation
+
   >>> suggested = pomsgset.getSuggestedSubmissions(0)
   >>> suggested.count()
   0
@@ -152,6 +168,12 @@ And the active translation is now the one from no-priv user.
   u'no-priv'
   >>> active.potranslation.translation
   u'test string'
+
+Also, we should have Foo Bar as the reviewer of that translation.
+
+  >>> selection = pomsgset.getSelection(0)
+  >>> selection.reviewer.displayname
+  u'Foo Bar'
 
 
 POMsgSet.pluralforms
@@ -188,22 +210,12 @@ the most common case:
 
   >>> print apa_dummypomsgset.pofile.language.pluralforms
   None
-  >>> print apa_dummypomsgset.pofile.pluralforms
-  None
   >>> apa_dummypomsgset.pluralforms
   2
   >>> apa_dummypomsgset.active_texts
   [None, None]
 
-We can guess the pluralforms for this language thru IPOFile.pluralforms:
-
-  >>> apa_dummypomsgset.pofile.pluralforms = 4 
-  >>> apa_dummypomsgset.pluralforms
-  4
-  >>> apa_dummypomsgset.active_texts
-  [None, None, None, None]
-
-Or thru ILanguage.pluralforms:
+We can guess the pluralforms for this language thru ILanguage.pluralforms:
 
   >>> ru_dummypofile = upstream_evo.getDummyPOFile('ru')
   >>> ru_dummypomsgset = ru_dummypofile.getPOMsgSet(u'%d contact')
@@ -214,3 +226,22 @@ Or thru ILanguage.pluralforms:
   3
   >>> ru_dummypomsgset.active_texts
   [None, None, None]
+
+
+POMsgSet.isNewerThan
+--------------------
+
+This method tells us whether the active translation was reviewed after the
+given timestamp.
+
+  >>> from datetime import datetime
+  >>> from pytz import UTC
+  >>> from canonical.launchpad.interfaces import TranslationConstants
+  >>> pomsgset = POMsgSet.get(2)
+  >>> selection = pomsgset.getSelection(TranslationConstants.SINGULAR_FORM)
+  >>> selection.date_reviewed.isoformat()
+  '2005-04-07T13:19:17.601068+00:00'
+  >>> pomsgset.isNewerThan(datetime(2004, 11, 30, 7, 0, 0, tzinfo=UTC))
+  True
+  >>> pomsgset.isNewerThan(datetime(2006, 11, 30, 7, 0, 0, tzinfo=UTC))
+  False

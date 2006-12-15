@@ -82,12 +82,15 @@ class IDistributionMirror(Interface):
         title=_('Description'), required=False, readonly=False)
     http_base_url = DistroHttpUrlField(
         title=_('HTTP URL'), required=False, readonly=False,
+        description=_('e.g.: http://archive.ubuntu.com/ubuntu/'),
         constraint=valid_http_url)
     ftp_base_url = DistroFtpUrlField(
         title=_('FTP URL'), required=False, readonly=False,
+        description=_('e.g.: ftp://archive.ubuntu.com/ubuntu/'),
         constraint=valid_ftp_url)
     rsync_base_url = DistroRsyncUrlField(
         title=_('Rsync URL'), required=False, readonly=False,
+        description=_('e.g.: rsync://archive.ubuntu.com/ubuntu/'),
         constraint=valid_rsync_url)
     enabled = Bool(
         title=_('Probe this mirror for its content periodically'),
@@ -103,8 +106,8 @@ class IDistributionMirror(Interface):
         description=_(
             'Choose Release if this mirror contains CD images of any of the '
             'various releases of this distribution, or choose Archive if this '
-            'mirror contains packages for this distributin and is meant to be '
-            'used in conjunction with apt.'),
+            'mirror contains packages for this distribution and is meant to '
+            'be used in conjunction with apt.'),
         vocabulary='MirrorContent')
     official_candidate = Bool(
         title=_('Apply to be an official mirror of this distribution'),
@@ -174,7 +177,15 @@ class IDistributionMirror(Interface):
         """
 
     def disableAndNotifyOwner():
-        """Mark this mirror as disabled and notifying the owner."""
+        """Mark this mirror as disabled and notify the owner by email.
+        
+        This method can't be called before a probe record has been created
+        because we'll link to the latest probe record in the email we send to
+        notify the owner.
+
+        The owner will be notified only if this mirror was previously enabled
+        or if it was probed only once.
+        """
 
     def newProbeRecord(log_file):
         """Create and return a new MirrorProbeRecord for this mirror."""
@@ -214,6 +225,9 @@ class IDistributionMirror(Interface):
         """Delete the MirrorCDImageDistroRelease with the given arch 
         release and flavour, in case it exists.
         """
+
+    def deleteAllMirrorCDImageReleases():
+        """Delete all MirrorCDImageDistroReleases of this mirror."""
 
     def getExpectedPackagesPaths():
         """Get all paths where we can find Packages.gz files on this mirror.
@@ -342,3 +356,4 @@ class IMirrorProbeRecord(Interface):
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
     log_file = Attribute(_("The log of this probing."))
+

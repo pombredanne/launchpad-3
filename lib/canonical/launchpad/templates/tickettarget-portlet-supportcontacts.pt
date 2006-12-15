@@ -2,18 +2,18 @@
 
   <h2>Support contacts for <span tal:replace="context/displayname"/></h2>
 
-  <div class="portletBody portletContent">
+  <div class="portletBody portletContent"
+       tal:define="support_contacts context/direct_support_contacts">
 
-    <ul class="people">
-      <li tal:repeat="support_contact context/support_contacts">
+    <ul class="people" tal:condition="support_contacts">
+      <li tal:repeat="support_contact support_contacts">
         <a href="#"
            tal:content="support_contact/browsername"
            tal:attributes="href support_contact/fmt:url">Ubuntu Team</a>
       </li>
     </ul>
 
-
-    <p tal:condition="not:context/support_contacts">
+    <p tal:condition="not: support_contacts">
       <i>There are no support contacts.</i>
     </p>
 

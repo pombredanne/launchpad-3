@@ -4,15 +4,16 @@
     many tables
 */
 
-CREATE OR REPLACE FUNCTION valid_name(text) RETURNS boolean AS
+CREATE OR REPLACE FUNCTION valid_name(text) RETURNS boolean
+LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
 $$
     import re
     name = args[0]
-    pat = r"^[a-z0-9][a-z0-9\\+\\.\\-]*$"
+    pat = r"^[a-z0-9][a-z0-9\+\.\-]*$"
     if re.match(pat, name):
         return 1
     return 0
-$$ LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT;
+$$;
 
 COMMENT ON FUNCTION valid_name(text)
     IS 'validate a name.
@@ -26,14 +27,16 @@ COMMENT ON FUNCTION valid_name(text)
     namespace conflict if URL traversal is possible by name as well as id.';
 
 
-CREATE OR REPLACE FUNCTION valid_branch_name(text) RETURNS boolean AS '
+CREATE OR REPLACE FUNCTION valid_branch_name(text) RETURNS boolean
+LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
+$$
     import re
     name = args[0]
-    pat = r"^(?i)[a-z0-9][a-z0-9\\+\\.\\-\\@_]+$"
+    pat = r"^(?i)[a-z0-9][a-z0-9+\.\-@_]+$"
     if re.match(pat, name):
         return 1
     return 0
-' LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT;
+$$;
 
 COMMENT ON FUNCTION valid_branch_name(text)
     IS 'validate a branch name.
@@ -41,14 +44,16 @@ COMMENT ON FUNCTION valid_branch_name(text)
     As per valid_name, except we allow uppercase and @';
 
 
-CREATE OR REPLACE FUNCTION valid_bug_name(text) RETURNS boolean AS '
+CREATE OR REPLACE FUNCTION valid_bug_name(text) RETURNS boolean
+LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
+$$
     import re
     name = args[0]
-    pat = r"^[a-z][a-z0-9\\+\\.\\-]+$"
+    pat = r"^[a-z][a-z0-9+\.\-]+$"
     if re.match(pat, name):
         return 1
     return 0
-' LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT;
+$$;
 
 COMMENT ON FUNCTION valid_bug_name(text) IS 'validate a bug name
 
@@ -56,13 +61,9 @@ COMMENT ON FUNCTION valid_bug_name(text) IS 'validate a bug name
     names that look like floats).';
 
 
-CREATE OR REPLACE FUNCTION valid_version(text) RETURNS boolean AS '
-    raise RuntimeError("Removed")
-' LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT;
-
-
-
-CREATE OR REPLACE FUNCTION valid_debian_version(text) RETURNS boolean AS '
+CREATE OR REPLACE FUNCTION valid_debian_version(text) RETURNS boolean
+LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
+$$
     import re
     m = re.search("""^(?ix)
         ([0-9]+:)?
@@ -81,12 +82,14 @@ CREATE OR REPLACE FUNCTION valid_debian_version(text) RETURNS boolean AS '
         if "-" in version:
             return 0
     return 1
-' LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT;
+$$;
 
 COMMENT ON FUNCTION valid_debian_version(text) IS 'validate a version number as per Debian Policy';
 
 
-CREATE OR REPLACE FUNCTION sane_version(text) RETURNS boolean AS '
+CREATE OR REPLACE FUNCTION sane_version(text) RETURNS boolean
+LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
+$$
     import re
     if re.search("""^(?ix)
         [0-9a-z]
@@ -94,26 +97,28 @@ CREATE OR REPLACE FUNCTION sane_version(text) RETURNS boolean AS '
         $""", args[0]):
         return 1
     return 0
-' LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT;
+$$;
 
 COMMENT ON FUNCTION sane_version(text) IS 'A sane version number for use by ProductRelease and DistroRelease. We may make it less strict if required, but it would be nice if we can enforce simple version strings because we use them in URLs';
 
 
-CREATE OR REPLACE FUNCTION valid_cve(text) RETURNS boolean AS '
+CREATE OR REPLACE FUNCTION valid_cve(text) RETURNS boolean
+LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
+$$
     import re
     name = args[0]
-    pat = r"^(19|20)\\d{2}-\\d{4}$"
+    pat = r"^(19|20)\d{2}-\d{4}$"
     if re.match(pat, name):
         return 1
     return 0
-' LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT;
+$$;
 
-COMMENT ON FUNCTION valid_cve(text) IS 'validate a common vulnerability number
-
-    As defined on www.cve.mitre.org, minus the CAN- or CVE- prefix.';
+COMMENT ON FUNCTION valid_cve(text) IS 'validate a common vulnerability number as defined on www.cve.mitre.org, minus the CAN- or CVE- prefix.';
 
 
-CREATE OR REPLACE FUNCTION valid_absolute_url(text) RETURNS boolean AS '
+CREATE OR REPLACE FUNCTION valid_absolute_url(text) RETURNS boolean
+LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
+$$
     from urlparse import urlparse
     (scheme, netloc, path, params, query, fragment) = urlparse(args[0])
     if scheme == "sftp":
@@ -121,43 +126,67 @@ CREATE OR REPLACE FUNCTION valid_absolute_url(text) RETURNS boolean AS '
     if not (scheme and netloc):
         return 0
     return 1
-' LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT;
+$$;
 
 COMMENT ON FUNCTION valid_absolute_url(text) IS 'Ensure the given test is a valid absolute URL, containing both protocol and network location';
 
 
-CREATE OR REPLACE FUNCTION valid_fingerprint(text) RETURNS boolean AS '
+CREATE OR REPLACE FUNCTION valid_fingerprint(text) RETURNS boolean
+LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
+$$
     import re
-    if re.match(r"[\\dA-F]{40}", args[0]) is not None:
+    if re.match(r"[\dA-F]{40}", args[0]) is not None:
         return 1
     else:
         return 0
-' LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT;
+$$;
 
 COMMENT ON FUNCTION valid_fingerprint(text) IS 'Returns true if passed a valid GPG fingerprint. Valid GPG fingerprints are a 40 character long hexadecimal number in uppercase.';
 
 
-CREATE OR REPLACE FUNCTION valid_keyid(text) RETURNS boolean AS '
+CREATE OR REPLACE FUNCTION valid_keyid(text) RETURNS boolean
+LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
+$$
     import re
-    if re.match(r"[\\dA-F]{8}", args[0]) is not None:
+    if re.match(r"[\dA-F]{8}", args[0]) is not None:
         return 1
     else:
         return 0
-' LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT;
+$$;
 
 COMMENT ON FUNCTION valid_keyid(text) IS 'Returns true if passed a valid GPG keyid. Valid GPG keyids are an 8 character long hexadecimal number in uppercase (in reality, they are 16 characters long but we are using the \'common\' definition.';
 
 
-CREATE OR REPLACE FUNCTION sha1(text) RETURNS char(40) AS '
+CREATE OR REPLACE FUNCTION valid_regexp(text) RETURNS boolean
+LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
+$$
+    import re
+    try:
+        re.compile(args[0])
+    except:
+        return False
+    else:
+        return True
+$$;
+
+COMMENT ON FUNCTION valid_regexp(text)
+    IS 'Returns true if the input can be compiled as a regular expression.';
+
+
+CREATE OR REPLACE FUNCTION sha1(text) RETURNS char(40)
+LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
+$$
     import sha
     return sha.new(args[0]).hexdigest()
-' LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT;
+$$;
 
 COMMENT ON FUNCTION sha1(text) IS
     'Return the SHA1 one way cryptographic hash as a string of 40 hex digits';
 
 
-CREATE OR REPLACE FUNCTION you_are_your_own_member() RETURNS trigger AS '
+CREATE OR REPLACE FUNCTION you_are_your_own_member() RETURNS trigger
+LANGUAGE plpgsql AS
+$$
     BEGIN
         IF NEW.teamowner IS NULL THEN
             INSERT INTO TeamParticipation (person, team)
@@ -165,47 +194,48 @@ CREATE OR REPLACE FUNCTION you_are_your_own_member() RETURNS trigger AS '
         END IF;
         RETURN NULL;
     END;
-' LANGUAGE plpgsql;
+$$;
 
 COMMENT ON FUNCTION you_are_your_own_member() IS
     'Trigger function to ensure that every row added to the Person table gets a corresponding row in the TeamParticipation table, as per the TeamParticipationUsage page on the Launchpad wiki';
 
 SET check_function_bodies=false; -- Handle forward references
 
-CREATE OR REPLACE FUNCTION is_team(integer) returns boolean AS '
+CREATE OR REPLACE FUNCTION is_team(integer) returns boolean
+LANGUAGE sql STABLE RETURNS NULL ON NULL INPUT AS
+$$
     SELECT count(*)>0 FROM Person WHERE id=$1 AND teamowner IS NOT NULL;
-' LANGUAGE sql STABLE RETURNS NULL ON NULL INPUT;
+$$;
 
 COMMENT ON FUNCTION is_team(integer) IS
     'True if the given id identifies a team in the Person table';
 
 
-CREATE OR REPLACE FUNCTION is_team(text) returns boolean AS '
+CREATE OR REPLACE FUNCTION is_team(text) returns boolean
+LANGUAGE sql STABLE RETURNS NULL ON NULL INPUT AS 
+$$
     SELECT count(*)>0 FROM Person WHERE name=$1 AND teamowner IS NOT NULL;
-' LANGUAGE sql STABLE RETURNS NULL ON NULL INPUT;
+$$;
 
 COMMENT ON FUNCTION is_team(text) IS
     'True if the given name identifies a team in the Person table';
 
-/*
-CREATE OR REPLACE FUNCTION is_person(integer) returns boolean AS '
-    SELECT count(*)>0 FROM Person WHERE id=$1 AND teamowner IS NULL;
-' LANGUAGE sql STABLE RETURNS NULL ON NULL INPUT;
 
-COMMENT ON FUNCTION is_person(integer) IS
-    'True if the given id identifies a person in the Person table';
-*/
-
-CREATE OR REPLACE FUNCTION is_person(text) returns boolean AS '
+CREATE OR REPLACE FUNCTION is_person(text) returns boolean
+LANGUAGE sql STABLE RETURNS NULL ON NULL INPUT AS
+$$
     SELECT count(*)>0 FROM Person WHERE name=$1 AND teamowner IS NULL;
-' LANGUAGE sql STABLE RETURNS NULL ON NULL INPUT;
+$$;
 
 COMMENT ON FUNCTION is_person(text) IS
     'True if the given name identifies a person in the Person table';
     
 SET check_function_bodies=true;
 
-CREATE OR REPLACE FUNCTION is_printable_ascii(text) RETURNS boolean AS '
+
+CREATE OR REPLACE FUNCTION is_printable_ascii(text) RETURNS boolean
+LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
+$$
     import re, string
     try:
         text = args[0].decode("ASCII")
@@ -214,24 +244,27 @@ CREATE OR REPLACE FUNCTION is_printable_ascii(text) RETURNS boolean AS '
     if re.search(r"^[%s]*$" % re.escape(string.printable), text) is None:
         return False
     return True
-' LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT;
+$$;
 
 COMMENT ON FUNCTION is_printable_ascii(text) IS
     'True if the string is pure printable US-ASCII';
 
+
 CREATE OR REPLACE FUNCTION sleep_for_testing(double precision) RETURNS boolean
-AS $$
+LANGUAGE plpythonu AS
+$$
     import time
     time.sleep(args[0])
     return True
-$$ LANGUAGE plpythonu;
+$$;
 
 COMMENT ON FUNCTION sleep_for_testing(double precision) IS
     'Sleep for the given number of seconds and return True.  This function is intended to be used by tests to trigger timeout conditions.';
 
 
 CREATE OR REPLACE FUNCTION mv_pillarname_distribution() RETURNS TRIGGER
-VOLATILE SECURITY DEFINER AS $$
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS
+$$
 BEGIN
     IF TG_OP = 'INSERT' THEN
         INSERT INTO PillarName (name, distribution)
@@ -241,48 +274,51 @@ BEGIN
     END IF;
     RETURN NULL; -- Ignored - this is an AFTER trigger
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 COMMENT ON FUNCTION mv_pillarname_distribution() IS
     'Trigger maintaining the PillarName table';
 
 
 CREATE OR REPLACE FUNCTION mv_pillarname_product() RETURNS TRIGGER
-VOLATILE SECURITY DEFINER AS $$
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS
+$$
 BEGIN
     IF TG_OP = 'INSERT' THEN
-        INSERT INTO PillarName (name, product)
-        VALUES (NEW.name, NEW.id);
-    ELSIF NEW.name != OLD.name THEN
-        UPDATE PillarName SET name=NEW.name WHERE product=NEW.id;
+        INSERT INTO PillarName (name, product, active)
+        VALUES (NEW.name, NEW.id, NEW.active);
+    ELSIF NEW.name != OLD.name OR NEW.active != OLD.active THEN
+        UPDATE PillarName SET name=NEW.name, active=NEW.active
+        WHERE product=NEW.id;
     END IF;
     RETURN NULL; -- Ignored - this is an AFTER trigger
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 COMMENT ON FUNCTION mv_pillarname_product() IS
     'Trigger maintaining the PillarName table';
 
 
 CREATE OR REPLACE FUNCTION mv_pillarname_project() RETURNS TRIGGER
-VOLATILE SECURITY DEFINER AS $$
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
-        INSERT INTO PillarName (name, project)
-        VALUES (NEW.name, NEW.id);
-    ELSIF NEW.name != OLD.name THEN
-        UPDATE PillarName SET name=NEW.name WHERE project=NEW.id;
+        INSERT INTO PillarName (name, project, active)
+        VALUES (NEW.name, NEW.id, NEW.active);
+    ELSIF NEW.name != OLD.name or NEW.active != OLD.active THEN
+        UPDATE PillarName SET name=NEW.name, active=NEW.active
+        WHERE project=NEW.id;
     END IF;
     RETURN NULL; -- Ignored - this is an AFTER trigger
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 COMMENT ON FUNCTION mv_pillarname_project() IS
     'Trigger maintaining the PillarName table';
 
 
 CREATE OR REPLACE FUNCTION mv_validpersonorteamcache_person() RETURNS TRIGGER
-VOLATILE SECURITY DEFINER AS $$
+LANGUAGE plpythonu VOLATILE SECURITY DEFINER AS $$
     # This trigger function could be simplified by simply issuing
     # one DELETE followed by one INSERT statement. However, we want to minimize
     # expensive writes so we use this more complex logic.
@@ -343,14 +379,13 @@ VOLATILE SECURITY DEFINER AS $$
         plpy.execute(SD["delete_plan"], query_params)
     else:
         plpy.execute(SD["maybe_insert_plan"], query_params)
-$$ LANGUAGE plpythonu;
+$$;
 
 COMMENT ON FUNCTION mv_validpersonorteamcache_person() IS 'A trigger for maintaining the ValidPersonOrTeamCache eager materialized view when changes are made to the Person table';
 
 
 CREATE OR REPLACE FUNCTION mv_validpersonorteamcache_emailaddress()
-RETURNS TRIGGER
-VOLATILE SECURITY DEFINER AS $$
+RETURNS TRIGGER LANGUAGE plpythonu VOLATILE SECURITY DEFINER AS $$
     # This trigger function keeps the ValidPersonOrTeamCache materialized
     # view in sync when updates are made to the EmailAddress table.
     # Note that if the corresponding person is a team, changes to this table
@@ -437,13 +472,116 @@ VOLATILE SECURITY DEFINER AS $$
     elif new["status"] == PREF and not is_team(new["person"]):
         # May now be valid, or unchanged if they are a team.
         plpy.execute(SD["maybe_insert_plan"], [new["person"]])
-
-$$ LANGUAGE plpythonu;
+$$;
 
 COMMENT ON FUNCTION mv_validpersonorteamcache_emailaddress() IS 'A trigger for maintaining the ValidPersonOrTeamCache eager materialized view when changes are made to the EmailAddress table';
 
+
+CREATE OR REPLACE FUNCTION mv_pofiletranslator_posubmission() RETURNS TRIGGER
+VOLATILE SECURITY DEFINER AS $$
+DECLARE
+    v_pofile INTEGER;
+    v_trash_old BOOLEAN;
+BEGIN
+    -- If we are deleting a row, we need to remove the existing
+    -- POFileTranslator row and reinsert the historical data if it exists.
+    -- We also treat UPDATEs that change the key (person, pofile) the same
+    -- as deletes. UPDATEs that don't change these columns are treated like
+    -- INSERTs below.
+    IF TG_OP = 'INSERT' THEN
+        v_trash_old := FALSE;
+    ELSIF TG_OP = 'DELETE' THEN
+        v_trash_old := TRUE;
+    ELSE -- UPDATE
+        v_trash_old = (
+            OLD.person != NEW.person OR OLD.pomsgset != NEW.pomsgset
+            );
+    END IF;
+
+    IF v_trash_old THEN
+
+        -- Delete the old record.
+        DELETE FROM POFileTranslator USING POMsgSet
+        WHERE POFileTranslator.pofile = POMsgSet.pofile
+            AND POFileTranslator.person = OLD.person
+            AND POMsgSet.id = OLD.pomsgset;
+
+        -- Insert a past record if there is one.
+        INSERT INTO POFileTranslator (
+            person, pofile, latest_posubmission, date_last_touched
+            )
+            SELECT DISTINCT ON (POSubmission.person, POMsgSet.pofile)
+                POSubmission.person, POMsgSet.pofile,
+                POSubmission.id, POSubmission.datecreated
+            FROM POSubmission, POMsgSet
+            WHERE POSubmission.pomsgset = POMsgSet.id
+                AND POSubmission.pomsgset = OLD.pomsgset
+                AND POSubmission.person = OLD.person
+            ORDER BY
+                POSubmission.person, POMsgSet.pofile,
+                POSubmission.datecreated DESC, POSubmission.id DESC;
+
+        -- No NEW with DELETE, so we can short circuit and leave.
+        IF TG_OP = 'DELETE' THEN
+            RETURN NULL; -- Ignored because this is an AFTER trigger
+        END IF;
+    END IF;
+
+    -- Get our new pofile id
+    SELECT INTO v_pofile POMsgSet.pofile FROM POMsgSet
+    WHERE POMsgSet.id = NEW.pomsgset;
+
+    -- Standard 'upsert' loop to avoid race conditions.
+    LOOP
+        UPDATE POFileTranslator
+            SET
+                date_last_touched = CURRENT_TIMESTAMP AT TIME ZONE 'UTC',
+                latest_posubmission = NEW.id
+            WHERE
+                person = NEW.person
+                AND pofile = v_pofile;
+        IF found THEN
+            RETURN NULL; -- Return value ignored as this is an AFTER trigger
+        END IF;
+
+        BEGIN
+            INSERT INTO POFileTranslator (person, pofile, latest_posubmission)
+            VALUES (NEW.person, v_pofile, NEW.id);
+            RETURN NULL; -- Return value ignored as this is an AFTER trigger
+        EXCEPTION WHEN unique_violation THEN
+            -- do nothing
+        END;
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION mv_pofiletranslator_posubmission() IS
+    'Trigger maintaining the POFileTranslator table';
+
+
+CREATE OR REPLACE FUNCTION mv_pofiletranslator_pomsgset() RETURNS TRIGGER
+VOLATILE SECURITY INVOKER AS $$
+BEGIN
+    IF TG_OP = 'DELETE' THEN
+        RAISE EXCEPTION
+            'Deletions from POMsgSet not supported by the POFileTranslator materialized view';
+    ELSIF TG_OP = 'UPDATE' THEN
+        IF OLD.pofile != NEW.pofile THEN
+            RAISE EXCEPTION
+                'Changing POMsgSet.pofile not supported by the POFileTranslator materialized view';
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION mv_pofiletranslator_pomsgset() IS
+    'Trigger enforing no POMsgSet deletions or POMsgSet.pofile changes';
+
+
 CREATE OR REPLACE FUNCTION person_sort_key(displayname text, name text)
-RETURNS text AS
+RETURNS text
+LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
 $$
     # NB: If this implementation is changed, the person_sort_idx needs to be
     # rebuilt along with any other indexes using it.
@@ -461,13 +599,13 @@ $$
     # name, as we know it is just plain ascii.
     displayname = strip_re.sub('', displayname.decode('UTF-8').lower())
     return ("%s, %s" % (displayname.strip(), name)).encode('UTF-8')
-$$ LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT;
+$$;
 
 COMMENT ON FUNCTION person_sort_key(text,text) IS 'Return a string suitable for sorting people on, generated by stripping noise out of displayname and concatenating name';
 
 
-CREATE OR REPLACE FUNCTION debversion_sort_key(version text)
-RETURNS text AS
+CREATE OR REPLACE FUNCTION debversion_sort_key(version text) RETURNS text
+LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
 $$
     # If this method is altered, then any functional indexes using it
     # need to be rebuilt.
@@ -532,7 +670,46 @@ $$
                 raise ValueError("Number too large")
             result.extend(element)
     return "".join(result)
-$$ LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT;
+$$;
 
 COMMENT ON FUNCTION debversion_sort_key(text) IS 'Return a string suitable for sorting debian version strings on';
+
+
+CREATE OR REPLACE FUNCTION name_blacklist_match(text) RETURNS int4
+LANGUAGE plpythonu STABLE RETURNS NULL ON NULL INPUT AS
+$$
+    import re
+    name = args[0].decode("UTF-8")
+    if not SD.has_key("select_plan"):
+        SD["select_plan"] = plpy.prepare("""
+            SELECT id, regexp FROM NameBlacklist ORDER BY id
+            """)
+        SD["compiled"] = {}
+    compiled = SD["compiled"]
+    for row in plpy.execute(SD["select_plan"]):
+        regexp_id = row["id"]
+        regexp_txt = row["regexp"]
+        if (compiled.get(regexp_id) is None
+            or compiled[regexp_id][0] != regexp_txt):
+            regexp = re.compile(
+                regexp_txt, re.IGNORECASE | re.UNICODE | re.VERBOSE
+                )
+            compiled[regexp_id] = (regexp_txt, regexp)
+        else:
+            regexp = compiled[regexp_id][1]
+        if regexp.search(name) is not None:
+            return regexp_id
+    return None
+$$;
+
+COMMENT ON FUNCTION name_blacklist_match(text) IS 'Return the id of the row in the NameBlacklist table that matches the given name, or NULL if no regexps in the NameBlacklist table match.';
+
+
+CREATE OR REPLACE FUNCTION is_blacklisted_name(text) RETURNS boolean
+LANGUAGE SQL STABLE RETURNS NULL ON NULL INPUT AS
+$$
+    SELECT COALESCE(name_blacklist_match($1)::boolean, FALSE);
+$$;
+
+COMMENT ON FUNCTION is_blacklisted_name(text) IS 'Return TRUE if any regular expressions stored in the NameBlacklist table match the givenname, otherwise return FALSE.';
 

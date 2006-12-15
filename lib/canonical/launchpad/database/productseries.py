@@ -5,7 +5,6 @@ __metaclass__ = type
 __all__ = [
     'ProductSeries',
     'ProductSeriesSet',
-    'ProductSeriesSourceSet',
     ]
 
 
@@ -18,11 +17,13 @@ from sqlobject import (
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.sqlbase import (
+    SQLBase, quote, sqlvalues)
 
-from canonical.launchpad.components.bugtarget import BugTargetBase
+from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.interfaces import (
-    IProductSeries, IProductSeriesSet, IProductSeriesSource,
-    IProductSeriesSourceAdmin, IProductSeriesSourceSet, NotFoundError)
+    IProductSeries, IProductSeriesSet, IProductSeriesSourceAdmin,
+    NotFoundError)
 
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
@@ -31,18 +32,28 @@ from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.specification import Specification
-from canonical.database.sqlbase import (
-    SQLBase, quote, sqlvalues)
+from canonical.launchpad.interfaces import (
+    IProductSeries, IProductSeriesSet,IProductSeriesSourceAdmin, NotFoundError)
 
 from canonical.lp.dbschema import (
     EnumCol, ImportStatus, PackagingType, RevisionControlSystems,
     SpecificationSort, SpecificationGoalStatus, SpecificationFilter,
     SpecificationStatus)
 
+class ProductSeriesSet:
+    implements(IProductSeriesSet)
 
-class ProductSeries(SQLBase):
+    def get(self, productseriesid):
+        """See IProductSeriesSet."""
+        try:
+            return ProductSeries.get(productseriesid)
+        except SQLObjectNotFound:
+            raise NotFoundError(productseriesid)
+
+
+class ProductSeries(SQLBase, BugTargetBase):
     """A series of product releases."""
-    implements(IProductSeries, IProductSeriesSource, IProductSeriesSourceAdmin)
+    implements(IProductSeries, IProductSeriesSourceAdmin)
     _table = 'ProductSeries'
 
     product = ForeignKey(dbName='product', foreignKey='Product', notNull=True)
@@ -69,7 +80,6 @@ class ProductSeries(SQLBase):
     # where are the tarballs released from this branch placed?
     cvstarfileurl = StringCol(default=None)
     svnrepository = StringCol(default=None)
-    releaseroot = StringCol(default=None)
     releasefileglob = StringCol(default=None)
     releaseverstyle = StringCol(default=None)
     # key dates on the road to import happiness
@@ -89,6 +99,11 @@ class ProductSeries(SQLBase):
     @property
     def displayname(self):
         return self.name
+
+    @property
+    def bugtargetname(self):
+        """See IBugTarget."""
+        return "%s %s (upstream)" % (self.product.name, self.name)
 
     @property
     def drivers(self):
@@ -280,6 +295,24 @@ class ProductSeries(SQLBase):
         results = Specification.select(query, orderBy=order, limit=quantity)
         return results.prejoin(['assignee', 'approver', 'drafter'])
 
+    def searchTasks(self, search_params):
+        """See IBugTarget."""
+        search_params.setProductSeries(self)
+        return BugTaskSet().search(search_params)
+
+    def getUsedBugTags(self):
+        """See IBugTarget."""
+        return get_bug_tags("BugTask.productseries = %s" % sqlvalues(self))
+
+    def getUsedBugTagsWithOpenCounts(self, user):
+        """See IBugTarget."""
+        return get_bug_tags_open_count(
+            "BugTask.productseries = %s" % sqlvalues(self), user)
+
+    def createBug(self, bug_params):
+        """See IBugTarget."""
+        raise NotImplementedError('Cannot file a bug against a productseries')
+
     def getSpecification(self, name):
         """See ISpecificationTarget."""
         return self.product.getSpecification(name)
@@ -379,12 +412,6 @@ class ProductSeriesSet:
         except SQLObjectNotFound:
             return default
 
-
-# XXX matsubara, 2005-11-30: This class should be merged with ProductSeriesSet
-# https://launchpad.net/products/launchpad-bazaar/+bug/5247
-class ProductSeriesSourceSet:
-    """See IProductSeriesSourceSet"""
-    implements(IProductSeriesSourceSet)
     def search(self, ready=None, text=None, forimport=None, importstatus=None,
                start=None, length=None):
         query, clauseTables = self._querystr(
@@ -445,7 +472,7 @@ class ProductSeriesSourceSet:
         return query, clauseTables
 
     def getByCVSDetails(self, cvsroot, cvsmodule, cvsbranch, default=None):
-        """See IProductSeriesSourceSet."""
+        """See IProductSeriesSet."""
         result = ProductSeries.selectOneBy(
             cvsroot=cvsroot, cvsmodule=cvsmodule, cvsbranch=cvsbranch)
         if result is None:
@@ -453,7 +480,7 @@ class ProductSeriesSourceSet:
         return result
 
     def getBySVNDetails(self, svnrepository, default=None):
-        """See IProductSeriesSourceSet."""
+        """See IProductSeriesSet."""
         result = ProductSeries.selectOneBy(svnrepository=svnrepository)
         if result is None:
             return default

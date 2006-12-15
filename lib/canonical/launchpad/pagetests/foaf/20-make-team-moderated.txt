@@ -2,7 +2,7 @@
 
 
   >>> print http(r"""
-  ... POST /people/myemail/+edit HTTP/1.1
+  ... POST /~myemail/+edit HTTP/1.1
   ... Authorization: Basic Zm9vQGJhei5jb206Zg==
   ... Content-Length: ...
   ... Content-Type: multipart/form-data; boundary=---------------------------10179102741957765912820968610

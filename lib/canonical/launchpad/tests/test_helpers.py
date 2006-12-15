@@ -173,31 +173,6 @@ class DummyLaunchBag:
         self.user = user
 
 
-def test_count_lines():
-    r'''
-    >>> from canonical.launchpad.helpers import count_lines
-    >>> count_lines("foo")
-    1
-    >>> count_lines("123456789a123456789a123456789a1234566789a123456789a")
-    2
-    >>> count_lines("123456789a123456789a123456789a1234566789a123456789")
-    1
-    >>> count_lines("a\nb")
-    2
-    >>> count_lines("a\nb\n")
-    3
-    >>> count_lines("a\nb\nc")
-    3
-    >>> count_lines("123456789a123456789a123456789a\n1234566789a123456789a")
-    2
-    >>> count_lines("123456789a123456789a123456789a123456789a123456789a1\n1234566789a123456789a123456789a")
-    3
-    >>> count_lines("123456789a123456789a123456789a123456789a123456789a123456789a\n1234566789a123456789a123456789a")
-    3
-    >>> count_lines("foo bar\n")
-    2
-    '''
-
 def test_request_languages():
     '''
     >>> from zope.app.testing.placelesssetup import setUp, tearDown
@@ -239,77 +214,6 @@ def test_request_languages():
 
     >>> tearDown()
     '''
-
-def test_parse_cformat_string():
-    '''
-    >>> from canonical.launchpad.helpers import parse_cformat_string
-    >>> parse_cformat_string('')
-    []
-    >>> parse_cformat_string('foo')
-    [('string', 'foo')]
-    >>> parse_cformat_string('blah %d blah')
-    [('string', 'blah '), ('interpolation', '%d'), ('string', ' blah')]
-    >>> parse_cformat_string('%sfoo%%bar%s')
-    [('interpolation', '%s'), ('string', 'foo%%bar'), ('interpolation', '%s')]
-    >>> parse_cformat_string('%')
-    Traceback (most recent call last):
-    ...
-    UnrecognisedCFormatString: %
-    '''
-
-def test_msgid_html():
-    r'''
-    Test message ID presentation munger.
-
-    >>> from canonical.launchpad.helpers import msgid_html
-
-    First, do no harm.
-
-    >>> msgid_html(u'foo bar', [], 'XXXA')
-    u'foo bar'
-
-    Test replacement of leading and trailing spaces.
-
-    >>> msgid_html(u' foo bar', [], 'XXXA')
-    u'XXXAfoo bar'
-    >>> msgid_html(u'foo bar ', [], 'XXXA')
-    u'foo barXXXA'
-    >>> msgid_html(u'  foo bar  ', [], 'XXXA')
-    u'XXXAXXXAfoo barXXXAXXXA'
-
-    Test replacement of newlines.
-
-    >>> msgid_html(u'foo\nbar', [], newline='YYYA')
-    u'fooYYYAbar'
-
-    And both together.
-
-    >>> msgid_html(u'foo \nbar', [], 'XXXA', 'YYYA')
-    u'fooXXXAYYYAbar'
-
-    Test treatment of tabs.
-
-    >>> msgid_html(u'foo\tbar', [])
-    u'foo<code>[tab]</code>bar'
-
-    Test valid C format strings are formatted.
-
-    >>> msgid_html(u'foo %d bar', ['c-format'])
-    u'foo <code>%d</code> bar'
-
-    Test bad format strings are caught and passed through.
-
-    >>> text = u'foo %z bar'
-    >>> from canonical.launchpad.helpers import parse_cformat_string
-    >>> parse_cformat_string(text)
-    Traceback (most recent call last):
-    ...
-    UnrecognisedCFormatString: foo %z bar
-
-    >>> msgid_html(text, ['c-format']) == text
-    True
-    '''
-
 
 def test_suite():
     suite = unittest.TestSuite()
