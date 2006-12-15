@@ -14,7 +14,7 @@ __all__ = [
     'valid_bug_number',
     'valid_cve_sequence',
     'valid_emblem',
-    'valid_hackergotchi',
+    'valid_gotchi',
     'validate_new_team_email',
     'validate_new_person_email',
     'validate_distribution_mirror_schema',
@@ -363,8 +363,8 @@ def _valid_image(image, max_size, max_dimensions):
 def valid_emblem(emblem):
     return _valid_image(emblem, 9000, (16,16))
 
-def valid_hackergotchi(hackergotchi):
-    return _valid_image(hackergotchi, 54000, (150,150))
+def valid_gotchi(gotchi):
+    return _valid_image(gotchi, 54000, (150,150))
 
 
 def _validate_email(email):

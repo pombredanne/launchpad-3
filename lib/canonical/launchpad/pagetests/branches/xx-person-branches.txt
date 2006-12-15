@@ -7,7 +7,7 @@ There are several views of the branches related to a person.
 First, check that the condensed branch listing page works:
 
   >>> print http(r"""
-  ... GET /people/name12/+branches HTTP/1.1
+  ... GET /~name12/+branches HTTP/1.1
   ... Host: launchpad.dev
   ... """)
   HTTP/1.1 200 Ok
@@ -17,7 +17,7 @@ Then get the detailed branch listing (related branches) for an user which has
 branches in each lifecycle.
 
   >>> print http(r"""
-  ... GET /people/name12/+branchlisting HTTP/1.1
+  ... GET /~name12/+branchlisting HTTP/1.1
   ... Host: launchpad.dev
   ... """)
   HTTP/1.1 200 Ok
@@ -33,7 +33,7 @@ If a person does not have any related branches, we should print an informative
 message.
 
   >>> print http(r"""
-  ... GET /people/ddaa/+branches HTTP/1.1
+  ... GET /~ddaa/+branches HTTP/1.1
   ... Host: launchpad.dev
   ... """)
   HTTP/1.1 200 Ok
@@ -42,7 +42,7 @@ message.
 This informative message should also appear in the detailed branch listing.
 
   >>> print http(r"""
-  ... GET /people/ddaa/+branchlisting HTTP/1.1
+  ... GET /~ddaa/+branchlisting HTTP/1.1
   ... Host: launchpad.dev
   ... """)
   HTTP/1.1 200 Ok
@@ -54,16 +54,16 @@ There should be a link in the branch context menu for person which points to
 the authored branches page.
 
   >>> print http(r"""
-  ... GET /people/name12/+branches HTTP/1.1
+  ... GET /~name12/+branches HTTP/1.1
   ... Host: launchpad.dev
   ... """)
   HTTP/1.1 200 Ok
-  ...<a href="http://launchpad.dev/people/name12/+authoredbranches">Branches Authored</a>...
+  ...<a href="http://launchpad.dev/~name12/+authoredbranches">Branches Authored</a>...
 
 And we can load the authored branches page.
 
   >>> print http(r"""
-  ... GET /people/name12/+authoredbranches HTTP/1.1
+  ... GET /~name12/+authoredbranches HTTP/1.1
   ... Host: launchpad.dev
   ... """)
   HTTP/1.1 200 Ok
@@ -74,16 +74,16 @@ And we can load the authored branches page.
 There should also be a link which points to the registered branches page.
 
   >>> print http(r"""
-  ... GET /people/name12/+branches HTTP/1.1
+  ... GET /~name12/+branches HTTP/1.1
   ... Host: launchpad.dev
   ... """)
   HTTP/1.1 200 Ok
-  ...<a href="http://launchpad.dev/people/name12/+registeredbranches">Branches Registered</a>...
+  ...<a href="http://launchpad.dev/~name12/+registeredbranches">Branches Registered</a>...
 
 And we can load the registered branches page.
 
   >>> print http(r"""
-  ... GET /people/name12/+registeredbranches HTTP/1.1
+  ... GET /~name12/+registeredbranches HTTP/1.1
   ... Host: launchpad.dev
   ... """)
   HTTP/1.1 200 Ok
@@ -92,16 +92,16 @@ And we can load the registered branches page.
 == Subscribed branches ==
 
   >>> print http(r"""
-  ... GET /people/name12/+branches HTTP/1.1
+  ... GET /~name12/+branches HTTP/1.1
   ... Host: launchpad.dev
   ... """)
   HTTP/1.1 200 Ok
-  ...<a href="http://launchpad.dev/people/name12/+subscribedbranches">Branches Subscribed</a>...
+  ...<a href="http://launchpad.dev/~name12/+subscribedbranches">Branches Subscribed</a>...
 
 And we can load the subscribed branches page.
 
   >>> print http(r"""
-  ... GET /people/name12/+subscribedbranches HTTP/1.1
+  ... GET /~name12/+subscribedbranches HTTP/1.1
   ... Host: launchpad.dev
   ... """)
   HTTP/1.1 200 Ok

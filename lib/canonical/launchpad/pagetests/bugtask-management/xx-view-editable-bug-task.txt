@@ -1,13 +1,13 @@
 An anonymous user who tries to access the bugtask edit page will be
 redirected to the login page.
 
-    >>> browser.open("http://localhost/products/thunderbird/+bug/9/+editstatus")
+    >>> browser.open("http://localhost/thunderbird/+bug/9/+editstatus")
     Traceback (most recent call last):
       ...
     Unauthorized: ...
 
 (Even when the product has a bug contact:
-https://launchpad.net/products/malone/+bug/49891)
+https://launchpad.net/malone/+bug/49891)
 
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates
@@ -24,7 +24,7 @@ https://launchpad.net/products/malone/+bug/49891)
 
     >>> logout()
 
-    >>> browser.open("http://localhost/products/firefox/+bug/1/+editstatus")
+    >>> browser.open("http://localhost/firefox/+bug/1/+editstatus")
     Traceback (most recent call last):
       ...
     Unauthorized: ...
@@ -32,6 +32,6 @@ https://launchpad.net/products/malone/+bug/49891)
 Any logged-in user can edit a bugtask.
 
     >>> browser.addHeader("Authorization", "Basic test@canonical.com:test")
-    >>> browser.open("http://localhost/products/firefox/+bug/6/+editstatus")
+    >>> browser.open("http://localhost/firefox/+bug/6/+editstatus")
     >>> browser.title
     'Bug #6 in firefox (upstream)...'

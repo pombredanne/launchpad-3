@@ -91,10 +91,10 @@ class Person(SQLBase):
     displayname = StringCol(dbName='displayname', notNull=True)
     teamdescription = StringCol(dbName='teamdescription', default=None)
     homepage_content = StringCol(default=None)
-    emblem = ForeignKey(dbName='emblem',
-        foreignKey='LibraryFileAlias', default=None)
-    hackergotchi = ForeignKey(dbName='hackergotchi',
-        foreignKey='LibraryFileAlias', default=None)
+    emblem = ForeignKey(
+        dbName='emblem', foreignKey='LibraryFileAlias', default=None)
+    gotchi = ForeignKey(
+        dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
 
     city = StringCol(default=None)
     phone = StringCol(default=None)
