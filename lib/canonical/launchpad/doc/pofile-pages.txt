@@ -241,11 +241,15 @@ Now, we are going to check the alternative language submission.
 Let's check that the upload form sets the right fields.
 
 To be sure that we are using the right entry from the import queue,
-we check that it's empty atm.
+we check that it contains only sample data entries.
 
     >>> translationimportqueue = getUtility(ITranslationImportQueue)
     >>> translationimportqueue.entryCount()
-    0
+    2
+    >>> for entry in translationimportqueue.getAllEntries():
+    ...     print entry.content.filename
+    evolution-2.2-test.pot
+    pt_BR.po
 
 The FileUpload class needs a class with the attributes: filename, file and
 headers.
@@ -265,14 +269,14 @@ Now, we do the upload.
     >>> pofile_view = getView(pofile_es, '+upload', request)
     >>> pofile_view.initialize()
 
-As we can see, we have now one entry in our queue.
+As we can see, we have now one entry added to our queue.
 
     >>> translationimportqueue.entryCount()
-    1
+    3
 
 Get it and check that some attributes are set as they should.
 
-    >>> entry = translationimportqueue.get(1)
+    >>> entry = translationimportqueue.get(3)
     >>> entry.pofile == pofile_es
     True
 
