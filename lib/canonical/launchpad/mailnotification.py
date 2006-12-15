@@ -891,6 +891,10 @@ def notify_team_join(event):
         # it so the member don't get two notifications.
         admin_addrs = set(admin_addrs).difference(set(member_addrs))
 
+    # Yes, we can have teams with no members; not even admins.
+    if not admin_addrs:
+        return
+
     replacements = {
         'person_name': "%s (%s)" % (user.browsername, user.name),
         'team_name': "%s (%s)" % (team.browsername, team.name),
