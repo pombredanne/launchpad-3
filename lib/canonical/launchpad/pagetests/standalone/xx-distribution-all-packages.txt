@@ -1,6 +1,6 @@
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/+allpackages HTTP/1.1
+  ... GET /ubuntu/+allpackages HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -11,11 +11,16 @@
   ...
           <strong>1</strong>
           &rarr;
-          <strong>8</strong>
+          <strong>5</strong>
           of
-          8 results
+          9 results
   ...
         <a href="...">alsa-utils</a>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+        <a href="...">cnews</a>
   <BLANKLINE>
   <BLANKLINE>
   <BLANKLINE>
@@ -25,16 +30,11 @@
   <BLANKLINE>
   <BLANKLINE>
   <BLANKLINE>
-        <a href="...">mozilla-firefox</a>
+        <a href="...">foobar</a>
   <BLANKLINE>
   <BLANKLINE>
   <BLANKLINE>
   <BLANKLINE>
-        <a href="...">netapplet</a>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-        <a href="...">pmount</a>
+        <a href="...">libstdc++</a>
   ...
 

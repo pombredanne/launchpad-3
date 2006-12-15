@@ -35,6 +35,7 @@ __all__ = (
 'BranchLifecycleStatus',
 'BranchReviewStatus',
 'BugBranchStatus',
+'BugNominationStatus',
 'BugTaskStatus',
 'BugAttachmentType',
 'BugTrackerType',
@@ -1816,16 +1817,13 @@ class TicketAction(DBSchema):
         was changed.
         """)
 
+# Enumeration covered by bug 66633:
+#   Need way to define enumerations outside of dbschema
 class TicketSort(DBSchema):
     """An enumeration of the valid ticket search sort order.
 
     This enumeration is part of the ITicketTarget.searchTickets() API. The
     titles are formatted for nice display in browser code.
-
-    XXX flacoste 2006/08/29 This has nothing to do with database code and
-    is really part of the ITicketTarget definitions. We should find a way
-    to define enumerations in interface code and generate easily,
-    when required, the database implementation code.
     """
 
     RELEVANCY = Item(5, """
@@ -1860,6 +1858,10 @@ class TicketStatus(DBSchema):
     """The current status of a Support Request
 
     This enum tells us the current status of the support ticket.
+
+    The lifecycle of a support request is documented in
+    https://help.launchpad.net/SupportRequestLifeCycle, so remember
+    to update that document for any pertinent changes.
     """
 
     OPEN = Item(10, """
@@ -2706,6 +2708,34 @@ class BranchReviewStatus(DBSchema):
         """)
 
 
+class BugNominationStatus(DBSchema):
+    """Bug Nomination Status
+
+    The status of the decision to fix a bug in a specific release.
+    """
+
+    PROPOSED = Item(10, """
+        Nominated
+
+        This nomination hasn't yet been reviewed, or is still under
+        review.
+        """)
+
+    APPROVED = Item(20, """
+        Approved
+
+        The release management team has approved fixing the bug for this
+        release.
+        """)
+
+    DECLINED = Item(30, """
+        Declined
+
+        The release management team has declined fixing the bug for this
+        release.
+        """)
+
+
 class BugTaskStatus(DBSchema):
     """Bug Task Status
 
@@ -3084,6 +3114,15 @@ class LoginTokenType(DBSchema):
 
         A user has found an unvalidated profile in Launchpad and is trying
         to claim it.
+        """)
+
+    NEWPROFILE = Item(9, """
+        A user created a new Launchpad profile for another person.
+
+        Any Launchpad user can create new "placeholder" profiles to represent
+        people who don't use Launchpad. The person that a given profile
+        represents has to first use the token to finish the registration
+        process in order to be able to login with that profile.
         """)
 
 
@@ -3664,3 +3703,11 @@ class PersonCreationRationale(DBSchema):
         Somebody went to the Ubuntu wiki and was directed to Launchpad to
         create an account.
         """)
+
+    USER_CREATED = Item(11, """
+        Created by a user to represent a person which does not uses Launchpad.
+
+        A user wanted to reference a person which is not a Launchpad user, so
+        he created this "placeholder" profile.
+        """)
+

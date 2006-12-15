@@ -25,7 +25,19 @@
     <p>
       Launchpad's record for <span tal:replace="context/browsername" /> was
       created on <span tal:replace="context/datecreated/fmt:date" />
-      <span tal:replace="context/creation_comment" />.
+      <tal:user-created
+        condition="context/creation_rationale/enumvalue:USER_CREATED">
+          by <a tal:attributes="href context/registrant/fmt:url">
+          <span tal:replace="context/registrant/browsername">Foo</span></a>,
+          and the reason given by that user for its creation is:
+            <em tal:content="structure context/creation_comment/fmt:text-to-html">
+              reason
+            </em>
+      </tal:user-created>
+      <tal:not-user-created 
+        condition="not: context/creation_rationale/enumvalue:USER_CREATED">
+          <span tal:replace="context/creation_comment" />.
+      </tal:not-user-created>
     </p>
     <p>
       If you're <span tal:replace="context/browsername" />, relax! You don't

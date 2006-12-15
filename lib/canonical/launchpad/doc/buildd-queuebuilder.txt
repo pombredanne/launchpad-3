@@ -121,8 +121,7 @@ createMissingBuilds() method. Additionally if the target is an already
 released distrorelease it can only be visible if published in in
 special pocket (UPDATES, SECURITY or BACKPORTS)
 
-The count and IDs used here Just Work<tm>.
-
+  >>> from canonical.launchpad.database import Manifest
   >>> count = 1
   >>> def createPackageAndPublication(name, release, architecturehintlist):
   ...     """Create a SourcePackageRelease, ReleaseFile and publication.
@@ -130,6 +129,7 @@ The count and IDs used here Just Work<tm>.
   ...     Return a tuple with (SourcePackageRelease, publication)
   ...     """
   ...     global count
+  ...     manifest = Manifest(uuid="fake %d" % count)
   ...     tar = SourcePackageFileType.TARBALL
   ...     published = PackagePublishingStatus.PUBLISHED
   ...     release_pocket = PackagePublishingPocket.UPDATES
@@ -146,8 +146,12 @@ The count and IDs used here Just Work<tm>.
   ...         builddepends=None,
   ...         dsc=None,
   ...         changelog=None,
-  ...         manifest=16+count,
-  ...         dscsigningkey=None)
+  ...         manifest=manifest,
+  ...         dscsigningkey=None,
+  ...         dsc_format="1.0",
+  ...         dsc_maintainer_rfc822="mark <mark@mark.com>",
+  ...         dsc_standards_version="3.6.9",
+  ...         dsc_binaries="%s" % name.name)
   ...     srcfile = SourcePackageReleaseFile(
   ...         sourcepackagerelease=srcpkgrel,
   ...         libraryfile=1,
@@ -196,6 +200,26 @@ each of these options:
   >>> [a.architecturetag for a in
   ...       determineArchitecturesToBuild(pub_one, legal_archs, hoary)]
   [u'hppa']
+
+Check any-foo and linux-foo notation in architecture hint list
+--------------------------------------------------------------
+
+See bug 73761.
+
+  >>> name6 = SourcePackageName(name="test-buildd-6")
+  >>> spr_any_foo, pub_any_foo = createPackageAndPublication(
+  ...     name6, hoary, "any-hppa")
+  >>> name7 = SourcePackageName(name="test-buildd-7")
+  >>> spr_linux_foo, pub_linux_foo = createPackageAndPublication(
+  ...     name7, hoary, "linux-i386")
+
+  >>> [a.architecturetag for a in
+  ...       determineArchitecturesToBuild(pub_any_foo, legal_archs, hoary)]
+  [u'hppa']
+  >>> [a.architecturetag for a in
+  ...       determineArchitecturesToBuild(pub_linux_foo, legal_archs, hoary)]
+  [u'i386']
+
 
 Check architectures against source PAS
 --------------------------------------
@@ -291,6 +315,9 @@ Check that we only created new Build entries for the new hoary releases:
   hppa build of test-buildd-3 669 in ubuntu hoary UPDATES
   i386 build of test-buildd-3 669 in ubuntu hoary UPDATES
   hppa build of test-buildd-4 670 in ubuntu hoary UPDATES
+  hppa build of test-buildd-6 672 in ubuntu hoary UPDATES
+  i386 build of test-buildd-7 673 in ubuntu hoary UPDATES
+  
 
 And have a look at our arch-all release's build:
 
@@ -306,7 +333,7 @@ marked as NEEDSBUILD we can create BuildQueue entries for it
 
   >>> bm.addMissingBuildQueueEntries()
   >>> print BuildQueue.select().count() - len(old_jobs)
-  6
+  8
 
 A separate method, sanitiseAndScoreCandidates, is responsible for
 cleaning up the BuildQueue and scroring the jobs properly. Since we
@@ -338,10 +365,12 @@ sourcepackagerelease files should remain:
   WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary hppa
   WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary i386
   WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary hppa
+  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary hppa
+  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary i386
 
   >>> new_jobs = [job for job in jobs if job not in old_jobs]
   >>> len(new_jobs)
-  6
+  8
 
   >>> job = new_jobs[0]
   >>> job.build.sourcepackagerelease.name

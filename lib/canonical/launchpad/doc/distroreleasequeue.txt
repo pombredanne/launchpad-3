@@ -160,6 +160,7 @@ Iterating over IDistroReleaseQueues via iDistroReleaseQueueSet:
   9
   10
   11
+  12
 
 Retrieving an IDistroReleaseQueue by its id:
 
@@ -172,7 +173,7 @@ Retrieving an IDistroReleaseQueue by its id:
 Counter, optionally by status (informally named "queue") and or distrorelease:
 
   >>> qset.count()
-  11
+  12
 
   >>> qset.count(DistroReleaseQueueStatus.ACCEPTED)
   1

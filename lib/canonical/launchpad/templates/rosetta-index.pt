@@ -51,7 +51,7 @@
               </td>
               <td>
                 <a
-                  tal:attributes="href string:/distros/${distrorelease/distribution/name}/${distrorelease/name}/+translations"
+                  tal:attributes="href string:/${distrorelease/distribution/name}/${distrorelease/name}/+translations"
                 >
                   <span tal:replace="distrorelease/version">5.04</span>:
                   <span tal:replace="distrorelease/title">Hoary Hedgehog</span>

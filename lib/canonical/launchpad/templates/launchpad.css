@@ -549,6 +549,19 @@ ins {
     font-weight: normal;
 }
 
+.discreet a {
+    color: #76797c;
+    text-decoration: none;
+    border-bottom: 1px dotted #76797c;
+    font-weight: normal;
+}
+
+.suggestion {
+    color: #76797c;
+    font-size: 50%;
+    font-weight: normal;
+}
+
 .listingBar {
     background-color: #dee7ec;
     border-color: #8cacbb;
@@ -1199,12 +1212,10 @@ ul.menuroot {
   border-color: #fff #8cacbb #8cacbb #fff;
 }
 .scrollbutton.up {
-  background: url(/@@/arrowUp.gif) 
-                center center no-repeat;
+  background: url(/@@/arrowUp) center center no-repeat;
 }
 .scrollbutton.down {
-  background: url(/@@/arrowDown.gif) 
-                center center no-repeat;
+  background: url(/@@/arrowDown) center center no-repeat;
 }
 .item, .scrollbutton {
   border: 0px solid;
@@ -1284,12 +1295,10 @@ ul.menuroot {
   border: 0px solid;
 }
 * html .scrollbutton.up {
-  background: url(/@@/arrowUp.gif) 
-                center center no-repeat;
+  background: url(/@@/arrowUp) center center no-repeat;
 }
 * html .scrollbutton.down {
-  background: url(/@@/arrowDown.gif) 
-                center center no-repeat;
+  background: url(/@@/arrowDown) center center no-repeat;
 }
 * html .item, * html .scrollbutton.down, * html .scrollbutton.up {
   border: 0px solid;
