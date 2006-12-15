@@ -1,10 +1,6 @@
 Here, we are going to see that when we use copy buttons, we don't lose
 anything else added in other messages.
 
-XXX CarlosPerelloMarin 20061202: textarea values gets extra '\n' char when
-reading its value due a bug in our test infrastructure. For more info
-you can see bug #47511.
-
   >>> user_browser.open(
   ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
   ...     '+pots/evolution-2.2/es/+translate')
@@ -37,7 +33,7 @@ another message in the form.
 And now, the new translation textarea has current translation:
 
   >>> user_browser.getControl(name='msgset_134_es_translation_0_new').value
-  '\n caratas'
+  ' caratas'
 
 Its checkbox is set
 
@@ -48,7 +44,7 @@ Its checkbox is set
 And also, the translation we added by hand, is still there.
 
   >>> user_browser.getControl(name='msgset_130_es_translation_0_new').value
-  '\nYou will not erase me!'
+  'You will not erase me!'
   >>> user_browser.getControl(
   ...     name='msgset_130_es_translation_0_new_checkbox').value
   True

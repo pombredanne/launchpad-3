@@ -107,18 +107,12 @@ will be empty waiting for new suggestions/translations.
 
   >>> user_browser.getControl(name='msgset_150_es_translation_0_new_checkbox').value
   True
-
-XXX: CarlosPerelloMarin 20061026: The extra '\n' char is there to workaroud bug #47511
-
   >>> user_browser.getControl(name='msgset_150_es_translation_0_new').value
-  '\nFound %s invalid file'
+  'Found %s invalid file'
   >>> user_browser.getControl(name='msgset_150_es_translation_1_new_checkbox').value
   True
-
-XXX: CarlosPerelloMarin 20061026: The extra '\n' char is there to workaroud bug #47511
-
   >>> user_browser.getControl(name='msgset_150_es_translation_1_new').value
-  '\nFound %s invalid files'
+  'Found %s invalid files'
 
 Also, we can see that the message has no active translation yet:
 
