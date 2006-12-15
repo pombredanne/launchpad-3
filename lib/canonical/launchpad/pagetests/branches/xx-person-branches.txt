@@ -6,7 +6,7 @@ There are several views of the branches related to a person.
 
 First, check that the condensed branch listing page works:
 
-  >>> browser.open('http://launchpad.dev/people/name12/+branches')
+  >>> browser.open('http://launchpad.dev/~name12/+branches')
   >>> print browser.contents
   <!DOCTYPE...
   ...Sample Person...
@@ -16,7 +16,7 @@ First, check that the condensed branch listing page works:
 Then get the detailed branch listing (related branches) for an user which has
 branches in each lifecycle.
 
-  >>> browser.open('http://launchpad.dev/people/name12/+branchlisting')
+  >>> browser.open('http://launchpad.dev/~name12/+branchlisting')
   >>> print browser.contents
   <!DOCTYPE...
   ...<h2>Mature</h2>...
@@ -29,14 +29,14 @@ branches in each lifecycle.
 If a person does not have any related branches, we should print an informative
 message.
 
-  >>> browser.open('http://launchpad.dev/people/ddaa/+branches')
+  >>> browser.open('http://launchpad.dev/~ddaa/+branches')
   >>> print browser.contents
   <!DOCTYPE...
   ...There are no branches related to David Allouche...
 
 This informative message should also appear in the detailed branch listing.
 
-  >>> browser.open('http://launchpad.dev/people/ddaa/+branchlisting')
+  >>> browser.open('http://launchpad.dev/~ddaa/+branchlisting')
   >>> print browser.contents
   <!DOCTYPE...
   ...There are no branches related to David Allouche...
@@ -46,7 +46,7 @@ This informative message should also appear in the detailed branch listing.
 There should be a link in the branch context menu for person which points to
 the authored branches page.
 
-  >>> browser.open('http://launchpad.dev/people/name12/+branches')
+  >>> browser.open('http://launchpad.dev/~name12/+branches')
   >>> link = browser.getLink('Branches Authored')
   >>> print link.url
   http://launchpad.dev/people/name12/+authoredbranches
@@ -55,35 +55,35 @@ And we can load the authored branches page.
 
   >>> link.click()
   >>> browser.url
-  'http://launchpad.dev/people/name12/+authoredbranches'
+  'http://launchpad.dev/~name12/+authoredbranches'
 
 == Registered Branches ==
 
 There should also be a link which points to the registered branches page.
 
-  >>> browser.open('http://launchpad.dev/people/name12/+branches')
+  >>> browser.open('http://launchpad.dev/~name12/+branches')
   >>> link = browser.getLink('Branches Registered')
   >>> print link.url
-  http://launchpad.dev/people/name12/+registeredbranches
+  http://launchpad.dev/~name12/+registeredbranches
 
 And we can load the registered branches page.
 
   >>> link.click()
   >>> browser.url
-  'http://launchpad.dev/people/name12/+registeredbranches'
+  'http://launchpad.dev/~name12/+registeredbranches'
 
 == Subscribed branches ==
 
-  >>> browser.open('http://launchpad.dev/people/name12/+branches')
+  >>> browser.open('http://launchpad.dev/~name12/+branches')
   >>> link = browser.getLink('Branches Subscribed')
   >>> print link.url
-  http://launchpad.dev/people/name12/+subscribedbranches
+  http://launchpad.dev/~name12/+subscribedbranches
 
 And we can load the subscribed branches page.
 
   >>> link.click()
   >>> browser.url
-  'http://launchpad.dev/people/name12/+subscribedbranches'
+  'http://launchpad.dev/~name12/+subscribedbranches'
 
 == Branch filtering ==
 
@@ -92,7 +92,7 @@ branches are shown.  Current branches are those that have a
 lifecycle status of New, Development, Experimental or Mature.
 Merged or Abandoned branches are not shown.
 
-  >>> browser.open('http://launchpad.dev/people/name12/+branches')
+  >>> browser.open('http://launchpad.dev/~name12/+branches')
   >>> from BeautifulSoup import BeautifulSoup
   >>> soup = BeautifulSoup(browser.contents)
   >>> table = str(soup.find('table', { 'id':'branchtable' } ))
@@ -162,7 +162,7 @@ If anyone tries to hack the URL, and put in an invalid
 status value, it will default to current branches.
 
   >>> browser.open(
-  ...  'http://launchpad.dev/people/name12/+branches?field.lifecycle=Fubar')
+  ...  'http://launchpad.dev/~name12/+branches?field.lifecycle=Fubar')
   >>> browser.getControl(name='field.lifecycle').displayValue
   ['New, Experimental, Development or Mature']
   >>> soup = BeautifulSoup(browser.contents)
@@ -182,7 +182,7 @@ the current filter, the table is shown, and a (hopefully)
 helpful message supplied.
 
   >>> browser.open('http://code.launchpad.dev/'
-  ...   'people/launchpad/+branches?field.lifecycle=Mature')
+  ...   '~launchpad/+branches?field.lifecycle=Mature')
   >>> browser.getControl(name='field.lifecycle').displayValue
   ['Mature']
   >>> soup = BeautifulSoup(browser.contents)

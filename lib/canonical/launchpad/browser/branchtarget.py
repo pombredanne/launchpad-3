@@ -66,7 +66,7 @@ class BranchTargetView(LaunchpadFormView):
             # BranchLifecycleStatus and BranchLifecycleStatusFilter
             # share values for common elements, so to get the correct
             # status to compare against, we know that we can just
-            # index into the enumeration with the value
+            # index into the enumeration with the value.
             show_status = BranchLifecycleStatus.items[lifecycle_filter.value]
             branches = [branch for branch in self.context.branches
                         if branch.lifecycle_status == show_status]
