@@ -9,7 +9,7 @@
       <ul tal:condition="contributors">
         <li tal:repeat="contributor contributors" class="person">
           <a tal:content="contributor/browsername"
-             tal:attributes="href string:/people/${contributor/name}/"
+             tal:attributes="href contributor/fmt:url"
              >Mark Shuttleworth</a><br />
         </li>
       </ul>

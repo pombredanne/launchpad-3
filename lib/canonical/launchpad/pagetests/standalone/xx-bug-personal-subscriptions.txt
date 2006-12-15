@@ -8,9 +8,9 @@ in the actions portlet.
   ...     print_direct_subscribers, print_indirect_subscribers)
 
   >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
-  >>> browser.open('http://localhost/products/firefox/+bug/1')
+  >>> browser.open('http://localhost/firefox/+bug/1')
   >>> browser.url
-  'http://localhost/products/firefox/+bug/1'
+  'http://localhost/firefox/+bug/1'
 
   >>> subscribe_link = browser.getLink('Subscribe')
   >>> subscribe_link.text
@@ -35,7 +35,7 @@ this.
   >>> submit.click()
 
   >>> browser.url
-  'http://localhost/products/firefox/+bug/1/'
+  'http://localhost/firefox/+bug/1/'
 
   >>> for tag in find_tags_by_class(browser.contents, "informational message"):
   ...   print tag.renderContents()
@@ -55,7 +55,7 @@ The "Subscribe" link now says "Unsubscribe".
   >>> print browser.title
   Bug #1 - Subscription options
   >>> browser.url
-  'http://localhost/products/firefox/+bug/1/+subscribe'
+  'http://localhost/firefox/+bug/1/+subscribe'
 
 Clicking the "Continue" button from the +subscribe page will unsubscribe
 the user this time, and inform the user.
@@ -66,7 +66,7 @@ the user this time, and inform the user.
   >>> submit.click()
 
   >>> browser.url
-  'http://localhost/products/firefox/+bug/1/'
+  'http://localhost/firefox/+bug/1/'
 
   >>> for tag in find_tags_by_class(browser.contents, 'informational message'):
   ...   print tag.renderContents()
@@ -81,12 +81,12 @@ first subscribing one of Foo Bar's teams.
 
   >>> browser.getLink('Subscribe Someone Else').click()
   >>> browser.url
-  'http://localhost/products/firefox/+bug/1/+addsubscriber'
+  'http://localhost/firefox/+bug/1/+addsubscriber'
 
   >>> browser.getControl('Person').value = 'launchpad'
   >>> browser.getControl('Add').click()
   >>> browser.url
-  'http://localhost/products/firefox/+bug/1'
+  'http://localhost/firefox/+bug/1'
 
   >>> print_direct_subscribers(browser.contents)
   Launchpad Developers
@@ -104,7 +104,7 @@ unsubscribing the Launchpad team.
 
   >>> subscribe_link.click()
   >>> browser.url
-  'http://localhost/products/firefox/+bug/1/+subscribe'
+  'http://localhost/firefox/+bug/1/+subscribe'
 
   >>> subscription_widget = browser.getControl(name='field.subscription')
   >>> subscription_widget.options
@@ -116,7 +116,7 @@ Let's unsubscribe the Launchpad team.
   >>> browser.getControl('Continue').click()
 
   >>> browser.url
-  'http://localhost/products/firefox/+bug/1/'
+  'http://localhost/firefox/+bug/1/'
 
   >>> for tag in find_tags_by_class(browser.contents, 'informational message'):
   ...   print tag.renderContents()
@@ -135,7 +135,7 @@ that page and press the Cancel button, we will return to the bug page.
 
   >>> subscribe_link.click()
   >>> browser.url
-  'http://localhost/products/firefox/+bug/1/+subscribe'
+  'http://localhost/firefox/+bug/1/+subscribe'
 
   >>> subscription_widget = browser.getControl(name='field.subscription')
   >>> subscription_widget.value
@@ -143,7 +143,7 @@ that page and press the Cancel button, we will return to the bug page.
   >>> cancel_button = browser.getControl('Cancel')
   >>> cancel_button.click()
   >>> browser.url
-  'http://localhost/products/firefox/+bug/1/'
+  'http://localhost/firefox/+bug/1/'
 
 Foo Bar wasn't subscribed to the bug.
 
@@ -182,7 +182,7 @@ a dupe of bug #3, then Steve gets indirectly subscribed to bug #3, and
 is presented with the Unsubscribe link instead.
 
   >>> stevea_browser.open(
-  ...     "http://launchpad.dev/products/ubuntu-product/+bug/2/+duplicate")
+  ...     "http://launchpad.dev/ubuntu-product/+bug/2/+duplicate")
 
   >>> stevea_browser.getControl("Duplicate Of").value = "3"
   >>> stevea_browser.getControl("Change").click()
@@ -223,7 +223,7 @@ to see how the unsubscribe notification changes slightly, because he
 gets unsubscribed from more than one duplicate.
 
   >>> stevea_browser.open(
-  ...     "http://launchpad.dev/products/firefox/+bug/1/+duplicate")
+  ...     "http://launchpad.dev/firefox/+bug/1/+duplicate")
   >>> stevea_browser.getControl("Duplicate Of").value = "3"
   >>> stevea_browser.getControl("Change").click()
 
@@ -231,7 +231,7 @@ gets unsubscribed from more than one duplicate.
 previous example.)
 
   >>> stevea_browser.open(
-  ...     "http://launchpad.dev/products/ubuntu-product/+bug/2/+subscribe")
+  ...     "http://launchpad.dev/ubuntu-product/+bug/2/+subscribe")
   >>> stevea_browser.getControl("Continue").click()
 
   >>> stevea_browser.open("http://launchpad.dev/bugs/3")
@@ -253,7 +253,7 @@ previous example.)
 that follow.)
 
   >>> stevea_browser.open(
-  ...     "http://launchpad.dev/products/firefox/+bug/1/+duplicate")
+  ...     "http://launchpad.dev/firefox/+bug/1/+duplicate")
   >>> stevea_browser.getControl("Duplicate Of").value = ""
   >>> stevea_browser.getControl("Change").click()
 
