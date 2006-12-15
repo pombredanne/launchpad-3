@@ -480,6 +480,7 @@ class TicketSet:
                             current_timestamp -interval '%s days'))
                     AND
                     datelastquery  < (current_timestamp - interval '%s days')
+                    AND assignee IS NULL
             """ % sqlvalues(
                 TicketStatus.OPEN, TicketStatus.NEEDSINFO,
                 days_before_expiration, days_before_expiration))
@@ -525,8 +526,8 @@ class TicketSearch:
     """
 
     def __init__(self, search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-                 language=None, sort=None, product=None, distribution=None,
-                 sourcepackagename=None):
+                 language=None, needs_attention_from=None, sort=None,
+                 product=None, distribution=None, sourcepackagename=None):
         self.search_text = search_text
 
         if zope_isinstance(status, Item):
@@ -540,6 +541,10 @@ class TicketSearch:
             self.language = language
 
         self.sort = sort
+        if needs_attention_from is not None:
+            assert IPerson.providedBy(needs_attention_from), (
+                "expected IPerson, got %r" % needs_attention_from)
+        self.needs_attention_from = needs_attention_from
 
         self.product = product
         self.distribution = distribution
@@ -577,6 +582,21 @@ class TicketSearch:
         if self.status:
             constraints.append('Ticket.status IN %s' % sqlvalues(
                 list(self.status)))
+
+        if self.needs_attention_from:
+            constraints.append('''Ticket.id IN (
+                SELECT DISTINCT t.id FROM Ticket t
+                    JOIN TicketMessage tm ON (Ticket.id = tm.ticket)
+                    JOIN Message m ON (tm.message = m.id)
+                    WHERE (t.owner = %(person)s AND
+                           t.status IN %(owner_status)s)
+                        OR (t.owner != %(person)s AND
+                            t.status = %(open_status)s AND
+                            m.owner = %(person)s)
+            )''' % sqlvalues(
+                person=self.needs_attention_from,
+                owner_status=[TicketStatus.NEEDSINFO, TicketStatus.ANSWERED],
+                open_status=TicketStatus.OPEN))
 
         if self.language:
             constraints.append(
@@ -640,13 +660,15 @@ class TicketTargetSearch(TicketSearch):
     """
 
     def __init__(self, search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-                 language=None, sort=None, owner=None, product=None,
-                 distribution=None, sourcepackagename=None):
+                 language=None, owner=None,  needs_attention_from=None,
+                 sort=None, product=None, distribution=None,
+                 sourcepackagename=None):
         assert product is not None or distribution is not None, (
             "Missing a product or distribution context.")
         TicketSearch.__init__(
             self, search_text=search_text, status=status, language=language,
-            sort=sort, product=product, distribution=distribution,
+            needs_attention_from=needs_attention_from, sort=sort,
+            product=product, distribution=distribution,
             sourcepackagename=sourcepackagename)
 
         if owner:
@@ -700,10 +722,15 @@ class TicketPersonSearch(TicketSearch):
 
     def __init__(self, person, search_text=None,
                  status=TICKET_STATUS_DEFAULT_SEARCH, language=None,
-                 participation=None, sort=None):
+                 participation=None, needs_attention=False, sort=None):
+        if needs_attention:
+            needs_attention_from = person
+        else:
+            needs_attention_from = None
+
         TicketSearch.__init__(
             self, search_text=search_text, status=status, language=language,
-            sort=sort)
+            needs_attention_from=needs_attention_from, sort=sort)
 
         assert IPerson.providedBy(person), "expected IPerson, got %r" % person
         self.person = person

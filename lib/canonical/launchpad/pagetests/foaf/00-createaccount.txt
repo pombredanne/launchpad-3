@@ -1,6 +1,6 @@
   Go to the register page.
 
-  Workaround while https://launchpad.net/products/launchpad/+bug/39016 is not
+  Workaround while https://launchpad.net/launchpad/+bug/39016 is not
   fixed.
   >>> from canonical.launchpad.mail import stub
   >>> stub.test_emails[:] = []
@@ -327,7 +327,7 @@
   ... """ % path)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/people/foo
+  Location: http://localhost:9000/~foo
   ...
 
   >>> foo = PersonSet().getByName('foo')
@@ -339,7 +339,7 @@
   turned on.
 
   >>> print http(r"""
-  ... GET /people/foo/+edit HTTP/1.1
+  ... GET /~foo/+edit HTTP/1.1
   ... Authorization: Basic Zm9vQGJhei5jb206Zg==
   ... """)
   HTTP/1.1 200 Ok

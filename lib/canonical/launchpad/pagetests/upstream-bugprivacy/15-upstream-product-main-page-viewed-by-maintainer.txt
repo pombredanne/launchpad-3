@@ -1,7 +1,7 @@
 View the bugs on Mozilla Firefox as Sample Person:
 
     >>> browser.addHeader("Authorization", "Basic test@canonical.com:test")
-    >>> browser.open("http://launchpad.dev/products/firefox")
+    >>> browser.open("http://launchpad.dev/firefox")
 
     >>> print browser.contents
     <!DOCTYPE...

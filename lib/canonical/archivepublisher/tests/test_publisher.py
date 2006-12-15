@@ -224,6 +224,54 @@ class TestPublisher(TestNativePublishingBase):
         # remove locally created dir
         shutil.rmtree(test_pool_dir)
 
+    def testReleaseFile(self):
+        """Test release file writing.
+
+        The release file should contain the MD5, SHA1 and SHA256 for each
+        index created for a given distrorelease.
+        """
+        from canonical.archivepublisher.publishing import Publisher
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool, self.ubuntutest)
+
+        pub_source = self.getPubSource(
+            "foo", "main", "foo.dsc", filecontent='Hello world',
+            status=PackagePublishingStatus.PENDING)
+
+        publisher.A_publish(False)
+        publisher.C_doFTPArchive(False)
+        publisher.D_writeReleaseFiles(False)
+
+        release_file = os.path.join(
+            self.config.distsroot, 'breezy-autotest', 'Release')
+        release_contents = open(release_file).read().splitlines()
+
+        md5_header = 'MD5Sum:'
+        self.assertTrue(md5_header in release_contents)
+        md5_header_index = release_contents.index(md5_header)
+        first_md5_line = release_contents[md5_header_index + 1]
+        self.assertEqual(
+            first_md5_line,
+            (' a5e5742a193740f17705c998206e18b6              '
+             '114 main/source/Release'))
+
+        sha1_header = 'SHA1:'
+        self.assertTrue(sha1_header in release_contents)
+        sha1_header_index = release_contents.index(sha1_header)
+        first_sha1_line = release_contents[sha1_header_index + 1]
+        self.assertEqual(
+            first_sha1_line,
+            (' 6222b7e616bcc20a32ec227254ad9de8d4bd5557              '
+             '114 main/source/Release'))
+
+        sha256_header = 'SHA256:'
+        self.assertTrue(sha256_header in release_contents)
+        sha256_header_index = release_contents.index(sha256_header)
+        first_sha256_line = release_contents[sha256_header_index + 1]
+        self.assertEqual(
+            first_sha256_line,
+            (' 297125e9b0f5da85552691597c9c4920aafd187e18a4e01d2ba70d'
+             '8d106a6338              114 main/source/Release'))
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
