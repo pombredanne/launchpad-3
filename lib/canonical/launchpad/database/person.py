@@ -488,17 +488,37 @@ class Person(SQLBase):
             sums=', '.join(sums), conditions=' AND '.join(conditions)))
         distribution_set = getUtility(IDistributionSet)
         sourcepackagename_set = getUtility(ISourcePackageNameSet)
+        packages_with_bugs = set()
         L = []
         for row in shortlist(cur.dictfetchall()):
             distribution = distribution_set.get(row['distribution'])
             sourcepackagename = sourcepackagename_set.get(
                 row['sourcepackagename'])
+            source_package = distribution.getSourcePackage(sourcepackagename)
+            # XXX: Add a tuple instead of the distribution package
+            # directly, since DistributionSourcePackage doesn't define a
+            # __hash__ method.
+            # -- Bjorn Tillenius, 2006-12-15
+            packages_with_bugs.add((distribution, sourcepackagename))
             package_counts = dict(
-                package=distribution.getSourcePackage(sourcepackagename),
+                package=source_package,
                 open=row['open_bugs'],
                 open_critical=row['open_critical_bugs'],
                 open_unassigned=row['open_unassigned_bugs'],
                 open_inprogress=row['open_inprogress_bugs'])
+            L.append(package_counts)
+
+        # Only packages with open bugs were included in the query. Let's
+        # add the rest of the packages as well.
+        all_packages = set(
+            (distro_package.distribution, distro_package.sourcepackagename)
+            for distro_package in self.getBugContactPackages())
+        for distribution, sourcepackagename in all_packages.difference(
+                packages_with_bugs):
+            package_counts = dict(
+                package=distribution.getSourcePackage(sourcepackagename),
+                open=0, open_critical=0, open_unassigned=0,
+                open_inprogress=0)
             L.append(package_counts)
 
         return L

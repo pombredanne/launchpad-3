@@ -34,6 +34,12 @@ states.
     open_inprogress: 0
     open_unassigned: 1
     package: mozilla-firefox (Ubuntu)
+    <BLANKLINE>
+    open: 0
+    open_critical: 0
+    open_inprogress: 0
+    open_unassigned: 0
+    package: pmount (Ubuntu)
 
 If we file a new unassigned bug on mozilla-firefox both the open and
 open_unassigned count will increase by one.
@@ -56,6 +62,12 @@ open_unassigned count will increase by one.
     open_inprogress: 0
     open_unassigned: 2
     package: mozilla-firefox (Ubuntu)
+    <BLANKLINE>
+    open: 0
+    open_critical: 0
+    open_inprogress: 0
+    open_unassigned: 0
+    package: pmount (Ubuntu)
 
 If we mark the bug as critical, the open_critical count will increase.
 
@@ -73,6 +85,12 @@ If we mark the bug as critical, the open_critical count will increase.
     open_inprogress: 0
     open_unassigned: 2
     package: mozilla-firefox (Ubuntu)
+    <BLANKLINE>
+    open: 0
+    open_critical: 0
+    open_inprogress: 0
+    open_unassigned: 0
+    package: pmount (Ubuntu)
 
 If we assign the bug to someone, the open_unassigned count will
 decrease.
@@ -87,6 +105,12 @@ decrease.
     open_inprogress: 0
     open_unassigned: 1
     package: mozilla-firefox (Ubuntu)
+    <BLANKLINE>
+    open: 0
+    open_critical: 0
+    open_inprogress: 0
+    open_unassigned: 0
+    package: pmount (Ubuntu)
 
 If we mark the bug as In Progress, the open_inprogress will increase.
 
@@ -101,6 +125,12 @@ If we mark the bug as In Progress, the open_inprogress will increase.
     open_inprogress: 1
     open_unassigned: 1
     package: mozilla-firefox (Ubuntu)
+    <BLANKLINE>
+    open: 0
+    open_critical: 0
+    open_inprogress: 0
+    open_unassigned: 0
+    package: pmount (Ubuntu)
 
 === Privacy ===
 
@@ -119,6 +149,12 @@ open bug, even though there are two.
     open_inprogress: 0
     open_unassigned: 1
     package: mozilla-firefox (Ubuntu)
+    <BLANKLINE>
+    open: 0
+    open_critical: 0
+    open_inprogress: 0
+    open_unassigned: 0
+    package: pmount (Ubuntu)
 
 Foo Bar still can see all the bugs, though.
 
@@ -129,6 +165,12 @@ Foo Bar still can see all the bugs, though.
     open_inprogress: 1
     open_unassigned: 1
     package: mozilla-firefox (Ubuntu)
+    <BLANKLINE>
+    open: 0
+    open_critical: 0
+    open_inprogress: 0
+    open_unassigned: 0
+    package: pmount (Ubuntu)
 
 === Duplicate Bugs ===
 
@@ -144,29 +186,9 @@ Duplicates bugs are omitted from the counts.
     open_inprogress: 0
     open_unassigned: 1
     package: mozilla-firefox (Ubuntu)
-
-You may have noticed that only one package is in the returned list, even
-though Foo Bar is bug contact for two packages. This is because Only
-packages that have bugs open on them are included in the list.
-
-    >>> from canonical.launchpad.interfaces import ISourcePackageNameSet
-    >>> bug.duplicateof = None
-    >>> syncUpdate(bug)
-    >>> pmount = getUtility(ISourcePackageNameSet)['pmount']
-    >>> ubuntu_firefox_bugtask.sourcepackagename = pmount
-    >>> syncUpdate(ubuntu_firefox_bugtask)
-
-    >>> for package_count in foo_bar.getBugContactOpenBugCounts(foo_bar):
-    ...     print_package_counts(package_count)
-    ...     print
-    open: 1
+    <BLANKLINE>
+    open: 0
     open_critical: 0
     open_inprogress: 0
-    open_unassigned: 1
-    package: mozilla-firefox (Ubuntu)
-    <BLANKLINE>
-    open: 1
-    open_critical: 1
-    open_inprogress: 1
     open_unassigned: 0
     package: pmount (Ubuntu)
