@@ -1,9 +1,9 @@
 This page shows a list of PO templates contained within all source packages
 for the distrorelease that is the translation focus for a given distribution.
 
-  >>> browser.open('http://localhost/distros/ubuntu/+translations')
+  >>> browser.open('http://localhost/ubuntu/+translations')
   >>> browser.url
-  'http://localhost/distros/ubuntu/+translations'
+  'http://localhost/ubuntu/+translations'
 
 Check that there aren't disabled languages shown here:
 
@@ -29,11 +29,11 @@ Now, we are going to check that the language list we got is pointing to the
 right translation focus.
 
   >>> browser.getLink('Spanish')
-  <Link text='Spanish' url='http://localhost/distros/ubuntu/hoary/+lang/es'>
+  <Link text='Spanish' url='http://localhost/ubuntu/hoary/+lang/es'>
   >>> browser.getLink('Italian')
-  <Link text='Italian' url='http://localhost/distros/ubuntu/hoary/+lang/it'>
+  <Link text='Italian' url='http://localhost/ubuntu/hoary/+lang/it'>
   >>> browser.getLink('Portuguese (Brazil)')
-  <Link text='Portuguese (Brazil)' url='http://localhost/distros/ubuntu/hoary/+lang/pt_BR'>
+  <Link text='Portuguese (Brazil)' url='http://localhost/ubuntu/hoary/+lang/pt_BR'>
 
 And the other Ubuntu distributions should be there too.
 
@@ -50,30 +50,30 @@ We are not showing its translation status here, so we should have links to
 their particular translation status.
 
   >>> browser.getLink('6.6.6 Breezy Badger Autotest')
-  <Link text='6.6.6 Breezy Badger Autotest' url='http://localhost/distros/ubuntu/breezy-autotest/+translations'>
+  <Link text='6.6.6 Breezy Badger Autotest' url='http://localhost/ubuntu/breezy-autotest/+translations'>
   >>> browser.getLink('5.10 The Grumpy Groundhog Release')
-  <Link text='5.10 The Grumpy Groundhog Release' url='http://localhost/distros/ubuntu/grumpy/+translations'>
+  <Link text='5.10 The Grumpy Groundhog Release' url='http://localhost/ubuntu/grumpy/+translations'>
   >>> browser.getLink('4.10 The Warty Warthog Release')
-  <Link text='4.10 The Warty Warthog Release' url='http://localhost/distros/ubuntu/warty/+translations'>
+  <Link text='4.10 The Warty Warthog Release' url='http://localhost/ubuntu/warty/+translations'>
 
 But we are already showing the status for the translation focus one,
 we should not have a link to it.
 
-  >>> 'http://localhost/distros/ubuntu/hoary/+translations' in browser.contents
+  >>> 'http://localhost/ubuntu/hoary/+translations' in browser.contents
   False
 
 Let's try now a distribution that lacks a translation focus.
 Debian is a good example. We should get latest release as the translation focus.
 
-  >>> browser.open('http://localhost/distros/debian/+translations')
+  >>> browser.open('http://localhost/debian/+translations')
   >>> browser.url
-  'http://localhost/distros/debian/+translations'
+  'http://localhost/debian/+translations'
 
 It doesn't have any translation, so we will get the defaul geoIP languages
 pointing to the latest release, Hoary.
 
   >>> browser.getLink('Zulu')
-  <Link text='Zulu' url='http://localhost/distros/debian/sarge/+lang/zu'>
+  <Link text='Zulu' url='http://localhost/debian/sarge/+lang/zu'>
 
 And the other Ubuntu distributions should be there too.
 
@@ -88,12 +88,12 @@ We are not showing its translation status here, so we should have links to
 their particular translation status.
 
   >>> browser.getLink('3.2 Sid')
-  <Link text='3.2 Sid' url='http://localhost/distros/debian/sid/+translations'>
+  <Link text='3.2 Sid' url='http://localhost/debian/sid/+translations'>
   >>> browser.getLink('3.0 WOODY')
-  <Link text='3.0 WOODY' url='http://localhost/distros/debian/woody/+translations'>
+  <Link text='3.0 WOODY' url='http://localhost/debian/woody/+translations'>
 
 But we are already showing the status for the translation focus one,
 we should not have a link to it.
 
-  >>> 'http://localhost/distros/debian/sarge/+translations' in browser.contents
+  >>> 'http://localhost/debian/sarge/+translations' in browser.contents
   False

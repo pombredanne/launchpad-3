@@ -34,6 +34,11 @@
   <browser:defaultView
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"
     name="+index" />
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IDistributionSourcePackage"
+    layer="canonical.launchpad.layers.AnswersLayer"
+    name="+tickets"
+    />
 
   <browser:url
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"

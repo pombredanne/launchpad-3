@@ -41,6 +41,11 @@ class Sprint(SQLBase):
     summary = StringCol(notNull=True)
     driver = ForeignKey(dbName='driver', foreignKey='Person')
     home_page = StringCol(notNull=False, default=None)
+    homepage_content = StringCol(default=None)
+    emblem = ForeignKey(
+        dbName='emblem', foreignKey='LibraryFileAlias', default=None)
+    gotchi = ForeignKey(
+        dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
     address = StringCol(notNull=False, default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
     time_zone = StringCol(notNull=True)
