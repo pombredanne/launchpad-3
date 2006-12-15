@@ -906,6 +906,7 @@ class POMsgSetView(LaunchpadView):
         self.translations = translations
         self.error = error
         self.is_fuzzy = is_fuzzy
+        self.is_fuzzy_disabled = self.user is None
 
         # Set up alternative language variables. XXX: This could be made
         # much simpler if we built suggestions externally in the parent

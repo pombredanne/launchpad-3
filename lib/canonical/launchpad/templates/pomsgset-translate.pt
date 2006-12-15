@@ -18,7 +18,12 @@
 
     <div metal:fill-slot="main">
 
-      <div>You are translating</div>
+      <tal:notloggedin condition="not:request/lp:person">
+        <div>You are browsing</div>
+      </tal:notloggedin>
+      <tal:loggedin condition="request/lp:person">
+        <div>You are translating</div>
+      </tal:loggedin>
       <h1>
         <tal:productseries
           condition="exists:context/pofile/potemplate/productseries/displayname"
@@ -73,7 +78,7 @@
               <div tal:replace="structure view/pomsgset_view" />
             </tbody>
             <tfoot>
-              <tr>
+              <tr tal:condition="request/lp:person">
                 <th colspan="5">
                   <tal:review
                     condition="not: view/user_is_official_translator"

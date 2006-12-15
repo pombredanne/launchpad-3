@@ -32,9 +32,95 @@ interested on doesn't have any translation.
   ...             td_translation.renderContents())
 
 
-Let's identify us first.
+First, we need to be sure that anonymous users are able to browse translations
+but they don't have a chance to change anything.
+
+  >>> browser.open(
+  ...     'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/'
+  ...     '+pots/evolution-2.2/es/5')
+  >>> browser.url
+  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/5/+translate'
+
+The set of things that should be hidden in this case are:
+
+ - No msgset_134_es_translation_0_new_checkbox or
+   msgset_134_es_translation_0_new tags. Those are used to introduce
+   new translations/suggestions so it makes no sense to allow that in a read
+   only mode.
+ - No copy buttons, for this message: msgset_134_singular_copy,
+   msgset_134_es_translation_0_copy, msgset_134_es_suggestion_689_0_copy,
+   msgset_134_es_suggestion_4_0_copy and msgset_134_es_suggestion_690_0_copy.
+ - The 'Needs review' flag should not be editable, ie. disabled.
+ - The 'submit_translations' submit button.
+
+  >>> 'msgset_134_es_translation_0_new_checkbox' in browser.contents
+  False
+  >>> 'msgset_134_es_translation_0_new' in browser.contents
+  False
+  >>> 'msgset_134_singular_copy' in browser.contents
+  False
+  >>> 'msgset_134_es_translation_0_copy' in browser.contents
+  False
+  >>> 'msgset_134_es_suggestion_689_0_copy' in browser.contents
+  False
+  >>> 'msgset_134_es_suggestion_4_0_copy' in browser.contents
+  False
+  >>> 'msgset_134_es_suggestion_690_0_copy' in browser.contents
+  False
+  >>> 'name="submit_translations"' in browser.contents
+  False
+  >>> for tag in find_tags_by_class(browser.contents, 'fuzzy-checkbox'):
+  ...     print tag
+  <label class="fuzzy-checkbox">
+  <input type="checkbox" value="fuzzy" disabled="disabled" name="msgset_134_es_needsreview" />
+  <BLANKLINE>
+              Someone should review this translation
+  <BLANKLINE>
+  <BLANKLINE>
+          </label>
+
+
+To be completely sure that previous test is working because the form is
+behaving as it should, instead of working because we don't use those tags
+anymore, we check now that we can see them when we are logged in.
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+  >>> browser.open(
+  ...     'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/'
+  ...     '+pots/evolution-2.2/es/5')
+  >>> browser.url
+  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/5/+translate'
+
+And now, we can see that the tags exist:
+
+  >>> 'msgset_134_es_translation_0_new_checkbox' in browser.contents
+  True
+  >>> 'msgset_134_es_translation_0_new' in browser.contents
+  True
+  >>> 'msgset_134_singular_copy' in browser.contents
+  True
+  >>> 'msgset_134_es_translation_0_copy' in browser.contents
+  True
+  >>> 'msgset_134_es_suggestion_689_0_copy' in browser.contents
+  True
+  >>> 'msgset_134_es_suggestion_4_0_copy' in browser.contents
+  True
+  >>> 'msgset_134_es_suggestion_690_0_copy' in browser.contents
+  True
+  >>> 'name="submit_translations"' in browser.contents
+  True
+  >>> for tag in find_tags_by_class(browser.contents, 'fuzzy-checkbox'):
+  ...     print tag
+  <label class="fuzzy-checkbox">
+  <input type="checkbox" value="fuzzy" name="msgset_134_es_needsreview" />
+  <BLANKLINE>
+              Someone should review this translation
+  <BLANKLINE>
+  <BLANKLINE>
+          </label>
+
+
+Now, we are going to test common parts of the navigation.
 
 The main page for a pomsgset object should redirect us to the translation form.
 
