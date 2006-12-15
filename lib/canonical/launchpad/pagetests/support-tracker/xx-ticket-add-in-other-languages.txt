@@ -1,11 +1,11 @@
-== Adding tickets in languages other than English ==
+= Adding tickets in languages other than English =
 
 It is possible to create support requests in a language other than
 English. The 'Request Support' page has a pop-up where the user
 can select the language of the request. By default, the support request
 language is 'English'.
 
-    >>> user_browser.open('http://launchpad.dev/distros/ubuntu/+tickets')
+    >>> user_browser.open('http://launchpad.dev/ubuntu/+tickets')
     >>> user_browser.getLink('Request Support').click()
     >>> user_browser.getControl('Language').value
     ['en']
@@ -17,7 +17,7 @@ link to enable to change his preferred languages:
     >>> print user_browser.title
     Sample Person's preferred languages
     >>> user_browser.url
-    '.../people/name12/+editlanguages'
+    '.../~name12/+editlanguages'
 
 Although it's possible to add tickets in any of the user's preferred
 languages, we need to do some checks to warn the user in case he's using
@@ -25,7 +25,7 @@ a language that is not spoken/understood by any of the context's support
 contacts.
 
     >>> browser.addHeader('Authorization', 'Basic salgado@ubuntu.com:zeca')
-    >>> browser.open('http://launchpad.dev/distros/ubuntu/+addticket')
+    >>> browser.open('http://launchpad.dev/ubuntu/+addticket')
 
     >>> browser.getControl('Language').value = ['pt_BR']
     >>> browser.getControl('Summary').value = (
@@ -71,7 +71,7 @@ from making a request in the language of his choice.
     ...     ).encode('utf-8')
     >>> browser.getControl('Add').click()
     >>> browser.url
-    '.../distros/ubuntu/+ticket/...'
+    '.../ubuntu/+ticket/...'
     >>> browser.title
     'Ubuntu support request #...Abrir uma pagina que requer...'
 
@@ -86,7 +86,7 @@ then changes his mind on the second page.
     >>> from zope.testbrowser.testing import Browser
     >>> browser = Browser()
     >>> browser.addHeader('Authorization', 'Basic daf@canonical.com:daf')
-    >>> browser.open('http://launchpad.dev/distros/ubuntu/+addticket')
+    >>> browser.open('http://launchpad.dev/ubuntu/+addticket')
 
     >>> browser.getControl('Language').value = ['en']
     >>> browser.getControl('Summary').value = 'some random words'
@@ -108,7 +108,7 @@ Welsh, we'll have to warn him.
     >>> browser.getControl('Add').click()
 
     >>> browser.url
-    'http://launchpad.dev/distros/ubuntu/+addticket'
+    'http://launchpad.dev/ubuntu/+addticket'
 
     >>> for tag in find_tags_by_class(browser.contents, 'warning message'):
     ...     print tag.renderContents()
@@ -141,7 +141,7 @@ new support request.
 
     >>> browser.getControl('Add').click()
     >>> browser.url
-    '.../distros/ubuntu/+ticket/...'
+    '.../ubuntu/+ticket/...'
     >>> browser.title.decode('utf-8')
     u'Ubuntu support request #...\u52a9\u3051\u306e\u8981\u6c42...'
     >>> soup = BeautifulSoup(browser.contents)

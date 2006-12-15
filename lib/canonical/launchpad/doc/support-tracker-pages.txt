@@ -1,5 +1,4 @@
-Support Tracker Pages
-=====================
+= Support Tracker Pages =
 
 Several views are used to handle the various operations on a ticket.
 
@@ -12,15 +11,15 @@ Several views are used to handle the various operations on a ticket.
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> firefox_ticket = firefox.getTicket(2)
 
-    (The firefox_ticket doesn't have any subscribers, let's subscribe
-    the owner.)
+    # The firefox_ticket doesn't have any subscribers, let's subscribe
+    # the owner.
     >>> login('test@canonical.com')
     >>> firefox_ticket.subscribe(firefox_ticket.owner)
     <TicketSubscription...>
 
-    (Let's define a helper function which commits the transaction, so
-    that the notifications are queued in stub.test_emails and pops these
-    notifications from the queue.)
+    # Let's define a helper function which commits the transaction, so
+    # that the notifications are queued in stub.test_emails and pops these
+    # notifications from the queue.
     >>> from canonical.launchpad.mail import stub
     >>> import email
     >>> import transaction
@@ -33,8 +32,7 @@ Several views are used to handle the various operations on a ticket.
     ...     stub.test_emails = []
     ...     return notifications
 
-TicketSubscriptionView
-----------------------
+== TicketSubscriptionView ==
 
 This view is used to subscribe and unsubscribe from a ticket.
 Subscription is done when the user click on the 'Subscribe' button.
@@ -74,22 +72,21 @@ These two actions didn't generate any notification mails:
     >>> len(pop_notifications())
     0
 
-TicketWorkflowView
-------------------
+== TicketWorkflowView ==
 
 TicketWorkflowView is the view used to handle the comments submitted by
 users on the ticket. The actions available on it always depends on the
 current state of the ticket and the identify of the user viewing the
 form.
 
-    (Setup a harness to easily test the view.)
+    # Setup a harness to easily test the view.
     >>> from canonical.launchpad.ftests import LaunchpadFormHarness
     >>> from canonical.launchpad.browser import TicketWorkflowView
     >>> workflow_harness = LaunchpadFormHarness(
     ...     firefox_ticket, TicketWorkflowView)
 
-    (Let's define a helper method that will return the names of the
-    available actions.)
+    # Let's define a helper method that will return the names of the
+    # available actions.
     >>> def getAvailableActionNames(view):
     ...     names = [action.__name__.split('.')[-1]
     ...              for action in view.actions
@@ -275,11 +272,10 @@ the SOLVED state.
     >>> workflow_harness.redirectionTarget()
     '.../+ticket/2'
 
-    (Clear all notifications.)
+    # Clear all notifications.
     >>> notifications = pop_notifications()
 
-TicketMakeBugView
------------------
+== TicketMakeBugView ==
 
 The TicketMakeBugView is used to handle the creation of a bug from a
 ticket. In addition to creating a bug, this operation will also link
@@ -342,8 +338,7 @@ If the ticket already has bugs linked to it, no new bug can be created.
     ...     print n.message
     You cannot create a bug report...
 
-BugLinkView and BugsUnlinkView
-------------------------------
+== BugLinkView and BugsUnlinkView ==
 
 Linking bug (+linkbug) to the ticket is managed through the BugLinkView.
 Unlinking bugs from the ticket is managed through the BugsUnlinkView.
@@ -351,8 +346,7 @@ See 'buglinktarget-pages.txt' for their documentation. The notifications
 sent along linking and unlinking bugs can be found in
 'support-tracker-notifications.txt'.
 
-TicketRejectView
-----------------
+== TicketRejectView ==
 
 That view is used by administrator and support contacts to reject a
 support request.
@@ -370,8 +364,7 @@ support request.
     >>> print firefox_ticket.status.title
     Invalid
 
-TicketChangeStatusView
-----------------------
+== TicketChangeStatusView ==
 
 TicketChangeStatusView is used by administrator to change the status
 outside of the comment workflow.
@@ -389,11 +382,10 @@ outside of the comment workflow.
     >>> print firefox_ticket.status.title
     Solved
 
-    (Clear the notification)
+    # Clear the notification.
     >>> notifications = pop_notifications()
 
-TicketEditView
---------------
+== TicketEditView ==
 
 TicketEditView available through '+edit' is used to edit most ticket
 fields. It can be used to edit the ticket title and description and also
@@ -492,11 +484,10 @@ a distribution ticket:
     >>> firefox_ticket.sourcepackagename is None
     True
 
-    (Clear out the pending notifications.)
+    # Clear out the pending notifications.
     >>> notifications = pop_notifications()
 
-The TicketLanguage vocabulary
------------------------------
+== The TicketLanguage vocabulary ==
 
 The TicketLanguageVocabularyFactory is an IContextSourceBinder which
 is used in browser forms to create a vocabulary containing only the
@@ -646,8 +637,7 @@ excluded:
     >>> sorted(language.code for language in view.user_support_languages)
     [u'cy', u'en', u'ja']
 
-SearchTicketsView
------------------
+== SearchTicketsView ==
 
 This view is used as a base class to search for tickets. It is intended
 to be easily customizable to offer more specific reports, while
@@ -683,11 +673,6 @@ It also includes a widget to select the sort order.
 
 The tickets matching the search are available by using the
 searchResults() method. The returned results are batched.
-
-    # We want 5 items per page for these tests.
-    >>> from canonical.config import config
-    >>> original_default_batch_size = config.launchpad.default_batch_size
-    >>> config.launchpad.default_batch_size = 5
 
     >>> tickets = search_view.searchResults()
     >>> tickets
@@ -791,9 +776,3 @@ It works also with user submitted values:
     >>> print translate(search_view_harness.view.empty_listing_message)
     There are no support requests about "evolution" for Ubuntu with the
     requested statuses.
-
-Cleanup
--------
-
-    # Restore original batch size.
-    >>> config.launchpad.default_batch_size = original_default_batch_size

@@ -16,20 +16,31 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Context title goes here</h3>
-  <h1>Register someone else</h1>
+  <h3 tal:content="context/title">Sprint Title</h3>
 </metal:heading>
 
 <div metal:fill-slot="main">
 
-  <div metal:use-macro="context/@@launchpad_generalform/generalform">
+  <div metal:use-macro="context/@@launchpad_form/form">
+
+    <h1 metal:fill-slot="heading">Register someone else</h1>
 
     <div metal:fill-slot="extra_info" class="documentDescription">
       Use this form to register someone else to attend the meeting.
+      Use the sprint's local time.
     </div>
 
   </div>
 
+</div>
+
+<div metal:fill-slot="help">
+<p>If you know that someone is attending the sprint, but has not yet
+registered themselves, you can register them here.</p>
+
+<p>The times should be entered in the local time for the location of
+the sprint, which is
+<kbd tal:content="context/time_zone">UTC</kbd>.</p>
 </div>
     
 </body>

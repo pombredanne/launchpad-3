@@ -8,7 +8,7 @@ bug contacts, if there are any.
     >>> browser.addHeader("Authorization", "Basic mark@hbd.com:test")
 
     >>> browser.open(
-    ...     "http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/"
+    ...     "http://localhost:9000/ubuntu/+source/mozilla-firefox/"
     ...     "+filebug-advanced")
 
     >>> browser.getControl(name="field.title").value = "a public bug"
@@ -17,7 +17,7 @@ bug contacts, if there are any.
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> print browser.url
-    http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/+bug/13
+    http://localhost:9000/ubuntu/+source/mozilla-firefox/+bug/13
 
 We should have three subscribers now. The bug reporter (also a package
 contact), sabdfl, the distro contact, carlos, and the other package
@@ -52,7 +52,7 @@ Cc'd, because the Ubuntu distribution does not have a security contact.
     >>> logout()
 
     >>> browser.open(
-    ...     "http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/"
+    ...     "http://localhost:9000/ubuntu/+source/mozilla-firefox/"
     ...     "+filebug-advanced")
     >>> browser.getControl(name="field.title").value = "a PRIVATE bug"
     >>> browser.getControl(name="field.comment").value = "top sekrit"
@@ -61,7 +61,7 @@ Cc'd, because the Ubuntu distribution does not have a security contact.
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> print browser.url
-    http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/+bug/14
+    http://localhost:9000/ubuntu/+source/mozilla-firefox/+bug/14
 
     >>> login("mark@hbd.com")
 

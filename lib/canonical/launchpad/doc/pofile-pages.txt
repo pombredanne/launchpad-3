@@ -161,6 +161,7 @@ Now we do the submit
     ...     'batch': '10',
     ...     'start': '10',
     ...     'show': 'untranslated',
+    ...     'lock_timestamp': '2006-11-28 13:00:00 UTC',
     ...     'msgset_130': None,
     ...     'msgset_130_es_translation_0': 'Foo',
     ...     'msgset_138': None,
@@ -206,6 +207,7 @@ their sequence is 0.
     ...     'batch': '10',
     ...     'start': '0',
     ...     'show': 'untranslated',
+    ...     'lock_timestamp': '2006-11-28 13:00:00 UTC',
     ...     'msgset_161': None,
     ...     'msgset_161_es_translation_0': 'Foo',
     ...     'submit_translations': 'Save &amp; Continue'})
@@ -261,18 +263,6 @@ Now, we do the upload.
     ...     'pofile_upload': 'Upload'})
     >>> request.method = 'POST'
     >>> pofile_view = getView(pofile_es, '+upload', request)
-
-We get an error, because we have disabled this kind of uploads
-while bug #68014 is fixed.
-
-    >>> pofile_view.initialize()
-    Traceback (most recent call last):
-    ...
-    UnexpectedFormData: Only admins can use this form.
-
-We log now as an admin and see that be sure that submissions still work.
-
-    >>> login('carlos@canonical.com')
     >>> pofile_view.initialize()
 
 As we can see, we have now one entry in our queue.
