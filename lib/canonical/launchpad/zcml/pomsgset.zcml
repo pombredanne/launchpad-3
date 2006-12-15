@@ -51,6 +51,7 @@
 
     <browser:page
         name="+translate"
+        facet="translations"
         for="canonical.launchpad.interfaces.IPOMsgSet"
         permission="launchpad.AnyPerson"
         template="../templates/pomsgset-translate.pt"

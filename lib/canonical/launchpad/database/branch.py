@@ -94,6 +94,10 @@ class Branch(SQLBase):
     bug_branches = SQLMultipleJoin(
         'BugBranch', joinColumn='branch', orderBy='id')
 
+    spec_links = SQLMultipleJoin('SpecificationBranch',
+        joinColumn='branch',
+        orderBy='id')
+
     @property
     def related_bugs(self):
         """See IBranch."""

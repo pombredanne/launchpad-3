@@ -1,7 +1,7 @@
   These are the bugs reported by Foo Bar.
 
   >>> print http(r"""
-  ... GET /people/name16/+reportedbugs HTTP/1.1
+  ... GET /~name16/+reportedbugs HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...

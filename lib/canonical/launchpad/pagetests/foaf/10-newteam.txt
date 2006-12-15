@@ -20,7 +20,7 @@
   >>> browser.getControl('Add').click()
 
   >>> browser.url
-  'http://launchpad.dev/people/myemail'
+  'http://launchpad.dev/~myemail'
 
   >>> browser.title
   'my own team in Launchpad'
@@ -52,7 +52,7 @@ for that team. This contact address must not be registered in Launchpad.
   ...     print tag
   <...An error occurred...
   ...
-  test@canonical.com is already taken...
+  ...test@canonical.com is already registered in Launchpad and is associated...
   ...
 
 We also check if the given email address is syntactically valid.
@@ -73,7 +73,7 @@ Now we enter a valid email address that's not registered in Launchpad.
   >>> browser.getControl('Add').click()
 
   >>> browser.url
-  'http://launchpad.dev/people/newtestteam'
+  'http://launchpad.dev/~newtestteam'
 
   >>> for tag in find_tags_by_class(browser.contents, 'informational message'):
   ...     tag.renderContents()

@@ -91,6 +91,9 @@
       name="+listing-compact"
       template="../templates/specification-listing-compact.pt" />
     <browser:page
+        name="+portlet-details"
+        template="../templates/specification-portlet-details.pt" />
+    <browser:page
       name="+portlet-lifecycle"
       template="../templates/specification-portlet-lifecycle.pt" />
     <browser:page
@@ -105,6 +108,9 @@
     <browser:page
       name="+portlet-feedbackqueue"
       template="../templates/specification-portlet-feedbackqueue.pt" />
+    <browser:page
+        name="+portlet-branches"
+        template="../templates/specification-portlet-branches.pt" />
   </browser:pages>
 
   <browser:pages
@@ -390,6 +396,14 @@
     class="canonical.launchpad.browser.SpecificationTreeDotOutput"
     permission="zope.Public"
     attribute="__call__"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ISpecification"
+    name="+linkbranch"
+    class="canonical.launchpad.browser.SpecificationLinkBranchView"
+    template="../templates/specification-linkbranch.pt"
+    permission="launchpad.AnyPerson"
     />
 
   <!-- SpecificationSet -->

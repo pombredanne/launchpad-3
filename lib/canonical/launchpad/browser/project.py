@@ -25,18 +25,19 @@ from zope.app.form.browser import TextWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.security.interfaces import Unauthorized
 
+from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    ICalendarOwner, IPerson, IProduct, IProductSet, IProject, IProjectSet)
+    ICalendarOwner, IPerson, IProduct, IProductSet, IProject, IProjectSet,
+    ILaunchpadRoot, NotFoundError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
-    enabled_with_permission, GetitemNavigation, LaunchpadFormView,
-    LaunchpadEditFormView, Link, Navigation, StandardLaunchpadFacets,
-    structured)
+    enabled_with_permission, LaunchpadEditFormView, Link, LaunchpadFormView,
+    Navigation, RedirectionNavigation, StandardLaunchpadFacets, structured)
 
 
 class ProjectNavigation(Navigation, CalendarTraversalMixin):
@@ -53,15 +54,22 @@ class ProjectNavigation(Navigation, CalendarTraversalMixin):
         return self.context.getProduct(name)
 
 
-class ProjectSetNavigation(GetitemNavigation):
+class ProjectSetNavigation(RedirectionNavigation):
 
     usedfor = IProjectSet
 
     def breadcrumb(self):
         return 'Projects'
 
-    def breadcrumb(self):
-        return 'Projects'
+    @property
+    def redirection_root_url(self):
+        return canonical_url(getUtility(ILaunchpadRoot))
+
+    def traverse(self, name):
+        # Raise a 404 on an invalid project name
+        if self.context.getByName(name) is None:
+            raise NotFoundError(name)
+        return RedirectionNavigation.traverse(self, name)
 
 
 class ProjectSOP(StructuralObjectPresentation):
@@ -183,83 +191,6 @@ class ProjectSpecificationsMenu(ApplicationMenu):
     def assignments(self):
         text = 'Assignments'
         return Link('+assignments', text, icon='info')
-
-
-class ProjectView(object):
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.form = self.request.form
-
-    #
-    # XXX: this code is broken -- see bug 47769
-    #
-    def hasProducts(self):
-        return len(list(self.context.products())) > 0
-
-    #
-    # XXX: this code is broken -- see bug 47769
-    #
-    def productTranslationStats(self):
-        for product in self.context.products():
-            total = 0
-            currentCount = 0
-            rosettaCount = 0
-            updatesCount = 0
-            for language in helpers.request_languages(self.request):
-                total += product.messageCount()
-                currentCount += product.currentCount(language.code)
-                rosettaCount += product.rosettaCount(language.code)
-                updatesCount += product.updatesCount(language.code)
-
-            nonUpdatesCount = currentCount - updatesCount
-            translated = currentCount  + rosettaCount
-            untranslated = total - translated
-            try:
-                currentPercent = float(currentCount) / total * 100
-                rosettaPercent = float(rosettaCount) / total * 100
-                updatesPercent = float(updatesCount) / total * 100
-                nonUpdatesPercent = float (nonUpdatesCount) / total * 100
-                translatedPercent = float(translated) / total * 100
-                untranslatedPercent = float(untranslated) / total * 100
-            except ZeroDivisionError:
-                # XXX: I think we will see only this case when we don't have
-                # anything to translate.
-                currentPercent = 0
-                rosettaPercent = 0
-                updatesPercent = 0
-                nonUpdatesPercent = 0
-                translatedPercent = 0
-                untranslatedPercent = 100
-
-            # NOTE: To get a 100% value:
-            # 1.- currentPercent + rosettaPercent + untranslatedPercent
-            # 2.- translatedPercent + untranslatedPercent
-            # 3.- rosettaPercent + updatesPercent + nonUpdatesPercent +
-            # untranslatedPercent
-            retdict = {
-                'name': product.name,
-                'title': product.title,
-                'poLen': total,
-                'poCurrentCount': currentCount,
-                'poRosettaCount': rosettaCount,
-                'poUpdatesCount' : updatesCount,
-                'poNonUpdatesCount' : nonUpdatesCount,
-                'poTranslated': translated,
-                'poUntranslated': untranslated,
-                'poCurrentPercent': currentPercent,
-                'poRosettaPercent': rosettaPercent,
-                'poUpdatesPercent' : updatesPercent,
-                'poNonUpdatesPercent' : nonUpdatesPercent,
-                'poTranslatedPercent': translatedPercent,
-                'poUntranslatedPercent': untranslatedPercent,
-            }
-
-            yield retdict
-
-    def languages(self):
-        return helpers.request_languages(self.request)
 
 
 class ProjectEditView(LaunchpadEditFormView):

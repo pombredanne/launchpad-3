@@ -1,6 +1,6 @@
 Test that the project edit page loads.
 
-  >>> user_browser.open('http://launchpad.dev/projects/gnome')
+  >>> user_browser.open('http://launchpad.dev/gnome')
   >>> user_browser.getLink('Edit Project Details').click()
   >>> print user_browser.contents
   <...
@@ -19,4 +19,4 @@ Test that the project edit page works when we POST changes.
   >>> user_browser.getControl('Change').click()
 
   >>> user_browser.url
-  'http://launchpad.dev/projects/new-name'
+  'http://launchpad.dev/new-name'

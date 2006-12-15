@@ -91,7 +91,11 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
             changelog='',
             dsc='',
             dscsigningkey=signingkey,
-            manifest=None
+            manifest=None,
+            dsc_maintainer_rfc822 = 'Foo Bar <foo@bar.com>',
+            dsc_standards_version = '3.6.2',
+            dsc_format = '1.0',
+            dsc_binaries= '%s-bin' % spn.name
             )
 
         spr.addFile(alias)
@@ -153,7 +157,7 @@ class TestNativePublishing(TestNativePublishingBase):
             pub_source.status,PackagePublishingStatus.PENDING)
         self.assertEqual(open(foo_dsc_path).read().strip(), 'Hello world')
 
-    def testPublishingDiferentContents(self):
+    def testPublishingDifferentContents(self):
         """Test if publishOne refuses to overwrite its own publication."""
         pub_source = self.getPubSource(
             "foo", "main", "foo.dsc", filecontent='foo is happy')
@@ -223,7 +227,8 @@ class TestNativePublishing(TestNativePublishingBase):
         self.assertEqual(
             os.readlink(sim_universe), '../../../main/s/sim/sim.dsc')
 
-        # if the contests don't match it raises.
+        # if the contexts don't match it raises, so the publication
+        # remains pending.
         pub_source3 = self.getPubSource(
             "sim", "restricted", "sim.dsc", filecontent='It is all my fault')
         pub_source3.publish(self.disk_pool, self.logger)
