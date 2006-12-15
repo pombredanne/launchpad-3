@@ -5,6 +5,7 @@ __all__ = [ 'Publisher', 'pocketsuffix', 'suffixpocket' ]
 import os
 from md5 import md5
 from sha import sha
+from Crypto.Hash.SHA256 import new as sha256
 from datetime import datetime
 
 from canonical.archivepublisher.domination import Dominator
@@ -189,6 +190,7 @@ class Publisher(object):
         all_architectures = set()
         all_files = set()
         for component, architectures in release_files_needed[full_name].items():
+
             all_components.add(component)
             for architecture in architectures:
                 # XXX malcc 2006-09-20: We don't like the way we build this
@@ -205,7 +207,9 @@ class Publisher(object):
         else:
             drsummary += pocket.name.capitalize()
 
-        f = open(os.path.join(self._config.distsroot, full_name, "Release"), "w")
+        f = open(os.path.join(
+            self._config.distsroot, full_name, "Release"), "w")
+
         stanza = DISTRORELEASE_STANZA % (
                     self.distro.displayname,
                     self.distro.displayname,
@@ -224,6 +228,9 @@ class Publisher(object):
         f.write("SHA1:\n")
         for file_name in all_files:
             self._writeSumLine(full_name, f, file_name, sha)
+        f.write("SHA256:\n")
+        for file_name in all_files:
+            self._writeSumLine(full_name, f, file_name, sha256)
 
         f.close()
 
@@ -293,4 +300,3 @@ class Publisher(object):
         length = len(contents)
         checksum = sum_form(contents).hexdigest()
         out_file.write(" %s % 16d %s\n" % (checksum, length, file_name))
-

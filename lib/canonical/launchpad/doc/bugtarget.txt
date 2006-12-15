@@ -13,7 +13,8 @@ bugtasks. Here are some examples, using Debian mozilla-firefox:
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IDistributionSet
 
-    >>> debian = getUtility(IDistributionSet).getByName("debian")
+    >>> distroset = getUtility(IDistributionSet)
+    >>> debian = distroset.getByName("debian")
     >>> debian_firefox = debian.getSourcePackage("mozilla-firefox")
 
 Open bugtasks:
@@ -64,10 +65,13 @@ display in bug-related pages.
     >>> from canonical.launchpad.interfaces import IProductSet, IBugTarget
 
     >>> firefox = getUtility(IProductSet).getByName("firefox")
+    >>> firefox_1_0 = firefox.getSeries("1.0")
     >>> debian_woody = debian.getRelease("woody")
     >>> debian_woody_firefox = debian_woody.getSourcePackage("mozilla-firefox")
 
     >>> IBugTarget.providedBy(firefox)
+    True
+    >>> IBugTarget.providedBy(firefox_1_0)
     True
     >>> IBugTarget.providedBy(debian)
     True
@@ -80,6 +84,8 @@ display in bug-related pages.
 
     >>> print firefox.bugtargetname
     firefox (upstream)
+    >>> print firefox_1_0.bugtargetname
+    firefox 1.0 (upstream)
     >>> print debian.bugtargetname
     Debian
     >>> print debian_firefox.bugtargetname

@@ -37,11 +37,9 @@ from zope.interface import implements
 
 from canonical.launchpad import helpers
 
-from canonical.launchpad.interfaces import IPOTemplateExporter
-from canonical.launchpad.interfaces import IDistroReleasePOExporter
-from canonical.launchpad.interfaces import IPOFileOutput
-from canonical.launchpad.interfaces import IVPOExportSet
-from canonical.launchpad.interfaces import IVPOTExportSet
+from canonical.launchpad.interfaces import (
+    IPOTemplateExporter, IDistroReleasePOExporter, IPOFileOutput,
+    IVPOExportSet, IVPOTExportSet, EXPORT_DATE_HEADER)
 
 from canonical.launchpad.components.poparser import POMessage, POHeader
 
@@ -498,7 +496,7 @@ def export_rows(rows, pofile_output, force_utf8=False):
             # modifications.
             UTC = pytz.timezone('UTC')
             dt = datetime.datetime.now(UTC)
-            header['X-Rosetta-Export-Date'] = dt.strftime('%F %R%z')
+            header[EXPORT_DATE_HEADER] = dt.strftime('%F %R+%z')
 
             # Create the new PO file.
 

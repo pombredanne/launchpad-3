@@ -23,11 +23,12 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.interfaces import (
     ISourcePackage, IHasBuildRecords, ITicketTarget,
-    TICKET_STATUS_DEFAULT_SEARCH)
-from canonical.launchpad.components.bugtarget import BugTargetBase
+    TICKET_STATUS_DEFAULT_SEARCH, get_supported_languages)
+from canonical.launchpad.database.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.bug import get_bug_tags_open_count
 from canonical.launchpad.database.bugtask import BugTaskSet
+from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
@@ -47,11 +48,12 @@ from canonical.launchpad.database.build import Build
 class SourcePackageTicketTargetMixin:
     """Implementation of ITicketTarget for SourcePackage."""
 
-    def newTicket(self, owner, title, description, datecreated=None):
+    def newTicket(self, owner, title, description, language=None,
+                  datecreated=None):
         """See ITicketTarget."""
         return TicketSet.new(
             title=title, description=description, owner=owner,
-            distribution=self.distribution,
+            language=language, distribution=self.distribution,
             sourcepackagename=self.sourcepackagename, datecreated=datecreated)
 
     def getTicket(self, ticket_id):
@@ -125,6 +127,19 @@ class SourcePackageTicketTargetMixin:
         return sorted(
             [contact.person for contact in support_contacts],
             key=attrgetter('displayname'))
+
+    def getSupportedLanguages(self):
+        """See ITicketTarget."""
+        return get_supported_languages(self)
+
+    def getTicketLanguages(self):
+        """See ITicketTarget."""
+        return set(Language.select(
+            'Language.id = language AND distribution = %s AND '
+            'sourcepackagename = %s'
+                % sqlvalues(self.distribution, self.sourcepackagename),
+            clauseTables=['Ticket'], distinct=True))
+
 
 
 class SourcePackage(BugTargetBase, SourcePackageTicketTargetMixin):

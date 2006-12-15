@@ -17,6 +17,7 @@ __all__ = [
     'BinaryPackageNameVocabulary',
     'BountyVocabulary',
     'BranchVocabulary',
+    'BugNominatableReleasesVocabulary',
     'BugVocabulary',
     'BugTrackerVocabulary',
     'BugWatchVocabulary',
@@ -57,6 +58,7 @@ __all__ = [
     ]
 
 import cgi
+from operator import attrgetter
 
 from zope.component import getUtility
 from zope.interface import implements, Attribute
@@ -67,7 +69,7 @@ from zope.security.proxy import isinstance as zisinstance
 from sqlobject import AND, OR, CONTAINSSTRING, SQLObjectNotFound
 
 from canonical.launchpad.helpers import shortlist
-from canonical.lp.dbschema import EmailAddressStatus
+from canonical.lp.dbschema import EmailAddressStatus, DistributionReleaseStatus
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.database import (
     Distribution, DistroRelease, Person, SourcePackageRelease, Branch,
@@ -1331,6 +1333,87 @@ class ProcessorFamilyVocabulary(NamedSQLObjectVocabulary):
         return SimpleTerm(obj, obj.name, obj.title)
 
 
+def BugNominatableReleasesVocabulary(context=None):
+    """Return a nominatable releases vocabulary."""
+
+    if getUtility(ILaunchBag).distribution:
+        return BugNominatableDistroReleaseVocabulary(
+            context, getUtility(ILaunchBag).distribution)
+    else:
+        assert getUtility(ILaunchBag).product
+        return BugNominatableProductSeriesVocabulary(
+            context, getUtility(ILaunchBag).product)
+
+
+class BugNominatableReleaseVocabularyBase(NamedSQLObjectVocabulary):
+    """Base vocabulary class for releases for which a bug can be nominated."""
+
+    def __iter__(self):
+        bug = self.context
+
+        releases = self._getNominatableObjects()
+
+        for release in sorted(releases, key=attrgetter("displayname")):
+            if bug.canBeNominatedFor(release):
+                yield self.toTerm(release)
+
+    def toTerm(self, obj):
+        return SimpleTerm(obj, obj.name, obj.name.capitalize())
+
+    def getTermByToken(self, token):
+        obj = self._queryNominatableObjectByName(token)
+        if obj is None:
+            raise LookupError(token)
+
+        return self.toTerm(obj)
+
+    def _getNominatableObjects(self):
+        """Return the release objects that the bug can be nominated for."""
+        raise NotImplementedError
+
+    def _queryNominatableObjectByName(self, name):
+        """Return the release object with the given name."""
+        raise NotImplementedError
+
+
+class BugNominatableProductSeriesVocabulary(BugNominatableReleaseVocabularyBase):
+    """The product series for which a bug can be nominated."""
+
+    _table = ProductSeries
+
+    def __init__(self, context, product):
+        BugNominatableReleaseVocabularyBase.__init__(self, context)
+        self.product = product
+
+    def _getNominatableObjects(self):
+        """See BugNominatableReleaseVocabularyBase."""
+        return shortlist(self.product.serieslist)
+
+    def _queryNominatableObjectByName(self, name):
+        """See BugNominatableReleaseVocabularyBase."""
+        return self.product.getSeries(name)
+
+
+class BugNominatableDistroReleaseVocabulary(BugNominatableReleaseVocabularyBase):
+    """The distribution releases for which a bug can be nominated."""
+
+    _table = DistroRelease
+
+    def __init__(self, context, distribution):
+        BugNominatableReleaseVocabularyBase.__init__(self, context)
+        self.distribution = distribution
+
+    def _getNominatableObjects(self):
+        """Return all non-obsolete distribution releases."""
+        return [
+            release for release in shortlist(self.distribution.releases)
+            if release.releasestatus != DistributionReleaseStatus.OBSOLETE]
+
+    def _queryNominatableObjectByName(self, name):
+        """See BugNominatableReleaseVocabularyBase."""
+        return self.distribution.getRelease(name)
+
+
 class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
 
     displayname = 'Needs to be overridden'
@@ -1368,5 +1451,3 @@ class DistributionOrProductVocabulary(PillarVocabularyBase):
 class DistributionOrProductOrProjectVocabulary(PillarVocabularyBase):
     displayname = 'Select a distribution, product or project'
     _filter = PillarName.q.active == True
-
-

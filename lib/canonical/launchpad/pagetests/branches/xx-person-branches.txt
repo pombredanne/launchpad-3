@@ -49,7 +49,7 @@ the authored branches page.
   >>> browser.open('http://launchpad.dev/~name12/+branches')
   >>> link = browser.getLink('Branches Authored')
   >>> print link.url
-  http://launchpad.dev/people/name12/+authoredbranches
+  http://launchpad.dev/~name12/+authoredbranches
 
 And we can load the authored branches page.
 
@@ -87,26 +87,34 @@ And we can load the subscribed branches page.
 
 == Branch filtering ==
 
+This is a helper function to print out the branches that
+are visible to the user.
+
+  >>> def visible_branches(contents):
+  ...   table = find_tag_by_id(contents, 'branchtable')
+  ...   for row in table.tbody.fetch('tr'):
+  ...     cells = row.fetch('td')
+  ...     name = cells[0].renderContents()
+  ...     status = cells[-3].fetch('span')[-1].renderContents()
+  ...     print name, status
+
+
 When the branches for a person is first loaded, only the 'Current'
 branches are shown.  Current branches are those that have a 
 lifecycle status of New, Development, Experimental or Mature.
 Merged or Abandoned branches are not shown.
 
   >>> browser.open('http://launchpad.dev/~name12/+branches')
-  >>> from BeautifulSoup import BeautifulSoup
-  >>> soup = BeautifulSoup(browser.contents)
-  >>> table = str(soup.find('table', { 'id':'branchtable' } ))
-  >>> status_values = ['New', 'Experimental', 'Development', 
-  ... 'Mature', 'Merged', 'Abandoned']
-  >>> for status in status_values:
-  ...   status in table
-  ...
-  True
-  True
-  True
-  True
-  False
-  False
+  >>> visible_branches(browser.contents)
+  junk.dev     Experimental
+  junk.contrib New
+  main         New
+  2.6          Mature
+  main         Development
+  klingon      Experimental
+  pushed       New
+  launchpad    New
+
 
 There is a select control that is used to define which
 subset of the branches are shown.
@@ -129,34 +137,26 @@ button.
 
 Now all types of branches should be shown.
 
-  >>> soup = BeautifulSoup(browser.contents)
-  >>> table = str(soup.find('table', { 'id':'branchtable' } ))
-  >>> for status in status_values:
-  ...   status in table
-  ...
-  True
-  True
-  True
-  True
-  True
-  True
+  >>> visible_branches(browser.contents)
+  junk.dev     Experimental
+  junk.contrib New
+  main         New
+  2.6          Mature
+  main         Development
+  klingon      Experimental
+  slowness     Merged
+  2.4          Abandoned
+  pushed       New
+  launchpad    New
+
 
 Selecting an individual lifecycle status from the select control 
 will cause only branches with that status to be listed.
 
   >>> browser.getControl(name='field.lifecycle').displayValue = ['Abandoned']
   >>> browser.getControl('Filter').click()
-  >>> soup = BeautifulSoup(browser.contents)
-  >>> table = str(soup.find('table', { 'id':'branchtable' } ))
-  >>> for status in status_values:
-  ...   status in table
-  ...
-  False
-  False
-  False
-  False
-  False
-  True
+  >>> visible_branches(browser.contents)
+  2.4     Abandoned
 
 If anyone tries to hack the URL, and put in an invalid
 status value, it will default to current branches.
@@ -165,17 +165,16 @@ status value, it will default to current branches.
   ...  'http://launchpad.dev/~name12/+branches?field.lifecycle=Fubar')
   >>> browser.getControl(name='field.lifecycle').displayValue
   ['New, Experimental, Development or Mature']
-  >>> soup = BeautifulSoup(browser.contents)
-  >>> table = str(soup.find('table', { 'id':'branchtable' } ))
-  >>> for status in status_values:
-  ...   status in table
-  ...
-  True
-  True
-  True
-  True
-  False
-  False
+  >>> visible_branches(browser.contents)
+  junk.dev     Experimental
+  junk.contrib New
+  main         New
+  2.6          Mature
+  main         Development
+  klingon      Experimental
+  pushed       New
+  launchpad    New
+
 
 If the user does have branches, but they are not visible with
 the current filter, the table is shown, and a (hopefully)
@@ -185,9 +184,9 @@ helpful message supplied.
   ...   '~launchpad/+branches?field.lifecycle=Mature')
   >>> browser.getControl(name='field.lifecycle').displayValue
   ['Mature']
-  >>> soup = BeautifulSoup(browser.contents)
-  >>> print str(soup.find('table', { 'id':'branchtable' } ))
-  <table...
-  ...There are branches registered for launchpad but none of them match the
-  current filter criteria for this page. Try filtering on "Any Status"...
-  ...</table>
+  >>> table = find_tag_by_id(browser.contents, 'branchtable')
+  >>> cell = table.tbody.fetch('tr')[0].fetch('td')[0]
+  >>> print cell.renderContents()
+  <i>There are branches registered for launchpad but none of them match the
+  current filter criteria for this page. Try filtering on "Any Status".</i>
+

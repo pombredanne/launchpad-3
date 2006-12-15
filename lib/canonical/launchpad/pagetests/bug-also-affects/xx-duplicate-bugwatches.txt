@@ -4,7 +4,7 @@ with adding a Debian bug watch to bug #8.
 
     >>> debian_bug = 'http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=42'
     >>> user_browser.open(
-    ...     'http://launchpad.dev/distros/debian/+source/mozilla-firefox/'
+    ...     'http://launchpad.dev/debian/+source/mozilla-firefox/'
     ...     '+bug/8/')
     >>> user_browser.getLink(url='+distrotask').click()
     >>> user_browser.getControl('Distribution').value = ['debian']
@@ -41,7 +41,7 @@ Both the thunderbird and gnome-terminal Debian tasks are pointing to the
 same bug watch.
 
     >>> user_browser.open(
-    ...     'http://launchpad.dev/distros/debian/+source/mozilla-firefox/'
+    ...     'http://launchpad.dev/debian/+source/mozilla-firefox/'
     ...     '+bug/8/')
     >>> affects_table = find_tags_by_class(user_browser.contents, 'listing')[0]
     >>> task_rows = [

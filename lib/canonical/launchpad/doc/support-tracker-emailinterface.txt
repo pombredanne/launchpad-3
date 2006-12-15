@@ -1,5 +1,4 @@
-Support Tracker Email Interface
-===============================
+= Support Tracker Email Interface =
 
 The support tracker has an email interface, although it's quite limited
 at the moment. The only thing you can do is post new messages on the
@@ -10,12 +9,12 @@ it will be added to the ticket.
 Incoming emails for the support tracker are processed by the
 SupportTrackerHandler.
 
-    (Define a time generator to ensure ordering of the messages. That is
-    necessary because the date of the messages created from an email has
-    only resolution to the second whereas the ones created by the DB API
-    have microseconds resolution. This means that it would be possible
-    for a message created using the DB API before one created by
-    the email interface to sort after.)
+    # Define a time generator to ensure ordering of the messages. That is
+    # necessary because the date of the messages created from an email has
+    # only resolution to the second whereas the ones created by the DB API
+    # have microseconds resolution. This means that it would be possible
+    # for a message created using the DB API before one created by
+    # the email interface to sort after.
     >>> from datetime import datetime, timedelta
     >>> from pytz import UTC
     >>> def now_generator(now_ref):
@@ -24,11 +23,11 @@ SupportTrackerHandler.
     ...         yield now
     ...         now += timedelta(seconds=1)
 
-    (We are using a date in the past because MessageSet disallows the
-    creation of email message with a future date.)
+    # We are using a date in the past because MessageSet disallows the
+    # creation of email message with a future date.
     >>> now = now_generator(datetime.now(UTC) - timedelta(hours=24))
 
-    (Define a helper function to send email to the support tracker handler)
+    # Define a helper function to send email to the support tracker handler.
     >>> from canonical.launchpad.mail.handlers import SupportTrackerHandler
     >>> from email.Utils import formatdate, make_msgid, mktime_tz
     >>> from canonical.launchpad.mail import signed_message_from_string
@@ -77,8 +76,7 @@ can be found:
     >>> comment_msgid is None
     True
 
-Incoming Email and Workflow
----------------------------
+== Incoming Email and Workflow ==
 
 With the way the support tracker workflow is modelled (see
 support-tracker-workflow.txt for the details), adding a message will
@@ -92,11 +90,11 @@ but we chose the defaults based on what we assume is the common case
 and by trying to minimize the impact of that error on future
 possibilities for the user.
 
-    (We will use a new ticket on the Ubuntu distribution in these
-    examples. We also use two actors, No Privileges Person which will
-    be the ticket owner and Sample Person who will play the role of
-    support contact. Foo Bar is used to change the status of the
-    ticket.)
+    # We will use a new ticket on the Ubuntu distribution in these
+    # examples. We also use two actors, No Privileges Person which will
+    # be the ticket owner and Sample Person who will play the role of
+    # support contact. Foo Bar is used to change the status of the
+    # ticket.
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, IPersonSet)
     >>> login('no-priv@canonical.com')
@@ -111,22 +109,20 @@ possibilities for the user.
     ...     "I've tried installing Ubuntu on a Mac. But the installer never "
     ...     "boots.", datecreated=now.next())
 
-    (Define an helper to change the ticket status easily.)
+    # Define an helper to change the ticket status easily.
     >>> def setTicketStatus(ticket, new_status):
     ...     login('foo.bar@canonical.com')
     ...     msg = ticket.setStatus(foo_bar, new_status, 'Status Change',
     ...                            datecreated=now.next())
     ...     login('no-priv@canonical.com')
 
-Message From the Request Owner
-------------------------------
+== Message From the Request Owner ==
 
 When the owner sends a message on the support request, the message
 is interpretated in three different manners based on the current ticket
 state.
 
-Open and Needs Information
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== Open and Needs Information ===
 
 In the Open and Needs Information states, we assume the message provides
 more information on the problem.
@@ -169,8 +165,7 @@ own message. And if that was the case, it is easy for the owner to
 correct our bad decision, since the support request will stay on his
 list of open requests.
 
-Answered and Expired
-~~~~~~~~~~~~~~~~~~~~
+=== Answered and Expired ===
 
 When the request is in the Answered or Expired states, we assume that
 the email is reopening the request with more information.
@@ -213,8 +208,7 @@ explaining that the owner solved his problem. Again, to minimize
 confusion, the outoing notification contain a footer explaining what will
 happen if one reply to the message.
 
-Solved and Invalid
-~~~~~~~~~~~~~~~~~~
+=== Solved and Invalid ===
 
 When the support request is in the Solved or Invalid state, we interpret
 the message as a comment.
@@ -253,8 +247,7 @@ That is the only possibility on an Invalid request. From the 'Invalid'
 state, there is no normal transition. The only possibility is that an
 admin comes to change the status of the request.
 
-Message From Another User
--------------------------
+=== Message From Another User ===
 
 It is simpler when a user other than the owner sends an email. When
 the request is in the Open or Needs information state, there are only two
@@ -307,8 +300,7 @@ Answered example:
     Answer
 
 
-Solved, Invalid and Expired
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== Solved, Invalid and Expired ===
 
 When another user than the owner sends a message to a support request
 in the Solved, Invalid or Expired states, the only possible
@@ -350,8 +342,7 @@ interpretation is that it is a comment.
     Comment
 
 
-SupportTrackerHandler Integration
----------------------------------
+== SupportTrackerHandler Integration ==
 
 The general mail processor delegates all emails to the
 config.tickettracker.email_domain to the SupportTrackerHandler.
