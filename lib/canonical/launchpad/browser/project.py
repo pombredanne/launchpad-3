@@ -8,7 +8,6 @@ __all__ = [
     'ProjectNavigation',
     'ProjectSetNavigation',
     'ProjectSOP',
-    'ProjectView',
     'ProjectEditView',
     'ProjectAddProductView',
     'ProjectSetView',

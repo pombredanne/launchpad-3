@@ -16,7 +16,7 @@ __all__ = [
     'IcingFolder',
     'StructuralObjectPresentationView',
     'StructuralObjectPresentation',
-    'ApplicationButtons'
+    'ApplicationButtons',
     'SearchProjectsView',
     ]
 
