@@ -81,8 +81,8 @@
       </div>
     </tal:block>
     <tal:block condition="view/batchnav/currentBatch">
+      <tal:navigation replace="structure view/batchnav/@@+navigation-links-upper" />
       <form name="entries_to_import" action="" method="POST">
-        <tal:navigation replace="structure view/batchnav/@@+navigation-links" />
         <table class="listing" width="100%">
           <tal:loop repeat="entry view/batchnav/currentBatch">
             <tr>
@@ -93,10 +93,10 @@
                 it should not. See bug #34213 for more information.
               </tal:comment>
               <td tal:condition="entry/import_into/title|nothing" rowspan="3">
-                <img alt="" src="/@@/download.png" />
+                <img alt="" src="/@@/download" />
               </td>
               <td tal:condition="not: entry/import_into/title|nothing" rowspan="2">
-                <img alt="" src="/@@/download.png" />
+                <img alt="" src="/@@/download" />
               </td>
               <td>
                 <a tal:attributes="href entry/content/url"

@@ -1,0 +1,4 @@
+Check if the DistroRelease page is not broken.
+
+  >>> browser.open("http://localhost/ubuntu/warty")
+

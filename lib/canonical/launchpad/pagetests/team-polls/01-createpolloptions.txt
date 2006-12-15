@@ -4,10 +4,10 @@
   >>> team_admin_browser.addHeader(
   ...     'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')
   >>> team_admin_browser.open(
-  ...     'http://launchpad.dev/people/ubuntu-team/+poll/dpl-2080')
+  ...     'http://launchpad.dev/~ubuntu-team/+poll/dpl-2080')
   >>> team_admin_browser.getLink('Add New Option').click()
   >>> team_admin_browser.url
-  'http://launchpad.dev/people/ubuntu-team/+poll/dpl-2080/+newoption'
+  'http://launchpad.dev/~ubuntu-team/+poll/dpl-2080/+newoption'
 
   >>> 'Add a poll option' in team_admin_browser.contents
   True
@@ -23,14 +23,14 @@
   We're redirected to the poll page
 
   >>> team_admin_browser.url
-  'http://launchpad.dev/people/ubuntu-team/+poll/dpl-2080'
+  'http://launchpad.dev/~ubuntu-team/+poll/dpl-2080'
 
   And here we see the option listed as one of the active options for this
   poll.
 
   >>> team_admin_browser.getLink('Show Option Details').click()
   >>> team_admin_browser.url
-  'http://launchpad.dev/people/ubuntu-team/+poll/dpl-2080/+options'
+  'http://launchpad.dev/~ubuntu-team/+poll/dpl-2080/+options'
 
   >>> 'Poll options' in team_admin_browser.contents
   True
@@ -42,7 +42,7 @@
 
   >>> team_admin_browser.getLink('Add New Option').click()
   >>> team_admin_browser.url
-  'http://launchpad.dev/people/ubuntu-team/+poll/dpl-2080/+newoption'
+  'http://launchpad.dev/~ubuntu-team/+poll/dpl-2080/+newoption'
 
   >>> will_name = (
   ...     'Will amazingly-huge-middle-name-almost-impossible-to-read Graham')
@@ -69,7 +69,7 @@
   That's only possible when the poll is not yet open.
 
   >>> team_admin_browser.open(
-  ...     'http://launchpad.dev/people/ubuntu-team/+poll/director-2004/+newoption')
+  ...     'http://launchpad.dev/~ubuntu-team/+poll/director-2004/+newoption')
 
   >>> message = (
   ...     "You can&#8217;t add new options because the poll is already "
@@ -78,7 +78,7 @@
   True
 
   >>> team_admin_browser.open(
-  ...     'http://launchpad.dev/people/ubuntu-team/+poll/never-closes/+newoption')
+  ...     'http://launchpad.dev/~ubuntu-team/+poll/never-closes/+newoption')
   >>> message = (
   ...     "You can&#8217;t add new options because the poll is already open.")
   >>> message in team_admin_browser.contents

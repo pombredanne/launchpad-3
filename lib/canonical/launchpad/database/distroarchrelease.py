@@ -36,6 +36,7 @@ from canonical.lp.dbschema import (
 class DistroArchRelease(SQLBase):
     implements(IDistroArchRelease, IHasBuildRecords, IPublishing)
     _table = 'DistroArchRelease'
+    _defaultOrder = 'id'
 
     distrorelease = ForeignKey(dbName='distrorelease',
         foreignKey='DistroRelease', notNull=True)
@@ -57,6 +58,11 @@ class DistroArchRelease(SQLBase):
     @property
     def default_processor(self):
         """See IDistroArchRelease"""
+        # XXX cprov 20050831
+        # I could possibly be better designed, let's think about it in
+        # the future. Pick the first processor we found for this
+        # distroarchrelease.processorfamily. The data model should
+        # change to have a default processor for a processorfamily
         return self.processors[0]
 
     @property
@@ -186,8 +192,7 @@ class DistroArchRelease(SQLBase):
         queries = []
 
         if not IBinaryPackageName.providedBy(binary_name):
-            binname_set = getUtility(IBinaryPackageNameSet)
-            binary_name = binname_set.getOrCreateByName(binary_name)
+            binary_name = BinaryPackageName.byName(binary_name)
 
         queries.append("""
         binarypackagerelease=binarypackagerelease.id AND
@@ -279,3 +284,4 @@ class PocketChroot(SQLBase):
                      notNull=True)
 
     chroot = ForeignKey(dbName='chroot', foreignKey='LibraryFileAlias')
+

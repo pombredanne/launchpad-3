@@ -1,5 +1,5 @@
 <div class="portlet">
-  <h4 tal:content="context/title">product title</h4>
+  <h2 tal:content="context/title">product title</h2>
 
   <div class="portletBody">
     <div class="portletContent">
@@ -13,7 +13,7 @@
 
       <b>Registrant:</b><br />
       <img alt="" src="/@@/user" />
-      <a tal:attributes="href string:/people/${context/owner/name}"
+      <a tal:attributes="href context/owner/fmt:url"
          tal:content="context/owner/browsername"
          class="link">ownername
       </a>
@@ -35,7 +35,7 @@
       <b>Security contact:</b><br />
       <span tal:condition="context/security_contact">
         <img alt="" src="/@@/user" />
-        <a tal:attributes="href string:${context/fmt:url}/+securitycontact"
+        <a tal:attributes="href context/security_contact/fmt:url"
            tal:content="context/security_contact/browsername">sample person</a>
       </span>
       <span tal:condition="not:context/security_contact">
@@ -56,7 +56,7 @@
       <img alt="" src="/@@/languages" />
       <tal:block condition="context/translationgroup">
       <a tal:attributes="href
-               string:/rosetta/groups/${context/translationgroup/name}/"
+               string:/translations/groups/${context/translationgroup/name}/"
          tal:content="context/translationgroup/title"
       >Group</a><br />
       </tal:block>
@@ -65,6 +65,19 @@
       </tal:block>
       <b>Translation contributions:</b><br />
       <span tal:replace="context/translationpermission/title">Open</span><br />
+
+      <tal:bugtracker
+           tal:define="bugtracker context/getExternalBugTracker"
+           tal:condition="not:context/official_malone">
+
+        <b>Bug Tracker:</b><br />
+        <a tal:condition="bugtracker" tal:content="bugtracker/title"
+           tal:attributes="href bugtracker/fmt:url">Tracker</a>
+        <i tal:condition="not: bugtracker">None specified</i>
+        <br />
+
+      </tal:bugtracker>
+
 
       <b>Product status:</b>
       <ul>
@@ -83,15 +96,15 @@
            tal:content="context/project/title"
            class="link">Project name</a><br />
       </tal:has-project>
-      <tal:has_series condition="context/serieslist">
-        <b>Registered series:</b>
-        <ul>
-          <li tal:repeat="series context/serieslist">
-            <a tal:attributes="href series/fmt:url"
-               tal:content="series/name">1.0</a>
-          </li>
-        </ul>
-      </tal:has_series>
+      <b>Registered series:</b>
+      <ul>
+        <li tal:repeat="series context/serieslist">
+          <a tal:attributes="href series/fmt:url"
+             tal:content="series/name">1.0</a>
+          <small tal:condition="python:series == context.development_focus"
+            >(development focus)</small>
+        </li>
+      </ul>
 
     </div>
   </div>

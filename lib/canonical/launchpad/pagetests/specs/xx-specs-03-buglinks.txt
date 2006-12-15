@@ -2,100 +2,72 @@
 Linking Specs and Bugs
 ======================
 
-Let's take a tour of the sample data that we should have. we want to see
-some of the specs on Mozilla Firefox.  First, let's see the spec about SVG
-support in Mozilla.
+Specifications can be linked to bugs. Bug reports exposing problems that
+will be solved by the specification are likely candidates for such
+linking.
 
-It should be linked to bug #1. We should see the "Remove Bug Link" menu
-item, and the bug link itself.
+For example, in our sample data, bug #1 is about the lack of SVG support
+in Mozilla Firefox. The 'svg-support' specification is exactly about SVG
+support. That is why both were linked together. The linked bug appear in
+the 'Related Bugs' portlet.
 
-  >>> print http(r"""
-  ... GET /products/firefox/+spec/svg-support HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Related bugs:...
-  ...#1:...Firefox does not support SVG...
-  ...Remove bug link...
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/firefox/+spec/svg-support')
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> soup = BeautifulSoup(anon_browser.contents)
+    >>> soup.first('li', 'bug')
+    <li class="bug">
+    <a href=".../bugs/1">#1:
+        Firefox does not support SVG</a>
+    </li>
 
+Adding Links
+------------
 
-All right. Now let's link it to another bug, say Bug #4. First we want to
-make sure we can load the page to link to a bug.
+Linking a bug report to a specification is done by using the
+'Link to bug' link.
 
-  >>> print http(r"""
-  ... GET /products/firefox/+spec/svg-support/+linkbug HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+This link is only available to registered users:
 
-Now, lets POST to the form. We will be redirected back to the spec home
-page.
+    >>> anon_browser.getLink('Link to bug').click()
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ...
 
-  >>> print http(r"""
-  ... POST /products/firefox/+spec/svg-support/+linkbug HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... Content-Length: 298
-  ... Content-Type: multipart/form-data; boundary=---------------------------16237967561476010744592030799
-  ... Cookie: launchpad=WGtY6QC9i8F-Myr0BWSOqf4Q8kgaYG0jKi2QwfbN.pXnnEzGpsFIH8
-  ... 
-  ... -----------------------------16237967561476010744592030799
-  ... Content-Disposition: form-data; name="field.bug"
-  ... 
-  ... 4
-  ... -----------------------------16237967561476010744592030799
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... -----------------------------16237967561476010744592030799--
-  ... """)
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://.../products/firefox/+spec/svg-support
-  ...
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/firefox/+spec/svg-support')
+    >>> user_browser.getLink('Link to bug').click()
 
+To link the bug, the user enters the bug ID and clicks the 'Add'
+button.
 
-So lets make sure we can see the bug link on the spec home page.
+    >>> user_browser.getControl('Bug ID').value = '4'
+    >>> user_browser.getControl('Link').click()
 
-  >>> print http(r"""
-  ... GET /products/firefox/+spec/svg-support HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Related bugs:...
-  ...#1:...
-  ...#4:...
+A notification message is displayed telling the user about the added
+link.
 
+    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup.first('div', 'informational message')
+    <div class="informational message">Added link to bug #4:
+    ...Reflow problems with complex page layouts...</div>
 
-Oops, that was actually the wrong bug. So lets remove the link. We first
-make sure we can see the page to remove a bug link from a specification.
+Removing Links
+--------------
 
-  >>> print http(r"""
-  ... GET /products/firefox/+spec/svg-support/+unlinkbug HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+Oops, that was actually the wrong bug. So lets remove the link. This is
+done by using the 'Remove bug link' link.
 
-Now lets POST to it saying we want to remove Bug #4.
+    >>> user_browser.getLink('Remove bug link').click()
 
-  >>> print http(r"""
-  ... POST /products/firefox/+spec/svg-support/+unlinkbug HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... Content-Length: 301
-  ... Content-Type: multipart/form-data; boundary=---------------------------148383055419827608741461868515
-  ... 
-  ... -----------------------------148383055419827608741461868515
-  ... Content-Disposition: form-data; name="field.bug"
-  ... 
-  ... 4
-  ... -----------------------------148383055419827608741461868515
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... -----------------------------148383055419827608741461868515--
-  ... """)
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://.../products/firefox/+spec/svg-support
-  ...
+The list of linked bugs is displayed. The user select the bug to remove
+and click the 'Remove' button.
 
+    >>> user_browser.getControl('#4: Reflow problems').selected = True
+    >>> user_browser.getControl('Remove').click()
 
+A confirmation is displayed to the user.
+
+    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup.first('div', 'informational message')
+    <div class="informational message">Removed link to bug #4.</div>

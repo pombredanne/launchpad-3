@@ -174,22 +174,19 @@ class IPOTemplate(IRosettaStats):
             title=_('Date for last update'),
             required=True)
 
-    def __len__():
-        """Return the number of Current IPOTMsgSets in this template."""
-
     def __iter__():
         """Return an iterator over current IPOTMsgSets in this template."""
 
-    def getPOTMsgSetByMsgIDText(msgidtext, onlyCurrent=False):
-        """Extract one IPOTMesgSet from this template.
+    def getPOTMsgSetByMsgIDText(msgidtext, only_current=False):
+        """Return the IPOTMesgSet indexed by msgidtext from this template.
 
         If the key is a string or a unicode object, returns the
         IPOTMsgSet in this template that has a primary message ID
         with the given text.
 
-        If onlyCurrent is True, then get only current message sets.
+        If only_current is True, then get only current message sets.
 
-        If no IPOTMsgSet is found, raises NotFoundError.
+        If no IPOTMsgSet is found, return None.
         """
 
     def getPOTMsgSetBySequence(sequence):
@@ -216,7 +213,7 @@ class IPOTemplate(IRosettaStats):
         """
 
     def __getitem__(key):
-        """Same as getPOTMsgSetByMsgIDText(), with onlyCurrent=True
+        """Same as getPOTMsgSetByMsgIDText(), with only_current=True
         """
 
     def getPOTMsgSetByID(id):
@@ -368,12 +365,23 @@ class IPOTemplateSubset(Interface):
         The iterator will give entries sorted by modification.
         """
 
+    def getClosestPOTemplate(path):
+        """Return a IPOTemplate with a path closer to the given path or None.
+
+        If there is no IPOTemplate with a common path with the given argument,
+        or if there are more than one IPOTemplate with the same common path,
+        and both are the closer ones, returns None.
+        """
+
 
 class IPOTemplateSet(Interface):
     """A set of PO templates."""
 
     def __iter__():
         """Return an iterator over all PO templates."""
+
+    def getByIDs(ids):
+        """Return all PO templates with the given IDs."""
 
     def getAllByName(name):
         """Return a list with all PO templates with the given name."""

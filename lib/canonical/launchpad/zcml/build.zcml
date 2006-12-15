@@ -57,9 +57,9 @@
       class="canonical.launchpad.browser.BuildView"
       permission="launchpad.Admin">
       <browser:page 
-        name="+reset"
+        name="+retry"
         facet="overview"
-        template="../templates/build-reset.pt"
+        template="../templates/build-retry.pt"
         />
       <browser:page 
         name="+rescore"

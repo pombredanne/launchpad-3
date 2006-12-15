@@ -4,7 +4,8 @@ __metaclass__ = type
 __all__ = [
     'POFile',
     'DummyPOFile',
-    'POFileSet'
+    'POFileSet',
+    'POFileTranslator',
     ]
 
 import StringIO
@@ -21,8 +22,6 @@ from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLObjectNotFound, SQLMultipleJoin
     )
 
-from canonical.cachedproperty import cachedproperty
-
 from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, sqlvalues)
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -35,8 +34,9 @@ import canonical.launchpad
 from canonical.launchpad import helpers
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.interfaces import (
-    IPOFileSet, IPOFile, IPOTemplateExporter, ILibraryFileAliasSet,
-    ILaunchpadCelebrities, ZeroLengthPOExportError, NotFoundError)
+    IPersonSet, IPOFileSet, IPOFile, IPOTemplateExporter,
+    ILibraryFileAliasSet, ILaunchpadCelebrities, IPOFileTranslator,
+    ZeroLengthPOExportError, NotFoundError)
 
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
@@ -46,12 +46,13 @@ from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
 
 from canonical.launchpad.components.rosettastats import RosettaStats
-from canonical.launchpad.components.poimport import import_po, OldPOImported
+from canonical.launchpad.components.poimport import (
+    import_po, OldPOImported, NotExportedFromRosetta)
 from canonical.launchpad.components.poparser import (
     POSyntaxError, POHeader, POInvalidInputError)
+from canonical.launchpad.webapp import canonical_url
 from canonical.librarian.interfaces import ILibrarianClient
 
-from canonical.launchpad.webapp.snapshot import Snapshot
 
 def _check_translation_perms(permission, translators, person):
     """Return True or False dependening on whether the person is part of the
@@ -99,6 +100,7 @@ def _check_translation_perms(permission, translators, person):
 
     # ok, thats all we can check, and so we must assume the answer is no
     return False
+
 
 def _can_edit_translations(pofile, person):
     """Say if a person is able to edit existing translations.
@@ -189,8 +191,6 @@ class POFile(SQLBase, RosettaStats):
     owner = ForeignKey(foreignKey='Person',
                        dbName='owner',
                        notNull=True)
-    pluralforms = IntCol(dbName='pluralforms',
-                         notNull=True)
     variant = StringCol(dbName='variant',
                         notNull=False,
                         default=None)
@@ -203,8 +203,7 @@ class POFile(SQLBase, RosettaStats):
     exporttime = UtcDateTimeCol(dbName='exporttime',
                                 notNull=False,
                                 default=None)
-    datecreated = UtcDateTimeCol(notNull=True,
-        default=UTC_NOW)
+    datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
     latestsubmission = ForeignKey(foreignKey='POSubmission',
         dbName='latestsubmission', notNull=False, default=None)
@@ -230,25 +229,17 @@ class POFile(SQLBase, RosettaStats):
             translator = group.query_translator(self.language)
             if translator is not None:
                 translators.add(translator)
-        return sorted(list(translators),
-            key=lambda x: x.translator.name)
+        return sorted(list(translators), key=lambda x: x.translator.name)
 
     @property
     def translationpermission(self):
         """See IPOFile."""
         return self.potemplate.translationpermission
 
-    @cachedproperty
+    @property
     def contributors(self):
         """See IPOFile."""
-        from canonical.launchpad.database.person import Person
-
-        return list(Person.select("""
-            POSubmission.person = Person.id AND
-            POSubmission.pomsgset = POMsgSet.id AND
-            POMsgSet.pofile = %d""" % self.id,
-            clauseTables=('POSubmission', 'POMsgSet'),
-            distinct=True))
+        return getUtility(IPersonSet).getPOFileContributors(self)
 
     def canEditTranslations(self, person):
         """See IPOFile."""
@@ -528,9 +519,8 @@ class POFile(SQLBase, RosettaStats):
 
     def createMessageSetFromText(self, text):
         """See IPOFile."""
-        try:
-            potmsgset = self.potemplate[text]
-        except KeyError:
+        potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(text, only_current=False)
+        if potmsgset is None:
             potmsgset = self.potemplate.createMessageSetFromText(text)
 
         return self.createMessageSetFromMessageSet(potmsgset)
@@ -566,7 +556,6 @@ class POFile(SQLBase, RosettaStats):
         self.topcomment = new_header.commentText
         self.header = new_header.msgstr
         self.fuzzyheader = 'fuzzy' in new_header.flags
-        self.pluralforms = new_header.nplurals
 
     def isPORevisionDateOlder(self, header):
         """See IPOFile."""
@@ -590,6 +579,7 @@ class POFile(SQLBase, RosettaStats):
 
     def getNextToImport(self):
         """See IPOFile."""
+        flush_database_updates()
         return TranslationImportQueueEntry.selectFirstBy(
                 pofile=self,
                 status=RosettaImportStatus.APPROVED,
@@ -607,69 +597,68 @@ class POFile(SQLBase, RosettaStats):
 
         file = librarian_client.getFileByAlias(entry_to_import.content.id)
 
+        # While importing a file, there are two kinds of errors:
+        #
+        # - Errors that prevent us to parse the file. That's a global error,
+        #   is handled with exceptions and will not change any data other than
+        #   the status of that file to note the fact that its import failed.
+        #
+        # - Errors in concrete messages included in the file to import. That's
+        #   a more localised error that doesn't affect the whole file being
+        #   imported. It allows us to accept other translations so we accept
+        #   everything but the messages with errors. We handle it returning a
+        #   list of faulty messages.
+        import_rejected = False
         try:
             errors = import_po(self, file, entry_to_import.importer,
                                entry_to_import.is_published)
-        except (POSyntaxError, POInvalidInputError):
-            # The import failed, we mark it as failed so we could review it
-            # later in case it's a bug in our code.
-            # XXX Carlos Perello Marin 2005-06-22: We should intregrate this
-            # kind of error with the new TranslationValidation feature.
-            entry_to_import.status = RosettaImportStatus.FAILED
+        except NotExportedFromRosetta:
+            # We got a file that was not exported from Rosetta as a non
+            # published upload. We log it and select the email template.
             if logger:
                 logger.warning(
                     'Error importing %s' % self.title, exc_info=1)
-            return
+            template_mail = 'poimport-not-exported-from-rosetta.txt'
+            import_rejected = True
+        except (POSyntaxError, POInvalidInputError):
+            # The import failed with a format error. We log it and select the
+            # email template.
+            if logger:
+                logger.warning(
+                    'Error importing %s' % self.title, exc_info=1)
+            template_mail = 'poimport-syntax-error.txt'
+            import_rejected = True
         except OldPOImported:
             # The attached file is older than the last imported one, we ignore
-            # it.
-            # XXX Carlos Perello Marin 2005-06-22: We should intregrate this
-            # kind of error with the new TranslationValidation feature.
-            entry_to_import.status = RosettaImportStatus.FAILED
+            # it. We also log this problem and select the email template.
             if logger:
                 logger.warning('Got an old version for %s' % self.title)
-            return
-
-        # Request a sync of 'self' as we need to use real datetime values.
-        self.sync()
+            template_mail = 'poimport-got-old-version.txt'
+            import_rejected = True
 
         # Prepare the mail notification.
-
         msgsets_imported = POMsgSet.select(
             'sequence > 0 AND pofile=%s' % (sqlvalues(self.id))).count()
-
-        UTC = pytz.timezone('UTC')
-        # XXX: Carlos Perello Marin 2005-06-29 This code should be using the
-        # solution defined by PresentingLengthsOfTime spec when it's
-        # implemented.
-        elapsedtime = (
-            datetime.datetime.now(UTC) - entry_to_import.dateimported)
-        elapsedtime_text = ''
-        hours = elapsedtime.seconds / 3600
-        minutes = (elapsedtime.seconds % 3600) / 60
-        if elapsedtime.days > 0:
-            elapsedtime_text += '%d days ' % elapsedtime.days
-        if hours > 0:
-            elapsedtime_text += '%d hours ' % hours
-        if minutes > 0:
-            elapsedtime_text += '%d minutes ' % minutes
-
-        if len(elapsedtime_text) > 0:
-            elapsedtime_text += 'ago'
-        else:
-            elapsedtime_text = 'just requested'
 
         replacements = {
             'importer': entry_to_import.importer.displayname,
             'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
-            'elapsedtime': elapsedtime_text,
-            'numberofmessages': msgsets_imported,
+            'elapsedtime': entry_to_import.getElapsedTimeText(),
             'language': self.language.displayname,
-            'template': self.potemplate.displayname
+            'template': self.potemplate.displayname,
+            'file_link': entry_to_import.content.url,
+            'numberofmessages': msgsets_imported,
+            'import_title': '%s translations for %s' % (
+                self.language.displayname, self.potemplate.displayname)
             }
 
-        if len(errors):
-            # There were errors.
+        if import_rejected:
+            # We got an error that prevented us to import any translation, we
+            # need to notify the user.
+            subject = 'Import problem - %s - %s' % (
+                self.language.displayname, self.potemplate.displayname)
+        elif len(errors):
+            # There were some errors with translations.
             errorsdetails = ''
             for error in errors:
                 pomsgset = error['pomsgset']
@@ -687,25 +676,29 @@ class POFile(SQLBase, RosettaStats):
             replacements['numberofcorrectmessages'] = (msgsets_imported -
                 len(errors))
 
-            template_mail = 'poimport-error.txt'
+            template_mail = 'poimport-with-errors.txt'
             subject = 'Translation problems - %s - %s' % (
                 self.language.displayname, self.potemplate.displayname)
         else:
+            # The import was successful.
             template_mail = 'poimport-confirmation.txt'
             subject = 'Translation import - %s - %s' % (
                 self.language.displayname, self.potemplate.displayname)
 
         # Send the email.
-        template_file = os.path.join(
-            os.path.dirname(canonical.launchpad.__file__),
-            'emailtemplates', template_mail)
-        template = open(template_file).read()
+        template = helpers.get_email_template(template_mail)
         message = template % replacements
 
-        fromaddress = 'Rosetta SWAT Team <rosetta@ubuntu.com>'
+        fromaddress = 'Rosetta SWAT Team <rosetta@launchpad.net>'
         toaddress = helpers.contactEmailAddresses(entry_to_import.importer)
 
         simple_sendmail(fromaddress, toaddress, subject, message)
+
+        if import_rejected:
+            # There were no imports at all and the user needs to review that
+            # file, we tag it as FAILED.
+            entry_to_import.status = RosettaImportStatus.FAILED
+            return
 
         # The import has been done, we mark it that way.
         entry_to_import.status = RosettaImportStatus.IMPORTED
@@ -842,7 +835,6 @@ class DummyPOFile(RosettaStats):
         self.language = language
         self.variant = variant
         self.latestsubmission = None
-        self.pluralforms = language.pluralforms
         self.lasttranslator = None
         self.contributors = []
 
@@ -862,7 +854,7 @@ class DummyPOFile(RosettaStats):
             return pomsgset
 
     def messageCount(self):
-        return len(self.potemplate)
+        return self.potemplate.messageCount()
 
     @property
     def title(self):
@@ -1032,3 +1024,15 @@ class POFileSet:
                 POTemplate.sourcepackagename = %s''' % sqlvalues(
                     path, distrorelease.id, sourcepackagename.id),
                 clauseTables=['POTemplate'])
+
+
+class POFileTranslator(SQLBase):
+    """See IPOFileTranslator."""
+    implements(IPOFileTranslator)
+    pofile = ForeignKey(foreignKey='POFile', dbName='pofile', notNull=True)
+    person = ForeignKey(foreignKey='Person', dbName='person', notNull=True)
+    latest_posubmission = ForeignKey(foreignKey='POSubmission',
+        dbName='latest_posubmission', notNull=True)
+    date_last_touched = UtcDateTimeCol(dbName='date_last_touched',
+        notNull=False, default=None)
+

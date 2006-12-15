@@ -10,6 +10,9 @@
     <allow interface="canonical.launchpad.interfaces.ICve" />
     <require permission="launchpad.AnyPerson"
              set_schema="canonical.launchpad.interfaces.ICve" />
+    <!-- IBugLinkTarget -->
+    <allow attributes="bugs bug_links" />
+    <require permission="launchpad.AnyPerson" attributes="linkBug unlinkBug"/>
   </content>
 
   <browser:menus
@@ -31,14 +34,8 @@
     for="canonical.launchpad.interfaces.ICve"
     permission="zope.Public">
     <browser:page
-      name="+index"
-      template="../templates/cve-index.pt" />
-    <browser:page
       name="+listing-detailed"
       template="../templates/cve-listing-detailed.pt" />
-    <browser:page
-      name="+portlet-bugs"
-      template="../templates/cve-portlet-bugs.pt" />
     <browser:page
       name="+portlet-details"
       template="../templates/cve-portlet-details.pt" />
@@ -47,28 +44,27 @@
       template="../templates/cve-portlet-references.pt" />
   </browser:pages>
 
-  <browser:generalform
+  <browser:page
+      name="+index"
+      for="canonical.launchpad.interfaces.ICve"
+      class="canonical.launchpad.browser.BugLinksListingView"
+      template="../templates/cve-index.pt"
+      permission="zope.Public"
+      />
+
+  <browser:page
     name="+linkbug"
     for="canonical.launchpad.interfaces.ICve"
-    schema="canonical.launchpad.interfaces.IBugCve"
     class="canonical.launchpad.browser.BugLinkView"
-    fields="bug"
-    arguments="bug"
     permission="launchpad.AnyPerson"
-    template="../templates/cve-bug.pt">
-  </browser:generalform>
+    template="../templates/cve-linkbug.pt" />
 
-  <browser:generalform
+  <browser:page
     name="+unlinkbug"
     for="canonical.launchpad.interfaces.ICve"
-    schema="canonical.launchpad.interfaces.IBugCve"
-    class="canonical.launchpad.browser.BugUnlinkView"
-    fields="bug"
-    arguments="bug"
+    class="canonical.launchpad.browser.BugsUnlinkView"
     permission="launchpad.AnyPerson"
-    template="../templates/cve-removebug.pt">
-  </browser:generalform>
-
+    template="../templates/cve-unlinkbugs.pt" />
 
   <!-- CveSet -->
   <browser:defaultView
@@ -116,4 +112,10 @@
       template="../templates/cveset-portlet-details.pt" />
   </browser:pages>
 
+  <browser:page
+      name="+portlet-bugs"
+      for="canonical.launchpad.interfaces.ICve"
+      class="canonical.launchpad.browser.BugLinksListingView"
+      permission="zope.Public"
+      template="../templates/cve-portlet-bugs2.pt" />
 </configure>

@@ -1,6 +1,6 @@
 <div class="portlet">
 
-  <h4><span tal:replace="context/title">project title</span>:</h4>
+  <h2><span tal:replace="context/title">project title</span></h2>
 
   <div class="portletBody portletContent">
 
@@ -30,7 +30,7 @@
     <img alt="" src="/@@/languages" />
     <tal:block condition="context/translationgroup">
     <a tal:attributes="href
-             string:/rosetta/groups/${context/translationgroup/name}/"
+             string:/translations/groups/${context/translationgroup/name}/"
        tal:content="context/translationgroup/title"
     >Group</a><br />
     </tal:block>
@@ -39,6 +39,13 @@
     </tal:block>
     <b>Translation Perms:</b><br />
     <span tal:replace="context/translationpermission/title">Open</span>
+    <br />
+
+    <b>Bug Tracker:</b><br />
+    <a tal:condition="context/bugtracker"
+        tal:content="context/bugtracker/title"
+       tal:attributes="href context/bugtracker/fmt:url">tracker title</a>
+    <i tal:condition="not: context/bugtracker">None specified</i>
     <br />
 
     <b>Products:</b><br />

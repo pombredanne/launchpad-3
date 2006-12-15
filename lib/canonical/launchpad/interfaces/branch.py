@@ -18,6 +18,7 @@ from canonical.config import config
 from canonical.lp.dbschema import BranchLifecycleStatus
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import Title, Summary, Whiteboard
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
@@ -56,11 +57,11 @@ class IBranch(IHasOwner):
         "short, unique, and descriptive, because it will be used in URLs. "
         "Examples: main, devel, release-1.0, gnome-vfs."),
         constraint=name_validator)
-    title = TextLine(
+    title = Title(
         title=_('Title'), required=False, description=_("Describe the "
         "branch as clearly as possible in up to 70 characters. This "
         "title is displayed in every branch list or report."))
-    summary = Text(
+    summary = Summary(
         title=_('Summary'), required=False, description=_("A "
         "single-paragraph description of the branch. This will be "
         "displayed on the branch page."))
@@ -72,7 +73,7 @@ class IBranch(IHasOwner):
             "www.bazaar-vcs.org for more information."),
         constraint=valid_webref)
 
-    whiteboard = Text(title=_('Status Whiteboard'), required=False,
+    whiteboard = Whiteboard(title=_('Whiteboard'), required=False,
         description=_('Notes on the current status of the branch.'))
     mirror_status_message = Text(
         title=_('The last message we got when mirroring this branch '
@@ -197,6 +198,9 @@ class IBranch(IHasOwner):
     related_bugs = Attribute(
         "The bugs related to this branch, likely branches on which "
         "some work has been done to fix this bug.")
+
+    # Specification attributes
+    spec_links = Attribute("Specifications linked to this branch")
 
     # Joins
     revision_history = Attribute("The sequence of revisions in that branch.")

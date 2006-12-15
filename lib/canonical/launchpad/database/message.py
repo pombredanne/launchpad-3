@@ -20,9 +20,10 @@ import pytz
 from canonical.encoding import guess as ensure_unicode
 from canonical.launchpad.helpers import get_filename_from_message_id
 from canonical.launchpad.interfaces import (
-    IMessage, IMessageSet, IMessageChunk, IPersonSet, ILibraryFileAliasSet, 
+    IMessage, IMessageSet, IMessageChunk, IPersonSet, ILibraryFileAliasSet,
     UnknownSender, InvalidEmailMessage, NotFoundError)
 
+from canonical.lp.dbschema import PersonCreationRationale
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -50,8 +51,6 @@ class Message(SQLBase):
     rfc822msgid = StringCol(unique=True, notNull=True)
     bugs = SQLRelatedJoin('Bug', joinColumn='message', otherColumn='bug',
         intermediateTable='BugMessage')
-    tickets = SQLRelatedJoin('Ticket', joinColumn='message',
-        otherColumn='ticket', intermediateTable='TicketMessage')
     chunks = SQLMultipleJoin('MessageChunk', joinColumn='message')
     raw = ForeignKey(foreignKey='LibraryFileAlias', dbName='raw', default=None)
     bugattachments = SQLMultipleJoin('BugAttachment', joinColumn='message')
@@ -83,6 +82,10 @@ class Message(SQLBase):
         bits = [unicode(chunk) for chunk in self if chunk.content]
         return '\n\n'.join(bits)
 
+    # XXX flacoste 2006/09/08 Bogus attribute only present so that
+    # verifyObject doesn't fail. That attribute is part of the
+    # interface because it is used as a UI field in MessageAddView
+    content = None
 
 def get_parent_msgids(parsed_message):
     """Returns a list of message ids the mail was a reply to.
@@ -229,7 +232,14 @@ class MessageSet:
                 # autocreate a person
                 sendername = ensure_unicode(from_addrs[0][0].strip())
                 senderemail = from_addrs[0][1].lower().strip()
-                owner = person_set.ensurePerson(senderemail, sendername)
+                # XXX: It's hard to define what rationale to use here, and to
+                # make things worst, it's almost impossible to provide a
+                # meaningful comment having only the email message.
+                # (https://launchpad.net/bugs/62344)
+                # -- Guilherme Salgado, 2006-08-31
+                owner = person_set.ensurePerson(
+                    senderemail, sendername,
+                    PersonCreationRationale.FROMEMAILMESSAGE)
                 if owner is None:
                     raise UnknownSender(senderemail)
 

@@ -34,7 +34,9 @@ class ITranslationImportQueueEntry(Interface):
             "The person that imported this file in Rosetta."),
         vocabulary="ValidOwner")
 
-    dateimported = Attribute('The timestamp when this file was imported.')
+    dateimported = Datetime(
+        title=_("The timestamp when this file was imported."),
+        required=True)
 
     productseries = Choice(
         title=_("Product Branch or Series"),
@@ -81,14 +83,6 @@ class ITranslationImportQueueEntry(Interface):
         "The IPOTemplate that we can guess this entry could be imported into."
         " None if we cannot guess it.")
 
-    guessed_language_and_variant = Attribute(
-        "A set with the ILanguage and a variant that we think this entry is"
-        "for.")
-
-    guessed_pofile = Attribute(
-        "The IPOFile that we can guess this entry could be imported into."
-        " None if we cannot guess it.")
-
     import_into = Attribute("The Object where this entry will be imported. Is"
         " None if we don't know where to import it.")
 
@@ -108,6 +102,11 @@ class ITranslationImportQueueEntry(Interface):
         " associated with tha translation."),
         required=False)
 
+    def getGuessedPOFile():
+        """Return an IPOFile that we think this entry should be imported into.
+
+        Return None if we cannot guess it."""
+
     def getFileContent():
         """Return the imported file content as a stream."""
 
@@ -115,6 +114,13 @@ class ITranslationImportQueueEntry(Interface):
         """Return import queue entries stored on the same directory as self.
 
         The returned entries will be only .pot entries.
+        """
+
+    def getElapsedTimeText():
+        """Return a string representing the elapsed time since we got the file.
+
+        The returned string is like:
+            '2 days 3 hours 10 minutes ago' or 'just requested'
         """
 
 
@@ -131,10 +137,8 @@ class ITranslationImportQueue(Interface):
         raised.
         """
 
-    def __len__():
-        """Return the number of entries in the queue, including blocked
-        entries.
-        """
+    def entryCount(self):
+        """Return the number of TranslationImportQueueEntry records."""
 
     def iterNeedReview():
         """Iterate over all entries in the queue that need review."""
@@ -220,8 +224,10 @@ class ITranslationImportQueue(Interface):
         imported from the Needs Review status to the Accepted one.
         """
 
-    def executeOptimisticBlock():
+    def executeOptimisticBlock(ztm):
         """Try to move entries from the Needs Review status to Blocked one.
+
+        :arg ztm: Zope transaction manager object or None.
 
         This method moves all .po entries that are on the same directory that
         a .pot entry that has the status Blocked to that same status.

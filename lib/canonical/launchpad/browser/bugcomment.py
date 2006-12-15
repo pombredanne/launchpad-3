@@ -65,11 +65,27 @@ class BugComment:
         text = self.text_contents = '\n\n'.join(bits)
 
         if truncate and comment_limit and len(text) > comment_limit:
-            self.text_for_display = "%s..." % text[:comment_limit-3]
+            # Note here that we truncate at comment_limit, and not
+            # comment_limit - 3; while it would be nice to account for
+            # the ellipsis, this breaks down when the comment limit is
+            # less than 3 (which can happen in a testcase) and it makes
+            # counting the strings harder.
+            self.text_for_display = "%s..." % text[:comment_limit]
             self.was_truncated = True
         else:
             self.text_for_display = text
             self.was_truncated = False
+
+    def isIdenticalTo(self, other):
+        if self.text_for_display != other.text_for_display:
+            return False
+        if self.title != other.title:
+            return False
+        if self.bugattachments or other.bugattachments:
+            # We shouldn't collapse comments which have attachments;
+            # there's really no possible identity in that case.
+            return False
+        return True
 
 
 class BugCommentView(LaunchpadView):
@@ -81,3 +97,4 @@ class BugCommentView(LaunchpadView):
         bugtask = getUtility(ILaunchBag).bugtask
         LaunchpadView.__init__(self, bugtask, request)
         self.comment = context
+

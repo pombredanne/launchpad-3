@@ -7,20 +7,16 @@ __metaclass__ = type
 __all__ = [
     'IProject',
     'IProjectSet',
-    'IProjectBugTracker',
-    'IProjectBugTrackerSet',
     ]
 
-from zope.component import getUtility
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Int, Text, TextLine
+from zope.schema import Bool, Bytes, Choice, Int, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Summary, Title
 from canonical.launchpad.interfaces import (
         IHasOwner, IBugTarget, IHasSpecifications, PillarNameField,
-        valid_webref
-        )
+        valid_emblem, valid_gotchi, valid_webref)
 from canonical.launchpad.validators.name import name_validator
 
 
@@ -122,6 +118,28 @@ class IProject(IHasOwner, IBugTarget, IHasSpecifications):
             if it is in freshmeat."""),
         required=False)
 
+    homepage_content = Text(
+        title=_("Homepage Content"), required=False,
+        description=_(
+            "The content of this project's home page. Edit this and it will "
+            "be displayed for all the world to see. It is NOT a wiki "
+            "so you cannot undo changes."))
+
+    emblem = Bytes(
+        title=_("Emblem"), required=False,
+        description=_(
+            "A small image, max 16x16 pixels and 8k in file size, that can "
+            "be used to refer to this project."),
+        constraint=valid_emblem)
+
+    gotchi = Bytes(
+        title=_("Gotchi"), required=False,
+        description=_(
+            "An image, maximum 150x150 pixels, that will be displayed on "
+            "this project's home page. It should be no bigger than 50k in "
+            "size. "),
+        constraint=valid_gotchi)
+
     translationgroup = Choice(
         title = _("Translation group"),
         description = _("The translation group for this project. This group "
@@ -152,21 +170,14 @@ class IProject(IHasOwner, IBugTarget, IHasSpecifications):
 
     bounties = Attribute(_("The bounties that are related to this project."))
 
-    def bugtrackers():
-        """Return the BugTrackers for this Project."""
+    bugtracker = Choice(title=_('Bug Tracker'), required=False,
+        vocabulary='BugTracker',
+        description=_("The bug tracker the products in this project use."))
 
-    def products():
-        """Return Products for this Project."""
+    products = Attribute(_("An iterator over the Products for this project."))
 
     def getProduct(name):
         """Get a product with name `name`."""
-
-    def shortDescription(aDesc=None):
-        """return the projects summary, setting it if aDesc is provided"""
-
-    def product(name):
-        """Return the product belonging to this project with the given
-        name."""
 
     def ensureRelatedBounty(bounty):
         """Ensure that the bounty is linked to this project. Return None.
@@ -223,13 +234,3 @@ class IProjectSet(Interface):
     def forSyncReview():
         """Return a list of projects that have productseries ready to
         import which need review."""
-
-class IProjectBugTracker(Interface):
-    id = Int(title=_('ID'))
-    project = Int(title=_('Owner'))
-    bugtracker = Int(title=_('Bug Tracker'))
-
-class IProjectBugTrackerSet(Interface):
-    def new(project, bugtracker):
-        """Create a new project bug tracker."""
-

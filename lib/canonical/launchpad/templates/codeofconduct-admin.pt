@@ -71,7 +71,7 @@
 
      <ul tal:condition="view/results">
        <li tal:repeat="code view/results">
-           <a tal:attributes="href string:/people/${code/owner/name}" 
+           <a tal:attributes="href code/owner/fmt:url" 
               tal:content="code/owner/displayname">OWNER</a>
            <a tal:attributes="href code/id"
 	      tal:content="code/displayname">CoC</a>

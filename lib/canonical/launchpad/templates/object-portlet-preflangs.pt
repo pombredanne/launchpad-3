@@ -1,6 +1,6 @@
 <div class="portlet">
 
-  <h4>Your preferred languages:</h4>
+  <h2>Your preferred languages</h2>
 
   <div class="portletBody">
 
@@ -14,7 +14,9 @@
       </ul>
 
       <ul style="text-align: right;">
-        <li class="add"><a href="/rosetta/prefs">Select Languages...</a></li>
+        <li class="add">
+          <a href="/+editmylanguages">Select Languages...</a>
+        </li>
       </ul>
 
     </div>

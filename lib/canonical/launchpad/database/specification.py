@@ -3,13 +3,13 @@
 __metaclass__ = type
 __all__ = ['Specification', 'SpecificationSet']
 
-
 from zope.interface import implements
 
 from sqlobject import (
     ForeignKey, IntCol, StringCol, SQLMultipleJoin, SQLRelatedJoin, BoolCol)
 
 from canonical.launchpad.interfaces import (
+    IBugLinkTarget,
     IDistroRelease,
     IProductSeries,
     ISpecification,
@@ -20,8 +20,11 @@ from canonical.database.sqlbase import SQLBase, quote
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
+from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
 from canonical.launchpad.database.specificationdependency import (
     SpecificationDependency)
+from canonical.launchpad.database.specificationbranch import (
+    SpecificationBranch)
 from canonical.launchpad.database.specificationbug import (
     SpecificationBug)
 from canonical.launchpad.database.specificationfeedback import (
@@ -31,8 +34,9 @@ from canonical.launchpad.database.specificationsubscription import (
 from canonical.launchpad.database.sprintspecification import (
     SprintSpecification)
 from canonical.launchpad.database.sprint import Sprint
+
 from canonical.launchpad.helpers import (
-    contactEmailAddresses, check_permission, shortlist)
+    contactEmailAddresses, shortlist)
 
 from canonical.launchpad.components.specification import SpecificationDelta
 
@@ -44,10 +48,10 @@ from canonical.lp.dbschema import (
     )
 
 
-class Specification(SQLBase):
+class Specification(SQLBase, BugLinkTargetMixin):
     """See ISpecification."""
 
-    implements(ISpecification)
+    implements(ISpecification, IBugLinkTarget)
 
     _defaultOrder = ['-priority', 'status', 'name', 'id']
 
@@ -115,11 +119,14 @@ class Specification(SQLBase):
     sprints = SQLRelatedJoin('Sprint', orderBy='name',
         joinColumn='specification', otherColumn='sprint',
         intermediateTable='SprintSpecification')
-    buglinks = SQLMultipleJoin('SpecificationBug', joinColumn='specification',
+    bug_links = SQLMultipleJoin('SpecificationBug', joinColumn='specification',
         orderBy='id')
     bugs = SQLRelatedJoin('Bug',
         joinColumn='specification', otherColumn='bug',
         intermediateTable='SpecificationBug', orderBy='id')
+    branch_links = SQLMultipleJoin('SpecificationBranch',
+        joinColumn='specification',
+        orderBy='id')
     spec_dependency_links = SQLMultipleJoin('SpecificationDependency',
         joinColumn='specification', orderBy='id')
 
@@ -266,14 +273,14 @@ class Specification(SQLBase):
     # NB NB NB if you change this definition PLEASE update the db constraint
     # Specification.specification_completion_recorded_chk !!!
     completeness_clause =  """
-                Specification.delivery = %d 
+                Specification.delivery = %d
                 """ % SpecificationDelivery.IMPLEMENTED.value + """
-            OR 
-                Specification.status IN ( %d, %d ) 
+            OR
+                Specification.status IN ( %d, %d )
                 """ % (SpecificationStatus.OBSOLETE.value,
                        SpecificationStatus.SUPERSEDED.value) + """
-            OR 
-               (Specification.informational IS TRUE AND 
+            OR
+               (Specification.informational IS TRUE AND
                 Specification.status = %d)
                 """ % SpecificationStatus.APPROVED.value
 
@@ -302,11 +309,11 @@ class Specification(SQLBase):
                 """ % ( SpecificationDelivery.UNKNOWN.value,
                         SpecificationDelivery.NOTSTARTED.value,
                         SpecificationDelivery.DEFERRED.value ) + """
-            OR 
-               (Specification.informational IS TRUE AND 
+            OR
+               (Specification.informational IS TRUE AND
                 Specification.status = %d)
                 """ % SpecificationStatus.APPROVED.value
-    
+
     @property
     def is_started(self):
         """See ISpecification. This is a code implementation of the
@@ -347,7 +354,7 @@ class Specification(SQLBase):
                     newstatus = SpecificationLifecycleStatus.STARTED
                 else:
                     newstatus = SpecificationLifecycleStatus.NOTSTARTED
- 
+
         return newstatus
 
     @property
@@ -469,21 +476,12 @@ class Specification(SQLBase):
                 SpecificationFeedback.delete(fbreq.id)
                 return
 
-    # linking to bugs
-    def linkBug(self, bug_number):
-        """See ISpecification."""
-        for buglink in self.buglinks:
-            if buglink.bug.id == bug_number:
-                return buglink
-        return SpecificationBug(specification=self, bug=bug_number)
+    # Template methods for BugLinkTargetMixin
+    buglinkClass = SpecificationBug
 
-    def unLinkBug(self, bug_number):
-        """See ISpecification."""
-        # see if a relevant bug link exists, and if so, delete it
-        for buglink in self.buglinks:
-            if buglink.bug.id == bug_number:
-                SpecificationBug.delete(buglink.id)
-                return buglink
+    def createBugLink(self, bug):
+        """See BugLinkTargetMixin."""
+        return SpecificationBug(specification=self, bug=bug)
 
     # sprint linking
     def linkSprint(self, sprint, user):
@@ -555,6 +553,19 @@ class Specification(SQLBase):
         self._find_all_blocked(blocked)
         return sorted(blocked, key=lambda s: (s.status, s.priority, s.title))
 
+    # branches
+    def getBranchLink(self, branch):
+        return SpecificationBranch.selectOneBy(
+            specificationID=self.id, branchID=branch.id)
+        
+    def linkBranch(self, branch, summary=None):
+        branchlink = self.getBranchLink(branch)
+        if branchlink is not None:
+            return branchlink
+        return SpecificationBranch(specification=self,
+                                   branch=branch,
+                                   summary=summary)
+
 
 class SpecificationSet:
     """The set of feature specifications."""
@@ -593,7 +604,7 @@ class SpecificationSet:
                 completeness = True
         if completeness is False:
             filter.append(SpecificationFilter.INCOMPLETE)
-        
+
         # defaults for acceptance: in this case we have nothing to do
         # because specs are not accepted/declined against a distro
 
@@ -612,7 +623,7 @@ class SpecificationSet:
         #  - completeness.
         #  - informational.
         #
-        
+
         # filter out specs on inactive products
         base = """(Specification.product IS NULL OR
                    Specification.product NOT IN
@@ -659,7 +670,7 @@ class SpecificationSet:
         """See ISpecificationSet."""
         specification = Specification.selectOneBy(specurl=url)
         if specification is None:
-            return None 
+            return None
         return specification
 
     @property

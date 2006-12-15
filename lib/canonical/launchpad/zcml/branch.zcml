@@ -4,7 +4,7 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
-    
+
     <!-- Branch -->
     <content class="canonical.launchpad.database.Branch">
         <allow interface="canonical.launchpad.interfaces.IBranch" />
@@ -44,19 +44,27 @@
             name="+portlet-details"
             template="../templates/branch-portlet-details.pt" />
         <browser:page
-            name="+portlet-subscribers"
-            template="../templates/branch-portlet-subscribers.pt" />
-        <browser:page
             name="+series-reference"
             template="../templates/branch-series-reference.pt" />
     </browser:pages>
 
   <browser:pages
       for="canonical.launchpad.interfaces.IBranch"
+      permission="zope.Public">
+    <browser:page
+        name="+portlet-specifications"
+        template="../templates/branch-portlet-specifications.pt" />
+    <browser:page
+        name="+portlet-subscribers"
+        template="../templates/branch-portlet-subscribers.pt" />
+  </browser:pages>
+
+  <browser:pages
+      for="canonical.launchpad.interfaces.IBranch"
       facet="overview"
       permission="zope.Public"
       class="canonical.launchpad.browser.BranchInProductView" >
-    <browser:page      
+    <browser:page
       name="+product-summary-listing"
       template="../templates/branch-summary-listing.pt" />
   </browser:pages>
@@ -90,20 +98,12 @@
     template="../templates/branch-edit.pt" />
 
   <browser:page
-    name="+lifecycle"
+    name="+reassign"
     for="canonical.launchpad.interfaces.IBranch"
-    class="canonical.launchpad.browser.BranchLifecycleView"
-    facet="branches"
     permission="launchpad.Edit"
-    template="../templates/branch-edit.pt" />
-
-  <browser:page
-    name="+admin"
-    for="canonical.launchpad.interfaces.IBranch"
-    class="canonical.launchpad.browser.BranchAdminView"
     facet="branches"
-    permission="launchpad.Admin"
-    template="../templates/branch-edit.pt" />
+    class="canonical.launchpad.browser.BranchReassignmentView"
+    template="../templates/object-reassignment.pt" />
 
   <!-- BranchSet -->
   <content class="canonical.launchpad.database.BranchSet">

@@ -235,8 +235,10 @@ Create the katie user and register it in a team that is allowed to
 do uploads:
 
   >>> from canonical.launchpad.interfaces import IPersonSet, IEmailAddressSet
+  >>> from canonical.lp.dbschema import PersonCreationRationale
   >>> name, address = "Katie", "katie@rockhopper.ubuntu.com"
-  >>> user = getUtility(IPersonSet).ensurePerson(address, name)
+  >>> user = getUtility(IPersonSet).ensurePerson(
+  ...     address, name, PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
   >>> assert user is not None
   >>> email = getUtility(IEmailAddressSet).getByEmail(address)
   >>> user.validateAndEnsurePreferredEmail(email)
@@ -597,6 +599,7 @@ required entry for 'etherwake':
   <BLANKLINE>
   END
 
+
 Invoke changeOverride on just published etherwake moving it to
 component 'universe'.
 
@@ -669,6 +672,39 @@ Check if the package was moved properly to the component 'universe':
   ...                         "Sources").read()
   >>> print universe_sources + '\nEND'
   Package: etherwake
+  ...
+  END
+
+== Release File ==
+
+The publish-distro.py script will write an appropriate Release file
+containing the suite in question and a list of checksums (MD5, SHA1
+and SHA256) for each index published.
+
+XXX cprov 20061213: trailing space on Architectures is a side-effect
+caused by the absence of published binaries in this suite. It should
+no happen in real conditions.
+
+  >>> releasefile_contents = open("/var/tmp/archive/ubuntutest/dists/"
+  ...                             "breezy-autotest/Release").read()
+  >>> print releasefile_contents + '\nEND' #doctest: -NORMALIZE_WHITESPACE
+  Origin: ubuntutest
+  Label: ubuntutest
+  Suite: breezy-autotest
+  Version: 6.6.6
+  Codename: breezy-autotest
+  Date: ...
+  Architectures: 
+  Components: main restricted universe multiverse
+  Description: ubuntutest Breezy Badger Autotest 6.6.6
+  MD5Sum:
+   a5e5742a193740f17705c998206e18b6              114 main/source/Release
+  ...
+  SHA1:
+   6222b7e616bcc20a32ec227254ad9de8d4bd5557              114 main/source/Release
+  ...
+  SHA256:
+   297125e9b0f5da85552691597c9c4920aafd187e18a4e01d2ba70d8d106a6338              114 main/source/Release
   ...
   END
 

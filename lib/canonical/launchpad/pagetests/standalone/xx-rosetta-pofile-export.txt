@@ -1,117 +1,121 @@
-
 Exporting Single PO Files through the Web
 -----------------------------------------
 
-If we haven't logged in yet, we should be prompted to.
+Not logged in users can't access the +export page.
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+export HTTP/1.1
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  Content-Type: text/plain
-  Location: http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+export/+login...
+  >>> anon_browser.open(
+  ...     'http://launchpad.dev/ubuntu/hoary'
+  ...     '/+source/evolution/+pots/evolution-2.2/es/')
+  >>> anon_browser.getLink('Download').click()
+  Traceback (most recent call last):
+  ...
+  Unauthorized:...
 
-If we GET the page while logged in, we should get a confirmation form.
+Logged in as a regular user, the +export page is accessible.
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+export HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  <BLANKLINE>
-      <h1>PO file export</h1>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  ...Once you complete this form, the file will be exported...
-  ...carlos@canonical.com...
-  ...
+  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+  >>> browser.open(
+  ...     'http://launchpad.dev/ubuntu/hoary'
+  ...     '/+source/evolution/+pots/evolution-2.2/es')
+  >>> browser.getLink('Download').click()
+
+  >>> browser.url
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+export'
+
+  >>> browser.title
+  'Spanish (es) translation of evolution-2.2 in Ubuntu Hoary
+  package "evolution" file exports'
+
+  >>> 'PO file export' in browser.contents
+  True
+  >>> 'carlos@canonical.com' in browser.contents
+  True
 
 If we POST the page, it should add the request to the queue.
 
-  >>> print http(r"""
-  ... POST /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+export HTTP/1.1
-  ... Content-Length: 9
-  ... Content-Type: application/x-www-form-urlencoded
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... 
-  ... format=PO""")
-  HTTP/1.1 200 Ok
-  ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
-  ...
-  <BLANKLINE>
-      <h1>PO file export</h1>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-              <p>
-              Your request has been received. Expect to receive an email shortly.
-              </p>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  ...
+  >>> browser.getControl('Format').value = ['PO']
+  >>> browser.getControl('Confirm Export').click()
+
+  >>> browser.url
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es'
+
+  >>> for tag in find_tags_by_class(browser.contents, 'informational'):
+  ...     tag.renderContents()
+  'Your request has been received. Expect to receive an email shortly.'
 
 Let's be sure that we can request po files without translations as the
 No Privileges Person.
 
-  >>> print http(r"""
-  ... POST /products/evolution/trunk/+pots/evolution-2.2/cy/+export HTTP/1.1
-  ... Content-Length: 9
-  ... Content-Type: application/x-www-form-urlencoded
-  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... 
-  ... format=PO""")
-  HTTP/1.1 200 Ok
+  >>> from zope.testbrowser.testing import Browser
+  >>> no_priv_browser = Browser()
+  >>> no_priv_browser.handleErrors = False
+  >>> no_priv_browser.addHeader(
+  ...     'Authorization', 'Basic no-priv@canonical.com:test')
+
+  >>> no_priv_browser.open(
+  ...    'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/cy/')
+
+  >>> no_priv_browser.getLink('Download').click()
+  >>> no_priv_browser.url
+  'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/cy/+export'
+
+  >>> no_priv_browser.getControl('Format').value = ['PO']
+  >>> no_priv_browser.getControl('Confirm Export').click()
+
+  >>> no_priv_browser.url
+  'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/cy'
+
+  >>> for tag in find_tags_by_class(browser.contents, 'informational'):
+  ...     tag.renderContents()
+  'Your request has been received. Expect to receive an email shortly.'
+
+Since no-privileges person isn't a valid translator for Welsh (cy) language, the
+ownership of the newly created pofile is set to Rosetta Admins.
+
+  >>> browser.open(
+  ...     'http://launchpad.dev/evolution'
+  ...     '/trunk/+pots/evolution-2.2/cy')
+  >>> translation_portlet = find_portlet(
+  ...     browser.contents, 'Translation file details')
+  >>> translation_portlet.firstText('Creator:').findNext('a').string
+  u'Rosetta Administrators'
+
+But if we request an export from a valid translator, he gets the ownership.
+We test using the Swedish (sv) language which doesn't have a pofile for
+evolution yet; it will be created at the moment the export is requested.
+
+  >>> browser.open(
+  ...     'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/sv')
+  >>> browser.getLink('Download').click()
+
+  >>> browser.getControl('Format').value = ['PO']
+  >>> browser.getControl('Confirm Export').click()
+
+  >>> browser.url
+  'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/sv'
+
+  >>> for tag in find_tags_by_class(browser.contents, 'informational'):
+  ...     tag.renderContents()
+  'Your request has been received. Expect to receive an email shortly.'
   ...
 
-And that we don't take the ownership if we are not valid translators for that language.
+  >>> translation_portlet = find_portlet(
+  ...     browser.contents, 'Translation file details')
+  >>> translation_portlet.firstText('Creator:').findNext('a').string
+  u'Carlos Perell\xf3 Mar\xedn'
 
-  >>> print http(r"""
-  ... GET /products/evolution/trunk/+pots/evolution-2.2/cy HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Creator:...
-  ...Rosetta Administrators...
-  ...For:...
+Request the same pofile again won't crash. (See bug
+https://launchpad.net/rosetta/+bug/1558).
 
-But if we request an export from a valid translator, he gets the ownership
+  >>> browser.getLink('Download').click()
 
-  >>> print http(r"""
-  ... POST /products/evolution/trunk/+pots/evolution-2.2/sv/+export HTTP/1.1
-  ... Content-Length: 9
-  ... Content-Type: application/x-www-form-urlencoded
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... 
-  ... format=PO""")
-  HTTP/1.1 200 Ok
+  >>> browser.getControl('Format').value = ['PO']
+  >>> browser.getControl('Confirm Export').click()
+
+  >>> browser.url
+  'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/sv'
+
+  >>> for tag in find_tags_by_class(browser.contents, 'informational'):
+  ...     tag.renderContents()
+  'Your request has been received. Expect to receive an email shortly.'
   ...
-
-And that we don't take the ownership if we are not valid translators for that language.
-
-  >>> print http(r"""
-  ... GET /products/evolution/trunk/+pots/evolution-2.2/sv HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Creator:...
-  ...Carlos...
-  ...For:...

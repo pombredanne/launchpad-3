@@ -14,7 +14,6 @@
 
 <metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure context/@@+portlet-details" />
-    <div tal:replace="structure context/@@+portlet-calendar" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
@@ -72,7 +71,7 @@
 
         <p>
           Once <dfn>Inactive</dfn>, a signature can only be reactivated by a
-          <a href="/people/admins">Launchpad Administrator<a>.
+          <a href="/~admins">Launchpad Administrator<a>.
         </p>
       <ul> 
          <li tal:repeat="sig context/inactivesignatures"

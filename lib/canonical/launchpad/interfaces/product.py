@@ -7,18 +7,21 @@ __metaclass__ = type
 __all__ = [
     'IProduct',
     'IProductSet',
+    'IProductLaunchpadUsageForm',
     ]
 
-from zope.schema import Bool, Choice, Int, Text, TextLine
+from zope.schema import Bool, Bytes, Choice, Int, Text, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Description, Summary, Title
+from canonical.launchpad.fields import (
+    Description, ProductBugTracker, Summary, Title)
 from canonical.launchpad.interfaces import (
-    IHasOwner, IHasDrivers, IBugTarget, ISpecificationTarget, ITicketTarget,
+    IHasOwner, IHasDrivers, IBugTarget, ISpecificationTarget,
     IHasSecurityContact, IKarmaContext, PillarNameField)
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces.validation import valid_webref
+from canonical.launchpad.interfaces.validation import (
+    valid_emblem, valid_gotchi, valid_webref)
 
 
 class ProductNameField(PillarNameField):
@@ -29,7 +32,7 @@ class ProductNameField(PillarNameField):
 
 
 class IProduct(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
-               IHasSecurityContact, ITicketTarget, IKarmaContext):
+               IHasSecurityContact, IKarmaContext):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -119,7 +122,7 @@ class IProduct(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
         title=_('Homepage URL'),
         required=False,
         constraint=valid_webref,
-        description=_("""The product home page. Please include 
+        description=_("""The product home page. Please include
             the http://"""))
 
     wikiurl = TextLine(
@@ -158,6 +161,28 @@ class IProduct(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
         required=False, description=_("""The Freshmeat project name for
             this product, if it is in freshmeat."""))
 
+    homepage_content = Text(
+        title=_("Homepage Content"), required=False,
+        description=_(
+            "The content of this product's home page. Edit this and it will "
+            "be displayed for all the world to see. It is NOT a wiki "
+            "so you cannot undo changes."))
+
+    emblem = Bytes(
+        title=_("Emblem"), required=False,
+        description=_(
+            "A small image, max 16x16 pixels and 8k in file size, that can "
+            "be used to refer to this product."),
+        constraint=valid_emblem)
+
+    gotchi = Bytes(
+        title=_("Gotchi"), required=False,
+        description=_(
+            "An image, maximum 150x150 pixels, that will be displayed on "
+            "this product's home page. It should be no bigger than 50k in "
+            "size. "),
+        constraint=valid_gotchi)
+
     translationgroup = Choice(
         title = _("Translation group"),
         description = _("The translation group for this product. This group "
@@ -190,6 +215,20 @@ class IProduct(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
     reviewed = Bool(title=_('Reviewed'), description=_("""Whether or not
         this product has been reviewed."""))
 
+    def getExternalBugTracker():
+        """Return the external bug tracker used by this bug tracker.
+
+        If the product uses Malone, return None.
+        If the product doesn't have a bug tracker specified, return the
+        project bug tracker instead.
+        """
+
+    bugtracker = Choice(title=_('Bug Tracker'), required=False,
+        vocabulary='BugTracker',
+        description=_(
+            "The external bug tracker this product uses, if it's different"
+            " from its Project's bug tracker."))
+
     official_malone = Bool(title=_('Uses Malone Officially'),
         required=True, description=_('Check this box to indicate that '
         'this application officially uses Malone for bug tracking '
@@ -207,6 +246,11 @@ class IProduct(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
 
     serieslist = Attribute(_("""An iterator over the ProductSeries for this
         product"""))
+
+    development_focus = Choice(
+        title=_('Development focus'), required=True,
+        vocabulary='FilteredProductSeries',
+        description=_('The product series where development is focused'))
 
     name_with_project = Attribute(_("Returns the product name prefixed "
         "by the project name, if a project is associated with this "
@@ -246,11 +290,6 @@ class IProduct(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
         "that applies to translations in this product, based on the "
         "permissions that apply to the product as well as its project.")
 
-    # XXX: shouldn't this be validated with valid_webref?
-    #   -- kiko, 2005-10-11
-    releaseroot = Text(title=_("The URL of the root directory for the product "
-        "used when the series doesn't supply one."))
-
     def getLatestBranches(quantity=5):
         """Latest <quantity> branches registered for this product."""
 
@@ -262,7 +301,7 @@ class IProduct(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
         None.
         """
 
-    def newSeries(owner, name, summary):
+    def newSeries(owner, name, summary, branch=None):
         """Creates a new ProductSeries for this product."""
 
     def getSeries(name):
@@ -314,7 +353,8 @@ class IProductSet(Interface):
                       description, project=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
-                      sourceforgeproject=None):
+                      sourceforgeproject=None, programminglang=None,
+                      reviewed=False):
         """Create and Return a brand new Product."""
 
     def forReview():
@@ -360,3 +400,12 @@ class IProductSet(Interface):
         """return a count of the number of products in the Launchpad that
         are both active and reviewed."""
 
+
+class IProductLaunchpadUsageForm(Interface):
+    """Form for indicating whether Rosetta or Malone is used."""
+
+    official_rosetta = IProduct['official_rosetta']
+    bugtracker = ProductBugTracker(
+        title=_('Bug Tracker'),
+        description=_('Where are bugs primarily tracked?'),
+        vocabulary="BugTracker")

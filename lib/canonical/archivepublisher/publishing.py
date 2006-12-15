@@ -5,20 +5,17 @@ __all__ = [ 'Publisher', 'pocketsuffix', 'suffixpocket' ]
 import os
 from md5 import md5
 from sha import sha
+from Crypto.Hash.SHA256 import new as sha256
 from datetime import datetime
 
 from canonical.archivepublisher.domination import Dominator
 from canonical.archivepublisher.ftparchive import FTPArchiveHandler
+from canonical.launchpad.interfaces import pocketsuffix
 from canonical.librarian.client import LibrarianClient
 from canonical.lp.dbschema import PackagePublishingPocket
-
-from canonical.launchpad.interfaces import pocketsuffix
+from canonical.archivepublisher import HARDCODED_COMPONENT_ORDER
 
 suffixpocket = dict((v, k) for (k, v) in pocketsuffix.items())
-# XXX: if people actually start seriously using ComponentSelections this
-# will need to be revisited. For instance, adding new components will
-# break places which use this list. -- kiko, 2006-08-23
-HARDCODED_COMPONENT_ORDER = ['main', 'restricted', 'universe', 'multiverse']
 
 DISTRORELEASE_STANZA = """Origin: %s
 Label: %s
@@ -62,14 +59,21 @@ class Publisher(object):
     the processing of each DistroRelease and DistroArchRelease in question
     """
 
-    def __init__(self, log, config, diskpool, distribution, library=None):
-        """Initialise a publisher. Publishers need the pool root dir
-        and a DiskPool object.
+    def __init__(self, log, config, diskpool, distribution,
+                 allowed_suites=None, library=None):
+        """Initialise a publisher.
+
+        Publishers need the pool root dir and a DiskPool object.
+
+        Optionally we can pass a list of tuples, (distrorelease.name, pocket),
+        which will restrict the publisher actions, only suites listed in
+        allowed_suites will be modified.
         """
         self.log = log
-
         self._config = config
         self.distro = distribution
+        self.allowed_suites = allowed_suites
+
         if not os.path.isdir(config.poolroot):
             raise ValueError("Root %s is not a directory or does "
                              "not exist" % config.poolroot)
@@ -96,12 +100,24 @@ class Publisher(object):
         Asks each DistroRelease to publish itself, which causes
         publishing records to be updated, and files to be placed on disk
         where necessary.
+        If self.allowed_suites is set, restrict the publication procedure
+        to them.
         """
         self.log.debug("* Step A: Publishing packages")
+
         for distrorelease in self.distro:
-            more_dirt = distrorelease.publish(self._diskpool, self.log,
-                                              is_careful=force_publishing)
-            self.dirty_pockets.update(more_dirt)
+            for pocket, suffix in pocketsuffix.items():
+                if (self.allowed_suites and not (distrorelease.name, pocket) in
+                    self.allowed_suites):
+                    self.log.debug(
+                        "* Skipping %s/%s" % (distrorelease.name, pocket.name))
+                    continue
+
+                more_dirt = distrorelease.publish(
+                    self._diskpool, self.log, pocket,
+                    is_careful=force_publishing)
+
+                self.dirty_pockets.update(more_dirt)
 
     def B_dominate(self, force_domination):
         """Second step in publishing: domination."""
@@ -149,11 +165,6 @@ class Publisher(object):
 
                 self._writeDistroRelease(distrorelease, pocket)
 
-    def E_sanitiseLinks(self):
-        """Ensure links in the pool are sane."""
-        self.log.debug("* Step E: Sanitising links in the pool.")
-        self._diskpool.sanitiseLinks(HARDCODED_COMPONENT_ORDER)
-
     def isDirty(self, distrorelease, pocket):
         """True if a publication has happened in this release and pocket."""
         if not (distrorelease.name, pocket) in self.dirty_pockets:
@@ -179,11 +190,15 @@ class Publisher(object):
         all_architectures = set()
         all_files = set()
         for component, architectures in release_files_needed[full_name].items():
+
             all_components.add(component)
             for architecture in architectures:
-                self._writeDistroArchRelease(
-                    distrorelease, pocket, component, architecture,
-                    all_files, all_architectures)
+                # XXX malcc 2006-09-20: We don't like the way we build this
+                # all_architectures list. Make this better code.
+                clean_architecture = self._writeDistroArchRelease(
+                    distrorelease, pocket, component, architecture, all_files)
+                if clean_architecture != "source":
+                    all_architectures.add(clean_architecture)
 
         drsummary = "%s %s " % (self.distro.displayname,
                                 distrorelease.displayname)
@@ -192,7 +207,9 @@ class Publisher(object):
         else:
             drsummary += pocket.name.capitalize()
 
-        f = open(os.path.join(self._config.distsroot, full_name, "Release"), "w")
+        f = open(os.path.join(
+            self._config.distsroot, full_name, "Release"), "w")
+
         stanza = DISTRORELEASE_STANZA % (
                     self.distro.displayname,
                     self.distro.displayname,
@@ -200,7 +217,7 @@ class Publisher(object):
                     distrorelease.version,
                     distrorelease.name,
                     datetime.utcnow().strftime("%a, %d %b %Y %k:%M:%S UTC"),
-                    " ".join(all_architectures),
+                    " ".join(sorted(list(all_architectures))),
                     " ".join(reorder_components(all_components)), drsummary)
         f.write(stanza)
 
@@ -211,11 +228,14 @@ class Publisher(object):
         f.write("SHA1:\n")
         for file_name in all_files:
             self._writeSumLine(full_name, f, file_name, sha)
+        f.write("SHA256:\n")
+        for file_name in all_files:
+            self._writeSumLine(full_name, f, file_name, sha256)
 
         f.close()
 
     def _writeDistroArchRelease(self, distrorelease, pocket, component,
-                                architecture, all_files, all_architectures):
+                                architecture, all_files):
         """Write out a Release file for a DAR."""
         # XXX: untested method -- kiko, 2006-08-24
 
@@ -233,14 +253,11 @@ class Publisher(object):
             di_file_stub = os.path.join(di_path, file_stub)
             for suffix in ('', '.gz', '.bz2'):
                 all_files.add(di_file_stub + suffix)
-            # Strip "binary-" off the front of the architecture before
-            # noting it in all_architectures
+            # Strip "binary-" off the front of the architecture
             clean_architecture = architecture[7:]
         else:
             file_stub = "Sources"
             clean_architecture = architecture
-
-        all_architectures.add(clean_architecture)
 
         # Now, grab the actual (non-di) files inside each of
         # the suite's architectures
@@ -283,4 +300,3 @@ class Publisher(object):
         length = len(contents)
         checksum = sum_form(contents).hexdigest()
         out_file.write(" %s % 16d %s\n" % (checksum, length, file_name))
-

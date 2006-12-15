@@ -94,6 +94,10 @@ class Branch(SQLBase):
     bug_branches = SQLMultipleJoin(
         'BugBranch', joinColumn='branch', orderBy='id')
 
+    spec_links = SQLMultipleJoin('SpecificationBranch',
+        joinColumn='branch',
+        orderBy='id')
+
     @property
     def related_bugs(self):
         """See IBranch."""
@@ -242,14 +246,14 @@ class BranchSet:
 
     def new(self, name, owner, product, url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
-            summary=None, home_page=None):
+            summary=None, home_page=None, whiteboard=None):
         """See IBranchSet."""
         if not home_page:
             home_page = None
         return Branch(
             name=name, owner=owner, author=author, product=product, url=url,
             title=title, lifecycle_status=lifecycle_status, summary=summary,
-            home_page=home_page)
+            home_page=home_page, whiteboard=whiteboard)
 
     def getByUrl(self, url, default=None):
         """See IBranchSet."""

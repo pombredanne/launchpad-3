@@ -51,7 +51,7 @@
   <tr class="results">
     <td
       tal:attributes="colspan listing_columns/count:len"
-      tal:content="structure task_batch_navigator/@@+navigation-links" />
+      tal:content="structure task_batch_navigator/@@+navigation-links-upper" />
   </tr>
 </metal:header>
 
@@ -422,11 +422,27 @@
               </td>
             </tr>
             <tr>
-              <td>
-                <label tal:attributes="for view/tag_widget/name"
-                       tal:content="structure view/tag_widget/label">
-                  Tag
-                </label>: <input tal:replace="structure view/tag_widget" />
+              <tal:comment tal:replace="nothing">
+                XXX: The rendering of the widget is pretty much copied from
+                     the widget macro; the difference is that we want to
+                     render the wiget in a table, and the label should
+                     be rendered on the same line as the widget. When
+                     FormLayout lands we should be able to use the
+                     standard macro instead.
+                     -- Bjorn Tillenius, 2006-10-02
+              </tal:comment>
+              <td tal:define="error view/tag_widget/error">
+                <div tal:attributes="class python:error and 'error' or ''">
+                  <label tal:attributes="for view/tag_widget/name"
+                         tal:content="structure view/tag_widget/label">
+                    Tag
+                  </label>: <input tal:replace="structure view/tag_widget" />
+                  <div
+                    tal:condition="error"
+                    class="message"
+                    tal:content="structure error"
+                    >An error message.</div>
+                </div>
               </td>
               <td tal:condition="view/shouldShowNoPackageWidget">
                   <span tal:content="structure view/has_no_package_widget" />
