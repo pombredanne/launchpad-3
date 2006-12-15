@@ -1,0 +1,34 @@
+= Reviewing proposed members =
+
+We have one page in which a team admin can review (approve/decline/hold) all
+proposed members at once.
+
+    >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
+    >>> browser.open('http://launchpad.dev/~ubuntu-team/+members')
+    >>> browser.getLink('Approve or decline members').click()
+    >>> browser.url
+    'http://launchpad.dev/~ubuntu-team/+editproposedmembers'
+
+Let's have a look at the proposed members that we have.
+
+    >>> table = find_tag_by_id(browser.contents, 'member-list')
+    >>> for tag in table.findAll('a'):
+    ...     print tag.renderContents()
+    <BLANKLINE>
+    <span>Andrew Bennetts</span>
+    <BLANKLINE>
+    <span>Warty Security Team</span>
+
+Now we'll approve one and decline the other.
+
+    >>> browser.getControl(name='action_7').value = ['decline']
+    >>> browser.getControl(name='action_20').value = ['approve']
+    >>> browser.getControl('Submit').click()
+
+And now we see that there are no pending members left.
+
+    >>> browser.open('http://launchpad.dev/~ubuntu-team/+members')
+    >>> browser.getLink('Approve or decline members')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
