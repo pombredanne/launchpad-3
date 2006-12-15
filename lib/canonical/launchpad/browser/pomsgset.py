@@ -17,6 +17,7 @@ import re
 import operator
 import gettextpo
 import pytz
+from math import ceil
 from xml.sax.saxutils import escape as xml_escape
 
 from zope.app import datetimeutils
@@ -123,6 +124,24 @@ def convert_newlines_to_web_form(unicode_text):
     else:
         return helpers.text_replaced(unicode_text, {u'\r': u'\r\n'})
 
+def count_lines(text):
+    """Count the number of physical lines in a string.
+
+    This is always at least as large as the number of logical lines in a string.
+    """
+    if text is None:
+        return 0
+
+    CHARACTERS_PER_LINE = 60
+    count = 0
+
+    for line in text.split(u'\n'):
+        if len(line) == 0:
+            count += 1
+        else:
+            count += int(ceil(float(len(line)) / CHARACTERS_PER_LINE))
+
+    return count
 
 def parse_cformat_string(string):
     """Parse a printf()-style format string into a sequence of interpolations
@@ -956,14 +975,22 @@ class POMsgSetView(LaunchpadView):
         # Let's initialise the translation dictionaries used from the
         # translation form.
         self.translation_dictionaries = []
+
         for index in self.pluralform_indices:
+            active = self.getActiveTranslation(index)
+            translation = self.getTranslation(index)
+            is_multi_line = (count_lines(active) > 1 or
+                             count_lines(translation) > 1 or
+                             count_lines(self.msgid) > 1 or
+                             count_lines(self.msgid_plural) > 1)
             self.translation_dictionaries.append({
                 'plural_index': index,
-                'active_translation': self.getActiveTranslation(index),
-                'translation': self.getTranslation(index),
+                'active_translation': active,
+                'translation': translation,
                 'selection': self.context.getSelection(index),
                 'suggestion_block': self.suggestion_blocks[index],
-                'store_flag': index in self.plural_indices_to_store
+                'store_flag': index in self.plural_indices_to_store,
+                'is_multi_line': is_multi_line
                 })
 
     def _buildAllSuggestions(self, index):
