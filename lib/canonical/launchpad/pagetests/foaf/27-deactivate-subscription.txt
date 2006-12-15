@@ -5,7 +5,7 @@ We want to test concurrency here, so keep two browsers around:
   >>> from zope.testbrowser.testing import Browser
   >>> browser2 = Browser()
   >>> browser2.addHeader("Authorization", "Basic foo@baz.com:f")
-  >>> browser2.open("http://launchpad.dev/people/myemail/+member/name16")
+  >>> browser2.open("http://launchpad.dev/~myemail/+member/name16")
 
 XXX: As per bug 68655, it would be nice to be able to clone the browser
 and not do the manual copy.
@@ -13,10 +13,10 @@ and not do the manual copy.
 Deactivate the member:
 
   >>> browser.addHeader("Authorization", "Basic foo@baz.com:f")
-  >>> browser.open("http://launchpad.dev/people/myemail/+member/name16")
+  >>> browser.open("http://launchpad.dev/~myemail/+member/name16")
   >>> browser.getControl('Deactivate').click()
   >>> browser.url
-  'http://launchpad.dev/people/myemail/+members'
+  'http://launchpad.dev/~myemail/+members'
 
 And see how it went:
 
@@ -36,7 +36,7 @@ instance. No crashes in sight:
   >>> browser2.handleErrors = False
   >>> browser2.getControl('Deactivate').click()
   >>> browser2.url
-  'http://launchpad.dev/people/myemail/+members'
+  'http://launchpad.dev/~myemail/+members'
 
 Let's make sure that 'name16' is now a DEACTIVATED member of this team.
 

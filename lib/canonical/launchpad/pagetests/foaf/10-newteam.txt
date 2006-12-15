@@ -20,7 +20,7 @@
   >>> browser.getControl('Add').click()
 
   >>> browser.url
-  'http://launchpad.dev/people/myemail'
+  'http://launchpad.dev/~myemail'
 
   >>> browser.title
   'my own team in Launchpad'
@@ -73,7 +73,7 @@ Now we enter a valid email address that's not registered in Launchpad.
   >>> browser.getControl('Add').click()
 
   >>> browser.url
-  'http://launchpad.dev/people/newtestteam'
+  'http://launchpad.dev/~newtestteam'
 
   >>> for tag in find_tags_by_class(browser.contents, 'informational message'):
   ...     tag.renderContents()

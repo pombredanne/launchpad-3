@@ -36,7 +36,7 @@ dupes.)
     >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
 
     >>> browser.open(
-    ...     "http://launchpad.dev/products/landscape/+filebug-advanced")
+    ...     "http://launchpad.dev/landscape/+filebug-advanced")
 
     >>> browser.getControl(name="field.title").value = "a test summary"
     >>> browser.getControl(name="field.comment").value = (

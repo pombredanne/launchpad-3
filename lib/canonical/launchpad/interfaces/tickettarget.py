@@ -67,7 +67,8 @@ class ITicketTarget(Interface):
         """
 
     def searchTickets(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-                      language=None, owner=None, sort=None):
+                      language=None, owner=None, needs_attention_from=None,
+                      sort=None):
         """Search the object's tickets.
 
         :search_text: A string that is matched against the ticket
@@ -82,6 +83,12 @@ class ITicketTarget(Interface):
         the language is not included as a filter criteria.
 
         :owner: The IPerson that created the ticket.
+
+        :needs_attention_from: Selects tickets that nee attention from an
+        IPerson. These are the tickets in the NEEDSINFO or ANSWERED state
+        owned by the person. The tickets not owned by the person but on which
+        the person requested for more information or gave an answer and that
+        are back in the OPEN state are also included.
 
         :sort:  An attribute of TicketSort. If None, a default value is used.
         When there is a search_text value, the default is to sort by RELEVANCY,

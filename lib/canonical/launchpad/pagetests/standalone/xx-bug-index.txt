@@ -4,7 +4,7 @@ comments, external references, details of places in which this bug needs
 to be fixed, and so forth.
 
   >>> anon_browser.open(
-  ...     "http://launchpad.dev/distros/debian/+source/mozilla-firefox/+bug/2")
+  ...     "http://launchpad.dev/debian/+source/mozilla-firefox/+bug/2")
   >>> anon_browser.title
   '...Blackhole Trash folder...'
 
@@ -12,7 +12,7 @@ If you are logged in, each "Affects" row contains a form for editing the
 status in that context. The forms are hidden initially using CSS.
 
   >>> user_browser.open(
-  ...     "http://launchpad.dev/distros/debian/+source/mozilla-firefox/+bug/2")
+  ...     "http://launchpad.dev/debian/+source/mozilla-firefox/+bug/2")
   >>> print user_browser.contents
   <!DOCTYPE...
   ...
