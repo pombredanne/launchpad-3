@@ -26,8 +26,6 @@ for the member.
     ...     return notifications
 
     >>> from zope.component import getUtility
-    >>> from zope.event import notify
-    >>> from canonical.launchpad.event.team import JoinTeamRequestEvent
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, ITeamMembershipSet)
     >>> from canonical.lp.dbschema import TeamMembershipStatus
@@ -46,8 +44,6 @@ generates a notification email only Ubuntu Team administrators.
     >>> membership.status.title
     'Proposed'
 
-    >>> notify(JoinTeamRequestEvent(membership.person, membership.team))
-    >>> flush_database_updates()
     >>> transaction.commit()
     >>> len(stub.test_emails)
     1
@@ -55,7 +51,9 @@ generates a notification email only Ubuntu Team administrators.
     >>> admins_notification['To']
     'foo.bar@canonical.com,jeff.waugh@ubuntulinux.com,mark@hbd.com'
     >>> admins_notification['Subject']
-    'Launchpad: name12 wants to be a member of ubuntu-team'
+    'Launchpad: name12 wants to join team ubuntu-team'
+    >>> admins_notification['Reply-To']
+    'test@canonical.com'
     >>> print admins_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
     Hello
     <BLANKLINE>
@@ -124,6 +122,13 @@ The same goes for approving a proposed member.
     >>> daf_membership = membershipset.getByPersonAndTeam(daf, ubuntu_team)
     >>> daf_membership.status.title
     'Proposed'
+
+    # Remove notification of daf's membership pending approval from
+    # stub.test_emails
+    >>> transaction.commit()
+    >>> [notification] = pop_notifications()
+    >>> notification['Subject']
+    'Launchpad: daf wants to join team ubuntu-team'
 
     >>> setStatus(daf_membership, TeamMembershipStatus.APPROVED, 
     ...           reviewer=sabdfl, comment='This is a nice guy; I like him')
@@ -277,7 +282,40 @@ like that.
     >>> from canonical.launchpad.helpers import contactEmailAddresses
     >>> contactEmailAddresses(mirror_admins)
     set(['mark@hbd.com', 'karl@canonical.com'])
-    >>> ubuntu_team.addMember(mirror_admins, reviewer=sabdfl)
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> ubuntu_team.addMember(mirror_admins, reviewer=cprov)
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    2
+    >>> admins_notification, member_notification = pop_notifications()
+    >>> admins_notification['To']
+    'celso.providelo@canonical.com,foo.bar@canonical.com'
+    >>> print admins_notification.get_payload()
+    Hello,
+    <BLANKLINE>
+    Mirror Administrators (ubuntu-mirror-admins) has been added as
+    a member of Ubuntu Team (ubuntu-team) by Celso Providelo (cprov).
+    Follow the link below for more details.
+    <BLANKLINE>
+        http://launchpad.dev/~ubuntu-team/+member/ubuntu-mirror-admins
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    <BLANKLINE>
+
+    >>> member_notification['To']
+    'mark@hbd.com,karl@canonical.com'
+
+    >>> print member_notification.get_payload()
+    Hello,
+    <BLANKLINE>
+    Celso Providelo (cprov) added Mirror Administrators (ubuntu-mirror-admins)
+    (which you are a member of) as a member of Ubuntu Team (ubuntu-team).
+    <BLANKLINE>
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+
     >>> mirror_admins_membership = membershipset.getByPersonAndTeam(
     ...     mirror_admins, ubuntu_team)
     >>> setStatus(mirror_admins_membership, TeamMembershipStatus.DEACTIVATED,
@@ -288,7 +326,6 @@ like that.
     >>> admins_notification['To']
     'mark@hbd.com,karl@canonical.com'
 
-    >> [email.strip() for email in member_notification['To'].split(',')]
     >>> member_notification['To']
     'celso.providelo@canonical.com,foo.bar@canonical.com'
     >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE

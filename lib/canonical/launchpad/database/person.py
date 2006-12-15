@@ -26,6 +26,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database import postgresql
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.event.karma import KarmaAssignedEvent
+from canonical.launchpad.event.team import JoinTeamEvent
 from canonical.launchpad.helpers import (
     contactEmailAddresses, is_english_variant, shortlist)
 
@@ -725,6 +726,7 @@ class Person(SQLBase):
         TeamMembershipSet().new(
             person, self, status, dateexpires=expires, reviewer=reviewer,
             reviewercomment=comment)
+        notify(JoinTeamEvent(person, self))
 
     def setMembershipData(self, person, status, reviewer, expires=None,
                           comment=None):
@@ -1122,8 +1124,11 @@ class PersonSet:
                 defaultmembershipperiod=defaultmembershipperiod,
                 defaultrenewalperiod=defaultrenewalperiod,
                 subscriptionpolicy=subscriptionpolicy)
-        team.addMember(
-            teamowner, reviewer=teamowner, status=TeamMembershipStatus.ADMIN)
+        # Here we add the owner as a team admin manually because we know what
+        # we're doing (so we don't need to do any sanity checks) and we don't
+        # want any email notifications to be sent.
+        TeamMembershipSet().new(
+            teamowner, team, TeamMembershipStatus.ADMIN, reviewer=teamowner)
         return team
 
     def createPersonAndEmail(

@@ -61,7 +61,6 @@ import cgi
 import urllib
 from StringIO import StringIO
 
-from zope.event import notify
 from zope.app.form.browser import TextAreaWidget
 from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
@@ -112,8 +111,6 @@ from canonical.launchpad.webapp import (
     enabled_with_permission, Navigation, RedirectionNavigation,
     stepto, stepthrough, smartquote,
     GeneralFormView, LaunchpadFormView, action, custom_widget)
-
-from canonical.launchpad.event.team import JoinTeamRequestEvent
 
 from canonical.launchpad import _
 
@@ -1823,7 +1820,6 @@ class TeamJoinView(PersonView):
 
         if self.request.form.get('join') and self.userCanRequestToJoin():
             user.join(self.context)
-            notify(JoinTeamRequestEvent(user, self.context))
             if (self.context.subscriptionpolicy ==
                 TeamSubscriptionPolicy.MODERATED):
                 self.request.response.addInfoNotification(
