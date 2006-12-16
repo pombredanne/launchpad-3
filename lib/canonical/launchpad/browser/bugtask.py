@@ -1671,6 +1671,17 @@ class BugTasksAndNominationsView(LaunchpadView):
 
 class BugTaskTableRowView(LaunchpadView):
     """Browser class for rendering a bugtask row on the bug page."""
+
+    def getTaskRowCSSClass(self):
+        """Return the appropriate CSS class for the row in the Affects table.
+        Currently this consists solely of highlighting the current context.
+        """
+        bugtask = self.context
+        if bugtask == getUtility(ILaunchBag).bugtask:
+            return 'highlight'
+        else:
+            return ''
+
     def shouldIndentTask(self):
         """Should this task be indented in the task listing on the bug page?
 
