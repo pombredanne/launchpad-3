@@ -27,7 +27,7 @@
                                    hold_id string:hold${member/id}">
 
             <td align="right">
-              <a tal:attributes="href string:/people/${member/name}">
+              <a tal:attributes="href member/fmt:url">
                 <span tal:content="member/browsername" /></a>
             <td>
               <label tal:attributes="for approve_id">

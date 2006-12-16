@@ -61,7 +61,7 @@ We are going to import the pmount build.
   ...     pmount_sourcepackagename, "0.9.7-2ubuntu2", dapper.owner, UTC_NOW,
   ...     None, None, 'i386', Component.get(1), dapper.owner,
   ...     SourcePackageUrgency.LOW, None, None, GPGKey.get(1), Section.get(1),
-  ...     Manifest.get(1))
+  ...     Manifest.get(1), None, None, None, None)
 
   >>> publishing_history = SecureSourcePackagePublishingHistory(
   ...     distrorelease=dapper.id,

@@ -2,7 +2,7 @@ Any authenticated user can edit a source package bug task.
 
     >>> browser.addHeader("Authorization", "Basic no-priv@canonical.com:test")
     >>> browser.open(
-    ...     "http://localhost:9000/distros/ubuntu/+source/mozilla-firefox"
+    ...     "http://localhost:9000/ubuntu/+source/mozilla-firefox"
     ...     "/+bug/1/+editstatus")
 
     >>> status_control = browser.getControl(
@@ -14,7 +14,7 @@ Any authenticated user can edit a source package bug task.
     >>> browser.getControl(name="FORM_SUBMIT").click()
 
     >>> browser.open(
-    ...     "http://localhost:9000/distros/ubuntu/+source/mozilla-firefox"
+    ...     "http://localhost:9000/ubuntu/+source/mozilla-firefox"
     ...     "/+bug/1/+editstatus")
 
     >>> status_control = browser.getControl(

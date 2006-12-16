@@ -10,27 +10,52 @@ __all__ = [
     'TicketTargetFacetMixin',
     'TicketTargetLatestTicketsView',
     'TicketTargetSearchMyTicketsView',
+    'TicketTargetSearchNeedAttentionView',
     'TicketTargetTraversalMixin',
     'TicketTargetSupportMenu',
+    'UserSupportLanguagesMixin',
     ]
 
+from operator import attrgetter
 from urllib import urlencode
 
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import DropdownWidget
 from zope.app.pagetemplate import ViewPageTemplateFile
+from zope.component import getUtility
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
+from canonical.launchpad.helpers import is_english_variant, request_languages
 from canonical.launchpad.interfaces import (
-    IDistribution, IManageSupportContacts, ISearchTicketsForm, ITicketTarget,
-    NotFoundError)
+    IDistribution, ILanguageSet, IManageSupportContacts, ISearchTicketsForm,
+    ITicketTarget, NotFoundError)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, redirection, stepthrough,
     ApplicationMenu, GeneralFormView, LaunchpadFormView, Link)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import TicketStatus
 from canonical.widgets import LabeledMultiCheckBoxWidget
+
+
+class UserSupportLanguagesMixin:
+    """Mixin for views that needs to get the set of user support languages."""
+
+    @cachedproperty
+    def user_support_languages(self):
+        """The set of user support languages.
+
+        This set includes English and the user's preferred languages,
+        excluding all English variants. If the user is not logged in, or
+        doesn't have any preferred languages set, the languages will be
+        inferred from the request's (the Accept-Language header and GeoIP
+        information).
+        """
+        languages = set(
+            language for language in request_languages(self.request)
+            if not is_english_variant(language))
+        languages.add(getUtility(ILanguageSet)['en'])
+        return languages
 
 
 class TicketTargetLatestTicketsView:
@@ -44,7 +69,7 @@ class TicketTargetLatestTicketsView:
         return self.context.searchTickets()[:quantity]
 
 
-class SearchTicketsView(LaunchpadFormView):
+class SearchTicketsView(UserSupportLanguagesMixin, LaunchpadFormView):
     """View that can filter the target's ticket in a batched listing.
 
     This view provides a search form to filter the displayed tickets.
@@ -63,6 +88,16 @@ class SearchTicketsView(LaunchpadFormView):
 
     # Will contain the parameters used by searchResults
     search_params = None
+
+    def setUpWidgets(self):
+        """See LaunchpadFormView."""
+        LaunchpadFormView.setUpWidgets(self)
+        # Make sure that the default filter is displayed
+        # correctly in the widgets when not overriden by the user
+        for name, value in self.getDefaultFilter().items():
+            widget = self.widgets.get(name)
+            if widget and not widget.hasValidInput():
+                widget.setRenderedValue(value)
 
     @cachedproperty
     def status_title_map(self):
@@ -158,15 +193,31 @@ class SearchTicketsView(LaunchpadFormView):
         else:
             return set(self.getDefaultFilter().get('status', []))
 
-    def setUpWidgets(self):
-        """See LaunchpadFormView."""
-        LaunchpadFormView.setUpWidgets(self)
-        # Make sure that the default filter is displayed
-        # correctly in the widgets when not overriden by the user
-        for name, value in self.getDefaultFilter().items():
-            widget = self.widgets.get(name)
-            if widget and not widget.hasValidInput():
-                widget.setRenderedValue(value)
+    @cachedproperty
+    def context_ticket_languages(self):
+        """Return the set of ILanguages used by this context's tickets."""
+        return self.context.getTicketLanguages()
+
+    @property
+    def all_languages_shown(self):
+        """Return whether all the used languages are displayed."""
+        if self.request.form.get('all_languages'):
+            return True
+        return self.context_ticket_languages.issubset(
+            self.user_support_languages)
+
+    @property
+    def displayed_languages(self):
+        """Return the ticket languages displayed ordered by language name."""
+        displayed_languages = self.user_support_languages.intersection(
+            self.context_ticket_languages)
+        return sorted(displayed_languages, key=attrgetter('englishname'))
+
+    @property
+    def show_all_languages_checkbox(self):
+        """Whether to show the 'All Languages' checkbox or not."""
+        return not self.context_ticket_languages.issubset(
+            self.user_support_languages)
 
     @action(_('Search'))
     def search_action(self, action, data):
@@ -184,6 +235,11 @@ class SearchTicketsView(LaunchpadFormView):
             # Search button wasn't clicked, use the default filter.
             # Copy it so that it doesn't get mutated accidently.
             self.search_params = dict(self.getDefaultFilter())
+
+        if self.request.form.get('all_languages'):
+            self.search_params['language'] = None
+        else:
+            self.search_params['language'] = self.user_support_languages
 
         # The search parameters used is defined by the union of the fields
         # present in ISearchTicketsForm (search_text, status, sort) and the
@@ -247,6 +303,42 @@ class TicketTargetSearchMyTicketsView(SearchTicketsView):
         """See SearchTicketsView."""
         return {'owner': self.user,
                 'status': set(TicketStatus.items)}
+
+
+class TicketTargetSearchNeedAttentionView(SearchTicketsView):
+    """SearchTicketsView specialization for the 'Need Attention' report.
+
+    It displays and searches the support requests needing attention from the
+    logged in user in a tickettarget context.
+    """
+
+    @property
+    def pageheading(self):
+        """See SearchTicketsView."""
+        if self.search_text:
+            return _('Support requests about "${search_text}" needing your '
+                     'attention for ${context}', mapping=dict(
+                        context=self.context.displayname,
+                        search_text=self.search_text))
+        else:
+            return _('Support requests needing your attention for ${context}',
+                     mapping={'context': self.context.displayname})
+
+    @property
+    def empty_listing_message(self):
+        """See SearchTicketsView."""
+        if self.search_text:
+            return _('No support requests about "${search_text}" need your '
+                     'attention for ${context}.', mapping=dict(
+                        context=self.context.displayname,
+                        search_text=self.search_text))
+        else:
+            return _("No support requests need your attention for ${context}.",
+                     mapping={'context': self.context.displayname})
+
+    def getDefaultFilter(self):
+        """See SearchTicketsView."""
+        return {'needs_attention_from': self.user}
 
 
 class ManageSupportContactView(GeneralFormView):
@@ -341,7 +433,7 @@ class TicketTargetSupportMenu(ApplicationMenu):
 
     usedfor = ITicketTarget
     facet = 'support'
-    links = ['open', 'answered', 'myrequests', 'new',
+    links = ['open', 'answered', 'myrequests', 'need_attention', 'new',
              'support_contact']
 
     def makeSearchLink(self, statuses):
@@ -364,6 +456,10 @@ class TicketTargetSupportMenu(ApplicationMenu):
     def myrequests(self):
         text = 'My Requests'
         return Link('+mytickets', text, icon='ticket')
+
+    def need_attention(self):
+        text = 'Need Attention'
+        return Link('+need-attention', text, icon='ticket')
 
     def new(self):
         text = 'Request Support'

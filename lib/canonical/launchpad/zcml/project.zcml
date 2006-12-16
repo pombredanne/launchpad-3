@@ -224,7 +224,7 @@
     <browser:url
         for="canonical.launchpad.interfaces.IProject"
         path_expression="name"
-        parent_utility="canonical.launchpad.interfaces.IProjectSet"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
         />
 
     <browser:pages
@@ -252,10 +252,6 @@
             name="+review"
             template="../templates/registry-review.pt"
             lp:url="/projects/+review" />
-        <browser:page
-            name="+syncreview"
-            template="../templates/bazaar-sync-review.pt"
-            lp:url="/projects/+syncreview" />
     </browser:pages>
 
 </configure>

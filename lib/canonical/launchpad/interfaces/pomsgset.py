@@ -8,7 +8,13 @@ __metaclass__ = type
 __all__ = [
     'IPOMsgSet',
     'IPOMsgSetSuggestions',
+    'TranslationConflict',
 ]
+
+
+class TranslationConflict(Exception):
+    """Someone updated the translation we are trying to update."""
+
 
 class IPOMsgSet(Interface):
 
@@ -68,6 +74,13 @@ class IPOMsgSet(Interface):
     submissions = Attribute(
         """All IPOSubmissions associated with this IPOMsgSet.""")
 
+    def isNewerThan(timestamp):
+        """Whether the active translations are newer than the given timestamp.
+
+        :arg timestamp: A DateTime object with a timestamp.
+
+        """
+
     def getSelection(pluralform):
         """Return the IPOSelection for this PO msgset or None.
 
@@ -109,20 +122,23 @@ class IPOMsgSet(Interface):
         upstream, or in other distributions."""
 
     def updateTranslationSet(person, new_translations, fuzzy, published,
-        ignore_errors=False, force_edition_rights=False):
+        lock_timestamp, ignore_errors=False, force_edition_rights=False):
         """Update a pomsgset using the set of translations provided.
 
-        person is the author of the translations.
-        new_translations is a dictionary of plural forms, with the integer
-        plural form number as the key and the translation as the value.
-        fuzzy is a flag that tells us if the translations are fuzzy or not.
-        published indicates whether this update is coming from a published po
-        file.
-        ignore_errors is a flag that controlls if the translations should be
-        stored even when an error is detected.
-        force_edition_rights is a flag that 'forces' that this submition
-        is handled as coming from an editor, no matter if it's really an
-        editor or not
+        :arg person: is the author of the translations.
+        :arg new_translations: is a dictionary of plural forms, with the
+            integer plural form number as the key and the translation as the
+            value.
+        :arg fuzzy: A flag that tells us whether the translations are fuzzy.
+        :arg published: indicates whether this update is coming from a
+            published po file.
+        :arg lock_timestamp: The timestamp when we checked the values we want
+            to update.
+        :arg ignore_errors: A flag that controlls whether the translations
+            should be stored even when an error is detected.
+        :arg force_edition_rights: A flag that 'forces' that this submition
+            is handled as coming from an editor, no matter whether is really
+            an editor.
 
         If there is an error with the translations and ignore_errors is not
         True or it's not a fuzzy submit, raises gettextpo.error

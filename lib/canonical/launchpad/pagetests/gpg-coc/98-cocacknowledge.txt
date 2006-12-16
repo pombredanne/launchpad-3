@@ -21,13 +21,13 @@ Perform Acknowledge process as Foo bar person:
 
 Ensure the CoC was acknowledge by searching in the CoC Admin Console:
 
-  >>> admin_browser.open('http://localhost:9000/codeofconduct/console')
+  >>> admin_browser.open('http://launchpad.dev/codeofconduct/console')
   >>> admin_browser.getControl(name='searchfor').value = ["all"]
   >>> admin_browser.getControl(name='name').value = "mark"
   >>> admin_browser.getControl(name='search').click()
   >>> 'paper submission accepted by Foo Bar' in admin_browser.contents
   True
-  >>> '<a href="/people/sabdfl">' in admin_browser.contents
+  >>> '<a href="http://launchpad.dev/~sabdfl">' in admin_browser.contents
   True
   >>> '[ACTIVE]' in admin_browser.contents
   True

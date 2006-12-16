@@ -65,7 +65,7 @@ Create a Spanish PO file, with an active translation submission created on
     >>> pomsgset = es.createMessageSetFromMessageSet(potmsgset)
     >>> translations = { 0: u'blah (es)' }
     >>> pomsgset.updateTranslationSet(person, translations, fuzzy=False,
-    ...                               published=False)
+    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
     >>> submission_es = pomsgset.getActiveSubmission(0)
     >>> submission_es.datecreated = d2000_01_01
 
@@ -76,7 +76,7 @@ Create a Welsh PO file, with an active translation submission created on
     >>> pomsgset = cy.createMessageSetFromMessageSet(potmsgset)
     >>> translations = { 0: u'blah (cy)' }
     >>> pomsgset.updateTranslationSet(person, translations, fuzzy=False,
-    ...                               published=False)
+    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
     >>> submission_cy = pomsgset.getActiveSubmission(0)
     >>> submission_cy.datecreated = d2000_01_03
 

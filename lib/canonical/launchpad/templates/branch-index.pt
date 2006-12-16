@@ -86,7 +86,8 @@
 
   <p class="highlighted lesser" tal:condition="context/whiteboard">
     <b>Whiteboard:</b>
-    <span tal:replace="context/whiteboard">whiteboard</span>
+    <span id="branch-whiteboard-value"
+      tal:content="context/whiteboard">whiteboard</span>
   </p>
 
   <h2>Recent revisions</h2>
@@ -199,7 +200,6 @@
     host only serves data for use with the Bazaar version control system.</p>
 
 </metal:block><tal:comment condition="nothing"><!-- end help slot --></tal:comment>
-
 
 </body>
 </html>
