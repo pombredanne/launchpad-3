@@ -30,8 +30,8 @@
   <h1 tal:content="context/browsername" />
 
   <img
-    tal:condition="context/hackergotchi"
-    tal:attributes="src context/hackergotchi/secure_url"
+    tal:condition="context/gotchi"
+    tal:attributes="src context/gotchi/secure_url"
     style="float: right; margin: 0 0 0.5em 0.5em"
     alt=""
   />
@@ -154,7 +154,7 @@
         </p>
         <ul>
           <li tal:repeat="team subteams">
-            <a tal:attributes="href string:../${team/name}"
+            <a tal:attributes="href team/fmt:url"
                tal:content="team/browsername">name</a>
           </li>
         </ul>
@@ -170,7 +170,7 @@
         </p>
         <ul>
           <li tal:repeat="team superteams">
-            <a tal:attributes="href string:../${team/name}"
+            <a tal:attributes="href team/fmt:url"
                tal:content="team/browsername">name</a>
           </li>
         </ul>
@@ -236,9 +236,20 @@
 
   <p><span tal:replace="context/browsername" /> does not use Launchpad.
     <tal:block condition="context/creation_comment">
-      (This page was created on 
+      This page was created on
       <span tal:replace="context/datecreated/fmt:date" />
-      <span tal:replace="context/creation_comment" />.)
+      <tal:user-created
+        condition="context/creation_rationale/enumvalue:USER_CREATED">
+        by <a tal:attributes="href context/registrant/fmt:url">
+        <span tal:replace="context/registrant/browsername">Foo</span></a>,
+        and the reason given by that user for its creation is:
+        <em tal:content="structure context/creation_comment/fmt:text-to-html">
+          reason</em>
+      </tal:user-created>
+      <tal:not-user-created
+        condition="not: context/creation_rationale/enumvalue:USER_CREATED">
+        <strong tal:content="context/creation_comment" />.
+      </tal:not-user-created>
     </tal:block>
     <tal:block condition="not: context/creation_comment">
       (This page was created on 

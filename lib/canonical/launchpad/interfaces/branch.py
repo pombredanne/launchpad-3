@@ -73,7 +73,7 @@ class IBranch(IHasOwner):
             "www.bazaar-vcs.org for more information."),
         constraint=valid_webref)
 
-    whiteboard = Whiteboard(title=_('Status Whiteboard'), required=False,
+    whiteboard = Whiteboard(title=_('Whiteboard'), required=False,
         description=_('Notes on the current status of the branch.'))
     mirror_status_message = Text(
         title=_('The last message we got when mirroring this branch '
@@ -198,6 +198,9 @@ class IBranch(IHasOwner):
     related_bugs = Attribute(
         "The bugs related to this branch, likely branches on which "
         "some work has been done to fix this bug.")
+
+    # Specification attributes
+    spec_links = Attribute("Specifications linked to this branch")
 
     # Joins
     revision_history = Attribute("The sequence of revisions in that branch.")

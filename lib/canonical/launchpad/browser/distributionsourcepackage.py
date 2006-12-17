@@ -18,7 +18,8 @@ from canonical.launchpad.interfaces import (
     DeleteBugContactError, IPersonSet)
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
-from canonical.launchpad.browser.tickettarget import TicketTargetFacetMixin
+from canonical.launchpad.browser.tickettarget import (
+        TicketTargetFacetMixin, TicketTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu,
     GetitemNavigation, canonical_url, redirection)
@@ -75,7 +76,7 @@ class DistributionSourcePackageBugsMenu(DistributionSourcePackageOverviewMenu):
 
 
 class DistributionSourcePackageNavigation(GetitemNavigation,
-    BugTargetTraversalMixin):
+    BugTargetTraversalMixin, TicketTargetTraversalMixin):
 
     usedfor = IDistributionSourcePackage
 

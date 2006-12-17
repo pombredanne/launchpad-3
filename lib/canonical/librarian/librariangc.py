@@ -17,6 +17,35 @@ BATCH_SIZE = 1
 log = None
 debug = False
 
+def delete_expired_blobs(con):
+    """Remove expired TemporaryBlobStorage entries and their corresponding
+       LibraryFileAlias entries.
+
+       We delete the LibraryFileAliases here as the default behavior of the
+       garbage collector could leave them hanging around indefinitely.
+    """
+    cur = con.cursor()
+    cur.execute("""
+        SELECT file_alias
+        INTO TEMPORARY TABLE BlobAliasesToDelete
+        FROM LibraryFileAlias, TemporaryBlobStorage
+        WHERE file_alias = LibraryFileAlias.id
+            AND expires < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+        """)
+    cur.execute("""
+        DELETE FROM TemporaryBlobStorage
+        USING BlobAliasesToDelete
+        WHERE TemporaryBlobStorage.file_alias = BlobAliasesToDelete.file_alias
+        """)
+    cur.execute("""
+        DELETE FROM LibraryFileAlias
+        USING BlobAliasesToDelete
+        WHERE file_alias = LibraryFileAlias.id
+        """)
+    log.info("Removed %d expired blobs" % cur.rowcount)
+    con.commit()
+
+
 def merge_duplicates(con):
     """Merge duplicate LibraryFileContent rows
     

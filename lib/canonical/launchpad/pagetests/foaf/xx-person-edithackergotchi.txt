@@ -1,7 +1,7 @@
 First we test that the name12 user can visit his edithackergotchi page
 
   >>> print http(r"""
-  ... GET /people/name12/+edithackergotchi HTTP/1.1
+  ... GET /~name12/+edithackergotchi HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -21,14 +21,14 @@ Testing the upload of a 16x16 image.
   >>> icon = open(data_file_name).read()
 
   >>> print http(r"""
-  ... POST /people/name12/+edithackergotchi HTTP/1.1
+  ... POST /~name12/+edithackergotchi HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------75081443203208152087282358
   ... 
   ... 
   ... 
   ... -----------------------------75081443203208152087282358
-  ... Content-Disposition: form-data; name="field.hackergotchi"; filename="gnome-dev-floppy.png"
+  ... Content-Disposition: form-data; name="field.gotchi"; filename="gnome-dev-floppy.png"
   ... Content-Type: image/png
   ... 
   ... %s^M
@@ -41,7 +41,7 @@ Testing the upload of a 16x16 image.
   HTTP/1.1 303 See Other
   Content-Length: 0
   ...
-  Location: http://localhost:9000/people/name12
+  Location: http://localhost:9000/~name12
 
 
 
@@ -49,10 +49,10 @@ After the upload we should be redirected to the overview
 page; we then check if the hackergotchi is there.
 
   >>> print http(r"""
-  ... GET /people/name12 HTTP/1.1
+  ... GET /~name12 HTTP/1.1
   ... Accept-Language: en-us,en;q=0.5
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Referer: http://localhost:9000/people/name12/+edithackergotchi
+  ... Referer: http://localhost:9000/~name12/+edithackergotchi
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
@@ -74,14 +74,14 @@ Testing the upload of a big 21239 bytes image file.
   >>> icon = open(data_file_name).read()
 
   >>> print http(r"""
-  ... POST /people/name12/+edithackergotchi HTTP/1.1
+  ... POST /~name12/+edithackergotchi HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------75081443203208152087282358
   ... 
   ... 
   ... 
   ... -----------------------------75081443203208152087282358
-  ... Content-Disposition: form-data; name="field.hackergotchi"; filename="gnome-dev-floppy.png"
+  ... Content-Disposition: form-data; name="field.gotchi"; filename="gnome-dev-floppy.png"
   ... Content-Type: image/png
   ... 
   ... %s^M
@@ -107,12 +107,12 @@ Testing the upload of a wide 192x192 image file.
   >>> icon = open(data_file_name).read()
   
   >>> print http(r"""
-  ... POST /people/name12/+edithackergotchi HTTP/1.1
+  ... POST /~name12/+edithackergotchi HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------191893153320867125371338229898
   ... 
   ... -----------------------------191893153320867125371338229898
-  ... Content-Disposition: form-data; name="field.hackergotchi"; filename="wide.png"
+  ... Content-Disposition: form-data; name="field.gotchi"; filename="wide.png"
   ... Content-Type: image/png
   ... 
   ... %s
@@ -134,12 +134,12 @@ Testing the upload of a file that is not a image.
   
   
   >>> print http(r"""
-  ... POST /people/name12/+edithackergotchi HTTP/1.1
+  ... POST /~name12/+edithackergotchi HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------10224279862908137151495771256
   ... 
   ... -----------------------------10224279862908137151495771256
-  ... Content-Disposition: form-data; name="field.hackergotchi"; filename="msg.txt"
+  ... Content-Disposition: form-data; name="field.gotchi"; filename="msg.txt"
   ... Content-Type: text/plain
   ... 
   ... -----BEGIN PGP MESSAGE-----

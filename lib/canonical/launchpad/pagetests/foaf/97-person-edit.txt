@@ -4,7 +4,7 @@ timezone) of 'name16'.
 Check the existing values:
 
   >>> print http(r"""
-  ... GET /people/name16/+edit HTTP/1.1
+  ... GET /~name16/+edit HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -21,10 +21,10 @@ email addresses selected. If we leave leading or trailing whitespace in the
 displayname it'll be stripped. 
 
   >>> print http(r"""
-  ... POST /people/name16/+edit HTTP/1.1
+  ... POST /~name16/+edit HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------1686168710640211894599015137
-  ... Referer: http://localhost:9000/people/name16/+edit
+  ... Referer: http://localhost:9000/~name16/+edit
   ... 
   ... -----------------------------1686168710640211894599015137
   ... Content-Disposition: form-data; name="field.name"
@@ -59,13 +59,13 @@ displayname it'll be stripped.
   HTTP/1.1 303 See Other
   Content-Length: 0
   ...
-  Location: http://localhost:9000/people/name16
+  Location: http://localhost:9000/~name16
 
 
 Now we check to make sure the displayname was changed and stripped.
 
   >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
-  >>> browser.open('http://localhost:9000/people/name16/+edit')
+  >>> browser.open('http://localhost:9000/~name16/+edit')
   >>> browser.getControl('Display Name').value
   'Foo Bar2'
 
@@ -75,7 +75,7 @@ name12 user:
   >>> from zope.testbrowser.testing import Browser
   >>> browser = Browser()
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
-  >>> browser.open('http://localhost:9000/people/name16/')
+  >>> browser.open('http://localhost:9000/~name16/')
   >>> 'foo.bar@canonical.com' in browser.contents
   False
 

@@ -1,7 +1,7 @@
   First we check that Sample Person never signed a code of conduct.
 
   >>> browser.addHeader("Authorization", "Basic test@canonical.com:test")
-  >>> browser.open("http://launchpad.dev/people/name12/+codesofconduct")
+  >>> browser.open("http://launchpad.dev/~name12/+codesofconduct")
 
   >>> "Sample Person has never signed" in browser.contents
   True
@@ -68,8 +68,8 @@
   This succeeds because the words are the same and in the same order.
 
   >>> browser.url
-  'http://launchpad.dev/people/name12/+codesofconduct'
+  'http://launchpad.dev/~name12/+codesofconduct'
 
-  >>> browser.open("http://launchpad.dev/people/name12/+codesofconduct")
+  >>> browser.open("http://launchpad.dev/~name12/+codesofconduct")
   >>> "1024D/DFD20543" in browser.contents
   True

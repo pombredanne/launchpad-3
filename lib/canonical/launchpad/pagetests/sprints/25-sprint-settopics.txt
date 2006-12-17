@@ -1,7 +1,7 @@
 Any logged in user can propose specs to be discussed in a sprint.
 
   >>> user_browser.open(
-  ...     'http://blueprints.launchpad.dev/distros/ubuntu/'
+  ...     'http://blueprints.launchpad.dev/ubuntu/'
   ...     '+spec/media-integrity-check/+linksprint')
   >>> user_browser.getControl('Sprint').value = ['uds-guacamole']
   >>> user_browser.getControl('Add').click()
@@ -10,7 +10,7 @@ Any logged in user can propose specs to be discussed in a sprint.
   True
 
   >>> user_browser.open(
-  ...     'http://blueprints.launchpad.dev/distros/kubuntu/'
+  ...     'http://blueprints.launchpad.dev/kubuntu/'
   ...     '+spec/kde-desktopfile-langpacks/+linksprint')
   >>> user_browser.getControl('Sprint').value = ['uds-guacamole']
   >>> user_browser.getControl('Add').click()
@@ -48,7 +48,7 @@ First choose a driver for the UDS Guacamole sprint.
   'http://launchpad.dev/sprints/uds-guacamole/+edit'
 
   >>> browser.getControl('Meeting Driver').value = 'ubuntu-team'
-  >>> browser.getControl('Continue').click()
+  >>> browser.getControl('Change').click()
 
   >>> browser.url
   'http://launchpad.dev/sprints/uds-guacamole'

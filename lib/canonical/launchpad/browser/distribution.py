@@ -17,6 +17,7 @@ __all__ = [
     'DistributionArchiveMirrorsView',
     'DistributionReleaseMirrorsView',
     'DistributionReleaseMirrorsRSSView',
+    'DistributionArchiveMirrorsRSSView',
     'DistributionDisabledMirrorsView',
     'DistributionUnofficialMirrorsView',
     'DistributionLaunchpadUsageEditView',
@@ -32,9 +33,10 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
+from canonical.config import config
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IPerson, IPublishedPackageSet,
-    NotFoundError, ILaunchBag)
+    ILaunchBag, ILaunchpadRoot, NotFoundError)
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -44,7 +46,8 @@ from canonical.launchpad.browser.tickettarget import (
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, enabled_with_permission,
     GetitemNavigation, LaunchpadEditFormView, LaunchpadView, Link,
-    redirection, StandardLaunchpadFacets, stepthrough, stepto)
+    redirection, RedirectionNavigation, StandardLaunchpadFacets,
+    stepthrough, stepto)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import DistributionReleaseStatus
 
@@ -82,12 +85,22 @@ class DistributionNavigation(
         return self.context.getSpecification(name)
 
 
-class DistributionSetNavigation(GetitemNavigation):
+class DistributionSetNavigation(RedirectionNavigation):
 
     usedfor = IDistributionSet
 
     def breadcrumb(self):
         return 'Distributions'
+
+    @property
+    def redirection_root_url(self):
+        return canonical_url(getUtility(ILaunchpadRoot))
+
+    def traverse(self, name):
+        # Raise a 404 on an invalid distribution name
+        if self.context.getByName(name) is None:
+            raise NotFoundError(name)
+        return RedirectionNavigation.traverse(self, name)
 
 
 class DistributionSOP(StructuralObjectPresentation):
@@ -511,8 +524,8 @@ class DistributionReleaseMirrorsView(DistributionMirrorsView):
         return self._groupMirrorsByCountry(self.context.release_mirrors)
 
 
-class DistributionReleaseMirrorsRSSView(LaunchpadView):
-    """The RSS feed for release mirrors."""
+class DistributionMirrorsRSSBaseView(LaunchpadView):
+    """A base class for RSS feeds of distribution mirrors."""
 
     def initialize(self):
         self.now = datetime.utcnow()
@@ -522,6 +535,26 @@ class DistributionReleaseMirrorsRSSView(LaunchpadView):
             'content-type', 'text/xml;charset=utf-8')
         body = LaunchpadView.render(self)
         return body.encode('utf-8')
+
+
+class DistributionArchiveMirrorsRSSView(DistributionMirrorsRSSBaseView):
+    """The RSS feed for archive mirrors."""
+
+    heading = 'Archive Mirrors'
+
+    @property
+    def mirrors(self):
+        return self.context.archive_mirrors
+
+
+class DistributionReleaseMirrorsRSSView(DistributionMirrorsRSSBaseView):
+    """The RSS feed for release mirrors."""
+
+    heading = 'CD Mirrors'
+
+    @property
+    def mirrors(self):
+        return self.context.release_mirrors
 
 
 class DistributionMirrorsAdminView(DistributionMirrorsView):

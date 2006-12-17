@@ -41,16 +41,9 @@
         layer="canonical.launchpad.layers.BlueprintLayer"
         />
 
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IProject"
-        layer="canonical.launchpad.layers.RosettaLayer"
-        name="+rosetta-index" />
-
     <browser:pages
         for="canonical.launchpad.interfaces.IProject"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.ProjectView"
-        lp:url="Rosetta/projects/$Project.name">
+        permission="zope.Public">
         <browser:page
             name="+index"
             facet="overview"
@@ -67,41 +60,26 @@
             template="../templates/related-bounties.pt"
             lp:url="/projects/$Project.name/+bounties/" />
         <browser:page
-            name="+rosetta-index"
-            facet="translations"
-            template="../templates/project-rosetta-index.pt"
-            lp:url="Rosetta/projects/$Project.name/+index" />
-        <browser:page
             name="+listing-detailed"
             template="../templates/project-listing-detailed.pt"
             />
 
        <!-- Projects portlets -->
        <browser:page
-            name="+portlet-languages"
-            facet="translations"
-            template="../templates/project-portlet-languages.pt"
-            lp:url="Rosetta/projects/$Project.name/+portlet-languages" />
-       <browser:page
             name="+portlet-bounties"
             facet="bounties"
-            template="../templates/object-portlet-bounties.pt"
-            lp:url="Rosetta/projects/$Project.name/+portlet-bounties" />
-       <browser:page
-            name="+portlet-trackers"
-            facet="bugs"
-            template="../templates/project-portlet-trackers.pt"
-            lp:url="Rosetta/projects/$Project.name/+portlet-trackers" />
+            template="../templates/object-portlet-bounties.pt" 
+            />
        <browser:page
             name="+portlet-details"
             facet="overview"
             template="../templates/project-portlet-details.pt"
-            lp:url="/projects/$Project.name/+portlet-details" />
+            />
        <browser:page
             name="+portlet-lifecycle"
             facet="overview"
             template="../templates/project-portlet-lifecycle.pt"
-            lp:url="/projects/$Project.name/+portlet-lifecycle" />
+            />
     </browser:pages>
 
     <browser:page
@@ -260,7 +238,7 @@
     <browser:url
         for="canonical.launchpad.interfaces.IProject"
         path_expression="name"
-        parent_utility="canonical.launchpad.interfaces.IProjectSet"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
         />
 
     <browser:pages
@@ -288,10 +266,6 @@
             name="+review"
             template="../templates/registry-review.pt"
             lp:url="/projects/+review" />
-        <browser:page
-            name="+syncreview"
-            template="../templates/bazaar-sync-review.pt"
-            lp:url="/projects/+syncreview" />
     </browser:pages>
 
 </configure>
