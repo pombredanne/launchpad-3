@@ -3233,73 +3233,79 @@ class MirrorPulseType(DBSchema):
 class MirrorSpeed(DBSchema):
     """The speed of a given mirror."""
 
-    S128K = Item(1, """
+    S128K = Item(10, """
         128 Kbps
 
         The upstream link of this mirror can make up to 128Kb per second.
         """)
 
-    S256K = Item(2, """
+    S256K = Item(20, """
         256 Kbps
 
         The upstream link of this mirror can make up to 256Kb per second.
         """)
 
-    S512K = Item(3, """
+    S512K = Item(30, """
         512 Kbps
 
         The upstream link of this mirror can make up to 512Kb per second.
         """)
 
-    S1M = Item(4, """
+    S1M = Item(40, """
         1 Mbps
 
         The upstream link of this mirror can make up to 1Mb per second.
         """)
 
-    S2M = Item(5, """
+    S2M = Item(50, """
         2 Mbps
 
         The upstream link of this mirror can make up to 2Mb per second.
         """)
 
-    S10M = Item(6, """
+    S10M = Item(60, """
         10 Mbps
 
         The upstream link of this mirror can make up to 10Mb per second.
         """)
 
-    S100M = Item(7, """
+    S45M = Item(65, """
+        45 Mbps
+
+        The upstream link of this mirror can make up to 45 Mb per second.
+        """)
+
+    S100M = Item(70, """
         100 Mbps
 
         The upstream link of this mirror can make up to 100Mb per second.
         """)
 
-    S1G = Item(8, """
+    S1G = Item(80, """
         1 Gbps
 
         The upstream link of this mirror can make up to 1 gigabit per second.
         """)
 
-    S2G = Item(9, """
+    S2G = Item(90, """
         2 Gbps
 
         The upstream link of this mirror can make up to 2 gigabit per second.
         """)
 
-    S4G = Item(10, """
+    S4G = Item(100, """
         4 Gbps
 
         The upstream link of this mirror can make up to 4 gigabit per second.
         """)
 
-    S10G = Item(11, """
+    S10G = Item(110, """
         10 Gbps
 
         The upstream link of this mirror can make up to 10 gigabits per second.
         """)
 
-    S20G = Item(12, """
+    S20G = Item(120, """
         20 Gbps
 
         The upstream link of this mirror can make up to 20 gigabits per second.
