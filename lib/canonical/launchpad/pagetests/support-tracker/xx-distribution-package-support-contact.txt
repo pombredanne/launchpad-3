@@ -21,7 +21,7 @@ see both a porlet listing the support contacts for the source package
 and another one listing those of the distribution.
 
     >>> anon_browser.open(
-    ...     'http://launchpad.dev/distros/ubuntu/+source/mozilla-firefox')
+    ...     'http://launchpad.dev/ubuntu/+source/mozilla-firefox')
     >>> anon_browser.getLink('Support').click()
     >>> portlet = find_portlet(
     ...     anon_browser.contents,
@@ -44,7 +44,7 @@ To register himself as support contact, the user clicks on the
     Unauthorized: ...
 
     >>> user_browser.open(
-    ...     'http://launchpad.dev/distros/ubuntu/+source/mozilla-firefox/+tickets')
+    ...     'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+tickets')
     >>> user_browser.getLink('Support').click()
     >>> user_browser.getLink('Support Contact').click()
     >>> print user_browser.title

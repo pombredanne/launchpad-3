@@ -8,11 +8,11 @@ First, we need to load the +edit page.
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
   >>> features_domain = 'http://blueprints.launchpad.dev'
-  >>> spec_path = '/products/firefox/+spec/extension-manager-upgrades'
+  >>> spec_path = '/firefox/+spec/extension-manager-upgrades'
   >>> browser.open(features_domain + spec_path)
   >>> browser.getLink('Edit title and summary').click()
   >>> browser.url
-  'http://blueprints.launchpad.dev/products/firefox/+spec/extension-manager-upgrades/+edit'
+  'http://blueprints.launchpad.dev/firefox/+spec/extension-manager-upgrades/+edit'
 
 And we test the URL field validator filling a dupe URL.
 
@@ -54,7 +54,7 @@ specification home page.
   >>> browser.getControl('Status Whiteboard').value = 'XXX'
   >>> browser.getControl('Change').click()
   >>> browser.url
-  'http://blueprints.launchpad.dev/products/firefox/+spec/extension-manager-upgrades'
+  'http://blueprints.launchpad.dev/firefox/+spec/extension-manager-upgrades'
 
 Also, we would like to assign these to someone other than Carlos, and we
 would also like to have a drafter associated with it.
@@ -66,7 +66,7 @@ would also like to have a drafter associated with it.
   >>> browser.getControl('Status Whiteboard').value = 'YYY'
   >>> browser.getControl('Change').click()
   >>> browser.url
-  'http://blueprints.launchpad.dev/products/firefox/+spec/extension-manager-upgrades'
+  'http://blueprints.launchpad.dev/firefox/+spec/extension-manager-upgrades'
 
 Finally, we should be able to change the status metadata (definition status,
 implementation status, estimated man days etc) of the specification.
@@ -78,19 +78,19 @@ implementation status, estimated man days etc) of the specification.
   >>> browser.getControl('Status Whiteboard').value = 'XXX'
   >>> browser.getControl('Change').click()
   >>> browser.url
-  'http://blueprints.launchpad.dev/products/firefox/+spec/extension-manager-upgrades'
+  'http://blueprints.launchpad.dev/firefox/+spec/extension-manager-upgrades'
 
 Any logged in user can edit a specification whiteboard.
 
   >>> user_browser.open(
-  ...     'http://blueprints.launchpad.dev/distros/kubuntu/'
+  ...     'http://blueprints.launchpad.dev/kubuntu/'
   ...     '+spec/krunch-desktop-plan')
 
   >>> user_browser.getLink('Edit whiteboard').click()
   >>> user_browser.getControl('Whiteboard').value = 'XXX by Sample Person'
   >>> user_browser.getControl('Change').click()
   >>> user_browser.url
-  'http://blueprints.launchpad.dev/distros/kubuntu/+spec/krunch-desktop-plan'
+  'http://blueprints.launchpad.dev/kubuntu/+spec/krunch-desktop-plan'
 
   >>> 'XXX by Sample Person' in user_browser.contents
   True
@@ -103,7 +103,7 @@ Regular users can't access the change status page.
   LinkNotFoundError
 
   >>> user_browser.open(
-  ...     'http://blueprints.launchpad.dev/distros/kubuntu/'
+  ...     'http://blueprints.launchpad.dev/kubuntu/'
   ...     '+spec/krunch-desktop-plan/+status')
   Traceback (most recent call last):
   ...

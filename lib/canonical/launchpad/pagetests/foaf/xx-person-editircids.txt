@@ -2,7 +2,7 @@
 
 
   >>> print http(r"""
-  ... POST /people/name16/+editircnicknames HTTP/1.1
+  ... POST /~name16/+editircnicknames HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
   ... 
@@ -16,7 +16,7 @@
   Now try to add a new one with an empty network.
 
   >>> print http(r"""
-  ... POST /people/name16/+editircnicknames HTTP/1.1
+  ... POST /~name16/+editircnicknames HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
   ... 
@@ -29,7 +29,7 @@
   Now do it properly, with a non-empty nickname and network.
 
   >>> print http(r"""
-  ... POST /people/name16/+editircnicknames HTTP/1.1
+  ... POST /~name16/+editircnicknames HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
   ... 
@@ -45,7 +45,7 @@
   And now, remove it.
 
   >>> print http(r"""
-  ... POST /people/name16/+editircnicknames HTTP/1.1
+  ... POST /~name16/+editircnicknames HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
   ... 

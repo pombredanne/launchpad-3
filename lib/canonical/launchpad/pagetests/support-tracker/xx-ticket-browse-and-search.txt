@@ -9,7 +9,7 @@ Average Joe has recently installed Kubuntu. He has a problem with his
 system and goes to the Kubuntu's support page in Launchpad to see if
 somebody had a similar problem.
 
-    >>> browser.open('http://launchpad.dev/distros/kubuntu')
+    >>> browser.open('http://launchpad.dev/kubuntu')
     >>> browser.getLink('Support').click()
 
 He discovers that there are no tickets on the Kubuntu support page:
@@ -26,7 +26,7 @@ He discovers that there are no tickets on the Kubuntu support page:
 He realises that support for Kubuntu is probably going on in the Ubuntu
 support page and goes there to check.
 
-    >>> browser.open('http://launchpad.dev/distros/ubuntu/+tickets')
+    >>> browser.open('http://launchpad.dev/ubuntu/+tickets')
     >>> browser.title
     'Support requests for Ubuntu'
 
@@ -131,7 +131,7 @@ whenever he has Firefox open. Luckily for Average Joe, searching for
 similar support requests is easy: on the ticket listing page, he just
 enters his search key and hit the 'Search' button.
 
-    >>> browser.open('http://launchpad.dev/distros/ubuntu/+tickets')
+    >>> browser.open('http://launchpad.dev/ubuntu/+tickets')
     >>> browser.getControl(name='field.search_text').value = 'firefox is slow'
     >>> browser.getControl('Search').click()
 
@@ -176,7 +176,7 @@ package's ticket listing.
     # We should use goBack() here but can't because of ZC #645:
     # zope.testbrowser truncates document content after goBack().
     #>>> browser.goBack()
-    >>> browser.open('http://launchpad.dev/distros/ubuntu/+tickets')
+    >>> browser.open('http://launchpad.dev/ubuntu/+tickets')
     >>> browser.getLink('mozilla-firefox').click()
     >>> browser.title
     'Support requests for mozilla-firefox in ubuntu'
@@ -212,7 +212,7 @@ In the actions menu, we find links to some common reports.
 Nice Guy likes helping others. He uses the 'Open' link to view the most
 recent requests on Mozilla Firefox.
 
-    >>> browser.open('http://launchpad.dev/products/firefox/+tickets')
+    >>> browser.open('http://launchpad.dev/firefox/+tickets')
     >>> browser.getLink('Open').click()
     >>> print browser.title
     Open support requests for Mozilla Firefox
@@ -241,7 +241,7 @@ A random user has a problem with firefox in Ubuntu. He uses the
 similar problems. (This listing includes both 'Answered' and 'Solved'
 support requests.)
 
-    >>> browser.open('http://launchpad.dev/distros/ubuntu/+tickets')
+    >>> browser.open('http://launchpad.dev/ubuntu/+tickets')
     >>> browser.getLink('Answered').click()
     >>> print browser.title
     Answered support requests for Ubuntu
@@ -272,7 +272,7 @@ to list all the requests he ever made about that package.
 He needs to login to access that page:
 
     >>> anon_browser.open(
-    ...     'http://launchpad.dev/distros/ubuntu/+source/mozilla-firefox/'
+    ...     'http://launchpad.dev/ubuntu/+source/mozilla-firefox/'
     ...     '+tickets')
     >>> anon_browser.getLink('My Requests').click()
     Traceback (most recent call last):
@@ -280,7 +280,7 @@ He needs to login to access that page:
     Unauthorized...
 
     >>> user_browser.open(
-    ...     'http://launchpad.dev/distros/ubuntu/+source/mozilla-firefox/'
+    ...     'http://launchpad.dev/ubuntu/+source/mozilla-firefox/'
     ...     '+tickets')
     >>> user_browser.getLink('My Requests').click()
     >>> print user_browser.title
@@ -314,7 +314,7 @@ The exact request he was searching for is displayed!
 If the user didn't make any support requests on the product, a message
 informing him of this fact is displayed.
 
-    >>> user_browser.open('http://launchpad.dev/products/gnomebaker/+tickets')
+    >>> user_browser.open('http://launchpad.dev/gnomebaker/+tickets')
     >>> user_browser.getLink('My Requests').click()
     >>> print find_main_content(
     ...     user_browser.contents).first('p').renderContents()
@@ -375,7 +375,7 @@ requests that the person was involved with. This includes requests that
 the person created, answered, is assigned to, is subscribed to, or
 commented.
 
-    >>> browser.open('http://launchpad.dev/people/name16')
+    >>> browser.open('http://launchpad.dev/~name16')
     >>> browser.getLink('Support').click()
     >>> print browser.title
     Support requests involving Foo Bar
@@ -415,7 +415,7 @@ The listing is searchable and can restrict also the list of displayed
 requests to a particular status:
 
     # goBack() doesn't work.
-    >>> browser.open('http://launchpad.dev/people/name16/+tickets')
+    >>> browser.open('http://launchpad.dev/~name16/+tickets')
     >>> browser.getControl(name='field.search_text').value = 'Firefox'
     >>> browser.getControl(name='field.status').value = ['Solved', 'Invalid']
     >>> browser.getControl('Search').click()

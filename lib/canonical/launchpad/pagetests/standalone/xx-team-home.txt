@@ -3,7 +3,7 @@
   while logged in as someone who's not a member.
 
   >>> print http(r"""
-  ... GET /people/ubuntu-translators HTTP/1.1
+  ... GET /~ubuntu-translators HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok

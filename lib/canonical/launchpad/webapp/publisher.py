@@ -8,7 +8,7 @@ __metaclass__ = type
 __all__ = ['UserAttributeCache', 'LaunchpadView', 'LaunchpadXMLRPCView',
            'canonical_url', 'nearest', 'get_current_browser_request',
            'canonical_url_iterator', 'rootObject', 'Navigation',
-           'stepthrough', 'redirection', 'stepto']
+           'stepthrough', 'redirection', 'stepto', 'RedirectionView']
 
 from zope.interface import implements
 from zope.component import getUtility
