@@ -1,7 +1,7 @@
 The bug contact reports present an overview and searchable bug listing
 views for packages for which a user is a bug contact.
 
-    >>> anon_browser.open("http://launchpad.dev/people/name16/+packagebugs")
+    >>> anon_browser.open("http://launchpad.dev/~name16/+packagebugs")
     >>> print anon_browser.contents
     <!DOCTYPE...
     ...Foo Bar's package bug reports...
@@ -14,7 +14,7 @@ The overview report presents links to open, critical, unassigned, and in
 progress bugs.
 
     >>> anon_browser.open(
-    ...     "http://launchpad.dev/people/name16/+packagebugs-search?"
+    ...     "http://launchpad.dev/~name16/+packagebugs-search?"
     ...     "field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&"
     ...     "field.status=Unconfirmed&field.status=Confirmed&"
     ...     "field.status=In+Progress&search=Search")
@@ -23,7 +23,7 @@ progress bugs.
     Foo Bar's package bug reports
 
     >>> anon_browser.open(
-    ...     "http://launchpad.dev/people/name16/+packagebugs-search?"
+    ...     "http://launchpad.dev/~name16/+packagebugs-search?"
     ...     "field.distribution=ubuntu&field.importance=Critical&"
     ...     "field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&"
     ...     "field.status=Confirmed&field.status=In+Progress&search=Search")
@@ -32,7 +32,7 @@ progress bugs.
     Foo Bar's package bug reports
 
     >>> anon_browser.open(
-    ...     "http://launchpad.dev/people/name16/+packagebugs-search?"
+    ...     "http://launchpad.dev/~name16/+packagebugs-search?"
     ...     "field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&"
     ...     "field.status=Unconfirmed&field.status=Confirmed&"
     ...     "field.status=In+Progress&field.unassigned=on&search=Search")
@@ -41,7 +41,7 @@ progress bugs.
     Foo Bar's package bug reports
 
     >>> anon_browser.open(
-    ...     "http://launchpad.dev/people/name16/+packagebugs-search?"
+    ...     "http://launchpad.dev/~name16/+packagebugs-search?"
     ...     "field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&"
     ...     "field.status=In+Progress&search=Search")
 
@@ -49,7 +49,7 @@ progress bugs.
     Foo Bar's package bug reports
 
     >>> anon_browser.open(
-    ...     "http://launchpad.dev/people/name16/+packagebugs-search?"
+    ...     "http://launchpad.dev/~name16/+packagebugs-search?"
     ...     "field.distribution=debian&field.sourcepackagename=mozilla-firefox&"
     ...     "field.status=Unconfirmed&field.status=Confirmed&"
     ...     "field.status=In+Progress&search=Search")
@@ -61,7 +61,7 @@ On the bug listing page, there is a searchtext field, for searching the
 title and description of the package's bugs.
 
     >>> anon_browser.open(
-    ...     "http://launchpad.dev/people/name16/+packagebugs-search?"
+    ...     "http://launchpad.dev/~name16/+packagebugs-search?"
     ...     "field.distribution=debian&field.sourcepackagename=mozilla-firefox&"
     ...     "field.searchtext=support&search=Search")
 
@@ -76,7 +76,7 @@ field.sourcepackagename in the URL, otherwise an UnexpectedFormData
 exception will be raised.
 
     >>> anon_browser.open(
-    ...     "http://launchpad.dev/people/name12/+packagebugs-search?"
+    ...     "http://launchpad.dev/~name12/+packagebugs-search?"
     ...     "advanced=1&field.distribution=ubuntu&field.sourcepackagename=&"
     ...     "search=Search")
     Traceback (most recent call last):
@@ -84,7 +84,7 @@ exception will be raised.
     UnexpectedFormData: ...
 
     >>> anon_browser.open(
-    ...     "http://launchpad.dev/people/name12/+packagebugs-search")
+    ...     "http://launchpad.dev/~name12/+packagebugs-search")
     Traceback (most recent call last):
       ..
     UnexpectedFormData: ...

@@ -293,7 +293,23 @@ class FileBugGuidedView(FileBugViewBase):
                     self.context.sourcepackagename)
         matching_bugtasks = getUtility(IBugTaskSet).findSimilar(
             self.user, title, **context_params)
-        for bugtask in matching_bugtasks:
+        # Remove all the prejoins, since we won't use them and they slow
+        # down the query significantly.
+        matching_bugtasks = matching_bugtasks.prejoin([])
+
+        # XXX: We might end up returning less than :limit: bugs, but in
+        #      most cases we won't, and '4*limit' is here to prevent
+        #      this page from timing out in production. Later I'll fix
+        #      this properly by selecting distinct Bugs directly
+        #      If matching_bugtasks isn't sliced, it will take a long time
+        #      to iterate over it, even over only 10, because
+        #      Transaction.iterSelect() listifies the result. Bug 75764.
+        #      -- Bjorn Tillenius, 2006-12-13
+        # We select more than :self._MATCHING_BUGS_LIMIT: since if a bug
+        # affects more than one source package, it will be returned more
+        # than one time. 4 is an arbitrary number that should be large
+        # enough.
+        for bugtask in matching_bugtasks[:4*self._MATCHING_BUGS_LIMIT]:
             if not bugtask.bug in matching_bugs:
                 matching_bugs.append(bugtask.bug)
                 if len(matching_bugs) >= self._MATCHING_BUGS_LIMIT:

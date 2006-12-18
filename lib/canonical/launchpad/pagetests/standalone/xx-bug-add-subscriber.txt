@@ -8,7 +8,7 @@ someone else to the bug.
 First, let's make sure we can see the page.
 
   >>> print http(r"""
-  ... GET /products/firefox/+bug/1/+addsubscriber HTTP/1.1
+  ... GET /firefox/+bug/1/+addsubscriber HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -17,7 +17,7 @@ First, let's make sure we can see the page.
 Now, let's POST to it, to subscribe sabdfl.
 
   >>> print http(r"""
-  ... POST /products/firefox/+bug/1/+addsubscriber HTTP/1.1
+  ... POST /firefox/+bug/1/+addsubscriber HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 306
   ... Content-Type: multipart/form-data; boundary=---------------------------12077743959310110181447415077
@@ -35,13 +35,13 @@ Now, let's POST to it, to subscribe sabdfl.
   HTTP/1.1 303 See Other
   Content-Length: 0
   ...
-  Location: http://.../products/firefox/+bug/1
+  Location: http://.../firefox/+bug/1
 
 Now, we should see Mark Shuttleworth as a subscriber.
 
 
   >>> print http(r"""
-  ... GET /products/firefox/+bug/1 HTTP/1.1
+  ... GET /firefox/+bug/1 HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...Mark Shuttleworth...

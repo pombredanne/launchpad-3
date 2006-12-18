@@ -9,7 +9,7 @@ expected value.
 
   >>> browser.addHeader('Authorization',
   ...     'Basic david.allouche@canonical.com:test')
-  >>> browser.open('http://launchpad.dev/products/a52dec/trunk/+source')
+  >>> browser.open('http://launchpad.dev/a52dec/trunk/+source')
   >>> print find_main_content(browser.contents)
   <...
   <h2>Import Status</h2>
@@ -24,7 +24,7 @@ button to allow us to approve imports.
 
 This button does not appear for normal users:
 
-  >>> user_browser.open('http://launchpad.dev/products/a52dec/trunk/+source')
+  >>> user_browser.open('http://launchpad.dev/a52dec/trunk/+source')
   >>> user_browser.getControl('Approve import for production and publication')
   Traceback (most recent call last):
     ...
@@ -38,7 +38,7 @@ certify the import:
   >>> browser.getControl(
   ...     'Approve import for production and publication').click()
   >>> print browser.url
-  http://launchpad.dev/products/a52dec/trunk/+source
+  http://launchpad.dev/a52dec/trunk/+source
   >>> for tag in find_tags_by_class(browser.contents, 'error'):
   ...     print tag
   <p class="error message">There is 1 error.</p>
@@ -55,7 +55,7 @@ If we have correct details, we can approve the build for production:
   >>> browser.getControl(
   ...     'Approve import for production and publication').click()
   >>> print browser.url
-  http://launchpad.dev/products/a52dec/trunk
+  http://launchpad.dev/a52dec/trunk
 
 Check that that import status was indeed updated.
 

@@ -43,7 +43,7 @@ When all fields are filled correctly, the new profile is created.
     >>> admin_browser.getControl('Email address').value = 'test2@canonical.com'
     >>> admin_browser.getControl('Create Profile').click()
     >>> admin_browser.url
-    'http://launchpad.dev/people/test2'
+    'http://launchpad.dev/~test2'
 
     >>> print admin_browser.contents
     <...
@@ -92,7 +92,7 @@ not entered by the users themselves.
     >>> browser.getControl('Continue').click()
 
     >>> browser.url
-    'http://launchpad.dev/people/test2'
+    'http://launchpad.dev/~test2'
 
 
 Non-launchpad admins can't acces the page to ceate a new profile.

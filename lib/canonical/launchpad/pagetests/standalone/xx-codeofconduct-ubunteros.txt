@@ -7,7 +7,7 @@ but still valid.
   'Ubunteros registered in Launchpad'
   >>> admin_browser.getLink('Foo Bar (name16)').click()
   >>> admin_browser.url
-  'http://launchpad.dev/people/name16'
+  'http://launchpad.dev/~name16'
 
   >>> admin_browser.getLink('Codes of Conduct').click() 
 
