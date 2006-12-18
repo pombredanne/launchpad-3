@@ -7,7 +7,7 @@ SET client_min_messages=ERROR;
 -- We use the wordscrashedtoghether naming convention for consistency with the
 -- rest of the ProductSeries table.
 
-ALTER TABLE ProductSeries ADD COLUMN datepublishedsync
+ALTER TABLE ProductSeries ADD COLUMN date_published_sync
     TIMESTAMP WITHOUT TIME ZONE;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (97, 12, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (67, 37, 0);

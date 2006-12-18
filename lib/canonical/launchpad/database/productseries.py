@@ -108,7 +108,8 @@ class ProductSeries(SQLBase, BugTargetBase):
     # controlling the freshness of an import
     syncinterval = IntervalCol(default=None)
     datelastsynced = UtcDateTimeCol(default=None)
-    datepublishedsync = UtcDateTimeCol(default=None)
+    datepublishedsync = UtcDateTimeCol(
+        dbName='date_published_sync', default=None)
 
     releases = SQLMultipleJoin('ProductRelease', joinColumn='productseries',
                             orderBy=['-datereleased'])
