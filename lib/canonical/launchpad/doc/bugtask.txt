@@ -888,6 +888,11 @@ like these, use the NullBugTask object.
     >>> expected_related_task_ids == actual_related_task_ids
     True
 
+    >>> null_bugtask.conjoined_slave is None
+    True
+    >>> null_bugtask.conjoined_master is None
+    True
+
 The astute reader will have noticed that NullBugTask automatically
 "marked" itself as providing the correct IBugTask interface. Let's see
 two more examples:
