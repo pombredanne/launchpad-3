@@ -35,6 +35,19 @@ class IPillarNameSet(Interface):
     def __getitem__(name):
         """Get a pillar by its name."""
 
+    def search(text, limit):
+        """Return at most limit Products/Projects/Distros matching :text:.
+
+        The return value is a sequence of dicts, where each dict contain
+        the name of the object it represents (one of 'product', 'project'
+        or 'distribution'), that object's id, name, title, description and
+        the rank of that object on this specific search.
+
+        If limit is None, config.launchpad.default_batch_size will be used.
+
+        The results are ordered descending by rank.
+        """
+
 
 class PillarNameField(BlacklistableContentNameField):
 

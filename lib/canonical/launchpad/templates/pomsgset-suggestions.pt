@@ -1,50 +1,42 @@
 <tal:block condition="context/submissions">
-  <tr class="secondary translation">
+  <tr class="discreet secondary translation">
     <th colspan="3" style="border: inherit;">
       <label tal:content="string:${context/title}:" />
     </th>
-    <td class="icon left right" />
+  </tr>
+  <tal:submission repeat="submission context/submissions">
+  <tr class="discreet secondary"
+      tal:define="submissionlang submission/pomsgset/pofile/language">
+    <td colspan="3" />
+    <td class="icon left right">
+      <input type="image" src="/@@/copy" title="Copy text"
+          tal:attributes="
+            name string:msgset_${context/pomsgset/potmsgset/id}_${submissionlang/code}_suggestion_${submission/id}_${submission/pluralform}_copy"
+        />
+    </td>
     <td>
-      <tal:block condition="not: context/is_multi_line">
-        <tal:submission repeat="submission context/submissions">
-          <metal:macro define-macro="submission_text">
-            <div tal:define="submissionlang submission/pomsgset/pofile/language"
-                 tal:attributes="lang submissionlang/dashedcode;
-                                 dir submissionlang/abbreviated_text_dir"
-                 tal:content="submission/potranslation/translation">suggestion</div>
-            <div class="discreet">
-              &mdash; By
-              <a tal:content="submission/person/browsername"
-                 tal:attributes="href submission/person/fmt:url" >Foo</a> to
-              <a tal:content="submission/pomsgset/potmsgset/potemplate/displayname"
-                 tal:attributes="href submission/pomsgset/potmsgset/potemplate/fmt:url" >Foo</a> on
-              <span tal:replace="submission/datecreated/fmt:datetime">
-                2006-08-05 01:04 UTC
-              </span>
-              <metal:extra define-slot="extra" />
-            </div>
-          </metal:macro>
-        </tal:submission>
-      </tal:block>
-      <tal:block condition="context/is_multi_line">
-        <tal:maxentries condition="context/max_entries">
-          <tal:define define="submission python:context.submissions[0]">
-            <metal:macro use-macro="template/macros/submission_text">
-              <tal:block
-                metal:fill-slot="extra"
-                define="submissions_remaining python:len(context.submissions)-1"
-                condition="submissions_remaining">
-                (<span tal:replace="submissions_remaining">3</span> more)
-              </tal:block>
-            </metal:macro>
-          </tal:define>
-        </tal:maxentries>
-        <tal:maxentries condition="not: context/max_entries">
-          <tal:submission repeat="submission context/submissions">
-            <metal:macro use-macro="template/macros/submission_text" />
-          </tal:submission>
-        </tal:maxentries>
-      </tal:block>
+      <div tal:attributes="lang submissionlang/dashedcode;
+                           dir submissionlang/abbreviated_text_dir"
+           tal:content="structure submission/potranslation/translation/fmt:text-to-html">
+        suggestion</div>
     </td>
   </tr>
+  <tr class="suggestion secondary">
+    <th colspan="3">
+      Coming from:
+    </th>
+    <td class="icon left right" />
+    <td style="overflow: auto;">
+      <a tal:content="submission/pomsgset/pofile/potemplate/displayname"
+         tal:attributes="href string:${submission/pomsgset/fmt:url}/+translate">
+        Spanish translation for evolution
+      </a> by
+      <a tal:content="submission/person/browsername"
+         tal:attributes="href submission/person/fmt:url">Foo Bar</a> on
+      <span tal:content="submission/datecreated/fmt:datetime">
+        2006-08-05 01:04 UTC
+      </span>
+    </td>
+  </tr>
+  </tal:submission>
 </tal:block>

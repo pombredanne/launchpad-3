@@ -23,7 +23,7 @@
 
         <b>Creator:</b>
         <img alt="" src="/@@/user" />
-        <a tal:attributes="href string:/people/${context/owner/name}"
+        <a tal:attributes="href context/owner/fmt:url"
            tal:content="context/owner/browsername"
            class="link">ownername</a><br />
 

@@ -25,7 +25,7 @@
       <li class="translations"
           tal:repeat="pkg context/translatable_packages">
         <a tal:content="pkg/title"
-               tal:attributes="href string:/distros/${pkg/distribution/name}/${pkg/distrorelease/name}/+sources/${pkg/name}/+translations">
+               tal:attributes="href string:/${pkg/distribution/name}/${pkg/distrorelease/name}/+sources/${pkg/name}/+translations">
           package title</a>
       </li>
     </ul>
