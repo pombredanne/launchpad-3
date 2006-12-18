@@ -41,7 +41,7 @@ def project_filebug(project, summary):
     Since it's not possible to file a bug on a project directly, the bug
     will be filed on one of its products.
     """
-    # It doesn't matter on which product the bug is filed on.
+    # It doesn't matter which product the bug is filed on.
     bug = bugtarget_filebug(project.products[0], summary)
     return bug
 
@@ -125,24 +125,20 @@ def sourcePackageSetUp(test):
 def test_suite():
     suite = unittest.TestSuite()
 
-    bugtargets = [
-        ('product', productSetUp),
-        ('productseries', productSetUp),
-        ('project', projectSetUp),
-        ('distribution', distributionSetUp),
-        ('distribution-source-package', distributionSourcePackageSetUp),
-        ('distrorelease', distributionReleaseSetUp),
-        ('sourcepackage', sourcePackageSetUp),
+    setUpMethods = [
+        productSetUp,
+        productSetUp,
+        projectSetUp,
+        distributionSetUp,
+        distributionSourcePackageSetUp,
+        distributionReleaseSetUp,
+        sourcePackageSetUp,
         ]
 
-    for name, setUpMethod in bugtargets:
+    for setUpMethod in setUpMethods:
         test = FunctionalDocFileSuite('bugtarget-recently-touched-bugs.txt',
             setUp=setUpMethod, tearDown=tearDown,
             optionflags=default_optionflags, package=__name__,
             layer=LaunchpadFunctionalLayer)
         suite.addTest(test)
     return suite
-
-
-if __name__ == '__main__':
-    unittest.main()

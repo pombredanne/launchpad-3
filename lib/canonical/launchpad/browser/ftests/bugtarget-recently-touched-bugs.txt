@@ -10,8 +10,9 @@ bugs (i.e bugs that have been recently modified/created).
     ...     LaunchpadTestRequest())
     >>> portlet_view.initialize()
 
-    >>> from datetime import datetime, timedelta
     >>> import pytz
+    >>> from datetime import datetime, timedelta
+    >>> from canonical.launchpad.ftests import syncUpdate
     >>> now = datetime.now(pytz.timezone('UTC'))
     >>> def set_date_updated(bug, minutes_in_future):
     ...     bug.date_last_updated = now + timedelta(minutes=minutes_in_future)
@@ -20,7 +21,6 @@ bugs (i.e bugs that have been recently modified/created).
 If we have three bugs with a recent date_last_updated set, they will
 appear in the top of the list.
 
-    >>> from canonical.launchpad.ftests import syncUpdate
     >>> login('test@canonical.com')
     >>> sample_person = getUtility(ILaunchBag).user
     >>> bug_a = filebug(bugtarget, 'Bug A')
@@ -76,7 +76,7 @@ Only bugs that the user is allowed to see will be present in the list.
 
 == Duplicate bugs ==
 
-Bugs that are duplicates of other bugs won't be omitted from the list as
+Bugs that are duplicates of other bugs will be omitted from the list as
 well.
 
     >>> bug_b.duplicateof = bug_c
