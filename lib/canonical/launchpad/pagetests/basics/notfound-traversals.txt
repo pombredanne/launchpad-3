@@ -336,8 +336,7 @@ And this is for a person:
 >>> check("/people/name12/+branch/gnome-terminal/pushed/+edit", auth=True)
 >>> check_redirect("/people/name12/+branch/gnome-terminal/pushed/+lifecycle")
 >>> check("/people/name12/+branch/gnome-terminal/pushed/+lifecycle", auth=True)
->>> check(
-...     "people/sabdfl/+branch/firefox/release-0.9.2/+bug/4/+status")
+>>> check("people/sabdfl/+branch/firefox/release-0.9.2/+bug/4/+status")
 >>> check_redirect("/people/name16/+bugs")
 >>> check_not_found("/people/name16/+bugs/1")
 >>> check("/people/name16/+reportedbugs")
