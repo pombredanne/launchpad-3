@@ -2,9 +2,9 @@ On the bug listings page there is a portlet which shows all tags that
 have been used for bugs in this context.
 
     >>> from BeautifulSoup import BeautifulSoup
-    >>> anon_browser.open('http://launchpad.dev/distros/ubuntu/+bugs')
+    >>> anon_browser.open('http://launchpad.dev/ubuntu/+bugs')
     >>> anon_browser.url
-    'http://launchpad.dev/distros/ubuntu/+bugs'
+    'http://launchpad.dev/ubuntu/+bugs'
     >>> soup = BeautifulSoup(anon_browser.contents)
     >>> tags_portlet = soup.find('div', {'id': "bug-tags"})
     >>> for li_tag in tags_portlet('li'):
@@ -17,7 +17,7 @@ If we click on a tag, only bugs with that tag are displayed:
 
     >>> anon_browser.getLink(url='crash').click()
     >>> anon_browser.url
-    'http://launchpad.dev/distros/ubuntu/+bugs?field.tag=crash'
+    'http://launchpad.dev/ubuntu/+bugs?field.tag=crash'
 
     >>> def print_bugtasks(text):
     ...     """Print all the bugtasks in the text."""
@@ -40,7 +40,7 @@ shown.
 
     >>> anon_browser.getLink('dataloss').click()
     >>> anon_browser.url
-    'http://launchpad.dev/distros/ubuntu/+bugs?field.tag=dataloss'
+    'http://launchpad.dev/ubuntu/+bugs?field.tag=dataloss'
     >>> print_bugtasks(anon_browser.contents)
     2 Blackhole Trash folder
 
@@ -49,13 +49,13 @@ of the default listing. So if we would show only the rejected bugs, and
 then press the tag link again, only open bugs will be shown
 
     >>> anon_browser.open(
-    ...     'http://launchpad.dev/distros/ubuntu/+bugs?advanced=1')
+    ...     'http://launchpad.dev/ubuntu/+bugs?advanced=1')
     >>> anon_browser.getControl(name='field.status:list').value = ['Rejected']
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print_bugtasks(anon_browser.contents)
 
     >>> anon_browser.getLink('dataloss').click()
     >>> anon_browser.url
-    'http://launchpad.dev/distros/ubuntu/+bugs?field.tag=dataloss'
+    'http://launchpad.dev/ubuntu/+bugs?field.tag=dataloss'
     >>> print_bugtasks(anon_browser.contents)
     2 Blackhole Trash folder

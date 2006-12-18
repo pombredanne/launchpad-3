@@ -115,8 +115,8 @@ class IBug(IMessageTarget):
         title=_('Date Last Updated'), required=True, readonly=True)
     name = BugNameField(
         title=_('Nickname'), required=False,
-        description=_("""A short and unique name for this bug.
-        Add a nickname only if you often need to retype the URL
+        description=_("""A short and unique name.
+        Add one only if you often need to retype the URL
         but have trouble remembering the bug number."""),
         constraint=name_validator)
     title = Title(
@@ -175,7 +175,7 @@ class IBug(IMessageTarget):
         "Branches associated with this bug, usually "
         "branches on which this bug is being fixed.")
     tags = List(
-        title=_("Tags (separated by whitespace)"),
+        title=_("Tags"), description=_("Separated by whitespace."),
         value_type=Tag(), required=False)
 
 
@@ -288,12 +288,47 @@ class IBug(IMessageTarget):
     def getMessageChunks():
         """Return MessageChunks corresponding to comments made on this bug"""
 
+    def addNomination(owner, target):
+        """Nominate a bug for an IDistroRelease or IProductSeries.
+
+        :owner: An IPerson.
+        :target: An IDistroRelease or IProductSeries.
+
+        This method creates and returns a BugNomination. (See
+        canonical.launchpad.database.bugnomination.BugNomination.)
+        """
+
+    def canBeNominatedFor(nomination_target):
+        """Can this bug nominated for this target?
+
+        :nomination_target: An IDistroRelease or IProductSeries.
+
+        Returns True or False.
+        """
+
+    def getNominationFor(nomination_target):
+        """Return the IBugNomination for the target.
+
+        If no nomination is found, a NotFoundError is raised.
+
+        :nomination_target: An IDistroRelease or IProductSeries.
+        """
+
+    def getNominations(target=None):
+        """Return a list of all IBugNominations for this bug.
+
+        The list is ordered by IBugNominations.target.bugtargetname.
+
+        Optional filtering arguments:
+
+        :target: An IProduct or IDistribution.
+        """
+
     def getBugWatch(bugtracker, remote_bug):
         """Return the BugWatch that has the given bugtracker and remote bug.
 
         Return None if this bug doesn't have such a bug watch.
         """
-
 
 
 class IBugDelta(Interface):
@@ -355,9 +390,10 @@ class IBugAddForm(IBug):
                 "tracker."),
             vocabulary="DistributionUsingMalone")
     owner = Int(title=_("Owner"), required=True)
-    comment = Text(title=_('Description'), required=True,
-            description=_("""A detailed description of the problem you are
-            seeing."""))
+    comment = Text(
+        title=_('Further information, steps to reproduce,'
+                ' version information, etc.'),
+        required=True)
 
 
 class IBugSet(Interface):
@@ -386,7 +422,7 @@ class IBugSet(Interface):
         """Find one or None bugs in Malone that have a BugWatch matching the
         given bug tracker and remote bug id."""
 
-    def createBug(self, bug_params):
+    def createBug(bug_params):
         """Create a bug and return it.
 
         :bug_params: A CreateBugParams object.

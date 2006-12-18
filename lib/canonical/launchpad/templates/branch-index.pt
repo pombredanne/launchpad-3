@@ -14,6 +14,7 @@
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-subscribers" />
+  <div tal:replace="structure context/@@+portlet-specifications" />
 </metal:leftportlets>
 
 <div metal:fill-slot="main">
@@ -85,7 +86,8 @@
 
   <p class="highlighted lesser" tal:condition="context/whiteboard">
     <b>Whiteboard:</b>
-    <span tal:replace="context/whiteboard">whiteboard</span>
+    <span id="branch-whiteboard-value"
+      tal:content="context/whiteboard">whiteboard</span>
   </p>
 
   <h2>Recent revisions</h2>
@@ -157,9 +159,9 @@
 
 <metal:block fill-slot="help">
 
-  <p>Launchpad can act as a registry of branches for the <a
-    href="http://bazaar-vcs.org/">Bazaar</a>distributed version control
-    system.</p>
+  <p>Launchpad is integrated with the <a
+    href="http://bazaar-vcs.org/">Bazaar</a> version control system. (<a
+    href="http://bazaar-vcs.org/WhyUseBzr">Why use Bazaar?</a>).</p>
 
   <ul>
     <li>Mirror branches are primarily hosted somewhere else on the internet.
@@ -198,7 +200,6 @@
     host only serves data for use with the Bazaar version control system.</p>
 
 </metal:block><tal:comment condition="nothing"><!-- end help slot --></tal:comment>
-
 
 </body>
 </html>

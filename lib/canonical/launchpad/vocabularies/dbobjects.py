@@ -17,12 +17,15 @@ __all__ = [
     'BinaryPackageNameVocabulary',
     'BountyVocabulary',
     'BranchVocabulary',
+    'BugNominatableReleasesVocabulary',
     'BugVocabulary',
     'BugTrackerVocabulary',
     'BugWatchVocabulary',
     'ComponentVocabulary',
     'CountryNameVocabulary',
     'DistributionVocabulary',
+    'DistributionOrProductVocabulary',
+    'DistributionOrProductOrProjectVocabulary',
     'DistributionUsingMaloneVocabulary',
     'DistroReleaseVocabulary',
     'FilteredDistroArchReleaseVocabulary',
@@ -32,6 +35,7 @@ __all__ = [
     'KarmaCategoryVocabulary',
     'LanguageVocabulary',
     'MilestoneVocabulary',
+    'NonMergedPeopleAndTeamsVocabulary',
     'PackageReleaseVocabulary',
     'PersonAccountToMergeVocabulary',
     'PersonActiveMembershipVocabulary',
@@ -54,6 +58,7 @@ __all__ = [
     ]
 
 import cgi
+from operator import attrgetter
 
 from zope.component import getUtility
 from zope.interface import implements, Attribute
@@ -64,7 +69,7 @@ from zope.security.proxy import isinstance as zisinstance
 from sqlobject import AND, OR, CONTAINSSTRING, SQLObjectNotFound
 
 from canonical.launchpad.helpers import shortlist
-from canonical.lp.dbschema import EmailAddressStatus
+from canonical.lp.dbschema import EmailAddressStatus, DistributionReleaseStatus
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.database import (
     Distribution, DistroRelease, Person, SourcePackageRelease, Branch,
@@ -72,12 +77,12 @@ from canonical.launchpad.database import (
     BinaryPackageName, Language, Milestone, Product, Project, ProductRelease,
     ProductSeries, TranslationGroup, BugTracker, POTemplateName, Schema,
     Bounty, Country, Specification, Bug, Processor, ProcessorFamily,
-    BinaryAndSourcePackageName, Component)
+    BinaryAndSourcePackageName, Component, PillarName)
 from canonical.launchpad.interfaces import (
     IBranchSet, IBugTask, IDistribution, IDistributionSourcePackage,
     IDistroBugTask, IDistroRelease, IDistroReleaseBugTask, IEmailAddressSet,
-    ILaunchBag, IMilestoneSet, IPerson, IPersonSet, IProduct, IProject,
-    ISourcePackage, ISpecification, ITeam, IUpstreamBugTask)
+    ILaunchBag, IMilestoneSet, IPerson, IPersonSet, IPillarName, IProduct,
+    IProject, ISourcePackage, ISpecification, ITeam, IUpstreamBugTask)
 
 
 class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
@@ -121,6 +126,7 @@ class SQLObjectVocabularyBase:
     """
     implements(IVocabulary, IVocabularyTokenized)
     _orderBy = None
+    _filter = None
 
     def __init__(self, context=None):
         self.context = context
@@ -133,7 +139,7 @@ class SQLObjectVocabularyBase:
         params = {}
         if self._orderBy:
             params['orderBy'] = self._orderBy
-        for obj in self._table.select(**params):
+        for obj in self._table.select(self._filter, **params):
             yield self.toTerm(obj)
 
     def __len__(self):
@@ -144,10 +150,16 @@ class SQLObjectVocabularyBase:
         # z3 form machinery sends through integer ids. This might be due
         # to a bug somewhere.
         if zisinstance(obj, SQLBase):
-            found_obj = self._table.selectOne(self._table.q.id == obj.id)
+            clause = self._table.q.id == obj.id
+            if self._filter:
+                clause = AND(clause, _filter)
+            found_obj = self._table.selectOne(clause)
             return found_obj is not None and found_obj == obj
         else:
-            found_obj = self._table.selectOne(self._table.q.id == int(obj))
+            clause = self._table.q.id == int(obj)
+            if self._filter:
+                clause = AND(clause, _filter)
+            found_obj = self._table.selectOne(clause)
             return found_obj is not None
 
     def getQuery(self):
@@ -164,8 +176,11 @@ class SQLObjectVocabularyBase:
         except ValueError:
             raise LookupError(value)
 
+        clause = self._table.q.id == value
+        if self._filter:
+            clause = AND(clause, self._filter)
         try:
-            obj = self._table.selectOne(self._table.q.id == value)
+            obj = self._table.selectOne(clause)
         except ValueError:
             raise LookupError(value)
 
@@ -204,7 +219,10 @@ class NamedSQLObjectVocabulary(SQLObjectVocabularyBase):
         return SimpleTerm(obj.id, obj.name, obj.name)
 
     def getTermByToken(self, token):
-        objs = list(self._table.selectBy(name=token))
+        clause = self._table.q.name == token
+        if self._filter:
+            clause = AND(clause, self._filter)
+        objs = list(self._table.select(clause))
         if not objs:
             raise LookupError(token)
         return self.toTerm(objs[0])
@@ -212,10 +230,10 @@ class NamedSQLObjectVocabulary(SQLObjectVocabularyBase):
     def search(self, query):
         """Return terms where query is a subtring of the name"""
         if query:
-            return self._table.select(
-                CONTAINSSTRING(self._table.q.name, query),
-                orderBy=self._orderBy
-                )
+            clause = CONTAINSSTRING(self._table.q.name, query)
+            if self._filter:
+                clause = AND(clause, self._filter)
+            return self._table.select(clause, orderBy=self._orderBy)
         return self.emptySelectResults()
 
 
@@ -535,6 +553,33 @@ class TranslationGroupVocabulary(NamedSQLObjectVocabulary):
 
     def toTerm(self, obj):
         return SimpleTerm(obj, obj.name, obj.title)
+
+
+class NonMergedPeopleAndTeamsVocabulary(
+        BasePersonVocabulary, SQLObjectVocabularyBase):
+    """The set of all non-merged people and teams.
+    
+    If you use this vocabulary you need to make sure that any code which uses
+    the people provided by it know how to deal with people which don't have
+    a preferred email address, that is, unvalidated person profiles.
+    """
+    implements(IHugeVocabulary)
+
+    _orderBy = ['displayname']
+    displayname = 'Select a Person or Team'
+
+    def __contains__(self, obj):
+        return obj in self._select()
+
+    def _select(self, text=""):
+        return getUtility(IPersonSet).find(text)
+
+    def search(self, text):
+        """Return people/teams whose fti or email address match :text."""
+        if not text:
+            return self.emptySelectResults()
+
+        return self._select(text.lower())
 
 
 class PersonAccountToMergeVocabulary(
@@ -1288,3 +1333,121 @@ class ProcessorFamilyVocabulary(NamedSQLObjectVocabulary):
         return SimpleTerm(obj, obj.name, obj.title)
 
 
+def BugNominatableReleasesVocabulary(context=None):
+    """Return a nominatable releases vocabulary."""
+
+    if getUtility(ILaunchBag).distribution:
+        return BugNominatableDistroReleaseVocabulary(
+            context, getUtility(ILaunchBag).distribution)
+    else:
+        assert getUtility(ILaunchBag).product
+        return BugNominatableProductSeriesVocabulary(
+            context, getUtility(ILaunchBag).product)
+
+
+class BugNominatableReleaseVocabularyBase(NamedSQLObjectVocabulary):
+    """Base vocabulary class for releases for which a bug can be nominated."""
+
+    def __iter__(self):
+        bug = self.context
+
+        releases = self._getNominatableObjects()
+
+        for release in sorted(releases, key=attrgetter("displayname")):
+            if bug.canBeNominatedFor(release):
+                yield self.toTerm(release)
+
+    def toTerm(self, obj):
+        return SimpleTerm(obj, obj.name, obj.name.capitalize())
+
+    def getTermByToken(self, token):
+        obj = self._queryNominatableObjectByName(token)
+        if obj is None:
+            raise LookupError(token)
+
+        return self.toTerm(obj)
+
+    def _getNominatableObjects(self):
+        """Return the release objects that the bug can be nominated for."""
+        raise NotImplementedError
+
+    def _queryNominatableObjectByName(self, name):
+        """Return the release object with the given name."""
+        raise NotImplementedError
+
+
+class BugNominatableProductSeriesVocabulary(BugNominatableReleaseVocabularyBase):
+    """The product series for which a bug can be nominated."""
+
+    _table = ProductSeries
+
+    def __init__(self, context, product):
+        BugNominatableReleaseVocabularyBase.__init__(self, context)
+        self.product = product
+
+    def _getNominatableObjects(self):
+        """See BugNominatableReleaseVocabularyBase."""
+        return shortlist(self.product.serieslist)
+
+    def _queryNominatableObjectByName(self, name):
+        """See BugNominatableReleaseVocabularyBase."""
+        return self.product.getSeries(name)
+
+
+class BugNominatableDistroReleaseVocabulary(BugNominatableReleaseVocabularyBase):
+    """The distribution releases for which a bug can be nominated."""
+
+    _table = DistroRelease
+
+    def __init__(self, context, distribution):
+        BugNominatableReleaseVocabularyBase.__init__(self, context)
+        self.distribution = distribution
+
+    def _getNominatableObjects(self):
+        """Return all non-obsolete distribution releases."""
+        return [
+            release for release in shortlist(self.distribution.releases)
+            if release.releasestatus != DistributionReleaseStatus.OBSOLETE]
+
+    def _queryNominatableObjectByName(self, name):
+        """See BugNominatableReleaseVocabularyBase."""
+        return self.distribution.getRelease(name)
+
+
+class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
+
+    displayname = 'Needs to be overridden'
+    _table = PillarName
+    _orderBy = 'name'
+
+    def toTerm(self, obj):
+        if IPillarName.providedBy(obj):
+            assert obj.active, 'Inactive object %s %d' % (
+                    obj.__class__.__name__, obj.id
+                    )
+            if obj.product is not None:
+                obj = obj.product
+            elif obj.distribution is not None:
+                obj = obj.distribution
+            elif obj.project is not None:
+                obj = obj.project
+            else:
+                raise AssertionError('Broken PillarName')
+
+        # It is a hack using the class name here, but it works
+        # fine and avoids an ugly if statement.
+        title = '%s (%s)' % (obj.title, obj.__class__.__name__)
+
+        return SimpleTerm(obj, obj.name, title)
+
+
+class DistributionOrProductVocabulary(PillarVocabularyBase):
+    displayname = 'Select a distribution or product'
+    _filter = AND(OR(
+            PillarName.q.distributionID != None,
+            PillarName.q.productID != None
+            ), PillarName.q.active == True)
+
+class DistributionOrProductOrProjectVocabulary(PillarVocabularyBase):
+    displayname = 'Select a distribution, product or project'
+    _filter = PillarName.q.active == True

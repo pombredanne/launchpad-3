@@ -2,7 +2,7 @@ The bug task edit page now features a new and improved assignee
 widget, which makes it easier to "take" a task.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
+  ... GET /ubuntu/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -15,7 +15,7 @@ So, taking the task is now as simple as selecting the "me" radio
 button:
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
+  ... POST /ubuntu/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------19759086281403130373932339922
   ... 
@@ -76,7 +76,7 @@ In this example, we were logged in as Foo Bar, so the task is now
 automagically assigned to Foo Bar.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/+source/mozilla-firefox/+bug/1 HTTP/1.1
+  ... GET /ubuntu/+source/mozilla-firefox/+bug/1 HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -87,7 +87,7 @@ automagically assigned to Foo Bar.
 But, you can also assign the task to another person, of course:
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
+  ... POST /ubuntu/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1999
   ... Content-Type: multipart/form-data; boundary=---------------------------19759086281403130373932339922
@@ -148,7 +148,7 @@ But, you can also assign the task to another person, of course:
 In this case, we assigned the task to Sample Person:
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/+source/mozilla-firefox/+bug/1 HTTP/1.1
+  ... GET /ubuntu/+source/mozilla-firefox/+bug/1 HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -160,7 +160,7 @@ Lastly, the widget also allows you to simply assign the task to nobody
 (to, "give up" the task, you might say)
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
+  ... POST /ubuntu/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1999
   ... Content-Type: multipart/form-data; boundary=---------------------------19759086281403130373932339922
@@ -221,7 +221,7 @@ Lastly, the widget also allows you to simply assign the task to nobody
 And now the bug task is unassigned:
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/+source/mozilla-firefox/+bug/1 HTTP/1.1
+  ... GET /ubuntu/+source/mozilla-firefox/+bug/1 HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok

@@ -377,7 +377,7 @@ wrong.
     ...
     The message you sent included commands to modify the bug report, but
     your OpenPGP key isn't imported into Launchpad. Please go to
-    http://launchpad.dev/people/name12/+editpgpkeys to import your key.
+    http://launchpad.dev/~name12/+editpgpkeys to import your key.
     ...
 
 The same will happen if we send the same email without signing it:
