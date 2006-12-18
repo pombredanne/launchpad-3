@@ -1680,7 +1680,7 @@ class BugTaskTableRowView(LaunchpadView):
         if bugtask == getUtility(ILaunchBag).bugtask:
             return 'highlight'
         else:
-            return ''
+            return None
 
     def shouldIndentTask(self):
         """Should this task be indented in the task listing on the bug page?
