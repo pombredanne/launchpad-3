@@ -23,7 +23,7 @@ XXX: This doctest needs a lot of cleanups!
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> personset = getUtility(IPersonSet)
     >>> foobar = personset.getByName('name16')
-    >>> reviewer = p = foobar
+    >>> reviewer = foobar
     >>> t1 = personset.newTeam(
     ...     foobar, 't1', 't1',
     ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
@@ -190,12 +190,15 @@ Let's see...
      u't3', u't5']
 
 
-# XXX: Need to fix this
-It's important to note that even if p is not a member of t5, he still retains
-his rights over the team because he's the team's owner:
+It's important to note that even if Foo Bar leaves the team he's the owner,
+he'll retains his rights over the team because he's the team's owner. This
+ensures we'll never have teams which can't be managed.
 
+    >>> foobar.leave(t5)
     >>> flush_database_updates()
-    >>> p.inTeam(t5)
+    >>> [m.displayname for m in t5.allmembers]
+    []
+    >>> foobar.inTeam(t5)
     True
 
 
@@ -215,8 +218,7 @@ Let's change the expiry date of an active membership, so we have something for
 our script to flag as expired.
 
     >>> foobar_on_admins = TeamMembershipSet().getByPersonAndTeam(
-    ...     Person.selectOneBy(name='name16'),
-    ...     Person.selectOneBy(name='admins'))
+    ...     personset.getByName('name16'), personset.getByName('admins'))
     >>> foobar_on_admins.dateexpires is None
     True
     >>> foobar_on_admins.status.title
@@ -227,8 +229,8 @@ And here we change the expiry date of a membership that's already deactivated.
 The cronscript will not change this membership, because it's not active.
 
     >>> sp_on_ubuntu_translators = TeamMembershipSet().getByPersonAndTeam(
-    ...     Person.selectOneBy(name='name12'),
-    ...     Person.selectOneBy(name='ubuntu-translators'))
+    ...     personset.getByName('name12'),
+    ...     personset.getByName('ubuntu-translators'))
     >>> sp_on_ubuntu_translators.dateexpires is None
     True
     >>> sp_on_ubuntu_translators.status.title
@@ -263,14 +265,13 @@ while the one that was inactive hasn't changed.
     >>> sp_on_ubuntu_translators.expire()
 
     >>> foobar_on_admins = TeamMembershipSet().getByPersonAndTeam(
-    ...     Person.selectOneBy(name='name16'),
-    ...     Person.selectOneBy(name='admins'))
+    ...     personset.getByName('name16'), personset.getByName('admins'))
     >>> foobar_on_admins.status.title
     'Expired'
 
     >>> sp_on_ubuntu_translators = TeamMembershipSet().getByPersonAndTeam(
-    ...     Person.selectOneBy(name='name12'),
-    ...     Person.selectOneBy(name='ubuntu-translators'))
+    ...     personset.getByName('name12'),
+    ...     personset.getByName('ubuntu-translators'))
     >>> sp_on_ubuntu_translators.status.title
     'Deactivated'
 
