@@ -8,7 +8,7 @@ request a fix for these releases.
 
 Gentoo is currently using Malone.
 
-    >>> admin_browser.open('http://launchpad.dev/distros/gentoo/+launchpad')
+    >>> admin_browser.open('http://launchpad.dev/gentoo/+launchpad')
     >>> admin_browser.getControl('Uses Malone Officially').selected
     True
 
@@ -19,7 +19,7 @@ Any user can request a fix for it.
     >>> user_browser.getControl('Distribution').value = ['gentoo']
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.url
-    'http://launchpad.dev/distros/gentoo/+bug/4'
+    'http://launchpad.dev/gentoo/+bug/4'
 
 == A distribution not using Malone ==
 
@@ -28,7 +28,7 @@ link to a external bug for it.
 
     >>> admin_browser.getControl('Uses Malone Officially').selected = False
     >>> admin_browser.getControl('Change').click()
-    >>> admin_browser.open('http://launchpad.dev/distros/gentoo/+launchpad')
+    >>> admin_browser.open('http://launchpad.dev/gentoo/+launchpad')
     >>> admin_browser.getControl('Uses Malone Officially').selected
     False
 
@@ -40,4 +40,4 @@ link to a external bug for it.
     ...     'http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1234')
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.url
-    'http://launchpad.dev/distros/gentoo/+bug/7'
+    'http://launchpad.dev/gentoo/+bug/7'
