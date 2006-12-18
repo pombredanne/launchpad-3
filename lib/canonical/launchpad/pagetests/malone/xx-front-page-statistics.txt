@@ -2,9 +2,9 @@
 
 On the Bugs front page there is some statistics shown, showing:
 
-  * number of bugs are filed in Launchpad
-  * number of how many links to external bug
-  * number of external bug trackers registerd
+  * number of bugs that are filed in Launchpad
+  * number of links to external bugs
+  * number of external bug trackers registered
   * number of CVE bug links
 
   >>> anon_browser.open('http://bugs.launchpad.dev/')
