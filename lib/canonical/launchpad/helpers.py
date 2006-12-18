@@ -574,38 +574,3 @@ def is_ascii_only(string):
         return False
     else:
         return True
-
-# Delta helpers
-
-class ObjectDelta:
-    def __init__(self, old_obj, new_obj):
-        self.old_obj = old_obj
-        self.new_obj = new_obj
-        self.changes = {}
-
-    def record_new_values(fields):
-        """Updates changes based on changed field values"""
-        for field_name in fields:
-            old_val = getattr(self.old_obj, field_name)
-            new_val = getattr(self.new_obj, field_name)
-            if old_val != new_val:
-                self.changes[field_name] = new_val
-
-    def record_new_and_old(fields):
-        """Updates changes with old and new values for changed fields"""
-        for field_name in fields:
-            old_val = getattr(self.old_obj, field_name)
-            new_val = getattr(self.new_obj, field_name)
-            if old_val != new_val:
-                self.changes[field_name] = { 'old' : old_val,
-                                             'new' : new_val }
-                
-    def record_list_added_and_removed(field, added_name, removed_name):
-        old_items = set(getattr(self.old_obj, field))
-        new_items = set(getattr(self.new_obj, field))
-        added = [item for item in new_items.difference(old_items)]
-        if len(added):
-            self.changes[added_name] = added
-        removed = [item for item in old_items.difference(new_items)]
-        if len(removed):
-            self.changes[removed_name] = removed

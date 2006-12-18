@@ -26,6 +26,7 @@ from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.lp.dbschema import (
     EnumCol, BranchRelationships, BranchLifecycleStatus)
+from canonical.launchpad.utilities import ObjectDelta
 
 
 class Branch(SQLBase):
