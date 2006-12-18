@@ -855,14 +855,17 @@ getTemplatesOnSameDirectory
 This method allows us to get the set of .pot files we have on the same
 directory that a given entry.
 
-For the third entry, we don't have any .pot file on that directory.
+For the third entry, we have one .pot file on that directory, which is already
+in sample data.
 
-# XXX This test is failing. My addition to sample data makes it return 1 entry
-# while it should be 0 *sigh*
     >>> entry3.status = RosettaImportStatus.NEEDS_REVIEW
     >>> entries = entry3.getTemplatesOnSameDirectory()
     >>> entries.count()
-    0
+    1
+    >>> entries[0].status == RosettaImportStatus.IMPORTED
+    True
+    >>> entries[0].id
+    1
 
 For the fourth entry, we have one.
 

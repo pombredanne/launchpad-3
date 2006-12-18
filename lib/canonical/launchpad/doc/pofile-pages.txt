@@ -246,9 +246,9 @@ we check that it contains only sample data entries.
     >>> translationimportqueue.entryCount()
     2
     >>> for entry in translationimportqueue.getAllEntries():
-    ...     print entry.content.filename
-    evolution-2.2-test.pot
-    pt_BR.po
+    ...     print entry.id, entry.content.filename
+    1 evolution-2.2-test.pot
+    2 pt_BR.po
 
 The FileUpload class needs a class with the attributes: filename, file and
 headers.
