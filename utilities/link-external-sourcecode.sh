@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Links sourcecode and library from those present in a main tree into
 # this tree.

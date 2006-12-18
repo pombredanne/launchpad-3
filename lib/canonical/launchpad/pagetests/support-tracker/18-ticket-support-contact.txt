@@ -1,6 +1,4 @@
-
-Support Contacts
-================
+= Support Contacts =
 
 Each product and distros can have support contacts. Support contacts
 receive notifications for new tickets as well as changes to existing
@@ -52,10 +50,10 @@ new support contacts appear in the 'Support Contacts' portlet:
     >>> soup.first('div', id='portlet-support-contacts').first('ul')
      <ul class="people">
       <li>
-        <a href=".../people/name12">Sample Person</a>
+        <a href=".../people/landscape-developers">Landscape Developers</a>
       </li>
       <li>
-        <a href=".../people/landscape-developers">Landscape Developers</a>
+        <a href=".../people/name12">Sample Person</a>
       </li>
     </ul>
 
@@ -95,5 +93,3 @@ ticket.
         <a href=".../people/name12">Sample Person</a>
       </li>
     </ul>
-
-

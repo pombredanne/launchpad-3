@@ -130,8 +130,8 @@
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.PersonHackergotchiView"
     schema="canonical.launchpad.interfaces.IPerson"
-    fields="hackergotchi"
-    keyword_arguments="hackergotchi"
+    fields="gotchi"
+    keyword_arguments="gotchi"
     permission="launchpad.Edit"
     template="../templates/person-images.pt"
     >
@@ -540,6 +540,13 @@
       classes="PersonSetNavigation"
       />
 
+  <browser:page
+      name="+newperson"
+      for="canonical.launchpad.interfaces.IPersonSet"
+      class="canonical.launchpad.browser.PersonAddView"
+      permission="launchpad.Admin"
+      template="../templates/people-newperson.pt" />
+
   <browser:addform
       name="+newteam"
       for="canonical.launchpad.interfaces.IPersonSet"
@@ -548,7 +555,7 @@
               defaultmembershipperiod defaultrenewalperiod subscriptionpolicy"
       class="canonical.launchpad.browser.TeamAddView"
       permission="launchpad.AnyPerson"
-      template="../templates/foaf-newteam.pt"
+      template="../templates/people-newteam.pt"
       lp:url="/people/+newteam">
       <browser:widget
           field="teamdescription"
@@ -607,7 +614,7 @@
       fields="dupeaccount"
       class="canonical.launchpad.browser.RequestPeopleMergeView"
       permission="launchpad.AnyPerson"
-      template="../templates/foaf-requestmerge.pt"
+      template="../templates/people-requestmerge.pt"
       lp:url="/people/+requestmerge">
   </browser:addform>
 
@@ -617,7 +624,7 @@
       class="canonical.launchpad.browser.AdminRequestPeopleMergeView">
       <browser:page
           name="+adminrequestmerge"
-          template="../templates/foaf-adminrequestmerge.pt"
+          template="../templates/people-adminrequestmerge.pt"
           lp:url="/people/+adminrequestmerge" />
   </browser:pages>
 
@@ -627,7 +634,7 @@
       class="canonical.launchpad.browser.RequestPeopleMergeMultipleEmailsView">
       <browser:page
           name="+requestmerge-multiple"
-          template="../templates/foaf-requestmerge-multiple.pt"
+          template="../templates/people-requestmerge-multiple.pt"
           lp:url="/people/+requestmerge-multiple" />
   </browser:pages>
 
@@ -637,7 +644,7 @@
       class="canonical.launchpad.browser.FinishedPeopleMergeRequestView">
       <browser:page
           name="+mergerequest-sent"
-          template="../templates/foaf-mergerequest-sent.pt"
+          template="../templates/people-mergerequest-sent.pt"
           lp:url="/people/+mergerequest-sent" />
   </browser:pages>
 
@@ -686,6 +693,12 @@
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.SearchCreatedTicketsView"
     name="+createdtickets"
+    permission="zope.Public"
+    />
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.SearchNeedAttentionTicketsView"
+    name="+needattentiontickets"
     permission="zope.Public"
     />
   <browser:page
