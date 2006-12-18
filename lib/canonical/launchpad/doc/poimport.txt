@@ -524,6 +524,7 @@ And run the cronscript.
     INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
     WARNING Got an old version for Welsh (cy) translation of firefox in Mozilla Firefox trunk
     INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
+    INFO    Removed 2 entries from the queue.
     <BLANKLINE>
 
 It's time to test the import queue.
