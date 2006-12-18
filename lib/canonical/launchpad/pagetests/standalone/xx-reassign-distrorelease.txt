@@ -5,7 +5,7 @@
   not the owner nor a member of the admins team.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/grumpy/+reassign HTTP/1.1
+  ... GET /ubuntu/grumpy/+reassign HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 403 Forbidden
@@ -17,7 +17,7 @@
   Now we're logged in as Mark Shutleworth and reassign grumpy to Foo Bar.
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/grumpy/+reassign HTTP/1.1
+  ... POST /ubuntu/grumpy/+reassign HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... 
   ... field.owner=name16&existing=existing&CHANGE_OWNER=Change+Owner""")
@@ -30,7 +30,7 @@
   Foo Bar is the owner here
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/grumpy/ HTTP/1.1
+  ... GET /ubuntu/grumpy/ HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -46,7 +46,7 @@
   Now we reassign it to a newly create team: ubuntu2
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/grumpy/+reassign HTTP/1.1
+  ... POST /ubuntu/grumpy/+reassign HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... 
   ... field.owner=ubuntu2&existing=new&CHANGE_OWNER=Change+Owner""")
@@ -59,7 +59,7 @@
   And the new team can be seen as the owner.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/grumpy/ HTTP/1.1
+  ... GET /ubuntu/grumpy/ HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok

@@ -6,10 +6,10 @@ expected value.
 
   >>> browser.addHeader('Authorization',
   ...                   'Basic david.allouche@canonical.com:test')
-  >>> browser.open('http://launchpad.dev/products/a52dec/failedbranch')
+  >>> browser.open('http://launchpad.dev/a52dec/failedbranch')
   >>> browser.getLink('Edit Source').click()
   >>> print browser.url
-  http://launchpad.dev/products/a52dec/failedbranch/+source
+  http://launchpad.dev/a52dec/failedbranch/+source
 
   >>> print find_main_content(browser.contents)
   <...
@@ -26,7 +26,7 @@ build to the testing state.
 
 A normal user does not see this button:
 
-  >>> user_browser.open('http://launchpad.dev/products/a52dec/'
+  >>> user_browser.open('http://launchpad.dev/a52dec/'
   ...                   'failedbranch/+source')
   >>> user_browser.getControl('Rerun import in the Autotester')
   Traceback (most recent call last):
@@ -40,7 +40,7 @@ details", we can't reset the import if we make that change:
   >>> browser.getControl('No revision control system, or Bazaar').click()
   >>> browser.getControl('Rerun import in the Autotester').click()
   >>> print browser.url
-  http://launchpad.dev/products/a52dec/failedbranch/+source
+  http://launchpad.dev/a52dec/failedbranch/+source
   >>> for tag in find_tags_by_class(browser.contents, 'error'):
   ...     print tag
   <p class="error message">There is 1 error.</p>
@@ -53,7 +53,7 @@ switch back to that and reset the import:
   >>> browser.getControl('CVS').click()
   >>> browser.getControl('Rerun import in the Autotester').click()
   >>> print browser.url
-  http://launchpad.dev/products/a52dec/failedbranch
+  http://launchpad.dev/a52dec/failedbranch
 
 
 Check that the importstatus was indeed updated.

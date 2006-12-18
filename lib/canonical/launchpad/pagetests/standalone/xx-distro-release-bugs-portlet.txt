@@ -2,7 +2,7 @@ The release bugs portlet displays the number of open bugs filed in each release
 of a distribution.
 
   >>> print http(r"""
-  ... GET /distros/debian/+bugs HTTP/1.1
+  ... GET /debian/+bugs HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -17,7 +17,7 @@ of a distribution.
   ...
 
   >>> print http(r"""
-  ... GET /distros/debian/sarge/+bugs HTTP/1.1
+  ... GET /debian/sarge/+bugs HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -31,7 +31,7 @@ of a distribution.
   ...
 
   >>> print http(r"""
-  ... GET /distros/debian/woody/+bugs HTTP/1.1
+  ... GET /debian/woody/+bugs HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -45,7 +45,7 @@ of a distribution.
   ...
 
   >>> print http(r"""
-  ... GET /distros/debian/sid/+bugs HTTP/1.1
+  ... GET /debian/sid/+bugs HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
