@@ -1,8 +1,9 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
 __all__ = [
-    'serialise_bugtask'
-    'export_bugtasks'
+    'BUGS_XMLNS',
+    'export_bugtasks',
+    'serialise_bugtask',
     ]
 
 import base64
@@ -13,14 +14,19 @@ from canonical.launchpad.interfaces import (
     IBugTaskSet, BugTaskSearchParams, ILaunchpadCelebrities)
 from canonical.launchpad.browser.bugtask import get_comments_for_bugtask
 
+BUGS_XMLNS = 'https://launchpad.net/xmlns/2006/bugs'
+
+
 def addnode(parent, elementname, content, **attrs):
     node = ET.SubElement(parent, elementname, attrs)
     node.text = content
     node.tail = '\n'
     return node
 
+
 def addperson(parent, elementname, person):
     return addnode(parent, elementname, person.displayname, name=person.name)
+
 
 def serialise_bugtask(bugtask):
     bug = bugtask.bug
@@ -97,7 +103,7 @@ def export_bugtasks(ztm, bugtarget, output, include_private=False):
     ids = [task.id for task in bugtarget.searchTasks(
         BugTaskSearchParams(user=user, omit_dupes=False, orderby='id'))]
     bugtaskset = getUtility(IBugTaskSet)
-    output.write('<launchpad-bugs>\n')
+    output.write('<launchpad-bugs xmlns="%s">\n' % BUGS_XMLNS)
     for count, taskid in enumerate(ids):
         task = bugtaskset.get(taskid)
         tree = ET.ElementTree(serialise_bugtask(task))

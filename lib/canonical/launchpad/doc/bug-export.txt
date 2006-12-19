@@ -82,7 +82,7 @@ successively serialising each of the tasks for that product.
   >>> ztm = ZopelessTransactionManager._installed
 
   >>> export_bugtasks(ztm, firefox, sys.stdout)
-  <launchpad-bugs>
+  <launchpad-bugs xmlns="https://launchpad.net/xmlns/2006/bugs">
   <bug id="1">
   ...
   </bug>
