@@ -998,9 +998,6 @@ It is returned in 'SelectResults' form:
 
 Each element is a ISourcePackageRelease instance:
 
-XXX cprov 20061219: ISourcePackageRelease requires 'branches'
-attribute. why ?
-
   >>> from canonical.launchpad.interfaces import ISourcePackageRelease
-  >>> ISourcePackageRelease.providedBy(last_uploads[0])
+  >>> verifyObject(ISourcePackageRelease, last_uploads[0])
   True
