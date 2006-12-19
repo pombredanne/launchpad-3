@@ -422,6 +422,10 @@ class ITicketAddMessageForm(Interface):
 
     message = Text(title=_('Message'), required=False)
 
+    subscribe_me = Bool(
+        title=_('E-mail me future discussion about this request'),
+        required=False, default=False)
+
 
 class ITicketChangeStatusForm(Interface):
     """Form schema for changing the status of a ticket."""

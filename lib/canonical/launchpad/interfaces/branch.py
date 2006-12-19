@@ -7,7 +7,8 @@ __metaclass__ = type
 __all__ = [
     'IBranch',
     'IBranchSet',
-    'IBranchDelta'
+    'IBranchDelta',
+    'IBranchLifecycleFilter'
     ]
 
 from zope.interface import Interface, Attribute
@@ -16,7 +17,8 @@ from zope.component import getUtility
 from zope.schema import Bool, Int, Choice, Text, TextLine, Datetime
 
 from canonical.config import config
-from canonical.lp.dbschema import BranchLifecycleStatus
+from canonical.lp.dbschema import (BranchLifecycleStatus,
+                                   BranchLifecycleStatusFilter)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Title, Summary, Whiteboard
@@ -74,7 +76,7 @@ class IBranch(IHasOwner):
             "www.bazaar-vcs.org for more information."),
         constraint=valid_webref)
 
-    whiteboard = Whiteboard(title=_('Status Whiteboard'), required=False,
+    whiteboard = Whiteboard(title=_('Whiteboard'), required=False,
         description=_('Notes on the current status of the branch.'))
     mirror_status_message = Text(
         title=_('The last message we got when mirroring this branch '
@@ -304,6 +306,7 @@ class IBranchSet(Interface):
     def getBranchesToScan():
         """Return an iterator for the branches that need to be scanned."""
 
+
 class IBranchDelta(Interface):
     """The quantitative changes made to a branch that was edited or altered."""
 
@@ -328,3 +331,20 @@ class IBranchDelta(Interface):
     lifecycle_status = Attribute("Old and new lifecycle status, or None.")
     revision_count = Attribute("Old and new revision counts, or None.")
     
+
+
+class IBranchLifecycleFilter(Interface):
+    """A helper interface to render lifecycle filter choice."""
+
+    # Stats and status attributes
+    lifecycle = Choice(
+        title=_('Lifecycle Filter'), vocabulary='BranchLifecycleStatusFilter',
+        default=BranchLifecycleStatusFilter.CURRENT,
+        description=_(
+        "The author's assessment of the branch's maturity. "
+        " Mature: recommend for production use."
+        " Development: useful work that is expected to be merged eventually."
+        " Experimental: not recommended for merging yet, and maybe ever."
+        " Merged: integrated into mainline, of historical interest only."
+        " Abandoned: no longer considered relevant by the author."
+        " New: unspecified maturity."))

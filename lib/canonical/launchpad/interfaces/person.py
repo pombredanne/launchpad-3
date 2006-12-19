@@ -21,7 +21,9 @@ __all__ = [
 
 from zope.schema import (
     Bool, Bytes, Choice, Datetime, Int, Text, TextLine)
-from zope.interface import Attribute, Interface, Invalid, invariant
+from zope.interface import Attribute, Interface
+from zope.interface.exceptions import Invalid
+from zope.interface.interface import invariant
 from zope.component import getUtility
 
 from canonical.launchpad import _
