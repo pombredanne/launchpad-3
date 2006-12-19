@@ -1923,12 +1923,17 @@ class NascentUpload:
         # extra fields required to generate archive indexes in future.
         arg_dsc_maintainer_rfc822 = guess_encoding(
             self.dsc_contents['maintainer'])
-        arg_dsc_standards_version = guess_encoding(
-            self.dsc_contents['standards-version'])
         arg_dsc_format = guess_encoding(
             self.dsc_contents['format'])
         arg_dsc_binaries = guess_encoding(
             self.dsc_contents['binary'])
+        # Standards version do not apply for installer uploads
+        # see bug #75874 for further information.
+        if self.dsc_contents.has_key('standards-version'):
+            arg_dsc_standards_version = guess_encoding(
+                self.dsc_contents['standards-version'])
+        else:
+            arg_dsc_standards_version = None
 
         self.policy.sourcepackagerelease = (
             self.distrorelease.createUploadedSourcePackageRelease(
