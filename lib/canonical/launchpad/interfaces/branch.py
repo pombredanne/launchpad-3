@@ -250,6 +250,12 @@ class IBranch(IHasOwner):
         Returns True if any RevisionNumber objects were destroyed.
         """
 
+    def updateScannedDetails(revision_id, revision_count):
+        """Updates attributes associated with the scanning of the branch.
+
+        A single entry point that is called solely from the branch scanner
+        script.
+        """
 
 class IBranchSet(Interface):
     """Interface representing the set of branches."""

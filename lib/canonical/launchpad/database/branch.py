@@ -211,6 +211,12 @@ class Branch(SQLBase):
 
         return did_something
 
+    def updateScannedDetails(self, revision_id, revision_count):
+        """See IBranch."""
+        self.last_scanned = UTC_NOW
+        self.last_scanned_id = revision_id
+        self.revision_count = revision_count
+        
 
 
 class BranchSet:
