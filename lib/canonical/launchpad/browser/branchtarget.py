@@ -11,15 +11,33 @@ __all__ = [
 
 import operator
 
+from canonical.lp.dbschema import (BranchLifecycleStatus,
+                                   BranchLifecycleStatusFilter)
+
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.interfaces import IPerson, IProduct
-from canonical.launchpad.webapp import LaunchpadView
+from canonical.launchpad.interfaces import (IPerson, IProduct,
+                                            IBranchLifecycleFilter)
+from canonical.launchpad.webapp import LaunchpadFormView, custom_widget
+from canonical.widgets import LaunchpadDropdownWidget
 
-# XXX This stuff was initially cargo-culted from ITicketTarget, some of it
-# could be factored out. See bug 4011. -- David Allouche 2005-09-09
 
+class BranchTargetView(LaunchpadFormView):
+    schema = IBranchLifecycleFilter
+    field_names = ['lifecycle']
+    custom_widget('lifecycle', LaunchpadDropdownWidget)
 
-class BranchTargetView(LaunchpadView):
+    # The default set of statuses to show.
+    CURRENT_SET = set([BranchLifecycleStatus.NEW,
+                       BranchLifecycleStatus.EXPERIMENTAL,
+                       BranchLifecycleStatus.DEVELOPMENT,
+                       BranchLifecycleStatus.MATURE])
+                  
+
+    @property
+    def initial_values(self):
+        return {
+            'lifecycle': BranchLifecycleStatusFilter.CURRENT
+            }
 
     @cachedproperty
     def branches(self):
@@ -27,6 +45,31 @@ class BranchTargetView(LaunchpadView):
         # A cache to avoid repulling data from the database, which can be
         # particularly expensive
         branches = self.context.branches
+        return sorted(branches, key=operator.attrgetter('sort_key'))
+
+    @cachedproperty
+    def visible_branches(self):
+        """The branches that should be visible to the user."""
+        widget = self.widgets['lifecycle']
+
+        if widget.hasValidInput():
+            lifecycle_filter = widget.getInputValue()
+        else:
+            lifecycle_filter = BranchLifecycleStatusFilter.CURRENT
+
+        if lifecycle_filter == BranchLifecycleStatusFilter.ALL:
+            branches = self.branches
+        elif lifecycle_filter == BranchLifecycleStatusFilter.CURRENT:
+            branches = [branch for branch in self.context.branches
+                        if branch.lifecycle_status in self.CURRENT_SET]
+        else:
+            # BranchLifecycleStatus and BranchLifecycleStatusFilter
+            # share values for common elements, so to get the correct
+            # status to compare against, we know that we can just
+            # index into the enumeration with the value.
+            show_status = BranchLifecycleStatus.items[lifecycle_filter.value]
+            branches = [branch for branch in self.context.branches
+                        if branch.lifecycle_status == show_status]
         return sorted(branches, key=operator.attrgetter('sort_key'))
 
     def context_relationship(self):

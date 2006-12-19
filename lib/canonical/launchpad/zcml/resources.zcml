@@ -37,6 +37,7 @@
     <resource name="arrowBottom" file="../images/arrowBottom.gif" />
     <resource name="arrowDownAlternative" file="../images/arrowDownAlternative.gif" />
     <resource name="arrowDown" file="../images/arrowDown.gif" />
+    <resource name="arrowRight" file="../images/arrowRight.gif" />
     <resource name="arrowTop" file="../images/arrowTop.gif" />
     <resource name="arrowUp" file="../images/arrowUp.gif" />
     <resource name="build-chrootwait" file="../images/build-chrootwait.png" />

@@ -9,7 +9,7 @@
     <content class="canonical.launchpad.database.BugBranch">
       <allow interface="canonical.launchpad.interfaces.IBugBranch" />
       <require
-          permission="launchpad.AnyPerson"
+          permission="launchpad.Edit"
           set_attributes="fixed_in_revision_id status whiteboard" />
     </content>
 
