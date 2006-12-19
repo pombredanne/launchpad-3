@@ -132,6 +132,8 @@ class NullBugTask(BugTaskMixin):
         self.assignee = None
         self.bugwatch = None
         self.owner = None
+        self.conjoined_master = None
+        self.conjoined_slave = None
 
     @property
     def targetname(self):
