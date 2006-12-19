@@ -66,103 +66,45 @@ Finally, set the author and summary back to their previous values.
 
 == Editing the Lifecycle Status ==
 
-We want to update the lifecycle status of the branch and add a joyful
-whiteboard message. We use the +lifecycle page for that.
-
-First check the page lifecycle page is linked from the branch page.
+To change the branch status, the +edit page is also used:
 
   >>> user_browser.open('http://launchpad.dev'
-  ...     '/~name12/+branch/gnome-terminal/klingon')
-  >>> user_browser.getLink('Set Branch Status').url
-  'http://launchpad.dev/~name12/+branch/gnome-terminal/klingon/+lifecycle'
+  ...     '/~name12/+branch/gnome-terminal/klingon/+edit')
 
-Then click on the link and load the +lifecycle page.
+The form displays the branch current status.
 
-  >>> print http(r"""
-  ... GET /~name12/+branch/gnome-terminal/klingon/+lifecycle HTTP/1.1
-  ... Host: launchpad.dev
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+  >>> user_browser.getControl('Status').value
+  ['Experimental']
+  >>> user_browser.getControl('Whiteboard').value
+  ''
 
-Post the +lifecycle that sets the branch status and whiteboard message.
+The user selects the new status value and enters a more complete status message
+in the 'Whiteboard':
 
-  >>> print http(r"""
-  ... POST /~name12/+branch/gnome-terminal/klingon/+lifecycle HTTP/1.1
-  ... Host: launchpad.dev
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------5143029969841501371191119783
-  ... 
-  ... -----------------------------5143029969841501371191119783
-  ... Content-Disposition: form-data; name="field.lifecycle_status"
-  ... 
-  ... Merged
-  ... -----------------------------5143029969841501371191119783
-  ... Content-Disposition: form-data; name="field.lifecycle_status-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------5143029969841501371191119783
-  ... Content-Disposition: form-data; name="field.whiteboard"
-  ... 
-  ... The brave shall prevail. Ka'plah!
-  ... -----------------------------5143029969841501371191119783
-  ... Content-Disposition: form-data; name="field.actions.change"
-  ... 
-  ... Change Branch
-  ... -----------------------------5143029969841501371191119783--
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
-  Location: http://launchpad.dev/~name12/+branch/gnome-terminal/klingon
+  >>> user_browser.getControl('Status').value = ['Merged'];
+  >>> user_browser.getControl('Whiteboard').value = \
+  ...     "The brave shall prevail. Ka'plah!"
+  >>> user_browser.getControl('Change Branch').click()
 
-Load the redirection target and presence of the new status and whiteboard.
+The branch page is displayed with the new status and the whiteboard content:
 
-  >>> page = http(r"""
-  ... GET /~name12/+branch/gnome-terminal/klingon HTTP/1.1
-  ... Host: launchpad.dev
-  ... """)
-  >>> print page
-  HTTP/1.1 200 Ok
-  ...Status:...
-  ...Merged...
-  >>> print page
-  HTTP/1.1 200 Ok
-  ...Whiteboard:...
-  ...The brave shall prevail. Ka'plah!...
+  >>> user_browser.url
+  'http://launchpad.dev/~name12/+branch/gnome-terminal/klingon'
+  >>> contents = user_browser.contents
+  >>> status_tag = find_tag_by_id(contents, 'branch-details-status-value')
+  >>> print status_tag.renderContents()
+  Merged
+  >>> whiteboard_tag = find_tag_by_id(contents, 'branch-whiteboard-value')
+  >>> print whiteboard_tag.renderContents()
+  The brave shall prevail. Ka'plah!
 
 Set the branch status back to its initial state.
 
-  >>> print http(r"""
-  ... POST /~name12/+branch/gnome-terminal/klingon/+lifecycle HTTP/1.1
-  ... Host: launchpad.dev
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------48234340612238207421310801252
-  ... 
-  ... -----------------------------48234340612238207421310801252
-  ... Content-Disposition: form-data; name="field.lifecycle_status"
-  ... 
-  ... Experimental
-  ... -----------------------------48234340612238207421310801252
-  ... Content-Disposition: form-data; name="field.lifecycle_status-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------48234340612238207421310801252
-  ... Content-Disposition: form-data; name="field.whiteboard"
-  ... 
-  ... 
-  ... -----------------------------48234340612238207421310801252
-  ... Content-Disposition: form-data; name="field.actions.change"
-  ... 
-  ... Change Branch
-  ... -----------------------------48234340612238207421310801252--
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
-  Location: http://launchpad.dev/~name12/+branch/gnome-terminal/klingon
-
+  >>> user_browser.open('http://launchpad.dev'
+  ...     '/~name12/+branch/gnome-terminal/klingon/+edit')
+  >>> user_browser.getControl('Status').value = ['Experimental'];
+  >>> user_browser.getControl('Whiteboard').value = ''
+  >>> user_browser.getControl('Change Branch').click()
 
 == Changing branch product and name ==
 

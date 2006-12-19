@@ -14,7 +14,8 @@ import logging
 import doctest
 import unittest
 
-from canonical.launchpad.interfaces import IPOMessage, IPOHeader, IPOParser
+from canonical.launchpad.interfaces import (
+    IPOMessage, IPOHeader, IPOParser, EXPORT_DATE_HEADER)
 from zope.interface import implements
 from zope.app import datetimeutils
 
@@ -564,12 +565,26 @@ class POHeader(dict, POMessage):
         else:
             try:
                 date = datetimeutils.parseDatetimetz(date_string)
-            except (datetimeutils.SyntaxError, datetimeutils.DateError,
-                    datetimeutils.DateTimeError, ValueError):
+            except datetimeutils.DateTimeError:
                 # invalid date format
                 date = None
 
         return (date_string, date)
+
+    def getRosettaExportDate(self):
+        """See IPOHeader."""
+
+        date_string = self.get(EXPORT_DATE_HEADER, None)
+        if date_string is None:
+            date = None
+        else:
+            try:
+                date = datetimeutils.parseDatetimetz(date_string)
+            except datetimeutils.DateTimeError:
+                # invalid date format
+                date = None
+
+        return date
 
     def getPluralFormExpression(self):
         """See IPOHeader."""
