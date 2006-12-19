@@ -32,5 +32,3 @@ WHERE POFile.language = Language.id AND POFile.potemplate = POTemplate.id AND
             POFile.variant = pf.variant AND
             POFile.id <> pf.id);
 DROP FUNCTION get_right_path(text, text, text, text);
-
-INSERT INTO LaunchpadDatabaseRevision VALUES (67, 99, 0);
