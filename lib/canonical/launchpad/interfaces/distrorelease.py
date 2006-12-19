@@ -136,6 +136,9 @@ class IDistroRelease(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
         Return True if the upload is allowed and False if denied.
         """
 
+    def lastUploads():
+        """Return the last five source uploads for this DistroRelease."""
+
     def traverse(name):
         """Traverse across a distrorelease in Launchpad. This looks for
         special URL items, like +sources or +packages, then goes on to

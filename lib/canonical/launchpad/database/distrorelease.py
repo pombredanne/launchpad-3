@@ -879,6 +879,31 @@ class DistroRelease(SQLBase, BugTargetBase):
         return Milestone(name=name, dateexpected=dateexpected,
             distribution=self.distribution, distrorelease=self)
 
+    def lastUploads(self):
+        """See IDistroRelease."""
+        query = """
+        sourcepackagerelease.id=distroreleasequeuesource.sourcepackagerelease
+        AND sourcepackagerelease.sourcepackagename=sourcepackagename.id
+        AND distroreleasequeuesource.distroreleasequeue=distroreleasequeue.id
+        AND distroreleasequeue.status=%s
+        """ % sqlvalues(DistroReleaseQueueStatus.DONE)
+
+        clauseTables=[
+            'SourcePackageName',
+            'DistroReleaseQueue',
+            'DistroReleaseQueueSource',
+            ]
+
+        prejoins=[
+            'SourcePackageName',
+            ]
+
+        last_uploads = SourcePackageRelease.select(
+            query, clauseTables=clauseTables,
+            orderBy=['-distroreleasequeue.id'])
+
+        return last_uploads[:5]
+
     def createQueueEntry(self, pocket, changesfilename, changesfilecontent):
         """See IDistroRelease."""
         # We store the changes file in the librarian to avoid having to
