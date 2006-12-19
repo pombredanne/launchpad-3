@@ -33,6 +33,7 @@ __all__ = (
 'BountyStatus',
 'BranchRelationships',
 'BranchLifecycleStatus',
+'BranchLifecycleStatusFilter',
 'BranchReviewStatus',
 'BugBranchStatus',
 'BugNominationStatus',
@@ -2656,6 +2657,76 @@ class BranchLifecycleStatus(DBSchema):
         This branch contains work which the author has abandoned, likely
         because it did not prove fruitful.
         """, sortkey=50)
+
+
+# XXX thumper 2006-12-15 Has copies of BranchLifecycleStatus
+# until I find a better way of extending an existing list.
+# The dbschema refactoring should make this all become simple.
+class BranchLifecycleStatusFilter(DBSchema):
+    """Branch Lifecycle Status Filter
+
+    Used to populate the branch lifecycle status filter widget.
+    UI only.
+    """
+
+    CURRENT = Item(-1, """
+        New, Experimental, Development or Mature
+
+        Show the currently active branches.
+        """)
+
+    ALL = Item(0, """
+        Any Status
+
+        Show all the branches.
+        """)
+
+    NEW = Item(1, """
+        New
+
+        This branch has just been created, and we know nothing else about
+        it.
+        """, sortkey=60)
+
+    EXPERIMENTAL = Item(10, """
+        Experimental
+
+        This branch contains code that is considered experimental. It is
+        still under active development and should not be merged into
+        production infrastructure.
+        """, sortkey=30)
+
+    DEVELOPMENT = Item(30, """
+        Development
+
+        This branch contains substantial work that is shaping up nicely, but
+        is not yet ready for merging or production use. The work is
+        incomplete, or untested.
+        """, sortkey=20)
+
+    MATURE = Item(50, """
+        Mature
+
+        The developer considers this code mature. That means that it
+        completely addresses the issues it is supposed to, that it is tested,
+        and that it has been found to be stable enough for the developer to
+        recommend it to others for inclusion in their work.
+        """, sortkey=10)
+
+    MERGED = Item(70, """
+        Merged
+
+        This code has successfully been merged into its target branch(es),
+        and no further development is anticipated on the branch.
+        """, sortkey=40)
+
+    ABANDONED = Item(80, """
+        Abandoned
+
+        This branch contains work which the author has abandoned, likely
+        because it did not prove fruitful.
+        """, sortkey=50)
+
 
 
 class BranchReviewStatus(DBSchema):
