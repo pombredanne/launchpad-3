@@ -556,6 +556,46 @@ bug # 30741.
   Unable to find ed_0.2.orig.tar.gz in the distribution.
   END
 
+== Installer source uploads doesn't contain 'Standards-Version' ==
+
+Check if we can accept a installer-source upload which doesn't have
+'Standards-Version' field in DSC. See bug #75874 for further
+information.
+
+  >>> inst_src = NascentUpload(
+  ...          findPolicyByName('sync'), datadir(''),
+  ...          "test75874_0.1_source.changes", MockMunchyLogger())
+  >>> inst_src.policy.setOptions(MockOptions())
+  >>> inst_src.process()
+
+  >>> inst_src.rejected
+  False
+
+  >>> success, msgs = inst_src.do_accept()
+  >>> success
+  True
+
+Look for the respective SourcePackageRelease entry and inspect its
+content, it should have all the required fields except the
+'dsc_standards_version':
+
+  >>> inst_queue = hoary.getQueueItems(DistroReleaseQueueStatus.NEW,
+  ...                                  name='test75874', exact_match=True)[0]
+  >>> inst_spr = inst_queue.sources[0].sourcepackagerelease
+
+  >>> inst_spr.dsc_maintainer_rfc822
+  u'Colin Watson <cjwatson@ubuntu.com>'
+
+  >>> inst_spr.dsc_binaries
+  u'test75874'
+
+  >>> inst_spr.dsc_standards_version is None
+  True
+
+Chuck it all away again
+
+  >>> transaction.abort()
+
 == Insecure Policy ==
 
 'insecure' upload policy forces NascentUpload to perform ACLs over the
