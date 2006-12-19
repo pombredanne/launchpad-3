@@ -21,7 +21,7 @@ provide an RSS feed with information about all official release mirrors.
           <title>Releases-mirror</title>
           <link>http://localhost:11375/valid-mirror/releases</link>
           <description>...</description>
-          <mirror:bandwidth>5</mirror:bandwidth>
+          <mirror:bandwidth>...</mirror:bandwidth>
           <mirror:location>
             <mirror:continent>Asia</mirror:continent>
             <mirror:country>British Indian Ocean Territory</mirror:country>
