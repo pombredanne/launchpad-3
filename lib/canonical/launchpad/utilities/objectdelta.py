@@ -15,16 +15,16 @@ class ObjectDelta:
     def record_new_values(self, fields):
         """Updates changes based on changed field values."""
         for field_name in fields:
-            old_val = getattr(self.old_obj, field_name)
-            new_val = getattr(self.new_obj, field_name)
+            old_val = getattr(self.old_obj, field_name, None)
+            new_val = getattr(self.new_obj, field_name, None)
             if old_val != new_val:
                 self.changes[field_name] = new_val
 
     def record_new_and_old(self, fields):
         """Updates changes with old and new values for changed fields."""
         for field_name in fields:
-            old_val = getattr(self.old_obj, field_name)
-            new_val = getattr(self.new_obj, field_name)
+            old_val = getattr(self.old_obj, field_name, None)
+            new_val = getattr(self.new_obj, field_name, None)
             if old_val != new_val:
                 self.changes[field_name] = { 'old' : old_val,
                                              'new' : new_val }
@@ -34,8 +34,8 @@ class ObjectDelta:
         # As much as I'd love to use sets, they are unordered
         # and any differences returned are not necessarily
         # consistant with the order they are in the underlying object.
-        old_items = getattr(self.old_obj, field)
-        new_items = getattr(self.new_obj, field)
+        old_items = getattr(self.old_obj, field, [])
+        new_items = getattr(self.new_obj, field, [])
         
         added_items = []
         for item in new_items:

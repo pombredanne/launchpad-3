@@ -118,6 +118,11 @@
     <allow interface="canonical.launchpad.interfaces.IBranchSet" />
   </content>
 
+  <!-- BranchDelta -->
+  <content class="canonical.launchpad.components.branch.BranchDelta">
+    <allow interface="canonical.launchpad.interfaces.IBranchDelta" />
+  </content>
+
   <securedutility
     class="canonical.launchpad.database.BranchSet"
     provides="canonical.launchpad.interfaces.IBranchSet" >

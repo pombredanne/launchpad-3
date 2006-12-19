@@ -16,8 +16,8 @@ class BranchDelta:
                  summary=None, url=None, whiteboard=None,
                  landing_target=None, tip_revision=None,
                  bugs_linked=None, bugs_unlinked=None,
-                 specs_linked=None, specs_unlinked_None,
-                 lifecycle_statys=None, revision_count=None):
+                 specs_linked=None, specs_unlinked=None,
+                 lifecycle_status=None, revision_count=None):
         self.branch = branch
         self.user = user
 

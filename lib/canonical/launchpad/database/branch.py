@@ -21,8 +21,10 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.interfaces import (IBranch, IBranchSet,
     ILaunchpadCelebrities, NotFoundError)
+from canonical.launchpad.components.branch import BranchDelta
 from canonical.launchpad.database.revision import RevisionNumber
 from canonical.launchpad.database.branchsubscription import BranchSubscription
+from canonical.launchpad.helpers import contactEmailAddresses
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.lp.dbschema import (
     EnumCol, BranchRelationships, BranchLifecycleStatus)
@@ -76,7 +78,7 @@ class Branch(SQLBase):
     last_scanned = UtcDateTimeCol(default=None)
     last_scanned_id = StringCol(default=None)
     revision_count = IntCol(default=None)
-    tip_revision = ForeignKey(dbName='revision', foreignKey='Revision',
+    tip_revision = ForeignKey(dbName='tip_revision', foreignKey='Revision',
                               default=None)
 
     cache_url = StringCol(default=None)
@@ -214,14 +216,39 @@ class Branch(SQLBase):
 
         return did_something
 
+    def notificationRecipientAddresses(self):
+        """See IBranch."""
+        related_people = [
+            self.owner, self.author]
+        related_people = [
+            person for person in related_people if person is not None]
+        # listify the subscribers
+        subscribers = [person for person in self.subscribers]
+        addresses = set()
+        for person in related_people + subscribers:
+            addresses.update(contactEmailAddresses(person))
+        return sorted(addresses)
+
     def getDelta(self, old_branch, user):
         """See IBranch.getDelta()"""
         delta = ObjectDelta(old_branch, self)
-        delta.record_new_values(("name", "title", "summary", "url",
-                                 "whiteboard", "landing_target",
+        delta.record_new_values(("title", "summary", "url",
+                                 "whiteboard",
+                                 "landing_target",
                                  "tip_revision"))
-        delta.record_new_and_old(("lifecycle_status", "revision_count"))
-        delta.record_list_added_and_removed()
+        delta.record_new_and_old(("name", "lifecycle_status",
+                                  "revision_count"))
+        # delta.record_list_added_and_removed()
+        # XXX: TFP: finish this
+        if delta.changes:
+            changes = delta.changes
+            changes["branch"] = self
+            changes["user"] = user
+
+            return BranchDelta(**changes)
+        else:
+            return None
+        
 
 
 class BranchSet:

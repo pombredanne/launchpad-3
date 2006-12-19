@@ -222,6 +222,9 @@ class IBranch(IHasOwner):
         """Revisions in the history that are more recent than timestamp."""
 
     # event-related methods
+    def notificationRecipientAddresses():
+        """Return the list of email addresses that receive notifications."""
+
     def getDelta(old_branch, user):
         """Returns a BranchDelta instance that encapsulates the changes.
 
