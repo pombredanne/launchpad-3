@@ -651,6 +651,23 @@ focus, doesn't have any conjoined masters or slaves.
     >>> warty_netapplet_task.conjoined_slave is None
     True
 
+If a distribution doesn't have a current release, its tasks don't have a
+conjoined master or slave.
+
+    >>> gentoo = getUtility(IDistributionSet).getByName('gentoo')
+    >>> gentoo.currentrelease is None
+    True
+
+    >>> gentoo_netapplet_task = bugtaskset.createTask(
+    ...     bug=ubuntu_netapplet_bug, owner=launchbag.user,
+    ...     distribution=gentoo,
+    ...     sourcepackagename=ubuntu_netapplet.sourcepackagename)
+    >>> gentoo_netapplet_task.conjoined_master is None
+    True
+    >>> gentoo_netapplet_task.conjoined_slave is None
+    True
+
+
 Now the attributes are kept in sync. Here are examples of each:
 
 (Login as Foo Bar, because the milestone and importance examples
@@ -869,6 +886,11 @@ like these, use the NullBugTask object.
     >>> expected_related_task_ids.sort()
     >>> actual_related_task_ids.sort()
     >>> expected_related_task_ids == actual_related_task_ids
+    True
+
+    >>> null_bugtask.conjoined_slave is None
+    True
+    >>> null_bugtask.conjoined_master is None
     True
 
 The astute reader will have noticed that NullBugTask automatically

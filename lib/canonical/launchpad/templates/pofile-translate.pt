@@ -159,8 +159,7 @@
                     <input type="submit"
                            name="submit_translations"
                            value="Save &amp; Continue"
-                           style="text-align: right;"
-                           tabindex="1" />
+                           style="text-align: right;"/>
                   </th>
                 </tr>
               </tfoot>

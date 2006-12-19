@@ -1385,7 +1385,7 @@ ALTER TABLE developmentmanifest ENABLE TRIGGER ALL;
 
 ALTER TABLE distribution DISABLE TRIGGER ALL;
 
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, emblem, gotchi, gotchi_heading) VALUES (1, 'ubuntu', 'Ubuntu Linux', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 'ubuntulinux.org', 17, '[publishing]
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, emblem, gotchi, gotchi_heading, fti) VALUES (1, 'ubuntu', 'Ubuntu Linux', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 'ubuntulinux.org', 17, '[publishing]
 pendingremovalduration=5
 root=/var/tmp/archive
 archiveroot=/var/tmp/archive/ubuntu
@@ -1394,21 +1394,21 @@ distsroot=/var/tmp/archive/ubuntu/dists
 overrideroot=/var/tmp/archive/ubuntu-overrides
 cacheroot=/var/tmp/archive/ubuntu-cache
 miscroot=/var/tmp/archive/ubuntu-misc
-', 'Ubuntu', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 17, NULL, 1, NULL, true, true, NULL, NULL, 3, 59, NULL, NULL, '2006-10-16 18:31:43.415195', NULL, NULL, NULL, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, emblem, gotchi, gotchi_heading) VALUES (2, 'redhat', 'Redhat Advanced Server', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 'redhat.com', 1, NULL, 'Red Hat', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 1, NULL, 1, NULL, false, false, NULL, 8, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.417928', NULL, NULL, NULL, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, emblem, gotchi, gotchi_heading) VALUES (3, 'debian', 'Debian GNU/Linux', 'Debian GNU/Linux is
+', 'Ubuntu', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 17, NULL, 1, NULL, true, true, NULL, NULL, 3, 59, NULL, NULL, '2006-10-16 18:31:43.415195', NULL, NULL, NULL, NULL, '''cd'':22C,42 ''new'':8C,28 ''linux'':4B,11C,31 ''singl'':21C,41 ''includ'':14C,34 ''instal'':23C,43 ''releas'':16C,36 ''system'':24C,44 ''ubuntu'':1A,2A,3B,5C,25 ''regular'':15C,35 ''approach'':9C,29 ''simplifi'':19C,39 ''distribut'':12C,32 ''single-cd'':20C,40');
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, emblem, gotchi, gotchi_heading, fti) VALUES (2, 'redhat', 'Redhat Advanced Server', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 'redhat.com', 1, NULL, 'Red Hat', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 1, NULL, 1, NULL, false, false, NULL, 8, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.417928', NULL, NULL, NULL, NULL, '''hat'':3A,8C,19 ''red'':2A,7C,18 ''oper'':16C,27 ''advanc'':5B ''redhat'':1A,4B ''server'':6B ''system'':17C,28 ''commerci'':11C,22 ''distribut'':12C,23 ''gnu/linux'':15C,26');
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, emblem, gotchi, gotchi_heading, fti) VALUES (3, 'debian', 'Debian GNU/Linux', 'Debian GNU/Linux is
 a non commercial distribution of a GNU/Linux Operating System for many
 platforms.', 'debian.org', 1, NULL, 'Debian', 'Debian GNU/Linux is
 a non commercial distribution of a GNU/Linux Operating System for many
-platforms.', 1, NULL, 1, NULL, false, false, NULL, NULL, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.418942', NULL, NULL, NULL, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, emblem, gotchi, gotchi_heading) VALUES (4, 'gentoo', 'The Gentoo Linux', 'Gentoo is a very
+platforms.', 1, NULL, 1, NULL, false, false, NULL, NULL, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.418942', NULL, NULL, NULL, NULL, '''non'':9C,24 ''mani'':18C,33 ''oper'':15C,30 ''debian'':1A,2A,3B,5C,20 ''system'':16C,31 ''commerci'':10C,25 ''platform'':19C,34 ''distribut'':11C,26 ''gnu/linux'':4B,6C,14C,21,29');
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, emblem, gotchi, gotchi_heading, fti) VALUES (4, 'gentoo', 'The Gentoo Linux', 'Gentoo is a very
 customizeable GNU/Linux Distribution that is designed to let you build every
-single package yourself, with your own preferences.', 'gentoo.org', 1, NULL, 'Gentoo', 'Gentoo is a very customizeable GNU/Linux Distribution that is designed to let you build every single package yourself, with your own preferences.', 1, NULL, 1, NULL, true, false, NULL, NULL, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.41974', NULL, NULL, NULL, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, emblem, gotchi, gotchi_heading) VALUES (5, 'kubuntu', 'Kubuntu - Free KDE-based Linux', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
+single package yourself, with your own preferences.', 'gentoo.org', 1, NULL, 'Gentoo', 'Gentoo is a very customizeable GNU/Linux Distribution that is designed to let you build every single package yourself, with your own preferences.', 1, NULL, 1, NULL, true, false, NULL, NULL, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.41974', NULL, NULL, NULL, NULL, '''let'':17C,39 ''build'':19C,41 ''everi'':20C,42 ''linux'':5B ''singl'':21C,43 ''design'':15C,37 ''gentoo'':1A,2A,4B,6C,28 ''packag'':22C,44 ''prefer'':27C,49 ''customiz'':10C,32 ''distribut'':12C,34 ''gnu/linux'':11C,33');
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, emblem, gotchi, gotchi_heading, fti) VALUES (5, 'kubuntu', 'Kubuntu - Free KDE-based Linux', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
 Environment as its default desktop after install.', 'kubuntu.org', 1, NULL, 'Kubuntu', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
-Environment as its default desktop after install.', 1, NULL, 1, NULL, false, false, NULL, 8, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.420551', NULL, NULL, NULL, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, emblem, gotchi, gotchi_heading) VALUES (7, 'guadalinex', 'GuadaLinex: Linux for Andalucia', 'GuadaLinex is based on Ubuntu and adds full support for applications specific to the local environment in Andalucia.', 'guadalinex.es', 4, NULL, 'GuadaLinex', 'The GuadaLinex team produces a high quality linux for the Andalucian marketplace.', 32, NULL, 1, NULL, false, false, NULL, NULL, NULL, 4, NULL, NULL, '2006-10-16 18:31:43.421329', NULL, NULL, NULL, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, emblem, gotchi, gotchi_heading) VALUES (8, 'ubuntutest', 'Ubuntu Test', 'Ubuntu Test', 'ubuntulinux.org', 17, '[publishing]
+Environment as its default desktop after install.', 1, NULL, 1, NULL, false, false, NULL, 8, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.420551', NULL, NULL, NULL, NULL, '''k'':19C,38 ''kde'':6B ''use'':17C,36 ''base'':7B ''free'':4B,13C,32 ''entir'':12C,31 ''linux'':8B,14C,33 ''instal'':27C,46 ''default'':24C,43 ''desktop'':20C,25C,39,44 ''environ'':21C,40 ''kde-bas'':5B ''kubuntu'':1A,2A,3B,9C,28 ''distribut'':15C,34');
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, emblem, gotchi, gotchi_heading, fti) VALUES (7, 'guadalinex', 'GuadaLinex: Linux for Andalucia', 'GuadaLinex is based on Ubuntu and adds full support for applications specific to the local environment in Andalucia.', 'guadalinex.es', 4, NULL, 'GuadaLinex', 'The GuadaLinex team produces a high quality linux for the Andalucian marketplace.', 32, NULL, 1, NULL, false, false, NULL, NULL, NULL, 4, NULL, NULL, '2006-10-16 18:31:43.421329', NULL, NULL, NULL, NULL, '''add'':25 ''base'':21 ''full'':26 ''high'':12C ''team'':9C ''linux'':4B,14C ''local'':33 ''applic'':29 ''produc'':10C ''specif'':30 ''ubuntu'':23 ''environ'':34 ''qualiti'':13C ''support'':27 ''andalucia'':6B,36 ''andalucian'':17C ''guadalinex'':1A,2A,3B,8C,19 ''marketplac'':18C');
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, emblem, gotchi, gotchi_heading, fti) VALUES (8, 'ubuntutest', 'Ubuntu Test', 'Ubuntu Test', 'ubuntulinux.org', 17, '[publishing]
 pendingremovalduration=5
 root=/var/tmp/archive
 archiveroot=/var/tmp/archive/ubuntutest
@@ -1417,7 +1417,7 @@ distsroot=/var/tmp/archive/ubuntutest/dists
 overrideroot=/var/tmp/archive/ubuntutest-overrides
 cacheroot=/var/tmp/archive/ubuntutest-cache
 miscroot=/var/tmp/archive/ubuntutest-misc
-', 'ubuntutest', 'Ubuntu Test summary', 17, NULL, 1, NULL, false, false, NULL, NULL, NULL, 17, NULL, NULL, '2006-10-16 18:31:43.422162', NULL, NULL, NULL, NULL);
+', 'ubuntutest', 'Ubuntu Test summary', 17, NULL, 1, NULL, false, false, NULL, NULL, NULL, 17, NULL, NULL, '2006-10-16 18:31:43.422162', NULL, NULL, NULL, NULL, '''test'':4B,6C,9 ''ubuntu'':3B,5C,8 ''summari'':7C ''ubuntutest'':1A,2A');
 
 
 ALTER TABLE distribution ENABLE TRIGGER ALL;
@@ -1433,15 +1433,15 @@ ALTER TABLE distributionbounty ENABLE TRIGGER ALL;
 
 ALTER TABLE distributionmirror DISABLE TRIGGER ALL;
 
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created) VALUES (1, 1, 'archive-mirror', 'http://localhost:11375/valid-mirror', NULL, NULL, NULL, NULL, 1, 1, 1, 1, true, true, true, '2006-10-16 18:31:43.434567');
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created) VALUES (2, 1, 'invalid-mirror', 'http://localhost:11375/invalid-mirror', NULL, NULL, NULL, NULL, 16, 5, 32, 2, true, false, true, '2006-10-16 18:31:43.436833');
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created) VALUES (3, 1, 'unreachable-mirror', 'http://localhost:11375/timeout', NULL, NULL, NULL, NULL, 16, 3, 32, 2, true, true, true, '2006-10-16 18:31:43.437635');
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created) VALUES (4, 1, 'archive-404-mirror', 'http://localhost:11375/archive-mirror/', NULL, NULL, NULL, NULL, 16, 5, 32, 1, true, true, true, '2006-10-16 18:31:43.438573');
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created) VALUES (5, 1, 'releases-mirror', 'http://localhost:11375/valid-mirror/releases', NULL, NULL, NULL, NULL, 16, 5, 32, 2, true, true, true, '2006-10-16 18:31:43.439336');
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created) VALUES (6, 1, 'releases-mirror2', 'http://localhost:11375/valid-mirror/releases2/', NULL, NULL, NULL, NULL, 16, 5, 82, 2, true, true, true, '2006-10-16 18:31:43.440079');
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created) VALUES (7, 1, 'archive-mirror2', 'http://localhost:11375/valid-mirror2/', NULL, NULL, NULL, NULL, 1, 1, 9, 1, true, true, true, '2006-10-16 18:31:43.440832');
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created) VALUES (8, 1, 'canonical-archive', 'http://archive.ubuntu.com/ubuntu/', NULL, NULL, NULL, NULL, 1, 1, 1, 1, true, false, true, '2006-10-16 18:31:43.434567');
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created) VALUES (9, 1, 'canonical-releases', 'http://releases.ubuntu.com/', NULL, NULL, NULL, NULL, 1, 1, 1, 2, true, false, true, '2006-10-16 18:31:43.434567');
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created) VALUES (1, 1, 'archive-mirror', 'http://localhost:11375/valid-mirror', NULL, NULL, NULL, NULL, 1, 10, 1, 1, true, true, true, '2006-10-16 18:31:43.434567');
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created) VALUES (2, 1, 'invalid-mirror', 'http://localhost:11375/invalid-mirror', NULL, NULL, NULL, NULL, 16, 50, 32, 2, true, false, true, '2006-10-16 18:31:43.436833');
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created) VALUES (3, 1, 'unreachable-mirror', 'http://localhost:11375/timeout', NULL, NULL, NULL, NULL, 16, 30, 32, 2, true, true, true, '2006-10-16 18:31:43.437635');
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created) VALUES (4, 1, 'archive-404-mirror', 'http://localhost:11375/archive-mirror/', NULL, NULL, NULL, NULL, 16, 50, 32, 1, true, true, true, '2006-10-16 18:31:43.438573');
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created) VALUES (5, 1, 'releases-mirror', 'http://localhost:11375/valid-mirror/releases', NULL, NULL, NULL, NULL, 16, 50, 32, 2, true, true, true, '2006-10-16 18:31:43.439336');
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created) VALUES (6, 1, 'releases-mirror2', 'http://localhost:11375/valid-mirror/releases2/', NULL, NULL, NULL, NULL, 16, 50, 82, 2, true, true, true, '2006-10-16 18:31:43.440079');
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created) VALUES (7, 1, 'archive-mirror2', 'http://localhost:11375/valid-mirror2/', NULL, NULL, NULL, NULL, 1, 10, 9, 1, true, true, true, '2006-10-16 18:31:43.440832');
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created) VALUES (8, 1, 'canonical-archive', 'http://archive.ubuntu.com/ubuntu/', NULL, NULL, NULL, NULL, 1, 10, 1, 1, true, false, true, '2006-10-16 18:31:43.434567');
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created) VALUES (9, 1, 'canonical-releases', 'http://releases.ubuntu.com/', NULL, NULL, NULL, NULL, 1, 10, 1, 2, true, false, true, '2006-10-16 18:31:43.434567');
 
 
 ALTER TABLE distributionmirror ENABLE TRIGGER ALL;
@@ -1667,6 +1667,7 @@ INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (57, '
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (58, 'karl@canonical.com', 63, 4, '2006-10-16 18:31:43.628123');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (59, 'limi@plone.org', 10, 1, '2006-10-16 18:31:43.628504');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (60, 'janitor@support.launchpad.net', 65, 4, '2006-10-17 23:23:23.232323');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (61, 'matsubara@async.com.br', 66, 1, '2006-12-13 21:19:06.369142');
 
 
 ALTER TABLE emailaddress ENABLE TRIGGER ALL;
@@ -1762,6 +1763,8 @@ INSERT INTO karma (id, datecreated, person, "action", product, distribution, sou
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (41, '2001-01-02 00:00:00', 1, 22, 12, NULL, NULL);
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (42, '2001-01-02 00:00:00', 1, 22, 4, NULL, NULL);
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (43, '2001-01-02 00:00:00', 1, 22, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (44, '2001-12-13 21:19:05.833412', 16, 10, 5, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (45, '2001-12-13 21:19:06.369142', 16, 11, 5, NULL, NULL);
 
 
 ALTER TABLE karma ENABLE TRIGGER ALL;
@@ -2513,6 +2516,8 @@ INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_acc
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (54, 54, 'foobar-1.0.dsc', 'application/dsc', NULL, '2006-12-01 15:41:34.028627');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (55, 55, 'cdrkit_1.0_all.deb', 'application/deb', NULL, '2006-12-01 15:41:34.028627');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (56, 56, 'foobar_1.0_all.deb', 'application/deb', NULL, '2006-12-01 15:41:34.028627');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (57, 57, 'evolution-2.2-test.pot', 'application/x-po', NULL, '2006-12-13 21:17:56.241901');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (58, 58, 'pt_BR.po', 'application/x-po', NULL, '2006-12-13 21:18:28.796588');
 
 
 ALTER TABLE libraryfilealias ENABLE TRIGGER ALL;
@@ -2572,6 +2577,8 @@ INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, d
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (54, '2006-12-01 16:41:34.028627', NULL, 716, '86d537a0d8b5b346d02752a853cc6ea648a0ebd7', false, 'eeb4c1e00a2e17a1eb51bd8b92fa5437');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (55, '2006-12-01 16:41:34.028627', NULL, 716, '86d537a0d8b5b346d02752a853cc6ea648a0ebd7', false, 'eeb4c1e00a2e17a1eb51bd8b92fa5437');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (56, '2006-12-01 16:41:34.028627', NULL, 716, '86d537a0d8b5b346d02752a853cc6ea648a0ebd7', false, 'eeb4c1e00a2e17a1eb51bd8b92fa5437');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (57, '2006-12-13 21:17:56.241901', NULL, 1599, 'acdf6b9b99c39b1585f829ec7d68598a8e10816d', false, '5c6fa250b612e7e4d17261268a4d8400');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (58, '2006-12-13 21:18:28.796588', NULL, 1599, 'acdf6b9b99c39b1585f829ec7d68598a8e10816d', false, '5c6fa250b612e7e4d17261268a4d8400');
 
 
 ALTER TABLE libraryfilecontent ENABLE TRIGGER ALL;
@@ -2961,7 +2968,8 @@ INSERT INTO person (id, displayname, "password", teamowner, teamdescription, nam
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (63, 'Karl Tilbury', 'UnjDN34pTZ0xE3vbCNZDedIVpLPrA9nty9S/mOzbeefQXAEN6CMNUQ==', NULL, NULL, 'karl', NULL, '''karl'':1A,2A ''tilburi'':3A', NULL, NULL, 1, NULL, '2006-05-23 12:49:30.483464', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, 8, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (64, 'Landscape Developers', NULL, 12, NULL, 'landscape-developers', NULL, '''develop'':3A,5A ''landscap'':2A,4A ''landscape-develop'':1A', NULL, NULL, 1, NULL, '2006-07-11 20:01:09.874128', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (65, 'Support Tracker Janitor', NULL, NULL, NULL, 'support-tracker-janitor', NULL, '''janitor'':4A,7A ''support'':2A,5A ''tracker'':3A,6A ''support-tracker-janitor'':1A', NULL, NULL, 1, NULL, '2006-10-04 16:20:51.19954', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, 1, NULL, NULL, NULL);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (66, 'Team Membership Janitor', NULL, NULL, NULL, 'team-membership-janitor', NULL, '''team'':2A,5A ''janitor'':4A,7A ''membership'':3A,6A ''team-membership-janitor'':1A', NULL, NULL, 1, NULL, '2006-10-04 16:20:51.19954', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, 1, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (66, 'Diogo Matsubara', NULL, NULL, NULL, 'matsubara', NULL, '''diogo'':2A ''matsubara'':1A,3A', NULL, NULL, 1, NULL, '2006-12-13 21:19:06.369142', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 4, 'when importing the Portuguese (Brazil) (pt_BR) translation of evolution-2.2-test in Evolution trunk', NULL, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (67, 'Team Membership Janitor', NULL, NULL, NULL, 'team-membership-janitor', NULL, '''team'':2A,5A ''janitor'':4A,7A ''membership'':3A,6A ''team-membership-janitor'':1A', NULL, NULL, 1, NULL, '2006-10-04 16:20:51.19954', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, 1, NULL, NULL, NULL);
 
 
 ALTER TABLE person ENABLE TRIGGER ALL;
@@ -3573,6 +3581,23 @@ Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=1; plural=0
 ', true, NULL, NULL, 0, 0, 1, NULL, 13, NULL, 'ja.po', NULL, NULL, '2005-10-11 23:08:01.899322', 695, NULL);
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (30, 6, 521, NULL, ' Spanish translation for wammu
+ Copyright (c) (c) 2006 Canonical Ltd, and Rosetta Contributors 2006
+ This file is distributed under the same license as the wammu package.
+ FIRST AUTHOR <EMAIL@ADDRESS>, 2006.
+
+', 'Project-Id-Version: wammu
+Report-Msgid-Bugs-To: michal@cihar.com
+POT-Creation-Date: 2006-11-10 23:24+0100
+PO-Revision-Date: 2006-12-04 19:50+0000
+Last-Translator: Diogo Matsubara <matsubara@async.com.br>
+Language-Team: Spanish <es@li.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Rosetta-Export-Date: 2006-12-04 19:58+0000
+Plural-Forms: nplurals=2; plural=n > 1
+', true, NULL, NULL, 5, 0, 0, NULL, 16, NULL, 'po/pt_BR.po', NULL, NULL, '2006-12-13 21:18:28.796588', 701, NULL);
 
 
 ALTER TABLE pofile ENABLE TRIGGER ALL;
@@ -3609,6 +3634,7 @@ INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last
 INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (27, 50, 18, 669, '2005-05-06 21:12:39.082421');
 INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (28, 51, 16, 684, '2005-05-06 21:12:42.747648');
 INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (29, 52, 1, 693, '2005-08-29 16:16:58.010285');
+INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (30, 66, 30, 701, '2006-12-13 21:19:06.369142');
 
 
 ALTER TABLE pofiletranslator ENABLE TRIGGER ALL;
@@ -3948,6 +3974,14 @@ INSERT INTO pomsgid (id, msgid) VALUES (145, 'This is not a bug, Don''t submit b
 INSERT INTO pomsgid (id, msgid) VALUES (146, '%s: option `%s'' is ambiguous
 ');
 INSERT INTO pomsgid (id, msgid) VALUES (147, 'test man page');
+INSERT INTO pomsgid (id, msgid) VALUES (148, 'Bat: %(battery_percent)d %% (%(power_source)s), Sig: %(signal_percent)d %%, Time: %(time)s');
+INSERT INTO pomsgid (id, msgid) VALUES (149, 'Before submiting please try searching for simmilar bugs on %s');
+INSERT INTO pomsgid (id, msgid) VALUES (150, 'Bluetooth device scan completed');
+INSERT INTO pomsgid (id, msgid) VALUES (151, 'Bold');
+INSERT INTO pomsgid (id, msgid) VALUES (152, 'C&alls');
+INSERT INTO pomsgid (id, msgid) VALUES (153, '%(count)d messages exported to "%(path)s (%(type)s)"');
+INSERT INTO pomsgid (id, msgid) VALUES (154, '%d messages exported to IMAP server "%s"');
+INSERT INTO pomsgid (id, msgid) VALUES (155, '%d messages exported to maildir "%s"');
 
 
 ALTER TABLE pomsgid ENABLE TRIGGER ALL;
@@ -4130,6 +4164,14 @@ INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen
 INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (173, 165, 146, '2005-08-25 15:27:55.264235', '2005-08-25 15:27:55.264235', true, 0);
 INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (174, 166, 147, '2006-08-14 18:41:39.782681', '2006-08-14 18:41:39.782681', true, 0);
 INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (175, 167, 147, '2006-08-14 18:43:56.040134', '2006-08-14 18:43:56.040134', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (176, 168, 148, '2006-12-13 21:19:05.833412', '2006-12-13 21:19:06.369142', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (177, 169, 149, '2006-12-13 21:19:05.833412', '2006-12-13 21:19:06.369142', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (178, 170, 150, '2006-12-13 21:19:05.833412', '2006-12-13 21:19:06.369142', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (179, 171, 151, '2006-12-13 21:19:05.833412', '2006-12-13 21:19:06.369142', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (180, 172, 152, '2006-12-13 21:19:05.833412', '2006-12-13 21:19:06.369142', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (181, 173, 153, '2006-12-13 21:19:05.833412', '2006-12-13 21:19:06.369142', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (182, 174, 154, '2006-12-13 21:19:05.833412', '2006-12-13 21:19:06.369142', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (183, 175, 155, '2006-12-13 21:19:05.833412', '2006-12-13 21:19:06.369142', true, 0);
 
 
 ALTER TABLE pomsgidsighting ENABLE TRIGGER ALL;
@@ -4879,6 +4921,14 @@ INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, com
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (739, 0, 29, false, false, false, NULL, 147, false, false, false);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (740, 0, 29, false, false, false, NULL, 148, false, false, false);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (741, 0, 29, false, false, false, NULL, 149, false, false, false);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (742, 1, 30, false, false, false, '', 168, false, false, false);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (743, 2, 30, true, false, false, '', 169, false, true, false);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (744, 3, 30, true, false, false, '', 170, false, true, false);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (745, 4, 30, false, false, false, '', 171, false, false, false);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (746, 5, 30, true, false, false, '', 172, false, true, false);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (747, 6, 30, true, true, true, '', 173, true, true, false);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (748, 7, 30, true, true, false, '', 174, false, true, false);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (749, 8, 30, true, true, false, '', 175, false, true, false);
 
 
 ALTER TABLE pomsgset ENABLE TRIGGER ALL;
@@ -5573,6 +5623,12 @@ INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsu
 INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsubmission, reviewer, date_reviewed) VALUES (685, 599, 0, NULL, NULL, NULL, NULL);
 INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsubmission, reviewer, date_reviewed) VALUES (686, 15, 2, 694, NULL, 13, '2005-10-11 20:18:55.9815');
 INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsubmission, reviewer, date_reviewed) VALUES (687, 736, 0, 695, NULL, 13, '2005-10-11 23:08:01.899322');
+INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsubmission, reviewer, date_reviewed) VALUES (688, 743, 0, 696, 696, 66, '2006-12-13 21:19:06.369142');
+INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsubmission, reviewer, date_reviewed) VALUES (689, 744, 0, 697, 697, 66, '2006-12-13 21:19:06.369142');
+INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsubmission, reviewer, date_reviewed) VALUES (690, 746, 0, 698, 698, 66, '2006-12-13 21:19:06.369142');
+INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsubmission, reviewer, date_reviewed) VALUES (691, 747, 0, 699, 699, 66, '2006-12-13 21:19:06.369142');
+INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsubmission, reviewer, date_reviewed) VALUES (692, 748, 0, 700, 700, 66, '2006-12-13 21:19:06.369142');
+INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsubmission, reviewer, date_reviewed) VALUES (693, 749, 0, 701, 701, 66, '2006-12-13 21:19:06.369142');
 
 
 ALTER TABLE poselection ENABLE TRIGGER ALL;
@@ -6270,6 +6326,12 @@ INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datec
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (693, 14, 0, 652, 2, '2005-08-29 16:16:58.010285', 52, 1);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (694, 15, 2, 7, 2, '2005-10-11 20:18:55.9815', 13, 1);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (695, 736, 0, 10, 2, '2005-10-11 23:08:01.899322', 13, 1);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (696, 743, 0, 653, 1, '2006-12-13 21:19:06.369142', 66, 1);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (697, 744, 0, 654, 1, '2006-12-13 21:19:06.369142', 66, 1);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (698, 746, 0, 655, 1, '2006-12-13 21:19:06.369142', 66, 1);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (699, 747, 0, 656, 1, '2006-12-13 21:19:06.369142', 66, 1);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (700, 748, 0, 657, 1, '2006-12-13 21:19:06.369142', 66, 1);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (701, 749, 0, 658, 1, '2006-12-13 21:19:06.369142', 66, 1);
 
 
 ALTER TABLE posubmission ENABLE TRIGGER ALL;
@@ -6335,7 +6397,17 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=CHARSET
 Content-Transfer-Encoding: 8bit
 ', 4, NULL, false, NULL, NULL, '2005-05-06 21:12:33.238579');
-INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, path, iscurrent, messagecount, "owner", sourcepackagename, distrorelease, sourcepackageversion, "header", potemplatename, binarypackagename, languagepack, productseries, from_sourcepackagename, date_last_updated) VALUES (6, 0, NULL, NULL, NULL, '2005-08-10 09:31:29.606407', 'po/evolution-2.2-test.pot', true, 0, 12, NULL, NULL, NULL, NULL, 5, NULL, false, 3, NULL, '2006-05-11 20:07:01.432042');
+INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, path, iscurrent, messagecount, "owner", sourcepackagename, distrorelease, sourcepackageversion, "header", potemplatename, binarypackagename, languagepack, productseries, from_sourcepackagename, date_last_updated) VALUES (6, 0, NULL, NULL, NULL, '2005-08-10 09:31:29.606407', 'po/evolution-2.2-test.pot', true, 8, 12, NULL, NULL, NULL, 'Project-Id-Version: wammu
+Report-Msgid-Bugs-To: michal@cihar.com
+POT-Creation-Date: 2006-11-10 23:24+0100
+PO-Revision-Date: 2006-12-04 19:50+0000
+Last-Translator: Diogo Matsubara <matsubara@async.com.br>
+Language-Team: Spanish <es@li.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Rosetta-Export-Date: 2006-12-04 19:58+0000
+', 5, NULL, false, 3, NULL, '2006-12-13 21:19:05.945938');
 INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, path, iscurrent, messagecount, "owner", sourcepackagename, distrorelease, sourcepackageversion, "header", potemplatename, binarypackagename, languagepack, productseries, from_sourcepackagename, date_last_updated) VALUES (7, 0, NULL, NULL, NULL, '2006-08-14 18:41:07.274661', 'man.pot', true, 1, 13, 9, 3, NULL, 'Project-Id-Version: PACKAGE VERSION
 POT-Creation-Date: 2006-08-14 15:01+0100
 PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
@@ -6557,6 +6629,14 @@ INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, file
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (165, 146, 23, 1, '', 'lib/getopt.c:629 lib/getopt.c:641', '', 'c-format');
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (166, 147, 1, 7, '', 'test_browserwidget.py:34', '', '');
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (167, 147, 1, 8, '', 'test_browserwidget.py:34', '', '');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (168, 148, 1, 6, '', 'Wammu/Main.py:469', '', 'python-format');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (169, 149, 2, 6, '', 'Wammu/Error.py:82', '', 'python-format');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (170, 150, 3, 6, '', 'Wammu/PhoneSearch.py:127 Wammu/PhoneSearch.py:157', '', '');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (171, 151, 4, 6, '', 'Wammu/Data.py:652', '', '');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (172, 152, 5, 6, '', 'Wammu/Main.py:276', '', '');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (173, 153, 6, 6, '', '', '', '');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (174, 154, 7, 6, '', '', '', '');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (175, 155, 8, 6, '', '', '', '');
 
 
 ALTER TABLE potmsgset ENABLE TRIGGER ALL;
@@ -7901,6 +7981,12 @@ INSERT INTO potranslation (id, translation) VALUES (648, ' Srprise! (non-editor)
 INSERT INTO potranslation (id, translation) VALUES (649, ' bang bang in evo hoary');
 INSERT INTO potranslation (id, translation) VALUES (652, 'This is a suggestion added by a non-editor for a multiline entry, and it happens to have a very long first line.
 It should work! :-P');
+INSERT INTO potranslation (id, translation) VALUES (653, 'Antes de enviar, por favor, pruebe a buscar un bug similar en %s');
+INSERT INTO potranslation (id, translation) VALUES (654, 'Búsqueda de dispositivos bluetooth completada');
+INSERT INTO potranslation (id, translation) VALUES (655, 'L&lamadas');
+INSERT INTO potranslation (id, translation) VALUES (656, '%d mensajes exportados al mailbox "%s"');
+INSERT INTO potranslation (id, translation) VALUES (657, '%d mensajes exportados al servidor IMAP "%s"');
+INSERT INTO potranslation (id, translation) VALUES (658, '%d mensajes exportados al directorio mail "%s"');
 
 
 ALTER TABLE potranslation ENABLE TRIGGER ALL;
@@ -9272,6 +9358,7 @@ INSERT INTO teamparticipation (id, team, person) VALUES (99, 63, 63);
 INSERT INTO teamparticipation (id, team, person) VALUES (100, 59, 63);
 INSERT INTO teamparticipation (id, team, person) VALUES (101, 64, 12);
 INSERT INTO teamparticipation (id, team, person) VALUES (102, 65, 65);
+INSERT INTO teamparticipation (id, team, person) VALUES (103, 66, 66);
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;
@@ -9377,6 +9464,8 @@ ALTER TABLE translationgroup ENABLE TRIGGER ALL;
 
 ALTER TABLE translationimportqueueentry DISABLE TRIGGER ALL;
 
+INSERT INTO translationimportqueueentry (id, path, content, importer, dateimported, distrorelease, sourcepackagename, productseries, is_published, pofile, potemplate, status, date_status_changed) VALUES (1, 'po/evolution-2.2-test.pot', 57, 16, '2006-12-13 21:17:56.241901', NULL, NULL, 3, true, NULL, 6, 2, '2006-12-13 21:18:40.885499');
+INSERT INTO translationimportqueueentry (id, path, content, importer, dateimported, distrorelease, sourcepackagename, productseries, is_published, pofile, potemplate, status, date_status_changed) VALUES (2, 'po/pt_BR.po', 58, 16, '2006-12-13 21:18:28.796588', NULL, NULL, 3, true, 30, 6, 2, '2006-12-13 21:18:40.898084');
 
 
 ALTER TABLE translationimportqueueentry ENABLE TRIGGER ALL;
@@ -9547,6 +9636,7 @@ INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (50, 51, 'https://wiki.
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (51, 52, 'https://wiki.ubuntu.com/', 'NoPrivilegesPerson');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (52, 62, 'https://wiki.ubuntu.com/', 'BugWatchUpdater');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (53, 65, 'https://wiki.ubuntu.com/', 'SupportTrackerJanitor');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (54, 66, 'https://wiki.ubuntu.com/', 'DiogoMatsubara');
 
 
 ALTER TABLE wikiname ENABLE TRIGGER ALL;
