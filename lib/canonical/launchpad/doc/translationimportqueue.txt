@@ -753,32 +753,45 @@ executeOptimisticBlock
 This method looks on the queue to find entries to block based on other .pot
 entries that are stored on the same directory and are already blocked.
 
-Check the number of entries on the queue.
+Check the number of entries on the queue. We have the two sample data entries
+plus the ones added in this test.
 
     >>> translationimportqueue.entryCount()
-    3
+    5
 
 First, let's check the status of the existing entries.
 
     >>> entry1 = translationimportqueue.get(1)
     >>> entry1.path
-    u'po/sr.po'
-    >>> entry1.status == RosettaImportStatus.NEEDS_REVIEW
+    u'po/evolution-2.2-test.pot'
+    >>> entry1.status == RosettaImportStatus.IMPORTED
     True
 
     >>> entry2 = translationimportqueue.get(2)
     >>> entry2.path
-    u'po/sr.po'
-    >>> entry2.status == RosettaImportStatus.NEEDS_REVIEW
+    u'po/pt_BR.po'
+    >>> entry2.status == RosettaImportStatus.IMPORTED
     True
 
     >>> entry3 = translationimportqueue.get(3)
     >>> entry3.path
+    u'po/sr.po'
+    >>> entry3.status == RosettaImportStatus.NEEDS_REVIEW
+    True
+
+    >>> entry4 = translationimportqueue.get(4)
+    >>> entry4.path
+    u'po/sr.po'
+    >>> entry4.status == RosettaImportStatus.NEEDS_REVIEW
+    True
+
+    >>> entry5 = translationimportqueue.get(5)
+    >>> entry5.path
     u'po/evolution-2.2.pot'
 
 We need it blocked for this test.
 
-    >>> entry3.status = RosettaImportStatus.BLOCKED
+    >>> entry5.status = RosettaImportStatus.BLOCKED
 
 Let's see how many entries are blocked.
 
@@ -787,31 +800,31 @@ Let's see how many entries are blocked.
 
 Now is time to check that we only have one item on the NeedsReview status.
 
-    >>> entry1 = translationimportqueue.get(1)
-    >>> entry1.path
+    >>> entry3 = translationimportqueue.get(3)
+    >>> entry3.path
     u'po/sr.po'
 
 This entry is for a productseries, and it's not blocked because the blocked
 .pot entry is for a distrorelease-sourcepackagename.
 
-    >>> entry1.status == RosettaImportStatus.NEEDS_REVIEW
+    >>> entry3.status == RosettaImportStatus.NEEDS_REVIEW
     True
 
 On the other hand, this other one is for the same
 distrorelease/sourcepackagename than the .pot file we have so it's also blocked.
 
-    >>> entry2 = translationimportqueue.get(2)
-    >>> entry2.path
+    >>> entry4 = translationimportqueue.get(4)
+    >>> entry4.path
     u'po/sr.po'
-    >>> entry2.status == RosettaImportStatus.BLOCKED
+    >>> entry4.status == RosettaImportStatus.BLOCKED
     True
 
 And the .pot entry is still blocked.
 
-    >>> entry3 = translationimportqueue.get(3)
-    >>> entry3.path
+    >>> entry5 = translationimportqueue.get(5)
+    >>> entry5.path
     u'po/evolution-2.2.pot'
-    >>> entry3.status == RosettaImportStatus.BLOCKED
+    >>> entry5.status == RosettaImportStatus.BLOCKED
     True
 
 getElapsedTimeText
@@ -867,17 +880,22 @@ getTemplatesOnSameDirectory
 This method allows us to get the set of .pot files we have on the same
 directory that a given entry.
 
-For the first entry, we don't have any .pot file on that directory.
+For the third entry, we have one .pot file on that directory, which is already
+in sample data.
 
-    >>> entry1.status = RosettaImportStatus.NEEDS_REVIEW
-    >>> entries = entry1.getTemplatesOnSameDirectory()
+    >>> entry3.status = RosettaImportStatus.NEEDS_REVIEW
+    >>> entries = entry3.getTemplatesOnSameDirectory()
     >>> entries.count()
-    0
+    1
+    >>> entries[0].status == RosettaImportStatus.IMPORTED
+    True
+    >>> entries[0].id
+    1
 
-For the second entry, we have one.
+For the fourth entry, we have one.
 
-    >>> entry2.status = RosettaImportStatus.NEEDS_REVIEW
-    >>> entries = entry2.getTemplatesOnSameDirectory()
+    >>> entry4.status = RosettaImportStatus.NEEDS_REVIEW
+    >>> entries = entry4.getTemplatesOnSameDirectory()
     >>> entries.count()
     1
 
@@ -890,7 +908,7 @@ And finally, the .pot entry doesn't have other .pot in the same directory and
 obviously, we are not returning it as being at the same directory as it makes
 no sense at all.
 
-    >>> entry3.status = RosettaImportStatus.NEEDS_REVIEW
-    >>> entries = entry3.getTemplatesOnSameDirectory()
+    >>> entry5.status = RosettaImportStatus.NEEDS_REVIEW
+    >>> entries = entry5.getTemplatesOnSameDirectory()
     >>> entries.count()
     0

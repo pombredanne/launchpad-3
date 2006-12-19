@@ -14,21 +14,22 @@ First, we need to feed the import queue.
   >>> browser.open('http://launchpad.dev/alsa-utils/trunk/+translations-upload')
   >>> browser.url
   'http://launchpad.dev/alsa-utils/trunk/+translations-upload'
-  >>> file_ctrl = browser.getControl(name='file')
-  >>> file_ctrl.add_file(tarball, 'application/x-gzip', 'test-autofilling.tar.gz')
-  >>> browser.getControl(name='translations_upload').click()
+  >>> file_ctrl = browser.getControl('File:')
+  >>> file_ctrl.add_file(
+  ...     tarball, 'application/x-gzip', 'test-autofilling.tar.gz')
+  >>> browser.getControl('Request Upload').click()
   >>> browser.url
   'http://launchpad.dev/alsa-utils/trunk/+translations-upload'
-  >>> 'Thank you for your upload. 2 files from the tarball will be reviewed' in browser.contents
-  True
+  >>> for tag in find_tags_by_class(browser.contents, 'message'):
+  ...     print tag
+  <div...Thank you for your upload. 2 files from the tarball will be reviewed...
 
 Let's check the values we get by default from the .pot file. As we can see,
 the form is completely empty.
 
-  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
-  >>> browser.open('http://launchpad.dev/translations/imports/2')
+  >>> browser.open('http://launchpad.dev/translations/imports/4')
   >>> browser.url
-  'http://launchpad.dev/translations/imports/2'
+  'http://launchpad.dev/translations/imports/4'
   >>> browser.getControl(name='field.potemplatename').value
   ''
   >>> browser.getControl(name='field.path').value
@@ -44,9 +45,9 @@ Let's fill the information.
 Now, as we already know the potemplatename, a new form load should
 give us that field with information.
 
-  >>> browser.open('http://launchpad.dev/translations/imports/2')
+  >>> browser.open('http://launchpad.dev/translations/imports/4')
   >>> browser.url
-  'http://launchpad.dev/translations/imports/2'
+  'http://launchpad.dev/translations/imports/4'
   >>> browser.getControl(name='field.potemplatename').value
   'alsa-utils'
 
@@ -54,9 +55,9 @@ Let's move to the .po file. By default, we don't know anything about it,
 but we can guess the language. As it's a guessed value, we warn the user so
 he checks that it's ok.
 
-  >>> browser.open('http://launchpad.dev/translations/imports/1')
+  >>> browser.open('http://launchpad.dev/translations/imports/3')
   >>> browser.url
-  'http://launchpad.dev/translations/imports/1'
+  'http://launchpad.dev/translations/imports/3'
   >>> browser.getControl(name='field.potemplatename').value
   ''
   >>> browser.getControl(name='field.path').value
@@ -75,9 +76,9 @@ Let's add the potemplatename information and confirm the language selection.
 
 And reloading the form, we should get all that information.
 
-  >>> browser.open('http://launchpad.dev/translations/imports/1')
+  >>> browser.open('http://launchpad.dev/translations/imports/3')
   >>> browser.url
-  'http://launchpad.dev/translations/imports/1'
+  'http://launchpad.dev/translations/imports/3'
   >>> browser.getControl(name='field.potemplatename').value
   'alsa-utils'
   >>> browser.getControl(name='field.path').value

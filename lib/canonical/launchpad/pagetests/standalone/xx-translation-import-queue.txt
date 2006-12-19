@@ -3,13 +3,13 @@ Uploading templates
 
 An upstream maintainer can use Rosetta to submit their initial template uploads.
 
-    >>> from zope.testbrowser.testing import Browser
+  >>> from zope.testbrowser.testing import Browser
 
-    >>> ff_owner = Browser()
-    >>> ff_owner.addHeader('Authorization', 'Basic test@canonical.com:test')
-    >>> ff_owner.open(
+    >>> ff_owner_browser = Browser()
+    >>> ff_owner_browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> ff_owner_browser.open(
     ...     'http://launchpad.dev/firefox/1.0/+translations-upload')
-    >>> 'Upload either a single file' in ff_owner.contents
+    >>> 'Upload either a single file' in ff_owner_browser.contents
     True
 
 Time to do the upload...
@@ -20,29 +20,29 @@ Time to do the upload...
     ...     os.path.dirname(canonical.launchpad.__file__),
     ...     'pagetests/standalone/xx-translation-import-queue.tar.gz')
     >>> tarball = open(test_file_name, "rb")
-    >>> upload = ff_owner.getControl('File')
+    >>> upload = ff_owner_browser.getControl('File')
     >>> upload
     <Control name='file' type='file'>
     >>> upload.add_file(tarball, 'application/x-gzip', test_file_name)
-    >>> ff_owner.getControl('Request Upload').click()
-    >>> ff_owner.url
+    >>> ff_owner_browser.getControl('Request Upload').click()
+    >>> ff_owner_browser.url
     'http://launchpad.dev/firefox/1.0/+translations-upload'
-    >>> 'Upload new translation resources' in ff_owner.contents
+    >>> 'Upload new translation resources' in ff_owner_browser.contents
     True
-    >>> 'Thank you for your upload. 1 files from the tarball will be reviewed' in ff_owner.contents
+    >>> 'Thank you for your upload. 1 files from the tarball will be reviewed' in ff_owner_browser.contents
     True
 
 We check now that the upload is available from the translation import queue page
 and the status is static as we are not logged in.
 
-  >>> browser.open('http://launchpad.dev/translations/imports')
-  >>> browser.url
+  >>> anon_browser.open('http://launchpad.dev/translations/imports')
+  >>> anon_browser.url
   'http://launchpad.dev/translations/imports'
-  >>> 'po/es.po' in browser.contents
+  >>> 'po/es.po' in anon_browser.contents
   True
-  >>> 'Mozilla Firefox Series' in browser.contents
+  >>> 'Mozilla Firefox Series' in anon_browser.contents
   True
-  >>> '<td>Needs Review</td>' in browser.contents
+  >>> '<td>Needs Review</td>' in anon_browser.contents
   True
 
 As an admin, the same page should give us extra rights to edit imports and
@@ -56,19 +56,10 @@ thus, the link should appear.
   True
   >>> 'Mozilla Firefox Series' in browser.contents
   True
-
-Also, we get a set of different status and the default one...
-
-  >>> 'Deleted' in browser.contents
-  True
-  >>> 'selected="yes" value="NEEDS_REVIEW"' in browser.contents
-  True
-  >>> 'Blocked' in browser.contents
-  True
-  >>> 'Edit' in browser.contents
-  True
-  >>> 'Sample Person' in browser.contents
-  True
+  >>> browser.getLink(url='imports/3')
+  <Link text='Edit' url='http://launchpad.dev/translations/imports/3'>
+  >>> browser.getControl(name='status-3').displayValue
+  ['Needs Review']
 
 Now, we attach a new file to an already existing translation resource.
 
@@ -78,83 +69,56 @@ Now, we attach a new file to an already existing translation resource.
   >>> upload = browser.getControl('File')
   >>> upload
   <Control name='file' type='file'>
-  >>> import cStringIO
-  >>> upload.add_file(cStringIO.StringIO('# foo\n'), 'text/x-gettext-translation-template', 'evolution.pot')
+  >>> from StringIO import StringIO
+  >>> upload.add_file(StringIO('# foo\n'), 'text/x-gettext-translation-template', 'evolution.pot')
   >>> browser.getControl('Upload').click()
   >>> browser.url
   'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload'
-  >>> 'Thank you for your upload. The file content will be imported soon' in browser.contents
-  True
-  >>> 'Upload a new version of Template "evolution-2.2" in Ubuntu Hoary package "evolution"' in browser.contents
-  True
+  >>> for tag in find_tags_by_class(browser.contents, 'message'):
+  ...     print tag
+  <div...Thank you for your upload. The file content will be imported soon...
 
-Now the import queue should have two entries with the last upload as the last
-entry.
+The import queue should have two additional entries with the last upload as
+the last entry.
 
-  >>> browser = Browser()
-  >>> browser.open('http://launchpad.dev/translations/imports')
-  >>> browser.url
-  'http://launchpad.dev/translations/imports'
-  >>> print browser.contents
-  <...
+  >>> anon_browser.open('http://launchpad.dev/translations/imports')
+  >>> print find_main_content(anon_browser.contents)
+  <...1...4...of...4 results...
+  ...po/evolution-2.2-test.pot...
+  ...Evolution Series: trunk...
+  ...<td>Imported</td>...
+  ...po/pt_BR.po...
+  ...Evolution Series: trunk...
+  ...<td>Imported</td>...
   ...po/es.po...
   ...Mozilla Firefox Series...
   ...<td>Needs Review</td>...
-  ...po/evolution-2.2.pot...
   ...evolution in Ubuntu Hoary...
   ...<td>Needs Review</td>...
   ...Carlos Perelló Marín...
   ...Template "evolution-2.2" in Ubuntu Hoary package "evolution"...
 
-Get the edit form for the first entry.
+Open the edit form for the third entry.
 
-  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
-  >>> browser.open('http://launchpad.dev/translations/imports/1')
-  >>> browser.url
-  'http://launchpad.dev/translations/imports/1'
-  >>> '<label for="field.potemplatename">Template Name</label>' in browser.contents
-  True
-  >>> '<input type="text" name="field.potemplatename" onkeypress=""' in browser.contents
-  True
-  >>> '<label for="field.path">Path</label>' in browser.contents
-  True
-  >>> '<label for="field.language">Language</label>' in browser.contents
-  True
-  >>> '<label for="field.variant">Variant</label>' in browser.contents
-  True
-  >>> 'Origin:' in browser.contents
-  True
-  >>> 'Mozilla Firefox Series' in browser.contents
-  True
-  >>> 'Path:' in browser.contents
-  True
-  >>> 'po/es.po' in browser.contents
-  True
-  >>> 'Uploader:' in browser.contents
-  True
-  >>> 'Sample Person' in browser.contents
-  True
-  >>> 'Waiting since:' in browser.contents
-  True
-  >>> 'Status:' in browser.contents
-  True
-  >>> 'Needs Review' in browser.contents
-  True
-  >>> 'Status changed on:' in browser.contents
-  True
+  >>> browser.open('http://launchpad.dev/translations/imports')
+  >>> browser.getLink(url='imports/3').click()
 
-Is time to associate this import to the right IPOFile.
+And associate this import to the right IPOFile.
 
-  >>> browser.getControl(name='field.potemplatename').value = 'pkgconf-mozilla'
-  >>> browser.getControl(name='field.language').value = ['es']
-  >>> browser.getControl(name='field.actions.attach').click()
+  >>> browser.getControl('Template Name').value = 'pkgconf-mozilla'
+  >>> browser.getControl('Path').value = ''
+  >>> browser.getControl('Language').value = ['es']
+  >>> browser.getControl('Variant').value = ''
+  >>> browser.getControl('Attach').click()
+
   >>> browser.url
   'http://launchpad.dev/translations/imports'
 
 And we get that entry approved and with a place where it will be imported
 
-  >>> print browser.contents
-  <...
+  >>> anon_browser.open('http://launchpad.dev/translations/imports')
+  >>> print find_main_content(anon_browser.contents)
+  <...1...4...of...4 results...
   ...po/es.po...
   ...Mozilla Firefox Series...
   ...Approved...
@@ -165,20 +129,8 @@ And we get that entry approved and with a place where it will be imported
 Removing from the import queue
 ------------------------------
 
-Check the removal feature. For that, the user carlos is going to attach a new
-entry
-
-  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
-  >>> browser.open('http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload')
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload'
-  >>> upload = browser.getControl(name='file')
-  >>> upload.add_file(cStringIO.StringIO('#foo\n'), 'text/x-gettext-translation-template', 'evolution.pot')
-  >>> browser.getControl(name='UPLOAD').click()
-  >>> 'Thank you for your upload. The file content will be imported soon' in browser.contents
-  True
-
-Now, the No Privileges Person will try to remove it, but will fail. We are getting
+Check the removal feature.
+No Privileges Person will try to remove it, but will fail. We are getting
 an Internal Server Error and that's fine as the user will not get a UI to do this
 POST, if we get this POST is because it was created by hand or not using our forms.
 
@@ -197,126 +149,88 @@ POST, if we get this POST is because it was created by hand or not using our for
 
 But Jordi, a Rosetta expert, will be allowed to remove it.
 
-  >>> browser.addHeader('Authorization', 'Basic jordi@canonical.com:test')
-  >>> browser.open('http://launchpad.dev/translations/imports')
-  >>> browser.url
-  'http://launchpad.dev/translations/imports'
-  >>> browser.getControl(name='status-2').value = ['DELETED']
-  >>> browser.getControl(name='handle_queue').click()
-  >>> browser.url
+  >>> jordi_browser = Browser()
+  >>> jordi_browser.handleErrors = False
+  >>> jordi_browser.addHeader('Authorization', 'Basic jordi@ubuntu.com:test')
+  >>> jordi_browser.open('http://launchpad.dev/translations/imports')
+  >>> jordi_browser.getControl(name='status-1').value = ['DELETED']
+  >>> jordi_browser.getControl('Change Status').click()
+  >>> jordi_browser.url
   'http://launchpad.dev/translations/imports/+index'
 
-  >>> print browser.contents
-  <...
-  ...po/evolution-2.2.pot...
-  ...evolution in Ubuntu Hoary...
-  ...status-2...
+  >>> print find_main_content(jordi_browser.contents)
+  <...po/evolution-2.2-test.pot...
+  ...Evolution Series: trunk...
+  ...status-1...
   ...selected="yes" value="DELETED"...
-  ...Carlos Perelló Marín...
-  ...Template "evolution-2.2" in Ubuntu Hoary package "evolution"...
+  ...Foo Bar...
+  ...Template "evolution-2.2-test" in Evolution trunk...
 
-We need a new entry imported to check that a Launchpad admin is always allowed
-to remove it.
+Foo Bar Person is a launchpad admin and he's allowed to remove an entry.
 
-  >>> browser.addHeader('Authorization', 'Basic jordi@canonical.com:test')
-  >>> browser.open('http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload')
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload'
-  >>> upload = browser.getControl(name='file')
-  >>> upload.add_file(cStringIO.StringIO('#foo\n'), 'text/x-gettext-translation-template', 'evolution.pot')
-  >>> browser.getControl(name='UPLOAD').click()
-  >>> 'Thank you for your upload. The file content will be imported soon' in browser.contents
-  True
-
-Foo Bar Person is a launchpad admin and he's allowed to remove the entry.
-
-  >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
-  >>> browser.open('http://launchpad.dev/translations/imports')
-  >>> browser.url
-  'http://launchpad.dev/translations/imports'
-  >>> browser.getControl(name='status-2').value = ['DELETED']
-  >>> browser.getControl(name='handle_queue').click()
-  >>> browser.url
+  >>> admin_browser.open('http://launchpad.dev/translations/imports')
+  >>> admin_browser.getControl(name='status-2').value = ['DELETED']
+  >>> admin_browser.getControl('Change Status').click()
+  >>> admin_browser.url
   'http://launchpad.dev/translations/imports/+index'
 
-  >>> print browser.contents
-  <...
-  ...po/evolution-2.2.pot...
-  ...evolution in Ubuntu Hoary...
+  >>> print find_main_content(admin_browser.contents)
+  <...po/pt_BR.po...
+  ...Evolution Series: trunk...
   ...status-2...
   ...selected="yes" value="DELETED"...
-  ...Carlos Perelló Marín...
-  ...Template "evolution-2.2" in Ubuntu Hoary package "evolution"...
+  ...Foo Bar...
+  ...Portuguese (Brazil) (pt_BR) translation of evolution-2.2-test in Evolution trunk...
 
-And finally, we do another import to be sure that the importer is also allowed
-to remove their own imports.
+And finally, we make sure that the importer is also allowed to remove their
+own imports.
 
-    >>> a52_owner = Browser()
-    >>> a52_owner.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
-    >>> a52_owner.open(
-    ...     'http://launchpad.dev/a52dec/trunk/+translations-upload')
-    >>> upload = a52_owner.getControl('File')
-    >>> upload
-    <Control name='file' type='file'>
-    >>> upload.add_file(
-    ...     cStringIO.StringIO('#foo'), 'text/x-gettext-translation-template',
-    ...     'a52dec.pot')
-    >>> a52_owner.getControl('Request Upload').click()
-    >>> a52_owner.url
-    'http://launchpad.dev/a52dec/trunk/+translations-upload'
-    >>> print a52_owner.contents
-    <...
-    ...Upload new translation resources...
-    ...Thank you for your upload. The file content will be reviewed soon...
-
-Now, removing it:
-
-    >>> a52_owner.open('http://launchpad.dev/translations/imports')
-    >>> menu = a52_owner.getControl(name='status-3')
-    >>> menu.value
-    ['NEEDS_REVIEW']
-    >>> menu.value = ['DELETED']
-    >>> a52_owner.getControl('Change Status').click()
+  >>> ff_owner_browser.open('http://launchpad.dev/translations/imports')
+  >>> ff_owner_browser.getControl(name='status-3').value
+  ['APPROVED']
+  >>> ff_owner_browser.getControl(name='status-3').value = ['DELETED']
+  >>> ff_owner_browser.getControl('Change Status').click()
 
 The entry now appears deleted.
 
-    >>> print a52_owner.contents
-    <...
-    ...a52dec.pot...
-    ...a52dec Series...
-    ...status-3...
-    ...selected="yes" value="DELETED"...
-    ...Foo Bar...
-
+  >>> print find_main_content(ff_owner_browser.contents)
+  <...po/es.po...
+  ...Mozilla Firefox Series: 1.0...
+  ...status-3...
+  ...selected="yes" value="DELETED"...
+  ...Sample Person...
+  ...Spanish (es) translation of pkgconf-mozilla in Mozilla Firefox 1.0...
 
 Corner cases
 ------------
 
 Let's check tar.bz2 uploads. They work ;-)
 
-    >>> evo_owner = ff_owner
-    >>> evo_owner.open('http://launchpad.dev/evolution/trunk/+translations-upload')
-    >>> test_file_name = os.path.join(
-    ...     os.path.dirname(canonical.launchpad.__file__),
-    ...     'pagetests/standalone/xx-translation-import-queue.tar.bz2')
-    >>> tarball = open(test_file_name)
+  >>> evo_owner_browser = ff_owner_browser
+  >>> evo_owner_browser.open('http://launchpad.dev/evolution/trunk/+translations-upload')
 
-    >>> upload = evo_owner.getControl('File')
-    >>> upload
-    <Control name='file' type='file'>
-    >>> upload.add_file(tarball, 'application/x-bzip', test_file_name)
-    >>> evo_owner.getControl('Request Upload').click()
-    >>> evo_owner.url
-    'http://launchpad.dev/evolution/trunk/+translations-upload'
-    >>> print evo_owner.contents
-    <...
-    ...Thank you for your upload. 2 files from the tarball will be reviewed...
+  >>> test_file_name = os.path.join(
+  ...     os.path.dirname(canonical.launchpad.__file__),
+  ...     'pagetests/standalone/xx-translation-import-queue.tar.bz2')
+  >>> tarball = open(test_file_name)
+
+  >>> evo_owner_browser.getControl('File').add_file(
+  ...     tarball, 'application/x-bzip', test_file_name)
+  >>> evo_owner_browser.getControl('Request Upload').click()
+  >>> evo_owner_browser.url
+  'http://launchpad.dev/evolution/trunk/+translations-upload'
+  >>> for tag in find_tags_by_class(evo_owner_browser.contents, 'message'):
+  ...     print tag
+  <div...Thank you for your upload. 2 files from the tarball will be reviewed...
 
 Let's try breaking the form by not supplying a file object. It give us a
 decent error message:
 
-  >>> browser.addHeader('Authorization', 'Basic jordi@canonical.com:test')
-  >>> browser.open('http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload')
-  >>> browser.getControl(name='UPLOAD').click()
-  >>> 'Your upload was ignored because you didn\'t select a file. Please select a file and try again.' in browser.contents
-  True
+  >>> browser.open(
+  ...     'http://launchpad.dev/ubuntu/hoary/'
+  ...     '+source/evolution/+pots/evolution-2.2/+upload')
+  >>> browser.getControl('Upload').click()
+  >>> for tag in find_tags_by_class(browser.contents, 'message'):
+  ...     print tag
+  <div...Your upload was ignored because you didn't select a file....
+  ...Please select a file and try again.</div>...
