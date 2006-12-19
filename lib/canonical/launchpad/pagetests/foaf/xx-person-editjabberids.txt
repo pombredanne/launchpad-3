@@ -1,7 +1,7 @@
   First we try to add a jabber ID that's already registered by someone else.
 
   >>> print http(r"""
-  ... POST /people/name16/+editjabberids HTTP/1.1
+  ... POST /~name16/+editjabberids HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
   ... 
@@ -15,7 +15,7 @@
   Now we add a new jabberid for 'name16'
 
   >>> print http(r"""
-  ... POST /people/name16/+editjabberids HTTP/1.1
+  ... POST /~name16/+editjabberids HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
   ... 
@@ -30,7 +30,7 @@
   And now, remove it.
 
   >>> print http(r"""
-  ... POST /people/name16/+editjabberids HTTP/1.1
+  ... POST /~name16/+editjabberids HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
   ... 

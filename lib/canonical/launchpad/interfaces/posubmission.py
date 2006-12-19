@@ -1,9 +1,22 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2006 Canonical Ltd.  All rights reserved.
 
 from zope.interface import Interface, Attribute
 
 __metaclass__ = type
-__all__ = ('IPOSubmission', )
+__all__ = [
+    'IPOSubmission',
+    'IPOSubmissionSet'
+    ]
+
+class IPOSubmissionSet(Interface):
+    """The set of submissions we have in our database."""
+
+    def getPOSubmissionByID(id):
+        """Return the IPOsubmission with the given id or None.
+
+        :arg id: IPOSubmission.id
+        """
+
 
 class IPOSubmission(Interface):
     """A submission of a translation to a PO file."""

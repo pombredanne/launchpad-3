@@ -1,0 +1,112 @@
+== Searching for Projects, Products and Distributions ==
+
+Launchpad provides a way for people to search across products, projects and
+distributions. This is done at the /+search page.
+
+    >>> browser.open('http://launchpad.dev/+search')
+    >>> browser.getControl(name='q').value = 'ubuntu'
+    >>> browser.getControl('Search').click()
+    >>> browser.url
+    'http://launchpad.dev/+search?q=ubuntu&search=Search'
+
+We'll only show up to config.launchpad.default_batch_size results; if there
+are more results than that, we'll show an informational message and ask the
+user to refine his search.
+
+    >>> from canonical.config import config
+    >>> config.launchpad.default_batch_size
+    5
+
+    >>> tags = find_tags_by_class(browser.contents, "informational message")
+    >>> for tag in tags:
+    ...   print tag.renderContents()
+    More than 5 projects
+    were found, so we're displaying only the ones that are most relevant
+    to your search terms.
+    If the project you are looking for is not on the list below, please
+    do another search with more search terms.
+ 
+    >>> search_results = find_tag_by_id(browser.contents, 'search-results')
+    >>> print search_results.renderContents()
+    <...
+    ...<a href="/ubuntu">
+    ...Ubuntu Linux...
+    ...(distribution)...
+    ...<a href="/ubuntu-product">
+    ...Ubuntu...
+    ...(product)...
+    ...<a href="/ubuntu-project">
+    ...The Ubuntu Project...
+    ...(project)...
+
+We can follow one of these links to go straight to the
+Product/Project/Distribution.
+
+    >>> browser.getLink('The Ubuntu Project').click()
+    >>> browser.url
+    'http://launchpad.dev/ubuntu-project'
+
+
+On that same page it's also possible to enter a product/distribution/project
+name and go straight to its Launchpad page.
+
+    >>> browser.open('http://launchpad.dev/+search')
+    >>> browser.getControl(name='q').value = 'ubuntu'
+    >>> browser.getControl('Go').click()
+    >>> browser.url
+    'http://launchpad.dev/ubuntu'
+
+If there's no product/distribution/project whose name exactly matches the
+given string, we'll then display a list of results and a message explaining
+that no exact match was found.
+
+    >>> browser.open('http://launchpad.dev/+search')
+    >>> browser.getControl(name='q').value = 'foo'
+    >>> browser.getControl('Go').click()
+
+    >>> tags = find_tags_by_class(browser.contents, "informational message")
+    >>> for tag in tags:
+    ...   print tag.renderContents()
+    We couldn't find an exact match for your search term. Below you can see
+    some projects that are likely to be what you are looking for.
+
+    >>> search_results = find_tag_by_id(browser.contents, 'search-results')
+    >>> print search_results.renderContents()
+    <...
+    ...<a href="/iso-codes">
+    ...The iso-codes...
+    ...(product)...
+    ...<a href="/iso-codes-project">
+    ...iso-codes...
+    ...(project)...
+
+
+If the user tries to do a search without any search terms, we ask him to enter
+some terms and do another search.
+
+    >>> browser.open('http://launchpad.dev/+search')
+    >>> browser.getControl(name='q').value
+    ''
+    >>> browser.getControl('Search').click()
+    >>> empty_search = find_tag_by_id(browser.contents, 'empty-search-string')
+    >>> print empty_search.renderContents()
+    Enter one or more words on the box above to search the existent
+    Launchpad projects.
+
+
+Also, we want to make it easy for people to enter the search string on the
+URL, saving them a page load.
+
+    >>> browser.open('http://launchpad.dev/+search?q=ubuntu')
+    >>> search_results = find_tag_by_id(browser.contents, 'search-results')
+    >>> print search_results.renderContents()
+    <...
+    ...<a href="/ubuntu">
+    ...Ubuntu Linux...
+    ...(distribution)...
+    ...<a href="/ubuntu-product">
+    ...Ubuntu...
+    ...(product)...
+    ...<a href="/ubuntu-project">
+    ...The Ubuntu Project...
+    ...(project)...

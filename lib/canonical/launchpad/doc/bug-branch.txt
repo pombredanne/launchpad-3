@@ -13,7 +13,7 @@ BugBranch links a bug and a branch.
     ...     IBugSet, IBranchSet)
     >>> from canonical.database.sqlbase import flush_database_updates
 
-    >>> login("foo.bar@canonical.com")
+    >>> login("no-priv@canonical.com")
 
     >>> bugset = getUtility(IBugSet)
     >>> bug = bugset.get(1)
@@ -68,6 +68,30 @@ of interest to others tracking the bugfix on this branch:
     ...     branch, "I should have this fixed today")
     >>> bug_branch_three.whiteboard
     u'I should have this fixed today'
+
+Anyone who can edit the bug the BugBranch object points to may edit the
+BugBranch object itself.
+
+    >>> login('no-priv@canonical.com')
+    >>> bug_branch_three.whiteboard = 'New whiteboard.'
+    >>> bug.description = 'New description.'
+
+If we make the bug private, no-priv won't be allowed to edit neither the
+bug nor the BugBranch.
+
+    >>> login('foo.bar@canonical.com')
+    >>> bug.private = True
+
+    >>> login('no-priv@canonical.com')
+    >>> bug_branch_three.whiteboard = 'Yet another whiteboard.'
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+    >>> bug.description = 'Yet another description.'
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
 
 Bugs Related to Branches
 ------------------------

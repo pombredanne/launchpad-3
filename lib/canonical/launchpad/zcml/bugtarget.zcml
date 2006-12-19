@@ -16,6 +16,13 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IBugTarget"
+        class="canonical.launchpad.browser.BugTargetView"
+        name="+portlet-recently-touched-bugs"
+        permission="zope.Public"
+        template="../templates/bugtarget-portlet-recently-touched-bugs.pt" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IBugTarget"
         class="canonical.launchpad.browser.BugListingPortletView"
         permission="zope.Public"
         name="+portlet-bugfilters"
@@ -43,6 +50,27 @@
         permission="zope.Public"
         name="+bugs"
         template="../templates/buglisting-default.pt"/>
+
+    <browser:page
+        for="*"
+        name="+filebug-macros"
+        permission="zope.Public"
+        template="../templates/bugtarget-macros-filebug.pt" />
+
+    <browser:page
+        name="+filebug"
+        for="canonical.launchpad.interfaces.IBugTarget"
+        class="canonical.launchpad.browser.FileBugGuidedView"
+        facet="bugs"
+        permission="launchpad.AnyPerson" />
+
+    <browser:page
+        name="+filebug-advanced"
+        for="canonical.launchpad.interfaces.IBugTarget"
+        class="canonical.launchpad.browser.FileBugAdvancedView"
+        facet="bugs"
+        permission="launchpad.AnyPerson" />
+
   </facet>
 
   <!-- Macros -->

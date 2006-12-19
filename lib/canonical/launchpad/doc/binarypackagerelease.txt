@@ -127,7 +127,7 @@ getByNameInDistroRelease
 
    >>> result = binset.getByNameInDistroRelease(warty.id)
    >>> print len(list(result))
-   5
+   6
    >>> result = binset.getByNameInDistroRelease(warty.id, 'mozilla-firefox')
    >>> print len(list(result))
    1

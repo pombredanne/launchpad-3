@@ -1,8 +1,9 @@
 When filing a distribution bug, an error is raised if you enter a
-package name that doesn't exist in the distribution.
+package name that doesn't exist in the distribution. We'll demonstrate
+using the advanced filebug workflow, to skip searching for dupes.
 
     >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
-    >>> browser.open("http://localhost:9000/distros/ubuntu/+filebug")
+    >>> browser.open("http://launchpad.dev/ubuntu/+filebug-advanced")
 
     >>> browser.getControl(name="field.title").value = "test"
     >>> browser.getControl(name="field.comment").value = "test"
@@ -17,7 +18,7 @@ package name that doesn't exist in the distribution.
 An error is also raised if you choose the radio button to enter a
 package name, but don't specify a package.
 
-    >>> browser.open("http://localhost:9000/distros/ubuntu/+filebug")
+    >>> browser.open("http://launchpad.dev/ubuntu/+filebug-advanced")
 
     >>> browser.getControl(name="field.title").value = "test"
     >>> browser.getControl(name="field.comment").value = "test"

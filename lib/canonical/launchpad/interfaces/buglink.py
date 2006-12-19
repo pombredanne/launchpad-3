@@ -101,6 +101,6 @@ class BugLinksVocabularyFactory:
 class IUnlinkBugsForm(Interface):
     """Schema for the unlink bugs form."""
 
-    bugs = Set(title=_('Bug Links:'), required=True,
+    bugs = Set(title=_('Bug Links'), required=True,
                value_type=Choice(source=BugLinksVocabularyFactory()),
                description=_('Select the bug links that you want to remove.'))
