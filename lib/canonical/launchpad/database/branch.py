@@ -74,6 +74,7 @@ class Branch(SQLBase):
 
     last_scanned = UtcDateTimeCol(default=None)
     last_scanned_id = StringCol(default=None)
+    revision_count = IntCol(default=0, notNull=True)
 
     cache_url = StringCol(default=None)
 
@@ -144,10 +145,6 @@ class Branch(SQLBase):
         name = self.name
         owner = self.owner.name
         return (product, status, author, name, owner)
-
-    def revision_count(self):
-        """See IBranch."""
-        return RevisionNumber.selectBy(branch=self).count()
 
     def latest_revisions(self, quantity=10):
         """See IBranch."""

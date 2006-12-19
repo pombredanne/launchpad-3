@@ -168,7 +168,7 @@ class TestBzrSync(BzrSyncTestCase):
         self.syncAndCount(new_revisions=1, new_numbers=1)
         self.uncommitRevision()
         self.syncAndCount(new_numbers=-1)
-        self.assertEqual(self.db_branch.revision_count(), 0)
+        self.assertEqual(self.db_branch.revision_count, 0)
 
     def test_import_recommit(self):
         # Second import honours uncommit followed by commit.
@@ -177,7 +177,7 @@ class TestBzrSync(BzrSyncTestCase):
         self.uncommitRevision()
         self.commitRevision('second')
         self.syncAndCount(new_revisions=1)
-        self.assertEqual(self.db_branch.revision_count(), 1)
+        self.assertEqual(self.db_branch.revision_count, 1)
         [revno] = self.db_branch.revision_history
         self.assertEqual(revno.revision.log_body, 'second')
 

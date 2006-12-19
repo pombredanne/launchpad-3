@@ -202,6 +202,7 @@ class BzrSync:
         if last_revision != self.db_branch.last_scanned_id:
             self.db_branch.last_scanned = UTC_NOW
             self.db_branch.last_scanned_id = last_revision
+            self.db_branch.revision_count = len(self.bzr_history)
             did_something = True
 
         if did_something:
