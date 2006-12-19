@@ -993,9 +993,14 @@ It is returned in 'SelectResults' form:
   >>> last_uploads
   <sqlobject.main.SelectResults ...>
 
-
   >>> last_uploads.count()
   1
 
-  >>> [(spr.name, spr.version) for spr in last_uploads]
-  [(u'mozilla-firefox', u'0.9')]
+Each element is a ISourcePackageRelease instance:
+
+XXX cprov 20061219: ISourcePackageRelease requires 'branches'
+attribute. why ?
+
+  >>> from canonical.launchpad.interfaces import ISourcePackageRelease
+  >>> ISourcePackageRelease.providedBy(last_uploads[0])
+  True
