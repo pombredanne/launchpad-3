@@ -89,15 +89,22 @@ class BzrSync:
         # synchronise Revision objects
         ancestry = self.bzr_branch.repository.get_ancestry(
             self.bzr_branch.last_revision())
+        curr = 0
+        last = len(ancestry)
         for revision_id in ancestry:
+            curr = curr + 1
             if revision_id is None:
+                self.logger.debug("%d of %d: revision_id is None",
+                                  curr, last)
                 continue
             # If the revision is a ghost, it won't appear in the repository.
             try:
                 revision = self.bzr_branch.repository.get_revision(revision_id)
             except NoSuchRevision:
+                self.logger.debug("%d of %d: %s is a ghost",
+                                  curr, last, revision_id)
                 continue
-            if self.syncRevision(revision):
+            if self.syncRevision(revision, curr, last):
                 did_something = True
 
         # now synchronise the RevisionNumber objects
@@ -106,14 +113,15 @@ class BzrSync:
 
         return did_something
 
-    def syncRevision(self, bzr_revision):
+    def syncRevision(self, bzr_revision, curr, last):
         """Import the revision with the given revision_id.
 
         :param bzr_revision: the revision to import
         :type bzr_revision: bzrlib.revision.Revision
         """
         revision_id = bzr_revision.revision_id
-        self.logger.debug("synchronizing revision: %s", revision_id)
+        self.logger.debug("%d of %d: synchronizing revision: %s",
+                          curr, last, revision_id)
 
         # If did_something is True, new information was found and
         # loaded into the database.
@@ -265,7 +273,7 @@ def main(branch_id):
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(formatter)
     logger = logging.getLogger("BzrSync")
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)
     logger.addHandler(handler)
 
     branch = getUtility(IBranchSet).get(branch_id)

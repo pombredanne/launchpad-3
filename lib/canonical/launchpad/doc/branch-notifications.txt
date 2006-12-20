@@ -1,0 +1,33 @@
+Email Notifications for Branches
+================================
+
+There are two situations where emails are sent out for branches:
+ - when a user modifies the state of the branch object using the UI
+ - when the branch scanner notices a change in the tip revision
+
+
+Launchpad UI changes
+--------------------
+
+    >>> from zope.publisher.browser import TestRequest
+    >>> from zope.component import getView
+    >>> from canonical.launchpad.interfaces import IBranchSet
+
+    >>> login('test@canonical.com')
+    >>> branch = getUtility(IBranchSet).getByUniqueName('~name12/firefox/main')
+    >>> form = {
+    ...     'UPDATE_SUBMIT': 'Change', 
+    ...     'field.lifecycle_status': 'Experimental',
+    ...     'field.whiteboard': branch.whiteboard,
+    ...     }
+    >>> edit_view = getView(branch, '+lifecycle', TestRequest(form=form))
+    >>> branch.lifecycle_status
+    >>> edit_view.__class__
+    >>> edit_view.update()
+    u'Updated...'
+
+    >>> import transaction
+    >>> from canonical.launchpad.mail import stub
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    7

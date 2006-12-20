@@ -1278,3 +1278,74 @@ def notify_specification_modified(spec, event):
 
     for address in spec.notificationRecipientAddresses():
         simple_sendmail_from_person(event.user, address, subject, body)
+
+
+# def send_branch_revisions_updated(branch, ):
+def notify_branch_modified(branch, event):
+    """Notify the related people that a branch has been modifed."""
+    branch_delta = branch.getDelta(event.object_before_modification,
+                                   event.user)
+    if branch_delta is None:
+        return
+
+    subject = '[Branch %s] %s' % (branch.unique_name, branch.title)
+    indent = ' '*4
+
+    # Fields for which we have old and new values.
+    for field_name in ('name', 'lifecycle_status', 'revision_count'):
+        title = IBranch[field_name].title
+        delta = getattr(branch_delta, field_name)
+        if delta is not None:
+            old_item = delta['old']
+            new_item = delta['new']
+            info_lines.append("%s%s: %s => %s" % (
+                indent, title, old_item.title, new_item.title))
+            
+    # Fields for which we only have the new value.
+    for field_name in ('title', 'summary', 'url'):
+        title = IBranch[field_name].title
+        delta = getattr(branch_delta, field_name)
+        if delta is not None:
+            info_lines.append("%s%s: %s" % (
+                indent, title, delta))
+
+    # Landing target is a little special.
+    if branch_delta.landing_target is not None:
+        title = IBranch['landing_target'].title
+        info_lines.append("%s%s: %s" % (
+            indent, title, branch_delta.landing_target.unique_name))
+
+    mail_wrapper = MailWrapper(width=72)
+    # If the tip revision has changed, then show the log for the tip.
+    if branch_delta.tip_revision is not None:
+        title = IBranch['tip_revision'].title
+        log_entry = branch_delta.tip_revision.log_body
+        if info_lines:
+            info_lines.append('')
+        info_lines.append('Log entry of last revision:')
+        info_lines.append('')
+        info_lines.append(mail_wrapper.format(log_entry))
+
+    if branch_delta.whiteboard is not None:
+        if info_lines:
+            info_lines.append('')
+        info_lines.append('Whiteboard changed to:')
+        info_lines.append('')
+        info_lines.append(mail_wrapper.format(branch_delta.whiteboard))
+
+    if not info_lines:
+        # The specification was modified, but we don't yet support
+        # sending notification for the change.
+        return
+    
+    body = get_email_template('branch-modified.txt') % {
+        'editor': event.user.displayname,
+        'info_fields': '\n'.join(info_lines),
+        'branch_title': branch.title,
+        'branch_unique_name': branch.unique_name,
+        'branch_url': canonical_url(branch),
+        'unsubscribe_url': canonical_url(branch) + '/+subscribe' }
+
+    for address in branch.notificationRecipientAddresses():
+        simple_sendmail_from_person(event.user, address, subject, body)
+
