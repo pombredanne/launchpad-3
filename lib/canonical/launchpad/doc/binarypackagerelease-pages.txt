@@ -1,0 +1,89 @@
+= BinaryPackageRelease Pages =
+
+The view class for IBinaryPackageRelease is exposed via a traversal of
+a IBuild, i.e, by traversing a 'name' in an IBuild you can access an
+raw (may be unpublished) IBinaryPackageRelease.
+
+  >>> from zope.component import getUtility
+  >>> from zope.component import queryView
+  >>> from zope.publisher.browser import TestRequest
+  >>> from canonical.launchpad.database import BinaryPackageRelease
+
+  >>> pmount_bin = BinaryPackageRelease.get(15)
+  >>> pmount_bin.name
+  u'pmount'
+  >>> pmount_bin.version
+  u'0.1-1'
+
+Get a "mock" request:
+  >>> mock_form = {}
+  >>> request = TestRequest(form=mock_form)
+
+Let's instantiate the view for +index:
+
+  >>> pmount_view = queryView(pmount_bin, "+index", request)
+
+Main functionality of this class is to provide abstracted model of the
+stored package relationships. They are provided as a list of
+IPackageRelationship. (see package-relationship.txt).
+
+
+  >>> pmount_deps = pmount_view.depends()
+  >>> len(pmount_deps)
+  3
+
+Let's check the rendering parameters for an specific dep:
+
+  >>> at_dep = pmount_deps[0]
+  >>> at_dep.name
+  'at'
+  >>> at_dep.signal
+  '>='
+  >>> at_dep.version
+  '3.14156'
+  >>> at_dep.url
+  u'http://launchpad.dev/ubuntu/hoary/i386/at'
+
+Not that the 'url' attribute points to the IDistroArchReleaseBinaryPackage
+for 'at'.
+
+Besides that, 'signal' can be null regarding the given relationship,
+it automatically means that 'version' will be an empty string.
+
+  >>> linux_dep = pmount_deps[1]
+  >>> linux_dep.name
+  'linux-2.6.12'
+  >>> linux_dep.signal is None
+  True
+  >>> linux_dep.version
+  ''
+  >>> linux_dep.url
+  u'http://launchpad.dev/ubuntu/hoary/i386/linux-2.6.12'
+
+Another possible case is the binary package mentioned in
+package relationship isn't present in the DistroArchRelease in
+question. In this case 'url' will be None, which indicates no link
+should be rendered for this dependency.
+
+  >>> notfound_dep = pmount_deps[2]
+  >>> notfound_dep.name
+  'tramp-package'
+  >>> notfound_dep.signal is None
+  True
+  >>> notfound_dep.version
+  ''
+  >>> notfound_dep.url is None
+  True
+
+Other relationship groups use the same mechanism:
+
+  >>> len(pmount_view.recommends())
+  0
+  >>> len(pmount_view.conflicts())
+  0
+  >>> len(pmount_view.suggests())
+  0
+  >>> len(pmount_view.replaces())
+  0
+  >>> len(pmount_view.provides())
+  0

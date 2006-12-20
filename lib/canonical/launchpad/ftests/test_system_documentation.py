@@ -167,6 +167,11 @@ special = {
             '../doc/poparser.txt', optionflags=default_optionflags
             ),
 
+    'package-relationship.txt': DocFileSuite(
+            '../doc/package-relationship.txt',
+            optionflags=default_optionflags
+            ),
+
     # POExport stuff is Zopeless and connects as a different database user.
     # poexport-distrorelease-(date-)tarball.txt is excluded, since they add
     # data to the database as well.

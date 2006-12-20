@@ -25,4 +25,5 @@ class IPackageRelationship(Interface):
     name = Attribute("The name of the related package")
     signal = Attribute("The operation for version comparisons, e.g '>='")
     version = Attribute("The version related to")
-
+    url = Attribute("URL to where this token should link to. It can be None, "
+                    "in this case no link should be rendered.")
