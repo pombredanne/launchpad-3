@@ -262,6 +262,13 @@ class IBranch(IHasOwner):
         Returns True if any RevisionNumber objects were destroyed.
         """
 
+    def getTipRevision():
+        """Returns the Revision associated with the last_scanned_id.
+
+        Will return None if last_scanned_id is None, or if the id
+        is not found (as in a ghost revision).
+        """
+
     def updateScannedDetails(revision_id, revision_count):
         """Updates attributes associated with the scanning of the branch.
 
@@ -325,18 +332,9 @@ class IBranchDelta(Interface):
     summary = Attribute("The branch summary or None.")
     url = Attribute("The branch URL or None.")
     whiteboard = Attribute("The branch whiteboard or None.")
-    landing_target = Attribute("The branch landing target or None.")
-    tip_revision = Attribute("The branch tip revision or None.")
-
-    bugs_linked = Attribute("A list of new bugs linked to this branch.")
-    bugs_unlinked = Attribute("A list of bugs unlinked from this branch.")
-    specs_linked = Attribute("A list of new specs linked to this branch.")
-    specs_unlinked = Attribute("A list of specs unlinked from this branch.")
-
-    # items where we provide 'old' and 'new' values if they changed
     lifecycle_status = Attribute("Old and new lifecycle status, or None.")
     revision_count = Attribute("Old and new revision counts, or None.")
-    
+    last_scanned_id = Attribute("The revision id of the tip revision.")
 
 
 class IBranchLifecycleFilter(Interface):

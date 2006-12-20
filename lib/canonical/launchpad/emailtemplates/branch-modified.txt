@@ -1,10 +1,7 @@
-  * Branch: %(branch_title)s (%(branch_unique_name)s)
-  * Revisions: (branch_revision_count)d
-
-%(info_fields)s
-
-You received this email because either you are the owner of the branch or you are subscribed to this branch. To unsubscribe from this branch use go to %(unsubscribe_url)s.
+%(contents)s
 
 --
 %(branch_title)s
 %(branch_url)s
+
+You received this email because either you are the owner of the branch or you are subscribed to this branch. To unsubscribe from this branch use go to %(unsubscribe_url)s.

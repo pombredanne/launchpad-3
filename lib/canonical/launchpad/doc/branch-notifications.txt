@@ -5,29 +5,145 @@ There are two situations where emails are sent out for branches:
  - when a user modifies the state of the branch object using the UI
  - when the branch scanner notices a change in the tip revision
 
+Firstly lets just make sure that the emails that'll be sent out
+have the appropriate information.
 
-Launchpad UI changes
---------------------
+Email Format
+------------
 
-    >>> from zope.publisher.browser import TestRequest
-    >>> from zope.component import getView
-    >>> from canonical.launchpad.interfaces import IBranchSet
+    >>> from zope.event import notify
+    >>> from canonical.launchpad.event import SQLObjectModifiedEvent
+    >>> from canonical.launchpad.interfaces import IBranch, IBranchSet
+    >>> from canonical.launchpad.webapp.snapshot import Snapshot
 
     >>> login('test@canonical.com')
     >>> branch = getUtility(IBranchSet).getByUniqueName('~name12/firefox/main')
-    >>> form = {
-    ...     'UPDATE_SUBMIT': 'Change', 
-    ...     'field.lifecycle_status': 'Experimental',
-    ...     'field.whiteboard': branch.whiteboard,
-    ...     }
-    >>> edit_view = getView(branch, '+lifecycle', TestRequest(form=form))
-    >>> branch.lifecycle_status
-    >>> edit_view.__class__
-    >>> edit_view.update()
-    u'Updated...'
+
+    >>> before_modification = Snapshot(branch, providing=IBranch)
+
+    >>> branch.whiteboard = 'This is the new whiteboard'
+
+Even though the branch notification emails don't use the field
+names just now, we'll pass them through anyway
+
+    >>> notify(SQLObjectModifiedEvent(branch,
+    ...                               before_modification,
+    ...                               ['whiteboard']))
 
     >>> import transaction
     >>> from canonical.launchpad.mail import stub
     >>> transaction.commit()
     >>> len(stub.test_emails)
-    7
+    1
+    >>> email_body = stub.test_emails[0][2]
+
+    >>> def check_email(email, To=None, From=None, Subject=None, contents=None):
+    ...   email_body = email[2]
+    ...   # email headers are terminated by a blank line
+    ...   email_headers = email_body.split('\n\n')[0]
+    ...   email_text = '\n\n'.join(email_body.split('\n\n')[1:])
+    ...   dump_body = False
+    ...   if To and ('To: %s' % To) not in email_headers:
+    ...     print "Expected To:", To
+    ...     dump_body = True
+    ...   if From and ('From: %s' % From) not in email_headers:
+    ...     print "Expected From:", From
+    ...     dump_body = True
+    ...   if Subject and ('Subject: %s' % Subject) not in email_headers:
+    ...     print "Expected Subject:", Subject
+    ...     dump_body = True
+    ...   if contents and contents not in email_text:
+    ...     print "Expected the following in the email:"
+    ...     print contents
+    ...     dump_body = True
+    ...   if dump_body:
+    ...     print "--- the email ---"
+    ...     print email_body
+
+    >>> check_email(stub.test_emails[0],
+    ...   To='test@canonical.com',
+    ...   From='Sample Person <test@canonical.com>',
+    ...   Subject='[Branch ~name12/firefox/main] Mozilla Firefox Mainline',
+    ...   contents='Whiteboard changed to:\n\nThis is the new whiteboard\n\n')
+
+The fields that are currently tracked with the delta, and cause
+an email to be sent out are:
+  * name
+  * title
+  * summary
+  * url
+  * whiteboard
+  * lifecycle_status
+  * revision_count
+  * last_scanned_id
+
+All but the last two are modified through the web UI, and the last
+two are modified by the branch scanner.  Now normally scripts don't
+emit emails, but we're going to have to change this for the branch
+scanner.
+
+So, if all the UI fields are changed, you should get an email that looks
+something like this:
+
+
+
+
+
+According to the bazaar guys, if the revision_id is still the same at the
+tip of the branch, then the branch hasn't changed.  
+
+    >>> stub.test_emails = []
+    >>> branch = getUtility(IBranchSet).getByUniqueName('~name12/+junk/junk.dev')
+
+Now make it have less revisions, and set a bogus last scanned id
+    >>> revision_count = branch.revision_count
+    >>> last_id = branch.last_scanned_id
+    >>> branch.revision_count -= 2
+    >>> branch.last_scanned_id = u'something different'
+
+Snapshot it for the delta
+
+    >>> before_modification = Snapshot(branch, providing=IBranch)
+    >>> branch.revision_count = revision_count
+    >>> branch.last_scanned_id = last_id
+
+    >>> notify(SQLObjectModifiedEvent(branch,
+    ...                               before_modification,
+    ...                               ['revision_count', 'last_scanned_id']))
+
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    2
+
+    >>> def check_recipients(emails, addresses):
+    ...   found = []
+    ...   for email in emails:
+    ...     recipient = email[1]
+    ...     if len(recipient) != 1: print "Expected only one recipient"
+    ...     found.append(recipient[0])
+    ...   if sorted(found) != sorted(addresses):
+    ...     print "Expected: %s\nFound: %s" % (sorted(addresses),
+    ...                                        sorted(found))
+
+    >>> check_recipients(stub.test_emails, ['test@canonical.com',
+    ...                                     'support@ubuntu.com'])
+
+
+    >>> email = stub.test_emails[0]
+    >>> check_email(email,
+    ...   Subject='[Branch ~name12/+junk/junk.dev] Ubuntu Junk Code',
+    ...   contents='Revision count: 4 =3D> 6')
+    >>> check_email(email,
+    ...   contents='Log entry of last revision:\n\n'
+    ...            'fix bug in bar')
+
+
+
+
+
+
+
+
+
+Launchpad UI changes
+--------------------
