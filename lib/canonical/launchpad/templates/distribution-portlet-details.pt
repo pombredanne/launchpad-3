@@ -68,8 +68,8 @@
       <th>Uploaders:</th>
       <td>
         <ul>
-          <li tal:repeat="dcu context/uploaders">
-            <tal:component replace="dcu/component/name" />:
+          <li tal:repeat="dcu context/uploaders"
+            ><tal:component replace="dcu/component/name" />:
             <a
               tal:attributes="href dcu/uploader/fmt:url"
               tal:content="dcu/uploader/browsername"

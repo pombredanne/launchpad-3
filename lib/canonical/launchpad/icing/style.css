@@ -1,4 +1,7 @@
-.demo {background-color: #fee;} /* turned off for the demo */
+.demo {background-color: #fee;}
+
+/* Stuff browsers should do but don't: */
+tr {vertical-align: top;}
 
 body {
   position: relative;
@@ -684,10 +687,10 @@ ul#applicationchooser li#applicationchooser_selected {
   width: 100%;
   background-image: url(mainarea_topright.gif);
   background-repeat: no-repeat;
-  background-position: top right;
+  background-position: 100% top;
 }
 #singlecolumn div.z {
-  padding: 0 20px 20px; /* XXX Makes the top right corner disappear */
+  padding: 0 0 20px; /* XXX Makes the top right corner disappear */
 }
 #help_panel {
   visibility: hidden; /* global.js reveals it if JavaScript is available */
@@ -917,6 +920,7 @@ body.tab-specifications #mainarea div#portlets div.portlet.active ul li a:hover 
 body.tab-specifications #actions {background-color: #eef;}
 body.tab-specifications #actions h2 {background-color: #3f3ccc;}
 .tab-specifications h1, .tab-specifications h2, .tab-specifications h3,
+.tab-specifications #application-footer strong,
 .tab-specifications #maincontent :link, .tab-specifications #maincontent :visited {
   background: none;
   color: #3f3ccc; /* darkest color from mainarea_tab4-* */
@@ -1021,6 +1025,9 @@ body {
 #container {
   padding-left: 240px;
   padding-right: 20px;
+}
+#singlecolumn #container {
+  padding-left: 20px;
 }
 #maincontent, #portlets {
   float: left;
@@ -1146,6 +1153,11 @@ table.summary tr {
 table.summary td {
   padding-left: 0.5em;
 }
+table.summary ul, table.summary ul li {
+  list-style-position: inside;
+  margin: 0;
+  padding: 0;
+}
 th {
   text-align: right;
 }
@@ -1190,12 +1202,14 @@ li {
 
 /* Various custom list formats: */
 ul.architecture, li.architecture     {list-style-image: url(/@@/architecture);}
+ul.blueprint, li.blueprint           {list-style-image: url(/@@/blueprint);}
 ul.distrorelease, li.distrorelease   {list-style-image: url(/@@/distribution);}
 ul.package-binary, li.package-binary {
   list-style-image: url(/@@/package-binary);
 }
 ul.person, li.person                 {list-style-image: url(/@@/person);}
 ul.spec, li.spec                     {list-style-image: url(/@@/spec);}
+ul.sprint, li.sprint                 {list-style-image: url(/@@/sprint);}
 ul.webref, li.webref, ul.external.link, li.external.link {
   list-style-image: url(/@@/link);
 }
