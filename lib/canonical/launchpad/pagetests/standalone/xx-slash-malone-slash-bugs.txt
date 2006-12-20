@@ -1,7 +1,7 @@
-If we enter a bug ID in the "Jump to bug" form on the Malone homepage, we
+If we enter a bug ID in the search form on the Bugs front page, we
 get redirected to the bug with the corresponding id.
 
-  >>> browser.open("http://launchpad.dev/bugs")
+  >>> browser.open("http://bugs.launchpad.dev/")
   >>> control = browser.getControl(name="id")
   >>> control.value = "2"
   >>> browser.getControl(name="jump_to_bug").click()
@@ -25,7 +25,7 @@ and an error message is displayed:
   ...
 
 If the ID is prefixed by a hash, the hash is ignored and the redirection
-works as expected:
+works as expected.
 
   >>> browser.open("http://launchpad.dev/bugs")
   >>> control = browser.getControl(name="id")

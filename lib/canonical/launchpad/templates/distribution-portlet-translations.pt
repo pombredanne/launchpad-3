@@ -9,7 +9,7 @@
           <td tal:condition="context/translationgroup">
             <a
               tal:attributes="href context/translationgroup/fmt:url"
-              tal:content="context/translationgroup/browsername"
+              tal:content="context/translationgroup/title"
             />
           </td>
         </tr>

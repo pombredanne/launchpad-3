@@ -5,7 +5,6 @@
     i18n:domain="malone"
 >
   <body>
-<<<<<<< TREE
     <div metal:fill-slot="main">
       <div
         id="applications"
@@ -113,7 +112,7 @@
                           </div>
                           <div class="two column right">
                             <h2>Recently fixed</h2>
-                            <table>
+                            <table id="fixed-bugs">
                               <tbody>
                                 <tr
                                   tal:repeat="fixed_bug view/getMostRecentlyFixedBugs"

@@ -35,7 +35,7 @@
       <td tal:condition="not:context/members">None</td>
       <td tal:condition="context/members">
         <a
-          tal:attributes="href context/members/fmt:url"
+          tal:attributes="href string:${context/fmt:url}/+members"
           tal:content="context/members/browsername"
         />
       </td>
@@ -50,7 +50,7 @@
       <td tal:condition="context/translationgroup">
         <a
           tal:attributes="href context/translationgroup/fmt:url"
-          tal:content="context/translationgroup/browsername"
+          tal:content="context/translationgroup/title"
         />
       </td>
     </tr>
