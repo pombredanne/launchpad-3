@@ -137,7 +137,11 @@ class IDistroRelease(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
         """
 
     def lastUploads():
-        """Return the last five source uploads for this DistroRelease."""
+        """Return the last five source uploads for this DistroRelease.
+
+        It returns a list containing up to five elements as
+        IDistroReleaseSourcePackageRelease instances
+        """
 
     def traverse(name):
         """Traverse across a distrorelease in Launchpad. This looks for

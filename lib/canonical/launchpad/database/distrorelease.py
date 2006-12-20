@@ -902,7 +902,11 @@ class DistroRelease(SQLBase, BugTargetBase):
             query, clauseTables=clauseTables,
             orderBy=['-distroreleasequeue.id'])
 
-        return last_uploads[:5]
+        distro_sprs = []
+        for spr in last_uploads[:5]:
+            distro_sprs.append(self.getSourcePackageRelease(spr))
+
+        return distro_sprs
 
     def createQueueEntry(self, pocket, changesfilename, changesfilecontent):
         """See IDistroRelease."""
