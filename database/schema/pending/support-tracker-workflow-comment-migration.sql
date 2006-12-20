@@ -1,3 +1,4 @@
+BEGIN;
 -- Mark all comments from somebody else than the ticket submitter
 -- as an answer. Otherwise, no answers posted before the new
 -- support tracker workfler is in place can be confirmed.
@@ -12,4 +13,5 @@ UPDATE TicketMessage SET ACTION = 35
 UPDATE Ticket SET status = 18
     WHERE status = 10 AND id IN (
     SELECT DISTINCT ticket FROM TicketMessage WHERE action = 35);
+COMMIT;
 

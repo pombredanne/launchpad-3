@@ -55,7 +55,7 @@
     for="canonical.launchpad.interfaces.ISpecification"
     path_expression="string:+spec/${name}"
     attribute_to_parent="target"
-    rootsite="blueprint"
+    rootsite="blueprints"
     />
 
   <subscriber
@@ -90,21 +90,29 @@
     <browser:page
       name="+listing-compact"
       template="../templates/specification-listing-compact.pt" />
+  </browser:pages>
+
+  <browser:pages
+      for="canonical.launchpad.interfaces.ISpecification"
+      permission="zope.Public">
     <browser:page
-      name="+portlet-details"
-      template="../templates/specification-portlet-details.pt" />
+        name="+portlet-details"
+        template="../templates/specification-portlet-details.pt" />
     <browser:page
-      name="+portlet-subscribers"
-      template="../templates/specification-portlet-subscribers.pt" />
+        name="+portlet-subscribers"
+        template="../templates/specification-portlet-subscribers.pt" />
     <browser:page
-      name="+portlet-dependencies"
-      template="../templates/specification-portlet-dependencies.pt" />
+        name="+portlet-dependencies"
+        template="../templates/specification-portlet-dependencies.pt" />
     <browser:page
-      name="+portlet-blocked"
-      template="../templates/specification-portlet-blocked.pt" />
+        name="+portlet-blocked"
+        template="../templates/specification-portlet-blocked.pt" />
     <browser:page
-      name="+portlet-feedbackqueue"
-      template="../templates/specification-portlet-feedbackqueue.pt" />
+        name="+portlet-feedbackqueue"
+        template="../templates/specification-portlet-feedbackqueue.pt" />
+    <browser:page
+        name="+portlet-branches"
+        template="../templates/specification-portlet-branches.pt" />
   </browser:pages>
 
   <browser:pages
@@ -392,6 +400,14 @@
     attribute="__call__"
     />
 
+  <browser:page
+    for="canonical.launchpad.interfaces.ISpecification"
+    name="+linkbranch"
+    class="canonical.launchpad.browser.SpecificationLinkBranchView"
+    template="../templates/specification-linkbranch.pt"
+    permission="launchpad.AnyPerson"
+    />
+
   <!-- SpecificationSet -->
   <content class="canonical.launchpad.database.SpecificationSet">
     <allow interface="canonical.launchpad.interfaces.ISpecificationSet" />
@@ -407,7 +423,7 @@
     for="canonical.launchpad.interfaces.ISpecificationSet"
     path_expression="string:"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
-    rootsite="blueprint"
+    rootsite="blueprints"
     />
 
   <browser:defaultView

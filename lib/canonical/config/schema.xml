@@ -22,6 +22,62 @@
         <key name="cookie" datatype="string" default="launchpad" />
     </sectiontype>
 
+    <sectiontype name="virtual_host">
+        <key name="hostname" datatype="string" required="yes">
+            <description>
+                Host name of this virtual host.
+                This is matched from the incoming Host header, and
+                also used to put together URLs if rooturl is not provided.
+                Example: launchpad.net
+            </description>
+        </key>
+        <key name="althostnames" datatype="string" required="no">
+            <description>
+                Alternative host names to match, in addition to
+                the one given in hostname, comma separated.
+                Example: wwwww.launchpad.net, www.launchpad.net
+            </description>
+        </key>
+        <key name="rooturl" datatype="string" required="no">
+            <description>
+                Explicit root URL for this virtual host.
+                If this is not provided, the root URL is calculated
+                based on the host name.
+                Example: https://launchpad.net/
+            </description>
+        </key>
+    </sectiontype>
+
+    <sectiontype name="mainsite" extends="virtual_host" />
+    <sectiontype name="blueprints" extends="virtual_host" />
+    <sectiontype name="code" extends="virtual_host" />
+    <sectiontype name="translations" extends="virtual_host" />
+    <sectiontype name="bugs" extends="virtual_host" />
+    <sectiontype name="answers" extends="virtual_host" />
+    <sectiontype name="shipitubuntu" extends="virtual_host" />
+    <sectiontype name="shipitkubuntu" extends="virtual_host" />
+    <sectiontype name="shipitedubuntu" extends="virtual_host" />
+    <sectiontype name="xmlrpc" extends="virtual_host" />
+
+    <sectiontype name="virtual_hosts">
+        <key name="use_https" datatype="boolean" required="yes">
+            <description>
+                When true, use https URLs unless explicitly overridden.
+                When false, use http URLs unless explicitly overridden.
+            </description>
+        </key>
+        <section name="*" type="mainsite" attribute="mainsite" required="yes" />
+        <section name="*" type="blueprints" attribute="blueprints" required="yes" />
+        <section name="*" type="code" attribute="code" required="yes" />
+        <section name="*" type="translations" attribute="translations" required="yes" />
+        <section name="*" type="bugs" attribute="bugs" required="yes" />
+        <section name="*" type="answers" attribute="answers" required="yes" />
+        <section name="*" type="shipitubuntu" attribute="shipitubuntu" required="yes" />
+        <section name="*" type="shipitkubuntu" attribute="shipitkubuntu" required="yes" />
+        <section name="*" type="shipitedubuntu" attribute="shipitedubuntu" required="yes" />
+        <section name="*" type="xmlrpc" attribute="xmlrpc" required="yes" />
+    </sectiontype>
+
     <sectiontype name="launchpad_errorreports">
         <!-- Not 'existing-directory' because the test runner needs to
         create it. Not 'existing-dirpath' because ZConfig will enforce it
@@ -57,8 +113,6 @@
                 Domains should not start with a leading '.'.
             </description>
         </key>
-        <key name="root_url" datatype="canonical.config.urlbase"
-            default="https://launchpad.net/" />
         <key name="errors_address" datatype="string" required="no"
             default="launchpad-error-reports@lists.canonical.com" />
         <key name="bugs_domain" datatype="string" required="no"
@@ -117,64 +171,26 @@
                 puller to use, not for public URLs.
             </description>
         </key>
-        <key name="main_hostname" datatype="string" required="no"
-             default="launchpad.net,shipit.ubuntu.com,shipit.kubuntu.org,shipit.edubuntu.org,localhost">
+        <key name="default_blob_expiry" datatype="integer" default="10800">
             <description>
-            The host name for the main Launchpad site.
+                Number of seconds a blob stored in the temporary blob storage
+                must remain before it may be garbage collected.
             </description>
         </key>
-        <key name="blueprint_hostname" datatype="string"
-            default="features.launchpad.net">
+        <key name="max_blob_size" datatype="integer" default="0">
             <description>
-            The host name for the Blueprint site.
+                Maximum size of blobs that can be stored in the temporary
+                blob storage. Set to 0 for unlimited.
             </description>
         </key>
-        <key name="blueprint_root_url" datatype="canonical.config.urlbase"
-            default="https://features.launchpad.net/">
+        <section name="*" type="virtual_hosts" attribute="vhosts" required="no"
+            />
+        <key name="restrict_to_team" datatype="string" default="">
             <description>
-            The root url for Blueprint, used when constructing canonical urls.
-            </description>
-        </key>
-        <key name="xmlrpc_hostname" datatype="string"
-            default="xmlrpc.launchpad.net">
-            <description>
-            The host name for the XMLRPC site.
-            </description>
-        </key>
-        <key name="shipitubuntu_hostname" datatype="string"
-            default="shipit.ubuntu.com">
-            <description>
-            The host name for the shipit ubuntu site.
-            </description>
-        </key>
-        <key name="shipitubuntu_root_url" datatype="canonical.config.urlbase"
-            default="https://shipit.ubuntu.com/">
-            <description>
-            The root url for shipit ubuntu, used when constructing canonical urls.
-            </description>
-        </key>
-        <key name="shipitkubuntu_hostname" datatype="string"
-            default="shipit.kubuntu.org">
-            <description>
-            The host name for the shipit kubuntu site.
-            </description>
-        </key>
-        <key name="shipitkubuntu_root_url" datatype="canonical.config.urlbase"
-            default="https://shipit.kubuntu.org/">
-            <description>
-            The root url for shipit kubuntu, used when constructing canonical urls.
-            </description>
-        </key>
-        <key name="shipitedubuntu_hostname" datatype="string"
-            default="shipit.edubuntu.org">
-            <description>
-            The host name for the shipit edubuntu site.
-            </description>
-        </key>
-        <key name="shipitedubuntu_root_url" datatype="canonical.config.urlbase"
-            default="https://shipit.edubuntu.org/">
-            <description>
-            The root url for shipit edubuntu, used when constructing canonical urls.
+            If this is provided, only members of the given team, and
+            launchpad admins, may access the site.  Anonymous access is
+            not allowed.  If this is provided, but not a known team name,
+            only launchpad admins may access the site.
             </description>
         </key>
         <section name="*" type="launchpad_session" attribute="session"
@@ -182,7 +198,6 @@
         <section name="*" type="launchpad_errorreports" attribute="errorreports"
             required="no" />
     </sectiontype>
-
     <sectiontype name="gina_target">
         <description>
             Gina will run against the target specified on the command line.

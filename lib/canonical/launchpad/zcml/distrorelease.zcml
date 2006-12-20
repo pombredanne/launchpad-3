@@ -9,6 +9,7 @@
     <allow interface="canonical.launchpad.interfaces.IDistroRelease"/>
     <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
     <allow interface="canonical.launchpad.interfaces.IHasQueueItems"/>
+    <allow interface="canonical.launchpad.interfaces.IPublishing"/>
     <!-- NB: check with SABDFL before modifying these, there is potential to
          make a huge mess if these get changed and Soyuz has to republish
          shedloads of data. -->
@@ -61,7 +62,7 @@
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IDistroRelease"
-    layer="canonical.launchpad.layers.MaloneLayer"
+    layer="canonical.launchpad.layers.BugsLayer"
     name="+bugs" />
 
   <browser:pages

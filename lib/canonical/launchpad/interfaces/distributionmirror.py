@@ -226,6 +226,9 @@ class IDistributionMirror(Interface):
         release and flavour, in case it exists.
         """
 
+    def deleteAllMirrorCDImageReleases():
+        """Delete all MirrorCDImageDistroReleases of this mirror."""
+
     def getExpectedPackagesPaths():
         """Get all paths where we can find Packages.gz files on this mirror.
 
@@ -353,3 +356,4 @@ class IMirrorProbeRecord(Interface):
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
     log_file = Attribute(_("The log of this probing."))
+

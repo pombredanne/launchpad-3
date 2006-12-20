@@ -1,13 +1,13 @@
   'salgado' have an email address that was probably added by gina, let's
   validate it now.
 
-  Workaround while https://launchpad.net/products/launchpad/+bug/39016 is not
+  Workaround while https://launchpad.net/launchpad/+bug/39016 is not
   fixed.
   >>> from canonical.launchpad.mail import stub
   >>> stub.test_emails[:] = []
 
   >>> print http(r"""
-  ... GET /people/salgado/+editemails HTTP/1.1
+  ... GET /~salgado/+editemails HTTP/1.1
   ... Authorization: Basic Z3VpbGhlcm1lLnNhbGdhZG9AY2Fub25pY2FsLmNvbTp6ZWNh
   ... """)
   HTTP/1.1 200 Ok
@@ -19,7 +19,7 @@
 
 
   >>> print http(r"""
-  ... POST /people/salgado/+editemails HTTP/1.1
+  ... POST /~salgado/+editemails HTTP/1.1
   ... Authorization: Basic Z3VpbGhlcm1lLnNhbGdhZG9AY2Fub25pY2FsLmNvbTp6ZWNh
   ... Content-Length: ...
   ... Content-Type: application/x-www-form-urlencoded
@@ -80,7 +80,7 @@
   ... VALIDATE=Confirm""" % path)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/people/salgado
+  Location: http://localhost:9000/~salgado
   ...
   ...informational message">Email address successfully confirmed...
   ...
