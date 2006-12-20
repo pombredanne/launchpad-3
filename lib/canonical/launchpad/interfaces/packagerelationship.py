@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'IPackageRelationship',
+    'IPackageRelationshipSet',
     ]
 
 from zope.interface import Interface, Attribute
@@ -27,3 +28,12 @@ class IPackageRelationship(Interface):
     version = Attribute("The version related to")
     url = Attribute("URL to where this token should link to. It can be None, "
                     "in this case no link should be rendered.")
+
+class IPackageRelationshipSet(Interface):
+    """IPackageRelationShip aggregator."""
+
+    def addContent(name, signal, version, url):
+        """Aggregates a new IPackageRelationship with given parameters."""
+
+    def has_items():
+        """whether of not this container has relationships to render."""

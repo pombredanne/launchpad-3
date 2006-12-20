@@ -138,6 +138,114 @@ Move back to the SourcePackage page to continue the tests:
   >>> browser.open(
   ...     'http://localhost/ubuntu/warty/+source/mozilla-firefox')
 
+
+PackageRelationships, 'builddepends' & 'builddependsindep', for the
+source in question are provided is this page:
+
+  >>> print find_tag_by_id(browser.contents, 'depends')
+  <td id="depends">
+  <h3>Build dependencies</h3>
+  <ul>
+  <li>
+  <BLANKLINE>
+  <BLANKLINE>
+  gcc-3.4-base
+  <BLANKLINE>
+  <BLANKLINE>
+  </li>
+  <li>
+  <BLANKLINE>
+  <BLANKLINE>
+  libc6
+  <BLANKLINE>
+  (&gt;=
+  2.3.2.ds1-4)
+  <BLANKLINE>
+  <BLANKLINE>
+  </li>
+  <li>
+  <BLANKLINE>
+  <BLANKLINE>
+  gcc-3.4
+  <BLANKLINE>
+  (&gt;=
+  3.4.1-4sarge1)
+  <BLANKLINE>
+  <BLANKLINE>
+  </li>
+  <li>
+  <BLANKLINE>
+  <BLANKLINE>
+  gcc-3.4
+  <BLANKLINE>
+  (&lt;&lt;
+  3.4.2)
+  <BLANKLINE>
+  <BLANKLINE>
+  </li>
+  <li>
+  <BLANKLINE>
+  <BLANKLINE>
+  libstdc++6-dev
+  <BLANKLINE>
+  (&gt;=
+  3.4.1-4sarge1)
+  <BLANKLINE>
+  <BLANKLINE>
+  </li>
+  <li>
+  <a href="http://localhost/ubuntu/warty/+source/alsa-utils">
+  alsa-utils
+  <BLANKLINE>
+  </a>
+  </li>
+  </ul>
+  </td>
+
+  >>> print find_tag_by_id(browser.contents, 'dependsindep')
+  <td id="dependsindep">
+  <h3>Platform-independent build dependencies</h3>
+  <ul>
+  <li>
+  <BLANKLINE>
+  <BLANKLINE>
+  bacula-common
+  <BLANKLINE>
+  (=
+  1.34.6-2)
+  <BLANKLINE>
+  <BLANKLINE>
+  </li>
+  <li>
+  <BLANKLINE>
+  <BLANKLINE>
+  bacula-director-common
+  <BLANKLINE>
+  (=
+  1.34.6-2)
+  <BLANKLINE>
+  <BLANKLINE>
+  </li>
+  <li>
+  <BLANKLINE>
+  <BLANKLINE>
+  postgresql-client
+  <BLANKLINE>
+  (&gt;=
+  7.4)
+  <BLANKLINE>
+  <BLANKLINE>
+  </li>
+  <li>
+  <a href="http://localhost/ubuntu/warty/+source/alsa-utils">
+  alsa-utils
+  <BLANKLINE>
+  </a>
+  </li>
+  </ul>
+  </td>
+
+
 The '+changelog' page provides an aggregation of the changelogs for
 SourcePackageReleases published in this DistroRelease.
 

@@ -1,0 +1,65 @@
+= PackageRelationshipSet Pages =
+
+IPackageReleationshipSet provides a single page, '+render-list', via
+SimpleView class.
+This page is incorporated in parent pages with a specific relationship
+group. Some example of pages using it are:
+
+ * +builds/+build/1234/$binaryname
+ * $distrorelease/+source/$sourcename
+
+Let's fill a IPackageRelationshipSet:
+
+  >>> from canonical.launchpad.browser import PackageRelationshipSet
+
+  >>> relationship_set = PackageRelationshipSet()
+  >>> relationship_set.addContent(
+  ...    name="foobar",
+  ...    signal=">=",
+  ...    version="1.0.2",
+  ...    url="http://whatever/")
+
+  >>> relationship_set.addContent(
+  ...    name="test",
+  ...    signal="",
+  ...    version="",
+  ...    url=None)
+
+Let's get the view class:
+
+  >>> from zope.component import queryView
+  >>> from zope.publisher.browser import TestRequest
+
+  >>> request = TestRequest(form={})
+  >>> pkg_rel_view = queryView(relationship_set, "+render-list", request)
+
+By the lack of any other method for this view class we will test if it
+renders properly:
+
+  >>> print pkg_rel_view()
+  <ul>
+  <li>
+  <BLANKLINE>
+  <a href="http://whatever/">
+  foobar
+  <BLANKLINE>
+  (&gt;=
+  1.0.2)
+  <BLANKLINE>
+  </a>
+  <BLANKLINE>
+  <BLANKLINE>
+  </li>
+  <li>
+  <BLANKLINE>
+  test
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  </li>
+  </ul>
+  <BLANKLINE>
+
+Note that no link is rendered for IPackageReleationship where 'url' is
+None.
+

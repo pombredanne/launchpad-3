@@ -85,9 +85,16 @@ Check dependency related view attributes:
   True
 
 Check the formatted dependency lines provided by the view class, they
-return a list of IPackageRelationship objects (see package-relationship.txt).
+return a IPackageRelationshipSet object (see package-relationship.txt).
 
-  >>> for dep in firefox_view.builddepends():
+  >>> firefox_parsed_depends = firefox_view.builddepends()
+
+  >>> from zope.interface.verify import verifyObject
+  >>> from canonical.launchpad.interfaces import IPackageRelationshipSet
+  >>> verifyObject(IPackageRelationshipSet, firefox_parsed_depends)
+  True
+
+  >>> for dep in firefox_parsed_depends:
   ...    dep.name, dep.signal, dep.version, dep.url
   ('gcc-3.4-base', None, '', None)
   ('libc6', '>=', '2.3.2.ds1-4', None)
@@ -96,7 +103,12 @@ return a list of IPackageRelationship objects (see package-relationship.txt).
   ('libstdc++6-dev', '>=', '3.4.1-4sarge1', None)
   ('alsa-utils', None, '', u'http://launchpad.dev/ubuntu/warty/+source/alsa-utils')
 
-  >>> for dep in firefox_view.builddependsindep():
+  >>> firefox_parsed_dependsindep = firefox_view.builddependsindep()
+
+  >>> verifyObject(IPackageRelationshipSet, firefox_parsed_dependsindep)
+  True
+
+  >>> for dep in firefox_parsed_dependsindep:
   ...    dep.name, dep.signal, dep.version, dep.url
   ('bacula-common', '=', '1.34.6-2', None)
   ('bacula-director-common', '=', '1.34.6-2', None)
