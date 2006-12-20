@@ -221,9 +221,7 @@ Check that the message #13 has the new value we submitted.
   >>> (msgid_number, msgid, translation) = getMessageValues(browser.contents)
   >>> print msgid_number
   13.
-  <a name="13">
-    <input type="hidden" name="msgset_142" />
-  </a>
+  <input type="hidden" name="msgset_142" />
   >>> print msgid
   Migrating `<code>%s</code>':
   >>> print translation
@@ -388,8 +386,8 @@ Also, we should still have previous translation:
   <input type="hidden" name="msgset_143" />
   >>> print msgid
   The location and hierarchy of the Evolution contact...
-  >>> print translation
-  <div lang="es" dir="ltr">blah</div>\n
+  >>> translation
+  '\n<div lang="es" dir="ltr">blah</div>\n'
 
 But also, the new one should appear in the form.
 
