@@ -8,7 +8,7 @@ import pytz
 from email.Utils import parseaddr
 from zope.component import getUtility
 from sqlobject import SQLObjectNotFound
-from canonical.launchpad.database.pomsgid import POMsgID
+#from canonical.launchpad.database.pomsgid import POMsgID
 
 from canonical.launchpad.interfaces import (
         IPOTemplate, IPOFile, IPersonSet, TranslationConstants
@@ -130,16 +130,16 @@ def translation_import(pofile_or_potemplate, file, importer, published=True):
             # XXX: set fuzzy marker if primemsgid actually changes
             # Note that we saw it.
             if pomsg['msgid']:
-                if pomsg['msgid'] != potmsgset.primemsgid_.msgid:
-                    try:
-                        messageID = POMsgID.byMsgid(pomsg['msgid'])
-                    except SQLObjectNotFound:
-                        # If there are no existing message ids,
-                        # create a new one.
-                        messageID = POMsgID(msgid=text)
-                    potmsgset.primemsgid_ = messageID
-                    if not 'fuzzy' in pomsg['flags']:
-                        pomsg['flags'].append('fuzzy')
+#                 if pomsg['msgid'] != potmsgset.primemsgid_.msgid:
+#                     try:
+#                         messageID = POMsgID.byMsgid(pomsg['msgid'])
+#                     except SQLObjectNotFound:
+#                         # If there are no existing message ids,
+#                         # create a new one.
+#                         messageID = POMsgID(msgid=text)
+#                     potmsgset.primemsgid_ = messageID
+#                     if not 'fuzzy' in pomsg['flags']:
+#                         pomsg['flags'].append('fuzzy')
 
                 potmsgset.makeMessageIDSighting(
                     pomsg['msgid'], TranslationConstants.SINGULAR_FORM,

@@ -6328,6 +6328,7 @@ INSERT INTO potemplatename (id, name, title, description, translationdomain) VAL
 INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (5, 'evolution-2.2-test', 'Another template for Evolution', NULL, 'evolution-2.2-test');
 INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (6, 'alsa-utils', 'Alsa Utils', NULL, 'alsa-utils');
 INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (7, 'man', 'man', NULL, 'man');
+INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (8, 'firefox', 'Firefox', NULL, 'firefox');
 
 
 ALTER TABLE potemplatename ENABLE TRIGGER ALL;
