@@ -144,23 +144,10 @@ class XPIFormatHandler(Handler):
         import sys
 
         if is_potemplate(self.obj):
-            try:
-                return self.obj.source_file.read()
-            except:
-                print >>sys.stderr, "Unexpected error:", sys.exc_info()
-                raise
-
+            return self.obj.source_file.read()
         else:
-            try:
-                template = StringIO(self.obj.potemplate.source_file.read())
-                print >>sys.stderr, "Evo me ovde: prevod!"
-                mozexport = MozillaZipFile(template, self.obj)
-            except:
-                import traceback
-                err = sys.exc_info()
-                print >>sys.stderr, "Unexpected error in:", err[0]
-                print >>sys.stderr, traceback.print_tb(err[2])
-                raise
+            template = StringIO(self.obj.potemplate.source_file.read())
+            mozexport = MozillaZipFile(template, self.obj)
             return mozexport.get_contents()
 
     def get_librarian_url(self):
@@ -245,11 +232,39 @@ class MozillaZipFile (MozillaLocalizableFile):
                 zip.writestr(zip.getinfo(filename), jarf.get_contents())
             elif filename == 'install.rdf':
                 data = zip.read(filename)
+                product_guid_re = re.compile("<em:id>({.*})</em:id>")
+                r = product_guid_re.search(data)
+                if r:
+                    product_guid = r.groups()[0]
+
                 #zip.writestr(zip.getinfo(file), "blablabla")
                 # XXX (Danilo): need to implement install.rdf updater
                 pass
         zip.close()
 
+    def create_install_rdf(self, pofile, product_guid): 
+       all = """<?xml version="1.0"?>
+<RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+     xmlns:em="http://www.mozilla.org/2004/em-rdf#">
+  <Description about="urn:mozilla:install-manifest"
+               em:id="langpack-%s@firefox.mozilla.org"
+               em:name="%s (%s) Language Pack"
+               em:version="2.0"
+               em:type="8"
+               em:creator="Rosetta">
+    <em:contributor>Данилcо Шеган</em:contributor> 
+    <em:contributor>Carlos Perelló Marín</em:contributor>
+
+    <em:targetApplication>
+      <Description>
+        <em:id>{ec8030f7-c20a-464f-9b0e-13a3a9e97384}</em:id><!-- firefox -->
+        <em:minVersion>2.0</em:minVersion>
+        <em:maxVersion>2.0.0.*</em:maxVersion>
+      </Description>
+    </em:targetApplication>
+  </Description>
+</RDF>
+"""
 
 class MozillaDtdFile (MozillaLocalizableFile):
     """Class for updating translatable messages in a .dtd file.

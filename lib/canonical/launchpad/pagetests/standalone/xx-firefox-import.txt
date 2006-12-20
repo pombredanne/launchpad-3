@@ -1,0 +1,57 @@
+= Demonstrate import of Firefox XPI file =
+
+To import translations into Firefox product, we must first import en-US.xpi
+file, which is an equivalent of a PO Template.
+
+Lets start with Firefox product inside trunk revision.
+
+  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+  >>> browser.open('http://translations.launchpad.dev/products/firefox/trunk')
+  >>> print browser.url
+  http://translations.launchpad.dev/products/firefox/trunk
+
+We click on the 'Translation' link which takes us to general Firefox
+translations overview.
+
+  >>> browser.getLink('Translations').click()
+  >>> print browser.url
+  http://translations.launchpad.dev/products/firefox/trunk/+translations
+
+Since we still don't have any POTemplates assigned, we must use the general
+translations upload link.
+
+  >>> browser.getLink('Upload Translations').click()
+  >>> print browser.url
+  http://translations.launchpad.dev/products/firefox/trunk/+translations-upload
+
+Lets create a XPI file out of extracted en-US.xpi contents.  en-US.xpi file
+is a ZIP file which contains embedded JAR file (which is also a ZIP file) and
+a couple of other files.  Embedded JAR file is named 'en-US.jar' and contains
+translatable resources.
+
+  >>> import zipfile, tempfile
+  >>> jarfile = tempfile.TemporaryFile()
+  >>> jar = zipfile.ZipFile(jarfile,'w')
+  >>> jarlist = [ 'copyover1.foo', 'test1.dtd', 'test1.properties',
+  ... 	      	  'subdir/test2.dtd', 'subdir/test2.properties',
+  ...		  'subdir/copyover2.foo' ]
+  >>> for subfile in jarlist:
+  >>> 	  f = open('pagetests/standalone/firefox/en-US/en-US-jar/'+subfile, 'r')
+  >>>	  jar.writestr(jarcontent, f.read())
+  >>> jar.close()
+
+  >>> xpifile = tempfile.TemporaryFile()
+  >>> xpi = zipfile.ZipFile(xpifile,'w')
+  >>> xpilist = [ 'install.rdf', 'copyover3.png' ]
+  >>> for xpicontent in xpilist:
+  >>> 	  f = open('pagetests/standalone/firefox/en-US/'+xpicontent, 'r')
+  >>>	  xpi.writestr(xpicontent, f.read())
+  >>> xpi.writestr('chrome/en-US.jar', jarfile.read())
+  >>> xpi.close()
+
+  >>> data=xpifile.read()
+  >>> proba = open('pagetests/standalone/firefox/en-US.xpi', 'w')
+  >>> proba.write(data)
+  >>> proba.close()
+
+  >>> #browser.getControl('File:').

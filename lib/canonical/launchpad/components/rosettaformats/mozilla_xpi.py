@@ -84,9 +84,9 @@ class MozillaZipFile (LocalizableFile):
             elif file == 'install.rdf':
                 import re
                 data = zip.read(file)
-                match = re.match('<em:contributor>(.*)</em:contributor>')
+                match = re.match('<em:contributor>(.*)</em:contributor>', data)
                 if match:
-                    self.last_translator = match.group(1)
+                    self.last_translator = match.groups()[0]
 
     def getLastTranslator(self):
         return self.last_translator
