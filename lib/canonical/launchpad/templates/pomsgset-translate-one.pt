@@ -7,7 +7,6 @@
   </td>
   <td style="text-align: right;">
     <span tal:replace="view/sequence">1</span>.
-    <a tal:attributes="name view/sequence" />
     <input
       type="hidden"
       tal:attributes="
@@ -28,8 +27,11 @@
         name string:msgset_${context/potmsgset/id}_singular_copy"
       />
   </td>
-  <td tal:content="structure view/msgid">
-    The original text.
+  <td>
+    <div tal:content="structure view/msgid"
+         tal:attributes="id string:msgset_${context/potmsgset/id}_singular">
+      The original text.
+    </div>
   </td>
 </tr>
 <tr class="secondary translation" tal:condition="view/is_plural">
@@ -42,8 +44,11 @@
         name string:msgset_${context/potmsgset/id}_plural_copy"
     />
   </td>
-  <td tal:content="structure view/msgid_plural">
-    plural source
+  <td>
+    <div tal:content="structure view/msgid_plural"
+         tal:attributes="id string:msgset_${context/potmsgset/id}_plural">
+      plural source
+    </div>
   </td>
 </tr>
 <tr
@@ -106,7 +111,7 @@
       This refers to the content type.
   </td>
 </tr>
-<tr class="error" tal:condition="view/error">
+<tr class="error translation" tal:condition="view/error">
   <th colspan="3" >
     <strong>Error in Translation:</strong>
   </th>
@@ -122,7 +127,7 @@
   <tal:translation-dictionaries
        repeat="translation_dictionary view/translation_dictionaries">
   <tal:plural-form define="plural_index translation_dictionary/plural_index">
-    <tr class="secondary">
+    <tr class="secondary translation">
       <th colspan="3">
         <label class="language-code">Current
           <span tal:replace="context/pofile/language/englishname">
@@ -139,22 +144,31 @@
               name string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_copy"
           />
         </td>
-        <td tal:content="structure translation_dictionary/active_translation">
-          current translation
+        <td>
+          <div tal:content="structure translation_dictionary/active_translation"
+               tal:attributes="
+                 lang context/pofile/language/dashedcode;
+                 dir context/pofile/language/abbreviated_text_dir;
+                 id string:msgset_${context/potmsgset/id}_${language_code}_translation_{plural_index}">
+            current translation
+          </div>
         </td>
       </tal:with-content>
       <tal:without-content
         condition="not: translation_dictionary/active_translation">
         <td />
         <td>
-          (no translation yet)
+          <div tal:attributes="
+               id string:msgset_${context/potmsgset/id}_${language_code}_translation_{plural_index}">
+            (no translation yet)
+          </div>
         </td>
       </tal:without-content>
     </tr>
     <tal:selection
       define="selection translation_dictionary/selection"
       condition="selection">
-      <tr class="discreet secondary"
+      <tr class="discreet secondary translation"
           tal:condition="selection/activesubmission">
         <th colspan="3">
           Translated by:
@@ -168,7 +182,7 @@
           </span>
         </td>
       </tr>
-      <tr class="discreet secondary"
+      <tr class="discreet secondary translation"
           tal:condition="selection/reviewer">
         <th colspan="3">
           Reviewed by:
@@ -189,7 +203,7 @@
         <div tal:replace="structure suggestions/@@+display" />
       </tal:suggestions>
     </tal:suggestion_block>
-    <tr class="discreet secondary">
+    <tr class="discreet secondary translation">
       <th colspan="3">
         <label
          tal:attributes="

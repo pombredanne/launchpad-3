@@ -250,18 +250,16 @@ class IEditTranslationImportQueueEntry(Interface):
 
     potemplatename = Choice(
         title=_("Template Name"),
-        description=_("The name of this PO template, for example "
-            "'evolution-2.2'. Each translation template has a "
-            "unique name in its package. It's important to get this "
-            "correct, because Rosetta will recommend alternative "
-            "translations based on the name."),
+        description=_("The name of this PO template, for example"
+            " 'evolution-2.2'. Each translation template's name"
+            " is unique within its package"),
         required=True,
         vocabulary="POTemplateName")
 
     sourcepackagename = Choice(
         title=_("Source Package Name"),
         description=_(
-            "The source package from where this entry comes."),
+            "The source package where this entry will be imported."),
         required=True,
         vocabulary="SourcePackageName")
 
@@ -272,6 +270,9 @@ class IEditTranslationImportQueueEntry(Interface):
 
     variant = TextLine(
         title=_("Variant"),
+        description=_(
+            "Language variant, usually used to note the script used to"
+            " write the translations (like 'Latn' for Latin)"),
         required=False)
 
     path = TextLine(

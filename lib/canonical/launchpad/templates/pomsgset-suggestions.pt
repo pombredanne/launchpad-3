@@ -16,7 +16,8 @@
     </td>
     <td>
       <div tal:attributes="lang submissionlang/dashedcode;
-                           dir submissionlang/abbreviated_text_dir"
+                           dir submissionlang/abbreviated_text_dir;
+                           id string:msgset_${context/pomsgset/potmsgset/id}_${submissionlang/code}_suggestion_${submission/id}_${submission/pluralform}"
            tal:content="structure submission/potranslation/translation/fmt:text-to-html">
         suggestion</div>
     </td>
