@@ -73,22 +73,19 @@ def serialise_bugtask(bugtask):
         addnode(comment_node, 'date',
                 comment.datecreated.strftime('%Y-%m-%dT%H:%M:%SZ'))
         addnode(comment_node, 'text', comment.text_for_display)
-        # Note that these are just references to the attachments
-        # that are serialised after the comments.
         for attachment in comment.bugattachments:
-            addnode(comment_node, 'attachment', None,
-                    href=attachment.libraryfile.url)
-
-    for attachment in bug.attachments:
-        attachment_node = ET.SubElement(bug_node, 'attachment',
-                                        href=attachment.libraryfile.url)
-        attachment_node.text = attachment_node.tail = '\n'
-        addnode(attachment_node, 'type', attachment.type.name)
-        addnode(attachment_node, 'title', attachment.title)
-        addnode(attachment_node, 'mimetype', attachment.libraryfile.mimetype)
-        # Attach the attachment file contents, base 64 encoded.
-        addnode(attachment_node, 'contents',
-                base64.encodestring(attachment.libraryfile.read()))
+            attachment_node = ET.SubElement(comment_node, 'attachment',
+                                            href=attachment.libraryfile.url)
+            attachment_node.text = attachment_node.tail = '\n'
+            addnode(attachment_node, 'type', attachment.type.name)
+            addnode(attachment_node, 'filename',
+                    attachment.libraryfile.filename)
+            addnode(attachment_node, 'title', attachment.title)
+            addnode(attachment_node, 'mimetype',
+                    attachment.libraryfile.mimetype)
+            # Attach the attachment file contents, base 64 encoded.
+            addnode(attachment_node, 'contents',
+                    base64.encodestring(attachment.libraryfile.read()))
 
     return bug_node
 
