@@ -1,23 +1,20 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
-"""Bug Import code"""
+"""An XML bug importer
 
-
-"""Sourceforge.net Tracker import logic.
-
-This code relies on the output of Frederik Lundh's Sourceforge tracker
-screen-scraping tools:
-
-  http://effbot.org/zone/sandbox-sourceforge.htm
+This code can import an XML bug dump into Launchpad.  The XML format
+is described in the RELAX-NG schema 'doc/bug-export.rnc'.
 """
+
 
 __metaclass__ = type
 
 __all__ = [
-    'Tracker',
-    'TrackerImporter'
+    'BugXMLSyntaxError',
+    'BugImporter',
     ]
 
+import cPickle
 from cStringIO import StringIO
 import datetime
 import logging
@@ -25,13 +22,12 @@ import os
 import sys
 import time
 
-import pytz
-
-# use cElementTree if it is available ...
 try:
     import xml.elementtree.cElementTree as ET
 except ImportError:
     import cElementTree as ET
+
+import pytz
 
 from zope.component import getUtility
 from zope.app.content_types import guess_content_type
@@ -101,15 +97,20 @@ def get_all(node, name):
 class BugImporter:
     """Import bugs into Launchpad"""
 
-    def __init__(self, product, filename, verify_users=False):
+    def __init__(self, product, bugs_filename, cache_filename,
+                 verify_users=False):
         self.product = product
-        self.filename = filename
+        self.bugs_filename = bugs_filename
+        self.cache_filename = cache_filename
         self.verify_users = verify_users
         self.person_id_cache = {}
         self.bug_importer = getUtility(ILaunchpadCelebrities).bug_importer
-        
+
+        # A mapping of old bug IDs to new Launchpad Bug IDs
         self.bug_id_map = {}
-        self.duplicate_bugs = {}
+        # A mapping of old bug IDs to a list of Launchpad Bug IDs that are
+        # duplicates of this bug.
+        self.pending_duplicates = {}
 
     def getPerson(self, node):
         """Get the Launchpad user corresponding to the given XML node"""
@@ -176,6 +177,24 @@ class BugImporter:
         series = self.product.development_focus
         return series.newMilestone(name)
 
+    def loadCache(self):
+        """Load the Bug ID mapping and pending duplicates list from cache."""
+        if not os.path.exists(self.cache_filename):
+            self.bug_id_map = {}
+            self.pending_duplicates = {}
+        else:
+            self.bug_id_map, self.pending_duplicates = cPickle.load(
+                open(self.cache_filename, 'rb'))
+
+    def saveCache(self):
+        """Save the bug ID mapping and pending duplicates list to cache."""
+        tmpfilename = '%s.tmp' % self.cache_filename
+        fp = open(tmpfilename, 'wb')
+        cPickle.dump((self.bug_id_map, self.pending_duplicates),
+                     fp, protocol=2)
+        fp.close()
+        os.rename(tmpfilename, self.cache_filename)
+
     def haveImportedBug(self, bugnode):
         """Return True if the given bug has been imported already."""
         bug_id = int(bugnode.get('id'))
@@ -185,7 +204,7 @@ class BugImporter:
 
     def importBugs(self, ztm):
         """Import bugs from a file."""
-        tree = ET.parse(self.filename)
+        tree = ET.parse(self.bugs_filename)
         root = tree.getroot()
         # Basic sanity check that we have the correct type of XML:
         assert root.tag == '{%s}launchpad-bugs' % BUGS_XMLNS
@@ -194,7 +213,12 @@ class BugImporter:
                 continue
             ztm.begin()
             try:
+                # The cache is loaded before we import the bug so that
+                # changes to the bug mapping and pending duplicates
+                # made by failed bug imports don't affect this bug.
+                self.loadCache()
                 self.importBug(bugnode)
+                self.saveCache()
             except (SystemExit, KeyboardInterrupt):
                 raise
             except:
@@ -290,6 +314,7 @@ class BugImporter:
             whatchanged='bug',
             message='Imported external bug #%s' % bug_id)
 
+        self.handleDuplicate(bug, bug_id, get_value(bugnode, 'duplicateof'))
         self.bug_id_map[bug_id] = bug.id
         return bug
 
@@ -348,3 +373,29 @@ class BugImporter:
                 attach_type=attach_type,
                 title=title,
                 message=message)
+
+    def handleDuplicate(self, bug, bug_id, duplicateof=None):
+        """Handle duplicate processing for the given bug report."""
+        # update the bug ID map
+        self.bug_id_map[bug_id] = bug.id
+        # Are there any pending bugs that are duplicates of this bug?
+        if bug_id in self.pending_duplicates:
+            for other_bug_id in self.pending_duplicates[bug_id]:
+                other_bug = getUtility(IBugSet).get(other_bug_id)
+                logger.info('Marking bug %d as duplicate of bug %d',
+                            other_bug.id, bug.id)
+                other_bug.duplicateof = bug
+            del self.pending_duplicates[bug_id]
+        # Process this bug as a duplicate
+        if duplicateof is not None:
+            duplicateof = int(duplicateof)
+            # Have we already imported the bug?
+            if duplicateof in self.bug_id_map:
+                other_bug = getUtility(IBugSet).get(
+                    self.bug_id_map[duplicateof])
+                logger.info('Marking bug %d as duplicate of bug %d',
+                            bug.id, other_bug.id)
+                bug.duplicateof = other_bug
+            else:
+                self.pending_duplicates.setdefault(
+                    duplicateof, []).append(bug.id)
