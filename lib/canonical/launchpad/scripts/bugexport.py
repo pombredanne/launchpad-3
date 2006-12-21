@@ -36,7 +36,7 @@ def serialise_bugtask(bugtask):
     addnode(bug_node, 'private', str(bug.private))
     addnode(bug_node, 'security_related', str(bug.security_related))
     if bug.duplicateof is not None:
-        addnode(bug_node, 'duplicateof', None, bug=str(bug.duplicateof.id))
+        addnode(bug_node, 'duplicateof', str(bug.duplicateof.id))
     addnode(bug_node, 'datecreated',
             bug.datecreated.strftime('%Y-%m-%dT%H:%M:%SZ'))
     if bug.name is not None:
