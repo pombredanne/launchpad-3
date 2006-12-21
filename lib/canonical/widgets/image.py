@@ -1,4 +1,8 @@
+# Copyright 2006 Canonical Ltd.  All rights reserved.
 
+__metaclass__ = type
+
+from zope.interface import implements
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.widget import SimpleInputWidget
 from zope.app.form.browser import FileWidget
@@ -7,6 +11,7 @@ from zope.formlib import form
 from zope.schema import Bytes, Choice
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
+from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
@@ -23,6 +28,8 @@ class LaunchpadFileWidget(FileWidget):
 class ImageUploadWidget(SimpleInputWidget):
     """Widget for uploading an image or deleting an existing one."""
 
+    implements(IAlwaysSubmittedWidget)
+
     def __init__(self, context, request):
         SimpleInputWidget.__init__(self, context, request)
         fields = form.Fields(
@@ -38,19 +45,15 @@ class ImageUploadWidget(SimpleInputWidget):
             data={'action': 'keep'})
         self.action_widget = widgets['action']
         self.image_widget = widgets['image']
-
-    def _getCurrentImage(self):
-        return getattr(self.context.context, self.context.__name__, None)
+        self.setRenderedValue(getattr(context.context, context.__name__, None))
 
     def __call__(self):
-        img = self._getCurrentImage()
-        if img is not None:
+        img = self._data
+        if self._renderedValueSet() and img is not None:
             # This widget is meant to be used only by fields which expect an
             # object implementing ILibraryFileAlias as their values.
             assert ILibraryFileAlias.providedBy(img)
-            # XXX: Need to use img.secure_url here. This branch shouldn't land
-            # without this changed. -- Guilherme Salgado, 2006-12-12
-            url = img.url
+            url = img.secure_url
         else:
             url = self.context.default_image_resource
         html = ('<div><img src="%s" alt="%s" /></div>\n'
@@ -62,7 +65,8 @@ class ImageUploadWidget(SimpleInputWidget):
         return self.action_widget.hasInput()
 
     def _getActionsVocabulary(self):
-        if self._getCurrentImage() is not None:
+        current = getattr(self.context.context, self.context.__name__, None)
+        if current is not None:
             action_names = [('keep', 'Keep your selected image'),
                             ('delete', 'Change back to default image'),
                             ('change', 'Change to')]

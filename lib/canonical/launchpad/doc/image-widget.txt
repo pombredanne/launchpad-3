@@ -38,9 +38,7 @@ other radio button allows the user to upload a new image.
 
     >>> def print_radio_items(html):
     ...     soup = BeautifulSoup(html)
-    ...     for input in soup('input'):
-    ...         if input.get('type') != 'radio':
-    ...             continue
+    ...     for input in soup('input', {'type': 'radio'}):
     ...         item = input.get('value')
     ...         if input.get('checked'):
     ...             item += ': SELECTED'
@@ -65,7 +63,7 @@ well as an option to delete the image that was just uploaded.
     >>> widget = ImageUploadWidget(person_gotchi, TestRequest())
 
     >>> html = widget()
-    >>> mugshot.url == BeautifulSoup(html).find('img').get('src')
+    >>> mugshot.secure_url == BeautifulSoup(html).find('img').get('src')
     True
 
     >>> print_radio_items(html)
@@ -126,7 +124,7 @@ specific to each image, so you must subclass it before using.
     >>> person_gotchi.__class__ != BaseImageUpload
     True
     >>> person_gotchi.max_size
-    524288
+    102400
     >>> person_gotchi.max_dimensions
     (200, 200)
 
@@ -204,7 +202,17 @@ A similar error will be raised if the image's dimensions are bigger than the
 maximun we allow.
 
     >>> person_gotchi.max_size = mugshot.len
-    >>> person_gotchi.max_dimensions = (image.size[0] - 1, image.size[1], - 1)
+    >>> person_gotchi.max_dimensions = (image.size[0] - 1, image.size[1] + 1)
+    >>> mugshot.seek(0)
+    >>> widget = ImageUploadWidget(person_gotchi, TestRequest(form=form))
+    >>> widget.getInputValue()
+    Traceback (most recent call last):
+    ...
+    WidgetInputError: ('field.gotchi', u'Hackergotchi',
+                       This image exceeds the maximum allowed width or height
+                       in pixels.)
+
+    >>> person_gotchi.max_dimensions = (image.size[0] + 1, image.size[1] - 1)
     >>> mugshot.seek(0)
     >>> widget = ImageUploadWidget(person_gotchi, TestRequest(form=form))
     >>> widget.getInputValue()
