@@ -458,9 +458,10 @@ class POTemplate(SQLBase, RosettaStats):
             path_variant = '@%s' % variant
 
         # By default, we set as the path directory the same as the POTemplate
-        # one.
+        # one and set as the file name the translation domain + language.
         potemplate_dir = os.path.dirname(self.path)
-        path = '%s/%s%s.po' % (potemplate_dir, language.code, path_variant)
+        path = '%s/%s-%s%s.po' % (potemplate_dir,
+            self.potemplatename.translationdomain,language.code, path_variant)
 
         pofile = POFile(
             potemplate=self,

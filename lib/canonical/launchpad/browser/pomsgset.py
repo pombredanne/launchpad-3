@@ -12,11 +12,13 @@ __all__ = [
     'BaseTranslationView',
     ]
 
+import cgi
 import datetime
-import re
-import operator
 import gettextpo
+import operator
 import pytz
+import re
+import urllib
 from xml.sax.saxutils import escape as xml_escape
 
 from zope.app import datetimeutils
@@ -57,20 +59,29 @@ def expand_rosetta_tabs(unicode_text):
                                   u'[tab]': TranslationConstants.TAB_CHAR_ESCAPED})
 
 
-def msgid_html(text, flags, space=TranslationConstants.SPACE_CHAR,
+def text_to_html(text, flags, space=TranslationConstants.SPACE_CHAR,
                newline=TranslationConstants.NEWLINE_CHAR):
-    """Convert a message ID to a HTML representation."""
+    """Convert a unicode text to a HTML representation."""
+
+    if text is None:
+        return None
 
     lines = []
     # Replace leading and trailing spaces on each line with special markup.
-    for line in xml_escape(text).split('\n'):
+    if u'\r\n' in text:
+        newline_chars = u'\r\n'
+    elif u'\r' in text:
+        newline_chars = u'\r'
+    else:
+        newline_chars = u'\n'
+    for line in xml_escape(text).split(newline_chars):
         # Pattern:
         # - group 1: zero or more spaces: leading whitespace
         # - group 2: zero or more groups of (zero or
         #   more spaces followed by one or more non-spaces): maximal string
         #   which doesn't begin or end with whitespace
         # - group 3: zero or more spaces: trailing whitespace
-        match = re.match('^( *)((?: *[^ ]+)*)( *)$', line)
+        match = re.match(u'^( *)((?: *[^ ]+)*)( *)$', line)
 
         if match:
             lines.append(
@@ -97,7 +108,7 @@ def msgid_html(text, flags, space=TranslationConstants.SPACE_CHAR,
                 type, content = segment
 
                 if type == 'interpolation':
-                    formatted_line += ('<code>%s</code>' % content)
+                    formatted_line += (u'<code>%s</code>' % content)
                 elif type == 'string':
                     formatted_line += content
 
@@ -790,15 +801,35 @@ class BaseTranslationView(LaunchpadView):
             if self.request.get('QUERY_STRING'):
                 new_url += '?%s' % self.request.get('QUERY_STRING')
 
+        # Get the default values for several parameters.
         parameters = self._buildRedirectParams()
-        params_str = '&'.join(
-            ['%s=%s' % (key, value) for key, value in parameters.items()])
-        if params_str:
-            if '?' not in new_url:
-                new_url += '?'
-            else:
-                new_url += '&'
-            new_url += params_str
+
+        if '?' in new_url:
+            # Get current query string
+            base_url, old_query_string = new_url.split('?')
+            query_parts = cgi.parse_qsl(old_query_string, strict_parsing=False)
+
+            # Override whatever current query string values we have with the
+            # ones added by _buildRedirectParams.
+            final_parameters = []
+            for (key, value) in query_parts:
+                for (par_key, par_value) in parameters.items():
+                    if par_key == key:
+                        final_parameters.append((par_key, par_value))
+                    else:
+                        final_parameters.append((key, value))
+
+        else:
+            base_url = new_url
+            final_parameters = []
+            for (key, value) in parameters.items():
+                final_parameters.append((key, value))
+
+        new_query = urllib.urlencode(
+            [(key, value) for (key, value) in final_parameters])
+
+        if new_query:
+            new_url = '%s?%s' % (base_url, new_query)
 
         self.request.response.redirect(new_url)
 
@@ -960,7 +991,9 @@ class POMsgSetView(LaunchpadView):
         for index in self.pluralform_indices:
             self.translation_dictionaries.append({
                 'plural_index': index,
-                'active_translation': self.getActiveTranslation(index),
+                'active_translation': text_to_html(
+                    self.getActiveTranslation(index),
+                    self.context.potmsgset.flags()),
                 'translation': self.getTranslation(index),
                 'selection': self.context.getSelection(index),
                 'suggestion_block': self.suggestion_blocks[index],
@@ -1110,7 +1143,7 @@ class POMsgSetView(LaunchpadView):
     def msgid(self):
         """Return a msgid string prepared to render in a web page."""
         msgid = self.msgids[TranslationConstants.SINGULAR_FORM].msgid
-        return msgid_html(msgid, self.context.potmsgset.flags())
+        return text_to_html(msgid, self.context.potmsgset.flags())
 
     @property
     def msgid_plural(self):
@@ -1120,7 +1153,7 @@ class POMsgSetView(LaunchpadView):
         """
         if self.is_plural:
             msgid = self.msgids[TranslationConstants.PLURAL_FORM].msgid
-            return msgid_html(msgid, self.context.potmsgset.flags())
+            return text_to_html(msgid, self.context.potmsgset.flags())
         else:
             return None
 
