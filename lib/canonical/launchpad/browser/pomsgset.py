@@ -380,12 +380,8 @@ class BaseTranslationView(LaunchpadView):
         # _extractFormPostedTranslations, _prepareView and
         # _storeTranslations.
         self.form_posted_translations = {}
-        self.form_posted_needsreview = {}
-
-        # These two dictionaries hold the text requested by the user to be
-        # copied to the textarea.
-        self.form_copied_translations = {}
         self.form_posted_translations_has_store_flag = {}
+        self.form_posted_needsreview = {}
 
         if not self.has_plural_form_information:
             # This POFile needs administrator setup.
@@ -444,9 +440,6 @@ class BaseTranslationView(LaunchpadView):
                     # need to set up the subviews for error display and
                     # correction.
                     return
-            else:
-                # Check and do any copy request we got.
-                self._submitCopyRequest()
         else:
             # It's not a POST, so we should generate lock_timestamp.
             UTC = pytz.timezone('UTC')
@@ -482,50 +475,6 @@ class BaseTranslationView(LaunchpadView):
         addErrorNotification), and otherwise call _redirectToNextPage if
         everything went fine."""
         raise NotImplementedError
-
-    def _submitCopyRequest(self):
-        """Handle translation copy requests."""
-        patterns_list = ['singular', 'plural']
-        for plural_index in range(self.pofile.language.pluralforms):
-            patterns_list.append(
-                '(%s_translation_%d)' % (
-                    self.pofile.language.code, plural_index))
-            patterns_list.append('((\S+)_suggestion_(\d+)_%d)' % plural_index)
-        search_pattern = 'msgset_(\d+)_(%s)_copy\.(x|y)' % (
-            '|'.join(patterns_list))
-        found_copy = False
-        expr_search = re.compile(search_pattern)
-        msgset_search = re.compile('msgset_(\d+)')
-        for key in self.request.form:
-            copy_button_match = expr_search.match(key)
-            if copy_button_match is not None and not found_copy:
-                # group #1 is the potmsgset.id
-                potmsgset_id = int(copy_button_match.group(1))
-                potmsgset = self.pofile.potemplate.getPOTMsgSetByID(
-                    potmsgset_id)
-                pomsgset = potmsgset.getPOMsgSet(
-                    self.pofile.language.code, self.pofile.variant)
-                if pomsgset is None:
-                    pomsgset = self.pofile.createMessageSetFromMessageSet(
-                        potmsgset)
-                self._copyTranslation(pomsgset, key)
-                found_copy = True
-            else:
-                # Let's extract the field values so the user doesn't lose any
-                # other change in the form. This will not modify our database,
-                # we use them just to display their changes again in the web
-                # UI.
-                msgset_match = msgset_search.match(key)
-                if msgset_match is not None:
-                    potmsgset_id = int(msgset_match.group(1))
-                    potmsgset = self.pofile.potemplate.getPOTMsgSetByID(
-                        potmsgset_id)
-                    pomsgset = potmsgset.getPOMsgSet(
-                        self.pofile.language.code, self.pofile.variant)
-                    if pomsgset is None:
-                        pomsgset = self.pofile.createMessageSetFromMessageSet(
-                            potmsgset)
-                    self._extractFormPostedTranslations(pomsgset)
 
     #
     # Helper methods that should be used for POMsgSetView.__init__() and
@@ -578,68 +527,12 @@ class BaseTranslationView(LaunchpadView):
         else:
             return None
 
-    def _copyTranslation(self, pomsgset, button_id):
-        """Perform the copy associated with :arg button_id:
-
-        :arg button_id: String with the name of the copy button submitted.
-        """
-        self.form_copied_translations[pomsgset] = {}
-        if 'singular' in button_id:
-            pomsgids = pomsgset.potmsgset.getPOMsgIDs()
-            text_to_copy = pomsgids[TranslationConstants.SINGULAR_FORM].msgid
-            requested_plural_indices = [TranslationConstants.SINGULAR_FORM]
-        elif 'plural' in button_id:
-            pomsgids = pomsgset.potmsgset.getPOMsgIDs()
-            text_to_copy = pomsgids[TranslationConstants.PLURAL_FORM].msgid
-            requested_plural_indices = []
-            for plural_index in range(pomsgset.pluralforms):
-                if plural_index != TranslationConstants.SINGULAR_FORM:
-                    requested_plural_indices.append(plural_index)
-        elif 'translation' in button_id:
-            translation_copy_match = re.match(
-                'msgset_%d_%s_translation_(\d+)_copy\.(x|y)' % (
-                    pomsgset.potmsgset.id, self.pofile.language.code),
-                button_id)
-            requested_plural_index = int(translation_copy_match.group(1))
-            if requested_plural_index not in range(pomsgset.pluralforms):
-                raise UnexpectedFormData(
-                    "Got a copy request for a plural form that doesn't exist")
-            text_to_copy = pomsgset.active_texts[requested_plural_index]
-            requested_plural_indices = [requested_plural_index]
-        elif 'suggestion' in button_id:
-            suggestion_copy_match = re.match(
-                'msgset_%d_%s_suggestion_(\d+)_(\d+)_copy\.(x|y)' % (
-                    pomsgset.potmsgset.id, self.pofile.language.code),
-                button_id)
-            suggestion_posubmission_id = int(suggestion_copy_match.group(1))
-            posubmissionset = getUtility(IPOSubmissionSet)
-            suggestion_posubmission = posubmissionset.getPOSubmissionByID(
-                suggestion_posubmission_id)
-            requested_plural_index = int(suggestion_copy_match.group(2))
-            if requested_plural_index not in range(pomsgset.pluralforms):
-                raise UnexpectedFormData(
-                    "Got a copy request for a plural form that doesn't exist")
-            text_to_copy = suggestion_posubmission.potranslation.translation
-            requested_plural_indices = [requested_plural_index]
-
-        # Prepare the dictionary with the texts copied.
-        dict_with_copies = {}
-        for plural_index in range(pomsgset.pluralforms):
-            if plural_index in requested_plural_indices:
-                dict_with_copies[plural_index] = text_to_copy
-            else:
-                dict_with_copies[plural_index] = None
-
-        self.form_copied_translations[pomsgset] = dict_with_copies
-
     def _prepareView(self, view_class, pomsgset, error):
         """Collect data and build a POMsgSetView for display."""
         # XXX: it would be nice if we could easily check if
         # this is being called in the right order, after
         # _storeTranslations(). -- kiko, 2006-09-27
         translations = {}
-        # Get the copied translations for the given pomsgset.
-        copied = self.form_copied_translations.get(pomsgset, None)
         # Get translations that the user typed in the form.
         posted = self.form_posted_translations.get(pomsgset, None)
         # Get the flags set by the user to note whether 'New suggestion'
@@ -648,20 +541,12 @@ class BaseTranslationView(LaunchpadView):
             self.form_posted_translations_has_store_flag.get(pomsgset, []))
         # We are going to prepare the content of the translation form.
         for plural_index in range(pomsgset.pluralforms):
-            if copied is not None and copied[plural_index] is not None:
-                # We got a copy request for this plural form, we setup our
-                # enviroment to show the copied values and override any other
-                # value we got with the submit.
-                translations[plural_index] = copied[plural_index]
-                plural_indices_to_store.append(plural_index)
-                continue
-            elif posted is not None and posted[plural_index] is not None:
-                # We didn't get a copy request for this plural form, but we
-                # have something submitted by the user, we use that value.
+            if posted is not None and posted[plural_index] is not None:
+                # We have something submitted by the user, we use that value.
                 translations[plural_index] = posted[plural_index]
             else:
-                # We didn't get a copy request for this plural form, neither
-                # have anything from the user, so we store nothing for it.
+                # We didn't get anything from the user for this translation,
+                # so we store nothing for it.
                 translations[plural_index] = None
 
         # Check the values we got with the submit for the 'Needs review' flag
@@ -944,7 +829,7 @@ class POMsgSetView(LaunchpadView):
             ignored. It's indexed by plural form.
         :arg translations: A dictionary indexed by plural form index;
             BaseTranslationView constructed it based on form-submitted
-            translations overlaid with any copy request.
+            translations.
         :arg is_fuzzy: A flag that notes current fuzzy flag overlaid with the
             form-submitted.
         :arg error: The error related to self.context submission or None.
@@ -1131,12 +1016,7 @@ class POMsgSetView(LaunchpadView):
             return None
 
     def getTranslation(self, index):
-        """Return the translation submitted for the pluralform 'index'.
-
-        Its value depends on what was submitted. It can be:
-            - A copied value depending on the copy button the user selected.
-            - A translation added by the user before submitting the form.
-        """
+        """Return the translation submitted for the pluralform 'index'."""
         assert index in self.pluralform_indices, (
             'There is no plural form #%d for %s language' % (
                 index, self.context.pofile.language.displayname))

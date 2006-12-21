@@ -30,7 +30,6 @@
           javascript:copyInnerHTMLById(
             'msgset_${context/potmsgset/id}_singular',
             'msgset_${context/potmsgset/id}_${language_code}_translation_0_new');;
-          selectWidget('msgset_${context/potmsgset/id}_${language_code}_translation_0_new_checkbox', event);;
           return false;;
         "><img alt="Copy text" src="/@@/copy"></a>
   </td>
@@ -46,6 +45,15 @@
     <label>English plural:</label>
   </th>
   <td class="icon left right">
+    <a href=""
+      tal:attributes="
+        onClick string:
+          javascript:copyEnglishPluralIntoPluralTranslations(
+            'msgset_${context/potmsgset/id}_plural',
+            'msgset_${context/potmsgset/id}_${language_code}_translation_',
+            ${context/pluralforms});;
+          return false;;
+        "><img alt="Copy text" src="/@@/copy"></a>
   </td>
   <td>
     <div tal:content="structure view/msgid_plural"

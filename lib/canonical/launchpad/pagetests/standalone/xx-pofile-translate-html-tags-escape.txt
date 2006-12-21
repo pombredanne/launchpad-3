@@ -1,20 +1,39 @@
 This check will be sure that we are escaping correctly html tags
 inside textareas.
 
-  >>> user_browser.open('http://launchpad.dev/ubuntu/hoary/+source/pmount/+pots/pmount/hr/+translate')
+  >>> user_browser.open(
+  ...     'http://launchpad.dev/ubuntu/hoary/+source/pmount/+pots/pmount/hr/'
+  ...     '+translate')
   >>> user_browser.url
   'http://launchpad.dev/ubuntu/hoary/+source/pmount/+pots/pmount/hr/+translate'
 
-We need to do a copy so we fill the textarea.
+We are going to assign a value with html tags to see that we escape it when
+rendered as part of a textarea.
 
-  >>> user_browser.getControl(name='msgset_67_hr_translation_0_copy').click()
+  >>> textarea = user_browser.getControl(name='msgset_67_hr_translation_0_new')
+  >>> textarea.value = 'Upotreba:\r\n\r\n%s [opcije] <uređaj> [<etiketa>]\r\n'
+  >>> user_browser.getControl(name='submit_translations').click()
+
+We stay in the same URL because we found an error.
+
   >>> user_browser.url
   'http://launchpad.dev/ubuntu/hoary/+source/pmount/+pots/pmount/hr/+translate'
+
+  >>> for tag in find_tags_by_class(user_browser.contents, 'error'):
+  ...     print tag
+  <div class="error message">There is an error in a translation you provided.
+    Please correct it before continuing.</div>
+  ...
+
+And we can see that we escaped the tags:
+
   >>> print user_browser.contents
   <!DOCTYPE html PUBLIC...
-                      name="msgset_67_hr_translation_0_new"
-                      dir="ltr"
-                      onkeypress="javascript:selectWidget('msgset_67_hr_translation_0_new_checkbox', event)">
+    name="msgset_67_hr_translation_0_new"
+    onkeypress="javascript:selectWidget('msgset_67_hr_translation_0_new_checkbox', event)"
+    onchange="javascript:selectWidget('msgset_67_hr_translation_0_new_checkbox', event)"
+    id="msgset_67_hr_translation_0_new"
+    dir="ltr">
   Upotreba:
   
   %s [opcije] &lt;uređaj&gt; [&lt;etiketa&gt;]
