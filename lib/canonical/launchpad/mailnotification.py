@@ -1294,45 +1294,46 @@ def notify_branch_modified(branch, event):
     info_lines = []
 
     # Fields for which we have old and new values.
-    for field_name in ('name', 'lifecycle_status', 'revision_count'):
-        title = IBranch[field_name].title
+    for field_name in ('name', 'revision_count', 'title', 'url'):
         delta = getattr(branch_delta, field_name)
         if delta is not None:
+            title = IBranch[field_name].title
             old_item = delta['old']
             new_item = delta['new']
             info_lines.append("%s%s: %s => %s" % (
-                indent, title, old_item, new_item))
+                indent, title, str(old_item), str(new_item)))
+
+    # lifecycle_status is different as it is an Enum type.
+    if branch_delta.lifecycle_status is not None:
+        old_item = branch_delta.lifecycle_status['old']
+        new_item = branch_delta.lifecycle_status['new']
+        title = IBranch['lifecycle_status'].title
+        info_lines.append("%s%s: %s => %s" % (
+            indent, title, old_item.title, new_item.title))
+        
             
     # Fields for which we only have the new value.
-    for field_name in ('title', 'summary', 'url'):
-        title = IBranch[field_name].title
+    for field_name in ('summary', 'whiteboard'):
         delta = getattr(branch_delta, field_name)
         if delta is not None:
-            info_lines.append("%s%s: %s" % (
-                indent, title, delta))
+            title = IBranch[field_name].title
+            if info_lines:
+                info_lines.append('')
+            info_lines.append('%s changed to:\n\n%s' % (title, delta))
 
-    mail_wrapper = MailWrapper(width=72)
     # If the tip revision has changed, then show the log for the tip.
     if branch_delta.last_scanned_id is not None:
         tip_revision = branch.getTipRevision()
         if tip_revision is None:
             # it's a ghost
-            info_lines.append('Latest revision is a ghost')
+            info_lines.append('Latest revision is a ghost (%s)' % (
+                branch_delta.last_scanned_id))
         else:
             # show the log entry
             log_entry = tip_revision.log_body
             if info_lines:
                 info_lines.append('')
-            info_lines.append('Log entry of last revision:')
-            info_lines.append('')
-            info_lines.append(mail_wrapper.format(log_entry))
-
-    if branch_delta.whiteboard is not None:
-        if info_lines:
-            info_lines.append('')
-        info_lines.append('Whiteboard changed to:')
-        info_lines.append('')
-        info_lines.append(mail_wrapper.format(branch_delta.whiteboard))
+            info_lines.append('Log entry of last revision:\n\n%s' % log_entry)
 
     if not info_lines:
         # The specification was modified, but we don't yet support

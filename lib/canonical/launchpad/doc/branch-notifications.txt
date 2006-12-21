@@ -11,31 +11,9 @@ have the appropriate information.
 Email Format
 ------------
 
-    >>> from zope.event import notify
-    >>> from canonical.launchpad.event import SQLObjectModifiedEvent
-    >>> from canonical.launchpad.interfaces import IBranch, IBranchSet
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
-
-    >>> login('test@canonical.com')
-    >>> branch = getUtility(IBranchSet).getByUniqueName('~name12/firefox/main')
-
-    >>> before_modification = Snapshot(branch, providing=IBranch)
-
-    >>> branch.whiteboard = 'This is the new whiteboard'
-
-Even though the branch notification emails don't use the field
-names just now, we'll pass them through anyway
-
-    >>> notify(SQLObjectModifiedEvent(branch,
-    ...                               before_modification,
-    ...                               ['whiteboard']))
-
-    >>> import transaction
-    >>> from canonical.launchpad.mail import stub
-    >>> transaction.commit()
-    >>> len(stub.test_emails)
-    1
-    >>> email_body = stub.test_emails[0][2]
+Here are a couple of helper functions to look at the inards
+of the emails.  If they are really useful, perhaps they
+sould be moved somewhere else and available to all tests.
 
     >>> def check_email(email, To=None, From=None, Subject=None, contents=None):
     ...   email_body = email[2]
@@ -60,6 +38,45 @@ names just now, we'll pass them through anyway
     ...     print "--- the email ---"
     ...     print email_body
 
+    >>> def check_recipients(emails, addresses):
+    ...   found = []
+    ...   for email in emails:
+    ...     recipient = email[1]
+    ...     if len(recipient) != 1: print "Expected only one recipient"
+    ...     found.append(recipient[0])
+    ...   if sorted(found) != sorted(addresses):
+    ...     print "Expected: %s\nFound: %s" % (sorted(addresses),
+    ...                                        sorted(found))
+
+
+It is the form infrastructure that fires off the SQLObjectModifedEvent,
+so we'll fake that bit here.  The page tests will check the emails
+sent.
+
+    >>> from zope.event import notify
+    >>> from canonical.launchpad.event import SQLObjectModifiedEvent
+    >>> from canonical.launchpad.interfaces import IBranch, IBranchSet
+    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+
+    >>> login('test@canonical.com')
+    >>> branch = getUtility(IBranchSet).getByUniqueName('~name12/firefox/main')
+
+    >>> before_modification = Snapshot(branch, providing=IBranch)
+
+    >>> branch.whiteboard = 'This is the new whiteboard'
+
+Even though the branch notification emails don't use the field
+names just now, we'll pass them through anyway
+
+    >>> notify(SQLObjectModifiedEvent(branch,
+    ...                               before_modification,
+    ...                               ['whiteboard']))
+
+    >>> import transaction
+    >>> from canonical.launchpad.mail import stub
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    1
     >>> check_email(stub.test_emails[0],
     ...   To='test@canonical.com',
     ...   From='Sample Person <test@canonical.com>',
@@ -85,8 +102,46 @@ scanner.
 So, if all the UI fields are changed, you should get an email that looks
 something like this:
 
+    >>> stub.test_emails = []
+    >>> branch = getUtility(IBranchSet).getByUniqueName('~name12/firefox/main')
 
+    >>> before_modification = Snapshot(branch, providing=IBranch)
 
+    >>> branch.name = 'new-name'
+    >>> branch.title = 'New title'
+    >>> branch.summary = 'A new summary'
+    >>> branch.url = 'http://example.com/foo'
+    >>> branch.whiteboard = 'This is a multiline whiteboard\n' \
+    ...  'with a really long line that should invoke the splitting ' \
+    ...  'algorithm in the mail wrapper to make sure that the line ' \
+    ...  'is not too long'
+    >>> from canonical.lp.dbschema import BranchLifecycleStatus
+    >>> branch.lifecycle_status = BranchLifecycleStatus.DEVELOPMENT
+    
+    >>> notify(SQLObjectModifiedEvent(branch,
+    ...                               before_modification,
+    ...                               ['name','title','summary','url','whiteboard','lifecycle_status']))
+
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    1
+    >>> changed_fields = \
+    ...   '    Name: main =3D> new-name\n' \
+    ...   '    Title: Mozilla Firefox Mainline =3D> New title\n' \
+    ...   '    Branch URL: http://bazaar.example.com/mozilla@arch.ubuntu.com' \
+    ...   '/mozilla--=\nMAIN--0 =3D> http://example.com/foo\n' \
+    ...   '    Status: New =3D> Development\n\n'
+    ...   'Summary changed to:\n\n'
+    ...   'A new summary\n\n'
+    ...   'Whiteboard changed to:\n\n'
+    ...   'This is a multiline whiteboard\n'
+    ...   'with a really long line that should invoke the splitting algorithm in the m=\n'
+    ...   'ail wrapper to make sure that the line is not too long\n'
+    >>> check_email(stub.test_emails[0],
+    ...   To='test@canonical.com',
+    ...   From='Sample Person <test@canonical.com>',
+    ...   Subject='[Branch ~name12/firefox/new-name] New title',
+    ...   contents=changed_fields)
 
 
 According to the bazaar guys, if the revision_id is still the same at the
@@ -99,7 +154,7 @@ Now make it have less revisions, and set a bogus last scanned id
     >>> revision_count = branch.revision_count
     >>> last_id = branch.last_scanned_id
     >>> branch.revision_count -= 2
-    >>> branch.last_scanned_id = u'something different'
+    >>> branch.last_scanned_id = 'something different'
 
 Snapshot it for the delta
 
@@ -112,19 +167,12 @@ Snapshot it for the delta
     ...                               ['revision_count', 'last_scanned_id']))
 
     >>> transaction.commit()
+
+Since there is a subscriber to this branch, it should go to 
+both the auther and the subscriber
+
     >>> len(stub.test_emails)
     2
-
-    >>> def check_recipients(emails, addresses):
-    ...   found = []
-    ...   for email in emails:
-    ...     recipient = email[1]
-    ...     if len(recipient) != 1: print "Expected only one recipient"
-    ...     found.append(recipient[0])
-    ...   if sorted(found) != sorted(addresses):
-    ...     print "Expected: %s\nFound: %s" % (sorted(addresses),
-    ...                                        sorted(found))
-
     >>> check_recipients(stub.test_emails, ['test@canonical.com',
     ...                                     'support@ubuntu.com'])
 
@@ -138,12 +186,3 @@ Snapshot it for the delta
     ...            'fix bug in bar')
 
 
-
-
-
-
-
-
-
-Launchpad UI changes
---------------------
