@@ -6,7 +6,8 @@ from textwrap import dedent
 from zope.app.content_types import guess_content_type
 from zope.component import getUtility
 from zope.schema import Bytes, Choice, Field, Int, Text, TextLine, Password
-from zope.schema.interfaces import IPassword, IText, ITextLine, IField, IInt
+from zope.schema.interfaces import (
+    IBytes, IField, IInt, IPassword, IText, ITextLine)
 from zope.interface import implements
 
 from canonical.database.sqlbase import cursor
@@ -107,6 +108,10 @@ class ITag(ITextLine):
 
     A text line which can be used as a simple text tag.
     """
+
+
+class IBaseImageUpload(IBytes):
+    """Marker interface for ImageUpload fields."""
 
 
 class StrippedTextLine(TextLine):
@@ -327,6 +332,8 @@ class BaseImageUpload(Bytes):
       form /@@/<resource-name>
     """
 
+    implements(IBaseImageUpload)
+
     max_dimensions = None
     max_size = None
     default_image_resource = '/@@/nyet-mugshot'
@@ -346,7 +353,9 @@ class BaseImageUpload(Bytes):
             raise LaunchpadValidationError(_(dedent("""
                 The file uploaded was not recognized as an image; please
                 check it and retry.""")))
-        if image.size > self.max_dimensions:
+        width, height = image.size
+        max_width, max_height = self.max_dimensions
+        if width > max_width or height > max_height:
             raise LaunchpadValidationError(_(dedent("""
                 This image exceeds the maximum allowed width or height in
                 pixels.""")))
@@ -377,7 +386,10 @@ class BaseImageUpload(Bytes):
 
 class LargeImageUpload(BaseImageUpload):
 
+    # The max dimensions here is actually a bit bigger than the advertised
+    # one --it's nice to be a bit permissive with user-entered data where we
+    # can.
     max_dimensions = (200, 200)
-    max_size = 512*1024
+    max_size = 100*1024
     default_image_resource = '/@@/nyet-mugshot'
 

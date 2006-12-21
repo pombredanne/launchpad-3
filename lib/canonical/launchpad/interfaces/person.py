@@ -36,8 +36,7 @@ from canonical.launchpad.interfaces.specificationtarget import (
 from canonical.launchpad.interfaces.tickettarget import (
     TICKET_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.validation import (
-    valid_emblem, valid_gotchi, validate_new_team_email,
-    validate_new_person_email)
+    valid_emblem, validate_new_team_email, validate_new_person_email)
 
 from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, TeamMembershipStatus, PersonCreationRationale)
@@ -124,14 +123,14 @@ class IPerson(IHasSpecifications):
     emblem = Bytes(
         title=_("Emblem"), required=False,
         description=_(
-            "A small image, max 16x16 pixels and 8k in file size, that can "
+            "A small image, max 16x16 pixels and 25k in file size, that can "
             "be used to refer to this team."),
         constraint=valid_emblem)
     gotchi = LargeImageUpload(
         title=_("Hackergotchi"), required=False,
         description=_(
             "An image, maximum 170x170 pixels, that will be displayed on "
-            "your home page. It should be no bigger than 500k in size. "
+            "your home page. It should be no bigger than 100k in size. "
             "Traditionally this is a great big grinning image of your mug. "
             "Make the most of it."))
 

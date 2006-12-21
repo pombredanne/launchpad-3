@@ -78,7 +78,7 @@ from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, SpecificationFilter, TicketParticipation,
     PersonCreationRationale)
 
-from canonical.widgets import ImageUploadWidget, PasswordChangeWidget
+from canonical.widgets import PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
@@ -1766,12 +1766,6 @@ class PersonEditView(LaunchpadEditFormView):
     field_names = ['displayname', 'name', 'hide_email_addresses', 'timezone',
                    'gotchi']
     custom_widget('timezone', SelectWidget, size=15)
-    custom_widget('gotchi', ImageUploadWidget)
-
-    def showOptionalMarker(self, field_name):
-        if field_name == 'gotchi':
-            return False
-        return True
 
     @action(_("Save"), name="save")
     def action_save(self, action, data):
