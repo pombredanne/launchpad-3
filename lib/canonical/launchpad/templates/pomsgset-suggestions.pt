@@ -9,16 +9,22 @@
       tal:define="submissionlang submission/pomsgset/pofile/language">
     <td colspan="3" />
     <td class="icon left right">
-      <input type="image" src="/@@/copy" title="Copy text"
-          tal:attributes="
-            name string:msgset_${context/pomsgset/potmsgset/id}_${submissionlang/code}_suggestion_${submission/id}_${submission/pluralform}_copy"
-        />
+      <a href=""
+         tal:attributes="
+           onClick string:
+             javascript:copyInnerHTMLById(
+               'msgset_${context/pomsgset/potmsgset/id}_${submissionlang/code}_suggestion_${submission/id}_${submission/pluralform}',
+               'msgset_${context/pomsgset/potmsgset/id}_${submissionlang/code}_translation_${submission/pluralform}_new');;
+             selectWidget('msgset_${context/pomsgset/potmsgset/id}_${submissionlang/code}_translation_${submission/pluralform}_new_checkbox', event);;
+             return false;;
+            "><img alt="Copy text" src="/@@/copy"></a>
     </td>
     <td>
-      <div tal:attributes="lang submissionlang/dashedcode;
-                           dir submissionlang/abbreviated_text_dir;
-                           id string:msgset_${context/pomsgset/potmsgset/id}_${submissionlang/code}_suggestion_${submission/id}_${submission/pluralform}"
-           tal:content="structure submission/potranslation/translation/fmt:text-to-html">
+      <div tal:attributes="
+        lang submissionlang/dashedcode;
+        dir submissionlang/abbreviated_text_dir;
+        id string:msgset_${context/pomsgset/potmsgset/id}_${submissionlang/code}_suggestion_${submission/id}_${submission/pluralform}"
+        tal:content="structure submission/potranslation/translation/fmt:text-to-html">
         suggestion</div>
     </td>
   </tr>

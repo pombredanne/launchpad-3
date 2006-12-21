@@ -1,3 +1,5 @@
+<tal:language-code
+  define="language_code context/pofile/language/code">
 <tr class="translation">
   <td>
     <a tal:attributes="href view/zoom_url"><img tal:attributes="
@@ -22,10 +24,15 @@
     </label>
   </th>
   <td class="icon left right">
-    <input type="image" src="/@@/copy" title="Copy text"
+    <a href=""
       tal:attributes="
-        name string:msgset_${context/potmsgset/id}_singular_copy"
-      />
+        onClick string:
+          javascript:copyInnerHTMLById(
+            'msgset_${context/potmsgset/id}_singular',
+            'msgset_${context/potmsgset/id}_${language_code}_translation_0_new');;
+          selectWidget('msgset_${context/potmsgset/id}_${language_code}_translation_0_new_checkbox', event);;
+          return false;;
+        "><img alt="Copy text" src="/@@/copy"></a>
   </td>
   <td>
     <div tal:content="structure view/msgid"
@@ -39,10 +46,6 @@
     <label>English plural:</label>
   </th>
   <td class="icon left right">
-    <input type="image" src="/@@/copy" title="Copy text"
-      tal:attributes="
-        name string:msgset_${context/potmsgset/id}_plural_copy"
-    />
   </td>
   <td>
     <div tal:content="structure view/msgid_plural"
@@ -122,8 +125,6 @@
       </div>
   </td>
 </tr>
-<tal:language-code
-  define="language_code context/pofile/language/code">
   <tal:translation-dictionaries
        repeat="translation_dictionary view/translation_dictionaries">
   <tal:plural-form define="plural_index translation_dictionary/plural_index">
@@ -139,17 +140,22 @@
       <tal:with-content
            condition="translation_dictionary/active_translation">
         <td>
-          <input type="image" src="/@@/copy" title="Copy text"
+          <a href=""
             tal:attributes="
-              name string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_copy"
-          />
+              onClick string:
+                javascript:copyInnerHTMLById(
+                  'msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}',
+                  'msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new');;
+                selectWidget('msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_checkbox', event);;
+                return false;;
+            "><img alt="Copy text" src="/@@/copy"></a>
         </td>
         <td>
           <div tal:content="structure translation_dictionary/active_translation"
                tal:attributes="
                  lang context/pofile/language/dashedcode;
                  dir context/pofile/language/abbreviated_text_dir;
-                 id string:msgset_${context/potmsgset/id}_${language_code}_translation_{plural_index}">
+                 id string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}">
             current translation
           </div>
         </td>
@@ -159,7 +165,7 @@
         <td />
         <td>
           <div tal:attributes="
-               id string:msgset_${context/potmsgset/id}_${language_code}_translation_{plural_index}">
+               id string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}">
             (no translation yet)
           </div>
         </td>
@@ -248,6 +254,7 @@
               style="width: 100%;"
               rows=6
               tal:attributes="
+                id string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new;
                 name string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new;
                 lang context/pofile/language/dashedcode;
                 dir context/pofile/language/abbreviated_text_dir;
@@ -262,6 +269,7 @@
               style="width: 100%;"
               rows=6
               tal:attributes="
+                id string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new;
                 name string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new;
                 lang context/pofile/language/dashedcode;
                 dir context/pofile/language/abbreviated_text_dir;
