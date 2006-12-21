@@ -112,20 +112,22 @@ ftest_inplace: inplace
 	env PYTHONPATH=$(PYTHONPATH) \
 	    $(PYTHON) test.py -f $(TESTFLAGS) $(TESTOPTS)
 
-run: inplace stop
+run: inplace stop bzr_version_info
 	rm -f thread*.request
+	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
+		 $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE)
+
+bzr_version_info:
 	rm -f bzr-version-info.py bzr-version-info.pyc
 	if which bzr > /dev/null  && test -x `which bzr`; \
 		then PYTHONPATH= bzr version-info --format=python > bzr-version-info.py 2>/dev/null; \
 	fi
-	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
-		 $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE)
 
 # Run as a daemon - hack using nohup until we move back to using zdaemon
 # properly. We also should really wait until services are running before 
 # exiting, as running 'make stop' too soon after running 'make start'
 # will not work as expected.
-start: inplace stop
+start: inplace stop bzr_version_info
 	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
 		 nohup $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE) \
 		 > ${LPCONFIG}-nohup.out 2>&1 &
@@ -138,6 +140,9 @@ stop: build
 
 harness:
 	PYTHONPATH=lib python -i lib/canonical/database/harness.py
+
+iharness:
+	PYTHONPATH=lib ipython -i lib/canonical/database/harness.py
 
 rebuildfti:
 	@echo Rebuilding FTI indexes on launchpad_dev database

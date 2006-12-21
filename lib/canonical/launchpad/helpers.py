@@ -330,6 +330,24 @@ def request_languages(request):
     return languages
 
 
+def is_english_variant(language):
+    """Return whether the language is a variant of modern English .
+
+    >>> class Language:
+    ...     def __init__(self, code):
+    ...         self.code = code
+    >>> is_english_variant(Language('fr'))
+    False
+    >>> is_english_variant(Language('en'))
+    True
+    >>> is_english_variant(Language('en_CA'))
+    True
+    >>> is_english_variant(Language('enm'))
+    False
+    """
+    return language.code[0:3] in ['en', 'en_']
+
+
 def check_po_syntax(s):
     parser = POParser()
 

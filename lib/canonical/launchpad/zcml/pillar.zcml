@@ -4,9 +4,9 @@
     i18n_domain="launchpad">
 
     <securedutility
-        class="canonical.launchpad.database.PillarSet"
-        provides="canonical.launchpad.interfaces.IPillarSet">
-        <allow interface="canonical.launchpad.interfaces.IPillarSet" />
+        class="canonical.launchpad.database.PillarNameSet"
+        provides="canonical.launchpad.interfaces.IPillarNameSet">
+        <allow interface="canonical.launchpad.interfaces.IPillarNameSet" />
     </securedutility>
 
 </configure>

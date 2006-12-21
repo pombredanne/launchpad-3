@@ -15,15 +15,18 @@
                   bugcontacts __getitem__ getVersion bugtasks __eq__ __ne__
                   searchTasks isBugContact open_bugtasks
                   critical_bugtasks inprogress_bugtasks unassigned_bugtasks
-                  unconfirmed_bugtasks all_bugtasks
-                  getUsedBugTags getUsedBugTagsWithOpenCounts bugtargetname" />
+                  unconfirmed_bugtasks all_bugtasks getUsedBugTags
+                  getUsedBugTagsWithOpenCounts bugtargetname
+                  getMostCommonBugs" />
     <require
       permission="launchpad.AnyPerson"
       attributes="addBugContact removeBugContact subscribe createBug " />
 
     <!-- ITicketTarget -->
     <allow attributes="getTicket searchTickets findSimilarTickets
-              support_contacts" />
+        support_contacts direct_support_contacts getSupportedLanguages
+	getTicketLanguages"
+	/>
     <require permission="launchpad.AnyPerson"
       attributes="newTicket addSupportContact removeSupportContact" />
   </content>
@@ -31,6 +34,11 @@
   <browser:defaultView
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"
     name="+index" />
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IDistributionSourcePackage"
+    layer="canonical.launchpad.layers.AnswersLayer"
+    name="+tickets"
+    />
 
   <browser:url
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"
@@ -72,28 +80,6 @@
       template="../templates/distributionsourcepackage-portlet-releases.pt"
       />
   </browser:pages>
-
-  <browser:generalform
-      name="+filebug"
-      for="canonical.launchpad.interfaces.IDistributionSourcePackage"
-      schema="canonical.launchpad.interfaces.IBugAddForm"
-      label="Report a bug"
-      fields="packagename title comment security_related"
-      class="canonical.launchpad.browser.FileBugView"
-      facet="bugs"
-      keyword_arguments="packagename title comment security_related"
-      permission="launchpad.AnyPerson"
-      template="../templates/bugtarget-filebug.pt"
-      lp:url="/distros/$Distribution.name/+filebug">
-      <browser:widget
-         field="title"
-         class="zope.app.form.browser.TextWidget"
-         displayWidth="50" />
-      <browser:widget
-         field="comment"
-         class="zope.app.form.browser.TextAreaWidget"
-         width="62" />
-  </browser:generalform>
 
   <browser:page
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"

@@ -9,7 +9,7 @@
 
         <p metal:fill-slot="extra_info">
           Before reporting a bug, please ensure it hasn&#8217;t
-          been <a href="/malone">reported already</a>.
+          been <a href="/bugs">reported already</a>.
         </p>
 
   </div>

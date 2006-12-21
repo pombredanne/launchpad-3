@@ -42,17 +42,17 @@
   because he's not the owner of the product nor a member of admins.
 
   >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
-  >>> browser.open('http://launchpad.dev/products/firefox/+reassign')
+  >>> browser.open('http://launchpad.dev/firefox/+reassign')
   Traceback (most recent call last):
   ...
   Unauthorized...
 
   Now we're logged in as FooBar and he's an LP admin, so he can do everything.
 
-  >>> admin_browser.open('http://launchpad.dev/products/firefox')
+  >>> admin_browser.open('http://launchpad.dev/firefox')
   >>> admin_browser.getLink('Change Maintainer').click()
   >>> admin_browser.url
-  'http://launchpad.dev/products/firefox/+reassign'
+  'http://launchpad.dev/firefox/+reassign'
 
   >>> admin_browser.title
   'Reassign Mozilla Firefox'
@@ -76,7 +76,7 @@
   >>> admin_browser.getControl('Change Owner').click()
 
   >>> admin_browser.url
-  'http://launchpad.dev/products/firefox/'
+  'http://launchpad.dev/firefox/'
 
   Here we see the new owner: No Privileges person. 
 
@@ -114,10 +114,10 @@
   Now that no-priv is the owner of the product, he can transfer ownership to
   another person.
 
-  >>> browser.open('http://launchpad.dev/products/firefox')
+  >>> browser.open('http://launchpad.dev/firefox')
   >>> browser.getLink('Change Maintainer').click()
   >>> browser.url
-  'http://launchpad.dev/products/firefox/+reassign'
+  'http://launchpad.dev/firefox/+reassign'
 
   >>> browser.getControl(name='field.owner').value = 'name12'
   >>> browser.getControl(name='existing').value = ['existing']

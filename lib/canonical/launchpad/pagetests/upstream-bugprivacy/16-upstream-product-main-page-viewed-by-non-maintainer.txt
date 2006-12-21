@@ -1,7 +1,7 @@
 View the product main page in Registry when you are not logged in:
 
   >>> print http(r"""
-  ... GET /products/firefox HTTP/1.1
+  ... GET /firefox HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...

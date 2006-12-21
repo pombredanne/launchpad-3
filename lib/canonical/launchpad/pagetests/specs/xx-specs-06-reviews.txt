@@ -8,7 +8,7 @@ him a message.
 First, we load the review request page.
 
   >>> print http(r"""
-  ... GET /products/firefox/+spec/canvas/+requestfeedback HTTP/1.1
+  ... GET /firefox/+spec/canvas/+requestfeedback HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -19,7 +19,7 @@ Now we try to POST to the form behind it. We expect to be redirected to the
 spec home page.
 
   >>> print http(r"""
-  ... POST /products/firefox/+spec/canvas/+requestfeedback HTTP/1.1
+  ... POST /firefox/+spec/canvas/+requestfeedback HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------9851763078341624562133848003
   ... 
@@ -39,14 +39,14 @@ spec home page.
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://.../products/firefox/+spec/canvas
+  Location: http://.../firefox/+spec/canvas
   ...
 
 If we try to request feedback to the same person to the same specification,
 we'll get a nice error message
 
   >>> print http(r"""
-  ... POST /products/firefox/+spec/canvas/+requestfeedback HTTP/1.1
+  ... POST /firefox/+spec/canvas/+requestfeedback HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------9851763078341624562133848003
   ... 
@@ -75,7 +75,7 @@ we'll get a nice error message
 I can't request feedback from myself
 
   >>> print http(r"""
-  ... POST /products/firefox/+spec/canvas/+requestfeedback HTTP/1.1
+  ... POST /firefox/+spec/canvas/+requestfeedback HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------9851763078341624562133848003
   ... 
@@ -104,7 +104,7 @@ I can't request feedback from myself
 Now We should see that review request message on the spec page.
 
   >>> print http(r"""
-  ... GET /products/firefox/+spec/canvas HTTP/1.1
+  ... GET /firefox/+spec/canvas HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...Feedback requests...
@@ -116,7 +116,7 @@ We will do another 2 feedback requests for sabdfl with different logged in
 users, first with Carlos.
 
   >>> print http(r"""
-  ... POST /products/firefox/+spec/canvas/+requestfeedback HTTP/1.1
+  ... POST /firefox/+spec/canvas/+requestfeedback HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... Content-Type: multipart/form-data; boundary=---------------------------9563630295607919491334846818
   ... 
@@ -136,13 +136,13 @@ users, first with Carlos.
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://.../products/firefox/+spec/canvas
+  Location: http://.../firefox/+spec/canvas
   ...
 
 And then with Foo Bar
 
   >>> print http(r"""
-  ... POST /products/firefox/+spec/canvas/+requestfeedback HTTP/1.1
+  ... POST /firefox/+spec/canvas/+requestfeedback HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 458
   ... Content-Type: multipart/form-data; boundary=---------------------------3460313531928717451553877484
@@ -163,7 +163,7 @@ And then with Foo Bar
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://.../products/firefox/+spec/canvas
+  Location: http://.../firefox/+spec/canvas
   ...
 
 Now, let's go and clear a review request. Sabdfl has been asked to review spec
@@ -172,7 +172,7 @@ First, on the spec home page we see an alert reminding us that we have been
 asked to review this page in particular.
 
   >>> print http(r"""
-  ... GET /products/firefox/+spec/canvas HTTP/1.1
+  ... GET /firefox/+spec/canvas HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -181,7 +181,7 @@ asked to review this page in particular.
 We also see our name in the "feedback requests" portlet.
 
   >>> print http(r"""
-  ... GET /products/firefox/+spec/canvas HTTP/1.1
+  ... GET /firefox/+spec/canvas HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...Feedback requests...
@@ -190,7 +190,7 @@ We also see our name in the "feedback requests" portlet.
 And we see the "Give Feedback" menu item.
 
   >>> print http(r"""
-  ... GET /products/firefox/+spec/canvas HTTP/1.1
+  ... GET /firefox/+spec/canvas HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -200,7 +200,7 @@ Let's load the "+givefeedback" page, to tell the system that our work is
 complete. Note that the form posts back to the main spec home page.
 
   >>> print http(r"""
-  ... GET /products/firefox/+spec/canvas/+givefeedback HTTP/1.1
+  ... GET /firefox/+spec/canvas/+givefeedback HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -209,7 +209,7 @@ complete. Note that the form posts back to the main spec home page.
 Now we POST this page back to itself. First, we clear a single item.
 
   >>> print http(r"""
-  ... POST /products/firefox/+spec/canvas/+givefeedback HTTP/1.1
+  ... POST /firefox/+spec/canvas/+givefeedback HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... Content-Length: 43
   ... Content-Type: application/x-www-form-urlencoded
@@ -222,7 +222,7 @@ Now we POST this page back to itself. First, we clear a single item.
 And now, the remaining two. This time we expect to be redirected.
 
   >>> print http(r"""
-  ... POST /products/firefox/+spec/canvas/+givefeedback HTTP/1.1
+  ... POST /firefox/+spec/canvas/+givefeedback HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... Content-Length: 66
   ... Content-Type: application/x-www-form-urlencoded
@@ -230,7 +230,7 @@ And now, the remaining two. This time we expect to be redirected.
   ... feedbackrequest=name12&feedbackrequest=name16&FORM_SUBMIT=Continue""")
   HTTP/1.1 303 See Other
   ...
-  Location: http://.../products/firefox/+spec/canvas
+  Location: http://.../firefox/+spec/canvas
   ...
 
 

@@ -2,7 +2,7 @@
   way to report it by clicking in the Also Needs Fixing Here button.
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/+source/mozilla-firefox/+bug/3 HTTP/1.1
+  ... POST /ubuntu/+source/mozilla-firefox/+bug/3 HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
   ... 
@@ -15,7 +15,7 @@
   If we try to report it again, we should get a nice error message.
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/+source/mozilla-firefox/+bug/3 HTTP/1.1
+  ... POST /ubuntu/+source/mozilla-firefox/+bug/3 HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
   ... 
