@@ -327,10 +327,10 @@ class IBranchDelta(Interface):
     user = Attribute("The IPerson that did the editing.")
 
     # fields on the branch itself, we provide just the new changed value
-    name = Attribute("The branch name or None.")
-    title = Attribute("The branch title or None.")
+    name = Attribute("Old and new names or None.")
+    title = Attribute("Old and new branch titles or None.")
     summary = Attribute("The branch summary or None.")
-    url = Attribute("The branch URL or None.")
+    url = Attribute("Old and new branch URLs or None.")
     whiteboard = Attribute("The branch whiteboard or None.")
     lifecycle_status = Attribute("Old and new lifecycle status, or None.")
     revision_count = Attribute("Old and new revision counts, or None.")

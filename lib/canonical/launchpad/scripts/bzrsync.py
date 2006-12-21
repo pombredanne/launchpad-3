@@ -275,7 +275,7 @@ def main(branch_id):
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(formatter)
     logger = logging.getLogger("BzrSync")
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
     logger.addHandler(handler)
 
     branch = getUtility(IBranchSet).get(branch_id)
