@@ -37,7 +37,7 @@ from canonical.launchpad.interfaces import (
     ISourcePackage, ISourcePackageNameSet,
     IHasQueueItems, IPublishing)
 
-from canonical.launchpad.components.bugtarget import BugTargetBase
+from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.launchpad.database.binarypackagename import (
     BinaryPackageName)
@@ -602,7 +602,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         return SourcePackagePublishingHistory.select(
             " AND ".join(queries), orderBy="id")
 
-    def getSourcePackagePublishing(self, status, pocket):
+    def getSourcePackagePublishing(self, status, pocket, component=None):
         """See IDistroRelease."""
         orderBy = ['SourcePackageName.name']
 
@@ -618,11 +618,19 @@ class DistroRelease(SQLBase, BugTargetBase):
             SourcePackagePublishingHistory.pocket=%s
             """ %  sqlvalues(self.id, status, pocket)
 
+        if component:
+            clause += (
+                " AND SourcePackagePublishingHistory.component=%s" %
+                sqlvalues(component)
+                )
+
         return SourcePackagePublishingHistory.select(
             clause, orderBy=orderBy, clauseTables=clauseTables)
 
-    def getBinaryPackagePublishing(self, name=None, version=None, archtag=None,
-                                   sourcename=None, orderBy=None):
+    def getBinaryPackagePublishing(self, name=None, version=None,
+                                   archtag=None, sourcename=None,
+                                   orderBy=None, pocket=None,
+                                   component=None):
         """See IDistroRelease."""
 
         clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchRelease',
@@ -660,6 +668,16 @@ class DistroRelease(SQLBase, BugTargetBase):
         if sourcename:
             query.append('SourcePackageName.name = %s' % sqlvalues(sourcename))
 
+        if pocket:
+            query.append(
+                'BinaryPackagePublishingHistory.pocket = %s'
+                % sqlvalues(pocket))
+
+        if component:
+            query.append(
+                'BinaryPackagePublishingHistory.component = %s'
+                % sqlvalues(component))
+
         query = " AND ".join(query)
 
         result = BinaryPackagePublishingHistory.select(
@@ -684,28 +702,23 @@ class DistroRelease(SQLBase, BugTargetBase):
         return getUtility(IBuildSet).getBuildsByArchIds(
             arch_ids, status, name, pocket)
 
-    def createUploadedSourcePackageRelease(self, sourcepackagename,
-            version, maintainer, dateuploaded, builddepends,
-            builddependsindep, architecturehintlist, component,
-            creator, urgency, changelog, dsc, dscsigningkey, section,
-            manifest):
+    def createUploadedSourcePackageRelease(
+        self, sourcepackagename, version, maintainer, dateuploaded,
+        builddepends, builddependsindep, architecturehintlist, component,
+        creator, urgency, changelog, dsc, dscsigningkey, section, manifest,
+        dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
+        dsc_binaries):
         """See IDistroRelease."""
-        return SourcePackageRelease(uploaddistrorelease=self,
-                                    sourcepackagename=sourcepackagename,
-                                    version=version,
-                                    maintainer=maintainer,
-                                    dateuploaded=dateuploaded,
-                                    builddepends=builddepends,
-                                    builddependsindep=builddependsindep,
-                                    architecturehintlist=architecturehintlist,
-                                    component=component,
-                                    creator=creator,
-                                    urgency=urgency,
-                                    changelog=changelog,
-                                    dsc=dsc,
-                                    dscsigningkey=dscsigningkey,
-                                    section=section,
-                                    manifest=manifest)
+        return SourcePackageRelease(
+            uploaddistrorelease=self, sourcepackagename=sourcepackagename,
+            version=version, maintainer=maintainer, dateuploaded=dateuploaded,
+            builddepends=builddepends, builddependsindep=builddependsindep,
+            architecturehintlist=architecturehintlist, component=component,
+            creator=creator, urgency=urgency, changelog=changelog, dsc=dsc,
+            dscsigningkey=dscsigningkey, section=section, manifest=manifest,
+            dsc_maintainer_rfc822=dsc_maintainer_rfc822, dsc_format=dsc_format,
+            dsc_standards_version=dsc_standards_version,
+            dsc_binaries=dsc_binaries)
 
     def getComponentByName(self, name):
         """See IDistroRelease."""
@@ -727,7 +740,7 @@ class DistroRelease(SQLBase, BugTargetBase):
             return section
         raise NotFoundError(name)
 
-    def removeOldCacheItems(self):
+    def removeOldCacheItems(self, log):
         """See IDistroRelease."""
 
         # get the set of package names that should be there
@@ -749,9 +762,12 @@ class DistroRelease(SQLBase, BugTargetBase):
         # remove the cache entries for binary packages we no longer want
         for cache in self.binary_package_caches:
             if cache.binarypackagename not in bpns:
+                log.debug(
+                    "Removing binary cache for '%s' (%s)"
+                    % (cache.name, cache.id))
                 cache.destroySelf()
 
-    def updateCompletePackageCache(self, ztm=None):
+    def updateCompletePackageCache(self, log, ztm):
         """See IDistroRelease."""
 
         # get the set of package names to deal with
@@ -774,15 +790,17 @@ class DistroRelease(SQLBase, BugTargetBase):
         # packages
         counter = 0
         for bpn in bpns:
-            self.updatePackageCache(bpn)
+            log.debug("Considering binary '%s'" % bpn.name)
+            self.updatePackageCache(bpn, log)
             counter += 1
             if counter > 99:
                 counter = 0
                 if ztm is not None:
+                    log.debug("Committing")
                     ztm.commit()
 
 
-    def updatePackageCache(self, binarypackagename):
+    def updatePackageCache(self, binarypackagename, log):
         """See IDistroRelease."""
 
         # get the set of published binarypackagereleases
@@ -801,6 +819,7 @@ class DistroRelease(SQLBase, BugTargetBase):
                           'DistroArchRelease'],
             distinct=True)
         if bprs.count() == 0:
+            log.debug("No binary releases found.")
             return
 
         # find or create the cache entry
@@ -809,6 +828,7 @@ class DistroRelease(SQLBase, BugTargetBase):
             binarypackagename = %s
             """ % sqlvalues(self.id, binarypackagename.id))
         if cache is None:
+            log.debug("Creating new binary cache entry.")
             cache = DistroReleasePackageCache(
                 distrorelease=self,
                 binarypackagename=binarypackagename)
@@ -824,6 +844,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         summaries = set()
         descriptions = set()
         for bpr in bprs:
+            log.debug("Considering binary version %s" % bpr.version)
             summaries.add(bpr.summary)
             descriptions.add(bpr.description)
 
@@ -1569,7 +1590,10 @@ class DistroRelease(SQLBase, BugTargetBase):
             # only situation when we could have POSelection rows to update.
             logger_object.info('Updating POSelection table...')
             cur.execute('''
-                UPDATE POSelection SET activesubmission = ps2.id
+                UPDATE POSelection
+                    SET activesubmission = ps2.id,
+                        reviewer = psel1.reviewer,
+                        date_reviewed = psel1.date_reviewed
                     FROM
                         POTemplate AS pt1
                         JOIN POFile AS pf1 ON pf1.potemplate = pt1.id
@@ -1622,12 +1646,15 @@ class DistroRelease(SQLBase, BugTargetBase):
         logger_object.info('Filling POSelection table...')
         cur.execute('''
             INSERT INTO POSelection (
-                pomsgset, pluralform, activesubmission, publishedsubmission)
+                pomsgset, pluralform, activesubmission, publishedsubmission,
+                reviewer, date_reviewed)
             SELECT
                 pms2.id AS pomsgset,
                 psel1.pluralform AS pluralform,
                 psactive2.id AS activesubmission,
-                %s AS publishedsubmission
+                %s AS publishedsubmission,
+                psel1.reviewer AS reviewer,
+                psel1.date_reviewed AS date_reviewed
             FROM
                 POTemplate AS pt1
                 JOIN POFile AS pf1 ON pf1.potemplate = pt1.id

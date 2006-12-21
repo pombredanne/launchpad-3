@@ -1,13 +1,11 @@
-
-Submitting New Support Requests
-===============================
+= Submitting New Support Requests =
 
 There are two paths available to a user to make new support requests.
 The first one involes three steps. First, go to the product or
 distribution for which support is desired. Then browse to the support
 facet and finally, use the 'Request support' action:
 
-    >>> browser.open('http://launchpad.dev/distros/ubuntu')
+    >>> browser.open('http://launchpad.dev/ubuntu')
     >>> browser.getLink('Support').click()
     >>> print browser.title
     Support requests for Ubuntu
@@ -18,14 +16,12 @@ Making a new support requests requires logging in:
     Traceback (most recent call last):
       ...
     Unauthorized...
-    >>> user_browser.open('http://launchpad.dev/distros/ubuntu/+tickets')
+    >>> user_browser.open('http://launchpad.dev/ubuntu/+tickets')
     >>> user_browser.getLink('Request Support').click()
     >>> user_browser.title
     'Request support with Ubuntu'
 
-
-Get Help Online
----------------
+== Get Help Online ==
 
 The other way is by using the 'Get Help Online' menu item that is found
 in all GTK2 applications packaged for Ubuntu (and soon in QT
@@ -34,7 +30,7 @@ that will start the creation process. Tickets created this way will be
 associated with the source package of the used application.
 
     >>> user_browser.open(
-    ...     'http://launchpad.dev/distros/ubuntu/hoary/'
+    ...     'http://launchpad.dev/ubuntu/hoary/'
     ...     '+sources/mozilla-firefox/+gethelp')
     >>> user_browser.title
     'Help and support options for mozilla-firefox...'
@@ -42,9 +38,7 @@ associated with the source package of the used application.
     >>> user_browser.title
     'Request support with Hoary mozilla-firefox'
 
-
-Searching for Similar Tickets
------------------------------
+== Searching for Similar Tickets ==
 
 Making a new support request is a two-step process. In the first step,
 the user enters a summary of his problem. Using that summary, a search
@@ -70,7 +64,7 @@ displayed.
     >>> soup = BeautifulSoup(user_browser.contents)
     >>> soup.first('table', {'id': 'similar-tickets'})
     <table id="similar-tickets">
-    ...<a...href=".../distros/ubuntu/+ticket/8"...>Installation of Java
+    ...<a...href=".../mozilla-firefox/+ticket/8"...>Installation of Java
     Runtime Environment for Mozilla</a>...
     </table>
 
@@ -89,9 +83,7 @@ left over the ticket's title.
     &quot;manual install&quot;
     3) clicking on &quot;manual install&quot; open java web site.......
 
-
-Creating a New Ticket
----------------------
+== Creating a New Ticket ==
 
 If the shown tickets don't help the user, he may post a new support
 ticket by filling in the 'Description' field. He may also edit the
@@ -130,9 +122,9 @@ redirect the user to the ticket page.
     ... "crashes.\n")
     >>> user_browser.getControl('Add').click()
     >>> user_browser.url
-    '.../distros/ubuntu/+ticket/...'
+    '.../ubuntu/+source/mozilla-firefox/+ticket/...'
     >>> user_browser.title
-    'Ubuntu support request #...Visiting a web page...'
+    'mozilla-firefox in ubuntu support request #...Visiting a web page...'
     >>> soup = BeautifulSoup(user_browser.contents)
     >>> soup.first('div', 'highlighted')
     <div class="highlighted">
@@ -143,6 +135,6 @@ The user automatically got subscribed to this new ticket.
 
     >>> soup.first('div', {'id': 'ticket-subscribers'})
     <div id="ticket-subscribers" class="portlet">
-    ...<a href=".../name12">Sample Person</a>...
+    ...<a href=".../~name12">Sample Person</a>...
     </div>
 

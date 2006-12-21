@@ -27,7 +27,7 @@
 
     <div metal:fill-slot="widgets" tal:define="widgets view/target_widgets">
 
-        <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows" />
+        <div metal:use-macro="context/@@launchpad_form/widget_rows" />
 
     </div>
 
@@ -41,7 +41,7 @@
             synchronizes the status automatically for you.
       </p>
 
-      <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows" />
+      <div metal:use-macro="context/@@launchpad_form/widget_rows" />
 
     </div>
 

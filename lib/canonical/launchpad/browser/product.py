@@ -37,11 +37,13 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.formlib import form
 from zope.interface import providedBy
 
+from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPerson, IProduct, IProductLaunchpadUsageForm,
     IProductSet, IProductSeries, ISourcePackage, ICountry,
-    ICalendarOwner, ITranslationImportQueue, NotFoundError)
+    ICalendarOwner, ITranslationImportQueue, NotFoundError,
+    ILaunchpadRoot)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.branchref import BranchRef
@@ -56,7 +58,8 @@ from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, GetitemNavigation, LaunchpadView,
     LaunchpadEditFormView, LaunchpadFormView, Link, Navigation,
-    StandardLaunchpadFacets, stepto, stepthrough, structured)
+    RedirectionNavigation, StandardLaunchpadFacets, stepto, stepthrough,
+    structured)
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.widgets.product import ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
@@ -94,12 +97,22 @@ class ProductNavigation(
         return self.context.getSeries(name)
 
 
-class ProductSetNavigation(GetitemNavigation):
+class ProductSetNavigation(RedirectionNavigation):
 
     usedfor = IProductSet
 
     def breadcrumb(self):
         return 'Products'
+
+    @property
+    def redirection_root_url(self):
+        return canonical_url(getUtility(ILaunchpadRoot))
+
+    def traverse(self, name):
+        # Raise a 404 on an invalid product name
+        if self.context.getByName(name) is None:
+            raise NotFoundError(name)
+        return RedirectionNavigation.traverse(self, name)
 
 
 class ProductFacets(TicketTargetFacetMixin, StandardLaunchpadFacets):
@@ -131,7 +144,7 @@ class ProductFacets(TicketTargetFacetMixin, StandardLaunchpadFacets):
         return Link(target, text, summary)
 
     def branches(self):
-        target = '+branches'
+        target = ''
         text = 'Code'
         summary = 'Branches for %s' % self.context.displayname
         return Link(target, text, summary)
@@ -675,7 +688,7 @@ class ProductAddView(LaunchpadFormView):
                    'screenshotsurl', 'downloadurl', 'programminglang',
                    'reviewed']
     custom_widget('homepageurl', TextWidget, displayWidth=30)
-    custom_widget('screenshoturl', TextWidget, displayWidth=30)
+    custom_widget('screenshotsurl', TextWidget, displayWidth=30)
     custom_widget('wikiurl', TextWidget, displayWidth=30)
     custom_widget('downloadurl', TextWidget, displayWidth=30)
 

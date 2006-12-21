@@ -1,7 +1,7 @@
 'foo' is a dupe account for 'no-priv'. Let's merge them, and keep only
 'no-priv'.
 
-Workaround while https://launchpad.net/products/launchpad/+bug/39016 is not
+Workaround while https://launchpad.net/launchpad/+bug/39016 is not
 fixed.
 
     >>> from canonical.launchpad.mail import stub
@@ -166,5 +166,5 @@ Revisiting the mergerequest-sent page now safely redirects the user:
 
     #>>> browser.open('http://launchpad.dev/people/+mergerequest-sent?dupe=55')
     #>>> browser.url
-    #'http://launchpad.dev/people/no-priv'
+    #'http://launchpad.dev/~no-priv'
 

@@ -24,6 +24,7 @@
     <browser:url
         for="canonical.launchpad.interfaces.ITeamMembership"
         path_expression="string:+member/${person/name}"
+        rootsite="mainsite"
         attribute_to_parent="team" />
 
     <browser:defaultView

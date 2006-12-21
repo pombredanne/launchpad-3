@@ -9,9 +9,9 @@
         <a tal:attributes="href attendance/attendee/fmt:url"
            tal:content="attendance/attendee/browsername">Foo Bar</a><br />
         <div class="discreet">
-           <span tal:replace="attendance/time_starts/fmt:date">
+           <span tal:replace="python:view.formatDate(attendance.time_starts)">
              2005-08-05</span> till
-           <span tal:replace="attendance/time_ends/fmt:date">
+           <span tal:replace="python:view.formatDate(attendance.time_ends)">
              2005-08-15</span>
         </div>
       </li>
