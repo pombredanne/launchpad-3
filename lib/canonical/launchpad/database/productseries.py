@@ -413,12 +413,12 @@ class ProductSeries(SQLBase, BugTargetBase):
         """See IProductSeries."""
         if self.import_branch is None:
             raise NoImportBranchError(
-                "setDateLastSynced called for series %d,"
+                "importUpdated called for series %d,"
                 " but import_branch is NULL." % (self.id,))
         if self.datepublishedsync is not None:
             if self.import_branch.last_mirrored is None:
                 raise DatePublishedSyncError(
-                    "setDateLastSynced called for series %d,"
+                    "importUpdated called for series %d,"
                     " where datepublishedsync is set,"
                     " but import_branch.last_mirror is NULL."
                     % (self.id,))

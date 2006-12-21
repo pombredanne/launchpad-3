@@ -62,7 +62,7 @@ class TestImportUpdated(ImportdTestCase):
         self.assertRaises(DatePublishedSyncError,
             self.series().importUpdated)
 
-    # XXX: RACE CONDITION if the mirroring starts after the branch has been
+    # WARNING: RACE CONDITION if the mirroring starts after the branch has been
     # published internally, but before importUpdated is called. The supermirror
     # will be up-to-date with the latest import when mirroring completes, but
     # importUpdated will see that the branch is out of date, and will not
@@ -72,11 +72,20 @@ class TestImportUpdated(ImportdTestCase):
     # the branch is out of date. Since this fails on the pessimistic side, this
     # is acceptable -- DavidAllouche 2006-12-12.
 
+    # XXX: This race condition can be avoided if the branch puller only runs
+    # for vcs-imports branches when importd_branch.last_mirrored <
+    # datelastsynced.  -- DavidAllouche 2006-12-21
+
+    # XXX: The race can be resolved if we record revision ids along with the
+    # datelastsynced and datepublishedsync timestamps. That will be easier to
+    # do when the status reporting is done from the importd slaves.
+    # -- DavidAllouche 2006-12-21.
+
     def testLastMirroredIsNone(self):
         # If import_branch.last_mirrored is None, importUpdated just sets
         # datelastsynced to UTC_NOW.
         series = self.series()
-        assert series.import_branch.last_mirrored is None
+        series.import_branch.last_mirrored = None
         series.datelastsynced = None
         series.importUpdated()
         # use str() to work around sqlobject lazy evaluation
