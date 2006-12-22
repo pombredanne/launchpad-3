@@ -302,9 +302,9 @@ def delete_unreferenced_content(con):
         con.commit()
 
 
-def delete_unreferenced_files(con):
+def delete_unwanted_files(con):
     """Delete files found on disk that have no corresponding record in the
-    database.
+    database or have been flagged as 'deleted' in the database.
 
     Files will only be deleted if they where created more than one day ago
     to avoid deleting files that have just been uploaded but have yet to have
@@ -313,11 +313,12 @@ def delete_unreferenced_files(con):
     cur = con.cursor()
 
     # Get the largest id in the database
-    cur.execute("""SELECT max(id) from LibraryFileContent""")
+    cur.execute("SELECT max(id) from LibraryFileContent")
     max_id = cur.fetchone()[0]
 
     # Build a dictionary containing all stored LibraryFileContent ids
-    cur.execute("""SELECT id FROM LibraryFileContent""")
+    # that we want to keep.
+    cur.execute("SELECT id FROM LibraryFileContent WHERE deleted IS FALSE")
     all_ids = set(row[0] for row in cur.fetchall())
 
     count = 0

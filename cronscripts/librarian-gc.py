@@ -84,7 +84,7 @@ def main():
         if not options.skip_content:
             librariangc.delete_unreferenced_content(con) # second sweep
         if not options.skip_files:
-            librariangc.delete_unreferenced_files(con)
+            librariangc.delete_unwanted_files(con)
     finally:
         lockfile.release()
 

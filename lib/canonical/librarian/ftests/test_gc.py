@@ -360,7 +360,7 @@ class TestLibrarianGarbageCollection(TestCase):
                 len(results), 0, 'Too many results %r' % (results,)
                 )
 
-    def test_deleteUnreferencedFiles(self):
+    def test_deleteUnwantedFiles(self):
         self.ztm.begin()
         cur = cursor()
 
@@ -374,19 +374,31 @@ class TestLibrarianGarbageCollection(TestCase):
             """)
 
         content_id = cur.fetchone()[0]
-        cur.execute(
-                """DELETE FROM LibraryFileContent WHERE id=%d""",
-                (content_id,)
-                )
+        cur.execute("""
+                DELETE FROM LibraryFileContent WHERE id=%s
+                """, (content_id,))
+
+        # Find a different content_id that we can flag as 'deleted'.
+        cur.execute("""SELECT id FROM LibraryFileContent LIMIT 1""")
+        deleted_content_id = cur.fetchone()[0]
+        cur.execute("""
+            UPDATE LibraryFileContent SET deleted = TRUE 
+            WHERE id = %s
+            """, (deleted_content_id,))
+
         self.ztm.commit()
 
         path = librariangc.get_file_path(content_id)
         self.failUnless(os.path.exists(path))
 
+        deleted_path = librariangc.get_file_path(deleted_content_id)
+        self.failUnless(os.path.exists(deleted_path))
+
         # Ensure delete_unreferenced_files does not remove it, because
         # it will have just been created.
-        librariangc.delete_unreferenced_files(self.con)
+        librariangc.delete_unwanted_files(self.con)
         self.failUnless(os.path.exists(path))
+        self.failUnless(os.path.exists(deleted_path))
 
         # To test removal does occur when we want it to, we need to trick
         # the garbage collector into thinking it is tomorrow.
@@ -397,16 +409,20 @@ class TestLibrarianGarbageCollection(TestCase):
 
         try:
             librariangc.time = tomorrow_time
-            librariangc.delete_unreferenced_files(self.con)
+            librariangc.delete_unwanted_files(self.con)
         finally:
             librariangc.time = org_time
 
         self.failIf(os.path.exists(path))
+        self.failIf(os.path.exists(deleted_path))
 
         # Make sure nothing else has been removed from disk
         self.ztm.begin()
         cur = cursor()
-        cur.execute("""SELECT id FROM LibraryFileContent""")
+        cur.execute("""
+                SELECT id FROM LibraryFileContent
+                WHERE deleted IS FALSE
+                """)
         for content_id in (row[0] for row in cur.fetchall()):
             path = librariangc.get_file_path(content_id)
             self.failUnless(os.path.exists(path))
