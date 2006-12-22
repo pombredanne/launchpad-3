@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 """Librarian garbage collection tests"""
 
 __metaclass__ = type
@@ -359,6 +359,57 @@ class TestLibrarianGarbageCollection(TestCase):
         self.failUnlessEqual(
                 len(results), 0, 'Too many results %r' % (results,)
                 )
+
+    def test_deleteUnreferencedFiles(self):
+        self.ztm.begin()
+        cur = cursor()
+
+        # Find a content_id we can easily delete and do so
+        cur.execute("""
+            SELECT LibraryFileContent.id
+            FROM LibraryFileContent
+            LEFT OUTER JOIN LibraryFileAlias ON LibraryFileContent.id = content
+            WHERE LibraryFileAlias.id IS NULL
+            LIMIT 1
+            """)
+
+        content_id = cur.fetchone()[0]
+        cur.execute(
+                """DELETE FROM LibraryFileContent WHERE id=%d""",
+                (content_id,)
+                )
+        self.ztm.commit()
+
+        path = librariangc.get_file_path(content_id)
+        self.failUnless(os.path.exists(path))
+
+        # Ensure delete_unreferenced_files does not remove it, because
+        # it will have just been created.
+        librariangc.delete_unreferenced_files(self.con)
+        self.failUnless(os.path.exists(path))
+
+        # To test removal does occur when we want it to, we need to trick
+        # the garbage collector into thinking it is tomorrow.
+        org_time = librariangc.time
+
+        def tomorrow_time():
+            return org_time() + 24 * 60 * 60 + 1
+
+        try:
+            librariangc.time = tomorrow_time
+            librariangc.delete_unreferenced_files(self.con)
+        finally:
+            librariangc.time = org_time
+
+        self.failIf(os.path.exists(path))
+
+        # Make sure nothing else has been removed from disk
+        self.ztm.begin()
+        cur = cursor()
+        cur.execute("""SELECT id FROM LibraryFileContent""")
+        for content_id in (row[0] for row in cur.fetchall()):
+            path = librariangc.get_file_path(content_id)
+            self.failUnless(os.path.exists(path))
 
     def test_cronscript(self):
         script_path = os.path.join(

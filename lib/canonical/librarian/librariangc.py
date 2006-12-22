@@ -1,9 +1,11 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 """Librarian garbage collection routines"""
 
 __metaclass__ = type
 
 import sys
+from time import time
+import os
 import os.path
 
 from canonical.config import config
@@ -298,6 +300,49 @@ def delete_unreferenced_content(con):
         # and the file is unreachable anyway so nothing will attempt to
         # access it between now and the next garbage collection run.
         con.commit()
+
+
+def delete_unreferenced_files(con):
+    """Delete files found on disk that have no corresponding record in the
+    database.
+
+    Files will only be deleted if they where created more than one day ago
+    to avoid deleting files that have just been uploaded but have yet to have
+    the database records committed.
+    """
+    cur = con.cursor()
+
+    # Get the largest id in the database
+    cur.execute("""SELECT max(id) from LibraryFileContent""")
+    max_id = cur.fetchone()[0]
+
+    # Build a dictionary containing all stored LibraryFileContent ids
+    cur.execute("""SELECT id FROM LibraryFileContent""")
+    all_ids = set(row[0] for row in cur.fetchall())
+
+    count = 0
+    for content_id in range(1, max_id+1):
+        if content_id in all_ids:
+            continue # Linked in the db - do nothing
+        path = get_file_path(content_id)
+        
+        if not os.path.exists(path):
+            continue # Exists neither on disk nor in the database - do nothing
+
+        one_day = 24 * 60 * 60
+        if time() - os.path.getctime(path) < one_day:
+            log.debug("File %d not removed - created too recently" % content_id)
+            continue # File created too recently - do nothing
+
+        # File uploaded a while ago but not in the database - remove it
+        log.debug("Deleting %s" % path)
+        os.remove(path)
+        count += 1
+
+    log.info(
+            "Removed %d from disk that where no longer referenced in the db"
+            % count
+            )
 
 
 def get_file_path(content_id):

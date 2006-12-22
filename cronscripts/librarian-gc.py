@@ -47,6 +47,11 @@ def main():
             dest="skip_blobs",
             help="Skip removing expired TemporaryBlobStorage rows"
             )
+    parser.add_option(
+            '', "--skip-files", action="store_true", default=False,
+            dest="skip_files",
+            help="Skip removing files on disk with no database references"
+            )
 
     (options, args) = parser.parse_args()
 
@@ -78,6 +83,8 @@ def main():
             librariangc.delete_unreferenced_aliases(con)
         if not options.skip_content:
             librariangc.delete_unreferenced_content(con) # second sweep
+        if not options.skip_files:
+            librariangc.delete_unreferenced_files(con)
     finally:
         lockfile.release()
 
