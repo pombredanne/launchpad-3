@@ -1,6 +1,13 @@
   'salgado' tries to join 'myemail', but now it's a RESTRICTED team, and
   nobody can ask to join.
 
+  # Make 'myemail' a restricted team first.
+  >>> from canonical.launchpad.database import PersonSet
+  >>> from canonical.lp.dbschema import TeamSubscriptionPolicy
+  >>> PersonSet().getByName('myemail').subscriptionpolicy = (
+  ...     TeamSubscriptionPolicy.RESTRICTED)
+  >>> from canonical.database.sqlbase import flush_database_updates
+  >>> flush_database_updates()
 
   >>> print http(r"""
   ... GET /~myemail/+join HTTP/1.1

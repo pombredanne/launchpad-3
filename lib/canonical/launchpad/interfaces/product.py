@@ -20,8 +20,7 @@ from canonical.launchpad.interfaces import (
     IHasOwner, IHasDrivers, IBugTarget, ISpecificationTarget,
     IHasSecurityContact, IKarmaContext, PillarNameField)
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces.validation import (
-    valid_emblem, valid_gotchi, valid_webref)
+from canonical.launchpad.interfaces.validation import valid_webref
 
 
 class ProductNameField(PillarNameField):
@@ -172,16 +171,14 @@ class IProduct(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
         title=_("Emblem"), required=False,
         description=_(
             "A small image, max 16x16 pixels and 8k in file size, that can "
-            "be used to refer to this product."),
-        constraint=valid_emblem)
+            "be used to refer to this product."))
 
     gotchi = Bytes(
         title=_("Gotchi"), required=False,
         description=_(
             "An image, maximum 150x150 pixels, that will be displayed on "
             "this product's home page. It should be no bigger than 50k in "
-            "size. "),
-        constraint=valid_gotchi)
+            "size. "))
 
     translationgroup = Choice(
         title = _("Translation group"),

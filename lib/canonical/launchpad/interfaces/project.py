@@ -16,7 +16,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import Summary, Title
 from canonical.launchpad.interfaces import (
         IHasOwner, IBugTarget, IHasSpecifications, PillarNameField,
-        valid_emblem, valid_gotchi, valid_webref)
+        valid_webref)
 from canonical.launchpad.validators.name import name_validator
 
 
@@ -129,16 +129,14 @@ class IProject(IHasOwner, IBugTarget, IHasSpecifications):
         title=_("Emblem"), required=False,
         description=_(
             "A small image, max 16x16 pixels and 8k in file size, that can "
-            "be used to refer to this project."),
-        constraint=valid_emblem)
+            "be used to refer to this project."))
 
     gotchi = Bytes(
         title=_("Gotchi"), required=False,
         description=_(
             "An image, maximum 150x150 pixels, that will be displayed on "
             "this project's home page. It should be no bigger than 50k in "
-            "size. "),
-        constraint=valid_gotchi)
+            "size. "))
 
     translationgroup = Choice(
         title = _("Translation group"),

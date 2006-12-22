@@ -19,8 +19,6 @@ from canonical.launchpad.interfaces import (
     IHasOwner, IHasDrivers, IBugTarget, ISpecificationTarget,
     IHasSecurityContact, PillarNameField)
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces.validation import (
-    valid_emblem, valid_gotchi)
 
 
 class DistributionNameField(PillarNameField):
@@ -62,15 +60,13 @@ class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
         title=_("Emblem"), required=False,
         description=_(
             "A small image, max 16x16 pixels and 8k in file size, that can "
-            "be used to refer to this distribution."),
-        constraint=valid_emblem)
+            "be used to refer to this distribution."))
     gotchi = Bytes(
         title=_("Gotchi"), required=False,
         description=_(
             "An image, maximum 150x150 pixels, that will be displayed on "
             "this distribution's home page. It should be no bigger than 50k "
-            "in size. "),
-        constraint=valid_gotchi)
+            "in size. "))
     description = Description(
         title=_("Description"),
         description=_("The distro's description."),

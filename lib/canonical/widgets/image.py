@@ -56,8 +56,8 @@ class ImageUploadWidget(SimpleInputWidget):
             url = img.secure_url
         else:
             url = self.context.default_image_resource
-        html = ('<div><img src="%s" alt="%s" /></div>\n'
-                % (url, self.context.title))
+        html = ('<div><img id="%s" src="%s" alt="%s" /></div>\n'
+                % ('%s_current_img' % self.name, url, self.context.title))
         html += "%s\n%s" % (self.action_widget(), self.image_widget())
         return html
 

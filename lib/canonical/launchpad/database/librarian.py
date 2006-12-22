@@ -62,6 +62,7 @@ class LibraryFileAlias(SQLBase):
     @property
     def secure_url(self):
         """See ILibraryFileAlias.secure_url"""
+        return self.url
         if not self.url:
             return None
         return self.url.replace('http', 'https', 1)

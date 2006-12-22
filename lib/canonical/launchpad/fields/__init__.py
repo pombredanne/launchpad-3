@@ -393,3 +393,10 @@ class LargeImageUpload(BaseImageUpload):
     max_size = 100*1024
     default_image_resource = '/@@/nyet-mugshot'
 
+
+class SmallImageUpload(BaseImageUpload):
+
+    max_dimensions = (64, 64)
+    max_size = 25*1024
+    default_image_resource = '/@@/nyet-mini'
+

@@ -20,8 +20,6 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import ContentNameField
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner, IHasSpecifications
-from canonical.launchpad.interfaces.validation import (
-    valid_emblem, valid_gotchi)
 
 
 class SprintNameField(ContentNameField):
@@ -73,15 +71,13 @@ class ISprint(IHasOwner, IHasSpecifications):
         title=_("Emblem"), required=False,
         description=_(
             "A small image, max 16x16 pixels and 8k in file size, that can "
-            "be used to refer to this meeting."),
-        constraint=valid_emblem)
+            "be used to refer to this meeting."))
     gotchi = Bytes(
         title=_("Gotchi"), required=False,
         description=_(
             "An image, maximum 150x150 pixels, that will be displayed on "
             "this meeting's home page. It should be no bigger than 50k "
-            "in size. "),
-        constraint=valid_gotchi)
+            "in size. "))
     owner = Choice(title=_('Owner'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam')
     time_zone = Choice(
