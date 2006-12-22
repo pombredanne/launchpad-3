@@ -13,6 +13,7 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from canonical.launchpad.fields import KEEP_SAME_IMAGE
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.launchpad import _
@@ -45,11 +46,10 @@ class ImageUploadWidget(SimpleInputWidget):
             data={'action': 'keep'})
         self.action_widget = widgets['action']
         self.image_widget = widgets['image']
-        self.setRenderedValue(getattr(context.context, context.__name__, None))
 
     def __call__(self):
-        img = self._data
-        if self._renderedValueSet() and img is not None:
+        img = self.context.getCurrentImage()
+        if img is not None:
             # This widget is meant to be used only by fields which expect an
             # object implementing ILibraryFileAlias as their values.
             assert ILibraryFileAlias.providedBy(img)
@@ -65,8 +65,7 @@ class ImageUploadWidget(SimpleInputWidget):
         return self.action_widget.hasInput()
 
     def _getActionsVocabulary(self):
-        current = getattr(self.context.context, self.context.__name__, None)
-        if current is not None:
+        if self.context.getCurrentImage() is not None:
             action_names = [('keep', 'Keep your selected image'),
                             ('delete', 'Change back to default image'),
                             ('change', 'Change to')]
@@ -87,7 +86,7 @@ class ImageUploadWidget(SimpleInputWidget):
                     _('Please specify the image you want to use.')))
             raise self._error
         if action == "keep":
-            return self.context.keep_image_marker
+            return KEEP_SAME_IMAGE
         elif action == "change":
             image = form.get(self.image_widget.name)
             try:

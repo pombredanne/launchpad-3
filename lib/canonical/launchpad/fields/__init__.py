@@ -5,7 +5,8 @@ from textwrap import dedent
 
 from zope.app.content_types import guess_content_type
 from zope.component import getUtility
-from zope.schema import Bytes, Choice, Field, Int, Text, TextLine, Password
+from zope.schema import (
+    Bytes, Choice, Field, Int, Text, TextLine, Password, Tuple)
 from zope.schema.interfaces import (
     IBytes, IField, IInt, IPassword, IText, ITextLine)
 from zope.interface import implements
@@ -15,6 +16,10 @@ from canonical.launchpad import _
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+
+
+# Marker object to tell BaseImageUpload to keep the existing image.
+KEEP_SAME_IMAGE = object()
 
 
 # Field Interfaces
@@ -112,6 +117,26 @@ class ITag(ITextLine):
 
 class IBaseImageUpload(IBytes):
     """Marker interface for ImageUpload fields."""
+
+    max_dimensions = Tuple(
+        title=_('Maximun dimensions'),
+        description=_('A two-tuple with the maximun width and height (in '
+                      'pixels) of this image.'))
+    max_size = Int(
+        title=_('Maximun size'),
+        description=_('The maximun size (in bytes) of this image.'))
+
+    default_image_resource = TextLine(
+        title=_('The default image'),
+        description=_(
+            'The URL of the zope3 resource of the default image that should '
+            'be used. Something of the form /@@/nyet-mugshot'))
+
+    def getCurrentImage():
+        """Return the value of the field for the object bound to it.
+
+        Raise FieldNotBoundError if the field is not bound to any object.
+        """
 
 
 class StrippedTextLine(TextLine):
@@ -319,6 +344,10 @@ class ProductBugTracker(Choice):
             ob.bugtracker = value
 
 
+class FieldNotBoundError(Exception):
+    """The field is not bound to any object."""
+
+
 class BaseImageUpload(Bytes):
     """Base class for ImageUpload fields.
 
@@ -334,11 +363,15 @@ class BaseImageUpload(Bytes):
 
     implements(IBaseImageUpload)
 
-    max_dimensions = None
-    max_size = None
+    max_dimensions = ()
+    max_size = 0
     default_image_resource = '/@@/nyet-mugshot'
 
-    keep_image_marker = object()
+    def getCurrentImage(self):
+        if self.context is None:
+            raise FieldNotBoundError("This field must be bound to an object.")
+        else:
+            return getattr(self.context, self.__name__)
 
     def _valid_image(self, image):
         """Check that the given image is under the given constraints."""
@@ -368,7 +401,7 @@ class BaseImageUpload(Bytes):
         self._valid_image(content)
 
     def set(self, object, value):
-        if value is not self.keep_image_marker and value is not None:
+        if value is not KEEP_SAME_IMAGE and value is not None:
             value.seek(0)
             content = value.read()
             filename = value.filename
