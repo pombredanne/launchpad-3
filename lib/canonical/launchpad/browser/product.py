@@ -54,6 +54,7 @@ from canonical.launchpad.browser.productseries import get_series_branch_error
 from canonical.launchpad.browser.tickettarget import (
     TicketTargetFacetMixin, TicketTargetTraversalMixin)
 from canonical.launchpad.event import SQLObjectModifiedEvent
+from canonical.launchpad.utilities.numbersort import expand_numbers
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, GetitemNavigation, LaunchpadView,
@@ -342,6 +343,8 @@ def _sort_distros(a, b):
         return -1
     return cmp(a['name'], b['name'])
 
+def _sort_series(a, b):
+    return cmp(expand_numbers(a.name), expand_numbers(b.name))
 
 class ProductSetContextMenu(ContextMenu):
 
@@ -473,6 +476,14 @@ class ProductView:
 
         return sorted(potemplatenames, key=lambda item: item.name)
 
+    def serieslist(self):
+        """get the series list from the product with the dev focus first."""
+        series_list = [series for series in self.context.serieslist]
+        series_list.remove(self.context.development_focus)
+        # now sort the list (currently alphabetical)
+        series_list.sort(cmp=_sort_series)
+        series_list.insert(0, self.context.development_focus)
+        return series_list
 
 class ProductEditView(SQLObjectEditView):
     """View class that lets you edit a Product object."""
