@@ -234,7 +234,17 @@ class PollVoteView(BasePollView):
         a new one."""
         context = self.context
         newoption_id = self.request.form.get('newoption')
+        # XXX: discussing this fix with salgado, we agree that it seems
+        # odd to leave the user on exactly the same page when pressing
+        # 'Continue' after selecting donotchange or donotvote. The poll
+        # view is already redirecting to the vote page if the poll is
+        # open, so redirecting to the poll view doesn't make sense...
+        # for now I'm just going to fix the oops, we might want to
+        # review the overall flow of voting later. -- elliot, 2006-12-22
         if newoption_id == 'donotchange':
+            assert self.userVoted()
+            return
+        elif newoption_id == 'donotvote':
             return
         elif newoption_id == 'none':
             newoption = None

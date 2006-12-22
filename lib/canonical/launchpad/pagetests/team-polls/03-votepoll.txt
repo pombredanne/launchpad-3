@@ -1,0 +1,17 @@
+Make sure that selecting the 'Do not vote' option does not OOPS (bug 46589)
+
+  >>> team_admin_browser = browser
+  >>> team_admin_browser.addHeader(
+  ...     'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')
+  >>> team_admin_browser.open(
+  ...   'http://launchpad.dev/~ubuntu-team/+poll/never-closes/+vote-simple')
+  >>> message = 'You have not yet voted in this poll.'
+  >>> message in team_admin_browser.contents
+  True
+
+  >>> team_admin_browser.getControl(name='newoption').value = ["donotvote"]
+  >>> team_admin_browser.getControl(name='continue').click()
+
+  >>> message = 'You have not yet voted in this poll.'
+  >>> message in team_admin_browser.contents
+  True
