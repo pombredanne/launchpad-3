@@ -5,6 +5,7 @@ from cStringIO import StringIO
 from urllib2 import urlopen, HTTPError
 
 import transaction
+from zope.component import getUtility
 
 from canonical.testing import LaunchpadZopelessLayer, LaunchpadFunctionalLayer
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
@@ -12,6 +13,7 @@ from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.librarian.client import LibrarianClient
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.launchpad.database import LibraryFileAlias
+from canonical.launchpad.interfaces import ILibraryFileAliasSet
 from canonical.config import config
 from canonical.database.sqlbase import commit
 
@@ -158,9 +160,49 @@ class LibrarianZopelessWebTestCase(LibrarianWebTestCase):
     def commit(self):
         commit()
 
+class DeletedContentTestCase(unittest.TestCase):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_deletedContentNotFound(self):
+        # Use a user with rights to change the deleted flag in the db.
+        LaunchpadZopelessLayer.switchDbUser(config.librarian.dbuser)
+
+        alias = getUtility(ILibraryFileAliasSet).create(
+                'whatever', 1, StringIO('x'), 'text/plain'
+                )
+        alias_id = alias.id
+        LaunchpadZopelessLayer.commit()
+
+        client = LibrarianClient()
+
+        # This works
+        alias = getUtility(ILibraryFileAliasSet)[alias_id]
+        alias.open()
+        alias.read()
+        alias.close()
+
+        # But when we flag the content as deleted
+        alias.content.deleted = True
+        LaunchpadZopelessLayer.commit()
+
+        # Things become not found
+        alias = getUtility(ILibraryFileAliasSet)[alias_id]
+        self.failUnlessRaises(DownloadFailed, alias.open)
+
+        # And people see a 404 page
+        url = client.getURLForAlias(alias_id)
+        try:
+            urlopen(url)
+            self.fail('404 not raised')
+        except HTTPError, x:
+            self.failUnlessEqual(x.code, 404)
+
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(LibrarianWebTestCase))
     suite.addTest(unittest.makeSuite(LibrarianZopelessWebTestCase))
+    suite.addTest(unittest.makeSuite(DeletedContentTestCase))
     return suite
 
