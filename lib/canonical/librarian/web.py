@@ -7,7 +7,7 @@ from twisted.web import resource, static, error, util, server, proxy
 from twisted.internet.threads import deferToThread
 
 from canonical.librarian.client import quote
-from canonical.database.sqlbase import begin, rollback
+from canonical.database.sqlbase import begin, commit, rollback
 
 defaultResource = static.Data("""
         <html>
@@ -80,11 +80,12 @@ class LibraryFileAliasResource(resource.Resource):
         try:
             try:
                 alias = self.storage.getFileAlias(aliasID)
+                alias.update_last_accessed()
                 return alias.contentID, alias.filename, alias.mimetype
             except LookupError:
                 raise NotFound
         finally:
-            rollback()
+            commit()
 
     def _eb_getFileAlias(self, failure):
         failure.trap(NotFound)

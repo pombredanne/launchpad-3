@@ -1,30 +1,33 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2006 Canonical Ltd.  All rights reserved.
 
-import unittest
 from cStringIO import StringIO
+import datetime
+import unittest
 from urllib2 import urlopen, HTTPError
+
+import pytz
 
 import transaction
 
-from canonical.testing import LaunchpadZopelessLayer, LaunchpadFunctionalLayer
-from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
+from canonical.config import config
+from canonical.database.sqlbase import commit, flush_database_updates
 from canonical.librarian.client import LibrarianClient
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.launchpad.database import LibraryFileAlias
-from canonical.config import config
-from canonical.database.sqlbase import commit
+from canonical.testing import LaunchpadZopelessLayer, LaunchpadFunctionalLayer
 
 
 class LibrarianWebTestCase(unittest.TestCase):
     """Test the librarian's web interface."""
     layer = LaunchpadFunctionalLayer
+    dbuser = 'librarian'
 
     # Add stuff to a librarian via the upload port, then check that it's
     # immediately visible on the web interface. (in an attempt to test ddaa's
     # 500-error issue).
 
     def commit(self):
+        flush_database_updates()
         transaction.commit()
 
     def test_uploadThenDownload(self):
@@ -150,14 +153,49 @@ class LibrarianWebTestCase(unittest.TestCase):
             config.librarian.download_host, config.librarian.download_port)
         f = urlopen(url)
         self.failUnless('Disallow: /' in f.read())
-        
+
 
 class LibrarianZopelessWebTestCase(LibrarianWebTestCase):
     layer = LaunchpadZopelessLayer
 
-    def commit(self):
-        commit()
+    def setUp(self):
+        LaunchpadZopelessLayer.switchDbUser(config.librarian.dbuser)
 
+    def commit(self):
+        LaunchpadZopelessLayer.commit()
+
+    def test_accessTime(self):
+        # Test to ensure the Librarian updates last_accessed as specced
+        # when files are retrieved via the web.
+        # We only test this under Zopeless because we need to connect as
+        # a non-standard database user, and because there doesn't seem
+        # any point running this test under both environments.
+
+        # Add a file.
+        client = LibrarianClient()
+        filename = 'sample.txt'
+        id1 = client.addFile(filename, 6, StringIO('sample'), 'text/plain')
+        self.commit()
+
+        # Manually force last accessed time to be some time way in the past, so
+        # that it'll be very clear if it's updated or not (otherwise, depending
+        # on the resolution of clocks and things, an immediate access might not
+        # look any newer).
+        LibraryFileAlias.get(id1).last_accessed = datetime.datetime(
+            2004,1,1,12,0,0, tzinfo=pytz.timezone('Australia/Sydney'))
+        self.commit()
+
+        # Check that last_accessed is updated when the file is accessed over the
+        # web.
+        access_time_1 = LibraryFileAlias.get(id1).last_accessed
+        client = LibrarianClient()
+        url = client.getURLForAlias(id1)
+        urlopen(url).close()
+        self.commit()
+        access_time_2 = LibraryFileAlias.get(id1).last_accessed
+
+        self.failUnless(access_time_1 < access_time_2)
+ 
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(LibrarianWebTestCase))

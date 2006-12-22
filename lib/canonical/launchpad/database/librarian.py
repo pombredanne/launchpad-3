@@ -3,6 +3,9 @@
 __metaclass__ = type
 __all__ = ['LibraryFileContent', 'LibraryFileAlias', 'LibraryFileAliasSet']
 
+from datetime import datetime, timedelta
+import pytz
+
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -93,6 +96,28 @@ class LibraryFileAlias(SQLBase):
     def close(self):
         self._datafile.close()
         self._datafile = None
+
+    def update_last_accessed(self):
+        """Update last_accessed if it has not been updated recently.
+
+        This method relies on the system clock being vaguely sane, but
+        does not cause real harm if this is not the case.
+        """
+        # Update last_accessed no more than once every 6 hours.
+        precision = timedelta(hours=6)
+        UTC = pytz.timezone('UTC')
+        now = datetime.now(UTC)
+        if self.last_accessed + precision < now:
+            self.last_accessed = UTC_NOW
+
+    products = SQLRelatedJoin('ProductRelease', joinColumn='libraryfile',
+                           otherColumn='productrelease',
+                           intermediateTable='ProductReleaseFile')
+
+    sourcepackages = SQLRelatedJoin('SourcePackageRelease',
+                                 joinColumn='libraryfile',
+                                 otherColumn='sourcepackagerelease',
+                                 intermediateTable='SourcePackageReleaseFile')
 
 
 class LibraryFileAliasSet(object):
