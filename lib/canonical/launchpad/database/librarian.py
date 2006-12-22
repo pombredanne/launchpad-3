@@ -11,7 +11,7 @@ from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
     ILibraryFileContent, ILibraryFileAlias, ILibraryFileAliasSet)
-from canonical.librarian.interfaces import ILibrarianClient
+from canonical.librarian.interfaces import ILibrarianClient, DownloadFailed
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -74,6 +74,10 @@ class LibraryFileAlias(SQLBase):
     def open(self):
         client = getUtility(ILibrarianClient)
         self._datafile = client.getFileByAlias(self.id)
+        if self._datafile is None:
+            raise DownloadFailed(
+                    "Unable to retrieve LibraryFileAlias %d" % self.id
+                    )
 
     def read(self, chunksize=None):
         """See ILibraryFileAlias.read"""

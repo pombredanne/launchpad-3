@@ -11,7 +11,7 @@ import transaction
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.database.sqlbase import commit, flush_database_updates
+from canonical.database.sqlbase import commit, flush_database_updates, cursor
 from canonical.librarian.client import LibrarianClient
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.launchpad.database import LibraryFileAlias
@@ -210,10 +210,11 @@ class DeletedContentTestCase(unittest.TestCase):
 
     def test_deletedContentNotFound(self):
         # Use a user with rights to change the deleted flag in the db.
-        LaunchpadZopelessLayer.switchDbUser(config.librarian.dbuser)
+        # This currently means a superuser.
+        LaunchpadZopelessLayer.switchDbUser('')
 
         alias = getUtility(ILibraryFileAliasSet).create(
-                'whatever', 1, StringIO('x'), 'text/plain'
+                'whatever', 8, StringIO('xxx\nxxx\n'), 'text/plain'
                 )
         alias_id = alias.id
         LaunchpadZopelessLayer.commit()
@@ -226,8 +227,18 @@ class DeletedContentTestCase(unittest.TestCase):
         alias.read()
         alias.close()
 
+        # And it can be retrieved via the web
+        url = alias.url
+        retrieved_content = urlopen(url).read()
+        self.failUnlessEqual(retrieved_content, 'xxx\nxxx\n')
+        
+
         # But when we flag the content as deleted
-        alias.content.deleted = True
+        cur = cursor()
+        cur.execute("""
+            UPDATE LibraryFileContent SET deleted=TRUE WHERE id=%s
+            """, (alias.content.id,)
+            )
         LaunchpadZopelessLayer.commit()
 
         # Things become not found
@@ -235,7 +246,6 @@ class DeletedContentTestCase(unittest.TestCase):
         self.failUnlessRaises(DownloadFailed, alias.open)
 
         # And people see a 404 page
-        url = client.getURLForAlias(alias_id)
         try:
             urlopen(url)
             self.fail('404 not raised')
