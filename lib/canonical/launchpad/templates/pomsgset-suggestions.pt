@@ -9,15 +9,30 @@
       tal:define="submissionlang submission/pomsgset/pofile/language">
     <td colspan="3" />
     <td class="icon left right">
-      <a href=""
-         tal:attributes="
-           onClick string:
-             javascript:copyInnerHTMLById(
-               'msgset_${context/pomsgset/potmsgset/id}_${submissionlang/code}_suggestion_${submission/id}_${submission/pluralform}',
-               'msgset_${context/pomsgset/potmsgset/id}_${submissionlang/code}_translation_${submission/pluralform}_new');;
-             selectWidget('msgset_${context/pomsgset/potmsgset/id}_${submissionlang/code}_translation_${submission/pluralform}_new_checkbox', event);;
-             return false;;
-            "><img alt="Copy text" src="/@@/copy"></a>
+      <tal:user-is-official-translator
+        condition="context/user_is_official_translator">
+        <input
+          type="radio"
+          tal:attributes="
+            name string:msgset_${context/pomsgset/potmsgset/id}_${submissionlang/code}_translation_${submission/pluralform}_radiobutton;
+            value string:msgset_${context/pomsgset/potmsgset/id}_${submissionlang/code}_suggestion_${submission/id}_${submission/pluralform};
+            onClick string:
+              javascript:copyInnerHTMLById(
+                'msgset_${context/pomsgset/potmsgset/id}_${submissionlang/code}_suggestion_${submission/id}_${submission/pluralform}',
+                'msgset_${context/pomsgset/potmsgset/id}_${submissionlang/code}_translation_${submission/pluralform}_new')
+            " />
+      </tal:user-is-official-translator>
+      <tal:user-is-not-official-translator condition="not:context/user_is_official_translator">
+        <a href=""
+          tal:attributes="
+            onClick string:
+              javascript:copyInnerHTMLById(
+                'msgset_${context/pomsgset/potmsgset/id}_${submissionlang/code}_suggestion_${submission/id}_${submission/pluralform}',
+                'msgset_${context/pomsgset/potmsgset/id}_${submissionlang/code}_translation_${submission/pluralform}_new');;
+              selectWidget('msgset_${context/pomsgset/potmsgset/id}_${submissionlang/code}_translation_${submission/pluralform}_new_select', event);;
+            return false;;
+          "><img alt="Copy text" src="/@@/copy"></a>
+      </tal:user-is-not-official-translator>
     </td>
     <td>
       <div tal:attributes="

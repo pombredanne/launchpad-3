@@ -346,6 +346,23 @@ class POMsgSetIndexView:
         self.request.response.redirect(url)
 
 
+def _getSuggestionFromFormId(form_id):
+    """Return the suggestion associated with the given form ID."""
+    expr_match = re.search(
+        'msgset_(\d+)_(\S+)_suggestion_(\d+)_(\d+)', form_id)
+    if expr_match is None:
+        raise UnexpectedFormData(
+            'The given form ID (%s) is not valid' % form_id)
+
+    # Extract the suggestion ID.
+    suggestion_id = int(expr_match.group(3))
+
+    posubmissionset = getUtility(IPOSubmissionSet)
+    suggestion = posubmissionset.getPOSubmissionByID(suggestion_id)
+
+    return suggestion.potranslation.translation
+
+
 class BaseTranslationView(LaunchpadView):
     """Base class that implements a framework for modifying translations.
 
@@ -653,26 +670,58 @@ class BaseTranslationView(LaunchpadView):
         # self.form_posted_translations. We try plural forms in turn,
         # starting at 0.
         for pluralform in xrange(self.MAX_PLURAL_FORMS):
-            msgset_ID_LANGCODE_translation_PLURALFORM_new = '%s%s_new' % (
+            msgset_ID_LANGCODE_translation_PLURALFORM_new = '%s%d_new' % (
                 msgset_ID_LANGCODE_translation_, pluralform)
             if msgset_ID_LANGCODE_translation_PLURALFORM_new not in form:
                 # Stop when we reach the first plural form which is
                 # missing from the form.
                 break
 
+            # Get new value introduced by the user.
             raw_value = form[msgset_ID_LANGCODE_translation_PLURALFORM_new]
             value = contract_rosetta_tabs(raw_value)
+
+            if self.user_is_official_translator:
+                # Let's see the section that we are interested on based on the
+                # radio button that is selected.
+                msgset_ID_LANGCODE_translation_PLURALFORM_radiobutton = (
+                    '%s%d_radiobutton' % (
+                        msgset_ID_LANGCODE_translation_, pluralform))
+                interesting_key = form[
+                    msgset_ID_LANGCODE_translation_PLURALFORM_radiobutton]
+
+                # We are going to check whether the radio button is for
+                # current translation, suggestion or the new translation
+                # field.
+                if (interesting_key !=
+                    msgset_ID_LANGCODE_translation_PLURALFORM_new):
+                    # It's either current translation or an existing
+                    # suggestion.
+                    # Let's override 'value' with the selected suggestion
+                    # value.
+                    if 'suggestion' in interesting_key:
+                        # It's a suggestion.
+                        value = _getSuggestionFromFormId(interesting_key)
+                    else:
+                        # It's current translation.
+                        value = self.context.active_texts[pluralform]
+
+                # It's a radio button and it's selected, so we are sure we
+                # want to store this submission.
+                store = True
+            else:
+                # Note whether this translation should be stored in our
+                # database as a new suggestion.
+                msgset_ID_LANGCODE_translation_PLURALFORM_new_checkbox = (
+                    '%s_checkbox' % msgset_ID_LANGCODE_translation_PLURALFORM_new)
+                store = (
+                    msgset_ID_LANGCODE_translation_PLURALFORM_new_checkbox in form
+                    )
 
             if not self.form_posted_translations.has_key(pomsgset):
                 self.form_posted_translations[pomsgset] = {}
             self.form_posted_translations[pomsgset][pluralform] = value
 
-            # Note whether this translation should be stored in our database.
-            msgset_ID_LANGCODE_translation_PLURALFORM_new_checkbox = (
-                '%s_checkbox' % msgset_ID_LANGCODE_translation_PLURALFORM_new)
-            store = (
-                msgset_ID_LANGCODE_translation_PLURALFORM_new_checkbox in form
-                )
             if not self.form_posted_translations_has_store_flag.has_key(
                 pomsgset):
                 self.form_posted_translations_has_store_flag[pomsgset] = []
@@ -841,6 +890,8 @@ class POMsgSetView(LaunchpadView):
         self.translations = translations
         self.error = error
         self.is_fuzzy = is_fuzzy
+        self.user_is_official_translator = (
+            pomsgset.pofile.canEditTranslations(self.user))
 
         # Set up alternative language variables. XXX: This could be made
         # much simpler if we built suggestions externally in the parent
@@ -998,7 +1049,7 @@ class POMsgSetView(LaunchpadView):
                              reverse=True)
         return POMsgSetSuggestions(
             title, self.context, submissions[:self.max_entries],
-            self.max_entries)
+            self.user_is_official_translator)
 
     def getActiveTranslation(self, index):
         """Return the active translation for the pluralform 'index'."""
@@ -1156,8 +1207,9 @@ class POMsgSetZoomedView(POMsgSetView):
 class POMsgSetSuggestions:
     """See IPOMsgSetSuggestions."""
     implements(IPOMsgSetSuggestions)
-    def __init__(self, title, pomsgset, submissions, max_entries):
+    def __init__(self, title, pomsgset, submissions,
+                 user_is_official_translator):
         self.title = title
         self.pomsgset = pomsgset
         self.submissions = submissions
-        self.max_entries = max_entries
+        self.user_is_official_translator = user_is_official_translator
