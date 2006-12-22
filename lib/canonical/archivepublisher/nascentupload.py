@@ -2157,8 +2157,14 @@ class NascentUpload:
                 return True, [new_msg % interpolations]
             else:
                 if self.policy.autoApprove(self):
-                    return True, [accept_msg % interpolations,
-                                  announce_msg % interpolations]
+                    if  (self.policy.pocket !=
+                         PackagePublishingPocket.BACKPORTS):
+                        return True, [accept_msg % interpolations,
+                                      announce_msg % interpolations]
+                    else:
+                        self.logger.debug(
+                            "Skipping announcement, it is a BACKPORT.")
+                        return True, [accept_msg % interpolations]
                 else:
                     interpolations["SUMMARY"] += ("\nThis upload awaits "
                                                   "approval by a distro "

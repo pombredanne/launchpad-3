@@ -592,6 +592,64 @@ Chuck it all away again
 
   >>> transaction.abort()
 
+== Announcements ==
+
+NascentUpload announces accepted uploads to the submitter and to the
+target distrorelease changeslist.
+
+  >>> netapplet_src = NascentUpload(
+  ...     findPolicyByName('sync'), datadir('netapplet_2.0-fake'),
+  ...     "netapplet_2.0-fake_source.changes", MockMunchyLogger())
+  >>> netapplet_src.policy.setOptions(MockOptions())
+  >>> netapplet_src.process()
+  >>> netapplet_src.logger = MockLogger()
+  >>> result, msgs = netapplet_src.do_accept()
+  DEBUG: Building recipients list.
+  ...
+  DEBUG: Setting it to ACCEPTED
+
+  >>> len(msgs)
+  2
+
+  >>> import email
+  >>> [email.message_from_string(str(m))['To'] for m in msgs]
+  ['Daniel Silverstone <daniel.silverstone@canonical.com>', 'dapper-announce@lists.ubuntu.com']
+
+However, it suppresses the announcements when the upload is submitted to
+BACKPORTS pocket, in order to avoid noise on changeslist.
+Only the uploader signer is warned by email:
+
+  >>> netapplet_src = NascentUpload(
+  ...     findPolicyByName('sync'), datadir('netapplet_2.0-fake'),
+  ...     "netapplet_2.0-fake_source.changes", MockMunchyLogger())
+
+Forces this upload to "warty-backports":
+
+  >>> local_options = MockOptions()
+  >>> local_options.distrorelease = "warty-backports"
+  >>> netapplet_src.policy.setOptions(local_options)
+
+  >>> netapplet_src.process()
+  >>> netapplet_src.rejected
+  False
+
+  >>> netapplet_src.logger = MockLogger()
+  >>> result, msgs = netapplet_src.do_accept()
+  DEBUG: Building recipients list.
+  ...
+  DEBUG: Setting it to ACCEPTED
+  DEBUG: Skipping announcement, it is a BACKPORT.
+
+  >>> len(msgs)
+  1
+
+  >>> [email.message_from_string(str(m))['To'] for m in msgs]
+  ['Daniel Silverstone <daniel.silverstone@canonical.com>']
+
+Chuck it all away again
+
+  >>> transaction.abort()
+
 == Insecure Policy ==
 
 'insecure' upload policy forces NascentUpload to perform ACLs over the
