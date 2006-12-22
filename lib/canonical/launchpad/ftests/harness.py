@@ -64,7 +64,7 @@ def _disconnect_sqlos():
     for key, connection in items:
         connection.rollback()
         del connCache[key]
-    sqlos.connection.connCache = {}
+    sqlos.connection.connCache.clear()
 
 def _reconnect_sqlos(dbuser=None):
     _disconnect_sqlos()
