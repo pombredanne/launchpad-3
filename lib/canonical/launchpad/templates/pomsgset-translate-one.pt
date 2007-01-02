@@ -8,12 +8,14 @@
           src view/zoom_icon;" /></a>
   </td>
   <td style="text-align: right;">
-    <span tal:replace="view/sequence">1</span>.
-    <input
-      type="hidden"
-      tal:attributes="
-      name string:msgset_${context/potmsgset/id}"
-      />
+    <div tal:attributes="id string:msgset_${context/potmsgset/id}">
+      <span tal:replace="view/sequence">1</span>.
+      <input
+        type="hidden"
+        tal:attributes="
+        name string:msgset_${context/potmsgset/id}"
+        />
+    </div>
   </td>
   <th style="border-style: dotted; border-width: 1px 0 0;">
     <label class="language-code" tal:condition="not:view/is_plural">

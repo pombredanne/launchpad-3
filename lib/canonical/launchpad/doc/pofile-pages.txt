@@ -159,10 +159,12 @@ Now we do a submission with new translations:
     ...     'show': 'all',
     ...     'lock_timestamp': '2006-11-28 13:00:00 UTC',
     ...     'msgset_130': None,
-    ...     'msgset_130_es_translation_0_new_checkbox': True,
+    ...     'msgset_130_es_translation_0_radiobutton':
+    ...         'msgset_130_es_translation_0_new',
     ...     'msgset_130_es_translation_0_new': 'Foo',
     ...     'msgset_138': None,
-    ...     'msgset_138_es_translation_0_new_checkbox': True,
+    ...     'msgset_138_es_translation_0_radiobutton':
+    ...         'msgset_138_es_translation_0_new',
     ...     'msgset_138_es_translation_0_new': 'Bar',
     ...     'submit_translations': 'Save &amp; Continue'})
     >>> request.method = 'POST'
@@ -207,7 +209,8 @@ their sequence is 0.
     ...     'show': 'untranslated',
     ...     'lock_timestamp': '2006-11-28 13:00:00 UTC',
     ...     'msgset_161': None,
-    ...     'msgset_161_es_translation_0_new_checkbox': True,
+    ...     'msgset_161_es_translation_0_radiobutton':
+    ...         'msgset_161_es_translation_0_new',
     ...     'msgset_161_es_translation_0_new': 'Foo',
     ...     'submit_translations': 'Save &amp; Continue'})
     >>> request.method = 'POST'

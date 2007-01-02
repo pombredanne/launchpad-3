@@ -30,8 +30,8 @@ And we can see that we escaped the tags:
   >>> print user_browser.contents
   <!DOCTYPE html PUBLIC...
     name="msgset_67_hr_translation_0_new"
-    onkeypress="javascript:selectWidget('msgset_67_hr_translation_0_new_checkbox', event)"
-    onchange="javascript:selectWidget('msgset_67_hr_translation_0_new_checkbox', event)"
+    onkeypress="javascript:selectWidget('msgset_67_hr_translation_0_new_select', event)"
+    onchange="javascript:selectWidget('msgset_67_hr_translation_0_new_select', event)"
     id="msgset_67_hr_translation_0_new"
     dir="ltr">
   Upotreba:

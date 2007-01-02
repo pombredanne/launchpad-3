@@ -702,10 +702,11 @@ class BaseTranslationView(LaunchpadView):
                     if 'suggestion' in interesting_key:
                         # It's a suggestion.
                         value = _getSuggestionFromFormId(interesting_key)
-                    else:
+                    elif pomsgset.active_texts[pluralform] is not None:
                         # It's current translation.
-                        value = self.context.active_texts[pluralform]
-
+                        value = pomsgset.active_texts[pluralform]
+                    else:
+                        value = u''
                 # It's a radio button and it's selected, so we are sure we
                 # want to store this submission.
                 store = True
