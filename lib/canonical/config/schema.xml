@@ -472,6 +472,12 @@
             Configuration for Rosetta admin tools
         </description>
         <key name="dbuser" datatype="string" default="rosettaadmin" />
+        <key name="email" datatype="string" default="rosetta@launchpad.net">
+            <description>
+                From-address used in PO import, export and language pack
+                notifications.
+            </description>
+	</key>
     </sectiontype>
 
     <sectiontype name="poimport">
