@@ -604,11 +604,11 @@ class DistroRelease(SQLBase, BugTargetBase):
         return SourcePackagePublishingHistory.select(
             " AND ".join(queries), orderBy="id")
 
-    def getSourcePackagePublishing(self, status, pocket, component=None):
+    def getSourcePackagePublishing(self, status, pocket, component=None,
+                                   archive=None):
         """See IDistroRelease."""
-        orderBy = ['SourcePackageName.name']
-
-        clauseTables = ['SourcePackageRelease', 'SourcePackageName']
+        if archive is None:
+            archive = self.main_archive
 
         clause = """
             SourcePackagePublishingHistory.sourcepackagerelease=
@@ -619,7 +619,7 @@ class DistroRelease(SQLBase, BugTargetBase):
             SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.status=%s AND
             SourcePackagePublishingHistory.pocket=%s
-            """ %  sqlvalues(self, self.main_archive, status, pocket)
+            """ %  sqlvalues(self, archive, status, pocket)
 
         if component:
             clause += (
@@ -627,18 +627,20 @@ class DistroRelease(SQLBase, BugTargetBase):
                 sqlvalues(component)
                 )
 
+        orderBy = ['SourcePackageName.name']
+        clauseTables = ['SourcePackageRelease', 'SourcePackageName']
+
         return SourcePackagePublishingHistory.select(
             clause, orderBy=orderBy, clauseTables=clauseTables)
 
     def getBinaryPackagePublishing(self, name=None, version=None,
                                    archtag=None, sourcename=None,
                                    orderBy=None, pocket=None,
-                                   component=None):
+                                   component=None, archive=None):
         """See IDistroRelease."""
 
-        clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchRelease',
-                        'BinaryPackageRelease', 'BinaryPackageName', 'Build',
-                        'SourcePackageRelease', 'SourcePackageName' ]
+        if archive is None:
+            archive = self.main_archive
 
         query = ["""
         BinaryPackagePublishingHistory.binarypackagerelease =
@@ -656,8 +658,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         DistroArchRelease.distrorelease = %s AND
         BinaryPackagePublishingHistory.archive = %s AND
         BinaryPackagePublishingHistory.status = %s
-        """ % sqlvalues(self, self.main_archive,
-                        PackagePublishingStatus.PUBLISHED)]
+        """ % sqlvalues(self, archive, PackagePublishingStatus.PUBLISHED)]
 
         if name:
             query.append('BinaryPackageName.name = %s' % sqlvalues(name))
@@ -684,6 +685,10 @@ class DistroRelease(SQLBase, BugTargetBase):
                 % sqlvalues(component))
 
         query = " AND ".join(query)
+
+        clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchRelease',
+                        'BinaryPackageRelease', 'BinaryPackageName', 'Build',
+                        'SourcePackageRelease', 'SourcePackageName' ]
 
         result = BinaryPackagePublishingHistory.select(
             query, distinct=False, clauseTables=clauseTables, orderBy=orderBy)
