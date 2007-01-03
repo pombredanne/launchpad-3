@@ -238,14 +238,13 @@ class TestPublisher(TestNativePublishingBase):
             getPublisherForDistribution,  getPublisherForPPA)
 
         # stub parameters
-        allowed_suites = [('breezy-autotest',
-                           PackagePublishingPocket.RELEASE)]
+        allowed_suites = [('breezy-autotest', PackagePublishingPocket.RELEASE)]
         distsroot = None
 
         distro_publisher = getPublisherForDistribution(
             self.ubuntutest, allowed_suites, self.logger, distsroot)
 
-        # check the publisher context, pointing the 'main_archive'
+        # check the publisher context, pointing to the 'main_archive'
         self.assertEqual(
             u'ubuntutest main archive', distro_publisher.archive.tag)
         self.assertEqual(
@@ -264,7 +263,7 @@ class TestPublisher(TestNativePublishingBase):
         ppa_publisher = getPublisherForPPA(
             cprov_ppa, self.ubuntutest, allowed_suites, self.logger)
 
-        # check the publisher context, pointing the given PPA archive
+        # check the publisher context, pointing to the given PPA archive
         self.assertEqual(
             u'cprov test', ppa_publisher.archive.tag)
         self.assertEqual(
