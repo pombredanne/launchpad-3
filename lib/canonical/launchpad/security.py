@@ -22,7 +22,7 @@ from canonical.launchpad.interfaces import (
     IBuilder, IBuild, IBugNomination, ISpecificationSubscription, IHasDrivers,
     IBugBranch)
 
-from canonical.lp.dbschema import DistroReleaseQueueStatus
+from canonical.lp.dbschema import PackageUploadStatus
 
 class AuthorizationBase:
     implements(IAuthorization)
