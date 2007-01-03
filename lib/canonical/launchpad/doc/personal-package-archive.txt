@@ -93,3 +93,13 @@ Usual methods from Publisher Configuration are preserved:
 
   >>> pubconfig.componentsForRelease('breezy-autotest')
   ['main', 'restricted', 'universe', 'multiverse']
+
+
+The utility IPersonalPackageArchiveSet also provides iteration over
+present PPAs:
+
+  >>> ppa_set = getUtility(IPersonalPackageArchiveSet)
+
+  >>> [(ppa.person.name, ppa.archive.tag) for ppa in ppa_set]
+  [(u'cprov', u'sandbox')]
+

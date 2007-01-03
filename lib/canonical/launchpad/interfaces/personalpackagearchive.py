@@ -39,3 +39,5 @@ class IPersonalPackageArchiveSet(Interface):
     def get(ppaid):
         """Return the IPersonalPackageArchive with the given id."""
 
+    def __iter__():
+        """Iterates over existent PersonalPackageArchives."""

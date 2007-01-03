@@ -61,3 +61,5 @@ class PersonalPackageArchiveSet:
         """See canonical.launchpad.interfaces.IPersonalPackageArchiveSet."""
         return PersonalPackageArchive(person=person, archive=archive)
 
+    def __iter__(self):
+        return iter(PersonalPackageArchive.select())
