@@ -26,6 +26,7 @@ __all__ = [
     'ProductLaunchpadUsageEditView',
     ]
 
+from operator import attrgetter
 from warnings import warn
 
 import zope.security.interfaces
@@ -54,12 +55,12 @@ from canonical.launchpad.browser.productseries import get_series_branch_error
 from canonical.launchpad.browser.tickettarget import (
     TicketTargetFacetMixin, TicketTargetTraversalMixin)
 from canonical.launchpad.event import SQLObjectModifiedEvent
-from canonical.launchpad.utilities.numbersort import expand_numbers
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, GetitemNavigation, LaunchpadView,
     LaunchpadEditFormView, LaunchpadFormView, Link, Navigation,
-    RedirectionNavigation, StandardLaunchpadFacets, stepto, stepthrough,
+    RedirectionNavigation, sorted_version_numbers,
+    StandardLaunchpadFacets, stepto, stepthrough,
     structured)
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.widgets.product import ProductBugTrackerWidget
@@ -344,6 +345,10 @@ def _sort_distros(a, b):
     return cmp(a['name'], b['name'])
 
 def _sort_series(a, b):
+    """If it starts with a digit, then reverse sort, otherwise alphabetic."""
+    #if a and a[0] in DIGITS and b and b[0] in DIGITS:
+    #    return cmp(expand_numbers(b.name), expand_numbers(a.name))
+    #else:
     return cmp(expand_numbers(a.name), expand_numbers(b.name))
 
 class ProductSetContextMenu(ContextMenu):
@@ -481,7 +486,8 @@ class ProductView:
         series_list = [series for series in self.context.serieslist]
         series_list.remove(self.context.development_focus)
         # now sort the list (currently alphabetical)
-        series_list.sort(cmp=_sort_series)
+        series_list = sorted_version_numbers(series_list,
+                                             key=attrgetter('name'))
         series_list.insert(0, self.context.development_focus)
         return series_list
 
