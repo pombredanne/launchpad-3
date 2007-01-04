@@ -31,10 +31,41 @@ interested on doesn't have any translation.
   ...     return (td_id.renderContents(), td_msgid.renderContents(),
   ...             td_translation.renderContents())
 
+First, we need to be sure that anonymous users are able to browse translations
+but are unable to actually change them.
 
-Let's identify us first.
+  >>> browser.open(
+  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     '+pots/evolution-2.2/es/5')
+  >>> browser.url
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/5/+translate'
+
+We are in read only mode, so there shouldn't be any textareas:
+
+  >>> main_content = find_tag_by_id(browser.contents, 'messages_to_translate')
+  >>> for textarea in main_content.findAll('textarea'):
+  ...     raise AssertionError, 'Found textarea:\n%s' % textarea
+
+Neither any input widget:
+
+  >>> for input in main_content.findAll('input'):
+  ...     raise AssertionError, 'Found input:\n%s' % input
+
+Also, any anonymous POST submission should fail:
+
+  >>> print http(r"""
+  ... POST /ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/5/+translate HTTP/1.1
+  ... """)
+  HTTP/1.1 500 Internal Server Error
+  ...
+  ...UnexpectedFormData: Anonymous users cannot do POST submissions...
+
+
+Let's log in.
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+
+Now, we are going to test common parts of the navigation.
 
 The main page for a pomsgset object should redirect us to the translation form.
 
