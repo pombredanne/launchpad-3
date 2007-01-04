@@ -521,6 +521,9 @@ class BugTask(SQLBase, BugTaskMixin):
                  'distroreleasename': self.distrorelease.name,
                  'sourcepackagename': sourcepackagename_value,
                  'componentname': component})
+        else:
+            # Fallback - no headers
+            header_value = ''
 
         header_value += ((
             ' status=%(status)s; importance=%(importance)s; '
