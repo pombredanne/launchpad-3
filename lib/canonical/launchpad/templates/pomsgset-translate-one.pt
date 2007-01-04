@@ -9,6 +9,7 @@
     <span tal:replace="view/sequence">1</span>.
     <input
       type="hidden"
+      tal:condition="request/lp:person"
       tal:attributes="
       name string:msgset_${context/potmsgset/id}"
       />
