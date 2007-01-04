@@ -75,7 +75,7 @@
                 </td>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="messages_to_translate">
               <div tal:replace="structure view/pomsgset_view" />
             </tbody>
             <tfoot>

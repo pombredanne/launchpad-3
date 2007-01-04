@@ -940,10 +940,6 @@ class POMsgSetView(LaunchpadView):
         self.translations = translations
         self.error = error
         self.is_fuzzy = is_fuzzy
-        # If the user is not logged in, we should note that the fuzzy/Needs
-        # Review checkbox is disabled so it cannot be changed. We use this
-        # flag to note it.
-        self.is_fuzzy_disabled = self.user is None
 
         # Set up alternative language variables. XXX: This could be made
         # much simpler if we built suggestions externally in the parent

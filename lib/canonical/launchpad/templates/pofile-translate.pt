@@ -148,7 +148,7 @@
                   </td>
                 </tr>
               </thead>
-              <tbody class="greater">
+              <tbody class="greater" id="messages_to_translate">
                 <tal:loop repeat="pomsgset_view view/pomsgset_views">
                   <div tal:replace="structure pomsgset_view" />
                 </tal:loop>

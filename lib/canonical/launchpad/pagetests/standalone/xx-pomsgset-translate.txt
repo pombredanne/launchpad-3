@@ -42,27 +42,14 @@ but are unable to actually change them.
 
 We are in read only mode, so there shouldn't be any textareas:
 
-  >>> main_content = find_main_content(browser.contents)
+  >>> main_content = find_tag_by_id(browser.contents, 'messages_to_translate')
   >>> for textarea in main_content.findAll('textarea'):
-  ...     print 'Found textarea:\n%s' % textarea
+  ...     raise AssertionError, 'Found textarea:\n%s' % textarea
 
-About input widgets, except for alternative language ones and the fuzzy
-checkbox, we shouldn't have any other. Also, the fuzzy checkbox should
-be disabled.
+Neither any input widget:
 
   >>> for input in main_content.findAll('input'):
-  ...     name = input.get('name')
-  ...     value = input.get('value')
-  ...     disabled = input.get('disabled')
-  ...     if (name == 'field.alternative_language-empty-marker' or
-  ...         name == 'select_alternate_language'):
-  ...         continue
-  ...     if value == 'fuzzy' and disabled is not None:
-  ...         name
-  ...         continue
-  ...     print 'Found input:\n%s' % input
-  u'msgset_134_es_needsreview'
-
+  ...     raise AssertionError, 'Found input:\n%s' % input
 
 Also, any anonymous POST submission should fail:
 

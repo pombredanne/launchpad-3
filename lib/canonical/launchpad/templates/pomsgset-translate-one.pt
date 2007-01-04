@@ -250,7 +250,7 @@
   <tr class="secondary">
     <td colspan="4" />
     <td>
-      <div>
+      <div tal:condition="request/lp:person">
         <label class="fuzzy-checkbox">
           <input
             type="checkbox"
@@ -258,8 +258,17 @@
             tal:attributes="
               checked view/is_fuzzy;
               name string:msgset_${context/potmsgset/id}_${language_code}_needsreview;
-              disabled view/is_fuzzy_disabled
               " />
+          <tal:block condition="not:view/is_plural">
+            Someone should review this translation
+          </tal:block>
+          <tal:block condition="view/is_plural">
+            Someone should review these translations
+          </tal:block>
+        </label>
+      </div>
+      <div tal:condition="not: request/lp:person">
+        <label tal:condition="view/is_fuzzy">
           <tal:block condition="not:view/is_plural">
             Someone should review this translation
           </tal:block>
