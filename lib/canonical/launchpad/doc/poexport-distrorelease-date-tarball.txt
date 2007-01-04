@@ -172,6 +172,7 @@ This is needed to make the PO export cache work, since it uses the Librarian.
 Then, export with a date limit: we should only get the second PO file.
 
     >>> tarfile = string_to_tarfile(exporter.export_tarball(d2000_01_02))
+    WARNING:root:PO file header entry has no content-type field
     >>> examine_tarfile(tarfile)
     |     0 | rosetta-grumpy/
     |     0 | rosetta-grumpy/cy/
