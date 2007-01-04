@@ -4,7 +4,7 @@ string.
 When we visit the bug listing page, we expect a search form.
 
   >>> print http(r"""
-  ... GET /distros/debian/+bugs HTTP/1.1
+  ... GET /debian/+bugs HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -16,10 +16,10 @@ The URL produced by the above form action is required to produce the expected
 search result.
 
   >>> print http(r"""
-  ... GET /distros/debian/+bugs?field.searchtext=blackhole&search=Search&advanced=&status=10&status=20&assignee=all HTTP/1.1
+  ... GET /debian/+bugs?field.searchtext=blackhole&search=Search&advanced=&status=10&status=20&assignee=all HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   ...
-  ...Blackhole Trash folder...
   ...1 result...
+  ...Blackhole Trash folder...

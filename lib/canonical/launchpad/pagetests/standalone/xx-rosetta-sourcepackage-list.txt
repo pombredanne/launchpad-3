@@ -4,7 +4,7 @@ in a particular distibution release. In this case, we're asking for the
 translation overview for Evolution in Hoary.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+source/evolution/+translations HTTP/1.1
+  ... GET /ubuntu/hoary/+source/evolution/+translations HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...evolution in Ubuntu Hoary...

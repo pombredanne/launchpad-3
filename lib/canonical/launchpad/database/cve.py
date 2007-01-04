@@ -172,3 +172,7 @@ class CveSet:
             prejoins=["cve"],
             orderBy=['bug', 'cve'])
 
+    def getBugCveCount(self):
+        """See ICveSet."""
+        return BugCve.select().count()
+

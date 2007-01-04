@@ -2,7 +2,7 @@ First we try to change the name of "name18" to "ubuntu-team", but
  "ubuntu-team" is already in use!
  
   >>> print http(r"""
-  ... POST /people/name18/+edit HTTP/1.1
+  ... POST /~name18/+edit HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------19030233218248605631984744659
   ... 
@@ -42,13 +42,13 @@ First we try to change the name of "name18" to "ubuntu-team", but
   ... """)
   HTTP/1.1 200 Ok
   ...
-  ...ubuntu-team is already in use by another person/team...
+  ...ubuntu-team is already in use by another person or team...
 
   
 Then we try to change it to "name99", wich isn't taken yet.
   
   >>> print http(r"""
-  ... POST /people/name18/+edit HTTP/1.1
+  ... POST /~name18/+edit HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------5241005213034596831996094424
   ... 
@@ -88,13 +88,13 @@ Then we try to change it to "name99", wich isn't taken yet.
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/people/name99...
+  Location: http://localhost:9000/~name99...
 
 Now we try to "name18"'s page, this way we make sure everything is how it
 should be.
 
   >>> print http(r"""
-  ... GET /people/name18 HTTP/1.1
+  ... GET /~name18 HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 404 Not Found

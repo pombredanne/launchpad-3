@@ -1,47 +1,28 @@
-  Deactivate membership for 'name16' on team 'myemail'.
+Testing the deactivation of membership for 'name16' on team 'myemail'.
 
+We want to test concurrency here, so keep two browsers around:
 
-  Go to the member's page.
+  >>> from zope.testbrowser.testing import Browser
+  >>> browser2 = Browser()
+  >>> browser2.addHeader("Authorization", "Basic foo@baz.com:f")
+  >>> browser2.open("http://launchpad.dev/~myemail/+member/name16")
 
-  >>> print http(r"""
-  ... GET /people/myemail/+member/name16 HTTP/1.1
-  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  ...Foo Bar...
-  ...
-  ...Active...
-  ...
+XXX: As per bug 68655, it would be nice to be able to clone the browser
+and not do the manual copy.
 
+Deactivate the member:
 
-  Click on the 'Deactivate' button.
+  >>> browser.addHeader("Authorization", "Basic foo@baz.com:f")
+  >>> browser.open("http://launchpad.dev/~myemail/+member/name16")
+  >>> browser.getControl('Deactivate').click()
+  >>> browser.url
+  'http://launchpad.dev/~myemail/+members'
 
-  >>> print http(r"""
-  ... POST /people/myemail/+member/name16 HTTP/1.1
-  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
-  ... Content-Length: ...
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... admin=no&day=16&month=4&year=2050&comment=&editactive=Deactivate""")
-  HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
+And see how it went:
 
-
-  Got redirected to the team's members page, and see the deactivated member
-  listed as an inactive member.
-
-  >>> print http(r"""
-  ... GET /people/myemail/+members/ HTTP/1.1
-  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
+  >>> print browser.contents
+  <...
+  <BLANKLINE>
   ...
   ...Inactive members...
   ...
@@ -49,14 +30,22 @@
   ...Deactivated...
   ...
 
+Attempt to deactivate the user again using our original browser2
+instance. No crashes in sight:
 
-  Let's make sure that 'name16' is now a DEACTIVATED member of this team.
+  >>> browser2.handleErrors = False
+  >>> browser2.getControl('Deactivate').click()
+  >>> browser2.url
+  'http://launchpad.dev/~myemail/+members'
+
+Let's make sure that 'name16' is now a DEACTIVATED member of this team.
 
   >>> from canonical.launchpad.database import Person, TeamMembership
   >>> foobar = Person.byName('name16')
   >>> team = Person.byName('myemail')
-  >>> tm = TeamMembership.selectOneBy(personID=foobar.id, teamID=team.id)
+  >>> tm = TeamMembership.selectOneBy(person=foobar, team=team)
   >>> tm.statusname
   'Deactivated'
   >>> foobar.inTeam(team)
   False
+

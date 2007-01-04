@@ -10,8 +10,10 @@
         <allow interface="canonical.launchpad.interfaces.ISourcePackage" />
         <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
         <!-- ITicketTarget -->
-        <allow attributes="tickets getTicket searchTickets findSimilarTickets
-              support_contacts" />
+        <allow attributes="getTicket searchTickets findSimilarTickets
+            support_contacts direct_support_contacts getSupportedLanguages
+	    getTicketLanguages"
+	    />
         <require permission="launchpad.AnyPerson"
             attributes="newTicket addSupportContact removeSupportContact" />
     </content>
@@ -22,8 +24,13 @@
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.ISourcePackage"
-        layer="canonical.launchpad.layers.MaloneLayer"
+        layer="canonical.launchpad.layers.BugsLayer"
         name="+bugs" />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ISourcePackage"
+        layer="canonical.launchpad.layers.AnswersLayer"
+        name="+tickets"
+        />
 
 
     <browser:navigation

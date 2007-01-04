@@ -20,7 +20,8 @@
     <form action="." 
           tal:attributes="action request/URL" 
           method="post"
-          enctype="multipart/form-data">
+          enctype="multipart/form-data"
+          accept-charset="UTF-8">
 
       <div metal:define-macro="formbody">
 
@@ -60,7 +61,6 @@
       </div>
       <div class="actions">
           <input type="submit"
-                 tabindex="1000"
                  value="Add"
                  name="UPDATE_SUBMIT"
                  i18n:attributes="value add-button" />

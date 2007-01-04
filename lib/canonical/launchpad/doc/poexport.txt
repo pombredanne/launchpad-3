@@ -137,8 +137,8 @@ Then get the PO file from the exporter.
   "Content-Type: text/plain; charset=UTF-8\n"
   "Content-Transfer-Encoding: 8bit\n"
   "Report-Msgid-Bugs-To: serrador@hispalinux.es\n"
-  "X-Generator: Rosetta (https://launchpad.net/rosetta/)\n"
   "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+  "X-Rosetta-Export-Date: ...-...-... ...:...+...\n"
   <BLANKLINE>
   #: a11y/addressbook/ea-addressbook-view.c:94
   #: a11y/addressbook/ea-addressbook-view.c:103
@@ -392,6 +392,17 @@ Then get the PO file from the exporter.
   #~ msgid "_Add Group"
   #~ msgstr "_Añadir grupo"
 
+The value at X-Rosetta-Export-Date cannot be tested directly because it would
+be a time bomb in our tests, so we parse the file again with our parser and
+try to get a datetime object of its value.
+
+  >>> from canonical.launchpad.components.poparser import POParser
+  >>> parser = POParser()
+  >>> parser.write(pofile)
+  >>> parser.finish()
+  >>> type(parser.header.getRosettaExportDate())
+  <type 'datetime.datetime'>
+
 We need to test also the feature that exports a po file without any obsolete
 message
 
@@ -426,7 +437,7 @@ Then get the PO file from the exporter.
   >>> print pofile
   # Japanese translation for evolution
   ...
-  "Plural-Forms: nplurals=1; plural=0\n"
+  "Plural-Forms: nplurals=1; plural=(0);\n"
   ...
   #, c-format
   msgid "%d contact"

@@ -12,6 +12,7 @@ __all__ = [
     'LaunchpadRootNavigation',
     'MaloneApplicationNavigation',
     'SoftTimeoutView',
+    'SearchProjectsView',
     ]
 
 import cgi
@@ -22,22 +23,21 @@ from datetime import timedelta, datetime
 
 from zope.app.datetimeutils import parseDatetimetz, tzinfo, DateTimeError
 from zope.component import getUtility
+from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
 
 import canonical.launchpad.layers
 from canonical.config import config
 from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.interfaces import (
-    ILaunchBag, ILaunchpadRoot, IRosettaApplication,
-    IMaloneApplication, IProductSet, IShipItApplication, IPersonSet,
-    IDistributionSet, ISourcePackageNameSet, IBinaryPackageNameSet,
-    IProjectSet, ILoginTokenSet, IKarmaActionSet, IPOTemplateNameSet,
+    ILaunchBag, ILaunchpadRoot, IRosettaApplication, IPillarNameSet,
+    IMaloneApplication, IProductSet, IPersonSet, IDistributionSet,
+    ISourcePackageNameSet, IBinaryPackageNameSet, IProjectSet,
+    ILoginTokenSet, IKarmaActionSet, IPOTemplateNameSet,
     IBazaarApplication, ICodeOfConductSet, IRegistryApplication,
     ISpecificationSet, ISprintSet, ITicketSet, IBuilderSet, IBountySet,
     ILaunchpadCelebrities, IBugSet, IBugTrackerSet, ICveSet,
-    ITranslationImportQueue, ITranslationGroupSet)
-from canonical.launchpad.layers import (
-    setFirstLayer, ShipItEdUbuntuLayer, ShipItKUbuntuLayer, ShipItUbuntuLayer)
+    ITranslationImportQueue, ITranslationGroupSet, NotFoundError)
 from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView, Navigation,
@@ -55,7 +55,7 @@ class MaloneApplicationNavigation(Navigation):
 
     usedfor = IMaloneApplication
 
-    newlayer = canonical.launchpad.layers.MaloneLayer
+    newlayer = canonical.launchpad.layers.BugsLayer
 
     @stepto('bugs')
     def bugs(self):
@@ -115,36 +115,6 @@ class MenuBox(LaunchpadView):
 class Breadcrumbs(LaunchpadView):
     """Page fragment to display the breadcrumbs text."""
 
-    sitemaptext = ("""
-    <ul id="launchPad" style="display: none">
-          <li id="p1">
-          <a href="/products">
-          Products
-          </a>
-          </li>
-          <li>
-          <a href="/distros">
-          Distributions
-          </a>
-          </li>
-          <li>
-          <a href="/people">
-          People
-          </a>
-          </li>
-          <li>
-          <a href="/projects">
-          Projects
-          </a>
-          </li>
-          <li>
-          <a href="/sprints">
-          Meetings
-          </a>
-          </li>
-    </ul>
-       """)
-
     def render(self):
         """Render the breadcrumbs text.
 
@@ -165,38 +135,46 @@ class Breadcrumbs(LaunchpadView):
 
         if not crumbs:
             L.append(
-                '<li class="last">'
+                '<li lpm:mid="root" class="item">'
                 '<a href="%s">'
                 '<img src="/@@/launchpad" alt="" /> %s'
                 '</a>'
-                '%s'
                 '</li>'
                 % (firsturl,
-                   cgi.escape(firsttext),
-                   self.sitemaptext))
+                   cgi.escape(firsttext)))
         else:
             L.append(
-                '<li>'
+                '<li lpm:mid="root" class="item">'
                 '<a href="%s">'
                 '<img src="/@@/launchpad" alt="" /> %s'
                 '</a>'
-                '%s'
                 '</li>'
                 % (firsturl,
-                   cgi.escape(firsttext),
-                   self.sitemaptext))
+                   cgi.escape(firsttext)))
 
-            lastcrumb = crumbs.pop()
+            #lastcrumb = crumbs.pop()
 
             for crumb in crumbs:
-                L.append('<li><a href="%s">%s</a></li>'
+                # XXX: SteveAlexander, 2006-06-09, this is putting the
+                #      full URL in as the lpm:mid.  We want just the path
+                #      here instead.
+                ##L.append('<li class="item" lpm:mid="%s/+menudata">'
+                ##         '<a href="%s">%s</a>'
+                ##         '</li>'
+                ##         % (crumb.url, crumb.url, cgi.escape(crumb.text)))
+
+                # Disable these menus for now.  To be re-enabled on the ui 1.0
+                # branch.
+                L.append('<li class="item">'
+                         '<a href="%s">%s</a>'
+                         '</li>'
                          % (crumb.url, cgi.escape(crumb.text)))
 
-            L.append(
-                '<li class="last">'
-                '<a href="%s">%s</a>'
-                '</li>'
-                % (lastcrumb.url, cgi.escape(lastcrumb.text)))
+            #L.append(
+            #    '<li class="item">'
+            #    '<a href="%s">%s</a>'
+            #    '</li>'
+            #    % (lastcrumb.url, cgi.escape(lastcrumb.text)))
         return u'\n'.join(L)
 
 
@@ -261,24 +239,24 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
         return Link(target, text)
 
     def translations(self):
-        target = 'rosetta'
+        target = ''
         text = 'Translations'
         return Link(target, text)
 
     def bugs(self):
-        target = 'malone'
+        target = ''
         text = 'Bugs'
         return Link(target, text)
 
     def support(self):
-        target = 'support'
-        text = 'Support'
+        target = ''
+        text = 'Answers'
         summary = 'Launchpad technical support tracker.'
         return Link(target, text, summary)
 
     def specifications(self):
         target = ''
-        text = 'Features'
+        text = 'Blueprints'
         summary = 'Launchpad feature specification tracker.'
         return Link(target, text, summary)
 
@@ -289,7 +267,7 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
         return Link(target, text, summary)
 
     def branches(self):
-        target = 'bazaar'
+        target = ''
         text = 'Code'
         summary = 'The Code Bazaar'
         return Link(target, text, summary)
@@ -311,18 +289,12 @@ class MaloneContextMenu(ContextMenu):
 
 class RosettaContextMenu(ContextMenu):
     usedfor = IRosettaApplication
-    links = ['about', 'preferences', 'import_queue', 'translation_groups']
+    links = ['about', 'import_queue', 'translation_groups']
 
     def about(self):
         text = 'About Rosetta'
         rosetta_application = getUtility(IRosettaApplication)
         url = '/'.join([canonical_url(rosetta_application), '+about'])
-        return Link(url, text)
-
-    def preferences(self):
-        text = 'Translation preferences'
-        rosetta_application = getUtility(IRosettaApplication)
-        url = '/'.join([canonical_url(rosetta_application), 'prefs'])
         return Link(url, text)
 
     def import_queue(self):
@@ -428,23 +400,44 @@ class LaunchpadRootNavigation(Navigation):
         'token': ILoginTokenSet,
         'karmaaction': IKarmaActionSet,
         'potemplatenames': IPOTemplateNameSet,
-        'bazaar': IBazaarApplication,
         'codeofconduct': ICodeOfConductSet,
-        'malone': IMaloneApplication,
         'bugs': IMaloneApplication,
         'registry': IRegistryApplication,
-        'rosetta': IRosettaApplication,
         'specs': ISpecificationSet,
         'sprints': ISprintSet,
         'support': ITicketSet,
+        'translations': IRosettaApplication,
         '+builds': IBuilderSet,
         'bounties': IBountySet,
+        '+code': IBazaarApplication,
+        # These three have been renamed, and no redirects done, as the old
+        # urls now point to the product pages.
+        #'bazaar': IBazaarApplication,
+        #'malone': IMaloneApplication,
+        #'rosetta': IRosettaApplication,
         }
 
     def traverse(self, name):
         if name in self.stepto_utilities:
             return getUtility(self.stepto_utilities[name])
-        else:
+
+        # Allow traversal to ~foo for People
+        if name.startswith('~'):
+            person = getUtility(IPersonSet).getByName(name[1:].lower())
+            return person
+
+        # Dapper and Edgy shipped with https://launchpad.net/bazaar hard coded
+        # into the Bazaar Launchpad plugin (part of Bazaar core). So in theory
+        # we need to support this URL until 2011 (although I suspect the API
+        # will break much sooner than that) or updates sent to
+        # {dapper,edgy}-updates. Probably all irrelevant, as I suspect the
+        # number of people using the plugin in edgy and dapper is 0.
+        if name == 'bazaar' and IXMLRPCRequest.providedBy(self.request):
+            return getUtility(IBazaarApplication)
+
+        try:
+            return getUtility(IPillarNameSet)[name.lower()]
+        except NotFoundError:
             return None
 
     @stepto('calendar')
@@ -478,3 +471,42 @@ class SoftTimeoutView(LaunchpadView):
         return (
             'Soft timeout threshold is set to %s ms. This page took'
             ' %s ms to render.' % (soft_timeout, time_to_generate_page))
+
+
+class SearchProjectsView(LaunchpadView):
+    """The page where people can search for Projects/Products/Distros."""
+
+    results = None
+    search_string = ""
+    max_results_to_display = config.launchpad.default_batch_size
+
+    def initialize(self):
+        form = self.request.form
+        self.search_string = form.get('q')
+        if not self.search_string:
+            return
+
+        search_string = self.search_string.lower()
+        if form.get('go') is not None:
+            try:
+                pillar = getUtility(IPillarNameSet)[search_string]
+            except NotFoundError:
+                pass
+            else:
+                self.request.response.redirect(canonical_url(pillar))
+                # No need to do the search, since we're going to teleport the
+                # user.
+                return
+
+        # We use a limit bigger than self.max_results_to_display so that we
+        # know when we had too many results and we can tell the user that some
+        # of them are not being displayed.
+        limit = self.max_results_to_display + 1
+        self.results = getUtility(IPillarNameSet).search(search_string, limit)
+
+    def tooManyResultsFound(self):
+        if len(self.results) > self.max_results_to_display:
+            return True
+        else:
+            return False
+

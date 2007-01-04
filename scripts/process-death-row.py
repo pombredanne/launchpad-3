@@ -11,12 +11,12 @@ from canonical.launchpad.database import Distribution
 from canonical.launchpad.scripts import (execute_zcml_for_scripts,
                                          logger, logger_options)
 
-from canonical.archivepublisher.diskpool import DiskPool, Poolifier, POOL_DEBIAN
+from canonical.archivepublisher.diskpool import DiskPool
 from canonical.archivepublisher.config import Config, LucilleConfigError
 from canonical.archivepublisher.deathrow import DeathRow
 
 
-def getDeathRow(distroname, log):
+def getDeathRow(distroname, log, pool_root_override):
     distro = Distribution.byName(distroname)
 
     log.debug("Grab Lucille config.")
@@ -26,12 +26,15 @@ def getDeathRow(distroname, log):
         log.error(info)
         raise
 
+    if pool_root_override is not None:
+        pool_root = pool_root_override
+    else:
+        pool_root = pubconf.poolroot
+
     log.debug("Preparing on-disk pool representation.")
-    dp = DiskPool(Poolifier(POOL_DEBIAN),
-                  pubconf.poolroot, logging.getLogger("DiskPool"))
+    dp = DiskPool(pool_root, logging.getLogger("DiskPool"))
     # Set the diskpool's log level to INFO to suppress debug output
     dp.logger.setLevel(20)
-    dp.scan()
 
     log.debug("Preparing death row.")
     return DeathRow(distro, dp, log)
@@ -46,6 +49,8 @@ def main():
     parser.add_option("-d", "--distribution",
                       dest="distribution", metavar="DISTRO",
                       help="Specified the distribution name.")
+    parser.add_option("-p", "--pool-root", metavar="PATH",
+                      help="Override the path to the pool folder")
 
     logger_options(parser)
     (options, args) = parser.parse_args()
@@ -57,17 +62,18 @@ def main():
     execute_zcml_for_scripts()
 
     distroname = options.distribution
-    death_row = getDeathRow(distroname, log)
+    death_row = getDeathRow(distroname, log, options.pool_root)
     try:
         # Unpublish death row
         log.debug("Unpublishing death row.")
         death_row.reap(options.dry_run)
 
-        log.debug("Committing")
         if options.dry_run:
-            txn.commit()
-        else:
+            log.debug("Dry run mode; rolling back.")
             txn.abort()
+        else:
+            log.debug("Committing")
+            txn.commit()
     except:
         log.exception("Bad muju while doing death-row unpublish")
         txn.abort()

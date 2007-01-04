@@ -5,7 +5,6 @@ __metaclass__ = type
 __all__ = [
     'DistributionSourcePackageFacets',
     'DistributionSourcePackageNavigation',
-    'DistributionSourcePackageView'
     ]
 
 from zope.component import getUtility
@@ -14,20 +13,18 @@ from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, ILaunchBag, DuplicateBugContactError,
     DeleteBugContactError, IPersonSet)
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
+from canonical.launchpad.browser.tickettarget import (
+        TicketTargetFacetMixin, TicketTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu,
     GetitemNavigation, canonical_url, redirection)
 
 
-class DistributionSourcePackageFacets(StandardLaunchpadFacets):
+class DistributionSourcePackageFacets(TicketTargetFacetMixin,
+                                      StandardLaunchpadFacets):
 
     usedfor = IDistributionSourcePackage
     enable_only = ['overview', 'bugs', 'support']
-
-    def support(self):
-        link = StandardLaunchpadFacets.support(self)
-        link.enabled = True
-        return link
 
 
 class DistributionSourcePackageOverviewMenu(ApplicationMenu):
@@ -52,7 +49,7 @@ class DistributionSourcePackageBugsMenu(DistributionSourcePackageOverviewMenu):
 
 
 class DistributionSourcePackageNavigation(GetitemNavigation,
-    BugTargetTraversalMixin):
+    BugTargetTraversalMixin, TicketTargetTraversalMixin):
 
     usedfor = IDistributionSourcePackage
 
@@ -60,30 +57,6 @@ class DistributionSourcePackageNavigation(GetitemNavigation,
 
     def breadcrumb(self):
         return self.context.sourcepackagename.name
-
-
-class DistributionSourcePackageSupportMenu(ApplicationMenu):
-
-    usedfor = IDistributionSourcePackage
-    facet = 'support'
-    links = ['addticket', 'support_contact']
-
-    def addticket(self):
-        return Link('+addticket', 'Request Support', icon='add')
-
-    def support_contact(self):
-        text = 'Support Contact'
-        return Link('+support-contact', text, icon='edit')
-
-
-class DistributionSourcePackageView:
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def latest_tickets(self):
-        return self.context.tickets(quantity=5)
 
 
 class DistributionSourcePackageBugContactsView:

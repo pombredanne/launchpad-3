@@ -16,29 +16,21 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Reject support request</h1>
+  <div metal:use-macro="context/@@launchpad_form/form">
 
-  <p class="documentDescription">
-    If this support request is a hoax, a test, or sample data, it should be
-    rejected.
-    It is better to reject fake or bogus requests than to mark them closed,
-    because rejected requests are not included in most reports.
-  </p>
+    <h1 metal:fill-slot="heading"
+        i18n:translate="">Reject support request</h1>
 
-  <form tal:attributes="action context/fmt:url" method="POST">
-
-    <div class="actions">
-      <input type="submit"
-             name="cancel"
-             value="Cancel" />
-      <input tal:condition="context/can_be_rejected"
-             type="submit"
-             name="reject"
-             value="Reject" />
-    </div>
-
-  </form>
-
+    <p metal:fill-slot="extra_info" class="documentDescription">
+      If this support request is a hoax, spam, a test, or sample data, it should
+      be rejected.
+    </p>
+  </div>
 </div>
+
+<p metal:fill-slot="help">Rejecting a support request will change its status
+  to <emph>Invalid</emph>. By default, it won't appear in listings anymore.
+  Give an appropriate reason why you are rejecting the request.
+</p>
 </body>
 </html>

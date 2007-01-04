@@ -9,6 +9,6 @@ Not directly.
 
 And not in bug listings.
 
-    >>> anon_browser.open("http://launchpad.dev/distros/ubuntu/+bugs")
+    >>> anon_browser.open("http://launchpad.dev/ubuntu/+bugs")
     >>> "a private bug" not in anon_browser.contents
     True

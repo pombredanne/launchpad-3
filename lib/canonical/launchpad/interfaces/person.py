@@ -15,30 +15,36 @@ __all__ = [
     'ITeamCreation',
     'IPersonChangePassword',
     'IPersonClaim',
+    'INewPerson',
     ]
 
 
 from zope.schema import (
-    Choice, Datetime, Int, Text, TextLine, Bytes, Bool)
-from zope.interface import Interface, Attribute
+    Bool, Bytes, Choice, Datetime, Int, Text, TextLine)
+from zope.interface import Attribute, Interface
+from zope.interface.exceptions import Invalid
+from zope.interface.interface import invariant
 from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    ContentNameField, PasswordField, StrippedTextLine)
+    BlacklistableContentNameField, PasswordField, StrippedTextLine)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
+from canonical.launchpad.interfaces.tickettarget import (
+    TICKET_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.validation import (
-    valid_emblem, valid_hackergotchi, valid_unregistered_email)
+    valid_emblem, valid_gotchi, validate_new_team_email,
+    validate_new_person_email)
 
 from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, TeamMembershipStatus, PersonCreationRationale)
 
 
-class PersonNameField(ContentNameField):
+class PersonNameField(BlacklistableContentNameField):
 
-    errormessage = _("%s is already in use by another person/team.")
+    errormessage = _("%s is already in use by another person or team.")
 
     @property
     def _content_iface(self):
@@ -66,6 +72,18 @@ class IPersonClaim(Interface):
     """The schema used by IPerson's +claim form."""
 
     emailaddress = TextLine(title=_('Email address'), required=True)
+
+
+class INewPerson(Interface):
+    """The schema used by IPersonSet's +newperson form."""
+
+    emailaddress = StrippedTextLine(
+        title=_('Email address'), required=True,
+        constraint=validate_new_person_email)
+    displayname = StrippedTextLine(title=_('Display name'), required=True)
+    creation_comment = Text(
+        title=_('Creation reason'), required=True,
+        description=_("The reason why you're creating this profile."))
 
 
 class IPerson(IHasSpecifications):
@@ -96,22 +114,26 @@ class IPerson(IHasSpecifications):
             title=_('Karma'), readonly=False,
             description=_('The cached total karma for this person.')
             )
-    homepage_content = Text(title=_("Homepage Content"), required=False,
-        description=_("The content of your home page. Edit this and it "
-        "will be displayed for all the world to see. It is NOT a wiki "
-        "so you cannot undo changes."))
+    homepage_content = Text(
+        title=_("Homepage Content"), required=False,
+        description=_(
+            "The content of your home page. Edit this and it will be "
+            "displayed for all the world to see. It is NOT a wiki so you "
+            "cannot undo changes."))
     emblem = Bytes(
-        title=_("Emblem"), required=False, description=_("A small image, "
-        "max 16x16 pixels and 8k in file size, that can be used to refer "
-        "to this team."),
+        title=_("Emblem"), required=False,
+        description=_(
+            "A small image, max 16x16 pixels and 8k in file size, that can "
+            "be used to refer to this team."),
         constraint=valid_emblem)
-    hackergotchi = Bytes(
-        title=_("Hackergotchi"), required=False, description=_("An image, "
-        "maximum 150x150 pixels, that will be displayed on your home page. "
-        "It should be no bigger than 50k in size. "
-        "Traditionally this is a great big grinning image of your mug. "
-        "Make the most of it."),
-        constraint=valid_hackergotchi)
+    gotchi = Bytes(
+        title=_("Hackergotchi"), required=False,
+        description=_(
+            "An image, maximum 150x150 pixels, that will be displayed on "
+            "your home page. It should be no bigger than 50k in size. "
+            "Traditionally this is a great big grinning image of your mug. "
+            "Make the most of it."),
+        constraint=valid_gotchi)
 
     addressline1 = TextLine(
             title=_('Address'), required=True, readonly=False,
@@ -166,8 +188,14 @@ class IPerson(IHasSpecifications):
             "This comment may be displayed verbatim in a web page, so it "
             "has to follow some structural constraints, that is, it must "
             "be of the form: 'when %(action_details)s' (e.g 'when the "
-            "foo package was imported into Ubuntu Breezy')."),
+            "foo package was imported into Ubuntu Breezy'). The only "
+            "exception to this is when we allow users to create Launchpad "
+            "profiles through the /people/+newperson page."),
         required=False, readonly=False)
+    # XXX: We can't use a Choice field here because we don't have a vocabulary
+    # which contains valid people but not teams, and we don't really need one
+    # appart from here. -- Guilherme Salgado, 2006-11-10
+    registrant = Attribute('The user who created this profile.')
     # bounty relations
     ownedBounties = Attribute('Bounties issued by this person.')
     reviewerBounties = Attribute('Bounties reviewed by this person.')
@@ -263,14 +291,6 @@ class IPerson(IHasSpecifications):
         "feedback, sorted newest first.")
     subscribed_specs = Attribute(
         "Specifications this person has subscribed to, sorted newest first.")
-    tickets = Attribute(
-        "Any support requests related to this person. They might be created, "
-        "or assigned, or answered by, or subscribed to by this person.")
-    assigned_tickets = Attribute("Tickets assigned to this person.")
-    created_tickets = Attribute("Tickets created by this person.")
-    answered_tickets = Attribute("Tickets answered by this person.")
-    subscribed_tickets = Attribute(
-        "Tickets to which this person subscribes.")
     teamowner = Choice(title=_('Team Owner'), required=False, readonly=False,
                        vocabulary='ValidTeamOwner')
     teamownerID = Int(title=_("The Team Owner's ID or None"), required=False,
@@ -279,7 +299,7 @@ class IPerson(IHasSpecifications):
                            readonly=False)
 
     preferredemail = TextLine(
-        title=_("Preferred Email Address"), 
+        title=_("Preferred Email Address"),
         description=_("The preferred email address for this person. The one "
                       "we'll use to communicate with them."),
         readonly=True)
@@ -332,14 +352,23 @@ class IPerson(IHasSpecifications):
             "this is set to None, then this Person has not been merged "
             "into another and is still valid"))
 
-    touched_pofiles = Attribute(
-        "The set of pofiles which the person has worked on in some way.")
+    translation_history = Attribute(
+        "The set of POFileTranslator objects that represent work done "
+        "by this translator.")
+
+    translation_groups = Attribute(
+        "The set of TranslationGroup objects this person is a member of.")
 
     # title is required for the Launchpad Page Layout main template
     title = Attribute('Person Page Title')
 
     browsername = Attribute(
         'Return a textual name suitable for display in a browser.')
+
+    @invariant
+    def personCannotHaveEmblem(person):
+        if person.emblem is not None and not person.isTeam():
+            raise Invalid('Only teams can have an emblem.')
 
     def getBugContactPackages():
         """Return a list of packages for which this person is a bug contact.
@@ -397,7 +426,7 @@ class IPerson(IHasSpecifications):
         """Return all requests made by this person that were sent to the
         shipping company already.
 
-        This only includes requests for CDs of 
+        This only includes requests for CDs of
         ShipItConstants.current_distrorelease.
         """
 
@@ -423,7 +452,7 @@ class IPerson(IHasSpecifications):
         """
 
     def latestUploadedButNotMaintainedPackages():
-        """Return SourcePackageReleases created by this person but 
+        """Return SourcePackageReleases created by this person but
         not maintained by him.
 
         This method will only include the latest source package release
@@ -435,15 +464,13 @@ class IPerson(IHasSpecifications):
 
         If this person doesn't have a preferred email, <email> will be set as
         this person's preferred one. Otherwise it'll be set as VALIDATED and
-        this person will keep its old preferred email. This is why this method
-        can't be called with person's preferred email as argument.
+        this person will keep their old preferred email.
 
         This method is meant to be the only one to change the status of an
         email address, but as we all know the real world is far from ideal and
         we have to deal with this in one more place, which is the case when
         people explicitly want to change their preferred email address. On
-        that case, though, all we have to do is assign the new preferred email
-        to person.preferredemail.
+        that case, though, all we have to do is use person.setPreferredEmail().
         """
 
     def hasMembershipEntryFor(team):
@@ -561,6 +588,52 @@ class IPerson(IHasSpecifications):
         If the given language is not present, nothing  will happen.
         """
 
+    def getSupportedLanguages():
+        """Return a set containing the languages in which support is provided.
+
+        For a person, this is equal to the list of known languages.
+        For a team that doesn't have any explicit known languages set, this
+        will be equal to union of all the languages known by its members.
+        """
+
+    def searchTickets(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
+                      language=None, participation=None,
+                      needs_attention=False, sort=None):
+        """Search the person's tickets.
+
+        :search_text: A string that is matched against the ticket
+        title and description. If None, the search_text is not included as
+        a filter criteria.
+
+        :status: A sequence of TicketStatus Items. If None or an empty
+        sequence, the status is not included as a filter criteria.
+
+        :language: An ILanguage or a sequence of ILanguage objects to match
+        against the ticket's language. If None or an empty sequence,
+        the language is not included as a filter criteria.
+
+        :participation: A list of TicketParticipation that defines the set
+        of relationship to tickets that will be searched. If None or an empty
+        sequence, all relationships are considered.
+
+        :needs_attention: If this flag is true, only tickets needing attention
+        from the person will be included. Tickets needing attention are those
+        owned by the person in the ANSWERED or NEEDSINFO state, as well as,
+        those not owned by the person but on which the person requested for
+        more information or gave an answer and that are back in the OPEN
+        state.
+
+        :sort:  An attribute of TicketSort. If None, a default value is used.
+        When there is a search_text value, the default is to sort by RELEVANCY,
+        otherwise results are sorted NEWEST_FIRST.
+
+        """
+
+    def getTicketLanguages():
+        """Return a set of ILanguage used by the tickets in which this person "
+        is involved.
+        """
+
 
 class ITeam(IPerson):
     """ITeam extends IPerson.
@@ -580,7 +653,7 @@ class IPersonSet(Interface):
     def createPersonAndEmail(
             email, rationale, comment=None, name=None, displayname=None,
             password=None, passwordEncrypted=False,
-            hide_email_addresses=False):
+            hide_email_addresses=False, registrant=None):
         """Create a new Person and an EmailAddress with the given email.
 
         The comment must be of the following form: "when %(action_details)s"
@@ -594,7 +667,8 @@ class IPersonSet(Interface):
         NEW) for the new Person.
         """
 
-    def ensurePerson(email, displayname, rationale, comment=None):
+    def ensurePerson(email, displayname, rationale, comment=None,
+                     registrant=None):
         """Make sure that there is a person in the database with the given
         email address. If necessary, create the person, using the
         displayname given.
@@ -638,6 +712,12 @@ class IPersonSet(Interface):
         If no orderBy is specified the results will be ordered using the
         default ordering specified in Person._defaultOrder.
         """
+
+    def getPOFileContributors(pofile):
+        """Return people that have contributed to the specified POFile."""
+
+    def getPOFileContributorsByDistroRelease(self, distrorelease, language):
+        """Return people who translated strings in distroRelease to language."""
 
     def getAllPersons(orderBy=None):
         """Return all Persons, ignoring the merged ones.
@@ -780,5 +860,5 @@ class ITeamCreation(ITeam):
             "this team will be sent to all team members. After finishing the "
             "team creation, a new message will be sent to this address with "
             "instructions on how to finish its registration."),
-        constraint=valid_unregistered_email)
+        constraint=validate_new_team_email)
 
