@@ -68,7 +68,7 @@ Let's make 1.5 the development series.
    >>> user_browser.getControl('Development focus').displayValue = ['firefox 1.5']
    >>> user_browser.getControl('Change').click()
 
-And now check the ordering of the series:#
+And now check the ordering of the series:
 
    >>> print_portlet_area_series(user_browser.contents)
    <a href="http://launchpad.dev/firefox/1.5">1.5</a>

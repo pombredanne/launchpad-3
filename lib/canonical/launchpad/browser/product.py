@@ -344,12 +344,6 @@ def _sort_distros(a, b):
         return -1
     return cmp(a['name'], b['name'])
 
-def _sort_series(a, b):
-    """If it starts with a digit, then reverse sort, otherwise alphabetic."""
-    #if a and a[0] in DIGITS and b and b[0] in DIGITS:
-    #    return cmp(expand_numbers(b.name), expand_numbers(a.name))
-    #else:
-    return cmp(expand_numbers(a.name), expand_numbers(b.name))
 
 class ProductSetContextMenu(ContextMenu):
 
