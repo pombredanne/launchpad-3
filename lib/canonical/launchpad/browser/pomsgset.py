@@ -403,6 +403,9 @@ class BaseTranslationView(LaunchpadView):
         self.size = self.batchnav.currentBatch().size
 
         if (self.request.method == 'POST'):
+            if self.user is None:
+                raise UnexpectedFormData, (
+                    'Anonymous users cannot do POST submissions.')
             try:
                 # Try to get the timestamp when the submitted form was
                 # created. We use it to detect whether someone else updated
@@ -937,6 +940,9 @@ class POMsgSetView(LaunchpadView):
         self.translations = translations
         self.error = error
         self.is_fuzzy = is_fuzzy
+        # If the user is not logged in, we should note that the fuzzy/Needs
+        # Review checkbox is disabled so it cannot be changed. We use this
+        # flag to note it.
         self.is_fuzzy_disabled = self.user is None
 
         # Set up alternative language variables. XXX: This could be made

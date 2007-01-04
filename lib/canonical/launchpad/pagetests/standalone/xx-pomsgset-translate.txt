@@ -31,15 +31,14 @@ interested on doesn't have any translation.
   ...     return (td_id.renderContents(), td_msgid.renderContents(),
   ...             td_translation.renderContents())
 
-
 First, we need to be sure that anonymous users are able to browse translations
 but they don't have a chance to change anything.
 
   >>> browser.open(
-  ...     'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/'
+  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
   ...     '+pots/evolution-2.2/es/5')
   >>> browser.url
-  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/5/+translate'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/5/+translate'
 
 The set of things that should be hidden in this case are:
 
@@ -83,10 +82,10 @@ anymore, we check now that we can see them when we are logged in.
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
   >>> browser.open(
-  ...     'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/'
+  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
   ...     '+pots/evolution-2.2/es/5')
   >>> browser.url
-  'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/5/+translate'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/5/+translate'
 
 And now, we can see that the tags exist:
 
@@ -112,6 +111,15 @@ And now, we can see that the tags exist:
     <input type="checkbox" value="fuzzy" name="msgset_134_es_needsreview" />
     Someone should review this translation
   </label>
+
+Also, any anonymous POST submission should fail:
+
+  >>> print http(r"""
+  ... POST /ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/5/+translate HTTP/1.1
+  ... """)
+  HTTP/1.1 500 Internal Server Error
+  ...
+  ...UnexpectedFormData: Anonymous users cannot do POST submissions...
 
 
 Now, we are going to test common parts of the navigation.

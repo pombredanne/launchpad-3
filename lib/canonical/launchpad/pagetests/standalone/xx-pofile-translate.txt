@@ -1,0 +1,20 @@
+This pagetest is used to check general behaviour of IPOFile translation
+submissions.
+
+For specific tests, you can see:
+
+  xx-pofile-translate-empty-strings-without-validation.txt
+  xx-pofile-translate-gettext-error-middle-page.txt
+  xx-pofile-translate-html-tags-escape.txt
+  xx-pofile-translate-lang-direction.txt
+  xx-pofile-translate-message-filtering.txt
+  xx-pofile-translate-newlines-check.txt
+
+Any anonymous POST submission should fail:
+
+  >>> print http(r"""
+  ... POST /ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate HTTP/1.1
+  ... """)
+  HTTP/1.1 500 Internal Server Error
+  ...
+  ...UnexpectedFormData: Anonymous users cannot do POST submissions...
