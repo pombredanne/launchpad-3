@@ -798,7 +798,7 @@ class SpecificationTreeImageTag(SpecificationTreeGraphView):
     def render(self):
         """Render the image and image map tags for this dependency graph."""
         return (u'<img src="deptree.png" usemap="#deptree" />\n' +
-                self.renderGraphvizGraph('cmapx'))
+                self.renderGraphvizGraph('cmapx').decode('UTF-8'))
 
 
 class SpecificationTreeDotOutput(SpecificationTreeGraphView):

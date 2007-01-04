@@ -11,6 +11,7 @@ COMMENT ON COLUMN Branch.last_mirrored IS 'The time when the branch was last mir
 COMMENT ON COLUMN Branch.last_mirrored_id IS 'The revision ID of the branch when it was last mirrored.';
 COMMENT ON COLUMN Branch.last_scanned IS 'The time when the branch was last scanned.';
 COMMENT ON COLUMN Branch.last_scanned_id IS 'The revision ID of the branch when it was last scanned.';
+COMMENT ON COLUMN Branch.revision_count IS 'The number of revisions in the associated bazaar branch revision_history.';
 
 /* Bug */
 

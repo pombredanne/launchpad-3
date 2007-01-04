@@ -54,7 +54,7 @@ Check a bug that is a duplicate.
 Get bug text page for a product.
 
   >>> print http(r"""
-  ... GET /products/firefox/+bugs-text HTTP/1.1
+  ... GET /firefox/+bugs-text HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...

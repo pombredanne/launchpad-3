@@ -1,7 +1,7 @@
 Check that the project RDF export works.
 
   >>> print http(r"""
-  ... GET /projects/mozilla/+rdf HTTP/1.1
+  ... GET /mozilla/+rdf HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   Content-Disposition: attachment; filename=mozilla-project.rdf
