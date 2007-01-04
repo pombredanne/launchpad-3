@@ -422,7 +422,11 @@ class ProductSeries(SQLBase, BugTargetBase):
                     " where datepublishedsync is set,"
                     " but import_branch.last_mirror is NULL."
                     % (self.id,))
-        if self.datelastsynced < self.import_branch.last_mirrored:
+        if self.datelastsynced is None:
+            self.datepublishedsync = None
+        elif self.import_branch.last_mirrored is None:
+            pass # datepublishedsync is already None
+        elif self.datelastsynced < self.import_branch.last_mirrored:
             self.datepublishedsync = self.datelastsynced
         self.datelastsynced = UTC_NOW
 
