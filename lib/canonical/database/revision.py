@@ -76,3 +76,6 @@ def confirm_dbrevision():
                 % patch_tuple
                 )
 
+def confirm_dbrevision_on_startup(*ignored):
+    """Event handler that calls confirm_dbrevision"""
+    confirm_dbrevision()
