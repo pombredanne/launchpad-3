@@ -9,13 +9,13 @@ Get hold of a PO file which has never been exported.
     >>> from canonical.launchpad.database import POFile
     >>> pofile = POFile.get(1)
 
-Because it has never been exported, it doesn't have a Librarian file
-containing a cached export.
+Because it has been exported before, it has a Librarian file containing a
+cached export.
 
     >>> pofile.exportfile is None
-    True
+    False
 
-And if we ask it, it will tell us that it doesn't have a valid cache.
+However, it was exported with old data, so it doesn't have a valid cache.
 
     >>> pofile.validExportCache()
     False
