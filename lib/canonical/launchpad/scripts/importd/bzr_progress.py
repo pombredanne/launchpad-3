@@ -63,15 +63,9 @@ class BatchUIFactory(SilentUIFactory):
 
 
 class BatchProgress(DummyProgress):
-    """Progress-bar that gives simple line-by-line progress.
+    """Progress-bar that gives simple line-by-line progress."""
 
-    Since bzrlib sometimes create multiple top-level Progress instances (that's
-    a bug when it does), all BatchProgress instances delegate printing to the
-    same BatchProgressPrinter instance, so it can effectively implement
-    rate-limiting.
-    """
-
-    # XXX: This class derives from bzrlib's DummyProgress. To avoid clashing
+    # This class derives from bzrlib's DummyProgress. To avoid clashing
     # with potential "_protected" attributes in the base class, all internal
     # attributes introduced here are "__private". -- David Allouche 2006-12-14
 
@@ -80,6 +74,11 @@ class BatchProgress(DummyProgress):
     def __init__(self, *args, **kwargs):
         DummyProgress.__init__(self, *args, **kwargs)
         self.__level = 0
+
+        # Since bzrlib sometimes create multiple top-level Progress instances
+        # (that's a bug when it does), all BatchProgress instances delegate
+        # printing to the same BatchProgressPrinter instance, so it can
+        # effectively implement rate-limiting. -- David Allouche 2006-12-14
         if BatchProgress.__printer is None:
             BatchProgress.__printer = BatchProgressPrinter()
 
@@ -146,7 +145,7 @@ class BatchProgressPrinter:
         :param level: nesting level of the calling BatchProgress instance.
         :param msg: update message (passed by bzrlib).
         :param current: current step in this progress (passed by bzrlib).
-        :param totla: total steps in this progress (passed by bzrlib).
+        :param total: total steps in this progress (passed by bzrlib).
         """
         self._current_level = level
         if current is None and total is None:
