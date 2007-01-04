@@ -17,8 +17,8 @@
 </metal:heading>
 
 <div metal:fill-slot="main"
-     tal:define="message view/performQueueAction;
-                 setup view/setupQueueList;
+     tal:define="setup view/setupQueueList;
+                 message view/performQueueAction;
                  error view/error|nothing">
 
   <p class="informational message"
