@@ -1,0 +1,84 @@
+A test to demonstrate the correct ordering for product releases.
+
+A helper function to print out the product series part of the portlet.
+
+   >>> def print_portlet_area_series(contents):
+   ...   portlet = find_portlet(contents, 'Mozilla Firefox')
+   ...   lists = portlet.fetch('ul')
+   ...   # The registered series is the second list in the portlet
+   ...   series = lists[1].fetch('li')
+   ...   for name in series:
+   ...      print name.renderContents()
+
+A helper function to print out the product series on the main page.
+
+   >>> def print_content_area_series(contents):
+   ...   series_divs = find_tags_by_id(contents, 'product_series')
+   ...   for series in series_divs:
+   ...     anchors = series.fetch('a')
+   ...     # first anchor is the product series link
+   ...     print anchors[0]
+
+Start by going to the firefox page.
+
+   >>> user_browser.open('http://launchpad.dev/firefox')
+
+Check the portlet order:
+
+   >>> print_portlet_area_series(user_browser.contents)
+   <a href="http://launchpad.dev/firefox/trunk">trunk</a>
+   <small>(development focus)</small>
+   <a href="http://launchpad.dev/firefox/1.0">1.0</a>
+
+And now the content order.  Again, development focus at the top:
+
+   >>> print_content_area_series(user_browser.contents)
+   <a href="http://launchpad.dev/firefox/trunk">trunk</a>
+   <a href="http://launchpad.dev/firefox/1.0">1.0</a>
+   
+Now let's add another product series for 1.5.
+
+   >>> user_browser.getLink('Add Release Series').click()
+   >>> user_browser.getControl('Name').value = '1.5'
+   >>> user_browser.getControl('Summary').value= 'A slightly newer firefox'
+   >>> user_browser.getControl('Add Series').click()
+
+And go back to the main product page
+
+   >>> user_browser.getLink('Mozilla Firefox').click()
+
+And check the ordering of the series.
+
+   >>> print_portlet_area_series(user_browser.contents)
+   <a href="http://launchpad.dev/firefox/trunk">trunk</a>
+   <small>(development focus)</small>
+   <a href="http://launchpad.dev/firefox/1.5">1.5</a>
+   <a href="http://launchpad.dev/firefox/1.0">1.0</a>
+
+And now the content order.  Again, development focus at the top:
+
+   >>> print_content_area_series(user_browser.contents)
+   <a href="http://launchpad.dev/firefox/trunk">trunk</a>
+   <a href="http://launchpad.dev/firefox/1.5">1.5</a>
+   <a href="http://launchpad.dev/firefox/1.0">1.0</a>
+
+Let's make 1.5 the development series.
+
+   >>> user_browser.getLink('Edit Product Details').click()
+   >>> user_browser.getControl('Development focus').displayValue = ['firefox 1.5']
+   >>> user_browser.getControl('Change').click()
+
+And now check the ordering of the series:#
+
+   >>> print_portlet_area_series(user_browser.contents)
+   <a href="http://launchpad.dev/firefox/1.5">1.5</a>
+   <small>(development focus)</small>
+   <a href="http://launchpad.dev/firefox/1.0">1.0</a>
+   <a href="http://launchpad.dev/firefox/trunk">trunk</a>
+
+
+   >>> print_content_area_series(user_browser.contents)
+   <a href="http://launchpad.dev/firefox/1.5">1.5</a>
+   <a href="http://launchpad.dev/firefox/1.0">1.0</a>
+   <a href="http://launchpad.dev/firefox/trunk">trunk</a>
+

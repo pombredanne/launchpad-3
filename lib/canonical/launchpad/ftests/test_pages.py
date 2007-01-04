@@ -24,7 +24,7 @@ class DuplicateIdError(Exception):
 
 
 def find_tag_by_id(content, id):
-    """Find and return the tags with the given ID"""
+    """Find and return the tag with the given ID"""
     soup = BeautifulSoup(content)
     elements_with_id = soup.findAll(attrs={'id': id})
     if not elements_with_id:
@@ -34,6 +34,12 @@ def find_tag_by_id(content, id):
     else:
         raise DuplicateIdError(
             'Found %d elements with id %r' % (len(elements_with_id), id))
+
+
+def find_tags_by_id(content, id):
+    """Find and return the tags with the given ID"""
+    soup = BeautifulSoup(content)
+    return soup.findAll(attrs={'id': id})
 
 
 def find_tags_by_class(content, class_):
@@ -72,6 +78,7 @@ def find_main_content(content):
 
 def setUpGlobs(test):
     test.globs['find_tag_by_id'] = find_tag_by_id
+    test.globs['find_tags_by_id'] = find_tags_by_id
     test.globs['find_tags_by_class'] = find_tags_by_class
     test.globs['find_portlet'] = find_portlet
     test.globs['find_main_content'] = find_main_content

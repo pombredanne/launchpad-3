@@ -98,7 +98,7 @@
       </tal:has-project>
       <b>Registered series:</b>
       <ul>
-        <li tal:repeat="series context/serieslist">
+        <li tal:repeat="series view/serieslist">
           <a tal:attributes="href series/fmt:url"
              tal:content="series/name">1.0</a>
           <small tal:condition="python:series == context.development_focus"
