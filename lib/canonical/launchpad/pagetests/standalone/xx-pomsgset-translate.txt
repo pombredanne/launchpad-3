@@ -152,9 +152,7 @@ First what we represent in the form when there is no translation:
   >>> (msgid_number, msgid, translation) = getMessageValues(browser.contents)
   >>> print msgid_number
   13.
-  <a name="13">
-    <input type="hidden" name="msgset_142" />
-  </a>
+  <input type="hidden" name="msgset_142" />
   >>> print msgid
   Migrating `<code>%s</code>':
   >>> print translation
@@ -176,7 +174,7 @@ Let's submit an invalid value for this message #13.
   >>> for tag in find_tags_by_class(browser.contents, 'error'):
   ...     print tag
   <div class="error message">There is an error in the translation you provided. Please correct it before continuing.</div>
-  <tr class="error">
+  <tr class="error translation">
     <th colspan="3">
       <strong>Error in Translation:</strong>
     </th>
@@ -193,9 +191,7 @@ The message is still without translation:
   >>> (msgid_number, msgid, translation) = getMessageValues(browser.contents, has_errors=True)
   >>> print msgid_number
   13.
-  <a name="13">
-    <input type="hidden" name="msgset_142" />
-  </a>
+  <input type="hidden" name="msgset_142" />
   >>> print msgid
   Migrating `<code>%s</code>':
   >>> print translation
@@ -225,13 +221,11 @@ Check that the message #13 has the new value we submitted.
   >>> (msgid_number, msgid, translation) = getMessageValues(browser.contents)
   >>> print msgid_number
   13.
-  <a name="13">
-    <input type="hidden" name="msgset_142" />
-  </a>
+  <input type="hidden" name="msgset_142" />
   >>> print msgid
   Migrating `<code>%s</code>':
   >>> print translation
-  foo %s
+  <div lang="es" dir="ltr">foo <code>%s</code></div>
 
 And now, we get someone as the Translator and also, we have a reviewer (in
 this case, it's the same):
@@ -369,7 +363,7 @@ We submit it
   >>> for tag in find_tags_by_class(slow_submission.contents, 'error'):
   ...     print tag
   <div class="error message">There is an error in the translation you provided. Please correct it before continuing.</div>
-  <tr class="error">
+  <tr class="error translation">
     <th colspan="3">
       <strong>Error in Translation:</strong>
     </th>
@@ -389,13 +383,11 @@ Also, we should still have previous translation:
   ...     slow_submission.contents, has_errors=True)
   >>> print msgid_number
   14.
-  <a name="14">
-    <input type="hidden" name="msgset_143" />
-  </a>
+  <input type="hidden" name="msgset_143" />
   >>> print msgid
   The location and hierarchy of the Evolution contact...
   >>> translation
-  'blah'
+  '\n<div lang="es" dir="ltr">blah</div>\n'
 
 But also, the new one should appear in the form.
 

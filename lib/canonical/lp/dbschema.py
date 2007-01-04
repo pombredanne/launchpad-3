@@ -33,6 +33,7 @@ __all__ = (
 'BountyStatus',
 'BranchRelationships',
 'BranchLifecycleStatus',
+'BranchLifecycleStatusFilter',
 'BranchReviewStatus',
 'BugBranchStatus',
 'BugNominationStatus',
@@ -2658,6 +2659,76 @@ class BranchLifecycleStatus(DBSchema):
         """, sortkey=50)
 
 
+# XXX thumper 2006-12-15 Has copies of BranchLifecycleStatus
+# until I find a better way of extending an existing list.
+# The dbschema refactoring should make this all become simple.
+class BranchLifecycleStatusFilter(DBSchema):
+    """Branch Lifecycle Status Filter
+
+    Used to populate the branch lifecycle status filter widget.
+    UI only.
+    """
+
+    CURRENT = Item(-1, """
+        New, Experimental, Development or Mature
+
+        Show the currently active branches.
+        """)
+
+    ALL = Item(0, """
+        Any Status
+
+        Show all the branches.
+        """)
+
+    NEW = Item(1, """
+        New
+
+        This branch has just been created, and we know nothing else about
+        it.
+        """, sortkey=60)
+
+    EXPERIMENTAL = Item(10, """
+        Experimental
+
+        This branch contains code that is considered experimental. It is
+        still under active development and should not be merged into
+        production infrastructure.
+        """, sortkey=30)
+
+    DEVELOPMENT = Item(30, """
+        Development
+
+        This branch contains substantial work that is shaping up nicely, but
+        is not yet ready for merging or production use. The work is
+        incomplete, or untested.
+        """, sortkey=20)
+
+    MATURE = Item(50, """
+        Mature
+
+        The developer considers this code mature. That means that it
+        completely addresses the issues it is supposed to, that it is tested,
+        and that it has been found to be stable enough for the developer to
+        recommend it to others for inclusion in their work.
+        """, sortkey=10)
+
+    MERGED = Item(70, """
+        Merged
+
+        This code has successfully been merged into its target branch(es),
+        and no further development is anticipated on the branch.
+        """, sortkey=40)
+
+    ABANDONED = Item(80, """
+        Abandoned
+
+        This branch contains work which the author has abandoned, likely
+        because it did not prove fruitful.
+        """, sortkey=50)
+
+
+
 class BranchReviewStatus(DBSchema):
     """Branch Review Cycle
 
@@ -3233,73 +3304,79 @@ class MirrorPulseType(DBSchema):
 class MirrorSpeed(DBSchema):
     """The speed of a given mirror."""
 
-    S128K = Item(1, """
+    S128K = Item(10, """
         128 Kbps
 
         The upstream link of this mirror can make up to 128Kb per second.
         """)
 
-    S256K = Item(2, """
+    S256K = Item(20, """
         256 Kbps
 
         The upstream link of this mirror can make up to 256Kb per second.
         """)
 
-    S512K = Item(3, """
+    S512K = Item(30, """
         512 Kbps
 
         The upstream link of this mirror can make up to 512Kb per second.
         """)
 
-    S1M = Item(4, """
+    S1M = Item(40, """
         1 Mbps
 
         The upstream link of this mirror can make up to 1Mb per second.
         """)
 
-    S2M = Item(5, """
+    S2M = Item(50, """
         2 Mbps
 
         The upstream link of this mirror can make up to 2Mb per second.
         """)
 
-    S10M = Item(6, """
+    S10M = Item(60, """
         10 Mbps
 
         The upstream link of this mirror can make up to 10Mb per second.
         """)
 
-    S100M = Item(7, """
+    S45M = Item(65, """
+        45 Mbps
+
+        The upstream link of this mirror can make up to 45 Mb per second.
+        """)
+
+    S100M = Item(70, """
         100 Mbps
 
         The upstream link of this mirror can make up to 100Mb per second.
         """)
 
-    S1G = Item(8, """
+    S1G = Item(80, """
         1 Gbps
 
         The upstream link of this mirror can make up to 1 gigabit per second.
         """)
 
-    S2G = Item(9, """
+    S2G = Item(90, """
         2 Gbps
 
         The upstream link of this mirror can make up to 2 gigabit per second.
         """)
 
-    S4G = Item(10, """
+    S4G = Item(100, """
         4 Gbps
 
         The upstream link of this mirror can make up to 4 gigabit per second.
         """)
 
-    S10G = Item(11, """
+    S10G = Item(110, """
         10 Gbps
 
         The upstream link of this mirror can make up to 10 gigabits per second.
         """)
 
-    S20G = Item(12, """
+    S20G = Item(120, """
         20 Gbps
 
         The upstream link of this mirror can make up to 20 gigabits per second.
