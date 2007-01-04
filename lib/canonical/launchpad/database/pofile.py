@@ -727,6 +727,13 @@ class POFile(SQLBase, RosettaStats):
             return True
 
         change_time = self.latestsubmission.datecreated
+
+        for selection in self.latestsubmission.active_selections:
+            if selection is not None:
+                if (selection.activesubmission is not None and
+                    selection.date_reviewed > change_time):
+                    change_time = selection.date_reviewed
+
         return change_time < self.exporttime
 
     def updateExportCache(self, contents):
