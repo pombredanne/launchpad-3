@@ -1,4 +1,4 @@
-<tal:XXX 2006-12-04: No longer used in Launchpad 1.0. -->
+<tal:XXX condition="nothing">2006-12-04: Not used in Launchpad 1.0.</tal:XXX>
 <div class="portlet">
 
   <h2><span tal:replace="context/displayname">Warty

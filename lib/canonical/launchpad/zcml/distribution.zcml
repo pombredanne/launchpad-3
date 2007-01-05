@@ -38,7 +38,7 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistribution"
         layer="canonical.launchpad.layers.BugsLayer"
-        name="+bugs"
+        name="+bugs-index"
         />
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistribution"
@@ -165,10 +165,16 @@
             lp:url="/distros/$Distribution.name/+members"
             />
         <browser:page
-            name="+bugs"
+            name="+bugs-index"
             facet="bugs"
             template="../templates/distribution-bugs.pt"
-            lp:url="/distros/$Distribution.name/+bugs"
+            lp:url="/$Distribution.name/+bugs"
+            />
+        <browser:page
+            name="+bugs"
+            facet="bugs"
+            template="../templates/buglisting-default.pt"
+            lp:url="/$Distribution.name/+bugs?..."
             />
         <browser:page
             name="+translations"

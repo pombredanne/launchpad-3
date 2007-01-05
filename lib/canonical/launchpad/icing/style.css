@@ -792,6 +792,10 @@ h1, h2, h3, #maincontent :link { /* On Overview tab or tab-less pages */
   background: none;
   color: #90b51a; /* darkest color from locationbar_em_bg.gif */
 }
+#maincontent :visited {
+  background: none;
+  color: #708d3f; /* halfway between #90b51a; and #656565; */
+}
 /* tab-branches */
 body.tab-branches #mainarea div.x {
   background-image: url(mainarea_tab1_top.gif);
@@ -833,10 +837,13 @@ body.tab-branches #mainarea #portlets .portlet.active div {
 body.tab-branches #actions {background-color: #ffc;}
 body.tab-branches #actions h2 {background-color: #f3cb00;}
 .tab-branches h1, .tab-branches h2, .tab-branches h3,
-.tab-branches #application-footer strong,
-.tab-branches #maincontent :link, .tab-branches #maincontent :visited {
+.tab-branches #application-footer strong, .tab-branches #maincontent :link {
   background: none;
   color: #f3cb00; /* "it fits nicely with the Bazaar logo" -- sabdfl */
+}
+body.tab-branches #maincontent :visited {
+  background: none;
+  color: #ac9832; /* halfway between #f3cb00; and #656565; */
 }
 /* tab-bugs */
 body.tab-bugs #mainarea div.x {
@@ -883,6 +890,10 @@ body.tab-bugs #actions h2 {background-color: #c03;}
   background: none;
   color: #c03;
 }
+body.tab-bugs #maincontent :visited {
+  background: none;
+  color: #98324c; /* halfway between #c03; and #656565; */
+}
 /* tab-features */
 body.tab-specifications #mainarea div.x {
   background-image: url(mainarea_tab4_top.gif);
@@ -902,11 +913,11 @@ body.tab-specifications #mainarea ul#applicationchooser li.tab-specifications {
 }
 body.tab-specifications #mainarea #portlets .portlet.active h2 a,
 body.tab-specifications #mainarea div#portlets div.portlet.active a {
-  background-color: #3F3CCC;
+  background-color: #F0CB00;
 }
 body.tab-specifications #mainarea #portlets .portlet.active h2 a:hover,
 body.tab-specifications #mainarea div#portlets div.portlet.active a:hover {
-  background-color: #5350E0;
+  background-color: #FFE40F;
 }
 body.tab-specifications #mainarea #portlets .portlet.active div,
 body.tab-specifications #mainarea #portlets .portlet.active ul,
@@ -915,15 +926,19 @@ body.tab-specifications #mainarea #portlets .portlet.active ul li a:hover,
 body.tab-specifications #mainarea div#portlets div.portlet.active ul,
 body.tab-specifications #mainarea div#portlets div.portlet.active ul li a,
 body.tab-specifications #mainarea div#portlets div.portlet.active ul li a:hover {
-  background-color: #F4F4FC;
+  background-color: #FEFCF0;
 }
-body.tab-specifications #actions {background-color: #eef;}
-body.tab-specifications #actions h2 {background-color: #3f3ccc;}
+body.tab-specifications #actions {background-color: #eff;}
+body.tab-specifications #actions h2 {background-color: #159cc8;}
 .tab-specifications h1, .tab-specifications h2, .tab-specifications h3,
 .tab-specifications #application-footer strong,
-.tab-specifications #maincontent :link, .tab-specifications #maincontent :visited {
+.tab-specifications #maincontent :link {
   background: none;
-  color: #3f3ccc; /* darkest color from mainarea_tab4-* */
+  color: #159cc8; /* darkest color from mainarea_tab4-* */
+}
+.tab-specifications #maincontent :visited {
+  background: none;
+  color: #3d8096; /* halfway between #159cc8; and #656565; */
 }
 /* tab-translations */
 body.tab-translations #mainarea div.x {
@@ -963,12 +978,16 @@ body.tab-translations #mainarea #portlets .portlet.active div {
   border-left: 4px solid #f1f9fc;
   border-right: 4px solid #f1f9fc;
 }
-body.tab-translations #actions {background-color: #eff;}
-body.tab-translations #actions h2 {background-color: #159cc8;}
+body.tab-translations #actions {background-color: #fcf;}
+body.tab-translations #actions h2 {background-color: #962667;}
 .tab-translations h1, .tab-translations h2, .tab-translations h3,
-.tab-translations #maincontent :link, .tab-translations #maincontent :visited {
+.tab-translations #maincontent :link {
   background: none;
-  color: #159cc8; /* darkest color from mainarea_tab5-* */
+  color: #962667; /* darkest color from mainarea_tab5-* */
+}
+.tab-translations #maincontent :visited {
+  background: none;
+  color: #7d4566; /* halfway between #962667; and #656565; */
 }
 /* tab-support */
 body.tab-support #mainarea div.x {
@@ -989,11 +1008,11 @@ body.tab-support #mainarea ul#applicationchooser li.tab-support {
 }
 body.tab-support #mainarea #portlets .portlet.active h2 a,
 body.tab-support #mainarea div#portlets div.portlet.active a {
-  background-color: #F0CB00;
+  background-color: #3F3CCC;
 }
 body.tab-support #mainarea #portlets .portlet.active h2 a:hover,
 body.tab-support #mainarea div#portlets div.portlet.active a:hover {
-  background-color: #FFE40F;
+  background-color: #5350E0;
 }
 body.tab-support #mainarea #portlets .portlet.active div,
 body.tab-support #mainarea #portlets .portlet.active ul,
@@ -1002,12 +1021,24 @@ body.tab-support #mainarea #portlets .portlet.active ul li a:hover,
 body.tab-support #mainarea div#portlets div.portlet.active ul,
 body.tab-support #mainarea div#portlets div.portlet.active ul li a,
 body.tab-support #mainarea div#portlets div.portlet.active ul li a:hover {
-  background-color: #FEFCF0;
+  background-color: #F4F4FC;
 }
 body.tab-support #mainarea #portlets .portlet.active div {
-  border-left: 4px solid #FEFCF0;
-  border-right: 4px solid #FEFCF0;
+  border-left: 4px solid #F4F4FC;
+  border-right: 4px solid #F4F4FC;
 }
+body.tab-support #actions {background-color: #eef;}
+body.tab-support #actions h2 {background-color: #3f3ccc;}
+.tab-support h1, .tab-support h2, .tab-support h3,
+.tab-support #maincontent :link {
+  background: none;
+  color: #3f3ccc;
+}
+.tab-support #maincontent :visited {
+  background: none;
+  color: #525098; /* halfway between #3f3ccc; and #656565; */
+}
+
 ul#applicationchooser a, ul#applicationchooser a:hover {
   color: #000;
 }
@@ -1038,7 +1069,7 @@ body {
   padding: 0 0 20px 0;
 }
 #portlets {
-  width: 240px;
+  width: 200px;
   margin: 0 0 20px -100%;
   padding: 0 20px;
   right: 240px;
@@ -1271,4 +1302,196 @@ table.listing img {
 }
 table.listing tr.secondary>th, table.listing tr.secondary td {
   border-top: none;
+}
+
+/* Dynamic menus: */
+
+#menuroot li li:hover {
+  background: #8cacbb;
+}
+#menuroot li li {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  background: #dee7ec;
+}
+#menuroot li li a {
+  display: block;
+  width: auto;
+  padding: 0 6px !important;
+}
+#menuroot li li a:hover {
+  background: #8cacbb;
+}
+ul.menuroot > li > ul.menu {
+  z-index: 2000;
+}
+ul.menuroot, ul.menu {
+  display: block;
+}
+* html ul.menuroot, * html ul.menu {
+  position: absolute;
+}
+#menucontainer div > ul, #menucontainer li > ul {
+  position: absolute;
+}
+ul.menuroot {
+  top: 0px;
+  background-color: #dee7ec;
+  font-family: sans-serif;
+  font-size: 0.675em;
+  width: 100%;
+}
+.menuroot {
+  border: 1px solid;
+  border-color: #fff #8cacbb #8cacbb #fff;
+}
+.scrollbutton.up {
+  background: url(/@@/arrowUp) center center no-repeat;
+}
+.scrollbutton.down {
+  background: url(/@@/arrowDown) center center no-repeat;
+}
+.item, .scrollbutton {
+  border: 0px solid;
+  border-color: #fff #8cacbb #8cacbb #fff;
+  white-space: nowrap;
+  margin: 0px;
+  padding: 0 2em 0 0.5em;
+  line-height: 2em;
+  height: 2em;
+  background-color: #dee7ec;
+  min-width: 3em;
+  color: black;
+  cursor: default;
+}
+.menu .item, .scrollbutton.down, .scrollbutton.up {
+  border-left-width: 1px;
+  border-right-width: 1px;
+  padding: 0 0.5em;
+}
+.menu, .menuroot {
+  list-style-type: none;
+  padding: 0px;
+  margin: 0px;
+}
+/* ul.menuroot>li:hover, ul.menu>li:hover, */
+.open {
+  background-color: #8cacbb;
+  color: #fff;
+}
+.menuroot .item {
+  float: left;
+  background-color: #dee7ec;
+}
+.menu .menu {
+  margin-top: -2em;
+  z-index: 2;
+}
+.menu > li > .menu {
+  position: absolute;
+}
+.container {
+  background: url(/@@/arrowRight.gif) 
+                center right no-repeat;
+}
+.menu .item {
+  display: block;
+  float: none;
+  width: 100%;
+}
+.item a {
+  text-decoration: none;
+  color: darkblue;
+  cursor: default;
+}
+.menu .item.first, .scrollbutton.up {
+  border-top-width: 1px;
+}
+.menu .item.last, .scrollbutton.down {
+  border-bottom-width: 1px;
+}
+
+* html .menuroot {
+  font-size: 0.8em;
+}
+#menucontainer * html ul {
+  background-color: #dee7ec;
+  display: block;
+  position: absolute;
+}
+#menucontainer * html li {
+  min-width: 20em;
+}
+#menucontainer * html .menuroot {
+  background-color: white;
+}
+* html .menuroot, * html .menu {
+  border: 0px solid;
+}
+* html .scrollbutton.up {
+  background: url(/@@/arrowUp) center center no-repeat;
+}
+* html .scrollbutton.down {
+  background: url(/@@/arrowDown) center center no-repeat;
+}
+* html .item, * html .scrollbutton.down, * html .scrollbutton.up {
+  border: 0px solid;
+  border-color: #fff #8cacbb #8cacbb #fff;
+  white-space: nowrap;
+  margin: 0px;
+  padding: 0px;
+  line-height: 2em;
+  height: 2em;
+  background-color: #dee7ec;
+  min-width: 20em;
+  color: black;
+  cursor: default;
+}
+* html .menu .item, * html .scrollbutton.down, * html .scrollbutton.up {
+  border-left-width: 1px;
+  border-right-width: 1px;
+}
+* html .menu, * html .menuroot {
+  list-style-type: none;
+  padding: 0px;
+  margin: 0px;
+}
+* html .menuroot .item {
+  float: left;
+  background-color: #dee7ec;
+}
+* html .menu {
+  z-index: 2;
+}
+* html .container {
+  background: url(/@@/arrowRight.gif) 
+                center right no-repeat;
+}
+* html .menu .item {
+  float: none;
+}
+* html .item a {
+  text-decoration: none;
+  color: darkblue;
+  cursor: default;
+}
+* html .menu .item.first, * html .scrollbutton.up {
+  border-top-width: 1px;
+}
+* html .menu .item.last, * html .scrollbutton.down {
+  border-bottom-width: 1px;
+}
+* html .rootitem {
+  width: 10em;
+  top: 0px;
+}
+#menupreload {
+  visibility: hidden;
+}
+* html .body {
+  padding-top: 1.5em;
+}
+#menuroot li {
+  list-style-image: none;
 }
