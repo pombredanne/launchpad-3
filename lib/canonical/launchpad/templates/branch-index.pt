@@ -103,15 +103,15 @@
           <a tal:attributes="href context/owner/fmt:url"
              tal:content="context/owner/browsername">Person</a>
           can upload to this branch.
-	</p>
+        </p>
         <p id="upload-directions" tal:condition="context/owner/isTeam">
           You cannot upload to this branch. Members of
           <a tal:attributes="href context/owner/fmt:url"
              tal:content="context/owner/browsername">Team</a>
           can upload to this branch.
-	  <a href="http://code.launchpad.dev/~landscape-developers/+join">Join
+          <a href="http://code.launchpad.dev/~landscape-developers/+join">Join
             the team</a>.
-	</p>
+        </p>
       </tal:cannot-upload>
 
       <tal:can-upload condition="view/user_can_upload">
@@ -131,7 +131,7 @@
           To authenticate with the Launchpad branch upload service, you need
           to <a href="http://code.launchpad.dev/~name12/+editsshkeys">
             register a SSH key </a>.
-	</p>
+        </p>
       </tal:can-upload>
     </tal:logged-in>
   </tal:hosted-branch>
@@ -207,21 +207,21 @@
   <ul style="list-style: none">
     <li tal:condition="context/product">
       <a tal:attributes="href string:${context/product/fmt:url}/+branches">
-	Other <tal:product replace="context/product/displayname" /> branches
+        Other <tal:product replace="context/product/displayname" /> branches
       </a>
     </li>
     <li>
       <tal:author condition="context/author">
-	<a tal:attributes="href string:${context/author/fmt:url}/+authoredbranches">
-	  Other branches authored by <tal:person
-	  replace="context/author/displayname">Author</tal:person>
-	</a>
+        <a tal:attributes="href string:${context/author/fmt:url}/+authoredbranches">
+          Other branches authored by <tal:person
+          replace="context/author/displayname">Author</tal:person>
+        </a>
       </tal:author>
       <tal:no-author condition="not:context/author">
-	<a tal:attributes="href string:${context/owner/fmt:url}/+registeredbranches">
-	  Other branches registered (and not authored) by <tal:person
-	  replace="context/owner/displayname">Owner</tal:person>
-	</a>
+        <a tal:attributes="href string:${context/owner/fmt:url}/+registeredbranches">
+          Other branches registered (and not authored) by <tal:person
+          replace="context/owner/displayname">Owner</tal:person>
+        </a>
       </tal:no-author>
     </li>
   </ul>
