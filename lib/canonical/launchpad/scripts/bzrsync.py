@@ -22,7 +22,6 @@ from bzrlib.errors import NoSuchRevision
 
 from sqlobject import AND
 from canonical.lp import initZopeless
-from canonical.database.constants import UTC_NOW
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IBranchSet, IRevisionSet)
@@ -199,9 +198,11 @@ class BzrSync:
             last_revision = self.bzr_history[-1]
         else:
             last_revision = NULL_REVISION
-        if last_revision != self.db_branch.last_scanned_id:
-            self.db_branch.last_scanned = UTC_NOW
-            self.db_branch.last_scanned_id = last_revision
+
+        revision_count = len(self.bzr_history)
+        if (last_revision != self.db_branch.last_scanned_id) or \
+           (revision_count != self.db_branch.revision_count):
+            self.db_branch.updateScannedDetails(last_revision, revision_count)
             did_something = True
 
         if did_something:

@@ -120,7 +120,7 @@
         </tal:block>
 
         <tal:block condition="view/batchnav/currentBatch">
-          <form method="POST" action="+translate">
+          <form method="POST" action="">
             <!-- the hidden elements -->
             <input tal:condition="view/second_lang_code"
                    tal:replace="structure view/alternative_language_widget/hidden" />
@@ -159,8 +159,7 @@
                     <input type="submit"
                            name="submit_translations"
                            value="Save &amp; Continue"
-                           style="text-align: right;"
-                           tabindex="1" />
+                           style="text-align: right;"/>
                   </th>
                 </tr>
               </tfoot>

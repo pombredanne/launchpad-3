@@ -89,16 +89,6 @@ item.
     >>> subview.context.potmsgset.sequence == 1
     True
 
-How many lines does the message have.
-
-    >>> subview.max_lines_count
-    1
-
-And as it has only one line, it's not a multi line message set.
-
-    >>> subview.is_multi_line
-    False
-
 It does not have a plural msgid.
 
     >>> subview.msgid_plural is None
@@ -111,8 +101,25 @@ And thus, it only has one translation.
 
 Which is the one we wanted.
 
-    >>> subview.getTranslation(0)
+    >>> subview.getActiveTranslation(0)
     u'libreta de direcciones de Evolution'
+
+As we didn't submit the form, the getTranslation method will return None.
+
+    >>> subview.getTranslation(0) is None
+    True
+
+If we request a plural form that is not valid, we get an AssertionError.
+
+    >>> subview.getActiveTranslation(1)
+    Traceback (most recent call last):
+    ...
+    AssertionError: There is no plural form #1 for Spanish (es) language
+
+    >>> subview.getTranslation(1)
+    Traceback (most recent call last):
+    ...
+    AssertionError: There is no plural form #1 for Spanish (es) language
 
 
 Web presentation
@@ -206,7 +213,8 @@ Now we do the submit.
     ...     form={
     ...         'alt': None,
     ...         'msgset_1': None,
-    ...         'msgset_1_es_translation_0': 'Foo',
+    ...         'msgset_1_es_translation_0_new_checkbox': True,
+    ...         'msgset_1_es_translation_0_new': 'Foo',
     ...         'submit_translations': 'Save &amp; Continue'})
     >>> request.method = 'POST'
     >>> pomsgset_page_view = getView(pomsgset, "+translate", request)
@@ -228,7 +236,8 @@ We do a new submit, but this time including a lock_timestamp field.
     ...         'lock_timestamp': '2006-11-28T13:00:00+00:00',
     ...         'alt': None,
     ...         'msgset_1': None,
-    ...         'msgset_1_es_translation_0': 'Foo',
+    ...         'msgset_1_es_translation_0_new_checkbox': True,
+    ...         'msgset_1_es_translation_0_new': 'Foo',
     ...         'submit_translations': 'Save &amp; Continue'})
     >>> request.method = 'POST'
     >>> pomsgset_page_view = getView(pomsgset, "+translate", request)
@@ -275,7 +284,8 @@ We do the submission with that lock_timestamp.
     ...         'lock_timestamp': old_timestamp_text,
     ...         'alt': None,
     ...         'msgset_1': None,
-    ...         'msgset_1_es_translation_0': 'Foos',
+    ...         'msgset_1_es_translation_0_new': 'Foos',
+    ...         'msgset_1_es_translation_0_new_checkbox': True,
     ...         'submit_translations': 'Save &amp; Continue'})
     >>> request.method = 'POST'
     >>> pomsgset_page_view = getView(pomsgset, "+translate", request)
@@ -311,7 +321,8 @@ considered?
     ...         'lock_timestamp': '2006-11-28 13:00:00 UTC',
     ...         'alt': None,
     ...         'msgset_2': None,
-    ...         'msgset_2_es_translation_0': 'Foo',
+    ...         'msgset_2_es_translation_0_new': 'Foo',
+    ...         'msgset_2_es_translation_0_new_checkbox': True,
     ...         'submit_translations': 'Save &amp; Continue'})
     >>> request.method = 'POST'
     >>> pomsgset_page_view = getView(pomsgset, "+translate", request)
