@@ -503,6 +503,9 @@ class BugTask(SQLBase, BugTaskMixin):
 
         if IUpstreamBugTask.providedBy(self):
             header_value = 'product=%s;' %  self.target.name
+        elif IProductSeriesBugTask.providedBy(self):
+            header_value = 'product=%s; productseries=%s;' %  (
+                self.productseries.product.name, self.productseries.name)
         elif IDistroBugTask.providedBy(self):
             header_value = ((
                 'distribution=%(distroname)s; '
@@ -522,8 +525,7 @@ class BugTask(SQLBase, BugTaskMixin):
                  'sourcepackagename': sourcepackagename_value,
                  'componentname': component})
         else:
-            # Fallback - no headers
-            header_value = ''
+            raise AssertionError('Unknown BugTask context: %r' % self)
 
         header_value += ((
             ' status=%(status)s; importance=%(importance)s; '
