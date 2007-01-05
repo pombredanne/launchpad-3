@@ -1338,7 +1338,8 @@ class PersonSet:
             POFileTranslator.pofile = POFile.id AND
             POFile.language = %s AND
             POFile.potemplate = POTemplate.id AND
-            POTemplate.distrorelease = %s"""
+            POTemplate.distrorelease = %s AND
+            POTemplate.iscurrent = TRUE"""
                 % sqlvalues(language, distrorelease),
             clauseTables=["POFileTranslator", "POFile", "POTemplate"],
             distinct=True,

@@ -450,7 +450,8 @@ class DistroRelease(SQLBase, BugTargetBase):
                 Language.visible = TRUE AND
                 Language.id = POFile.language AND
                 POFile.potemplate = POTemplate.id AND
-                POTemplate.distrorelease = %s
+                POTemplate.distrorelease = %s AND
+                POTemplate.iscurrent = TRUE
                 ''' % sqlvalues(self.id),
                 orderBy=['code'],
                 distinct=True,
@@ -470,7 +471,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         # lastly, we need to update the message count for this distro
         # release itself
         messagecount = 0
-        for potemplate in self.potemplates:
+        for potemplate in self.currentpotemplates:
             messagecount += potemplate.messageCount()
         self.messagecount = messagecount
         ztm.commit()

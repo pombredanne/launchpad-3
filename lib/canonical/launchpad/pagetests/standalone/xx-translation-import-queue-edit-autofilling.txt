@@ -70,6 +70,7 @@ he checks that it's ok.
 Let's add the potemplatename information and confirm the language selection.
 
   >>> browser.getControl(name='field.potemplatename').value = 'alsa-utils'
+  >>> browser.getControl(name='field.path').value = 'po/es.po'
   >>> browser.getControl(name='field.actions.attach').click()
   >>> browser.url
   'http://launchpad.dev/translations/imports'
