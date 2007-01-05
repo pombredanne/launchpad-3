@@ -193,7 +193,6 @@ class TestMirrorMethods(BzrManagerTestCase):
         assert self.series_helper.getSeries().import_branch is None
         # Call mirrorBranch to set the series.import_branch and create
         # the mirror
-        self.bzr_manager.silent = True
         self.bzr_manager.mirrorBranch(self.sandbox.path)
         # mirrorBranch sets the series.import_branch in a subprocess,
         # we need to rollback at this point to see this change in the
@@ -234,7 +233,6 @@ class TestMirrorMethods(BzrManagerTestCase):
         # Finally, call getSyncTarget to re-create the one-commit branch
         # in bzrworking.  We recreate it by branching the mirrored branch
         # we created just above.
-        self.bzr_manager.silent = True
         value = self.bzr_manager.getSyncTarget(self.sandbox.path)
         self.assertEqual(value, self.bzrworking)
         # Check that we actually have a non-empty branch here.
