@@ -8,7 +8,7 @@
     <div metal:fill-slot="main" class="tab-bugs">
       <h1>Bugs in Ubuntu</h1>
       <p class="demo">Search form missing here</p>
-      <xmetal:search
+      <metal:search
         use-macro="context/@@+bugtarget-macros-search/simple-search-form"
       />
       <div class="columns">
