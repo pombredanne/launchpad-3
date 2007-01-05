@@ -122,7 +122,7 @@ There is one email and it's for the error we produced.
   help you with this problem.
   <BLANKLINE>
   For your convenience, you can get the file you uploaded at:
-  http://localhost:58000/.../cy.po
+  http://localhost:58000/.../firefox-cy.po
   <BLANKLINE>
   Thanks for using Rosetta.
   <BLANKLINE>

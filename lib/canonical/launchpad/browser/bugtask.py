@@ -1584,8 +1584,9 @@ class BugTaskSearchListingView(LaunchpadView):
         return IDistributionSourcePackage(self.context, None)
 
 
-class BugTargetView:
+class BugTargetView(LaunchpadView):
     """Used to grab bugs for a bug target; used by the latest bugs portlet"""
+
     def latestBugTasks(self, quantity=5):
         """Return <quantity> latest bugs reported against this target."""
         params = BugTaskSearchParams(orderby="-datecreated",
@@ -1594,6 +1595,13 @@ class BugTargetView:
 
         tasklist = self.context.searchTasks(params)
         return tasklist[:quantity]
+
+    def getMostRecentlyUpdatedBugTasks(self, limit=5):
+        """Return the most recently updated bugtasks for this target."""
+        params = BugTaskSearchParams(
+            orderby="-date_last_updated", omit_dupes=True, user=self.user)
+        return self.context.searchTasks(params)[:limit]
+
 
 
 class BugTargetTextView(LaunchpadView):
@@ -1671,6 +1679,17 @@ class BugTasksAndNominationsView(LaunchpadView):
 
 class BugTaskTableRowView(LaunchpadView):
     """Browser class for rendering a bugtask row on the bug page."""
+
+    def getTaskRowCSSClass(self):
+        """Return the appropriate CSS class for the row in the Affects table.
+        Currently this consists solely of highlighting the current context.
+        """
+        bugtask = self.context
+        if bugtask == getUtility(ILaunchBag).bugtask:
+            return 'highlight'
+        else:
+            return None
+
     def shouldIndentTask(self):
         """Should this task be indented in the task listing on the bug page?
 

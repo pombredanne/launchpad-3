@@ -8,5 +8,6 @@
   <a href="/malone/bugtrackers">bug trackers</a>
 </div>
 <div>
-  and <strong class="demo">XXX</strong> <a href="/bugs/cve">CVE references</a>
+  and <strong tal:content="view/getCveBugLinkCount">5</strong>
+  <a href="/malone/cve">CVE references</a>
 </div>
