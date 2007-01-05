@@ -292,16 +292,6 @@ UnexpectedFormData exception:
     ...
   UnexpectedFormData: You specified...
 
-(And this happens when we try and do this for the main translation page
-as well!)
-
-  >>> browser.open(
-  ...  'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
-  ...  '+pots/evolution-2.2/es/+translate?field.alternative_language=ja&field.alternative_language=aj')
-  Traceback (most recent call last):
-    ...
-  UnexpectedFormData: You specified...
-
 Let's see what happens when we do a submission with a lock_timestamp older
 than the review date for current translation.
 
