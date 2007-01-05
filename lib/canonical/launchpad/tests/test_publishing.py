@@ -131,10 +131,17 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
                      description='Well ...\nit does nothing, though',
                      shlibdep=None, depends=None, recommends=None,
                      suggests=None, conflicts=None, replaces=None,
-                     provides=None):
+                     provides=None, filecontent='bbbiiinnnaaarrryyy',
+                     status=PackagePublishingStatus.PENDING,
+                     pocket=PackagePublishingPocket.RELEASE,
+                     pub_source=None):
         """Return a mock binary publishing record."""
         sourcename = "%s" % binaryname.split('-')[0]
-        pub_source = self.getPubSource(sourcename=sourcename)
+
+        if pub_source is None:
+            pub_source = self.getPubSource(
+                sourcename=sourcename, status=status, pocket=pocket)
+
         spr = pub_source.sourcepackagerelease
         build = spr.createBuild(
             self.breezy_autotest_i386, pocket=PackagePublishingPocket.RELEASE)
@@ -165,7 +172,7 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
             )
 
         filename = '%s.deb' % binaryname
-        alias = self.addMockFile(filename, filecontent='bbbiiinnnaaarrryyy')
+        alias = self.addMockFile(filename, filecontent=filecontent)
         bpr.addFile(alias)
 
         sbpph = SecureBinaryPackagePublishingHistory(
@@ -174,9 +181,9 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
             component=bpr.component,
             section=bpr.section,
             priority=bpr.priority,
-            status=PackagePublishingStatus.PENDING,
+            status=status,
             datecreated=UTC_NOW,
-            pocket=PackagePublishingPocket.RELEASE,
+            pocket=pocket,
             embargo=False
             )
 
