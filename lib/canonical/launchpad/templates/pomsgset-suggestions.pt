@@ -10,6 +10,7 @@
     <td colspan="3" />
     <td class="icon left right">
       <input type="image" src="/@@/copy" title="Copy text"
+          tal:condition="request/lp:person"
           tal:attributes="
             name string:msgset_${context/pomsgset/potmsgset/id}_${submissionlang/code}_suggestion_${submission/id}_${submission/pluralform}_copy"
         />
