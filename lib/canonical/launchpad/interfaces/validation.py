@@ -236,7 +236,7 @@ def valid_webref(web_ref):
     ...
     LaunchpadValidationError: ...
     """
-    if validate_url(web_ref, ['http', 'https', 'ftp', 'sftp']):
+    if validate_url(web_ref, ['http', 'https', 'ftp', 'sftp', 'bzr+ssh']):
         # Allow ftp so valid_webref can be used for download_url, and so
         # it doesn't lock out weird projects where the site or
         # screenshots are kept on ftp.
