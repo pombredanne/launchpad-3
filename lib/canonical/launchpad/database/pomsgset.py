@@ -159,8 +159,7 @@ class POMsgSet(SQLBase):
                 # XXX: CarlosPerelloMarin 20061201: This sync is needed to help
                 # tests to avoid cache problems. See bug #74025 for more info.
                 selection.sync()
-                if (selection.activesubmission is not None and
-                    selection.date_reviewed > timestamp):
+                if selection.isNewerThan(timestamp):
                     return True
         return False
 

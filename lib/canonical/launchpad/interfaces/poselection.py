@@ -27,3 +27,10 @@ class IPOSelection(Interface):
     date_reviewed = Datetime(
         title=u'The date when this message was reviewed for last time.',
         required=False)
+
+    def isNewerThan(timestamp):
+        """Whether the selection is active and newer than the given timestamp.
+
+        :arg timestamp: A DateTime object with a timestamp.
+
+        """

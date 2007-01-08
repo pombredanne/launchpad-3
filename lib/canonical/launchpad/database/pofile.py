@@ -728,14 +728,12 @@ class POFile(SQLBase, RosettaStats):
 
         change_time = self.latestsubmission.datecreated
 
-        # This is based on pomsgset.isNewerThan()
         for selection in self.latestsubmission.active_selections:
             if selection is not None:
                 # XXX: DaniloSegan 20070104: This sync is needed to help
                 # tests to avoid cache problems. See bug #74025 for more info.
                 selection.sync()
-                if (selection.activesubmission is not None and
-                    selection.date_reviewed > change_time):
+                if selection.isNewerThan(change_time):
                     change_time = selection.date_reviewed
 
         return change_time < self.exporttime
