@@ -174,10 +174,12 @@ class DistroReleaseSourcePackageRelease:
 
     @property
     def age(self):
+        """See ISourcePackageRelease."""
         return self.sourcepackagerelease.age
 
     @property
     def creator(self):
+        """See ISourcePackageRelease."""
         return self.sourcepackagerelease.creator
 
     @property

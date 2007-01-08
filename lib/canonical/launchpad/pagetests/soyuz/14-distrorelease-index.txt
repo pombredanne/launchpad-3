@@ -18,7 +18,7 @@ packages within the distrorelease in context:
 This page provides raw list of the last five source packages uploaded
 and published for a given distrorelease.
 
-Rach entry contains:
+Each entry contains:
 
  * source name & source version, linking to the LP page for this package
  * ubuntu maintainer, linking to a valid LP user
@@ -36,6 +36,6 @@ Rach entry contains:
   <a href="http://launchpad.dev/~sabdfl">
   Mark Shuttleworth
   </a>
-  116 weeks ago
+  ... ago
   </li>
   </ul>

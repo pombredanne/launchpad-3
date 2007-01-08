@@ -136,7 +136,7 @@ class IDistroRelease(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
         Return True if the upload is allowed and False if denied.
         """
 
-    def lastUploads():
+    def getLastUploads():
         """Return the last five source uploads for this DistroRelease.
 
         It returns a list containing up to five elements as

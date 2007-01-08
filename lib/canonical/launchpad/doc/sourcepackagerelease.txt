@@ -27,6 +27,13 @@ Let's get one from the database:
    >>> spr.age
    datetime.timedelta(...)
 
+   >>> import datetime
+   >>> import pytz
+   >>> local_now = datetime.datetime.now(pytz.timezone('UTC'))
+   >>> expected_age = local_now - spr.dateuploaded
+   >>> spr.age.days == expected_age.days
+   True
+
 We can use the magic productrelease property to map this to a ProductRelease:
 
    >>> pr = spr.productrelease

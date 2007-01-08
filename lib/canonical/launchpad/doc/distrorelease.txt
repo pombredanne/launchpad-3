@@ -982,22 +982,14 @@ driver. Here, we expect the driver to be the owner of the distribution
 
 == Last Uploads ==
 
-IDistroRelease provides the 'lastUpload' method which returns the
-last ISourcePackageRelease uploaded and published in its context.
-The results are restricted up to five items.
+IDistroRelease provides the 'getLastUpload' method which returns a
+list of last 5 (five) IDistroReleaseSourcePackageRelease (IDRSPR)
+uploaded and published in its context.
 
-  >>> last_uploads = breezy_autotest.lastUploads()
+  >>> last_uploads = breezy_autotest.getLastUploads()
 
-It is returned in 'SelectResults' form:
+Each element is a IDistroReleaseSourcePackageRelease instance:
 
-  >>> last_uploads
-  <sqlobject.main.SelectResults ...>
-
-  >>> last_uploads.count()
-  1
-
-Each element is a ISourcePackageRelease instance:
-
-  >>> from canonical.launchpad.interfaces import ISourcePackageRelease
-  >>> verifyObject(ISourcePackageRelease, last_uploads[0])
-  True
+  >>> for upload in last_uploads:
+  ...     print upload.name, upload.version
+  mozilla-firefox 0.9

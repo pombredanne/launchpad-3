@@ -879,7 +879,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         return Milestone(name=name, dateexpected=dateexpected,
             distribution=self.distribution, distrorelease=self)
 
-    def lastUploads(self):
+    def getLastUploads(self):
         """See IDistroRelease."""
         query = """
         sourcepackagerelease.id=distroreleasequeuesource.sourcepackagerelease
@@ -888,23 +888,15 @@ class DistroRelease(SQLBase, BugTargetBase):
         AND distroreleasequeue.status=%s
         """ % sqlvalues(DistroReleaseQueueStatus.DONE)
 
-        clauseTables=[
-            'SourcePackageName',
-            'DistroReleaseQueue',
-            'DistroReleaseQueueSource',
-            ]
-
-        prejoins=[
-            'SourcePackageName',
-            ]
-
         last_uploads = SourcePackageRelease.select(
-            query, clauseTables=clauseTables,
+            query, limit=5,
+            clauseTables=['SourcePackageName', 'DistroReleaseQueue',
+                          'DistroReleaseQueueSource'],
+            prejoins=['sourcepackagename'],
             orderBy=['-distroreleasequeue.id'])
 
-        distro_sprs = []
-        for spr in last_uploads[:5]:
-            distro_sprs.append(self.getSourcePackageRelease(spr))
+        distro_sprs = [
+            self.getSourcePackageRelease(spr) for spr in last_uploads[:5]]
 
         return distro_sprs
 
