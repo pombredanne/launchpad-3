@@ -19,6 +19,12 @@ support requests will be shown.
     mailto: problem in webpage
     Installation of Java Runtime Environment for Mozilla
     Slow system
+
+    # Since we have more than 5 results, some of them are in the second batch.
+    >>> anon_browser.getLink('Next').click()
+    >>> soup = BeautifulSoup(anon_browser.contents)
+    >>> for ticket in soup.fetch('td', 'ticket'):
+    ...     print ticket.first('a').renderContents()
     Installation failed
 
 Since there are some request languages that are not displayed, a message
@@ -44,6 +50,12 @@ requests, whatever the language they are written in are displayed:
     'Play DVDs in Totem'
     'mailto: problem in webpage'
     'Installation of Java Runtime Environment for Mozilla'
+
+    # Since we have more than 5 results, some of them are in the second batch.
+    >>> anon_browser.getLink('Next').click()
+    >>> soup = BeautifulSoup(anon_browser.contents)
+    >>> for ticket in soup.fetch('td', 'ticket'):
+    ...     ticket.first('a').renderContents()
     'Slow system'
     'Installation failed'
 
@@ -78,6 +90,12 @@ will appear:
     'Play DVDs in Totem'
     'mailto: problem in webpage'
     'Installation of Java Runtime Environment for Mozilla'
+
+    # Since we have more than 5 results, some of them are in the second batch.
+    >>> anon_browser.getLink('Next').click()
+    >>> soup = BeautifulSoup(anon_browser.contents)
+    >>> for ticket in soup.fetch('td', 'ticket'):
+    ...     ticket.first('a').renderContents()
     'Slow system'
     'Installation failed'
 

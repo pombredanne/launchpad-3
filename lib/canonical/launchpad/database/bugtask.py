@@ -161,7 +161,8 @@ class BugTask(SQLBase, BugTaskMixin):
     def conjoined_master(self):
         """See IBugTask."""
         conjoined_master = None
-        if IDistroBugTask.providedBy(self):
+        if (IDistroBugTask.providedBy(self) and
+            self.distribution.currentrelease is not None):
             current_release = self.distribution.currentrelease
             for bt in shortlist(self.bug.bugtasks):
                 if (bt.distrorelease == current_release and
@@ -169,6 +170,8 @@ class BugTask(SQLBase, BugTaskMixin):
                     conjoined_master = bt
                     break
         elif IUpstreamBugTask.providedBy(self):
+            assert self.product.development_focus is not None, (
+                'A product should always have a development series.')
             devel_focus = self.product.development_focus
             for bt in shortlist(self.bug.bugtasks):
                 if bt.productseries == devel_focus:
@@ -518,6 +521,9 @@ class BugTask(SQLBase, BugTaskMixin):
                  'distroreleasename': self.distrorelease.name,
                  'sourcepackagename': sourcepackagename_value,
                  'componentname': component})
+        else:
+            # Fallback - no headers
+            header_value = ''
 
         header_value += ((
             ' status=%(status)s; importance=%(importance)s; '

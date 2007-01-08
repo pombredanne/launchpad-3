@@ -34,10 +34,10 @@ from zope.security.interfaces import Unauthorized
 from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IAddBugTaskForm, IBug, IBugSet, IBugTaskSet,
-    IBugWatchSet, ICanonicalUrlData, IDistributionSourcePackage,
-    IDistroBugTask, IDistroReleaseBugTask, ILaunchBag, IUpstreamBugTask,
-    NoBugTrackerFound, NotFoundError, UnrecognizedBugTrackerURL,
-    valid_distrotask, valid_upstreamtask)
+    IBugWatchSet, ICanonicalUrlData, ICveSet, IDistributionSourcePackage,
+    IDistroBugTask, IDistroReleaseBugTask, ILaunchBag, ILaunchpadCelebrities,
+    IProductSet, IUpstreamBugTask, NoBugTrackerFound, NotFoundError,
+    UnrecognizedBugTrackerURL, valid_distrotask, valid_upstreamtask)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.webapp import (
@@ -202,13 +202,25 @@ class MaloneView(LaunchpadView):
         search_params = BugTaskSearchParams(
             self.user, status=BugTaskStatus.FIXRELEASED,
             orderby='-date_closed')
-        for bugtask in getUtility(IBugTaskSet).search(search_params):
+        fixed_bugtasks = getUtility(IBugTaskSet).search(search_params) 
+        # XXX: We might end up returning less than :limit: bugs, but in
+        #      most cases we won't, and '4*limit' is here to prevent
+        #      this page from timing out in production. Later I'll fix
+        #      this properly by selecting bugs instead of bugtasks.
+        #      If fixed_bugtasks isn't sliced, it will take a long time
+        #      to iterate over it, even over just 10, because
+        #      Transaction.iterSelect() listifies the result.
+        #      -- Bjorn Tillenius, 2006-12-13
+        for bugtask in fixed_bugtasks[:4*limit]:
             if bugtask.bug not in fixed_bugs:
                 fixed_bugs.append(bugtask.bug)
                 if len(fixed_bugs) >= limit:
                     break
         return fixed_bugs
 
+    def getCveBugLinkCount(self):
+        """Return the number of links between bugs and CVEs there are."""
+        return getUtility(ICveSet).getBugCveCount()
 
 
 class BugView:
@@ -349,6 +361,23 @@ class ChooseAffectedProductView(LaunchpadFormView, BugAlsoReportInBaseView):
     def validate(self, data):
         if data.get('product'):
             self.validateProduct(data['product'])
+        else:
+            # If the user entered a product, provide a more useful error
+            # message than "Invalid value".
+            entered_product = self.request.form.get(
+                self.widgets['product'].name)
+            if entered_product:
+                new_product_url = "%s/+new" % (
+                    canonical_url(getUtility(IProductSet)))
+                search_url = self.widgets['product'].popupHref()
+                self.setFieldError(
+                    'product',
+                    'There is no product in Launchpad named "%s". You may'
+                    ' want to <a href="%s">search for it</a>, or'
+                    ' <a href="%s">register it</a> if you can\'t find it.' % (
+                        cgi.escape(entered_product),
+                        cgi.escape(search_url, quote=True),
+                        cgi.escape(new_product_url, quote=True)))
 
     @action(u'Continue', name='continue')
     def continue_action(self, action, data):
@@ -468,13 +497,28 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
                 return
         elif distribution:
             target = distribution
-            try:
-                valid_distrotask(
-                    self.context.bug, distribution, sourcepackagename,
-                    on_create=True)
-            except WidgetsError, errors:
-                for error in errors:
-                    self.setFieldError('sourcepackagename', error.snippet())
+            entered_package = self.request.form.get(
+                self.widgets['sourcepackagename'].name)
+            if sourcepackagename is None and entered_package:
+                # The entered package doesn't exist.
+                filebug_url = "%s/+filebug" % canonical_url(
+                    getUtility(ILaunchpadCelebrities).launchpad)
+                self.setFieldError(
+                    'sourcepackagename',
+                    'There is no package in %s named "%s". If it should'
+                    ' be here, <a href="%s">report this as a bug</a>.' % (
+                        cgi.escape(distribution.displayname),
+                        cgi.escape(entered_package),
+                        cgi.escape(filebug_url, quote=True)))
+            else:
+                try:
+                    valid_distrotask(
+                        self.context.bug, distribution, sourcepackagename,
+                        on_create=True)
+                except WidgetsError, errors:
+                    for error in errors:
+                        self.setFieldError(
+                            'sourcepackagename', error.snippet())
         else:
             # Validation failed for either the product or distribution,
             # no point in trying to validate further.
@@ -511,7 +555,7 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
                     'bug_url',
                     "The bug tracker at %s isn't registered in Launchpad."
                     ' You need to'
-                    ' <a href="/malone/bugtrackers/+newbugtracker">register'
+                    ' <a href="/bugs/bugtrackers/+newbugtracker">register'
                     ' it</a> before you can link any bugs to it.' % (
                         cgi.escape(error.base_url)))
             except UnrecognizedBugTrackerURL:

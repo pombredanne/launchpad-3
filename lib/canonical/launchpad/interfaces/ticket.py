@@ -390,8 +390,8 @@ class ITicketSet(Interface):
         """Return the tickets that are expired.
 
         This should return all the tickets in the Open or Needs information
-        state that didn't receive any new comments in the last
-        <days_before_expiration> days.
+        state, without an assignee, that didn't receive any new comments in
+        the last <days_before_expiration> days.
         """
 
     def searchTickets(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
@@ -421,6 +421,10 @@ class ITicketAddMessageForm(Interface):
     """
 
     message = Text(title=_('Message'), required=False)
+
+    subscribe_me = Bool(
+        title=_('E-mail me future discussion about this request'),
+        required=False, default=False)
 
 
 class ITicketChangeStatusForm(Interface):

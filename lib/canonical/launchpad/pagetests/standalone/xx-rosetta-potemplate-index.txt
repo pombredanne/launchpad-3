@@ -3,7 +3,7 @@ Check that the index page for a POTemplate is listing all available
 translations.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/ HTTP/1.1
+  ... GET /ubuntu/hoary/+source/evolution/+pots/evolution-2.2/ HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -19,10 +19,10 @@ Check that the page is loading when you have more than one template inside the
 same product.
 
   >>> print http(r"""
-  ... GET /products/evolution/trunk/+pots/evolution-2.2-test HTTP/1.1
+  ... GET /evolution/trunk/+pots/evolution-2.2-test HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...These templates came from the same source as this one:...
-  ...<a href="http://.../products/evolution/trunk/+pots/evolution-2.2">evolution-2.2 in Evolution trunk</a>
+  ...<a href="http://.../evolution/trunk/+pots/evolution-2.2">evolution-2.2 in Evolution trunk</a>
   ...
 
