@@ -31,6 +31,7 @@ from canonical.launchpad.webapp.errorlog import ErrorReportRequest
 from canonical.launchpad.webapp.url import Url
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
+from canonical.launchpad.xmlrpc import OpStats
 
 
 class StepsToGo:
@@ -182,7 +183,7 @@ class LaunchpadRequestPublicationFactory:
         vhrps.append(VHRP('shipitedubuntu', EdubuntuShipItBrowserRequest,
             ShipItPublication))
         vhrps.append(VHRP('xmlrpc', LaunchpadXMLRPCRequest,
-            MainLaunchpadPublication))
+            XMLRPCLaunchpadPublication))
         # Done with using the short form of VirtualHostRequestPublication, so
         # clean up, as we won't need to use it again later.
         del VHRP
@@ -452,6 +453,18 @@ debughttp = wsgi.ServerType(
 
 class MainLaunchpadPublication(LaunchpadBrowserPublication):
     """The publication used for the main Launchpad site."""
+
+class XMLRPCLaunchpadPublication(LaunchpadBrowserPublication):
+    """The publication used for XML-RPC requests."""
+    def handleException(self, object, request, exc_info, retry_allowed=True):
+        super(XMLRPCLaunchpadPublication, self).handleException(
+                object, request, exc_info, retry_allowed
+                )
+        OpStats.stats['xml-rpc faults'] += 1
+
+    def endRequest(self, request, object):
+        OpStats.stats['xml-rpc requests'] += 1
+        return LaunchpadBrowserPublication.endRequest(self, request, object)
 
 # ---- blueprint
 

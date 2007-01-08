@@ -33,6 +33,11 @@ def setupInteraction(principal, login=None, participation=None):
     You can optionally pass in a participation to be used.  If no
     participation is given, a Participation is used.
     """
+    # If principal is None, this method acts just like endInteraction
+    if principal is None:
+        endInteraction()
+        return
+
     if participation is None:
         participation = Participation()
 
