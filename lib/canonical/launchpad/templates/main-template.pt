@@ -18,6 +18,11 @@
       media="screen"
     >@import url(/+icing/style.css);</style>
     <link type="text/css" media="print" href="/+icing/print.css" />
+    <style
+      tal:define="dbname modules/canonical.config/config/dbname"
+      tal:condition="python: dbname!='launchpad_prod'"
+      type="text/css"
+    >html, body {background: #ddd url(/@@/demo) !important;}</style>
     <link rel="shortcut icon" href="/@@/launchpad" />
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>

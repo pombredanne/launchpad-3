@@ -13,6 +13,7 @@
     <div tal:replace="structure context/@@+portlet-milestones" />
     <div tal:condition="context/project"
          tal:replace="structure context/project/@@+portlet-details" />
+    <div tal:replace="structure context/@@+portlet-recently-touched-bugs" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">

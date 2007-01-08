@@ -34,7 +34,7 @@ from zope.security.interfaces import Unauthorized
 from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IAddBugTaskForm, IBug, IBugSet, IBugTaskSet,
-    IBugWatchSet, ICanonicalUrlData, IDistributionSourcePackage,
+    IBugWatchSet, ICanonicalUrlData, ICveSet, IDistributionSourcePackage,
     IDistroBugTask, IDistroReleaseBugTask, ILaunchBag, ILaunchpadCelebrities,
     IProductSet, IUpstreamBugTask, NoBugTrackerFound, NotFoundError,
     UnrecognizedBugTrackerURL, valid_distrotask, valid_upstreamtask)
@@ -218,6 +218,9 @@ class MaloneView(LaunchpadView):
                     break
         return fixed_bugs
 
+    def getCveBugLinkCount(self):
+        """Return the number of links between bugs and CVEs there are."""
+        return getUtility(ICveSet).getBugCveCount()
 
 
 class BugView:

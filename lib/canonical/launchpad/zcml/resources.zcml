@@ -38,6 +38,7 @@
     <resource name="arrowDown" file="../images/arrowDown.png" />
     <resource name="arrowTop" file="../images/arrowTop.png" />
     <resource name="arrowUp" file="../images/arrowUp.png" />
+    <resource name="arrowRight" file="../images/arrowRight.gif" />
     <resource name="build-chrootwait" file="../images/build-chrootwait.png" />
     <resource name="build-depwait" file="../images/build-depwait.png" />
     <resource name="build-failure" file="../images/build-failure.png" />
@@ -59,6 +60,7 @@
     <resource name="bullet" file="../images/bullet.png" />
     <resource name="copy" file="../images/copy.png" />
     <resource name="cve" file="../images/cve.png" />
+    <resource name="demo" file="../images/demo.png" />
     <resource name="distribution" file="../images/distribution.png" />
     <resource name="distribution-mini" file="../images/distribution-mini.png" />
     <resource name="distribution-heading" file="../images/distribution-heading.png" />
