@@ -9,6 +9,8 @@ set -x
 set -e
 set -u
 
+# share lockfile with cron.daily
+LOCKFILE=/srv/launchpad.net/ubuntu-archive/cron.daily.lock
 # main archive path (target)
 ARCHIVE='/srv/launchpad.net/ubuntu-archive'
 
@@ -40,6 +42,19 @@ COMPAREFILES="yes"
 MOVEFILES="yes"
 
 set -e
+
+# claim the lock
+if ! lockfile -r1 $LOCKFILE; then
+  echo "Could not claim lock file."
+  exit 1
+fi
+
+cleanup () {
+  echo "Cleaning up lockfile."
+  rm -f $LOCKFILE
+}
+
+trap cleanup EXIT
 
 echo 'Ensure we have a private tree in place ...'
 mkdir -p $CONTENTARCHIVE/ubuntu-misc
