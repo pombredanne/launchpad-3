@@ -726,19 +726,14 @@ class POFile(SQLBase, RosettaStats):
         if self.latestsubmission is None:
             return True
 
-        # We don't check the date of submission creation
-        # (self.latestsubmission.datecreated), because whenever you create
-        # a submission, if it become active, it will have the
-        # date_reviewed==datecreated.  Or you will activate ("review") the
-        # submission created earlier.
-        change_time = datetime.datetime.min
-
+        # Any selection.date_reviewed is going to be greater than or equal
+        # to self.latestsubmission.datecreated, so no need to check that.
         for selection in self.latestsubmission.active_selections:
             if selection is not None:
-                if selection.isNewerThan(change_time):
-                    change_time = selection.date_reviewed
+                if selection.isNewerThan(self.exporttime):
+                    return False
 
-        return change_time < self.exporttime
+        return True
 
     def updateExportCache(self, contents):
         """See IPOFile."""
