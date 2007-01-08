@@ -94,21 +94,12 @@
       permission="launchpad.Edit"
       template="../templates/person-edit.pt" />
 
-  <browser:editform
+  <browser:page
       name="+edithomepage"
       for="canonical.launchpad.interfaces.IPerson"
-      schema="canonical.launchpad.interfaces.IPerson"
-      class="canonical.launchpad.browser.PersonEditView"
-      fields="homepage_content"
+      class="canonical.launchpad.browser.PersonEditHomePageView"
       permission="launchpad.Edit"
-      template="../templates/person-edithomepage.pt"
-      >
-      <browser:widget
-          field="homepage_content"
-          class="zope.app.form.browser.TextAreaWidget"
-          displayWidth="30"
-          height="30" />
-  </browser:editform>
+      template="../templates/person-edithomepage.pt" />
 
   <browser:pages
       for="canonical.launchpad.interfaces.IPerson"

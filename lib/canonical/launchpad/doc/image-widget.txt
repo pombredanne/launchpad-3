@@ -77,9 +77,10 @@ widget. Let's see how it reacts.
 
 First, let's tell it to keep the existing image.
 
+    >>> from canonical.launchpad.fields import KEEP_SAME_IMAGE
     >>> form = {'field.gotchi.action': 'keep'}
     >>> widget = ImageUploadWidget(person_gotchi, TestRequest(form=form))
-    >>> widget.getInputValue() == widget.context.keep_image_marker
+    >>> widget.getInputValue() == KEEP_SAME_IMAGE
     True
 
 Then we tell it to delete the existing one.
@@ -113,7 +114,7 @@ And now we change it to a random image.
 == The BaseImageUpload field ==
 
 Note that since this is a special widget which returns a special object
-(keep_image_marker) to indicate that the image should be kept, we need to use
+(KEEP_SAME_IMAGE) to indicate that the image should be kept, we need to use
 a custom field (BaseImageUpload) together with it. That field should not be
 used directly, since it specifies some constraints and defaults that are
 specific to each image, so you must subclass it before using.
@@ -128,14 +129,14 @@ specific to each image, so you must subclass it before using.
     >>> person_gotchi.max_dimensions
     (200, 200)
 
-If we pass that special object (keep_image_marker) to BaseImageUpload's set()
+If we pass that special object (KEEP_SAME_IMAGE) to BaseImageUpload's set()
 method, the current image will be kept.
 
     >>> existing_img = salgado.gotchi
     >>> existing_img is None
     False
 
-    >>> person_gotchi.set(salgado, person_gotchi.keep_image_marker)
+    >>> person_gotchi.set(salgado, KEEP_SAME_IMAGE)
     >>> salgado.gotchi == existing_img
     True
 

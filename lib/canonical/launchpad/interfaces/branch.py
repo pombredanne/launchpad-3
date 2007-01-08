@@ -188,6 +188,10 @@ class IBranch(IHasOwner):
         title=_("Last scanned revision ID"), required=False,
         description=_("The head revision ID of the branch when last "
                       "successfully scanned."))
+    revision_count = Int(
+        title=_("Revision count"),
+        description=_("The number of revisions in the branch")
+        )
 
     cache_url = Attribute("Private mirror of the branch, for internal use.")
     warehouse_url = Attribute(
@@ -206,7 +210,6 @@ class IBranch(IHasOwner):
 
     # Joins
     revision_history = Attribute("The sequence of revisions in that branch.")
-    revision_count = Attribute("The number of revisions in that branch.")
     subscriptions = Attribute("BranchSubscriptions associated to this branch.")
     subscribers = Attribute("Persons subscribed to this branch.")
 
@@ -247,6 +250,12 @@ class IBranch(IHasOwner):
         Returns True if any RevisionNumber objects were destroyed.
         """
 
+    def updateScannedDetails(revision_id, revision_count):
+        """Updates attributes associated with the scanning of the branch.
+
+        A single entry point that is called solely from the branch scanner
+        script.
+        """
 
 class IBranchSet(Interface):
     """Interface representing the set of branches."""
