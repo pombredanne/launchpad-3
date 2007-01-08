@@ -190,9 +190,9 @@ class IBranch(IHasOwner):
         description=_("The head revision ID of the branch when last "
                       "successfully scanned."))
     revision_count = Int(
-        title=_("The number of revisions in the branch"),
-        required=False)
-    tip_revision = Attribute("The current tip of the branch")
+        title=_("Revision count"),
+        description=_("The number of revisions in the branch")
+        )
 
     cache_url = Attribute("Private mirror of the branch, for internal use.")
     warehouse_url = Attribute(
@@ -262,6 +262,19 @@ class IBranch(IHasOwner):
         Returns True if any RevisionNumber objects were destroyed.
         """
 
+    def getTipRevision():
+        """Returns the Revision associated with the last_scanned_id.
+
+        Will return None if last_scanned_id is None, or if the id
+        is not found (as in a ghost revision).
+        """
+
+    def updateScannedDetails(revision_id, revision_count):
+        """Updates attributes associated with the scanning of the branch.
+
+        A single entry point that is called solely from the branch scanner
+        script.
+        """
 
 class IBranchSet(Interface):
     """Interface representing the set of branches."""
@@ -314,23 +327,14 @@ class IBranchDelta(Interface):
     user = Attribute("The IPerson that did the editing.")
 
     # fields on the branch itself, we provide just the new changed value
-    name = Attribute("The branch name or None.")
-    title = Attribute("The branch title or None.")
+    name = Attribute("Old and new names or None.")
+    title = Attribute("Old and new branch titles or None.")
     summary = Attribute("The branch summary or None.")
-    url = Attribute("The branch URL or None.")
+    url = Attribute("Old and new branch URLs or None.")
     whiteboard = Attribute("The branch whiteboard or None.")
-    landing_target = Attribute("The branch landing target or None.")
-    tip_revision = Attribute("The branch tip revision or None.")
-
-    bugs_linked = Attribute("A list of new bugs linked to this branch.")
-    bugs_unlinked = Attribute("A list of bugs unlinked from this branch.")
-    specs_linked = Attribute("A list of new specs linked to this branch.")
-    specs_unlinked = Attribute("A list of specs unlinked from this branch.")
-
-    # items where we provide 'old' and 'new' values if they changed
     lifecycle_status = Attribute("Old and new lifecycle status, or None.")
     revision_count = Attribute("Old and new revision counts, or None.")
-    
+    last_scanned_id = Attribute("The revision id of the tip revision.")
 
 
 class IBranchLifecycleFilter(Interface):

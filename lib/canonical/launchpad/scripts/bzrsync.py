@@ -22,7 +22,6 @@ from bzrlib.errors import NoSuchRevision
 
 from sqlobject import AND
 from canonical.lp import initZopeless
-from canonical.database.constants import UTC_NOW
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IBranchSet, IRevisionSet)
@@ -53,6 +52,8 @@ class BzrSync:
             branch_url = self.db_branch.url
         self.bzr_branch = Branch.open(branch_url)
         self.bzr_branch.lock_read()
+        self.curr = 0
+        self.last = 0
         try:
             self.bzr_history = self.bzr_branch.revision_history()
         except:
@@ -90,22 +91,22 @@ class BzrSync:
         # synchronise Revision objects
         ancestry = self.bzr_branch.repository.get_ancestry(
             self.bzr_branch.last_revision())
-        curr = 0
-        last = len(ancestry)
+        self.curr = 0
+        self.last = len(ancestry)
         for revision_id in ancestry:
-            curr = curr + 1
+            self.curr += 1
             if revision_id is None:
                 self.logger.debug("%d of %d: revision_id is None",
-                                  curr, last)
+                                  self.curr, self.last)
                 continue
             # If the revision is a ghost, it won't appear in the repository.
             try:
                 revision = self.bzr_branch.repository.get_revision(revision_id)
             except NoSuchRevision:
                 self.logger.debug("%d of %d: %s is a ghost",
-                                  curr, last, revision_id)
+                                  self.curr, self.last, revision_id)
                 continue
-            if self.syncRevision(revision, curr, last):
+            if self.syncRevision(revision):
                 did_something = True
 
         # now synchronise the RevisionNumber objects
@@ -114,7 +115,7 @@ class BzrSync:
 
         return did_something
 
-    def syncRevision(self, bzr_revision, curr, last):
+    def syncRevision(self, bzr_revision):
         """Import the revision with the given revision_id.
 
         :param bzr_revision: the revision to import
@@ -122,7 +123,7 @@ class BzrSync:
         """
         revision_id = bzr_revision.revision_id
         self.logger.debug("%d of %d: synchronizing revision: %s",
-                          curr, last, revision_id)
+                          self.curr, self.last, revision_id)
 
         # If did_something is True, new information was found and
         # loaded into the database.
@@ -207,9 +208,11 @@ class BzrSync:
             last_revision = self.bzr_history[-1]
         else:
             last_revision = NULL_REVISION
-        if last_revision != self.db_branch.last_scanned_id:
-            self.db_branch.last_scanned = UTC_NOW
-            self.db_branch.last_scanned_id = last_revision
+
+        revision_count = len(self.bzr_history)
+        if (last_revision != self.db_branch.last_scanned_id) or \
+           (revision_count != self.db_branch.revision_count):
+            self.db_branch.updateScannedDetails(last_revision, revision_count)
             did_something = True
 
         if did_something:
@@ -272,7 +275,7 @@ def main(branch_id):
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(formatter)
     logger = logging.getLogger("BzrSync")
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
     logger.addHandler(handler)
 
     branch = getUtility(IBranchSet).get(branch_id)

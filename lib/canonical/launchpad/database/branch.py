@@ -14,7 +14,7 @@ from sqlobject import (
     SQLObjectNotFound, AND)
 
 from canonical.config import config
-from canonical.database.constants import UTC_NOW
+from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote 
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -22,7 +22,7 @@ from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.interfaces import (IBranch, IBranchSet,
     ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.components.branch import BranchDelta
-from canonical.launchpad.database.revision import RevisionNumber
+from canonical.launchpad.database.revision import RevisionNumber, Revision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.helpers import contactEmailAddresses
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
@@ -77,9 +77,7 @@ class Branch(SQLBase):
 
     last_scanned = UtcDateTimeCol(default=None)
     last_scanned_id = StringCol(default=None)
-    revision_count = IntCol(default=None)
-    tip_revision = ForeignKey(dbName='tip_revision', foreignKey='Revision',
-                              default=None)
+    revision_count = IntCol(default=DEFAULT, notNull=True)
 
     cache_url = StringCol(default=None)
 
@@ -210,12 +208,28 @@ class Branch(SQLBase):
             RevisionNumber.q.branchID == self.id,
             RevisionNumber.q.sequence >= from_rev))
         did_something = False
+        # Since in the future we may not be storing the entire
+        # revision history, a simple count against RevisionNumber
+        # may not be sufficient to adjust the revision_count.
         for revno in revnos:
             revno.destroySelf()
+            self.revision_count -= 1
             did_something = True
-
         return did_something
 
+    def getTipRevision(self):
+        """See IBranch"""
+        tip_revision_id = self.last_scanned_id
+        if tip_revision_id is None:
+            return None
+        return Revision.selectOneBy(revision_id=tip_revision_id)
+
+    def updateScannedDetails(self, revision_id, revision_count):
+        """See IBranch."""
+        self.last_scanned = UTC_NOW
+        self.last_scanned_id = revision_id
+        self.revision_count = revision_count
+        
     def notificationRecipientAddresses(self):
         """See IBranch."""
         related_people = [
@@ -232,14 +246,11 @@ class Branch(SQLBase):
     def getDelta(self, old_branch, user):
         """See IBranch.getDelta()"""
         delta = ObjectDelta(old_branch, self)
-        delta.record_new_values(("title", "summary", "url",
-                                 "whiteboard",
-                                 "landing_target",
-                                 "tip_revision"))
+        delta.record_new_values(("summary", "whiteboard", "last_scanned_id"))
         delta.record_new_and_old(("name", "lifecycle_status",
-                                  "revision_count"))
+                                  "revision_count", "title", "url"))
         # delta.record_list_added_and_removed()
-        # XXX: TFP: finish this
+        # XXX thumper 2006-12-21: add in bugs and specs
         if delta.changes:
             changes = delta.changes
             changes["branch"] = self
@@ -249,7 +260,6 @@ class Branch(SQLBase):
         else:
             return None
         
-
 
 class BranchSet:
     """The set of all branches."""
