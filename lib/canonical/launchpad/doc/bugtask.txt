@@ -183,6 +183,7 @@ For a person:
     [u'Ubuntu',
      u'evolution (Ubuntu)',
      u'evolution (upstream)',
+     u'firefox 1.0 (upstream)',
      u'linux-source-2.6.15 (Ubuntu)',
      u'mozilla-firefox (Debian)',
      u'mozilla-firefox (Ubuntu)',
