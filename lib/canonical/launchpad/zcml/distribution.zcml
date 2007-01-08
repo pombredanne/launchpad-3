@@ -165,18 +165,6 @@
             lp:url="/distros/$Distribution.name/+members"
             />
         <browser:page
-            name="+bugs-index"
-            facet="bugs"
-            template="../templates/distribution-bugs.pt"
-            lp:url="/$Distribution.name/+bugs"
-            />
-        <browser:page
-            name="+bugs"
-            facet="bugs"
-            template="../templates/buglisting-default.pt"
-            lp:url="/$Distribution.name/+bugs?..."
-            />
-        <browser:page
             name="+translations"
             facet="translations"
             template="../templates/distribution-translations.pt"
@@ -193,6 +181,15 @@
             lp:url="/distros/$distribution/+builds-list"
             />
     </browser:pages>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IDistribution"
+        name="+bugs-index"
+        class="canonical.launchpad.browser.BugTaskSearchListingView"
+        permission="zope.Public"
+        facet="bugs"
+        template="../templates/distribution-bugs.pt"
+        />
 
     <browser:page
         for="canonical.launchpad.interfaces.IDistribution"
