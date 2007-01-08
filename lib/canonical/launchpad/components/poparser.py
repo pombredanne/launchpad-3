@@ -732,6 +732,20 @@ class POParser(object):
           u'abc'
           >>> parser._parse_quoted_string(u'\"ab\143\"')
           u'abc'
+
+          This test is to see whether we are able to handle escaped non ASCII
+          chars. To do this, we need to have a header with the charset set.
+          Let's create a fake one.
+
+          >>> class FakeHeader:
+          ...     charset = 'UTF-8'
+          >>> parser.header = FakeHeader()
+          >>> parser._parse_quoted_string(
+          ...     u'"view \\302\\253${version_title}\\302\\273"')
+          u'view \xab${version_title}\xbb'
+
+          Let's check now common errors.
+
           >>> parser._parse_quoted_string(u'abc')
           Traceback (most recent call last):
             ...
@@ -748,7 +762,9 @@ class POParser(object):
         if string[0] != '"':
             raise POSyntaxError(self._lineno, "string is not quoted")
         output = ''
+        # Remove initial quote char
         string = string[1:]
+
         escape_map = {
             'a': '\a',
             'b': '\b',
@@ -762,39 +778,50 @@ class POParser(object):
             '\\': '\\',
             }
         while string:
-            if string[0] == '\\':
-                if string[1] in escape_map:
-                    output += escape_map[string[1]]
-                    string = string[2:]
-                elif string[1] == 'x':
+            if string[0] == '\\' and string[1] in escape_map:
+                output += escape_map[string[1]]
+                string = string[2:]
+                continue
+            elif string[0] == '"':
+                string = string[1:]
+                break
+
+            escaped_string = ''
+            while string[0] == '\\':
+                if string[1] == 'x':
                     # hexadecimal escape
-                    output += unichr(int(string[2:4], 16))
+                    escaped_string += string[:4]
                     string = string[4:]
                 elif string[1].isdigit():
                     # octal escape
-                    digits = string[1]
+                    escaped_string += string[:2]
                     string = string[2:]
                     # up to two more octal digits
                     for i in range(2):
                         if string[0].isdigit():
-                            digits += string[0]
+                            escaped_string += string[0]
                             string = string[1:]
                         else:
                             break
-                    output += unichr(int(digits, 8))
+                elif string[1] in escape_map:
+                    break
                 else:
                     raise POSyntaxError(self._lineno,
                                         "unknown escape sequence %s"
                                         % string[:2])
-            elif string[0] == '"':
-                string = string[1:]
-                break
+            if escaped_string:
+                unescaped_string = escaped_string.decode('string-escape')
+
+                if self.header is not None:
+                    output += unescaped_string.decode(self.header.charset)
+                else:
+                    output += unescaped_string
             else:
                 output += string[0]
                 string = string[1:]
         else:
-            raise POSyntaxError(self._lineno,
-                                "string not terminated")
+            raise POSyntaxError(self._lineno, "string not terminated")
+
         # if there is any non-string data afterwards, raise an exception
         if string and not string.isspace():
             raise POSyntaxError(self._lineno,

@@ -236,5 +236,4 @@ Message strings in PO files can contain C string escape sequences:
   u'\x07\x08\x0b\x0c\t\x0b\\"\'\n8 8 80 p\n'
 
   >>> parser.messages[1].msgid
-  u'view \xc2\xab${version_title}\xc2\xbb'
-
+  u'view \xab${version_title}\xbb'
