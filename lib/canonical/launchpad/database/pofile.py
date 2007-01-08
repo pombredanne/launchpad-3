@@ -727,7 +727,7 @@ class POFile(SQLBase, RosettaStats):
             return True
 
         # If there are no activeselections, yet latestsubmission is defined,
-        # it must have been the case of deactivated translation
+        # it must have been the case of deactivated translation (bug #78501)
         if len(self.latestsubmission.active_selections) == 0:
             return False
 
