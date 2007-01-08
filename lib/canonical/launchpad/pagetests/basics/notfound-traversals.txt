@@ -341,7 +341,6 @@ And this is for a person:
 >>> check("/~name16/+editjabberids", auth=True)
 >>> check("/~name16/+codesofconduct", auth=True)
 >>> check("/~name16/+edithomepage", auth=True)
->>> check("/~name16/+edithackergotchi", auth=True)
 >>> check("/~name16/+review", auth=True)
 >>> check("/~name16/+portlet-emails")
 >>> check("/~name16/+portlet-details")

@@ -23,6 +23,7 @@ __all__ = [
     'PersonSpecFeedbackView',
     'PersonChangePasswordView',
     'PersonEditView',
+    'PersonEditHomePageView',
     'PersonEmblemView',
     'PersonAssignedBugTaskSearchListingView',
     'ReportedBugTaskSearchListingView',
@@ -1760,17 +1761,29 @@ class PersonChangePasswordView(LaunchpadFormView):
             "Password changed successfully"))
 
 
-class PersonEditView(LaunchpadEditFormView):
+class BasePersonEditView(LaunchpadEditFormView):
 
     schema = IPerson
-    field_names = ['displayname', 'name', 'hide_email_addresses', 'timezone',
-                   'gotchi']
-    custom_widget('timezone', SelectWidget, size=15)
+    field_names = []
 
     @action(_("Save"), name="save")
     def action_save(self, action, data):
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
+
+
+class PersonEditHomePageView(BasePersonEditView):
+
+    field_names = ['homepage_content']
+    custom_widget(
+        'homepage_content', TextAreaWidget, height=30, width=30)
+
+
+class PersonEditView(BasePersonEditView):
+
+    field_names = ['displayname', 'name', 'hide_email_addresses', 'timezone',
+                   'gotchi']
+    custom_widget('timezone', SelectWidget, size=15)
 
 
 class PersonEmblemView(GeneralFormView):
