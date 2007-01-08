@@ -205,6 +205,19 @@ one.)
 >>> check("/firefox/+bug/1/+addurl", auth=True)
 >>> check("/firefox/+bug/1/+activity", auth=True)
 
+Viewing a bug in a distribution context where the current development
+release is targeted.
+
+>>> check("/ubuntu/+bug/2", auth=True)
+>>> check("/ubuntu/+bug/2/+edit", auth=True)
+>>> check("/ubuntu/+bug/2/+secrecy", auth=True)
+>>> check("/ubuntu/+bug/2/+duplicate", auth=True)
+>>> check("/ubuntu/+bug/2/+subscribe", auth=True)
+>>> check("/ubuntu/+bug/2/+addsubscriber", auth=True)
+>>> check("/ubuntu/+bug/2/+addcomment", auth=True)
+>>> check("/ubuntu/+bug/2/+addurl", auth=True)
+>>> check("/ubuntu/+bug/2/+activity", auth=True)
+
 Viewing a bug comment.
 
 >>> check("/firefox/+bug/1/comments/1", auth=True)
