@@ -889,14 +889,13 @@ class DistroRelease(SQLBase, BugTargetBase):
         """ % sqlvalues(DistroReleaseQueueStatus.DONE)
 
         last_uploads = SourcePackageRelease.select(
-            query, limit=5,
+            query, limit=5, prejoins=['sourcepackagename'],
             clauseTables=['SourcePackageName', 'DistroReleaseQueue',
                           'DistroReleaseQueueSource'],
-            prejoins=['sourcepackagename'],
             orderBy=['-distroreleasequeue.id'])
 
         distro_sprs = [
-            self.getSourcePackageRelease(spr) for spr in last_uploads[:5]]
+            self.getSourcePackageRelease(spr) for spr in last_uploads]
 
         return distro_sprs
 
