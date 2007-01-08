@@ -1,0 +1,40 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:i18n="http://namespaces.zope.org/i18n"
+  xmlns:lp="http://launchpad.canonical.com"
+  i18n_domain="launchpad">
+
+  <!-- TemporaryBlobStorage -->
+  <content class="canonical.launchpad.database.TemporaryBlobStorage">
+    <allow
+      interface="canonical.launchpad.interfaces.ITemporaryBlobStorage" />
+  </content>
+
+  <browser:generalform
+    name="+storeblob"
+    for="canonical.launchpad.interfaces.ILaunchpadRoot"
+    class="canonical.launchpad.browser.TemporaryBlobStorageAddView"
+    schema="canonical.launchpad.interfaces.ITemporaryBlobStorage"
+    label="Store BLOB"
+    fields="blob"
+    keyword_arguments="blob"
+    permission="zope.Public"
+    template="../templates/temporaryblobstorage-storeblob.pt"
+    >
+  </browser:generalform>
+
+  <!-- TemporaryStorageManager -->
+  <content class="canonical.launchpad.database.TemporaryStorageManager">
+    <allow
+      interface="canonical.launchpad.interfaces.ITemporaryStorageManager" />
+  </content>
+
+  <securedutility
+      class="canonical.launchpad.database.TemporaryStorageManager"
+      provides="canonical.launchpad.interfaces.ITemporaryStorageManager">
+      <allow
+        interface="canonical.launchpad.interfaces.ITemporaryStorageManager" />
+  </securedutility>
+
+</configure>

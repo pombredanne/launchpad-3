@@ -12,7 +12,7 @@ support. That is why both were linked together. The linked bug appear in
 the 'Related Bugs' portlet.
 
     >>> anon_browser.open(
-    ...     'http://launchpad.dev/products/firefox/+spec/svg-support')
+    ...     'http://launchpad.dev/firefox/+spec/svg-support')
     >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(anon_browser.contents)
     >>> soup.first('li', 'bug')
@@ -35,7 +35,7 @@ This link is only available to registered users:
     Unauthorized: ...
 
     >>> user_browser.open(
-    ...     'http://launchpad.dev/products/firefox/+spec/svg-support')
+    ...     'http://launchpad.dev/firefox/+spec/svg-support')
     >>> user_browser.getLink('Link to bug').click()
 
 To link the bug, the user enters the bug ID and clicks the 'Add'

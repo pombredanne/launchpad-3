@@ -54,7 +54,7 @@ Now we add a new project.
   >>> admin_browser.getControl('Name', index=0).value = 'apache'
   >>> admin_browser.getControl('Add').click()
   >>> admin_browser.url
-  'http://launchpad.dev/projects/apache'
+  'http://launchpad.dev/apache'
 
   >>> anon_browser.open(admin_browser.url)
   >>> 'The Apache Project' in anon_browser.contents

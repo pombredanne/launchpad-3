@@ -14,7 +14,8 @@ import logging
 import doctest
 import unittest
 
-from canonical.launchpad.interfaces import IPOMessage, IPOHeader, IPOParser
+from canonical.launchpad.interfaces import (
+    IPOMessage, IPOHeader, IPOParser, EXPORT_DATE_HEADER)
 from zope.interface import implements
 from zope.app import datetimeutils
 
@@ -564,12 +565,26 @@ class POHeader(dict, POMessage):
         else:
             try:
                 date = datetimeutils.parseDatetimetz(date_string)
-            except (datetimeutils.SyntaxError, datetimeutils.DateError,
-                    datetimeutils.DateTimeError, ValueError):
+            except datetimeutils.DateTimeError:
                 # invalid date format
                 date = None
 
         return (date_string, date)
+
+    def getRosettaExportDate(self):
+        """See IPOHeader."""
+
+        date_string = self.get(EXPORT_DATE_HEADER, None)
+        if date_string is None:
+            date = None
+        else:
+            try:
+                date = datetimeutils.parseDatetimetz(date_string)
+            except datetimeutils.DateTimeError:
+                # invalid date format
+                date = None
+
+        return date
 
     def getPluralFormExpression(self):
         """See IPOHeader."""
@@ -753,7 +768,7 @@ class POParser(object):
                     string = string[2:]
                 elif string[1] == 'x':
                     # hexadecimal escape
-                    output += chr(int(string[2:4], 16))
+                    output += unichr(int(string[2:4], 16))
                     string = string[4:]
                 elif string[1].isdigit():
                     # octal escape
@@ -766,7 +781,7 @@ class POParser(object):
                             string = string[1:]
                         else:
                             break
-                    output += chr(int(digits, 8))
+                    output += unichr(int(digits, 8))
                 else:
                     raise POSyntaxError(self._lineno,
                                         "unknown escape sequence %s"

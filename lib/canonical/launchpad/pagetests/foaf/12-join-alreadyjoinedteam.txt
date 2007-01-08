@@ -3,7 +3,7 @@
 
 
   >>> print http(r"""
-  ... GET /people/myemail/+join HTTP/1.1
+  ... GET /~myemail/+join HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
