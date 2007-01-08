@@ -1,9 +1,41 @@
 Here we are going to check the basic behaviour of the translation form when we
 render just one message with all available information for it.
 
-Let's identify us first.
+First, we need to be sure that anonymous users are able to browse translations
+but are unable to actually change them.
+
+  >>> browser.open(
+  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     '+pots/evolution-2.2/es/5')
+  >>> browser.url
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/5/+translate'
+
+We are in read only mode, so there shouldn't be any textareas:
+
+  >>> main_content = find_tag_by_id(browser.contents, 'messages_to_translate')
+  >>> for textarea in main_content.findAll('textarea'):
+  ...     raise AssertionError, 'Found textarea:\n%s' % textarea
+
+Neither any input widget:
+
+  >>> for input in main_content.findAll('input'):
+  ...     raise AssertionError, 'Found input:\n%s' % input
+
+Also, any anonymous POST submission should fail:
+
+  >>> print http(r"""
+  ... POST /ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/5/+translate HTTP/1.1
+  ... """)
+  HTTP/1.1 500 Internal Server Error
+  ...
+  ...UnexpectedFormData: Anonymous users cannot do POST submissions...
+
+
+Let's log in.
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+
+Now, we are going to test common parts of the navigation.
 
 The main page for a pomsgset object should redirect us to the translation form.
 
@@ -233,9 +265,7 @@ Check that suggestions come in from other contexts:
 
   >>> "<label>Suggested elsewhere:</label>" in browser.contents
   True
-  >>> suggested = ("This is a suggestion added by a non-editor for a multiline"
-  ...     "entry, and it happens to have a ")
-  >>> suggested in browser.contents
+  >>> "suggestion added by a non-editor for a multiline" in browser.contents
   True
 
 Check that no other suggestions are presented (since no others are
@@ -264,17 +294,6 @@ UnexpectedFormData exception:
   >>> browser.open(
   ...  'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
   ...  '+pots/evolution-2.2/es/14/+translate?field.alternative_language=ja&'
-  ...  'field.alternative_language=aj')
-  Traceback (most recent call last):
-  ...
-  UnexpectedFormData: You specified...
-
-(And this happens when we try and do this for the main translation page
-as well!)
-
-  >>> browser.open(
-  ...  'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
-  ...  '+pots/evolution-2.2/es/+translate?field.alternative_language=ja&'
   ...  'field.alternative_language=aj')
   Traceback (most recent call last):
   ...

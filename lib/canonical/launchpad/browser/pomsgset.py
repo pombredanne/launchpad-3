@@ -435,6 +435,9 @@ class BaseTranslationView(LaunchpadView):
         self.size = self.batchnav.currentBatch().size
 
         if (self.request.method == 'POST'):
+            if self.user is None:
+                raise UnexpectedFormData, (
+                    'Anonymous users cannot do POST submissions.')
             try:
                 # Try to get the timestamp when the submitted form was
                 # created. We use it to detect whether someone else updated

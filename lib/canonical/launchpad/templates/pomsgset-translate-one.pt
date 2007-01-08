@@ -12,6 +12,7 @@
       <span tal:replace="view/sequence">1</span>.
       <input
         type="hidden"
+        tal:condition="request/lp:person"
         tal:attributes="
         name string:msgset_${context/potmsgset/id}"
         />
@@ -26,6 +27,7 @@
     </label>
   </th>
   <td class="icon left right">
+    <tal:logged-in condition="request/lp:person">
     <a href=""
        tal:attributes="
          onClick string:
@@ -35,6 +37,7 @@
            selectWidget('msgset_${context/potmsgset/id}_${language_code}_translation_0_new_select', event);;
            return false;;
        "><img alt="Copy text" src="/@@/copy"></a>
+    </tal:logged-in>
   </td>
   <td>
     <div tal:content="structure view/msgid"
@@ -48,6 +51,7 @@
     <label>English plural:</label>
   </th>
   <td class="icon left right">
+    <tal:logged-in condition="request/lp:person">
     <a href=""
        tal:attributes="
          onClick string:
@@ -57,6 +61,7 @@
              ${context/pluralforms});;
            return false;;
       "><img alt="Copy text" src="/@@/copy"></a>
+    </tal:logged-in>
   </td>
   <td>
     <div tal:content="structure view/msgid_plural"
@@ -151,6 +156,7 @@
       <tal:with-content
            condition="translation_dictionary/active_translation">
         <td>
+          <tal:logged-in condition="request/lp:person">
           <tal:user-is-official-translator condition="view/user_is_official_translator">
             <input
               type="radio"
@@ -175,6 +181,7 @@
                    return false;;
                "><img alt="Copy text" src="/@@/copy"></a>
           </tal:is-not-editor>
+          </tal:logged-in>
         </td>
         <td>
           <div tal:content="structure translation_dictionary/active_translation"
@@ -245,7 +252,8 @@
         <div tal:replace="structure suggestions/@@+display" />
       </tal:suggestions>
     </tal:suggestion_block>
-    <tr class="discreet secondary translation">
+    <tr class="discreet secondary translation"
+        tal:condition="request/lp:person">
       <th colspan="3">
         <label
           tal:condition="not:view/user_is_official_translator"
@@ -339,7 +347,7 @@
   <tr class="secondary">
     <td colspan="4" />
     <td>
-      <div>
+      <div tal:condition="request/lp:person">
         <label class="fuzzy-checkbox">
           <input
             type="checkbox"
@@ -349,6 +357,16 @@
               disabled not:view/user_is_official_translator;
               name string:msgset_${context/potmsgset/id}_${language_code}_needsreview
               " />
+          <tal:block condition="not:view/is_plural">
+            Someone should review this translation
+          </tal:block>
+          <tal:block condition="view/is_plural">
+            Someone should review these translations
+          </tal:block>
+        </label>
+      </div>
+      <div tal:condition="not: request/lp:person">
+        <label tal:condition="view/is_fuzzy">
           <tal:block condition="not:view/is_plural">
             Someone should review this translation
           </tal:block>
