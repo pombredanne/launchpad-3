@@ -726,13 +726,15 @@ class POFile(SQLBase, RosettaStats):
         if self.latestsubmission is None:
             return True
 
-        change_time = self.latestsubmission.datecreated
+        # We don't check the date of submission creation
+        # (self.latestsubmission.datecreated), because whenever you create
+        # a submission, if it become active, it will have the
+        # date_reviewed==datecreated.  Or you will activate ("review") the
+        # submission created earlier.
+        change_time = datetime.datetime.min
 
         for selection in self.latestsubmission.active_selections:
             if selection is not None:
-                # XXX: DaniloSegan 20070104: This sync is needed to help
-                # tests to avoid cache problems. See bug #74025 for more info.
-                selection.sync()
                 if selection.isNewerThan(change_time):
                     change_time = selection.date_reviewed
 

@@ -155,12 +155,8 @@ class POMsgSet(SQLBase):
         """See IPOMsgSet."""
         for plural_index in range(self.pluralforms):
             selection = self.getSelection(plural_index)
-            if selection is not None:
-                # XXX: CarlosPerelloMarin 20061201: This sync is needed to help
-                # tests to avoid cache problems. See bug #74025 for more info.
-                selection.sync()
-                if selection.isNewerThan(timestamp):
-                    return True
+            if selection is not None and selection.isNewerThan(timestamp):
+                return True
         return False
 
     def getSelection(self, pluralform):

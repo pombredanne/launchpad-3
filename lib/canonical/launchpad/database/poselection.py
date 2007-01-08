@@ -31,6 +31,9 @@ class POSelection(SQLBase):
 
     def isNewerThan(self, timestamp):
         """See IPOSelection."""
+        # XXX: CarlosPerelloMarin 20061201: This sync is needed to help
+        # tests to avoid cache problems. See bug #74025 for more info.
+        self.sync()
         if (self.activesubmission is not None and
             self.date_reviewed > timestamp):
             return True
