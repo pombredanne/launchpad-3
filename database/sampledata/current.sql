@@ -826,6 +826,7 @@ ALTER TABLE bugnomination DISABLE TRIGGER ALL;
 INSERT INTO bugnomination (id, bug, distrorelease, productseries, status, date_created, date_decided, "owner", decider) VALUES (1, 1, NULL, 2, 10, '2006-08-21 22:20:54.707408', NULL, 52, NULL);
 INSERT INTO bugnomination (id, bug, distrorelease, productseries, status, date_created, date_decided, "owner", decider) VALUES (2, 1, 3, NULL, 10, '2006-08-21 22:21:14.60328', NULL, 52, NULL);
 INSERT INTO bugnomination (id, bug, distrorelease, productseries, status, date_created, date_decided, "owner", decider) VALUES (3, 2, 3, NULL, 20, '2006-08-21 22:23:08.163936', '2006-08-21 22:23:08.332055', 1, 1);
+INSERT INTO bugnomination (id, bug, distrorelease, productseries, status, date_created, date_decided, "owner", decider) VALUES (4, 5, NULL, 2, 20, '2007-01-04 15:00:50.431687', '2007-01-04 15:00:50.552021', 16, 16);
 
 
 ALTER TABLE bugnomination ENABLE TRIGGER ALL;
@@ -912,6 +913,7 @@ INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackag
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (26, 2, NULL, 1, NULL, NULL, NULL, 10, NULL, 30, NULL, '2005-01-26 10:11:02.729077', '2004-01-26 10:11:02.729077', 16, NULL, NULL, NULL, '''ubuntu'':1B', 'Ubuntu', NULL, NULL, NULL, NULL);
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (27, 7, NULL, 3, NULL, 9, NULL, 999, 999, 999, NULL, '2005-01-27 16:45:45.054836', '2004-01-27 16:45:45.054836', 12, NULL, 7, NULL, '''debian'':2B ''evolut'':1B', 'evolution (Debian)', NULL, NULL, NULL, NULL);
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (28, 2, NULL, NULL, 3, NULL, NULL, 10, NULL, 5, NULL, NULL, '2006-08-21 22:23:08.163936', 1, NULL, NULL, NULL, '''hoari'':2B ''ubuntu'':1B', 'Ubuntu Hoary', NULL, NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (29, 5, NULL, NULL, NULL, NULL, NULL, 10, NULL, 5, NULL, NULL, '2007-01-04 15:00:50.431687', 16, NULL, NULL, NULL, '''1.0'':2B ''firefox'':1B ''upstream'':3B', 'firefox 1.0 (upstream)', NULL, NULL, NULL, 2);
 
 
 ALTER TABLE bugtask ENABLE TRIGGER ALL;
@@ -1667,6 +1669,7 @@ INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (57, '
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (58, 'karl@canonical.com', 63, 4, '2006-10-16 18:31:43.628123');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (59, 'limi@plone.org', 10, 1, '2006-10-16 18:31:43.628504');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (60, 'janitor@support.launchpad.net', 65, 4, '2006-10-17 23:23:23.232323');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (61, 'matsubara@async.com.br', 66, 1, '2006-12-13 21:19:06.369142');
 
 
 ALTER TABLE emailaddress ENABLE TRIGGER ALL;
@@ -1762,6 +1765,8 @@ INSERT INTO karma (id, datecreated, person, "action", product, distribution, sou
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (41, '2001-01-02 00:00:00', 1, 22, 12, NULL, NULL);
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (42, '2001-01-02 00:00:00', 1, 22, 4, NULL, NULL);
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (43, '2001-01-02 00:00:00', 1, 22, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (44, '2001-12-13 21:19:05.833412', 16, 10, 5, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (45, '2001-12-13 21:19:06.369142', 16, 11, 5, NULL, NULL);
 
 
 ALTER TABLE karma ENABLE TRIGGER ALL;
@@ -2513,6 +2518,8 @@ INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_acc
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (54, 54, 'foobar-1.0.dsc', 'application/dsc', NULL, '2006-12-01 15:41:34.028627');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (55, 55, 'cdrkit_1.0_all.deb', 'application/deb', NULL, '2006-12-01 15:41:34.028627');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (56, 56, 'foobar_1.0_all.deb', 'application/deb', NULL, '2006-12-01 15:41:34.028627');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (57, 57, 'evolution-2.2-test.pot', 'application/x-po', NULL, '2006-12-13 21:17:56.241901');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (58, 58, 'pt_BR.po', 'application/x-po', NULL, '2006-12-13 21:18:28.796588');
 
 
 ALTER TABLE libraryfilealias ENABLE TRIGGER ALL;
@@ -2572,6 +2579,8 @@ INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, d
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (54, '2006-12-01 16:41:34.028627', NULL, 716, '86d537a0d8b5b346d02752a853cc6ea648a0ebd7', false, 'eeb4c1e00a2e17a1eb51bd8b92fa5437');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (55, '2006-12-01 16:41:34.028627', NULL, 716, '86d537a0d8b5b346d02752a853cc6ea648a0ebd7', false, 'eeb4c1e00a2e17a1eb51bd8b92fa5437');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (56, '2006-12-01 16:41:34.028627', NULL, 716, '86d537a0d8b5b346d02752a853cc6ea648a0ebd7', false, 'eeb4c1e00a2e17a1eb51bd8b92fa5437');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (57, '2006-12-13 21:17:56.241901', NULL, 1599, 'acdf6b9b99c39b1585f829ec7d68598a8e10816d', false, '5c6fa250b612e7e4d17261268a4d8400');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (58, '2006-12-13 21:18:28.796588', NULL, 1599, 'acdf6b9b99c39b1585f829ec7d68598a8e10816d', false, '5c6fa250b612e7e4d17261268a4d8400');
 
 
 ALTER TABLE libraryfilecontent ENABLE TRIGGER ALL;
@@ -2961,6 +2970,7 @@ INSERT INTO person (id, displayname, "password", teamowner, teamdescription, nam
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (63, 'Karl Tilbury', 'UnjDN34pTZ0xE3vbCNZDedIVpLPrA9nty9S/mOzbeefQXAEN6CMNUQ==', NULL, NULL, 'karl', NULL, '''karl'':1A,2A ''tilburi'':3A', NULL, NULL, 1, NULL, '2006-05-23 12:49:30.483464', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, 8, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (64, 'Landscape Developers', NULL, 12, NULL, 'landscape-developers', NULL, '''develop'':3A,5A ''landscap'':2A,4A ''landscape-develop'':1A', NULL, NULL, 1, NULL, '2006-07-11 20:01:09.874128', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (65, 'Support Tracker Janitor', NULL, NULL, NULL, 'support-tracker-janitor', NULL, '''janitor'':4A,7A ''support'':2A,5A ''tracker'':3A,6A ''support-tracker-janitor'':1A', NULL, NULL, 1, NULL, '2006-10-04 16:20:51.19954', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, 1, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (66, 'Diogo Matsubara', NULL, NULL, NULL, 'matsubara', NULL, '''diogo'':2A ''matsubara'':1A,3A', NULL, NULL, 1, NULL, '2006-12-13 21:19:06.369142', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 4, 'when importing the Portuguese (Brazil) (pt_BR) translation of evolution-2.2-test in Evolution trunk', NULL, NULL);
 
 
 ALTER TABLE person ENABLE TRIGGER ALL;
@@ -3572,6 +3582,23 @@ Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=1; plural=0
 ', true, NULL, NULL, 0, 0, 1, NULL, 13, NULL, 'ja.po', NULL, NULL, '2005-10-11 23:08:01.899322', 695, NULL);
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, latestsubmission, from_sourcepackagename) VALUES (30, 6, 521, NULL, ' Spanish translation for wammu
+ Copyright (c) (c) 2006 Canonical Ltd, and Rosetta Contributors 2006
+ This file is distributed under the same license as the wammu package.
+ FIRST AUTHOR <EMAIL@ADDRESS>, 2006.
+
+', 'Project-Id-Version: wammu
+Report-Msgid-Bugs-To: michal@cihar.com
+POT-Creation-Date: 2006-11-10 23:24+0100
+PO-Revision-Date: 2006-12-04 19:50+0000
+Last-Translator: Diogo Matsubara <matsubara@async.com.br>
+Language-Team: Spanish <es@li.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Rosetta-Export-Date: 2006-12-04 19:58+0000
+Plural-Forms: nplurals=2; plural=n > 1
+', true, NULL, NULL, 5, 0, 0, NULL, 16, NULL, 'po/pt_BR.po', NULL, NULL, '2006-12-13 21:18:28.796588', 701, NULL);
 
 
 ALTER TABLE pofile ENABLE TRIGGER ALL;
@@ -3608,6 +3635,7 @@ INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last
 INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (27, 50, 18, 669, '2005-05-06 21:12:39.082421');
 INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (28, 51, 16, 684, '2005-05-06 21:12:42.747648');
 INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (29, 52, 1, 693, '2005-08-29 16:16:58.010285');
+INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (30, 66, 30, 701, '2006-12-13 21:19:06.369142');
 
 
 ALTER TABLE pofiletranslator ENABLE TRIGGER ALL;
@@ -3947,6 +3975,14 @@ INSERT INTO pomsgid (id, msgid) VALUES (145, 'This is not a bug, Don''t submit b
 INSERT INTO pomsgid (id, msgid) VALUES (146, '%s: option `%s'' is ambiguous
 ');
 INSERT INTO pomsgid (id, msgid) VALUES (147, 'test man page');
+INSERT INTO pomsgid (id, msgid) VALUES (148, 'Bat: %(battery_percent)d %% (%(power_source)s), Sig: %(signal_percent)d %%, Time: %(time)s');
+INSERT INTO pomsgid (id, msgid) VALUES (149, 'Before submiting please try searching for simmilar bugs on %s');
+INSERT INTO pomsgid (id, msgid) VALUES (150, 'Bluetooth device scan completed');
+INSERT INTO pomsgid (id, msgid) VALUES (151, 'Bold');
+INSERT INTO pomsgid (id, msgid) VALUES (152, 'C&alls');
+INSERT INTO pomsgid (id, msgid) VALUES (153, '%(count)d messages exported to "%(path)s (%(type)s)"');
+INSERT INTO pomsgid (id, msgid) VALUES (154, '%d messages exported to IMAP server "%s"');
+INSERT INTO pomsgid (id, msgid) VALUES (155, '%d messages exported to maildir "%s"');
 
 
 ALTER TABLE pomsgid ENABLE TRIGGER ALL;
@@ -4129,6 +4165,14 @@ INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen
 INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (173, 165, 146, '2005-08-25 15:27:55.264235', '2005-08-25 15:27:55.264235', true, 0);
 INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (174, 166, 147, '2006-08-14 18:41:39.782681', '2006-08-14 18:41:39.782681', true, 0);
 INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (175, 167, 147, '2006-08-14 18:43:56.040134', '2006-08-14 18:43:56.040134', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (176, 168, 148, '2006-12-13 21:19:05.833412', '2006-12-13 21:19:06.369142', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (177, 169, 149, '2006-12-13 21:19:05.833412', '2006-12-13 21:19:06.369142', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (178, 170, 150, '2006-12-13 21:19:05.833412', '2006-12-13 21:19:06.369142', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (179, 171, 151, '2006-12-13 21:19:05.833412', '2006-12-13 21:19:06.369142', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (180, 172, 152, '2006-12-13 21:19:05.833412', '2006-12-13 21:19:06.369142', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (181, 173, 153, '2006-12-13 21:19:05.833412', '2006-12-13 21:19:06.369142', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (182, 174, 154, '2006-12-13 21:19:05.833412', '2006-12-13 21:19:06.369142', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (183, 175, 155, '2006-12-13 21:19:05.833412', '2006-12-13 21:19:06.369142', true, 0);
 
 
 ALTER TABLE pomsgidsighting ENABLE TRIGGER ALL;
@@ -4878,6 +4922,14 @@ INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, com
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (739, 0, 29, false, false, false, NULL, 147, false, false, false);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (740, 0, 29, false, false, false, NULL, 148, false, false, false);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (741, 0, 29, false, false, false, NULL, 149, false, false, false);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (742, 1, 30, false, false, false, '', 168, false, false, false);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (743, 2, 30, true, false, false, '', 169, false, true, false);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (744, 3, 30, true, false, false, '', 170, false, true, false);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (745, 4, 30, false, false, false, '', 171, false, false, false);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (746, 5, 30, true, false, false, '', 172, false, true, false);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (747, 6, 30, true, true, true, '', 173, true, true, false);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (748, 7, 30, true, true, false, '', 174, false, true, false);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (749, 8, 30, true, true, false, '', 175, false, true, false);
 
 
 ALTER TABLE pomsgset ENABLE TRIGGER ALL;
@@ -5572,6 +5624,12 @@ INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsu
 INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsubmission, reviewer, date_reviewed) VALUES (685, 599, 0, NULL, NULL, NULL, NULL);
 INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsubmission, reviewer, date_reviewed) VALUES (686, 15, 2, 694, NULL, 13, '2005-10-11 20:18:55.9815');
 INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsubmission, reviewer, date_reviewed) VALUES (687, 736, 0, 695, NULL, 13, '2005-10-11 23:08:01.899322');
+INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsubmission, reviewer, date_reviewed) VALUES (688, 743, 0, 696, 696, 66, '2006-12-13 21:19:06.369142');
+INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsubmission, reviewer, date_reviewed) VALUES (689, 744, 0, 697, 697, 66, '2006-12-13 21:19:06.369142');
+INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsubmission, reviewer, date_reviewed) VALUES (690, 746, 0, 698, 698, 66, '2006-12-13 21:19:06.369142');
+INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsubmission, reviewer, date_reviewed) VALUES (691, 747, 0, 699, 699, 66, '2006-12-13 21:19:06.369142');
+INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsubmission, reviewer, date_reviewed) VALUES (692, 748, 0, 700, 700, 66, '2006-12-13 21:19:06.369142');
+INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsubmission, reviewer, date_reviewed) VALUES (693, 749, 0, 701, 701, 66, '2006-12-13 21:19:06.369142');
 
 
 ALTER TABLE poselection ENABLE TRIGGER ALL;
@@ -6269,6 +6327,12 @@ INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datec
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (693, 14, 0, 652, 2, '2005-08-29 16:16:58.010285', 52, 1);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (694, 15, 2, 7, 2, '2005-10-11 20:18:55.9815', 13, 1);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (695, 736, 0, 10, 2, '2005-10-11 23:08:01.899322', 13, 1);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (696, 743, 0, 653, 1, '2006-12-13 21:19:06.369142', 66, 1);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (697, 744, 0, 654, 1, '2006-12-13 21:19:06.369142', 66, 1);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (698, 746, 0, 655, 1, '2006-12-13 21:19:06.369142', 66, 1);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (699, 747, 0, 656, 1, '2006-12-13 21:19:06.369142', 66, 1);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (700, 748, 0, 657, 1, '2006-12-13 21:19:06.369142', 66, 1);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (701, 749, 0, 658, 1, '2006-12-13 21:19:06.369142', 66, 1);
 
 
 ALTER TABLE posubmission ENABLE TRIGGER ALL;
@@ -6334,7 +6398,17 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=CHARSET
 Content-Transfer-Encoding: 8bit
 ', 4, NULL, false, NULL, NULL, '2005-05-06 21:12:33.238579');
-INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, path, iscurrent, messagecount, "owner", sourcepackagename, distrorelease, sourcepackageversion, "header", potemplatename, binarypackagename, languagepack, productseries, from_sourcepackagename, date_last_updated) VALUES (6, 0, NULL, NULL, NULL, '2005-08-10 09:31:29.606407', 'po/evolution-2.2-test.pot', true, 0, 12, NULL, NULL, NULL, NULL, 5, NULL, false, 3, NULL, '2006-05-11 20:07:01.432042');
+INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, path, iscurrent, messagecount, "owner", sourcepackagename, distrorelease, sourcepackageversion, "header", potemplatename, binarypackagename, languagepack, productseries, from_sourcepackagename, date_last_updated) VALUES (6, 0, NULL, NULL, NULL, '2005-08-10 09:31:29.606407', 'po/evolution-2.2-test.pot', true, 8, 12, NULL, NULL, NULL, 'Project-Id-Version: wammu
+Report-Msgid-Bugs-To: michal@cihar.com
+POT-Creation-Date: 2006-11-10 23:24+0100
+PO-Revision-Date: 2006-12-04 19:50+0000
+Last-Translator: Diogo Matsubara <matsubara@async.com.br>
+Language-Team: Spanish <es@li.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Rosetta-Export-Date: 2006-12-04 19:58+0000
+', 5, NULL, false, 3, NULL, '2006-12-13 21:19:05.945938');
 INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, path, iscurrent, messagecount, "owner", sourcepackagename, distrorelease, sourcepackageversion, "header", potemplatename, binarypackagename, languagepack, productseries, from_sourcepackagename, date_last_updated) VALUES (7, 0, NULL, NULL, NULL, '2006-08-14 18:41:07.274661', 'man.pot', true, 1, 13, 9, 3, NULL, 'Project-Id-Version: PACKAGE VERSION
 POT-Creation-Date: 2006-08-14 15:01+0100
 PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
@@ -6556,6 +6630,14 @@ INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, file
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (165, 146, 23, 1, '', 'lib/getopt.c:629 lib/getopt.c:641', '', 'c-format');
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (166, 147, 1, 7, '', 'test_browserwidget.py:34', '', '');
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (167, 147, 1, 8, '', 'test_browserwidget.py:34', '', '');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (168, 148, 1, 6, '', 'Wammu/Main.py:469', '', 'python-format');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (169, 149, 2, 6, '', 'Wammu/Error.py:82', '', 'python-format');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (170, 150, 3, 6, '', 'Wammu/PhoneSearch.py:127 Wammu/PhoneSearch.py:157', '', '');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (171, 151, 4, 6, '', 'Wammu/Data.py:652', '', '');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (172, 152, 5, 6, '', 'Wammu/Main.py:276', '', '');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (173, 153, 6, 6, '', '', '', '');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (174, 154, 7, 6, '', '', '', '');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (175, 155, 8, 6, '', '', '', '');
 
 
 ALTER TABLE potmsgset ENABLE TRIGGER ALL;
@@ -7900,6 +7982,12 @@ INSERT INTO potranslation (id, translation) VALUES (648, ' Srprise! (non-editor)
 INSERT INTO potranslation (id, translation) VALUES (649, ' bang bang in evo hoary');
 INSERT INTO potranslation (id, translation) VALUES (652, 'This is a suggestion added by a non-editor for a multiline entry, and it happens to have a very long first line.
 It should work! :-P');
+INSERT INTO potranslation (id, translation) VALUES (653, 'Antes de enviar, por favor, pruebe a buscar un bug similar en %s');
+INSERT INTO potranslation (id, translation) VALUES (654, 'Búsqueda de dispositivos bluetooth completada');
+INSERT INTO potranslation (id, translation) VALUES (655, 'L&lamadas');
+INSERT INTO potranslation (id, translation) VALUES (656, '%d mensajes exportados al mailbox "%s"');
+INSERT INTO potranslation (id, translation) VALUES (657, '%d mensajes exportados al servidor IMAP "%s"');
+INSERT INTO potranslation (id, translation) VALUES (658, '%d mensajes exportados al directorio mail "%s"');
 
 
 ALTER TABLE potranslation ENABLE TRIGGER ALL;
@@ -8162,35 +8250,35 @@ ALTER TABLE productreleasefile ENABLE TRIGGER ALL;
 
 ALTER TABLE productseries DISABLE TRIGGER ALL;
 
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (1, 4, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.895136', NULL, 12, NULL);
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (2, 4, '1.0', 'The 1.0 branch of the Mozilla web browser. Currently, this is the stable branch of Mozilla, and all stable releases are made off this branch.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.898385', NULL, 12, NULL);
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (3, 5, 'trunk', 'The primary "trunk" of development for this product. This series
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (1, 4, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.895136', NULL, 12, NULL, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (2, 4, '1.0', 'The 1.0 branch of the Mozilla web browser. Currently, this is the stable branch of Mozilla, and all stable releases are made off this branch.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.898385', NULL, 12, NULL, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (3, 5, 'trunk', 'The primary "trunk" of development for this product. This series
 was automatically created and represents the idea of a primary trunk
 of software development without "stable branches". For most
 products, releases in this series will be "milestone" or "test"
 releases, and there should be other series for the stable releases
-of the product.', 14, 5, NULL, NULL, 1, ':pserver:anonymous@anoncvs.gnome.org:/cvs/gnome', 'evolution', 'MAIN', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.914873', NULL, 12, NULL);
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (4, 8, 'trunk', 'The primary "trunk" of development for this product. This series
+of the product.', 14, 5, NULL, NULL, 1, ':pserver:anonymous@anoncvs.gnome.org:/cvs/gnome', 'evolution', 'MAIN', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.914873', NULL, 12, NULL, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (4, 8, 'trunk', 'The primary "trunk" of development for this product. This series
 was automatically created and represents the idea of a primary trunk
 of software development without "stable branches". For most
 products, releases in this series will be "milestone" or "test"
 releases, and there should be other series for the stable releases
-of the product.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.91214', NULL, 12, NULL);
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (5, 11, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.899819', NULL, 12, NULL);
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (6, 12, 'trunk', 'The primary upstream development branch, from which all releases are made.', NULL, 2, NULL, NULL, 1, ':pserver:anonymous@cvs.sourceforge.net:/cvsroot/liba52', 'a52dec', 'MAIN', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.913564', NULL, 16, NULL);
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (7, 12, 'failedbranch', 'A branch where auto test has failed.', NULL, 3, NULL, NULL, 1, ':pserver:anonymous@cvs.sourceforge.net:/cvsroot/liba52', 'a52dec', 'AUTOTESTFAILED', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.913564', NULL, 16, NULL);
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (8, 15, 'trunk', 'The mainline for alsa-utils', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-09-15 09:10:03.531637', NULL, 1, NULL);
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (9, 16, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-07-11 19:59:17.311451', NULL, 12, NULL);
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (10, 14, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-11 06:16:00.934312', NULL, 12, NULL);
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (11, 13, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-11 06:16:00.934312', NULL, 16, NULL);
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (12, 9, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-11 06:16:00.934312', NULL, 16, NULL);
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (13, 7, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-11 06:16:00.934312', NULL, 12, NULL);
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (14, 6, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-11 06:16:00.934312', NULL, 12, NULL);
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (15, 3, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-11 06:16:00.934312', NULL, 2, NULL);
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (16, 1, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-11 06:16:00.934312', NULL, 17, NULL);
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (17, 2, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-14 07:56:10.631636', NULL, 2, NULL);
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (18, 10, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-14 07:56:10.631636', NULL, 2, NULL);
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch) VALUES (19, 17, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-11-24 12:48:19.178553', NULL, 12, NULL);
+of the product.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.91214', NULL, 12, NULL, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (5, 11, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.899819', NULL, 12, NULL, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (6, 12, 'trunk', 'The primary upstream development branch, from which all releases are made.', NULL, 2, NULL, NULL, 1, ':pserver:anonymous@cvs.sourceforge.net:/cvsroot/liba52', 'a52dec', 'MAIN', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.913564', NULL, 16, NULL, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (7, 12, 'failedbranch', 'A branch where auto test has failed.', NULL, 3, NULL, NULL, 1, ':pserver:anonymous@cvs.sourceforge.net:/cvsroot/liba52', 'a52dec', 'AUTOTESTFAILED', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.913564', NULL, 16, NULL, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (8, 15, 'trunk', 'The mainline for alsa-utils', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-09-15 09:10:03.531637', NULL, 1, NULL, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (9, 16, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-07-11 19:59:17.311451', NULL, 12, NULL, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (10, 14, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-11 06:16:00.934312', NULL, 12, NULL, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (11, 13, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-11 06:16:00.934312', NULL, 16, NULL, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (12, 9, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-11 06:16:00.934312', NULL, 16, NULL, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (13, 7, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-11 06:16:00.934312', NULL, 12, NULL, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (14, 6, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-11 06:16:00.934312', NULL, 12, NULL, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (15, 3, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-11 06:16:00.934312', NULL, 2, NULL, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (16, 1, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-11 06:16:00.934312', NULL, 17, NULL, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (17, 2, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-14 07:56:10.631636', NULL, 2, NULL, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (18, 10, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-14 07:56:10.631636', NULL, 2, NULL, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (19, 17, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-11-24 12:48:19.178553', NULL, 12, NULL, NULL);
 
 
 ALTER TABLE productseries ENABLE TRIGGER ALL;
@@ -9271,6 +9359,7 @@ INSERT INTO teamparticipation (id, team, person) VALUES (99, 63, 63);
 INSERT INTO teamparticipation (id, team, person) VALUES (100, 59, 63);
 INSERT INTO teamparticipation (id, team, person) VALUES (101, 64, 12);
 INSERT INTO teamparticipation (id, team, person) VALUES (102, 65, 65);
+INSERT INTO teamparticipation (id, team, person) VALUES (103, 66, 66);
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;
@@ -9376,6 +9465,8 @@ ALTER TABLE translationgroup ENABLE TRIGGER ALL;
 
 ALTER TABLE translationimportqueueentry DISABLE TRIGGER ALL;
 
+INSERT INTO translationimportqueueentry (id, path, content, importer, dateimported, distrorelease, sourcepackagename, productseries, is_published, pofile, potemplate, status, date_status_changed) VALUES (1, 'po/evolution-2.2-test.pot', 57, 16, '2006-12-13 21:17:56.241901', NULL, NULL, 3, true, NULL, 6, 2, '2006-12-13 21:18:40.885499');
+INSERT INTO translationimportqueueentry (id, path, content, importer, dateimported, distrorelease, sourcepackagename, productseries, is_published, pofile, potemplate, status, date_status_changed) VALUES (2, 'po/pt_BR.po', 58, 16, '2006-12-13 21:18:28.796588', NULL, NULL, 3, true, 30, 6, 2, '2006-12-13 21:18:40.898084');
 
 
 ALTER TABLE translationimportqueueentry ENABLE TRIGGER ALL;
@@ -9546,6 +9637,7 @@ INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (50, 51, 'https://wiki.
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (51, 52, 'https://wiki.ubuntu.com/', 'NoPrivilegesPerson');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (52, 62, 'https://wiki.ubuntu.com/', 'BugWatchUpdater');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (53, 65, 'https://wiki.ubuntu.com/', 'SupportTrackerJanitor');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (54, 66, 'https://wiki.ubuntu.com/', 'DiogoMatsubara');
 
 
 ALTER TABLE wikiname ENABLE TRIGGER ALL;
