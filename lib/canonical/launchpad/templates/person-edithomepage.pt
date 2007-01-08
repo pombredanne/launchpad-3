@@ -19,7 +19,7 @@
 
   <div metal:fill-slot="main">
 
-    <div metal:use-macro="context/@@launchpad_editform/editform">
+    <div metal:use-macro="context/@@launchpad_form/form">
 
     <p metal:fill-slot="extra_info">
       Describe yourself &mdash; your current activities, interests and so on.
