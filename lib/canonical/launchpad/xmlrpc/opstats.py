@@ -40,6 +40,7 @@ class OpStats(LaunchpadXMLRPCView):
         OpStats.stats.update({
             # Global
             'requests': 0, # Requests, all protocols, all statuses
+            'soft timeouts': 0, # Requests that generated a soft timeout OOPS
 
             # XML-RPC specific
             'xml-rpc requests': 0, # XML-RPC requests, all statuses
