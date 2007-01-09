@@ -72,7 +72,11 @@ class OpStats(LaunchpadXMLRPCView):
         now = time()
         out = StringIO()
         for stat_key in sorted(OpStats.stats.keys()):
-            print >> out, '%s,%d@%d' % (stat_key, OpStats.stats[stat_key], now)
+            print >> out, '%s,%d@%d' % (
+                    # Make keys more cricket friendly
+                    stat_key.replace(' ', '_').replace('-', ''),
+                    OpStats.stats[stat_key], now
+                    )
         self.request.response.setHeader(
                 'Content-Type', 'text/plain; charset=US-ASCII'
                 )
