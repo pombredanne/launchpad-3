@@ -12,7 +12,7 @@ A bug can be nominated for a product series.
     >>> nopriv_browser.addHeader(
     ...     "Authorization", "Basic no-priv@canonical.com:test")
     >>> nopriv_browser.open(
-    ...     "http://launchpad.dev/products/firefox/+bug/5/+nominate")
+    ...     "http://launchpad.dev/products/firefox/+bug/4/+nominate")
 
 Before we continue, we'll set up a second browser instance, to simulate
 no-priv accessing the site from another window. Working with the same
@@ -24,7 +24,7 @@ case errors, and we'll give an example of one shortly.
     >>> nopriv_other_browser.addHeader(
     ...     "Authorization", "Basic no-priv@canonical.com:test")
     >>> nopriv_other_browser.open(
-    ...     "http://launchpad.dev/products/firefox/+bug/5/+nominate")
+    ...     "http://launchpad.dev/products/firefox/+bug/4/+nominate")
 
     >>> nopriv_browser.getControl("1.0").selected = True
     >>> nopriv_other_browser.getControl("1.0").selected = True
@@ -51,7 +51,7 @@ When a nomination is submitted by a privileged user, it is immediately
 approved and targeted to the release.
 
     >>> admin_browser.open(
-    ...     "http://launchpad.dev/products/firefox/+bug/5/+nominate")
+    ...     "http://launchpad.dev/products/firefox/+bug/4/+nominate")
 
     >>> admin_browser.getControl("Trunk").selected = True
     >>> admin_browser.getControl("Submit").click()
