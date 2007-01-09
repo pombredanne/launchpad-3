@@ -1,3 +1,8 @@
+XXX 20060109 mpt: This test is disabled because the Bugs front page
+no longer has a specific field for looking up bug reports by number.
+It should be re-enabled once the Bugs global search field acquires
+this ability.
+
 If we enter a bug ID in the search form on the Bugs front page, we
 get redirected to the bug with the corresponding id.
 

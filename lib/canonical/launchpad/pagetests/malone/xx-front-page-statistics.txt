@@ -1,6 +1,6 @@
 = Launchpad Bug Statistics =
 
-On the Bugs front page there is some statistics shown, showing:
+The Bugs front page shows some statistics:
 
   * number of bugs that are filed in Launchpad
   * number of links to external bugs
@@ -8,12 +8,10 @@ On the Bugs front page there is some statistics shown, showing:
   * number of CVE bug links
 
   >>> anon_browser.open('http://bugs.launchpad.dev/')
-  >>> stat_portlet = find_portlet(anon_browser.contents, 'Malone statistics')
-  >>> for text in stat_portlet.div.findAll(text=True):
-  ...   print text
-  10 Bugs
-  10 Remote Bugs
-  5 Bug Trackers
-  0 Web links
-  22 Bug Tasks
-  2 CVE Bug Links
+  >>> statistics = find_tag_by_id(anon_browser.contents, 'application-footer')
+  >>> for text in statistics.findAll(text=True):
+  ...     print text
+  10 bugs reported in 22 places
+  including 10 links to 5 bug trackers
+  and 2 CVE references
+  

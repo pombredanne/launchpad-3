@@ -62,6 +62,10 @@
           <li tal:condition="context/official_malone">Bug tracking</li>
           <li tal:condition="context/official_rosetta">Translations</li>
         </ul>
+        <tal:XXX condition="nothing">
+          20060109 mpt: the UL shouldn't be there if it contains no LIs.
+        </tal:XXX>
+        <tal:neither condition="python:(not context.official_malone and not context.official_rosetta)">&mdash;</tal:neither>
       </td>
     </tr>
     <tr>
