@@ -12,10 +12,8 @@ a facet that's not available for projects.
   >>> browser.getLink('Mozilla Thunderbird').url
   'http://translations.launchpad.dev/thunderbird'
 
-  >>> browser.open('http://translations.launchpad.dev/mozilla')
-  >>> browser.url
-  'http://translations.launchpad.dev/mozilla'
-  >>> browser.getLink('Register another product').url
+  >>> admin_browser.open('http://translations.launchpad.dev/mozilla')
+  >>> admin_browser.getLink('Register another product').url
   'http://translations.launchpad.dev/mozilla/+newproduct'
 
 Test that a product page for the firefox product in the mozilla project loads.
