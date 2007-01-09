@@ -8,9 +8,13 @@ a facet that's not available for projects.
   >>> browser.getLink('Mozilla Firefox').url
   'http://translations.launchpad.dev/firefox'
 
+  >>> browser.open('http://translations.launchpad.dev/mozilla')
   >>> browser.getLink('Mozilla Thunderbird').url
   'http://translations.launchpad.dev/thunderbird'
 
+  >>> browser.open('http://translations.launchpad.dev/mozilla')
+  >>> browser.url
+  'http://translations.launchpad.dev/mozilla'
   >>> browser.getLink('Register another product').url
   'http://translations.launchpad.dev/mozilla/+newproduct'
 
@@ -23,5 +27,5 @@ Test that a product page for the firefox product in the mozilla project loads.
   <...
   ...The Mozilla Firefox web browser...
   ...
-  ...Latest bugs in Mozilla Firefox...
+  ...Latest bugs...
   ...
