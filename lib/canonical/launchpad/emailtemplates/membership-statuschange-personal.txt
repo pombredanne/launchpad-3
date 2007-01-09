@@ -1,7 +1,6 @@
 Hello,
 
-The status of your membership in the team %(team_name)s
-was changed by %(reviewer_name)s from %(old_status)s to %(new_status)s.
+The status of your membership in the team %(team_name)s was changed by %(reviewer_name)s from %(old_status)s to %(new_status)s.
 
 %(comment)s
 Regards,

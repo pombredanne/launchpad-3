@@ -207,32 +207,18 @@ class Person(SQLBase):
             orderBy=['-datecreated']))
 
     @property
+    def formattedname(self):
+        """See IPerson."""
+        return "%s (%s)" % (self.displayname, self.name)
+
+    @property
     def browsername(self):
         """Return a name suitable for display on a web page.
 
         Originally, this was calculated but now we just use displayname.
         You should continue to use this method, however, as we may want to
         change again, such as returning '$displayname ($name)'.
-
-        >>> class DummyPerson:
-        ...     displayname = None
-        ...     name = 'the_name'
-        ...     # This next line is some special evil magic to allow us to
-        ...     # unit test browsername in isolation.
-        ...     browsername = Person.browsername.im_func
-        ...
-        >>> person = DummyPerson()
-
-        Check with just the name.
-
-        >>> person.browsername
-        'the_name'
-
-        >>> person.displayname = 'the_displayname'
-        >>> person.browsername
-        'the_displayname'
         """
-        # Person.displayname is NOT NULL
         return self.displayname
 
     @property

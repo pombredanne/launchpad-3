@@ -362,6 +362,8 @@ class IPerson(IHasSpecifications):
     # title is required for the Launchpad Page Layout main template
     title = Attribute('Person Page Title')
 
+    formattedname = Attribute(
+        'Return a string of the form $displayname ($name).')
     browsername = Attribute(
         'Return a textual name suitable for display in a browser.')
 
@@ -519,13 +521,18 @@ class IPerson(IHasSpecifications):
         reviewer, and reviewer comment. This method is also responsible for
         filling the TeamParticipation table in case the status is APPROVED or
         ADMIN.
+
+        The reviewer is the user who made the given person a member of this
+        team.
         """
 
     def setMembershipData(person, status, reviewer, expires=None,
                           comment=None):
         """Set the attributes of the person's membership on this team.
 
-        Set the status, dateexpires, reviewer and comment.
+        Set the status, dateexpires, reviewer and comment, where reviewer is
+        the user responsible for this status change and comment is the comment
+        left by the reviewer for the change.
         
         This method will ensure that we only allow the status transitions
         specified in the TeamMembership spec. It's also responsible for

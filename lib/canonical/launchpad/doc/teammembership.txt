@@ -1,5 +1,4 @@
-Team Membership/Participation
-=============================
+= Team Membership/Participation =
 
 When a person joins a team, we store the relationship in the TeamMembership
 table. In this table we store the membership status, the join date and the
@@ -202,8 +201,7 @@ ensures we'll never have teams which can't be managed.
     True
 
 
-Flagging expired memberships
-----------------------------
+== Flagging expired memberships ==
 
 The expired memberships are flagged by a cronscript that runs daily. This
 script simply flags all active memberships which reached their expiry date as
@@ -267,6 +265,8 @@ while the one that was inactive hasn't changed.
     ...     personset.getByName('name16'), personset.getByName('admins'))
     >>> foobar_on_admins.status.title
     'Expired'
+    >>> foobar_on_admins.reviewer.name
+    u'team-membership-janitor'
 
     >>> sp_on_ubuntu_translators = TeamMembershipSet().getByPersonAndTeam(
     ...     personset.getByName('name12'),
@@ -275,8 +275,7 @@ while the one that was inactive hasn't changed.
     'Deactivated'
 
 
-Querying team memberships
--------------------------
+== Querying team memberships ==
 
 You can check a person's direct memberships by using myactivememberships:
 
@@ -310,8 +309,7 @@ of it, all based on Person._getMembersByStatus:
 
 except shorter)
 
-Querying a person for team participation
-----------------------------------------
+== Querying a person for team participation ==
 
 Team membership is direct; team participation is indirect, people being
 participants of teams by virtue of being members of other teams which are in

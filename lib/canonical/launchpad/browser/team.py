@@ -219,6 +219,7 @@ class ProposedTeamMembersEditView:
         # with this transaction will see this changes and thus they'll be
         # displayed on the page that calls this method.
         flush_database_updates()
+        self.request.response.redirect('%s/+members' % canonical_url(team))
 
 
 class TeamMemberAddView(AddView):

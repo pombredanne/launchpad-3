@@ -26,7 +26,7 @@ from canonical.launchpad.components.bugtask import BugTaskDelta
 from canonical.launchpad.helpers import (
     contactEmailAddresses, get_email_template)
 from canonical.launchpad.webapp import canonical_url
-from canonical.lp.dbschema import TicketAction, TeamMembershipStatus
+from canonical.lp.dbschema import TeamMembershipStatus, TicketAction
 
 GLOBAL_NOTIFICATION_EMAIL_ADDRS = []
 CC = "CC"
@@ -858,16 +858,16 @@ def notify_team_join(event):
     """
     user = event.user
     team = event.team
-    tm = getUtility(ITeamMembershipSet).getByPersonAndTeam(user, team)
-    assert tm is not None
-    reviewer = tm.reviewer
+    membership = getUtility(ITeamMembershipSet).getByPersonAndTeam(user, team)
+    assert membership is not None
+    reviewer = membership.reviewer
     approved, admin = [
         TeamMembershipStatus.APPROVED, TeamMembershipStatus.ADMIN]
     admin_addrs = team.getTeamAdminsEmailAddresses()
 
     from_addr = format_address('Launchpad', config.noreply_from_address)
 
-    if reviewer != user and tm.status in [approved, admin]:
+    if reviewer != user and membership.status in [approved, admin]:
         # Somebody added this user as a member, we better send a notification
         # to the user too.
         member_addrs = contactEmailAddresses(user)
@@ -875,16 +875,16 @@ def notify_team_join(event):
         subject = (
             'Launchpad: %s is now a member of %s' % (user.name, team.name))
         if user.isTeam():
-            body = ('%(reviewer)s added %(member)s\n'
-                    '(which you are a member of) as a member of %(team)s.')
+            templatename = 'new-member-notification-for-teams.txt'
         else:
-            body = '%(reviewer)s added you as a member\n of %(team)s.'
+            templatename = 'new-member-notification.txt'
         
-        body = "Hello,\n\n%s\n\n\nRegards,\nThe Launchpad team" % body
-        msg = body % {
+        template = get_email_template(templatename)
+        msg = template % {
             'reviewer': '%s (%s)' % (reviewer.browsername, reviewer.name),
             'member': '%s (%s)' % (user.browsername, user.name),
             'team': '%s (%s)' % (team.browsername, team.name)}
+        msg = MailWrapper().format(msg)
         simple_sendmail(from_addr, member_addrs, subject, msg)
 
         # The member's email address may be in admin_addrs too; let's remove
@@ -899,10 +899,10 @@ def notify_team_join(event):
         'person_name': "%s (%s)" % (user.browsername, user.name),
         'team_name': "%s (%s)" % (team.browsername, team.name),
         'reviewer_name': "%s (%s)" % (reviewer.browsername, reviewer.name),
-        'url': canonical_url(tm)}
+        'url': canonical_url(membership)}
 
     headers = {}
-    if tm.status in [approved, admin]:
+    if membership.status in [approved, admin]:
         template = get_email_template('new-member-notification-for-admins.txt')
         subject = (
             'Launchpad: %s is now a member of %s' % (user.name, team.name))
@@ -912,7 +912,7 @@ def notify_team_join(event):
             "Launchpad: %s wants to join team %s" % (user.name, team.name))
         headers = {"Reply-To": user.preferredemail.email}
 
-    msg = template % replacements
+    msg = MailWrapper().format(template % replacements)
     simple_sendmail(from_addr, admin_addrs, subject, msg, headers=headers)
 
 

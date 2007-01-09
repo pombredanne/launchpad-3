@@ -43,11 +43,12 @@ On the other hand, if the member is among the inactive/proposed members of
 the team, we'll simply change the membership's status and say that it was
 successfully added.
 
+    # Ideally we should do this using the web UI, but doing it this way is a
+    # lot simpler.
     >>> from canonical.lp.dbschema import TeamMembershipStatus
     >>> tm = TeamMembership.selectOneBy(personID=cprov.id, teamID=team.id)
     >>> tm.setStatus(TeamMembershipStatus.DEACTIVATED, team.teamowner)
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
+    >>> tm.syncUpdate()
 
     >>> browser.url
     'http://launchpad.dev/%7Emyemail/+addmember?notadded=28'
