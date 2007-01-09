@@ -5,9 +5,13 @@
 __metaclass__ = type
 __all__ = ["OpStats", "IOpStats"]
 
+from cStringIO import StringIO
+from time import time
+
 from zope.interface import Interface, implements
 
 from canonical.launchpad.webapp import canonical_url, LaunchpadXMLRPCView
+
 
 class IOpStats(Interface):
     """Interface for OpStats"""
@@ -41,6 +45,7 @@ class OpStats(LaunchpadXMLRPCView):
             # Global
             'requests': 0, # Requests, all protocols, all statuses
             'soft timeouts': 0, # Requests that generated a soft timeout OOPS
+            'timeouts': 0, # Requests that generated a hard timeout OOPS
 
             # XML-RPC specific
             'xml-rpc requests': 0, # XML-RPC requests, all statuses
@@ -62,6 +67,17 @@ class OpStats(LaunchpadXMLRPCView):
     def opstats(self):
         """See IOpStats."""
         return OpStats.stats
+
+    def __call__(self):
+        now = time()
+        out = StringIO()
+        for stat_key in sorted(OpStats.stats.keys()):
+            print >> out, '%s,%d@%d' % (stat_key, OpStats.stats[stat_key], now)
+        self.request.response.setHeader(
+                'Content-Type', 'text/plain; charset=US-ASCII'
+                )
+        return out.getvalue()
+
 
 OpStats.resetStats() # Initialize the statistics
 

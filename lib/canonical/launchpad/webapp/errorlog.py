@@ -19,7 +19,7 @@ from zope.app.error.interfaces import IErrorReportingUtility
 from zope.exceptions.exceptionformatter import format_exception
 
 from canonical.config import config
-from canonical.launchpad.xmlrpc.opstats import OpStats
+from canonical.launchpad.webapp.opstats import OpStats
 from canonical.launchpad.webapp.interfaces import (
     IErrorReport, IErrorReportRequest)
 from canonical.launchpad.webapp.adapter import (

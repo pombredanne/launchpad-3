@@ -484,7 +484,7 @@ class LaunchpadFunctionalLayer(
     @classmethod
     def tearDown(cls):
         # Reset any statistics
-        from canonical.launchpad.xmlrpc.opstats import OpStats
+        from canonical.launchpad.webapp.opstats import OpStats
         OpStats.resetStats()
 
     @classmethod

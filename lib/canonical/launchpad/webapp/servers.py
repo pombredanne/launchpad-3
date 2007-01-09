@@ -31,7 +31,7 @@ from canonical.launchpad.webapp.errorlog import ErrorReportRequest
 from canonical.launchpad.webapp.url import Url
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
-from canonical.launchpad.xmlrpc import OpStats
+from canonical.launchpad.webapp.opstats import OpStats
 
 
 class StepsToGo:

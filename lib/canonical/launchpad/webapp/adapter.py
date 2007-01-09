@@ -21,6 +21,7 @@ from canonical.config import config
 from canonical.database.interfaces import IRequestExpired
 from canonical.database.sqlbase import connect, AUTOCOMMIT_ISOLATION
 from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
+from canonical.launchpad.webapp.opstats import OpStats
 
 __all__ = [
     'LaunchpadDatabaseAdapter',
@@ -311,6 +312,7 @@ class CursorWrapper:
                 self._cur.execute('break this transaction')
             except psycopg.DatabaseError:
                 pass
+            OpStats.stats['timeouts'] += 1
             raise RequestExpired(statement)
         try:
             starttime = time.time()

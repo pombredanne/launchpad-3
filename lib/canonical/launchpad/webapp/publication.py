@@ -32,7 +32,7 @@ from canonical.launchpad.interfaces import (
 import canonical.launchpad.layers as layers
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 import canonical.launchpad.webapp.adapter as da
-from canonical.launchpad.xmlrpc import OpStats
+from canonical.launchpad.webapp.opstats import OpStats
 
 
 __all__ = [

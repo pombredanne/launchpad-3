@@ -1,5 +1,5 @@
-We make Zope 3 give us funky real time stats. We can access them via
-XML-RPC:
+We make Zope 3 give us real time statistics about Launchpad's operation.
+We can access them via XML-RPC:
 
     >>> import xmlrpclib
     >>> from canonical.functional import XMLRPCTestTransport
@@ -8,12 +8,10 @@ XML-RPC:
     ...     transport=XMLRPCTestTransport()
     ...     )
 
-Create a function to report our stats for these tests. Note that
-invoking this method makes an XML-RPC call, so the 'requests' and
-'xml-rpc' requests statistics will be incremented.
+Create a function to report our stats for these tests.
 
     >>> def reset():
-    ...     from canonical.launchpad.xmlrpc.opstats import OpStats
+    ...     from canonical.launchpad.webapp.opstats import OpStats
     ...     OpStats.resetStats()
     ...
     >>> def report():
@@ -49,6 +47,7 @@ the request has been served:
     http requests: 0
     requests: 0
     soft timeouts: 0
+    timeouts: 0
     xml-rpc faults: 0
     xml-rpc requests: 0
     >>> report()
@@ -102,7 +101,7 @@ Number of XML-RPC Faults:
 
     >>> try:
     ...     opstats = lp_xmlrpc.invalid() # XXX: Need a HTTP test too
-    ...     print 'Should have raised an exception!'
+    ...     print 'Should have raised a Fault exception!'
     ... except xmlrpclib.Fault:
     ...     pass
     >>> report()
@@ -128,7 +127,8 @@ Number of soft timeouts:
     soft timeouts: 1
 
 Number of Timeouts. We can't reliably track this using the 503 response
-code as other Launchpad code may well return this status:
+code as other Launchpad code may well return this status and an XML-RPC
+request may also return a timeout Fault:
 
     >>> old_db_statement_timeout = config.launchpad.db_statement_timeout
     >>> config.launchpad.db_statement_timeout = 1
@@ -143,11 +143,37 @@ code as other Launchpad code may well return this status:
     503s: 1
     5XXs: 1
     http requests: 1
-    timeouts: 1
     requests: 1
+    timeouts: 1
 
 Reset out config until Bug 78545 is fixed:
 
     >>> config.launchpad.db_statement_timeout = old_db_statement_timeout
     >>> config.launchpad.soft_request_timeout = old_soft_request_timeout
+
+Stats can also be retrieved via HTTP in cricket-graph format:
+
+    >>> output = http("GET / HTTP/1.1\nHost: launchpad.dev\n")
+    >>> output = http("GET / HTTP/1.1\nHost: launchpad.dev\n")
+    >>> print http("GET /+opstats HTTP/1.1\nHost: launchpad.dev\n")
+    HTTP/1.1 200 Ok
+    ...
+    Content-Type: text/plain; charset=US-ASCII
+    <BLANKLINE>
+    1XXs,0@...
+    2XXs,2@...
+    3XXs,0@...
+    404s,0@...
+    4XXs,0@...
+    500s,0@...
+    503s,0@...
+    5XXs,0@...
+    6XXs,0@...
+    http requests,2@...
+    requests,2@...
+    soft timeouts,0@...
+    timeouts,0@...
+    xml-rpc faults,0@...
+    xml-rpc requests,0@...
+    <BLANKLINE>
 
