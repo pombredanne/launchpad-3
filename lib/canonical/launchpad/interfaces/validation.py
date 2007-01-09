@@ -336,6 +336,10 @@ def valid_cve_sequence(value):
             "%s is not a valid CVE number" % value))
 
 
+# XXX: _valid_image, valid_emblem and valid_gotchi are going to be removed as
+# soon as I change IPillar's +edit page to use the new ImageUploadWidget for
+# emblems/icons, which will happen real soon.
+# -- Guilherme Salgado, 2006-12-13
 def _valid_image(image, max_size, max_dimensions):
     """Check that the given image is under the given constraints.
 

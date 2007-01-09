@@ -195,6 +195,15 @@ Now let's get a PO file to import.
     >>> pofile = potemplate.newPOFile('cy')
     >>> pofile_id = pofile.id
 
+By default, we got a safe path to prevent collisions with other IPOFile.
+
+    >>> pofile.path
+    u'po/firefox-cy.po'
+
+Let's override the default good path with one we know is the right one.
+
+    >>> pofile.path = u'po/cy.po'
+
 It's newly created, so it has no message sets yet.
 
     >>> pofile.currentMessageSets().count()
@@ -486,7 +495,7 @@ Now, is time to check the notification email.
     ...
     5.  [msg 0]
     "The msgid_Plural field has changed since last time this .po file was
-    generated, please notify this error to rosetta@ubuntu.com":
+    generated, please report this error to ...
     <BLANKLINE>
     #, c-format
     msgid "Singular %d"
