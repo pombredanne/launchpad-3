@@ -4,4 +4,3 @@ no merge will occur.
 
 This file may be removed, and the check_merge target cleaned up,
 when Launchpad 1.0 is fully released.
-
