@@ -36,6 +36,24 @@ class UtilsTestCase(unittest.TestCase):
         self.assertEqual(dt.second, 0)
         self.assertEqual(dt.tzinfo, pytz.timezone('UTC'))
 
+    def test_get_text(self):
+        self.assertEqual(bugimport.get_text(None), None)
+        node = ET.fromstring('<a/>')
+        self.assertEqual(bugimport.get_text(node), '')
+        node = ET.fromstring('<a>x</a>')
+        self.assertEqual(bugimport.get_text(node), 'x')
+        # whitespace at the beginning or end is stripped
+        node = ET.fromstring('<a>  x\n  </a>')
+        self.assertEqual(bugimport.get_text(node), 'x')
+        # but internal whitespace is not normalised
+        node = ET.fromstring('<a>  x    y\n  </a>')
+        self.assertEqual(bugimport.get_text(node), 'x    y')
+        # get_text() raises an error if there are subelements
+        node = ET.fromstring('<a>x<b/></a>')
+        self.assertRaises(bugimport.BugXMLSyntaxError,
+                          bugimport.get_text, node)
+        
+
     def test_get_enum_value(self):
         from canonical.lp.dbschema import BugTaskStatus
         self.assertEqual(bugimport.get_enum_value(BugTaskStatus,

@@ -55,6 +55,7 @@ class BugXMLSyntaxError(Exception):
 
 
 def parse_date(datestr):
+    """Parse a date in the format 'YYYY-MM-DDTHH:MM:SSZ' to a dattime."""
     if datestr in ['', None]:
         return None
     year, month, day, hour, minute, second = time.strptime(
@@ -62,7 +63,20 @@ def parse_date(datestr):
     return datetime.datetime(year, month, day, hour, minute, tzinfo=UTC)
 
 
+def get_text(node):
+    """Get the text content of an element."""
+    if node is None:
+        return None
+    if len(node) != 0:
+        raise BugXMLSyntaxError('No child nodes are expected for <%s>'
+                                % node.tag)
+    if node.text is None:
+        return ''
+    return node.text.strip()
+
+
 def get_enum_value(enumtype, name):
+    """Get the dbschema enum value with the given name."""
     for item in enumtype.items:
         if item.name == name:
             return item
@@ -80,10 +94,8 @@ def get_element(node, name):
 
 def get_value(node, name):
     """Return the text value of the element with the given name."""
-    childnode =  get_element(node, name)
-    if childnode is None:
-        return None
-    return childnode.text.strip()
+    childnode = get_element(node, name)
+    return get_text(childnode)
 
 
 def get_all(node, name):
@@ -128,7 +140,7 @@ class BugImporter:
             raise BugXMLSyntaxError('element %s (name=%s) has no email address'
                                     % (node.tag, name))
 
-        displayname = node.text.strip()
+        displayname = get_text(node)
         if not displayname:
             displayname = None
         
@@ -277,19 +289,19 @@ class BugImporter:
             getUtility(IBugExternalRefSet).createBugExternalRef(
                 bug=bug,
                 url=urlnode.get('href'),
-                title=urlnode.text.strip(),
+                title=get_text(urlnode),
                 owner=bug.owner)
 
         for cvenode in get_all(bugnode, 'cves/cve'):
-            cve = getUtility(ICveSet)[cvenode.text.strip()]
+            cve = getUtility(ICveSet)[get_text(cvenode)]
             if cve is None:
                 raise BugXMLSyntaxError('Unknown CVE: %s' %
-                                        cvenode.text.strip())
+                                        get_text(cvenode))
             bug.linkCVE(cve)
 
         tags = []
         for tagnode in get_all(bugnode, 'tags/tag'):
-            tags.append(tagnode.text.strip())
+            tags.append(get_text(tagnode))
         bug.tags = tags
 
         for subscribernode in get_all(bugnode, 'subscriptions/subscriber'):
@@ -330,7 +342,7 @@ class BugImporter:
         if date is None:
             raise BugXMLSyntaxError('No date for comment %r' % title)
         text = get_value(commentnode, 'text')
-        if text is None or text.strip() == '':
+        if text is None or text == '':
             text = '<empty comment>'
         return getUtility(IMessageSet).fromText(title, text, sender, date)
 
