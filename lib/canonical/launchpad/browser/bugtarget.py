@@ -13,6 +13,7 @@ __all__ = [
     "FileBugInPackageView"
     ]
 
+import email
 import urllib
 
 from zope.app.form.browser import TextWidget
@@ -21,21 +22,57 @@ from zope.app.form.utility import setUpWidgets
 from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.event import notify
+from zope.interface import implements
+from zope.publisher.interfaces.browser import IBrowserPublisher
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     IBugTaskSet, ILaunchBag, IDistribution, IDistroRelease, IDistroReleaseSet,
     IProduct, IDistributionSourcePackage, NotFoundError, CreateBugParams,
-    IBugAddForm, BugTaskSearchParams, ILaunchpadCelebrities)
+    IBugAddForm, BugTaskSearchParams, ILaunchpadCelebrities,
+    ITemporaryStorageManager)
 from canonical.launchpad.webapp import (
     canonical_url, LaunchpadView, LaunchpadFormView, action, custom_widget)
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.generalform import GeneralFormView
 
 
+class FileBugData:
+    """Extra data to be added to the bug."""
+
+    def __init__(self):
+        self.extra_description = None
+        self.comments = []
+        self.attachments = []
+
+    def setFromRawMessage(self, raw_mime_msg):
+        """Set the extra file bug data from a MIME multipart message.
+
+            * The first inline part will be added to the description.
+            * All other inline parts will be added as separate comments.
+            * All attachment parts will be added as attachment.
+        """
+        mime_msg = email.message_from_string(raw_mime_msg)
+        if mime_msg.is_multipart():
+            for part in mime_msg.get_payload():
+                if part.get('Content-Disposition', 'inline') == 'inline':
+                    assert part.get_content_type() == 'text/plain', (
+                        "Inline parts have to be plain text.")
+                    charset = part.get_content_charset()
+                    assert charset, (
+                        "A charset has to be specified for text parts.")
+                    part_text = part.get_payload(decode=True).decode(charset)
+                    if self.extra_description is None:
+                        self.extra_description = part_text.rstrip()
+
+
 class FileBugViewBase(LaunchpadFormView):
     """Base class for views related to filing a bug."""
+
+    implements(IBrowserPublisher)
+
+    extra_bug_data = None
 
     @property
     def initial_values(self):
@@ -125,8 +162,15 @@ class FileBugViewBase(LaunchpadFormView):
             failure=handleSubmitBugFailure)
     def submit_bug_action(self, action, data):
         """Add a bug to this IBugTarget."""
-        title = data.get("title")
-        comment = data.get("comment")
+        extra_data = FileBugData()
+        if self.extra_bug_data is not None:
+            extra_data.setFromRawMessage(self.extra_bug_data.blob)
+
+        title = data["title"]
+        comment = data["comment"]
+        if extra_data.extra_description:
+            comment = "%s\n\n%s" % (
+                comment.rstrip(), extra_data.extra_description)
         packagename = data.get("packagename")
         security_related = data.get("security_related", False)
         distribution = data.get(
@@ -203,6 +247,15 @@ class FileBugViewBase(LaunchpadFormView):
     def showFileBugForm(self):
         """Override this method in base classes to show the filebug form."""
         raise NotImplementedError
+
+    def publishTraverse(self, request, name):
+        """See IBrowserPublisher."""
+        self.extra_bug_data = getUtility(ITemporaryStorageManager).fetch(name)
+        return self
+
+    def browserDefault(self, request):
+        """See IBrowserPublisher."""
+        return self, ()
 
 
 class FileBugAdvancedView(FileBugViewBase):
