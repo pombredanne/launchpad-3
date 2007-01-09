@@ -37,16 +37,17 @@ check_not_a_ui_merge:
 check_merge: check_not_a_ui_merge build check importdcheck hctcheck
 	# Work around the current idiom of 'make check' getting too long
 	# because of hct and related tests. note that this is a short
-	# term solution, the long term solution will need to be 
+	# term solution, the long term solution will need to be
 	# finer grained testing anyway.
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
 	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
-check_merge_ui: build
-	env PYTHONPATH=$(PYTHONPATH) \
-	${PYTHON} -t ./test_on_merge.py -vvf canonical.launchpad.ftests.test_pages
+check_merge: build check importdcheck hctcheck
+	# Same as check_merge, except we don't need to do check_not_a_ui_merge.
+	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
+		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
 check_merge_edge: check_no_dbupdates check_merge
 	# Allow the merge if there are no database updates, including
