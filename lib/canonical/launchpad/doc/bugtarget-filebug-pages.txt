@@ -1,0 +1,29 @@
+= Filebug view classes =
+
+The base class used for all the filebug pages is FileBugViewBase. It
+contains enough functionality to file bug, the classes inheriting from
+it only adds some more functionality, like adding fields, searching for
+similar bug reports, etc.
+
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from canonical.launchpad.browser import FileBugViewBase
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> ubuntu_firefox = ubuntu.getSourcePackage('mozilla-firefox')
+    >>> bug_data = dict(
+    ...     title='Test Title', comment='Test description.')
+
+The validate and action don't use the request when filing the bug, so we
+can pass an empty request and pass the data dict to the methods
+directly.
+
+    >>> login('no-priv@canonical.com')
+    >>> request = LaunchpadTestRequest()
+    >>> filebug_view = FileBugViewBase(ubuntu_firefox, request)
+    >>> filebug_view.validate(bug_data) is None
+    True
+    >>> filebug_view.submit_bug_action.success(bug_data)
+    >>> filebug_view.added_bug.title
+    u'Test Title'
+    >>> filebug_view.added_bug.description
+    u'Test description.'

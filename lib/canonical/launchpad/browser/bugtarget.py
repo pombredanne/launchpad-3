@@ -186,7 +186,7 @@ class FileBugViewBase(LaunchpadFormView):
                 title=title, comment=comment, owner=self.user,
                 security_related=security_related, private=private)
 
-        bug = context.createBug(params)
+        self.added_bug = bug = context.createBug(params)
         notify(SQLObjectCreatedEvent(bug))
 
         # Give the user some feedback on the bug just opened.
