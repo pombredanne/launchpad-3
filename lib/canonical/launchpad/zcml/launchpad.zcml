@@ -38,7 +38,7 @@
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-requestexpired.pt"
-      class="canonical.launchpad.webapp.error.SystemErrorView"
+      class="canonical.launchpad.webapp.error.RequestExpiredView"
       />
 
   <!-- UnexpectedFormData -->
