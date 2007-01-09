@@ -107,6 +107,12 @@ to the bug.
     ...
     ... This should be added as a comment.
     ...
+    ... --boundary
+    ... Content-disposition: inline
+    ... Content-type: text/plain; charset=utf-8
+    ...
+    ... This should be added as another comment.
+    ...
     ... --boundary--
     ... """
     >>> token = getUtility(ITemporaryStorageManager).new(debug_data)
@@ -130,5 +136,6 @@ to the bug.
     ...     print "Comment by %s: %s" % (
     ...         comment.owner.displayname, comment.text_contents)
     Comment by No Privileges Person: This should be added as a comment.
+    Comment by No Privileges Person: This should be added as another comment.
 
 
