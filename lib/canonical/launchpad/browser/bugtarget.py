@@ -63,8 +63,11 @@ class FileBugData:
                     assert charset, (
                         "A charset has to be specified for text parts.")
                     part_text = part.get_payload(decode=True).decode(charset)
+                    part_text = part_text.rstrip()
                     if self.extra_description is None:
-                        self.extra_description = part_text.rstrip()
+                        self.extra_description = part_text
+                    else:
+                        self.comments.append(part_text)
 
 
 class FileBugViewBase(LaunchpadFormView):
@@ -232,6 +235,9 @@ class FileBugViewBase(LaunchpadFormView):
 
         self.added_bug = bug = context.createBug(params)
         notify(SQLObjectCreatedEvent(bug))
+
+        for comment in extra_data.comments:
+            bug.newMessage(self.user, bug.followup_subject(), comment)
 
         # Give the user some feedback on the bug just opened.
         self.request.response.addNotification(notification)

@@ -150,7 +150,7 @@ class Bug(SQLBase):
                            otherColumn='message',
                            intermediateTable='BugMessage',
                            prejoins=['owner'],
-                           orderBy='datecreated')
+                           orderBy=['datecreated', 'id'])
     productinfestations = SQLMultipleJoin(
             'BugProductInfestation', joinColumn='bug', orderBy='id')
     packageinfestations = SQLMultipleJoin(
