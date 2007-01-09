@@ -38,12 +38,14 @@
     <resource name="arrowDown" file="../images/arrowDown.png" />
     <resource name="arrowTop" file="../images/arrowTop.png" />
     <resource name="arrowUp" file="../images/arrowUp.png" />
+    <resource name="arrowRight" file="../images/arrowRight.gif" />
     <resource name="build-chrootwait" file="../images/build-chrootwait.png" />
     <resource name="build-depwait" file="../images/build-depwait.png" />
     <resource name="build-failure" file="../images/build-failure.png" />
     <resource name="build-needed" file="../images/build-needed.png" />
     <resource name="build-success" file="../images/build-success.png" />
     <resource name="blue-bar" file="../images/blue-bar.png" />
+    <resource name="blueprint" file="../images/specification.png" />
     <resource name="bounty" file="../images/bounty.png" />
     <resource name="branch" file="../images/list.png" />
     <resource name="bug" file="../images/bug.png" />
@@ -56,10 +58,12 @@
     <resource name="bug-remote" file="../images/bug-remote.png" />
     <resource name="bug-unknown" file="../images/bug.png" />
     <resource name="bullet" file="../images/bullet.png" />
+    <resource name="copy" file="../images/copy.png" />
     <resource name="cve" file="../images/cve.png" />
-    <resource name="distribution" file="../images/nyet.png" />
-    <resource name="distribution-mini" file="../images/nyet-mini.png" />
-    <resource name="distribution-heading" file="../images/nyet-heading.png" />
+    <resource name="demo" file="../images/demo.png" />
+    <resource name="distribution" file="../images/distribution.png" />
+    <resource name="distribution-mini" file="../images/distribution-mini.png" />
+    <resource name="distribution-heading" file="../images/distribution-heading.png" />
     <resource name="distribution-mugshot" file="../images/nyet-mugshot.png" />
     <resource name="divider" file="../images/divider.png" />
     <resource name="divider-highlighted"
@@ -108,17 +112,16 @@
     <resource name="retry" file="../images/retry.png" />
     <resource name="search" file="../images/search.png" />
     <resource name="sorry-closed" file="../images/sorry-closed.png" />
-    <resource name="spec" file="../images/topic_icon.gif" />
     <resource name="stop" file="../images/stop.png" />
-    <resource name="sprint" file="../images/backtalk.gif" />
+    <resource name="sprint" file="../images/meeting.png" />
     <resource name="subscriber-essential" file="../images/subscriber-essential.png" />
     <resource name="subscriber-inessential" file="../images/subscriber-inessential.png" />
-    <resource name="team" file="../images/nyet.png" />
-    <resource name="team-mini" file="../images/nyet-mini.png" />
-    <resource name="team-heading" file="../images/nyet-heading.png" />
+    <resource name="team" file="../images/team.png" />
+    <resource name="team-mini" file="../images/team-mini.png" />
+    <resource name="team-heading" file="../images/team-heading.png" />
     <resource name="team-mugshot" file="../images/nyet-mugshot.png" />
     <resource name="ticket" file="../images/ticket.png" />
-    <resource name="topic" file="../images/topic_icon.gif" />
+    <resource name="topic" file="../images/specification.png" />
     <resource name="translation-file" file="../images/translation-file.png" />
     <resource name="translation-newline" file="../images/translation-newline.png" />
     <resource name="translation-space" file="../images/translation-space.png" />
@@ -139,11 +142,11 @@
     <resource name="ubuntu-header-image4.png" file="../images/ubuntu-header-image4.png" />
 
     <!-- Shipit KUbuntu images (from www.kubuntu.org) -->
-    <resource name="kubuntu-header-bg-dapper.png"
-        file="../images/kubuntu-header-bg-dapper.png" />
-    <resource name="kubuntu-footer-bg-dapper.jpg"
-        file="../images/kubuntu-footer-bg-dapper.jpg" />
-    <resource name="kubuntu-header.png" file="../images/kubuntu-header.png" />
+    <resource name="kubuntu-header-bg"
+        file="../images/kubuntu-header-bg.png" />
+    <resource name="kubuntu-footer-bg"
+        file="../images/kubuntu-footer-bg.png" />
+    <resource name="kubuntu-header" file="../images/kubuntu-header.png" />
     <resource name="kubuntu-tab_off_ns1.gif" file="../images/kubuntu-tab_off_ns1.gif" />
     <resource name="kubuntu-tab_off_ns2.gif" file="../images/kubuntu-tab_off_ns2.gif" /> 
     <resource name="kubuntu-tab_on_ns2.gif" file="../images/kubuntu-tab_on_ns2.gif" />

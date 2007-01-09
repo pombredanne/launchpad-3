@@ -12,10 +12,12 @@ __all__ = [
     'BountyDifficultyVocabulary',
     'BountyStatusVocabulary',
     'BranchLifecycleStatusVocabulary',
+    'BranchLifecycleStatusFilterVocabulary',
     'BranchReviewStatusVocabulary',
     'BugAttachmentTypeVocabulary',
     'BugRefVocabulary',
     'BugBranchStatusVocabulary',
+    'BugNominationStatusVocabulary',
     'BugTaskImportanceVocabulary',
     'BugTaskStatusVocabulary',
     'BugTrackerTypeVocabulary',
@@ -79,9 +81,12 @@ BountyDifficultyVocabulary = vocab_factory(dbschema.BountyDifficulty)
 BountyStatusVocabulary = vocab_factory(dbschema.BountyStatus)
 BranchLifecycleStatusVocabulary = \
     vocab_factory(dbschema.BranchLifecycleStatus)
+BranchLifecycleStatusFilterVocabulary = \
+    vocab_factory(dbschema.BranchLifecycleStatusFilter)
 BranchReviewStatusVocabulary = vocab_factory(dbschema.BranchReviewStatus)
 BugAttachmentTypeVocabulary = vocab_factory(dbschema.BugAttachmentType)
 BugBranchStatusVocabulary = vocab_factory(dbschema.BugBranchStatus)
+BugNominationStatusVocabulary = vocab_factory(dbschema.BugNominationStatus)
 BugTaskStatusVocabulary = vocab_factory(
     dbschema.BugTaskStatus, noshow=[dbschema.BugTaskStatus.UNKNOWN])
 BugTaskImportanceVocabulary = vocab_factory(

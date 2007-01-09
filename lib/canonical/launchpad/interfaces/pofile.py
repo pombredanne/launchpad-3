@@ -11,9 +11,11 @@ __all__ = [
     'IPOFileSet',
     'IPOFile',
     'IPOFileTranslator',
-    'IPOFileAlternativeLanguage'
+    'IPOFileAlternativeLanguage',
+    'EXPORT_DATE_HEADER'
     ]
 
+EXPORT_DATE_HEADER = 'X-Rosetta-Export-Date'
 
 class ZeroLengthPOExportError(Exception):
     """An exception raised when a PO file export generated an empty file."""

@@ -18,7 +18,7 @@
 
   <div tal:replace="structure context/@@+portlet-bugs" />
 
-      <!-- 1-0 inprogress Needs "Related Questions" portlet -->
+  <div tal:replace="structure context/@@+portlet-branches" />
     </metal:portlets>
 
 
@@ -186,3 +186,4 @@
     </div>
   </body>
 </html>
+<!-- 1-0 inprogress Needs "Related Questions" portlet -->

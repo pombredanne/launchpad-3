@@ -120,17 +120,14 @@
         </tal:block>
 
         <tal:block condition="view/batchnav/currentBatch">
-          <form method="POST" action="+translate">
+          <form method="POST" action="">
             <!-- the hidden elements -->
-            <input tal:condition="view/second_lang_code"
-                   tal:replace="structure view/alternative_language_widget/hidden" />
-            <input type="hidden" name="show"
-                   tal:condition="view/show"
-                   tal:attributes="value view/show" />
             <input type="hidden" name="start" value=""
                    tal:attributes="value view/start" />
             <input type="hidden" name="batch" value=""
                    tal:attributes="value view/size" />
+            <input type="hidden" name="lock_timestamp" value=""
+                   tal:attributes="value view/lock_timestamp/isoformat" />
             <table class="listing" style="margin-top: 0.5em;">
               <thead>
                 <tr class="results">
@@ -157,8 +154,7 @@
                     <input type="submit"
                            name="submit_translations"
                            value="Save &amp; Continue"
-                           style="text-align: right;"
-                           tabindex="1" />
+                           style="text-align: right;"/>
                   </th>
                 </tr>
               </tfoot>

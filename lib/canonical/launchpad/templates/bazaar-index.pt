@@ -5,35 +5,9 @@
     i18n:domain="bazaar"
 >
   <body>
+<<<<<<< TREE
     <div metal:fill-slot="main">
-      <!-- tal:buttons replace="structure context/@@+app-buttons" / -->
-      <div id="applications">
-        <a href="/products">
-          <img alt="" src="/+icing/app-register.gif" />
-          Register your project.
-        </a>
-        <a href="/bazaar">
-          <img alt="" src="/+icing/app-code-large.gif" />
-          Publish your code.
-        </a>
-        <a href="/bugs">
-          <img alt="" src="/+icing/app-bugs.gif" />
-          Share bug reports and fixes.
-        </a>
-        <a href="/specs">
-          <img alt="" src="/+icing/app-features.gif" />
-          Track specifications.
-        </a>
-        <a href="/rosetta">
-          <img alt="" src="/+icing/app-translations.gif" />
-          Localize your software.
-        </a>
-        <a href="/support">
-          <img alt="" src="/+icing/app-support.gif" />
-          Help your users.
-        </a>
-      </div><!--applications-->
-
+      <div id="applications" tal:content="structure context/@@+applicationbuttons/code" />
       <div id="mainarea" class="tab-code">
         <div class="t">
           <div class="u">
@@ -42,77 +16,105 @@
                 <div class="x">
                   <div class="y">
                     <div class="z">
-                      <form class="central" action="/bugs" method="get">
-                        <h1>Code</h1>
-                        <p
-                          xtal:condition="view/error_message"
-                          xtal:content="view/error_message"
-                          class="error message"
-                        >Error message.</p>
-                        <input
-                          id="text"
-                          type="text"
-                          name="text"
-                          size="50"
-                        />
-                        <input
-                          type="submit"
-                          value="Find a Project"
-                        />
-                      </form>
-                      <p id="application-summary">
-                        Launchpad lets you track branches of any product that
-                        uses the <a href="http://bazaar-vcs.org/">Bazaar</a>
-                        version control system &mdash; and imports many
-                        <abbr>CVS</abbr>, <abbr>SVN</abbr>, and git projects,
-                        so you can use Bazaar with those too.
-                      </p>
-                      <div class="columns">
-                        <div class="three column left">
-                          <h2>Recent imports</h2>
-                          <ul>
-                            <li>foo</li>
-                            <li>bar</li>
-                            <li>hum</li>
-                            <li>baz</li>
-                          </ul>
+                      <div id="container">
+                        <form class="central" action="/products" method="get">
+                          <h1>Code</h1>
+                          <p
+                            xtal:condition="view/error_message"
+                            xtal:content="view/error_message"
+                            class="error message"
+                          ><!-- Error message. --></p>
+                          <input
+                            id="text"
+                            type="text"
+                            name="text"
+                            size="50"
+                          />
+                          <input
+                            type="submit"
+                            value="Find a Project"
+                          />
+                        </form>
+                        <p id="application-summary">
+                          Launchpad lets you track branches of any product that
+                          uses the <a href="http://bazaar-vcs.org/">Bazaar</a>
+                          version control system &mdash; and imports many
+                          <abbr>CVS</abbr>, <abbr>SVN</abbr>, and git projects,
+                          so you can use Bazaar with those too.
+                        </p>
+                        <ul class="buttons">
+                          <li>
+                            <a href="/+tour">
+                              <img
+                                alt="Take a tour"
+                                src="/+icing/but_lrg_takeatour.gif"
+                              />
+                            </a>
+                          </li>
+                          <li>
+                            <a href="/+addbranch">
+                              <img
+                                alt="Register a branch"
+                                src="/+icing/but_lrg_registerabranch.gif"
+                              />
+                            </a>
+                          </li>
+                          <li>
+                            <a href="/+import">
+                              <img
+                                alt="Import your project"
+                                src="/+icing/but_lrg_importyourproject.gif"
+                              />
+                            </a>
+                          </li>
+                        </ul>
+                        <div class="columns">
+                          <div class="three column left">
+                            <h2>Recent imports</h2>
+                            <ul>
+                              <li>TBD</li>
+                              <li>TBD</li>
+                              <li>TBD</li>
+                              <li>TBD</li>
+                            </ul>
+                          </div>
+                          <div class="three column center">
+                            <h2>Recently registered</h2>
+                            <ul>
+                              <li>TBD</li>
+                              <li>TBD</li>
+                              <li>TBD</li>
+                              <li>TBD</li>
+                            </ul>
+                          </div>
+                          <div class="three column right">
+                            <h2>Recently changed</h2>
+                            <ul>
+                              <li>TBD</li>
+                              <li>TBD</li>
+                              <li>TBD</li>
+                              <li>TBD</li>
+                            </ul>
+                          </div>
                         </div>
-                        <div class="three column center">
-                          <h2>Recently registered</h2>
-                          <ul>
-                            <li>foo</li>
-                            <li>bar</li>
-                            <li>hum</li>
-                            <li>baz</li>
-                          </ul>
-                        </div>
-                        <div class="three column right">
-                          <h2>Recently changed</h2>
-                          <ul>
-                            <li>foo</li>
-                            <li>bar</li>
-                            <li>hum</li>
-                            <li>baz</li>
-                          </ul>
+                        <div class="clear"></div>
+                        <div id="application-footer">
+                          <div>
+                            <strong class="demo">12345</strong>
+                            branches registered in
+                            <strong class="demo">1234</strong>
+                            products
+                          </div>
+                          <div>
+                            <strong tal:content="view/import_count">123</strong>
+                            imported branches
+                          </div>
+                          <div>
+                            <strong class="demo">12</strong>
+                            branches associated with bug reports
+                          </div>
                         </div>
                       </div>
-                      <div id="application-footer">
-                        <div>
-                          <tal:branches replace="nothing">12345</tal:branches>
-                          branches registered in
-                          <tal:products replace="nothing">1234</tal:products>
-                          products
-                        </div>
-                        <div>
-                          <tal:imports replace="view/import_count"
-                          >123</tal:imports> imported branches
-                        </div>
-                        <div>
-                          <tal:buglinks replace="nothing">12</tal:buglinks>
-                          branches associated with bug reports
-                        </div>
-                      </div>
-                      <div class="clear"></div>
                     </div><!--z-->
                   </div><!--y-->
                 </div><!--x-->
@@ -144,7 +146,7 @@
       <p>
         If the project you are working on uses CVS or Subversion, Launchpad can
         produce a Bazaar branch that is synchronised daily with the HEAD or
-        trunk of the project, so you can use Bazaar to manage you own changes
+        trunk of the project, so you can use Bazaar to manage your own changes
         even if the project leaders do not.
         To set up a VCS import, edit the source details of the trunk release
         series of the product.
@@ -176,4 +178,4 @@
   </body>
 </html>
 </tal:layout>
-<!-- 1-0 inprogress high-priority for 1.0 -->
+<!-- 1-0 inprogress Needs recent imports, registered, and changed lists -->

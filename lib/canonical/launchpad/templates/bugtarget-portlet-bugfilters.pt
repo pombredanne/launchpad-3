@@ -1,5 +1,7 @@
-<div class="portlet portletBody portletContent">
-
+<div class="portlet">
+  <h2>Filters</h2>
+  <div class="portletBody portletContent">
+ 
 <ul>
 
   <li>
@@ -47,4 +49,5 @@
   </li>
 </ul>
 
+  </div>
 </div>

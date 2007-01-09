@@ -31,6 +31,11 @@
     />
 
   <vocabulary
+    name="BranchLifecycleStatusFilter"
+    factory="canonical.launchpad.vocabularies.BranchLifecycleStatusFilterVocabulary"
+    />
+
+  <vocabulary
     name="BranchReviewStatus"
     factory="canonical.launchpad.vocabularies.BranchReviewStatusVocabulary"
     />
@@ -48,6 +53,16 @@
   <vocabulary
     name="BugBranchStatus"
     factory="canonical.launchpad.vocabularies.BugBranchStatusVocabulary"
+    />
+
+  <vocabulary
+    name="BugNominatableReleases"
+    factory="canonical.launchpad.vocabularies.BugNominatableReleasesVocabulary"
+    />
+
+  <vocabulary
+    name="BugNominationStatus"
+    factory="canonical.launchpad.vocabularies.BugNominationStatusVocabulary"
     />
 
   <vocabulary
@@ -178,6 +193,11 @@
   <vocabulary
     name="MirrorStatus"
     factory="canonical.launchpad.vocabularies.MirrorStatusVocabulary"
+    />
+
+  <vocabulary
+    name="NonMergedPeopleAndTeams"
+    factory="canonical.launchpad.vocabularies.NonMergedPeopleAndTeamsVocabulary"
     />
 
   <vocabulary
@@ -398,6 +418,16 @@
   <vocabulary
     name="ProcessorFamily"
     factory="canonical.launchpad.vocabularies.ProcessorFamilyVocabulary"
+    />
+
+  <vocabulary
+    name="DistributionOrProduct"
+    factory="canonical.launchpad.vocabularies.DistributionOrProductVocabulary"
+    />
+
+  <vocabulary
+    name="DistributionOrProductOrProject"
+    factory="canonical.launchpad.vocabularies.DistributionOrProductOrProjectVocabulary"
     />
 
   <!-- Define the widget used by Choice fields that use huge vocabularies -->

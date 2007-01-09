@@ -32,9 +32,9 @@ returns None as the referrer. However, the test browser sets it to
 'localhost' for some reason when the Referer: header is not set.
 http://www.zope.org/Collectors/Zope3-dev/710 -- StuartBishop 20060913
 
->>> anon_browser.open('http://features.launchpad.dev/')
+>>> anon_browser.open('http://blueprints.launchpad.dev/')
 >>> referrer(anon_browser)
-(u'localhost', u'http://features.launchpad.dev/specs/+index')
+(u'localhost', u'http://blueprints.launchpad.dev/specs/+index')
 
 And crazy referrers do not cause things to blow up.
 

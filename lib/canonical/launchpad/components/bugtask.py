@@ -59,6 +59,8 @@ class BugTaskMixin:
         # task has yet been marked with the correct interface.
         if self.product:
             return self.product
+        elif self.productseries:
+            return self.productseries
         elif self.distribution:
             if self.sourcepackagename:
                 return self.distribution.getSourcePackage(
@@ -94,10 +96,12 @@ class NullBugTask(BugTaskMixin):
     """
     implements(INullBugTask)
 
-    def __init__(self, bug, product=None, sourcepackagename=None,
-                 distribution=None, distrorelease=None):
+    def __init__(self, bug, product=None, productseries=None,
+                 sourcepackagename=None, distribution=None,
+                 distrorelease=None):
         self.bug = bug
         self.product = product
+        self.productseries = productseries
         self.sourcepackagename = sourcepackagename
         self.distribution = distribution
         self.distrorelease = distrorelease
@@ -128,6 +132,8 @@ class NullBugTask(BugTaskMixin):
         self.assignee = None
         self.bugwatch = None
         self.owner = None
+        self.conjoined_master = None
+        self.conjoined_slave = None
 
     @property
     def targetname(self):

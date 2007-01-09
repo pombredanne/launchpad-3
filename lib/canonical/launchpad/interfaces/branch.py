@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'IBranch',
     'IBranchSet',
+    'IBranchLifecycleFilter'
     ]
 
 from zope.interface import Interface, Attribute
@@ -15,7 +16,8 @@ from zope.component import getUtility
 from zope.schema import Bool, Int, Choice, Text, TextLine, Datetime
 
 from canonical.config import config
-from canonical.lp.dbschema import BranchLifecycleStatus
+from canonical.lp.dbschema import (BranchLifecycleStatus,
+                                   BranchLifecycleStatusFilter)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Title, Summary, Whiteboard
@@ -73,7 +75,7 @@ class IBranch(IHasOwner):
             "www.bazaar-vcs.org for more information."),
         constraint=valid_webref)
 
-    whiteboard = Whiteboard(title=_('Status Whiteboard'), required=False,
+    whiteboard = Whiteboard(title=_('Whiteboard'), required=False,
         description=_('Notes on the current status of the branch.'))
     mirror_status_message = Text(
         title=_('The last message we got when mirroring this branch '
@@ -186,6 +188,10 @@ class IBranch(IHasOwner):
         title=_("Last scanned revision ID"), required=False,
         description=_("The head revision ID of the branch when last "
                       "successfully scanned."))
+    revision_count = Int(
+        title=_("Revision count"),
+        description=_("The number of revisions in the branch")
+        )
 
     cache_url = Attribute("Private mirror of the branch, for internal use.")
     warehouse_url = Attribute(
@@ -199,9 +205,11 @@ class IBranch(IHasOwner):
         "The bugs related to this branch, likely branches on which "
         "some work has been done to fix this bug.")
 
+    # Specification attributes
+    spec_links = Attribute("Specifications linked to this branch")
+
     # Joins
     revision_history = Attribute("The sequence of revisions in that branch.")
-    revision_count = Attribute("The number of revisions in that branch.")
     subscriptions = Attribute("BranchSubscriptions associated to this branch.")
     subscribers = Attribute("Persons subscribed to this branch.")
 
@@ -242,6 +250,12 @@ class IBranch(IHasOwner):
         Returns True if any RevisionNumber objects were destroyed.
         """
 
+    def updateScannedDetails(revision_id, revision_count):
+        """Updates attributes associated with the scanning of the branch.
+
+        A single entry point that is called solely from the branch scanner
+        script.
+        """
 
 class IBranchSet(Interface):
     """Interface representing the set of branches."""
@@ -285,3 +299,20 @@ class IBranchSet(Interface):
 
     def getBranchesToScan():
         """Return an iterator for the branches that need to be scanned."""
+
+
+class IBranchLifecycleFilter(Interface):
+    """A helper interface to render lifecycle filter choice."""
+
+    # Stats and status attributes
+    lifecycle = Choice(
+        title=_('Lifecycle Filter'), vocabulary='BranchLifecycleStatusFilter',
+        default=BranchLifecycleStatusFilter.CURRENT,
+        description=_(
+        "The author's assessment of the branch's maturity. "
+        " Mature: recommend for production use."
+        " Development: useful work that is expected to be merged eventually."
+        " Experimental: not recommended for merging yet, and maybe ever."
+        " Merged: integrated into mainline, of historical interest only."
+        " Abandoned: no longer considered relevant by the author."
+        " New: unspecified maturity."))

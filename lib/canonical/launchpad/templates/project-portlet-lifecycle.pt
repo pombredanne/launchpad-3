@@ -1,6 +1,6 @@
 <div class="portlet">
   <h2>Lifecycle</h2>
-  <table class="body">
+  <table class="portletBody">
     <tbody>
       <tr>
         <th>Registered:</th>

@@ -16,34 +16,13 @@
 
 <div metal:fill-slot="main">
 
-      <!-- tal:buttons replace="structure context/@@+app-buttons" / -->
-      <div id="applications">
-        <a href="/products">
-          <img alt="" src="/+icing/app-register.gif" />
-          Register your project.
-        </a>
-        <a href="/bazaar">
-          <img alt="" src="/+icing/app-code.gif" />
-          Publish your code.
-        </a>
-        <a href="/bugs">
-          <img alt="" src="/+icing/app-bugs.gif" />
-          Share bug reports and fixes.
-        </a>
-        <a href="/specs">
-          <img alt="" src="/+icing/app-features.gif" />
-          Track specifications.
-        </a>
-        <a href="/rosetta">
-          <img alt="" src="/+icing/app-translations.gif" />
-          Localize your software.
-        </a>
-        <a href="/support">
-          <img alt="" src="/+icing/app-support.gif" />
-          Help your users.
-        </a>
-      </div>
-      <form class="central" action="/products/" method="get">
+      <div id="applications" tal:content="structure context/@@+applicationbuttons" />
+      <form
+        class="central"
+        style="text-align: center;"
+        action="/products/"
+        method="get"
+      >
         <label for="text">Is your project registered yet?</label>
         <input id="text" type="text" name="text" size="30" />
         <input type="submit" value="Search" />
@@ -54,18 +33,15 @@
           <ul>
             <li><a href="/distros/ubuntu">Ubuntu</a> (distribution)</li>
             <li><a href="/products/bzr">Bazaar</a> (product)</li>
-            <li><a href="/products/gnomebacker">GnomeBaker</a> (product)</li>
+            <li><a href="/products/gnomebaker">GnomeBaker</a> (product)</li>
           </ul>
         </div>
         <div class="right">
           <h2>More about Launchpad</h2>
-          <ul>
-            <li>marketing</li>
-            <li>goes</li>
-            <li>here</li>
-          </ul>
+          <p>TBD</p>
         </div>
       </div>
+      <div style="clear: both;">&nbsp;</div>
     </div>
     <p metal:fill-slot="help">
       This panel provides help on individual Launchpad pages.
@@ -74,4 +50,4 @@
   </body>
 </html>
 </tal:layout>
-<!-- 1-0 inprogress Needs app button mechanism, images, and marketing material -->
+<!-- 1-0 inprogress Needs images and marketing material -->

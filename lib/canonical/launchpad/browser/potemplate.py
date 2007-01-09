@@ -117,7 +117,7 @@ class POTemplateSubsetView:
 
     def __call__(self):
         # We are not using this context directly, only for traversals.
-        return self.request.response.redirect('../+translations')
+        self.request.response.redirect('../+translations')
 
 
 class POTemplateView(LaunchpadView):
@@ -224,8 +224,16 @@ class POTemplateView(LaunchpadView):
 
         if filename.endswith('.pot') or filename.endswith('.po'):
             # Add it to the queue.
+            if filename.endswith('.po'):
+                # It's a .po file attached to the template at self.context,
+                # we don't override its path.
+                path = filename
+            else:
+                # It's a template, we override it to have exactly the same
+                # path as the entry has in our database.
+                path = self.context.path
             translation_import_queue.addOrUpdateEntry(
-                self.context.path, content, True, self.user,
+                path, content, True, self.user,
                 sourcepackagename=self.context.sourcepackagename,
                 distrorelease=self.context.distrorelease,
                 productseries=self.context.productseries,
@@ -378,7 +386,7 @@ class POTemplateExportView(BaseExportView):
 class POTemplateSubsetURL:
     implements(ICanonicalUrlData)
 
-    rootsite = 'launchpad'
+    rootsite = 'mainsite'
 
     def __init__(self, context):
         self.context = context

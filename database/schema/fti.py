@@ -7,7 +7,7 @@ __metaclass__ = type
 
 import _pythonpath
 
-import sys, os.path, popen2, re
+import sys, os.path, popen2
 from optparse import OptionParser
 import psycopg
 from canonical.database.sqlbase import connect
@@ -44,6 +44,14 @@ ALL_FTI = [
     ('cve', [
             ('sequence', A),
             ('description', B),
+            ]),
+
+    ('distribution', [
+            ('name', A),
+            ('displayname', A),
+            ('title', B),
+            ('summary', C),
+            ('description', D),
             ]),
 
     ('distributionsourcepackagecache', [
