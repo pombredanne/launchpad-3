@@ -13,7 +13,9 @@ import unittest
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor
-from canonical.database.revision import *
+from canonical.database.revision import (
+        confirm_dbrevision, InvalidDatabaseRevision,
+        )
 from canonical.testing import LaunchpadZopelessLayer
 
 class TestRevision(unittest.TestCase):
@@ -21,7 +23,7 @@ class TestRevision(unittest.TestCase):
 
     def setUp(self):
         schema_dir = os.path.join(config.root, 'database', 'schema')
-        baseline = glob(os.path.join(schema_dir, 'launchpad-??-00-0.sql'))[0]
+        baseline, = glob(os.path.join(schema_dir, 'launchpad-??-00-0.sql'))
         match = re.search('launchpad-(\d\d)-00-0.sql', baseline)
         self.major = int(match.group(1))
 
@@ -42,8 +44,13 @@ class TestRevision(unittest.TestCase):
                 os.path.exists(path),
                 '%s already exists but it is reserved for this test' % path
                 )
-        open(path, 'w').close()
+        fake_patch = open(path, 'w')
         try:
+            print >> fake_patch, """
+                Delete this file - it is garbage from a test that died before
+                it could clean up properly.
+                """
+            fake_patch.close()
             self.failUnlessRaises(InvalidDatabaseRevision, confirm_dbrevision)
         finally:
             os.remove(path)

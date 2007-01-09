@@ -15,13 +15,14 @@ from canonical.database.sqlbase import cursor
 
 class InvalidDatabaseRevision(Exception):
     """Exception raised by confirm_dbrevision."""
-    pass
 
 
 def confirm_dbrevision():
     """Check that the database we are connected to is the same
-    database patch level as expected by the code. Raises an
-    InvalidDatabaseRevision exception if this is not the case.
+    database patch level as expected by the code.
+    
+    Raises an InvalidDatabaseRevision exception if the database patch level
+    is not what is expected.
     """
     # Get a list of patches the code expects to have been applied from the
     # filesystem.
