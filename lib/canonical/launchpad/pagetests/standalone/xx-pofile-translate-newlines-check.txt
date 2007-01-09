@@ -44,9 +44,7 @@ We can see that the message we are interested on is not translated.
   ...     browser.contents, 20)
   >>> print msgid_number
   20.
-  <a name="20">
-    <input type="hidden" name="msgset_149" />
-  </a>
+  <input type="hidden" name="msgset_149" />
   >>> print msgid
   Please select a key size in bits.  The cipher you have chosen...
   >>> print translation
@@ -59,7 +57,7 @@ answer should have exactly those strings.
   >>> browser.getControl(name='msgset_149_es_translation_0_new').value = '\r\nfoo\r\n\r\n'
   >>> browser.getControl(name='submit_translations').click()
   >>> browser.url
-  'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate'
+  'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=19&batch=1'
   >>> soup = BeautifulSoup(browser.contents)
   >>> soup.find(attrs={"name" : "msgset_149_es_translation_0_new"})
   <textarea ... name="msgset_149_es_translation_0_new" ...>
@@ -76,7 +74,7 @@ change the test, to be 100% sure that the textarea content is the right one.
   >>> browser.getControl(name='msgset_149_es_translation_0_new').value = 'foo'
   >>> browser.getControl(name='submit_translations').click()
   >>> browser.url
-  'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate'
+  'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=19&batch=1'
   >>> soup = BeautifulSoup(browser.contents)
   >>> soup.find(attrs={"name" : "msgset_149_es_translation_0_new"}) #doctest: -NORMALIZE_WHITESPACE
   <textarea ... name="msgset_149_es_translation_0_new" ...>
@@ -108,13 +106,12 @@ And, as we can see, we get the trailing new line char
   >>> (msgid_number, msgid, translation) = getMessageValues(browser.contents, 23)
   >>> print msgid_number
   23.
-  <a name="23">
-    <input type="hidden" name="msgset_165" />
-  </a>
+  <input type="hidden" name="msgset_165" />
   >>> print msgid
   <code>%s</code>: option `<code>%s</code>' is ambiguous...
-  >>> translation
-  '%s: la opcion \xc2\xab%s\xc2\xbb es ambigua\r\n'
+  >>> print translation
+  <div lang="es" dir="ltr"><code>%s</code>: la opcion «<code>%s</code>» es ambigua<img alt="" src="/@@/translation-newline" /><br />
+  </div>
 
 Now, we do the right submit, with one trailing new line...
 
@@ -138,13 +135,12 @@ And, as we can see, we get the same output, just one trailing new line char
   >>> (msgid_number, msgid, translation) = getMessageValues(browser.contents, 23)
   >>> print msgid_number
   23.
-  <a name="23">
-    <input type="hidden" name="msgset_165" />
-  </a>
+  <input type="hidden" name="msgset_165" />
   >>> print msgid
   <code>%s</code>: option `<code>%s</code>' is ambiguous...
-  >>> translation
-  '%s: la opcion \xc2\xab%s\xc2\xbb es ambigua\r\n'
+  >>> print translation
+  <div lang="es" dir="ltr"><code>%s</code>: la opcion «<code>%s</code>» es ambigua<img alt="" src="/@@/translation-newline" /><br />
+  </div>
 
 Last check, the user sends two new line chars instead of just one...
 
@@ -168,10 +164,8 @@ And Rosetta comes to the rescue and stores just one!.
   >>> (msgid_number, msgid, translation) = getMessageValues(browser.contents, 23)
   >>> print msgid_number
   23.
-  <a name="23">
-    <input type="hidden" name="msgset_165" />
-  </a>
+  <input type="hidden" name="msgset_165" />
   >>> print msgid
   <code>%s</code>: option `<code>%s</code>' is ambiguous...
   >>> translation
-  '%s: la opcion \xc2\xab%s\xc2\xbb es ambigua\r\n'
+  '\n<div lang="es" dir="ltr"><code>%s</code>: la opcion \xc2\xab<code>%s</code>\xc2\xbb es ambigua<img alt="" src="/@@/translation-newline" /><br />\n</div>\n'
