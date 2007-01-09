@@ -1,4 +1,5 @@
-We make Zope 3 give us funky real time stats.
+We make Zope 3 give us funky real time stats. We can access them via
+XML-RPC:
 
     >>> import xmlrpclib
     >>> from canonical.functional import XMLRPCTestTransport
@@ -7,90 +8,102 @@ We make Zope 3 give us funky real time stats.
     ...     transport=XMLRPCTestTransport()
     ...     )
 
-Number of requests
+Create a function to report our stats for these tests. Note that
+invoking this method makes an XML-RPC call, so the 'requests' and
+'xml-rpc' requests statistics will be incremented.
 
-    >>> opstats = lp_xmlrpc.opstats()
-    >>> old_requests = opstats['requests']
-    >>> opstats = lp_xmlrpc.opstats()
+    >>> def reset():
+    ...     from canonical.launchpad.xmlrpc.opstats import OpStats
+    ...     OpStats.resetStats()
+    ...
+    >>> def report():
+    ...     stats = lp_xmlrpc.opstats()
+    ...     for stat_key in sorted(stats.keys()):
+    ...         value = stats[stat_key]
+    ...         if value > 0:
+    ...             print "%s: %d" % (stat_key, value)
+    ...     reset()
+    ...
 
-    >>> new_requests = opstats['requests']
-    >>> new_requests == old_requests + 1
-    True
+Number of requests and XML-RPC requests. Even though XML-RPC
+requests are technically HTTP requests, we do not count them as such. Note
+that the call to obtain statistics will increment the 'requests' and
+'xml-rpc requests' statistics, but this will not be visible until the
+next time we access the statistics as the statistics are adjusted after
+the request has been served:
 
-Number of HTTP requests and success codes:
+    >>> stats = lp_xmlrpc.opstats()
+    >>> for key in sorted(stats.keys()):
+    ...     print '%s: %d' % (key, stats[key])
+    1XXs: 0
+    2XXs: 0
+    3XXs: 0
+    404s: 0
+    4XXs: 0
+    500s: 0
+    503s: 0
+    5XXs: 0
+    6XXs: 0
+    http requests: 0
+    requests: 0
+    xml-rpc faults: 0
+    xml-rpc requests: 0
+    >>> report()
+    requests: 1
+    xml-rpc requests: 1
 
-    >>> old_http = opstats['http requests']
-    >>> old_2XXs = opstats['2XXs']
-    >>> old_requests = opstats['requests']
+Number of HTTP requests and success codes.
+
     >>> output = http("GET / HTTP/1.1\nHost: code.launchpad.dev\n")
     >>> output.getStatus()
     200
-    >>> opstats = lp_xmlrpc.opstats()
-
-    >>> new_http = opstats['http requests']
-    >>> new_http == old_http + 1
-    True
-
-    >>> new_2XXs = opstats['2XXs']
-    >>> new_2XXs == old_2XXs + 1
-    True
-
-    Note that 'requests' has increased by 2, once for the HTTP requestand
-    once for the XML-RPC requests to obtain updated stats
-
-    >>> new_requests = opstats['requests']
-    >>> new_requests == old_requests + 2
-    True
-
-Number of XML-RPC requests:
-
-    >>> old_xmlrpc = opstats['xml-rpc requests']
-    >>> old_requests = opstats['requests']
-    >>> opstats = lp_xmlrpc.opstats()
-
-    >>> new_xmlrpc = opstats['xml-rpc requests']
-    >>> new_xmlrpc == old_xmlrpc + 1
-    True
-
-    >>> new_requests = opstats['requests']
-    >>> new_requests == old_requests + 1
-    True
-
+    >>> report()
+    2XXs: 1
+    http requests: 1
+    requests: 1
+    
 Number of 404s:
 
-    >>> old_404s = opstats['404s']
-    >>> old_requests = opstats['requests']
     >>> output = http("GET http://launchpad.dev/non-existant HTTP/1.1\n")
     >>> output.getStatus()
     404
-    >>> opstats = lp_xmlrpc.opstats()
+    >>> report()
+    404s: 1
+    4XXs: 1
+    http requests: 1
+    requests: 1
 
-    >>> new_404s = opstats['404s']
-    >>> new_404s == old_404s + 1
-    True
+Number of 500 Internal Server Errors (unhandled exceptions):
 
-    >>> new_requests = opstats['requests']
-    >>> new_requests == old_requests + 2
-    True
+    Register a test page that generates HTTP 500 errors.
+
+    >>> from zope.app.tests import ztapi
+    >>> class ErrorView(object):
+    ...     """A broken view"""
+    ...     def __call__(self, *args, **kw):
+    ...         raise Exception('Oops')
+    ...
+    >>> ztapi.browserView(None, "error-test", ErrorView)
+    >>> output = http("GET /error-test HTTP/1.1\nHost: launchpad.dev\n")
+    >>> output.getStatus()
+    500
+    >>> report()
+    500s: 1
+    5XXs: 1
+    http requests: 1
+    requests: 1
 
 Number of XML-RPC Faults:
 
-    >>> old_faults = opstats['xml-rpc faults']
-    >>> old_requests = opstats['xml-rpc requests']
     >>> try:
     ...     opstats = lp_xmlrpc.invalid() # XXX: Need a HTTP test too
     ...     print 'Should have raised an exception!'
     ... except xmlrpclib.Fault:
     ...     pass
-    >>> opstats = lp_xmlrpc.opstats()
-
-    >>> new_faults = opstats['xml-rpc faults']
-    >>> new_faults == old_faults + 1
-    True
-
-    >>> new_requests = opstats['xml-rpc requests']
-    >>> new_requests == old_requests + 2
-    True
+    >>> report()
+    requests: 1
+    xml-rpc faults: 1
+    xml-rpc requests:  1
 
 Number of OOPSes:
 

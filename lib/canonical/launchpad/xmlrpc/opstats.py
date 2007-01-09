@@ -33,7 +33,11 @@ class OpStats(LaunchpadXMLRPCView):
     implements(IOpStats)
 
     # Statistics maintained by the publication machinery. Class global.
-    stats = {
+    stats = {} # Initialized by OpStats.resetStats()
+
+    @classmethod
+    def resetStats(cls):
+        OpStats.stats.update({
             # Global
             'requests': 0, # Requests, all protocols, all statuses
 
@@ -52,9 +56,11 @@ class OpStats(LaunchpadXMLRPCView):
             '4XXs': 0, # Client Errors
             '5XXs': 0, # Server Errors
             '6XXs': 0, # Internal Errors
-            }
+            })
 
     def opstats(self):
         """See IOpStats."""
         return OpStats.stats
+
+OpStats.resetStats() # Initialize the statistics
 

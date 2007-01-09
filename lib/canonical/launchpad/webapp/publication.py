@@ -278,6 +278,8 @@ class LaunchpadBrowserPublication(
 
         # NB. We use IBrowserRequest, as other request types such as
         # IXMLRPCRequest use IHTTPRequest as a superclass.
+        # This should be fine as Launchpad only deals with browser
+        # and XML-RPC requests.
         if IBrowserRequest.providedBy(request):
             OpStats.stats['http requests'] += 1
             status = request.response.getStatus()
