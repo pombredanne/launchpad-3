@@ -44,7 +44,7 @@ check_merge: check_not_a_ui_merge build check importdcheck hctcheck
 	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
-check_merge: build check importdcheck hctcheck
+check_merge_ui: build check importdcheck hctcheck
 	# Same as check_merge, except we don't need to do check_not_a_ui_merge.
 	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
