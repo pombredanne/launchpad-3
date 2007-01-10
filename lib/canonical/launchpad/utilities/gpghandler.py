@@ -112,7 +112,7 @@ class GPGHandler:
             else:
                 return signature
 
-        stored_errors = [err.__str__() for err in errors]
+        stored_errors = [str(err) for err in errors]
 
         raise GPGVerificationError(
             "Verification failed 3 times: %s " % stored_errors)

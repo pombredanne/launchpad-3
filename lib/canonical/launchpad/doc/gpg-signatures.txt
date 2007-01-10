@@ -159,11 +159,11 @@ the GPGME error codes (they may be helpful).
     ...
     GPGVerificationError: (7, 9, 'No public key')
 
-Due unpredictable behaviour between production system and external
-keyserver, we have a resilient signature verifier, encapsulated in
-'getVerifiedSignatureResilient'.
+Due to unpredictable behaviour between the production system and
+the external keyserver, we have a resilient signature verifier,
+encapsulated in 'getVerifiedSignatureResilient'.
 
-It retries failed verification other 2 times before raising an
+It retries the failed verification 2 other times before raising an
 exception. The exception raised by this method will contain debug
 information for the 3 failures.
 
