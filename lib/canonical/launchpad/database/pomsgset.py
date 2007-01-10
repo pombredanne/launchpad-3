@@ -153,11 +153,8 @@ class POMsgSet(SQLBase):
 
     def isNewerThan(self, timestamp):
         """See IPOMsgSet."""
-        print "\n\nHERE in isNewerThan()\n\n"
         for plural_index in range(self.pluralforms):
             selection = self.getSelection(plural_index)
-            #import pdb
-            #pdb.set_trace()
             if selection is not None and selection.isNewerThan(timestamp):
                 return True
         return False
@@ -394,6 +391,9 @@ class POMsgSet(SQLBase):
                   not force_suggestion):
                 # activesubmission is updated only if the translation is
                 # valid and it's an editor.
+                # Lets set latestsubmission to be able to tell when
+                # the last change happened
+                self.pofile.latestsubmission = selection.activesubmission
                 selection.activesubmission = None
                 selection.reviewer = person
                 selection.date_reviewed = UTC_NOW
