@@ -23,7 +23,6 @@ class TestTeamMembershipSet(LaunchpadFunctionalTestCase):
     def test_membership_creation(self):
         marilize = self.personset.getByName('marilize')
         ubuntu_team = self.personset.getByName('ubuntu-team')
-        # First create a new membership with status = Approved
         membership = self.membershipset.new(
             marilize, ubuntu_team, TeamMembershipStatus.APPROVED)
         self.failUnless(
@@ -31,8 +30,9 @@ class TestTeamMembershipSet(LaunchpadFunctionalTestCase):
                                                                 ubuntu_team))
         self.failUnless(membership.status == TeamMembershipStatus.APPROVED)
 
+    def test_admin_membership_creation(self):
+        ubuntu_team = self.personset.getByName('ubuntu-team')
         no_priv = self.personset.getByName('no-priv')
-        # Now create another one with status = Admin
         membership = self.membershipset.new(
             no_priv, ubuntu_team, TeamMembershipStatus.ADMIN)
         self.failUnless(

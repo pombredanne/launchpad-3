@@ -132,7 +132,7 @@ class TeamMembership(SQLBase):
         reviewer = self.reviewer
 
         if reviewer != member:
-            reviewer_name = reviewer.formattedname
+            reviewer_name = reviewer.unique_displayname
         else:
             # The user himself changed his membership.
             reviewer_name = 'the user himself'
@@ -145,8 +145,8 @@ class TeamMembership(SQLBase):
         subject = ('Launchpad: Membership change: %(member)s in %(team)s'
                    % {'member': self.person.name, 'team': self.team.name})
         replacements = {
-            'member_name': member.formattedname,
-            'team_name': team.formattedname,
+            'member_name': member.unique_displayname,
+            'team_name': team.unique_displayname,
             'old_status': old_status.title,
             'new_status': new_status.title,
             'reviewer_name': reviewer_name,

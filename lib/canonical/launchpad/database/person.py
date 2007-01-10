@@ -207,7 +207,7 @@ class Person(SQLBase):
             orderBy=['-datecreated']))
 
     @property
-    def formattedname(self):
+    def unique_displayname(self):
         """See IPerson."""
         return "%s (%s)" % (self.displayname, self.name)
 

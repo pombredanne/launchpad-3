@@ -361,7 +361,7 @@ class IPerson(IHasSpecifications):
     # title is required for the Launchpad Page Layout main template
     title = Attribute('Person Page Title')
 
-    formattedname = Attribute(
+    unique_displayname = TextLine(
         'Return a string of the form $displayname ($name).')
     browsername = Attribute(
         'Return a textual name suitable for display in a browser.')
