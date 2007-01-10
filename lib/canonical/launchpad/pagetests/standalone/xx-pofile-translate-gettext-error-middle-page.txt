@@ -4,7 +4,8 @@ messages for this POFile, we still detect the error and notify to our users.
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
   >>> browser.open(
-  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=10&batch=5')
+  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/'
+  ...     'evolution-2.2/es/+translate?start=10&batch=5')
   >>> browser.url
   'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=10&batch=5'
 
@@ -18,12 +19,28 @@ integer.
   >>> browser.getControl(name='msgset_142_es_translation_0_new').value = (
   ...     'Migrando \xc2\xab%i\xc2\xbb')
 
+We are going to add a valid translation too so we are sure that it's stored
+even when there is an error in another message of the same form.
+
+  >>> browser.getControl(
+  ...     name='msgset_140_es_translation_0_radiobutton').value = [
+  ...         'msgset_140_es_translation_0_new']
+  >>> browser.getControl(name='msgset_140_es_translation_0_new').value = 'Foo'
+
+And submit the form.
+
   >>> browser.getControl(name='submit_translations').click()
 
 We remain at the same page:
 
   >>> browser.url
   'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=10&batch=5'
+
+The valid translation is stored:
+
+  >>> print find_tag_by_id(
+  ...     browser.contents, 'msgset_140_es_translation_0').renderContents()
+  Foo
 
 And the error is noted in the page.
 

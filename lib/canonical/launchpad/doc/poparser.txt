@@ -208,7 +208,10 @@ Verify that it still parses:
 
 == Escape Characters in Strings ==
 
-Message strings in PO files can contain C string escape sequences:
+Message strings in PO files can contain C string escape sequences. Some of
+them have special meaning like 'new line': '\n' or 'tabs' '\t' and others are
+just the numeric representation of a character in the declared encoding by
+the Content-Type field of the header.
 
   >>> content = """
   ... msgid ""
@@ -232,9 +235,14 @@ Message strings in PO files can contain C string escape sequences:
   >>> parser.write(content)
   >>> parser.finish()
 
+The special symbols and numeric representations of the chars '8', '80' and 'p'
+are decoded correctly.
+
   >>> parser.messages[0].msgstr
   u'\x07\x08\x0b\x0c\t\x0b\\"\'\n8 8 80 p\n'
 
-  >>> parser.messages[1].msgid
-  u'view \xc2\xab${version_title}\xc2\xbb'
+In this case, the numeric representation are UTF-8 only characters and we can
+see that we get its Unicode equivalent.
 
+  >>> parser.messages[1].msgid
+  u'view \xab${version_title}\xbb'
