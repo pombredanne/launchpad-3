@@ -378,7 +378,7 @@ class IPerson(IHasSpecifications):
         """
 
     def getBugContactOpenBugCounts(user):
-        """Return open bug counts for this bug contacts packages.
+        """Return open bug counts for this bug contact's packages.
 
             :user: The user doing the search. Private bugs that this
                    user doesn't have access to won't be included in the
