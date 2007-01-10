@@ -178,11 +178,6 @@ class DistroReleaseSourcePackageRelease:
         return self.sourcepackagerelease.age
 
     @property
-    def creator(self):
-        """See ISourcePackageRelease."""
-        return self.sourcepackagerelease.creator
-
-    @property
     def builddepends(self):
         """See ISourcePackageRelease."""
         return self.sourcepackagerelease.builddepends
