@@ -13,10 +13,12 @@ import sys
 import os
 import logging
 from datetime import datetime
+from StringIO import StringIO
 
 import pytz
 from zope.component import getUtility
 from bzrlib.branch import Branch
+from bzrlib.diff import show_diff_trees
 from bzrlib.revision import NULL_REVISION
 from bzrlib.errors import NoSuchRevision
 
@@ -257,6 +259,21 @@ class BzrSync:
 
         return did_something
 
+    def get_diff_lines(self, bzr_revision):
+        repo = self.bzr_branch.repository
+        if bzr_revision.parent_ids:
+            ids = (bzr_revision.revision_id, bzr_revision.parent_ids[0])
+            tree_new, tree_old = repo.revision_trees(ids)
+        else:
+            # can't get both trees at once, so one at a time
+            tree_new = repo.revision_tree(bzr_revision.revision_id)
+            tree_old = repo.revision_tree(None)
+            
+        diff_content = StringIO()
+        show_diff_trees(tree_old, tree_new, diff_content)
+        lines = diff_content.getvalue().split("\n")
+        numlines = len(lines)
+        return lines
 
 def main(branch_id):
     # Load branch with the given branch_id.

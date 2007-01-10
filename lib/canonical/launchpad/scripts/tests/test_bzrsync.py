@@ -132,13 +132,17 @@ class TestBzrSync(BzrSyncTestCase):
 
     def commitRevision(self, message=None, committer=None,
                        extra_parents=None, rev_id=None,
-                       timestamp=None, timezone=None):
-        file = open(os.path.join(self.bzr_branch_abspath, "file"), "w")
-        file.write(str(time.time()+random.random()))
+                       timestamp=None, timezone=None,
+                       filename="file", contents=None):
+        file = open(os.path.join(self.bzr_branch_abspath, filename), "w")
+        if contents is None:
+            file.write(str(time.time()+random.random()))
+        else:
+            file.write(contents)
         file.close()
         inventory = self.bzr_tree.read_working_inventory()
-        if not inventory.has_filename("file"):
-            self.bzr_tree.add("file")
+        if not inventory.has_filename(filename):
+            self.bzr_tree.add(filename)
         if message is None:
             message = self.LOG
         if committer is None:
@@ -257,6 +261,28 @@ class TestBzrSync(BzrSyncTestCase):
         self.assertEqual(rev_1.revision_date, dt)
         self.assertEqual(rev_2.revision_date, dt)
 
+    def test_diff_format(self):
+        first_revision = 'rev-1'
+        self.commitRevision(rev_id=first_revision,
+                            message="Log message",
+                            committer="Joe Bloggs <joe@example.com>",
+                            filename="hello.txt",
+                            contents="Hello World\n",
+                            timestamp=1000000000.0,
+                            timezone=0)
+        sync = BzrSync(self.txn, self.db_branch)
+        try:
+            revision = sync.bzr_branch.repository.get_revision(first_revision)
+            diff_lines = sync.get_diff_lines(revision)
+        
+            self.assertEqual('\n'.join(diff_lines),
+                             "=== added file 'hello.txt'\n"
+                             "--- a/hello.txt\t1970-01-01 00:00:00 +0000\n"
+                             "+++ b/hello.txt\t2001-09-09 01:46:40 +0000\n@@ -0,0 +1,1 @@\n"
+                             "+Hello World\n\n"
+                             )
+        finally:
+            sync.close()
 
 class TestBzrSyncModified(BzrSyncTestCase):
 
