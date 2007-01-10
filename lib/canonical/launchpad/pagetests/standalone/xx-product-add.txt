@@ -15,6 +15,20 @@ Tests if the validator is working for the URL fields
 ...     'If you were describing a Test Product this would be a little '
 ...     'short but sweet.'
 ...     )
+>>> import os
+>>> import canonical.launchpad
+>>> icon = os.path.join(
+...     os.path.dirname(canonical.launchpad.__file__),
+...     'pagetests/standalone/big.png')
+>>> user_browser.getControl(name='field.gotchi.action').value = ['change']
+>>> user_browser.getControl(name='field.gotchi.image').add_file(
+...     open(icon), 'image/png', 'icon.png')
+>>> emblem = os.path.join(
+...     os.path.dirname(canonical.launchpad.__file__),
+...     'pagetests/standalone/mypng.png')
+>>> user_browser.getControl(name='field.emblem.action').value = ['change']
+>>> user_browser.getControl(name='field.emblem.image').add_file(
+...     open(emblem), 'image/png', 'emblem.png')
 >>> user_browser.getControl('Homepage URL').value = 'www.test.test.com/'
 >>> user_browser.getControl('Sourceforge Project').value = 'testing'
 >>> user_browser.getControl('Freshmeat Project').value = 'testmeat'
@@ -29,8 +43,9 @@ Tests if the validator is working for the URL fields
 >>> user_browser.getControl('Add').click()
 >>> user_browser.url
 'http://launchpad.dev/products/+new'
->>> '<p class="error message">There is 1 error.</p>' in user_browser.contents
-True
+>>> for tag in find_tags_by_class(user_browser.contents, 'error message'):
+...     print tag.renderContents()
+There is 1 error.
 
 
 And just 'http://' for the url
@@ -46,10 +61,26 @@ True
 Test that the page to add a new product works.
 
 >>> user_browser.getControl('Homepage URL').value = 'http://www.test.test.com/'
+>>> user_browser.getControl(name='field.gotchi.image').add_file(
+...     open(icon), 'image/png', 'icon.png')
+>>> user_browser.getControl(name='field.emblem.image').add_file(
+...     open(emblem), 'image/png', 'emblem.png')
 >>> user_browser.getControl('Add').click()
+
 >>> user_browser.url
 'http://launchpad.dev/testing'
 
+Now we can see the uploaded icon and emblem on the product's edit page.
+
+>>> user_browser.getLink('Edit Product Details').click()
+>>> user_browser.url
+'http://launchpad.dev/testing/+edit'
+>>> find_tag_by_id(
+...     user_browser.contents, 'field.gotchi_current_img').get('src')
+u'.../icon.png'
+>>> find_tag_by_id(
+...     user_browser.contents, 'field.emblem_current_img').get('src')
+u'.../emblem.png'
 
 Test if we can see the page of the added product and tests if we can see the
 Project.

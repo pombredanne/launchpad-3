@@ -2,7 +2,11 @@
 
 __metaclass__ = type
 
+from StringIO import StringIO
+
 from zope.interface import implements
+from zope.component import getUtility
+from zope.app.content_types import guess_content_type
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.widget import SimpleInputWidget
 from zope.app.form.browser import FileWidget
@@ -12,7 +16,8 @@ from zope.schema import Bytes, Choice
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from canonical.launchpad.interfaces.librarian import (
+    ILibraryFileAlias, ILibraryFileAliasSet)
 from canonical.launchpad.fields import KEEP_SAME_IMAGE
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
@@ -26,8 +31,11 @@ class LaunchpadFileWidget(FileWidget):
         return contents
 
 
-class ImageUploadWidget(SimpleInputWidget):
-    """Widget for uploading an image or deleting an existing one."""
+class ImageChangeWidget(SimpleInputWidget):
+    """Widget for changing an existing image.
+
+    This widget should be used only on edit forms.
+    """
 
     implements(IAlwaysSubmittedWidget)
 
@@ -56,8 +64,8 @@ class ImageUploadWidget(SimpleInputWidget):
             url = img.secure_url
         else:
             url = self.context.default_image_resource
-        html = ('<div><img src="%s" alt="%s" /></div>\n'
-                % (url, self.context.title))
+        html = ('<div><img id="%s" src="%s" alt="%s" /></div>\n'
+                % ('%s_current_img' % self.name, url, self.context.title))
         html += "%s\n%s" % (self.action_widget(), self.image_widget())
         return html
 
@@ -94,7 +102,27 @@ class ImageUploadWidget(SimpleInputWidget):
             except ValidationError, v:
                 self._error = WidgetInputError(self.name, self.label, v)
                 raise self._error
-            return image
+            image.seek(0)
+            content = image.read()
+            filename = image.filename
+            type, dummy = guess_content_type(name=filename, body=content)
+            return getUtility(ILibraryFileAliasSet).create(
+                name=filename, size=len(content), file=StringIO(content),
+                contentType=type)
         elif action == "delete":
             return None
+
+
+class ImageAddWidget(ImageChangeWidget):
+    """Widget for adding an image.
+
+    This widget should be used only on add forms.
+    """
+
+    def _getActionsVocabulary(self):
+        action_names = [
+            ('keep', 'Leave as default image (you can change it later)'),
+            ('change', 'Use this one')]
+        terms = [SimpleTerm(name, name, label) for name, label in action_names]
+        return SimpleVocabulary(terms)
 
