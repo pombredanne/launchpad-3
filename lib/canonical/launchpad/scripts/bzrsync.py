@@ -19,8 +19,9 @@ import pytz
 from zope.component import getUtility
 from bzrlib.branch import Branch
 from bzrlib.diff import show_diff_trees
-from bzrlib.revision import NULL_REVISION
 from bzrlib.errors import NoSuchRevision
+from bzrlib.log import log_formatter, show_log
+from bzrlib.revision import NULL_REVISION
 
 from sqlobject import AND
 from canonical.lp import initZopeless
@@ -274,6 +275,26 @@ class BzrSync:
         lines = diff_content.getvalue().split("\n")
         numlines = len(lines)
         return lines
+
+    def get_revision_message(self, bzr_revision):
+        outf = StringIO()
+        lf = log_formatter('long',
+                           # show_ids=True,
+                           to_file=outf
+                           )
+        rev_id = bzr_revision.revision_id
+        rev1 = rev2 = self.bzr_branch.revision_id_to_revno(rev_id)
+        if rev1 == 0:
+            rev1 = None
+            rev2 = None
+
+        show_log(self.bzr_branch,
+                 lf,
+                 start_revision=rev1,
+                 end_revision=rev2,
+                 verbose=True
+                 )
+        return outf.getvalue()
 
 def main(branch_id):
     # Load branch with the given branch_id.
