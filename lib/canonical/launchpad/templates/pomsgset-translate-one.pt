@@ -7,9 +7,9 @@
   </td>
   <td style="text-align: right;">
     <span tal:replace="view/sequence">1</span>.
-    <a tal:attributes="name view/sequence" />
     <input
       type="hidden"
+      tal:condition="request/lp:person"
       tal:attributes="
       name string:msgset_${context/potmsgset/id}"
       />
@@ -24,6 +24,7 @@
   </th>
   <td class="icon left right">
     <input type="image" src="/@@/copy" title="Copy text"
+      tal:condition="request/lp:person"
       tal:attributes="
         name string:msgset_${context/potmsgset/id}_singular_copy"
       />
@@ -38,6 +39,7 @@
   </th>
   <td class="icon left right">
     <input type="image" src="/@@/copy" title="Copy text"
+      tal:condition="request/lp:person"
       tal:attributes="
         name string:msgset_${context/potmsgset/id}_plural_copy"
     />
@@ -106,7 +108,7 @@
       This refers to the content type.
   </td>
 </tr>
-<tr class="error" tal:condition="view/error">
+<tr class="error translation" tal:condition="view/error">
   <th colspan="3" >
     <strong>Error in Translation:</strong>
   </th>
@@ -122,7 +124,7 @@
   <tal:translation-dictionaries
        repeat="translation_dictionary view/translation_dictionaries">
   <tal:plural-form define="plural_index translation_dictionary/plural_index">
-    <tr class="secondary">
+    <tr class="secondary translation">
       <th colspan="3">
         <label class="language-code">Current
           <span tal:replace="context/pofile/language/englishname">
@@ -135,12 +137,18 @@
            condition="translation_dictionary/active_translation">
         <td>
           <input type="image" src="/@@/copy" title="Copy text"
+            tal:condition="request/lp:person"
             tal:attributes="
               name string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_copy"
           />
         </td>
-        <td tal:content="structure translation_dictionary/active_translation">
-          current translation
+        <td>
+          <div tal:content="structure translation_dictionary/active_translation"
+               tal:attributes="
+                 lang context/pofile/language/dashedcode;
+                 dir context/pofile/language/abbreviated_text_dir">
+            current translation
+          </div>
         </td>
       </tal:with-content>
       <tal:without-content
@@ -154,7 +162,7 @@
     <tal:selection
       define="selection translation_dictionary/selection"
       condition="selection">
-      <tr class="discreet secondary"
+      <tr class="discreet secondary translation"
           tal:condition="selection/activesubmission">
         <th colspan="3">
           Translated by:
@@ -168,7 +176,7 @@
           </span>
         </td>
       </tr>
-      <tr class="discreet secondary"
+      <tr class="discreet secondary translation"
           tal:condition="selection/reviewer">
         <th colspan="3">
           Reviewed by:
@@ -189,7 +197,8 @@
         <div tal:replace="structure suggestions/@@+display" />
       </tal:suggestions>
     </tal:suggestion_block>
-    <tr class="discreet secondary">
+    <tr class="discreet secondary translation"
+        tal:condition="request/lp:person">
       <th colspan="3">
         <label
          tal:attributes="
@@ -241,15 +250,25 @@
   <tr class="secondary">
     <td colspan="4" />
     <td>
-      <div>
+      <div tal:condition="request/lp:person">
         <label class="fuzzy-checkbox">
           <input
             type="checkbox"
             value="fuzzy"
             tal:attributes="
               checked view/is_fuzzy;
-              name string:msgset_${context/potmsgset/id}_${language_code}_needsreview
+              name string:msgset_${context/potmsgset/id}_${language_code}_needsreview;
               " />
+          <tal:block condition="not:view/is_plural">
+            Someone should review this translation
+          </tal:block>
+          <tal:block condition="view/is_plural">
+            Someone should review these translations
+          </tal:block>
+        </label>
+      </div>
+      <div tal:condition="not: request/lp:person">
+        <label tal:condition="view/is_fuzzy">
           <tal:block condition="not:view/is_plural">
             Someone should review this translation
           </tal:block>

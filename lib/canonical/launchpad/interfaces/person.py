@@ -28,15 +28,15 @@ from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    BlacklistableContentNameField, PasswordField, StrippedTextLine)
+    BlacklistableContentNameField, LargeImageUpload, PasswordField,
+    StrippedTextLine)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.tickettarget import (
     TICKET_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.validation import (
-    valid_emblem, valid_gotchi, validate_new_team_email,
-    validate_new_person_email)
+    valid_emblem, validate_new_team_email, validate_new_person_email)
 
 from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, TeamMembershipStatus, PersonCreationRationale)
@@ -123,17 +123,16 @@ class IPerson(IHasSpecifications):
     emblem = Bytes(
         title=_("Emblem"), required=False,
         description=_(
-            "A small image, max 16x16 pixels and 8k in file size, that can "
+            "A small image, max 16x16 pixels and 25k in file size, that can "
             "be used to refer to this team."),
         constraint=valid_emblem)
-    gotchi = Bytes(
+    gotchi = LargeImageUpload(
         title=_("Hackergotchi"), required=False,
         description=_(
-            "An image, maximum 150x150 pixels, that will be displayed on "
-            "your home page. It should be no bigger than 50k in size. "
+            "An image, maximum 170x170 pixels, that will be displayed on "
+            "your home page. It should be no bigger than 100k in size. "
             "Traditionally this is a great big grinning image of your mug. "
-            "Make the most of it."),
-        constraint=valid_gotchi)
+            "Make the most of it."))
 
     addressline1 = TextLine(
             title=_('Address'), required=True, readonly=False,
@@ -375,6 +374,22 @@ class IPerson(IHasSpecifications):
 
         Returns a list of IDistributionSourcePackage's, ordered alphabetically
         (A to Z) by name.
+        """
+
+    def getBugContactOpenBugCounts(user):
+        """Return open bug counts for this bug contact's packages.
+
+            :user: The user doing the search. Private bugs that this
+                   user doesn't have access to won't be included in the
+                   count.
+
+        Returns a list of dictionaries, where each dict contains:
+
+            'package': The package the bugs are open on.
+            'open': The number of open bugs.
+            'open_critical': The number of open critical bugs.
+            'open_unassigned': The number of open unassigned bugs.
+            'open_inprogress': The number of open bugs that ar In Progress.
         """
 
     def setPreferredEmail(email):

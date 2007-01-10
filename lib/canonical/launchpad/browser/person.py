@@ -23,8 +23,8 @@ __all__ = [
     'PersonSpecFeedbackView',
     'PersonChangePasswordView',
     'PersonEditView',
+    'PersonEditHomePageView',
     'PersonEmblemView',
-    'PersonHackergotchiView',
     'PersonAssignedBugTaskSearchListingView',
     'ReportedBugTaskSearchListingView',
     'BugContactPackageBugsSearchListingView',
@@ -59,10 +59,11 @@ __all__ = [
 
 import cgi
 import urllib
+from operator import itemgetter
 from StringIO import StringIO
 
 from zope.event import notify
-from zope.app.form.browser import TextAreaWidget
+from zope.app.form.browser import TextAreaWidget, SelectWidget
 from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
 from zope.app.content_types import guess_content_type
@@ -72,7 +73,6 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
-from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.lp.dbschema import (
@@ -97,7 +97,6 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
-from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.tickettarget import SearchTicketsView
 
@@ -110,9 +109,9 @@ from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
-    enabled_with_permission, Navigation, RedirectionNavigation,
-    stepto, stepthrough, smartquote,
-    GeneralFormView, LaunchpadFormView, action, custom_widget)
+    enabled_with_permission, Navigation, stepto, stepthrough, smartquote,
+    GeneralFormView, LaunchpadEditFormView, LaunchpadFormView, action,
+    custom_widget, RedirectionNavigation)
 
 from canonical.launchpad.event.team import JoinTeamRequestEvent
 
@@ -428,9 +427,8 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     facet = 'overview'
     links = ['karma', 'edit', 'common_edithomepage', 'editemailaddresses',
              'editlanguages', 'editwikinames', 'editircnicknames',
-             'editjabberids', 'editpassword', 'edithackergotchi',
-             'editsshkeys', 'editpgpkeys', 'codesofconduct', 'administer',
-             'common_packages']
+             'editjabberids', 'editpassword', 'editsshkeys', 'editpgpkeys',
+             'codesofconduct', 'administer', 'common_packages']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -497,12 +495,6 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         text = 'OpenPGP Keys'
         summary = 'Used for the Supermirror, and when maintaining packages'
         return Link(target, text, summary, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def edithackergotchi(self):
-        target = '+edithackergotchi'
-        text = 'Hackergotchi'
-        return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def codesofconduct(self):
@@ -896,24 +888,25 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
 
     def getPackageBugCounts(self):
         """Return a list of dicts used for rendering the package bug counts."""
-        package_bug_counts = []
-
-        for package in self.context.getBugContactPackages():
-            package_bug_counts.append({
+        L = []
+        for package_counts in self.context.getBugContactOpenBugCounts(
+            self.user):
+            package = package_counts['package']
+            L.append({
                 'package_name': package.displayname,
                 'package_search_url':
                     self.getBugContactPackageSearchURL(package),
-                'open_bugs_count': package.open_bugtasks.count(),
+                'open_bugs_count': package_counts['open'],
                 'open_bugs_url': self.getOpenBugsURL(package),
-                'critical_bugs_count': package.critical_bugtasks.count(),
+                'critical_bugs_count': package_counts['open_critical'],
                 'critical_bugs_url': self.getCriticalBugsURL(package),
-                'unassigned_bugs_count': package.unassigned_bugtasks.count(),
+                'unassigned_bugs_count': package_counts['open_unassigned'],
                 'unassigned_bugs_url': self.getUnassignedBugsURL(package),
-                'inprogress_bugs_count': package.inprogress_bugtasks.count(),
+                'inprogress_bugs_count': package_counts['open_inprogress'],
                 'inprogress_bugs_url': self.getInProgressBugsURL(package)
             })
 
-        return package_bug_counts
+        return sorted(L, key=itemgetter('package_name'))
 
     def getOtherBugContactPackageLinks(self):
         """Return a list of the other packages for a bug contact.
@@ -1770,15 +1763,29 @@ class PersonChangePasswordView(LaunchpadFormView):
             "Password changed successfully"))
 
 
-class PersonEditView(SQLObjectEditView):
+class BasePersonEditView(LaunchpadEditFormView):
 
-    def changed(self):
-        """Redirect to the person page.
+    schema = IPerson
+    field_names = []
 
-        We need this because people can now change their names, and this will
-        make their canonical_url to change too.
-        """
-        self.request.response.redirect(canonical_url(self.context))
+    @action(_("Save"), name="save")
+    def action_save(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context)
+
+
+class PersonEditHomePageView(BasePersonEditView):
+
+    field_names = ['homepage_content']
+    custom_widget(
+        'homepage_content', TextAreaWidget, height=30, width=30)
+
+
+class PersonEditView(BasePersonEditView):
+
+    field_names = ['displayname', 'name', 'hide_email_addresses', 'timezone',
+                   'gotchi']
+    custom_widget('timezone', SelectWidget, size=15)
 
 
 class PersonEmblemView(GeneralFormView):
@@ -1792,23 +1799,6 @@ class PersonEmblemView(GeneralFormView):
             self.context.emblem = getUtility(ILibraryFileAliasSet).create(
                 name=filename, size=len(emblem), file=StringIO(emblem),
                 contentType=content_type)
-        self._nextURL = canonical_url(self.context)
-        return 'Success'
-
-
-class PersonHackergotchiView(GeneralFormView):
-
-    def process(self, gotchi=None):
-        # XXX use Bjorn's nice file upload widget when he writes it
-        if gotchi is not None:
-            filename = self.request.get('field.gotchi').filename
-            content_type, encoding = guess_content_type(
-                name=filename, body=gotchi)
-            hkg = getUtility(ILibraryFileAliasSet).create(
-                name=filename, size=len(gotchi),
-                file=StringIO(gotchi),
-                contentType=content_type)
-            self.context.gotchi = hkg
         self._nextURL = canonical_url(self.context)
         return 'Success'
 

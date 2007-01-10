@@ -246,12 +246,16 @@ class ImportDBImplementor(object):
     def buildFinished(self, successful):
         getTxnManager().begin()
         self.setDateFinished()
-        if self.getSeries().importstatus in [ImportStatus.TESTING,
-                                             ImportStatus.AUTOTESTED,
-                                             ImportStatus.TESTFAILED]:
+        importstatus = self.getSeries().importstatus
+        if importstatus in [ImportStatus.TESTING,
+                            ImportStatus.AUTOTESTED,
+                            ImportStatus.TESTFAILED]:
             self.setAutotested(successful)
-        elif self.getSeries().importstatus == ImportStatus.PROCESSING:
+        if importstatus == ImportStatus.PROCESSING:
             self.processingComplete(successful)
+        if successful and importstatus in [ImportStatus.PROCESSING,
+                                           ImportStatus.SYNCING]:
+            self.getSeries().importUpdated()
         getTxnManager().commit()
 
     def setDateFinished(self):
@@ -273,7 +277,7 @@ class ImportDBImplementor(object):
         self.refreshBuilder(rerun=False)
 
     def processingComplete(self, successful):
-        """Import or sync run is complete, update database and buildbot.
+        """Import run is complete, update database and buildbot.
 
         If the job was an import, make it a sync and rerun it immediately.
         """
