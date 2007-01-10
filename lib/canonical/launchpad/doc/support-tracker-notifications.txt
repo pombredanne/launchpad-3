@@ -801,7 +801,12 @@ address if Spanish is among its preferred languages:
     >>> list(guadamen.languages)
     []
     >>> foobar = getUtility(IPersonSet).getByName('name16')
+
+    # This call also generates email notifications, so we'll clean up
+    # stub.test_emails after it
     >>> admins.addMember(guadamen, reviewer=foobar)
+    >>> transaction.commit()
+    >>> stub.test_emails = []
 
     >>> guadamen.addLanguage(spanish)
 
