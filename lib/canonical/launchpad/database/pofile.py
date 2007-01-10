@@ -728,14 +728,18 @@ class POFile(SQLBase, RosettaStats):
 
         # If there are no activeselections, yet latestsubmission is defined,
         # it must have been the case of deactivated translation (bug #78501)
-        active_selections = list(self.latestsubmission.active_selections)
-        if len(active_selections) == 0:
-            return False
+        po_selections = list(self.latestsubmission.active_selections)
+        if len(po_selections) == 0:
+            # If there are no activeselections, then a publishedselection
+            # was deactivated, so lets use them to get at pomsgset
+            po_selections = list(self.latestsubmission.published_selections)
+            if len(po_selections) == 0:
+                return False
 
         # Otherwise, we can get the POMsgSet itself through any of the
         # active selections, and then easily get to all POSelection's
         # and check their last update date which is guaranteed to be correct
-        pomsgset = active_selections[0].pomsgset
+        pomsgset = po_selections[0].pomsgset
 
         return not pomsgset.isNewerThan(self.exporttime)
 

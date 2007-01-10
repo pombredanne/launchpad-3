@@ -385,7 +385,6 @@ class POMsgSet(SQLBase):
             # null, if it was not null previously. This needs to be
             # addressed in ResettingTranslations. 27/05/05
             if published:
-                self.pofile.latestsubmission = selection.publishedsubmission
                 selection.publishedsubmission = None
             elif (is_editor and
                   validation_status == TranslationValidationStatus.OK and
@@ -394,10 +393,7 @@ class POMsgSet(SQLBase):
                 # valid and it's an editor.
                 # Lets set latestsubmission to be able to tell when
                 # the last change happened
-                if selection.activesubmission:
-                    self.pofile.latestsubmission = selection.activesubmission
-                else:
-                    self.pofile.latestsubmission = selection.publishedsubmission
+                self.pofile.latestsubmission = selection.activesubmission
                 selection.activesubmission = None
                 selection.reviewer = person
                 selection.date_reviewed = UTC_NOW
