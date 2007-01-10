@@ -720,6 +720,7 @@ class POFile(SQLBase, RosettaStats):
 
     def validExportCache(self):
         """See IPOFile."""
+        print "\n\nHERE in validExportCache().\n\n"
         if self.exportfile is None:
             return False
 
@@ -728,17 +729,21 @@ class POFile(SQLBase, RosettaStats):
 
         # If there are no activeselections, yet latestsubmission is defined,
         # it must have been the case of deactivated translation (bug #78501)
-        if len(self.latestsubmission.active_selections) == 0:
-            return False
+        #active_selections = list(self.latestsubmission.active_selections)
+        #if len(active_selections) == 0:
+        #    return False
 
-        # Any selection.date_reviewed is going to be greater than or equal
-        # to self.latestsubmission.datecreated, so no need to check that.
-        for selection in self.latestsubmission.active_selections:
-            if selection is not None:
-                if selection.isNewerThan(self.exporttime):
-                    return False
+        #import pdb
+        #pdb.set_trace()
+        # Otherwise, we can get the POMsgSet itself through any of the
+        # active selections, and then easily get to all POSelection's
+        # and check their last update date which is guaranteed to be correct
+        #mypomsgset = active_selections[0].pomsgset
+        #if mypomsgset is None:
+        #    return False
 
-        return True
+        #return not mypomsgset.isNewerThan(self.exporttime)
+        return False
 
     def updateExportCache(self, contents):
         """See IPOFile."""
