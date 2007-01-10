@@ -865,7 +865,7 @@ class POParser(object):
                     # so we cannot get the right values. We store the string
                     # assuming that is a valid ASCII escape sequence.
                     try:
-                        output += unescaped_string
+                        output += unescaped_string.decode('ascii')
                     except UnicodeDecodeError:
                         raise POInvalidInputError(self._lineno,
                             "could not decode escaped string: (%s)" %
