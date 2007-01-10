@@ -362,7 +362,7 @@ class IPerson(IHasSpecifications):
     title = Attribute('Person Page Title')
 
     unique_displayname = TextLine(
-        'Return a string of the form $displayname ($name).')
+        title=_('Return a string of the form $displayname ($name).'))
     browsername = Attribute(
         'Return a textual name suitable for display in a browser.')
 
