@@ -350,7 +350,6 @@ class ProductBugTracker(Choice):
             ob.official_malone = False
             ob.bugtracker = value
 
-<<<<<<< TREE
 
 class URIField(TextLine):
     implements(IURIField)
@@ -410,7 +409,7 @@ class URIField(TextLine):
                 if uri.path != '/' and has_slash:
                     raise LaunchpadValidationError(
                         'The URI must not end with a slash.')
-=======
+
 
 class FieldNotBoundError(Exception):
     """The field is not bound to any object."""
@@ -493,5 +492,3 @@ class LargeImageUpload(BaseImageUpload):
     max_dimensions = (200, 200)
     max_size = 100*1024
     default_image_resource = '/@@/nyet-mugshot'
-
->>>>>>> MERGE-SOURCE
