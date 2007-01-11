@@ -88,8 +88,6 @@ Bug five is already targeted to Ubuntu Warty, so even though it has no
 Warty nominations, it cannot be targeted to Warty.
 
     >>> bug_five = bugset.get(5)
-    >>> bug_five.getNominations()
-    []
 
     >>> def by_bugtargetname(bugtask):
     ...     return bugtask.target.bugtargetname
@@ -99,6 +97,7 @@ Warty nominations, it cannot be targeted to Warty.
     >>> for task in tasks:
     ...     print task.target.bugtargetname
     firefox (upstream)
+    firefox 1.0 (upstream)
     mozilla-firefox (Ubuntu Warty)
 
     >>> ubuntu_warty = ubuntu.getRelease("warty")

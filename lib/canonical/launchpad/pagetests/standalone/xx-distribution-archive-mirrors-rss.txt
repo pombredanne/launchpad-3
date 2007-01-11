@@ -22,7 +22,7 @@ provide an RSS feed with information about all official archive mirrors.
           <link>http://localhost:11375/valid-mirror</link>
           <description>
           </description>
-          <mirror:bandwidth>1</mirror:bandwidth>
+          <mirror:bandwidth>...</mirror:bandwidth>
           <mirror:location>
             <mirror:continent>Asia</mirror:continent>
             <mirror:country>Afghanistan</mirror:country>

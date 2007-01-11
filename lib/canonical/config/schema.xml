@@ -105,7 +105,7 @@
     <sectiontype name="launchpad">
         <key name="dbuser" datatype="string" default="launchpad" />
         <key name="cookie_domains" datatype="canonical.config.commalist"
-            default="staging.launchpad.net, launchpad.net, launchpad.dev">
+            default="demo.launchpad.net, staging.launchpad.net, launchpad.net, launchpad.dev">
             <description>
                 Session cookies being sent to a subdomain of the parent
                 domains listed here will be sent to the parent domain,
@@ -472,6 +472,12 @@
             Configuration for Rosetta admin tools
         </description>
         <key name="dbuser" datatype="string" default="rosettaadmin" />
+        <key name="email" datatype="string" default="rosetta@launchpad.net">
+            <description>
+                From-address used in PO import, export and language pack
+                notifications.
+            </description>
+	</key>
     </sectiontype>
 
     <sectiontype name="poimport">
