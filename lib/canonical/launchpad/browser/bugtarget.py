@@ -13,6 +13,7 @@ __all__ = [
     "FileBugInPackageView"
     ]
 
+from cStringIO import StringIO
 import email
 import urllib
 
@@ -56,7 +57,11 @@ class FileBugData:
         mime_msg = email.message_from_string(raw_mime_msg)
         if mime_msg.is_multipart():
             for part in mime_msg.get_payload():
-                if part.get('Content-Disposition', 'inline') == 'inline':
+                disposition_header = part.get('Content-Disposition', 'inline')
+                # Get the type, excluding any parameters.
+                disposition_type = disposition_header.split(';')[0]
+                disposition_type = disposition_type.strip()
+                if disposition_type == 'inline':
                     assert part.get_content_type() == 'text/plain', (
                         "Inline parts have to be plain text.")
                     charset = part.get_content_charset()
@@ -68,6 +73,22 @@ class FileBugData:
                         self.extra_description = part_text
                     else:
                         self.comments.append(part_text)
+                elif disposition_type == 'attachment':
+                    attachment = dict(
+                        filename=part.get_filename().strip("'"),
+                        content_type=part['Content-type'],
+                        content=StringIO(part.get_payload(decode=True)))
+                    if part.get('Content-Description'):
+                        attachment['description'] = part['Content-Description']
+                    else:
+                        attachment['description'] = attachment['filename']
+                    self.attachments.append(attachment)
+                else:
+                    # If the message include other disposition types,
+                    # simply ignore them. We don't want to break just
+                    # because some extra information is included.
+                    continue
+
 
 
 class FileBugViewBase(LaunchpadFormView):
@@ -238,6 +259,12 @@ class FileBugViewBase(LaunchpadFormView):
 
         for comment in extra_data.comments:
             bug.newMessage(self.user, bug.followup_subject(), comment)
+
+        for attachment in extra_data.attachments:
+            bug.addAttachment(
+                self.user, attachment['content'], attachment['description'],
+                None, attachment['filename'],
+                content_type=attachment['content_type'])
 
         # Give the user some feedback on the bug just opened.
         self.request.response.addNotification(notification)
