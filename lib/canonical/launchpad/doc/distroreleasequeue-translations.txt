@@ -19,11 +19,9 @@ First, we do some needed imports.
   ...     def debug(self, s):
   ...         print "DEBUG:", s
 
-
   >>> class MockOptions:
   ...     distro = "ubuntu"
   ...     distrorelease = "dapper"
-
 
   >>> from canonical.launchpad.ftests import import_public_test_keys
   >>> import_public_test_keys()
@@ -54,7 +52,7 @@ And an AMD 64 arch release.
   >>> dapper_amd64 = dapper.newArch('amd64', ProcessorFamily.get(3), True,
   ...     dapper.owner)
 
-We are going to import the pmount build.
+We are going to import the pmount build into RELEASE pocket.
 
   >>> pmount_sourcepackagename = getUtility(ISourcePackageNameSet)['pmount']
   >>> source_package_release = dapper.createUploadedSourcePackageRelease(
@@ -151,3 +149,46 @@ And now, we have exactly the 10 entries imported by pmount.
   >>> translation_import_queue.getAllEntries(target='distros').count()
   10
 
+Let's abort the transaction so we can check the same upload in a different
+pocket.
+
+  >>> transaction.abort()
+
+Check the import queue content, it should be empty now that we reverted
+the transaction.
+
+  >>> translation_import_queue.getAllEntries(target='distros').count()
+  0
+
+Do the publish. Nothing should be added to the import queue because
+it's the backports pocket.
+
+  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+  >>> dapper = distro_release_set.queryByName(ubuntu, 'dapper')
+  >>> queue_item = dapper.getQueueItems(status=DistroReleaseQueueStatus.NEW)[0]
+  >>> queue_item.pocket = PackagePublishingPocket.BACKPORTS
+  >>> queue_item.customfiles[0].publish()
+
+And this time, we see that there are no entries imported in the queue.
+
+  >>> translation_import_queue.getAllEntries(target='distros').count()
+  0
+
+Let's abort the transaction so we can check the same upload in a different
+pocket.
+
+  >>> transaction.abort()
+
+Do the publish. We should get imports again because we are using the updates
+pocket.
+
+  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+  >>> dapper = distro_release_set.queryByName(ubuntu, 'dapper')
+  >>> queue_item = dapper.getQueueItems(status=DistroReleaseQueueStatus.NEW)[0]
+  >>> queue_item.pocket = PackagePublishingPocket.UPDATES
+  >>> queue_item.customfiles[0].publish()
+
+And we get 10 new entries imported.
+
+  >>> translation_import_queue.getAllEntries(target='distros').count()
+  10
