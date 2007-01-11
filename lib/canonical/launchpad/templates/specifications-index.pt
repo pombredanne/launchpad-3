@@ -7,7 +7,7 @@
     <div metal:fill-slot="main">
       <div
         id="applications"
-        xtal:content="structure context/@@+applicationbuttons/blueprints"
+        tal:content="structure context/@@+applicationbuttons/blueprints"
       ></div>
       <div id="mainarea" class="tab-features">
         <div class="t">
