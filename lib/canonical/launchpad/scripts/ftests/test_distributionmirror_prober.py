@@ -24,11 +24,13 @@ from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.database import DistributionMirror, DistroRelease
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.tests.test_twisted import TwistedTestCase
+from canonical.launchpad.scripts import distributionmirror_prober
 from canonical.launchpad.scripts.distributionmirror_prober import (
     ProberFactory, MirrorProberCallbacks, BadResponseCode,
     MirrorCDImageProberCallbacks, ProberTimeout, RedirectAwareProberFactory,
     InfiniteLoopDetected, UnknownURLScheme, MAX_REDIRECTS,
-    RedirectAwareProberProtocol, probe_archive_mirror, probe_release_mirror)
+    RedirectAwareProberProtocol, probe_archive_mirror, probe_release_mirror,
+    MIN_REQUESTS_TO_CONSIDER_RATIO, MIN_REQUEST_TIMEOUT_RATIO)
 from canonical.launchpad.scripts.ftests.distributionmirror_http_server import (
     DistributionMirrorTestHTTPServer)
 
@@ -58,7 +60,7 @@ class HTTPServerTestSetup(TacTestSetup):
         return os.path.join(self.root, 'distributionmirror_http_server.log')
 
 
-class TestProberProtocol(TwistedTestCase):
+class TestProberProtocolAndFactory(TwistedTestCase):
 
     def setUp(self):
         self.urls = {'timeout': u'http://localhost:11375/timeout',
@@ -169,6 +171,86 @@ class FakeFactory(RedirectAwareProberFactory):
 
     def redirect(self, url):
         self.redirectedTo = url
+
+
+class TestProberFactoryRequestTimeoutRatioPart1(TestCase):
+
+    def _createProberStubConnectAndProbe(self, requests, timeouts):
+        def connect():
+            prober.connectCalled = True
+        host = 'foo.bar'
+        distributionmirror_prober.host_requests = {host: requests}
+        distributionmirror_prober.host_timeouts = {host: timeouts}
+        prober = ProberFactory('http://%s/baz' % host)
+        prober.connectCalled = False
+        prober.failed = lambda error: None
+        prober.connect = connect
+        prober.probe()
+        return prober
+
+    def test_connect_is_not_called_after_too_many_timeouts(self):
+        """If we get a small requests/timeouts ratio on a given host, we'll
+        stop issuing requests on that host.
+        """
+        # Even with a requests/timeouts ratio of 1, that is only considered if
+        # we have a considerable number of requests.
+        requests = 5
+        timeouts = 5
+        self.failUnless(requests < MIN_REQUESTS_TO_CONSIDER_RATIO)
+        prober = self._createProberStubConnectAndProbe(requests, timeouts)
+        self.failUnless(prober.connectCalled)
+
+        # If the ratio is small enough and we have a considerable number of
+        # requests, we won't issue more connections on that host.
+        requests = 15
+        timeouts = 8
+        self.failUnless(requests > MIN_REQUESTS_TO_CONSIDER_RATIO)
+        self.failUnless(requests/timeouts < MIN_REQUEST_TIMEOUT_RATIO)
+        prober = self._createProberStubConnectAndProbe(requests, timeouts)
+        self.failIf(prober.connectCalled)
+
+        # Of course, if the ratio is not too small we consider it's safe to
+        # keep issuing connections on that host.
+        requests = 15
+        timeouts = 5
+        self.failUnless(requests > MIN_REQUESTS_TO_CONSIDER_RATIO)
+        self.failUnless(requests/timeouts >= MIN_REQUEST_TIMEOUT_RATIO)
+        prober = self._createProberStubConnectAndProbe(requests, timeouts)
+        self.failUnless(prober.connectCalled)
+
+
+class TestProberFactoryRequestTimeoutRatioPart2(TwistedTestCase):
+
+    def setUp(self):
+        distributionmirror_prober.host_requests = {}
+        distributionmirror_prober.host_timeouts = {}
+        root = DistributionMirrorTestHTTPServer()
+        site = server.Site(root)
+        site.displayTracebacks = False
+        self.port = reactor.listenTCP(11375, site)
+
+    def tearDown(self):
+        return self.port.stopListening()
+
+    def _createProberAndProbe(self, url):
+        prober = ProberFactory(url)
+        return prober.probe()
+
+    def test_timeout_is_recorded(self):
+        host = 'localhost'
+        d = self._createProberAndProbe(u'http://%s:11375/timeout' % host)
+        def got_error(error):
+            self.failUnless(distributionmirror_prober.host_requests[host] == 1)
+            self.failUnless(distributionmirror_prober.host_timeouts[host] == 1)
+        return d.addErrback(got_error)
+
+    def test_non_timeout_is_recorded(self):
+        host = 'localhost'
+        d = self._createProberAndProbe(u'http://%s:11375/valid-mirror' % host)
+        def got_result(result):
+            self.failUnless(distributionmirror_prober.host_requests[host] == 1)
+            self.failUnless(distributionmirror_prober.host_timeouts[host] == 0)
+        return d.addCallback(got_result)
 
 
 class TestRedirectAwareProberFactoryAndProtocol(TestCase):

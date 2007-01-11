@@ -20,8 +20,17 @@ from canonical.launchpad.interfaces import (
     UnableToFetchCDImageFileList)
 from canonical.lp.dbschema import MirrorStatus
 
+
+# The requests/timeouts ratio has to be at least 3 for us to keep issuing
+# requests on a given host.
+MIN_REQUEST_TIMEOUT_RATIO = 3
+MIN_REQUESTS_TO_CONSIDER_RATIO = 10
+host_requests = {}
+host_timeouts = {}
+
 MAX_REDIRECTS = 3
 
+# Number of simultaneous connections we issue on a given host
 PER_HOST_REQUESTS = 1
 host_semaphores = {}
 
@@ -105,8 +114,21 @@ class ProberFactory(protocol.ClientFactory):
         self._deferred = defer.Deferred()
         self.timeout = timeout
         self.setURL(url.encode('ascii'))
+        if not host_requests.has_key(self.host):
+            host_requests[self.host] = 0
+        if not host_timeouts.has_key(self.host):
+            host_timeouts[self.host] = 0
 
     def probe(self):
+        requests = host_requests[self.host]
+        timeouts = host_timeouts[self.host]
+        if timeouts:
+            ratio = requests / timeouts
+        else:
+            ratio = 9999999
+        if (requests > MIN_REQUESTS_TO_CONSIDER_RATIO and 
+            ratio < MIN_REQUEST_TIMEOUT_RATIO):
+            return
         self.connect()
         self.timeoutCall = reactor.callLater(
             self.timeout, self.failWithTimeoutError)
@@ -114,9 +136,11 @@ class ProberFactory(protocol.ClientFactory):
         return self._deferred
 
     def connect(self):
+        host_requests[self.host] += 1
         reactor.connectTCP(self.host, self.port, self)
 
     def failWithTimeoutError(self):
+        host_timeouts[self.host] += 1
         self.failed(ProberTimeout(self.url, self.timeout))
         self.connector.disconnect()
 
