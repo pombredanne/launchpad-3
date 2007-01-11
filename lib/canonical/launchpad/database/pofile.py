@@ -739,9 +739,7 @@ class POFile(SQLBase, RosettaStats):
         # Otherwise, we can get the POMsgSet itself through any of the
         # active selections, and then easily get to all POSelection's
         # and check their last update date which is guaranteed to be correct
-        pomsgset = po_selections[0].pomsgset
-
-        return not pomsgset.isNewerThan(self.exporttime)
+        return not po_selections[0].pomsgset.isNewerThan(self.exporttime)
 
     def updateExportCache(self, contents):
         """See IPOFile."""

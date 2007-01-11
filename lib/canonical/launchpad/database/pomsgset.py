@@ -155,6 +155,8 @@ class POMsgSet(SQLBase):
         """See IPOMsgSet."""
         for plural_index in range(self.pluralforms):
             selection = self.getSelection(plural_index)
+            if selection is not None:
+                selection.sync()
             if selection is not None and selection.isNewerThan(timestamp):
                 return True
         return False

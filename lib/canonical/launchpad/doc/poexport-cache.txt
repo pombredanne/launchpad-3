@@ -4,7 +4,7 @@ Caching of Exported PO Files
 
 This test demonstrates how the PO file export caching mechanism works.
 
-Get hold of a PO file which has never been exported.
+Get hold of a PO file which has been exported before.
 
     >>> from canonical.launchpad.database import POFile
     >>> pofile = POFile.get(1)
