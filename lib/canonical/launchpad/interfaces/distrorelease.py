@@ -136,6 +136,13 @@ class IDistroRelease(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
         Return True if the upload is allowed and False if denied.
         """
 
+    def getLastUploads():
+        """Return the last five source uploads for this DistroRelease.
+
+        It returns a list containing up to five elements as
+        IDistroReleaseSourcePackageRelease instances
+        """
+
     def traverse(name):
         """Traverse across a distrorelease in Launchpad. This looks for
         special URL items, like +sources or +packages, then goes on to
@@ -227,12 +234,40 @@ class IDistroRelease(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
         given language, or a DummyDistroReleaseLanguage.
         """
 
-    def createUploadedSourcePackageRelease(sourcepackagename, version,
-            maintainer, dateuploaded, builddepends, builddependsindep,
-            architecturehintlist, component, creator, urgency,
-            changelog, dsc, dscsigningkey, section, manifest):
-        """Create a sourcepackagerelease with this distrorelease set to
-        be the uploadeddistrorelease.
+    def createUploadedSourcePackageRelease(
+        sourcepackagename, version, maintainer, dateuploaded, builddepends,
+        builddependsindep, architecturehintlist, component, creator, urgency,
+        changelog, dsc, dscsigningkey, section, manifest,
+        dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
+        dsc_binaries):
+        """Create an uploads SourcePackageRelease
+
+        Set this distrorelease set to be the uploadeddistrorelease.
+
+        All arguments are mandatory, they are extracted/built when
+        processing and uploaded source package:
+
+         * dateuploaded: timestamp, usually UTC_NOW
+         * sourcepackagename: ISourcePackageName
+         * version: string, a debian valid version
+         * maintainer: IPerson designed as package maintainer
+         * creator: IPerson, package uploader
+         * component: IComponent
+         * section: ISection
+         * urgency: dbschema.SourcePackageUrgency
+         * manifest: IManifest
+         * dscsigningkey: IGPGKey used to sign the DSC file
+         * dsc: string, original content of the dsc file
+         * changelog: string, changelog extracted from the changesfile
+         * architecturehintlist: string, DSC architectures
+         * builddepends: string, DSC build dependencies
+         * builddependsindep: string, DSC architecture independent build
+           dependencies.
+         * dsc_maintainer_rfc822: string, DSC maintainer field
+         * dsc_standards_version: string, DSC standards version field
+         * dsc_format: string, DSC format version field
+         * dsc_binaries:  string, DSC binaries field
+
         """
 
     def getComponentByName(name):
@@ -255,33 +290,47 @@ class IDistroRelease(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
     def addSection(section):
         """SQLObject provided method to fill a related join key section."""
 
-    def getBinaryPackagePublishing(name, version, archtag, sourcename, orderBy):
+    def getBinaryPackagePublishing(
+        name=None, version=None, archtag=None, sourcename=None, orderBy=None,
+        pocket=None, component=None):
         """Get BinaryPackagePublishings in a DistroRelease.
 
-        Can optionally restrict the results by name, version and/or
-        architecturetag.
+        Can optionally restrict the results by name, version,
+        architecturetag, pocket and/or component.
 
-        If sourcename is non-empty, only packages that are built from
+        If sourcename is passed, only packages that are built from
         source packages by that name will be returned.
         """
 
-    def getSourcePackagePublishing(status, pocket):
+    def getSourcePackagePublishing(status, pocket, component=None):
         """Return a selectResult of ISourcePackagePublishing.
 
         According status and pocket.
         """
 
-    def removeOldCacheItems():
-        """Delete any records that are no longer applicable."""
+    def removeOldCacheItems(log):
+        """Delete any records that are no longer applicable.
 
-    def updateCompletePackageCache():
-        """Update the package cache for all binary package names published
-        in this distro release.
+        Consider all binarypackages marked as REMOVED.
+        'log' is required, it should be a logger object able to print
+        DEBUG level messages.
         """
 
-    def updatePackageCache(name):
-        """Update the package cache for the binary packages with the given
-        name.
+    def updateCompletePackageCache(log, ztm):
+        """Update the binary package cache
+
+        Consider all binary package names published in this distro release.
+        'log' is required, it should be a logger object able to print
+        DEBUG level messages.
+        """
+
+    def updatePackageCache(name, log):
+        """Update the package cache for a given IBinaryPackageName
+
+        'log' is required, it should be a logger object able to print
+        DEBUG level messages.
+        'ztm' is the current trasaction manager used for partial commits
+        (in full batches of 100 elements)
         """
 
     def searchPackages(text):

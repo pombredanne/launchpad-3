@@ -20,8 +20,8 @@
     </tal:product-link>
   </div>
   <div>
-    <tal:revisions condition="view/revision_count">
-      <span tal:replace="view/revision_count">35</span> revisions,
+    <tal:revisions condition="context/revision_count">
+      <span tal:replace="context/revision_count">35</span> revisions,
       <span tal:replace="view/recent_revision_count">31</span> in the past month.<br />
     </tal:revisions>
   </div>

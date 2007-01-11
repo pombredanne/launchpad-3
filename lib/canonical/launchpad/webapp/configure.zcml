@@ -279,18 +279,6 @@
         provides="zope.app.session.interfaces.ISessionDataContainer"
         />
 
-    <!-- We want the changelog available on the debug view too, so people
-    can see when their patches make it to the dogfood server. -->
-
-    <browser:page
-        layer="canonical.launchpad.layers.DebugLayer"
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        name="changelog.html"
-        template="../templates/debug-root-changelog.pt"
-        class="canonical.launchpad.webapp.changelog.ChangeLog"
-        permission="zope.Public"
-        />
-
     <!-- Default favicon -->
     <browser:favicon for="*" file="../images/launchpad.png" />
 
@@ -414,6 +402,12 @@
     <subscriber
         for="zope.app.appsetup.IProcessStartingEvent"
         handler="canonical.launchpad.webapp.sigusr1.setup_sigusr1"
+        />
+
+    <!-- Confirm the database is the correct revision level -->
+    <subscriber
+        for="zope.app.appsetup.IProcessStartingEvent"
+        handler="canonical.database.revision.confirm_dbrevision_on_startup"
         />
 
     <subscriber

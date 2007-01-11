@@ -130,6 +130,17 @@ def bugNotificationSendingTearDown(test):
     logout()
     LaunchpadZopelessTestSetup().tearDown()
 
+def statisticianSetUp(test):
+    sqlos.connection.connCache = {}
+    LaunchpadZopelessTestSetup(
+        dbuser=config.statistician.dbuser).setUp()
+    setGlobs(test)
+    login(ANONYMOUS)
+
+def statisticianTearDown(test):
+    logout()
+    LaunchpadZopelessTestSetup().tearDown()
+
 def LayeredDocFileSuite(*args, **kw):
     '''Create a DocFileSuite with a layer.'''
     layer = kw.pop('layer')
@@ -260,6 +271,11 @@ special = {
             ),
     'uri.txt': DocFileSuite(
             '../doc/uri.txt', optionflags=default_optionflags
+            ),
+    'package-cache.txt': LayeredDocFileSuite(
+            '../doc/package-cache.txt',
+            setUp=statisticianSetUp, tearDown=statisticianTearDown,
+            optionflags=default_optionflags, layer=ZopelessLayer
             ),
     }
 

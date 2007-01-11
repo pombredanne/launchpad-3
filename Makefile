@@ -141,6 +141,9 @@ stop: build
 harness:
 	PYTHONPATH=lib python -i lib/canonical/database/harness.py
 
+iharness:
+	PYTHONPATH=lib ipython -i lib/canonical/database/harness.py
+
 rebuildfti:
 	@echo Rebuilding FTI indexes on launchpad_dev database
 	database/schema/fti.py -d launchpad_dev --force

@@ -1,0 +1,68 @@
+When a bug is targeted to the current development series, the general
+product task is no longer editable. Instead the status is tracked
+in the series task.
+
+    >>> user_browser.open('http://launchpad.dev/firefox/+bug/4')
+    >>> firefox_edit_url = (
+    ...     'http://launchpad.dev/firefox/+bug/4/+editstatus')
+    >>> user_browser.getLink(url=firefox_edit_url)
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError...
+
+    >>> firefox_trunk_edit_url = (
+    ...     'http://launchpad.dev/firefox/trunk/+bug/4/+editstatus')
+    >>> user_browser.getLink(url=firefox_trunk_edit_url) is not None
+    True
+
+However, if we reject the Trunk task, it means that the bug is deferred
+to the next release. In that case, the general Firefox task will stay
+open, while the series task is rejected.
+
+    >>> user_browser.getLink(url=firefox_trunk_edit_url).click()
+    >>> user_browser.getControl('Status').displayValue = ['Rejected']
+    >>> user_browser.getControl('Save Changes').click()
+    >>> user_browser.url
+    'http://launchpad.dev/firefox/trunk/+bug/4'
+
+Now both the general and series tasks are editable.
+
+    >>> user_browser.getLink(url=firefox_edit_url).click()
+    >>> user_browser.getControl('Status').displayValue
+    ['Unconfirmed']
+    >>> user_browser.getControl('Status').displayValue = ['Confirmed']
+    >>> user_browser.getControl('Save Changes').click()
+
+    >>> user_browser.getLink(url=firefox_trunk_edit_url).click()
+    >>> user_browser.getControl('Status').displayValue
+    ['Rejected']
+
+If the series task gets reopened, the tasks will be synced again, and
+the distribution task won't be editable.
+
+    >>> user_browser.getControl('Status').displayValue = ['Confirmed']
+    >>> user_browser.getControl('Save Changes').click()
+
+    >>> user_browser.getLink(url=firefox_edit_url)
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError...
+
+    >>> user_browser.getLink(url=firefox_trunk_edit_url) is not None
+    True
+
+It's worth noting that only a rejection causes the conjoined bugtasks
+from being separated, if the task gets changed to Fix Released, the
+general distribution task will remain uneditable.
+
+    >>> user_browser.getLink(url=firefox_trunk_edit_url).click()
+    >>> user_browser.getControl('Status').displayValue = ['Fix Released']
+    >>> user_browser.getControl('Save Changes').click()
+
+    >>> user_browser.getLink(url=firefox_edit_url)
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError...
+
+    >>> user_browser.getLink(url=firefox_trunk_edit_url) is not None
+    True

@@ -64,6 +64,7 @@ class LoginTokenView(LaunchpadView):
     PAGES = {LoginTokenType.PASSWORDRECOVERY: '+resetpassword',
              LoginTokenType.ACCOUNTMERGE: '+accountmerge',
              LoginTokenType.NEWACCOUNT: '+newaccount',
+             LoginTokenType.NEWPROFILE: '+newaccount',
              LoginTokenType.VALIDATEEMAIL: '+validateemail',
              LoginTokenType.VALIDATETEAMEMAIL: '+validateteamemail',
              LoginTokenType.VALIDATEGPG: '+validategpg',
@@ -556,8 +557,11 @@ class NewAccountView(BaseLoginTokenView, GeneralFormView):
             PersonCreationRationale.OWNER_CREATED_SHIPIT,
         UBUNTU_WIKI_URL: PersonCreationRationale.OWNER_CREATED_UBUNTU_WIKI}
 
+    created_person = None
+
     def initialize(self):
-        self.expected_token_types = (LoginTokenType.NEWACCOUNT,)
+        self.expected_token_types = (
+            LoginTokenType.NEWACCOUNT, LoginTokenType.NEWPROFILE)
         self.top_of_page_errors = []
         self.redirectIfInvalidOrConsumedToken()
         self.email = getUtility(IEmailAddressSet).getByEmail(
@@ -570,8 +574,15 @@ class NewAccountView(BaseLoginTokenView, GeneralFormView):
     def nextURL(self):
         if self.context.redirection_url:
             return self.context.redirection_url
+        elif self.user is not None:
+            # User is logged in, redirect to his home page.
+            return canonical_url(self.user)
+        elif self.created_person is not None:
+            # User is not logged in, redirect to the created person's home
+            # page.
+            return canonical_url(self.created_person)
         else:
-            return canonical_url(getUtility(ILaunchBag).user)
+            return None
 
     def validate(self, form_values):
         """Verify if the email address is not used by an existing account."""
@@ -618,6 +629,7 @@ class NewAccountView(BaseLoginTokenView, GeneralFormView):
             person, email = self._createPersonAndEmail(
                 displayname, hide_email_addresses, password)
 
+        self.created_person = person
         person.validateAndEnsurePreferredEmail(email)
         self.context.consume()
         self.logInPersonByEmail(email.email)

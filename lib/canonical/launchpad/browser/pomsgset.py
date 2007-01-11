@@ -12,12 +12,16 @@ __all__ = [
     'BaseTranslationView',
     ]
 
-import re
-import operator
+import cgi
+import datetime
 import gettextpo
-from math import ceil
+import operator
+import pytz
+import re
+import urllib
 from xml.sax.saxutils import escape as xml_escape
 
+from zope.app import datetimeutils
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.utility import setUpWidgets
 from zope.app.form.browser import DropdownWidget
@@ -30,7 +34,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     UnexpectedFormData, IPOMsgSet, TranslationConstants, NotFoundError,
-    ILanguageSet, IPOFileAlternativeLanguage, IPOMsgSetSuggestions)
+    ILanguageSet, IPOFileAlternativeLanguage, IPOMsgSetSuggestions,
+    IPOSubmissionSet, TranslationConflict)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ApplicationMenu, Link, LaunchpadView,
     canonical_url)
@@ -54,20 +59,29 @@ def expand_rosetta_tabs(unicode_text):
                                   u'[tab]': TranslationConstants.TAB_CHAR_ESCAPED})
 
 
-def msgid_html(text, flags, space=TranslationConstants.SPACE_CHAR,
+def text_to_html(text, flags, space=TranslationConstants.SPACE_CHAR,
                newline=TranslationConstants.NEWLINE_CHAR):
-    """Convert a message ID to a HTML representation."""
+    """Convert a unicode text to a HTML representation."""
+
+    if text is None:
+        return None
 
     lines = []
     # Replace leading and trailing spaces on each line with special markup.
-    for line in xml_escape(text).split('\n'):
+    if u'\r\n' in text:
+        newline_chars = u'\r\n'
+    elif u'\r' in text:
+        newline_chars = u'\r'
+    else:
+        newline_chars = u'\n'
+    for line in xml_escape(text).split(newline_chars):
         # Pattern:
         # - group 1: zero or more spaces: leading whitespace
         # - group 2: zero or more groups of (zero or
         #   more spaces followed by one or more non-spaces): maximal string
         #   which doesn't begin or end with whitespace
         # - group 3: zero or more spaces: trailing whitespace
-        match = re.match('^( *)((?: *[^ ]+)*)( *)$', line)
+        match = re.match(u'^( *)((?: *[^ ]+)*)( *)$', line)
 
         if match:
             lines.append(
@@ -94,7 +108,7 @@ def msgid_html(text, flags, space=TranslationConstants.SPACE_CHAR,
                 type, content = segment
 
                 if type == 'interpolation':
-                    formatted_line += ('<code>%s</code>' % content)
+                    formatted_line += (u'<code>%s</code>' % content)
                 elif type == 'string':
                     formatted_line += content
 
@@ -119,21 +133,6 @@ def convert_newlines_to_web_form(unicode_text):
         return helpers.text_replaced(unicode_text, {u'\n': u'\r\n'})
     else:
         return helpers.text_replaced(unicode_text, {u'\r': u'\r\n'})
-
-
-def count_lines(text):
-    '''Count the number of physical lines in a string. This is always at least
-    as large as the number of logical lines in a string.'''
-    CHARACTERS_PER_LINE = 50
-    count = 0
-
-    for line in text.split('\n'):
-        if len(line) == 0:
-            count += 1
-        else:
-            count += int(ceil(float(len(line)) / CHARACTERS_PER_LINE))
-
-    return count
 
 
 def parse_cformat_string(string):
@@ -364,6 +363,11 @@ class BaseTranslationView(LaunchpadView):
         self.form_posted_translations = {}
         self.form_posted_needsreview = {}
 
+        # These two dictionaries hold the text requested by the user to be
+        # copied to the textarea.
+        self.form_copied_translations = {}
+        self.form_posted_translations_has_store_flag = {}
+
         if not self.has_plural_form_information:
             # This POFile needs administrator setup.
             # XXX: this should refer people to +addticket, right? 
@@ -398,15 +402,39 @@ class BaseTranslationView(LaunchpadView):
         self.start = self.batchnav.start
         self.size = self.batchnav.currentBatch().size
 
-        if (self.request.method == 'POST' and 
-            self.request.form.get("submit_translations") and
-            self.user is not None):
+        if (self.request.method == 'POST'):
+            if self.user is None:
+                raise UnexpectedFormData, (
+                    'Anonymous users cannot do POST submissions.')
+            try:
+                # Try to get the timestamp when the submitted form was
+                # created. We use it to detect whether someone else updated
+                # the translation we are working on in the elapsed time
+                # between the form loading and its later submission.
+                self.lock_timestamp = datetimeutils.parseDatetimetz(
+                    self.request.form.get('lock_timestamp', u''))
+            except datetimeutils.DateTimeError:
+                # invalid format. Either we don't have the timestamp in the
+                # submitted form or it has the wrong format.
+                raise UnexpectedFormData, (
+                    'We didn\'t find the timestamp that tells us when was'
+                    ' generated the submitted form.')
+
             # Check if this is really the form we are listening for..
-            if self._submitTranslations():
-                # .. and if no errors occurred, adios. Otherwise, we
-                # need to set up the subviews for error display and
-                # correction.
-                return
+            if self.request.form.get("submit_translations"):
+                # Check if this is really the form we are listening for..
+                if self._submitTranslations():
+                    # .. and if no errors occurred, adios. Otherwise, we
+                    # need to set up the subviews for error display and
+                    # correction.
+                    return
+            else:
+                # Check and do any copy request we got.
+                self._submitCopyRequest()
+        else:
+            # It's not a POST, so we should generate lock_timestamp.
+            UTC = pytz.timezone('UTC')
+            self.lock_timestamp = datetime.datetime.now(UTC)
 
         # Slave view initialization depends on _submitTranslations being
         # called, because the form data needs to be passed in to it --
@@ -439,6 +467,50 @@ class BaseTranslationView(LaunchpadView):
         everything went fine."""
         raise NotImplementedError
 
+    def _submitCopyRequest(self):
+        """Handle translation copy requests."""
+        patterns_list = ['singular', 'plural']
+        for plural_index in range(self.pofile.language.pluralforms):
+            patterns_list.append(
+                '(%s_translation_%d)' % (
+                    self.pofile.language.code, plural_index))
+            patterns_list.append('((\S+)_suggestion_(\d+)_%d)' % plural_index)
+        search_pattern = 'msgset_(\d+)_(%s)_copy\.(x|y)' % (
+            '|'.join(patterns_list))
+        found_copy = False
+        expr_search = re.compile(search_pattern)
+        msgset_search = re.compile('msgset_(\d+)')
+        for key in self.request.form:
+            copy_button_match = expr_search.match(key)
+            if copy_button_match is not None and not found_copy:
+                # group #1 is the potmsgset.id
+                potmsgset_id = int(copy_button_match.group(1))
+                potmsgset = self.pofile.potemplate.getPOTMsgSetByID(
+                    potmsgset_id)
+                pomsgset = potmsgset.getPOMsgSet(
+                    self.pofile.language.code, self.pofile.variant)
+                if pomsgset is None:
+                    pomsgset = self.pofile.createMessageSetFromMessageSet(
+                        potmsgset)
+                self._copyTranslation(pomsgset, key)
+                found_copy = True
+            else:
+                # Let's extract the field values so the user doesn't lose any
+                # other change in the form. This will not modify our database,
+                # we use them just to display their changes again in the web
+                # UI.
+                msgset_match = msgset_search.match(key)
+                if msgset_match is not None:
+                    potmsgset_id = int(msgset_match.group(1))
+                    potmsgset = self.pofile.potemplate.getPOTMsgSetByID(
+                        potmsgset_id)
+                    pomsgset = potmsgset.getPOMsgSet(
+                        self.pofile.language.code, self.pofile.variant)
+                    if pomsgset is None:
+                        pomsgset = self.pofile.createMessageSetFromMessageSet(
+                            potmsgset)
+                    self._extractFormPostedTranslations(pomsgset)
+
     #
     # Helper methods that should be used for POMsgSetView.__init__() and
     # _submitTranslations().
@@ -456,33 +528,135 @@ class BaseTranslationView(LaunchpadView):
             # done. XXX: I'm not sure but I suspect this could be an
             # UnexpectedFormData..
             return None
+
+        plural_indices_to_store = (
+            self.form_posted_translations_has_store_flag.get(pomsgset, []))
+
+        # If the user submitted a translation without checking its checkbox,
+        # we assume they don't want to save it. We revert any submitted value
+        # to its current active translation.
+        for index in translations:
+            if index not in plural_indices_to_store:
+                if pomsgset.active_texts[index] is not None:
+                    translations[index] = pomsgset.active_texts[index]
+                else:
+                    translations[index] = u''
+
         is_fuzzy = self.form_posted_needsreview.get(pomsgset, False)
 
         try:
-            pomsgset.updateTranslationSet(person=self.user,
-                new_translations=translations, fuzzy=is_fuzzy, published=False)
+            pomsgset.updateTranslationSet(
+                person=self.user, new_translations=translations,
+                fuzzy=is_fuzzy, published=False,
+                lock_timestamp=self.lock_timestamp)
+        except TranslationConflict:
+            return (
+                u'Somebody else changed this translation since you started.'
+                u' To avoid accidentally reverting work done by others, we'
+                u' added your translations as suggestions, so please review'
+                u' current values.')
         except gettextpo.error, e:
             # Save the error message gettext gave us to show it to the
             # user.
-            return str(e)
+            return unicode(e)
         else:
             return None
+
+    def _copyTranslation(self, pomsgset, button_id):
+        """Perform the copy associated with :arg button_id:
+
+        :arg button_id: String with the name of the copy button submitted.
+        """
+        self.form_copied_translations[pomsgset] = {}
+        if 'singular' in button_id:
+            pomsgids = pomsgset.potmsgset.getPOMsgIDs()
+            text_to_copy = pomsgids[TranslationConstants.SINGULAR_FORM].msgid
+            requested_plural_indices = [TranslationConstants.SINGULAR_FORM]
+        elif 'plural' in button_id:
+            pomsgids = pomsgset.potmsgset.getPOMsgIDs()
+            text_to_copy = pomsgids[TranslationConstants.PLURAL_FORM].msgid
+            requested_plural_indices = []
+            for plural_index in range(pomsgset.pluralforms):
+                if plural_index != TranslationConstants.SINGULAR_FORM:
+                    requested_plural_indices.append(plural_index)
+        elif 'translation' in button_id:
+            translation_copy_match = re.match(
+                'msgset_%d_%s_translation_(\d+)_copy\.(x|y)' % (
+                    pomsgset.potmsgset.id, self.pofile.language.code),
+                button_id)
+            requested_plural_index = int(translation_copy_match.group(1))
+            if requested_plural_index not in range(pomsgset.pluralforms):
+                raise UnexpectedFormData(
+                    "Got a copy request for a plural form that doesn't exist")
+            text_to_copy = pomsgset.active_texts[requested_plural_index]
+            requested_plural_indices = [requested_plural_index]
+        elif 'suggestion' in button_id:
+            suggestion_copy_match = re.match(
+                'msgset_%d_%s_suggestion_(\d+)_(\d+)_copy\.(x|y)' % (
+                    pomsgset.potmsgset.id, self.pofile.language.code),
+                button_id)
+            suggestion_posubmission_id = int(suggestion_copy_match.group(1))
+            posubmissionset = getUtility(IPOSubmissionSet)
+            suggestion_posubmission = posubmissionset.getPOSubmissionByID(
+                suggestion_posubmission_id)
+            requested_plural_index = int(suggestion_copy_match.group(2))
+            if requested_plural_index not in range(pomsgset.pluralforms):
+                raise UnexpectedFormData(
+                    "Got a copy request for a plural form that doesn't exist")
+            text_to_copy = suggestion_posubmission.potranslation.translation
+            requested_plural_indices = [requested_plural_index]
+
+        # Prepare the dictionary with the texts copied.
+        dict_with_copies = {}
+        for plural_index in range(pomsgset.pluralforms):
+            if plural_index in requested_plural_indices:
+                dict_with_copies[plural_index] = text_to_copy
+            else:
+                dict_with_copies[plural_index] = None
+
+        self.form_copied_translations[pomsgset] = dict_with_copies
 
     def _prepareView(self, view_class, pomsgset, error):
         """Collect data and build a POMsgSetView for display."""
         # XXX: it would be nice if we could easily check if
         # this is being called in the right order, after
         # _storeTranslations(). -- kiko, 2006-09-27
-        if self.form_posted_translations.has_key(pomsgset):
-            translations = self.form_posted_translations[pomsgset]
-        else:
-            translations = pomsgset.active_texts
+        translations = {}
+        # Get the copied translations for the given pomsgset.
+        copied = self.form_copied_translations.get(pomsgset, None)
+        # Get translations that the user typed in the form.
+        posted = self.form_posted_translations.get(pomsgset, None)
+        # Get the flags set by the user to note whether 'New suggestion'
+        # should be taken in consideration.
+        plural_indices_to_store = (
+            self.form_posted_translations_has_store_flag.get(pomsgset, []))
+        # We are going to prepare the content of the translation form.
+        for plural_index in range(pomsgset.pluralforms):
+            if copied is not None and copied[plural_index] is not None:
+                # We got a copy request for this plural form, we setup our
+                # enviroment to show the copied values and override any other
+                # value we got with the submit.
+                translations[plural_index] = copied[plural_index]
+                plural_indices_to_store.append(plural_index)
+                continue
+            elif posted is not None and posted[plural_index] is not None:
+                # We didn't get a copy request for this plural form, but we
+                # have something submitted by the user, we use that value.
+                translations[plural_index] = posted[plural_index]
+            else:
+                # We didn't get a copy request for this plural form, neither
+                # have anything from the user, so we store nothing for it.
+                translations[plural_index] = None
+
+        # Check the values we got with the submit for the 'Needs review' flag
+        # so we prepare the new render with the same values.
         if self.form_posted_needsreview.has_key(pomsgset):
             is_fuzzy = self.form_posted_needsreview[pomsgset]
         else:
             is_fuzzy = pomsgset.isfuzzy
-        return view_class(pomsgset, self.request, translations,
-                          is_fuzzy, error, self.second_lang_code)
+
+        return view_class(pomsgset, self.request, plural_indices_to_store,
+            translations, is_fuzzy, error, self.second_lang_code)
 
     #
     # Internals
@@ -554,11 +728,12 @@ class BaseTranslationView(LaunchpadView):
 
         In all those form keys, 'ID' is the ID of the POTMsgSet.
         """
+        form = self.request.form
         potmsgset_ID = pomsgset.potmsgset.id
         language_code = pomsgset.pofile.language.code
 
         msgset_ID = 'msgset_%d' % potmsgset_ID
-        if msgset_ID not in self.request.form:
+        if msgset_ID not in form:
             # If this form does not have data about the msgset id, then
             # do nothing at all.
             return
@@ -567,7 +742,7 @@ class BaseTranslationView(LaunchpadView):
             potmsgset_ID, language_code)
 
         self.form_posted_needsreview[pomsgset] = (
-            msgset_ID_LANGCODE_needsreview in self.request.form)
+            msgset_ID_LANGCODE_needsreview in form)
 
         # Note the trailing underscore: we append the plural form number later.
         msgset_ID_LANGCODE_translation_ = 'msgset_%d_%s_translation_' % (
@@ -577,21 +752,35 @@ class BaseTranslationView(LaunchpadView):
         # self.form_posted_translations. We try plural forms in turn,
         # starting at 0.
         for pluralform in xrange(self.MAX_PLURAL_FORMS):
-            msgset_ID_LANGCODE_translation_PLURALFORM = '%s%s' % (
+            msgset_ID_LANGCODE_translation_PLURALFORM_new = '%s%s_new' % (
                 msgset_ID_LANGCODE_translation_, pluralform)
-            if msgset_ID_LANGCODE_translation_PLURALFORM not in self.request.form:
+            if msgset_ID_LANGCODE_translation_PLURALFORM_new not in form:
                 # Stop when we reach the first plural form which is
                 # missing from the form.
                 break
 
-            raw_value = self.request.form[msgset_ID_LANGCODE_translation_PLURALFORM]
+            raw_value = form[msgset_ID_LANGCODE_translation_PLURALFORM_new]
             value = contract_rosetta_tabs(raw_value)
 
             if not self.form_posted_translations.has_key(pomsgset):
                 self.form_posted_translations[pomsgset] = {}
             self.form_posted_translations[pomsgset][pluralform] = value
+
+            # Note whether this translation should be stored in our database.
+            msgset_ID_LANGCODE_translation_PLURALFORM_new_checkbox = (
+                '%s_checkbox' % msgset_ID_LANGCODE_translation_PLURALFORM_new)
+            store = (
+                msgset_ID_LANGCODE_translation_PLURALFORM_new_checkbox in form
+                )
+            if not self.form_posted_translations_has_store_flag.has_key(
+                pomsgset):
+                self.form_posted_translations_has_store_flag[pomsgset] = []
+            if store:
+                self.form_posted_translations_has_store_flag[pomsgset].append(
+                    pluralform)
         else:
-            raise AssertionError("More than 100 plural forms were submitted!")
+            raise AssertionError('More than %d plural forms were submitted!' %
+                self.MAX_PLURAL_FORMS)
 
     #
     # Redirection
@@ -615,15 +804,35 @@ class BaseTranslationView(LaunchpadView):
             if self.request.get('QUERY_STRING'):
                 new_url += '?%s' % self.request.get('QUERY_STRING')
 
+        # Get the default values for several parameters.
         parameters = self._buildRedirectParams()
-        params_str = '&'.join(
-            ['%s=%s' % (key, value) for key, value in parameters.items()])
-        if params_str:
-            if '?' not in new_url:
-                new_url += '?'
-            else:
-                new_url += '&'
-            new_url += params_str
+
+        if '?' in new_url:
+            # Get current query string
+            base_url, old_query_string = new_url.split('?')
+            query_parts = cgi.parse_qsl(old_query_string, strict_parsing=False)
+
+            # Override whatever current query string values we have with the
+            # ones added by _buildRedirectParams.
+            final_parameters = []
+            for (key, value) in query_parts:
+                for (par_key, par_value) in parameters.items():
+                    if par_key == key:
+                        final_parameters.append((par_key, par_value))
+                    else:
+                        final_parameters.append((key, value))
+
+        else:
+            base_url = new_url
+            final_parameters = []
+            for (key, value) in parameters.items():
+                final_parameters.append((key, value))
+
+        new_query = urllib.urlencode(
+            [(key, value) for (key, value) in final_parameters])
+
+        if new_query:
+            new_url = '%s?%s' % (base_url, new_query)
 
         self.request.response.redirect(new_url)
 
@@ -632,7 +841,6 @@ class BaseTranslationView(LaunchpadView):
         # XXX: isn't this a hell of a performance issue, hitting this
         # same table for every submit? -- kiko, 2006-09-27
         self.pofile.updateStatistics()
-
         next_url = self.batchnav.nextBatchURL()
         if next_url is None or next_url == '':
             # We are already at the end of the batch, forward to the
@@ -711,19 +919,24 @@ class POMsgSetView(LaunchpadView):
     #   self.suggestion_blocks
     #   self.pluralform_indices
 
-    def __init__(self, pomsgset, request, translations, is_fuzzy, error,
-                 second_lang_code):
+    def __init__(self, pomsgset, request, plural_indices_to_store,
+                 translations, is_fuzzy, error, second_lang_code):
         """Primes the view with information that is gathered by a parent view.
 
-        translations is a dictionary indexed by plural form index;
-        BaseTranslationView constructed it based on active_texts
-        overlaid with form-submitted translations. is_fuzzy is a flag
-        tht is similarly constructed.
-
-        second_lang_code is the result of submiting field.alternative_value.
+        :arg plural_indices_to_store: A dictionary that indicates whether the
+            translation associated should be stored in our database or
+            ignored. It's indexed by plural form.
+        :arg translations: A dictionary indexed by plural form index;
+            BaseTranslationView constructed it based on form-submitted
+            translations overlaid with any copy request.
+        :arg is_fuzzy: A flag that notes current fuzzy flag overlaid with the
+            form-submitted.
+        :arg error: The error related to self.context submission or None.
+        :arg second_lang_code: The result of submiting field.alternative_value.
         """
         LaunchpadView.__init__(self, pomsgset, request)
 
+        self.plural_indices_to_store = plural_indices_to_store
         self.translations = translations
         self.error = error
         self.is_fuzzy = is_fuzzy
@@ -767,12 +980,27 @@ class POMsgSetView(LaunchpadView):
         # allows us later to just iterate over them in the view code
         # using a generic template.
         self.suggestion_blocks = {}
-        self.pluralform_indices = range(len(self.translations))
+        self.pluralform_indices = range(self.context.pluralforms)
         for index in self.pluralform_indices:
             non_editor, elsewhere, wiki, alt_lang_suggestions = \
                 self._buildAllSuggestions(index)
             self.suggestion_blocks[index] = \
                 [non_editor, elsewhere, wiki, alt_lang_suggestions]
+
+        # Let's initialise the translation dictionaries used from the
+        # translation form.
+        self.translation_dictionaries = []
+        for index in self.pluralform_indices:
+            self.translation_dictionaries.append({
+                'plural_index': index,
+                'active_translation': text_to_html(
+                    self.getActiveTranslation(index),
+                    self.context.potmsgset.flags()),
+                'translation': self.getTranslation(index),
+                'selection': self.context.getSelection(index),
+                'suggestion_block': self.suggestion_blocks[index],
+                'store_flag': index in self.plural_indices_to_store
+                })
 
     def _buildAllSuggestions(self, index):
         """Builds all suggestions for a certain plural form index.
@@ -825,7 +1053,7 @@ class POMsgSetView(LaunchpadView):
         # Use a set for pruning; this is a bit inconsistent with the
         # other pruners which are dicts, but prune_dict copes well with
         # it.
-        active_translations = set([self.translations[index]])
+        active_translations = set([self.context.active_texts[index]])
 
         wiki_translations_clean = prune_dict(wiki_translations,
            [current_translations, non_editor_translations, active_translations])
@@ -834,10 +1062,7 @@ class POMsgSetView(LaunchpadView):
 
         non_editor_translations = prune_dict(non_editor_translations,
             [current_translations, active_translations])
-        if self.is_multi_line:
-            title = "Suggestions"
-        else:
-            title = "Suggestion"
+        title = "Suggestions"
         non_editor = self._buildSuggestions(title,
             non_editor_translations.values())
 
@@ -863,28 +1088,44 @@ class POMsgSetView(LaunchpadView):
         submissions = sorted(submissions,
                              key=operator.attrgetter("datecreated"),
                              reverse=True)
-        return POMsgSetSuggestions(title, submissions[:self.max_entries],
-                                   self.is_multi_line, self.max_entries)
+        return POMsgSetSuggestions(
+            title, self.context, submissions[:self.max_entries],
+            self.max_entries)
+
+    def getActiveTranslation(self, index):
+        """Return the active translation for the pluralform 'index'."""
+        assert index in self.pluralform_indices, (
+            'There is no plural form #%d for %s language' % (
+                index, self.context.pofile.language.displayname))
+
+        translation = self.context.active_texts[index]
+        # We store newlines as '\n', '\r' or '\r\n', depending on the
+        # msgid but forms should have them as '\r\n' so we need to change
+        # them before showing them.
+        if translation is not None:
+            return convert_newlines_to_web_form(translation)
+        else:
+            return None
 
     def getTranslation(self, index):
-        """Return the active translation for the pluralform 'index'.
+        """Return the translation submitted for the pluralform 'index'.
 
-        There are as many translations as the plural form information defines
-        for that language/pofile. If one of those translations does not
-        exists, it will have a None value. If the potmsgset is not a plural
-        form one, we only have one entry.
+        Its value depends on what was submitted. It can be:
+            - A copied value depending on the copy button the user selected.
+            - A translation added by the user before submitting the form.
         """
-        if index in self.pluralform_indices:
-            translation = self.translations[index]
-            # We store newlines as '\n', '\r' or '\r\n', depending on the
-            # msgid but forms should have them as '\r\n' so we need to change
-            # them before showing them.
-            if translation is not None:
-                return convert_newlines_to_web_form(translation)
-            else:
-                return None
+        assert index in self.pluralform_indices, (
+            'There is no plural form #%d for %s language' % (
+                index, self.context.pofile.language.displayname))
+
+        translation = self.translations[index]
+        # We store newlines as '\n', '\r' or '\r\n', depending on the
+        # msgid but forms should have them as '\r\n' so we need to change
+        # them before showing them.
+        if translation is not None:
+            return convert_newlines_to_web_form(translation)
         else:
-            raise IndexError('Translation out of range')
+            return None
 
     #
     # Display-related methods
@@ -896,29 +1137,6 @@ class POMsgSetView(LaunchpadView):
         return len(self.msgids) > 1
 
     @cachedproperty
-    def max_lines_count(self):
-        """Return the max number of lines a multiline entry will have
-
-        It will never be bigger than 12.
-        """
-        if self.is_plural:
-            singular_lines = count_lines(
-                self.msgids[TranslationConstants.SINGULAR_FORM].msgid)
-            plural_lines = count_lines(
-                self.msgids[TranslationConstants.PLURAL_FORM].msgid)
-            lines = max(singular_lines, plural_lines)
-        else:
-            lines = count_lines(
-                self.msgids[TranslationConstants.SINGULAR_FORM].msgid)
-
-        return min(lines, 12)
-
-    @cachedproperty
-    def is_multi_line(self):
-        """Return whether the msgid has more than one line."""
-        return self.max_lines_count > 1
-
-    @cachedproperty
     def sequence(self):
         """Return the position number of this potmsgset in the pofile."""
         return self.context.potmsgset.sequence
@@ -927,7 +1145,7 @@ class POMsgSetView(LaunchpadView):
     def msgid(self):
         """Return a msgid string prepared to render in a web page."""
         msgid = self.msgids[TranslationConstants.SINGULAR_FORM].msgid
-        return msgid_html(msgid, self.context.potmsgset.flags())
+        return text_to_html(msgid, self.context.potmsgset.flags())
 
     @property
     def msgid_plural(self):
@@ -937,7 +1155,7 @@ class POMsgSetView(LaunchpadView):
         """
         if self.is_plural:
             msgid = self.msgids[TranslationConstants.PLURAL_FORM].msgid
-            return msgid_html(msgid, self.context.potmsgset.flags())
+            return text_to_html(msgid, self.context.potmsgset.flags())
         else:
             return None
 
@@ -1035,9 +1253,8 @@ class POMsgSetZoomedView(POMsgSetView):
 class POMsgSetSuggestions:
     """See IPOMsgSetSuggestions."""
     implements(IPOMsgSetSuggestions)
-    def __init__(self, title, submissions, is_multi_line, max_entries):
+    def __init__(self, title, pomsgset, submissions, max_entries):
         self.title = title
+        self.pomsgset = pomsgset
         self.submissions = submissions
-        self.is_multi_line = is_multi_line
         self.max_entries = max_entries
-

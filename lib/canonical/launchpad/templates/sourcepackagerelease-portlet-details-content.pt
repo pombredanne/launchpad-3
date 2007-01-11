@@ -2,7 +2,7 @@
   This is here so that these details can be re-used in all the
   distr*sourcepackagerelease classes
 </tal:comment>
-<b>Creator:</b>
+<b>Uploaded By:</b>
 <img alt="" src="/@@/user" />
 <a tal:content="context/creator/browsername"
    tal:attributes="href context/creator/fmt:url">Foo Bar</a><br />

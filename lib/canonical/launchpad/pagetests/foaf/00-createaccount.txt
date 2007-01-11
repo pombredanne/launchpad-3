@@ -1,6 +1,6 @@
   Go to the register page.
 
-  Workaround while https://launchpad.net/products/launchpad/+bug/39016 is not
+  Workaround while https://launchpad.net/launchpad/+bug/39016 is not
   fixed.
   >>> from canonical.launchpad.mail import stub
   >>> stub.test_emails[:] = []
@@ -327,31 +327,18 @@
   ... """ % path)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/people/foo
+  Location: http://localhost:9000/~foo
   ...
-
-  >>> foo = PersonSet().getByName('foo')
-  >>> foo.creation_rationale.name
-  'OWNER_CREATED_LAUNCHPAD'
 
 
   New account was created with name 'foo' and the hide email addresses option is
   turned on.
 
-  >>> print http(r"""
-  ... GET /people/foo/+edit HTTP/1.1
-  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...name="field.displayname" size="20" type="text" value="foobar"...
-  ...
-  ...Hide my email addresses from other Launchpad users...
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-   ...name="field.hide_email_addresses" type="checkbox" value="on"...
-  ...
+  >>> foo = PersonSet().getByName('foo')
+  >>> foo.creation_rationale.name
+  'OWNER_CREATED_LAUNCHPAD'
+  >>> foo.hide_email_addresses
+  True
 
 
   If you are comming from shipit to create a new account, you'll get

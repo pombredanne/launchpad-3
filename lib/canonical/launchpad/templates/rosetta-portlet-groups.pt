@@ -8,7 +8,8 @@
 
       <ul>
         <li tal:repeat="group context/translation_groups">
-          <a tal:attributes="href string:/rosetta/groups/${group/name}/" tal:content="group/title" />
+          <a tal:attributes="href string:/translations/groups/${group/name}/"
+            tal:content="group/title" />
         </li>
       </ul>
 

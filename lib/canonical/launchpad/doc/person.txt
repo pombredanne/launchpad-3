@@ -249,26 +249,14 @@ person uploaded (where he isn't the maintainer).
     >>> for sprelease in sabdfl.latestUploadedButNotMaintainedPackages():
     ...     print (sprelease.name, sprelease.uploaddistrorelease.fullreleasename,
     ...            sprelease.version)
+    (u'foobar', u'Ubuntu Breezy-autotest', u'1.0')
+    (u'cdrkit', u'Ubuntu Breezy-autotest', u'1.0')
     (u'cnews', u'Ubuntu Breezy-autotest', u'1.0')
     (u'libstdc++', u'Ubuntu Hoary', u'b8p')
     (u'cnews', u'Ubuntu Hoary', u'cr.g7-37')
     (u'linux-source-2.6.15', u'Ubuntu Hoary', u'2.6.15.3')
     (u'at', u'Ubuntu Hoary', u'0.00')
     (u'alsa-utils', u'Ubuntu Hoary', u'1.0.9a-4ubuntu1')
-
-
-Bug contact packages
---------------------
-
-A person who chooses to receive all bugmail for a package is said to be
-a "bug contact" for that package. A package may have zero, one, or more
-bug contacts.
-
-IPerson.getBugContactPackages returns this list of packages, sorted
-alphabetically (A to Z) by package name.
-
-    >>> [package.name for package in foobar.getBugContactPackages()]
-    [u'mozilla-firefox', u'pmount']
 
 
 Translations

@@ -61,6 +61,9 @@ class IPOHeader(IMapping):
         This method is 100% code from Canonical.
         """
 
+    def getRosettaExportDate():
+        """Return a datetime obj for X-Rosetta-Export-Date entry or None."""
+
     def getPluralFormExpression():
         """Returns the plural form expression, if defined in the header.
 

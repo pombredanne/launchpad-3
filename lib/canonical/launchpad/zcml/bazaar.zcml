@@ -14,7 +14,7 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.IBazaarApplication"
-        path_expression="string:bazaar"
+        path_expression="string:+code"
         parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
         />
 
@@ -38,19 +38,15 @@
         permission="zope.Public"
         class="canonical.launchpad.browser.BazaarApplicationView"
         facet="branches"
-        lp:url="bazaar">
+        lp:url="/+code">
         <browser:page
             name="+index"
             template="../templates/bazaar-index.pt"
-            lp:url="bazaar/+index" />
-        <browser:page
-            name="+all-branches"
-            template="../templates/bazaar-all-branches.pt"
-            lp:url="bazaar/+all-branches" />
+            lp:url="/+code/+index" />
         <browser:page
             name="+portlet-importstats"
             template="../templates/bazaar-portlet-importstats.pt"
-            lp:url="bazaar/+portlet-importstats" />
+            lp:url="/+code/+portlet-importstats" />
     </browser:pages>
 
 <xmlrpc:view

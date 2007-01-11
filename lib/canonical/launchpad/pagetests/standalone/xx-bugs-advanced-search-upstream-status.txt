@@ -3,7 +3,7 @@ upstream status.
 
 There are currently four bugs open in Ubuntu.
 
-    >>> anon_browser.open('http://launchpad.dev/distros/ubuntu/+bugs')
+    >>> anon_browser.open('http://launchpad.dev/ubuntu/+bugs')
     >>> from BeautifulSoup import BeautifulSoup
     >>> def print_bugtasks(text):
     ...     soup = BeautifulSoup(anon_browser.contents)
@@ -28,9 +28,9 @@ have a bug watch.
        -- Bjorn Tillenius, 2006-07-04
     >>> anon_browser.getLink('Advanced search').attrs['href']
     '?advanced=1'
-    >>> anon_browser.open('http://launchpad.dev/distros/ubuntu/+bugs?advanced=1')
+    >>> anon_browser.open('http://launchpad.dev/ubuntu/+bugs?advanced=1')
     >>> anon_browser.url
-    'http://launchpad.dev/distros/ubuntu/+bugs?advanced=1'
+    'http://launchpad.dev/ubuntu/+bugs?advanced=1'
 
     >>> upstream_status = anon_browser.getControl(name='field.status_upstream')
     >>> upstream_status.displayValue = [
@@ -60,11 +60,12 @@ are not included in the report.
     ...     print "%s, %s" % (bugtask.target.bugtargetname, bugtask.status.title)
     ubuntu-product (upstream), Rejected
     Ubuntu, Unconfirmed
+    Ubuntu Hoary, Unconfirmed
     mozilla-firefox (Debian), Rejected
     mozilla-firefox (Debian Woody), Rejected
     >>> logout()
 
-    >>> anon_browser.open('http://launchpad.dev/distros/ubuntu/+bugs?advanced=1')
+    >>> anon_browser.open('http://launchpad.dev/ubuntu/+bugs?advanced=1')
     >>> upstream_status = anon_browser.getControl(name='field.status_upstream')
     >>> upstream_status.displayValue = [
     ...     'Show only bugs that need to be forwarded to an upstream bugtracker']
@@ -78,9 +79,9 @@ upstream, i.e., bugs that don't have an IUpstreamBugTask. This filter
 makes it easy for developers to ignore bugs that they've already passed
 on upstream, to focus instead on things they need to work on.
 
-    >>> anon_browser.open('http://launchpad.dev/distros/ubuntu/+bugs?advanced=1')
+    >>> anon_browser.open('http://launchpad.dev/ubuntu/+bugs?advanced=1')
     >>> anon_browser.url
-    'http://launchpad.dev/distros/ubuntu/+bugs?advanced=1'
+    'http://launchpad.dev/ubuntu/+bugs?advanced=1'
 
     >>> upstream_status = anon_browser.getControl(name='field.status_upstream')
     >>> upstream_status.displayValue = [
@@ -111,9 +112,9 @@ demonstrate.
 Now, if we choose to show only closed upstream task, only the bugs we
 modified and the sampledata we created above will show up.
 
-    >>> anon_browser.open('http://launchpad.dev/distros/ubuntu/+bugs?advanced=1')
+    >>> anon_browser.open('http://launchpad.dev/ubuntu/+bugs?advanced=1')
     >>> anon_browser.url
-    'http://launchpad.dev/distros/ubuntu/+bugs?advanced=1'
+    'http://launchpad.dev/ubuntu/+bugs?advanced=1'
 
     >>> upstream_status = anon_browser.getControl(name='field.status_upstream')
     >>> upstream_status.displayValue = [

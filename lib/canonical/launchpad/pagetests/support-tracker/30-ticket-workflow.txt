@@ -1,14 +1,12 @@
-Support Request Workflow
-========================
+= Support Request Workflow =
 
 The status of a support request changes based on the action done by
 users on the request. To demonstrate the workflow, we will use the
 existing ticket #2 on the Firefox product which was filed by
 'Sample Person'.
 
-    (We will use one browser objects for the owner, and one for the user
-    providing support, 'No Privileges Person' here.)
-
+    # We will use one browser objects for the owner, and one for the user
+    # providing support, 'No Privileges Person' here.
     >>> from zope.testbrowser.testing import Browser
     >>> owner_browser = Browser()
     >>> owner_browser.handleErrors = False
@@ -20,9 +18,8 @@ existing ticket #2 on the Firefox product which was filed by
     >>> support_browser.addHeader(
     ...     'Authorization', 'Basic no-priv@canonical.com:test')
 
-    (Define some utility functions to retrieve easily the last comment
-    added and the status of the request.)
-
+    # Define some utility functions to retrieve easily the last comment
+    # added and the status of the request.
     >>> from BeautifulSoup import BeautifulSoup
     >>> def find_request_status(contents):
     ...     soup = BeautifulSoup(contents)
@@ -32,19 +29,17 @@ existing ticket #2 on the Firefox product which was filed by
     ...     soup = BeautifulSoup(contents)
     ...     return soup.fetch('div', 'boardCommentBody')[-1]
 
-Logging In
-----------
+== Logging In ==
 
 To participate in a support request, the user must be logged in.
 
     >>> anon_browser.open(
-    ...     'http://launchpad.dev/products/firefox/+ticket/2')
+    ...     'http://launchpad.dev/firefox/+ticket/2')
     >>> content = find_main_content(anon_browser.contents)
     >>> print content.fetch('div')[-1].renderContents()
     To post a message you must <a href="+login">log in</a>.
 
-Requesting for More Information
--------------------------------
+== Requesting for More Information ==
 
 It's not unusual that the original message of a support request is terse
 and quite vague. In these cases, to help the user, some more information
@@ -55,7 +50,7 @@ question in the 'Message' field and clicks on the
 'Add Information Request' button.
 
     >>> support_browser.open(
-    ...     'http://launchpad.dev/products/firefox/+ticket/2')
+    ...     'http://launchpad.dev/firefox/+ticket/2')
     >>> support_browser.getControl('Message').value = (
     ...     "Can you provide an example of an URL displaying the problem?")
     >>> support_browser.getControl('Add Information Request').click()
@@ -77,8 +72,7 @@ you an error.
     >>> print soup.first('div', 'message').renderContents()
     Please enter a message.
 
-Answering with More Information
--------------------------------
+== Answering with More Information ==
 
 When the request is in the 'Needs information' state, it means that the
 request owner should come back and provide more information. He can do
@@ -86,7 +80,7 @@ so by entering the reply in the 'Message' box and clicking on the
 "I'm Providing More Information" button.
 
     >>> owner_browser.open(
-    ...     'http://launchpad.dev/products/firefox/+ticket/2')
+    ...     'http://launchpad.dev/firefox/+ticket/2')
     >>> owner_browser.getControl('Message').value = (
     ...     "The following SVG doesn't display properly:\n"
     ...     "http://www.w3.org/2001/08/rdfweb/rdfweb-chaals-and-dan.svg")
@@ -101,15 +95,14 @@ status is changed to Open and his answer appended to the request.
     <p>The following SVG doesn't display properly:<br />
     <a rel="nofollow" href="http://www.w3.org/2001/08/rdfweb/rdfweb-chaals-and-dan.svg">...</a></p>
 
-Giving an Answer
-----------------
+== Giving an Answer ==
 
 Once the request is clarified, it is easier for a user to give an answer
 to the request. This is done by entering the answer in the 'Message' box
 and clicking the 'Add Answer' button.
 
     >>> support_browser.open(
-    ...     'http://launchpad.dev/products/firefox/+ticket/2')
+    ...     'http://launchpad.dev/firefox/+ticket/2')
     >>> support_browser.getControl('Message').value = (
     ...     "New version of the firefox package are available with SVG "
     ...     "support enabled. You can use apt-get or adept to upgrade.")
@@ -125,14 +118,13 @@ answer to the request:
     <p>New version of the firefox package are available with SVG support
     enabled. You can use apt-get or adept to upgrade.</p>
 
-Confirming an Answer
---------------------
+== Confirming an Answer ==
 
 When the owner comes back on the request page, he will now see a new
 'This Solved my Problem' button near the answer.
 
     >>> owner_browser.open(
-    ...     'http://launchpad.dev/products/firefox/+ticket/2')
+    ...     'http://launchpad.dev/firefox/+ticket/2')
     >>> soup = BeautifulSoup(owner_browser.contents)
     >>> soup.fetch('div', 'boardComment')[-1].first('input', type='submit')
     <input type="submit" name="field.actions.confirm"
@@ -171,8 +163,7 @@ The confirmed answer is also highlighted.
     <p>New version of the firefox package are available with SVG support
     enabled. You can use apt-get or adept to upgrade.</p>
 
-Adding a Comment
-----------------
+== Adding a Comment ==
 
 When the request is Solved, it is possible to add comments to the
 request. The user simply enters the comment in the 'Message' box and
@@ -190,8 +181,7 @@ status:
     >>> print find_last_comment(owner_browser.contents).renderContents()
     <p>The example now displays correctly. Thanks.</p>
 
-Reopening
----------
+== Reopening ==
 
 It can happen that, altough the owner confirmed the request as solved,
 the original problem reappears. In this case, he can reopen the request
@@ -239,8 +229,7 @@ reopening portlet.
     >>> print portlet.fetch('a')[-1].renderContents()
     Sample Person
 
-Self-Answer
------------
+== Self-Answer ==
 
 The owner can also gives an answer to his own request. He simply have
 to enter his answer in the 'Message' box and click the
@@ -271,113 +260,12 @@ It also records the owner as the answerer and marks his answer with the
     <p>OK, this example requires some SVG features that will only be available
     in Firefox 2.0.</p>
 
-Confirming Link
-===============
-
-When an answer is posted on a ticket, its owner will usually receive a
-notification by email. That email includes a link that can be used by
-the owner to confirm that the answer solved his problem.
-
-When the URL is used when the ticket isn't in the right state, the user
-will be redirected to the ticket page and a notification will be
-displayed:
-
-    >>> owner_browser.open(
-    ...     'http://launchpad.dev/products/firefox/+ticket/6/+confirm?'
-    ...     'answer_id=1')
-    >>> owner_browser.url
-    'http://.../firefox/+ticket/6'
-    >>> soup = BeautifulSoup(owner_browser.contents)
-    >>> print soup.first('div', 'error message').renderContents()
-    The support request is not in a state where you can confirm an
-    answer.
-
-    (Let's setup an answer that can be confirmed on that ticket, since
-    sampledata doesn't have any support request in that state.)
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces import ITicketSet, ILaunchBag
-    >>> ticket_6 = getUtility(ITicketSet).get(6)
-
-    # The owner isn't subscribed to that request, so subscribe him.
-    >>> ticket_6.subscribe(ticket_6.owner)
-    <TicketSubscription...>
-    >>> foo_bar = getUtility(ILaunchBag).user
-    >>> answer_message = ticket_6.giveAnswer(
-    ...     foo_bar, 'Restarting Firefox should load the new plug-in.')
-
-    # Send out notification emails
-    >>> import transaction
-    >>> transaction.commit()
-    >>> logout()
-
-    # Get the confirmation URL from the notification
-    >>> import email
-    >>> import re
-    >>> from canonical.launchpad.mail import stub
-    >>> notification = email.message_from_string(stub.test_emails[-1][2])
-    >>> urls = re.findall('(http:[^\s]+)+', notification.get_payload())
-    >>> confirm_url = urls[-2].decode('quoted-printable')
-    >>> print confirm_url
-    http://launchpad.dev/products/firefox/+ticket/6/+confirm?answer_id=...
-
-If a cropped URL or forged URL is used, an UnexpectedFormData error will
-be displayed. In the following example, the answer_id parameter refers
-to an answer not part of that support request, it mimics a badly
-handcrafted URL:
-
-    >>> owner_browser.open(
-    ...     'http://launchpad.dev/products/firefox/+ticket/6/+confirm?'
-    ...     'answer_id=3')
-    Traceback (most recent call last):
-      ...
-    UnexpectedFormData...
-
-    >>> owner_browser.open(
-    ...     'http://launchpad.dev/products/firefox/+ticket/6/+confirm')
-    Traceback (most recent call last):
-      ...
-    UnexpectedFormData...
-
-The page is only accessible to the ticket owner:
-
-    >>> support_browser.open(confirm_url)
-    Traceback (most recent call last):
-      ...
-    Unauthorized...
-
-On the confirmation page, the user can see the answer that he is
-confirming.
-
-    >>> owner_browser.open(confirm_url)
-    >>> soup = BeautifulSoup(owner_browser.contents)
-    >>> for comment in  soup.fetch('div', 'boardCommentBody'):
-    ...     print comment.renderContents()
-    <p>Restarting Firefox should load the new plug-in.</p>
-
-To confirm the answer, he needs to click the 'This Solved my Problem'
-button. He can enter an optional message along his confirmation.
-
-    >>> owner_browser.getControl('Message').value = (
-    ...     "Thanks! This indeed solved the problem.")
-    >>> owner_browser.getControl('This Solved my Problem').click()
-
-This adds his comment to the request and mark the support request
-'Solved.'
-
-    >>> print find_request_status(owner_browser.contents)
-    Solved
-    >>> print find_last_comment(owner_browser.contents).renderContents()
-    <p>Thanks! This indeed solved the problem.</p>
-
-History
-=======
+= History =
 
 The history of the ticket is available on the 'History' page.
 
     >>> anon_browser.open(
-    ...     'http://launchpad.dev/products/firefox/+ticket/2')
+    ...     'http://launchpad.dev/firefox/+ticket/2')
     >>> anon_browser.getLink('History').click()
     >>> print anon_browser.title
     History of support request #2

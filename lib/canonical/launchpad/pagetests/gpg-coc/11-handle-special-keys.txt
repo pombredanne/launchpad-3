@@ -14,7 +14,7 @@ imported.
 
 Try to import a key which is already imported:
 
-  >>> user_browser.open('http://launchpad.dev/people/name12/+editpgpkeys')
+  >>> user_browser.open('http://launchpad.dev/~name12/+editpgpkeys')
   >>> user_browser.getControl(name='fingerprint').value = preimported
   >>> user_browser.getControl(name='import').click()
   >>> "A message has been sent" in user_browser.contents
@@ -29,7 +29,7 @@ Try to import a key which is already imported:
 Finally, a key which is sign-only. This one is actually supported and
 has a special validation email..
 
-  >>> user_browser.open('http://launchpad.dev/people/name12/+editpgpkeys')
+  >>> user_browser.open('http://launchpad.dev/~name12/+editpgpkeys')
   >>> user_browser.getControl(name='fingerprint').value = sign_only
   >>> user_browser.getControl(name='import').click()
   >>> print user_browser.contents
