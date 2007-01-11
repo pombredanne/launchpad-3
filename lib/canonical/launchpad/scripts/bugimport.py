@@ -359,7 +359,11 @@ class BugImporter:
             mimetype = get_value(attachnode, 'mimetype')
             contents = get_value(attachnode, 'contents').decode('base-64')
             if filename is None:
-                filename = 'unknown'
+                # if filename is None, use the last component of the URL
+                if attachnode.get('href') is not None:
+                    filename = attachnode.get('href').split('/')[-1]
+                else:
+                    filename = 'unknown'
             if title is None:
                 title = filename
             # force mimetype to text/plain if it is a patch
