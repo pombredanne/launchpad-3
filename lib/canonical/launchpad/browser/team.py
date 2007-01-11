@@ -132,9 +132,11 @@ class TeamEmailView:
         """Send a validation message to <email> and update self.feedback."""
         generateTokenAndValidationEmail(email, self.team)
         self.feedback = (
-            "An email message was sent to '%s'. Follow the "
+            "A confirmation message has been sent to '%s'. Follow the "
             "instructions in that message to confirm the new "
-            "contact address for this team." % email)
+            "contact address for this team. "
+            "(If your mail provider uses 'greylisting', it might take an hour "
+            "or two for the message to arrive.)" % email)
 
 
 class TeamAddView(AddView):
@@ -165,9 +167,11 @@ class TeamAddView(AddView):
         if email is not None:
             generateTokenAndValidationEmail(email, team)
             self.request.response.addNotification(
-                "An email message was sent to '%s'. Follow the "
+                "A confirmation message has been sent to '%s'. Follow the "
                 "instructions in that message to confirm the new "
-                "contact address for this team." % email)
+                "contact address for this team. "
+                "(If your mail provider uses 'greylisting', it might take an "
+                "hour or two for the message to arrive.)" % email)
 
         self._nextURL = canonical_url(team)
         return team

@@ -731,9 +731,11 @@ class PersonClaimView(LaunchpadFormView):
             tokentype=LoginTokenType.PROFILECLAIM)
         token.sendClaimProfileEmail()
         self.request.response.addInfoNotification(_(
-            "An email message was sent to '%(email)s'. Follow the "
-            "instructions in that message to finish claiming this "
-            "profile."), email=email)
+            "A confirmation  message has been sent to '%(email)s'. "
+            "Follow the instructions in that message to finish claiming this "
+            "profile. "
+            "(If your mail provider uses 'greylisting', it might take an hour "
+            "or two for the message to arrive.)"), email=email)
 
 
 class RedirectToEditLanguagesView(LaunchpadView):
@@ -1693,21 +1695,21 @@ class PersonGPGView(LaunchpadView):
         comments = []
         if len(found) > 0:
             comments.append(
-                'An email was sent to %s with instructions to reactivate '
-                'the following key(s): %s'
+                'A message has been sent to %s with instructions to reactivate '
+                'these key(s): %s'
                 % (self.context.preferredemail.email, ', '.join(found)))
         if len(notfound) > 0:
             if len(notfound) == 1:
                 comments.append(
-                    'Launchpad failed to retrieve the following key from '
-                    'the keyserver: %s. Please make sure this key is '
+                    'Launchpad failed to retrieve this key from '
+                    'the keyserver: %s. Please make sure the key is '
                     'published in a keyserver (such as '
                     '<a href="http://pgp.mit.edu">pgp.mit.edu</a>) before '
                     'trying to reactivate it again.' % (', '.join(notfound)))
             else:
                 comments.append(
-                    'Launchpad failed to retrieve the following keys from '
-                    'the keyserver: %s. Please make sure these keys '
+                    'Launchpad failed to retrieve these keys from '
+                    'the keyserver: %s. Please make sure the keys '
                     'are published in a keyserver (such as '
                     '<a href="http://pgp.mit.edu">pgp.mit.edu</a>) before '
                     'trying to reactivate them again.' % (', '.join(notfound)))
@@ -1994,9 +1996,11 @@ class PersonEditEmailsView:
         token.sendEmailValidationRequest(self.request.getApplicationURL())
 
         self.message = (
-                "An email message was sent to '%s'. Follow the "
-                "instructions in that message to confirm that the "
-                "address is yours." % newemail)
+                "A confirmation message has been sent to '%s'. "
+                "Follow the instructions in that message to confirm that the "
+                "address is yours. "
+                "(If your mail provider uses 'greylisting', it might take an "
+                "hour or two for the message to arrive.)" % newemail)
 
     def _setPreferred(self):
         """Set the selected email as preferred for the person in context."""

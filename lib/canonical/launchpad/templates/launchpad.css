@@ -1332,8 +1332,7 @@ ul.menuroot {
   z-index: 2;
 }
 * html .container {
-  background: url(/@@/arrowRight.gif) 
-                center right no-repeat;
+  background: url(/@@/arrowRight) center right no-repeat;
 }
 * html .menu .item {
   float: none;
