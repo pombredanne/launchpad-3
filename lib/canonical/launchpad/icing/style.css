@@ -28,11 +28,13 @@ body.largeText #central_column {font-size: 1.4em;}
   text-decoration: none;
 } 
 :link:hover, :visited:hover {
-  color: #36c;
   text-decoration: underline;
 }
+:link:active, :visited:active {
+  color: #36c;
+}
 :visited {
-  color: #147;
+  color: #324c7f;
   text-decoration: none;
 }
 
@@ -912,10 +914,6 @@ body.tab-specifications #actions h2 {background-color: #159cc8;}
   background: none;
   color: #159cc8; /* darkest color from mainarea_tab4-* */
 }
-.tab-specifications #maincontent :visited {
-  background: none;
-  color: #3d8096; /* halfway between #159cc8; and #656565; */
-}
 /* tab-translations */
 body.tab-translations #mainarea div.x {
   background-image: url(mainarea_tab5_top.gif);
@@ -1174,9 +1172,6 @@ th.icon.right, td.icon.right {
 }
 .title {
   font-weight: bold;
-}
-.invisiblelink :link, .invisiblelink :visited {
-  color: #656565 !important;
 }
 ul {
   margin-left: 24px;
