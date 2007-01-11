@@ -13,17 +13,25 @@ Let's fill a IPackageRelationshipSet:
   >>> from canonical.launchpad.browser import PackageRelationshipSet
 
   >>> relationship_set = PackageRelationshipSet()
-  >>> relationship_set.addContent(
+  >>> relationship_set.add(
   ...    name="foobar",
-  ...    signal=">=",
+  ...    operator=">=",
   ...    version="1.0.2",
   ...    url="http://whatever/")
 
-  >>> relationship_set.addContent(
+  >>> relationship_set.add(
   ...    name="test",
-  ...    signal="",
+  ...    operator="",
   ...    version="",
   ...    url=None)
+
+Note that iterations over PackageRelationshipSet are sorted
+alphabetically according the relationship 'name':
+
+  >>> [relationship.name for relationship in relationship_set]
+  ['foobar', 'test']
+
+It will cause all the relationship contents to be rendered in this order.
 
 Let's get the view class:
 
@@ -33,32 +41,31 @@ Let's get the view class:
   >>> request = TestRequest(form={})
   >>> pkg_rel_view = queryView(relationship_set, "+render-list", request)
 
-By the lack of any other method for this view class we will test if it
-renders properly:
+This view has no methods, so just demonstrate that it renders
+correctly as::
 
-  >>> print pkg_rel_view()
   <ul>
-  <li>
-  <BLANKLINE>
-  <a href="http://whatever/">
-  foobar
-  <BLANKLINE>
-  (&gt;=
-  1.0.2)
-  <BLANKLINE>
-  </a>
-  <BLANKLINE>
-  <BLANKLINE>
-  </li>
-  <li>
-  <BLANKLINE>
-  test
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  </li>
+     <li>
+        <a href="fofofof">noonoo</a>
+     </li>
+     ...
+     <li>
+        fooooooo
+     </li>
   </ul>
-  <BLANKLINE>
+
+XXX cprov 20070111: we could get parse_relationship_section imported
+implicitly if this test was set to PageTestLayer. However, it's a kind
+of accident that we need this function here, the code is already
+extensively exercised in soyuz pagetests.
+
+  >>> from canonical.launchpad.ftests.test_pages import (
+  ...     parse_relationship_section)
+
+  >>> parse_relationship_section(pkg_rel_view())
+  LINK: "foobar(&gt;=1.0.2)" -> http://whatever/
+  TEXT: "test"
+
 
 Note that no link is rendered for IPackageReleationship where 'url' is
 None.

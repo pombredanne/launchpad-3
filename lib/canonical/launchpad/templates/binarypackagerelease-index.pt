@@ -45,7 +45,7 @@
 
     <table>
       <tbody>
-        <tr id="provides" tal:define="relationships view/provides"
+          <tr id="provides" tal:define="relationships view/provides"
             tal:condition="relationships/has_items">
           <th><label>Provides:</label></th>
           <td>

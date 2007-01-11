@@ -9,6 +9,8 @@ __all__ = [
     'PackageRelationshipSet',
     ]
 
+import operator as std_operator
+
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
@@ -31,13 +33,13 @@ def relationship_builder(relationship_line, parser, getter):
     parsed_relationships = [
         token[0] for token in parser(relationship_line)]
 
-    for name, version, signal in parsed_relationships:
+    for name, version, operator in parsed_relationships:
         target_object = getter(name)
         if target_object is not None:
             url = canonical_url(target_object)
         else:
             url = None
-        relationship_set.addContent(name, signal, version, url)
+        relationship_set.add(name, operator, version, url)
 
     return relationship_set
 
@@ -47,15 +49,15 @@ class PackageRelationship:
 
     implements(IPackageRelationship)
 
-    def __init__(self, name, signal, version, url=None):
+    def __init__(self, name, operator, version, url=None):
         self.name = name
         self.version = version
         self.url = url
 
-        if len(signal.strip()) == 0:
-            self.signal = None
+        if len(operator.strip()) == 0:
+            self.operator = None
         else:
-            self.signal = signal
+            self.operator = operator
 
 
 class PackageRelationshipSet:
@@ -65,15 +67,16 @@ class PackageRelationshipSet:
     def __init__(self):
         self.contents = []
 
-    def addContent(self, name, signal, version, url):
+    def add(self, name, operator, version, url):
         """See IPackageRelationshipSet."""
         self.contents.append(
-            PackageRelationship(name, signal, version, url))
+            PackageRelationship(name, operator, version, url))
 
     def has_items(self):
         """See IPackageRelationshipSet."""
         return len(self.contents) is not 0
 
     def __iter__(self):
-        return iter(self.contents)
+        return iter(sorted(
+            self.contents, key=std_operator.attrgetter('name')))
 

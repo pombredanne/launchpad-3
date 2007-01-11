@@ -36,12 +36,12 @@ IPackageRelationshipSet. (see package-relationship.txt).
   >>> verifyObject(IPackageRelationshipSet, pmount_deps)
   True
 
-Let's check the rendering parameters for an specific dep:
+Let's check the rendering parameters for a specific dep:
 
-Not that the 'url' attribute points to the IDistroArchReleaseBinaryPackage
-for 'at'.
+Note that the 'url' attribute points to the
+IDistroArchReleaseBinaryPackage for 'at'.
 
-Besides that, 'signal' can be null regarding the given relationship,
+Besides that, 'operator' can be null regarding the given relationship,
 it automatically means that 'version' will be an empty string.
 
 Another possible case is the binary package mentioned in
@@ -50,11 +50,10 @@ question. In this case 'url' will be None, which indicates no link
 should be rendered for this dependency.
 
   >>> for dep in pmount_deps:
-  ...    dep.name, dep.signal, dep.version, dep.url
+  ...    dep.name, dep.operator, dep.version, dep.url
   ('at', '>=', '3.14156', u'http://launchpad.dev/ubuntu/hoary/i386/at')
   ('linux-2.6.12', None, '', u'http://launchpad.dev/ubuntu/hoary/i386/linux-2.6.12')
   ('tramp-package', None, '', None)
-
 
 Other relationship groups use the same mechanism.
 

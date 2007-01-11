@@ -1,4 +1,5 @@
-= Package Relationship Model =
+Package Relationship Model
+===========================
 
 We call "package relationship" the DSC field which describes relation
 between the package in question and others availble:
@@ -19,11 +20,9 @@ For binaries we have:
  * provides
 
 Those lines contain a list of comma-separated relationship where each
-element follows this format:
+element follows this format::
 
-{{{
-$NAME [($SIGNAL $VERSION)]
-}}}
+    $NAME [($OPERATOR $VERSION)]
 
 For example:
 
@@ -31,10 +30,25 @@ For example:
   ...    'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 ( = 3.4.1-4sarge1)')
 
 Launchpad models package relationship elements via the
-IPackageRelationShip instance. We use APT to parse the relationship lines:
+IPackageRelationShip instance. We use APT to parse the relationship
+lines:
 
   >>> from apt_pkg import ParseDepends
-  >>> parsed_relationships = [r[0] for r in ParseDepends(relationship_line)]
+
+ParseDepends returns a 'list of lists of tuples' as::
+
+  [ [('$NAME', '$VERSION', '$OPERATOR')],
+    [('$NAME', '$VERSION', '$OPERATOR')],
+    ...
+  ]
+
+So we need perform a small treatment on its result in order to have
+*sane* data:
+
+  >>> parsed_relationships = [relationship for (relationship,) in
+  ...                         ParseDepends(relationship_line)]
+
+Let's see what we call 'sane':
 
   >>> parsed_relationships
   [('gcc-3.4-base', '', ''), ('libc6', '2.3.2.ds1-4', '>='), ('gcc-3.4', '3.4.1-4sarge1', '=')]
@@ -45,18 +59,18 @@ Now for each parsed element we can build an IPackageRelationship:
   >>> from zope.interface.verify import verifyObject
   >>> from canonical.launchpad.interfaces import IPackageRelationship
 
-  >>> name, version, signal = parsed_relationships[1]
+  >>> name, version, operator = parsed_relationships[1]
   >>> fake_url = 'http://host/path'
 
   >>> pkg_relationship = PackageRelationship(
-  ...     name, signal, version, url=fake_url)
+  ...     name, operator, version, url=fake_url)
 
   >>> verifyObject(IPackageRelationship, pkg_relationship)
   True
 
   >>> pkg_relationship.name
   'libc6'
-  >>> pkg_relationship.signal
+  >>> pkg_relationship.operator
   '>='
   >>> pkg_relationship.version
   '2.3.2.ds1-4'

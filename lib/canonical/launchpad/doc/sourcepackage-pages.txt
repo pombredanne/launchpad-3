@@ -95,13 +95,13 @@ return a IPackageRelationshipSet object (see package-relationship.txt).
   True
 
   >>> for dep in firefox_parsed_depends:
-  ...    dep.name, dep.signal, dep.version, dep.url
-  ('gcc-3.4-base', None, '', None)
-  ('libc6', '>=', '2.3.2.ds1-4', None)
+  ...    dep.name, dep.operator, dep.version, dep.url
+  ('alsa-utils', None, '', u'http://launchpad.dev/ubuntu/warty/+source/alsa-utils')
   ('gcc-3.4', '>=', '3.4.1-4sarge1', None)
   ('gcc-3.4', '<<', '3.4.2', None)
+  ('gcc-3.4-base', None, '', None)
+  ('libc6', '>=', '2.3.2.ds1-4', None)
   ('libstdc++6-dev', '>=', '3.4.1-4sarge1', None)
-  ('alsa-utils', None, '', u'http://launchpad.dev/ubuntu/warty/+source/alsa-utils')
 
   >>> firefox_parsed_dependsindep = firefox_view.builddependsindep()
 
@@ -109,11 +109,11 @@ return a IPackageRelationshipSet object (see package-relationship.txt).
   True
 
   >>> for dep in firefox_parsed_dependsindep:
-  ...    dep.name, dep.signal, dep.version, dep.url
+  ...    dep.name, dep.operator, dep.version, dep.url
+  ('alsa-utils', None, '', u'http://launchpad.dev/ubuntu/warty/+source/alsa-utils')
   ('bacula-common', '=', '1.34.6-2', None)
   ('bacula-director-common', '=', '1.34.6-2', None)
   ('postgresql-client', '>=', '7.4', None)
-  ('alsa-utils', None, '', u'http://launchpad.dev/ubuntu/warty/+source/alsa-utils')
 
 Ensure we have fixed bug 31039, by properly escape the
 sourcepackagename before passing to regexp.
