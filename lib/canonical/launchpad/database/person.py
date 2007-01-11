@@ -35,12 +35,14 @@ from canonical.launchpad.interfaces import (
     ISSHKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner,
     IBugTaskSet, UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
     ITranslationGroupSet, ILaunchpadStatisticSet, ShipItConstants,
-    ILaunchpadCelebrities, ILanguageSet
-    )
+    ILaunchpadCelebrities, ILanguageSet, IDistributionSet,
+    ISourcePackageNameSet, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.branch import Branch
+from canonical.launchpad.database.bugtask import (
+    get_bug_privacy_filter, search_value_to_where_condition)
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.karma import KarmaTotalCache
 from canonical.launchpad.database.logintoken import LoginToken
@@ -60,10 +62,11 @@ from canonical.launchpad.database.teammembership import (
 from canonical.launchpad.database.ticket import TicketPersonSearch
 
 from canonical.lp.dbschema import (
-    EnumCol, SSHKeyType, EmailAddressStatus, TeamSubscriptionPolicy,
-    TeamMembershipStatus, LoginTokenType, SpecificationSort,
-    SpecificationFilter, SpecificationStatus, ShippingRequestStatus,
-    PersonCreationRationale)
+    BugTaskImportance, BugTaskStatus, EnumCol, SSHKeyType,
+    EmailAddressStatus, TeamSubscriptionPolicy, TeamMembershipStatus,
+    LoginTokenType, SpecificationSort, SpecificationFilter,
+    SpecificationStatus, ShippingRequestStatus, PersonCreationRationale)
+from canonical.launchpad.searchbuilder import any
 
 from canonical.foaf import nickname
 from canonical.cachedproperty import cachedproperty
@@ -441,6 +444,84 @@ class Person(SQLBase):
         packages_for_bug_contact.sort(key=lambda x: x.name)
 
         return packages_for_bug_contact
+
+    def getBugContactOpenBugCounts(self, user):
+        """See IPerson."""
+        # We could use IBugTask.search() to get all the counts, but
+        # that's slow, since we'd need to issue one query per package
+        # and count we want.
+        open_bugs_cond = (
+            'BugTask.status %s' % search_value_to_where_condition(
+                any(*UNRESOLVED_BUGTASK_STATUSES)))
+
+        sum_template = "SUM(CASE WHEN %s THEN 1 ELSE 0 END) AS %s"
+        sums = [
+            sum_template % (open_bugs_cond, 'open_bugs'),
+            sum_template % (
+                'BugTask.importance %s' % search_value_to_where_condition(
+                    BugTaskImportance.CRITICAL), 'open_critical_bugs'),
+            sum_template % (
+                'BugTask.assignee IS NULL', 'open_unassigned_bugs'),
+            sum_template % (
+                'BugTask.status %s' % search_value_to_where_condition(
+                    BugTaskStatus.INPROGRESS), 'open_inprogress_bugs')]
+
+        conditions = [
+            'Bug.id = BugTask.bug',
+            open_bugs_cond,
+            'PackageBugContact.bugcontact = %s' % sqlvalues(self),
+            'BugTask.sourcepackagename = PackageBugContact.sourcepackagename',
+            'BugTask.distribution = PackageBugContact.distribution',
+            'Bug.duplicateof is NULL']
+        privacy_filter = get_bug_privacy_filter(user)
+        if privacy_filter:
+            conditions.append(privacy_filter)
+
+        query = """SELECT BugTask.distribution,
+                          BugTask.sourcepackagename,
+                          %(sums)s
+                   FROM BugTask, Bug, PackageBugContact
+                   WHERE %(conditions)s
+                   GROUP BY BugTask.distribution, BugTask.sourcepackagename"""
+        cur = cursor()
+        cur.execute(query % dict(
+            sums=', '.join(sums), conditions=' AND '.join(conditions)))
+        distribution_set = getUtility(IDistributionSet)
+        sourcepackagename_set = getUtility(ISourcePackageNameSet)
+        packages_with_bugs = set()
+        L = []
+        for row in shortlist(cur.dictfetchall()):
+            distribution = distribution_set.get(row['distribution'])
+            sourcepackagename = sourcepackagename_set.get(
+                row['sourcepackagename'])
+            source_package = distribution.getSourcePackage(sourcepackagename)
+            # XXX: Add a tuple instead of the distribution package
+            # directly, since DistributionSourcePackage doesn't define a
+            # __hash__ method.
+            # -- Bjorn Tillenius, 2006-12-15
+            packages_with_bugs.add((distribution, sourcepackagename))
+            package_counts = dict(
+                package=source_package,
+                open=row['open_bugs'],
+                open_critical=row['open_critical_bugs'],
+                open_unassigned=row['open_unassigned_bugs'],
+                open_inprogress=row['open_inprogress_bugs'])
+            L.append(package_counts)
+
+        # Only packages with open bugs were included in the query. Let's
+        # add the rest of the packages as well.
+        all_packages = set(
+            (distro_package.distribution, distro_package.sourcepackagename)
+            for distro_package in self.getBugContactPackages())
+        for distribution, sourcepackagename in all_packages.difference(
+                packages_with_bugs):
+            package_counts = dict(
+                package=distribution.getSourcePackage(sourcepackagename),
+                open=0, open_critical=0, open_unassigned=0,
+                open_inprogress=0)
+            L.append(package_counts)
+
+        return L
 
     def getOrCreateCalendar(self):
         if not self.calendar:

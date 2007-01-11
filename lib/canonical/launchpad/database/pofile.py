@@ -22,6 +22,10 @@ from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLObjectNotFound, SQLMultipleJoin
     )
 
+from canonical.config import config
+
+from canonical.cachedproperty import cachedproperty
+
 from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, sqlvalues)
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -689,7 +693,8 @@ class POFile(SQLBase, RosettaStats):
         template = helpers.get_email_template(template_mail)
         message = template % replacements
 
-        fromaddress = 'Rosetta SWAT Team <rosetta@launchpad.net>'
+        fromaddress = ('Rosetta SWAT Team <%s>' %
+                       config.rosetta.rosettaadmin.email)
         toaddress = helpers.contactEmailAddresses(entry_to_import.importer)
 
         simple_sendmail(fromaddress, toaddress, subject, message)

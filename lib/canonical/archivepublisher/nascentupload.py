@@ -588,26 +588,27 @@ class NascentUpload:
         Returns the key owner (person object), the key (gpgkey object) and
         the pyme signature as a three-tuple
         """
+        self.logger.debug("Verifying signature on %s" % filename)
+
         try:
-            self.logger.debug("Verifying signature on %s" % filename)
-            sig = getUtility(IGPGHandler).getVerifiedSignature(
+            sig = getUtility(IGPGHandler).getVerifiedSignatureResilient(
                 file(os.path.join(self.fsroot, filename), "rb").read())
-
-            key = getUtility(IGPGKeySet).getByFingerprint(sig.fingerprint)
-
-            if key is None:
-                raise UploadError("Signing key not found within launchpad.")
-
-            if key.active == False:
-                raise UploadError(
-                    "File %s is signed with a deactivated key %s"
-                    % (filename, key.keyid))
-
-            return key.owner, key, sig
-
         except GPGVerificationError, e:
-            raise UploadError("GPG verification of %s failed: %s" % (filename,
-                                                                    str(e)))
+            raise UploadError(
+                "GPG verification of %s failed: %s" % (filename, str(e)))
+
+        key = getUtility(IGPGKeySet).getByFingerprint(sig.fingerprint)
+
+        if key is None:
+            raise UploadError("Signing key not found within launchpad.")
+
+        if key.active == False:
+            raise UploadError(
+                "File %s is signed with a deactivated key %s"
+                % (filename, key.keyid))
+
+        return key.owner, key, sig
+
 
     def _find_signer(self):
         """Find the signer and signing key for the .changes file.
