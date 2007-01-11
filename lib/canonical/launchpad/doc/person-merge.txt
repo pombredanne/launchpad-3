@@ -57,9 +57,9 @@ put the person we will merge into some of those.
     >>> ubuntu_team.teamowner = marilize
 
     >>> ubuntu_translators = personset.getByName('ubuntu-translators')
-    >>> ubuntu_translators.addMember(marilize)
+    >>> ubuntu_translators.addMember(marilize, marilize)
     >>> rosetta_admins = personset.getByName('rosetta-admins')
-    >>> rosetta_admins.addMember(marilize)
+    >>> rosetta_admins.addMember(marilize, marilize)
 
 Karma gets reassigned to the person we merge into. Let's assign karma to
 Marilize and save it for later comparison.

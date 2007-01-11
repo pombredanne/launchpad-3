@@ -212,13 +212,14 @@ class ProposedTeamMembersEditView:
             elif action == "hold":
                 continue
 
-            team.setMembershipStatus(person, status, expires,
-                                     reviewer=self.user)
+            team.setMembershipData(
+                person, status, reviewer=self.user, expires=expires)
 
         # Need to flush all changes we made, so subsequent queries we make
         # with this transaction will see this changes and thus they'll be
         # displayed on the page that calls this method.
         flush_database_updates()
+        self.request.response.redirect('%s/+members' % canonical_url(team))
 
 
 class TeamMemberAddView(AddView):
@@ -260,10 +261,10 @@ class TeamMemberAddView(AddView):
 
         expires = team.defaultexpirationdate
         if newmember.hasMembershipEntryFor(team):
-            team.setMembershipStatus(newmember, approved, expires,
-                                     reviewer=self.user)
+            team.setMembershipData(
+                newmember, approved, reviewer=self.user, expires=expires)
         else:
-            team.addMember(newmember, approved, reviewer=self.user)
+            team.addMember(newmember, reviewer=self.user, status=approved)
 
         self.addedMember = newmember
 
