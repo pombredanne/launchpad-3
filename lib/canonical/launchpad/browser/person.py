@@ -59,6 +59,7 @@ __all__ = [
 
 import cgi
 import urllib
+from operator import itemgetter
 from StringIO import StringIO
 
 from zope.event import notify
@@ -887,24 +888,25 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
 
     def getPackageBugCounts(self):
         """Return a list of dicts used for rendering the package bug counts."""
-        package_bug_counts = []
-
-        for package in self.context.getBugContactPackages():
-            package_bug_counts.append({
+        L = []
+        for package_counts in self.context.getBugContactOpenBugCounts(
+            self.user):
+            package = package_counts['package']
+            L.append({
                 'package_name': package.displayname,
                 'package_search_url':
                     self.getBugContactPackageSearchURL(package),
-                'open_bugs_count': package.open_bugtasks.count(),
+                'open_bugs_count': package_counts['open'],
                 'open_bugs_url': self.getOpenBugsURL(package),
-                'critical_bugs_count': package.critical_bugtasks.count(),
+                'critical_bugs_count': package_counts['open_critical'],
                 'critical_bugs_url': self.getCriticalBugsURL(package),
-                'unassigned_bugs_count': package.unassigned_bugtasks.count(),
+                'unassigned_bugs_count': package_counts['open_unassigned'],
                 'unassigned_bugs_url': self.getUnassignedBugsURL(package),
-                'inprogress_bugs_count': package.inprogress_bugtasks.count(),
+                'inprogress_bugs_count': package_counts['open_inprogress'],
                 'inprogress_bugs_url': self.getInProgressBugsURL(package)
             })
 
-        return package_bug_counts
+        return sorted(L, key=itemgetter('package_name'))
 
     def getOtherBugContactPackageLinks(self):
         """Return a list of the other packages for a bug contact.
