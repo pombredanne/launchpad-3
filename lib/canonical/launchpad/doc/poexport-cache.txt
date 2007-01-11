@@ -35,7 +35,6 @@ access it immediately, so we need to write it to the database and read it back
 again.
 
     >>> pofile.sync()
-    >>> print pofile.exporttime
 
 Because we exported a PO file, it will have updated the cache.
 
