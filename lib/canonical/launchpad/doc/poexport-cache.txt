@@ -35,11 +35,17 @@ access it immediately, so we need to write it to the database and read it back
 again.
 
     >>> pofile.sync()
+    >>> print pofile.exporttime
 
 Because we exported a PO file, it will have updated the cache.
 
     >>> pofile.validExportCache()
     True
+
+In order to have different datetimes for the export time of the pofile,
+and for any new stuff we do, lets commit a transaction.
+
+    >>> transaction.commit()
 
 Now let's add a translation to the PO file.
 
