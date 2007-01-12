@@ -58,6 +58,7 @@ unassigned bug tasks.
     [(1, 'UNCONFIRMED', None),
      (2, 'UNCONFIRMED', None),
      (3, 'UNCONFIRMED', None),
+     (5, 'UNCONFIRMED', None),
      (7, 'UNCONFIRMED', u'name16'),
      (9, 'CONFIRMED', None),
      (10, 'UNCONFIRMED', None)]
@@ -79,6 +80,7 @@ assigned.
     [(1, 'UNCONFIRMED', None),
      (2, 'UNCONFIRMED', None),
      (3, 'UNCONFIRMED', None),
+     (5, 'UNCONFIRMED', None),
      (9, 'CONFIRMED', None),
      (10, 'UNCONFIRMED', None)]
 

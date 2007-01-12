@@ -889,6 +889,26 @@ class DistroRelease(SQLBase, BugTargetBase):
         return Milestone(name=name, dateexpected=dateexpected,
             distribution=self.distribution, distrorelease=self)
 
+    def getLastUploads(self):
+        """See IDistroRelease."""
+        query = """
+        sourcepackagerelease.id=distroreleasequeuesource.sourcepackagerelease
+        AND sourcepackagerelease.sourcepackagename=sourcepackagename.id
+        AND distroreleasequeuesource.distroreleasequeue=distroreleasequeue.id
+        AND distroreleasequeue.status=%s
+        """ % sqlvalues(DistroReleaseQueueStatus.DONE)
+
+        last_uploads = SourcePackageRelease.select(
+            query, limit=5, prejoins=['sourcepackagename'],
+            clauseTables=['SourcePackageName', 'DistroReleaseQueue',
+                          'DistroReleaseQueueSource'],
+            orderBy=['-distroreleasequeue.id'])
+
+        distro_sprs = [
+            self.getSourcePackageRelease(spr) for spr in last_uploads]
+
+        return distro_sprs
+
     def createQueueEntry(self, pocket, changesfilename, changesfilecontent,
                          archive):
         """See IDistroRelease."""
