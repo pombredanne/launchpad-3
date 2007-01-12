@@ -34,7 +34,8 @@ from canonical.launchpad.interfaces import (
     IBugAddForm, BugTaskSearchParams, ILaunchpadCelebrities,
     ITemporaryStorageManager)
 from canonical.launchpad.webapp import (
-    canonical_url, LaunchpadView, LaunchpadFormView, action, custom_widget)
+    canonical_url, LaunchpadView, LaunchpadFormView, action, custom_widget,
+    urlappend)
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.generalform import GeneralFormView
 
@@ -280,6 +281,18 @@ class FileBugViewBase(LaunchpadFormView):
     def showFileBugForm(self):
         """Override this method in base classes to show the filebug form."""
         raise NotImplementedError
+
+    @property
+    def advanced_filebug_url(self):
+        """The URL to the advanced bug filing form.
+
+        If a token was passed to this view, it will be be passed through
+        to the advanced bug filing form via the returned URL.
+        """
+        url = urlappend(canonical_url(self.context), '+filebug-advanced')
+        if self.extra_bug_data is not None:
+            url = urlappend(url, self.extra_bug_data.uuid)
+        return url
 
     def publishTraverse(self, request, name):
         """See IBrowserPublisher."""

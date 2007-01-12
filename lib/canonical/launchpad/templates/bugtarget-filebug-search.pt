@@ -40,7 +40,7 @@
       <small>
         This guided form will try to help you find out whether your bug
         has already been reported. You may prefer the
-        <a href="#" tal:attributes="href string:${context/fmt:url}/+filebug-advanced">complicated bug filing form</a>.
+        <a href="#" tal:attributes="href view/advanced_filebug_url">complicated bug filing form</a>.
       </small>
     </p>
 
