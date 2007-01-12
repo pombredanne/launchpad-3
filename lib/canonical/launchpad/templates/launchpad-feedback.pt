@@ -11,9 +11,9 @@
     </metal:heading>
     <div metal:fill-slot="main">
       <p>
-        We're working to improve Launchpad all the time and over the next few
-        months you'll see some exciting changes. If you have suggestions for
-        how we can make Launchpad better, we want to hear them.
+        We are always working to improve Launchpad and regularly make new
+        features and bugfixes available on our live servers. If you have
+        suggestions for how we can make Launchpad better, we want to hear them.
       </p>
       <p>
         There are three main ways to tell us about your idea:
