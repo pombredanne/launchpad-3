@@ -13,6 +13,7 @@ __all__ = [
     "FileBugInPackageView"
     ]
 
+import cgi
 from cStringIO import StringIO
 import email
 import urllib
@@ -192,10 +193,7 @@ class FileBugViewBase(LaunchpadFormView):
             extra_data.setFromRawMessage(self.extra_bug_data.blob)
 
         title = data["title"]
-        comment = data["comment"]
-        if extra_data.extra_description:
-            comment = "%s\n\n%s" % (
-                comment.rstrip(), extra_data.extra_description)
+        comment = data["comment"].rstrip()
         packagename = data.get("packagename")
         security_related = data.get("security_related", False)
         distribution = data.get(
@@ -220,7 +218,7 @@ class FileBugViewBase(LaunchpadFormView):
         else:
             private = False
 
-        notification = "Thank you for your bug report."
+        notifications = ["Thank you for your bug report."]
         if IDistribution.providedBy(context) and packagename:
             # We don't know if the package name we got was a source or binary
             # package name, so let the Soyuz API figure it out for us.
@@ -233,8 +231,8 @@ class FileBugViewBase(LaunchpadFormView):
                 # nicer to allow people to indicate a package even if
                 # never published, but the quick fix for now is to note
                 # the issue and move on.
-                notification += (
-                    "<br /><br />The package %s is not published in %s; the "
+                notification.append(
+                    "The package %s is not published in %s; the "
                     "bug was targeted only to the distribution."
                     % (packagename, context.displayname))
                 comment += ("\r\n\r\nNote: the original reporter indicated "
@@ -255,20 +253,33 @@ class FileBugViewBase(LaunchpadFormView):
                 title=title, comment=comment, owner=self.user,
                 security_related=security_related, private=private)
 
+        if extra_data.extra_description:
+            params.comment = "%s\n\n%s" % (
+                params.comment, extra_data.extra_description)
+            notifications.append(
+                'Additional information was added to the bug description.')
+
         self.added_bug = bug = context.createBug(params)
         notify(SQLObjectCreatedEvent(bug))
 
         for comment in extra_data.comments:
             bug.newMessage(self.user, bug.followup_subject(), comment)
+            notifications.append(
+                'A comment with additional information was added to the'
+                ' bug report.')
 
         for attachment in extra_data.attachments:
             bug.addAttachment(
                 self.user, attachment['content'], attachment['description'],
                 None, attachment['filename'],
                 content_type=attachment['content_type'])
+            notifications.append(
+                'The file "%s" was attached to the bug report.' % cgi.escape(
+                    attachment['filename']))
 
         # Give the user some feedback on the bug just opened.
-        self.request.response.addNotification(notification)
+        for notification in notifications:
+            self.request.response.addNotification(notification)
         if bug.private:
             self.request.response.addNotification(
                 'Security-related bugs are by default <span title="Private '
