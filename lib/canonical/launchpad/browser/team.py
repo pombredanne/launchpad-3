@@ -135,8 +135,9 @@ class TeamEmailView:
             "A confirmation message has been sent to '%s'. Follow the "
             "instructions in that message to confirm the new "
             "contact address for this team. "
-            "(If your mail provider uses 'greylisting', it might take an hour "
-            "or two for the message to arrive.)" % email)
+            "(If the message doesn't arrive in a few minutes, your mail "
+            "provider might use 'greylisting', which could delay the message "
+            "for up to an hour or two.)" % email)
 
 
 class TeamAddView(AddView):
@@ -170,8 +171,9 @@ class TeamAddView(AddView):
                 "A confirmation message has been sent to '%s'. Follow the "
                 "instructions in that message to confirm the new "
                 "contact address for this team. "
-                "(If your mail provider uses 'greylisting', it might take an "
-                "hour or two for the message to arrive.)" % email)
+                "(If the message doesn't arrive in a few minutes, your mail "
+                "provider might use 'greylisting', which could delay the "
+                "message for up to an hour or two.)" % email)
 
         self._nextURL = canonical_url(team)
         return team
