@@ -229,5 +229,5 @@ a list of isolated attributes for each mentioned item.
   LINK: "linkedwithspaces" -> somewhereelse
 
 XXX cprov 20070111: Unfortunatelly, it purges more spaces than
-necessary, for instance, in 'linked with spaces'. I do not how to sort
-this.
+necessary, for instance, in 'linked with spaces'. I do not know how to
+sort this.

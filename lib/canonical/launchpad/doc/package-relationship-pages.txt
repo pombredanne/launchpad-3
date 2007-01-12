@@ -56,7 +56,7 @@ correctly as::
 
 XXX cprov 20070111: we could get parse_relationship_section imported
 implicitly if this test was set to PageTestLayer. However, it's a kind
-of accident that we need this function here, the code is already
+of a accident that we need this function here, the code is already
 extensively exercised in soyuz pagetests.
 
   >>> from canonical.launchpad.ftests.test_pages import (
