@@ -89,6 +89,12 @@ class SourcePackageRelease(SQLBase):
         joinColumn='sourcepackagerelease', orderBy="-datecreated")
 
     @property
+    def age(self):
+        """See ISourcePackageRelease."""
+        now = datetime.datetime.now(pytz.timezone('UTC'))
+        return now - self.dateuploaded
+
+    @property
     def latest_build(self):
         builds = self._cached_builds
         if len(builds) > 0:

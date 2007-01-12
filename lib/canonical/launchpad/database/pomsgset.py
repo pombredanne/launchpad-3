@@ -262,6 +262,7 @@ class POMsgSet(SQLBase):
                     selection.activesubmission = None
                     selection.reviewer = person
                     selection.date_reviewed = UTC_NOW
+                    selection.sync()
 
         # now loop through the translations and submit them one by one
         for index in fixed_new_translations.keys():
@@ -398,6 +399,7 @@ class POMsgSet(SQLBase):
                 selection.activesubmission = None
                 selection.reviewer = person
                 selection.date_reviewed = UTC_NOW
+                selection.sync()
 
         # If nothing was submitted, return None
         if text is None:
@@ -539,6 +541,7 @@ class POMsgSet(SQLBase):
                 selection.activesubmission = submission
                 selection.reviewer = person
                 selection.date_reviewed = UTC_NOW
+                selection.sync()
 
                 # And this is the latest submission that this IPOFile got.
                 self.pofile.latestsubmission = submission
