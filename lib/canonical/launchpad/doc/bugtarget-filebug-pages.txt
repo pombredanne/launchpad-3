@@ -229,3 +229,45 @@ Notifications were added to inform the user about what happened.
     Thank you for your bug report.
     The file "attachment1" was attached to the bug report.
     The file "attachment2" was attached to the bug report.
+
+== publishTraverse() ==
+
+As already seen above, it's the FileBugViewBase's publishTraverse that
+finds the right blob to use.
+
+    >>> request = LaunchpadTestRequest()
+    >>> filebug_view = FileBugViewBase(ubuntu_firefox, request)
+    >>> filebug_view.publishTraverse(request, token) is filebug_view
+    True
+    >>> filebug_view.extra_bug_data.uuid == token
+    True
+    >>> filebug_view.extra_bug_data.blob == debug_data
+    True
+
+Since the view itself is returned, it will handle further traversals as
+well, so if we call the method again, it represents a URL like
+'.../+filebug/token/foo', which should raise a NotFound error.
+
+    >>> filebug_view.publishTraverse(request, token)
+    Traceback (most recent call last):
+    ...
+    NotFound:...
+
+=== Not found tokens ===
+
+If publishTraverse is called with a token that can't be found, it's
+treated special, though. If a token can't be found, it can mean that the
+corresponding blob has expired from the database. Therefore the user is
+redirected to the normal +filebug, with a notification saying that the
+blob might have expired.
+
+    >>> request = LaunchpadTestRequest()
+    >>> filebug_view = FileBugViewBase(ubuntu_firefox, request)
+    >>> filebug_view.publishTraverse(request, 'no-such-token') is filebug_view
+    True
+    >>> filebug_view.request.response.getStatus()
+    302
+    >>> filebug_view.request.response.getHeader('Location')
+    'http://.../+filebug'
+
+XXX: Should display a notification here.

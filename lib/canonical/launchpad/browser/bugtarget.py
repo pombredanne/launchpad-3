@@ -25,6 +25,7 @@ from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
+from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 
 from canonical.cachedproperty import cachedproperty
@@ -307,7 +308,15 @@ class FileBugViewBase(LaunchpadFormView):
 
     def publishTraverse(self, request, name):
         """See IBrowserPublisher."""
+        if self.extra_bug_data is not None:
+            # The URL contains more path components than expected.
+            raise NotFound(self, name, request=request)
+
         self.extra_bug_data = getUtility(ITemporaryStorageManager).fetch(name)
+        if self.extra_bug_data is None:
+            # The URL might be mistyped, or the blob has expired.
+            self.request.response.redirect(
+                canonical_url(self.context) + '/+filebug')
         return self
 
     def browserDefault(self, request):
