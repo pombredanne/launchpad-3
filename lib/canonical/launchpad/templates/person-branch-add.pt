@@ -28,37 +28,8 @@
 
   </div>
 
-<script type="text/javascript">
-
-function populate_name()
-{
-   var url_text = trim(this.value);
-   // strip of any trailing slashes
-   url_text = url_text.replace(/\/+$/, '')
-   if (url_text != this.value) {
-      this.value = url_text;
-   }
-   // if the url finishes with a /, strip it off
-   var name_field = document.getElementById('field.name');
-   if (name_field.value == '') 
-   {
-      // parse the value of the url field
-      url_bits = url_text.split('/');
-      if (url_bits.length > 2) {
-         // attempt at not barfing on something completely invalid
-         last_bit = url_bits[url_bits.length - 1];
-         name_field.value = last_bit;
-      }
-   }
-}
-
-var field = document.getElementById('field.url');
-// Since it is possible that the form could be submitted without
-// the onblur getting called, and onblur can be called without
-// onchange being fired, set them both, and handle it in the function.
-field.onchange = populate_name;
-field.onblur = populate_name;
-</script>
+  <metal:javascript
+      metal:use-macro="context/@@branch-javascript-macros/branch-name-from-url" />
 
 </div><tal:comment condition="nothing"><!-- end main slot --></tal:comment>
 
