@@ -13,7 +13,7 @@
                tal:attributes="href string:${context/productseries/fmt:url}"
                >Evolution Series: MAIN</a><br />
             <b>Path:</b>
-            <a tal:attributes="href context/content/url"
+            <a tal:attributes="href context/content/http_url"
                tal:content="context/path">po/foo.pot</a><br />
             <b>Uploader:</b><br />
             <img src="/@@/user" />

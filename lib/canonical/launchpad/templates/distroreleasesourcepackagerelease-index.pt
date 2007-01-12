@@ -27,7 +27,7 @@
 
    <div id="changesfile" tal:define="changesfile context/changesfile">
      <p tal:condition="changesfile">
-        <a tal:attributes="href changesfile/url">
+        <a tal:attributes="href changesfile/http_url">
            View changesfile
         </a>
      </p>
@@ -40,7 +40,7 @@
      <ul class="download" tal:condition="context/files">
         <li tal:repeat="file context/files">
           <a tal:content="file/libraryfile/filename"
-             tal:attributes="href file/libraryfile/url" />
+             tal:attributes="href file/libraryfile/http_url" />
           (<span tal:replace="file/libraryfile/content/filesize/fmt:bytes" />)
         </li>
      </ul>

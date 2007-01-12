@@ -70,7 +70,7 @@
         <li tal:repeat="file files">
           <a
             tal:content="file/libraryfile/filename"
-            tal:attributes="href file/libraryfile/url">evolution_2.tar.gz</a>
+            tal:attributes="href file/libraryfile/http_url">evolution_2.tar.gz</a>
           (<span tal:replace="file/libraryfile/content/filesize/fmt:bytes" />)
         </li>
      </ul>
