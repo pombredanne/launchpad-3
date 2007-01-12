@@ -101,6 +101,20 @@ class RedirectAwareProberProtocol(ProberProtocol):
         self.transport.loseConnection()
 
 
+def should_skip_host(host):
+    """Return True if the requests/timeouts ratio on this host is too low."""
+    requests = host_requests[host]
+    timeouts = host_timeouts[host]
+    if timeouts:
+        ratio = requests / timeouts
+    else:
+        ratio = 9999999
+    if (requests > MIN_REQUESTS_TO_CONSIDER_RATIO and 
+        ratio < MIN_REQUEST_TIMEOUT_RATIO):
+        return True
+    return False
+
+
 class ProberFactory(protocol.ClientFactory):
     """Factory using ProberProtocol to probe single URL existence."""
 
@@ -120,15 +134,14 @@ class ProberFactory(protocol.ClientFactory):
             host_timeouts[self.host] = 0
 
     def probe(self):
-        requests = host_requests[self.host]
-        timeouts = host_timeouts[self.host]
-        if timeouts:
-            ratio = requests / timeouts
-        else:
-            ratio = 9999999
-        if (requests > MIN_REQUESTS_TO_CONSIDER_RATIO and 
-            ratio < MIN_REQUEST_TIMEOUT_RATIO):
-            return
+        if should_skip_host(self.host):
+            # XXX: Dear reviewer:
+            # I need to return the deferred here and have self.failed called
+            # only after the callsite has added all the errbacks it want on
+            # the returned deferred. Is it safe to do this? If so, how can I
+            # test it?
+            reactor.callLater(0.1, self.failed, ConnectionSkipped(self.url))
+            return self._deferred
         self.connect()
         self.timeoutCall = reactor.callLater(
             self.timeout, self.failWithTimeoutError)
@@ -158,23 +171,14 @@ class ProberFactory(protocol.ClientFactory):
             self.timeoutCall.cancel()
         return result
 
-    def _parse(self, url, defaultPort=80):
-        scheme, host, path, dummy, dummy, dummy = urlparse.urlparse(url)
-        port = defaultPort
-        if ':' in host:
-            host, port = host.split(':')
-            assert port.isdigit()
-            port = int(port)
-        return scheme, host, port, path
-
     def setURL(self, url):
         self.url = url
         proxy = os.getenv('http_proxy')
         if proxy:
-            scheme, host, port, path = self._parse(proxy)
+            scheme, host, port, path = _parse(proxy)
             path = url
         else:
-            scheme, host, port, path = self._parse(url)
+            scheme, host, port, path = _parse(url)
         # XXX: We don't actually know how to handle FTP responses, but we
         # expect to be behind a squid HTTP proxy with the patch at
         # http://www.squid-cache.org/bugs/show_bug.cgi?id=1758 applied. So, if
@@ -188,6 +192,16 @@ class ProberFactory(protocol.ClientFactory):
             self.host = host
             self.port = port
         self.path = path
+
+
+def _parse(url, defaultPort=80):
+    scheme, host, path, dummy, dummy, dummy = urlparse.urlparse(url)
+    port = defaultPort
+    if ':' in host:
+        host, port = host.split(':')
+        assert port.isdigit()
+        port = int(port)
+    return scheme, host, port, path
 
 
 class RedirectAwareProberFactory(ProberFactory):
@@ -246,6 +260,12 @@ class InfiniteLoopDetected(ProberError):
         return "Infinite loop detected"
 
 
+class ConnectionSkipped(ProberError):
+
+    def __str__(self):
+        return "Connection skipped because of too many timeouts on this host."
+
+
 class UnknownURLScheme(ProberError):
 
     def __init__(self, scheme, *args):
@@ -257,7 +277,7 @@ class UnknownURLScheme(ProberError):
                 "'%s' scheme." % self.scheme)
 
 
-class MirrorProberCallbacks(object):
+class ArchiveMirrorProberCallbacks(object):
 
     def __init__(self, mirror, release, pocket, component, url, log_file):
         self.mirror = mirror
@@ -281,8 +301,8 @@ class MirrorProberCallbacks(object):
     def deleteMirrorRelease(self, failure):
         """Delete the mirror for self.release, self.pocket and self.component.
 
-        If the failure we get from twisted is not a timeout, then this failure
-        is propagated.
+        If the failure we get from twisted is not a timeout, a bad response
+        code or a connection skipped, then this failure is propagated.
         """
         self.deleteMethod(self.release, self.pocket, self.component)
         msg = ('Deleted %s of %s with url %s because: %s.\n'
@@ -290,7 +310,7 @@ class MirrorProberCallbacks(object):
                   self._getReleasePocketAndComponentDescription(), self.url,
                   failure.getErrorMessage()))
         self.log_file.write(msg)
-        failure.trap(ProberTimeout, BadResponseCode)
+        failure.trap(ProberTimeout, BadResponseCode, ConnectionSkipped)
 
     def ensureMirrorRelease(self, http_status):
         """Make sure we have a mirror for self.release, self.pocket and 
@@ -319,6 +339,13 @@ class MirrorProberCallbacks(object):
         # so we need to check that here.
         if arch_or_source_mirror is None:
             return
+
+        # This assert is here to make sure that we can call prober.probe() and
+        # it won't fail with a ConnectionSkipped. It should never fail because
+        # when should_skip_host() returns True, our deferred will errback with
+        # a failure and thus won't callback this.
+        scheme, host, port, path = _parse(self.url)
+        assert not should_skip_host(host)
 
         status_url_mapping = arch_or_source_mirror.getURLsToCheckUpdateness()
         if not status_url_mapping:
@@ -408,7 +435,8 @@ class MirrorCDImageProberCallbacks(object):
             if success_or_failure == defer.FAILURE:
                 self.mirror.deleteMirrorCDImageRelease(
                     self.distrorelease, self.flavour)
-                response.trap(ProberTimeout, BadResponseCode)
+                response.trap(
+                    ProberTimeout, BadResponseCode, ConnectionSkipped)
                 return None
 
         mirror = self.mirror.ensureMirrorCDImageRelease(
@@ -469,7 +497,7 @@ def checkComplete(result, key, unchecked_keys):
     return result
 
 
-def probe_archive_mirror(mirror, logfile, unchecked_mirrors, logger,
+def probe_archive_mirror(mirror, logfile, unchecked_keys, logger,
                          host_semaphores=host_semaphores):
     """Probe an archive mirror for its contents and freshness.
 
@@ -483,9 +511,9 @@ def probe_archive_mirror(mirror, logfile, unchecked_mirrors, logger,
     all_paths = itertools.chain(packages_paths, sources_paths)
     for release, pocket, component, path in all_paths:
         url = "%s/%s" % (mirror.base_url, path)
-        callbacks = MirrorProberCallbacks(
+        callbacks = ArchiveMirrorProberCallbacks(
             mirror, release, pocket, component, url, logfile)
-        unchecked_mirrors.append(url)
+        unchecked_keys.append(url)
         prober = ProberFactory(url)
 
         # Use one semaphore per host, to limit the numbers of simultaneous
@@ -502,10 +530,10 @@ def probe_archive_mirror(mirror, logfile, unchecked_mirrors, logger,
         deferred.addCallback(callbacks.updateMirrorStatus)
         deferred.addErrback(logger.error)
 
-        deferred.addBoth(checkComplete, url, unchecked_mirrors)
+        deferred.addBoth(checkComplete, url, unchecked_keys)
 
 
-def probe_release_mirror(mirror, logfile, unchecked_mirrors, logger,
+def probe_release_mirror(mirror, logfile, unchecked_keys, logger,
                          host_semaphores=host_semaphores):
     """Probe a release or release mirror for its contents.
     
@@ -525,7 +553,7 @@ def probe_release_mirror(mirror, logfile, unchecked_mirrors, logger,
             mirror, release, flavour, logfile)
 
         mirror_key = (release, flavour)
-        unchecked_mirrors.append(mirror_key)
+        unchecked_keys.append(mirror_key)
         deferredList = []
         for path in paths:
             url = '%s/%s' % (mirror.base_url, path)
@@ -545,6 +573,6 @@ def probe_release_mirror(mirror, logfile, unchecked_mirrors, logger,
 
         deferredList = defer.DeferredList(deferredList, consumeErrors=True)
         deferredList.addCallback(callbacks.ensureOrDeleteMirrorCDImageRelease)
-        deferredList.addCallback(checkComplete, mirror_key, unchecked_mirrors)
+        deferredList.addCallback(checkComplete, mirror_key, unchecked_keys)
 
 
