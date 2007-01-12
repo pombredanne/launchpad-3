@@ -269,8 +269,10 @@ special = {
             setUp=setUp, tearDown=tearDown, optionflags=default_optionflags,
             layer=LaunchpadZopelessLayer
             ),
-    'uri.txt': DocFileSuite(
-            '../doc/uri.txt', optionflags=default_optionflags
+    'uri.txt': FunctionalDocFileSuite(
+            '../doc/uri.txt',
+            setUp=setUp, tearDown=tearDown, optionflags=default_optionflags,
+            layer=FunctionalLayer
             ),
     'package-cache.txt': LayeredDocFileSuite(
             '../doc/package-cache.txt',

@@ -6,7 +6,7 @@ from textwrap import dedent
 from zope.app.content_types import guess_content_type
 from zope.component import getUtility
 from zope.schema import (
-    Bytes, Choice, Field, Int, Text, TextLine, Password, Tuple)
+    Bool, Bytes, Choice, Field, Int, Text, TextLine, Password, Tuple)
 from zope.schema.interfaces import (
     IBytes, IField, IInt, IPassword, IText, ITextLine)
 from zope.interface import implements
@@ -118,8 +118,15 @@ class ITag(ITextLine):
 class IURIField(ITextLine):
     """A URI.
 
-    A text line that holds a simple
+    A text line that holds a URI.
     """
+    trailing_slash = Bool(
+        title=_('Whether a trailing slash is required for this field'),
+        required=False,
+        description=_('If set to True, then the path component of the URI '
+                      'must end in a slash.  If set to False, then the path '
+                      'component must not end in a slash.  If set to None, '
+                      'then no check is performed.'))
 
 
 class IBaseImageUpload(IBytes):

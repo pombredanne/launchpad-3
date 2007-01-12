@@ -7,6 +7,7 @@ from zope.app.datetimeutils import parse, DateTimeError
 from zope.app.form.browser.textwidgets import TextWidget
 from zope.app.form.interfaces import ConversionError
 
+from canonical.launchpad.interfaces import UnexpectedFormData
 from canonical.launchpad.webapp.uri import URI, InvalidURIError
 
 #XXX matsubara 2006-05-10: Should I move our NewLineToSpacesWidget to 
@@ -119,47 +120,18 @@ class URIWidget(TextWidget):
            then the widget ensures that the widget ends in a slash (or
            doesn't end in a slash).
          * the URI is canonicalised.
-
-        Extra validation is left to the field implementation.
-
-          >>> from zope.publisher.browser import TestRequest
-          >>> from canonical.launchpad.fields import URIField
-          >>> field = URIField(__name__='foo', title=u'Foo')
-          >>> widget = URIWidget(field, TestRequest())
-
-        Whitespace is stripped from the value:
-          >>> widget._toFieldValue('  http://www.ubuntu.com/   ')
-          u'http://www.ubuntu.com/'
-
-        Invalid URIs cause a ConversionError:
-          >>> widget._toFieldValue('not-a-uri')
-          Traceback (most recent call last):
-            ...
-          ConversionError: ('"not-a-uri" is not a valid URI', None)
-
-        Trailing slashes are added or removed if necessary:
-          >>> field.trailing_slash = True
-          >>> widget._toFieldValue('http://www.ubuntu.com/ubuntu?action=raw')
-          u'http://www.ubuntu.com/ubuntu/?action=raw'
-
-          >>> field.trailing_slash = False
-          >>> widget._toFieldValue('http://www.ubuntu.com/ubuntu/?action=edit')
-          u'http://www.ubuntu.com/ubuntu?action=edit'
-          >>> field.trailing_slash = None
-
-        URIs are canonicalised:
-          >>> widget._toFieldValue('HTTP://People.Ubuntu.COM:80/%7Ejamesh/')
-          u'http://people.ubuntu.com/~jamesh/'
         """
         if isinstance(input, list):
-            raise ConversionError('Only a single value is expected')
+            raise UnexpectedFormData('Only a single value is expected')
         input = input.strip()
         if input:
             try:
-                uri = URI(input.strip())
-            except InvalidURIError, e:
-                raise ConversionError(str(e))
-            # If there is a policy 
+                uri = URI(input)
+            except InvalidURIError, exc:
+                raise ConversionError(str(exc))
+            # If there is a policy for whether trailing slashes are
+            # allowed at the end of the path segment, ensure that the
+            # URI conforms.
             if self.context.trailing_slash is not None:
                 if self.context.trailing_slash:
                     uri = uri.ensureSlash()

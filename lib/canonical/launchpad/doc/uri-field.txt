@@ -41,10 +41,12 @@ valid URI:
 
 === Scheme Restrictions ===
 
-If the allowed_schemes argument is used with the field, otherwise
-valid URIs with the wrong scheme will get a validation error:
+If the allowed_schemes argument is specified for the field, then only
+URIs matching one of those schemes will be accepted.  Other schemes
+will result in a validation error:
 
   >>> sftp_only = IURIFieldTest['sftp_only']
+  >>> sftp_only.validate(u'sFtp://launchpad.net/')
   >>> sftp_only.validate(u'http://launchpad.net/')
   Traceback (most recent call last):
     ...
@@ -60,6 +62,11 @@ product home page, where authentication is not generally required:
 
   >>> no_userinfo = IURIFieldTest['no_userinfo']
   >>> no_userinfo.validate(u'http://launchpad.net:80@127.0.0.1/ubuntu')
+  Traceback (most recent call last):
+    ...
+  LaunchpadValidationError: A username may not be specified in the URI.
+
+  >>> no_userinfo.validate(u'http://launchpad.net@127.0.0.1/ubuntu')
   Traceback (most recent call last):
     ...
   LaunchpadValidationError: A username may not be specified in the URI.
@@ -108,8 +115,12 @@ The fragment component can also be disallowed:
 
 == Requiring or Forbidding a Trailing Slash ===
 
-For some URIs we want to require or forbid a trailing slash.  The
-default behaviour is to allow both types.
+For some URIs we want to require or forbid a trailing slash.  This
+might be because a certain URI type only makes sense with (or without)
+a trailing slash, or in cases where we want all the data entered to be
+in a normalised form.
+
+The default behaviour is to allow both cases:
 
   >>> with_slash = IURIFieldTest['with_slash']
   >>> with_slash.validate(u'http://launchpad.net/ubuntu/')
@@ -135,8 +146,9 @@ Similarly, we can require that the URI path does not end in a slash:
     ...
   LaunchpadValidationError: The URI must not end with a slash.
 
-Again, due to the canonicalisation, a URI with a path component of "/"
-is accepted even when trailing_slash=False:
+Due to the fact that URIs with an empty path component are
+normalised to a path of "/", we accept such a path even when
+trailing_slash=False is set:
 
   >>> without_slash.validate(u'http://launchpad.net/')
 
@@ -167,3 +179,45 @@ This widget is registered as an input widget:
   >>> print widget
   <canonical.widgets.textwidgets.URIWidget object at ...>
 
+
+While most validation is left to the underlying URIField, the
+URIWidget provides some additional features over the base TextWidget:
+
+Whitespace is stripped from the value:
+
+  >>> from zope.app.form.interfaces import ConversionError
+  >>> from zope.publisher.browser import TestRequest
+  >>> from canonical.widgets.textwidgets import URIWidget
+  >>> field = URIField(__name__='foo', title=u'Foo')
+  >>> widget = URIWidget(field, TestRequest())
+
+  >>> widget._toFieldValue('  http://www.ubuntu.com/   ')
+  u'http://www.ubuntu.com/'
+
+Invalid URIs cause a ConversionError:
+  >>> widget._toFieldValue('not-a-uri')
+  Traceback (most recent call last):
+    ...
+  ConversionError: ('"not-a-uri" is not a valid URI', None)
+
+Multiple values will cause an UnexpectedFormData exception:
+
+  >>> widget._toFieldValue(['http://launchpad.net',
+  ...                       'http://ubuntu.com'])
+  Traceback (most recent call last):
+    ...
+  UnexpectedFormData: Only a single value is expected
+
+Trailing slashes are added or removed if that policy is set for the field:
+  >>> field.trailing_slash = True
+  >>> widget._toFieldValue('http://www.ubuntu.com/ubuntu?action=raw')
+  u'http://www.ubuntu.com/ubuntu/?action=raw'
+
+  >>> field.trailing_slash = False
+  >>> widget._toFieldValue('http://www.ubuntu.com/ubuntu/?action=edit')
+  u'http://www.ubuntu.com/ubuntu?action=edit'
+  >>> field.trailing_slash = None
+
+URIs are canonicalised:
+  >>> widget._toFieldValue('HTTP://People.Ubuntu.COM:80/%7Ejamesh/')
+  u'http://people.ubuntu.com/~jamesh/'

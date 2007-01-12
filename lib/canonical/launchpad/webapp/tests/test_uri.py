@@ -3,13 +3,13 @@
 import unittest
 
 from canonical.launchpad.webapp.uri import (
-    URI, InvalidURIError, remove_dot_segments, merge, find_uris_in_text)
+    InvalidURIError, URI, find_uris_in_text, merge, remove_dot_segments)
 
 
 class URITestCase(unittest.TestCase):
 
     def test_normalisation(self):
-        # Example from Section 6.2.2
+        # URI normalisation examples from Section 6.2.2 of RFC 3986.
         self.assertEqual(str(URI('eXAMPLE://a/./b/../b/%63/%7bfoo%7d')),
                          'example://a/b/c/%7Bfoo%7D')
 
@@ -28,6 +28,8 @@ class URITestCase(unittest.TestCase):
                              'http://example.com/')
 
     def test_merge(self):
+        # Test that the merge() function performs as described in
+        # Section 5.2.3 of RFC 3986
         self.assertEqual(merge('', 'foo', has_authority=True), '/foo')
         self.assertEqual(merge('', 'foo', has_authority=False), 'foo')
         self.assertEqual(merge('/a/b/c', 'foo', has_authority=True),
@@ -36,12 +38,12 @@ class URITestCase(unittest.TestCase):
                          '/a/b/foo')
 
     def test_remove_dot_segments(self):
-        # Examples from Section 5.2.4:
+        # remove_dot_segments() examples from Section 5.2.4 of RFC 3986:
         self.assertEqual(remove_dot_segments('/a/b/c/./../../g'), '/a/g')
         self.assertEqual(remove_dot_segments('mid/content=5/../6'), 'mid/6')
 
     def test_normal_resolution(self):
-        # Examples from Section 5.4.1:
+        # Normal URI resolution examples from Section 5.4.1 of RFC 3986:
         base = URI('http://a/b/c/d;p?q')
         def resolve(relative):
             return str(base.resolve(relative))
@@ -71,7 +73,7 @@ class URITestCase(unittest.TestCase):
         self.assertEqual(resolve('../../g'), 'http://a/g')
 
     def test_abnormal_resolution(self):
-        # Examples from Section 5.4.2:
+        # Abnormal URI resolution examples from Section 5.4.2 of RFC 3986:
         base = URI('http://a/b/c/d;p?q')
         def resolve(relative):
             return str(base.resolve(relative))

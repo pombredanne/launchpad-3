@@ -71,8 +71,9 @@ _default_port = {
 scheme_re = r"(?P<scheme>[a-z][-a-z0-9+.]*)"
 
 userinfo_re = r"(?P<userinfo>(?:[-a-z0-9._~!$&\'()*+,;=:]|%[0-9a-f]{2})*)"
-# the following regular expression doesn't quite match the RFC, but should
-# be good enough.
+# The following regular expression will match some IP address style
+# host names that the RFC would not (e.g. leading zeros on the
+# components), but is signficantly simpler.
 host_re = (r"(?P<host>[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}|"
            r"(?:[-a-z0-9._~!$&\'()*+,;=]|%[0-9a-f]{2})*|"
            r"\[[0-9a-z:.]+\])")
@@ -111,9 +112,13 @@ relative_ref_pat = re.compile(relative_ref_re, re.IGNORECASE)
 
 
 def merge(basepath, relpath, has_authority):
-    """Merge two URI path components.
+    """Merge two URI path components into a single path component.
 
     Follows rules specified in Section 5.2.3 of RFC 3986.
+
+    The algorithm in the RFC treats the empty basepath edge case
+    differently for URIs with and without an authority section, which
+    is why the third argument is necessary.
     """
     if has_authority and basepath == '':
         return '/' + relpath
@@ -152,29 +157,29 @@ def remove_dot_segments(path):
     return ''.join(output)
 
 
-def normalise_unreserved(s):
+def normalise_unreserved(string):
     """Return a version of 's' where no unreserved characters are encoded.
 
     Unreserved characters are defined in Section 2.3 of RFC 3986.
 
     Percent encoded sequences are normalised to upper case.
     """
-    res = s.split('%')
+    result = string.split('%')
     unreserved = ('ABCDEFGHIJKLMNOPQRSTUVWXYZ'
                   'abcdefghijklmnopqrstuvwxyz'
                   '0123456789-._~')
-    for i, item in enumerate(res):
-        if i == 0:
+    for index, item in enumerate(result):
+        if index == 0:
             continue
         try:
             ch = int(item[:2], 16)
         except ValueError:
             continue
         if chr(ch) in unreserved:
-            res[i] = chr(ch) + item[2:]
+            result[index] = chr(ch) + item[2:]
         else:
-            res[i] = '%%%02X%s' % (ch, item[2:])
-    return ''.join(res)
+            result[index] = '%%%02X%s' % (ch, item[2:])
+    return ''.join(result)
 
 
 class InvalidURIError(Exception):
@@ -194,6 +199,9 @@ class URI:
 
         Can be called with either a string URI or the component parts
         of the URI as keyword arguments.
+
+        In either case, all arguments are expected to be appropriately
+        URI encoded.
         """
         assert (uri is not None and scheme is None and userinfo is None and
                 host is None and port is None and path is None and
@@ -243,6 +251,7 @@ class URI:
         self._normalise()
 
     def _normalise(self):
+        """Perform normalisation of URI components."""
         self.scheme = self.scheme.lower()
 
         if self.userinfo is not None:
@@ -468,7 +477,6 @@ class URI:
 # appear at the end of the URI since they may be incidental in the
 # flow of the text.
 
-# Match urls or bugs or oopses.
 possible_uri_re = r'''
 \b
 (?:about|gopher|http|https|sftp|news|ftp|mailto|file|irc|jabber|xmpp)

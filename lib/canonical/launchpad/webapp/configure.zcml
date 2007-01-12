@@ -431,7 +431,7 @@
       <allow attributes="scheme userinfo host port path query fragment 
           authority hier_part
           __str__ __repr__ __eq__ __ne__ replace resolve append contains
-          ensure_slash ensure_no_slash" />
+          ensureSlash ensureNoSlash" />
     </class>
 
 </configure>
