@@ -47,8 +47,15 @@ class ILibraryFileAlias(Interface):
                 ''')
             )
 
-    url = Attribute(_("The URL to this file"))
-    secure_url = Attribute(_("The secure URL to this file"))
+    http_url = TextLine(title=_("The http URL to this file"))
+    https_url = TextLine(title=_("The https URL to this file"))
+
+    def getURL(self):
+        """Return this file's http or https URL.
+
+        If config.launchpad.virtual_host.use_https is set, then return the
+        https URL. Otherwise return the http URL.
+        """
 
     def open():
         """Open this file for reading."""
