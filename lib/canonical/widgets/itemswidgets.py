@@ -48,6 +48,9 @@ class LaunchpadRadioWidget(RadioWidget):
     _joinButtonToMessageTemplate = (
         u'<label style="font-weight: normal">%s&nbsp;%s</label>')
 
+    def _div(self, cssClass, contents, **kw):
+        return contents
+
     def renderItems(self, value):
         """Render the items with with the correct radio button selected."""
         # XXX, Brad Bollenbach, 2006-08-11: Workaround the fact that

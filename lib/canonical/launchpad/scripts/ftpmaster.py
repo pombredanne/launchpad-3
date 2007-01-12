@@ -30,12 +30,11 @@ from sqlobject import SQLObjectMoreThanOneResultError
 from zope.component import getUtility
 
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.database.publishing import (
-    SourcePackageFilePublishing)
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
     IBinaryPackageNameSet, IDistributionSet, IBinaryPackageReleaseSet,
-    ILaunchpadCelebrities, NotFoundError, ILibraryFileAliasSet)
+    ILaunchpadCelebrities, NotFoundError, ILibraryFileAliasSet,
+    IDistributionSet)
 from canonical.lp.dbschema import (
     PackagePublishingPocket, PackagePublishingPriority)
 
@@ -993,31 +992,22 @@ class SyncSource:
         Return the fetched filename if it was present in Librarian or None
         if it wasn't.
         """
-        clauseTables = ['SourcePackageFilePublishing', 'LibraryFileAlias']
-        query = """
-        SourcePackageFilePublishing.libraryfilealiasfilename = %s AND
-        SourcePackageFilePublishing.libraryfilealias =
-            LibraryFileAlias.id AND
-        LibraryFileAlias.id IN (
-          SELECT DISTINCT ON (content) id FROM LibraryFileAlias
-          WHERE filename = %s)
-        """ % sqlvalues(filename, filename)
-
+        # XXX cprov 20070110: looking for files within ubuntu only.
+        # It doesn't affect the usual sync-source procedure. However
+        # it needs to be revisited for derivation, we probably need
+        # to pass the target distribution in order to make proper lookups.
+        # See further info in bug #78683.
+        ubuntu = getUtility(IDistributionSet)['ubuntu']
         try:
-            filepublish = SourcePackageFilePublishing.selectOne(
-                query, clauseTables=clauseTables)
-        except SQLObjectMoreThanOneResultError:
-            raise SyncSourceError(
-                "%s returns multiple Librarian IDs. Help?" % (filename))
-
-        if filepublish is None:
+            libraryfilealias = ubuntu.getFileByName(
+                filename, source=True, binary=False)
+        except NotFoundError:
             return None
 
         self.debug(
             "\t%s: already in distro - downloading from librarian" %
             filename)
 
-        libraryfilealias = filepublish.libraryfilealias
         output_file = open(filename, 'w')
         libraryfilealias.open()
         copy_and_close(libraryfilealias, output_file)

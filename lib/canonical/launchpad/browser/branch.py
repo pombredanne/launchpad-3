@@ -112,12 +112,6 @@ class BranchView(LaunchpadView):
             return False
         return self.context.has_subscription(self.user)
 
-    @cachedproperty
-    def revision_count(self):
-        # Avoid hitting the database multiple times, which is expensive
-        # because it issues a COUNT
-        return self.context.revision_count()
-
     def recent_revision_count(self, days=30):
         """Number of revisions committed during the last N days."""
         timestamp = datetime.now(pytz.UTC) - timedelta(days=days)
@@ -147,6 +141,15 @@ class BranchView(LaunchpadView):
             return self.context.url
         else:
             return self.supermirror_url()
+
+    def user_can_upload(self):
+        """Whether the user can upload to this branch."""
+        return self.user.inTeam(self.context.owner)
+
+    def upload_url(self):
+        """The URL the logged in user can use to upload to this branch."""
+        return 'sftp://%s@bazaar.canonical.com/%s' % (
+            self.user.name, self.context.unique_name)
 
     def missing_title_or_summary_text(self):
         if self.context.title:

@@ -147,6 +147,10 @@
       name="+portlet-milestones"
       template="../templates/object-portlet-milestones.pt"
       lp:url="/distros/$Distro.name/$DRelease.name/+portlet-milestones" />
+    <browser:page
+      name="+last-uploads"
+      template="../templates/distrorelease-last-uploads.pt"
+      lp:url="/distros/$Distro.name/$DRelease.name/+last-uploads" />
   </browser:pages>
 
   <browser:page
