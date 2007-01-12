@@ -50,6 +50,16 @@ class IGPGHandler(Interface):
         If action is provided, will attach that to the URL.
         """
 
+    def getVerifiedSignatureResilient(content, signature=None):
+        """Wrapper for getVerifiedSignature.
+
+        It calls the target method exactly 3 times.
+
+        Return the result if it succeed during the cycle, otherwise
+        capture the errors and emits at the end GPGVerificationError
+        with the stored error information.
+        """
+
     def getVerifiedSignature(content, signature=None):
         """Returns a PymeSignature object if content is correctly signed
         or else raise an exception.
