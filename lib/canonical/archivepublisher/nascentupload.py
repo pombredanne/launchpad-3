@@ -2104,15 +2104,26 @@ class NascentUpload:
         # Stuff the queue item away in case we want it later
         self.queue_root = queue_root
 
+        if self.is_new():
+            return
+
         # if it is known (already overridden properly), move it
         # to ACCEPTED state automatically
-        if not self.is_new():
-            if self.policy.autoApprove(self):
-                self.logger.debug("Setting it to ACCEPTED")
-                queue_root.setAccepted()
-            else:
-                self.logger.debug("Setting it to UNAPPROVED")
-                queue_root.setUnapproved()
+        if self.policy.autoApprove(self):
+            self.logger.debug("Setting it to ACCEPTED")
+            queue_root.setAccepted()
+            # If it is a pure-source upload we can further process it
+            # in order to have a pending publishing record for it in place
+            # This *hack* is based on discussions for bug #77853 and aims
+            # to fix a deficiency on published file lookup system.
+            if ((queue_root.sources.count() == 1) and
+                (queue_root.builds.count() == 0) and
+                (queue_root.customfiles.count() == 0)):
+                self.logger.debug("Creating PENDING publishing record.")
+                queue_root.realiseUpload()
+        else:
+            self.logger.debug("Setting it to UNAPPROVED")
+            queue_root.setUnapproved()
 
     def do_accept(self, new_msg=new_template, accept_msg=accepted_template,
                   announce_msg=announce_template):

@@ -337,6 +337,7 @@ changer and the distrorelease changes maillisting.
   DEBUG   Adding recipient: '"Celso R. Providelo" <celso.providelo@canonical.com>'
   DEBUG   Creating a New queue entry
   DEBUG   Setting it to ACCEPTED
+  DEBUG   Creating PENDING publishing record.
   INFO    Would be sending a mail:
   INFO       Subject: Accepted bar 1.0-5 (source)
   INFO       Recipients: "Celso R. Providelo" <celso.providelo@canonical.com>
