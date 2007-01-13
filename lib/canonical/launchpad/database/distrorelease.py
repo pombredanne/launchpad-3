@@ -892,16 +892,16 @@ class DistroRelease(SQLBase, BugTargetBase):
     def getLastUploads(self):
         """See IDistroRelease."""
         query = """
-        sourcepackagerelease.id=distroreleasequeuesource.sourcepackagerelease
+        sourcepackagerelease.id=packageuploadsource.sourcepackagerelease
         AND sourcepackagerelease.sourcepackagename=sourcepackagename.id
-        AND distroreleasequeuesource.distroreleasequeue=distroreleasequeue.id
-        AND distroreleasequeue.status=%s
-        """ % sqlvalues(DistroReleaseQueueStatus.DONE)
+        AND packageuploadsource.packageupload=packageupload.id
+        AND packageupload.status=%s
+        """ % sqlvalues(PackageUploadStatus.DONE)
 
         last_uploads = SourcePackageRelease.select(
             query, limit=5, prejoins=['sourcepackagename'],
-            clauseTables=['SourcePackageName', 'DistroReleaseQueue',
-                          'DistroReleaseQueueSource'],
+            clauseTables=['SourcePackageName', 'PackageUpload',
+                          'PackageUploadSource'],
             orderBy=['-distroreleasequeue.id'])
 
         distro_sprs = [
