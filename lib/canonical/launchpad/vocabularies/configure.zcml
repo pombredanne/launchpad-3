@@ -41,6 +41,11 @@
     />
 
   <vocabulary
+    name="BranchSubscriptionNotificationLevel"
+    factory="canonical.launchpad.vocabularies.BranchSubscriptionNotificationLevelVocabulary"
+    />
+
+  <vocabulary
     name="Bug"
     factory="canonical.launchpad.vocabularies.BugVocabulary"
     />
