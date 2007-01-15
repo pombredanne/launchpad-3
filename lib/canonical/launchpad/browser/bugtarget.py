@@ -315,8 +315,12 @@ class FileBugViewBase(LaunchpadFormView):
         self.extra_bug_data = getUtility(ITemporaryStorageManager).fetch(name)
         if self.extra_bug_data is None:
             # The URL might be mistyped, or the blob has expired.
-            self.request.response.redirect(
-                canonical_url(self.context) + '/+filebug')
+            # XXX: We should handle this case better, since a user might
+            #      come to this page when finishing his account
+            #      registration. In that case we should inform the user
+            #      that the blob has expired.
+            #      -- Bjorn Tillenius, 2006-01-15
+            raise NotFound(self, name, request=request)
         return self
 
     def browserDefault(self, request):

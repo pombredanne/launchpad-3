@@ -255,19 +255,12 @@ well, so if we call the method again, it represents a URL like
 
 === Not found tokens ===
 
-If publishTraverse is called with a token that can't be found, it's
-treated special, though. If a token can't be found, it can mean that the
-corresponding blob has expired from the database. Therefore the user is
-redirected to the normal +filebug, with a notification saying that the
-blob might have expired.
+If publishTraverse is called with a token that can't be found, a
+NotFound error is raised.
 
     >>> request = LaunchpadTestRequest()
     >>> filebug_view = FileBugViewBase(ubuntu_firefox, request)
-    >>> filebug_view.publishTraverse(request, 'no-such-token') is filebug_view
-    True
-    >>> filebug_view.request.response.getStatus()
-    302
-    >>> filebug_view.request.response.getHeader('Location')
-    'http://.../+filebug'
-
-XXX: Should display a notification here.
+    >>> filebug_view.publishTraverse(request, 'no-such-token')
+    Traceback (most recent call last):
+    ...
+    NotFound:...
