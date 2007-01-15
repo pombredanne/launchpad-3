@@ -132,15 +132,6 @@ class Bug(SQLBase):
         dbName='duplicateof', foreignKey='Bug', default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     date_last_updated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-    communityscore = IntCol(dbName='communityscore', notNull=True, default=0)
-    communitytimestamp = UtcDateTimeCol(dbName='communitytimestamp',
-                                        notNull=True, default=DEFAULT)
-    hits = IntCol(dbName='hits', notNull=True, default=0)
-    hitstimestamp = UtcDateTimeCol(dbName='hitstimestamp', notNull=True,
-                                   default=DEFAULT)
-    activityscore = IntCol(dbName='activityscore', notNull=True, default=0)
-    activitytimestamp = UtcDateTimeCol(dbName='activitytimestamp',
-                                       notNull=True, default=DEFAULT)
     private = BoolCol(notNull=True, default=False)
     security_related = BoolCol(notNull=True, default=False)
 

@@ -12,13 +12,19 @@ import unittest
 
 from zope.testing.doctest import DocFileSuite
 
+from canonical.functional import FunctionalDocFileSuite
 from canonical.launchpad.ftests.test_system_documentation import (
-    default_optionflags)
+    default_optionflags, setUp, tearDown)
+from canonical.testing import LaunchpadFunctionalLayer
 
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(DocFileSuite('ticketcontextmenu.txt',
                   optionflags=default_optionflags))
+    suite.addTest(FunctionalDocFileSuite('ticket-subscribe_me.txt',
+                  optionflags=default_optionflags, package=__name__,
+                  setUp=setUp, tearDown=tearDown,
+                  layer=LaunchpadFunctionalLayer))
     return suite
 
 if __name__ == '__main__':

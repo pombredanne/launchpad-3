@@ -9,7 +9,6 @@ __all__ = [
     'ProductBranchAddView',
     'BranchContextMenu',
     'BranchEditView',
-    'BranchLifecycleView',
     'BranchReassignmentView',
     'BranchNavigation',
     'BranchInPersonView',
@@ -67,17 +66,12 @@ class BranchContextMenu(ContextMenu):
 
     usedfor = IBranch
     facet = 'branches'
-    links = ['edit', 'lifecycle', 'reassign', 'subscription']
+    links = ['edit', 'reassign', 'subscription']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Edit Branch Details'
         return Link('+edit', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def lifecycle(self):
-        text = 'Set Branch Status'
-        return Link('+lifecycle', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def reassign(self):
@@ -118,12 +112,6 @@ class BranchView(LaunchpadView):
             return False
         return self.context.has_subscription(self.user)
 
-    @cachedproperty
-    def revision_count(self):
-        # Avoid hitting the database multiple times, which is expensive
-        # because it issues a COUNT
-        return self.context.revision_count()
-
     def recent_revision_count(self, days=30):
         """Number of revisions committed during the last N days."""
         timestamp = datetime.now(pytz.UTC) - timedelta(days=days)
@@ -153,6 +141,15 @@ class BranchView(LaunchpadView):
             return self.context.url
         else:
             return self.supermirror_url()
+
+    def user_can_upload(self):
+        """Whether the user can upload to this branch."""
+        return self.user.inTeam(self.context.owner)
+
+    def upload_url(self):
+        """The URL the logged in user can use to upload to this branch."""
+        return 'sftp://%s@bazaar.canonical.com/%s' % (
+            self.user.name, self.context.unique_name)
 
     def missing_title_or_summary_text(self):
         if self.context.title:
@@ -247,8 +244,8 @@ class BranchEditFormView(LaunchpadEditFormView):
 class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
 
     schema = IBranch
-    field_names = ['product', 'url', 'name', 'title', 'summary', 'whiteboard',
-                   'home_page', 'author']
+    field_names = ['product', 'url', 'name', 'title', 'summary',
+                   'lifecycle_status', 'whiteboard', 'home_page', 'author']
 
     custom_widget('url', BranchUrlWidget)
     custom_widget('home_page', BranchHomePageWidget)
@@ -265,12 +262,6 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             self.validate_branch_name(self.context.owner,
                                       data['product'],
                                       data['name'])
-
-
-class BranchLifecycleView(BranchEditFormView):
-
-    label = "Set branch status"
-    field_names = ['lifecycle_status', 'whiteboard']
 
 
 class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):

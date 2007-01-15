@@ -422,7 +422,7 @@ def launchpad_addform(context, view):
 
 launchpad_editform = launchpad_addform
 
-launchpad_feedback = 'Help us improve Launchpad'
+launchpad_feedback = 'Help improve Launchpad'
 
 launchpad_forbidden = 'Forbidden'
 
@@ -450,6 +450,8 @@ launchpad_log_out = 'Log out from Launchpad'
 launchpad_notfound = 'Error: Page not found'
 
 launchpad_requestexpired = 'Error: Timeout'
+
+launchpad_search = 'Search Launchpad Projects'
 
 launchpad_unexpectedformdata = 'Error: Unexpected form data'
 
