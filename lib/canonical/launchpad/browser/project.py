@@ -351,10 +351,11 @@ class ProjectAddTicketView(TicketAddView):
         return form.Fields(
             Choice(
                 __name__='product', vocabulary='ProjectProducts',
-                title=_('Product'), description=_(
-                        'Choose the product for which you need support.'),
+                title=_('Product'),
+                description=_(
+                    'Choose the product for which you need support.'),
                 required=True),
-                render_context=self.render_context)
+            render_context=self.render_context)
 
     @property
     def pagetitle(self):
