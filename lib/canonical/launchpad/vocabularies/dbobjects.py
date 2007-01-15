@@ -550,6 +550,7 @@ class ProjectVocabulary(SQLObjectVocabularyBase):
 
 def project_products_vocabulary_factory(context):
     """Return a SimpleVocabulary containing the project's products."""
+    assert context is not None
     project = IProject(context)
     return SimpleVocabulary([
         SimpleTerm(product, product.name, title=product.displayname)
