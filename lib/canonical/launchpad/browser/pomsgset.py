@@ -703,15 +703,17 @@ class BaseTranslationView(LaunchpadView):
                     # Let's override 'value' with the selected suggestion
                     # value.
                     if 'suggestion' in interesting_key:
-                        # It's a suggestion.
                         value = _getSuggestionFromFormId(interesting_key)
                     elif pomsgset.active_texts[pluralform] is not None:
                         # It's current translation.
                         value = pomsgset.active_texts[pluralform]
                     else:
+                        # Current translation is None, this code expects u''
+                        # when there is no translation.
                         value = u''
-                # It's a radio button and it's selected, so we are sure we
-                # want to store this submission.
+                # Current user is an official translator and the radio button
+                # for 'New translation' is selected, so we are sure we want to
+                # store this submission.
                 store = True
             else:
                 # Note whether this translation should be stored in our
@@ -950,6 +952,12 @@ class POMsgSetView(LaunchpadView):
         for index in self.pluralform_indices:
             active = self.getActiveTranslation(index)
             translation = self.getTranslation(index)
+            if (translation is None and
+                self.user_is_official_translator):
+                # We don't have anything to show as the submitted translation
+                # and the user is the official one. We prefill the 'New
+                # translation' field with the active translation.
+                translation = active
             is_multi_line = (count_lines(active) > 1 or
                              count_lines(translation) > 1 or
                              count_lines(self.msgid) > 1 or

@@ -13,8 +13,7 @@
       <input
         type="hidden"
         tal:condition="request/lp:person"
-        tal:attributes="
-        name string:msgset_${context/potmsgset/id}"
+        tal:attributes="name string:msgset_${context/potmsgset/id}"
         />
     </div>
   </td>
@@ -36,7 +35,7 @@
              'msgset_${context/potmsgset/id}_${language_code}_translation_0_new');;
            selectWidget('msgset_${context/potmsgset/id}_${language_code}_translation_0_new_select', event);;
            return false;;
-       "><img alt="Copy text" src="/@@/copy"></a>
+       "><img alt="Copy text" title="Copy text" src="/@@/copy"></a>
     </tal:logged-in>
   </td>
   <td>
@@ -60,7 +59,7 @@
              'msgset_${context/potmsgset/id}_${language_code}_translation_',
              ${context/pluralforms});;
            return false;;
-      "><img alt="Copy text" src="/@@/copy"></a>
+      "><img alt="Copy text" title="Copy text" src="/@@/copy"></a>
     </tal:logged-in>
   </td>
   <td>
@@ -163,6 +162,7 @@
               checked="true"
               tal:attributes="
                 name string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_radiobutton;
+                id string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_radiobutton;
                 value string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index};
                 onClick string:
                   javascript:copyInnerHTMLById(
@@ -179,18 +179,29 @@
                      'msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new');;
                    selectWidget('msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_select', event);;
                    return false;;
-               "><img alt="Copy text" src="/@@/copy"></a>
+               "><img alt="Copy text" title="Copy text" src="/@@/copy"></a>
           </tal:is-not-editor>
           </tal:logged-in>
         </td>
         <td>
           <div tal:content="structure translation_dictionary/active_translation"
+               tal:condition="not: view/user_is_official_translator"
                tal:attributes="
                  lang context/pofile/language/dashedcode;
                  dir context/pofile/language/abbreviated_text_dir;
                  id string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}">
             current translation
           </div>
+          <label
+            tal:content="structure translation_dictionary/active_translation"
+            tal:condition="view/user_is_official_translator"
+            tal:attributes="
+              lang context/pofile/language/dashedcode;
+              dir context/pofile/language/abbreviated_text_dir;
+              id string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index};
+              for string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_radiobutton">
+            current translation
+          </label>
         </td>
       </tal:with-content>
       <tal:without-content
@@ -202,15 +213,23 @@
               checked="true"
               tal:attributes="
                 name string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_radiobutton;
+                id string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_radiobutton
                 value string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}
             " />
           </tal:user-is-official-translator>
         </td>
         <td>
-          <div tal:attributes="
-               id string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}">
+          <div tal:condition="not: view/user_is_official_translator"
+               tal:attributes="
+                 id string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}">
             (no translation yet)
           </div>
+          <label tal:condition="view/user_is_official_translator"
+                 tal:attributes="
+                   id string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index};
+                   for string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_radiobutton">
+            (no translation yet)
+          </label>
         </td>
       </tal:without-content>
     </tr>
@@ -347,14 +366,13 @@
   <tr class="secondary">
     <td colspan="4" />
     <td>
-      <div tal:condition="request/lp:person">
+      <div tal:condition="view/user_is_official_translator">
         <label class="fuzzy-checkbox">
           <input
             type="checkbox"
             value="fuzzy"
             tal:attributes="
               checked view/is_fuzzy;
-              disabled not:view/user_is_official_translator;
               name string:msgset_${context/potmsgset/id}_${language_code}_needsreview
               " />
           <tal:block condition="not:view/is_plural">
@@ -365,7 +383,7 @@
           </tal:block>
         </label>
       </div>
-      <div tal:condition="not: request/lp:person">
+      <div tal:condition="not: view/user_is_official_translator">
         <label tal:condition="view/is_fuzzy">
           <tal:block condition="not:view/is_plural">
             Someone should review this translation

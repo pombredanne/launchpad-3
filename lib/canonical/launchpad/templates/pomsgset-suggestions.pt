@@ -16,6 +16,7 @@
           type="radio"
           tal:attributes="
             name string:msgset_${context/pomsgset/potmsgset/id}_${submissionlang/code}_translation_${submission/pluralform}_radiobutton;
+            id string:msgset_${context/pomsgset/potmsgset/id}_${submissionlang/code}_suggestion_${submission/id}_${submission/pluralform}_radiobutton;
             value string:msgset_${context/pomsgset/potmsgset/id}_${submissionlang/code}_suggestion_${submission/id}_${submission/pluralform};
             onClick string:
               javascript:copyInnerHTMLById(
@@ -32,17 +33,30 @@
                 'msgset_${context/pomsgset/potmsgset/id}_${submissionlang/code}_translation_${submission/pluralform}_new');;
               selectWidget('msgset_${context/pomsgset/potmsgset/id}_${submissionlang/code}_translation_${submission/pluralform}_new_select', event);;
             return false;;
-          "><img alt="Copy text" src="/@@/copy"></a>
+          "><img alt="Copy text" title="Copy text" src="/@@/copy"></a>
       </tal:user-is-not-official-translator>
       </tal:logged-in>
     </td>
     <td>
-      <div tal:attributes="
-        lang submissionlang/dashedcode;
-        dir submissionlang/abbreviated_text_dir;
-        id string:msgset_${context/pomsgset/potmsgset/id}_${submissionlang/code}_suggestion_${submission/id}_${submission/pluralform}"
+      <div
+        tal:condition="not:context/user_is_official_translator"
+        tal:attributes="
+          lang submissionlang/dashedcode;
+          dir submissionlang/abbreviated_text_dir;
+          id string:msgset_${context/pomsgset/potmsgset/id}_${submissionlang/code}_suggestion_${submission/id}_${submission/pluralform}"
         tal:content="structure submission/potranslation/translation/fmt:text-to-html">
-        suggestion</div>
+        suggestion
+      </div>
+      <label
+        tal:condition="not:context/user_is_official_translator"
+        tal:attributes="
+          lang submissionlang/dashedcode;
+          dir submissionlang/abbreviated_text_dir;
+          id string:msgset_${context/pomsgset/potmsgset/id}_${submissionlang/code}_suggestion_${submission/id}_${submission/pluralform};
+          for string:msgset_${context/pomsgset/potmsgset/id}_${submissionlang/code}_suggestion_${submission/id}_${submission/pluralform}_radiobutton;"
+        tal:content="structure submission/potranslation/translation/fmt:text-to-html">
+        suggestion
+      </label>
     </td>
   </tr>
   <tr class="suggestion secondary">
