@@ -391,9 +391,12 @@ class POMsgSet(SQLBase):
                   not force_suggestion):
                 # activesubmission is updated only if the translation is
                 # valid and it's an editor.
-                # Lets set latestsubmission to be able to tell when
-                # the last change happened
+
+                # XXX 20070115 DaniloSegan: We are setting latestsubmission
+                # to be able to tell when the last change happened in
+                # IPOFile.validExportCache().  See also bug #78501.
                 self.pofile.latestsubmission = selection.activesubmission
+
                 selection.activesubmission = None
                 selection.reviewer = person
                 selection.date_reviewed = UTC_NOW
