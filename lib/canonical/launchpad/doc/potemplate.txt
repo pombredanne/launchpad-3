@@ -230,5 +230,9 @@ But we can see that there is a third template in this context:
   True
   >>> not_current_template.sourcepackagename == potemplate.sourcepackagename
   True
+
+And this is the explanation of not having it in previous lists,
+it's not current.
+
   >>> not_current_template.iscurrent
   False
