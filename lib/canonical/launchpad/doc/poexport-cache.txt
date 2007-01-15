@@ -90,6 +90,11 @@ This tests two specific things:
     False
     >>> len(empty_pofile.export()) > 0
     True
+
+XXX DaniloSegan 20070115: we're currently unable to track cache status
+for empty PO files, since this is similar to case of a single deactivated
+translation.
+
     >>> empty_pofile.validExportCache()
-    True
+    False
 
