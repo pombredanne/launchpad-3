@@ -29,7 +29,7 @@ Let's do it under the wraps:
   >>> foobar = Person.byName('name16')
   >>> team = Person.byName('myemail')
   >>> tm = TeamMembership.selectOneBy(personID=foobar.id, teamID=team.id)
-  >>> tm.setStatus(TeamMembershipStatus.EXPIRED)
+  >>> tm.setStatus(TeamMembershipStatus.EXPIRED, reviewer=team.teamowner)
 
 Persist the change:
 

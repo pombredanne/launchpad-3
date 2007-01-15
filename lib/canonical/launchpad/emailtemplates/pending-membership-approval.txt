@@ -1,20 +1,8 @@
 Hello
 
-We received a request from the user named '%(browsername)s 
-(%(name)s)' trying to join the team '%(teamname)s', but
-because this is a moderated team, you or another team administrator
-will have to log into Launchpad and approve this membership. You can
-also do this by clicking on the link in the bottom of this message.
+%(person_name)s wants to be a member of %(team_name)s, but this is a moderated team, so that membership has to be approved.  You can approve, decline or leave it as proposed by following the link below.
 
-On the other hand, if you think this user should not become a member
-of this team, you can go to the link provided on the bottom of this
-message and decline this membership. If you're not sure if you should
-approve or decline this membership, you can leave this to be done by 
-another team administrator.
+    %(url)s
 
-This is the page where you can approve or decline this membership:
-%(url)s
-
-Thanks,
-
-The Launchpad Team
+Regards,
+The Launchpad team

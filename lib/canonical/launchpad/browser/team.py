@@ -132,9 +132,12 @@ class TeamEmailView:
         """Send a validation message to <email> and update self.feedback."""
         generateTokenAndValidationEmail(email, self.team)
         self.feedback = (
-            "An email message was sent to '%s'. Follow the "
+            "A confirmation message has been sent to '%s'. Follow the "
             "instructions in that message to confirm the new "
-            "contact address for this team." % email)
+            "contact address for this team. "
+            "(If the message doesn't arrive in a few minutes, your mail "
+            "provider might use 'greylisting', which could delay the message "
+            "for up to an hour or two.)" % email)
 
 
 class TeamAddView(AddView):
@@ -165,9 +168,12 @@ class TeamAddView(AddView):
         if email is not None:
             generateTokenAndValidationEmail(email, team)
             self.request.response.addNotification(
-                "An email message was sent to '%s'. Follow the "
+                "A confirmation message has been sent to '%s'. Follow the "
                 "instructions in that message to confirm the new "
-                "contact address for this team." % email)
+                "contact address for this team. "
+                "(If the message doesn't arrive in a few minutes, your mail "
+                "provider might use 'greylisting', which could delay the "
+                "message for up to an hour or two.)" % email)
 
         self._nextURL = canonical_url(team)
         return team
@@ -212,13 +218,14 @@ class ProposedTeamMembersEditView:
             elif action == "hold":
                 continue
 
-            team.setMembershipStatus(person, status, expires,
-                                     reviewer=self.user)
+            team.setMembershipData(
+                person, status, reviewer=self.user, expires=expires)
 
         # Need to flush all changes we made, so subsequent queries we make
         # with this transaction will see this changes and thus they'll be
         # displayed on the page that calls this method.
         flush_database_updates()
+        self.request.response.redirect('%s/+members' % canonical_url(team))
 
 
 class TeamMemberAddView(AddView):
@@ -260,10 +267,10 @@ class TeamMemberAddView(AddView):
 
         expires = team.defaultexpirationdate
         if newmember.hasMembershipEntryFor(team):
-            team.setMembershipStatus(newmember, approved, expires,
-                                     reviewer=self.user)
+            team.setMembershipData(
+                newmember, approved, reviewer=self.user, expires=expires)
         else:
-            team.addMember(newmember, approved, reviewer=self.user)
+            team.addMember(newmember, reviewer=self.user, status=approved)
 
         self.addedMember = newmember
 
