@@ -101,6 +101,16 @@ class FileBugViewBase(LaunchpadFormView):
 
     extra_bug_data = None
 
+    def initialize(self):
+        LaunchpadFormView.initialize(self)
+        if self.extra_bug_data is not None:
+            # XXX: We should include more details of what will be added
+            #      to the bug report.
+            #      -- Bjorn Tillenius, 2006-01-15
+            self.request.response.addNotification(
+                'Extra debug information will be added to the bug report'
+                ' automatically.')
+
     @property
     def initial_values(self):
         """Give packagename a default value, if applicable."""

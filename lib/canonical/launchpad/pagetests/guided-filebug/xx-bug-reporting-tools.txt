@@ -42,12 +42,19 @@ The most common case will be that the user is sent to the guided
     ...    'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+filebug/'
     ...     '%s' % blob_token)
     >>> user_browser.open(filebug_url)
+
+A notification will be shown to inform the user that additional
+information will be added to the bug automatically.
+
+    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+    ...     print message.renderContents()
+    Extra debug information will be added to the bug report automatically.
+
+After the user fills in the summary and clickon the button, we'll still
+on the same URL, with the token present.
+
     >>> user_browser.getControl('Summary').value = 'A new bug'
     >>> user_browser.getControl('Continue').click()
-
-After the user has click on the button, we're still on the same URL,
-with the token present.
-
     >>> user_browser.url == filebug_url
     True
 
