@@ -6,7 +6,7 @@ This is a special class which encapsulates the information associated with a
 particular language and distrorelease.
 
 First we need to know which distroreleaselanguage we are working with. We
-will work with french in Hoary first.
+will work with spanish in Hoary first.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
@@ -17,27 +17,58 @@ will work with french in Hoary first.
     >>> hoary = distroreleaseset.queryByName(ubuntu, "hoary")
     >>> hoary.name
     u'hoary'
-    >>> french = getUtility(ILanguageSet)['fr']
-    >>> hoary_french = hoary.getDistroReleaseLanguage(french)
+    >>> spanish = getUtility(ILanguageSet)['es']
+    >>> hoary_spanish = hoary.getDistroReleaseLanguage(spanish)
 
 Now lets get the list of real pofiles. By this we mean the ones where there
 is actually a translation or two:
 
-    >>> for po in hoary_french.pofiles: print po.potemplate.name
+    >>> for po in hoary_spanish.pofiles: print po.potemplate.name
+    evolution-2.2
     pmount
     pkgconf-mozilla
 
 Now lets include the dummies:
 
-    >>> for po in hoary_french.po_files_or_dummies: print po.potemplate.name
+    >>> for po in hoary_spanish.po_files_or_dummies: print po.potemplate.name
     evolution-2.2
     man
     man
     pkgconf-mozilla
     pmount
 
-Note that the sorting is by template name, and there is an evolution-2.2
-dummy po file.
+Note that the sorting is by template name, and there are two 'man'
+dummy po files.
+
+The list that include dummies should be the same as the current potemplates
+for Hoary
+
+    >>> for potemplate in hoary.currentpotemplates: print potemplate.name
+    evolution-2.2
+    man
+    man
+    pkgconf-mozilla
+    pmount
+
+But if we get the whole list of templates, even non current ones, we can see
+that there is one extra template that was not shown in distroreleaselanguage
+listing.
+
+    >>> for potemplate in hoary.potemplates: print potemplate.name
+    evolution-2.2
+    disabled-template
+    man
+    man
+    pkgconf-mozilla
+    pmount
+
+Also, we can see that the template has an Spanish translation that
+hoary_spanish.pofiles is hidding as expected.
+
+    >>> for potemplate in hoary.potemplates:
+    ...     if potemplate.name == 'disabled-template':
+    ...         print potemplate.getPOFileByLang('es').title
+    Spanish (es) translation of disabled-template in Ubuntu Hoary package "evolution"
 
 We also have DummyDistroReleaseLanguages.
 

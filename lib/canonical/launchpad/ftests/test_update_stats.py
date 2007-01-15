@@ -9,6 +9,11 @@ import unittest, subprocess, os.path, sys
 from canonical.launchpad.ftests.harness import LaunchpadTestCase
 from canonical.config import config
 
+def get_script():
+    script = os.path.join(config.root, 'cronscripts', 'update-stats.py')
+    assert os.path.exists(script), '%s not found' % script
+    return script
+
 class UpdateStatsTest(LaunchpadTestCase):
 
     dbuser = 'statistician'
@@ -19,12 +24,6 @@ class UpdateStatsTest(LaunchpadTestCase):
         # has been messed with by a subprocess.
         con.commit()
         LaunchpadTestCase.tearDown(self)
-
-    @property
-    def script(self):
-        script = os.path.join(config.root, 'cronscripts', 'update-stats.py')
-        assert os.path.exists(script), '%s not found' % script
-        return script
 
     def test_basic(self):
         # Nuke some stats so we know that they are updated
@@ -66,7 +65,7 @@ class UpdateStatsTest(LaunchpadTestCase):
         con.commit()
 
         # Run the update-stats.py script
-        cmd = [sys.executable, self.script, '--quiet']
+        cmd = [sys.executable, get_script(), '--quiet']
         process = subprocess.Popen(
                 cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT
@@ -164,9 +163,105 @@ class UpdateStatsTest(LaunchpadTestCase):
             self.failUnless(row[0] >= 0, '%s is invalid' % key)
 
 
+class UpdateTranslationStatsWithDisableTemplateTest(LaunchpadTestCase):
+
+    dbuser = 'launchpad'
+
+    def tearDown(self):
+        con = self.connect()
+        # Force a commit here so test harness optimizations know the database
+        # has been messed with by a subprocess.
+        con.commit()
+        LaunchpadTestCase.tearDown(self)
+
+    def test_basic(self):
+        # First, we check current values of cached statistics.
+        con = self.connect()
+        cur = con.cursor()
+
+        # The amount of messages to translate in Hoary is the expected.
+        cur.execute("SELECT messagecount FROM DistroRelease WHERE name = 'hoary'")
+        self.failUnlessEqual(cur.fetchone()[0], 96)
+
+        # The amount of messages translate into Spanish in Hoary is the expected.
+        cur.execute("""
+            SELECT currentcount, updatescount, rosettacount, contributorcount
+            FROM DistroReleaseLanguage, Language, DistroRelease
+            WHERE
+                DistroRelease.name = 'hoary' AND
+                DistroReleaseLanguage.distrorelease = DistroRelease.id AND
+                DistroReleaseLanguage.language = Language.id AND
+                Language.code = 'es'
+            """)
+        current, updates, rosetta, contributor = cur.fetchone()
+        self.failUnlessEqual(current, 67)
+        self.failUnlessEqual(updates, 1)
+        self.failUnlessEqual(rosetta, 0)
+        self.failUnlessEqual(contributor, 6)
+
+        # Let's set 'pmount' template as not current for Hoary.
+        cur.execute("""
+            UPDATE POTemplate SET iscurrent = FALSE
+            FROM DistroRelease, POTemplateName
+            WHERE
+                DistroRelease.name = 'hoary' AND
+                POTemplate.distrorelease = DistroRelease.id AND
+                POTemplate.potemplatename = POTemplateName.id AND
+                POTemplateName.name = 'pmount'
+            """)
+
+        # Commit our change so the subprocess can see it
+        con.commit()
+
+        # Run update-stats.py script to see that we don't count the
+        # information in that template anymore.
+        cmd = [sys.executable, get_script(), '--quiet']
+        process = subprocess.Popen(
+                cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT
+                )
+        (stdout, empty_stderr) = process.communicate()
+
+        # Ensure it returned a success code
+        self.failUnlessEqual(
+                process.returncode, 0,
+                'update-stats.py exited with return code %d. Output was %r' % (
+                    process.returncode, stdout
+                    )
+                )
+
+        # Now confirm it did stuff it is supposed to
+        cur = con.cursor()
+
+        # The amount of messages to translate in Hoary is now lower because we
+        # don't count anymore pmount messages.
+        cur.execute("SELECT messagecount FROM DistroRelease WHERE name = 'hoary'")
+        self.failUnlessEqual(cur.fetchone()[0], 33)
+
+        # The amount of messages translate into Spanish is also lower now
+        # because we don't count Spanish translations for pmount anymore.
+        cur.execute("""
+            SELECT currentcount, updatescount, rosettacount, contributorcount
+            FROM DistroReleaseLanguage, Language, DistroRelease
+            WHERE
+                DistroRelease.name = 'hoary' AND
+                DistroReleaseLanguage.distrorelease = DistroRelease.id AND
+                DistroReleaseLanguage.language = Language.id AND
+                Language.code = 'es'
+            """)
+        current, updates, rosetta, contributor = cur.fetchone()
+        self.failUnlessEqual(current, 13)
+        self.failUnlessEqual(updates, 1)
+        self.failUnlessEqual(rosetta, 0)
+        # Also, there are two Spanish translators that only did contributions
+        # to pmount, so they are gone now.
+        self.failUnlessEqual(contributor, 4)
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(UpdateStatsTest))
+    suite.addTest(
+        unittest.makeSuite(UpdateTranslationStatsWithDisableTemplateTest))
     return suite
 
 

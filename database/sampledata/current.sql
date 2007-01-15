@@ -1521,25 +1521,25 @@ ALTER TABLE distrorelease ENABLE TRIGGER ALL;
 
 ALTER TABLE distroreleaselanguage DISABLE TRIGGER ALL;
 
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (1, 3, 68, 62, 0, 0, 1, '2007-01-05 14:02:31.998927');
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (2, 3, 196, 9, 0, 1, 2, '2007-01-05 14:02:32.389229');
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (3, 3, 360, 63, 0, 0, 1, '2007-01-05 14:02:32.0514');
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (4, 3, 193, 9, 0, 0, 1, '2007-01-05 14:02:32.349385');
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (5, 3, 98, 65, 0, 0, 2, '2007-01-05 14:02:32.089656');
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (6, 3, 241, 9, 0, 0, 1, '2007-01-05 14:02:32.426507');
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (7, 3, 112, 9, 0, 0, 1, '2007-01-05 14:02:32.161222');
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (8, 3, 143, 72, 0, 0, 2, '2007-01-05 14:02:32.312361');
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (1, 3, 68, 62, 0, 0, 1, '2007-01-15 17:58:40.839938');
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (2, 3, 196, 9, 0, 1, 2, '2007-01-15 17:58:41.198626');
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (3, 3, 360, 63, 0, 0, 1, '2007-01-15 17:58:40.890389');
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (4, 3, 193, 9, 0, 0, 1, '2007-01-15 17:58:41.164517');
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (5, 3, 98, 65, 0, 0, 2, '2007-01-15 17:58:40.923097');
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (6, 3, 241, 9, 0, 0, 1, '2007-01-15 17:58:41.235376');
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (7, 3, 112, 9, 0, 0, 1, '2007-01-15 17:58:40.992446');
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (8, 3, 143, 72, 0, 0, 2, '2007-01-15 17:58:41.129836');
 INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (9, 3, 527, 49, 0, 0, 1, '2005-10-24 17:37:34.969591');
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (10, 3, 454, 0, 0, 0, 0, '2007-01-05 14:02:32.602406');
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (11, 3, 148, 3, 0, 0, 1, '2007-01-05 14:02:32.276698');
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (12, 3, 302, 63, 0, 0, 1, '2007-01-05 14:02:32.458805');
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (13, 3, 387, 130, 1, 0, 6, '2007-01-05 14:02:32.527219');
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (14, 3, 427, 6, 0, 0, 1, '2007-01-05 14:02:32.56723');
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (15, 3, 129, 9, 0, 0, 1, '2007-01-05 14:02:32.198516');
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (10, 3, 454, 0, 0, 0, 0, '2007-01-15 17:58:41.406949');
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (11, 3, 148, 3, 0, 0, 1, '2007-01-15 17:58:41.095497');
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (12, 3, 302, 63, 0, 0, 1, '2007-01-15 17:58:41.269372');
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (13, 3, 387, 67, 1, 0, 6, '2007-01-15 17:58:41.335782');
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (14, 3, 427, 6, 0, 0, 1, '2007-01-15 17:58:41.373856');
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (15, 3, 129, 9, 0, 0, 1, '2007-01-15 17:58:41.028301');
 INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (16, 3, 502, 0, 0, 0, 0, '2005-10-24 17:37:35.182173');
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (17, 3, 132, 66, 0, 0, 2, '2007-01-05 14:02:32.232558');
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (18, 3, 521, 9, 0, 0, 1, '2007-01-05 14:02:32.493382');
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (19, 3, 100, 9, 0, 0, 1, '2007-01-05 14:02:32.128188');
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (17, 3, 132, 66, 0, 0, 2, '2007-01-15 17:58:41.060738');
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (18, 3, 521, 9, 0, 0, 1, '2007-01-15 17:58:41.301627');
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (19, 3, 100, 9, 0, 0, 1, '2007-01-15 17:58:40.959409');
 
 
 ALTER TABLE distroreleaselanguage ENABLE TRIGGER ALL;
@@ -2454,20 +2454,20 @@ ALTER TABLE launchpaddatabaserevision ENABLE TRIGGER ALL;
 
 ALTER TABLE launchpadstatistic DISABLE TRIGGER ALL;
 
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (1, 'potemplate_count', 9, '2007-01-05 14:02:33.182886');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (2, 'pofile_count', 28, '2007-01-05 14:02:33.198996');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (3, 'pomsgid_count', 155, '2007-01-05 14:02:33.21247');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (4, 'translator_count', 26, '2007-01-05 14:02:33.238695');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (5, 'language_count', 18, '2007-01-05 14:02:33.225064');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (6, 'products_using_rosetta', 0, '2007-01-05 14:02:33.182886');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (7, 'rosetta_translator_count', 6, '2007-01-05 14:02:33.251559');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (8, 'products_with_potemplates', 2, '2007-01-05 14:02:33.264218');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (9, 'bug_count', 10, '2007-01-05 14:02:33.276665');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (10, 'bugtask_count', 21, '2007-01-05 14:02:33.28912');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (11, 'products_using_malone', 4, '2007-01-05 14:02:33.302562');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (12, 'products_with_bugs', 4, '2007-01-05 14:02:33.316385');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (13, 'people_count', 48, '2007-01-05 14:02:33.329925');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (14, 'teams_count', 17, '2007-01-05 14:02:33.344845');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (1, 'potemplate_count', 9, '2007-01-15 17:58:41.976532');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (2, 'pofile_count', 28, '2007-01-15 17:58:41.994441');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (3, 'pomsgid_count', 155, '2007-01-15 17:58:42.006402');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (4, 'translator_count', 26, '2007-01-15 17:58:42.030684');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (5, 'language_count', 18, '2007-01-15 17:58:42.017508');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (6, 'products_using_rosetta', 0, '2007-01-15 17:58:41.976532');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (7, 'rosetta_translator_count', 6, '2007-01-15 17:58:42.042536');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (8, 'products_with_potemplates', 2, '2007-01-15 17:58:42.054552');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (9, 'bug_count', 10, '2007-01-15 17:58:42.06841');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (10, 'bugtask_count', 22, '2007-01-15 17:58:42.080033');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (11, 'products_using_malone', 4, '2007-01-15 17:58:42.093622');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (12, 'products_with_bugs', 4, '2007-01-15 17:58:42.105869');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (13, 'people_count', 48, '2007-01-15 17:58:42.118694');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (14, 'teams_count', 17, '2007-01-15 17:58:42.131757');
 
 
 ALTER TABLE launchpadstatistic ENABLE TRIGGER ALL;
