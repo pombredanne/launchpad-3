@@ -422,7 +422,7 @@ def launchpad_addform(context, view):
 
 launchpad_editform = launchpad_addform
 
-launchpad_feedback = 'Help us improve Launchpad'
+launchpad_feedback = 'Help improve Launchpad'
 
 launchpad_forbidden = 'Forbidden'
 

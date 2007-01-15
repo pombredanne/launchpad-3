@@ -95,9 +95,10 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
         template = (
             '''javascript:'''
             '''popup_window('@@popup-window?'''
-            '''vocabulary=%s&field=%s','''
+            '''vocabulary=%s&field=%s&search='''
+            ''''+escape(document.getElementById('%s').value),'''
             ''''500','400')'''
-            ) % (self.context.vocabularyName, self.name)
+            ) % (self.context.vocabularyName, self.name, self.name)
         if self.onKeyPress:
             # XXX: I suspect onkeypress() here is non-standard, but it
             # works for me, and enough researching for tonight. It may
