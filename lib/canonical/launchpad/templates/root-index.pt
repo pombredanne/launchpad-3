@@ -38,7 +38,9 @@
         </div>
         <div class="right">
           <h2>More about Launchpad</h2>
-          <p>TBD</p>
+          <ul>
+            <li><a href="/+about">What is Launchpad?</a></li>
+          </ul>
         </div>
       </div>
       <div style="clear: both;">&nbsp;</div>
