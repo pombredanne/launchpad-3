@@ -57,7 +57,7 @@ Creating a new Enumeratable Vocabulary based on an existent dbschema
 constant:
 
     >>> from canonical.lp import dbschema
-    >>> from canonical.launchpad.vocabularies import vocab_factory
+    >>> from canonical.launchpad.webapp.vocabulary import vocab_factory
     >>> PackagingVocabulary = vocab_factory(dbschema.PackagingType)
 
 The right place to do it is in the file vocabularies/dbschema.py.
