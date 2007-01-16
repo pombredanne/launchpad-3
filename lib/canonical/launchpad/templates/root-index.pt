@@ -90,10 +90,12 @@
 
   <h2>Other services</h2>
 
-  <table>
+  <table tal:define="vhosts
+        modules/canonical.launchpad.webapp.vhosts/allvhosts/configs">
     <tr style="valign: top;">
       <td>
-        <a href="/support"><b>Support tracker</b></a><br />
+        <a tal:attributes="href vhosts/answers/rooturl"
+              href="/support"><b>Support tracker</b></a><br />
         Launchpad lets you track technical support requests
         from users of your product.
       </td>
