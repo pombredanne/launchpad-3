@@ -54,7 +54,7 @@
     <a href=""
        tal:attributes="
          onClick string:
-           javascript:copyEnglishPluralIntoPluralTranslations(
+           javascript:writeTextIntoPluralTranslationFiels(
              'msgset_${context/potmsgset/id}_plural',
              'msgset_${context/potmsgset/id}_${language_code}_translation_',
              ${context/pluralforms});;
@@ -326,7 +326,7 @@
           tal:attributes="
             name string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_to_textarea;
             id string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_to_textarea;
-            onClick string:javascript:convertInputIntoTextarea('msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new', 'msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_to_textarea', 6);"
+            onClick string:javascript:upgradeToTextAreaForTranslation('msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new');"
           />
         <tal:multi-line condition="translation_dictionary/is_multi_line">
           <tal:with-content
