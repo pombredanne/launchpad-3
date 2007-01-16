@@ -46,6 +46,7 @@ __all__ = [
     'ProductSeriesVocabulary',
     'ProductVocabulary',
     'ProjectVocabulary',
+    'project_products_vocabulary_factory',
     'SourcePackageNameVocabulary',
     'SpecificationVocabulary',
     'SpecificationDependenciesVocabulary',
@@ -63,7 +64,7 @@ from operator import attrgetter
 from zope.component import getUtility
 from zope.interface import implements, Attribute
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
-from zope.schema.vocabulary import SimpleTerm
+from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 from zope.security.proxy import isinstance as zisinstance
 
 from sqlobject import AND, OR, CONTAINSSTRING, SQLObjectNotFound
@@ -194,7 +195,7 @@ class SQLObjectVocabularyBase:
 
     def emptySelectResults(self):
         """Return a SelectResults object without any elements.
-        
+
         This is to be used when no search string is given to the search()
         method of subclasses, in order to be consistent and always return
         a SelectResults object.
@@ -547,6 +548,15 @@ class ProjectVocabulary(SQLObjectVocabularyBase):
         return self.emptySelectResults()
 
 
+def project_products_vocabulary_factory(context):
+    """Return a SimpleVocabulary containing the project's products."""
+    assert context is not None
+    project = IProject(context)
+    return SimpleVocabulary([
+        SimpleTerm(product, product.name, title=product.displayname)
+        for product in project.products])
+
+
 class TranslationGroupVocabulary(NamedSQLObjectVocabulary):
 
     _table = TranslationGroup
@@ -558,7 +568,7 @@ class TranslationGroupVocabulary(NamedSQLObjectVocabulary):
 class NonMergedPeopleAndTeamsVocabulary(
         BasePersonVocabulary, SQLObjectVocabularyBase):
     """The set of all non-merged people and teams.
-    
+
     If you use this vocabulary you need to make sure that any code which uses
     the people provided by it know how to deal with people which don't have
     a preferred email address, that is, unvalidated person profiles.
@@ -663,7 +673,7 @@ class ValidPersonOrTeamVocabulary(
                    quote_like(text))
         email_match_query += extra_clause
         email_matches = Person.select(
-            email_match_query, 
+            email_match_query,
             clauseTables=['ValidPersonOrTeamCache', 'EmailAddress'])
 
         # XXX: We have to explicitly provide an orderBy here as a workaround
@@ -701,7 +711,7 @@ class ValidTeamMemberVocabulary(ValidPersonOrTeamVocabulary):
         ValidPersonOrTeamVocabulary.__init__(self, context)
         self.extra_clause = """
             Person.id NOT IN (
-                SELECT team FROM TeamParticipation 
+                SELECT team FROM TeamParticipation
                 WHERE person = %d
                 ) AND Person.id != %d
             """ % (self.team.id, self.team.id)
@@ -740,7 +750,7 @@ class PersonActiveMembershipVocabulary:
 
     def __iter__(self):
         return iter(
-            [self.getTerm(membership.team) 
+            [self.getTerm(membership.team)
              for membership in self.context.myactivememberships])
 
     def getTerm(self, team):
