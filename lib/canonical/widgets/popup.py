@@ -13,7 +13,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.schema.vocabulary import IVocabularyFactory
 
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.vocabularies import IHugeVocabulary
+from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 from canonical.cachedproperty import cachedproperty
 
 
