@@ -65,6 +65,17 @@
             template="../templates/malone-portlet-bugtrackers.pt" />
     </browser:pages>
 
+    <!-- marketing material for Bugs -->
+    <browser:pages
+        for="canonical.launchpad.interfaces.ILaunchpadApplication"
+        layer="canonical.launchpad.layers.BugsLayer"
+        permission="zope.Public">
+        <browser:page
+            name="+about"
+            template="../templates/marketing-app-about.pt"
+            lp:url="bugs.launchpad/+about" />
+    </browser:pages>
+
     <xmlrpc:view
        for="canonical.launchpad.interfaces.IMaloneApplication"
        methods="filebug"

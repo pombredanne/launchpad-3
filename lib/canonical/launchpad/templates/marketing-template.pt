@@ -1,0 +1,66 @@
+<metal:page define-macro="master"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+  <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+      <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
+      <link
+        rel="stylesheet"
+        href="/+icing/marketing-style.css"
+        type="text/css"
+        media="screen"
+      />
+      <!--[if IE]>
+      <link
+        rel="stylesheet"
+        href="css/allie.css"
+        type="text/css"
+        media="screen"
+      />
+      <![endif]-->
+    </head>
+    <body id="home">
+      <a id="top"></a>
+      <div id="breadcrumb">
+        <dl>
+          <dt>Your location:</dt>
+          <dd>
+            <ul>
+              <li><a href="/" title="Launchpad Home">Launchpad Home</a></li>
+            </ul>
+          </dd>
+        </dl>
+      </div> <!-- breadcrumb -->
+      <div id="wrapper">
+        <div id="header">
+          <h1><a href="/" title="Launchpad">Launchpad</a></h1>
+          <dl id="navigation">
+            <dt>Navigation<dt>
+            <dd>
+              <ul>
+                <li id="liHome"><a href="/+about">Home</a></li>
+                <li id="liAccount"><a href="/+login">Get an account</a></li>
+                <li id="liTour"><a href="/+tour">Take a tour</a></li>
+              </ul>
+            </dd>
+          </dl>
+          <dl id="sub-navigation">
+            <dt>Sub-navigation<dt>
+            <dd>
+              <ul id="global">
+                <li id="liAbout"><a href="#">About</a></li>
+                <li id="liContact"><a href="#">Contact us</a></li>
+              </ul>
+            </dd>
+          </dl>
+        </div> <!-- header -->
+        <div id="main">
+          <metal:contents define-slot="contents" />
+        </div> <!-- main -->
+        <div id="footer">
+          <p class="left">Copyright 2004-2006 Canonical Ltd.</p>
+          <p class="right"><a href="#" title="Terms &amp; Conditions">Terms &amp; Conditions</a> | <a href="#" title="Feedback">Feedback</a> | <a href="#" title="FAQ">FAQ</a></p>
+        </div> <!-- footer -->
+      </div> <!-- wrapper -->
+    </body>
+  </html>
+</metal:page>
