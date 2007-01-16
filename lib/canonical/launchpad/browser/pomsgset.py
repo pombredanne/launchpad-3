@@ -690,20 +690,20 @@ class BaseTranslationView(LaunchpadView):
                 msgset_ID_LANGCODE_translation_PLURALFORM_radiobutton = (
                     '%s%d_radiobutton' % (
                         msgset_ID_LANGCODE_translation_, pluralform))
-                interesting_key = form[
+                selected_translation_key = form[
                     msgset_ID_LANGCODE_translation_PLURALFORM_radiobutton]
 
                 # We are going to check whether the radio button is for
                 # current translation, suggestion or the new translation
                 # field.
-                if (interesting_key !=
+                if (selected_translation_key !=
                     msgset_ID_LANGCODE_translation_PLURALFORM_new):
                     # It's either current translation or an existing
                     # suggestion.
                     # Let's override 'value' with the selected suggestion
                     # value.
-                    if 'suggestion' in interesting_key:
-                        value = _getSuggestionFromFormId(interesting_key)
+                    if 'suggestion' in selected_translation_key:
+                        value = _getSuggestionFromFormId(selected_translation_key)
                     elif pomsgset.active_texts[pluralform] is not None:
                         # It's current translation.
                         value = pomsgset.active_texts[pluralform]
@@ -1223,5 +1223,17 @@ class POMsgSetSuggestions:
                  user_is_official_translator):
         self.title = title
         self.pomsgset = pomsgset
-        self.submissions = submissions
         self.user_is_official_translator = user_is_official_translator
+        self.submissions = []
+        for submission in submissions:
+            self.submissions.append({
+                'id': submission.id,
+                'language': submission.pomsgset.pofile.language,
+                'plural_index': submission.pluralform,
+                'suggestion_text': text_to_html(
+                    submission.potranslation.translation,
+                    submission.pomsgset.potmsgset.flags()),
+                'pomsgset': pomsgset,
+                'person': submission.person,
+                'datecreated': submission.datecreated
+                })

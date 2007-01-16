@@ -2,6 +2,10 @@ We are going to test the system by which rosetta provides alternative
 translation suggestions. This will need to be updated when we change the
 presentation of these items.
 
+This test is going to work with evolution source package for Ubuntu Hoary.
+As part of this history, we have Hoary distro release with CLOSED permissions
+and with the Polyglot translation team in charge of its translations.
+
 Let's add a new suggestion as a person without privileges.
 
   >>> browser.addHeader("Authorization", "Basic no-priv@canonical.com:test")
