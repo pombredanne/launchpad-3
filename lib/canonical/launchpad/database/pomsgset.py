@@ -392,9 +392,14 @@ class POMsgSet(SQLBase):
                 # activesubmission is updated only if the translation is
                 # valid and it's an editor.
 
-                # XXX 20070115 DaniloSegan: We are setting latestsubmission
-                # to be able to tell when the last change happened in
-                # IPOFile.validExportCache().  See also bug #78501.
+                # XXX 20070115 DaniloSegan:  selection.activesubmission
+                # is not really the  latestsubmission, but for now use
+                # this hack to get POFile.validExportCache() to work as we
+                # want. We at least know that the activesubmission will be
+                # pointing to the POMsgSet that was last updated, and that's
+                # enough for POFile.validExportCache to make the right
+                # decision (though not correct in terms of what the data
+                # model would mandate).  See also bug #78501.
                 self.pofile.latestsubmission = selection.activesubmission
 
                 selection.activesubmission = None
