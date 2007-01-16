@@ -14,23 +14,18 @@ from canonical.launchpad.webapp import canonical_url, LaunchpadXMLRPCView
 
 
 class IOpStats(Interface):
-    """Interface for OpStats"""
-
+    """Interface for OpStats.
+    
+    This is only used for security declarations - the OpStats class
+    is intended to be used directly rather than retrieved as a utility
+    (any new metrics we want to measure will involve altering the OpStats
+    implementation, and the extra level of indirection just needlessly
+    complicate code that we want to run in extenuating circumstances, such
+    such as exception handling).
+    """
     def opstats():
-        """Return a dictionary of a number of operational statistics.
-
-        Keys currently are:
-            requests -- # requests served by this appserver.
-            xml-rpc requests -- # xml-rpc requests served.
-            404s -- # 404 status responses served (Not Found)
-            500s -- # 500 status responses served (Unhandled exceptions)
-            503s -- # 503 status responses served (Timeouts)
-            3XXs -- # 300-399 status responses served (Redirection)
-            4XXs -- # 400-499 status responses served (Client Errors)
-            5XXs -- # 500-599 status responses served (Server Errors)
-            6XXs -- # 600-600 status responses served (Internal Errors)
-        """
-
+        """See OpStats."""
+        
 
 class OpStats(LaunchpadXMLRPCView):
     """The XML-RPC API for extracting operational statistics."""
@@ -65,7 +60,19 @@ class OpStats(LaunchpadXMLRPCView):
             })
 
     def opstats(self):
-        """See IOpStats."""
+        """Return a dictionary of a number of operational statistics.
+
+        Keys currently are:
+            requests -- # requests served by this appserver.
+            xml-rpc requests -- # xml-rpc requests served.
+            404s -- # 404 status responses served (Not Found)
+            500s -- # 500 status responses served (Unhandled exceptions)
+            503s -- # 503 status responses served (Timeouts)
+            3XXs -- # 300-399 status responses served (Redirection)
+            4XXs -- # 400-499 status responses served (Client Errors)
+            5XXs -- # 500-599 status responses served (Server Errors)
+            6XXs -- # 600-600 status responses served (Internal Errors)
+        """
         return OpStats.stats
 
     def __call__(self):

@@ -457,8 +457,8 @@ class MainLaunchpadPublication(LaunchpadBrowserPublication):
 class XMLRPCLaunchpadPublication(LaunchpadBrowserPublication):
     """The publication used for XML-RPC requests."""
     def handleException(self, object, request, exc_info, retry_allowed=True):
-        super(XMLRPCLaunchpadPublication, self).handleException(
-                object, request, exc_info, retry_allowed
+        LaunchpadBrowserPublication.handleException(
+                self, object, request, exc_info, retry_allowed
                 )
         OpStats.stats['xml-rpc faults'] += 1
 

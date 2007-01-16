@@ -270,12 +270,11 @@ class LaunchpadBrowserPublication(
         superclass = zope.app.publication.browser.BrowserPublication
         superclass.endRequest(self, request, object)
         da.clear_request_started()
-        self._maintainStats(request)
 
-    def _maintainStats(self,request):
+        # Maintain operational statistics.
         OpStats.stats['requests'] += 1
-        # Increment counters for HTTP status codes we track individually
 
+        # Increment counters for HTTP status codes we track individually
         # NB. We use IBrowserRequest, as other request types such as
         # IXMLRPCRequest use IHTTPRequest as a superclass.
         # This should be fine as Launchpad only deals with browser
@@ -290,7 +289,7 @@ class LaunchpadBrowserPublication(
             elif status == 503: # Timeouts
                 OpStats.stats['503s'] += 1
 
-            # Increment counters for status code groups
+            # Increment counters for status code groups.
             OpStats.stats[str(status)[0] + 'XXs'] += 1
 
 

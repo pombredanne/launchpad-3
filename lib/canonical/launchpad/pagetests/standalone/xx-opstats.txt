@@ -1,3 +1,5 @@
+= Operational Statistics and Metrics =
+
 We make Zope 3 give us real time statistics about Launchpad's operation.
 We can access them via XML-RPC:
 
@@ -23,12 +25,13 @@ Create a function to report our stats for these tests.
     ...     reset()
     ...
 
-Number of requests and XML-RPC requests. Even though XML-RPC
-requests are technically HTTP requests, we do not count them as such. Note
-that the call to obtain statistics will increment the 'requests' and
-'xml-rpc requests' statistics, but this will not be visible until the
-next time we access the statistics as the statistics are adjusted after
-the request has been served:
+== Number of requests and XML-RPC requests ==
+
+Even though XML-RPC requests are technically HTTP requests, we do not
+count them as such. Note that the call to obtain statistics will increment
+the 'requests' and 'xml-rpc requests' statistics, but this will not be
+visible until the next time we access the statistics as the statistics
+are adjusted after the request has been served:
 
     >>> stats = lp_xmlrpc.opstats()
     >>> for key in sorted(stats.keys()):
@@ -54,7 +57,7 @@ the request has been served:
     requests: 1
     xml-rpc requests: 1
 
-Number of HTTP requests and success codes.
+== Number of HTTP requests and success codes ==
 
     >>> output = http("GET / HTTP/1.1\nHost: code.launchpad.dev\n")
     >>> output.getStatus()
@@ -64,7 +67,7 @@ Number of HTTP requests and success codes.
     http requests: 1
     requests: 1
     
-Number of 404s:
+== Number of 404s ==
 
     >>> output = http("GET http://launchpad.dev/non-existant HTTP/1.1\n")
     >>> output.getStatus()
@@ -75,11 +78,12 @@ Number of 404s:
     http requests: 1
     requests: 1
 
-Number of 500 Internal Server Errors (unhandled exceptions). This is
-normally the number of OOPS pages displayed to the user, but may also
-include the odd case where the OOPS system has failed and a fallback
-error page is rendered by Zope3. There doesn't seem to be any particular
-need to differentiate these cases though:
+== Number of 500 Internal Server Errors (unhandled exceptions) ==
+
+This is normally the number of OOPS pages displayed to the user, but
+may also include the odd case where the OOPS system has failed and a
+fallback error page is rendered by Zope3. There doesn't seem to be any
+particular need to differentiate these cases though:
 
     >>> from zope.app.tests import ztapi
     >>> class ErrorView(object):
@@ -97,7 +101,7 @@ need to differentiate these cases though:
     http requests: 1
     requests: 1
 
-Number of XML-RPC Faults:
+== Number of XML-RPC Faults ==
 
     >>> try:
     ...     opstats = lp_xmlrpc.invalid() # XXX: Need a HTTP test too
@@ -107,9 +111,9 @@ Number of XML-RPC Faults:
     >>> report()
     requests: 1
     xml-rpc faults: 1
-    xml-rpc requests:  1
+    xml-rpc requests: 1
 
-Number of soft timeouts:
+== Number of soft timeouts ==
 
     >>> from canonical.config import config
     >>> old_soft_request_timeout = config.launchpad.soft_request_timeout
@@ -126,9 +130,11 @@ Number of soft timeouts:
     requests: 1
     soft timeouts: 1
 
-Number of Timeouts. We can't reliably track this using the 503 response
-code as other Launchpad code may well return this status and an XML-RPC
-request may also return a timeout Fault:
+== Number of Timeouts ==
+
+We can't reliably track this using the 503 response code as other
+Launchpad code may well return this status and an XML-RPC request may
+also return a timeout Fault:
 
     >>> old_db_statement_timeout = config.launchpad.db_statement_timeout
     >>> config.launchpad.db_statement_timeout = 1
@@ -146,10 +152,12 @@ request may also return a timeout Fault:
     requests: 1
     timeouts: 1
 
-Reset out config until Bug 78545 is fixed:
+Reset our config until Bug 78545 is fixed:
 
     >>> config.launchpad.db_statement_timeout = old_db_statement_timeout
     >>> config.launchpad.soft_request_timeout = old_soft_request_timeout
+
+== HTTP access for Cricket ==
 
 Stats can also be retrieved via HTTP in cricket-graph format:
 

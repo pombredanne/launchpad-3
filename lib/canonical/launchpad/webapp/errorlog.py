@@ -19,12 +19,12 @@ from zope.app.error.interfaces import IErrorReportingUtility
 from zope.exceptions.exceptionformatter import format_exception
 
 from canonical.config import config
-from canonical.launchpad.webapp.opstats import OpStats
-from canonical.launchpad.webapp.interfaces import (
-    IErrorReport, IErrorReportRequest)
 from canonical.launchpad.webapp.adapter import (
     RequestExpired, get_request_statements, get_request_duration,
     soft_timeout_expired)
+from canonical.launchpad.webapp.interfaces import (
+    IErrorReport, IErrorReportRequest)
+from canonical.launchpad.webapp.opstats import OpStats
 
 UTC = pytz.utc
 
