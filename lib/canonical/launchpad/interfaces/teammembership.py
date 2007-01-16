@@ -36,9 +36,13 @@ class ITeamMembership(Interface):
     def isExpired():
         """Return True if this membership's status is EXPIRED."""
 
-    def setStatus(status, reviewer=None, reviewercomment=None):
-        """Set the status of this membership, filling or cleaning the
-        TeamParticipation table if necessary.
+    def setStatus(status, reviewer, reviewercomment=None):
+        """Set the status of this membership.
+        
+        Also sets the reviewer and reviewercomment, filling or cleaning
+        the TeamParticipation table if necessary.
+
+        The given status must be different than the current status.
         """
 
 
@@ -56,9 +60,9 @@ class ITeamMembershipSet(Interface):
             reviewercomment=None):
         """Create and return a new TeamMembership object.
 
-        The status of this new object must be either APPROVED or PROPOSED. If
-        the status is APPROVED, this method will also take care of filling the
-        TeamParticipation table.
+        The status of this new object must be APPROVED, PROPOSED or ADMIN. If
+        the status is APPROVED or ADMIN, this method will also take care of
+        filling the TeamParticipation table.
         """
 
     def getActiveMemberships(team, orderBy=None):

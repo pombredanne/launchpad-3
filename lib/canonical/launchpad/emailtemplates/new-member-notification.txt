@@ -1,0 +1,6 @@
+Hello,
+
+%(reviewer)s added you as a member of %(team)s.
+
+Regards,
+The Launchpad team
