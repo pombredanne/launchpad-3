@@ -628,19 +628,11 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         self.failUnless(25 in branch_ids,
                         "hosted branch no longer in pull list")
 
-    def failIfBranchInPullQueue(self, branch_id, message):
-        """Fail if the branch with this id is present in the pull queue."""
+    def isBranchInPullQueue(self, branch_id):
+        """Whether the branch with this id is present in the pull queue."""
         results = self.storage._getBranchPullQueueInteraction(self.cursor)
-        result_branch_ids = [
-            result_branch_id for result_branch_id, result_pull_url in results]
-        self.failIf(branch_id in result_branch_ids, message)
-
-    def failUnlessBranchInPullQueue(self, branch_id, message):
-        """Fail if the branch with this id is NOT present in the pull queue."""
-        results = self.storage._getBranchPullQueueInteraction(self.cursor)
-        result_branch_ids = [
-            result_branch_id for result_branch_id, result_pull_url in results]
-        self.failUnless(branch_id in result_branch_ids, message)
+        return branch_id in (
+            result_branch_id for result_branch_id, result_pull_url in results)
 
     def setSeriesDateLastSynced(self, series_id, value=None, now_minus=None):
         """Helper to set the datelastsynced of a ProductSeries.
@@ -650,7 +642,7 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         :param now_minus: shorthand to set a value before the current time.
         """
         # Exactly one of value or now_minus must be set.
-        assert bool(value is None) + bool(now_minus is None) == 1
+        assert int(value is None) + int(now_minus is None) == 1
         if now_minus is not None:
             value = ("CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '%s'"
                      % now_minus)
@@ -666,14 +658,13 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         :param now_minus: shorthand to set a value before the current time.
         """
         # Exactly one of value or now_minus must be set.
-        assert bool(value is None) + bool(now_minus is None) == 1
+        assert int(value is None) + int(now_minus is None) == 1
         if now_minus is not None:
             value = ("CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '%s'"
                      % now_minus)
         self.cursor.execute(
             "UPDATE Branch SET last_mirror_attempt = (%s) WHERE id = %d"
             % (value, branch_id))
-
 
     def test_import_branches_only_listed_when_due(self):
         # Import branches (branches owned by vcs-imports) are only listed when
@@ -706,7 +697,7 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
 
         # Since the import was never successful, the branch should not be in
         # the pull queue.
-        self.failIfBranchInPullQueue(14,
+        self.failIf(self.isBranchInPullQueue(14),
             "incomplete import branch in pull queue.")
 
         # Mark ProductSeries 3 as just synced, and branch 14 as never mirrored.
@@ -715,7 +706,7 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         self.connection.commit()
 
         # We have a new import! We must mirror it as soon as possible.
-        self.failUnlessBranchInPullQueue(14,
+        self.failUnless(self.isBranchInPullQueue(14),
             "new import branch not in pull queue.")
 
         # Mark ProductSeries 3 as synced, and branch 14 as more recently
@@ -727,7 +718,7 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
 
         # Since the the import was not successfully synced since the last
         # mirror, we do not have anything new to mirror.
-        self.failIfBranchInPullQueue(14,
+        self.failIf(self.isBranchInPullQueue(14),
             "not recently synced import branch in pull queue.")
 
         # Mark ProductSeries 3 as synced recently, and branch 13 as last
@@ -738,7 +729,7 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
 
         # The import was updated since the last mirror attempt. There might be
         # new revisions to mirror.
-        self.failUnlessBranchInPullQueue(14,
+        self.failUnless(self.isBranchInPullQueue(14),
             "recently synced import branch not in pull queue.")
 
         # During the transition period where the branch puller is aware of
@@ -752,7 +743,7 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         self.setSeriesDateLastSynced(3, 'NULL')
         self.setBranchLastMirrorAttempt(14, now_minus='1 day 1 minute')
         self.connection.commit()
-        self.failUnlessBranchInPullQueue(14,
+        self.failUnless(self.isBranchInPullQueue(14),
             "import branch last mirrored >1 day ago not in pull queue.")
 
         # Set a NULL datelastsynced in ProductSeries 3, and mark Branch 14 as
@@ -760,7 +751,7 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         self.setSeriesDateLastSynced(3, 'NULL')
         self.setBranchLastMirrorAttempt(14, now_minus='5 minutes')
         self.connection.commit()
-        self.failIfBranchInPullQueue(14,
+        self.failIf(self.isBranchInPullQueue(14),
             "import branch mirrored <1 day ago in pull queue.")
 
 
