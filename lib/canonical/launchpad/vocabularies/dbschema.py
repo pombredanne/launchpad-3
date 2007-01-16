@@ -14,6 +14,7 @@ __all__ = [
     'BranchLifecycleStatusVocabulary',
     'BranchLifecycleStatusFilterVocabulary',
     'BranchReviewStatusVocabulary',
+    'BranchSubscriptionDiffSizeVocabulary',
     'BranchSubscriptionNotificationLevelVocabulary',
     'BugAttachmentTypeVocabulary',
     'BugRefVocabulary',
@@ -52,6 +53,8 @@ __all__ = [
     'UpstreamFileTypeVocabulary',
     ]
 
+import operator
+
 from canonical.lp import dbschema
 from zope.schema.vocabulary import SimpleVocabulary
 
@@ -76,6 +79,20 @@ def vocab_factory(schema, noshow=[]):
         return SimpleVocabulary.fromItems(items)
     return factory
 
+def sortkey_ordered_vocab_factory(schema, noshow=[]):
+    """Another factory for IDBSchema -> IVocabulary.
+
+    This function returns a callable object that creates a vocabulary
+    from a dbschema ordered by that schema's sortkey.
+    """
+    def factory(context, schema=schema, noshow=noshow):
+        """Adapt IDBSchema to IVocabulary."""
+        items = [(item.title, item) for item in
+                 sorted(schema.items, key=operator.attrgetter('sortkey'))
+                 if item not in noshow]
+        return SimpleVocabulary.fromItems(items)
+    return factory
+
 # DB Schema Vocabularies
 
 BountyDifficultyVocabulary = vocab_factory(dbschema.BountyDifficulty)
@@ -85,6 +102,8 @@ BranchLifecycleStatusVocabulary = \
 BranchLifecycleStatusFilterVocabulary = \
     vocab_factory(dbschema.BranchLifecycleStatusFilter)
 BranchReviewStatusVocabulary = vocab_factory(dbschema.BranchReviewStatus)
+BranchSubscriptionDiffSizeVocabulary = \
+    sortkey_ordered_vocab_factory(dbschema.BranchSubscriptionDiffSize)
 BranchSubscriptionNotificationLevelVocabulary = \
     vocab_factory(dbschema.BranchSubscriptionNotificationLevel)
 BugAttachmentTypeVocabulary = vocab_factory(dbschema.BugAttachmentType)

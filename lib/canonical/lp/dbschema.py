@@ -35,6 +35,7 @@ __all__ = (
 'BranchLifecycleStatus',
 'BranchLifecycleStatusFilter',
 'BranchReviewStatus',
+'BranchSubscriptionDiffSize',
 'BranchSubscriptionNotificationLevel',
 'BugBranchStatus',
 'BugNominationStatus',
@@ -2779,6 +2780,47 @@ class BranchReviewStatus(DBSchema):
         further changes.
         """)
 
+
+class BranchSubscriptionDiffSize(DBSchema):
+    """Branch Subscription Diff Size
+
+    When getting branch revision notifications, the person can set a size
+    limit of the diff to send out. If the generated diff is greater than
+    the specified number of lines, then it is omitted from the email.
+    This enumerated type defines the number of lines as a choice
+    so we can sensibly limit the user to a number of size choices.
+    """
+
+    NODIFF = Item(0, """
+        Don't send diffs
+
+        Don't send generated diffs with the revision notifications.
+        """, sortkey=0)
+    
+    HALFKLINES = Item(500, """
+        500 lines
+
+        Limit the generated diff to 500 lines.
+        """, sortkey=500)
+    
+    ONEKLINES  = Item(1000, """
+        1000 lines
+
+        Limit the generated diff to 1000 lines.
+        """, sortkey=1000)
+    
+    FIVEKLINES = Item(5000, """
+        5000 lines
+
+        Limit the generated diff to 5000 lines.
+        """, sortkey=5000)
+    
+    WHOLEDIFF  = Item(-1, """
+        Send entire diff
+
+        Don't limit the size of the diff.
+        """, sortkey=1000000)
+    
 
 
 class BranchSubscriptionNotificationLevel(DBSchema):

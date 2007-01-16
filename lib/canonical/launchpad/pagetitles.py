@@ -111,11 +111,15 @@ bounty_index = ContextTitle(smartquote('Bounty "%s" in Launchpad'))
 
 bounty_subscription = ContextTitle(smartquote('Subscription to bounty "%s"'))
 
-branch_edit = ContextTitle(smartquote('Change "%s" branch details'))
+branch_edit = ContextDisplayName(smartquote('Change "%s" branch details'))
+
+branch_edit_subscription = ContextDisplayName(smartquote(
+    'Edit subscription to branch "%s"'))
 
 branch_index = ContextDisplayName(smartquote('Bazaar branch "%s"'))
 
-branch_subscription = ContextTitle(smartquote('Subscription to branch "%s"'))
+branch_subscription = ContextDisplayName(smartquote(
+    'Subscription to branch "%s"'))
 
 branchtarget_branchlisting = ContextTitle('Details of Branches for %s')
 

@@ -128,10 +128,7 @@ class Branch(SQLBase):
     @property
     def displayname(self):
         """See IBranch."""
-        if self.title:
-            return self.title
-        else:
-            return self.unique_name
+        return self.title or self.unique_name
 
     @property
     def sort_key(self):
@@ -171,26 +168,30 @@ class Branch(SQLBase):
         return tuple(self.subjectRelations) + tuple(self.objectRelations)
 
     # subscriptions
-    def subscribe(self, person):
+    def subscribe(self, person, notification_level, max_diff_lines):
         """See IBranch."""
-        for sub in self.subscriptions:
-            if sub.person.id == person.id:
-                return sub
-        return BranchSubscription(branch=self, person=person)
+        # can't subscribe twice
+        assert(not self.hasSubscription(person))
+        return BranchSubscription(branch=self, person=person,
+                                  notification_level=notification_level,
+                                  max_diff_lines=max_diff_lines)
 
-    def unsubscribe(self, person):
-        """See IBranch."""
-        for sub in self.subscriptions:
-            if sub.person.id == person.id:
-                BranchSubscription.delete(sub.id)
-                break
-
-    def has_subscription(self, person):
+    def getSubscription(self, person):
         """See IBranch."""
         assert person is not None
         subscription = BranchSubscription.selectOneBy(
             person=person, branch=self)
-        return subscription is not None
+        return subscription
+
+    def hasSubscription(self, person):
+        """See IBranch."""
+        return self.getSubscription(person) is not None
+
+    def unsubscribe(self, person):
+        """See IBranch."""
+        subscription = self.getSubscription(person)
+        assert(subscription is not None)
+        BranchSubscription.delete(subscription.id)
 
     # revision number manipulation
     def getRevisionNumber(self, sequence):
