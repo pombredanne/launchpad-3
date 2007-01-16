@@ -214,3 +214,4 @@ def vocab_factory(schema, noshow=[]):
         items = [(title, value) for sortkey, title, value in items]
         return SimpleVocabulary.fromItems(items)
     return factory
+

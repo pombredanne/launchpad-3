@@ -266,6 +266,11 @@
     />
 
   <vocabulary
+    name="ProjectProducts"
+    factory="canonical.launchpad.vocabularies.project_products_vocabulary_factory"
+    />
+
+  <vocabulary
     name="RemoteBugTaskStatus"
     factory="canonical.launchpad.vocabularies.RemoteBugTaskStatusVocabulary"
     />
