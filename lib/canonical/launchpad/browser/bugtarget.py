@@ -242,7 +242,7 @@ class FileBugViewBase(LaunchpadFormView):
                 # nicer to allow people to indicate a package even if
                 # never published, but the quick fix for now is to note
                 # the issue and move on.
-                notification.append(
+                notifications.append(
                     "The package %s is not published in %s; the "
                     "bug was targeted only to the distribution."
                     % (packagename, context.displayname))
