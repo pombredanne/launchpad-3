@@ -483,13 +483,13 @@ class LaunchpadFunctionalLayer(
 
     @classmethod
     def tearDown(cls):
-        # Reset any statistics
-        from canonical.launchpad.webapp.opstats import OpStats
-        OpStats.resetStats()
+        pass
 
     @classmethod
     def testSetUp(cls):
-        pass
+        # Reset any statistics
+        from canonical.launchpad.webapp.opstats import OpStats
+        OpStats.resetStats()
 
     @classmethod
     def testTearDown(cls):
@@ -498,6 +498,10 @@ class LaunchpadFunctionalLayer(
         # If tests forget to logout, we can do it for them.
         if is_logged_in():
             logout()
+
+        # Reset any statistics
+        from canonical.launchpad.webapp.opstats import OpStats
+        OpStats.resetStats()
 
 
 class LaunchpadZopelessLayer(
