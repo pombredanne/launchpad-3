@@ -5,12 +5,17 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-<facet facet="overview">
+  <facet facet="overview">
 
     <!-- BinaryPackagename -->
     <content class="canonical.launchpad.database.BinaryPackageName">
         <allow interface="canonical.launchpad.interfaces.IBinaryPackageName" />
     </content>
+
+    <vocabulary
+      name="BinaryPackageName"
+      factory="canonical.launchpad.database.binarypackagename.BinaryPackageNameVocabulary"
+      />
 
     <!-- BinaryPackageNameSet -->
     <securedutility
@@ -28,5 +33,10 @@
         <allow interface="canonical.launchpad.interfaces.IBinaryAndSourcePackageName" />
     </content>
 
-</facet>
+    <vocabulary
+      name="BinaryAndSourcePackageName"
+      factory="canonical.launchpad.database.binarypackagename.BinaryAndSourcePackageNameVocabulary"
+      />
+
+  </facet>
 </configure>

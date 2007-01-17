@@ -1,15 +1,22 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['SourcePackageName', 'SourcePackageNameSet']
+__all__ = [
+    'SourcePackageName',
+    'SourcePackageNameSet',
+    'SourcePackageNameVocabulary'
+]
 
 from zope.interface import implements
+from zope.schema.vocabulary import SimpleTerm
 
 from sqlobject import SQLObjectNotFound
 from sqlobject import StringCol, SQLMultipleJoin
 
 from canonical.database.sqlbase import SQLBase, quote_like
 
+from canonical.launchpad.webapp.vocabulary import (
+    NamedSQLObjectHugeVocabulary)
 from canonical.launchpad.interfaces import (
     ISourcePackageName, ISourcePackageNameSet, NotFoundError)
 
@@ -73,4 +80,28 @@ class SourcePackageNameSet:
             return self[name]
         except NotFoundError:
             return self.new(name)
+
+
+class SourcePackageNameVocabulary(NamedSQLObjectHugeVocabulary):
+
+    displayname = 'Select a Source Package'
+    _table = SourcePackageName
+    _orderBy = 'name'
+
+    def toTerm(self, obj):
+        return SimpleTerm(obj, obj.name, obj.name)
+
+    def search(self, query):
+        """Returns names where the sourcepackage contains the given
+        query. Returns an empty list if query is None or an empty string.
+
+        """
+        if not query:
+            return self.emptySelectResults()
+
+        query = query.lower()
+        return self._table.select(
+            "sourcepackagename.name LIKE '%%' || %s || '%%'"
+            % quote_like(query))
+
 
