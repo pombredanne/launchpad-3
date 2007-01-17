@@ -1,53 +1,16 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
-"""This module will contain sorting utility functions."""
+"""This module contains sorting utility functions."""
 
 __metaclass__ = type
 __all__ = ['expand_numbers',
            'sorted_version_numbers',
            'sorted_dotted_numbers']
 
-# leading _ indicates private to module
-def _find_embedded_numbers(unicode_text):
-    """Finds the locations of all the numbers in a string.
+import re
 
-    Returns a list of tuples containing the start and end position
-    of the numbers in the string value.
-
-    >>> _find_embedded_numbers(u'hello')
-    []
-    >>> _find_embedded_numbers(u'0.10')
-    [(0, 1), (2, 4)]
-    >>> _find_embedded_numbers(u'dev-1.23.465')
-    [(4, 5), (6, 8), (9, 12)]
-    >>> _find_embedded_numbers(123)
-    Traceback (most recent call last):
-    ...
-    TypeError: parameter must be a unicode string
-    >>> _find_embedded_numbers('123')
-    Traceback (most recent call last):
-    ...
-    TypeError: parameter must be a unicode string
-    
-    """ # check regex.find
-    if not isinstance(unicode_text, unicode):
-        raise TypeError("parameter must be a unicode string")
-    
-    result = []
-    start = None
-    for pos, char in enumerate(unicode_text):
-        if char.isdigit():
-            if start is None:
-                start = pos
-        else:
-            if start is not None:
-                result.append((start, pos))
-                start = None
-    if start is not None:
-        result.append((start, pos+1))
-    return result
 
 def expand_numbers(unicode_text, fill_digits=4):
-    """Any numbers in the unicode string are zero filled to fill_digits.
+    """Return a copy of the string with numbers zero filled.
 
     >>> expand_numbers(u'hello world')
     u'hello world'
@@ -59,76 +22,91 @@ def expand_numbers(unicode_text, fill_digits=4):
     u'branch-0002-0003.0012'
     
     """
-    positions = _find_embedded_numbers(unicode_text)
-    # apply from back to front to keep values accurate
-    result = unicode_text
-    for start, finish in reversed(positions):
-        result = (result[:start] + 
-                  result[start:finish].zfill(fill_digits) +
-                  result[finish:])
+    assert(isinstance(unicode_text, unicode))
+    def substitude_filled_numbers(match):
+        return match.group(0).zfill(fill_digits)
+    return re.sub(u'\d+', substitude_filled_numbers, unicode_text)
 
-    return result
 
-def _versioned_sort_comparitor(lhs_text, rhs_text):
-    """Strings starting with numbers reversed, but normal text alphabetically.
+def _reversed_number_comparator(lhs_text, rhs_text):
+    """Return comparison value reversed for numbers only.
 
-    >>> _versioned_sort_comparitor('0.9', '0.8')
+    >>> _reversed_number_comparator('9.3', '2.4')
     -1
-    >>> _versioned_sort_comparitor('0.9', 'hello')
-    -1
-    >>> _versioned_sort_comparitor('hello', '0.9')
+    >>> _reversed_number_comparator('world', 'hello')
     1
-    >>> _versioned_sort_comparitor('hello', 'world')
+    >>> _reversed_number_comparator('hello world', 'hello world')
+    0
+    >>> _reversed_number_comparator('dev', 'development')
     -1
-
-    """
-    if (lhs_text and lhs_text[0].isdigit() and
-        rhs_text and rhs_text[0].isdigit()):
-        return cmp(rhs_text, lhs_text)
-    else:
-        return cmp(lhs_text, rhs_text)
+    >>> _reversed_number_comparator('bzr-0.13', 'bzr-0.08')
+    -1
     
+    """
+    for left_char, right_char in zip(lhs_text, rhs_text):
+        # if they are both digits, then switch the comparitor
+        if left_char.isdigit() and right_char.isdigit():
+            result = cmp(right_char, left_char)
+            if result:
+                return result
+        else:
+            result = cmp(left_char, right_char)
+            if result:
+                return result
+    # if we get to here one of the strings is a substring of the other
+    left_len = len(lhs_text)
+    right_len = len(rhs_text)
+    if left_len == right_len:
+        return 0
+    else:
+        return (left_len > right_len) and 1 or -1
 
-def sorted_version_numbers(sequence, key=None):
-    """Have 'later' versions appear before 'older' ones.
 
-    >>> bzr_versions = [u'0.9', u'0.10', u'0.11', u'0.12', u'0.13', u'bzr.dev']
+def _identity(x):
+    return x
+
+
+def sorted_version_numbers(sequence, key=_identity):
+    """Return a new sequence where 'newer' versions appear before 'older' ones.
+
+    >>> bzr_versions = [u'0.9', u'0.10', u'0.11']
     >>> for version in sorted_version_numbers(bzr_versions):
     ...   print version
-    0.13
-    0.12
     0.11
     0.10
     0.9
-    bzr.dev
+    >>> bzr_versions = [u'bzr-0.9', u'bzr-0.10', u'bzr-0.11']
+    >>> for version in sorted_version_numbers(bzr_versions):
+    ...   print version
+    bzr-0.11
+    bzr-0.10
+    bzr-0.9
 
     >>> class series:
     ...   def __init__(self, name):
     ...     self.name = unicode(name)
     >>> bzr_versions = [series('0.9'), series('0.10'), series('0.11'),
-    ...                 series('0.12'), series('0.13'), series('bzr.dev')]
+    ...                 series('bzr-0.9'), series('bzr-0.10'),
+    ...                 series('bzr-0.11'), series('foo')]
     >>> from operator import attrgetter
     >>> for version in sorted_version_numbers(bzr_versions,
     ...                                       key=attrgetter('name')):
     ...   print version.name
-    0.13
-    0.12
     0.11
     0.10
     0.9
-    bzr.dev
-
+    bzr-0.11
+    bzr-0.10
+    bzr-0.9
+    foo
     
     """
-    if key is None:
-        expanded_key = expand_numbers
-    else:
-        expanded_key = lambda x: expand_numbers(key(x))
-    return sorted(sequence, key=expanded_key, cmp=_versioned_sort_comparitor)
+    expanded_key = lambda x: expand_numbers(key(x))
+    return sorted(sequence, key=expanded_key,
+                  cmp=_reversed_number_comparator)
 
 
-
-def sorted_dotted_numbers(sequence, key=None):
+def sorted_dotted_numbers(sequence, key=_identity):
     """Sorts numbers inside strings numerically.
 
     There are times where numbers are used as part of a string
@@ -137,27 +115,37 @@ def sorted_dotted_numbers(sequence, key=None):
 
     The function returns a new sorted sequence.
 
-    >>> series = [u'trunk', u'dev', u'0.13', u'0.12.2', u'0.12.1', u'0.12',
-    ...           u'0.11', u'0.10', u'0.9.1', u'0.9', u'0.8']
-    >>> for version in sorted_dotted_numbers(series):
+    >>> bzr_versions = [u'0.9', u'0.10', u'0.11']
+    >>> for version in sorted_dotted_numbers(bzr_versions):
     ...   print version
-    0.8
     0.9
-    0.9.1
     0.10
     0.11
-    0.12
-    0.12.1
-    0.12.2
-    0.13
-    dev
-    trunk
-    >>> series
-    [u'trunk', u'dev', u'0.13', u'0.12.2', u'0.12.1', u'0.12', u'0.11',
-    u'0.10', u'0.9.1', u'0.9', u'0.8']
+    >>> bzr_versions = [u'bzr-0.9', u'bzr-0.10', u'bzr-0.11']
+    >>> for version in sorted_dotted_numbers(bzr_versions):
+    ...   print version
+    bzr-0.9
+    bzr-0.10
+    bzr-0.11
+
+    >>> class series:
+    ...   def __init__(self, name):
+    ...     self.name = unicode(name)
+    >>> bzr_versions = [series('0.9'), series('0.10'), series('0.11'),
+    ...                 series('bzr-0.9'), series('bzr-0.10'),
+    ...                 series('bzr-0.11'), series('foo')]
+    >>> from operator import attrgetter
+    >>> for version in sorted_dotted_numbers(bzr_versions,
+    ...                                      key=attrgetter('name')):
+    ...   print version.name
+    0.9
+    0.10
+    0.11
+    bzr-0.9
+    bzr-0.10
+    bzr-0.11
+    foo
+    
     """
-    if key is None:
-        expanded_key = expand_numbers
-    else:
-        expanded_key = lambda x: expand_numbers(key(x))
+    expanded_key = lambda x: expand_numbers(key(x))
     return sorted(sequence, key=expanded_key)

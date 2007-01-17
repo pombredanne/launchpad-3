@@ -39,7 +39,8 @@ from canonical.launchpad.webapp.preferredcharsets import Utf8PreferredCharsets
 from canonical.launchpad.webapp.publisher import (
     canonical_url, nearest, LaunchpadView, Navigation, stepthrough,
     redirection, RedirectionView, stepto, LaunchpadXMLRPCView)
-from canonical.launchpad.webapp.sorting import *
+from canonical.launchpad.webapp.sorting import (
+    expand_numbers, sorted_version_numbers, sorted_dotted_numbers)
 
 def smartquote(str):
     """Return a copy of the string provided, with smartquoting applied.

@@ -3,17 +3,15 @@ A test to demonstrate the correct ordering for product releases.
 A helper function to print out the product series part of the portlet.
 
    >>> def print_portlet_area_series(contents):
-   ...   portlet = find_portlet(contents, 'Mozilla Firefox')
-   ...   lists = portlet.fetch('ul')
-   ...   # The registered series is the second list in the portlet
-   ...   series = lists[1].fetch('li')
+   ...   registered_series = find_tag_by_id(contents, 'registered-series')
+   ...   series = registered_series.fetch('li')
    ...   for name in series:
    ...      print name.renderContents()
 
 A helper function to print out the product series on the main page.
 
    >>> def print_content_area_series(contents):
-   ...   series_divs = find_tags_by_id(contents, 'product_series')
+   ...   series_divs = find_tags_by_class(contents, 'productSeries')
    ...   for series in series_divs:
    ...     anchors = series.fetch('a')
    ...     # first anchor is the product series link

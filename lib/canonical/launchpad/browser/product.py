@@ -475,11 +475,11 @@ class ProductView:
 
         return sorted(potemplatenames, key=lambda item: item.name)
 
-    def serieslist(self):
-        """get the series list from the product with the dev focus first."""
-        series_list = [series for series in self.context.serieslist]
+    def sorted_serieslist(self):
+        """Return the series list from the product with the dev focus first."""
+        series_list = list(self.context.serieslist)
         series_list.remove(self.context.development_focus)
-        # now sort the list (currently alphabetical)
+        # now sort the list by name with newer versions before older
         series_list = sorted_version_numbers(series_list,
                                              key=attrgetter('name'))
         series_list.insert(0, self.context.development_focus)
