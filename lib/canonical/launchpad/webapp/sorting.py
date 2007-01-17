@@ -28,38 +28,33 @@ def expand_numbers(unicode_text, fill_digits=4):
     return re.sub(u'\d+', substitude_filled_numbers, unicode_text)
 
 
+# Create translation table for numeric ordinals to their
+# strings in reversed order.  So ord(u'0') -> u'9' and
+# so on.
+reversed_numbers_table = dict(
+  zip(map(ord, u'0123456789'), reversed(u'0123456789')))
+
+
 def _reversed_number_comparator(lhs_text, rhs_text):
     """Return comparison value reversed for numbers only.
 
-    >>> _reversed_number_comparator('9.3', '2.4')
+    >>> _reversed_number_comparator(u'9.3', u'2.4')
     -1
-    >>> _reversed_number_comparator('world', 'hello')
+    >>> _reversed_number_comparator(u'world', u'hello')
     1
-    >>> _reversed_number_comparator('hello world', 'hello world')
+    >>> _reversed_number_comparator(u'hello world', u'hello world')
     0
-    >>> _reversed_number_comparator('dev', 'development')
+    >>> _reversed_number_comparator(u'dev', u'development')
     -1
-    >>> _reversed_number_comparator('bzr-0.13', 'bzr-0.08')
+    >>> _reversed_number_comparator(u'bzr-0.13', u'bzr-0.08')
     -1
     
     """
-    for left_char, right_char in zip(lhs_text, rhs_text):
-        # if they are both digits, then switch the comparitor
-        if left_char.isdigit() and right_char.isdigit():
-            result = cmp(right_char, left_char)
-            if result:
-                return result
-        else:
-            result = cmp(left_char, right_char)
-            if result:
-                return result
-    # if we get to here one of the strings is a substring of the other
-    left_len = len(lhs_text)
-    right_len = len(rhs_text)
-    if left_len == right_len:
-        return 0
-    else:
-        return (left_len > right_len) and 1 or -1
+    assert isinstance(lhs_text, unicode)
+    assert isinstance(rhs_text, unicode)
+    translated_lhs_text = lhs_text.translate(reversed_numbers_table)
+    translated_rhs_text = rhs_text.translate(reversed_numbers_table)
+    return cmp(translated_lhs_text, translated_rhs_text)
 
 
 def _identity(x):
