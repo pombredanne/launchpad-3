@@ -63,6 +63,7 @@ the Accept-Language header, we won't consider that as a valid language code.
 
   >>> from zope.testbrowser.testing import Browser
   >>> browser = Browser()
+  >>> browser.addHeader('X-Forwarded-For', '194.247.192.33')
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
   >>> browser.addHeader('Accept-Language', 'pt_br, Espa\xf1ol')
   >>> browser.open('http://launchpad.dev/~name12/+editlanguages')
@@ -82,6 +83,16 @@ the Accept-Language header, we won't consider that as a valid language code.
 
   >>> print_languages(browser.contents, portlet='browser')
   Portuguese (Brazil)
+
+We are also visiting it from Serbia (194.247.192.33), so lets check that
+the country is properly detected.  Since we don't have data for languages
+spoken in Serbia, we get information about how to contact Rosetta Admins to
+update it.
+
+  >>> 'Languages in Serbia and Montenegro' in browser.contents
+  True
+  >>> 'mailto:rosetta@launchpad.net' in browser.contents
+  True
 
 We also have a page under the launchpad root, called +editmylanguages, with
 launchpad.AnyPerson as permission. This is the page to which we direct
