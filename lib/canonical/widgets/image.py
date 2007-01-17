@@ -38,6 +38,9 @@ class ImageChangeWidget(SimpleInputWidget):
     """
 
     implements(IAlwaysSubmittedWidget)
+    
+    # The LibraryFileAlias representing the user-uploaded image, if any.
+    _image_file_alias = None
 
     def __init__(self, context, request):
         SimpleInputWidget.__init__(self, context, request)
@@ -105,10 +108,28 @@ class ImageChangeWidget(SimpleInputWidget):
             image.seek(0)
             content = image.read()
             filename = image.filename
+
+            # This method may be called more than once in a single request. If
+            # that's the case here we'll simply return the cached
+            # LibraryFileAlias we already have.
+            existing_alias = self._image_file_alias
+            if existing_alias is not None:
+                assert existing_alias.filename == filename, (
+                    "The existing LibraryFileAlias' name doesn't match the "
+                    "given image's name.")
+                assert existing_alias.content.filesize == len(content), (
+                    "The existing LibraryFileAlias' size doesn't match "
+                    "the given image's size.")
+                assert existing_alias.read() == content, (
+                    "The existing LibraryFileAlias' content doesn't match "
+                    "the given image's content.")
+                return existing_alias
+
             type, dummy = guess_content_type(name=filename, body=content)
-            return getUtility(ILibraryFileAliasSet).create(
+            self._image_file_alias = getUtility(ILibraryFileAliasSet).create(
                 name=filename, size=len(content), file=StringIO(content),
                 contentType=type)
+            return self._image_file_alias
         elif action == "delete":
             return None
 
