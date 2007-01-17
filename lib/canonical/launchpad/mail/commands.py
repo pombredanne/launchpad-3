@@ -23,6 +23,7 @@ from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent)
 from canonical.launchpad.event.interfaces import (
     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
+from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.searchbuilder import NULL
 
 from canonical.launchpad.webapp.snapshot import Snapshot
@@ -368,7 +369,22 @@ class AffectsEmailCommand(EmailCommand):
         elif IDistribution.providedBy(bug_target):
             return bugtaskset.createTask(bug, user, distribution=bug_target)
         elif IDistroRelease.providedBy(bug_target):
-            return bugtaskset.createTask(bug, user, distrorelease=bug_target)
+            distro_task = self.getBugTask(bug, bug_target.distribution)
+            # XXX: maybe move this code out to addNomination?
+            if distro_task is None:
+                # A distrorelease task has to have a corresponding
+                # distribution task.
+                distro_task = bugtaskset.createTask(
+                    bug, user, distribution=bug_target.distribution)
+            if not bug.canBeNominatedFor(bug_target):
+                # XXX: what do do here?
+                raise AssertionError("Bug can't be nominated.")
+            nomination = bug.addNomination(target=bug_target, owner=user)
+            if check_permission('launchpad.Driver', bug_target):
+                nomination.approve(user)
+                return self.getBugTask(bug, bug_target)
+            else:
+                return distro_task
         elif IDistributionSourcePackage.providedBy(bug_target):
             return bugtaskset.createTask(
                 bug, user, distribution=bug_target.distribution,
