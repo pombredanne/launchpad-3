@@ -954,7 +954,8 @@ body.tab-translations #mainarea #portlets .portlet.active div {
 }
 body.tab-translations #actions {background-color: #fcf;}
 body.tab-translations #actions h2 {background-color: #962667;}
-.tab-translations h1, .tab-translations h2, .tab-translations h3 {
+.tab-translations h1, .tab-translations h2, .tab-translations h3,
+.tab-translations #application-footer strong {
   background: none;
   color: #962667; /* darkest color from mainarea_tab5-* */
 }
@@ -998,7 +999,8 @@ body.tab-support #mainarea #portlets .portlet.active div {
 }
 body.tab-support #actions {background-color: #eef;}
 body.tab-support #actions h2 {background-color: #3f3ccc;}
-.tab-support h1, .tab-support h2, .tab-support h3 {
+.tab-support h1, .tab-support h2, .tab-support h3,
+.tab-support #application-footer strong {
   background: none;
   color: #3f3ccc;
 }
@@ -1127,9 +1129,10 @@ div.right div.section {
   border-width: 1px 0 0 1px;
   padding: 0.75em 0 0.75em 0.75em;
 }
-div.three.column {width: 33%;}
-div.three.column.left, div.three.column.center, div.three.column.right {
+div.three.columns {clear: both;}
+div.three.columns .column {
   float: left;
+  width: 33%;
 }
 
 table {

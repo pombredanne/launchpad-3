@@ -19,13 +19,13 @@
                   <div class="y">
                     <div class="z">
                       <div id="container">
+                        <h1>Search bug reports</h1>
                         <p
                           tal:condition="view/error_message"
                           tal:content="view/error_message"
                           class="error message"
                         >Error message.</p>
                         <form class="central" action="/bugs" method="get">
-                          <h1>Search bug reports</h1>
                           <table style="margin-left: 0;">
                             <tbody>
                               <tr>
