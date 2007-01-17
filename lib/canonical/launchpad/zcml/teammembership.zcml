@@ -19,7 +19,7 @@
             permission="zope.Public"
             attributes="team person reviewer status datejoined dateexpires
                         reviewercomment statusname is_admin is_owner
-                        isExpired " />
+                        isExpired sendExpirationWarningEmail" />
         <require 
             permission="launchpad.Edit"
             attributes="setStatus" />
