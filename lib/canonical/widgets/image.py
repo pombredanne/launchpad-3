@@ -108,6 +108,7 @@ class ImageChangeWidget(SimpleInputWidget):
             image.seek(0)
             content = image.read()
             filename = image.filename
+            type, dummy = guess_content_type(name=filename, body=content)
 
             # This method may be called more than once in a single request. If
             # that's the case here we'll simply return the cached
@@ -120,9 +121,11 @@ class ImageChangeWidget(SimpleInputWidget):
                 assert existing_alias.content.filesize == len(content), (
                     "The existing LibraryFileAlias' size doesn't match "
                     "the given image's size.")
+                assert existing_alias.mimetype == type, (
+                    "The existing LibraryFileAlias' type doesn't match "
+                    "the given image's type.")
                 return existing_alias
 
-            type, dummy = guess_content_type(name=filename, body=content)
             self._image_file_alias = getUtility(ILibraryFileAliasSet).create(
                 name=filename, size=len(content), file=StringIO(content),
                 contentType=type)
