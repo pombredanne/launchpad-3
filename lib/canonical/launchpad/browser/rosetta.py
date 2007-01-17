@@ -11,7 +11,7 @@ __all__ = [
 
 import httplib
 
-from canonical import config
+from canonical.config import config
 
 from zope.component import getUtility
 
