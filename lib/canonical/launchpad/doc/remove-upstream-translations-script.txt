@@ -133,7 +133,7 @@ And it also works for products!
     DEBUG   Before the removal, latest submission came from: Diogo Matsubara
     DEBUG   Removed 6 submissions
     DEBUG   Processing Spanish (es) translation of evolution-2.2 in Evolution trunk...
-    DEBUG   Before the removal, latest submission came from: Mark Shuttleworth
+    DEBUG   Before the removal, latest submission came from: Carlos Perelló Marín
     DEBUG   Removed 12 submissions
     DEBUG   After the removal, latest submission came from: Carlos Perelló Marín
     DEBUG   Removed 18 submissions in total.
