@@ -92,6 +92,26 @@ class TestImportUpdated(ImportdTestCase):
         self.assertEqual(str(series.datepublishedsync), str(None))
         self.assertEqual(str(series.datelastsynced), str(UTC_NOW))
 
+    def testLastSyncedIsNone(self):
+        # If datelastlastsynced is None and import_branch.last_mirrored is not
+        # None, set datelastsynced. This situation happens the first time we
+        # try to record datelastsynced for an import that has already been
+        # mirrored before the code setting datelastsynced was put in
+        # production.
+        series = self.series()
+        series.datelastsynced = None
+        UTC = pytz.timezone('UTC')
+        series.import_branch.last_mirrored = datetime.datetime(
+            2000, 1, 2, tzinfo=UTC)
+        # In this situation, datepublishedsync SHOULD be None, but let's make
+        # sure it is cleared, just to be safe..
+        series.datepublishedsync = datetime.datetime(
+            2000, 1, 1, tzinfo=UTC)
+        series.importUpdated()
+        # use str() to work around sqlobject lazy evaluation
+        self.assertEqual(str(series.datelastsynced), str(UTC_NOW))
+        self.assertEqual(str(series.datepublishedsync), str(None))
+
     def testLastMirroredBeforeLastSync(self):
         # If import_branch.last_mirrored is older than datelastsynced, the
         # previous sync has not been mirrored yet. The date of the currently

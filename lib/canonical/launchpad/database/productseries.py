@@ -425,7 +425,8 @@ class ProductSeries(SQLBase, BugTargetBase):
         if self.datelastsynced is None:
             self.datepublishedsync = None
         elif self.import_branch.last_mirrored is None:
-            pass # datepublishedsync is already None
+            assert series.datepublishedsync is None, (
+                'we did not raise DatePublishedSyncError')
         elif self.datelastsynced < self.import_branch.last_mirrored:
             self.datepublishedsync = self.datelastsynced
         self.datelastsynced = UTC_NOW
