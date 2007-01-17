@@ -61,6 +61,9 @@ When a user doesn't have a preferred language set, we determine it from the
 user's browser headers. If his browser send us any non-utf8 encoded string in 
 the Accept-Language header, we won't consider that as a valid language code.
 
+We are also pretending that this request is coming from someone in
+Serbia (194.247.192.33), to test country detection.
+
   >>> from zope.testbrowser.testing import Browser
   >>> browser = Browser()
   >>> browser.addHeader('X-Forwarded-For', '194.247.192.33')
@@ -84,10 +87,9 @@ the Accept-Language header, we won't consider that as a valid language code.
   >>> print_languages(browser.contents, portlet='browser')
   Portuguese (Brazil)
 
-We are also visiting it from Serbia (194.247.192.33), so lets check that
-the country is properly detected.  Since we don't have data for languages
-spoken in Serbia, we get information about how to contact Rosetta Admins to
-update it.
+Now we are checking that the country is properly detected.  Since we
+don't have data for languages spoken in Serbia, we get information
+about how to contact Rosetta Admins to update it.
 
   >>> 'Languages in Serbia and Montenegro' in browser.contents
   True
