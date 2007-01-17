@@ -257,14 +257,31 @@ True
 
 Branches can be subscribed to and unsubscribed from by a Person.
 
+Branch subscriptions now have extra attributes associated with them.
+The notification_level is used to control what email is sent to the
+subscribed user, and max_diff_level is used to control the size of
+any generated diffs between revisions that are emailed out.
+
+Both of these attributes are contolled through the UI through the use
+of the enumerated types: BranchSubscriptionDiffSize, and 
+BranchSubscriptionNotificationLevel.
+
 >>> from canonical.launchpad.interfaces import IPerson, IBranchSubscription
+>>> from canonical.lp.dbschema import (
+...   BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
 >>> sabdfl = personset.getByName('sabdfl')
 >>> sabdfl.subscribed_branches.count()
 0
->>> subscription = gterm_dev.subscribe(sabdfl)
+>>> subscription = gterm_dev.subscribe(sabdfl,
+...    BranchSubscriptionNotificationLevel.FULL, 
+...    BranchSubscriptionDiffSize.FIVEKLINES)
 >>> verifyObject(IBranchSubscription, subscription)
 True
 >>> subscription.branch == gterm_dev and subscription.person == sabdfl
+True
+>>> subscription.notification_level == BranchSubscriptionNotificationLevel.FULL
+True
+>>> subscription.max_diff_lines == BranchSubscriptionDiffSize.FIVEKLINES
 True
 >>> gterm_dev.subscriptions[0] == subscription
 True
@@ -290,7 +307,8 @@ the branches registered, authored and subscribed to by this person.
 ...     title, summary=title)
 >>> junkcode.author = lifeless
 >>> syncUpdate(junkcode)
->>> unused = gterm_dev.subscribe(lifeless)
+>>> unused = gterm_dev.subscribe(lifeless, 
+...            BranchSubscriptionNotificationLevel.NOEMAIL, None)
 >>> sorted(lifeless.branches, key=getName) == [gterm_dev, junkcode, meshmerge]
 True
 

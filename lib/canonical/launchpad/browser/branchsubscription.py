@@ -65,7 +65,7 @@ class BranchSubscriptionAddView(_BranchSubscriptionView):
         self.context.subscribe(self.user, notification_level, max_diff_lines)
         
         self.add_notification_message(
-            'You have been subscribed to the branch with: ',
+            'You have subscribed to this branch with: ',
             notification_level, max_diff_lines)
 
     @action("Cancel")
@@ -89,7 +89,7 @@ class BranchSubscriptionEditView(_BranchSubscriptionView):
     def unsubscribe(self, action, data):
         self.context.unsubscribe(self.user)
         self.request.response.addNotification(
-            "You have been unsubscribed from this branch.")
+            "You have unsubscribed from this branch.")
                 
     @action("Change")
     def change_details(self, action, data):

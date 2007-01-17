@@ -178,7 +178,8 @@ class Branch(SQLBase):
 
     def getSubscription(self, person):
         """See IBranch."""
-        assert person is not None
+        if person is None:
+            return None
         subscription = BranchSubscription.selectOneBy(
             person=person, branch=self)
         return subscription
