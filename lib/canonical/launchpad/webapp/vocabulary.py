@@ -17,6 +17,7 @@ __all__ = [
 ]
 
 from sqlobject import AND, CONTAINSSTRING
+from sqlos.interfaces import ISelectResults
 
 from zope.interface import implements, Attribute
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
@@ -37,19 +38,58 @@ class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
     displayname = Attribute(
         'A name for this vocabulary, to be displayed in the popup window.')
 
-    def toTerm(obj):
-        """Convert the given object into an ITokenizedTerm to be rendered in
-        the UI.
-        """
-
-    def search(query=None):
-        """Return an iterable of objects that match the search string.
+    def searchForTerms(query=None):
+        """Return an iterable of SimpleTerms that match the search string.
 
         The iterable must have a count() method.
 
         Note that what is searched and how the match is the choice of the
         IHugeVocabulary implementation.
         """
+
+
+class CountableIterator:
+    """Implements a wrapping iterator with a count() method.
+
+    This iterator implements a subset of the ISelectResults interface;
+    namely the portion required to have it work as part of a
+    BatchNavigator.
+    """
+
+    def __init__(self, count, iterator, item_wrapper):
+        """Construct a CountableIterator instance.
+
+        Arguments:
+            - count: number of items in the iterator
+            - iterator: the iterable we wrap
+            - item_wrapper: a callable that will be invoked for each
+              item we return.
+        """
+        self._count = count
+        self._iterator = iterator
+        self._item_wrapper = item_wrapper
+
+    def count(self):
+        """Return the number of items in the iterator."""
+        return self._count
+
+    def __iter__(self):
+        for item in self._iterator:
+            yield self._item_wrapper(item)
+
+    def __getitem__(self, arg):
+        # This is actually required because BatchNavigator will attempt
+        # to slice into us; we just pass on the buck.
+        for item in self._iterator[arg]:
+            yield self._item_wrapper(item)
+
+    def __len__(self):
+        # XXX: __len__ is required to make BatchNavigator work; we
+        # should probably change that to either check for the presence
+        # of a count() method, or for a simpler interface than
+        # ISelectResults, but I'm not going to do that today.
+        #   -- kiko, 2006-01-16
+        return self._count
 
 
 class SQLObjectVocabularyBase:
@@ -73,7 +113,28 @@ class SQLObjectVocabularyBase:
     def __init__(self, context=None):
         self.context = context
 
+    # XXX: note that the method searchForTerms is part of
+    # IHugeVocabulary, and so should not necessarily need to be
+    # implemented here; however, many of our vocabularies depend on
+    # searchForTerms for popup functionality so I have chosen to just do
+    # that. It is possible that a better solution would be to have the
+    # search functionality produce a new vocabulary restricted to the
+    # desired subset. -- kiko, 2006-01-16
+    def searchForTerms(self, query=None):
+        results = self.search(query)
+        return CountableIterator(results.count(), results, self.toTerm)
+
+    def search(self):
+        # This default implementation of searchForTerms glues together
+        # the legacy API of search() with the toTerm method. If you
+        # don't reimplement searchForTerms you will need to at least
+        # provide your own search() method.
+        raise NotImplementedError
+
     def toTerm(self, obj):
+        # This default implementation assumes that your object has a
+        # title attribute. If it does not you will need to reimplement
+        # toTerm, or reimplement the whole searchForTerms.
         return SimpleTerm(obj, obj.id, obj.title)
 
     def __iter__(self):
@@ -138,7 +199,7 @@ class SQLObjectVocabularyBase:
 
     def emptySelectResults(self):
         """Return a SelectResults object without any elements.
-        
+
         This is to be used when no search string is given to the search()
         method of subclasses, in order to be consistent and always return
         a SelectResults object.
@@ -172,7 +233,7 @@ class NamedSQLObjectVocabulary(SQLObjectVocabularyBase):
         return self.toTerm(objs[0])
 
     def search(self, query):
-        """Return terms where query is a subtring of the name"""
+        """Return terms where query is a subtring of the name."""
         if query:
             clause = CONTAINSSTRING(self._table.q.name, query)
             if self._filter:
