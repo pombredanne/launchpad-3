@@ -120,9 +120,6 @@ class ImageChangeWidget(SimpleInputWidget):
                 assert existing_alias.content.filesize == len(content), (
                     "The existing LibraryFileAlias' size doesn't match "
                     "the given image's size.")
-                assert existing_alias.read() == content, (
-                    "The existing LibraryFileAlias' content doesn't match "
-                    "the given image's content.")
                 return existing_alias
 
             type, dummy = guess_content_type(name=filename, body=content)
