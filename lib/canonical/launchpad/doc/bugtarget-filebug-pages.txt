@@ -94,7 +94,7 @@ A notification was added to inform the user about what happened.
     Thank you for your bug report.
     Additional information was added to the bug description.
 
-=== Other one inlines part ===
+=== Other inline parts ===
 
 If there are more than one inline part, those will be added as comments
 to the bug.
@@ -157,7 +157,7 @@ Notifications were added to inform the user about what happened.
 
 === Attachments ===
 
-All the parts that are has an 'Content-disposition: attachment' header
+All the parts that have a 'Content-disposition: attachment' header
 will get added as attachments to the bug. The attachment description can
 be specified using a Content-description header, but it's not required.
 

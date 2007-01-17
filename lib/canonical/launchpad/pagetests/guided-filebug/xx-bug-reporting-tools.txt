@@ -7,7 +7,7 @@ the bug to Launchpad.
     >>> import os.path
     >>> from canonical.launchpad import ftests
     >>> testfiles = os.path.join(os.path.dirname(ftests.__file__), 'testfiles')
-    >>> extra_filebug_data= open(
+    >>> extra_filebug_data = open(
     ...     os.path.join(testfiles, 'extra_filebug_data.msg'))
 
 
@@ -50,8 +50,8 @@ information will be added to the bug automatically.
     ...     print message.renderContents()
     Extra debug information will be added to the bug report automatically.
 
-After the user fills in the summary and clickon the button, we'll still
-on the same URL, with the token present.
+After the user fills in the summary and click on the button, we'll still
+be on the same URL, with the token present.
 
     >>> user_browser.getControl('Summary').value = 'A new bug'
     >>> user_browser.getControl('Continue').click()
@@ -105,16 +105,16 @@ created for the attachments.
     ...         if comment.li:
     ...             print "Attachment: %s" % comment.li.a.renderContents()
     ...         print comment.div.renderContents()
-    ...         print "-----------------------------------------"
+    ...         print "-"*40
     >>> print_comments(user_browser.contents)
     <p>This should be added as a comment.</p>
-    -----------------------------------------
+    ----------------------------------------
     <p>This should be added as another comment.</p>
-    -----------------------------------------
+    ----------------------------------------
     Attachment: attachment1
-    -----------------------------------------
+    ----------------------------------------
     Attachment: Attachment description.
-    -----------------------------------------
+    ----------------------------------------
 
 == Advanced +filebug ==
 
