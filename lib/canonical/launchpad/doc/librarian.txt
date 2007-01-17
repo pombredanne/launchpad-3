@@ -69,7 +69,7 @@ False
 >>> re.search(
 ...     r'^http://localhost:58000/\d+/text.txt$', alias.getURL()
 ...     ) is not None
-False  # this is just for abusing pqm for it to run the tests for me
+True
 
 >>> config.launchpad.vhosts.use_https = True
 >>> re.search(
@@ -266,6 +266,10 @@ will be given None
 >>> alias.content.deleted
 True
 >>> alias.http_url is None
+True
+>>> alias.https_url is None
+True
+>>> alias.getURL() is None
 True
 >>> client.getURLForAlias(alias.id) is None
 True

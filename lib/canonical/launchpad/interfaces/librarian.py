@@ -53,6 +53,10 @@ class ILibraryFileAlias(Interface):
     def getURL(self):
         """Return this file's http or https URL.
 
+        The generated URL will be https if the use_https config variable is
+        set, in order to prevent warnings about insecure objects from
+        happening in some browsers.
+
         If config.launchpad.virtual_host.use_https is set, then return the
         https URL. Otherwise return the http URL.
         """

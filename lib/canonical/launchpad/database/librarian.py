@@ -64,8 +64,8 @@ class LibraryFileAlias(SQLBase):
     def https_url(self):
         """See ILibraryFileAlias.https_url"""
         url = self.http_url
-        if not url:
-            return None
+        if url is None:
+            return url
         return url.replace('http', 'https', 1)
 
     def getURL(self):
