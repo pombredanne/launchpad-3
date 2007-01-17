@@ -13,23 +13,8 @@ from zope.interface import Interface, implements
 from canonical.launchpad.webapp import canonical_url, LaunchpadXMLRPCView
 
 
-class IOpStats(Interface):
-    """Interface for OpStats.
-    
-    This is only used for security declarations - the OpStats class
-    is intended to be used directly rather than retrieved as a utility
-    (any new metrics we want to measure will involve altering the OpStats
-    implementation, and the extra level of indirection just needlessly
-    complicate code that we want to run in extenuating circumstances, such
-    such as exception handling).
-    """
-    def opstats():
-        """See OpStats."""
-        
-
 class OpStats(LaunchpadXMLRPCView):
     """The XML-RPC API for extracting operational statistics."""
-    implements(IOpStats)
 
     # Statistics maintained by the publication machinery. Class global.
     stats = {} # Initialized by OpStats.resetStats()

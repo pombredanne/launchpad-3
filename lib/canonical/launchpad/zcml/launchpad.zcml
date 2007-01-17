@@ -239,7 +239,7 @@ these URLs in Apache.
 <xmlrpc:view
     for="canonical.launchpad.interfaces.ILaunchpadRoot"
     class="canonical.launchpad.webapp.opstats.OpStats"
-    interface="canonical.launchpad.webapp.opstats.IOpStats"
+    methods="opstats"
     permission="zope.Public"
     name="+opstats"
     />
