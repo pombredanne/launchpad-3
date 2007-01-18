@@ -58,6 +58,7 @@
             </tbody>
           </table>
           <ul class="cross-reference" tal:condition="nothing">
+          <!-- Waiting for bugs 79034 and 79035. -->
             <li>
               <a href="">
                 <strong tal:content="nothing"></strong>

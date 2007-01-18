@@ -19,7 +19,7 @@
 
               </a>
             </div>
-            <div>
+            <div tal:condition="not:context/product|nothing">
               <tal:product condition="bugtask/product">
                 <tal:productname replace="bugtask/product/name" />,
               </tal:product>
