@@ -550,7 +550,7 @@ class DistroReleaseQueueCustom(SQLBase):
         except DownloadFailed:
             if logger is not None:
                 debug(logger, "Unable to fetch %s to import it into Rosetta" %
-                    self.libraryfilealias.url)
+                    self.libraryfilealias.http_url)
 
 
 class DistroReleaseQueueSet:

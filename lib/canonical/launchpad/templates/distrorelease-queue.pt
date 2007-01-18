@@ -124,7 +124,7 @@
                 2006-03-15
               </td>
               <td>[<a tal:attributes="
-                href queue/changesfile/url">view</a>]
+                href queue/changesfile/http_url">view</a>]
               </td>
            </tr>
          </tal:batch>

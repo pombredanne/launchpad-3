@@ -85,7 +85,7 @@
                   content="build/buildduration/fmt:approximateduration" />
             <tal:log condition="build/buildlog">
               &mdash;
-              <a tal:attributes="href build/buildlog/url">see the log</a>)
+              <a tal:attributes="href build/buildlog/http_url">see the log</a>)
             </tal:log>
           </td>
         </tr>

@@ -29,7 +29,7 @@
       <tr tal:repeat="report view/reports">
         <td tal:content="report/datecreated/fmt:date" />
         <td><a tal:content="report/csvfile/filename"
-               tal:attributes="href report/csvfile/url" />
+               tal:attributes="href report/csvfile/http_url" />
         </td>
       </tr>
     </tbody>
