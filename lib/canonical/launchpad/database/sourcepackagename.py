@@ -20,6 +20,9 @@ from canonical.launchpad.webapp.vocabulary import (
 from canonical.launchpad.interfaces import (
     ISourcePackageName, ISourcePackageNameSet, NotFoundError)
 
+from canonical.launchpad.database.binarypackagename import (
+    PackageNameIterator)
+
 
 class SourcePackageName(SQLBase):
     implements(ISourcePackageName)
@@ -82,26 +85,23 @@ class SourcePackageNameSet:
             return self.new(name)
 
 
-class SourcePackageNameVocabulary(NamedSQLObjectHugeVocabulary):
+class SourcePackageNameIterator(PackageNameIterator):
+    """A custom iterator for SourcePackageNameVocabulary.
 
+    Used to iterate over vocabulary items and provide full
+    descriptions.
+    """
+    def getTermsWithDescriptions(self, results):
+        descriptions = self.getSourcePackageDescriptions(results)
+        return [SimpleTerm(obj, obj.name,
+                    descriptions.get(obj.name, "Not yet built"))
+                for obj in results]
+
+
+class SourcePackageNameVocabulary(NamedSQLObjectHugeVocabulary):
+    """A vocabulary that lists source package names."""
     displayname = 'Select a Source Package'
     _table = SourcePackageName
     _orderBy = 'name'
-
-    def toTerm(self, obj):
-        return SimpleTerm(obj, obj.name, obj.name)
-
-    def search(self, query):
-        """Returns names where the sourcepackage contains the given
-        query. Returns an empty list if query is None or an empty string.
-
-        """
-        if not query:
-            return self.emptySelectResults()
-
-        query = query.lower()
-        return self._table.select(
-            "sourcepackagename.name LIKE '%%' || %s || '%%'"
-            % quote_like(query))
-
+    iterator = SourcePackageNameIterator
 
