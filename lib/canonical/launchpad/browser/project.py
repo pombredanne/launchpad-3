@@ -16,8 +16,6 @@ __all__ = [
     'ProjectRdfView',
     ]
 
-from urllib import quote as urlquote
-
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser import TextWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
@@ -27,19 +25,17 @@ from zope.formlib import form
 from zope.schema import Choice
 from zope.security.interfaces import Unauthorized
 
-from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    ICalendarOwner, IPerson, IProduct, IProductSet, IProject, IProjectSet,
+    ICalendarOwner, IProduct, IProductSet, IProject, IProjectSet,
     ILaunchpadRoot, NotFoundError)
-from canonical.launchpad import helpers
-from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.ticket import TicketAddView
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, Link, LaunchpadFormView,
     Navigation, RedirectionNavigation, StandardLaunchpadFacets, structured)
+from canonical.widgets.image import ImageAddWidget, ImageChangeWidget
 
 
 class ProjectNavigation(Navigation, CalendarTraversalMixin):
@@ -179,8 +175,11 @@ class ProjectEditView(LaunchpadEditFormView):
     schema = IProject
     field_names = [
         'name', 'displayname', 'title', 'summary', 'description',
-        'homepageurl', 'bugtracker', 'sourceforgeproject',
+        'gotchi', 'emblem', 'homepageurl', 'bugtracker', 'sourceforgeproject',
         'freshmeatproject', 'wikiurl']
+    custom_widget('gotchi', ImageChangeWidget)
+    custom_widget('emblem', ImageChangeWidget)
+
 
     @action('Change Details', name='change')
     def edit(self, action, data):
@@ -285,10 +284,12 @@ class ProjectAddView(LaunchpadFormView):
 
     schema = IProject
     field_names = ['name', 'displayname', 'title', 'summary',
-                   'description', 'homepageurl']
+                   'description', 'homepageurl', 'gotchi', 'emblem']
     custom_widget('homepageurl', TextWidget, displayWidth=30)
     label = _('Register a project with Launchpad')
     project = None
+    custom_widget('gotchi', ImageAddWidget)
+    custom_widget('emblem', ImageAddWidget)
 
     @action(_('Add'), name='add')
     def add_action(self, action, data):
@@ -300,7 +301,9 @@ class ProjectAddView(LaunchpadFormView):
             homepageurl=data['homepageurl'],
             summary=data['summary'],
             description=data['description'],
-            owner=self.user)
+            owner=self.user,
+            gotchi=data['gotchi'],
+            emblem=data['emblem'])
         notify(ObjectCreatedEvent(self.project))
 
     @property

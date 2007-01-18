@@ -21,10 +21,9 @@ import pytz
 
 from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget
-from zope.app.form.interfaces import InputErrors
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 from canonical.launchpad.interfaces import ISprint, ISprintSet
@@ -37,8 +36,8 @@ from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import (
     SpecificationFilter, SpecificationPriority, SpecificationSort,
     SpecificationStatus)
+from canonical.widgets.image import ImageAddWidget, ImageChangeWidget
 from canonical.widgets.textwidgets import LocalDateTimeWidget
-
 
 
 class SprintFacets(StandardLaunchpadFacets):
@@ -187,11 +186,14 @@ class SprintAddView(LaunchpadFormView):
     schema = ISprint
     label = "Register a meeting"
     field_names = ['name', 'title', 'summary', 'home_page', 'driver',
-                   'time_zone', 'time_starts', 'time_ends', 'address']
+                   'time_zone', 'time_starts', 'time_ends', 'address',
+                   'gotchi', 'emblem']
     custom_widget('summary', TextAreaWidget, height=5)
     custom_widget('time_starts', LocalDateTimeWidget)
     custom_widget('time_ends', LocalDateTimeWidget)
     custom_widget('address', TextAreaWidget, height=3)
+    custom_widget('gotchi', ImageAddWidget)
+    custom_widget('emblem', ImageAddWidget)
 
     sprint = None
 
@@ -221,7 +223,9 @@ class SprintAddView(LaunchpadFormView):
             driver=data['driver'],
             time_zone=data['time_zone'],
             time_starts=data['time_starts'],
-            time_ends=data['time_ends'])
+            time_ends=data['time_ends'],
+            gotchi=data['gotchi'],
+            emblem=data['emblem'])
         self.request.response.addInfoNotification('Sprint created.')
 
     @property
@@ -236,11 +240,14 @@ class SprintEditView(LaunchpadEditFormView):
     schema = ISprint
     label = "Edit sprint details"
     field_names = ['name', 'title', 'summary', 'home_page', 'driver',
-                   'time_zone', 'time_starts', 'time_ends', 'address']
+                   'time_zone', 'time_starts', 'time_ends', 'address',
+                   'gotchi', 'emblem']
     custom_widget('summary', TextAreaWidget, height=5)
     custom_widget('time_starts', LocalDateTimeWidget)
     custom_widget('time_ends', LocalDateTimeWidget)
     custom_widget('address', TextAreaWidget, height=3)
+    custom_widget('gotchi', ImageChangeWidget)
+    custom_widget('emblem', ImageChangeWidget)
 
     def setUpWidgets(self):
         LaunchpadEditFormView.setUpWidgets(self)

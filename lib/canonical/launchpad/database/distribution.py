@@ -837,7 +837,7 @@ class DistributionSet:
             return None
 
     def new(self, name, displayname, title, description, summary, domainname,
-            members, owner):
+            members, owner, gotchi, emblem):
         return Distribution(
             name=name,
             displayname=displayname,
@@ -847,6 +847,7 @@ class DistributionSet:
             domainname=domainname,
             members=members,
             mirror_admin=owner,
-            owner=owner)
-
+            owner=owner,
+            gotchi=gotchi,
+            emblem=emblem)
 

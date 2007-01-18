@@ -39,21 +39,9 @@ Now we'll change some values.
     >>> browser.getControl('Display Name').value = 'The Ubuntu Team'
     >>> browser.getControl('Team Description').value = ''
     >>> browser.getControl('Subscription Policy').value = ['Restricted Team']
-    >>> import os
-    >>> import canonical.launchpad
-    >>> icon = os.path.join(
-    ...     os.path.dirname(canonical.launchpad.__file__),
-    ...     'pagetests/standalone/big.png')
-    >>> browser.getControl(name='field.gotchi.action').value = ['change']
-    >>> browser.getControl(name='field.gotchi.image').add_file(
-    ...     open(icon, 'r'), 'image/png', 'icon.png')
 
-    >>> emblem = os.path.join(
-    ...     os.path.dirname(canonical.launchpad.__file__),
-    ...     'pagetests/standalone/mypng.png')
-    >>> browser.getControl(name='field.emblem.action').value = ['change']
-    >>> browser.getControl(name='field.emblem.image').add_file(
-    ...     open(emblem, 'r'), 'image/png', 'emblem.png')
+    >>> from canonical.launchpad.ftests import set_gotchi_and_emblem
+    >>> set_gotchi_and_emblem(user_browser)
 
     >>> browser.getControl('Save').click()
 
