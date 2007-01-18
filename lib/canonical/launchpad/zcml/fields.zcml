@@ -9,14 +9,6 @@
 
     <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="canonical.launchpad.fields.IBaseImageUpload"
-        provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.widgets.image.ImageUploadWidget"
-        permission="zope.Public"
-        />
-
-    <view
-        type="zope.publisher.interfaces.browser.IBrowserRequest"
         for="canonical.launchpad.fields.ITitle"
         provides="zope.app.form.interfaces.IInputWidget"
         factory="canonical.launchpad.browser.TitleWidget"

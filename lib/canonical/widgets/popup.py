@@ -13,7 +13,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.schema.vocabulary import IVocabularyFactory
 
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.vocabularies import IHugeVocabulary
+from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 from canonical.cachedproperty import cachedproperty
 
 
@@ -69,16 +69,14 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
         if not isinstance(formValue, basestring):
             return [vocab.getTerm(formValue)]
 
-        # Search
-        search_results = vocab.search(formValue)
+        search_results = vocab.searchForTerms(formValue)
 
-        # If we have too many results to be useful in a list,
-        # return an empty list.
         if search_results.count() > 25:
+            # If we have too many results to be useful in a list, return
+            # an empty list.
             return []
 
-        # Or convert to a list
-        return [vocab.toTerm(item) for item in vocab.search(formValue)]
+        return search_results
 
     @cachedproperty
     def formToken(self):
@@ -95,9 +93,10 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
         template = (
             '''javascript:'''
             '''popup_window('@@popup-window?'''
-            '''vocabulary=%s&field=%s','''
+            '''vocabulary=%s&field=%s&search='''
+            ''''+escape(document.getElementById('%s').value),'''
             ''''500','400')'''
-            ) % (self.context.vocabularyName, self.name)
+            ) % (self.context.vocabularyName, self.name, self.name)
         if self.onKeyPress:
             # XXX: I suspect onkeypress() here is non-standard, but it
             # works for me, and enough researching for tonight. It may
@@ -116,16 +115,13 @@ class ISinglePopupView(Interface):
         """Title to use on the popup page"""
 
     def vocabulary():
-        """Return the IHugeVocabulary to display in the popup window"""
+        """Return the IHugeVocabulary to display in the popup window."""
 
     def search():
-        """Return the BatchNavigator of the current results to display"""
+        """Return the BatchNavigator of the current terms to display."""
 
     def hasMoreThanOnePage(self):
         """Return True if there's more than one page with results."""
-
-    def currentTokenizedBatch(self):
-        """Return the ITokenizedTerms for the current batch."""
 
 
 class SinglePopupView(object):
@@ -150,16 +146,11 @@ class SinglePopupView(object):
     def search(self):
         """See ISinglePopupView"""
         search_text = self.request.get('search', None)
-        self.batch = BatchNavigator(self.vocabulary().search(search_text),
+        self.batch = BatchNavigator(self.vocabulary().searchForTerms(search_text),
                                     self.request, size=self._batchsize)
         return self.batch
 
     def hasMoreThanOnePage(self):
         """See ISinglePopupView"""
         return len(self.batch.batchPageURLs()) > 1
-
-    def currentTokenizedBatch(self):
-        """See ISinglePopupView"""
-        vocabulary = self.vocabulary()
-        return [vocabulary.toTerm(item) for item in self.batch.currentBatch()]
 

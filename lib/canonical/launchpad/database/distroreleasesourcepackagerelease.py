@@ -173,6 +173,11 @@ class DistroReleaseSourcePackageRelease:
         return queue_record.changesfile
 
     @property
+    def age(self):
+        """See ISourcePackageRelease."""
+        return self.sourcepackagerelease.age
+
+    @property
     def builddepends(self):
         """See ISourcePackageRelease."""
         return self.sourcepackagerelease.builddepends
