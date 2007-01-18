@@ -234,6 +234,8 @@ class KarmaCategoryVocabulary(NamedSQLObjectVocabulary):
     _orderBy = 'name'
 
 
+# XXX: any reason why this can't be an NamedSQLObjectHugeVocabulary?
+#   -- kiko, 2007-01-18
 class ProductVocabulary(SQLObjectVocabularyBase):
     implements(IHugeVocabulary)
 
@@ -278,6 +280,8 @@ class ProductVocabulary(SQLObjectVocabularyBase):
         return self.emptySelectResults()
 
 
+# XXX: any reason why this can't be an NamedSQLObjectHugeVocabulary?
+#   -- kiko, 2007-01-18
 class ProjectVocabulary(SQLObjectVocabularyBase):
     implements(IHugeVocabulary)
 
@@ -331,9 +335,6 @@ def project_products_vocabulary_factory(context):
 class TranslationGroupVocabulary(NamedSQLObjectVocabulary):
 
     _table = TranslationGroup
-
-    def toTerm(self, obj):
-        return SimpleTerm(obj, obj.name, obj.title)
 
 
 class NonMergedPeopleAndTeamsVocabulary(
@@ -735,9 +736,6 @@ class FutureSprintVocabulary(NamedSQLObjectVocabulary):
 
     _table = Sprint
 
-    def toTerm(self, obj):
-        return SimpleTerm(obj, obj.name, obj.title)
-
     def __iter__(self):
         future_sprints = Sprint.select("time_ends > 'NOW'")
         for sprint in future_sprints:
@@ -820,9 +818,6 @@ class SpecificationVocabulary(NamedSQLObjectVocabulary):
     _table = Specification
     _orderBy = 'title'
 
-    def toTerm(self, obj):
-        return SimpleTerm(obj, obj.name, obj.name)
-
     def __iter__(self):
         launchbag = getUtility(ILaunchBag)
         product = launchbag.product
@@ -855,9 +850,6 @@ class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
     _table = Specification
     _orderBy = 'title'
 
-    def toTerm(self, obj):
-        return SimpleTerm(obj, obj.name, obj.title)
-
     def __iter__(self):
         launchbag = getUtility(ILaunchBag)
         curr_spec = launchbag.specification
@@ -879,9 +871,6 @@ class SpecificationDepCandidatesVocabulary(NamedSQLObjectVocabulary):
     _table = Specification
     _orderBy = 'title'
 
-    def toTerm(self, obj):
-        return SimpleTerm(obj, obj.name, obj.title)
-
     def __iter__(self):
         assert ISpecification.providedBy(self.context)
         curr_spec = self.context
@@ -900,9 +889,6 @@ class SpecificationDepCandidatesVocabulary(NamedSQLObjectVocabulary):
 
 class SprintVocabulary(NamedSQLObjectVocabulary):
     _table = Sprint
-
-    def toTerm(self, obj):
-        return SimpleTerm(obj, obj.name, obj.title)
 
 
 class BugWatchVocabulary(SQLObjectVocabularyBase):
@@ -936,9 +922,6 @@ class DistributionVocabulary(NamedSQLObjectVocabulary):
 
     _table = Distribution
     _orderBy = 'name'
-
-    def toTerm(self, obj):
-        return SimpleTerm(obj, obj.name, obj.title)
 
     def getTermByToken(self, token):
         obj = Distribution.selectOne("name=%s" % sqlvalues(token))
@@ -1064,31 +1047,17 @@ class POTemplateNameVocabulary(NamedSQLObjectHugeVocabulary):
         return SimpleTerm(obj, obj.name, obj.translationdomain)
 
 
-class ProcessorVocabulary(NamedSQLObjectHugeVocabulary):
+class ProcessorVocabulary(NamedSQLObjectVocabulary):
 
     displayname = 'Select a Processor'
     _table = Processor
     _orderBy = 'name'
 
-    def search(self, query):
-        """Return terms where query is a substring of the name"""
-        if not query:
-            return self.emptySelectResults()
-
-        query = query.lower()
-        processors = self._table.select(
-            CONTAINSSTRING(Processor.q.name, query),
-            orderBy=self._orderBy
-            )
-        return processors
-
 
 class ProcessorFamilyVocabulary(NamedSQLObjectVocabulary):
+    displayname = 'Select a Processor Family'
     _table = ProcessorFamily
     _orderBy = 'name'
-
-    def toTerm(self, obj):
-        return SimpleTerm(obj, obj.name, obj.title)
 
 
 def BugNominatableReleasesVocabulary(context=None):
