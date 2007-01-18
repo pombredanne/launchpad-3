@@ -16,10 +16,10 @@ COMMENT ON COLUMN Branch.revision_count IS 'The number of revisions in the assoc
 /* BranchSubscription*/
 
 COMMENT ON TABLE BranchSubscription IS 'An association between a person or team and a bazaar branch.';
-COMMENT ON TABLE BranchSubscription.person IS 'The person or team associated with the branch.';
-COMMENT ON TABLE BranchSubscription.branch IS 'The branch associated with the person or team.'
-COMMENT ON TABLE BranchSubscription.notification_level IS 'The level of email the person wants to receive from branch updates.'
-COMMENT ON TABLE BranchSubscription.max_diff_lines IS 'If the generated diff for a revision is larger than this number, then the diff is not sent in the notification email.'
+COMMENT ON COLUMN BranchSubscription.person IS 'The person or team associated with the branch.';
+COMMENT ON COLUMN BranchSubscription.branch IS 'The branch associated with the person or team.';
+COMMENT ON COLUMN BranchSubscription.notification_level IS 'The level of email the person wants to receive from branch updates.';
+COMMENT ON COLUMN BranchSubscription.max_diff_lines IS 'If the generated diff for a revision is larger than this number, then the diff is not sent in the notification email.';
 
 /* Bug */
 
