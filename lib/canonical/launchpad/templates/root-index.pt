@@ -20,11 +20,11 @@
       <form
         class="central"
         style="text-align: center;"
-        action="/products/"
+        action="/+search"
         method="get"
       >
         <label for="text">Is your project registered yet?</label>
-        <input id="text" type="text" name="text" size="30" />
+        <input id="text" type="text" name="q" size="30" />
         <input type="submit" value="Search" />
       </form>
       <div class="bordered">

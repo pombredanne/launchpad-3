@@ -6,7 +6,10 @@
 >
   <body>
     <div metal:fill-slot="main">
-      <div id="applications" tal:content="structure context/@@+applicationbuttons/code" />
+      <div
+        id="applications"
+        tal:content="structure context/@@+applicationbuttons/code"
+      />
       <div id="mainarea" class="tab-code">
         <div class="t">
           <div class="u">
