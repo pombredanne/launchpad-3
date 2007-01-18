@@ -49,6 +49,8 @@ class IPublishing(Interface):
         IDistroRelease -> ISourcePackagePublishing
         IDistroArchRelease -> IBinaryPackagePublishing
 
+        'pocket' argument restrict the results to a given value.
+
         If the distroreleases is already released, it automatically refuses
         to publish records to RELEASE pocket.
         """

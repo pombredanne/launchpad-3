@@ -60,166 +60,209 @@ class TestIPublishingAPI(TestNativePublishingBase):
         self.assertEqual(open(foo_deb).read().strip(), 'World')
 
 
-    def testGetPendingPublicationsForDistroRelease(self):
-        """getPendingPublication should return only the relevant records.
-
-        Results will be restricted to the given 'pocket', additionally,
-        RELEASE pocket will be automatically excluded for released/stable
-        distroreleases (see IDistroRelease.isUnstable).
-
-        'Careful' mode, will consider also published records.
-        """
-        # fill publishing tables:
-        pub_source1 = self.getPubSource(
+    def testPublicationLookUpForUnreleasedDistroRelease(self):
+        """Source publishing record lookup for a released DistroRelease."""
+        pub_pending_release = self.getPubSource(
             sourcename='first',
             status=PackagePublishingStatus.PENDING,
             pocket=PackagePublishingPocket.RELEASE)
 
-        pub_source2 = self.getPubSource(
+        pub_published_release = self.getPubSource(
             sourcename='second',
             status=PackagePublishingStatus.PUBLISHED,
             pocket=PackagePublishingPocket.RELEASE)
 
-        pub_source3 = self.getPubSource(
+        pub_pending_updates = self.getPubSource(
             sourcename='third',
             status=PackagePublishingStatus.PENDING,
             pocket=PackagePublishingPocket.UPDATES)
 
-        # only "first" is return for RELEASE & non-careful
+        # Usual publication procedure for a distrorelease in development
+        # state only 'pending' publishing records for pocket RELEASE
+        # are published.
         pub_records = self.breezy_autotest.getPendingPublications(
             pocket=PackagePublishingPocket.RELEASE,
             is_careful=False)
         self.assertEqual(pub_records.count(), 1)
         self.assertEqual(
-            [pub_source1.id], [pub.id for pub in pub_records])
+            [pub_pending_release.id], [pub.id for pub in pub_records])
 
-        # only "third" is returned for UPDATES & non-careful
+        # This step is unsusual but checks if the pocket restriction also
+        # work for other pockets than the RELEASE.
         pub_records = self.breezy_autotest.getPendingPublications(
             pocket=PackagePublishingPocket.UPDATES,
             is_careful=False)
         self.assertEqual(pub_records.count(), 1)
         self.assertEqual(
-            [pub_source3.id], [pub.id for pub in pub_records])
+            [pub_pending_updates.id], [pub.id for pub in pub_records])
 
-        # nothing is returned for BACKPORTS & non-careful
+        # Restricting to a pocket with no publication returns an
+        # empty SQLResult.
         pub_records = self.breezy_autotest.getPendingPublications(
             pocket=PackagePublishingPocket.BACKPORTS,
             is_careful=False)
         self.assertEqual(pub_records.count(), 0)
 
-        # "second" and "first" are returned for RELEASE & careful
+        # Using the 'careful' mode results in the consideration
+        # of every 'pending' and 'published' records present in
+        # the given pocket.
         pub_records = self.breezy_autotest.getPendingPublications(
             pocket=PackagePublishingPocket.RELEASE,
             is_careful=True)
         self.assertEqual(pub_records.count(), 2)
         self.assertEqual(
-            [pub_source2.id, pub_source1.id], [pub.id for pub in pub_records])
+            [pub_published_release.id, pub_pending_release.id],
+            [pub.id for pub in pub_records])
 
-        # let's release breezy-autotest 
+
+    def testPublicationLookUpForReleasedDistroRelease(self):
+        """Source publishing record lookup for a released DistroRelease."""
+        pub_pending_release = self.getPubSource(
+            sourcename='first',
+            status=PackagePublishingStatus.PENDING,
+            pocket=PackagePublishingPocket.RELEASE)
+
+        pub_published_release = self.getPubSource(
+            sourcename='second',
+            status=PackagePublishingStatus.PUBLISHED,
+            pocket=PackagePublishingPocket.RELEASE)
+
+        pub_pending_updates = self.getPubSource(
+            sourcename='third',
+            status=PackagePublishingStatus.PENDING,
+            pocket=PackagePublishingPocket.UPDATES)
+
+        # Release 'breezy-autotest'
         self.breezy_autotest.releasestatus = DistributionReleaseStatus.CURRENT
 
-        # nothing is returned for RELEASE & non-careful
+        # Since the distro is published, nothing is returned because
+        # RELEASE pocket is ignored, in both modes, careful or not.
         pub_records = self.breezy_autotest.getPendingPublications(
             pocket=PackagePublishingPocket.RELEASE,
             is_careful=False)
         self.assertEqual(pub_records.count(), 0)
 
-        # "third" is returned for UPDATES & non-careful
-        pub_records = self.breezy_autotest.getPendingPublications(
-            pocket=PackagePublishingPocket.UPDATES,
-            is_careful=False)
-        self.assertEqual(pub_records.count(), 1)
-        self.assertEqual(
-            [pub_source3.id], [pub.id for pub in pub_records])
-
-        # nothing is returned for RELEASE & careful
-        pub_records = self.breezy_autotest.getPendingPublications(
-            pocket=PackagePublishingPocket.RELEASE,
-            is_careful=True)
-        self.assertEqual(pub_records.count(), 0)
         # XXX cprov 20070105: it means that "careful" mode is useless for
         # rebuilding released archives.
         # This is quite right, IMHO, since republication of a released
         # archive will, obviously contain new timestamps, which would freak
         # mirrors/clients out.
         # At the end, "careful" mode is such a gross hack.
+        pub_records = self.breezy_autotest.getPendingPublications(
+            pocket=PackagePublishingPocket.RELEASE,
+            is_careful=True)
+        self.assertEqual(pub_records.count(), 0)
 
+        # publications targeted to other pockets than RELEASE are
+        # still reachable.
+        pub_records = self.breezy_autotest.getPendingPublications(
+            pocket=PackagePublishingPocket.UPDATES,
+            is_careful=False)
+        self.assertEqual(pub_records.count(), 1)
+        self.assertEqual(
+            [pub_pending_updates.id], [pub.id for pub in pub_records])
 
-    def testGetPendingPublicationsForDistroArchRelease(self):
-        """Exactly the same as it works for DistroRelease.
-
-        Except that it consider binary publications, instead of sources.
-        """
-        # fill publishing tables:
-        pub_binary1 = self.getPubBinary(
+    def testPublicationLookUpForUnreleasedDistroArchRelease(self):
+        """Binary publishing record lookup for a unreleased DAR."""
+        pub_pending_release = self.getPubBinary(
             binaryname='first',
             status=PackagePublishingStatus.PENDING,
             pocket=PackagePublishingPocket.RELEASE)
 
-        pub_binary2 = self.getPubBinary(
+        pub_published_release = self.getPubBinary(
             binaryname='second',
             status=PackagePublishingStatus.PUBLISHED,
             pocket=PackagePublishingPocket.RELEASE)
 
-        pub_binary3 = self.getPubBinary(
+        pub_pending_updates = self.getPubBinary(
             binaryname='third',
             status=PackagePublishingStatus.PENDING,
             pocket=PackagePublishingPocket.UPDATES)
 
-        # only "first" is return for RELEASE & non-careful
+        # Usual publication procedure for a distrorelease in development
+        # state only 'pending' publishing records for pocket RELEASE
+        # are published.
         pub_records = self.breezy_autotest_i386.getPendingPublications(
             pocket=PackagePublishingPocket.RELEASE,
             is_careful=False)
         self.assertEqual(pub_records.count(), 1)
         self.assertEqual(
-            [pub_binary1.id], [pub.id for pub in pub_records])
+            [pub_pending_release.id], [pub.id for pub in pub_records])
 
-        # only "third" is returned for UPDATES & non-careful
+        # This step is unsusual but checks if the pocket restriction also
+        # work for other pockets than the RELEASE.
         pub_records = self.breezy_autotest_i386.getPendingPublications(
             pocket=PackagePublishingPocket.UPDATES,
             is_careful=False)
         self.assertEqual(pub_records.count(), 1)
         self.assertEqual(
-            [pub_binary3.id], [pub.id for pub in pub_records])
+            [pub_pending_updates.id], [pub.id for pub in pub_records])
 
-        # nothing is returned for BACKPORTS & non-careful
+        # Restricting to a pocket with no publication returns an
+        # empty SQLResult.
         pub_records = self.breezy_autotest_i386.getPendingPublications(
             pocket=PackagePublishingPocket.BACKPORTS,
             is_careful=False)
         self.assertEqual(pub_records.count(), 0)
 
-        # "second" and "first" are returned for RELEASE & careful
+        # Using the 'careful' mode results in the consideration
+        # of every 'pending' and 'published' records present in
+        # the given pocket.
         pub_records = self.breezy_autotest_i386.getPendingPublications(
             pocket=PackagePublishingPocket.RELEASE,
             is_careful=True)
         self.assertEqual(pub_records.count(), 2)
         self.assertEqual(
-            [pub_binary2.id, pub_binary1.id], [pub.id for pub in pub_records])
+            [pub_published_release.id, pub_pending_release.id],
+            [pub.id for pub in pub_records])
 
-        # let's release breezy-autotest
+    def testPublicationLookUpForReleasedDistroArchRelease(self):
+        """Binary publishing record lookup for a released DistroArchRelease."""
+        pub_pending_release = self.getPubBinary(
+            binaryname='first',
+            status=PackagePublishingStatus.PENDING,
+            pocket=PackagePublishingPocket.RELEASE)
+
+        pub_published_release = self.getPubBinary(
+            binaryname='second',
+            status=PackagePublishingStatus.PUBLISHED,
+            pocket=PackagePublishingPocket.RELEASE)
+
+        pub_pending_updates = self.getPubBinary(
+            binaryname='third',
+            status=PackagePublishingStatus.PENDING,
+            pocket=PackagePublishingPocket.UPDATES)
+
+        # Release 'breezy-autotest'
         self.breezy_autotest.releasestatus = DistributionReleaseStatus.CURRENT
-        self.layer.txn.commit()
+        self.layer.commit()
 
-        # nothing is returned for RELEASE & non-careful
+        # Since the distro is published, nothing is returned because
+        # RELEASE pocket is ignored, in both modes, careful or not.
         pub_records = self.breezy_autotest_i386.getPendingPublications(
             pocket=PackagePublishingPocket.RELEASE,
             is_careful=False)
         self.assertEqual(pub_records.count(), 0)
 
-        # "third" is returned for UPDATES & non-careful
+        # XXX cprov 20070105: it means that "careful" mode is useless for
+        # rebuilding released archives.
+        # This is quite right, IMHO, since republication of a released
+        # archive will, obviously contain new timestamps, which would freak
+        # mirrors/clients out.
+        # At the end, "careful" mode is such a gross hack.
+        pub_records = self.breezy_autotest_i386.getPendingPublications(
+            pocket=PackagePublishingPocket.RELEASE,
+            is_careful=True)
+        self.assertEqual(pub_records.count(), 0)
+
+        # publications targeted to other pockets than RELEASE are
+        # still reachable.
         pub_records = self.breezy_autotest_i386.getPendingPublications(
             pocket=PackagePublishingPocket.UPDATES,
             is_careful=False)
         self.assertEqual(pub_records.count(), 1)
         self.assertEqual(
-            [pub_binary3.id], [pub.id for pub in pub_records])
-
-        # nothing is returned for RELEASE & careful
-        pub_records = self.breezy_autotest_i386.getPendingPublications(
-            pocket=PackagePublishingPocket.RELEASE,
-            is_careful=True)
-        self.assertEqual(pub_records.count(), 0)
-        # XXX: see above.
+            [pub_pending_updates.id], [pub.id for pub in pub_records])
 
 
 def test_suite():
