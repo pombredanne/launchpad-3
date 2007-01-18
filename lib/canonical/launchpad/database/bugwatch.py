@@ -96,6 +96,11 @@ class BugWatch(SQLBase):
                     linked_bugtask, old_bugtask, ['status'])
                 notify(event)
 
+    def destroySelf(self):
+        """See IBugWatch."""
+        assert self.bugtasks.count() == 0, "Can't delete linked bug watches"
+        SQLBase.destroySelf(self)
+
 
 class BugWatchSet(BugSetBase):
     """A set for BugWatch"""
