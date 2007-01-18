@@ -79,7 +79,7 @@ from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, SpecificationFilter, TicketParticipation,
     PersonCreationRationale)
 
-from canonical.widgets import PasswordChangeWidget
+from canonical.widgets import ImageChangeWidget, PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
@@ -734,8 +734,9 @@ class PersonClaimView(LaunchpadFormView):
             "A confirmation  message has been sent to '%(email)s'. "
             "Follow the instructions in that message to finish claiming this "
             "profile. "
-            "(If your mail provider uses 'greylisting', it might take an hour "
-            "or two for the message to arrive.)"), email=email)
+            "(If the message doesn't arrive in a few minutes, your mail "
+            "provider might use 'greylisting', which could delay the message "
+            "for up to an hour or two.)"), email=email)
 
 
 class RedirectToEditLanguagesView(LaunchpadView):
@@ -1785,6 +1786,7 @@ class PersonEditView(BasePersonEditView):
     field_names = ['displayname', 'name', 'hide_email_addresses', 'timezone',
                    'gotchi']
     custom_widget('timezone', SelectWidget, size=15)
+    custom_widget('gotchi', ImageChangeWidget)
 
 
 class PersonEmblemView(GeneralFormView):
@@ -1999,8 +2001,9 @@ class PersonEditEmailsView:
                 "A confirmation message has been sent to '%s'. "
                 "Follow the instructions in that message to confirm that the "
                 "address is yours. "
-                "(If your mail provider uses 'greylisting', it might take an "
-                "hour or two for the message to arrive.)" % newemail)
+                "(If the message doesn't arrive in a few minutes, your mail "
+                "provider might use 'greylisting', which could delay the "
+                "message for up to an hour or two.)" % newemail)
 
     def _setPreferred(self):
         """Set the selected email as preferred for the person in context."""

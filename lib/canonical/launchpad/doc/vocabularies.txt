@@ -57,7 +57,7 @@ Creating a new Enumeratable Vocabulary based on an existent dbschema
 constant:
 
     >>> from canonical.lp import dbschema
-    >>> from canonical.launchpad.vocabularies import vocab_factory
+    >>> from canonical.launchpad.webapp.vocabulary import vocab_factory
     >>> PackagingVocabulary = vocab_factory(dbschema.PackagingType)
 
 The right place to do it is in the file vocabularies/dbschema.py.
@@ -398,6 +398,17 @@ Trying to get a non-existant release will result in a LookupError:
     Traceback (most recent call last):
     ...
     LookupError...
+
+o ProjectProductsVocabulary - All the products in a project.
+
+    >>> mozilla_project = getUtility(IProjectSet).getByName('mozilla')
+    >>> mozilla_products_vocabulary = vocabulary_registry.get(
+    ...     mozilla_project,'ProjectProducts')
+
+    >>> for term in mozilla_products_vocabulary:
+    ...     print "%s: %s" %(term.token, term.title)
+    firefox: Mozilla Firefox
+    thunderbird: Mozilla Thunderbird
 
 Non-Enumerable Vocabularies
 ===========================
@@ -945,5 +956,5 @@ o DistributionOrProductOrProjectVocabulary - all products, projects
     Ubuntu (Product) - class Product
     The Ubuntu Project (Project) - class Project
     Ubuntu Test (Distribution) - class Distribution
- 
+
 XXX: document more vocabularies here, particularly when they break!

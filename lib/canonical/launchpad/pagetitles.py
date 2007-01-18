@@ -422,7 +422,7 @@ def launchpad_addform(context, view):
 
 launchpad_editform = launchpad_addform
 
-launchpad_feedback = 'Help us improve Launchpad'
+launchpad_feedback = 'Help improve Launchpad'
 
 launchpad_forbidden = 'Forbidden'
 
@@ -922,9 +922,10 @@ sprintspecification_admin = 'Approve specification for sprint agenda'
 
 tickets_index = 'Launchpad support tracker'
 
-ticket_add = ContextDisplayName('Request support with %s')
+def ticket_add(context, view):
+    return view.pagetitle
 
-ticket_add_search = ContextDisplayName('Request support with %s')
+ticket_add_search = ticket_add
 
 ticket_bug = ContextId('Link support request #%s to a bug report')
 
