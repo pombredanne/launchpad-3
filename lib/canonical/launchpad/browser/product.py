@@ -26,6 +26,7 @@ __all__ = [
     'ProductLaunchpadUsageEditView',
     ]
 
+from operator import attrgetter
 from warnings import warn
 
 import zope.security.interfaces
@@ -58,7 +59,8 @@ from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, GetitemNavigation, LaunchpadView,
     LaunchpadEditFormView, LaunchpadFormView, Link, Navigation,
-    RedirectionNavigation, StandardLaunchpadFacets, stepto, stepthrough,
+    RedirectionNavigation, sorted_version_numbers,
+    StandardLaunchpadFacets, stepto, stepthrough,
     structured)
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.widgets.image import ImageAddWidget
@@ -474,6 +476,15 @@ class ProductView:
 
         return sorted(potemplatenames, key=lambda item: item.name)
 
+    def sorted_serieslist(self):
+        """Return the series list from the product with the dev focus first."""
+        series_list = list(self.context.serieslist)
+        series_list.remove(self.context.development_focus)
+        # now sort the list by name with newer versions before older
+        series_list = sorted_version_numbers(series_list,
+                                             key=attrgetter('name'))
+        series_list.insert(0, self.context.development_focus)
+        return series_list
 
 class ProductEditView(SQLObjectEditView):
     """View class that lets you edit a Product object."""
