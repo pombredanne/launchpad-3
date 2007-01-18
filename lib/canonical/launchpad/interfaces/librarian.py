@@ -47,8 +47,11 @@ class ILibraryFileAlias(Interface):
                 ''')
             )
 
-    http_url = TextLine(title=_("The http URL to this file"))
-    https_url = TextLine(title=_("The https URL to this file"))
+    # XXX: We can't use TextLine here because they return
+    # byte strings.  -- Guilherme Salgado, 2007-01-18
+    # (https://beta.launchpad.net/launchpad/+bug/80487)
+    http_url = Attribute(_("The http URL to this file"))
+    https_url = Attribute(_("The https URL to this file"))
 
     def getURL(self):
         """Return this file's http or https URL.
