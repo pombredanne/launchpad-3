@@ -64,7 +64,11 @@ Let's make 1.5 the development series.
 
    >>> user_browser.getLink('Edit Product Details').click()
    >>> user_browser.getControl('Development focus').displayValue = ['firefox 1.5']
-   >>> user_browser.getControl('Change').click()
+
+With the additions of the icons and emblems, you need to specify
+the name of the Change control as there are now more than one.
+
+   >>> user_browser.getControl(name='UPDATE_SUBMIT').click()
 
 And now check the ordering of the series:
 

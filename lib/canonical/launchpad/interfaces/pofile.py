@@ -68,6 +68,20 @@ class IPOFile(IRosettaStats):
 
     datecreated = Attribute("The fate this file was created.")
 
+    # We keep track of latestsubmission, which is the last submission
+    # to receive any change.  POSubmission interface also has a join on
+    # all active_selections (poselection.active_submission=posubmission.id)
+    # and published_selections.
+    #
+    # What we do with latestsubmission is to use any of the either active
+    # or published submissions to get POMsgSet they refer to, and loop through
+    # all POSelections for that POMsgSet, looking at date_reviewed.
+    #
+    # If latestsubmission is neither neither active nor published for any of
+    # the POSelections, it means that this is about a deactivated translation.
+    #
+    # XXX DaniloSegan 20070115: doing this with latestsubmission is just
+    # a workaround; see bug #78501 for suggestion about using latestselection
     latestsubmission = Field(
         title=u'Translation submission which was most recently added.',
         description=(u'Translation submission which was most recently added,'
@@ -181,7 +195,15 @@ class IPOFile(IRosettaStats):
         Rosetta."""
 
     def validExportCache():
-        """Does this PO file have a cached export that is up to date?"""
+        """Does this PO file have a cached export that is up to date?
+
+        Using stale cache can result in exporting outdated data (eg.
+        translations which have been changed or deactivated in the
+        meantime would end up exported).
+
+        So, 'False' is the more conservative choice: if we're not sure
+        if the cache is valid, returning False is the way to go.
+        """
 
     def updateExportCache(contents):
         """Update this PO file's export cache with a string."""
