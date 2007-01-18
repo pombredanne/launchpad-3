@@ -173,11 +173,25 @@ class FakeFactory(RedirectAwareProberFactory):
         self.redirectedTo = url
 
 
-class TestProberFactoryRequestTimeoutRatioPart1(TestCase):
+class TestProberFactoryRequestTimeoutRatioWithoutTwisted(TestCase):
+    """Tests to ensure we stop issuing requests on a given host if the
+    requests/timeouts ratio on that host is too low.
+
+    The tests here will stub the prober's connect() method, so that we can
+    easily check whether it was called or not without actually issuing any
+    connections.
+    """
 
     host = 'foo.bar'
 
     def _createProberStubConnectAndProbe(self, requests, timeouts):
+        """Create a ProberFactory object with a URL inside self.host and call
+        its probe() method.
+
+        Before the prober.probe() method is called, we stub the connect
+        method, because all we want is to check whether that method was called
+        or not --we don't want to actually connect.
+        """
         def connect():
             prober.connectCalled = True
         distributionmirror_prober.host_requests = {self.host: requests}
@@ -189,12 +203,10 @@ class TestProberFactoryRequestTimeoutRatioPart1(TestCase):
         prober.probe()
         return prober
 
-    def test_connect_is_not_called_after_too_many_timeouts(self):
-        """If we get a small requests/timeouts ratio on a given host, we'll
-        stop issuing requests on that host.
+    def test_connect_is_called_if_not_enough_requests(self):
+        """Test that only a small ratio is not enough to cause a host to be
+        skipped; we also need to have a considerable number of requests.
         """
-        # Even with a requests/timeouts ratio of 1, that is only considered if
-        # we have a considerable number of requests.
         requests = 5
         timeouts = 5
         prober = self._createProberStubConnectAndProbe(requests, timeouts)
@@ -203,6 +215,10 @@ class TestProberFactoryRequestTimeoutRatioPart1(TestCase):
         # _NOT_ cause a given host to be skipped.
         self.failIf(should_skip_host(self.host))
 
+    def test_connect_is_not_called_after_too_many_timeouts(self):
+        """If we get a small requests/timeouts ratio on a given host, we'll
+        stop issuing requests on that host.
+        """
         # If the ratio is small enough and we have a considerable number of
         # requests, we won't issue more connections on that host.
         requests = 15
@@ -213,8 +229,9 @@ class TestProberFactoryRequestTimeoutRatioPart1(TestCase):
         # actually cause a given host to be skipped.
         self.failUnless(should_skip_host(self.host))
 
-        # Of course, if the ratio is not too small we consider it's safe to
-        # keep issuing connections on that host.
+    def test_connect_is_called_if_not_many_timeouts(self):
+        # If the ratio is not too small we consider it's safe to keep 
+        # issuing connections on that host.
         requests = 15
         timeouts = 5
         prober = self._createProberStubConnectAndProbe(requests, timeouts)
@@ -224,7 +241,16 @@ class TestProberFactoryRequestTimeoutRatioPart1(TestCase):
         self.failIf(should_skip_host(self.host))
 
 
-class TestProberFactoryRequestTimeoutRatioPart2(TwistedTestCase):
+class TestProberFactoryRequestTimeoutRatioWithTwisted(TwistedTestCase):
+    """Tests to ensure we stop issuing requests on a given host if the
+    requests/timeouts ratio on that host is too low.
+
+    The tests here will check that we'll record a timeout whenever we get a
+    ProberTimeout from twisted, as well as checking that twisted raises
+    ConnectionSkipped when it finds a URL that should not be probed. This
+    means that we need a test HTTP server as well as the twisted magic to
+    actually connect to the server.
+    """
 
     def setUp(self):
         distributionmirror_prober.host_requests = {}

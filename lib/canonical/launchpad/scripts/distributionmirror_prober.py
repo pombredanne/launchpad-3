@@ -105,14 +105,11 @@ def should_skip_host(host):
     """Return True if the requests/timeouts ratio on this host is too low."""
     requests = host_requests[host]
     timeouts = host_timeouts[host]
-    if timeouts:
-        ratio = requests / timeouts
+    if timeouts == 0 or requests < MIN_REQUESTS_TO_CONSIDER_RATIO:
+        return False
     else:
-        ratio = 9999999
-    if (requests > MIN_REQUESTS_TO_CONSIDER_RATIO and 
-        ratio < MIN_REQUEST_TIMEOUT_RATIO):
-        return True
-    return False
+        ratio = requests / timeouts
+        return ratio < MIN_REQUEST_TIMEOUT_RATIO
 
 
 class ProberFactory(protocol.ClientFactory):
@@ -195,6 +192,7 @@ class ProberFactory(protocol.ClientFactory):
 
 
 def _parse(url, defaultPort=80):
+    """Parse the given URL returning the scheme, host, port and path."""
     scheme, host, path, dummy, dummy, dummy = urlparse.urlparse(url)
     port = defaultPort
     if ':' in host:
@@ -340,17 +338,12 @@ class ArchiveMirrorProberCallbacks(object):
         if arch_or_source_mirror is None:
             return
 
-        # This assert is here to make sure that we can call prober.probe() and
-        # it won't fail with a ConnectionSkipped. It should never fail because
-        # when should_skip_host() returns True, our deferred will errback with
-        # a failure and thus won't callback this.
         scheme, host, port, path = _parse(self.url)
-        assert not should_skip_host(host)
-
         status_url_mapping = arch_or_source_mirror.getURLsToCheckUpdateness()
-        if not status_url_mapping:
-            # We have no publishing records for self.release, self.pocket and
-            # self.component, so it's better to delete this
+        if not status_url_mapping or should_skip_host(host):
+            # Either we have no publishing records for self.release,
+            # self.pocket and self.component or we got too may timeouts from
+            # this host and thus should skip it, so it's better to delete this
             # MirrorDistroArchRelease/MirrorDistroReleaseSource than to keep
             # it with an UNKNOWN status.
             self.deleteMethod(self.release, self.pocket, self.component)
@@ -362,7 +355,14 @@ class ArchiveMirrorProberCallbacks(object):
         arch_or_source_mirror.status = MirrorStatus.UNKNOWN
         for status, url in status_url_mapping.items():
             prober = ProberFactory(url)
-            deferred = prober.probe()
+            # Use one semaphore per host, to limit the numbers of simultaneous
+            # connections on a given host. Note that we don't have an overall
+            # limit of connections, since the per-host limit should be enough.
+            # If we ever need an overall limit, we can use Andrews's suggestion
+            # on https://launchpad.net/bugs/54791 to implement it.
+            semaphore = host_semaphores.setdefault(
+                prober.host, DeferredSemaphore(PER_HOST_REQUESTS))
+            deferred = semaphore.run(prober.probe)
             deferred.addCallback(
                 self.setMirrorStatus, arch_or_source_mirror, status, url)
             deferred.addErrback(self.logError, url)
@@ -574,5 +574,4 @@ def probe_release_mirror(mirror, logfile, unchecked_keys, logger,
         deferredList = defer.DeferredList(deferredList, consumeErrors=True)
         deferredList.addCallback(callbacks.ensureOrDeleteMirrorCDImageRelease)
         deferredList.addCallback(checkComplete, mirror_key, unchecked_keys)
-
 
