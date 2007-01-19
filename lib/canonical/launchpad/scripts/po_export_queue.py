@@ -20,7 +20,7 @@ from canonical.launchpad.interfaces import (
     IPOExportRequestSet, IPOTemplate, IPOFile, ILibraryFileAliasSet,
     ILaunchpadCelebrities)
 
-import psycopg.Error, sys
+import psycopg, sys
 
 def is_potemplate(obj):
     """Return True if the object is a PO template."""
