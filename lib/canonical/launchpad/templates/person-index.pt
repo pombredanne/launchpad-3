@@ -41,7 +41,8 @@
   </tal:homepage>
   <tal:description condition="context/teamdescription">
     <b>About this team:</b>
-    <span tal:replace="context/teamdescription">DESCRIPTION</span>
+    <span tal:replace="structure context/teamdescription/fmt:text-to-html">
+      DESCRIPTION</span>
   </tal:description>
 
   <h2>Details</h2>
