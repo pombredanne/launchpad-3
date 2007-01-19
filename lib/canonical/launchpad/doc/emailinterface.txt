@@ -859,10 +859,59 @@ Now a new bugtask for the release will be create directly.
     evolution (Debian)
     mozilla-firefox (Debian)
 
-Let's take on the upstream task as well. This time we'll sneak in a
-'subscribe' command between the 'affects' and the other commands, to
-show that the commands acting on the bug task don't have to be grouped
-together:
+It works the same when specifying a source package while targeting a
+specific distrorelease.
+
+    >>> from canonical.launchpad.interfaces import CreateBugParams, IProductSet
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> bug = firefox.createBug(CreateBugParams(
+    ...     getUtility(ILaunchBag).user, 'New Bug', comment='New bug.'))
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.targetname
+    firefox (upstream)
+
+    >>> submit_commands(bug, 'affects /distros/ubuntu/hoary/evolution')
+
+Now we can see that two tasks were created; both the general Ubuntu
+task, and the release specific task.
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.targetname
+    firefox (upstream)
+    evolution (Ubuntu)
+    evolution (Ubuntu Hoary)
+
+As with the example with no source package above; if the user isn't a
+driver of the release, only a nomination will be created.
+
+    >>> login('foo.bar@canonical.com')
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> ubuntu.driver = None
+    >>> login('test@canonical.com')
+
+    >>> bug = firefox.createBug(CreateBugParams(
+    ...     getUtility(ILaunchBag).user, 'New Bug', comment='New bug.'))
+    >>> len(bug.bugtasks)
+    1
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.targetname
+    firefox (upstream)
+
+    >>> submit_commands(bug, 'affects /distros/ubuntu/hoary/evolution')
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.targetname
+    firefox (upstream)
+    evolution (Ubuntu)
+
+    >>> for nomination in bug.getNominations():
+    ...     print nomination.target.bugtargetname
+    Ubuntu Hoary
+
+Let's take on the upstream task on bug four as well. This time we'll
+sneak in a 'subscribe' command between the 'affects' and the other
+commands, to show that the commands acting on the bug task don't have to
+be grouped together:
 
     >>> submit_commands(
     ...     bug_four,

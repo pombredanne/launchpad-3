@@ -265,8 +265,7 @@ def get_object(url_or_path, default_distro=None, path_only=False):
                     "Source package '%s' not released in: '%s'" % (
                         part, url_or_path))
 
-            spr = objs[-1].sourcepackagerelease
-            obj = SourcePackageReleaseInDistroRelease(spr, obj)
+            obj = obj.getSourcePackage(name)
 
         elif ISourcePackage.providedBy(obj):
             # The part of the URL after a source package is always a

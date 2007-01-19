@@ -18,7 +18,7 @@ from canonical.launchpad.interfaces import (
         IBugTaskEditEmailCommand, IBugSet, ILaunchBag, IBugTaskSet,
         BugTaskSearchParams, IBugTarget, IMessageSet, IDistroBugTask,
         IDistributionSourcePackage, EmailProcessingError, NotFoundError,
-        CreateBugParams)
+        CreateBugParams, ISourcePackage)
 from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent)
 from canonical.launchpad.event.interfaces import (
@@ -381,6 +381,30 @@ class AffectsEmailCommand(EmailCommand):
                 raise AssertionError("Bug can't be nominated.")
             nomination = bug.addNomination(target=bug_target, owner=user)
             if check_permission('launchpad.Driver', bug_target):
+                nomination.approve(user)
+                return self.getBugTask(bug, bug_target)
+            else:
+                return distro_task
+        elif ISourcePackage.providedBy(bug_target):
+            # XXX: to much code duplication
+            distribution = bug_target.distrorelease.distribution
+            sourcepackagename = bug_target.sourcepackagename
+            distro_sourcepackage = distribution.getSourcePackage(
+                sourcepackagename)
+            distro_task = self.getBugTask(bug, distro_sourcepackage)
+            # XXX: maybe move this code out to addNomination?
+            if distro_task is None:
+                # A distrorelease task has to have a corresponding
+                # distribution task.
+                distro_task = bugtaskset.createTask(
+                    bug, user, distribution=distribution,
+                    sourcepackagename=sourcepackagename)
+            if not bug.canBeNominatedFor(bug_target.distrorelease):
+                # XXX: what do do here?
+                raise AssertionError("Bug can't be nominated.")
+            nomination = bug.addNomination(
+                target=bug_target.distrorelease, owner=user)
+            if check_permission('launchpad.Driver', bug_target.distrorelease):
                 nomination.approve(user)
                 return self.getBugTask(bug, bug_target)
             else:
