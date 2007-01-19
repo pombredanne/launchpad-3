@@ -489,9 +489,14 @@ class Bug(SQLBase):
             raise NominationError(
                 "This bug cannot be nominated for %s" % target_displayname)
 
-        return BugNomination(
+        nomination = BugNomination(
             owner=owner, bug=self, distrorelease=distrorelease,
             productseries=productseries)
+        for driver in target.drivers:
+            if owner.inTeam(driver):
+                nomination.approve(owner)
+                break
+        return nomination
 
     def canBeNominatedFor(self, nomination_target):
         """See IBug."""

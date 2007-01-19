@@ -70,16 +70,16 @@ class BugNomination(SQLBase):
                 if not task.distribution == distribution:
                     continue
                 if task.sourcepackagename:
-                    return bugtaskset.createTask(
+                    bugtaskset.createTask(
                         bug=self.bug, owner=approver,
                         distrorelease=distrorelease,
                         sourcepackagename=task.sourcepackagename)
                 else:
-                    return bugtaskset.createTask(
+                    bugtaskset.createTask(
                         bug=self.bug, owner=approver,
                         distrorelease=distrorelease)
         else:
-            return bugtaskset.createTask(
+            bugtaskset.createTask(
                 bug=self.bug, owner=approver, productseries=self.productseries)
 
     def decline(self, decliner):
