@@ -88,15 +88,8 @@ class BasePersonVocabulary:
     _table = Person
 
     def toTerm(self, obj):
-        """Return the term for this object.
-
-        Preference is given to email-based terms, falling back on
-        name-based terms when no preferred email exists for the IPerson.
-        """
-        if obj.preferredemail is not None:
-            return SimpleTerm(obj, obj.preferredemail.email, obj.browsername)
-        else:
-            return SimpleTerm(obj, obj.name, obj.browsername)
+        """Return the term for this object."""
+        return SimpleTerm(obj, obj.name, obj.browsername)
 
     def getTermByToken(self, token):
         """Return the term for the given token.
