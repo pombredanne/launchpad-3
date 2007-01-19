@@ -13,8 +13,11 @@ __all__ = [
     'SQLObjectVocabularyBase',
     'NamedSQLObjectVocabulary',
     'NamedSQLObjectHugeVocabulary',
+    'sortkey_ordered_vocab_factory',
     'vocab_factory'
 ]
+
+import operator
 
 from sqlobject import AND, CONTAINSSTRING
 from sqlos.interfaces import ISelectResults
@@ -276,3 +279,16 @@ def vocab_factory(schema, noshow=[]):
         return SimpleVocabulary.fromItems(items)
     return factory
 
+def sortkey_ordered_vocab_factory(schema, noshow=[]):
+    """Another factory for IDBSchema -> IVocabulary.
+
+    This function returns a callable object that creates a vocabulary
+    from a dbschema ordered by that schema's sortkey.
+    """
+    def factory(context, schema=schema, noshow=noshow):
+        """Adapt IDBSchema to IVocabulary."""
+        items = [(item.title, item) for item in
+                 sorted(schema.items, key=operator.attrgetter('sortkey'))
+                 if item not in noshow]
+        return SimpleVocabulary.fromItems(items)
+    return factory

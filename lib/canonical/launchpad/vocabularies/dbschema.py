@@ -53,25 +53,11 @@ __all__ = [
     'UpstreamFileTypeVocabulary',
     ]
 
-import operator
-
 from canonical.lp import dbschema
 
-from canonical.launchpad.webapp.vocabulary import vocab_factory
+from canonical.launchpad.webapp.vocabulary import (
+    sortkey_ordered_vocab_factory, vocab_factory)
 
-def sortkey_ordered_vocab_factory(schema, noshow=[]):
-    """Another factory for IDBSchema -> IVocabulary.
-
-    This function returns a callable object that creates a vocabulary
-    from a dbschema ordered by that schema's sortkey.
-    """
-    def factory(context, schema=schema, noshow=noshow):
-        """Adapt IDBSchema to IVocabulary."""
-        items = [(item.title, item) for item in
-                 sorted(schema.items, key=operator.attrgetter('sortkey'))
-                 if item not in noshow]
-        return SimpleVocabulary.fromItems(items)
-    return factory
 
 # DB Schema Vocabularies
 

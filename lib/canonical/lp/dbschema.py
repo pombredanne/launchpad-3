@@ -2820,7 +2820,6 @@ class BranchSubscriptionDiffSize(DBSchema):
 
         Don't limit the size of the diff.
         """, sortkey=1000000)
-    
 
 
 class BranchSubscriptionNotificationLevel(DBSchema):
@@ -2858,6 +2857,7 @@ class BranchSubscriptionNotificationLevel(DBSchema):
         Send notifications for both branch attribute updates
         and new revisions added to the branch.
         """)
+
 
 class BugNominationStatus(DBSchema):
     """Bug Nomination Status
