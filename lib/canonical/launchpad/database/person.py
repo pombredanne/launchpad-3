@@ -26,6 +26,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database import postgresql
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.event.karma import KarmaAssignedEvent
+from canonical.launchpad.event.team import JoinTeamEvent
 from canonical.launchpad.helpers import (
     contactEmailAddresses, is_english_variant, shortlist)
 
@@ -209,32 +210,18 @@ class Person(SQLBase):
             orderBy=['-datecreated']))
 
     @property
+    def unique_displayname(self):
+        """See IPerson."""
+        return "%s (%s)" % (self.displayname, self.name)
+
+    @property
     def browsername(self):
         """Return a name suitable for display on a web page.
 
         Originally, this was calculated but now we just use displayname.
         You should continue to use this method, however, as we may want to
         change again, such as returning '$displayname ($name)'.
-
-        >>> class DummyPerson:
-        ...     displayname = None
-        ...     name = 'the_name'
-        ...     # This next line is some special evil magic to allow us to
-        ...     # unit test browsername in isolation.
-        ...     browsername = Person.browsername.im_func
-        ...
-        >>> person = DummyPerson()
-
-        Check with just the name.
-
-        >>> person.browsername
-        'the_name'
-
-        >>> person.displayname = 'the_displayname'
-        >>> person.browsername
-        'the_displayname'
         """
-        # Person.displayname is NOT NULL
         return self.displayname
 
     @property
@@ -719,8 +706,8 @@ class Person(SQLBase):
             # Ok, we're done. You are not an active member and still not being.
             return
 
-        team.setMembershipStatus(self, TeamMembershipStatus.DEACTIVATED,
-                                 tm.dateexpires)
+        team.setMembershipData(
+            self, TeamMembershipStatus.DEACTIVATED, self, tm.dateexpires)
 
     def join(self, team):
         """See IPerson."""
@@ -746,16 +733,16 @@ class Person(SQLBase):
         tm = TeamMembership.selectOneBy(person=self, team=team)
         expires = team.defaultexpirationdate
         if tm is None:
-            team.addMember(self, status)
+            team.addMember(self, reviewer=self, status=status)
         else:
             if (tm.status == declined and
                 team.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED):
                 # The user is a DECLINED member, we just have to change the
                 # status to PROPOSED.
-                team.setMembershipStatus(self, status, expires)
+                team.setMembershipData(self, status, self, expires)
             elif (tm.status in [expired, deactivated, declined] and
                   team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN):
-                team.setMembershipStatus(self, status, expires)
+                team.setMembershipData(self, status, self, expires)
             else:
                 return False
 
@@ -785,8 +772,8 @@ class Person(SQLBase):
             to_addrs.update(contactEmailAddresses(person))
         return sorted(to_addrs)
 
-    def addMember(self, person, status=TeamMembershipStatus.APPROVED,
-                  reviewer=None, comment=None):
+    def addMember(self, person, reviewer, status=TeamMembershipStatus.APPROVED,
+                  comment=None):
         """See IPerson."""
         assert self.teamowner is not None
 
@@ -806,9 +793,10 @@ class Person(SQLBase):
         TeamMembershipSet().new(
             person, self, status, dateexpires=expires, reviewer=reviewer,
             reviewercomment=comment)
+        notify(JoinTeamEvent(person, self))
 
-    def setMembershipStatus(self, person, status, expires=None, reviewer=None,
-                            comment=None):
+    def setMembershipData(self, person, status, reviewer, expires=None,
+                          comment=None):
         """See IPerson."""
         tm = TeamMembership.selectOneBy(person=person, team=self)
         assert tm is not None
@@ -817,8 +805,13 @@ class Person(SQLBase):
             now = datetime.now(pytz.timezone('UTC'))
             assert expires > now, expires
 
-        tm.setStatus(status, reviewer, comment)
         tm.dateexpires = expires
+        # Only call setStatus() if there was an actual status change.
+        if status != tm.status:
+            tm.setStatus(status, reviewer, reviewercomment=comment)
+        else:
+            tm.reviewer = reviewer
+            tm.comment = comment
 
         tm.syncUpdate()
 
@@ -1198,8 +1191,11 @@ class PersonSet:
                 defaultmembershipperiod=defaultmembershipperiod,
                 defaultrenewalperiod=defaultrenewalperiod,
                 subscriptionpolicy=subscriptionpolicy)
-        team.addMember(teamowner)
-        team.setMembershipStatus(teamowner, TeamMembershipStatus.ADMIN)
+        # Here we add the owner as a team admin manually because we know what
+        # we're doing (so we don't need to do any sanity checks) and we don't
+        # want any email notifications to be sent.
+        TeamMembershipSet().new(
+            teamowner, team, TeamMembershipStatus.ADMIN, reviewer=teamowner)
         return team
 
     def createPersonAndEmail(

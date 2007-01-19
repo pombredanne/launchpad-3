@@ -271,6 +271,11 @@
     />
 
   <vocabulary
+    name="ProjectProducts"
+    factory="canonical.launchpad.vocabularies.project_products_vocabulary_factory"
+    />
+
+  <vocabulary
     name="RemoteBugTaskStatus"
     factory="canonical.launchpad.vocabularies.RemoteBugTaskStatusVocabulary"
     />
@@ -433,16 +438,6 @@
   <vocabulary
     name="DistributionOrProductOrProject"
     factory="canonical.launchpad.vocabularies.DistributionOrProductOrProjectVocabulary"
-    />
-
-  <!-- Define the widget used by Choice fields that use huge vocabularies -->
-  <view
-    type="zope.publisher.interfaces.browser.IBrowserRequest"
-    for="zope.schema.interfaces.IChoice
-      canonical.launchpad.vocabularies.IHugeVocabulary"
-    provides="zope.app.form.interfaces.IInputWidget"
-    factory="canonical.widgets.SinglePopupWidget"
-    permission="zope.Public"
     />
 
 </configure>

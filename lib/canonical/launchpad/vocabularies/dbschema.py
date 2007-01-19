@@ -53,28 +53,8 @@ __all__ = [
     ]
 
 from canonical.lp import dbschema
-from zope.schema.vocabulary import SimpleVocabulary
 
-# TODO: Make DBSchema classes provide an interface, so we can adapt IDBSchema
-# to IVocabulary
-def vocab_factory(schema, noshow=[]):
-    """Factory for IDBSchema -> IVocabulary adapters.
-
-    This function returns a callable object that creates vocabularies
-    from dbschemas.
-
-    The items appear in value order, lowest first.
-    """
-    def factory(context, schema=schema, noshow=noshow):
-        """Adapt IDBSchema to IVocabulary."""
-        # XXX kiko: we should use sort's built-in DSU here.
-        items = [(item.value, item.title, item)
-            for item in schema.items
-            if item not in noshow]
-        items.sort()
-        items = [(title, value) for sortkey, title, value in items]
-        return SimpleVocabulary.fromItems(items)
-    return factory
+from canonical.launchpad.webapp.vocabulary import vocab_factory
 
 # DB Schema Vocabularies
 
@@ -129,3 +109,4 @@ TicketStatusVocabulary =  vocab_factory(dbschema.TicketStatus)
 TicketPriorityVocabulary = vocab_factory(dbschema.TicketPriority)
 TranslationPermissionVocabulary = vocab_factory(dbschema.TranslationPermission)
 UpstreamFileTypeVocabulary = vocab_factory(dbschema.UpstreamFileType)
+
