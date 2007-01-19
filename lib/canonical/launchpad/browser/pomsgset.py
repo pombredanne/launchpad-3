@@ -1233,7 +1233,7 @@ class POMsgSetSuggestions:
                 'suggestion_text': text_to_html(
                     submission.potranslation.translation,
                     submission.pomsgset.potmsgset.flags()),
-                'pomsgset': pomsgset,
+                'pomsgset': submission.pomsgset,
                 'person': submission.person,
                 'datecreated': submission.datecreated
                 })
