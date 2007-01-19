@@ -23,7 +23,7 @@
     <p
       tal:condition="view/feedback"
       tal:content="view/feedback"
-      class="error message"
+      class="informational message"
     />
 
     <div class="highlighted" style="font-size: 80%;">
@@ -118,7 +118,7 @@
     </form>
     </tal:can-vote>
 
-    <p tal:condition="not: view/userCanVote" class="error message">
+    <p tal:condition="not: view/userCanVote" class="informational message">
       You can&#8217;t vote in this poll because you&#8217;re not
       a member of <span tal:replace="context/team/browsername" />.
     </p>

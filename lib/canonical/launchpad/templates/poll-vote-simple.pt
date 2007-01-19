@@ -23,7 +23,7 @@
     <p
       tal:condition="view/feedback"
       tal:content="view/feedback"
-      class="error message"
+      class="informational message"
     />
 
     <div class="highlighted" style="font-size: 80%;">
