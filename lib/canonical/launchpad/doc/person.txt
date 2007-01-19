@@ -267,8 +267,8 @@ for a Person:
 
   >>> carlos = getUtility(IPersonSet).getByName('carlos')
   >>> [pt.pofile.title for pt in carlos.translation_history]
-  [u'Japanese (ja) translation of evolution-2.2 in Ubuntu Hoary package "evolution"',
-   u'Spanish (es) translation of evolution-2.2 in Evolution trunk',
+  [u'Spanish (es) translation of evolution-2.2 in Evolution trunk',
+   u'Japanese (ja) translation of evolution-2.2 in Ubuntu Hoary package "evolution"',
    u'Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"']
 
 The IPersonSet component contains a few convenience methods to return

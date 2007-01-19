@@ -45,6 +45,7 @@ from canonical.launchpad.database.sourcepackagename import *
 from canonical.launchpad.database.sourcepackagerelease import *
 from canonical.launchpad.database.binarypackagerelease import *
 from canonical.launchpad.database.binarypackagename import *
+from canonical.launchpad.database.binaryandsourcepackagename import *
 from canonical.launchpad.database.publishedpackage import *
 from canonical.launchpad.database.distribution import *
 from canonical.launchpad.database.distributionbounty import *

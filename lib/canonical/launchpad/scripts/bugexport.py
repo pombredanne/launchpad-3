@@ -71,11 +71,11 @@ def serialise_bugtask(bugtask):
         # that are serialised after the comments.
         for attachment in comment.bugattachments:
             addnode(comment_node, 'attachment', None,
-                    href=attachment.libraryfile.url)
+                    href=attachment.libraryfile.http_url)
 
     for attachment in bug.attachments:
         attachment_node = ET.SubElement(bug_node, 'attachment',
-                                        href=attachment.libraryfile.url)
+                                        href=attachment.libraryfile.http_url)
         attachment_node.text = attachment_node.tail = '\n'
         addnode(attachment_node, 'type', attachment.type.name)
         addnode(attachment_node, 'title', attachment.title)

@@ -39,7 +39,7 @@
         <tr tal:repeat="record view/probe_records/currentBatch">
           <td tal:content="record/date_created/fmt:datetime" />
           <td><a tal:content="record/log_file/filename"
-                 tal:attributes="href record/log_file/url" />
+                 tal:attributes="href record/log_file/http_url" />
           </td>
         </tr>
       </tbody>
