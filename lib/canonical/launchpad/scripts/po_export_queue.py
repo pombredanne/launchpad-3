@@ -344,7 +344,7 @@ class ExportResult:
         self.warnings_handler.flush()
         self.successes[name] = self.warnings_stream.getvalue()
 
-    def notify_rosetta_admins(exportid, exception):
+    def notify_rosetta_admins(self, exportid, exception):
         """Notify Rosetta admins about exception and restart transaction.
 
         It's important to restart the transaction if an exception occurs,
