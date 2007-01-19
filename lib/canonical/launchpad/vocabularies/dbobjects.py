@@ -448,10 +448,20 @@ class ValidPersonOrTeamVocabulary(
             email_match_query,
             clauseTables=['ValidPersonOrTeamCache', 'EmailAddress'])
 
+        ircid_match_query = """
+            IRCId.person = Person.id
+            AND IRCId.person = ValidPersonOrTeamCache.id
+            AND lower(IRCId.nickname) = %s
+            """ % quote(text)
+        ircid_match_query += extra_clause
+        ircid_matches = Person.select(
+            ircid_match_query,
+            clauseTables=['ValidPersonOrTeamCache', 'IRCId'])
+
         # XXX: We have to explicitly provide an orderBy here as a workaround
         # for https://launchpad.net/products/launchpad/+bug/30053
         # -- Guilherme Salgado, 2006-01-30
-        return name_matches.union(
+        return name_matches.union(ircid_matches).union(
             email_matches, orderBy=['displayname', 'name'])
 
     def search(self, text):
