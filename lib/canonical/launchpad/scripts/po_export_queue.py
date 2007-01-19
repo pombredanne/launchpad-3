@@ -10,7 +10,6 @@ from StringIO import StringIO
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.database.sqlbase import rollback, begin
 from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad import helpers
 from canonical.launchpad.mail import simple_sendmail
@@ -350,9 +349,6 @@ class ExportResult:
         It's important to restart the transaction if an exception occurs,
         since if it's a DB exception, the transaction isn't usable anymore.
         """
-        rollback()
-        begin()
-
         # Send the email.
         subject = 'Exception in Rosetta export queue'
         replacements = {
@@ -385,14 +381,12 @@ def process_single_object_request(obj, format):
     try:
         result.url = handler.get_librarian_url()
     except psycopg.Error:
-        # Lets notify Rosetta Admins about this
-        result.notify_rosetta_admins(obj.id, sys.exc_info())
         # And re-raise the exception
         raise
     except:
         # Since we are losing the details of exception, lets email
-        # Rosetta admins about it; this also rolls-back and restarts
-        # the transaction, so it's again usable for emailing
+        # Rosetta admins about it
+        # XXX DaniloSegan 20070119: integrate OOPS for scripts handling
         result.notify_rosetta_admins(obj.id, sys.exc_info())
 
         result.add_failure(obj)
@@ -433,14 +427,12 @@ def process_multi_object_request(objects, format):
         try:
             contents = handler.get_contents()
         except psycopg.Error:
-            # Lets notify Rosetta Admins about this
-            result.notify_rosetta_admins(obj.id, sys.exc_info())
-            # And re-raise the exception
+            # Lets re-raise database exceptions
             raise
         except:
             # Since we are losing the details of exception, lets email
-            # Rosetta admins about it; this also rolls-back and restarts
-            # the transaction, so it's again usable for emailing
+            # Rosetta admins about it
+            # XXX DaniloSegan 20070119: integrate OOPS for scripts handling
             result.notify_rosetta_admins(obj.id, sys.exc_info())
 
             result.add_failure(filename)
