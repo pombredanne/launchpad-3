@@ -33,11 +33,7 @@ class TestPublishDistro(TestNativePublishingBase):
         Expect database publishing record to be updated to PUBLISHED and
         the file to be written in disk.
         """
-        pub_source = self.getPubSource(
-            "foo", "main", "foo.dsc", filecontent='foo',
-            status=PackagePublishingStatus.PENDING,
-            pocket=PackagePublishingPocket.RELEASE,
-            distrorelease=self.ubuntutest['breezy-autotest'])
+        pub_source = self.getPubSource(filecontent='foo')
         self.layer.txn.commit()
 
         rc, out, err = self.runPublishDistro([])
@@ -55,15 +51,9 @@ class TestPublishDistro(TestNativePublishingBase):
         targeted to the specified suite, other records should be untouched
         and not present in disk.
         """
-        pub_source = self.getPubSource(
-            "foo", "main", "foo.dsc", filecontent='foo',
-            status=PackagePublishingStatus.PENDING,
-            pocket=PackagePublishingPocket.RELEASE,
-            distrorelease=self.ubuntutest['breezy-autotest'])
+        pub_source = self.getPubSource(filecontent='foo')
         pub_source2 = self.getPubSource(
-            "baz", "main", "baz.dsc", filecontent='baz',
-            status=PackagePublishingStatus.PENDING,
-            pocket=PackagePublishingPocket.RELEASE,
+            sourcename='baz', filecontent='baz',
             distrorelease=self.ubuntutest['hoary-test'])
         self.layer.txn.commit()
 
