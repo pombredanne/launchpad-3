@@ -58,6 +58,9 @@ form {
   margin: 0;
   padding: 0;
 }
+form.primary.search {
+  margin-bottom: 2em;
+}
 @media print {
   .notforprint {display:none;}
 }
@@ -1118,7 +1121,12 @@ img.mugshot {display: block;}
 div.left, div.right {width: 50%;}
 div.left {clear: left; float: left;}
 div.right {clear: right; float: right;}
-div.section {border: dotted #ccc;}
+div.section {
+  border: dotted #ccc;
+  border-width: 1px 0 0 0;
+  margin-top: 1em;
+  padding-top: 1em;
+}
 div.left div.section {
   border-width: 1px 1px 0 0;
   padding: 0.75em 0.75em 0.75em 0;

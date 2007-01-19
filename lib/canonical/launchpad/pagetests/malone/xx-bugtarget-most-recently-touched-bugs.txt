@@ -7,7 +7,7 @@ recently updated bugs. It's shown on the following pages:
 
     >>> from canonical.launchpad.ftests.test_pages import find_portlet
     >>> anon_browser.open('http://launchpad.dev/products/firefox')
-    >>> portlet = find_portlet(anon_browser.contents, 'Latest bugs')
+    >>> portlet = find_portlet(anon_browser.contents, 'Latest bugs reported')
     >>> for tr in portlet('tr'):
     ...   icon_td, summary_td = tr('td')
     ...   for tag in summary_td.findAll():
