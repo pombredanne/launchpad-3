@@ -78,10 +78,10 @@ class POFormatHandler(Handler):
                 size=len(potemplate_content),
                 file=StringIO(potemplate_content),
                 contentType='application/x-po')
-            return alias.url
+            return alias.http_url
         else:
             self.obj.export()
-            return self.obj.exportfile.url
+            return self.obj.exportfile.http_url
 
 class MOFormatHandler(Handler):
     """Export handler for MO format exports."""
@@ -120,7 +120,7 @@ class MOFormatHandler(Handler):
                 size=len(mo_contents),
                 file=StringIO(mo_contents),
                 contentType='application/octet-stream')
-            return alias.url
+            return alias.http_url
 
 format_handlers = {
     RosettaFileFormat.PO: POFormatHandler,
@@ -414,7 +414,7 @@ def process_multi_object_request(objects, format):
             size=size,
             file=filehandle,
             contentType='application/octet-stream')
-        result.url = alias.url
+        result.url = alias.http_url
 
     return result
 

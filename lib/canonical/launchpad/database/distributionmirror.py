@@ -182,10 +182,11 @@ class DistributionMirror(SQLBase):
             fromaddress = format_address(
                 "Launchpad Mirror Prober", config.noreply_from_address)
 
-            replacements = {'distro': self.distribution.title,
-                            'mirror_name': self.name,
-                            'mirror_url': canonical_url(self),
-                            'logfile_url': self.last_probe_record.log_file.url}
+            replacements = {
+                'distro': self.distribution.title,
+                'mirror_name': self.name,
+                'mirror_url': canonical_url(self),
+                'logfile_url': self.last_probe_record.log_file.http_url}
             message = template % replacements
             subject = (
                 "Launchpad: Notification of failure from the mirror prober")
