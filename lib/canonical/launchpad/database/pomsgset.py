@@ -34,6 +34,48 @@ def _get_pluralforms(pomsgset):
         entries = 1
     return entries
 
+
+def _get_wiki_submissions(pomsgset, pluralform):
+    """See IPOMsgSet."""
+    posubmission_ids = POMsgSet._connection.queryAll('''
+        SELECT DISTINCT POSubmission.id
+        FROM POSubmission
+            JOIN POMsgSet ON (POSubmission.pomsgset = POMsgSet.id AND
+                              POMsgSet.isfuzzy = FALSE)
+            JOIN POFile ON (POMsgSet.pofile = POFile.id AND
+                            POFile.language = %s)
+            JOIN POTMsgSet ON (POMsgSet.potmsgset = POTMsgSet.id AND
+                               POTMsgSet.primemsgid = %s)
+        WHERE
+            POSubmission.pluralform = %s
+        ''' % sqlvalues(
+            pomsgset.pofile.language.id, pomsgset.potmsgset.primemsgid_ID,
+            pluralform))[0]
+
+    active_submission = pomsgset.getActiveSubmission(pluralform)
+
+    if (active_submission is not None and
+        active_submission.potranslation is not None):
+        # We look for all the IPOSubmissions with the same translation.
+        same_translation = POSubmission.select(
+            "POSubmission.potranslation = %s" %
+                sqlvalues(active_submission.potranslation.id))
+
+        # Remove it so we don't show as suggestion something that we
+        # already have as active.
+        for posubmission in same_translation:
+            if posubmission.id in posubmission_ids:
+                posubmission_ids.remove(posubmission.id)
+
+    if len(posubmission_ids) > 0:
+        ids = [str(id) for id in posubmission_ids]
+        return POSubmission.select(
+            'POSubmission.id IN (%s)' % ', '.join(ids),
+            orderBy='-datecreated')
+    else:
+        return []
+
+
 class DummyPOMsgSet:
     """Represents a POMsgSet where we do not yet actually HAVE a POMsgSet for
     that POFile and POTMsgSet.
@@ -80,7 +122,7 @@ class DummyPOMsgSet:
 
     def getWikiSubmissions(self, pluralform):
         """See IPOMsgSet."""
-        return []
+        return _get_wiki_submissions(self, pluralform)
 
 
 class POMsgSet(SQLBase):
@@ -623,43 +665,7 @@ class POMsgSet(SQLBase):
 
     def getWikiSubmissions(self, pluralform):
         """See IPOMsgSet."""
-        posubmission_ids = self._connection.queryAll('''
-            SELECT DISTINCT POSubmission.id
-            FROM POSubmission
-                JOIN POMsgSet ON (POSubmission.pomsgset = POMsgSet.id AND
-                                  POMsgSet.isfuzzy = FALSE)
-                JOIN POFile ON (POMsgSet.pofile = POFile.id AND
-                                POFile.language = %s)
-                JOIN POTMsgSet ON (POMsgSet.potmsgset = POTMsgSet.id AND
-                                   POTMsgSet.primemsgid = %s)
-            WHERE
-                POSubmission.pluralform = %s
-            ''' % sqlvalues(
-                self.pofile.language.id, self.potmsgset.primemsgid_ID,
-                pluralform))
-
-        active_submission = self.getActiveSubmission(pluralform)
-
-        if (active_submission is not None and
-            active_submission.potranslation is not None):
-            # We look for all the IPOSubmissions with the same translation.
-            same_translation = POSubmission.select(
-                "POSubmission.potranslation = %s" %
-                    sqlvalues(active_submission.potranslation.id))
-
-            # Remove it so we don't show as suggestion something that we
-            # already have as active.
-            for posubmission_id in same_translation:
-                if posubmission_id in posubmission_ids:
-                    posubmission_ids.remove(posubmission_id)
-
-        if len(posubmission_ids) > 0:
-            ids = [str(L[0]) for L in posubmission_ids]
-            return POSubmission.select(
-                'POSubmission.id IN (%s)' % ', '.join(ids),
-                orderBy='-datecreated')
-        else:
-            return []
+        return _get_wiki_submissions(self, pluralform)
 
     def getSuggestedSubmissions(self, pluralform):
         """See IPOMsgSet."""
