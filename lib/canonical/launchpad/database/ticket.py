@@ -658,6 +658,8 @@ class TicketSearch:
                         "-Ticket.datecreated"]
             else:
                 return "-Ticket.datecreated"
+        elif sort is TicketSort.RECENT_OWNER_ACTIVITY:
+            return ['-Ticket.datelastquery']
         else:
             raise AssertionError, "Unknown TicketSort value: %s" % sort
 
