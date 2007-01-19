@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'IBranch',
     'IBranchSet',
+    'IBranchDelta',
     'IBranchLifecycleFilter'
     ]
 
@@ -222,6 +223,17 @@ class IBranch(IHasOwner):
     def revisions_since(timestamp):
         """Revisions in the history that are more recent than timestamp."""
 
+    # event-related methods
+    def notificationRecipientAddresses():
+        """Return the list of email addresses that receive notifications."""
+
+    def getDelta(old_branch, user):
+        """Returns a BranchDelta instance that encapsulates the changes.
+
+        This method is primarily used by event subscription code to
+        determine what has changed during an SQLObjectModifiedEvent.
+        """
+        
     # subscription-related methods
     def subscribe(person):
         """Subscribe this person to the branch.
@@ -248,6 +260,13 @@ class IBranch(IHasOwner):
         equal to from_rev are destroyed.
 
         Returns True if any RevisionNumber objects were destroyed.
+        """
+
+    def getTipRevision():
+        """Returns the Revision associated with the last_scanned_id.
+
+        Will return None if last_scanned_id is None, or if the id
+        is not found (as in a ghost revision).
         """
 
     def updateScannedDetails(revision_id, revision_count):
@@ -299,6 +318,23 @@ class IBranchSet(Interface):
 
     def getBranchesToScan():
         """Return an iterator for the branches that need to be scanned."""
+
+
+class IBranchDelta(Interface):
+    """The quantitative changes made to a branch that was edited or altered."""
+
+    branch = Attribute("The IBranch, after it's been edited.")
+    user = Attribute("The IPerson that did the editing.")
+
+    # fields on the branch itself, we provide just the new changed value
+    name = Attribute("Old and new names or None.")
+    title = Attribute("Old and new branch titles or None.")
+    summary = Attribute("The branch summary or None.")
+    url = Attribute("Old and new branch URLs or None.")
+    whiteboard = Attribute("The branch whiteboard or None.")
+    lifecycle_status = Attribute("Old and new lifecycle status, or None.")
+    revision_count = Attribute("Old and new revision counts, or None.")
+    last_scanned_id = Attribute("The revision id of the tip revision.")
 
 
 class IBranchLifecycleFilter(Interface):

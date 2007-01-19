@@ -17,8 +17,9 @@ from zope.security.proxy import isinstance as zope_isinstance
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IDistroBugTask, IDistroReleaseBugTask, ILanguageSet, IProductSeriesBugTask,
-    ISpecification, ITeamMembershipSet, IUpstreamBugTask)
+    IBranch, IDistroBugTask, IDistroReleaseBugTask, ILanguageSet,
+    IProductSeriesBugTask, ISpecification, ITeamMembershipSet,
+    IUpstreamBugTask)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.components.bug import BugDelta
@@ -1324,3 +1325,73 @@ def notify_specification_modified(spec, event):
 
     for address in spec.notificationRecipientAddresses():
         simple_sendmail_from_person(event.user, address, subject, body)
+
+
+# def send_branch_revisions_updated(branch, ):
+def notify_branch_modified(branch, event):
+    """Notify the related people that a branch has been modifed."""
+    branch_delta = branch.getDelta(event.object_before_modification,
+                                   event.user)
+    if branch_delta is None:
+        return
+
+    subject = '[Branch %s] %s' % (branch.unique_name, branch.title)
+    indent = ' '*4
+    info_lines = []
+
+    # Fields for which we have old and new values.
+    for field_name in ('name', 'revision_count', 'title', 'url'):
+        delta = getattr(branch_delta, field_name)
+        if delta is not None:
+            title = IBranch[field_name].title
+            old_item = delta['old']
+            new_item = delta['new']
+            info_lines.append("%s%s: %s => %s" % (
+                indent, title, str(old_item), str(new_item)))
+
+    # lifecycle_status is different as it is an Enum type.
+    if branch_delta.lifecycle_status is not None:
+        old_item = branch_delta.lifecycle_status['old']
+        new_item = branch_delta.lifecycle_status['new']
+        title = IBranch['lifecycle_status'].title
+        info_lines.append("%s%s: %s => %s" % (
+            indent, title, old_item.title, new_item.title))
+        
+            
+    # Fields for which we only have the new value.
+    for field_name in ('summary', 'whiteboard'):
+        delta = getattr(branch_delta, field_name)
+        if delta is not None:
+            title = IBranch[field_name].title
+            if info_lines:
+                info_lines.append('')
+            info_lines.append('%s changed to:\n\n%s' % (title, delta))
+
+    # If the tip revision has changed, then show the log for the tip.
+    if branch_delta.last_scanned_id is not None:
+        tip_revision = branch.getTipRevision()
+        if tip_revision is None:
+            # it's a ghost
+            info_lines.append('Latest revision is a ghost (%s)' % (
+                branch_delta.last_scanned_id))
+        else:
+            # show the log entry
+            log_entry = tip_revision.log_body
+            if info_lines:
+                info_lines.append('')
+            info_lines.append('Log entry of last revision:\n\n%s' % log_entry)
+
+    if not info_lines:
+        # The specification was modified, but we don't yet support
+        # sending notification for the change.
+        return
+    
+    body = get_email_template('branch-modified.txt') % {
+        'contents': '\n'.join(info_lines),
+        'branch_title': branch.title,
+        'branch_url': canonical_url(branch),
+        'unsubscribe_url': canonical_url(branch) + '/+subscribe' }
+
+    for address in branch.notificationRecipientAddresses():
+        simple_sendmail_from_person(event.user, address, subject, body)
+

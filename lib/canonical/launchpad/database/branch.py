@@ -14,18 +14,21 @@ from sqlobject import (
     SQLObjectNotFound, AND)
 
 from canonical.config import config
-from canonical.database.constants import UTC_NOW
+from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote 
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.interfaces import (IBranch, IBranchSet,
     ILaunchpadCelebrities, NotFoundError)
-from canonical.launchpad.database.revision import RevisionNumber
+from canonical.launchpad.components.branch import BranchDelta
+from canonical.launchpad.database.revision import RevisionNumber, Revision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
+from canonical.launchpad.helpers import contactEmailAddresses
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.lp.dbschema import (
     EnumCol, BranchRelationships, BranchLifecycleStatus)
+from canonical.launchpad.utilities import ObjectDelta
 
 
 class Branch(SQLBase):
@@ -74,7 +77,7 @@ class Branch(SQLBase):
 
     last_scanned = UtcDateTimeCol(default=None)
     last_scanned_id = StringCol(default=None)
-    revision_count = IntCol(default=0, notNull=True)
+    revision_count = IntCol(default=DEFAULT, notNull=True)
 
     cache_url = StringCol(default=None)
 
@@ -214,13 +217,49 @@ class Branch(SQLBase):
             did_something = True
         return did_something
 
+    def getTipRevision(self):
+        """See IBranch"""
+        tip_revision_id = self.last_scanned_id
+        if tip_revision_id is None:
+            return None
+        return Revision.selectOneBy(revision_id=tip_revision_id)
+
     def updateScannedDetails(self, revision_id, revision_count):
         """See IBranch."""
         self.last_scanned = UTC_NOW
         self.last_scanned_id = revision_id
         self.revision_count = revision_count
         
+    def notificationRecipientAddresses(self):
+        """See IBranch."""
+        related_people = [
+            self.owner, self.author]
+        related_people = [
+            person for person in related_people if person is not None]
+        # listify the subscribers
+        subscribers = [person for person in self.subscribers]
+        addresses = set()
+        for person in related_people + subscribers:
+            addresses.update(contactEmailAddresses(person))
+        return sorted(addresses)
 
+    def getDelta(self, old_branch, user):
+        """See IBranch.getDelta()"""
+        delta = ObjectDelta(old_branch, self)
+        delta.record_new_values(("summary", "whiteboard", "last_scanned_id"))
+        delta.record_new_and_old(("name", "lifecycle_status",
+                                  "revision_count", "title", "url"))
+        # delta.record_list_added_and_removed()
+        # XXX thumper 2006-12-21: add in bugs and specs
+        if delta.changes:
+            changes = delta.changes
+            changes["branch"] = self
+            changes["user"] = user
+
+            return BranchDelta(**changes)
+        else:
+            return None
+        
 
 class BranchSet:
     """The set of all branches."""

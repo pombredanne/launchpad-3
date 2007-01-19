@@ -52,6 +52,8 @@ class BzrSync:
             branch_url = self.db_branch.url
         self.bzr_branch = Branch.open(branch_url)
         self.bzr_branch.lock_read()
+        self.curr = 0
+        self.last = 0
         try:
             self.bzr_history = self.bzr_branch.revision_history()
         except:
@@ -89,13 +91,20 @@ class BzrSync:
         # synchronise Revision objects
         ancestry = self.bzr_branch.repository.get_ancestry(
             self.bzr_branch.last_revision())
+        self.curr = 0
+        self.last = len(ancestry)
         for revision_id in ancestry:
+            self.curr += 1
             if revision_id is None:
+                self.logger.debug("%d of %d: revision_id is None",
+                                  self.curr, self.last)
                 continue
             # If the revision is a ghost, it won't appear in the repository.
             try:
                 revision = self.bzr_branch.repository.get_revision(revision_id)
             except NoSuchRevision:
+                self.logger.debug("%d of %d: %s is a ghost",
+                                  self.curr, self.last, revision_id)
                 continue
             if self.syncRevision(revision):
                 did_something = True
@@ -113,7 +122,8 @@ class BzrSync:
         :type bzr_revision: bzrlib.revision.Revision
         """
         revision_id = bzr_revision.revision_id
-        self.logger.debug("synchronizing revision: %s", revision_id)
+        self.logger.debug("%d of %d: synchronizing revision: %s",
+                          self.curr, self.last, revision_id)
 
         # If did_something is True, new information was found and
         # loaded into the database.
