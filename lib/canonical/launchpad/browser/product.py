@@ -61,6 +61,7 @@ from canonical.launchpad.webapp import (
     RedirectionNavigation, StandardLaunchpadFacets, stepto, stepthrough,
     structured)
 from canonical.launchpad.webapp.snapshot import Snapshot
+from canonical.widgets.image import ImageAddWidget
 from canonical.widgets.product import ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -683,14 +684,16 @@ class ProductAddView(LaunchpadFormView):
 
     schema = IProduct
     field_names = ['name', 'owner', 'displayname', 'title', 'summary',
-                   'description', 'project', 'homepageurl',
-                   'sourceforgeproject', 'freshmeatproject', 'wikiurl',
-                   'screenshotsurl', 'downloadurl', 'programminglang',
-                   'reviewed']
+                   'description', 'project', 'homepageurl', 'gotchi',
+                   'emblem', 'sourceforgeproject', 'freshmeatproject',
+                   'wikiurl', 'screenshotsurl', 'downloadurl',
+                   'programminglang', 'reviewed']
     custom_widget('homepageurl', TextWidget, displayWidth=30)
     custom_widget('screenshotsurl', TextWidget, displayWidth=30)
     custom_widget('wikiurl', TextWidget, displayWidth=30)
     custom_widget('downloadurl', TextWidget, displayWidth=30)
+    custom_widget('gotchi', ImageAddWidget)
+    custom_widget('emblem', ImageAddWidget)
 
     label = "Register an upstream open source product"
     product = None
@@ -737,7 +740,9 @@ class ProductAddView(LaunchpadFormView):
             programminglang=data['programminglang'],
             project=data['project'],
             owner=data['owner'],
-            reviewed=data['reviewed'])
+            reviewed=data['reviewed'],
+            gotchi=data['gotchi'],
+            emblem=data['emblem'])
         notify(ObjectCreatedEvent(self.product))
 
     @property

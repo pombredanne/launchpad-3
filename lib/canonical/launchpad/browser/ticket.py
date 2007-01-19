@@ -237,6 +237,9 @@ class TicketAddView(TicketSupportLanguageMixin, LaunchpadFormView):
 
     field_names = ['title', 'description']
 
+    # The fields displayed on the search page.
+    search_field_names = ['language', 'title']
+
     custom_widget('title', TextWidget, displayWidth=40)
 
     search_template = ViewPageTemplateFile('../templates/ticket-add-search.pt')
@@ -259,7 +262,7 @@ class TicketAddView(TicketSupportLanguageMixin, LaunchpadFormView):
     def setUpWidgets(self):
         # Only setup the widgets that needs validation
         if not self.add_action.submitted():
-            fields = self.form_fields.select('language', 'title')
+            fields = self.form_fields.select(*self.search_field_names)
         else:
             fields = self.form_fields
         self.widgets = form.setUpWidgets(
@@ -280,6 +283,12 @@ class TicketAddView(TicketSupportLanguageMixin, LaunchpadFormView):
                     'description',
                     _('You must provide details about your problem.'))
 
+    @property
+    def pagetitle(self):
+        """The current page title."""
+        return _('Request support with ${context}',
+                 mapping=dict(context=self.context.displayname))
+
     @action(_('Continue'))
     def continue_action(self, action, data):
         """Search for tickets similar to the entered summary."""
@@ -290,7 +299,7 @@ class TicketAddView(TicketSupportLanguageMixin, LaunchpadFormView):
                  self.context, self.request, data=self.initial_values,
                  ignore_request=False)
 
-        tickets = self.context.findSimilarTickets(data['title'])
+        tickets = self.ticket_target.findSimilarTickets(data['title'])
         self.searchResults = tickets[:self._MAX_SIMILAR_TICKETS]
 
         return self.add_template()
@@ -301,9 +310,9 @@ class TicketAddView(TicketSupportLanguageMixin, LaunchpadFormView):
         the continue action handler to do the search.
         """
         if 'title' not in data:
-            # Remove the description widget
+            # Remove the description widget.
             widgets = [(True, self.widgets[name])
-                       for name in ('language', 'title')]
+                       for name in self.search_field_names]
             self.widgets = form.Widgets(widgets, len(self.prefix)+1)
             return self.search_template()
         return self.continue_action.success(data)
@@ -318,7 +327,7 @@ class TicketAddView(TicketSupportLanguageMixin, LaunchpadFormView):
             self.searchResults = []
             return self.add_template()
 
-        ticket = self.context.newTicket(
+        ticket = self.ticket_target.newTicket(
             self.user, data['title'], data['description'], data['language'])
 
         # XXX flacoste 2006/07/25 This should be moved to newTicket().
