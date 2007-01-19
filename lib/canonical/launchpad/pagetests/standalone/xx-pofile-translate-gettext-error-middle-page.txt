@@ -14,16 +14,17 @@ means it will be an string, but we are going to use '%i' which means an
 integer.
 
   >>> browser.getControl(
-  ...     name='msgset_142_es_translation_0_new_checkbox').value = True
-  >>> browser.getControl(
-  ...     name='msgset_142_es_translation_0_new').value = (
-  ...         'Migrando \xc2\xab%i\xc2\xbb')
+  ...     name='msgset_142_es_translation_0_radiobutton').value = [
+  ...         'msgset_142_es_translation_0_new']
+  >>> browser.getControl(name='msgset_142_es_translation_0_new').value = (
+  ...     'Migrando \xc2\xab%i\xc2\xbb')
 
 We are going to add a valid translation too so we are sure that it's stored
 even when there is an error in another message of the same form.
 
   >>> browser.getControl(
-  ...     name='msgset_140_es_translation_0_new_checkbox').value = True
+  ...     name='msgset_140_es_translation_0_radiobutton').value = [
+  ...         'msgset_140_es_translation_0_new']
   >>> browser.getControl(name='msgset_140_es_translation_0_new').value = 'Foo'
 
 And submit the form.
@@ -37,22 +38,9 @@ We remain at the same page:
 
 The valid translation is stored:
 
-  >>> for tag in find_tags_by_class(
-  ...     browser.contents, 'secondary translation')[1]:
-  ...     print tag
-  <th colspan="3">
-    <label class="language-code">Current
-      Spanish:
-    </label>
-  </th>
-  <td>
-    <input type="image" src="/@@/copy" title="Copy text"
-           name="msgset_140_es_translation_0_copy" />
-  </td>
-  <td>
-    <div lang="es" dir="ltr">Foo</div>
-  </td>
-
+  >>> print find_tag_by_id(
+  ...     browser.contents, 'msgset_140_es_translation_0').renderContents()
+  Foo
 
 And the error is noted in the page.
 
@@ -67,9 +55,7 @@ And the error is noted in the page.
     <td>
     </td><td>
       <div>
-        format specifications in 'msgid' and 'msgstr' for argument 1 are not
-        the same
+        format specifications in 'msgid' and 'msgstr' for argument 1 are not the same
       </div>
     </td>
   </tr>
-
