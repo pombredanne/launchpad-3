@@ -118,8 +118,7 @@ class IPerson(IHasSpecifications):
         title=_("Homepage Content"), required=False,
         description=_(
             "The content of your home page. Edit this and it will be "
-            "displayed for all the world to see. It is NOT a wiki so you "
-            "cannot undo changes."))
+            "displayed for all the world to see."))
     emblem = Bytes(
         title=_("Emblem"), required=False,
         description=_(
@@ -294,8 +293,9 @@ class IPerson(IHasSpecifications):
                        vocabulary='ValidTeamOwner')
     teamownerID = Int(title=_("The Team Owner's ID or None"), required=False,
                       readonly=True)
-    teamdescription = Text(title=_('Team Description'), required=False,
-                           readonly=False)
+    teamdescription = Text(
+        title=_('Team Description'), required=False, readonly=False,
+        description=_('Use plain text; URLs will be linkified'))
 
     preferredemail = TextLine(
         title=_("Preferred Email Address"),
