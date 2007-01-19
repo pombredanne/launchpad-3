@@ -572,10 +572,10 @@ class TicketSearch:
 
     def getTableJoins(self):
         """Return the tables that should be joined for the constraints."""
-        joins = []
         if self.needs_attention_from:
-            joins.extend(self.getMessageJoins(self.needs_attention_from))
-        return joins
+            return self.getMessageJoins(self.needs_attention_from)
+        else:
+            return []
 
     def getMessageJoins(self, person):
         """Create the joins needed to select constraints on the messages by a
@@ -662,17 +662,16 @@ class TicketSearch:
 
     def getResults(self):
         """Return the tickets that match this query."""
+        query = ''
         constraints = self.getConstraints()
-        if not constraints:
-            return Ticket.select(
-                prejoins=self.getPrejoins(), orderBy=self.getOrderByClause())
-        else:
-            return Ticket.select(
-                'Ticket.id IN (SELECT Ticket.id FROM Ticket\n%s\nWHERE %s)' % (
-                    '\n     '.join(self.getTableJoins()),
-                    '\n      AND '.join(self.getConstraints())),
-                prejoins=self.getPrejoins(),
-                orderBy=self.getOrderByClause())
+        if constraints:
+            query += (
+                'Ticket.id IN (SELECT Ticket.id FROM Ticket %s WHERE %s)' % (
+                    '\n'.join(self.getTableJoins()),
+                    ' AND '.join(constraints)))
+        return Ticket.select(
+            query, prejoins=self.getPrejoins(),
+            orderBy=self.getOrderByClause())
 
 
 class TicketTargetSearch(TicketSearch):
