@@ -358,6 +358,41 @@ class AffectsEmailCommand(EmailCommand):
 
         return bugtask, event
 
+    def _target_bug(self, user, bug, distrorelease,
+                                sourcepackagename=None):
+        """Try to target the bug the the given distrorelease.
+
+        If the user doesn't have permission to target the bug directly,
+        only a nomination will be created.
+        """
+        distribution = distrorelease.distribution
+        if sourcepackagename:
+            general_target = distribution.getSourcePackage(
+                sourcepackagename)
+        else:
+            general_target = distribution
+        general_task = self.getBugTask(bug, general_target)
+        # XXX: maybe move this code out to addNomination?
+        if general_task is None:
+            # A distrorelease task has to have a corresponding
+            # distribution task.
+            general_task = getUtility(IBugTaskSet).createTask(
+                bug, user, distribution=distribution,
+                sourcepackagename=sourcepackagename)
+        if not bug.canBeNominatedFor(distrorelease):
+            # XXX: what do do here?
+            raise AssertionError("Bug can't be nominated.")
+        nomination = bug.addNomination(target=distrorelease, owner=user)
+        if nomination.isApproved():
+            if sourcepackagename:
+                return self.getBugTask(
+                    bug, distrorelease.getSourcePackage(sourcepackagename))
+            else:
+                return self.getBugTask(bug, distrorelease)
+        else:
+            # XXX: what to do here?
+            return general_task
+
     def _create_bug_task(self, bug, bug_target):
         """Creates a new bug task with bug_target as the target."""
         # XXX kiko: we could fix this by making createTask be a method on
@@ -369,46 +404,11 @@ class AffectsEmailCommand(EmailCommand):
         elif IDistribution.providedBy(bug_target):
             return bugtaskset.createTask(bug, user, distribution=bug_target)
         elif IDistroRelease.providedBy(bug_target):
-            distro_task = self.getBugTask(bug, bug_target.distribution)
-            # XXX: maybe move this code out to addNomination?
-            if distro_task is None:
-                # A distrorelease task has to have a corresponding
-                # distribution task.
-                distro_task = bugtaskset.createTask(
-                    bug, user, distribution=bug_target.distribution)
-            if not bug.canBeNominatedFor(bug_target):
-                # XXX: what do do here?
-                raise AssertionError("Bug can't be nominated.")
-            nomination = bug.addNomination(target=bug_target, owner=user)
-            if check_permission('launchpad.Driver', bug_target):
-                nomination.approve(user)
-                return self.getBugTask(bug, bug_target)
-            else:
-                return distro_task
+            return self._target_bug(user, bug, bug_target)
         elif ISourcePackage.providedBy(bug_target):
-            # XXX: to much code duplication
-            distribution = bug_target.distrorelease.distribution
-            sourcepackagename = bug_target.sourcepackagename
-            distro_sourcepackage = distribution.getSourcePackage(
-                sourcepackagename)
-            distro_task = self.getBugTask(bug, distro_sourcepackage)
-            # XXX: maybe move this code out to addNomination?
-            if distro_task is None:
-                # A distrorelease task has to have a corresponding
-                # distribution task.
-                distro_task = bugtaskset.createTask(
-                    bug, user, distribution=distribution,
-                    sourcepackagename=sourcepackagename)
-            if not bug.canBeNominatedFor(bug_target.distrorelease):
-                # XXX: what do do here?
-                raise AssertionError("Bug can't be nominated.")
-            nomination = bug.addNomination(
-                target=bug_target.distrorelease, owner=user)
-            if check_permission('launchpad.Driver', bug_target.distrorelease):
-                nomination.approve(user)
-                return self.getBugTask(bug, bug_target)
-            else:
-                return distro_task
+            return self._target_bug(
+                user, bug, bug_target.distrorelease,
+                bug_target.sourcepackagename)
         elif IDistributionSourcePackage.providedBy(bug_target):
             return bugtaskset.createTask(
                 bug, user, distribution=bug_target.distribution,
