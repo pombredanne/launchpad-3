@@ -26,7 +26,7 @@ from canonical.launchpad.components.bugtask import BugTaskDelta
 from canonical.launchpad.helpers import (
     contactEmailAddresses, get_email_template)
 from canonical.launchpad.webapp import canonical_url
-from canonical.lp.dbschema import TicketAction
+from canonical.lp.dbschema import TeamMembershipStatus, TicketAction
 
 GLOBAL_NOTIFICATION_EMAIL_ADDRS = []
 CC = "CC"
@@ -391,7 +391,7 @@ def get_bug_edit_notification_texts(bug_delta):
     if bug_delta.attachment is not None and bug_delta.attachment['new']:
         added_attachment = bug_delta.attachment['new']
         change_info = '** Attachment added: "%s"\n' % added_attachment.title
-        change_info += "   %s" % added_attachment.libraryfile.url
+        change_info += "   %s" % added_attachment.libraryfile.http_url
         changes.append(change_info)
 
     if bug_delta.bugtask_deltas is not None:
@@ -849,25 +849,71 @@ def notify_bug_attachment_added(bugattachment, event):
     add_bug_change_notifications(bug_delta)
 
 
-def notify_join_request(event):
-    """Notify team administrators that a new membership is pending approval."""
-    if not event.user in event.team.proposedmembers:
-        return
-
+def notify_team_join(event):
+    """Notify team administrators that a new joined (or tried to) the team.
+    
+    If the team's policy is Moderated, the email will say that the membership
+    is pending approval. Otherwise it'll say that the user has joined the team
+    and who added that person to the team.
+    """
     user = event.user
     team = event.team
-    tm = getUtility(ITeamMembershipSet).getByPersonAndTeam(user, team)
-    assert tm is not None
-    to_addrs = team.getTeamAdminsEmailAddresses()
-    replacements = {'browsername': user.browsername,
-                    'name': user.name,
-                    'teamname': team.browsername,
-                    'url': canonical_url(tm)}
-    msg = get_email_template('pending-membership-approval.txt') % replacements
-    subject = "Launchpad: New %s member awaiting approval." % team.name
-    from_addr = config.noreply_from_address
-    headers = {"Reply-To": user.preferredemail.email}
-    simple_sendmail(from_addr, to_addrs, subject, msg, headers=headers)
+    membership = getUtility(ITeamMembershipSet).getByPersonAndTeam(user, team)
+    assert membership is not None
+    reviewer = membership.reviewer
+    approved, admin = [
+        TeamMembershipStatus.APPROVED, TeamMembershipStatus.ADMIN]
+    admin_addrs = team.getTeamAdminsEmailAddresses()
+
+    from_addr = format_address('Launchpad', config.noreply_from_address)
+
+    if reviewer != user and membership.status in [approved, admin]:
+        # Somebody added this user as a member, we better send a notification
+        # to the user too.
+        member_addrs = contactEmailAddresses(user)
+
+        subject = (
+            'Launchpad: %s is now a member of %s' % (user.name, team.name))
+        if user.isTeam():
+            templatename = 'new-member-notification-for-teams.txt'
+        else:
+            templatename = 'new-member-notification.txt'
+        
+        template = get_email_template(templatename)
+        msg = template % {
+            'reviewer': '%s (%s)' % (reviewer.browsername, reviewer.name),
+            'member': '%s (%s)' % (user.browsername, user.name),
+            'team': '%s (%s)' % (team.browsername, team.name)}
+        msg = MailWrapper().format(msg)
+        simple_sendmail(from_addr, member_addrs, subject, msg)
+
+        # The member's email address may be in admin_addrs too; let's remove
+        # it so the member don't get two notifications.
+        admin_addrs = set(admin_addrs).difference(set(member_addrs))
+
+    # Yes, we can have teams with no members; not even admins.
+    if not admin_addrs:
+        return
+
+    replacements = {
+        'person_name': "%s (%s)" % (user.browsername, user.name),
+        'team_name': "%s (%s)" % (team.browsername, team.name),
+        'reviewer_name': "%s (%s)" % (reviewer.browsername, reviewer.name),
+        'url': canonical_url(membership)}
+
+    headers = {}
+    if membership.status in [approved, admin]:
+        template = get_email_template('new-member-notification-for-admins.txt')
+        subject = (
+            'Launchpad: %s is now a member of %s' % (user.name, team.name))
+    else:
+        template = get_email_template('pending-membership-approval.txt')
+        subject = (
+            "Launchpad: %s wants to join team %s" % (user.name, team.name))
+        headers = {"Reply-To": user.preferredemail.email}
+
+    msg = MailWrapper().format(template % replacements)
+    simple_sendmail(from_addr, admin_addrs, subject, msg, headers=headers)
 
 
 class TicketNotification:

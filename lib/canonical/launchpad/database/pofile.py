@@ -650,7 +650,7 @@ class POFile(SQLBase, RosettaStats):
             'elapsedtime': entry_to_import.getElapsedTimeText(),
             'language': self.language.displayname,
             'template': self.potemplate.displayname,
-            'file_link': entry_to_import.content.url,
+            'file_link': entry_to_import.content.http_url,
             'numberofmessages': msgsets_imported,
             'import_title': '%s translations for %s' % (
                 self.language.displayname, self.potemplate.displayname)
@@ -728,11 +728,43 @@ class POFile(SQLBase, RosettaStats):
         if self.exportfile is None:
             return False
 
+        # XXX DaniloSegan 20070115: doing this with latestsubmission is just
+        # a workaround; see bug #78501 for suggestion about using
+        # latestselection instead
+        #
+        # When an active submission is deactivated, POSelection
+        # corresponding to a certain pomsgset (and plural form) is set
+        # to have active_submission as None.  Similarly for published
+        # submission.
+        #
+        # If such a POSelection without active_submission but with
+        # published_submission is deactivated, self.latestsubmission
+        # would be set to None.  In this situation the data model has
+        # no easy way of indication when the latest update was done,
+        # and we therefore return False to be on the safe side.
         if self.latestsubmission is None:
-            return True
+            return False
 
-        change_time = self.latestsubmission.datecreated
-        return change_time < self.exporttime
+        # If there are no activeselections, yet latestsubmission is defined,
+        # it must have been the case of deactivated translation (bug #78501)
+        po_selections = list(self.latestsubmission.active_selections)
+        # If there is any of the active or published submissions,
+        # we can get to a "root" POMsgSet which was last updated,
+        # and thus we can go through all the POSelections to find
+        # out the last updated date.
+        if len(po_selections) == 0:
+            # If there are no activeselections, then a publishedselection
+            # was deactivated, so lets use them to get at pomsgset
+            po_selections = list(self.latestsubmission.published_selections)
+            if len(po_selections) == 0:
+                # Again, if we can't get at the POMsgSet, we're simply
+                # returning False to be on the safe side
+                return False
+
+        # Otherwise, we can get the POMsgSet itself through any of the
+        # active selections, and then easily get to all POSelection's
+        # and check their last update date which is guaranteed to be correct
+        return not po_selections[0].pomsgset.isNewerThan(self.exporttime)
 
     def updateExportCache(self, contents):
         """See IPOFile."""

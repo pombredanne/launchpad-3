@@ -47,8 +47,22 @@ class ILibraryFileAlias(Interface):
                 ''')
             )
 
-    url = Attribute(_("The URL to this file"))
-    secure_url = Attribute(_("The secure URL to this file"))
+    # XXX: We can't use TextLine here because they return
+    # byte strings.  -- Guilherme Salgado, 2007-01-18
+    # (https://beta.launchpad.net/launchpad/+bug/80487)
+    http_url = Attribute(_("The http URL to this file"))
+    https_url = Attribute(_("The https URL to this file"))
+
+    def getURL(self):
+        """Return this file's http or https URL.
+
+        The generated URL will be https if the use_https config variable is
+        set, in order to prevent warnings about insecure objects from
+        happening in some browsers.
+
+        If config.launchpad.virtual_host.use_https is set, then return the
+        https URL. Otherwise return the http URL.
+        """
 
     def open():
         """Open this file for reading."""

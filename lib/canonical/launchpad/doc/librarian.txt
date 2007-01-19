@@ -49,16 +49,36 @@ We can get its URL too
 
 >>> import re
 >>> re.search(
-...     r'^http://localhost:58000/\d+/text.txt$', alias.url
+...     r'^http://localhost:58000/\d+/text.txt$', alias.http_url
 ...     ) is not None
 True
 
-Librarian also serves the same file thru https.
+Librarian also serves the same file through https.
 
 >>> re.search(
-...     r'^https://localhost:58000/\d+/text.txt$', alias.secure_url
+...     r'^https://localhost:58000/\d+/text.txt$', alias.https_url
 ...     ) is not None
 True
+
+And we even have a convenient method which returns either the http URL or the
+https one, depending on a config value.
+
+>>> from canonical.config import config
+>>> config.launchpad.vhosts.use_https
+False
+>>> re.search(
+...     r'^http://localhost:58000/\d+/text.txt$', alias.getURL()
+...     ) is not None
+True
+
+>>> config.launchpad.vhosts.use_https = True
+>>> re.search(
+...     r'^https://localhost:58000/\d+/text.txt$', alias.getURL()
+...     ) is not None
+True
+
+# Let's reset the value of use_https to avoid problems in future tests
+>>> config.launchpad.vhosts.use_https = False
 
 However, we can't access its contents until we have committed
 
@@ -171,7 +191,6 @@ client can't see the database records yet).
 Buildd mechanism
 ----------------
 
->>> from canonical.config import config
 >>> temp_url = config.librarian.buildd_download_url
 >>> config.librarian.buildd_download_url = "http://NOT.VALID.COM/"
 
@@ -246,7 +265,11 @@ will be given None
 >>> alias = lfas[36]
 >>> alias.content.deleted
 True
->>> alias.url is None
+>>> alias.http_url is None
+True
+>>> alias.https_url is None
+True
+>>> alias.getURL() is None
 True
 >>> client.getURLForAlias(alias.id) is None
 True

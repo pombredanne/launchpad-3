@@ -146,7 +146,7 @@ def handleMail(trans=transaction):
 
                 # Let's save the url of the file alias, otherwise we might not
                 # be able to access it later if we get a DB exception.
-                file_alias_url = file_alias.url
+                file_alias_url = file_alias.http_url
 
                 # If something goes wrong when handling the mail, the
                 # transaction will be aborted. Therefore we need to commit the

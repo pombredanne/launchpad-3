@@ -486,7 +486,7 @@ Adding an attachment will generate a notification that looks as follows:
 
     >>> class MockLibraryFile:
     ...     def __init__(self, url):
-    ...         self.url = url
+    ...         self.http_url = url
     >>> class MockAttachment:
     ...     def __init__(self, title, libraryfile):
     ...         self.title = title
