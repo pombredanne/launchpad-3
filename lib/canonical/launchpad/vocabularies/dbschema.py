@@ -14,6 +14,7 @@ __all__ = [
     'BranchLifecycleStatusVocabulary',
     'BranchLifecycleStatusFilterVocabulary',
     'BranchReviewStatusVocabulary',
+    'BranchSubscriptionNotificationLevelVocabulary',
     'BugAttachmentTypeVocabulary',
     'BugRefVocabulary',
     'BugBranchStatusVocabulary',
@@ -64,6 +65,8 @@ BranchLifecycleStatusVocabulary = \
 BranchLifecycleStatusFilterVocabulary = \
     vocab_factory(dbschema.BranchLifecycleStatusFilter)
 BranchReviewStatusVocabulary = vocab_factory(dbschema.BranchReviewStatus)
+BranchSubscriptionNotificationLevelVocabulary = \
+    vocab_factory(dbschema.BranchSubscriptionNotificationLevel)
 BugAttachmentTypeVocabulary = vocab_factory(dbschema.BugAttachmentType)
 BugBranchStatusVocabulary = vocab_factory(dbschema.BugBranchStatus)
 BugNominationStatusVocabulary = vocab_factory(dbschema.BugNominationStatus)
