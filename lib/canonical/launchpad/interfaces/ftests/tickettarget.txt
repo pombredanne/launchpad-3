@@ -253,9 +253,9 @@ the tickets will be sorted NEWEST_FIRST.
 ('Ticket title4' is not shown in this case because it has INVALID as
 its status.)
 
-You can also sort by the time to the last owner reply by using the
-RECENT_OWNER_ACTIVITY sort order. (This effectively sorts descending on
-the datelastquery attribute.)
+The RECENT_OWNER_ACTIVITY sort order sorts first tickets which recently
+received a new message by their owner. (It effectively sorts
+descending on the datelastquery attribute.)
 
     >>> for t in target.searchTickets(sort=TicketSort.RECENT_OWNER_ACTIVITY):
     ...     print t.title
@@ -268,7 +268,7 @@ the datelastquery attribute.)
     New ticket
 
 (Ticket title0 sorts first because it had a message from its owner
-after the other were created.)
+after the others were created.)
 
 === owner ===
 
