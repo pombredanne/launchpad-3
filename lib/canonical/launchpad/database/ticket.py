@@ -503,7 +503,8 @@ class TicketSet:
         ticket = Ticket(
             title=title, description=description, owner=owner,
             product=product, distribution=distribution, language=language,
-            sourcepackagename=sourcepackagename, datecreated=datecreated)
+            sourcepackagename=sourcepackagename, datecreated=datecreated,
+            datelastquery=datecreated)
 
         # Subscribe the submitter
         ticket.subscribe(owner)

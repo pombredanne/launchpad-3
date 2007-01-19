@@ -47,6 +47,8 @@ which defaults to UTC_NOW.
     True
     >>> ticket.datecreated == now
     True
+    >>> ticket.datelastquery == now
+    True
 
 The created ticket starts in the 'Open' status and should have the owner
 subscribed to the ticket.
