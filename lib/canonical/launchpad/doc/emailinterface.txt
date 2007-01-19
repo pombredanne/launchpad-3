@@ -796,42 +796,43 @@ task will be created:
 It's also possible to add tasks for specific distribution releases as
 well.
 
-    >>> submit_commands(bug_four, 'affects /distros/ubuntu/hoary')
+    >>> from canonical.launchpad.interfaces import CreateBugParams, IProductSet
+    >>> def new_firefox_bug():
+    ...     firefox = getUtility(IProductSet).getByName('firefox')
+    ...     return firefox.createBug(CreateBugParams(
+    ...         getUtility(ILaunchBag).user, 'New Bug', comment='New bug.'))
+    >>> bug = new_firefox_bug()
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.targetname
+    firefox (upstream)
+
+    >>> submit_commands(bug, 'affects /distros/ubuntu/hoary')
 
 This caused one bugtask to be added to the bug. The added bug task is a
 generic Ubuntu task, though.
 
-    >>> len(bug_four.bugtasks)
-    4
-
-    >>> for bugtask in bug_four.bugtasks:
+    >>> for bugtask in bug.bugtasks:
     ...     print bugtask.targetname
     firefox (upstream)
     Ubuntu
-    evolution (Debian)
-    mozilla-firefox (Debian)
 
 Because Sample Person isn't a driver of Ubuntu, he's not allowed to
 target a bug directly, instead a nomination was created.
 
-    >>> for nomination in bug_four.getNominations():
+    >>> for nomination in bug.getNominations():
     ...     print nomination.target.bugtargetname
     Ubuntu Hoary
 
 The same happens if we try to target another release.
 
-    >>> submit_commands(bug_four, 'affects /distros/ubuntu/warty')
+    >>> submit_commands(bug, 'affects /distros/ubuntu/warty')
 
-    >>> len(bug_four.bugtasks)
-    4
-    >>> for bugtask in bug_four.bugtasks:
+    >>> for bugtask in bug.bugtasks:
     ...     print bugtask.targetname
     firefox (upstream)
     Ubuntu
-    evolution (Debian)
-    mozilla-firefox (Debian)
 
-    >>> for nomination in bug_four.getNominations():
+    >>> for nomination in bug.getNominations():
     ...     print nomination.target.bugtargetname
     Ubuntu Hoary
     Ubuntu Warty
@@ -847,25 +848,18 @@ bugs directly to releases.
 
 Now a new bugtask for the release will be create directly.
 
-    >>> submit_commands(bug_four, 'affects /distros/ubuntu/grumpy')
+    >>> submit_commands(bug, 'affects /distros/ubuntu/grumpy')
 
-    >>> len(bug_four.bugtasks)
-    5
-    >>> for bugtask in bug_four.bugtasks:
+    >>> for bugtask in bug.bugtasks:
     ...     print bugtask.targetname
     firefox (upstream)
     Ubuntu
     Ubuntu Grumpy
-    evolution (Debian)
-    mozilla-firefox (Debian)
 
 It works the same when specifying a source package while targeting a
 specific distrorelease.
 
-    >>> from canonical.launchpad.interfaces import CreateBugParams, IProductSet
-    >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> bug = firefox.createBug(CreateBugParams(
-    ...     getUtility(ILaunchBag).user, 'New Bug', comment='New bug.'))
+    >>> bug = new_firefox_bug()
     >>> for bugtask in bug.bugtasks:
     ...     print bugtask.targetname
     firefox (upstream)
@@ -889,10 +883,7 @@ driver of the release, only a nomination will be created.
     >>> ubuntu.driver = None
     >>> login('test@canonical.com')
 
-    >>> bug = firefox.createBug(CreateBugParams(
-    ...     getUtility(ILaunchBag).user, 'New Bug', comment='New bug.'))
-    >>> len(bug.bugtasks)
-    1
+    >>> bug = new_firefox_bug()
     >>> for bugtask in bug.bugtasks:
     ...     print bugtask.targetname
     firefox (upstream)
@@ -921,7 +912,7 @@ be grouped together:
     ...     'status confirmed', 'assignee test@canonical.com')
 
     >>> len(bug_four.bugtasks)
-    5
+    3
     >>> upstream_task = bug_four.bugtasks[0]
     >>> print upstream_task.importance.name
     CRITICAL
