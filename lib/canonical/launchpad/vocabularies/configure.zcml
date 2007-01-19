@@ -41,6 +41,11 @@
     />
 
   <vocabulary
+    name="BranchSubscriptionDiffSize"
+    factory="canonical.launchpad.vocabularies.BranchSubscriptionDiffSizeVocabulary"
+    />
+
+  <vocabulary
     name="BranchSubscriptionNotificationLevel"
     factory="canonical.launchpad.vocabularies.BranchSubscriptionNotificationLevelVocabulary"
     />

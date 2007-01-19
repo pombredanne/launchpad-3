@@ -79,16 +79,6 @@
         template="../templates/branch-summary-listing.pt" />
   </browser:pages>
 
-  <browser:pages
-    for="canonical.launchpad.interfaces.IBranch"
-    class="canonical.launchpad.browser.BranchView"
-    facet="branches"
-    permission="launchpad.AnyPerson">
-    <browser:page
-      name="+subscribe"
-      template="../templates/branch-subscription.pt" />
-  </browser:pages>
-
   <browser:page
       for="*"
       name="branch-filtering-macros"

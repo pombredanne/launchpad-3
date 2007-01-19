@@ -132,13 +132,17 @@ class TestBzrSync(BzrSyncTestCase):
 
     def commitRevision(self, message=None, committer=None,
                        extra_parents=None, rev_id=None,
-                       timestamp=None, timezone=None):
-        file = open(os.path.join(self.bzr_branch_abspath, "file"), "w")
-        file.write(str(time.time()+random.random()))
+                       timestamp=None, timezone=None,
+                       filename="file", contents=None):
+        file = open(os.path.join(self.bzr_branch_abspath, filename), "w")
+        if contents is None:
+            file.write(str(time.time()+random.random()))
+        else:
+            file.write(contents)
         file.close()
         inventory = self.bzr_tree.read_working_inventory()
-        if not inventory.has_filename("file"):
-            self.bzr_tree.add("file")
+        if not inventory.has_filename(filename):
+            self.bzr_tree.add(filename)
         if message is None:
             message = self.LOG
         if committer is None:
@@ -257,6 +261,83 @@ class TestBzrSync(BzrSyncTestCase):
         self.assertEqual(rev_1.revision_date, dt)
         self.assertEqual(rev_2.revision_date, dt)
 
+    def assertTextEqual(self, text1, text2):
+        if text1 != text2:
+            # find the first point of difference
+            for pos in xrange(len(text1)):
+                if text1[pos] != text2[pos]:
+                    raise AssertionError("Text differs at position %d\n"
+                                         "  text1[%d:]: %s\n"
+                                         "  text2[%d:]: %s\n"
+                                         % (pos, pos, repr(text1[pos:]),
+                                            pos, repr(text2[pos:])))
+
+    def test_email_format(self):
+        first_revision = 'rev-1'
+        self.commitRevision(rev_id=first_revision,
+                            message="Log message",
+                            committer="Joe Bloggs <joe@example.com>",
+                            filename="hello.txt",
+                            contents="Hello World\n",
+                            timestamp=1000000000.0,
+                            timezone=0)
+        second_revision = 'rev-2'
+        self.commitRevision(rev_id=second_revision,
+                            message="Extended contents",
+                            committer="Joe Bloggs <joe@example.com>",
+                            filename="hello.txt",
+                            contents="Hello World\n\nFoo Bar\n",
+                            timestamp=1000100000.0,
+                            timezone=0)
+        
+        sync = BzrSync(self.txn, self.db_branch)
+        try:
+            revision = sync.bzr_branch.repository.get_revision(first_revision)
+            diff_lines = sync.get_diff_lines(revision)
+
+            expected = ("=== added file 'hello.txt'\n"
+                        "--- a/hello.txt\t1970-01-01 00:00:00 +0000\n"
+                        "+++ b/hello.txt\t2001-09-09 01:46:40 +0000\n@@ -0,0 +1,1 @@\n"
+                        "+Hello World\n\n")
+            self.assertTextEqual('\n'.join(diff_lines), expected)
+                             
+            expected = (u"------------------------------------------------------------\n"
+                        "revno: 1\n"
+                        "committer: Joe Bloggs <joe@example.com>\n"
+                        "branch nick: bzr_branch\n"
+                        "timestamp: Sun 2001-09-09 01:46:40 +0000\n"
+                        "message:\n"
+                        "  Log message\n"
+                        "added:\n"
+                        "  hello.txt\n")
+            self.assertTextEqual(sync.get_revision_message(revision), expected)
+
+
+            revision = sync.bzr_branch.repository.get_revision(second_revision)
+            diff_lines = sync.get_diff_lines(revision)
+
+            expected = ("=== modified file 'hello.txt'\n"
+                        "--- a/hello.txt\t2001-09-09 01:46:40 +0000\n"
+                        "+++ b/hello.txt\t2001-09-10 05:33:20 +0000\n"
+                        "@@ -1,1 +1,3 @@\n"
+                        " Hello World\n"
+                        "+\n"
+                        "+Foo Bar\n\n")
+            self.assertTextEqual('\n'.join(diff_lines), expected)
+                             
+            expected = (u"------------------------------------------------------------\n"
+                        "revno: 2\n"
+                        "committer: Joe Bloggs <joe@example.com>\n"
+                        "branch nick: bzr_branch\n"
+                        "timestamp: Mon 2001-09-10 05:33:20 +0000\n"
+                        "message:\n"
+                        "  Extended contents\n"
+                        "modified:\n"
+                        "  hello.txt\n")
+            self.assertTextEqual(sync.get_revision_message(revision), expected)
+
+        finally:
+            sync.close()
 
 class TestBzrSyncModified(BzrSyncTestCase):
 

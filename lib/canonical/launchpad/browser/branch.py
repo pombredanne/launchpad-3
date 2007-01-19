@@ -78,13 +78,17 @@ class BranchContextMenu(ContextMenu):
         text = 'Change Registrant'
         return Link('+reassign', text, icon='edit')
 
+    @enabled_with_permission('launchpad.AnyPerson')
     def subscription(self):
-        user = self.user
-        if user is not None and self.context.has_subscription(user):
-            text = 'Unsubscribe'
+        if self.context.hasSubscription(self.user):
+            url = '+edit-subscription'
+            text = 'Edit Subscription'
+            icon = 'edit'
         else:
+            url = '+subscribe'
             text = 'Subscribe'
-        return Link('+subscribe', text, icon='edit')
+            icon = 'add'
+        return Link(url, text, icon=icon)
 
 
 class BranchView(LaunchpadView):
@@ -110,7 +114,7 @@ class BranchView(LaunchpadView):
         """Is the current user subscribed to this branch?"""
         if self.user is None:
             return False
-        return self.context.has_subscription(self.user)
+        return self.context.hasSubscription(self.user)
 
     def recent_revision_count(self, days=30):
         """Number of revisions committed during the last N days."""

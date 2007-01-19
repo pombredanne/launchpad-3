@@ -214,9 +214,6 @@ class IBranch(IHasOwner):
     subscriptions = Attribute("BranchSubscriptions associated to this branch.")
     subscribers = Attribute("Persons subscribed to this branch.")
 
-    def has_subscription(person):
-        """Is this person subscribed to the branch?"""
-
     def latest_revisions(quantity=10):
         """A specific number of the latest revisions in that branch."""
 
@@ -235,10 +232,16 @@ class IBranch(IHasOwner):
         """
         
     # subscription-related methods
-    def subscribe(person):
+    def subscribe(person, notification_level, max_diff_lines):
         """Subscribe this person to the branch.
 
         :return: new or existing BranchSubscription."""
+
+    def getSubscription(person):
+        """Return the BranchSubscription for this person."""
+
+    def hasSubscription(person):
+        """Is this person subscribed to the branch?"""
 
     def unsubscribe(person):
         """Remove the person's subscription to this branch."""

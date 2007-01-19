@@ -13,12 +13,15 @@ import sys
 import os
 import logging
 from datetime import datetime
+from StringIO import StringIO
 
 import pytz
 from zope.component import getUtility
 from bzrlib.branch import Branch
-from bzrlib.revision import NULL_REVISION
+from bzrlib.diff import show_diff_trees
 from bzrlib.errors import NoSuchRevision
+from bzrlib.log import log_formatter, show_log
+from bzrlib.revision import NULL_REVISION
 
 from sqlobject import AND
 from canonical.lp import initZopeless
@@ -257,6 +260,41 @@ class BzrSync:
 
         return did_something
 
+    def get_diff_lines(self, bzr_revision):
+        repo = self.bzr_branch.repository
+        if bzr_revision.parent_ids:
+            ids = (bzr_revision.revision_id, bzr_revision.parent_ids[0])
+            tree_new, tree_old = repo.revision_trees(ids)
+        else:
+            # can't get both trees at once, so one at a time
+            tree_new = repo.revision_tree(bzr_revision.revision_id)
+            tree_old = repo.revision_tree(None)
+            
+        diff_content = StringIO()
+        show_diff_trees(tree_old, tree_new, diff_content)
+        lines = diff_content.getvalue().split("\n")
+        numlines = len(lines)
+        return lines
+
+    def get_revision_message(self, bzr_revision):
+        outf = StringIO()
+        lf = log_formatter('long',
+                           # show_ids=True,
+                           to_file=outf
+                           )
+        rev_id = bzr_revision.revision_id
+        rev1 = rev2 = self.bzr_branch.revision_id_to_revno(rev_id)
+        if rev1 == 0:
+            rev1 = None
+            rev2 = None
+
+        show_log(self.bzr_branch,
+                 lf,
+                 start_revision=rev1,
+                 end_revision=rev2,
+                 verbose=True
+                 )
+        return outf.getvalue()
 
 def main(branch_id):
     # Load branch with the given branch_id.
