@@ -38,8 +38,8 @@ Same behavior for people:
 
 >>> admin_browser.open('http://launchpad.dev/~stub')
 >>> admin_browser.getLink('Personal Details').click()
->>> admin_browser.getControl('Name', index=0).value = 'admin42'
->>> admin_browser.getControl('Change').click()
+>>> admin_browser.getControl('Name', index=1).value = 'admin42'
+>>> admin_browser.getControl('Save').click()
 >>> "The name 'admin42' has been blocked" in admin_browser.contents
 True
 

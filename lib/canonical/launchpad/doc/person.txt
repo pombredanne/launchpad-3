@@ -259,20 +259,6 @@ person uploaded (where he isn't the maintainer).
     (u'alsa-utils', u'Ubuntu Hoary', u'1.0.9a-4ubuntu1')
 
 
-Bug contact packages
---------------------
-
-A person who chooses to receive all bugmail for a package is said to be
-a "bug contact" for that package. A package may have zero, one, or more
-bug contacts.
-
-IPerson.getBugContactPackages returns this list of packages, sorted
-alphabetically (A to Z) by package name.
-
-    >>> [package.name for package in foobar.getBugContactPackages()]
-    [u'mozilla-firefox', u'pmount']
-
-
 Translations
 ------------
 
@@ -281,8 +267,8 @@ for a Person:
 
   >>> carlos = getUtility(IPersonSet).getByName('carlos')
   >>> [pt.pofile.title for pt in carlos.translation_history]
-  [u'Japanese (ja) translation of evolution-2.2 in Ubuntu Hoary package "evolution"',
-   u'Spanish (es) translation of evolution-2.2 in Evolution trunk',
+  [u'Spanish (es) translation of evolution-2.2 in Evolution trunk',
+   u'Japanese (ja) translation of evolution-2.2 in Ubuntu Hoary package "evolution"',
    u'Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"']
 
 The IPersonSet component contains a few convenience methods to return

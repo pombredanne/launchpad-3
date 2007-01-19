@@ -25,7 +25,7 @@ Now he'll request his key to be reactivated.
     >>> soup = BeautifulSoup(user_browser.contents)
     >>> for tag in soup('p', 'informational message'):
     ...     print tag.renderContents()
-    An email was sent to test@canonical.com with instructions to reactivate...
+    A message has been sent to test@canonical.com with instructions to reactivate...
 
 
 Get the token from the body of the email sent.

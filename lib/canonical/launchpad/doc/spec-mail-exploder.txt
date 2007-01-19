@@ -193,7 +193,7 @@ So that if we someone re-sends the notification we sent to us, we'll
 simply emit a warning and drop the email.
 
     >>> class FakeFileAlias:
-    ...     url = 'http://librarian/foo.txt'
+    ...     http_url = 'http://librarian/foo.txt'
     >>> del sent_msg['Sender']
     >>> sent_msg['Sender'] = 'webmaster@ubuntu.com'
     >>> handler.process(

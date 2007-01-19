@@ -1,13 +1,23 @@
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 
-from zope.schema import Choice, Field, Int, Text, TextLine, Password
-from zope.schema.interfaces import IPassword, IText, ITextLine, IField, IInt
-from zope.interface import implements, Attribute
+from StringIO import StringIO
+from textwrap import dedent
+
+from zope.schema import (
+    Bytes, Choice, Field, Int, Text, TextLine, Password, Tuple)
+from zope.schema.interfaces import (
+    IBytes, IField, IInt, IPassword, IText, ITextLine)
+from zope.interface import implements
+from zope.security.interfaces import ForbiddenAttribute
 
 from canonical.database.sqlbase import cursor
 from canonical.launchpad import _
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name
+
+
+# Marker object to tell BaseImageUpload to keep the existing image.
+KEEP_SAME_IMAGE = object()
 
 
 # Field Interfaces
@@ -101,6 +111,30 @@ class ITag(ITextLine):
 
     A text line which can be used as a simple text tag.
     """
+
+
+class IBaseImageUpload(IBytes):
+    """Marker interface for ImageUpload fields."""
+
+    max_dimensions = Tuple(
+        title=_('Maximun dimensions'),
+        description=_('A two-tuple with the maximun width and height (in '
+                      'pixels) of this image.'))
+    max_size = Int(
+        title=_('Maximun size'),
+        description=_('The maximun size (in bytes) of this image.'))
+
+    default_image_resource = TextLine(
+        title=_('The default image'),
+        description=_(
+            'The URL of the zope3 resource of the default image that should '
+            'be used. Something of the form /@@/nyet-mugshot'))
+
+    def getCurrentImage():
+        """Return the value of the field for the object bound to it.
+
+        Raise FieldNotBoundError if the field is not bound to any object.
+        """
 
 
 class StrippedTextLine(TextLine):
@@ -306,4 +340,89 @@ class ProductBugTracker(Choice):
         else:
             ob.official_malone = False
             ob.bugtracker = value
+
+
+class FieldNotBoundError(Exception):
+    """The field is not bound to any object."""
+
+
+class BaseImageUpload(Bytes):
+    """Base class for ImageUpload fields.
+
+    Any subclass of this one must be used in conjunction with
+    ImageUploadWidget and must define the following attributes:
+    - max_dimensions: the maximun dimension of the image; a tuple of the
+      form (width, height).
+    - max_size: the maximun size of the image, in bytes.
+    - default_image_resource: the zope3 resource of the image that should be
+      used when the user hasn't yet provided one; should be a string of the
+      form /@@/<resource-name>
+    """
+
+    implements(IBaseImageUpload)
+
+    max_dimensions = ()
+    max_size = 0
+    default_image_resource = '/@@/nyet-mugshot'
+
+    def getCurrentImage(self):
+        if self.context is None:
+            raise FieldNotBoundError("This field must be bound to an object.")
+        else:
+            try:
+                current = getattr(self.context, self.__name__)
+            except ForbiddenAttribute:
+                # When this field is used in add forms it gets bound to
+                # I*Set objects, which don't have the attribute represented
+                # by the field, so we need this hack here.
+                current = None
+            return current
+
+    def _valid_image(self, image):
+        """Check that the given image is under the given constraints."""
+        # No global import to avoid hard dependency on PIL being installed
+        import PIL.Image
+        if len(image) > self.max_size:
+            raise LaunchpadValidationError(_(dedent("""
+                This image exceeds the maximum allowed size in bytes.""")))
+        try:
+            image = PIL.Image.open(StringIO(image))
+        except IOError:
+            raise LaunchpadValidationError(_(dedent("""
+                The file uploaded was not recognized as an image; please
+                check it and retry.""")))
+        width, height = image.size
+        max_width, max_height = self.max_dimensions
+        if width > max_width or height > max_height:
+            raise LaunchpadValidationError(_(dedent("""
+                This image exceeds the maximum allowed width or height in
+                pixels.""")))
+        return True
+
+    def validate(self, value):
+        value.seek(0)
+        content = value.read()
+        Bytes.validate(self, content)
+        self._valid_image(content)
+
+    def set(self, object, value):
+        if value is not KEEP_SAME_IMAGE:
+            Bytes.set(self, object, value)
+
+
+class LargeImageUpload(BaseImageUpload):
+
+    # The max dimensions here is actually a bit bigger than the advertised
+    # one --it's nice to be a bit permissive with user-entered data where we
+    # can.
+    max_dimensions = (200, 200)
+    max_size = 100*1024
+    default_image_resource = '/@@/nyet-mugshot'
+
+
+class SmallImageUpload(BaseImageUpload):
+
+    max_dimensions = (64, 64)
+    max_size = 25*1024
+    default_image_resource = '/@@/nyet-mini'
 

@@ -61,7 +61,7 @@
 
       <b>Team:</b>
       <img tal:condition="context/emblem"
-            tal:attributes="src context/emblem/secure_url" />
+            tal:attributes="src context/emblem/getURL" />
       <a tal:attributes="href context/fmt:url"
          tal:content="context/name">sabdfl</a><br />
       <b>Team Owner:</b><br />
@@ -79,7 +79,7 @@
     <tal:emblems repeat="team context/teams_participated_in">
       <a tal:attributes="href team/fmt:url"
         ><img tal:condition="team/emblem"
-              tal:attributes="src team/emblem/secure_url;
+              tal:attributes="src team/emblem/getURL;
                               title string:Emblem of ${team/name}"
           /></a>
     </tal:emblems>
