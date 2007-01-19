@@ -10,6 +10,7 @@ from StringIO import StringIO
 from zope.component import getUtility
 
 from canonical.config import config
+from canonical.database.sqlbase import rollback, begin
 from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad import helpers
 from canonical.launchpad.mail import simple_sendmail
@@ -18,6 +19,8 @@ from canonical.launchpad.components.poexport import (
 from canonical.launchpad.interfaces import (
     IPOExportRequestSet, IPOTemplate, IPOFile, ILibraryFileAliasSet,
     ILaunchpadCelebrities)
+
+import psycopg.Error, sys
 
 def is_potemplate(obj):
     """Return True if the object is a PO template."""
@@ -189,7 +192,7 @@ class ExportResult:
         # users.
         if warnings:
             warning_text = textwrap.dedent('''
-                The following files where exported but had warnings:
+                The following files were exported but had warnings:
 
                 %s
                 ''' % warnings)
@@ -341,6 +344,30 @@ class ExportResult:
         self.warnings_handler.flush()
         self.successes[name] = self.warnings_stream.getvalue()
 
+    def notify_rosetta_admins(exportid, exception):
+        """Notify Rosetta admins about exception and restart transaction.
+
+        It's important to restart the transaction if an exception occurs,
+        since if it's a DB exception, the transaction isn't usable anymore.
+        """
+        rollback()
+        begin()
+
+        # Send the email.
+        subject = 'Exception in Rosetta export queue'
+        replacements = {
+            'exception' : str(exception[0]),
+            'traceback' : exception[1],
+            'pofile' : self.name,
+            'exportid' : exportid
+            }
+        template = helpers.get_email_template('poexport-exception.txt')
+        message = template % replacements
+        emailaddress = ('Rosetta SWAT Team <%s>' %
+                       config.rosetta.rosettaadmin.email)
+
+        simple_sendmail(emailaddress, emailaddress, subject, message)
+
 def process_single_object_request(obj, format):
     """Process a request for a single object.
 
@@ -357,7 +384,17 @@ def process_single_object_request(obj, format):
 
     try:
         result.url = handler.get_librarian_url()
+    except psycopg.Error:
+        # Lets notify Rosetta Admins about this
+        result.notify_rosetta_admins(obj.id, sys.exc_info())
+        # And re-raise the exception
+        raise
     except:
+        # Since we are losing the details of exception, lets email
+        # Rosetta admins about it; this also rolls-back and restarts
+        # the transaction, so it's again usable for emailing
+        result.notify_rosetta_admins(obj.id, sys.exc_info())
+
         result.add_failure(obj)
         # The export for the current entry failed, we can remove the specific
         # logger to catch warnings.
@@ -395,7 +432,17 @@ def process_multi_object_request(objects, format):
 
         try:
             contents = handler.get_contents()
+        except psycopg.Error:
+            # Lets notify Rosetta Admins about this
+            result.notify_rosetta_admins(obj.id, sys.exc_info())
+            # And re-raise the exception
+            raise
         except:
+            # Since we are losing the details of exception, lets email
+            # Rosetta admins about it; this also rolls-back and restarts
+            # the transaction, so it's again usable for emailing
+            result.notify_rosetta_admins(obj.id, sys.exc_info())
+
             result.add_failure(filename)
         else:
             result.add_success(filename)
