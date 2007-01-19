@@ -779,6 +779,13 @@ o ValidPersonOrTeam - all 'valid' persons or teams. This is currently defined
     >>> [person.name for person in vocab.search('foo.bar')]
     [u'name16']
 
+    The vocabulary also allows us to search by IRC nickname.
+    >>> [cjwatson] = vocab.search('cjwatson')
+    >>> cjwatson.name, cjwatson.preferredemail.email
+    (u'kamion', u'colin.watson@ubuntulinux.com')
+    >>> [ircid.nickname for ircid in cjwatson.ircnicknames]
+    [u'cjwatson']
+
 o ValidOwner - all valid persons and teams are also valid owners.
 
     >>> vocab = vocabulary_registry.get(None, "ValidOwner")

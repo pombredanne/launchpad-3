@@ -1616,7 +1616,7 @@ INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (3, 'c
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (4, 'daf@canonical.com', 14, 4, '2006-10-16 18:31:43.543302');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (6, 'foo.bar@canonical.com', 16, 4, '2006-10-16 18:31:43.543649');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (7, 'steve.alexander@ubuntulinux.com', 11, 1, '2006-10-16 18:31:43.543996');
-INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (8, 'colin.watson@ubuntulinux.com', 4, 1, '2006-10-16 18:31:43.544344');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (8, 'colin.watson@ubuntulinux.com', 4, 4, '2006-10-16 18:31:43.544344');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (9, 'scott.james.remnant@ubuntulinux.com', 5, 1, '2006-10-16 18:31:43.544693');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (10, 'andrew.bennetts@ubuntulinux.com', 7, 4, '2006-10-16 18:31:43.54507');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (11, 'james.blackwell@ubuntulinux.com', 8, 4, '2006-10-16 18:31:43.54542');
@@ -1696,7 +1696,7 @@ INSERT INTO ircid (id, person, network, nickname) VALUES (3, 10, 'irc.freenode.n
 INSERT INTO ircid (id, person, network, nickname) VALUES (4, 8, 'irc.freenode.net', 'jblack');
 INSERT INTO ircid (id, person, network, nickname) VALUES (5, 3, 'irc.freenode.net', 'justdave');
 INSERT INTO ircid (id, person, network, nickname) VALUES (6, 9, 'irc.freenode.net', 'kiko');
-INSERT INTO ircid (id, person, network, nickname) VALUES (7, 4, 'irc.freenode.net', 'Kamion');
+INSERT INTO ircid (id, person, network, nickname) VALUES (7, 4, 'irc.freenode.net', 'cjwatson');
 INSERT INTO ircid (id, person, network, nickname) VALUES (8, 5, 'irc.freenode.net', 'Keybuk');
 INSERT INTO ircid (id, person, network, nickname) VALUES (9, 6, 'irc.freenode.net', 'jeff');
 
