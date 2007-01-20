@@ -205,14 +205,14 @@
         <form action="" method="POST" name="editproposed">
           <table>
             <tr>
-              <th>Membership applied for:</th>
+              <th>Applied in:</th>
               <td tal:content="context/datejoined/fmt:date" />
             </tr>
 
             <metal:error use-macro="template/macros/error" />
 
             <tr>
-              <th>Subscription expires:</th>
+              <th>Expires?</th>
               <td>
                 <metal:radios use-macro="template/macros/expiry-radios" />
                 <span tal:replace="structure view/dateChooserForProposedMembers" />

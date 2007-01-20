@@ -575,6 +575,40 @@ Notification received by the owner:
     The rejection was a mistake.
     <BLANKLINE>
 
+== Notifications and Teams ==
+
+When a team is subscribed to a ticket, there are two cases two consider.
+The first one is if the team has an email address set, a notification
+will only be sent to that address. (That email address is assumed to
+be a mailing list reaching all the team members.) We already saw an
+example of that case with the Ubuntu Team in the examples above.
+
+The other case is when the team doesn't have an email address set. In
+that case, all the team members will be notified individually.
+
+    >>> launchpad_devs = getUtility(IPersonSet).getByName('launchpad')
+    >>> ubuntu_ticket.subscribe(launchpad_devs)
+    <TicketSubscription...>
+
+    >>> login('test@canonical.com')
+    >>> message = ubuntu_ticket.addComment(sample_person, 'A comment.')
+
+    >>> notifications = pop_notifications()
+    >>> [email_msg['To'] for email_msg in notifications]
+    ['foo.bar@canonical.com', 'support@ubuntu.com', 'test@canonical.com']
+
+Of course, if the user is also individually subscribed to the ticket, he
+will receives only one notification:
+
+    >>> ubuntu_ticket.subscribe(foo_bar)
+    <TicketSubscription...>
+
+    >>> message = ubuntu_ticket.addComment(sample_person, 'A comment.')
+
+    >>> notifications = pop_notifications()
+    >>> [email_msg['To'] for email_msg in notifications]
+    ['foo.bar@canonical.com', 'support@ubuntu.com', 'test@canonical.com']
+
 == Notifications and Localized Requests ==
 
 In general, only subscribers speaking the language of the ticket will
