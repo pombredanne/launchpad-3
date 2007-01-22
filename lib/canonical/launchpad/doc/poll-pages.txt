@@ -46,4 +46,4 @@ level checks.
     >>> form_processed
     False
     >>> voting_page.feedback
-    "This poll is not open.
+    "This poll is not open."
