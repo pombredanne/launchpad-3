@@ -10,9 +10,12 @@ __metaclass__ = type
 __all__ = ['BranchScanner']
 
 
-from bzrlib.errors import NotBranchError, ConnectionError
+import sys
 
+from bzrlib.errors import NotBranchError, ConnectionError
 from zope.component import getUtility
+from zope.app.error.interfaces import IErrorReportingUtility
+from canonical.launchpad.webapp.errorlog import ScriptRequest
 
 from canonical.launchpad.interfaces import IBranchSet
 from canonical.launchpad.scripts.bzrsync import BzrSync
@@ -64,5 +67,13 @@ class BranchScanner:
 
     def logScanFailure(self, branch, message="Failed to scan"):
         """Log diagnostic for branches that could not be scanned."""
+        request = ScriptRequest([
+            ('branch.id', branch.id),
+            ('branch.unique_name', branch.unique_name),
+            ('branch.url', branch.url),
+            ('branch.warehouse_url', branch.warehouse_url),
+            ('error-explanation', message)])
+        getUtility(IErrorReportingUtility).raising(
+            sys.exc_info(), request)
         self.log.warning("%s: %s\n    branch.url = %r",
                          message, branch.warehouse_url, branch.url)
