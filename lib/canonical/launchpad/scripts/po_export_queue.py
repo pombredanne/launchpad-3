@@ -5,6 +5,7 @@ __metaclass__ = type
 import logging
 import tempfile
 import textwrap
+import psycopg
 from StringIO import StringIO
 
 from zope.component import getUtility
@@ -18,8 +19,6 @@ from canonical.launchpad.components.poexport import (
 from canonical.launchpad.interfaces import (
     IPOExportRequestSet, IPOTemplate, IPOFile, ILibraryFileAliasSet,
     ILaunchpadCelebrities)
-
-import psycopg, sys
 
 def is_potemplate(obj):
     """Return True if the object is a PO template."""
@@ -343,27 +342,6 @@ class ExportResult:
         self.warnings_handler.flush()
         self.successes[name] = self.warnings_stream.getvalue()
 
-    def notify_rosetta_admins(self, exportid, exception):
-        """Notify Rosetta admins about exception and restart transaction.
-
-        It's important to restart the transaction if an exception occurs,
-        since if it's a DB exception, the transaction isn't usable anymore.
-        """
-        # Send the email.
-        subject = 'Exception in Rosetta export queue'
-        replacements = {
-            'exception' : str(exception[0]),
-            'traceback' : exception[1],
-            'pofile' : self.name,
-            'exportid' : exportid
-            }
-        template = helpers.get_email_template('poexport-exception.txt')
-        message = template % replacements
-        emailaddress = ('Rosetta SWAT Team <%s>' %
-                       config.rosetta.rosettaadmin.email)
-
-        simple_sendmail(emailaddress, emailaddress, subject, message)
-
 def process_single_object_request(obj, format):
     """Process a request for a single object.
 
@@ -384,11 +362,6 @@ def process_single_object_request(obj, format):
         # And re-raise the exception
         raise
     except:
-        # Since we are losing the details of exception, lets email
-        # Rosetta admins about it
-        # XXX DaniloSegan 20070119: integrate OOPS for scripts handling
-        result.notify_rosetta_admins(obj.id, sys.exc_info())
-
         result.add_failure(obj)
         # The export for the current entry failed, we can remove the specific
         # logger to catch warnings.
@@ -430,11 +403,6 @@ def process_multi_object_request(objects, format):
             # Lets re-raise database exceptions
             raise
         except:
-            # Since we are losing the details of exception, lets email
-            # Rosetta admins about it
-            # XXX DaniloSegan 20070119: integrate OOPS for scripts handling
-            result.notify_rosetta_admins(obj.id, sys.exc_info())
-
             result.add_failure(filename)
         else:
             result.add_success(filename)
