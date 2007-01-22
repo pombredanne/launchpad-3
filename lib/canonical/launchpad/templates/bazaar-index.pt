@@ -161,7 +161,7 @@
         To create a hosted branch, use the <code>bzr push</code> command. When
         registering the first branch for a product, you may have to use the
         <code>--create-prefix</code> option. The destination URL must be of the
-        form <code>sftp://<var>user</var>@bazaar.launchpad.net/~<var>registrant</var>/<var>product</var>/<var>branch</var></code>
+        form <code>sftp://<var>user</var>@bazaar.<wbr></wbr>launchpad.net/<wbr></wbr>~<var>registrant</var>/<wbr></wbr><var>product</var>/<wbr></wbr><var>branch</var></code>
         where <var>user</var> is your short name in Launchpad
         (omitted if it is the same as your system login or is specified in
         <code>ssh</code> configuration),
