@@ -392,7 +392,7 @@ def get_bug_edit_notification_texts(bug_delta):
     if bug_delta.attachment is not None and bug_delta.attachment['new']:
         added_attachment = bug_delta.attachment['new']
         change_info = '** Attachment added: "%s"\n' % added_attachment.title
-        change_info += "   %s" % added_attachment.libraryfile.url
+        change_info += "   %s" % added_attachment.libraryfile.http_url
         changes.append(change_info)
 
     if bug_delta.bugtask_deltas is not None:

@@ -13,7 +13,7 @@ COMMENT ON COLUMN Branch.last_scanned IS 'The time when the branch was last scan
 COMMENT ON COLUMN Branch.last_scanned_id IS 'The revision ID of the branch when it was last scanned.';
 COMMENT ON COLUMN Branch.revision_count IS 'The number of revisions in the associated bazaar branch revision_history.';
 
-/* BranchSubscription */
+/* BranchSubscription*/
 
 COMMENT ON TABLE BranchSubscription IS 'An association between a person or team and a bazaar branch.';
 COMMENT ON COLUMN BranchSubscription.person IS 'The person or team associated with the branch.';

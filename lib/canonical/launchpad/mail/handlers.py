@@ -382,13 +382,13 @@ class SpecificationHandler:
         if signed_msg['X-Loop'] and our_address in signed_msg.get_all('X-Loop'):
             if log and filealias:
                 log.warning(
-                    'Got back a notification we sent: %s' % filealias.url)
+                    'Got back a notification we sent: %s' % filealias.http_url)
             return True
         # Check for emails that Launchpad sent us.
         if signed_msg['Sender'] == config.bounce_address:
             if log and filealias:
-                log.warning(
-                    'We received an email from Launchpad: %s' % filealias.url)
+                log.warning('We received an email from Launchpad: %s'
+                            % filealias.http_url)
             return True
         # When sending the email, the sender will be set so that it's
         # clear that we're the one sending the email, not the original

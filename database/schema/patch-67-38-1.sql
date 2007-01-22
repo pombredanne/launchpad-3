@@ -12,4 +12,4 @@ ALTER TABLE branchsubscription ADD COLUMN max_diff_lines int4;
 --  3 := both diffs, and attribute notifications
 
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (67, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (67, 38, 1);
