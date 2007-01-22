@@ -12,10 +12,14 @@ First, we need to feed the import queue.
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
   >>> browser.open('http://launchpad.dev/alsa-utils/trunk/+translations-upload')
+  >>> browser.url
+  'http://launchpad.dev/alsa-utils/trunk/+translations-upload'
   >>> file_ctrl = browser.getControl('File:')
   >>> file_ctrl.add_file(
   ...     tarball, 'application/x-gzip', 'test-autofilling.tar.gz')
   >>> browser.getControl('Request Upload').click()
+  >>> browser.url
+  'http://launchpad.dev/alsa-utils/trunk/+translations-upload'
   >>> for tag in find_tags_by_class(browser.contents, 'message'):
   ...     print tag
   <div...Thank you for your upload. 2 files from the tarball will be reviewed...
@@ -34,7 +38,7 @@ the form is completely empty.
 Let's fill the information.
 
   >>> browser.getControl(name='field.potemplatename').value = 'alsa-utils'
-  >>> browser.getControl(name='FORM_SUBMIT').click()
+  >>> browser.getControl(name='field.actions.attach').click()
   >>> browser.url
   'http://launchpad.dev/translations/imports'
 
@@ -66,7 +70,7 @@ he checks that it's ok.
 Let's add the potemplatename information and confirm the language selection.
 
   >>> browser.getControl(name='field.potemplatename').value = 'alsa-utils'
-  >>> browser.getControl(name='FORM_SUBMIT').click()
+  >>> browser.getControl(name='field.actions.attach').click()
   >>> browser.url
   'http://launchpad.dev/translations/imports'
 

@@ -12,10 +12,10 @@ from canonical.config import config
 from canonical.lp import initZopeless
 from canonical.lp.dbschema import TeamMembershipStatus
 from canonical.launchpad.scripts import (
-        execute_zcml_for_scripts, logger_options, logger
-        )
+        execute_zcml_for_scripts, logger_options, logger)
 from canonical.launchpad.scripts.lockfile import LockFile
-from canonical.launchpad.interfaces import ITeamMembershipSet
+from canonical.launchpad.interfaces import (
+    ILaunchpadCelebrities, ITeamMembershipSet)
 
 _default_lock_file = '/var/lock/launchpad-flag-expired-memberships.lock'
 
@@ -25,8 +25,9 @@ def flag_expired_memberships():
         dbuser=config.expiredmembershipsflagger.dbuser, implicitBegin=False)
 
     ztm.begin()
+    reviewer = getUtility(ILaunchpadCelebrities).team_membership_janitor
     for membership in getUtility(ITeamMembershipSet).getMembershipsToExpire():
-        membership.setStatus(TeamMembershipStatus.EXPIRED)
+        membership.setStatus(TeamMembershipStatus.EXPIRED, reviewer)
     ztm.commit()
 
 

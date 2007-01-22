@@ -60,6 +60,7 @@
     <resource name="bullet" file="../images/bullet.gif" />
     <resource name="copy" file="../images/copy.png" />
     <resource name="cve" file="../images/cve.ico" />
+    <resource name="demo" file="../images/demo.png" />
     <resource name="distribution" file="../images/nyet.png" />
     <resource name="distribution-mini" file="../images/nyet-mini.png" />
     <resource name="distribution-heading" file="../images/nyet-heading.png" />

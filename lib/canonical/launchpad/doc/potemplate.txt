@@ -156,11 +156,16 @@ newPOFile
 ---------
 
 The Portuguese translation has not been started yet; therefore,
-when we call IPOTemplate.newPOFile() a DummyPOFile instance will
-be created. We'll use the following test to verify if DummyPOFile
-implements the required IPOFile interface:
+when we call IPOTemplate.newPOFile() a POFile instance will
+be created.
 
   >>> pofile = potemplate.newPOFile('pt')
+
+By default, we should get a path for this pofile, that has some information
+about its potemplate's filename so we don't have conflicts with other pofiles.
+
+  >>> pofile.path
+  u'po/evolution-2.2-pt.po'
 
 Lets try to access untranslated entries here.
 

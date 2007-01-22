@@ -42,7 +42,7 @@
           <tr>
             <th>Changesfile:</th>
             <td tal:condition="context/changesfile">
-              <a tal:attributes="href context/changesfile/url"
+              <a tal:attributes="href context/changesfile/http_url"
                  tal:content="context/changesfile/filename">CHANGESFILE</a>
             </td>
             <td tal:condition="not:context/changesfile">
@@ -111,7 +111,7 @@
             <tr>
               <th>Build log:</th>
               <td tal:condition="context/buildlog">
-                <a tal:attributes="href context/buildlog/url"
+                <a tal:attributes="href context/buildlog/http_url"
                    tal:content="context/buildlog/filename">BUILDLOG</a>
               </td>
               <td tal:condition="not: context/buildlog">
