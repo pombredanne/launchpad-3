@@ -151,7 +151,7 @@
       <a tal:attributes="href vhosts/code/rooturl">Code</a> &ndash;
       Copyright&nbsp;2004-2006&nbsp;<a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
       &ndash;  <a href="/legal">Copyright&nbsp;terms</a> &ndash;
-      <a href="/feedback">Help&nbsp;us&nbsp;improve</a> &ndash;
+      <a href="/feedback">Help&nbsp;improve&nbsp;Launchpad</a> &ndash;
       <a href="/faq">FAQ</a> &ndash;
       <tal:block define="revno modules/canonical.launchpad.versioninfo/revno">
           build

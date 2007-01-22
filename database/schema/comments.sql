@@ -13,6 +13,14 @@ COMMENT ON COLUMN Branch.last_scanned IS 'The time when the branch was last scan
 COMMENT ON COLUMN Branch.last_scanned_id IS 'The revision ID of the branch when it was last scanned.';
 COMMENT ON COLUMN Branch.revision_count IS 'The number of revisions in the associated bazaar branch revision_history.';
 
+/* BranchSubscription*/
+
+COMMENT ON TABLE BranchSubscription IS 'An association between a person or team and a bazaar branch.';
+COMMENT ON COLUMN BranchSubscription.person IS 'The person or team associated with the branch.';
+COMMENT ON COLUMN BranchSubscription.branch IS 'The branch associated with the person or team.';
+COMMENT ON COLUMN BranchSubscription.notification_level IS 'The level of email the person wants to receive from branch updates.';
+COMMENT ON COLUMN BranchSubscription.max_diff_lines IS 'If the generated diff for a revision is larger than this number, then the diff is not sent in the notification email.';
+
 /* Bug */
 
 COMMENT ON TABLE Bug IS 'A software bug that requires fixing. This particular bug may be linked to one or more products or source packages to identify the location(s) that this bug is found.';

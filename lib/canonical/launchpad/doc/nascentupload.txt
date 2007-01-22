@@ -579,7 +579,7 @@ Look for the respective SourcePackageRelease entry and inspect its
 content, it should have all the required fields except the
 'dsc_standards_version':
 
-  >>> inst_queue = hoary.getQueueItems(DistroReleaseQueueStatus.NEW,
+  >>> inst_queue = hoary.getQueueItems(PackageUploadStatus.NEW,
   ...                                  name='test75874', exact_match=True)[0]
   >>> inst_spr = inst_queue.sources[0].sourcepackagerelease
 
