@@ -108,7 +108,7 @@ The branch in question is security proxied, and has 6 revisions:
 
   >>> type(branch)
   <type 'zope.security._proxy._Proxy'>
-  >>> branch.revision_count()
+  >>> branch.revision_count
   6
 
 
@@ -139,7 +139,7 @@ does, leaving only 5 revisions in the branch:
 
   >>> branch.truncateHistory(6)
   True
-  >>> branch.revision_count()
+  >>> branch.revision_count
   5
 
 

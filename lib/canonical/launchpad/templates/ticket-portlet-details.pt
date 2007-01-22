@@ -34,7 +34,7 @@
     </tal:block>
 
     <b>Created:</b>
-    <span tal:replace="context/datecreated/fmt:date" /><br />
+    <span tal:replace="context/datecreated/fmt:datetime" /><br />
 
     <b>Assignee:</b><br />
     <tal:block condition="context/assignee">

@@ -5,55 +5,57 @@ An upstream maintainer can use Rosetta to submit their initial template uploads.
 
   >>> from zope.testbrowser.testing import Browser
 
-  >>> ff_owner_browser = Browser()
-  >>> ff_owner_browser.addHeader('Authorization', 'Basic test@canonical.com:test')
-  >>> ff_owner_browser.open(
-  ...     'http://launchpad.dev/firefox/1.0/+translations-upload')
-  >>> print ff_owner_browser.contents
-  <...
-  ...Upload either a single file...
+    >>> ff_owner_browser = Browser()
+    >>> ff_owner_browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> ff_owner_browser.open(
+    ...     'http://launchpad.dev/firefox/1.0/+translations-upload')
+    >>> 'Upload either a single file' in ff_owner_browser.contents
+    True
 
 Time to do the upload...
 
-  >>> import canonical.launchpad
-  >>> import os.path
-  >>> test_file_name = os.path.join(
-  ...     os.path.dirname(canonical.launchpad.__file__),
-  ...     'pagetests/standalone/xx-translation-import-queue.tar.gz')
-  >>> tarball = open(test_file_name, "rb")
-  >>> upload = ff_owner_browser.getControl('File')
-  >>> upload
-  <Control name='file' type='file'>
-  >>> upload.add_file(tarball, 'application/x-gzip', test_file_name)
-  >>> ff_owner_browser.getControl('Request Upload').click()
-  >>> ff_owner_browser.url
-  'http://launchpad.dev/firefox/1.0/+translations-upload'
-  >>> print ff_owner_browser.contents
-  <...
-  ...Upload new translation resources...
-  ...Thank you for your upload. 1 files from the tarball will be reviewed...
+    >>> import canonical.launchpad
+    >>> import os.path
+    >>> test_file_name = os.path.join(
+    ...     os.path.dirname(canonical.launchpad.__file__),
+    ...     'pagetests/standalone/xx-translation-import-queue.tar.gz')
+    >>> tarball = open(test_file_name, "rb")
+    >>> upload = ff_owner_browser.getControl('File')
+    >>> upload
+    <Control name='file' type='file'>
+    >>> upload.add_file(tarball, 'application/x-gzip', test_file_name)
+    >>> ff_owner_browser.getControl('Request Upload').click()
+    >>> ff_owner_browser.url
+    'http://launchpad.dev/firefox/1.0/+translations-upload'
+    >>> 'Upload new translation resources' in ff_owner_browser.contents
+    True
+    >>> 'Thank you for your upload. 1 files from the tarball will be reviewed' in ff_owner_browser.contents
+    True
 
 We check now that the upload is available from the translation import queue page
 and the status is static as we are not logged in.
 
   >>> anon_browser.open('http://launchpad.dev/translations/imports')
-  >>> print find_main_content(anon_browser.contents)
-  <...1...3...of...3 result...
-  ...po/evolution-2.2-test.pot...
-  ...Evolution Series: trunk...
-  ...<td>Imported</td>...
-  ...po/pt_BR.po...
-  ...Evolution Series: trunk...
-  ...<td>Imported</td>...
-  ...po/es.po...
-  ...Mozilla Firefox Series...
-  ...<td>Needs Review</td>...
+  >>> anon_browser.url
+  'http://launchpad.dev/translations/imports'
+  >>> 'po/es.po' in anon_browser.contents
+  True
+  >>> 'Mozilla Firefox Series' in anon_browser.contents
+  True
+  >>> '<td>Needs Review</td>' in anon_browser.contents
+  True
 
 As an admin, the same page should give us extra rights to edit imports and
 thus, the link should appear.
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
   >>> browser.open('http://launchpad.dev/translations/imports')
+  >>> browser.url
+  'http://launchpad.dev/translations/imports'
+  >>> 'po/es.po' in browser.contents
+  True
+  >>> 'Mozilla Firefox Series' in browser.contents
+  True
   >>> browser.getLink(url='imports/3')
   <Link text='Edit' url='http://launchpad.dev/translations/imports/3'>
   >>> browser.getControl(name='status-3').displayValue
@@ -61,14 +63,17 @@ thus, the link should appear.
 
 Now, we attach a new file to an already existing translation resource.
 
+  >>> browser.open('http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload')
+  >>> browser.url
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload'
+  >>> upload = browser.getControl('File')
+  >>> upload
+  <Control name='file' type='file'>
   >>> from StringIO import StringIO
-
-  >>> browser.open(
-  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution'
-  ...     '/+pots/evolution-2.2/+upload')
-  >>> browser.getControl('File:').add_file(
-  ...    StringIO('# foo'), 'text/x-gettext-translation-template', 'evolution.pot')
+  >>> upload.add_file(StringIO('# foo\n'), 'text/x-gettext-translation-template', 'evolution.pot')
   >>> browser.getControl('Upload').click()
+  >>> browser.url
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload'
   >>> for tag in find_tags_by_class(browser.contents, 'message'):
   ...     print tag
   <div...Thank you for your upload. The file content will be imported soon...
@@ -104,7 +109,7 @@ And associate this import to the right IPOFile.
   >>> browser.getControl('Path').value = ''
   >>> browser.getControl('Language').value = ['es']
   >>> browser.getControl('Variant').value = ''
-  >>> browser.getControl('Continue').click()
+  >>> browser.getControl('Attach').click()
 
   >>> browser.url
   'http://launchpad.dev/translations/imports'

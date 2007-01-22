@@ -235,6 +235,10 @@ class PollVoteView(BasePollView):
         context = self.context
         newoption_id = self.request.form.get('newoption')
         if newoption_id == 'donotchange':
+            self.feedback = "Your vote was not changed."
+            return
+        elif newoption_id == 'donotvote':
+            self.feedback = "You chose not to vote yet."
             return
         elif newoption_id == 'none':
             newoption = None

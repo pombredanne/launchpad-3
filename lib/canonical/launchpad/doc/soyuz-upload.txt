@@ -246,7 +246,7 @@ do uploads:
   >>> uploader_team = getUtility(IPersonSet).getByName("ubuntu-team")
   >>> assert uploader_team is not None
 
-  >>> uploader_team.addMember(user)
+  >>> uploader_team.addMember(user, reviewer=uploader_team.teamowner)
 
 
 Assign the loaded GPG key to the katie user.
@@ -580,8 +580,8 @@ Check the generation of a correct Sources tag file for the main
 component of ubuntutest/breezy-autotest, containing the only the
 required entry for 'etherwake':
 
-  >>> print open("/var/tmp/archive/ubuntutest/dists/breezy-autotest"
-  ...            "/main/source/Sources").read() + '\nEND'
+  >>> print open("/var/tmp/archive/ubuntutest/dists/breezy-autotest/main/source"
+  ...            "/Sources").read().replace('Section: net\n', '') + '\nEND'
   Package: etherwake
   Binary: etherwake
   Version: 1.08-1
@@ -599,8 +599,13 @@ required entry for 'etherwake':
   <BLANKLINE>
   END
 
+XXX mpt 20061221: apt in Edgy prints a "Section: net" line between the
+Version and Maintainer lines, but apt on the PQM server does not. When
+the PQM server is upgraded, that line should be added to the expected
+test output, and the ".replace('Section: net\n', '') in this test
+should be removed.
 
-Invoke changeOverride on just published etherwake moving it to
+Now we invoke changeOverride on just published etherwake, moving it to
 component 'universe'.
 
   >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']

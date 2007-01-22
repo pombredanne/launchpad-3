@@ -183,6 +183,7 @@ For a person:
     [u'Ubuntu',
      u'evolution (Ubuntu)',
      u'evolution (upstream)',
+     u'firefox 1.0 (upstream)',
      u'linux-source-2.6.15 (Ubuntu)',
      u'mozilla-firefox (Debian)',
      u'mozilla-firefox (Ubuntu)',
@@ -1026,7 +1027,7 @@ But if we add No Privileges Person to the Ubuntu Team, and because the Ubuntu
 Team *is* subscribed to the bug, No Privileges Person will see the private bug.
 
     >>> login("mark@hbd.com")
-    >>> ubuntu_team.addMember(no_priv)
+    >>> ubuntu_team.addMember(no_priv, reviewer=ubuntu_team.teamowner)
 
     >>> login("no-priv@canonical.com")
     >>> params = BugTaskSearchParams(

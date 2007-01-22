@@ -35,7 +35,7 @@ Let's check the complex properties of a build object.
   True
 
   >>> firefox_build.buildlog = 34
-  >>> firefox_build.buildlog.url
+  >>> firefox_build.buildlog.http_url
   'http://localhost:58000/34/evolution-2.2-test.pot'
 
   >>> firefox_build.changesfile

@@ -60,6 +60,9 @@ class IBugWatch(IHasBug):
         The lastchanged attribute gets set to the current time.
         """
 
+    def destroySelf():
+        """Delete this bug watch."""
+
 
 class IBugWatchSet(Interface):
     """The set of IBugWatch's."""

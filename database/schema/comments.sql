@@ -11,6 +11,15 @@ COMMENT ON COLUMN Branch.last_mirrored IS 'The time when the branch was last mir
 COMMENT ON COLUMN Branch.last_mirrored_id IS 'The revision ID of the branch when it was last mirrored.';
 COMMENT ON COLUMN Branch.last_scanned IS 'The time when the branch was last scanned.';
 COMMENT ON COLUMN Branch.last_scanned_id IS 'The revision ID of the branch when it was last scanned.';
+COMMENT ON COLUMN Branch.revision_count IS 'The number of revisions in the associated bazaar branch revision_history.';
+
+/* BranchSubscription*/
+
+COMMENT ON TABLE BranchSubscription IS 'An association between a person or team and a bazaar branch.';
+COMMENT ON COLUMN BranchSubscription.person IS 'The person or team associated with the branch.';
+COMMENT ON COLUMN BranchSubscription.branch IS 'The branch associated with the person or team.';
+COMMENT ON COLUMN BranchSubscription.notification_level IS 'The level of email the person wants to receive from branch updates.';
+COMMENT ON COLUMN BranchSubscription.max_diff_lines IS 'If the generated diff for a revision is larger than this number, then the diff is not sent in the notification email.';
 
 /* Bug */
 
@@ -285,8 +294,9 @@ which had no apparent difficulty in being imported.';
 COMMENT ON COLUMN ProductSeries.datestarted IS 'The timestamp when we last
 initiated an import test or sync of this upstream repository.';
 COMMENT ON COLUMN ProductSeries.datefinished IS 'The timestamp when we last
-completed an import test or sync of this upstream repository. If this is
-NULL and datestarted is NOT NULL, then there is a sync in progress.';
+completed an import test or sync of this upstream repository.';
+COMMENT ON COLUMN ProductSeries.datelastsynced IS 'The timestamp when we last successfully completed a production sync of this upstream repository.';
+COMMENT ON COLUMN ProductSeries.date_published_sync IS 'The saved value of datelastsynced from the last time it was older than the corresponding branch\'s last_mirrored timestamp. The timestamp currently published import branch is either datelastsynced or datepublishedsync.';
 COMMENT ON COLUMN ProductSeries.import_branch IS 'The VCS imports branch for
 this product series.  If user_branch is not set, then this is considered the
 product series branch.';
