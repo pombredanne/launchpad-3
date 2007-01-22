@@ -85,11 +85,11 @@
             </li>
           </ul>
         </div>
-        <!--div
+        <div
           class="two column section"
-          tal:condition="context/currentrelease"
+          tal:condition="nothing"
           tal:content="structure context/currentrelease/@@+last-uploads"
-        /-->
+        >After bug 74342, change tal:condition="context/currentrelease"</div>
       </div>
       <div class="right">
         <div
