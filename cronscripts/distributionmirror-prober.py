@@ -98,6 +98,7 @@ def main(argv):
     results = mirror_set.getMirrorsToProbe(
         content_type, ignore_last_probe=options.force)
     mirror_ids = [mirror.id for mirror in results]
+    unchecked_keys = []
     logfiles = {}
     probed_mirrors = []
 
@@ -119,7 +120,7 @@ def main(argv):
         probed_mirrors.append(mirror)
         logfile = StringIO()
         logfiles[mirror_id] = logfile
-        probe_function(mirror, logfile, unchecked_keys=[], logger_obj)
+        probe_function(mirror, logfile, unchecked_keys, logger_obj)
 
     if probed_mirrors:
         reactor.run()

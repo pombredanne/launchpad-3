@@ -132,12 +132,7 @@ class ProberFactory(protocol.ClientFactory):
 
     def probe(self):
         if should_skip_host(self.host):
-            # XXX: Dear reviewer:
-            # I need to return the deferred here and have self.failed called
-            # only after the callsite has added all the errbacks it want on
-            # the returned deferred. Is it safe to do this? If so, how can I
-            # test it?
-            reactor.callLater(0.1, self.failed, ConnectionSkipped(self.url))
+            reactor.callLater(0, self.failed, ConnectionSkipped(self.url))
             return self._deferred
         self.connect()
         self.timeoutCall = reactor.callLater(
@@ -277,6 +272,8 @@ class UnknownURLScheme(ProberError):
 
 class ArchiveMirrorProberCallbacks(object):
 
+    expected_failures = (BadResponseCode, ProberTimeout, ConnectionSkipped)
+
     def __init__(self, mirror, release, pocket, component, url, log_file):
         self.mirror = mirror
         self.release = release
@@ -308,7 +305,7 @@ class ArchiveMirrorProberCallbacks(object):
                   self._getReleasePocketAndComponentDescription(), self.url,
                   failure.getErrorMessage()))
         self.log_file.write(msg)
-        failure.trap(ProberTimeout, BadResponseCode, ConnectionSkipped)
+        failure.trap(*self.expected_failures)
 
     def ensureMirrorRelease(self, http_status):
         """Make sure we have a mirror for self.release, self.pocket and 
@@ -333,7 +330,7 @@ class ArchiveMirrorProberCallbacks(object):
         we can have an idea of when that mirror was last updated.
         """
         # The errback that's one level before this callback in the chain will
-        # return None if it gets a ProberTimeout or BadResponseCode error,
+        # return None if it gets any of self.expected_failures as the error,
         # so we need to check that here.
         if arch_or_source_mirror is None:
             return
@@ -404,7 +401,7 @@ class ArchiveMirrorProberCallbacks(object):
         msg = ("%s on %s of %s\n" 
                % (failure.getErrorMessage(), url,
                   self._getReleasePocketAndComponentDescription()))
-        if failure.check(ProberTimeout, BadResponseCode) is not None:
+        if failure.check(*self.expected_failures) is not None:
             self.log_file.write(msg)
         else:
             # This is not an error we expect from an HTTP server, so we log it
@@ -416,6 +413,8 @@ class ArchiveMirrorProberCallbacks(object):
 
 
 class MirrorCDImageProberCallbacks(object):
+
+    expected_failures = (BadResponseCode, ProberTimeout, ConnectionSkipped)
 
     def __init__(self, mirror, distrorelease, flavour, log_file):
         self.mirror = mirror
@@ -435,8 +434,7 @@ class MirrorCDImageProberCallbacks(object):
             if success_or_failure == defer.FAILURE:
                 self.mirror.deleteMirrorCDImageRelease(
                     self.distrorelease, self.flavour)
-                response.trap(
-                    ProberTimeout, BadResponseCode, ConnectionSkipped)
+                response.trap(*self.expected_failures)
                 return None
 
         mirror = self.mirror.ensureMirrorCDImageRelease(
