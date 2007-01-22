@@ -6,7 +6,14 @@ __metaclass__ = type
 
 import unittest, subprocess, os.path, sys
 
-from canonical.launchpad.ftests.harness import LaunchpadTestCase
+from zope.component import getUtility
+
+from canonical.launchpad.ftests import login
+from canonical.launchpad.ftests.harness import (
+    LaunchpadTestCase, LaunchpadFunctionalTestCase)
+from canonical.launchpad.interfaces import (
+    IDistributionSet, IDistroReleaseSet, ILanguageSet, IPOTemplateSet,
+    IPersonSet)
 from canonical.config import config
 
 def get_script():
@@ -163,55 +170,88 @@ class UpdateStatsTest(LaunchpadTestCase):
             self.failUnless(row[0] >= 0, '%s is invalid' % key)
 
 
-class UpdateTranslationStatsWithDisableTemplateTest(LaunchpadTestCase):
+class UpdateTranslationStatsWithDisabledTemplateTest(
+    LaunchpadFunctionalTestCase):
 
-    dbuser = 'launchpad'
+    def setUp(self):
+        LaunchpadFunctionalTestCase.setUp(self)
 
-    def tearDown(self):
-        con = self.connect()
-        # Force a commit here so test harness optimizations know the database
-        # has been messed with by a subprocess.
-        con.commit()
-        LaunchpadTestCase.tearDown(self)
+        self.distribution = getUtility(IDistributionSet)
+        self.distroreleaseset = getUtility(IDistroReleaseSet)
+        self.languageset = getUtility(ILanguageSet)
+        self.potemplateset = getUtility(IPOTemplateSet)
+        self.personset = getUtility(IPersonSet)
+
+        # This test needs to do some changes that require admin permissions.
+        login('carlos@canonical.com')
+
 
     def test_basic(self):
         # First, we check current values of cached statistics.
-        con = self.connect()
-        cur = con.cursor()
+
+        # We get some objects we will need for this test.
+        ubuntu = self.distribution['ubuntu']
+        hoary = self.distroreleaseset.queryByName(ubuntu, 'hoary')
+        spanish = self.languageset['es']
+        spanish_hoary = hoary.getDistroReleaseLanguage(spanish)
+        # We need pmount's template.
+        templates = self.potemplateset.getAllByName('pmount')
+        pmount_template = None
+        for template in templates:
+            if template.distrorelease == hoary:
+                pmount_template = template
+
+        self.failIfEqual(pmount_template, None)
+
+        # Let's calculate the statistics ourselves so we can check that cached
+        # values are the right ones.
+        messagecount = 0
+        currentcount = 0
+        for template in hoary.currentpotemplates:
+            messagecount += template.messageCount()
+            # Get the Spanish IPOFile.
+            pofile = template.getPOFileByLang('es')
+            if pofile is not None:
+                # This method should not return any IPOFile with variant field
+                # set.
+                assert pofile.variant is None
+                currentcount += pofile.currentCount()
+        contributor_count = (
+            self.personset.getPOFileContributorsByDistroRelease(
+                hoary, spanish).count())
+
+        # As noted in the for loop, we don't count IPOFile objects with
+        # variants. Here we can see that, actually, there are translations
+        # in a IPOFile with the variant field set so it's not just that we
+        # count it with a '0' value.
+        pofile_with_variant = pmount_template.getPOFileByLang('es', u'test')
+        self.failIf(pofile_with_variant.currentCount() <= 0)
+
 
         # The amount of messages to translate in Hoary is the expected.
-        cur.execute("SELECT messagecount FROM DistroRelease WHERE name = 'hoary'")
-        self.failUnlessEqual(cur.fetchone()[0], 96)
+        self.failUnlessEqual(hoary.messagecount, messagecount)
 
-        # The amount of messages translate into Spanish in Hoary is the expected.
-        cur.execute("""
-            SELECT currentcount, updatescount, rosettacount, contributorcount
-            FROM DistroReleaseLanguage, Language, DistroRelease
-            WHERE
-                DistroRelease.name = 'hoary' AND
-                DistroReleaseLanguage.distrorelease = DistroRelease.id AND
-                DistroReleaseLanguage.language = Language.id AND
-                Language.code = 'es'
-            """)
-        current, updates, rosetta, contributor = cur.fetchone()
-        self.failUnlessEqual(current, 67)
-        self.failUnlessEqual(updates, 1)
-        self.failUnlessEqual(rosetta, 0)
-        self.failUnlessEqual(contributor, 6)
+        # And the same for translations and contributors.
+        self.failUnlessEqual(spanish_hoary.currentCount(), currentcount)
+        self.failUnlessEqual(spanish_hoary.contributor_count,
+            contributor_count)
 
         # Let's set 'pmount' template as not current for Hoary.
-        cur.execute("""
-            UPDATE POTemplate SET iscurrent = FALSE
-            FROM DistroRelease, POTemplateName
-            WHERE
-                DistroRelease.name = 'hoary' AND
-                POTemplate.distrorelease = DistroRelease.id AND
-                POTemplate.potemplatename = POTemplateName.id AND
-                POTemplateName.name = 'pmount'
-            """)
+        pmount_template.iscurrent = False
+        # And store its statistics values to validate cached values later.
+        pmount_messages = pmount_template.messageCount()
+        pmount_spanish_pofile = pmount_template.getPOFileByLang('es')
+        pmount_spanish_translated = pmount_spanish_pofile.currentCount()
 
-        # Commit our change so the subprocess can see it
-        con.commit()
+        # Commit the current transaction because the script will run in
+        # another transaction and thus it won't see the changes done on this
+        # test unless we commit.
+        # XXX CarlosPerelloMarin 20070122: Unecessary flush_database_updates
+        # required. See bug #3989 for more info.
+        from canonical.database.sqlbase import flush_database_updates
+        flush_database_updates()
+        import transaction
+        transaction.commit()
 
         # Run update-stats.py script to see that we don't count the
         # information in that template anymore.
@@ -231,37 +271,56 @@ class UpdateTranslationStatsWithDisableTemplateTest(LaunchpadTestCase):
                 )
 
         # Now confirm it did stuff it is supposed to
-        cur = con.cursor()
+
+        # We flush the caches, so that the above defined objects gets
+        # their content from the modified DB.
+        from canonical.database.sqlbase import flush_database_caches
+        flush_database_caches()
+
+        # The transaction changed, we need to refetch SQLObjects.
+        ubuntu = self.distribution['ubuntu']
+        hoary = self.distroreleaseset.queryByName(ubuntu, 'hoary')
+        spanish = self.languageset['es']
+        spanish_hoary = hoary.getDistroReleaseLanguage(spanish)
+
+        # Let's recalculate the statistics ourselved to validate what the
+        # script run recalculated.
+        new_messagecount = 0
+        new_currentcount = 0
+        for template in hoary.currentpotemplates:
+            new_messagecount += template.messageCount()
+            pofile = template.getPOFileByLang('es')
+            if pofile is not None:
+                new_currentcount += pofile.currentCount()
+
+        new_contributor_count = (
+            self.personset.getPOFileContributorsByDistroRelease(
+                hoary, spanish).count())
 
         # The amount of messages to translate in Hoary is now lower because we
         # don't count anymore pmount messages.
-        cur.execute("SELECT messagecount FROM DistroRelease WHERE name = 'hoary'")
-        self.failUnlessEqual(cur.fetchone()[0], 33)
+        self.failUnlessEqual(hoary.messagecount, new_messagecount)
+        self.failIf(messagecount <= new_messagecount)
+        self.failUnlessEqual(messagecount - pmount_messages, new_messagecount)
 
         # The amount of messages translate into Spanish is also lower now
         # because we don't count Spanish translations for pmount anymore.
-        cur.execute("""
-            SELECT currentcount, updatescount, rosettacount, contributorcount
-            FROM DistroReleaseLanguage, Language, DistroRelease
-            WHERE
-                DistroRelease.name = 'hoary' AND
-                DistroReleaseLanguage.distrorelease = DistroRelease.id AND
-                DistroReleaseLanguage.language = Language.id AND
-                Language.code = 'es'
-            """)
-        current, updates, rosetta, contributor = cur.fetchone()
-        self.failUnlessEqual(current, 13)
-        self.failUnlessEqual(updates, 1)
-        self.failUnlessEqual(rosetta, 0)
+        self.failUnlessEqual(spanish_hoary.currentCount(), new_currentcount)
+        self.failIf(currentcount <= new_currentcount)
+        self.failUnlessEqual(currentcount - pmount_spanish_translated,
+            new_currentcount)
+
         # Also, there are two Spanish translators that only did contributions
         # to pmount, so they are gone now.
-        self.failUnlessEqual(contributor, 4)
+        self.failUnlessEqual(
+            spanish_hoary.contributor_count, new_contributor_count)
+        self.failIf(contributor_count <= new_contributor_count)
 
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(UpdateStatsTest))
     suite.addTest(
-        unittest.makeSuite(UpdateTranslationStatsWithDisableTemplateTest))
+        unittest.makeSuite(UpdateTranslationStatsWithDisabledTemplateTest))
     return suite
 
 

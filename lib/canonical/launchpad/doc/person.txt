@@ -279,11 +279,25 @@ Person objects that have contributed translations.
   >>> [p.name for p in personset.getPOFileContributors(pofile)]
   [u'carlos', u'name16', u'tsukimi']
 
+getPOFileContributorsByDistroRelease gives the list of people that did
+contributions to templates that are current in the given IDistroRelease
+and ILanguage.
+
   >>> from canonical.launchpad.database import DistroRelease, Language
   >>> hoary = DistroRelease.selectOneBy(name="hoary")
   >>> spanish = Language.selectOneBy(code="es")
   >>> [p.name for p in personset.getPOFileContributorsByDistroRelease(hoary, spanish)]
   [u'jorge-gonzalez-gonzalez', u'carlos', u'valyag', u'danner', u'name16', u'tsukimi']
+
+  # We can see that there is another translator that doesn't appear in
+  # previous list because the template he translated is not current.
+  >>> non_current_pofile = POFile.get(31)
+  >>> [p.name for p in personset.getPOFileContributors(non_current_pofile)]
+  [u'jordi']
+  >>> non_current_pofile.potemplate.distrorelease == hoary
+  True
+  >>> non_current_pofile.language == spanish
+  True
 
 
 Specification Lists
