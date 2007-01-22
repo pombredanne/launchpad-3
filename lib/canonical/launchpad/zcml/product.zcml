@@ -435,6 +435,16 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSet"
+        permission="zope.Public"
+        facet="overview"
+        class="canonical.launchpad.browser.ProductBazaarView" >
+        <browser:page
+            name="+the-bazaar"
+            template="../templates/product-bazaar.pt" />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IProductSet"
         class="canonical.launchpad.browser.ProductSetView"
         facet="overview"
         permission="launchpad.AnyPerson">

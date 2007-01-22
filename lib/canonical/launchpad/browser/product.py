@@ -25,6 +25,7 @@ __all__ = [
     'ProductBugContactEditView',
     'ProductReassignmentView',
     'ProductLaunchpadUsageEditView',
+    'ProductBazaarView',
     ]
 
 from warnings import warn
@@ -370,7 +371,7 @@ def _sort_distros(a, b):
 class ProductSetContextMenu(ContextMenu):
 
     usedfor = IProductSet
-    links = ['register', 'listall']
+    links = ['register', 'listall', 'thebazaar']
 
     def register(self):
         text = 'Register a Product'
@@ -380,6 +381,9 @@ class ProductSetContextMenu(ContextMenu):
         text = 'List All Products'
         return Link('+all', text, icon='list')
 
+    def thebazaar(self):
+        text = 'Products in The Bazaar'
+        return Link('+the-bazaar', text, icon='list')
 
 class ProductView:
 
@@ -828,3 +832,11 @@ class ProductReassignmentView(ObjectReassignmentView):
         for release in product.releases:
             if release.owner == oldOwner:
                 release.owner = newOwner
+
+
+class ProductBazaarView(LaunchpadView):
+    """Browser class for products gettable with Bazaar."""
+    
+    def products(self):
+        return []
+    
