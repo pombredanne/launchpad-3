@@ -19,8 +19,8 @@
                   <div class="y">
                     <div class="z">
                       <div id="container">
+                        <h1>Code</h1>
                         <form class="central" action="/products" method="get">
-                          <h1>Code</h1>
                           <p
                             xtal:condition="view/error_message"
                             xtal:content="view/error_message"
