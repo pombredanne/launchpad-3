@@ -29,8 +29,9 @@ Tests if the validator is working for the URL fields
 >>> user_browser.getControl('Add').click()
 >>> user_browser.url
 'http://launchpad.dev/products/+new'
->>> '<p class="error message">There is 1 error.</p>' in user_browser.contents
-True
+>>> for tag in find_tags_by_class(user_browser.contents, 'error message'):
+...     print tag.renderContents()
+There is 1 error.
 
 
 And just 'http://' for the url
@@ -47,6 +48,7 @@ Test that the page to add a new product works.
 
 >>> user_browser.getControl('Homepage URL').value = 'http://www.test.test.com/'
 >>> user_browser.getControl('Add').click()
+
 >>> user_browser.url
 'http://launchpad.dev/testing'
 
@@ -172,3 +174,45 @@ And now check it was correctly created:
   >>> print product.reviewed
   True
 
+It's also possible to set the product's icon/emblem at creation time.
+
+>>> user_browser.open('http://launchpad.dev/products/+new')
+>>> user_browser.getControl('Project', index=0).value = 'mozilla'
+>>> user_browser.getControl('Name', index=0).value = 'testing3'
+>>> user_browser.getControl('Display Name').value = 'Test Product #3'
+>>> user_browser.getControl('Title').value = 'This is a Test Product #3'
+>>> user_browser.getControl('Description').value = (
+...     'If you were describing a Test Product this would be a little '
+...     'short but sweet.'
+...     )
+>>> user_browser.getControl('Summary').value = 'This is the summary'
+>>> import os
+>>> import canonical.launchpad
+>>> icon = os.path.join(
+...     os.path.dirname(canonical.launchpad.__file__),
+...     'pagetests/standalone/big.png')
+>>> user_browser.getControl(name='field.gotchi.action').value = ['change']
+>>> user_browser.getControl(name='field.gotchi.image').add_file(
+...     open(icon), 'image/png', 'icon.png')
+>>> emblem = os.path.join(
+...     os.path.dirname(canonical.launchpad.__file__),
+...     'pagetests/standalone/mypng.png')
+>>> user_browser.getControl(name='field.emblem.action').value = ['change']
+>>> user_browser.getControl(name='field.emblem.image').add_file(
+...     open(emblem), 'image/png', 'emblem.png')
+>>> user_browser.getControl('Add').click()
+
+>>> user_browser.url
+'http://launchpad.dev/testing3'
+
+The uploaded icon and emblem can be seen on the product's edit page:
+
+>>> user_browser.getLink('Edit Product Details').click()
+>>> user_browser.url
+'http://launchpad.dev/testing3/+edit'
+>>> find_tag_by_id(
+...     user_browser.contents, 'field.gotchi_current_img').get('src')
+u'.../icon.png'
+>>> find_tag_by_id(
+...     user_browser.contents, 'field.emblem_current_img').get('src')
+u'.../emblem.png'

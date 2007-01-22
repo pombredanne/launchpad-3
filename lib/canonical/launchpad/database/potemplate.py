@@ -13,6 +13,8 @@ from zope.component import getUtility
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import SQLMultipleJoin, SQLObjectNotFound
 
+from canonical.config import config
+
 from canonical.lp.dbschema import RosettaImportStatus
 
 from canonical.database.sqlbase import (
@@ -458,9 +460,10 @@ class POTemplate(SQLBase, RosettaStats):
             path_variant = '@%s' % variant
 
         # By default, we set as the path directory the same as the POTemplate
-        # one.
+        # one and set as the file name the translation domain + language.
         potemplate_dir = os.path.dirname(self.path)
-        path = '%s/%s%s.po' % (potemplate_dir, language.code, path_variant)
+        path = '%s/%s-%s%s.po' % (potemplate_dir,
+            self.potemplatename.translationdomain,language.code, path_variant)
 
         pofile = POFile(
             potemplate=self,
@@ -573,7 +576,7 @@ class POTemplate(SQLBase, RosettaStats):
                 'importer': entry_to_import.importer.displayname,
                 'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
                 'elapsedtime': entry_to_import.getElapsedTimeText(),
-                'file_link': entry_to_import.content.url,
+                'file_link': entry_to_import.content.http_url,
                 'import_title': self.displayname
                 }
 
@@ -585,7 +588,8 @@ class POTemplate(SQLBase, RosettaStats):
             template = helpers.get_email_template(template_mail)
             message = template % replacements
 
-            fromaddress = 'Rosetta SWAT Team <rosetta@launchpad.net>'
+            fromaddress = 'Rosetta SWAT Team <%s>' % (
+                config.rosetta.rosettaadmin.email)
             toaddress = helpers.contactEmailAddresses(entry_to_import.importer)
 
             simple_sendmail(fromaddress, toaddress, subject, message)

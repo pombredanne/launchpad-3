@@ -232,38 +232,37 @@ class DistroArchRelease(SQLBase):
             packagepublishingstatus=PackagePublishingStatus.PUBLISHED,
             orderBy=['-id'])
 
-    def publish(self, diskpool, log, archive, pocket, is_careful=False):
+    def getPendingPublications(self, pocket, is_careful):
         """See IPublishing."""
-        # XXX: this method shares exactly the same pattern as
-        # DistroRelease.publish(); they could be factored if API was
-        # provided to return the correct publishing entries.
-        #    -- kiko, 2006-08-23
-        log.debug("Attempting to publish pending binaries for %s"
-              % self.architecturetag)
-
-        dirty_pockets = set()
-        queries = ["distroarchrelease=%s AND archive = %s" %
-                   sqlvalues(self, archive)]
+        queries = ["distroarchrelease=%s" % sqlvalues(self)]
 
         target_status = [PackagePublishingStatus.PENDING]
         if is_careful:
             target_status.append(PackagePublishingStatus.PUBLISHED)
-        queries.append("status in %s" % sqlvalues(target_status))
+        queries.append("status IN %s" % sqlvalues(target_status))
 
-        # restrict to a specific pocket if it is given.
-        if pocket is not None:
-            queries.append('pocket = %s' % sqlvalues(pocket))
+        # restrict to a specific pocket.
+        queries.append('pocket = %s' % sqlvalues(pocket))
 
         # exclude RELEASE pocket if the distrorelease was already released,
         # since it should not change.
         if not self.distrorelease.isUnstable():
             queries.append(
-                'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
+            'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
 
         publications = BinaryPackagePublishingHistory.select(
                     " AND ".join(queries), orderBy=["-id"])
 
-        for bpph in publications:
+        return publications
+
+    def publish(self, diskpool, log, archive, pocket, is_careful=False):
+        """See IPublishing."""
+        log.debug("Attempting to publish pending binaries for %s"
+              % self.architecturetag)
+
+        dirty_pockets = set()
+
+        for bpph in self.getPendingPublications(pocket, is_careful):
             if not is_careful and self.distrorelease.checkLegalPocket(
                 bpph, log):
                 continue

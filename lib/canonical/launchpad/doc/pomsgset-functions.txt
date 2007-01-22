@@ -1,11 +1,9 @@
-POMsgSet translation functions
-==============================
+= POMsgSet translation functions =
 
 For rendering translations in the POMsgSetView a number of helper
 functions exist. The following sections cover them in detail.
 
-contract_rosetta_tabs
----------------------
+== contract_rosetta_tabs ==
 
     >>> from canonical.launchpad.browser.pomsgset import contract_rosetta_tabs
 
@@ -37,8 +35,7 @@ And so on...
     'foo\\\\[tab]bar'
 
 
-expand_rosetta_tabs
--------------------
+== expand_rosetta_tabs ==
 
     >>> from canonical.launchpad.browser.pomsgset import expand_rosetta_tabs
 
@@ -72,8 +69,7 @@ And so on...
     u'foo\\\\<code>\\[tab]</code>bar'
 
 
-parse_cformat_string
---------------------
+== parse_cformat_string ==
 
     >>> from canonical.launchpad.browser.pomsgset import parse_cformat_string
     >>> parse_cformat_string('')
@@ -90,44 +86,48 @@ parse_cformat_string
     UnrecognisedCFormatString: %
 
 
-msgid_html
-----------
+== text_to_html ==
 
-    >>> from canonical.launchpad.browser.pomsgset import msgid_html
+    >>> from canonical.launchpad.browser.pomsgset import text_to_html
 
 First, do no harm.
 
-    >>> msgid_html(u'foo bar', [], '<sp>')
+    >>> text_to_html(u'foo bar', [], '<sp>')
     u'foo bar'
 
 Test replacement of leading and trailing spaces.
 
-    >>> msgid_html(u' foo bar', [], '<sp>')
+    >>> text_to_html(u' foo bar', [], '<sp>')
     u'<sp>foo bar'
-    >>> msgid_html(u'foo bar ', [], '<sp>')
+    >>> text_to_html(u'foo bar ', [], '<sp>')
     u'foo bar<sp>'
-    >>> msgid_html(u'  foo bar  ', [], '<sp>')
+    >>> text_to_html(u'  foo bar  ', [], '<sp>')
     u'<sp><sp>foo bar<sp><sp>'
 
 Test replacement of newlines.
 
-    >>> msgid_html(u'foo\nbar', [], newline='<cr>')
+    >>> text_to_html(u'foo\nbar', [], newline='<cr>')
     u'foo<cr>bar'
 
 And both together.
 
-    >>> msgid_html(u'foo \nbar', [], '<sp>', '<cr>')
+    >>> text_to_html(u'foo \nbar', [], '<sp>', '<cr>')
     u'foo<sp><cr>bar'
 
 Test treatment of tabs.
 
-    >>> msgid_html(u'foo\tbar', [])
+    >>> text_to_html(u'foo\tbar', [])
     u'foo<code>[tab]</code>bar'
 
 Test valid C format strings are formatted.
 
-    >>> msgid_html(u'foo %d bar', ['c-format'])
+    >>> text_to_html(u'foo %d bar', ['c-format'])
     u'foo <code>%d</code> bar'
+
+If we get None, we return None.
+
+    >>> text_to_html(None, []) is None
+    True
 
 Test bad format strings are caught and passed through.
 
@@ -137,12 +137,21 @@ Test bad format strings are caught and passed through.
     ...
     UnrecognisedCFormatString: foo %z bar
 
-    >>> msgid_html(text, ['c-format']) == text
+    >>> text_to_html(text, ['c-format']) == text
     True
 
+If we get '\r\n' as the new line mark, we should remove '\r':
 
-convert_newlines_to_web_form
-----------------------------
+    >>> text_to_html(u'foo\r\nbar', [])
+    u'foo<img alt="" src="/@@/translation-newline" /><br/>\nbar'
+
+And '\r' should be also handled:
+
+    >>> text_to_html(u'foo\rbar', [])
+    u'foo<img alt="" src="/@@/translation-newline" /><br/>\nbar'
+
+
+== convert_newlines_to_web_form ==
 
     >>> from canonical.launchpad.browser.pomsgset import convert_newlines_to_web_form
     >>> convert_newlines_to_web_form(u'foo')
@@ -155,3 +164,36 @@ convert_newlines_to_web_form
     u'foo\r\nbar'
     >>> convert_newlines_to_web_form(u'foo\rbar')
     u'foo\r\nbar'
+
+
+== count_lines ==
+
+  >>> from canonical.launchpad.browser.pomsgset import count_lines
+  >>> count_lines("foo")
+  1
+  >>> count_lines(
+  ...     "123456789abc123456789abc123456789abc1234566789abc123456789abc")
+  2
+  >>> count_lines(
+  ...     "123456789a123456789a123456789a1234566789a123456789")
+  1
+  >>> count_lines("a\nb")
+  2
+  >>> count_lines("a\nb\n")
+  3
+  >>> count_lines("a\nb\nc")
+  3
+  >>> count_lines(
+  ...     "123456789abc123456789abc123456789abc123456789abc\n"
+  ...     "1234566789a123456789a")
+  2
+  >>> count_lines(
+  ...     "123456789abc123456789abc123456789abc123456789abc123456789abc123456\n"
+  ...     "789a123456789a123456789a")
+  3
+  >>> count_lines(
+  ...     "123456789abc123456789abc123456789abc123456789abc123456789abc"
+  ...     "123456789abc\n1234566789a123456789a123456789a")
+  3
+  >>> count_lines("foo bar\n")
+  2

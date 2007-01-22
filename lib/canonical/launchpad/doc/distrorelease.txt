@@ -1002,4 +1002,16 @@ driver. Here, we expect the driver to be the owner of the distribution
  ...     print d.name
  sabdfl
 
+== Last Uploads ==
 
+IDistroRelease provides the 'getLastUpload' method which returns a
+list of last 5 (five) IDistroReleaseSourcePackageRelease (IDRSPR)
+uploaded and published in its context.
+
+  >>> last_uploads = breezy_autotest.getLastUploads()
+
+Each element is a IDistroReleaseSourcePackageRelease instance:
+
+  >>> for upload in last_uploads:
+  ...     print upload.name, upload.version
+  mozilla-firefox 0.9

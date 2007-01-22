@@ -35,7 +35,7 @@
           <td style="text-align: right"
               tal:content="export/requests_count" />
           <td><a tal:content="export/csvfile/filename"
-                 tal:attributes="href export/csvfile/url" />
+                 tal:attributes="href export/csvfile/http_url" />
           </td>
           <td class="formControls" style="text-align: center">
             <form action="" method="POST" name="sent"
@@ -65,7 +65,7 @@
           <td style="text-align: right"
               tal:content="export/requests_count" />
           <td><a tal:content="export/csvfile/filename"
-                 tal:attributes="href export/csvfile/url" />
+                 tal:attributes="href export/csvfile/http_url" />
           </td>
         </tr>
       </tbody>
