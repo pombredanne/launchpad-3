@@ -117,8 +117,7 @@ class IPerson(IHasSpecifications):
         title=_("Homepage Content"), required=False,
         description=_(
             "The content of your home page. Edit this and it will be "
-            "displayed for all the world to see. It is NOT a wiki so you "
-            "cannot undo changes."))
+            "displayed for all the world to see."))
     emblem = SmallImageUpload(
         title=_("Emblem"), required=False,
         description=_(
@@ -292,8 +291,9 @@ class IPerson(IHasSpecifications):
                        vocabulary='ValidTeamOwner')
     teamownerID = Int(title=_("The Team Owner's ID or None"), required=False,
                       readonly=True)
-    teamdescription = Text(title=_('Team Description'), required=False,
-                           readonly=False)
+    teamdescription = Text(
+        title=_('Team Description'), required=False, readonly=False,
+        description=_('Use plain text; URLs will be linkified'))
 
     preferredemail = TextLine(
         title=_("Preferred Email Address"),
@@ -667,6 +667,12 @@ class ITeam(IPerson):
             "An image, maximum 170x170 pixels, that will be displayed on "
             "this team's home page. It should be no bigger than 100k in "
             "size."))
+
+    displayname = StrippedTextLine(
+            title=_('Display Name'), required=True, readonly=False,
+            description=_(
+                "This team's name as you would like it displayed throughout "
+                "Launchpad."))
 
 
 class IPersonSet(Interface):
