@@ -71,7 +71,7 @@ well as an option to delete the image that was just uploaded.
     >>> widget = ImageChangeWidget(person_gotchi, TestRequest())
 
     >>> html = widget()
-    >>> mugshot.secure_url == BeautifulSoup(html).find('img').get('src')
+    >>> mugshot.getURL() == BeautifulSoup(html).find('img').get('src')
     True
 
     >>> print_radio_items(html)
