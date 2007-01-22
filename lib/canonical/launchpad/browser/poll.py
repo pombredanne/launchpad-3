@@ -222,7 +222,7 @@ class PollVoteView(BasePollView):
             return
 
         if not self.context.isOpen():
-            self.feedback = "This poll is not open. You can't vote anymore."
+            self.feedback = "This poll is not open."
             return
 
         if self.isSimple():
