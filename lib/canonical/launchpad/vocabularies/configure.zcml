@@ -1,16 +1,6 @@
 <configure xmlns="http://namespaces.zope.org/zope">
 
   <vocabulary
-    name="BinaryAndSourcePackageName"
-    factory="canonical.launchpad.vocabularies.BinaryAndSourcePackageNameVocabulary"
-    />
-
-  <vocabulary
-    name="BinaryPackageName"
-    factory="canonical.launchpad.vocabularies.BinaryPackageNameVocabulary"
-    />
-
-  <vocabulary
     name="Bounty"
     factory="canonical.launchpad.vocabularies.BountyVocabulary"
     />
@@ -38,6 +28,11 @@
   <vocabulary
     name="BranchReviewStatus"
     factory="canonical.launchpad.vocabularies.BranchReviewStatusVocabulary"
+    />
+
+  <vocabulary
+    name="BranchSubscriptionNotificationLevel"
+    factory="canonical.launchpad.vocabularies.BranchSubscriptionNotificationLevelVocabulary"
     />
 
   <vocabulary
@@ -291,11 +286,6 @@
     />
 
   <vocabulary
-    name="SourcePackageName"
-    factory="canonical.launchpad.vocabularies.SourcePackageNameVocabulary"
-    />
-
-  <vocabulary
     name="Specification"
     factory="canonical.launchpad.vocabularies.SpecificationVocabulary"
     />
@@ -433,16 +423,6 @@
   <vocabulary
     name="DistributionOrProductOrProject"
     factory="canonical.launchpad.vocabularies.DistributionOrProductOrProjectVocabulary"
-    />
-
-  <!-- Define the widget used by Choice fields that use huge vocabularies -->
-  <view
-    type="zope.publisher.interfaces.browser.IBrowserRequest"
-    for="zope.schema.interfaces.IChoice
-      canonical.launchpad.vocabularies.IHugeVocabulary"
-    provides="zope.app.form.interfaces.IInputWidget"
-    factory="canonical.widgets.SinglePopupWidget"
-    permission="zope.Public"
     />
 
 </configure>

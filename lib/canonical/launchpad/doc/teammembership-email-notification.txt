@@ -54,8 +54,9 @@ generates a notification email only to Ubuntu Team administrators.
     >>> len(stub.test_emails)
     1
     >>> [admins_notification] = pop_notifications()
-    >>> admins_notification['To']
-    'foo.bar@canonical.com,jeff.waugh@ubuntulinux.com,mark@hbd.com'
+    >>> print admins_notification['To']
+    colin.watson@ubuntulinux.com, foo.bar@canonical.com,
+    jeff.waugh@ubuntulinux.com, mark@hbd.com
     >>> admins_notification['Subject']
     'Launchpad: name12 wants to join team ubuntu-team'
     >>> admins_notification['Reply-To']
@@ -86,8 +87,9 @@ and team admins.
     2
 
     >>> admins_notification, member_notification = pop_notifications()
-    >>> admins_notification['To']
-    'foo.bar@canonical.com,jeff.waugh@ubuntulinux.com,mark@hbd.com'
+    >>> print admins_notification['To']
+    colin.watson@ubuntulinux.com, foo.bar@canonical.com,
+    jeff.waugh@ubuntulinux.com, mark@hbd.com
     >>> admins_notification['Subject']
     'Launchpad: Membership change: name12 in ubuntu-team'
     >>> print admins_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
@@ -139,15 +141,14 @@ The same goes for approving a proposed member.
     2
     >>> member_notification, admins_notification = pop_notifications()
     >>> admins_notification['To']
-    'foo.bar@canonical.com,jeff.waugh@ubuntulinux.com,mark@hbd.com'
+    'daf@canonical.com'
     >>> admins_notification['Subject']
     'Launchpad: Membership change: daf in ubuntu-team'
     >>> print admins_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
     Hello,
     <BLANKLINE>
-    The membership status of Dafydd Harries (daf) in the team Ubuntu Team
-    (ubuntu-team) was changed by Mark Shuttleworth (sabdfl) from Proposed to
-    Approved.
+    The status of your membership in the team Ubuntu Team (ubuntu-team) was
+    changed by Mark Shuttleworth (sabdfl) from Proposed to Approved.
     <BLANKLINE>
     Comment:
     This is a nice guy; I like him
@@ -156,15 +157,17 @@ The same goes for approving a proposed member.
     Regards,
     The Launchpad team
 
-    >>> member_notification['To']
-    'daf@canonical.com'
+    >>> print member_notification['To']
+    colin.watson@ubuntulinux.com, foo.bar@canonical.com,
+    jeff.waugh@ubuntulinux.com, mark@hbd.com
     >>> member_notification['Subject']
     'Launchpad: Membership change: daf in ubuntu-team'
     >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
     Hello,
     <BLANKLINE>
-    The status of your membership in the team Ubuntu Team (ubuntu-team) was
-    changed by Mark Shuttleworth (sabdfl) from Proposed to Approved.
+    The membership status of Dafydd Harries (daf) in the team Ubuntu Team
+    (ubuntu-team) was changed by Mark Shuttleworth (sabdfl) from Proposed to
+    Approved.
     <BLANKLINE>
     Comment:
     This is a nice guy; I like him
@@ -182,9 +185,10 @@ The same for deactivating a membership.
     >>> stub.test_emails.sort(by_to_addrs)
     >>> len(stub.test_emails)
     2
-    >>> member_notification, admins_notification = pop_notifications()
-    >>> admins_notification['To']
-    'foo.bar@canonical.com,jeff.waugh@ubuntulinux.com,mark@hbd.com'
+    >>> admins_notification, member_notification = pop_notifications()
+    >>> print admins_notification['To']
+    colin.watson@ubuntulinux.com, foo.bar@canonical.com,
+    jeff.waugh@ubuntulinux.com, mark@hbd.com
     >>> admins_notification['Subject']
     'Launchpad: Membership change: daf in ubuntu-team'
     >>> print admins_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
@@ -238,8 +242,9 @@ notification.
     >>> len(stub.test_emails)
     2
     >>> member_notification, admins_notification = pop_notifications()
-    >>> admins_notification['To']
-    'foo.bar@canonical.com,jeff.waugh@ubuntulinux.com,mark@hbd.com'
+    >>> print admins_notification['To']
+    colin.watson@ubuntulinux.com, foo.bar@canonical.com,
+    jeff.waugh@ubuntulinux.com, mark@hbd.com
     >>> member_notification['To']
     'celso.providelo@canonical.com'
 
@@ -254,8 +259,9 @@ sent to the team administrators.
     >>> len(stub.test_emails)
     1
     >>> [admins_notification] = pop_notifications()
-    >>> admins_notification['To']
-    'celso.providelo@canonical.com,foo.bar@canonical.com,mark@hbd.com'
+    >>> print admins_notification['To']
+    celso.providelo@canonical.com, colin.watson@ubuntulinux.com,
+    foo.bar@canonical.com, mark@hbd.com
     >>> admins_notification['Subject']
     'Launchpad: Membership change: jdub in ubuntu-team'
     >>> print admins_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
@@ -279,7 +285,7 @@ member.
     >>> transaction.commit()
     >>> len(stub.test_emails)
     2
-    >>> member_notification, admins_notification = pop_notifications()
+    >>> admins_notification, member_notification = pop_notifications()
 
     >>> member_notification['To']
     'marilize@hbd.com'
@@ -292,8 +298,9 @@ member.
     Regards,
     The Launchpad team
 
-    >>> admins_notification['To']
-    'mark@hbd.com,celso.providelo@canonical.com,foo.bar@canonical.com'
+    >>> print admins_notification['To']
+    colin.watson@ubuntulinux.com, mark@hbd.com, celso.providelo@canonical.com,
+    foo.bar@canonical.com
     >>> print admins_notification.get_payload()
     Hello,
     <BLANKLINE>
@@ -322,8 +329,9 @@ like that.
     >>> len(stub.test_emails)
     2
     >>> admins_notification, member_notification = pop_notifications()
-    >>> admins_notification['To']
-    'celso.providelo@canonical.com,foo.bar@canonical.com'
+    >>> print admins_notification['To']
+    colin.watson@ubuntulinux.com, celso.providelo@canonical.com,
+    foo.bar@canonical.com
     >>> print admins_notification.get_payload()
     Hello,
     <BLANKLINE>
@@ -359,8 +367,9 @@ like that.
     >>> admins_notification['To']
     'mark@hbd.com,karl@canonical.com'
 
-    >>> member_notification['To']
-    'celso.providelo@canonical.com,foo.bar@canonical.com'
+    >>> print member_notification['To']
+    celso.providelo@canonical.com, colin.watson@ubuntulinux.com,
+    foo.bar@canonical.com
     >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
     Hello,
     <BLANKLINE>
