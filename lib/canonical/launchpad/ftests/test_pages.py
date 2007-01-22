@@ -7,6 +7,7 @@ __metaclass__ = type
 
 import doctest
 import os
+import re
 import unittest
 
 from BeautifulSoup import BeautifulSoup
@@ -14,12 +15,26 @@ from BeautifulSoup import BeautifulSoup
 from canonical.functional import PageTestDocFileSuite, SpecialOutputChecker
 from canonical.testing import PageTestLayer
 
+
 here = os.path.dirname(os.path.realpath(__file__))
 
+
+class DuplicateIdError(Exception):
+    """Raised by find_tag_by_id if more than one element has the given id."""
+
+
 def find_tag_by_id(content, id):
-    """Find and return the tags with the given ID"""
+    """Find and return the tag with the given ID"""
     soup = BeautifulSoup(content)
-    return soup.find(attrs={'id': id})
+    elements_with_id = soup.findAll(attrs={'id': id})
+    if not elements_with_id:
+        return None
+    elif len(elements_with_id) == 1:
+        return elements_with_id[0]
+    else:
+        raise DuplicateIdError(
+            'Found %d elements with id %r' % (len(elements_with_id), id))
+
 
 def find_tags_by_class(content, class_):
     """Find and return the tags matching the given class(s)"""
@@ -31,13 +46,20 @@ def find_tags_by_class(content, class_):
     soup = BeautifulSoup(content)
     return soup.findAll(attrs={'class': class_matcher})
 
+
 def find_portlet(content, name):
-    """Find and return the portlet with the given title"""
+    """Find and return the portlet with the given title. Sequences of
+    whitespace are considered equivalent to one space, and beginning and
+    ending whitespace is also ignored.
+    """
+    whitespace_re = re.compile('\s+')
+    name = whitespace_re.sub(' ', name.strip())
     for portlet in find_tags_by_class(content, 'portlet'):
-        portlet_title = portlet.find('h4').renderContents()
-        if name == portlet_title:
+        portlet_title = portlet.find('h2').renderContents()
+        if name == whitespace_re.sub(' ', portlet_title.strip()):
             return portlet
     return None
+
 
 def find_main_content(content):
     """Find and return the main content area of the page"""
@@ -46,6 +68,7 @@ def find_main_content(content):
     if tag:
         return tag
     return soup.find(attrs={'id': 'content'})
+
 
 def setUpGlobs(test):
     test.globs['find_tag_by_id'] = find_tag_by_id
@@ -56,7 +79,7 @@ def setUpGlobs(test):
 
 class PageStoryTestCase(unittest.TestCase):
     """A test case that represents a pagetest story
-    
+
     This is achieved by holding a testsuite for the story, and
     delegating responsiblity for most methods to it.
     We want this to be a TestCase instance and not a TestSuite
@@ -67,46 +90,19 @@ class PageStoryTestCase(unittest.TestCase):
 
     layer = PageTestLayer
 
-    def __init__(self, storydir, package=None):
-        """Create a PageTest story for storydir.
+    def __init__(self, name, storysuite):
+        """Create a PageTest story from the given suite.
 
-        storydir should be an package relative file path.
-        package is the python package the page test is found under, it
-        defaults to the caller's package.
+        :param name: an identifier for the story, such as the directory
+            containing the tests.
+        :param storysuite: a test suite containing the tests to be run
+            as a story.
         """
         # we do not run the super __init__ because we are not using any of
         # the base classes functionality, and we'd just have to give it a
         # meaningless method.
-        self._description = storydir
-        self._suite = unittest.TestSuite()
-
-        # we need to normalise the package name here, because it
-        # involves checking the parent stack frame.  Otherwise the
-        # files would be looked up relative to this module.
-        package = doctest._normalize_module(package)
-        abs_storydir = doctest._module_relative_path(package, storydir)
-
-        filenames = set(filename
-                        for filename in os.listdir(abs_storydir)
-                        if filename.lower().endswith('.txt'))
-        numberedfilenames = set(filename for filename in filenames
-                                if len(filename) > 4
-                                and filename[:2].isdigit()
-                                and filename[2] == '-')
-        unnumberedfilenames = filenames - numberedfilenames
-
-        # A predictable order is important, even if it remains officially
-        # undefined for un-numbered filenames.
-        numberedfilenames = sorted(numberedfilenames)
-        unnumberedfilenames = sorted(unnumberedfilenames)
-        test_scripts = unnumberedfilenames + numberedfilenames
-    
-        checker = SpecialOutputChecker()
-        for leaf_filename in test_scripts:
-            filename = os.path.join(storydir, leaf_filename)
-            self._suite.addTest(PageTestDocFileSuite(
-                filename, package=package, checker=checker, setUp=setUpGlobs
-                ))
+        self._description = name
+        self._suite = storysuite
 
     def countTestCases(self):
         return self._suite.countTestCases()
@@ -121,7 +117,7 @@ class PageStoryTestCase(unittest.TestCase):
         return self.shortDescription()
 
     def __repr__(self):
-        return "<%s storydir=%s>" % (self.__class__.__name__, self._description)
+        return "<%s name=%s>" % (self.__class__.__name__, self._description)
 
     def run(self, result=None):
         if result is None:
@@ -139,41 +135,76 @@ class PageStoryTestCase(unittest.TestCase):
         self._suite.debug()
 
 
+# This function name doesn't follow our standard naming conventions,
+# but does follow the convention of the other doctest related *Suite()
+# functions.
+
+def PageTestSuite(storydir, package=None):
+    """Create a suite of page tests for files found in storydir.
+
+    :param storydir: the directory containing the page tests.
+    :param package: the package to resolve storydir relative to.  Defaults
+        to the caller's package.
+
+    The unnumbered page tests will be added to the suite individually,
+    while the numbered tests will be run together as a story.
+    """
+    # we need to normalise the package name here, because it
+    # involves checking the parent stack frame.  Otherwise the
+    # files would be looked up relative to this module.
+    package = doctest._normalize_module(package)
+    abs_storydir = doctest._module_relative_path(package, storydir)
+
+    filenames = set(filename
+                    for filename in os.listdir(abs_storydir)
+                    if filename.lower().endswith('.txt'))
+    numberedfilenames = set(filename for filename in filenames
+                            if len(filename) > 4
+                            and filename[:2].isdigit()
+                            and filename[2] == '-')
+    unnumberedfilenames = filenames - numberedfilenames
+
+    # A predictable order is important, even if it remains officially
+    # undefined for un-numbered filenames.
+    numberedfilenames = sorted(numberedfilenames)
+    unnumberedfilenames = sorted(unnumberedfilenames)
+
+    # Add unnumbered tests to the suite individually.
+    checker = SpecialOutputChecker()
+    suite = PageTestDocFileSuite(
+        package=package, checker=checker,
+        layer=PageTestLayer, setUp=setUpGlobs,
+        *[os.path.join(storydir, filename)
+          for filename in unnumberedfilenames])
+
+    # Add numbered tests to the suite as a single story.
+    storysuite = PageTestDocFileSuite(
+        package=package, checker=checker,
+        layer=PageTestLayer, setUp=setUpGlobs,
+        *[os.path.join(storydir, filename)
+          for filename in numberedfilenames])
+    suite.addTest(PageStoryTestCase(abs_storydir, storysuite))
+
+    return suite
+
+
 def test_suite():
     pagetestsdir = os.path.join('..', 'pagetests')
     abs_pagetestsdir = os.path.abspath(
         os.path.normpath(os.path.join(here, pagetestsdir)))
 
     stories = [
-        (os.path.join(pagetestsdir, d), os.path.join(abs_pagetestsdir, d))
+        os.path.join(pagetestsdir, d)
         for d in os.listdir(abs_pagetestsdir)
         if not d.startswith('.') and
            os.path.isdir(os.path.join(abs_pagetestsdir, d))
         ]
     stories.sort()
 
-    standalone_suite = unittest.TestSuite()
-    story_suite = unittest.TestSuite()
-
-    for (storydir, abs_storydir) in stories:
-        if not storydir.endswith('standalone'):
-            story_suite.addTest(PageStoryTestCase(storydir))
-        else:
-            # For standalone page tests, we just create normal
-            # PageTestDocFileSuite instances.
-            filenames = sorted(filename
-                               for filename in os.listdir(abs_storydir)
-                               if filename.lower().endswith('.txt'))
-            checker = SpecialOutputChecker()
-            for filename in filenames:
-                standalone_suite.addTest(PageTestDocFileSuite(
-                    os.path.join(storydir, filename),
-                    checker=checker, layer=PageTestLayer,
-                    setUp=setUpGlobs))
-
     suite = unittest.TestSuite()
-    suite.addTest(standalone_suite)
-    suite.addTest(story_suite)
+
+    for storydir in stories:
+        suite.addTest(PageTestSuite(storydir))
     return suite
 
 if __name__ == '__main__':

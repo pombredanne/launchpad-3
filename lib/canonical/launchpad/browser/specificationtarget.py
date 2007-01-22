@@ -43,6 +43,64 @@ class HasSpecificationsView(LaunchpadView):
         else:
             self.title = _('Specifications for $name', mapping=mapping)
 
+    def mdzCsv(self):
+        """Quick hack for mdz, to get csv dump of specs."""
+        import csv
+        from StringIO import StringIO
+        from canonical.launchpad.webapp import canonical_url
+        output = StringIO()
+        writer = csv.writer(output)
+        headings = [
+            'name',
+            'title',
+            'url',
+            'specurl',
+            'status',
+            'priority',
+            'assignee',
+            'drafter',
+            'approver',
+            'owner',
+            'distrorelease',
+            'direction_approved',
+            'man_days',
+            'delivery',
+            'informational'
+            ]
+        def dbschema(item):
+            """Format a dbschema sortably for a spreadsheet."""
+            return '%s-%s' % (item.value, item.title)
+        def fperson(person):
+            """Format a person as 'name (full name)', or 'none'"""
+            if person is None:
+                return 'none'
+            else:
+                return '%s (%s)' % (person.name, person.displayname)
+        writer.writerow(headings)
+        for spec in self.context.all_specifications:
+            row = []
+            row.append(spec.name)
+            row.append(spec.title)
+            row.append(canonical_url(spec))
+            row.append(spec.specurl)
+            row.append(dbschema(spec.status))
+            row.append(dbschema(spec.priority))
+            row.append(fperson(spec.assignee))
+            row.append(fperson(spec.drafter))
+            row.append(fperson(spec.approver))
+            row.append(fperson(spec.owner))
+            if spec.distrorelease is None:
+                row.append('none')
+            else:
+                row.append(spec.distrorelease.name)
+            row.append(spec.direction_approved)
+            row.append(spec.man_days)
+            row.append(dbschema(spec.delivery))
+            row.append(spec.informational)
+            writer.writerow([unicode(item).encode('utf8') for item in row])
+        self.request.response.setHeader('Content-Type', 'text/plain')
+        return output.getvalue()
+
     def is_person(self):
         return IPerson.providedBy(self.context)
 

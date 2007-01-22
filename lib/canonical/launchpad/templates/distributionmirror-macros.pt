@@ -15,8 +15,11 @@
       </tr>
       <tr tal:repeat="mirror country_and_mirrors/mirrors">
         <td>
-          <a tal:attributes="href mirror/http_base_url"
+          <a tal:condition="mirror/base_url"
+             tal:attributes="href mirror/base_url"
              tal:content="mirror/title">Mirror Name</a>
+          <span tal:condition="not:mirror/base_url"
+                tal:content="mirror/title">Mirror Name</span>
         </td>
         <td><span tal:replace="mirror/speed/title" /></td>
         <td tal:define="status mirror/getOverallStatus">

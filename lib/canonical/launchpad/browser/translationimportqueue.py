@@ -8,6 +8,7 @@ __all__ = [
     'TranslationImportQueueEntryNavigation',
     'TranslationImportQueueEntryURL',
     'TranslationImportQueueEntryView',
+    'TranslationImportQueueEntryContextMenu',
     'TranslationImportQueueContextMenu',
     'TranslationImportQueueNavigation',
     'TranslationImportQueueView',
@@ -20,14 +21,18 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.app.form.browser.widget import renderElement
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
+from canonical.database.constants import UTC_NOW
+from canonical.launchpad.browser.launchpad import RosettaContextMenu
 from canonical.launchpad.interfaces import (
-    ITranslationImportQueueEntry, ITranslationImportQueue, ICanonicalUrlData,
-    IPOTemplateSet, ILanguageSet, NotFoundError, UnexpectedFormData)
+    ITranslationImportQueueEntry, IEditTranslationImportQueueEntry,
+    ITranslationImportQueue, ICanonicalUrlData, IPOTemplateSet,
+    ILanguageSet, NotFoundError, UnexpectedFormData)
 from canonical.launchpad.webapp import (
-    GetitemNavigation, LaunchpadView, ContextMenu, Link, canonical_url)
+    GetitemNavigation, LaunchpadView, canonical_url, LaunchpadFormView, action
+    )
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.generalform import GeneralFormView
 
 from canonical.lp.dbschema import RosettaImportStatus
 
@@ -39,7 +44,7 @@ class TranslationImportQueueEntryNavigation(GetitemNavigation):
 class TranslationImportQueueEntryURL:
     implements(ICanonicalUrlData)
 
-    rootsite = 'launchpad'
+    rootsite = 'mainsite'
 
     def __init__(self, context):
         self.context = context
@@ -54,20 +59,18 @@ class TranslationImportQueueEntryURL:
         return getUtility(ITranslationImportQueue)
 
 
-class TranslationImportQueueEntryView(GeneralFormView):
-    """The view part of the admin interface for the translation import queue.
-    """
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.initialize()
-        GeneralFormView.__init__(self, context, request)
+class TranslationImportQueueEntryView(LaunchpadFormView):
+    """The view part of admin interface for the translation import queue."""
+    label = "Select where this entry should be attached"
+    schema = IEditTranslationImportQueueEntry
 
     @property
     def initial_values(self):
         """Initialize some values on the form, when it's possible."""
         field_values = {}
+        if self.request.method == 'POST':
+            # We got a form post, we don't need to do any initialisation.
+            return field_values
         # Fill the know values.
         if self.context.sourcepackagename is not None:
             field_values['sourcepackagename'] = self.context.sourcepackagename
@@ -78,7 +81,8 @@ class TranslationImportQueueEntryView(GeneralFormView):
             field_values['language'] = self.context.pofile.language
             field_values['variant'] = self.context.pofile.variant
         else:
-            # We try to guess the values.
+            # It's not a template, we try to guess the language based on its
+            # file name.
             language_set = getUtility(ILanguageSet)
             filename = os.path.basename(self.context.path)
             guessed_language, file_ext = filename.split(u'.', 1)
@@ -99,47 +103,75 @@ class TranslationImportQueueEntryView(GeneralFormView):
 
         return field_values
 
+    @property
+    def next_url(self):
+        """Return the URL of the main import queue at 'rosetta/imports'."""
+        translationimportqueue_set = getUtility(ITranslationImportQueue)
+        return canonical_url(translationimportqueue_set)
+
     def initialize(self):
-        """Set the fields that will be shown based on the 'context' values.
+        """Remove some fields based on the entry handled."""
+        self.field_names = ['sourcepackagename', 'potemplatename', 'path',
+                            'language', 'variant']
 
-        If the context comes from a productseries, the sourcepackagename
-        chooser is hidden.
-        If the 'context.path' field ends with the string '.pot', it means that
-        the context is related with a '.pot' file, so we hide the language and
-        variant fields as they are useless here.
-        """
-        self.fieldNames = ['sourcepackagename', 'potemplatename', 'path',
-            'language', 'variant']
-
-        if (self.context.productseries is not None and
-            'sourcepackagename' in self.fieldNames):
-            self.fieldNames.remove('sourcepackagename')
+        if self.context.productseries is not None:
+            # We are handling an entry for a productseries, this field is not
+            # useful here.
+            self.field_names.remove('sourcepackagename')
 
         if self.context.path.endswith('.pot'):
-            if 'language' in self.fieldNames:
-                self.fieldNames.remove('language')
-            if 'variant' in self.fieldNames:
-                self.fieldNames.remove('variant')
+            # It's template file, we don't need to choose the language and
+            # variant.
+            self.field_names.remove('language')
+            self.field_names.remove('variant')
 
-    def process(self, potemplatename, path=None, sourcepackagename=None,
-        language=None, variant=None):
-        """Process the form we got from the submission."""
-        if path and self.context.path != path:
+        # Execute default initialisation.
+        LaunchpadFormView.initialize(self)
+
+    def validate(self, data):
+        """Extra validations for the given fields."""
+        path = data.get('path')
+        if path is not None and self.context.path != path:
             # The Rosetta Expert decided to change the path of the file.
-            self.context.path = path
+            # Before accepting such change, we should check first whether is
+            # already another entry with that path in the same context
+            # (sourcepackagename/distrorelease or productseries).
+            pofile_set = getUtility(IPOFileSet)
+            existing_pofile = pofile_set.getPOFileByPathAndOrigin(
+                path, self.context.productseries, self.context.distrorelease,
+                self.context.sourcepackagename)
+            if existing_pofile is None:
+                # There is no other pofile in the given path for this context,
+                # let's change it as requested by admins.
+                self.context.path = path
+            else:
+                # We already have an IPOFile in this path, let's notify the
+                # user about that so they choose another path.
+                self.setFieldError('path',
+                    'There is already a POFile in the given path.')
 
-        if (sourcepackagename is not None and
-            self.context.sourcepackagename is not None):
-            # Got another sourcepackagename from the form, we will use it.
-            destination_sourcepackagename = sourcepackagename
-        else:
-            destination_sourcepackagename = self.context.sourcepackagename
+    @action("Attach")
+    def change_action(self, action, data):
+        """Process the form we got from the submission."""
+        potemplatename = data.get('potemplatename')
+        path = data.get('path')
+        sourcepackagename = data.get('sourcepackagename')
+        language = data.get('language')
+        variant = data.get('variant')
 
         potemplate_set = getUtility(IPOTemplateSet)
         if self.context.productseries is None:
-            potemplate_subset = potemplate_set.getSubset(
-                distrorelease=self.context.distrorelease,
-                sourcepackagename=destination_sourcepackagename)
+            if (sourcepackagename is not None and
+                self.context.sourcepackagename is not None and
+                sourcepackagename.id != self.context.sourcepackagename.id):
+                # Got another sourcepackagename from the form, we will use it.
+                potemplate_subset = potemplate_set.getSubset(
+                    distrorelease=self.context.distrorelease,
+                    sourcepackagename=sourcepackagename)
+            else:
+                potemplate_subset = potemplate_set.getSubset(
+                    distrorelease=self.context.distrorelease,
+                    sourcepackagename=self.context.sourcepackagename)
         else:
             potemplate_subset = potemplate_set.getSubset(
                 productseries=self.context.productseries)
@@ -164,6 +196,15 @@ class TranslationImportQueueEntryView(GeneralFormView):
                 # import it as a .pot file, we update the path changing the
                 # file extension from .po to .pot to reflect this fact.
                 self.context.path = '%st' % self.context.path
+            if (self.context.sourcepackagename is not None and
+                potemplate.sourcepackagename is not None and
+                self.context.sourcepackagename.id !=
+                potemplate.sourcepackagename.id):
+                # We got the template from a different package than the one
+                # selected by the user where the import should done, so we
+                # note it here.
+                potemplate.from_sourcepackagename = (
+                    self.context.sourcepackagename)
         else:
             # We are hadling an IPOFile import.
             pofile = potemplate.getPOFileByLang(language.code, variant)
@@ -172,27 +213,41 @@ class TranslationImportQueueEntryView(GeneralFormView):
                 pofile = potemplate.newPOFile(
                     language.code, variant, self.context.importer)
             self.context.pofile = pofile
+            if (self.context.sourcepackagename is not None and
+                potemplate.sourcepackagename is not None and
+                self.context.sourcepackagename.id !=
+                pofile.potemplate.sourcepackagename.id):
+                # We got the template from a different package than the one
+                # selected by the user where the import should done, so we
+                # note it here.
+                pofile.from_sourcepackagename = self.context.sourcepackagename
+
+            if path is not None:
+                # We got a path to store as the new one for the POFile.
+                pofile.path = path
+            elif (self.context.is_published and
+                  pofile.path != self.context.path):
+                # This entry comes from upstream, which means that the path we
+                # got is exactly the right one. If it's different from what
+                # pofile has, that would mean that either the entry changed
+                # its path since previous upload or that we had to guess it
+                # and now that we got the right path, we should fix it.
+                pofile.path = self.context.path
 
         self.context.status = RosettaImportStatus.APPROVED
-
-    def nextURL(self):
-        """Return the URL of the main import queue at 'rosetta/imports'."""
-        translationimportqueue_set = getUtility(ITranslationImportQueue)
-        return canonical_url(translationimportqueue_set)
+        self.context.date_status_changed = UTC_NOW
 
 
 class TranslationImportQueueNavigation(GetitemNavigation):
-
     usedfor = ITranslationImportQueue
 
 
-class TranslationImportQueueContextMenu(ContextMenu):
+class TranslationImportQueueContextMenu(RosettaContextMenu):
     usedfor = ITranslationImportQueue
-    links = ['overview']
 
-    def overview(self):
-        text = 'Import queue'
-        return Link('', text)
+
+class TranslationImportQueueEntryContextMenu(RosettaContextMenu):
+    usedfor = ITranslationImportQueueEntry
 
 
 class TranslationImportQueueView(LaunchpadView):
@@ -264,10 +319,10 @@ class TranslationImportQueueView(LaunchpadView):
         # Process the form.
         self.processForm()
 
-    @property
+    @cachedproperty
     def has_entries(self):
         """Return whether there are things on the queue."""
-        return len(self.context) > 0
+        return bool(self.context.entryCount())
 
     def processForm(self):
         """Block or remove entries from the queue based on the selection of

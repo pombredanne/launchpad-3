@@ -1,122 +1,118 @@
 Open the "Upstream Source Import" page for a series.
 
-  >>> print http(r"""
-  ... GET /products/firefox/trunk/+source HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  Content-Type: text/html;charset=utf-8
-  ...
+  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser.open('http://launchpad.dev/firefox/trunk')
+  >>> browser.getLink('Edit Source').click()
+  >>> print browser.url
+  http://launchpad.dev/firefox/trunk/+source
+
+  >>> print browser.contents
+  <...
   ...<h1>Upstream source import</h1>...
   ...
 
-Add CVS source import details, but no Source Package.
 
-  >>> print http(r"""
-  ... POST /products/firefox/trunk/+source HTTP/1.1
-  ... Accept-Language: en-us,en;q=0.5
-  ... Content-Type: application/x-www-form-urlencoded
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ...
-  ... ubuntupkg=&rcstype=cvs&cvsroot=%3Apserver%3Aanonymous%40cvs-mirror.mozilla.org%3A%2Fcvsroot&cvsmodule=mozilla&cvsbranch=main&edit_productseries_source=Update+RCS+Details""")
-  HTTP/1.1 303 See Other 
-  ...
-  Location: http://.../products/firefox/trunk...
-  ...
+Currently, no revision details are selected.  We can submit the form
+as is, which will leave us with no revision control system selected:
+
+  >>> browser.getControl('No revision control system, or Bazaar').selected
+  True
+  >>> browser.getControl('Update RCS Details').click()
+  >>> print browser.url
+  http://launchpad.dev/firefox/trunk
+
+
+Now we'll go back to the edit source form and add some CVS details:
+
+  >>> browser.getLink('Edit Source').click()
+  >>> print browser.url
+  http://launchpad.dev/firefox/trunk/+source
+  >>> browser.getControl('CVS').click()
+  >>> browser.getControl('Repository root').value = (
+  ...     ':pserver:anonymous@cvs-mirror.mozilla.org:/cvsroot')
+  >>> browser.getControl('Module').value = 'mozilla'
+  >>> browser.getControl('Branch name').value = 'main'
+  >>> browser.getControl('Update RCS Details').click()
+  >>> print browser.url
+  http://launchpad.dev/firefox/trunk
 
 We check if the info we just entered on the form is displayed correctly
 
-  >>> print http(r"""
-  ... GET /products/firefox/trunk/ HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+  >>> print find_main_content(browser.contents)
+  <...
   ...<td>CVS root:</td>...
   ...<td>:pserver:anonymous@cvs-mirror.mozilla.org:/cvsroot</td>...
-  ...
-
-Now add a Source Package name, but try a non-existent one.
-
-  >>> print http(r"""
-  ... POST /products/firefox/trunk/+source HTTP/1.1
-  ... Content-Type: application/x-www-form-urlencoded
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... 
-  ... ubuntupkg=moz&rcstype=cvs&cvsroot=%3Apserver%3Aanonymous%40cvs-mirror.mozilla.org%3A%2Fcvsroot&cvsmodule=mozilla&cvsbranch=main&edit_productseries_source=Update+RCS+Details""")
-  HTTP/1.1 200 Ok
-  ...
-  ...Invalid source package name moz...
-  ...
-
-Now put in a valid Source Package Name.
-
-  >>> print http(r"""
-  ... POST /products/firefox/trunk/+source HTTP/1.1
-  ... Accept-Language: en-us,en;q=0.5
-  ... Content-Length: 192
-  ... Content-Type: application/x-www-form-urlencoded
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Referer: http://.../products/firefox/trunk/+source
-  ... 
-  ... ubuntupkg=mozilla-firefox&rcstype=cvs&cvsroot=%3Apserver%3Aanonymous%40cvs-mirror.mozilla.org%3A%2Fcvsroot&cvsmodule=mozilla&cvsbranch=main&edit_productseries_source=Update+RCS+Details""")
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
-  Location: http://.../products/firefox/trunk
-
-Test if we can add the FTP Details
-
-  >>> print http(r"""
-  ... POST /products/alsa-utils/trunk/+source HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... ubuntupkg=&rcstype=cvs&cvsroot=%3Apserver%3Aanonymous%40anoncvs.gnome.org%3A%2Fcvs%2Falsa&cvsmodule=alsa-utils&cvsbranch=alsa&releaseroot=ftp%3A%2F%2Fwww.mozilla.org%2Fpub%2Falsa&releasefileglob=alsa.*.src.tgz&edit_productseries_source=Update+RCS+Details""")
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://.../products/alsa-utils/trunk...
   ...
 
 And we test if the validator is working adding the same CVS details to
 another product
 
-  >>> print http(r"""
-  ... POST /products/netapplet/trunk/+source HTTP/1.1
-  ... Accept-Language: en-us,en;q=0.5
-  ... Content-Type: application/x-www-form-urlencoded
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ...
-  ... ubuntupkg=netapplet&rcstype=cvs&cvsroot=%3Apserver%3Aanonymous%40cvs-mirror.mozilla.org%3A%2Fcvsroot&cvsmodule=mozilla&cvsbranch=main&edit_productseries_source=Update+RCS+Details""")
-  HTTP/1.1 200 Ok
-  ...
+  >>> browser.open('http://launchpad.dev/netapplet/trunk/+source')
+  >>> browser.getControl('CVS').click()
+  >>> browser.getControl('Repository root').value = (
+  ...     ':pserver:anonymous@cvs-mirror.mozilla.org:/cvsroot')
+  >>> browser.getControl('Module').value = 'mozilla'
+  >>> browser.getControl('Branch name').value = 'main'
+  >>> browser.getControl('Update RCS Details').click()
+  >>> for tag in find_tags_by_class(browser.contents, 'error'):
+  ...     print tag
+  <...
   ...CVS repository details already in use by another product...
+  
+Now we test if we can edit again changing the RCS to Subversion:
+
+  >>> browser.open('http://launchpad.dev/firefox/trunk/+source')
+  >>> browser.getControl('Subversion').click()
+  >>> browser.getControl('Repository', index=1).value = (
+  ...     'svn://svn.mozilla.org/firefox/trunk')
+  >>> browser.getControl('Update RCS Details').click()
+  >>> print browser.url
+  http://launchpad.dev/firefox/trunk
+
+  >>> print find_main_content(browser.contents)
+  <...
+  ...<td>Subversion Repository:</td>...
+  ...<td>svn://svn.mozilla.org/firefox/trunk</td>...
   ...
 
-Now we test if we can edit again changing the RCS
 
-  >>> print http(r"""
-  ... POST /products/alsa-utils/trunk/+source HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... ubuntupkg=alsa-utils&rcstype=svn&svnrepository=svn%3A%2F%2Falsa.com&releaseroot=ftp%3A%2F%2Fwww.mozilla.org%2Fpub%2Falsa&releasefileglob=alsa.*.src.tgz&edit_productseries_source=Update+RCS+Details""")
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
-  Location: http://.../products/alsa-utils/trunk
+After changing to over to Subversion, the CVS details are unset in the
+form:
+
+  >>> browser.open('http://launchpad.dev/firefox/trunk/+source')
+  >>> browser.getControl('Repository root').value
+  ''
+  >>> browser.getControl('Module').value
+  ''
+  >>> browser.getControl('Branch name').value
+  ''
+
 
 Test if the RCS details validator is working properly by adding the same
 svnrepository to another ProductSeries
 
-  >>> print http(r"""
-  ... POST /products/firefox/1.0/+source HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... ubuntupkg=mozilla&rcstype=svn&svnrepository=svn%3A%2F%2Falsa.com&releaseroot=ftp%3A%2F%2Fwww.mozilla.org%2Fpub%2Falsa&releasefileglob=alsa.*.src.tgz&edit_productseries_source=Update+RCS+Details""")
-  HTTP/1.1 200 Ok
-  ...
-  ...SVN repository details already in use by another product...
-  ...
+  >>> browser.open('http://launchpad.dev/netapplet/trunk/+source')
+  >>> browser.getControl('Subversion').click()
+  >>> browser.getControl('Repository', index=1).value = (
+  ...     'svn://svn.mozilla.org/firefox/trunk')
+  >>> browser.getControl('Update RCS Details').click()
+  >>> for tag in find_tags_by_class(browser.contents, 'error'):
+  ...     print tag
+  <...
+  ...Subversion repository details already in use by another product...
+
+
+If we set the series back to no upstream details, the subversion
+details are blanked:
+
+  >>> browser.open('http://launchpad.dev/firefox/trunk/+source')
+  >>> browser.getControl('No revision control system, or Bazaar').click()
+  >>> browser.getControl('Update RCS Details').click()
+  >>> print browser.url
+  http://launchpad.dev/firefox/trunk
+
+  >>> browser.open('http://launchpad.dev/firefox/trunk/+source')
+  >>> browser.getControl('No revision control system, or Bazaar').selected
+  True
+  >>> browser.getControl('Repository', index=1).value
+  ''

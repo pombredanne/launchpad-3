@@ -9,7 +9,7 @@ __all__ = [
     'IDistributionSet',
     ]
 
-from zope.schema import Choice, Int, TextLine, Bool
+from zope.schema import Bytes, Choice, Int, Text, TextLine, Bool
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
@@ -17,8 +17,10 @@ from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces import (
     IHasOwner, IHasDrivers, IBugTarget, ISpecificationTarget,
-    IHasSecurityContact, ITicketTarget, PillarNameField)
+    IHasSecurityContact, PillarNameField)
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.interfaces.validation import (
+    valid_emblem, valid_gotchi)
 
 
 class DistributionNameField(PillarNameField):
@@ -50,6 +52,25 @@ class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
             "The distribution summary. A short paragraph "
             "describing the goals and highlights of the distro."),
         required=True)
+    homepage_content = Text(
+        title=_("Homepage Content"), required=False,
+        description=_(
+            "The content of this distribution's home page. Edit this and it "
+            "will be displayed for all the world to see. It is NOT a wiki "
+            "so you cannot undo changes."))
+    emblem = Bytes(
+        title=_("Emblem"), required=False,
+        description=_(
+            "A small image, max 16x16 pixels and 8k in file size, that can "
+            "be used to refer to this distribution."),
+        constraint=valid_emblem)
+    gotchi = Bytes(
+        title=_("Gotchi"), required=False,
+        description=_(
+            "An image, maximum 150x150 pixels, that will be displayed on "
+            "this distribution's home page. It should be no bigger than 50k "
+            "in size. "),
+        constraint=valid_gotchi)
     description = Description(
         title=_("Description"),
         description=_("The distro's description."),
@@ -114,7 +135,8 @@ class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
         "All enabled and official ARCHIVE mirrors of this Distribution.")
     release_mirrors = Attribute(
         "All enabled and official RELEASE mirrors of this Distribution.")
-    disabled_mirrors = Attribute("All disabled mirrors of this Distribution.")
+    disabled_mirrors = Attribute(
+        "All disabled and official mirrors of this Distribution.")
     unofficial_mirrors = Attribute(
         "All unofficial mirrors of this Distribution.")
     releases = Attribute("DistroReleases inside this Distributions")
@@ -191,11 +213,15 @@ class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
         if it's not found.
         """
 
-    def newMirror(owner, speed, country, content, pulse_type, displayname=None,
+    def newMirror(owner, speed, country, content, displayname=None,
                   description=None, http_base_url=None, ftp_base_url=None,
-                  rsync_base_url=None, file_list=None, pulse_source=None,
-                  official_candidate=False, enabled=False):
-        """Create a new DistributionMirror for this distribution."""
+                  rsync_base_url=None, enabled=False,
+                  official_candidate=False):
+        """Create a new DistributionMirror for this distribution.
+        
+        At least one of http_base_url or ftp_base_url must be provided in
+        order to create a mirror.
+        """
 
     def getMilestone(name):
         """Return a milestone with the given name for this distribution, or
@@ -222,21 +248,24 @@ class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
         """Return a (distrorelease,pocket) tuple which is the given textual
         distroreleasename in this distribution."""
 
-    def removeOldCacheItems():
-        """Delete any cache records that are no longer needed for this
-        distribution, perhaps because all of the binary packages have been
-        removed from the archives.
+    def removeOldCacheItems(log):
+        """Delete any cache records for removed packages."""
+
+    def updateCompleteSourcePackageCache(log, ztm):
+        """Update the source package cache.
+
+        Consider every non-REMOVED sourcepackage.
+        'log' is required an only prints debug level information.
+        'ztm' is required for partial commits, every chunk of 50 updates
+        are committed.
         """
 
-    def updateCompleteSourcePackageCache():
-        """Update the source package cache, for all source packages in the
-        distribution.
-        """
+    def updateSourcePackageCache(log, sourcepackagename):
+        """Update cached source package details.
 
-    def updateSourcePackageCache(name):
-        """Update the cached source package details that are stored in
-        DistributionSourcePackageDetailsCache, for the source package with
-        name given as 'name'.
+        Update cache details for a given ISourcePackageName, including
+        generated binarypackage names, summary and description fti.
+        'log' is required and only prints debug level information.
         """
 
     def searchSourcePackages(text):

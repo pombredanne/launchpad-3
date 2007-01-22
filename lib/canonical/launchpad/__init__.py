@@ -13,3 +13,6 @@ warnings.filterwarnings(
 from zope.i18nmessageid import MessageFactory
 _ = MessageFactory("launchpad")
 
+# Load versioninfo.py so that we get errors on start-up rather than waiting
+# for first page load.
+import canonical.launchpad.versioninfo

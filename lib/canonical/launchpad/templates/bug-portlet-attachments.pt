@@ -2,14 +2,14 @@
      tal:define="current_task view/currentBugTask;
                  url current_task/fmt:url">
 
-  <h4>Bug attachments:</h4>
+  <h2>Bug attachments</h2>
 
   <div class="portletBody">
     <div class="portletContent">
       <ul>
         <li class="download"
             tal:repeat="attachment context/attachments">
-          <a tal:attributes="href attachment/libraryfile/url"
+          <a tal:attributes="href attachment/libraryfile/http_url"
              tal:content="attachment/title">
             Attachment Title
           </a>

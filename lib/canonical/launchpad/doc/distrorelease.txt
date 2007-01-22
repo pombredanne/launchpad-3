@@ -120,31 +120,6 @@ not, according the distrorelease status and the upload target pocket.
    >>> breezy_autotest.canUploadToPocket(PackagePublishingPocket.SECURITY)
    False
 
-DistroRelease.getBinaryPackagePublishing will return
-BinaryPackagePublishingHistory objects for the DistroRelease:
-
-    >>> from canonical.launchpad.database import DistroRelease
-    >>> warty = DistroRelease.get(1)
-    >>> bpph = warty.getBinaryPackagePublishing()
-    >>> print bpph.count()
-    5
-    >>> 'mozilla-firefox' in set(
-    ...     pkgpub.binarypackagerelease.binarypackagename.name
-    ...     for pkgpub in bpph)
-    True
-    >>> bpph = warty.getBinaryPackagePublishing(name="nosuchpackage")
-    >>> print bpph.count()
-    0
-    >>> bpph = warty.getBinaryPackagePublishing(version="nosuchversion")
-    >>> print bpph.count()
-    0
-    >>> bpph = warty.getBinaryPackagePublishing(archtag="nosucharch")
-    >>> print bpph.count()
-    0
-    >>> bpph = warty.getBinaryPackagePublishing(sourcename="nosuchsource")
-    >>> print bpph.count()
-    0
-
 Package searching
 -----------------
 
@@ -241,66 +216,6 @@ again" type set of assertions.
    1
    >>> len(humpy_i386.getReleasedPackages('pmount'))
    1
-   >>> len(hoary.potemplates)
-   5
-   >>> len(humpy.potemplates)
-   5
-
-Check one by one and compare the exported text. We define a function because
-we will need it later for other tests.
-
-   >>> def compare_translations(orig_distrorelease, dest_distrorelease):
-   ...
-   ...     from difflib import unified_diff
-   ...
-   ...     orig_templates = sorted(
-   ...         orig_distrorelease.potemplates,
-   ...         key=lambda x: x.potemplatename.name)
-   ...     dest_templates = sorted(
-   ...         dest_distrorelease.potemplates,
-   ...         key=lambda x: x.potemplatename.name)
-   ...
-   ...     output_text = u''
-   ...     for i in range(len(orig_templates)):
-   ...         old_template = orig_templates[i]
-   ...         new_template = dest_templates[i]
-   ...         if old_template.priority != new_template.priority:
-   ...             output_text += u'Priority of %s is different from %s\n' % (
-   ...                 old_template.title, new_template.title)
-   ...         output = '\n'.join(list(unified_diff(
-   ...             old_template.export().split('\n'),
-   ...             new_template.export().split('\n'))))
-   ...         output = output.decode('UTF-8')
-   ...         if len(output) > 0:
-   ...             output_text += (
-   ...                 u'%s is different than its parent %s:\n%s' % (
-   ...                     new_template.title, old_template.title, output))
-   ...             return output_text
-   ...         for old_pofile in old_template.pofiles:
-   ...             new_pofile = new_template.getPOFileByLang(
-   ...                 old_pofile.language.code, old_pofile.variant)
-   ...             old_pofile_content = old_pofile.uncachedExport(
-   ...                     included_obsolete=False,
-   ...                     force_utf8=True).split('\n')
-   ...             new_pofile_content = new_pofile.uncachedExport(
-   ...                     included_obsolete=False,
-   ...                     force_utf8=True).split('\n')
-   ...             output = '\n'.join(list(unified_diff(
-   ...                 old_pofile_content, new_pofile_content)))
-   ...             output = output.decode('UTF-8')
-   ...             if len(output) > 0:
-   ...                 output_text += (
-   ...                     u'%s is different than its parent %s:\n%s' % (
-   ...                         new_pofile.title, old_pofile.title, output))
-   ...                 return output_text
-   ...     return output_text
-
-Let's compare what we have in our parent distro release and the new one just
-created. We should get no differences at all.
-
-   >>> compare_translations(hoary, humpy) == u''
-   True
-
 
 Check if the attributes of an DRSPR instance for the just initialised
 distrorelease are sane. A DRSPR instance should filter attributes of
@@ -456,6 +371,22 @@ Most recent published history row:
    >>> spph.section.name
    u'web'
 
+The changesfile attribute contains the package changelog. It is provided as
+an ILibraryFileAlias:
+
+   >>> firefox_srcrel =  warty.getSourcePackage(
+   ...    'mozilla-firefox').currentrelease
+   >>> firefox_srcrel.title
+   u'mozilla-firefox 0.9 (source) in ubuntu warty'
+
+   >>> firefox_srcrel.changesfile
+   <LibraryFileAlias at ...>
+
+If the package changelog is not available, that attribute is None:
+
+   >>> netapplet_srcrel.changesfile is None
+   True
+
 Perform `post publication` override:
 
    >>> new_section = getUtility(ISectionSet)['base']
@@ -490,8 +421,69 @@ DistroRelease Translations migration
 
 We have several ways to copy translations between distro releases.
 
-The main one is to clone what we have in its parent distribution, like we did
-before in this test when we created 'humpy' distribution.
+The main one is to clone what we have in its parent distribution:
+
+   >>> humpy.copyMissingTranslationsFromParent()
+
+   >>> len(hoary.potemplates)
+   5
+   >>> len(humpy.potemplates)
+   5
+
+Check one by one and compare the exported text. We define a function because
+we will need it later for other tests.
+
+   >>> def compare_translations(orig_distrorelease, dest_distrorelease):
+   ...
+   ...     from difflib import unified_diff
+   ...
+   ...     orig_templates = sorted(
+   ...         orig_distrorelease.potemplates,
+   ...         key=lambda x: x.potemplatename.name)
+   ...     dest_templates = sorted(
+   ...         dest_distrorelease.potemplates,
+   ...         key=lambda x: x.potemplatename.name)
+   ...
+   ...     output_text = u''
+   ...     for i in range(len(orig_templates)):
+   ...         old_template = orig_templates[i]
+   ...         new_template = dest_templates[i]
+   ...         if old_template.priority != new_template.priority:
+   ...             output_text += u'Priority of %s is different from %s\n' % (
+   ...                 old_template.title, new_template.title)
+   ...         output = '\n'.join(list(unified_diff(
+   ...             old_template.export().split('\n'),
+   ...             new_template.export().split('\n'))))
+   ...         output = output.decode('UTF-8')
+   ...         if len(output) > 0:
+   ...             output_text += (
+   ...                 u'%s is different than its parent %s:\n%s' % (
+   ...                     new_template.title, old_template.title, output))
+   ...             return output_text
+   ...         for old_pofile in old_template.pofiles:
+   ...             new_pofile = new_template.getPOFileByLang(
+   ...                 old_pofile.language.code, old_pofile.variant)
+   ...             old_pofile_content = old_pofile.uncachedExport(
+   ...                     included_obsolete=False,
+   ...                     force_utf8=True).split('\n')
+   ...             new_pofile_content = new_pofile.uncachedExport(
+   ...                     included_obsolete=False,
+   ...                     force_utf8=True).split('\n')
+   ...             output = '\n'.join(list(unified_diff(
+   ...                 old_pofile_content, new_pofile_content)))
+   ...             output = output.decode('UTF-8')
+   ...             if len(output) > 0:
+   ...                 output_text += (
+   ...                     u'%s is different than its parent %s:\n%s' % (
+   ...                         new_pofile.title, old_pofile.title, output))
+   ...                 return output_text
+   ...     return output_text
+
+Let's compare what we have in our parent distro release and the new one just
+created. We should get no differences at all.
+
+   >>> compare_translations(hoary, humpy) == u''
+   True
 
 Now, we are going to test how to migrate updates from Hoary to Humpy. To do
 this test, we will add some new translations to Hoary, migrate them to Humpy
@@ -499,6 +491,8 @@ and check that the changes are migrated when needed.
 
 Get the needed objects to prepare this test.
 
+    >>> import datetime
+    >>> import pytz
     >>> from canonical.launchpad.interfaces import (
     ...     ISourcePackageNameSet, IPOTemplateSet, IPersonSet)
     >>> evolution = getUtility(ISourcePackageNameSet)['evolution']
@@ -511,6 +505,7 @@ Get the needed objects to prepare this test.
     ...     sourcepackagename=evolution)
     >>> potemplate_humpy = potemplatesubset_humpy.getPOTemplateByName('evolution-2.2')
     >>> pofile_es_humpy = potemplate_humpy.getPOFileByLang('es')
+    >>> UTC = pytz.timezone('UTC')
 
 The one submitting the string will be Carlos. He's an editor for this POFile.
 
@@ -520,19 +515,22 @@ Update a string in the parent release.
 
     >>> pomsgset_hoary = pofile_es_hoary.getPOMsgSet(u'evolution addressbook')
     >>> pomsgset_hoary.updateTranslationSet(
-    ...     carlos, { 0: u'hoary updated string' }, fuzzy=False, published=False)
+    ...     carlos, { 0: u'hoary updated string' }, fuzzy=False,
+    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
 
 And another update in a string that is untranslated.
 
     >>> pomsgset_hoary = pofile_es_hoary.getPOMsgSet(u'has ')
     >>> pomsgset_hoary.updateTranslationSet(
-    ...     carlos, { 0: u'empty string translated' }, fuzzy=False, published=False)
+    ...     carlos, { 0: u'empty string translated' }, fuzzy=False,
+    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
 
 Update a string in the children release.
 
     >>> pomsgset_humpy = pofile_es_humpy.getPOMsgSet(u'current addressbook folder')
     >>> pomsgset_humpy.updateTranslationSet(
-    ...     carlos, { 0: u'humpy updated string' }, fuzzy=False, published=False)
+    ...     carlos, { 0: u'humpy updated string' }, fuzzy=False,
+    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
 
 Let's update the statistics.
 
@@ -612,7 +610,8 @@ changed in Hoary?
 
     >>> pomsgset_hoary = pofile_es_hoary.getPOMsgSet(u'current addressbook folder')
     >>> pomsgset_hoary.updateTranslationSet(
-    ...     carlos, { 0: u'second hoary updated string' }, fuzzy=False, published=False)
+    ...     carlos, { 0: u'second hoary updated string' }, fuzzy=False,
+    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
 
 We copy missing translations...
 
@@ -695,6 +694,23 @@ the future.
    ...     PackagePublishingPocket.UPDATES).count()
    0
 
+This method also allow us to restrict the results to a given
+component:
+
+   >>> component_main = getUtility(IComponentSet)['main']
+   >>> hoary.getSourcePackagePublishing(
+   ...     PackagePublishingStatus.PUBLISHED,
+   ...     PackagePublishingPocket.RELEASE,
+   ...     component=component_main).count()
+   5
+
+   >>> component_multiverse = getUtility(IComponentSet)['multiverse']
+   >>> hoary.getSourcePackagePublishing(
+   ...     PackagePublishingStatus.PUBLISHED,
+   ...     PackagePublishingPocket.RELEASE,
+   ...     component=component_multiverse).count()
+   0
+
 ISPP.publishedBinaries return all the binaries generated by the
 publication in question:
 
@@ -703,7 +719,7 @@ publication in question:
    ...     PackagePublishingStatus.PUBLISHED,
    ...     PackagePublishingPocket.RELEASE)
 
-   >>> warty_pub_source = warty_pub_sources[2]
+   >>> warty_pub_source = warty_pub_sources[3]
    >>> warty_pub_source.sourcepackagerelease.name
    u'mozilla-firefox'
    >>> warty_pub_source.sourcepackagerelease.version
@@ -731,6 +747,64 @@ publication in question:
    u'main'
    >>> warty_mozilla_pub_bin.section.name
    u'base'
+
+DistroRelease.getBinaryPackagePublishing will return
+BinaryPackagePublishingHistory objects for the DistroRelease:
+
+    >>> warty = ubuntu['warty']
+    >>> bpphs = warty.getBinaryPackagePublishing()
+    >>> bpphs.count()
+    6
+    >>> 'mozilla-firefox' in set(
+    ...     pkgpub.binarypackagerelease.binarypackagename.name
+    ...     for pkgpub in bpphs)
+    True
+
+It also allows us to pass wanted strings like: name, version, archtag and
+sourcename.
+
+    >>> warty.getBinaryPackagePublishing(
+    ...     name="nosuchpackage").count()
+    0
+    >>> warty.getBinaryPackagePublishing(
+    ...     version="nosuchversion").count()
+    0
+    >>> warty.getBinaryPackagePublishing(
+    ...     archtag="nosucharch").count()
+    0
+    >>> warty.getBinaryPackagePublishing(
+    ...     sourcename="nosuchsource").count()
+    0
+
+We can restrict the results by component:
+
+    >>> warty.getBinaryPackagePublishing(
+    ...     component=component_main).count()
+    6
+    >>> warty.getBinaryPackagePublishing(
+    ...     component=component_multiverse).count()
+    0
+
+By pocket:
+
+    >>> warty.getBinaryPackagePublishing(
+    ...     pocket=PackagePublishingPocket.RELEASE).count()
+    6
+    >>> warty.getBinaryPackagePublishing(
+    ...     pocket=PackagePublishingPocket.BACKPORTS).count()
+    0
+
+Or any combination of them:
+
+    >>> warty.getBinaryPackagePublishing(
+    ...     sourcename="alsa", pocket=PackagePublishingPocket.RELEASE,
+    ...     component=component_main).count()
+    0
+
+    >>> warty.getBinaryPackagePublishing(
+    ...     name="mozilla-firefox", archtag='i386',
+    ...     component=component_main).count()
+    1
 
 
 Specification Listings
@@ -906,4 +980,16 @@ driver. Here, we expect the driver to be the owner of the distribution
  ...     print d.name
  sabdfl
 
+== Last Uploads ==
 
+IDistroRelease provides the 'getLastUpload' method which returns a
+list of last 5 (five) IDistroReleaseSourcePackageRelease (IDRSPR)
+uploaded and published in its context.
+
+  >>> last_uploads = breezy_autotest.getLastUploads()
+
+Each element is a IDistroReleaseSourcePackageRelease instance:
+
+  >>> for upload in last_uploads:
+  ...     print upload.name, upload.version
+  mozilla-firefox 0.9

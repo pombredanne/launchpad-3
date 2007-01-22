@@ -67,6 +67,7 @@ Let's check the notification content:
   Content-Type: text/plain; charset="utf-8"
   MIME-Version: 1.0
   Content-Transfer-Encoding: quoted-printable
+  X-Creator-Recipient: mark@hbd.com
   X-Launchpad-Build-State: FAILEDTOBUILD
   To: mark@hbd.com
   From: Launchpad Buildd System <noreply@launchpad.net>
@@ -139,6 +140,7 @@ Check the notification content:
   Content-Type: text/plain; charset="utf-8"
   MIME-Version: 1.0
   Content-Transfer-Encoding: quoted-printable
+  X-Creator-Recipient: mark@hbd.com
   X-Launchpad-Build-State: NEEDSBUILD
   To: mark@hbd.com
   From: Launchpad Buildd System <noreply@launchpad.net>
@@ -212,6 +214,7 @@ Check the notification content:
   Content-Type: text/plain; charset="utf-8"
   MIME-Version: 1.0
   Content-Transfer-Encoding: quoted-printable
+  X-Creator-Recipient: mark@hbd.com
   X-Launchpad-Build-State: BUILDING
   To: mark@hbd.com
   From: Launchpad Buildd System <noreply@launchpad.net>
@@ -284,6 +287,7 @@ Check the notification content:
   Content-Type: text/plain; charset="utf-8"
   MIME-Version: 1.0
   Content-Transfer-Encoding: quoted-printable
+  X-Creator-Recipient: mark@hbd.com
   X-Launchpad-Build-State: SUPERSEDED
   To: mark@hbd.com
   From: Launchpad Buildd System <noreply@launchpad.net>

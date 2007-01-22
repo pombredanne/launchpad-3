@@ -1,20 +1,19 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['JoinTeamRequestEvent']
+__all__ = ['JoinTeamEvent']
 
 from zope.interface import implements
 
-from canonical.launchpad.event.interfaces import IJoinTeamRequestEvent
+from canonical.launchpad.event.interfaces import IJoinTeamEvent
 
 
-class JoinTeamRequestEvent:
-    """See canonical.launchpad.event.interfaces.IJoinTeamRequestEvent."""
+class JoinTeamEvent:
+    """See canonical.launchpad.event.interfaces.IJoinTeamEvent."""
 
-    implements(IJoinTeamRequestEvent)
+    implements(IJoinTeamEvent)
 
-    def __init__(self, user, team, appurl):
+    def __init__(self, user, team):
         self.user = user
         self.team = team
-        self.appurl = appurl
 

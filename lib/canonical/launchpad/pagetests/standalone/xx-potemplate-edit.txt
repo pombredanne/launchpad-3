@@ -4,7 +4,7 @@ product owners, Rosetta Experts or a Launchpad admin are able to use it.
 Check to be sure that an unpriviledged user cannot reach this page
 
   >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
-  >>> browser.open('http://localhost/products/evolution/trunk/+pots/evolution-2.2/+edit')
+  >>> browser.open('http://localhost/evolution/trunk/+pots/evolution-2.2/+edit')
   Traceback (most recent call last):
   ...
   Unauthorized:...
@@ -20,9 +20,9 @@ Check to be sure that a Rosetta expert (Jordi) can reach the POTemplate edit
 page.
 
   >>> browser.addHeader('Authorization', 'Basic jordi@ubuntu.com:test')
-  >>> browser.open('http://localhost/products/evolution/trunk/+pots/evolution-2.2/+edit')
+  >>> browser.open('http://localhost/evolution/trunk/+pots/evolution-2.2/+edit')
   >>> print browser.url
-  http://localhost/products/evolution/trunk/+pots/evolution-2.2/+edit
+  http://localhost/evolution/trunk/+pots/evolution-2.2/+edit
 
 XXX: CarlosPerelloMarin 20060517: We need to reset the Browser object to reset the headers.
 See bug #45226 for more information.
@@ -34,9 +34,9 @@ And also, Sample Person, the owner of the product where this potemplate is,
 should be able to edit it.
 
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
-  >>> browser.open('http://localhost/products/evolution/trunk/+pots/evolution-2.2/+edit')
+  >>> browser.open('http://localhost/evolution/trunk/+pots/evolution-2.2/+edit')
   >>> print browser.url
-  http://localhost/products/evolution/trunk/+pots/evolution-2.2/+edit
+  http://localhost/evolution/trunk/+pots/evolution-2.2/+edit
 
 We should be sure that the edit form get only the non admin fields.
 
@@ -55,7 +55,7 @@ We should be sure that the edit form get only the non admin fields.
   ...
   LookupError:...
   >>> browser.getControl(name='field.owner').value
-  'rosetta@launchpad.net'
+  'rosetta-admins'
   >>> browser.getControl(name='field.productseries').value
   Traceback (most recent call last):
   ...
@@ -90,10 +90,10 @@ And that we are able to POST it.
   >>> browser.getControl(name='field.description').value = u'foo'
   >>> browser.getControl(name='UPDATE_SUBMIT').click()
   >>> print browser.url
-  http://localhost/products/evolution/trunk/+pots/evolution-2.2
+  http://localhost/evolution/trunk/+pots/evolution-2.2
 
 And the changed value is stored.
 
-  >>> browser.open('http://localhost/products/evolution/trunk/+pots/evolution-2.2/+edit')
+  >>> browser.open('http://localhost/evolution/trunk/+pots/evolution-2.2/+edit')
   >>> browser.getControl(name='field.description').value
   'foo'

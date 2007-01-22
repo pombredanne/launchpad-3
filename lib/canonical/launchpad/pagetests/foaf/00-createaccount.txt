@@ -1,6 +1,6 @@
   Go to the register page.
 
-  Workaround while https://launchpad.net/products/launchpad/+bug/39016 is not
+  Workaround while https://launchpad.net/launchpad/+bug/39016 is not
   fixed.
   >>> from canonical.launchpad.mail import stub
   >>> stub.test_emails[:] = []
@@ -24,20 +24,6 @@
   HTTP/1.1 200 Ok
   ...
   ...The email address you provided isn't valid...
-  ...
-
-
-  Type an email address that's already registered and got another warning
-  message.
-
-  >>> print http(r"""
-  ... POST /+login HTTP/1.1
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... loginpage_email=foo.bar%40canonical.com&loginpage_submit_registration=Register""")
-  HTTP/1.1 200 Ok
-  ...
-  ...The email address foo.bar@canonical.com is already registered in our system...
   ...
 
 
@@ -97,10 +83,10 @@
 
   >>> from canonical.lp.dbschema import EmailAddressStatus
   >>> from canonical.launchpad.database import EmailAddressSet, PersonSet
-  >>> kiko = PersonSet().getByName('kiko')
+  >>> salgado = PersonSet().getByName('salgado')
   >>> email = EmailAddressSet().new(
-  ...   'foobarino@baz.com.br', kiko, EmailAddressStatus.VALIDATED)
-  >>> [email.email for email in kiko.validatedemails]
+  ...   'foobarino@baz.com.br', salgado, EmailAddressStatus.VALIDATED)
+  >>> [email.email for email in salgado.validatedemails]
   [u'foobarino@baz.com.br']
 
   And we try to create a new account using that email, we'll get an error
@@ -341,27 +327,18 @@
   ... """ % path)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/people/foo
+  Location: http://localhost:9000/~foo
   ...
 
 
   New account was created with name 'foo' and the hide email addresses option is
   turned on.
 
-  >>> print http(r"""
-  ... GET /people/foo/+edit HTTP/1.1
-  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...name="field.displayname" size="20" type="text" value="foobar"...
-  ...
-  ...Hide my email addresses from other Launchpad users...
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-   ...name="field.hide_email_addresses" type="checkbox" value="on"...
-  ...
+  >>> foo = PersonSet().getByName('foo')
+  >>> foo.creation_rationale.name
+  'OWNER_CREATED_LAUNCHPAD'
+  >>> foo.hide_email_addresses
+  True
 
 
   If you are comming from shipit to create a new account, you'll get
@@ -438,6 +415,13 @@ redirection_url in the form post below.
   Location: https://shipit.ubuntu.com
   ...
 
+  We'll also track that this account was initially created because the user
+  wanted to request some CDs on shipit, by setting the correct
+  creation_rationale.
+
+  >>> foo2 = PersonSet().getByName('foo-baz2')
+  >>> foo2.creation_rationale.name
+  'OWNER_CREATED_SHIPIT'
 
   If we try to go to that token's page again, we'll see a message explaining
   that the confirmation that token was created for is already concluded, so we

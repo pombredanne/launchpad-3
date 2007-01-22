@@ -9,30 +9,20 @@ __all__ = [
     ]
 
 import os
-import psycopg
 
 from zope.interface import implements
-
-# XXX: canonical.authserver.adbapi is backport of a new version of adbapi; it
-#      was supposed to fix the database reconnection issues, but didn't.
-#      Probably it should be removed, in favour of canonical.database.reconnect.
-#        - Andrew Bennetts, 2005-01-25
-from twisted.enterprise import adbapi
-#from canonical.authserver import adbapi
 
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.launchpad.interfaces import UBUNTU_WIKI_URL
-from canonical.database.sqlbase import sqlvalues, quote
+from canonical.database.sqlbase import sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.lp import dbschema
 from canonical.config import config
 
 from canonical.authserver.interfaces import (
     IUserDetailsStorage, IUserDetailsStorageV2, IBranchDetailsStorage)
-
-from canonical.foaf import nickname
 
 
 def utf8(x):
@@ -57,25 +47,6 @@ class UserDetailsStorageMixin:
                         dbschema.EmailAddressStatus.PREFERRED))
         )
         return [row[0] for row in transaction.fetchall()]
-
-    def _addEmailAddresses(self, transaction, emailAddresses, personID):
-        """Add some email addresses to a person
-       
-        First email address is PREFERRED, others are VALIDATED
-        """
-        transaction.execute(utf8('''
-            INSERT INTO EmailAddress (person, email, status)
-            VALUES (%s, %s, %s)'''
-            % sqlvalues(personID, emailAddresses[0].encode('utf-8'),
-                        dbschema.EmailAddressStatus.PREFERRED))
-            )
-        for emailAddress in emailAddresses[1:]:
-            transaction.execute(utf8('''
-                INSERT INTO EmailAddress (person, email, status)
-                VALUES (%s, %s, %s)'''
-                % sqlvalues(personID, emailAddress.encode('utf-8'),
-                            dbschema.EmailAddressStatus.VALIDATED))
-            )
 
     def getSSHKeys(self, archiveName):
         ri = self.connectionPool.runInteraction
@@ -128,14 +99,6 @@ class UserDetailsStorageMixin:
         authorisedKeys = [(dbschema.SSHKeyType.items[keytype].title, keytext)
                           for keytype, keytext in authorisedKeys]
         return authorisedKeys
-
-    def _wikinameExists(self, transaction, wikiname):
-        """Is a wikiname already taken?"""
-        transaction.execute(utf8(
-            "SELECT count(*) FROM Wikiname WHERE wikiname = %s"
-            % sqlvalues(wikiname))
-        )
-        return bool(transaction.fetchone()[0])
 
     def _getPerson(self, transaction, loginID):
         # We go through some contortions with assembling the SQL to ensure that
@@ -287,110 +250,6 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
             'salt': salt,
         }
 
-    def createUser(self, preferredEmail, sshaDigestedPassword, displayname,
-                   emailAddresses):
-        """Create a user.
-
-        :param preferredEmail: Preferred email address for this user.
-
-        :param emailAddresses: Other email addresses for this user.
-        
-        This method should only be called if the email addresses have all
-        been validated, or if emailAddresses is an empty list and the
-        password only known by the controller of the preferredEmail address.
-        """
-        ri = self.connectionPool.runInteraction
-        emailAddresses = (
-                [preferredEmail]
-                + [e for e in emailAddresses if e != preferredEmail]
-                )
-        deferred = ri(self._createUserInteraction,
-                      sshaDigestedPassword.encode('base64'),
-                      displayname, emailAddresses)
-        deferred.addErrback(self._eb_createUser)
-        return deferred
-
-    def _eb_createUser(self, failure):
-        failure.trap(psycopg.DatabaseError)
-        # Return any empty dict to signal failure
-        # FIXME: we should distinguish between transient failure (e.g. DB
-        #        temporarily down or timing out) and actual errors (i.e. the
-        #        data is somehow invalid due to violating a constraint)?
-        return {}
-
-    def _createUserInteraction(self, transaction, sshaDigestedPassword,
-                               displayname, emailAddresses):
-        """The interaction for createUser."""
-        # Note that any psycopg.DatabaseErrors that occur will be translated
-        # into a return value of {} by the _eb_createUser errback.
-        # TODO: Catch bad types, e.g. unicode, and raise appropriate exceptions
-
-        # Get the ID of the new person
-        transaction.execute(
-            "SELECT NEXTVAL('person_id_seq'); "
-        )
-
-        # No try/except IndexError here, because this shouldn't be able to fail!
-        personID = transaction.fetchone()[0]
-
-        # Create the Person
-        name = nickname.generate_nick(emailAddresses[0], lambda nick:
-                self._getPerson(transaction, nick))
-        transaction.execute(utf8('''
-            INSERT INTO Person (id, name, displayname, password)
-            VALUES (%s, %s, %s, %s)'''
-            % sqlvalues(personID, name, displayname, sshaDigestedPassword))
-        )
-        
-        # Create a wikiname
-        wikiname = nickname.generate_wikiname(
-                displayname,
-                registered=lambda x: self._wikinameExists(transaction, x)
-        )
-        transaction.execute(utf8('''
-            INSERT INTO Wikiname (person, wiki, wikiname)
-            VALUES (%s, %s, %s)'''
-            % sqlvalues(personID, UBUNTU_WIKI_URL, wikiname))
-        )
-
-        self._addEmailAddresses(transaction, emailAddresses, personID)
-
-        return {
-            'id': personID,
-            'displayname': displayname,
-            'emailaddresses': list(emailAddresses),
-            'wikiname': wikiname,
-            'salt': saltFromDigest(sshaDigestedPassword),
-        }
-                
-    def changePassword(self, loginID, sshaDigestedPassword,
-                       newSshaDigestedPassword):
-        ri = self.connectionPool.runInteraction
-        return ri(self._changePasswordInteraction, loginID,
-                  sshaDigestedPassword.encode('base64'),
-                  newSshaDigestedPassword.encode('base64'))
-
-    def _changePasswordInteraction(self, transaction, loginID,
-                                   sshaDigestedPassword,
-                                   newSshaDigestedPassword):
-        """The interaction for changePassword."""
-        userDict = self._authUserInteraction(transaction, loginID,
-                                             sshaDigestedPassword)
-        if not userDict:
-            return {}
-
-        personID = userDict['id']
-        
-        transaction.execute(utf8('''
-            UPDATE Person
-            SET password = %s
-            WHERE Person.id = %s'''
-            % sqlvalues(newSshaDigestedPassword, personID))
-        )
-        
-        userDict['salt'] = saltFromDigest(newSshaDigestedPassword)
-        return userDict
-
 
 def saltFromDigest(digest):
     """Extract the salt from a SSHA digest.
@@ -509,98 +368,6 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             'teams': self._getTeams(transaction, personID),
         }
 
-    def createUser(self, preferredEmail, password, displayname, emailAddresses):
-        ri = self.connectionPool.runInteraction
-        emailAddresses = (
-                [preferredEmail]
-                + [e for e in emailAddresses if e != preferredEmail]
-                )
-        deferred = ri(self._createUserInteraction,
-                      password, displayname, emailAddresses)
-        deferred.addErrback(self._eb_createUser)
-        return deferred
-
-    def _eb_createUser(self, failure):
-        failure.trap(psycopg.DatabaseError)
-        # Return any empty dict to signal failure
-        # FIXME: should we distinguish between transient failure (e.g. DB
-        #        temporarily down or timing out) and actual errors (i.e. the
-        #        data is somehow invalid due to violating a constraint)?
-        return {}
-
-    def _createUserInteraction(self, transaction, password, displayname,
-                               emailAddresses):
-        """The interaction for createUser."""
-        # Note that any psycopg.DatabaseErrors that are raised will be
-        # translated into a return value of {} by the _eb_createUser errback.
-
-        # TODO: Catch bad types, e.g. unicode, and raise appropriate exceptions
-
-        # Get the ID of the new person
-        transaction.execute(
-            "SELECT NEXTVAL('person_id_seq'); "
-        )
-
-        # No try/except IndexError here, because this shouldn't be able to fail!
-        personID = transaction.fetchone()[0]
-
-        # Create the Person
-        name = nickname.generate_nick(emailAddresses[0], lambda nick:
-                self._getPerson(transaction, nick))
-        passwordDigest = self.encryptor.encrypt(password)
-        transaction.execute(utf8('''
-            INSERT INTO Person (id, name, displayname, password)
-            VALUES (%s, %s, %s, %s)'''
-            % sqlvalues(personID, name, displayname, passwordDigest))
-        )
-        
-        # Create a wikiname
-        wikiname = nickname.generate_wikiname(
-                displayname,
-                registered=lambda x: self._wikinameExists(transaction, x)
-        )
-        transaction.execute(utf8('''
-            INSERT INTO Wikiname (person, wiki, wikiname)
-            VALUES (%s, %s, %s)'''
-            % sqlvalues(personID, UBUNTU_WIKI_URL, wikiname))
-        )
-
-        self._addEmailAddresses(transaction, emailAddresses, personID)
-
-        return {
-            'id': personID,
-            'displayname': displayname,
-            'emailaddresses': list(emailAddresses),
-            'wikiname': wikiname,
-            'teams': self._getTeams(transaction, personID),
-        }
-                
-    def changePassword(self, loginID, oldPassword, newPassword):
-        ri = self.connectionPool.runInteraction
-        return ri(self._changePasswordInteraction, loginID,
-                  oldPassword, newPassword)
-
-    def _changePasswordInteraction(self, transaction, loginID,
-                                   oldPassword, newPassword):
-        """The interaction for changePassword."""
-        # First authenticate with the old password
-        userDict = self._authUserInteraction(transaction, loginID, oldPassword)
-        if not userDict:
-            return {}
-
-        personID = userDict['id']
-        newPasswordDigest = self.encryptor.encrypt(newPassword)
-        
-        # XXX: typo in query ("'%s'")?
-        transaction.execute(utf8('''
-            UPDATE Person
-            SET password = '%s'
-            WHERE Person.id = %s'''
-            % sqlvalues(newPasswordDigest, personID))
-        )
-        
-        return userDict
-
     def getBranchesForUser(self, personID):
         ri = self.connectionPool.runInteraction
         return ri(self._getBranchesForUserInteraction, personID)
@@ -704,14 +471,29 @@ class DatabaseBranchDetailsStorage:
         # <> 'vcs-imports') so that they are always in the queue, regardless of
         # last_mirror_attempt.  This is a band-aid fix for bug #48813, but we'll
         # need to do something more scalable eventually.
+
+        # NOTE: The import-branch case is separated by testing
+        # ProductSeries.id, but the 'vcs-imports' test is still relevant to
+        # prevent obsolete vcs-imports branches that are no longer associated
+        # to a ProductSeries from being mirrored every time.
+        # -- DavidAllouche 2006-12-22
         transaction.execute(utf8("""
             SELECT Branch.id, Branch.url, Person.name
-              FROM Branch INNER JOIN Person ON Branch.owner = Person.id
-              WHERE (last_mirror_attempt is NULL
-                     OR (%s - last_mirror_attempt > '1 day')
-                     OR (url is NULL AND Person.name <> 'vcs-imports'))
-              ORDER BY last_mirror_attempt IS NOT NULL, last_mirror_attempt
-            """ % UTC_NOW))
+            FROM Branch INNER JOIN Person ON Branch.owner = Person.id
+            LEFT OUTER JOIN ProductSeries
+                ON ProductSeries.import_branch = Branch.id
+            WHERE (ProductSeries.id is NULL AND (
+                      last_mirror_attempt is NULL
+                      OR (%(utc_now)s - last_mirror_attempt > '1 day')
+                      OR (url is NULL AND Person.name <> 'vcs-imports')))
+                   OR (ProductSeries.id IS NOT NULL AND (
+                      (datelastsynced IS NOT NULL
+                          AND last_mirror_attempt IS NULL)
+                       OR (datelastsynced > last_mirror_attempt)
+                       OR (datelastsynced IS NULL
+                          AND (%(utc_now)s - last_mirror_attempt > '1 day'))))
+            ORDER BY last_mirror_attempt IS NOT NULL, last_mirror_attempt
+            """ % {'utc_now': UTC_NOW}))
         result = []
         for (branch_id, url, owner_name) in transaction.fetchall():
             if url is not None:

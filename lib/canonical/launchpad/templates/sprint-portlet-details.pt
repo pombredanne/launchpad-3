@@ -1,6 +1,6 @@
 <div class="portlet">
 
-  <h4>Meeting details:</h4>
+  <h2>Meeting details</h2>
 
   <div class="portletBody portletContent">
     
@@ -22,11 +22,11 @@
          tal:content="context/driver/browsername" /><br />
     </tal:has_driver>
     <b>Starts:</b><br />
-    <span tal:replace="context/time_starts/fmt:datetime">08:00 12 Nov
-    2005</span><br />
+    <span tal:replace="python:view.formatDateTime(context.time_starts)">
+      08:00 12 Nov 2005</span><br />
     <b>Ends:</b><br />
-    <span tal:replace="context/time_ends/fmt:datetime">08:00 12 Nov
-    2005</span><br />
+    <span tal:replace="python:view.formatDateTime(context.time_ends)">
+      08:00 12 Nov 2005</span><br />
     <b>Address:</b><br />
     <span tal:replace="context/address" />
     <br />

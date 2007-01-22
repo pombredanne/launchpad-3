@@ -13,20 +13,28 @@ __all__ = [
     'PubSourceChecker',
     'ChrootManager',
     'ChrootManagerError',
+    'SyncSource',
+    'SyncSourceError',
     ]
 
+import apt_pkg
 import commands
+import md5
 import os
 import re
+import stat
+import sys
 import tempfile
-import apt_pkg
 
+from sqlobject import SQLObjectMoreThanOneResultError
 from zope.component import getUtility
 
+from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
     IBinaryPackageNameSet, IDistributionSet, IBinaryPackageReleaseSet,
-    ILaunchpadCelebrities, NotFoundError, ILibraryFileAliasSet)
+    ILaunchpadCelebrities, NotFoundError, ILibraryFileAliasSet,
+    IDistributionSet)
 from canonical.lp.dbschema import (
     PackagePublishingPocket, PackagePublishingPriority)
 
@@ -939,3 +947,135 @@ class ChrootManager:
 
         pocket_chroot.chroot.open()
         copy_and_close(pocket_chroot.chroot, local_file)
+
+class SyncSourceError(Exception):
+    """Raised when an critical error occurs inside SyncSource.
+
+    The entire procedure should be aborted in order to avoid unknown problems.
+    """
+
+class SyncSource:
+    """Sync Source procedure helper class.
+
+    It provides the backend for retrieving files from Librarian or the
+    'sync source' location. Also provides a method to check the downloaded
+    files integrity.
+    'aptMD5Sum' is provided as a classmethod during the integration time.
+    """
+
+    def __init__(self, files, origin, debug, downloader):
+        """Store local context.
+
+        files: a dictionary where the keys are the filename and the
+               value another dictionary with the file informations.
+        origin: a dictionary similar to 'files' but where the values
+                contain information for download files to be synchronized
+        debug: a debug function, 'debug(message)'
+        downloader: a callable that fetchs URLs, 'downloader(url, destination)'
+        """
+        self.files = files
+        self.origin = origin
+        self.debug = debug
+        self.downloader = downloader
+
+    @classmethod
+    def generateMD5Sum(self, filename):
+        file_handle = open(filename)
+        md5sum = md5.md5(file_handle.read()).hexdigest()
+        file_handle.close()
+        return md5sum
+
+    def fetchFileFromLibrarian(self, filename):
+        """Fetch file from librarian.
+
+        Store the contents in local path with the original filename.
+        Return the fetched filename if it was present in Librarian or None
+        if it wasn't.
+        """
+        # XXX cprov 20070110: looking for files within ubuntu only.
+        # It doesn't affect the usual sync-source procedure. However
+        # it needs to be revisited for derivation, we probably need
+        # to pass the target distribution in order to make proper lookups.
+        # See further info in bug #78683.
+        ubuntu = getUtility(IDistributionSet)['ubuntu']
+        try:
+            libraryfilealias = ubuntu.getFileByName(
+                filename, source=True, binary=False)
+        except NotFoundError:
+            return None
+
+        self.debug(
+            "\t%s: already in distro - downloading from librarian" %
+            filename)
+
+        output_file = open(filename, 'w')
+        libraryfilealias.open()
+        copy_and_close(libraryfilealias, output_file)
+        return filename
+
+    def fetchLibrarianFiles(self):
+        """Try to fetch files from Librarian.
+
+        It raises SyncSourceError if anything else then an
+        'orig.tar.gz' was found in Librarian.
+        Return a boolean indicating whether or not the 'orig.tar.gz' is
+        required in the upload.
+        """
+        orig_filename = None
+        for filename in self.files.keys():
+            if not self.fetchFileFromLibrarian(filename):
+                continue
+            # set the return code if an orig was, in fact,
+            # fetched from Librarian
+            if filename.endswith("orig.tar.gz"):
+                orig_filename = filename
+            else:
+                raise SyncSourceError(
+                    'Oops, only orig.tar.gz can be retrieved from librarian')
+
+        return orig_filename
+
+    def fetchSyncFiles(self):
+        """Fetch files from the original sync source.
+
+        Return DSC filename, which should always come via this path.
+        """
+        dsc_filename = None
+        for filename in self.files.keys():
+            if os.path.exists(filename):
+                continue
+            self.debug(
+                "  - <%s: downloading from %s>" %
+                (filename, self.origin["url"]))
+            download_f = ("%s%s" % (self.origin["url"],
+                                    self.files[filename]["remote filename"]))
+            sys.stdout.flush()
+            self.downloader(download_f, filename)
+            # only set the dsc_filename if the DSC was really downloaded.
+            # this loop usually includes the other files for the upload,
+            # DIFF and ORIG.
+            if filename.endswith(".dsc"):
+                dsc_filename = filename
+
+        return dsc_filename
+
+    def checkDownloadedFiles(self):
+        """Check md5sum and size match Source.
+
+        If anything fails SyncSourceError will be raised.
+        """
+        for filename in self.files.keys():
+            actual_md5sum = self.generateMD5Sum(filename)
+            expected_md5sum = self.files[filename]["md5sum"]
+            if actual_md5sum != expected_md5sum:
+                raise SyncSourceError(
+                    "%s: md5sum check failed (%s [actual] "
+                    "vs. %s [expected])."
+                    % (filename, actual_md5sum, expected_md5sum))
+
+            actual_size = os.stat(filename)[stat.ST_SIZE]
+            expected_size = int(self.files[filename]["size"])
+            if actual_size != expected_size:
+                raise SyncSourceError(
+                    "%s: size mismatch (%s [actual] vs. %s [expected])."
+                    % (filename, actual_size, expected_size))

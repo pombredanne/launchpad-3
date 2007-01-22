@@ -1,6 +1,6 @@
 <div class="portlet" tal:condition="context/myactivememberships">
 
-  <h4>Bugs assigned to:</h4>
+  <h2>Bugs assigned to</h2>
 
   <div class="portletBody portletContent">
 

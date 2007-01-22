@@ -1,48 +1,42 @@
-  Reactivate the subscription for 'name16', on team 'myemail', which we just
-  deactivated.
+Reactivate the subscription for 'name16', on team 'myemail', which we
+just deactivated.
 
+Go to the member's page.
 
-  Go to the member's page.
-
-  >>> print http(r"""
-  ... GET /people/myemail/+member/name16 HTTP/1.1
-  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
+  >>> browser.addHeader("Authorization", "Basic foo@baz.com:f")
+  >>> browser.open("http://launchpad.dev/~myemail/+member/name16")
+  >>> print browser.contents
+  <...
+  <BLANKLINE>
   ...
-  ...Foo Bar...
-  ...
-  ...Deactivated...
+  ...Inactive member...
   ...
 
+Open a second Browser on the same page:
 
-  Click on the 'Reactivate' button.
+  >>> from zope.testbrowser.testing import Browser
+  >>> browser2 = Browser()
+  >>> browser2.addHeader("Authorization", "Basic foo@baz.com:f")
+  >>> browser2.open("http://launchpad.dev/~myemail/+member/name16")
 
-  >>> print http(r"""
-  ... POST /people/myemail/+member/name16 HTTP/1.1
-  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
-  ... Content-Length: ...
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... day=16&month=4&year=2050&comment=&editinactive=Reactivate""")
-  HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
+XXX: See test 27's comment on bug 68655.
 
+Reactivate the subscription:
 
-  Got redirected to the team's members page, and see the reactivated member
-  listed as an active member.
+  >>> browser.getControl(name="expires").value = ["date"]
+  >>> browser.getControl(name="day").value = ["16"]
+  >>> browser.getControl(name="month").value = ["4"]
+  >>> browser.getControl(name="year").value = ["2049"]
+  >>> browser.getControl("Reactivate").click()
 
-  >>> print http(r"""
-  ... GET /people/myemail/+members/ HTTP/1.1
-  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
+And check the results:
+
+  >>> browser.url
+  'http://launchpad.dev/~myemail/+members'
+
+  >>> print browser.contents
+  <...
+  <BLANKLINE>
   ...
   ...Active members...
   ...
@@ -51,8 +45,24 @@
   ...Approved...
   ...
 
+A second submission for reactivation should not crash but will print an
+error message:
 
-  Let's make sure that 'name16' is now an APPROVED member of this team.
+  >>> browser2.handleErrors = False
+  >>> browser2.getControl(name="expires").value = ["date"]
+  >>> browser2.getControl(name="day").value = ["16"]
+  >>> browser2.getControl(name="month").value = ["4"]
+  >>> browser2.getControl(name="year").value = ["2049"]
+  >>> browser2.getControl("Reactivate").click()
+  >>> browser2.url
+  'http://launchpad.dev/%7Emyemail/+member/name16/+index'
+  >>> print browser2.contents
+  <BLANKLINE>
+  ...
+  ...The membership request for Foo Bar has already been processed...
+  ...
+
+Let's make sure that 'name16' is now an APPROVED member of this team.
 
   >>> from canonical.launchpad.database import Person, TeamMembership
   >>> foobar = Person.byName('name16')
@@ -62,3 +72,4 @@
   'Approved'
   >>> foobar.inTeam(team)
   True
+

@@ -7,7 +7,7 @@ import logging
 import sys
 from optparse import OptionParser
 
-from canonical.lp import initZopeless
+from canonical.lp import initZopeless, READ_COMMITTED_ISOLATION
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger as logger_from_options)
 from canonical.launchpad.scripts.lockfile import LockFile
@@ -29,7 +29,8 @@ def main(args):
         return 0
 
     try:
-        ztm = initZopeless()
+        ztm = initZopeless(
+            dbuser='poexport', isolation=READ_COMMITTED_ISOLATION)
         execute_zcml_for_scripts()
         process_queue(ztm, logger)
         logger.info('Done.')

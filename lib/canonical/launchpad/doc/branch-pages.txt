@@ -191,9 +191,8 @@ When a branch has a URL, the user is allowed to modify it. Check that the
 True
 >>> view = getView(gterm_dev, '+edit', TestRequest())
 >>> view.setUpFields()
->>> [field.__name__ for field in view.form_fields]
-['product', 'url', 'name', 'title', 'summary', 'whiteboard', 'home_page',
- 'author']
+>>> 'url' in [field.__name__ for field in view.form_fields]
+True
 
 When a branch's URL is null, the user is not allowed to set it.
 
@@ -202,8 +201,8 @@ When a branch's URL is null, the user is not allowed to set it.
 True
 >>> view = getView(no_url, '+edit', TestRequest())
 >>> view.setUpFields()
->>> [field.__name__ for field in view.form_fields]
-['product', 'name', 'title', 'summary', 'whiteboard', 'home_page', 'author']
+>>> 'url' in [field.__name__ for field in view.form_fields]
+False
 
 Thus, a branch cannot change between being a pull branch and a push branch
 through the web interface.

@@ -4,9 +4,9 @@
   a) the +archivemirrors page, which lists all official and enabled archive
      mirrors.
 
-  >>> browser.open('http://launchpad.dev/distros/ubuntu/+archivemirrors')
+  >>> browser.open('http://launchpad.dev/ubuntu/+archivemirrors')
   >>> browser.url
-  'http://launchpad.dev/distros/ubuntu/+archivemirrors'
+  'http://launchpad.dev/ubuntu/+archivemirrors'
 
   >>> 'Archive Mirrors' in browser.contents
   True
@@ -19,9 +19,9 @@
   b) the +cdmirrors page, which lists all official and enabled release
      mirrors.
 
-  >>> browser.open('http://launchpad.dev/distros/ubuntu/+cdmirrors')
+  >>> browser.open('http://launchpad.dev/ubuntu/+cdmirrors')
   >>> browser.url
-  'http://launchpad.dev/distros/ubuntu/+cdmirrors'
+  'http://launchpad.dev/ubuntu/+cdmirrors'
 
   >>> 'CD Mirrors' in browser.contents
   True
@@ -35,7 +35,7 @@
   distro or launchpad admins.
 
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
-  >>> browser.open('http://launchpad.dev/distros/ubuntu/+disabledmirrors')
+  >>> browser.open('http://launchpad.dev/ubuntu/+disabledmirrors')
   Traceback (most recent call last):
   ...
   Unauthorized: ...
@@ -46,16 +46,15 @@
   >>> browser.handleErrors = False
 
   >>> browser.addHeader('Authorization', 'Basic karl@canonical.com:test')
-  >>> browser.open('http://launchpad.dev/distros/ubuntu/+disabledmirrors')
+  >>> browser.open('http://launchpad.dev/ubuntu/+disabledmirrors')
   >>> browser.url
-  'http://launchpad.dev/distros/ubuntu/+disabledmirrors'
+  'http://launchpad.dev/ubuntu/+disabledmirrors'
 
   >>> 'Disabled Mirrors' in browser.contents
   True
   >>> print browser.contents
   <!DOCTYPE...
-  ...This distribution has no...
-  ...Disabled Mirrors...
+  ...We don't know about any Disabled Mirrors of this distribution...
 
   
   And yet another page to list the non-official mirrors, which can be seen
@@ -66,7 +65,7 @@
   >>> browser.handleErrors = False
 
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
-  >>> browser.open('http://launchpad.dev/distros/ubuntu/+unofficialmirrors')
+  >>> browser.open('http://launchpad.dev/ubuntu/+unofficialmirrors')
   Traceback (most recent call last):
   ...
   Unauthorized: ...
@@ -76,9 +75,9 @@
   >>> browser.handleErrors = False
 
   >>> browser.addHeader('Authorization', 'Basic karl@canonical.com:test')
-  >>> browser.open('http://launchpad.dev/distros/ubuntu/+unofficialmirrors')
+  >>> browser.open('http://launchpad.dev/ubuntu/+unofficialmirrors')
   >>> browser.url
-  'http://launchpad.dev/distros/ubuntu/+unofficialmirrors'
+  'http://launchpad.dev/ubuntu/+unofficialmirrors'
 
   >>> 'Unofficial Mirrors' in browser.contents
   True

@@ -4,12 +4,13 @@ the Debian task on bug #1.
 
     >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
     >>> browser.open(
-    ...     'http://localhost/distros/debian/+source/mozilla-firefox/'
+    ...     'http://localhost/debian/+source/mozilla-firefox/'
     ...     '+bug/1/+editstatus')
 
 There's currently a bug watch linked to the task.
 
-    >>> bugwatch_control = browser.getControl(name='field.bugwatch')
+    >>> bugwatch_control = browser.getControl(
+    ...     name='debian_mozilla-firefox.bugwatch')
     >>> bugwatch_control.type
     'radio'
     >>> bugwatch_control.displayValue
@@ -20,84 +21,120 @@ This means that we only display the status, it's not possible to edit it:
     >>> print browser.contents
     <!DOCTYPE...
 
-    <label for="field.status">Status</label>
+    <label for="debian_mozilla-firefox.status">Status</label>
     ...
     <td><span class="statusConfirmed">Confirmed</span></td>
     ...
 
-    >>> status_control = browser.getControl(name='field.status')
+    >>> status_control = browser.getControl(name='debian_mozilla-firefox.status')
     Traceback (most recent call last):
     ...
-    LookupError: name 'field.status'
+    LookupError: name 'debian_mozilla-firefox.status'
 
 Of course we can't edit the importance or assignee either.
 
-    >>> browser.getControl(name='field.importance')
+    >>> browser.getControl(name='debian_mozilla-firefox.importance')
     Traceback (most recent call last):
     ...
-    LookupError: name 'field.importance'
+    LookupError: name 'debian_mozilla-firefox.importance'
 
-    >>> browser.getControl(name='field.assignee')
+    >>> browser.getControl(name='debian_mozilla-firefox.assignee')
     Traceback (most recent call last):
     ...
-    LookupError: name 'field.assignee'
+    LookupError: name 'debian_mozilla-firefox.assignee'
 
 If we remove the bug watch, we'll be able to edit the status, which has
 been reset to Unconfirmed.
 
     >>> bugwatch_control.displayValue = []
-    >>> submit_button = browser.getControl(name='FORM_SUBMIT')
+    >>> submit_button = browser.getControl('Save Changes')
     >>> submit_button.click()
 
     >>> browser.open(
-    ...     'http://localhost/distros/debian/+source/mozilla-firefox/'
+    ...     'http://localhost/debian/+source/mozilla-firefox/'
     ...     '+bug/1/+editstatus')
-    >>> status_control = browser.getControl(name='field.status')
+    >>> status_control = browser.getControl(name='debian_mozilla-firefox.status')
     >>> status_control.displayValue
     ['Unconfirmed']
 
-    >>> browser.getControl(name='field.assignee') is not None
+    >>> browser.getControl(name='debian_mozilla-firefox.assignee') is not None
     True
 
 Let's try to actually edit the status to see that it works:
 
     >>> status_control.displayValue = ['Rejected']
-    >>> submit_button = browser.getControl(name='FORM_SUBMIT')
+    >>> submit_button = browser.getControl('Save Changes')
     >>> submit_button.click()
 
     >>> browser.open(
-    ...     'http://localhost/distros/debian/+source/mozilla-firefox/'
+    ...     'http://localhost/debian/+source/mozilla-firefox/'
     ...     '+bug/1/+editstatus')
-    >>> status_control = browser.getControl(name='field.status')
+    >>> status_control = browser.getControl(name='debian_mozilla-firefox.status')
     >>> status_control.displayValue
     ['Rejected']
 
 From the edit page we can also create a new bug watch:
 
     >>> browser.open(
-    ...     'http://localhost/distros/debian/+source/mozilla-firefox/'
+    ...     'http://localhost/debian/+source/mozilla-firefox/'
     ...     '+bug/1/+editstatus')
-    >>> bugwatch_control = browser.getControl(name='field.bugwatch')
-    >>> bugtracker_control = browser.getControl(name='field.bugtracker')
-    >>> remotebug_control = browser.getControl(name='field.remotebug')
+    >>> bugwatch_control = browser.getControl(
+    ...     name='debian_mozilla-firefox.bugwatch')
+    >>> bugtracker_control = browser.getControl(
+    ...     name='debian_mozilla-firefox.bugtracker')
+    >>> remotebug_control = browser.getControl(
+    ...     name='debian_mozilla-firefox.remotebug')
     >>> bugwatch_control.value = ['NEW']
     >>> bugtracker_control.displayValue
     ['Debian Bug tracker']
     >>> remotebug_control.value = '1'
 
-    >>> submit_button = browser.getControl(name='FORM_SUBMIT')
+    >>> submit_button = browser.getControl('Save Changes')
     >>> submit_button.click()
     >>> browser.url
-    'http://localhost/distros/debian/+source/mozilla-firefox/+bug/1'
+    'http://localhost/debian/+source/mozilla-firefox/+bug/1'
 
-We can see that the Debian task is linked to the newly created bug
-watch.
+The Debian task is linked to the newly created bug watch.
 
     >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(browser.contents)
-    >>> debian_tr = soup.first('tr', {'class': 'highlight'})
+    >>> debian_link = soup.first(
+    ...     'a',
+    ...     {'href': 'http://localhost/debian/+source/mozilla-firefox/+bug/1/+editstatus'})
+    >>> debian_tr = debian_link.parent.parent.parent
     >>> for td_tag in debian_tr('td'):
     ...     print td_tag
-    <td...> <a...>mozilla-firefox (Debian)</a> </td>
+    <td...>...<a...>mozilla-firefox (Debian)</a>...</td>
     ...
     <td...> <a...> debbugs #1 </a> </td>
+
+If we try to add an already existing bug watch, a new one won't be
+created, instead the old one will be used.
+
+    >>> browser.open(
+    ...     'http://localhost/debian/+source/mozilla-firefox/'
+    ...     '+bug/1/+editstatus')
+    >>> bugwatch_control = browser.getControl(
+    ...     name='debian_mozilla-firefox.bugwatch')
+    >>> bugtracker_control = browser.getControl(
+    ...     name='debian_mozilla-firefox.bugtracker')
+    >>> remotebug_control = browser.getControl(
+    ...     name='debian_mozilla-firefox.remotebug')
+    >>> bugwatch_control.value = ['NEW']
+    >>> bugtracker_control.displayValue
+    ['Debian Bug tracker']
+    >>> remotebug_control.value = '1'
+
+    >>> submit_button = browser.getControl('Save Changes')
+    >>> submit_button.click()
+    >>> browser.url
+    'http://localhost/debian/+source/mozilla-firefox/+bug/1'
+
+    >>> bugwatch_portlet = find_portlet(browser.contents, 'Remote bug watches')
+    >>> for li_tag in bugwatch_portlet.fetch('li'):
+    ...     print li_tag.a.string
+    mozilla.org #123543
+    mozilla.org #2000
+    mozilla.org #42
+    debbugs #1
+    debbugs #304014

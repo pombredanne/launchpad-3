@@ -1,5 +1,5 @@
 <div class="portlet">
-    <h4 tal:content="context/title">object title</h4>
+    <h2 tal:content="context/title">object title</h2>
 
     <div class="portletBody">
         <div class="portletContent"

@@ -2,10 +2,10 @@
      tal:define="current_task view/currentBugTask;
                  url current_task/fmt:url">
 
-  <h4>
+  <h2>
     <abbr title="Common Vulnerabilities and Exposures index">CVE</abbr>
     references:
-  </h4>
+  </h2>
 
   <div class="portletBody">
     <div class="portletContent">

@@ -36,7 +36,8 @@ from canonical.launchpad.interfaces import (
     CreateBugParams)
 from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import (
-    BugTaskImportance, BugTaskStatus, BugAttachmentType)
+    BugTaskImportance, BugTaskStatus, BugAttachmentType,
+    PersonCreationRationale)
 
 logger = logging.getLogger('canonical.launchpad.scripts.bugzilla')
 
@@ -311,7 +312,9 @@ class Bugzilla:
             email, displayname = self.backend.lookupUser(bugzilla_id)
 
             person = self.personset.ensurePerson(
-                email=email, displayname=displayname)
+                email, displayname, PersonCreationRationale.BUGIMPORT,
+                comment=('when importing bugs from %s'
+                         % self.bugtracker.baseurl))
 
             # Bugzilla performs similar address checks to Launchpad, so
             # if the Launchpad account has no preferred email, use the

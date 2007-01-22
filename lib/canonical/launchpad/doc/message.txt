@@ -175,9 +175,9 @@ True
 >>> blob = chunks[1].blob
 >>> blob.filename
 u'anna.jpg.exe'
->>> blob.url.startswith(u'http://localhost:58000/')
+>>> blob.http_url.startswith(u'http://localhost:58000/')
 True
->>> blob.url.endswith(u'/anna.jpg.exe')
+>>> blob.http_url.endswith(u'/anna.jpg.exe')
 True
 
 >>> blob2 = chunks[3].blob
@@ -331,6 +331,12 @@ UnknownSender: u'invalid@example.com'
 ... ''', create_missing_persons=True)
 >>> msg.subject
 u'Foo Bar Bazarooney!'
+
+When the fromEmail() method creates a new Person entry, it'll set the
+creation_rationale accordingly.
+
+>>> msg.owner.creation_rationale.name
+'FROMEMAILMESSAGE'
 
 It also will refuse to deal with messages without a From: or Reply-To:
 header, or a missing Message-Id: or Date: header. These are required, and if

@@ -1,5 +1,5 @@
 <div class="portlet">
-    <h4>This group translates for:</h4>
+    <h2>This group translates for</h2>
 
     <div class="portletBody">
         <div class="portletContent">
@@ -10,7 +10,7 @@
                   <a href="#"
                      tal:content="distribution/displayname"
                      tal:attributes="href
-                       string:/distros/${distribution/name}">Ubuntu</a>
+                       string:/${distribution/name}">Ubuntu</a>
                 </li>
             </ul>
 
@@ -20,7 +20,7 @@
                   <a href="#"
                      tal:content="product/displayname"
                      tal:attributes="href
-                     string:/products/${product/name}">Mozilla Firefox</a>
+                     string:/${product/name}">Mozilla Firefox</a>
                 </li>
             </ul>
 
@@ -30,7 +30,7 @@
                   <a href="#"
                      tal:content="project/displayname"
                      tal:attributes="href
-                     string:/projects/${project/name}">Gnome</a>
+                     string:/${project/name}">Gnome</a>
                 </li>
             </ul>
 

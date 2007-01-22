@@ -1,7 +1,7 @@
 <tal:blocked_specs define="blocked_specs context/blocked_specs">
   <div tal:condition="blocked_specs" class="portlet">
 
-    <h4>Blocks:</h4>
+    <h2>Blocks</h2>
 
     <div class="portletBody portletContent">
 

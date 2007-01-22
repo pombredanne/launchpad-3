@@ -21,11 +21,16 @@ exception.
   ...
   EmailAddressAlreadyTaken: The email address test@canonical.com is already registered.
 
-
-All email addresses operations are case insensitive.
+The email addresses verification is case insensitive:
 
   >>> emailset.new('Test@Canonical.com', foobar)
   Traceback (most recent call last):
   ...
   EmailAddressAlreadyTaken: The email address Test@Canonical.com is already registered.
+
+Registering a new email address works -- and preserves case -- though:
+
+  >>> emailaddress = emailset.new('oink@Canonical.com', foobar)
+  >>> emailaddress.email
+  u'oink@Canonical.com'
 

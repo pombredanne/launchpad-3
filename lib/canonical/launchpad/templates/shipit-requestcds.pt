@@ -73,7 +73,10 @@
   </tal:has-current-order>
 
   <tal:no-current-order condition="not: view/current_order">
-    <h1 tal:condition="not: view/current_order">Request CDs</h1>
+    <h1 tal:condition="not: view/current_order">
+      Request <span tal:replace="view/flavour/title" /> 6.06 LTS
+      (Dapper Drake) CDs
+    </h1>
 
     <p class="informational message">
       We can send you CDs free of charge, but it will take from
@@ -146,6 +149,7 @@
   request to not contain the name/value of the button.
   -->
   <form name="shipit" action="" method="post"
+        accept-charset="UTF-8"
         onsubmit="javascript: window.setTimeout('disableSubmitButton()', 1);">
 
   <table>

@@ -8,7 +8,7 @@ __all__ = [
     'ShipItUnauthorizedView', 'StandardShipItRequestsView',
     'ShipItExportsView', 'ShipItNavigation', 'ShipItReportsView',
     'ShippingRequestAdminView', 'StandardShipItRequestSetNavigation',
-    'ShippingRequestSetNavigation']
+    'ShippingRequestSetNavigation', 'ShipitFrontPageView']
 
 
 from zope.event import notify
@@ -58,6 +58,32 @@ class ShipItUnauthorizedView(SystemErrorView):
         return self.forbidden_page()
 
 
+class ShipitFrontPageView(LaunchpadView):
+
+    def initialize(self):
+        if not config.shipit.switch_to_edgy:
+            self.request.response.redirect('login')
+        self.flavour = _get_flavour_from_layer(self.request)
+
+    @property
+    def download_or_buy_link(self):
+        if self.flavour == ShipItFlavour.UBUNTU:
+            return 'http://www.ubuntu.com/products/GetUbuntu'
+        elif self.flavour == ShipItFlavour.KUBUNTU:
+            return 'http://www.kubuntu.org/download.php'
+        elif self.flavour == ShipItFlavour.EDUBUNTU:
+            return 'http://www.edubuntu.org/Download'
+
+    @property
+    def download_link(self):
+        if self.flavour == ShipItFlavour.UBUNTU:
+            return 'http://www.ubuntu.com/download'
+        elif self.flavour == ShipItFlavour.KUBUNTU:
+            return 'http://www.kubuntu.org/download.php'
+        elif self.flavour == ShipItFlavour.EDUBUNTU:
+            return 'http://www.edubuntu.org/Download'
+
+
 # XXX: The LoginOrRegister class is not really designed to be reused. That
 # class must either be fixed to allow proper reuse or we should write a new
 # class which doesn't reuses LoginOrRegister here. -- GuilhermeSalgado
@@ -89,22 +115,15 @@ class ShipItLoginView(LoginOrRegister):
             self._redirect()
 
     def _redirect(self):
-        """Redirect the logged in user to the request page.
-
-        If the logged in user is a ShipIt administrator, then he's redirected
-        to the 'requests' page, where all requests are shown.
-        """
+        """Redirect the logged in user to the request page."""
         user = getUtility(ILaunchBag).user
         assert user is not None
-        if user.inTeam(getUtility(ILaunchpadCelebrities).shipit_admin):
-            self.request.response.redirect('requests')
+        current_order = user.currentShipItRequest()
+        if (current_order and
+            current_order.containsCustomQuantitiesOfFlavour(self.flavour)):
+            self.request.response.redirect('specialrequest')
         else:
-            current_order = user.currentShipItRequest()
-            if (current_order and
-                current_order.containsCustomQuantitiesOfFlavour(self.flavour)):
-                self.request.response.redirect('specialrequest')
-            else:
-                self.request.response.redirect('myrequest')
+            self.request.response.redirect('myrequest')
 
 
 def _get_flavour_from_layer(request):
@@ -941,10 +960,16 @@ class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
         'addressline2', 'province', 'postcode', 'organization']
 
     def __init__(self, context, request):
-        order_id = request.form.get('order')
-        if order_id is not None and order_id.isdigit():
-            self.current_order = getUtility(IShippingRequestSet).get(
-                int(order_id))
+        release = request.form.get('release')
+        if release is not None and release.lower() == 'edgy':
+            self.release = ShipItDistroRelease.EDGY
+        else:
+            self.release = ShipItConstants.current_distrorelease
+            # We only allow changing requests of the current release.
+            order_id = request.form.get('order')
+            if order_id is not None and order_id.isdigit():
+                self.current_order = getUtility(IShippingRequestSet).get(
+                    int(order_id))
         GeneralFormView.__init__(self, context, request)
 
     @property
@@ -1006,7 +1031,7 @@ class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
             # This is a newly created request, and because it's created by a
             # shipit admin we set both approved and requested quantities and
             # approve it.
-            current_order.setQuantities(quantities)
+            current_order.setQuantities(quantities, distrorelease=self.release)
             current_order.approve()
         else:
             for name in self.shipping_details_fields:

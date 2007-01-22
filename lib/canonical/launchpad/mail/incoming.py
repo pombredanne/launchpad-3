@@ -103,18 +103,20 @@ def authenticateEmail(mail):
 def handleMail(trans=transaction):
     # First we define an error handler. We define it as a local
     # function, to avoid having to pass a lot of parameters.
-    def _handle_error(error_msg, file_alias_url):
+    def _handle_error(error_msg, file_alias_url, notify=True):
         """Handles error occuring in handleMail's for-loop.
 
         It does the following:
 
             * deletes the current mail from the mailbox
-            * sends error_msg and file_alias_url to the errors list
+            * sends error_msg and file_alias_url to the errors list if
+              notify is True
             * commits the current transaction to ensure that the
-              message gets sent.
+              message gets sent
         """
         mailbox.delete(mail_id)
-        notify_errors_list(error_msg, file_alias_url)
+        if notify:
+            notify_errors_list(error_msg, file_alias_url)
         trans.commit()
 
     log = getLogger('process-mail')
@@ -144,7 +146,7 @@ def handleMail(trans=transaction):
 
                 # Let's save the url of the file alias, otherwise we might not
                 # be able to access it later if we get a DB exception.
-                file_alias_url = file_alias.url
+                file_alias_url = file_alias.http_url
 
                 # If something goes wrong when handling the mail, the
                 # transaction will be aborted. Therefore we need to commit the
@@ -169,7 +171,9 @@ def handleMail(trans=transaction):
                 # that it's a bounce from a message we sent.
                 if mail['Return-Path'] == '<>':
                     _handle_error(
-                        "Message had an empty Return-Path.", file_alias_url)
+                        "Message had an empty Return-Path.",
+                        file_alias_url, notify=False
+                        )
                     continue
 
                 try:
@@ -212,7 +216,9 @@ def handleMail(trans=transaction):
 
                 if principal is None and not handler.allow_unknown_users:
                     _handle_error(
-                        'Unknown user: %s ' % mail['From'], file_alias_url)
+                        'Unknown user: %s ' % mail['From'],
+                        file_alias_url, notify=False
+                        )
                     continue
 
                 handled = handler.process(mail, email_addr, file_alias)

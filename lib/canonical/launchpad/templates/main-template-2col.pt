@@ -8,20 +8,30 @@
     <!-- Launchpad JS code -->
     <script type="text/javascript" src="/@@/launchpad.js"></script>
     <script type="text/javascript" src="/@@/sorttable.js"></script>
-    <style type="text/css">
-      @import url("/@@/dynarch/skin-aqua.css");
-    </style>
-    <script type="text/javascript" src="/@@/dynarch/hmenu.js"></script>
+    <script type="text/javascript" src="/@@/MochiKit/MochiKit.js"></script>
+    <script type="text/javascript" src="/@@/SignalWrapper.js"></script>
+    <script type="text/javascript" src="/@@/lpmenu.js"></script>
     <!-- Launchpad style sheet -->
     <style type="text/css"
-        media="screen">@import url(/@@/launchpad.css);</style>
+        media="screen">@import url(/@@/launchpad.css?rev=2);</style>
+    <style
+      tal:define="dbname modules/canonical.config/config/dbname"
+      tal:condition="python: dbname!='launchpad_prod'"
+      type="text/css"
+    >html, body {background: #ddd url(/@@/demo) !important;}</style>
     <link rel="shortcut icon" href="/@@/launchpad" />
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>
-  <body onload="DynarchMenu.setup('menu', {electric: true});" id="document">
-    <ul id="menu" class="hierarchy">
-      <tal:hierarchy content="structure context/@@+breadcrumbs" />
-    </ul>
+  <body onload="lpmenu.initialize(['menuroot'], 
+                    '/',
+                    'menupreload',
+                    [],
+                    '2em', 16, true);" id="document">
+    <div id="menucontainer">
+      <ul id="menuroot" class="menuroot">
+        <tal:hierarchy content="structure context/@@+breadcrumbs" />
+      </ul>
+    </div>
     <div class="userLog">
       <tal:login tal:content="structure context/@@login_status" />
     </div>
@@ -104,16 +114,29 @@
         <div class="visualClear">&nbsp;</div>
       </div><!-- class="body" -->
     <div class="footer">
-      <a href="/malone">Malone</a> &ndash;
+      <a href="/bugs">Malone</a> &ndash;
       <a href="/specs">Blueprint</a> &ndash;
       <a href="/rosetta">Rosetta</a> &ndash;
       <a href="/support">Tech&nbsp;support</a> &ndash;
       <a href="/bazaar">Bazaar</a> &ndash;
       Copyright&nbsp;2004-2006&nbsp;<a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
       &ndash;  <a href="/legal">Copyright&nbsp;terms</a> &ndash;
-      <a href="/feedback">Help&nbsp;us&nbsp;improve</a> &ndash;
-      <a href="/faq">FAQ</a>
+      <a href="/feedback">Help&nbsp;improve&nbsp;Launchpad</a> &ndash;
+      <a href="/faq">FAQ</a> &ndash;
+      <tal:block define="revno modules/canonical.launchpad.versioninfo/revno">
+          build
+          <tal:block condition="revno" replace="revno" />
+          <tal:block condition="not: revno">unknown</tal:block>
+      </tal:block>
+  </div>
+    <div id="menupreload">
+      <ul class="menu" lpm:mid="root" lpm:midbase="/$$/+menudata">
+        <li class="item"><a href="/products">Products</a></li>
+        <li class="item"><a href="/distros">Distributions</a></li>
+        <li class="item"><a href="/people">People</a></li>
+        <li class="item"><a href="/projects">Projects</a></li>
+        <li class="item"><a href="/sprints">Meetings</a></li>
     </div>
-  </body>
+</body>
 </html>
 </metal:page>

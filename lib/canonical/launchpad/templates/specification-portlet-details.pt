@@ -1,6 +1,6 @@
 <div class="portlet">
 
-  <h4>specification details:</h4>
+  <h2>Specification details</h2>
 
   <div class="portletBody portletContent">
 
@@ -96,11 +96,11 @@
       <tal:sprint repeat="sprint_link sprint_links">
         <a tal:attributes="href sprint_link/sprint/fmt:url"
            tal:content="sprint_link/sprint/name" /> 
-        (<a tal:condition="sprint_link/required:launchpad.Edit"
+        (<a tal:condition="sprint_link/required:launchpad.Driver"
             tal:content="sprint_link/status/title"
             tal:attributes="href string:${sprint_link/fmt:url}"
             >Approved</a><span
-              tal:condition="not: sprint_link/required:launchpad.Edit"
+              tal:condition="not: sprint_link/required:launchpad.Driver"
               tal:replace="sprint_link/status/title">Proposed</span>)<br />
       </tal:sprint>
     </tal:has_sprints>

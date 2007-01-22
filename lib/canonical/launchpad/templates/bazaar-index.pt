@@ -106,7 +106,7 @@
   <h2>Integration with other services</h2>
 
   <p>
-    You can associate a branch to a <a href="/malone">Malone<a> bug report, for
+    You can associate a branch to a <a href="/bugs">Malone<a> bug report, for
     example if the branch contains a fix for the bug, instead of attaching a
     patch the old-fashioned way.
   </p>

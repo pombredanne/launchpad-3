@@ -6,7 +6,7 @@
   <body>
     <metal:heading fill-slot="pageheading">    
       <h3 tal:content="context/title">Name of product</h3>
-      <h1>Top Contributors</h1>
+      <h1>Top contributors</h1>
     </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
@@ -25,7 +25,7 @@
     <span tal:replace="context/displayname" /> in Launchpad.
   </div>
 
-  <h3>Top Overall Contributors</h3>
+  <h2>Top overall contributors</h2>
 
   <table class="listing sortable" id="overall_top">
   <thead>
@@ -41,7 +41,7 @@
   </tbody>
   </table>
 
-  <h3>Top Contributors by Category</h3>
+  <h2>Top contributors by category</h2>
 
   <tal:block 
     define="contributors_by_category view/top_contributors_by_category">

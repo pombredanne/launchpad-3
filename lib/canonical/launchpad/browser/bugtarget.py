@@ -7,160 +7,117 @@ __metaclass__ = type
 __all__ = [
     "BugTargetBugListingView",
     "BugTargetBugTagsView",
-    "FileBugView"
+    "FileBugViewBase",
+    "FileBugAdvancedView",
+    "FileBugGuidedView",
+    "FileBugInPackageView"
     ]
 
+import cgi
+from cStringIO import StringIO
+import email
 import urllib
 
-from zope.app.form.interfaces import IInputWidget, WidgetsError
+from zope.app.form.browser import TextWidget
+from zope.app.form.interfaces import IInputWidget, WidgetsError, InputErrors
 from zope.app.form.utility import setUpWidgets
+from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.event import notify
+from zope.interface import implements
+from zope.publisher.interfaces import NotFound
+from zope.publisher.interfaces.browser import IBrowserPublisher
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IDistribution, IDistroRelease, IDistroReleaseSet,
-    IProduct, IDistributionSourcePackage, NotFoundError, CreateBugParams)
-from canonical.launchpad.webapp import canonical_url, LaunchpadView
+    IBugTaskSet, ILaunchBag, IDistribution, IDistroRelease, IDistroReleaseSet,
+    IProduct, IDistributionSourcePackage, NotFoundError, CreateBugParams,
+    IBugAddForm, BugTaskSearchParams, ILaunchpadCelebrities,
+    ITemporaryStorageManager)
+from canonical.launchpad.webapp import (
+    canonical_url, LaunchpadView, LaunchpadFormView, action, custom_widget,
+    urlappend)
+from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.generalform import GeneralFormView
 
-class FileBugView(GeneralFormView):
-    """Browser view for filebug forms.
 
-    This class handles bugs filed on an IBugTarget, and the 'generic'
-    bug filing, where a distribution argument is passed with the form.
-    """
+class FileBugData:
+    """Extra data to be added to the bug."""
+
+    def __init__(self):
+        self.extra_description = None
+        self.comments = []
+        self.attachments = []
+
+    def setFromRawMessage(self, raw_mime_msg):
+        """Set the extra file bug data from a MIME multipart message.
+
+            * The first inline part will be added to the description.
+            * All other inline parts will be added as separate comments.
+            * All attachment parts will be added as attachment.
+        """
+        mime_msg = email.message_from_string(raw_mime_msg)
+        if mime_msg.is_multipart():
+            for part in mime_msg.get_payload():
+                disposition_header = part.get('Content-Disposition', 'inline')
+                # Get the type, excluding any parameters.
+                disposition_type = disposition_header.split(';')[0]
+                disposition_type = disposition_type.strip()
+                if disposition_type == 'inline':
+                    assert part.get_content_type() == 'text/plain', (
+                        "Inline parts have to be plain text.")
+                    charset = part.get_content_charset()
+                    assert charset, (
+                        "A charset has to be specified for text parts.")
+                    part_text = part.get_payload(decode=True).decode(charset)
+                    part_text = part_text.rstrip()
+                    if self.extra_description is None:
+                        self.extra_description = part_text
+                    else:
+                        self.comments.append(part_text)
+                elif disposition_type == 'attachment':
+                    attachment = dict(
+                        filename=part.get_filename().strip("'"),
+                        content_type=part['Content-type'],
+                        content=StringIO(part.get_payload(decode=True)))
+                    if part.get('Content-Description'):
+                        attachment['description'] = part['Content-Description']
+                    else:
+                        attachment['description'] = attachment['filename']
+                    self.attachments.append(attachment)
+                else:
+                    # If the message include other disposition types,
+                    # simply ignore them. We don't want to break just
+                    # because some extra information is included.
+                    continue
+
+
+
+class FileBugViewBase(LaunchpadFormView):
+    """Base class for views related to filing a bug."""
+
+    implements(IBrowserPublisher)
+
+    extra_bug_data = None
 
     def initialize(self):
-        self.packagename_error = ""
+        LaunchpadFormView.initialize(self)
+        if self.extra_bug_data is not None:
+            # XXX: We should include more details of what will be added
+            #      to the bug report.
+            #      -- Bjorn Tillenius, 2006-01-15
+            self.request.response.addNotification(
+                'Extra debug information will be added to the bug report'
+                ' automatically.')
 
     @property
     def initial_values(self):
-        """Set the default package name when filing a distribution bug."""
+        """Give packagename a default value, if applicable."""
         if not IDistributionSourcePackage.providedBy(self.context):
             return {}
 
-        if self.request.get("field.packagename"):
-            return {}
-
         return {'packagename': self.context.name}
-
-    def shouldSelectChoosePackageNameRadioButton(self):
-        """Should the radio button to select a package be selected?"""
-        # XXX, Brad Bollenbach, 2006-07-13: We also call _renderedValueSet() in
-        # case there is a default value in the widget, i.e., a value that was
-        # set outside the request. See https://launchpad.net/bugs/52912.
-        return (
-            self.request.form.get("field.packagename") or
-            self.packagename_widget._renderedValueSet())
-
-    def validateFromRequest(self):
-        """Make sure the package name, if provided, exists in the distro."""
-        self.packagename_error = ""
-        form = self.request.form
-
-        if form.get("packagename_option") == "choose":
-            packagename = form.get("field.packagename")
-            if packagename:
-                if IDistribution.providedBy(self.context):
-                    distribution = self.context
-                else:
-                    assert IDistributionSourcePackage.providedBy(self.context)
-                    distribution = self.context.distribution
-
-                try:
-                    distribution.guessPackageNames(packagename)
-                except NotFoundError:
-                    self.packagename_error = (
-                        '"%s" does not exist in %s. Please choose a different '
-                        'package. If you\'re unsure, please select '
-                        '"I don\'t know"' % (
-                            packagename, distribution.displayname))
-            else:
-                self.packagename_error = "Please enter a package name"
-
-        if self.packagename_error:
-            raise WidgetsError(self.packagename_error)
-
-    def process(self, title=None, comment=None, packagename=None,
-                distribution=None, security_related=False):
-        """Add a bug to this IBugTarget."""
-        current_user = getUtility(ILaunchBag).user
-        context = self.context
-        if distribution is not None:
-            # We're being called from the generic bug filing form, so manually
-            # set the chosen distribution as the context.
-            context = distribution
-
-        # Ensure that no package information is used, if the user
-        # enters a package name but then selects "I don't know".
-        if self.request.form.get("packagename_option") == "none":
-            packagename = None
-
-        # Security bugs are always private when filed, but can be disclosed
-        # after they've been reported.
-        if security_related:
-            private = True
-        else:
-            private = False
-
-        notification = "Thank you for your bug report."
-        if IDistribution.providedBy(context) and packagename:
-            # We don't know if the package name we got was a source or binary
-            # package name, so let the Soyuz API figure it out for us.
-            packagename = str(packagename)
-            try:
-                sourcepackagename, binarypackagename = (
-                    context.guessPackageNames(packagename))
-            except NotFoundError:
-                # guessPackageNames may raise NotFoundError. It would be
-                # nicer to allow people to indicate a package even if
-                # never published, but the quick fix for now is to note
-                # the issue and move on.
-                notification += (
-                    "<br /><br />The package %s is not published in %s; the "
-                    "bug was targeted only to the distribution."
-                    % (packagename, context.displayname))
-                comment += ("\r\n\r\nNote: the original reporter indicated "
-                            "the bug was in package %r; however, that package "
-                            "was not published in %s."
-                            % (packagename, context.displayname))
-                params = CreateBugParams(
-                    title=title, comment=comment, private=private,
-                    security_related=security_related, owner=current_user)
-            else:
-                context = context.getSourcePackage(sourcepackagename.name)
-                params = CreateBugParams(
-                    title=title, comment=comment, private=private,
-                    security_related=security_related, owner=current_user,
-                    binarypackagename=binarypackagename)
-        else:
-            params = CreateBugParams(
-                title=title, comment=comment, private=private,
-                security_related=security_related, owner=current_user)
-
-        bug = context.createBug(params)
-        notify(SQLObjectCreatedEvent(bug))
-
-        # Give the user some feedback on the bug just opened.
-        self.request.response.addNotification(notification)
-        if bug.private:
-            self.request.response.addNotification(
-                'Security-related bugs are by default <span title="Private '
-                'bugs are visible only to their direct subscribers.">private'
-                '</span>. You may choose to <a href="+secrecy">publically '
-                'disclose</a> this bug.')
-        self._nextURL = canonical_url(bug.bugtasks[0])
-
-    def _setUpWidgets(self):
-        # Customize the onKeyPress event of the package name chooser,
-        # so that it's corresponding radio button is selected.
-        setUpWidgets(
-            self, self.schema, IInputWidget, initial=self.initial_values,
-            names=self.fieldNames)
-
-        if "packagename" in self.fieldNames:
-            self.packagename_widget.onKeyPress = "selectWidget('choose', event)"
 
     def getProductOrDistroFromContext(self):
         """Return the IProduct or IDistribution for this context."""
@@ -175,6 +132,398 @@ class FileBugView(GeneralFormView):
                 "Got: %r" % context)
 
             return context.distribution
+
+    def getPackageNameFieldCSSClass(self):
+        """Return the CSS class for the packagename field."""
+        if self.widget_errors.get("packagename"):
+            return 'error'
+        else:
+            return ''
+
+    def validate(self, data):
+        """Make sure the package name, if provided, exists in the distro."""
+        # We have to poke at the packagename value directly in the
+        # request, because if validation failed while getting the
+        # widget's data, it won't appear in the data dict.
+        form = self.request.form
+        if form.get("packagename_option") == "choose":
+            packagename = form.get("field.packagename")
+            if packagename:
+                if IDistribution.providedBy(self.context):
+                    distribution = self.context
+                elif 'distribution' in data:
+                    distribution = data['distribution']
+                else:
+                    assert IDistributionSourcePackage.providedBy(self.context)
+                    distribution = self.context.distribution
+
+                try:
+                    distribution.guessPackageNames(packagename)
+                except NotFoundError:
+                    if distribution.releases:
+                        # If a distribution doesn't have any releases,
+                        # it won't have any source packages published at
+                        # all, so we set the error only if there are
+                        # releases.
+                        packagename_error = (
+                            '"%s" does not exist in %s. Please choose a '
+                            "different package. If you're unsure, please "
+                            'select "I don\'t know"' % (
+                                packagename, distribution.displayname))
+                        self.setFieldError("packagename", packagename_error)
+            else:
+                self.setFieldError("packagename", "Please enter a package name")
+
+    def setUpWidgets(self):
+        """Customize the onKeyPress event of the package name chooser."""
+        LaunchpadFormView.setUpWidgets(self)
+
+        if "packagename" in self.field_names:
+            self.widgets["packagename"].onKeyPress = (
+                "selectWidget('choose', event)")
+
+    def contextUsesMalone(self):
+        """Does the context use Malone as its official bugtracker?"""
+        return self.getProductOrDistroFromContext().official_malone
+
+    def shouldSelectPackageName(self):
+        """Should the radio button to select a package be selected?"""
+        return (
+            self.request.form.get("field.packagename") or
+            self.initial_values.get("packagename"))
+
+    def handleSubmitBugFailure(self, action, data, errors):
+        return self.showFileBugForm()
+
+    @action("Submit Bug Report", name="submit_bug",
+            failure=handleSubmitBugFailure)
+    def submit_bug_action(self, action, data):
+        """Add a bug to this IBugTarget."""
+        extra_data = FileBugData()
+        if self.extra_bug_data is not None:
+            extra_data.setFromRawMessage(self.extra_bug_data.blob)
+
+        title = data["title"]
+        comment = data["comment"].rstrip()
+        packagename = data.get("packagename")
+        security_related = data.get("security_related", False)
+        distribution = data.get(
+            "distribution", getUtility(ILaunchBag).distribution)
+        product = getUtility(ILaunchBag).product
+
+        context = self.context
+        if distribution is not None:
+            # We're being called from the generic bug filing form, so
+            # manually set the chosen distribution as the context.
+            context = distribution
+
+        # Ensure that no package information is used, if the user
+        # enters a package name but then selects "I don't know".
+        if self.request.form.get("packagename_option") == "none":
+            packagename = None
+
+        # Security bugs are always private when filed, but can be disclosed
+        # after they've been reported.
+        if security_related:
+            private = True
+        else:
+            private = False
+
+        notifications = ["Thank you for your bug report."]
+        if IDistribution.providedBy(context) and packagename:
+            # We don't know if the package name we got was a source or binary
+            # package name, so let the Soyuz API figure it out for us.
+            packagename = str(packagename.name)
+            try:
+                sourcepackagename, binarypackagename = (
+                    context.guessPackageNames(packagename))
+            except NotFoundError:
+                # guessPackageNames may raise NotFoundError. It would be
+                # nicer to allow people to indicate a package even if
+                # never published, but the quick fix for now is to note
+                # the issue and move on.
+                notifications.append(
+                    "The package %s is not published in %s; the "
+                    "bug was targeted only to the distribution."
+                    % (packagename, context.displayname))
+                comment += ("\r\n\r\nNote: the original reporter indicated "
+                            "the bug was in package %r; however, that package "
+                            "was not published in %s."
+                            % (packagename, context.displayname))
+                params = CreateBugParams(
+                    title=title, comment=comment, owner=self.user,
+                    security_related=security_related, private=private)
+            else:
+                context = context.getSourcePackage(sourcepackagename.name)
+                params = CreateBugParams(
+                    title=title, comment=comment, owner=self.user,
+                    security_related=security_related, private=private,
+                    binarypackagename=binarypackagename)
+        else:
+            params = CreateBugParams(
+                title=title, comment=comment, owner=self.user,
+                security_related=security_related, private=private)
+
+        if extra_data.extra_description:
+            params.comment = "%s\n\n%s" % (
+                params.comment, extra_data.extra_description)
+            notifications.append(
+                'Additional information was added to the bug description.')
+
+        self.added_bug = bug = context.createBug(params)
+        notify(SQLObjectCreatedEvent(bug))
+
+        for comment in extra_data.comments:
+            bug.newMessage(self.user, bug.followup_subject(), comment)
+            notifications.append(
+                'A comment with additional information was added to the'
+                ' bug report.')
+
+        for attachment in extra_data.attachments:
+            bug.addAttachment(
+                self.user, attachment['content'], attachment['description'],
+                None, attachment['filename'],
+                content_type=attachment['content_type'])
+            notifications.append(
+                'The file "%s" was attached to the bug report.' % cgi.escape(
+                    attachment['filename']))
+
+        # Give the user some feedback on the bug just opened.
+        for notification in notifications:
+            self.request.response.addNotification(notification)
+        if bug.private:
+            self.request.response.addNotification(
+                'Security-related bugs are by default <span title="Private '
+                'bugs are visible only to their direct subscribers.">private'
+                '</span>. You may choose to <a href="+secrecy">publically '
+                'disclose</a> this bug.')
+
+        self.request.response.redirect(canonical_url(bug.bugtasks[0]))
+
+    def showFileBugForm(self):
+        """Override this method in base classes to show the filebug form."""
+        raise NotImplementedError
+
+    @property
+    def advanced_filebug_url(self):
+        """The URL to the advanced bug filing form.
+
+        If a token was passed to this view, it will be be passed through
+        to the advanced bug filing form via the returned URL.
+        """
+        url = urlappend(canonical_url(self.context), '+filebug-advanced')
+        if self.extra_bug_data is not None:
+            url = urlappend(url, self.extra_bug_data.uuid)
+        return url
+
+    def publishTraverse(self, request, name):
+        """See IBrowserPublisher."""
+        if self.extra_bug_data is not None:
+            # The URL contains more path components than expected.
+            raise NotFound(self, name, request=request)
+
+        self.extra_bug_data = getUtility(ITemporaryStorageManager).fetch(name)
+        if self.extra_bug_data is None:
+            # The URL might be mistyped, or the blob has expired.
+            # XXX: We should handle this case better, since a user might
+            #      come to this page when finishing his account
+            #      registration. In that case we should inform the user
+            #      that the blob has expired.
+            #      -- Bjorn Tillenius, 2006-01-15
+            raise NotFound(self, name, request=request)
+        return self
+
+    def browserDefault(self, request):
+        """See IBrowserPublisher."""
+        return self, ()
+
+
+class FileBugAdvancedView(FileBugViewBase):
+    """Browser view for filing a bug.
+
+    This view skips searching for duplicates.
+    """
+    schema = IBugAddForm
+    # XXX, Brad Bollenbach, 2006-10-04: This assignment to actions is a
+    # hack to make the action decorator Just Work across
+    # inheritance. Technically, this isn't needed for this class,
+    # because it defines no further actions, but I've added it just to
+    # preclude mysterious bugs if/when another action is defined in this
+    # class!
+    actions = FileBugViewBase.actions
+    custom_widget('title', TextWidget, displayWidth=40)
+    template = ViewPageTemplateFile(
+        "../templates/bugtarget-filebug-advanced.pt")
+
+    @property
+    def field_names(self):
+        """Return the list of field names to display."""
+        context = self.context
+        if IProduct.providedBy(context):
+            return ['title', 'comment', 'security_related']
+        else:
+            assert (
+                IDistribution.providedBy(context) or
+                IDistributionSourcePackage.providedBy(context))
+
+            return ['title', 'comment', 'security_related', 'packagename']
+
+    def showFileBugForm(self):
+        return self.template()
+
+
+class FileBugGuidedView(FileBugViewBase):
+    schema = IBugAddForm
+    # XXX, Brad Bollenbach, 2006-10-04: This assignment to actions is a
+    # hack to make the action decorator Just Work across inheritance.
+    actions = FileBugViewBase.actions
+    custom_widget('title', TextWidget, displayWidth=40)
+
+    _MATCHING_BUGS_LIMIT = 10
+    _SEARCH_FOR_DUPES = ViewPageTemplateFile(
+        "../templates/bugtarget-filebug-search.pt")
+    _FILEBUG_FORM = ViewPageTemplateFile(
+        "../templates/bugtarget-filebug-submit-bug.pt")
+
+    template = _SEARCH_FOR_DUPES
+
+    focused_element_id = 'field.title'
+
+    @property
+    def field_names(self):
+        """Return the list of field names to display."""
+        context = self.context
+        if IProduct.providedBy(context):
+            return ['title', 'comment']
+        else:
+            assert (
+                IDistribution.providedBy(context) or
+                IDistributionSourcePackage.providedBy(context))
+
+            return ['title', 'comment', 'packagename']
+
+    @action("Continue", name="search", validator="validate_search")
+    def search_action(self, action, data):
+        """Search for similar bug reports."""
+        return self.showFileBugForm()
+
+    @cachedproperty
+    def similar_bugs(self):
+        """Return the similar bugs based on the user search."""
+        matching_bugs = []
+        title = self.getSearchText()
+        if not title:
+            return []
+        search_context = self.getProductOrDistroFromContext()
+        if IProduct.providedBy(search_context):
+            context_params = {'product': search_context}
+        else:
+            assert IDistribution.providedBy(search_context), (
+                'Unknown search context: %r' % search_context)
+            context_params = {'distribution': search_context}
+            if IDistributionSourcePackage.providedBy(self.context):
+                context_params['sourcepackagename'] = (
+                    self.context.sourcepackagename)
+        matching_bugtasks = getUtility(IBugTaskSet).findSimilar(
+            self.user, title, **context_params)
+        # Remove all the prejoins, since we won't use them and they slow
+        # down the query significantly.
+        matching_bugtasks = matching_bugtasks.prejoin([])
+
+        # XXX: We might end up returning less than :limit: bugs, but in
+        #      most cases we won't, and '4*limit' is here to prevent
+        #      this page from timing out in production. Later I'll fix
+        #      this properly by selecting distinct Bugs directly
+        #      If matching_bugtasks isn't sliced, it will take a long time
+        #      to iterate over it, even over only 10, because
+        #      Transaction.iterSelect() listifies the result. Bug 75764.
+        #      -- Bjorn Tillenius, 2006-12-13
+        # We select more than :self._MATCHING_BUGS_LIMIT: since if a bug
+        # affects more than one source package, it will be returned more
+        # than one time. 4 is an arbitrary number that should be large
+        # enough.
+        for bugtask in matching_bugtasks[:4*self._MATCHING_BUGS_LIMIT]:
+            if not bugtask.bug in matching_bugs:
+                matching_bugs.append(bugtask.bug)
+                if len(matching_bugs) >= self._MATCHING_BUGS_LIMIT:
+                    break
+
+        return matching_bugs
+
+    @cachedproperty
+    def most_common_bugs(self):
+        """Return a list of the most duplicated bugs."""
+        return self.context.getMostCommonBugs(
+            self.user, limit=self._MATCHING_BUGS_LIMIT)
+
+    @property
+    def found_possible_duplicates(self):
+        return self.similar_bugs or self.most_common_bugs
+
+
+    def getSearchText(self):
+        """Return the search string entered by the user."""
+        try:
+            return self.widgets['title'].getInputValue()
+        except InputErrors:
+            return None
+
+    def validate_search(self, action, data):
+        """Make sure some keywords are provided."""
+        try:
+            data['title'] = self.widgets['title'].getInputValue()
+        except InputErrors, error:
+            self.setFieldError("title", "A summary is required.")
+            return [error]
+
+        # Return an empty list of errors to satisfy the validation API,
+        # and say "we've handled the validation and found no errors."
+        return ()
+
+    def validate_no_dupe_found(self, action, data):
+        return ()
+
+    @action("Continue", name="continue",
+            validator="validate_no_dupe_found")
+    def continue_action(self, action, data):
+        """The same action as no-dupe-found, with a different label."""
+        return self.showFileBugForm()
+
+    def showFileBugForm(self):
+        return self._FILEBUG_FORM()
+
+
+class FileBugInPackageView(FileBugViewBase):
+    """Browser view class for the top-level filebug-in-package page."""
+    schema = IBugAddForm
+    # XXX, Brad Bollenbach, 2006-10-04: This assignment to actions is a
+    # hack to make the action decorator Just Work across
+    # inheritance. Technically, this isn't needed for this class,
+    # because it defines no further actions, but I've added it just to
+    # preclude mysterious bugs if/when another action is defined in this
+    # class!
+    actions = FileBugViewBase.actions
+    template = ViewPageTemplateFile(
+        "../templates/bugtarget-filebug-simple.pt")
+    custom_widget('title', TextWidget, displayWidth=40)
+
+    @property
+    def initial_values(self):
+        return {"distribution": getUtility(ILaunchpadCelebrities).ubuntu}
+
+    @property
+    def field_names(self):
+        return ['title', 'comment', 'distribution', 'packagename']
+
+    def showFileBugForm(self):
+        return self.template()
+
+    def shouldShowSteps(self):
+        return False
+
+    def contextUsesMalone(self):
+        """Say context uses Malone so that the filebug form is shown!"""
+        return True
 
 
 class BugTargetBugListingView:

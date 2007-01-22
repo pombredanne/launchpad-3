@@ -1,9 +1,9 @@
 
 Sample Person already has a deactivated key.
 
-    >>> user_browser.open('http://launchpad.dev/people/name12/+editpgpkeys')
+    >>> user_browser.open('http://launchpad.dev/~name12/+editpgpkeys')
     >>> user_browser.url
-    'http://launchpad.dev/people/name12/+editpgpkeys'
+    'http://launchpad.dev/~name12/+editpgpkeys'
 
     >>> print user_browser.contents
     <...
@@ -25,7 +25,7 @@ Now he'll request his key to be reactivated.
     >>> soup = BeautifulSoup(user_browser.contents)
     >>> for tag in soup('p', 'informational message'):
     ...     print tag.renderContents()
-    An email was sent to test@canonical.com with instructions to reactivate...
+    A message has been sent to test@canonical.com with instructions to reactivate...
 
 
 Get the token from the body of the email sent.
@@ -59,7 +59,7 @@ Now Sample Person confirms the reactivation.
 
     >>> user_browser.getControl('Confirm').click()
     >>> user_browser.url
-    'http://launchpad.dev/people/name12'
+    'http://launchpad.dev/~name12'
 
     >>> print user_browser.contents
     <...
@@ -68,7 +68,7 @@ Now Sample Person confirms the reactivation.
 
 And now we can see the key listed as one of Sample Person's active keys.
 
-    >>> user_browser.open('http://launchpad.dev/people/name12/+editpgpkeys')
+    >>> user_browser.open('http://launchpad.dev/~name12/+editpgpkeys')
     >>> print user_browser.contents
     <...
     ...Active keys...

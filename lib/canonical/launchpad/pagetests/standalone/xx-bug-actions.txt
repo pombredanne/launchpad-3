@@ -2,7 +2,7 @@ The bug index page includes an actions portlet, which provides various
 links to add things to the bug.
 
   >>> user_browser.open(
-  ...     'http://launchpad.dev/distros/debian/+source/mozilla-firefox/+bug/3')
+  ...     'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/3')
   >>> print user_browser.contents
   <...
   ...Mark as Duplicate...
@@ -12,7 +12,7 @@ links to add things to the bug.
 
   >>> user_browser.getLink('Mark as Duplicate').click()
   >>> print user_browser.url
-  http://launchpad.dev/distros/debian/+source/mozilla-firefox/+bug/3/+duplicate
+  http://launchpad.dev/debian/+source/mozilla-firefox/+bug/3/+duplicate
 
   >>> user_browser.getControl('Duplicate Of').value = '6'
   >>> user_browser.getControl('Change').click()
@@ -40,18 +40,18 @@ links to add things to the bug.
   changed.
 
   >>> user_browser.open(
-  ...     'http://launchpad.dev/products/firefox/+bug/6/+duplicate')
+  ...     'http://launchpad.dev/firefox/+bug/6/+duplicate')
   >>> user_browser.getControl('Duplicate Of').value
   '5'
   >>> user_browser.getControl('Change').click()
   >>> user_browser.url
-  'http://launchpad.dev/products/firefox/+bug/6'
+  'http://launchpad.dev/firefox/+bug/6'
 
 
   Tests the input of data that is not a valid value.
 
   >>> user_browser.open(
-  ...     'http://launchpad.dev/products/firefox/+bug/6/+duplicate')
+  ...     'http://launchpad.dev/firefox/+bug/6/+duplicate')
   >>> user_browser.getControl('Duplicate Of').value = 'xajskd'
   >>> user_browser.getControl('Change').click()
   >>> print user_browser.contents
@@ -62,17 +62,17 @@ links to add things to the bug.
   Tests using a bug nickname as the duplicate value
 
   >>> user_browser.open(
-  ...     'http://launchpad.dev/products/evolution/+bug/7/+duplicate')
+  ...     'http://launchpad.dev/evolution/+bug/7/+duplicate')
   >>> user_browser.getControl('Duplicate Of').value = 'blackhole'
   >>> user_browser.getControl('Change').click()
   >>> user_browser.url
-  'http://launchpad.dev/products/evolution/+bug/7'
+  'http://launchpad.dev/evolution/+bug/7'
 
 
   Marking a bugX as a duplicate of bugY is not allowed if bugX has dupes.
 
   >>> user_browser.open(
-  ...     'http://launchpad.dev/products/firefox/+bug/5/+duplicate')
+  ...     'http://launchpad.dev/firefox/+bug/5/+duplicate')
   >>> user_browser.getControl('Duplicate Of').value = '4'
   >>> user_browser.getControl('Change').click()
   >>> print user_browser.contents

@@ -95,15 +95,19 @@ class BranchToMirror:
         return branch
         
 
-    def _mirrorFailed(self, error_msg):
+    def _mirrorFailed(self, logger, error_msg):
         """Log that the mirroring of this branch failed."""
         self.branch_status_client.mirrorFailed(self.branch_id, str(error_msg))
+        logger.warning('Failed to mirror branch %d: %s',
+                       self.branch_id, str(error_msg))
 
-    def mirror(self):
+    def mirror(self, logger):
         """Open source and destination branches and pull source into
         destination.
         """
         self.branch_status_client.startMirroring(self.branch_id)
+        logger.info('Mirroring %s (%d) to %s',
+                    self.source, self.branch_id, self.dest)
 
         try: 
             self._openSourceBranch()
@@ -118,41 +122,43 @@ class BranchToMirror:
                 # be able to get rid of this.
                 # https://launchpad.net/products/bzr/+bug/42383
                 msg = 'Private branch; required authentication'
-            self._mirrorFailed(msg)
+            self._mirrorFailed(logger, msg)
 
         except socket.error, e:
             msg = 'A socket error occurred: %s' % str(e)
-            self._mirrorFailed(msg)
+            self._mirrorFailed(logger, msg)
 
         except bzrlib.errors.UnsupportedFormatError, e:
             msg = ("The supermirror does not support branches from before "
                    "bzr 0.7. Please upgrade the branch using bzr upgrade.")
-            self._mirrorFailed(msg)
+            self._mirrorFailed(logger, msg)
 
         except bzrlib.errors.UnknownFormatError, e:
             if e.args[0].count('\n') >= 2:
                 msg = 'Not a branch'
             else:
                 msg = 'Unknown branch format: %s' % e.args[0]
-            self._mirrorFailed(msg)
+            self._mirrorFailed(logger, msg)
 
         except bzrlib.errors.ParamikoNotPresent, e:
             msg = ("The supermirror does not support mirroring branches "
                    "from SFTP URLs. Please register a HTTP location for "
                    "this branch.")
-            self._mirrorFailed(msg)
+            self._mirrorFailed(logger, msg)
 
         except bzrlib.errors.NotBranchError, e:
-            self._mirrorFailed(e)
+            self._mirrorFailed(logger, e)
 
         except bzrlib.errors.BzrError, e:
-            self._mirrorFailed(e)
+            self._mirrorFailed(logger, e)
 
         else:
             last_rev = self._dest_branch.last_revision()
             if last_rev is None:
                 last_rev = NULL_REVISION
             self.branch_status_client.mirrorComplete(self.branch_id, last_rev)
+            logger.info('Branch %d mirrored successfully to rev %s',
+                        self.branch_id, last_rev)
 
     def __eq__(self, other):
         return self.source == other.source and self.dest == other.dest

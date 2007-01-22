@@ -38,9 +38,10 @@ def send_signal(database, signal):
         import os
 
         signal = args[0]
-        for row in plpy.execute(
-            "SELECT procpid FROM pg_stat_activity WHERE datname=%(qdatabase)s"
-            ):
+        for row in plpy.execute('''
+            SELECT procpid FROM pg_stat_activity WHERE datname=%(qdatabase)s
+                AND procpid != pg_backend_pid()
+            '''):
             try:
                 os.kill(row['procpid'], signal)
             except OSError:

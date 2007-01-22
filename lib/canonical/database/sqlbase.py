@@ -357,8 +357,8 @@ class ZopelessTransactionManager(object):
 def clear_current_connection_cache():
     """Clear SQLObject's object cache for the current connection."""
     # XXX: There is a different hack for (I think?) similar reasons in
-    #      canonical.publication.  This should probably share code with
-    #      that one.
+    #      canonical.launchpad.webapp.publication.  This should probably
+    #      share code with that one.
     #        - Andrew Bennetts, 2005-02-01
 
     # Don't break if _connection is a FakeZopelessConnectionDescriptor

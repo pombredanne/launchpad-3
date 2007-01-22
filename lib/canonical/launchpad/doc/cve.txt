@@ -1,5 +1,4 @@
-Common Vulnerabilities and Exposures (CVE)
-==========================================
+= Common Vulnerabilities and Exposures (CVE) =
 
 Malone supports attaching CVE references to bugs. From
 http://www.cve.mitre.org/about/ CVE is:
@@ -12,8 +11,11 @@ For more information, consult the CVE website:
 
     http://www.cve.mitre.org/
 
-Creating CVE entries
---------------------
+== CveSet ==
+
+The ICveSet utility is used to create and get CVEs and BugCves.
+
+=== Creating CVE entries ===
 
 CVE references can be created with the ICveSet utility.
 
@@ -34,8 +36,32 @@ To create a CVE, call ICveSet.new(sequence, description,
     >>> cve.displayname
     u'CVE-2004-0276'
 
-Linking CVEs to Bugs
----------------------
+=== Number of CVE links ===
+
+We can get the number of CVE links to bugs in Launchpad using
+getBugCveCount.
+
+    >>> cveset.getBugCveCount()
+    2
+
+If we add another link, the count will of course increase by one.
+
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> bug_one.linkCVE(cve)
+    <BugCve at ...>
+
+    >>> cveset.getBugCveCount()
+    3
+
+And if we unlink it, the count will decrease.
+
+    >>> bug_one.unlinkCVE(cve)
+
+    >>> cveset.getBugCveCount()
+    2
+
+== Linking CVEs to Bugs ==
 
 You can link a CVE to a bug. You can also see which CVEs are currently
 linked to a bug:
@@ -71,8 +97,7 @@ string of text:
     True
     >>> b.unlinkCVE(cve)
 
-CVE Reports
------------
+== CVE Reports ==
 
 Launchpad offers distributions, distribution releases and products with
 reports that inform on the status of bugs related to CVEs in the

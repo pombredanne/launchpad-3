@@ -11,7 +11,7 @@ as the root user.
 
 Add this line to /etc/hosts:
 {{{
-127.0.0.88 launchpad.dev blueprint.launchpad.dev
+127.0.0.88	launchpad.dev bugs.launchpad.dev features.launchpad.dev translation.launchpad.dev code.launchpad.dev
 }}}
 
 As we add more domains, you'll need to alter this line.
@@ -20,22 +20,22 @@ As we add more domains, you'll need to alter this line.
 
 If you have apache version 1 installed, remove it:
 
-  apt-get remove apache
+  sudo apt-get remove apache
 
 Install apache2:
 
-  apt-get install apache2
+  sudo apt-get install apache2
 
 Turn on proxying:
 
-  a2enmod proxy
+  sudo a2enmod proxy
 
 Set up virtual hosting:
 
 Create a file at /etc/apache2/sites-enabled/locallaunchpad
 
 {{{
-vim /etc/apache2/sites-enabled/locallaunchpad
+sudo vim /etc/apache2/sites-enabled/locallaunchpad
 }}}
 
 Put the following text in there.
@@ -55,7 +55,7 @@ Put the following text in there.
 
 Reload apache:
 
-  /etc/init.d/apache2 reload
+  sudo /etc/init.d/apache2 reload
 
 == Use Launchpad ==
 
@@ -63,5 +63,5 @@ As your normal user, run launchpad.  You should be able to access it
 at the following URLs:
 
   http://launchpad.dev/
-  http://blueprint.launchpad.dev/
+  http://features.launchpad.dev/
 

@@ -32,9 +32,9 @@
     <b>Download:</b>
     <ul tal:condition="context/files">
       <li class="download" tal:repeat="file context/files">
-        <a tal:content="file/url/filename"
-           tal:attributes="href file/url/fileurl"></a>
-        (<span tal:replace="file/libraryfile/content/filesize" /> bytes)
+        <a tal:content="file/libraryfile/filename"
+           tal:attributes="href file/libraryfile/http_url"></a>
+        (<span tal:replace="file/libraryfile/content/filesize/fmt:bytes" />)
       </li>
     </ul>
     <p tal:condition="not: context/files">
@@ -42,7 +42,6 @@
     </p>
 
     <h2>Relationship to other packages</h2>
-          
 
     <table>
       <tbody>
@@ -51,8 +50,7 @@
           <td>
             <ul >
               <li tal:repeat="binprovides view/provides">
-
-     <span tal:content="binprovides/name" />
+                <span tal:content="binprovides/name" />
 		<tal:dummy condition="binprovides/signal">
                   (<span tal:replace="binprovides/signal" />
                   <span tal:replace="binprovides/version" />)
@@ -67,13 +65,12 @@
             <td>
               <ul>
                 <li tal:repeat="bindepends view/depends">
-                  
 	        <a tal:content="bindepends/name"
-		tal:attributes="href string:../../../${bindepends/name}"/> 
+		tal:attributes="href string:../../../${bindepends/name}"/>
 		<tal:dummy condition="bindepends/signal">
-		              (<span tal:replace="bindepends/signal" /> 
+		              (<span tal:replace="bindepends/signal" />
 		              <span tal:replace="bindepends/version" />)
-		</tal:dummy> 
+		</tal:dummy>
 
 	              </li>
 	            </ul>
@@ -87,9 +84,9 @@
                 <li tal:repeat="binrecommends view/recommends">
 
 	        <a tal:content="binrecommends/name"
-		tal:attributes="href string:../../../${binrecommends/name}"/> 
+		tal:attributes="href string:../../../${binrecommends/name}"/>
 		<tal:dummy condition="binrecommends/signal">
-                  (<span tal:replace="binrecommends/signal" /> 
+                  (<span tal:replace="binrecommends/signal" />
                   <span tal:replace="binrecommends/version" />)
 		</tal:dummy>
 
@@ -105,7 +102,7 @@
                 <li tal:repeat="binsuggests view/suggests">
 
 	        <a tal:content="binsuggests/name"
-		tal:attributes="href string:../../../${binsuggests/name}"/>  
+		tal:attributes="href string:../../../${binsuggests/name}"/>
 		<tal:dummy condition="binsuggests/signal">
                   (<span tal:replace="binsuggests/signal" />
                   <span tal:replace="binsuggests/version" />)
@@ -123,11 +120,11 @@
                 <li tal:repeat="binconflicts view/conflicts">
 
 	        <a tal:content="binconflicts/name"
-		tal:attributes="href string:../../../${binconflicts/name}"/> 
+		tal:attributes="href string:../../../${binconflicts/name}"/>
 		<tal:dummy condition="binconflicts/signal">
-                  (<span tal:replace="binconflicts/signal" /> 
+                  (<span tal:replace="binconflicts/signal" />
                   <span tal:replace="binconflicts/version" />)
-		</tal:dummy> 
+		</tal:dummy>
 
                 </li>
               </ul>
@@ -142,11 +139,11 @@
                 <li tal:repeat="binreplaces view/replaces">
 
 	        <a tal:content="binreplaces/name"
-		tal:attributes="href string:../../../${binreplaces/name}"/>  
+		tal:attributes="href string:../../../${binreplaces/name}"/>
 		<tal:dummy condition="binreplaces/signal">
-                  (<span tal:replace="binreplaces/signal" /> 
+                  (<span tal:replace="binreplaces/signal" />
                   <span tal:replace="binreplaces/version" />)
-		</tal:dummy> 
+		</tal:dummy>
 
                 </li>
               </ul>

@@ -1,28 +1,12 @@
-<div class="portlet">
-  <h4><span tal:replace="context/browsername" />:</h4>
+<div class="portlet" tal:condition="context/is_valid_person_or_team">
+  <h2 tal:content="context/browsername" />
 
   <div class="portletBody portletContent">
 
     <tal:is_person condition="not: context/teamowner">
       <b tal:content="context/browsername">Mark Shuttleworth</b>
-      (<img tal:condition="context/emblem"
-            tal:attributes="src context/emblem/secure_url" /><a
-            tal:attributes="href context/fmt:url"
-            tal:content="context/name">sabdfl</a>)<br />
-
-      <tal:no_preferredemail condition="not: context/preferredemail">
-        <img alt="" src="/@@/info" />
-        This person is not an active Launchpad user.
-        <ul>
-          <li><small><a href="/faq">Why was this page created?</a></small></li>
-          <li tal:condition="view/user">
-            <small><a tal:attributes="href string:/people/+requestmerge?field.dupeaccount=${context/name}">This is me</a></small>
-          </li>
-          <li tal:condition="not:view/user">
-            <small><a href="/+forgottenpassword">This is me</a></small>
-          </li>
-        </ul>
-      </tal:no_preferredemail>
+      (<a tal:attributes="href context/fmt:url"
+          tal:content="context/name">sabdfl</a>)<br />
 
       <tal:has_preferredemail condition="context/preferredemail">
 
@@ -77,7 +61,7 @@
 
       <b>Team:</b>
       <img tal:condition="context/emblem"
-            tal:attributes="src context/emblem/secure_url" />
+            tal:attributes="src context/emblem/getURL" />
       <a tal:attributes="href context/fmt:url"
          tal:content="context/name">sabdfl</a><br />
       <b>Team Owner:</b><br />
@@ -95,7 +79,7 @@
     <tal:emblems repeat="team context/teams_participated_in">
       <a tal:attributes="href team/fmt:url"
         ><img tal:condition="team/emblem"
-              tal:attributes="src team/emblem/secure_url;
+              tal:attributes="src team/emblem/getURL;
                               title string:Emblem of ${team/name}"
           /></a>
     </tal:emblems>

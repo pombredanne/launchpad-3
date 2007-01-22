@@ -12,7 +12,7 @@ Setup the stub KeyServer:
 
 Start out with a clean page:
 
-  >>> user_browser.open("http://launchpad.dev/people/name12/+editpgpkeys")
+  >>> user_browser.open("http://launchpad.dev/~name12/+editpgpkeys")
   >>> "<title>Sample Person's OpenPGP keys</title>" in user_browser.contents
   True
   >>> "1024D/DFD20543" in user_browser.contents
@@ -87,13 +87,13 @@ Get redirected to +validategpg, and confirm token:
 Get redirected to the user's homepage with a greeting:
 
   >>> user_browser.url
-  'http://launchpad.dev/people/name12'
+  'http://launchpad.dev/~name12'
   >>> "The key 1024D/DFD20543 was successfully validated" in user_browser.contents
   True
 
 Certify the key is imported:
 
-  >>> user_browser.open("http://launchpad.dev/people/name12/+editpgpkeys")
+  >>> user_browser.open("http://launchpad.dev/~name12/+editpgpkeys")
 
   >>> print user_browser.contents
   <BLANKLINE>
@@ -106,7 +106,7 @@ Certify the key is imported:
 Make sure that UIDs were properly processed; in particular, check that
 the revoked UID in the key wasn't added as an email address:
 
-  >>> user_browser.open("http://launchpad.dev/people/name12/+editemails")
+  >>> user_browser.open("http://launchpad.dev/~name12/+editemails")
   >>> "sample.person@canonical.com_unvalidated" in user_browser.contents
   True
   >>> "sample.revoked@canonical.com" in user_browser.contents

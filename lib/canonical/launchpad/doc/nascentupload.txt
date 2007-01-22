@@ -202,6 +202,17 @@ If the address is unparsable, we get an error.
   ...
   UploadError: Cannot Parse Me <FOOO>: no @ found in email address part.
 
+If the email address is not yet registered and policy.create_people is True,
+a new Person will be created.
+
+  >>> orig_create_people = ed_upload.policy.create_people
+  >>> ed_upload.policy.create_people = True
+  >>> addr = ed_upload.parse_address("Baz <baz@canonical.com>")
+  >>> addr['person'].creation_rationale.name
+  'SOURCEPACKAGEUPLOAD'
+  >>> addr['person'].creation_comment
+  u'when the ed package was uploaded to Ubuntu'
+  >>> ed_upload.policy.create_people = orig_create_people
 
 
 The upload can extract distributions and distroreleases if it tries
@@ -360,6 +371,32 @@ mentioned in bug # 30621)
   ...
    -- James Troup <james@nocrew.org>  Wed,  2 Apr 2003 17:19:47 +0100
 
+Some new fields required for NoMoreAptFtparchive implementation are
+present in SourcePackageRelease. They are cached from the DSC and used
+for the archive index generation:
+
+The 'Maintainer:' identification in RFC-822 format, as it was in DSC:
+
+  >>> ed_spr.dsc_maintainer_rfc822
+  u'James Troup <james@nocrew.org>'
+
+Version of debian policy/standards used to build this sourcepackage:
+
+  >>> ed_spr.dsc_standards_version
+  u'3.5.8.0'
+
+Format of the included DSC (.dsc) file:
+
+  >>> ed_spr.dsc_format
+  u'1.0'
+
+Binaries names claimed to be resulted of this source, line with names
+separated by space:
+
+  >>> ed_spr.dsc_binaries
+  u'ed'
+
+
 Roll back everything so that we can try again
 
   >>> import transaction
@@ -515,34 +552,119 @@ bug # 30741.
   Unable to find ed_0.2.orig.tar.gz in the distribution.
   END
 
-Next let's throw the whole thing out again and try once more having purged
-the ACLs for the uploader
+== Installer source uploads doesn't contain 'Standards-Version' ==
+
+Check if we can accept a installer-source upload which doesn't have
+'Standards-Version' field in DSC. See bug #75874 for further
+information.
+
+  >>> inst_src = NascentUpload(
+  ...          findPolicyByName('sync'), datadir(''),
+  ...          "test75874_0.1_source.changes", MockMunchyLogger())
+  >>> inst_src.policy.setOptions(MockOptions())
+  >>> inst_src.process()
+
+  >>> inst_src.rejected
+  False
+
+  >>> success, msgs = inst_src.do_accept()
+  >>> success
+  True
+
+Look for the respective SourcePackageRelease entry and inspect its
+content, it should have all the required fields except the
+'dsc_standards_version':
+
+  >>> inst_queue = hoary.getQueueItems(DistroReleaseQueueStatus.NEW,
+  ...                                  name='test75874', exact_match=True)[0]
+  >>> inst_spr = inst_queue.sources[0].sourcepackagerelease
+
+  >>> inst_spr.dsc_maintainer_rfc822
+  u'Colin Watson <cjwatson@ubuntu.com>'
+
+  >>> inst_spr.dsc_binaries
+  u'test75874'
+
+  >>> inst_spr.dsc_standards_version is None
+  True
+
+Chuck it all away again
 
   >>> transaction.abort()
-  >>> from canonical.launchpad.database import DistroComponentUploader, Person
-  >>> for x in DistroComponentUploader.select():
-  ...     x.uploader = Person.get(1)
 
-Ensure that the key is attached to the database...
+== Insecure Policy ==
 
-  >>> discarded_key = getUtility(IGPGKeySet).new(26, '20687895',
+'insecure' upload policy forces NascentUpload to perform ACLs over the
+DSC signature. It only allows 'source' upload where both, changesfile
+and DSC, should be signed.
+
+  >>> from zope.interface.verify import verifyObject
+  >>> from canonical.launchpad.interfaces import (
+  ...     IGPGKey, IPersonSet)
+
+Ensure that the key is attached to the database to be used in tests:
+
+  >>> key_owner = getUtility(IPersonSet).getByName('kinnison')
+  >>> uploader_key = getUtility(IGPGKeySet).new(key_owner, '20687895',
   ...     '961F4EB829D7D304A77477822BC8401620687895', 1024, GPGKeyAlgorithm.D)
 
-This time the upload should fail because the ACLs don't let person 26 upload
+When using 'insecure' policy, NascentUpload instace stores the DSC
+sigining key reference as an IGPGKey:
 
-  >>> ed_src = NascentUpload(findPolicyByName('insecure'), 
-  ...          datadir(''), "ed_0.2-20_i386.changes", 
-  ...          MockMunchyLogger())
-  >>> ed_src.policy.setOptions(MockOptions())
-  >>> ed_src.policy.can_upload_binaries = True
-  >>> ed_src.policy.can_upload_mixed = True
-  >>> ed_src.process()
-  >>> ed_src.rejected
+  >>> ed_ok = NascentUpload(
+  ...     findPolicyByName('insecure'), datadir(''),
+  ...     "ed_0.2-20_i386.changes", MockMunchyLogger())
+  >>> ed_ok.policy.setOptions(MockOptions())
+
+XXX cprov 20061206: ok, by lack of better sample-packages we will
+override the policy attributes to allow binary (and mixed) uploads.
+
+  >>> ed_ok.policy.can_upload_binaries = True
+  >>> ed_ok.policy.can_upload_mixed = True
+
+  >>> ed_ok.process()
+  >>> ed_ok.rejected
+  False
+
+  >>> verifyObject(IGPGKey, ed_ok.dsc_signing_key)
   True
-  >>> print ed_src.rejection_message+"\nEND"
-  Signer has no upload rights at all to this distribution.
-  END
 
-(and some tear down)
+  >>> ed_ok.dsc_signing_key.fingerprint == uploader_key.fingerprint
+  True
 
-  >>> transaction.abort()
+Let's modify the current ACL rules for ubuntu, moving the upload
+rights to all commponents from 'ubuntu-team' to 'sabdfl':
+
+  >>> new_uploader = getUtility(IPersonSet).getByName('sabdfl')
+  >>> for distro_component in ubuntu.uploaders:
+  ...     distro_component.uploader = new_uploader
+
+This time the upload should fail because the ACLs don't let
+"kinnison", the key owner,  upload a package.
+
+  >>> ed_failed = NascentUpload(
+  ...     findPolicyByName('insecure'), datadir(''),
+  ...     "ed_0.2-20_i386.changes", MockMunchyLogger())
+  >>> ed_failed.policy.setOptions(MockOptions())
+
+XXX cprov 20061206: ok, by lack of better sample-packages we will
+override the policy attributes to allow binary (and mixed) upload.
+
+  >>> ed_failed.policy.can_upload_binaries = True
+  >>> ed_failed.policy.can_upload_mixed = True
+
+  >>> ed_failed.process()
+  >>> ed_failed.rejected
+  True
+  >>> ed_failed.rejection_message
+  'Signer has no upload rights at all to this distribution.'
+
+Even in a rejected upload using 'insecure' policy, the DSC signing key
+is stored in NascentUpload instance for further checks:
+
+  >>> verifyObject(IGPGKey, ed_failed.dsc_signing_key)
+  True
+
+  >>> ed_failed.dsc_signing_key.fingerprint == uploader_key.fingerprint
+  True
+

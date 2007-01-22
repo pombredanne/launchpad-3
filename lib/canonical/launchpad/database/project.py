@@ -7,8 +7,6 @@ __all__ = [
     'ProjectSet',
     ]
 
-import sets
-
 from zope.interface import implements
 
 from sqlobject import (
@@ -31,7 +29,7 @@ from canonical.launchpad.database.projectbounty import ProjectBounty
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.specification import Specification
-from canonical.launchpad.components.bugtarget import BugTargetBase
+from canonical.launchpad.database.bugtarget import BugTargetBase
 
 
 class Project(SQLBase, BugTargetBase):
@@ -53,6 +51,11 @@ class Project(SQLBase, BugTargetBase):
     driver = ForeignKey(
         foreignKey="Person", dbName="driver", notNull=False, default=None)
     homepageurl = StringCol(dbName='homepageurl', notNull=False, default=None)
+    homepage_content = StringCol(default=None)
+    emblem = ForeignKey(
+        dbName='emblem', foreignKey='LibraryFileAlias', default=None)
+    gotchi = ForeignKey(
+        dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
     wikiurl = StringCol(dbName='wikiurl', notNull=False, default=None)
     sourceforgeproject = StringCol(dbName='sourceforgeproject', notNull=False,
         default=None)
@@ -306,7 +309,7 @@ class ProjectSet:
         should be limited to projects that are active in those Launchpad
         applications.
         """
-        clauseTables = sets.Set()
+        clauseTables = set()
         clauseTables.add('Project')
         queries = []
         if rosetta:
@@ -341,3 +344,4 @@ class ProjectSet:
 
         query = " AND ".join(queries)
         return Project.select(query, distinct=True, clauseTables=clauseTables)
+

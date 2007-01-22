@@ -1,7 +1,7 @@
 <div class="portlet"
      tal:condition="context/currentpotemplates">
 
-    <h4>Translation sets:</h4>
+    <h2>Translation sets</h2>
 
     <div class="portletBody">
 

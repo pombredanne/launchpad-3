@@ -8,10 +8,12 @@ Let's see if No Privileges Person can see the translated strings in Southern
 Sotho. We expect them to be told they can only make contributions:
 
   >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
-  >>> browser.open('http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/st/+translate')
+  >>> browser.open(
+  ...     'http://localhost/ubuntu/hoary/+source/evolution/'
+  ...     '+pots/evolution-2.2/st/+translate')
   >>> browser.url
-  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/st/+translate'
-  >>> 'You are not an official translator for this file' in browser.contents
+  'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/st/+translate'
+  >>> 'Your translations will be held for review' in browser.contents
   True
 
 However, in Afrikaans, No Privileges Person DOES have the ability to edit
@@ -19,24 +21,32 @@ directly.
 
 First, we show that the message 137 is not translated.
 
-  >>> browser.open('http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+translate')
+  >>> browser.open(
+  ...     'http://localhost/ubuntu/hoary/+source/evolution/'
+  ...     '+pots/evolution-2.2/af/8/+translate')
   >>> browser.url
-  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+translate'
-  >>> browser.getControl(name='msgset_137_af_translation_0').value
-  ''
+  'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/8/+translate'
+  >>> '(no translation yet)' in browser.contents
+  True
 
 Now, we need to show that it is translated after a post. Let's go ahead and
 POST and see that all goes well:
 
-  >>> browser.getControl(name='msgset_137_af_translation_0').value = 'evolution minikaart'
+  >>> browser.getControl(
+  ...     name='msgset_137_af_translation_0_radiobutton').value = [
+  ...         'msgset_137_af_translation_0_new']
+  >>> browser.getControl(
+  ...     name='msgset_137_af_translation_0_new').value = 'evolution minikaart'
   >>> browser.getControl(name='submit_translations').click()
   >>> browser.url
-  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+translate?start=10'
+  'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/9/+translate'
 
 And finally, let's take a look again, and we should have a translation added.
 
-  >>> browser.open('http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+translate')
+  >>> browser.getLink('Previous').click()
   >>> browser.url
-  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+translate'
-  >>> browser.getControl(name='msgset_137_af_translation_0').value
-  'evolution minikaart'
+  'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/8/+translate'
+  >>> '(no translation yet)' in browser.contents
+  False
+  >>> 'evolution minikaart' in browser.contents
+  True

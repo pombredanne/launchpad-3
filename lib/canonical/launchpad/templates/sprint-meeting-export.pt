@@ -24,7 +24,8 @@
                              approver spec/spec/approver/name|nothing;
                              priority spec/spec/priority/value">
       <person tal:repeat="person spec/interested"
-              tal:attributes="name person/name" />
+              tal:attributes="name person/name;
+                              required person/required" />
     </meeting>
   </unscheduled>
 

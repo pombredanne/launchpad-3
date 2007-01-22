@@ -1,4 +1,4 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2006 Canonical Ltd.  All rights reserved.
 
 """Classes to represent source packages in a distribution."""
 
@@ -8,22 +8,19 @@ __all__ = [
     'DistributionSourcePackage',
     ]
 
-import apt_pkg
-apt_pkg.InitSystem()
-
 from sqlobject import SQLObjectNotFound
+from sqlobject.sqlbuilder import SQLConstant
 
 from zope.interface import implements
 
-from canonical.lp.dbschema import PackagePublishingStatus, TicketStatus
+from canonical.lp.dbschema import PackagePublishingStatus
 
 from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, ITicketTarget, DuplicateBugContactError,
     DeleteBugContactError, TICKET_STATUS_DEFAULT_SEARCH)
-from canonical.launchpad.components.bugtarget import BugTargetBase
+from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.database.bug import (
-    BugSet, get_bug_tags, get_bug_tags_open_count)
+from canonical.launchpad.database.bug import BugSet, get_bug_tags_open_count
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
@@ -34,14 +31,16 @@ from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
-from canonical.launchpad.database.sourcepackage import SourcePackage
+from canonical.launchpad.database.sourcepackage import (
+    SourcePackage, SourcePackageTicketTargetMixin)
 from canonical.launchpad.database.supportcontact import SupportContact
-from canonical.launchpad.database.ticket import Ticket, TicketSet
+from canonical.launchpad.database.ticket import (
+    SimilarTicketsSearch, Ticket, TicketTargetSearch, TicketSet)
 from canonical.launchpad.helpers import shortlist
 
-_arg_not_provided = object()
 
-class DistributionSourcePackage(BugTargetBase):
+class DistributionSourcePackage(BugTargetBase,
+                                SourcePackageTicketTargetMixin):
     """This is a "Magic Distribution Source Package". It is not an
     SQLObject, but instead it represents a source package with a particular
     name in a particular distribution. You can then ask it all sorts of
@@ -101,10 +100,12 @@ class DistributionSourcePackage(BugTargetBase):
             distribution=self.distribution,
             sourcepackagerelease=spph[0].sourcepackagerelease)
 
+    # XXX: bad method name, no need to be a property -- kiko, 2006-08-16
     @property
     def currentrelease(self):
         """See IDistributionSourcePackage."""
-        sprs = SourcePackageRelease.select("""
+        order_const = "debversion_sort_key(SourcePackageRelease.version) DESC"
+        spr = SourcePackageRelease.selectFirst("""
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackageRelease.id =
                 SourcePackagePublishingHistory.sourcepackagerelease AND
@@ -114,18 +115,16 @@ class DistributionSourcePackage(BugTargetBase):
             SourcePackagePublishingHistory.status != %s
             """ % sqlvalues(self.sourcepackagename, self.distribution,
                             PackagePublishingStatus.REMOVED),
-            orderBy='datecreated',
-            clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'])
+            clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
+            orderBy=[SQLConstant(order_const),
+                     "-SourcePackagePublishingHistory.datepublished"])
 
-        # safely sort by version
-        compare = lambda a,b: apt_pkg.VersionCompare(a.version, b.version)
-        releases = sorted(shortlist(sprs, 30), cmp=compare)
-        if len(releases) == 0:
+        if spr is None:
             return None
-
-        return DistributionSourcePackageRelease(
-            distribution=self.distribution,
-            sourcepackagerelease=releases[-1])
+        else:
+            return DistributionSourcePackageRelease(
+                distribution=self.distribution,
+                sourcepackagerelease=spr)
 
     def bugtasks(self, quantity=None):
         """See IDistributionSourcePackage."""
@@ -194,6 +193,7 @@ class DistributionSourcePackage(BugTargetBase):
             return None
         return cache.binpkgnames
 
+    # XXX: bad method name, no need to be a property -- kiko, 2006-08-16
     @property
     def by_distroreleases(self):
         """See IDistributionSourcePackage."""
@@ -209,6 +209,7 @@ class DistributionSourcePackage(BugTargetBase):
         """See IDistributionSourcePackage."""
         return self._getPublishingHistoryQuery()
 
+    # XXX: bad method name, no need to be a property -- kiko, 2006-08-16
     @property
     def current_publishing_records(self):
         """See IDistributionSourcePackage."""
@@ -235,6 +236,7 @@ class DistributionSourcePackage(BugTargetBase):
             prejoinClauseTables=['SourcePackageRelease'],
             orderBy='-datecreated')
 
+    # XXX: bad method name, no need to be a property -- kiko, 2006-08-16
     @property
     def releases(self):
         """See IDistributionSourcePackage."""
@@ -258,84 +260,6 @@ class DistributionSourcePackage(BugTargetBase):
                 result.append(dspr)
         return result
 
-    # ticket related interfaces
-    def tickets(self, quantity=None):
-        """See ITicketTarget."""
-        return Ticket.select("""
-            distribution=%s AND
-            sourcepackagename=%s
-            """ % sqlvalues(self.distribution.id,
-                            self.sourcepackagename.id),
-            orderBy='-datecreated',
-            limit=quantity)
-
-    def newTicket(self, owner, title, description, datecreated=None):
-        """See ITicketTarget."""
-        return TicketSet.new(
-            title=title, description=description, owner=owner,
-            distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename,
-            datecreated=datecreated)
-
-    def getTicket(self, ticket_id):
-        """See ITicketTarget."""
-        # first see if there is a ticket with that number
-        try:
-            ticket = Ticket.get(ticket_id)
-        except SQLObjectNotFound:
-            return None
-        # now verify that that ticket is actually for this target
-        if ticket.distribution != self.distribution:
-            return None
-        if ticket.sourcepackagename != self.sourcepackagename:
-            return None
-        return ticket
-
-    def searchTickets(self, search_text=None,
-                      status=TICKET_STATUS_DEFAULT_SEARCH, sort=None):
-        """See ITicketTarget."""
-        return TicketSet.search(search_text=search_text, status=status,
-                                sort=sort, distribution=self.distribution,
-                                sourcepackagename=self.sourcepackagename)
-
-    def findSimilarTickets(self, title):
-        """See ITicketTarget."""
-        return TicketSet.findSimilar(title, distribution=self.distribution,
-                                     sourcepackagename=self.sourcepackagename)
-
-    def addSupportContact(self, person):
-        """See ITicketTarget."""
-        if person in self.support_contacts:
-            return False
-        SupportContact(
-            product=None, person=person,
-            sourcepackagename=self.sourcepackagename,
-            distribution=self.distribution)
-        return True
-
-    def removeSupportContact(self, person):
-        """See ITicketTarget."""
-        if person not in self.support_contacts:
-            return False
-        support_contact_entry = SupportContact.selectOneBy(
-            distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename,
-            person=person)
-        support_contact_entry.destroySelf()
-        return True
-
-    @property
-    def support_contacts(self):
-        """See ITicketTarget."""
-        support_contacts = SupportContact.selectBy(
-            distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename)
-
-        return shortlist([
-            support_contact.person for support_contact in support_contacts
-            ],
-            longest_expected=100)
-
     def __eq__(self, other):
         """See IDistributionSourcePackage."""
         return (
@@ -346,6 +270,12 @@ class DistributionSourcePackage(BugTargetBase):
     def __ne__(self, other):
         """See IDistributionSourcePackage."""
         return not self.__eq__(other)
+
+    def _getBugTaskContextWhereClause(self):
+        """See BugTargetBase."""
+        return (
+            "BugTask.distribution = %d AND BugTask.sourcepackagename = %d" % (
+            self.distribution.id, self.sourcepackagename.id))
 
     def searchTasks(self, search_params):
         """See IBugTarget."""
@@ -370,3 +300,4 @@ class DistributionSourcePackage(BugTargetBase):
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename)
         return BugSet().createBug(bug_params)
+

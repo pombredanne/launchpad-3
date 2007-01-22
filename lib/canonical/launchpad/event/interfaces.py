@@ -34,12 +34,11 @@ class ISQLObjectToBeModifiedEvent(IObjectEvent):
     user = Attribute("The user who will modify the object.")
 
 
-class IJoinTeamRequestEvent(Interface):
-    """An user requested to join a team."""
+class IJoinTeamEvent(Interface):
+    """A user joined (or tried to join) a team."""
 
-    user = Attribute("The user who requested to join the team.")
+    user = Attribute("The user who joined the team.")
     team = Attribute("The team.")
-    appurl = Attribute("The base url. (i.e. https://launchpad.ubuntu.com)")
 
 
 class IKarmaAssignedEvent(IObjectEvent):

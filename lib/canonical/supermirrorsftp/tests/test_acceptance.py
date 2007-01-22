@@ -11,14 +11,14 @@ import os
 import shutil
 import gc
 
-from bzrlib.bzrdir import ScratchDir
 import bzrlib.branch
 from bzrlib.tests import TestCaseInTempDir
 from bzrlib.tests.repository_implementations.test_repository import (
     TestCaseWithRepository)
 from bzrlib.errors import NoSuchFile, NotBranchError, PermissionDenied
 from bzrlib.transport import get_transport
-from bzrlib.transport import sftp
+from bzrlib.transport import sftp, ssh
+from bzrlib.urlutils import local_path_from_url
 from bzrlib.builtins import cmd_push
 
 from twisted.python.util import sibpath
@@ -88,8 +88,8 @@ class SFTPTestCase(TestCaseWithRepository):
 
         # XXX spiv 2005-01-13: 
         # Force bzrlib to use paramiko (because OpenSSH doesn't respect $HOME)
-        self.realSshVendor = sftp._ssh_vendor
-        sftp._ssh_vendor = 'none'
+        self.realSshVendor = ssh._ssh_vendor
+        ssh._ssh_vendor = ssh.ParamikoVendor()
 
         # Start authserver.
         self.authserver = AuthserverTacTestSetup()
@@ -123,7 +123,7 @@ class SFTPTestCase(TestCaseWithRepository):
         # LaunchpadZopelessTestSetup's tear down will remove bzrlib's logging
         # handlers, causing it to blow up.  See bug #41697.
         super(SFTPTestCase, self).tearDown()
-        sftp._ssh_vendor = self.realSshVendor
+        ssh._ssh_vendor = self.realSshVendor
         shutil.rmtree(self.userHome)
 
         # XXX spiv 2006-04-28: as the comment bzrlib.tests.run_suite says, this
@@ -172,7 +172,7 @@ class AcceptanceTests(SFTPTestCase):
 
     def _push(self, remote_url):
         old_dir = os.getcwdu()
-        os.chdir(self.local_branch.base)
+        os.chdir(local_path_from_url(self.local_branch.base))
         try:
             cmd_push().run_argv([remote_url])
         finally:

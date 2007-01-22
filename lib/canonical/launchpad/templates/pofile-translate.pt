@@ -8,7 +8,6 @@
     <metal:leftportlets fill-slot="portlets_one">
       <div tal:replace="structure context/@@+portlet-about" />
       <div tal:replace="structure context/@@+portlet-details" />
-      <div tal:replace="structure context/@@+portlet-quickhelp" />
       <div tal:replace="structure context/@@+portlet-stats" />
     </metal:leftportlets>
 
@@ -19,7 +18,12 @@
 
     <div metal:fill-slot="main">
 
-      <div>You are translating</div>
+      <tal:notloggedin condition="not:request/lp:person">
+        <div>You are browsing</div>
+      </tal:notloggedin>
+      <tal:loggedin condition="request/lp:person">
+        <div>You are translating</div>
+      </tal:loggedin>
       <h1>
         <tal:productseries
           condition="exists:context/potemplate/productseries/displayname"
@@ -40,7 +44,7 @@
 
         <!-- Alternative suggestions. -->
         <div metal:define-macro="editform">
-          <form method="POST" style="text-align: right;" action="+translate">
+          <form method="get" style="text-align: right;" action="+translate">
             <!-- the hidden elements -->
             <input type="hidden" name="show" value=""
                    tal:attributes="value view/show" />
@@ -57,15 +61,15 @@
             </tal:comment>
             <label>Make suggestions from:</label>
             <tal:language-widget content="structure view/alternative_language_widget" />
-            <input
-              type="submit" name='select_alternate_language' value="Change" />
+            <input type="submit" name="select_alternate_language" value="Change" />
           </form>
         </div>
-        <form method="GET" style="text-align: right;" action="+translate">
+        <form method="get" style="text-align: right;" action="+translate">
           <!-- the hidden elements -->
-          <input type="hidden" name="alt" value=""
-                 tal:condition="view/second_lang_code"
-                 tal:attributes="value view/second_lang_code" />
+          <input tal:condition="view/second_lang_code"
+                 tal:replace="structure view/alternative_language_widget/hidden" />
+          <input type="hidden" name="start" value=""
+                 tal:attributes="value view/start" />
           <input type="hidden" name="batch" value=""
                  tal:attributes="value view/size" />
           <label>Show:</label>
@@ -121,45 +125,42 @@
         </tal:block>
 
         <tal:block condition="view/batchnav/currentBatch">
-          <form method="POST" action="+translate">
+          <form method="POST" action="">
             <!-- the hidden elements -->
-            <input type="hidden" name="alt"
-                   tal:condition="view/second_lang_code"
-                   tal:attributes="value view/second_lang_code" />
-            <input type="hidden" name="show"
-                   tal:condition="view/show"
-                   tal:attributes="value view/show" />
             <input type="hidden" name="start" value=""
                    tal:attributes="value view/start" />
             <input type="hidden" name="batch" value=""
                    tal:attributes="value view/size" />
+            <input type="hidden" name="lock_timestamp" value=""
+                   tal:condition="request/lp:person"
+                   tal:attributes="value view/lock_timestamp/isoformat" />
             <table class="listing" style="margin-top: 0.5em;">
               <thead>
                 <tr class="results">
                   <td colspan="5">
                     <!-- Paging doodads. -->
-                    <tal:navigation replace="structure view/batchnav/@@+navigation-links" />
+                    <tal:navigation replace="structure view/batchnav/@@+navigation-links-upper" />
                   </td>
                 </tr>
               </thead>
-              <tbody class="greater">
-                <tal:loop repeat="entry view/batchnav/currentBatch">
-                  <tal:pomsgsetview
-                    define="pomsgset_view python:view.getPOMsgSetViewFromPOTMsgSet(entry)">
-                    <metal:pomsgsetview
-                      use-macro="pomsgset_view/@@+pomsgset-translate/pomsgset-view"
-                      />
-                  </tal:pomsgsetview>
+              <tbody class="greater" id="messages_to_translate">
+                <tal:loop repeat="pomsgset_view view/pomsgset_views">
+                  <div tal:replace="structure pomsgset_view" />
                 </tal:loop>
               </tbody>
               <tfoot>
-                <tr>
+                <tr tal:condition="request/lp:person">
                   <th colspan="5">
+                    <tal:review
+                      condition="not: view/user_is_official_translator"
+                    >
+                      Your translations will be held for review by the
+                      official translators for this file.
+                    </tal:review>
                     <input type="submit"
                            name="submit_translations"
                            value="Save &amp; Continue"
-                           style="text-align: right;"
-                           tal:attributes="tabindex view/generateNextTabIndex" />
+                           style="text-align: right;"/>
                   </th>
                 </tr>
               </tfoot>
@@ -170,9 +171,8 @@
         <p class="discreet">
           Translation status:
           <span class="language-code"
-                tal:content="context/language/englishname"
-                tal:omit-tag="">Spanish</span>
-          <span tal:replace="view/completeness" tal:omit-tag="">0 %</span>
+                tal:replace="context/language/englishname">Spanish</span>
+          <span tal:replace="view/completeness">0 %</span>
         </p>
       </tal:havepluralforms>
     </div>

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://web.resource.org/cc/"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://inkscape.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="10"
+   height="10"
+   id="svg2"
+   sodipodi:version="0.32"
+   inkscape:version="0.43"
+   version="1.0"
+   sodipodi:docbase="/home/mpt/hacking/lp/2006-09-bug-46/lib/canonical/launchpad/images"
+   sodipodi:docname="translation-newline.svg"
+   inkscape:export-filename="/home/mpt/hacking/lp/2006-09-bug-46/lib/canonical/launchpad/images/translation-newline.png"
+   inkscape:export-xdpi="90"
+   inkscape:export-ydpi="90">
+  <defs
+     id="defs4" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="30.541689"
+     inkscape:cx="5"
+     inkscape:cy="4.9275682"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     gridempspacing="2"
+     showgrid="true"
+     inkscape:grid-bbox="true"
+     inkscape:grid-points="true"
+     inkscape:window-width="872"
+     inkscape:window-height="587"
+     inkscape:window-x="142"
+     inkscape:window-y="25"
+     gridspacingx="0.5px"
+     gridspacingy="0.5px" />
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <path
+       style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="M 9,1 L 10,1 L 10,7 L 5,7 L 5,10 L 1,6 L 5,2 L 5,6 L 9,6 L 9,1 z "
+       id="path3195"
+       sodipodi:nodetypes="cccccccccc" />
+    <path
+       style="fill:#8cacbb;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="M 7,0 L 9,0 L 9,6 L 4,6 L 4,9 L 0,5 L 4,1 L 4,4 L 7,4 L 7,0 z "
+       id="path2318"
+       sodipodi:nodetypes="cccccccccc" />
+  </g>
+</svg>

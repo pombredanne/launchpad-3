@@ -76,19 +76,16 @@
     <div class="actions">
       <input
         type="submit"
-        tabindex="2"
         name="accept"
         value="Accept"
         />
       <input
         type="submit"
-        tabindex="3"
         name="decline"
         value="Decline"
         />
       <input
         type="submit"
-        tabindex="4"
         name="cancel"
         value="Cancel"
         />

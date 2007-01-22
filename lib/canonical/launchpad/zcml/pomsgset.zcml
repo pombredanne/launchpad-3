@@ -22,6 +22,10 @@
         set_schema="canonical.launchpad.interfaces.IPOMsgSet" />
     </content>
 
+    <content class="canonical.launchpad.browser.POMsgSetSuggestions">
+      <allow interface="canonical.launchpad.interfaces.IPOMsgSetSuggestions" />
+    </content>
+
     <browser:url
         for="canonical.launchpad.interfaces.IPOMsgSet"
         path_expression="string:${potmsgset/sequence}"
@@ -40,24 +44,25 @@
     <browser:page
         for="canonical.launchpad.interfaces.IPOMsgSet"
         class="canonical.launchpad.browser.POMsgSetIndexView"
-        facet="translations"
         permission="zope.Public"
         name="+index"
         attribute="__call__"
         />
 
     <browser:page
-      for="*"
-      name="+pomsgset-translate"
-      permission="launchpad.AnyPerson"
-      template="../templates/pomsgset-translate-macros.pt" />
+        name="+translate"
+        facet="translations"
+        for="canonical.launchpad.interfaces.IPOMsgSet"
+        permission="zope.Public"
+        template="../templates/pomsgset-translate.pt"
+        class="canonical.launchpad.browser.POMsgSetPageView"
+        />
 
     <browser:page
-        name="+translate"
-        for="canonical.launchpad.interfaces.IPOMsgSet"
+        name="+display"
+        for="canonical.launchpad.interfaces.IPOMsgSetSuggestions"
         permission="launchpad.AnyPerson"
-        template="../templates/pomsgset-translate.pt"
-        class="canonical.launchpad.browser.POMsgSetView"
+        template="../templates/pomsgset-suggestions.pt"
         />
 
 </facet>

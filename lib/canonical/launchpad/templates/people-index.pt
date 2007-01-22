@@ -22,7 +22,7 @@
           <table style="margin-bottom: 1em;">
             <tr>
               <td>
-                <input type="text" name="name" size="35" tabindex="1"
+                <input type="text" name="name" size="35"
                      tal:attributes="value request/name|nothing"
                 />
                 <input
@@ -93,6 +93,9 @@
             </tr>
           </table>
         </form>
+        <script type="text/javascript"><!--
+          setFocusByName('name');
+        // --></script>
         <tal:block condition="not: bn">
           <p> 
             <b>Duplicate accounts</b> may have been created
@@ -136,7 +139,7 @@
               <tbody>
                 <tr tal:repeat="person bn/currentBatch">
                   <td><a tal:content="person/browsername"
-                         tal:attributes="href person/name"/>
+                         tal:attributes="href person/fmt:url"/>
                   </td>
                   <td tal:content="person/name">foobar</td>
                   <td class="amount" tal:content="person/karma">34</td>

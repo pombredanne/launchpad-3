@@ -9,6 +9,7 @@ __all__ = [
     'ValidateEmailView',
     'NewAccountView',
     'MergePeopleView',
+    'ClaimProfileView',
     ]
 
 import urllib
@@ -21,18 +22,23 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 
 from canonical.database.sqlbase import flush_database_updates
 
-from canonical.lp.dbschema import EmailAddressStatus, LoginTokenType
-from canonical.lp.dbschema import GPGKeyAlgorithm
+from canonical.widgets import PasswordChangeWidget
+
+from canonical.lp.dbschema import (
+    EmailAddressStatus, GPGKeyAlgorithm, LoginTokenType,
+    PersonCreationRationale)
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.login import logInPerson
 from canonical.launchpad.webapp import (
-    canonical_url, GeneralFormView, GetitemNavigation, LaunchpadView)
+    action, canonical_url, custom_widget, GeneralFormView, GetitemNavigation,
+    LaunchpadView, LaunchpadFormView)
 
 from canonical.launchpad.interfaces import (
-    IPersonSet, IEmailAddressSet, ILaunchBag, ILoginTokenSet, 
-    IGPGKeySet, IGPGHandler, GPGVerificationError, GPGKeyNotFoundError)
+    IPersonSet, IEmailAddressSet, ILaunchBag, ILoginTokenSet, IPerson,
+    IGPGKeySet, IGPGHandler, GPGVerificationError, GPGKeyNotFoundError,
+    ShipItConstants, UBUNTU_WIKI_URL)
 
 UTC = pytz.timezone('UTC')
 
@@ -58,10 +64,12 @@ class LoginTokenView(LaunchpadView):
     PAGES = {LoginTokenType.PASSWORDRECOVERY: '+resetpassword',
              LoginTokenType.ACCOUNTMERGE: '+accountmerge',
              LoginTokenType.NEWACCOUNT: '+newaccount',
+             LoginTokenType.NEWPROFILE: '+newaccount',
              LoginTokenType.VALIDATEEMAIL: '+validateemail',
              LoginTokenType.VALIDATETEAMEMAIL: '+validateteamemail',
              LoginTokenType.VALIDATEGPG: '+validategpg',
              LoginTokenType.VALIDATESIGNONLYGPG: '+validatesignonlygpg',
+             LoginTokenType.PROFILECLAIM: '+claimprofile',
              }
 
     def render(self):
@@ -116,6 +124,52 @@ class BaseLoginTokenView:
         logInPerson(self.request, principal, email)
 
 
+class ClaimProfileView(BaseLoginTokenView, LaunchpadFormView):
+
+    schema = IPerson
+    field_names = ['displayname', 'hide_email_addresses', 'password']
+    custom_widget('password', PasswordChangeWidget)
+    label = 'Claim Launchpad profile'
+    expected_token_types = (LoginTokenType.PROFILECLAIM,)
+    claimed_profile = None
+
+    def initialize(self):
+        if not self.redirectIfInvalidOrConsumedToken():
+            self.claimed_profile = getUtility(IEmailAddressSet).getByEmail(
+                self.context.email).person
+            LaunchpadFormView.initialize(self)
+
+    @property
+    def initial_values(self):
+        return {'displayname': self.claimed_profile.displayname}
+
+    @property
+    def next_url(self):
+        return canonical_url(self.claimed_profile)
+
+    @action(_('Continue'), name='confirm')
+    def confirm_action(self, action, data):
+        email = getUtility(IEmailAddressSet).getByEmail(self.context.email)
+        # The user is not yet logged in, but we need to set some
+        # things on his new account, so we need to remove the security
+        # proxy from it.
+        # XXX: We should be able to login with this person and set the
+        # password, to avoid removing the security proxy, but it didn't
+        # work, so I'm leaving this hack for now.
+        # https://launchpad.net/bugs/62674
+        # -- Guilherme Salgado, 2006-09-27
+        from zope.security.proxy import removeSecurityProxy
+        naked_person = removeSecurityProxy(email.person)
+        naked_person.displayname = data['displayname']
+        naked_person.hide_email_addresses = data['hide_email_addresses']
+        naked_person.password = data['password']
+
+        email.person.validateAndEnsurePreferredEmail(email)
+        self.context.consume()
+        self.logInPersonByEmail(email.email)
+        self.success(_("Profile claimed successfully"))
+
+
 class ResetPasswordView(BaseLoginTokenView, GeneralFormView):
 
     def initialize(self):
@@ -155,6 +209,7 @@ class ResetPasswordView(BaseLoginTokenView, GeneralFormView):
         # XXX: It should be possible to do the login before this and avoid
         # this hack. In case the user doesn't want to be logged in
         # automatically we can log him out after doing what we want.
+        # https://launchpad.net/bugs/62674
         # XXX: Steve Alexander, 2005-03-18
         #      Local import, because I don't want this import copied elsewhere!
         #      This code is to be removed when the UpgradeToBusinessClass
@@ -259,7 +314,6 @@ class ValidateEmailView(BaseLoginTokenView, LaunchpadView):
 
     def validateSignOnlyGpg(self):
         """Validate a gpg key."""
-        person_url = canonical_url(self.context.requester)
         gpghandler = getUtility(IGPGHandler)
 
         # retrieve respective key info
@@ -438,7 +492,7 @@ class ValidateEmailView(BaseLoginTokenView, LaunchpadView):
                     hijacked.append(lpemail)
                     continue
                 # store guessed email address with status NEW
-                email = emailset.new(uid, requester.id)
+                email = emailset.new(uid, requester)
                 guessed.append(email)
 
         return guessed, hijacked
@@ -478,52 +532,139 @@ class ValidateEmailView(BaseLoginTokenView, LaunchpadView):
 
         # New email validated by the user. We must add it to our emailaddress
         # table.
-        email = emailset.new(emailaddress, requester.id)
+        email = emailset.new(emailaddress, requester)
         return email
 
 
 class NewAccountView(BaseLoginTokenView, GeneralFormView):
+    """Page to create a new Launchpad account.
+
+    # This is just a small test to make sure
+    # LoginOrRegister.registered_origins and
+    # NewAccountView.urls_and_rationales are kept in sync.
+    >>> from canonical.launchpad.webapp.login import LoginOrRegister
+    >>> urls = sorted(LoginOrRegister.registered_origins.values())
+    >>> urls == sorted(NewAccountView.urls_and_rationales.keys())
+    True
+    """
+
+    urls_and_rationales = {
+        ShipItConstants.ubuntu_url:
+            PersonCreationRationale.OWNER_CREATED_SHIPIT,
+        ShipItConstants.kubuntu_url:
+            PersonCreationRationale.OWNER_CREATED_SHIPIT,
+        ShipItConstants.edubuntu_url:
+            PersonCreationRationale.OWNER_CREATED_SHIPIT,
+        UBUNTU_WIKI_URL: PersonCreationRationale.OWNER_CREATED_UBUNTU_WIKI}
+
+    created_person = None
 
     def initialize(self):
-        self.expected_token_types = (LoginTokenType.NEWACCOUNT,)
+        self.expected_token_types = (
+            LoginTokenType.NEWACCOUNT, LoginTokenType.NEWPROFILE)
         self.top_of_page_errors = []
         self.redirectIfInvalidOrConsumedToken()
+        self.email = getUtility(IEmailAddressSet).getByEmail(
+            self.context.email)
 
     def assertNoErrors(self):
-        assert not self.top_of_page_errors and not self.errors, \
-               'token processing can not succeed with an error message set'
+        assert not self.top_of_page_errors and not self.errors, (
+           'token processing can not succeed with an error message set')
 
     def nextURL(self):
         if self.context.redirection_url:
             return self.context.redirection_url
+        elif self.user is not None:
+            # User is logged in, redirect to his home page.
+            return canonical_url(self.user)
+        elif self.created_person is not None:
+            # User is not logged in, redirect to the created person's home
+            # page.
+            return canonical_url(self.created_person)
         else:
-            return canonical_url(getUtility(ILaunchBag).user)
+            return None
 
     def validate(self, form_values):
-        """Verify if the email address is not used."""
-        if getUtility(IEmailAddressSet).getByEmail(self.context.email):
+        """Verify if the email address is not used by an existing account."""
+        if self.email is not None and self.email.person.is_valid_person:
             self.top_of_page_errors.append(_(
                 'The email address %s is already registered.'
                 % self.context.email))
             raise WidgetsError(self.top_of_page_errors)
 
     def process(self, displayname, hide_email_addresses, password):
-        """Check if both passwords match and then create a new Person.
-        If everything went ok, we delete the LoginToken (self.context) from
-        the database, so nobody can use it again.
+        """Create a new Person with the context's email address and set a
+        preferred email and password to it, or use an existing Person
+        associated with the context's email address, setting it as the
+        preferred address and also setting the password.
+        
+        If everything went ok, we consume the LoginToken (self.context), so
+        nobody can use it again.
         """
-        person, email = getUtility(IPersonSet).createPersonAndEmail(
-                self.context.email, displayname=displayname,
-                password=password, passwordEncrypted=True,
-                hide_email_addresses=hide_email_addresses)
+        if self.email is not None:
+            # This is a placeholder profile automatically created by one of
+            # our scripts, let's just confirm its email address and set a
+            # password.
+            person = self.email.person
+            assert not person.is_valid_person, (
+                'Account %s has already been claimed and this should '
+                'have been caught by the validate() method.' % person.name)
+            email = self.email
+            # The user is not yet logged in, but we need to set some
+            # things on his new account, so we need to remove the security
+            # proxy from it.
+            # XXX: We should be able to login with this person and set the
+            # password, to avoid removing the security proxy, but it didn't
+            # work, so I'm leaving this hack for now.
+            # https://launchpad.net/bugs/62674
+            # -- Guilherme Salgado, 2006-09-27
+            from zope.security.proxy import removeSecurityProxy
+            naked_person = removeSecurityProxy(person)
+            naked_person.displayname = displayname
+            naked_person.hide_email_addresses = hide_email_addresses
+            naked_person.password = password
+            naked_person.creation_rationale = self._getCreationRationale()
+            naked_person.creation_comment = None
+        else:
+            person, email = self._createPersonAndEmail(
+                displayname, hide_email_addresses, password)
 
-        notify(ObjectCreatedEvent(person))
-        notify(ObjectCreatedEvent(email))
-
+        self.created_person = person
         person.validateAndEnsurePreferredEmail(email)
         self.context.consume()
         self.logInPersonByEmail(email.email)
         self.success(_("Registration completed successfully"))
+
+    def _getCreationRationale(self):
+        """Return the creation rationale that should be used for this person.
+
+        If there's a rationale for the logintoken's redirection_url, then use
+        it, otherwise uses PersonCreationRationale.OWNER_CREATED_LAUNCHPAD.
+        """
+        rationale = self.urls_and_rationales.get(self.context.redirection_url)
+        if rationale is None:
+            rationale = PersonCreationRationale.OWNER_CREATED_LAUNCHPAD
+        return rationale
+
+    def _createPersonAndEmail(
+            self, displayname, hide_email_addresses, password):
+        """Create and return a new Person and EmailAddress.
+
+        Use the given arguments and the email address stored in the
+        LoginToken (our context).
+
+        Also fire ObjectCreatedEvents for both the newly created Person
+        and EmailAddress.
+        """
+        rationale = self._getCreationRationale()
+        person, email = getUtility(IPersonSet).createPersonAndEmail(
+            self.context.email, rationale, displayname=displayname,
+            password=password, passwordEncrypted=True,
+            hide_email_addresses=hide_email_addresses)
+
+        notify(ObjectCreatedEvent(person))
+        notify(ObjectCreatedEvent(email))
+        return person, email
 
 
 class MergePeopleView(BaseLoginTokenView, LaunchpadView):
@@ -570,7 +711,8 @@ class MergePeopleView(BaseLoginTokenView, LaunchpadView):
         # The user proved that he has access to this email address of the
         # dupe account, so we can assign it to him.
         requester = self.context.requester
-        email = getUtility(IEmailAddressSet).getByEmail(self.context.email)
+        emailset = getUtility(IEmailAddressSet)
+        email = emailset.getByEmail(self.context.email)
         email.person = requester.id
         requester.validateAndEnsurePreferredEmail(email)
 
@@ -581,7 +723,7 @@ class MergePeopleView(BaseLoginTokenView, LaunchpadView):
 
         # Now we must check if the dupe account still have registered email
         # addresses. If it hasn't we can actually do the merge.
-        if getUtility(IEmailAddressSet).getByPerson(self.dupe):
+        if emailset.getByPerson(self.dupe):
             self.mergeCompleted = False
             return
 

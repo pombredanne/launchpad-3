@@ -1,5 +1,4 @@
-IBugLinkTarget Interface
-========================
+= IBugLinkTarget Interface =
 
 Launchpad includes Malone, the powerful bug tracker. One of the best
 features of Malone is the ability to track a bug in multiple products
@@ -13,8 +12,8 @@ made available through the 'target' variable which is defined outside of
 this file, usually by a LaunchpadFunctionalTestCase. This instance
 shouldn't have any bugs linked to it at the start of the test.)
 
-    (Some parts of the IBugLinkTarget interface are only accessible
-    to a registered user.)
+    # Some parts of the IBugLinkTarget interface are only accessible
+    # to a registered user.
     >>> login('no-priv@canonical.com')
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import (
@@ -23,9 +22,7 @@ shouldn't have any bugs linked to it at the start of the test.)
     >>> verifyObject(IBugLinkTarget, target)
     True
 
-
-linkBug()
----------
+== linkBug() ==
 
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> bugset = getUtility(IBugSet)
@@ -96,9 +93,7 @@ if he is an administrator:
     >>> login('foo.bar@canonical.com')
     >>> private_link = target.linkBug(private_bug)
 
-
-bugs
-----
+== bugs ==
 
 The list of bugs linked to the target should be available in the bugs
 attributes:
@@ -106,9 +101,7 @@ attributes:
     >>> [bug.id for bug in target.bugs]
     [1, 2, 6]
 
-
-bug_links
----------
+== bug_links ==
 
 The IBugLink objects available on the target should be available in the
 bug_links attribute:
@@ -116,9 +109,7 @@ bug_links attribute:
     >>> [link.bug.id for link in target.bug_links]
     [1, 2, 6]
 
-
-unlinkBug()
------------
+== unlinkBug() ==
 
 The unlinkBug() method is used to remove a link between a bug and
 the target.
@@ -170,10 +161,8 @@ the bug or if he is an administrator.
     >>> target.unlinkBug(private_bug) == private_link
     True
 
+== Cleanup ==
 
-Cleanup
--------
-
-    (Unregister event listeners.)
+    # Unregister event listeners.
     >>> created_event_listener.unregister()
     >>> deleted_event_listener.unregister()

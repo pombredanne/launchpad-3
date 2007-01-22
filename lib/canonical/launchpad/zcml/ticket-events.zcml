@@ -5,12 +5,26 @@
 <subscriber
    for="canonical.launchpad.interfaces.ITicket
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
-   handler="canonical.launchpad.mailnotification.notify_ticket_added" />
+   handler="canonical.launchpad.mailnotification.TicketAddedNotification" />
+<subscriber
+   for="canonical.launchpad.interfaces.ITicket
+        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+   handler="canonical.launchpad.mailnotification.TicketUnsupportedLanguageNotification" />
 
 <subscriber
    for="canonical.launchpad.interfaces.ITicket
         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-   handler="canonical.launchpad.mailnotification.notify_ticket_modified" />
+   handler="canonical.launchpad.mailnotification.TicketModifiedDefaultNotification" />
+
+<subscriber
+   for="canonical.launchpad.interfaces.ITicket
+        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+   handler="canonical.launchpad.mailnotification.TicketModifiedOwnerNotification" />
+
+<subscriber
+   for="canonical.launchpad.interfaces.ITicket
+        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+   handler="canonical.launchpad.subscribers.karma.ticket_created" />
 
 <subscriber
    for="canonical.launchpad.interfaces.ITicket
@@ -26,5 +40,10 @@
    for="canonical.launchpad.interfaces.ITicketBug
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
    handler="canonical.launchpad.subscribers.karma.ticket_bug_added" />
+
+<subscriber
+   for="canonical.launchpad.interfaces.ITicket
+        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+   handler="canonical.launchpad.database.create_ticketreopening" />
 
 </configure>

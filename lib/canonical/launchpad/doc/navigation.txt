@@ -46,7 +46,7 @@ catch-all 'traverse()' method.
 
 You can also say that a new browser UI layer applies for this object.
 
-  newlayer = MaloneLayer
+  newlayer = BugsLayer
 
 You can also say how the breadcrumb will look for this object, if it has one.
 

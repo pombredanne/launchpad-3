@@ -17,6 +17,8 @@ import shutil
 import subprocess
 import unittest
 
+from bzrlib.urlutils import local_path_to_url
+
 from canonical.launchpad.scripts.importd.sourcetransport import (
     ImportdSourceTransport)
 from canonical.testing import reset_logging
@@ -49,7 +51,7 @@ class ImportdSourceTransportTestCase(SandboxTestCase):
         special remote_dir.
         """
         self.transport = ImportdSourceTransport(
-            self.logger, self.local_source, self.remote_dir)
+            self.logger, self.local_source, local_path_to_url(self.remote_dir))
 
     def tearDown(self):
         SandboxTestCase.tearDown(self)

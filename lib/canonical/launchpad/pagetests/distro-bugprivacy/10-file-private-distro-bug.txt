@@ -1,8 +1,9 @@
 Foo Bar files a security (private) bug on Ubuntu Linux. He gets
-redirected to the bug page.
+redirected to the bug page. (Note that only the advanced bug
+filing page, not the simple one, supports filing security bugs.)
 
     >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
-    >>> browser.open("http://launchpad.dev/distros/ubuntu/+filebug")
+    >>> browser.open("http://launchpad.dev/ubuntu/+filebug-advanced")
 
 Ubuntu has no security contact, so the Ubuntu maintainer, Ubuntu Team,
 will be subscribed instead.
@@ -21,7 +22,7 @@ will be subscribed instead.
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> print browser.url
-    http://launchpad.dev/distros/ubuntu/+source/evolution/+bug/11
+    http://launchpad.dev/ubuntu/+source/evolution/+bug/11
 
     >>> print browser.contents
     <!DOCTYPE...
@@ -29,7 +30,7 @@ will be subscribed instead.
 
 Foo Bar sees the private bug he filed.
 
-    >>> browser.open("http://launchpad.dev/distros/ubuntu/+bugs")
+    >>> browser.open("http://launchpad.dev/ubuntu/+bugs")
     >>> print browser.contents
     <!DOCTYPE...
     ...
@@ -54,11 +55,11 @@ Foo Bar and the Ubuntu Team are subscribed to the bug.
 Now let's set an Ubuntu security team, and see how the filebug page and
 subscriptions differ.
 
-    >>> browser.open("http://launchpad.dev/distros/ubuntu/+securitycontact")
+    >>> browser.open("http://launchpad.dev/ubuntu/+securitycontact")
     >>> browser.getControl("Security Contact").value = "name12"
     >>> browser.getControl("Change").click()
 
-    >>> browser.open("http://launchpad.dev/distros/ubuntu/+filebug")
+    >>> browser.open("http://launchpad.dev/ubuntu/+filebug-advanced")
 
     >>> print browser.contents
     <!DOCTYPE...
@@ -74,7 +75,7 @@ subscriptions differ.
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> print browser.url
-    http://launchpad.dev/distros/ubuntu/+source/evolution/+bug/12
+    http://launchpad.dev/ubuntu/+source/evolution/+bug/12
 
 Now only the reporter and /security contact/ are subscribed.
 

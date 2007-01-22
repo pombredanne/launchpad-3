@@ -1,11 +1,7 @@
 <metal:page define-macro="master"
             extend-macro="context/@@+shipit-macros/meta-master">
-<metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
-<metal:block define-slot="top_slot" />
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"
-    tal:attributes="lang default_language|default;
-                    xml:lang default_language|default;">
 
+  <metal:block define-slot="top_slot" />
   <head>
     <metal:extra-head fill-slot="extra-head">
       <link rel="icon" href="/@@/edubuntu-icon" />
@@ -81,5 +77,4 @@
     </div>
   </body>
 
-</html>
 </metal:page>

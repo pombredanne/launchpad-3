@@ -7,10 +7,32 @@ import cgi, urllib
 from zope.interface import implements
 
 from canonical.config import config
+from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.z3batching.batch import _Batch
 from canonical.launchpad.webapp.interfaces import (
     IBatchNavigator, ITableBatchNavigator,
     )
+
+
+class UpperBatchNavigationView(LaunchpadView):
+    """Only render navigation links if there is a batch."""
+
+    def render(self):
+        if self.context.currentBatch():
+            return LaunchpadView.render(self)
+        return u""
+
+
+class LowerBatchNavigationView(LaunchpadView):
+    """Render the bottom navigation links only if there are multiple batches."""
+
+    def render(self):
+        if (self.context.currentBatch() and
+            (self.context.nextBatchURL() or
+            self.context.prevBatchURL())):
+            return LaunchpadView.render(self)
+        return u""
+
 
 class BatchNavigator:
 

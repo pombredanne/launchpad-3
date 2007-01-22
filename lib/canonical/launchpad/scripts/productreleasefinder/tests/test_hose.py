@@ -46,7 +46,7 @@ class Hose_Filter(unittest.TestCase):
         from canonical.launchpad.scripts.productreleasefinder.hose import Hose
         from canonical.launchpad.scripts.productreleasefinder.filter import (
             FilterPattern)
-        pattern = FilterPattern("foo", "http:", "e*")
+        pattern = FilterPattern("foo", "http:e*")
         h = Hose([pattern])
         self.assertEquals(len(h.filter.filters), 1)
         self.assertEquals(h.filter.filters[0], pattern)
@@ -64,7 +64,7 @@ class Hose_Urls(Scaffold):
         from canonical.launchpad.scripts.productreleasefinder.hose import Hose
         from canonical.launchpad.scripts.productreleasefinder.filter import (
             FilterPattern)
-        pattern = FilterPattern("foo", "http://archive.ubuntu.com/", "e*")
+        pattern = FilterPattern("foo", "http://archive.ubuntu.com/e*")
         h = self.wrapped(Hose, [pattern])
         self.assertEquals(h.called_args["reduceWork"][0][0],
                           ["http://archive.ubuntu.com/"])
@@ -144,8 +144,8 @@ class Hose_LimitWalk(unittest.TestCase):
         from canonical.launchpad.scripts.productreleasefinder.hose import Hose
         from canonical.launchpad.scripts.productreleasefinder.filter import (
             FilterPattern)
-        pattern = FilterPattern("key", self.release_url,
-                                "foo/1.*/source/foo-1.*.tar.gz")
+        pattern = FilterPattern("key", self.release_url + 
+                                "/foo/1.*/source/foo-1.*.tar.gz")
         hose = Hose([pattern])
 
         prefix_len = len(self.release_url)

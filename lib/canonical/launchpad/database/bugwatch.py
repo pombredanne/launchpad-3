@@ -27,13 +27,9 @@ from canonical.launchpad.webapp import urlappend, urlsplit
 from canonical.launchpad.webapp.snapshot import Snapshot
 
 from canonical.launchpad.interfaces import (
-    IBugWatch, IBugWatchSet, IBugTrackerSet, NotFoundError)
+    IBugWatch, IBugWatchSet, IBugTrackerSet, ILaunchpadCelebrities,
+    NoBugTrackerFound, NotFoundError, UnrecognizedBugTrackerURL)
 from canonical.launchpad.database.bugset import BugSetBase
-
-
-bugzillaref = re.compile(r'(https?://.+/)show_bug.cgi.+id=(\d+).*')
-roundupref = re.compile(r'(https?://.+/)issue(\d+).*')
-tracref = re.compile(r'(https?://.+/)tickets/(\d+)')
 
 
 class BugWatch(SQLBase):
@@ -63,36 +59,17 @@ class BugWatch(SQLBase):
     def url(self):
         """See canonical.launchpad.interfaces.IBugWatch."""
         url_formats = {
-            BugTrackerType.BUGZILLA: 'show_bug.cgi?id=%s',
-            BugTrackerType.TRAC:     'ticket/%s',
-            BugTrackerType.DEBBUGS:  'cgi-bin/bugreport.cgi?bug=%s',
-            BugTrackerType.ROUNDUP:  'issue%s'
+            BugTrackerType.BUGZILLA:    'show_bug.cgi?id=%s',
+            BugTrackerType.TRAC:        'ticket/%s',
+            BugTrackerType.DEBBUGS:     'cgi-bin/bugreport.cgi?bug=%s',
+            BugTrackerType.ROUNDUP:     'issue%s',
+            BugTrackerType.SOURCEFORGE: 'support/tracker.php?aid=%s',
         }
         bt = self.bugtracker.bugtrackertype
-        if bt == BugTrackerType.SOURCEFORGE:
-            return self._sf_url()
-        elif not url_formats.has_key(bt):
+        if not url_formats.has_key(bt):
             raise AssertionError('Unknown bug tracker type %s' % bt)
         return urlappend(self.bugtracker.baseurl,
                          url_formats[bt] % self.remotebug)
-
-    def _sf_url(self):
-        # XXX: validate that the bugtracker URL has atid and group_id in
-        # it.
-        #
-        # Sourceforce has a pretty nasty URL model, with two codes that
-        # specify what project are looking at. This code disassembles
-        # it, sets the bug number and then reassembles it again.
-        # http://sourceforge.net/tracker/?atid=737291
-        #                                &group_id=136955
-        #                                &func=detail
-        #                                &aid=1337833
-        method, base, path, query, frag = urlsplit(self.bugtracker.baseurl)
-        params = cgi.parse_qs(query)
-        params['func'] = "detail"
-        params['aid'] = self.remotebug
-        query = urllib.urlencode(params, doseq=True)
-        return urlunsplit((method, base, path, query, frag))
 
     @property
     def needscheck(self):
@@ -119,16 +96,29 @@ class BugWatch(SQLBase):
                     linked_bugtask, old_bugtask, ['status'])
                 notify(event)
 
+    def destroySelf(self):
+        """See IBugWatch."""
+        assert self.bugtasks.count() == 0, "Can't delete linked bug watches"
+        SQLBase.destroySelf(self)
+
 
 class BugWatchSet(BugSetBase):
     """A set for BugWatch"""
 
     implements(IBugWatchSet)
     table = BugWatch
+    url_pattern = re.compile(r'(\bhttps?://.+/\S*)\.?\b')
 
     def __init__(self, bug=None):
         BugSetBase.__init__(self, bug)
         self.title = 'A set of bug watches'
+        self.bugtracker_parse_functions = {
+            BugTrackerType.BUGZILLA: self.parseBugzillaURL,
+            BugTrackerType.DEBBUGS:  self.parseDebbugsURL,
+            BugTrackerType.ROUNDUP: self.parseRoundupURL,
+            BugTrackerType.SOURCEFORGE: self.parseSourceForgeURL,
+            BugTrackerType.TRAC: self.parseTracURL,
+        }
 
     def get(self, watch_id):
         """See canonical.launchpad.interfaces.IBugWatchSet."""
@@ -140,49 +130,34 @@ class BugWatchSet(BugSetBase):
     def search(self):
         return BugWatch.select()
 
-    def _find_watches(self, pattern, trackertype, text, bug, owner):
-        """Find the watches in a piece of text, based on a given pattern and
-        tracker type."""
-        newwatches = []
-        # let's look for matching entries
-        matches = pattern.findall(text)
-        if len(matches) == 0:
-            return []
-        for match in matches:
-            # let's see if we already know about this bugtracker
-            bugtrackerset = getUtility(IBugTrackerSet)
-            baseurl = match[0]
-            remotebug = match[1]
-            # make sure we have a bugtracker
-            bugtracker = bugtrackerset.ensureBugTracker(baseurl, owner,
-                trackertype)
-            # see if there is a bugwatch for this remote bug on this bug
-            bugwatch = None
-            for watch in bug.watches:
-                if (watch.bugtracker == bugtracker and
-                    watch.remotebug == remotebug):
-                    bugwatch = watch
-                    break
-            if bugwatch is None:
-                bugwatch = BugWatch(bugtracker=bugtracker, bug=bug,
-                    remotebug=remotebug, owner=owner)
-                newwatches.append(bugwatch)
-                if len(newwatches) > 0:
-                    flush_database_updates()
-        return newwatches
-
     def fromText(self, text, bug, owner):
         """See IBugTrackerSet.fromText."""
-        watches = set([])
-        for pattern, trackertype in [
-            (bugzillaref, BugTrackerType.BUGZILLA),
-            (roundupref, BugTrackerType.ROUNDUP),
-            (tracref, BugTrackerType.TRAC),
-            ]:
-            watches = watches.union(self._find_watches(pattern, 
-                trackertype, text, bug, owner))
-        return sorted(watches, key=lambda a: (a.bugtracker.name,
-            a.remotebug))
+        newwatches = []
+        # Let's find all the URLs and see if they are bug references.
+        matches = self.url_pattern.findall(text)
+        if len(matches) == 0:
+            return []
+
+        for url in matches:
+            try:
+                bugtracker, remotebug = self.extractBugTrackerAndBug(url)
+            except NoBugTrackerFound, error:
+                bugtracker = getUtility(IBugTrackerSet).ensureBugTracker(
+                    error.base_url, owner, error.bugtracker_type)
+                remotebug = error.remote_bug
+            except UnrecognizedBugTrackerURL:
+                # It doesn't look like a bug URL, so simply ignore it.
+                continue
+
+            if bug.getBugWatch(bugtracker, remotebug) is None:
+                # This bug doesn't have such a bug watch, let's create
+                # one.
+                bugwatch = BugWatch(
+                    bugtracker=bugtracker, bug=bug, remotebug=remotebug,
+                    owner=owner)
+                newwatches.append(bugwatch)
+
+        return newwatches
 
     def fromMessage(self, message, bug):
         """See IBugWatchSet."""
@@ -206,3 +181,97 @@ class BugWatchSet(BugSetBase):
             bug=bug, owner=owner, datecreated=UTC_NOW, lastchanged=UTC_NOW, 
             bugtracker=bugtracker, remotebug=remotebug)
 
+    def parseBugzillaURL(self, scheme, host, path, query):
+        """Extract the Bugzilla base URL and bug ID."""
+        bug_page = 'show_bug.cgi'
+        if not path.endswith(bug_page):
+            return None
+        if query.get('id'):
+            # This is a Bugzilla URL.
+            remote_bug = query['id']
+        elif query.get('issue'):
+            # This is a Issuezilla URL.
+            remote_bug = query['issue']
+        else:
+            return None
+        base_path = path[:-len(bug_page)]
+        base_url = urlunsplit((scheme, host, base_path, '', ''))
+        return base_url, remote_bug
+
+    def parseDebbugsURL(self, scheme, host, path, query):
+        """Extract the Debbugs base URL and bug ID."""
+        bug_page = 'cgi-bin/bugreport.cgi'
+        if not path.endswith(bug_page):
+            return None
+
+        remote_bug = query.get('bug')
+        if remote_bug is None or not remote_bug.isdigit():
+            return None
+
+        base_path = path[:-len(bug_page)]
+        base_url = urlunsplit((scheme, host, base_path, '', ''))
+        return base_url, remote_bug
+
+    def parseRoundupURL(self, scheme, host, path, query):
+        """Extract the RoundUp base URL and bug ID."""
+        match = re.match(r'(.*/)issue(\d+)', path)
+        if not match:
+            return None
+        base_path = match.group(1)
+        remote_bug = match.group(2)
+
+        base_url = urlunsplit((scheme, host, base_path, '', ''))
+        return base_url, remote_bug
+
+    def parseTracURL(self, scheme, host, path, query):
+        """Extract the Trac base URL and bug ID."""
+        match = re.match(r'(.*/)ticket/(\d+)', path)
+        if not match:
+            return None
+        base_path = match.group(1)
+        remote_bug = match.group(2)
+
+        base_url = urlunsplit((scheme, host, base_path, '', ''))
+        return base_url, remote_bug
+
+    def parseSourceForgeURL(self, scheme, host, path, query):
+        """Extract the SourceForge base URL and bug ID.
+
+        Only the path is considered. If it looks like a SF URL, we
+        return the global SF instance. This makes it possible for people
+        to use alternative host names, like sf.net.
+        """
+        if not path.startswith('/tracker/'):
+            return None
+        if not query.get('aid'):
+            return None
+
+        remote_bug = query['aid']
+        # There's only one global SF instance registered in Launchpad.
+        sf_tracker = getUtility(ILaunchpadCelebrities).sourceforge_tracker
+
+        return sf_tracker.baseurl, remote_bug
+
+    def extractBugTrackerAndBug(self, url):
+        """See IBugWatchSet."""
+        for trackertype, parse_func in self.bugtracker_parse_functions.items():
+            scheme, host, path, query_string, frag = urlsplit(url)
+            query = {}
+            for query_part in query_string.split('&'):
+                key, value = urllib.splitvalue(query_part)
+                query[key] = value
+
+            bugtracker_data = parse_func(scheme, host, path, query)
+            if not bugtracker_data:
+                continue
+            base_url, remote_bug = bugtracker_data
+            bugtrackerset = getUtility(IBugTrackerSet)
+            # Check whether we have a registered bug tracker already.
+            bugtracker = bugtrackerset.queryByBaseURL(base_url)
+
+            if bugtracker is not None:
+                return bugtracker, remote_bug
+            else:
+                raise NoBugTrackerFound(base_url, remote_bug, trackertype)
+
+        raise UnrecognizedBugTrackerURL(url)

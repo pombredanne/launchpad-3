@@ -2,7 +2,7 @@
 
 First, let's define a helper to post to the Person +addbranch form.
 
->>> add_branch_form = 'http://launchpad.dev/people/lifeless/+addbranch'
+>>> add_branch_form = 'http://launchpad.dev/%7Elifeless/+addbranch'
 >>> def add_branch(url):
 ...     user_browser.open(add_branch_form)
 ...     user_browser.getControl('Name').value = 'pyresources'

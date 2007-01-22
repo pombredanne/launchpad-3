@@ -9,10 +9,34 @@
 
   <!-- Ticket -->
   <content class="canonical.launchpad.database.Ticket">
-    <allow interface="canonical.launchpad.interfaces.ITicket" />
+    <!-- ITicket -->
+    <allow
+        attributes="id title description status priority owner assignee
+                    answerer answer datecreated datedue datelastquery
+                    datelastresponse dateanswered language messages whiteboard
+                    product distribution sourcepackagename
+                    target can_be_reopened reopenings canReject
+                    can_request_info can_give_info can_give_answer
+                    can_confirm_answer can_reopen
+                    subscriptions isSubscribed getSubscribers
+                    getDirectSubscribers getIndirectSubscribers" />
     <require
-      permission="launchpad.AnyPerson"
-      set_schema="canonical.launchpad.interfaces.ITicket" />
+        permission="launchpad.Owner"
+        attributes="giveInfo reopen confirmAnswer"
+        />
+    <require
+        permission="launchpad.AnyPerson"
+        attributes="requestInfo giveAnswer expireTicket addComment
+                    subscribe unsubscribe"
+        set_attributes="title description datedue product distribution
+                        sourcepackagename language" />
+    <require
+        permission="launchpad.Moderate"
+        attributes="reject" />
+    <require
+        permission="launchpad.Admin"
+        attributes="setStatus"
+        set_attributes="priority assignee whiteboard" />
     <!-- IBugLinkTarget -->
     <allow attributes="bugs bug_links" />
     <require permission="launchpad.AnyPerson" attributes="linkBug unlinkBug"/>
@@ -21,6 +45,15 @@
   <content class="canonical.launchpad.database.TicketBug">
     <allow interface="canonical.launchpad.interfaces.ITicketBug"/>
   </content>
+
+  <content class="canonical.launchpad.database.TicketMessage">
+    <allow interface="canonical.launchpad.interfaces.ITicketMessage"/>
+  </content>
+
+  <adapter
+    for="canonical.launchpad.interfaces.ITicket"
+    provides="canonical.launchpad.interfaces.ITicketTarget"
+    factory="canonical.launchpad.components.ticket.ticket_to_tickettarget" />
 
   <browser:menus
       module="canonical.launchpad.browser"
@@ -38,11 +71,7 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.ITicket"
-    class="canonical.launchpad.browser.TicketView"
     permission="zope.Public">
-    <browser:page
-      name="+index"
-      template="../templates/ticket-index.pt" />
     <browser:page
       name="+history"
       template="../templates/ticket-history.pt" />
@@ -60,20 +89,33 @@
       template="../templates/ticket-portlet-subscribers.pt" />
   </browser:pages>
 
-  <browser:pages
+  <browser:page
+    name="+index"
     for="canonical.launchpad.interfaces.ITicket"
-    class="canonical.launchpad.browser.TicketView"
-    permission="launchpad.AnyPerson">
-    <browser:page
-      name="+reopen"
-      template="../templates/ticket-reopen.pt" />
-    <browser:page
-      name="+reject"
-      template="../templates/ticket-reject.pt" />
-    <browser:page
-      name="+subscribe"
-      template="../templates/ticket-subscription.pt" />
-  </browser:pages>
+    class="canonical.launchpad.browser.TicketWorkflowView"
+    permission="zope.Public"
+    template="../templates/ticket-index.pt" />
+
+  <browser:page
+    name="+confirm"
+    for="canonical.launchpad.interfaces.ITicket"
+    class="canonical.launchpad.browser.TicketConfirmAnswerView"
+    permission="launchpad.Owner"
+    template="../templates/ticket-confirm-answer.pt" />
+
+  <browser:page
+    name="+reject"
+    for="canonical.launchpad.interfaces.ITicket"
+    class="canonical.launchpad.browser.TicketRejectView"
+    permission="launchpad.Moderate"
+    template="../templates/ticket-reject.pt" />
+
+  <browser:page
+    name="+subscribe"
+    template="../templates/ticket-subscription.pt"
+    for="canonical.launchpad.interfaces.ITicket"
+    class="canonical.launchpad.browser.TicketSubscriptionView"
+    permission="launchpad.AnyPerson" />
 
   <browser:generalform
     name="+makebug"
@@ -94,33 +136,11 @@
     template="../templates/ticket-edit.pt" />
 
   <browser:page
-    name="+sourcepackage"
+    name="+change-status"
     for="canonical.launchpad.interfaces.ITicket"
-    class="canonical.launchpad.browser.TicketChangeSourcePackageNameView"
-    permission="launchpad.Edit"
-    template="../templates/ticket-edit.pt" />
-
-  <browser:page
-    name="+admin"
-    for="canonical.launchpad.interfaces.ITicket"
-    class="canonical.launchpad.browser.TicketAdminView"
+    class="canonical.launchpad.browser.TicketChangeStatusView"
     permission="launchpad.Admin"
-    template="../templates/ticket-edit.pt" />
-
-  <browser:addform
-    name="+addmessage"
-    for="canonical.launchpad.interfaces.ITicket"
-    schema="canonical.launchpad.interfaces.IMessageOnTicket"
-    class="canonical.launchpad.browser.MessageAddView"
-    label="Add message or comment"
-    fields="subject content owner resolved"
-    keyword_arguments="subject content owner resolved"
-    permission="launchpad.AnyPerson"
-    template="../templates/message-add.pt">
-    <browser:widget
-      field="owner"
-      class="canonical.widgets.HiddenUserWidget" />
-  </browser:addform>
+    template="../templates/ticket-change-status.pt" />
 
   <browser:page
     name="+linkbug"
@@ -135,6 +155,14 @@
     class="canonical.launchpad.browser.BugsUnlinkView"
     permission="launchpad.AnyPerson"
     template="../templates/ticket-unlinkbugs.pt" />
+
+  <browser:page
+    name="+display"
+    for="canonical.launchpad.interfaces.ITicketMessage"
+    class="canonical.launchpad.browser.TicketMessageDisplayView"
+    permission="zope.Public"
+    template="../templates/ticketmessage-display.pt"
+    />
 
   <!-- TicketSet -->
   <content class="canonical.launchpad.database.TicketSet">
@@ -162,16 +190,13 @@
     for="canonical.launchpad.interfaces.ITicketSet"
     name="+index" />
 
-  <browser:pages
+  <browser:page
+    name="+index"
     for="canonical.launchpad.interfaces.ITicketSet"
-    permission="zope.Public">
-    <browser:page
-      name="+index"
-      template="../templates/tickets-index.pt" />
-    <browser:page
-      name="+portlet-details"
-      template="../templates/tickets-portlet-details.pt" />
-  </browser:pages>
+    class="canonical.launchpad.browser.TicketSetView"
+    permission="zope.Public"
+    template="../templates/tickets-index.pt"
+    />
 
 </facet>
 </configure>

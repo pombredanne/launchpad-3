@@ -16,11 +16,7 @@
 
 <div metal:fill-slot="main">
 
-  <div metal:use-macro="context/@@launchpad_addform/addform">
-
-    <h1 tal:condition="view/label"
-        tal:content="view/label"
-        metal:fill-slot="heading">Heading from ZCML label="xxx"</h1>
+  <div metal:use-macro="context/@@launchpad_form/form">
 
     <div metal:fill-slot="extra_info" class="documentDescription">
       Use this page to register a product, so that you can

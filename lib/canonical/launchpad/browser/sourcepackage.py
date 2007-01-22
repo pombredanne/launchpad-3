@@ -26,6 +26,8 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagerelationship import (
     PackageRelationship)
+from canonical.launchpad.browser.tickettarget import (
+    TicketTargetFacetMixin, TicketTargetSupportMenu)
 from canonical.launchpad.webapp.batching import BatchNavigator
 
 from canonical.launchpad.webapp import (
@@ -73,15 +75,10 @@ def linkify_changelog(changelog, sourcepkgnametxt):
     return changelog
 
 
-class SourcePackageFacets(StandardLaunchpadFacets):
+class SourcePackageFacets(TicketTargetFacetMixin, StandardLaunchpadFacets):
 
     usedfor = ISourcePackage
     enable_only = ['overview', 'bugs', 'support', 'translations']
-
-    def support(self):
-        link = StandardLaunchpadFacets.support(self)
-        link.enabled = True
-        return link
 
 
 class SourcePackageOverviewMenu(ApplicationMenu):
@@ -117,21 +114,15 @@ class SourcePackageBugsMenu(ApplicationMenu):
         return Link('+filebug', text, icon='add')
 
 
-class SourcePackageSupportMenu(ApplicationMenu):
+class SourcePackageSupportMenu(TicketTargetSupportMenu):
 
     usedfor = ISourcePackage
     facet = 'support'
-    links = ['addticket', 'support_contact', 'gethelp']
+
+    links = TicketTargetSupportMenu.links + ['gethelp']
 
     def gethelp(self):
         return Link('+gethelp', 'Help and Support Options', icon='info')
-
-    def addticket(self):
-        return Link('+addticket', 'Request Support', icon='add')
-
-    def support_contact(self):
-        text = 'Support Contact'
-        return Link('+support-contact', text, icon='edit')
 
 
 class SourcePackageTranslationsMenu(ApplicationMenu):

@@ -7,19 +7,22 @@ __metaclass__ = type
 __all__ = [
     'IProductSeries',
     'IProductSeriesSet',
-    'IProductSeriesSource',
     'IProductSeriesSourceAdmin',
-    'IProductSeriesSourceSet',
     ]
 
+import re
 
-from zope.schema import  Choice, Datetime, Int, Text, Object
+from zope.schema import  Choice, Datetime, Int, Object, Text, TextLine
 from zope.interface import Interface, Attribute
+
+from CVS.protocol import CVSRoot, CvsRootError
 
 from canonical.launchpad.fields import ContentNameField
 from canonical.launchpad.interfaces import (
-    IBranch, IBugTarget, ISpecificationGoal, IHasOwner, IHasDrivers)
+    IBranch, IBugTarget, ISpecificationGoal, IHasOwner, IHasDrivers,
+    validate_url)
 
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad import _
 
@@ -39,7 +42,48 @@ class ProductSeriesNameField(ContentNameField):
             return self.context.getSeries(name)
 
 
-class IProductSeries(IHasDrivers, IHasOwner, ISpecificationGoal):
+def validate_cvs_root(cvsroot):
+    try:
+        root = CVSRoot(cvsroot)
+    except CvsRootError, e:
+        raise LaunchpadValidationError(str(e))
+    if root.method == 'local':
+        raise LaunchpadValidationError('Local CVS roots are not allowed.')
+    if root.hostname.count('.') == 0:
+        raise LaunchpadValidationError(
+            'Please use a fully qualified host name.')
+    return True
+
+def validate_cvs_module(cvsmodule):
+    valid_module = re.compile('^[a-zA-Z][a-zA-Z0-9_/.+-]*$')
+    if not valid_module.match(cvsmodule):
+        raise LaunchpadValidationError(
+            'The CVS module contains illegal characters.')
+    if cvsmodule == 'CVS':
+        raise LaunchpadValidationError('A CVS module can not be called "CVS".')
+    return True
+    
+def validate_cvs_branch(branch):
+    if branch and re.match('^[a-zA-Z][a-zA-Z0-9_-]*$', branch):
+        return True
+    else:
+        raise LaunchpadValidationError('Your CVS branch name is invalid.')
+
+def validate_svn_repo(repo):
+    if validate_url(repo, ["http", "https", "svn", "svn+ssh"]):
+        return True
+    else:
+        raise LaunchpadValidationError(
+            'Please give valid Subversion server details.')
+
+def validate_release_glob(value):
+    if validate_url(value, ["http", "https", "ftp"]):
+        return True
+    else:
+        raise LaunchpadValidationError('Invalid release URL pattern.')
+
+
+class IProductSeries(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
     """A series of releases. For example '2.0' or '1.3' or 'dev'."""
     # XXX Mark Shuttleworth 14/10/04 would like to get rid of id in
     # interfaces, as soon as SQLobject allows using the object directly
@@ -145,6 +189,107 @@ class IProductSeries(IHasDrivers, IHasOwner, ISpecificationGoal):
     def newMilestone(name, dateexpected=None):
         """Create a new milestone for this DistroRelease."""
 
+    # revision control items
+    import_branch = Choice(
+        title=_('Import Branch'),
+        vocabulary='Branch',
+        description=_("The Bazaar branch for this series imported from "
+                      "upstream version control. Note that there may be "
+                      "many branches associated with a given series, such "
+                      "as the branches of individual tarball releases. "
+                      "This branch is the real upstream code, mapped into "
+                      "Bazaar from CVS or SVN."))
+    importstatus = Attribute("The bazaar-import status of upstream "
+        "revision control for this series. It can be NULL if we do not "
+        "have any revision control data for this series, otherwise it "
+        "will reflect our current status for importing and syncing the "
+        "upstream code and publishing it as a Bazaar branch.")
+    rcstype = Choice(title=_("Type of RCS"),
+        required=False, vocabulary='RevisionControlSystems',
+        description=_("The type of revision control used for "
+        "the upstream branch of this series. Can be CVS, SVN, BK or "
+        "Arch."))
+    cvsroot = TextLine(title=_("Repository root"), required=False,
+        constraint=validate_cvs_root,
+        description=_('Example: :pserver:anonymous@anoncvs.gnome.org:'
+                      '/cvs/gnome'))
+    cvsmodule = TextLine(title=_("Module"), required=False,
+        constraint=validate_cvs_module)
+    cvstarfileurl = Text(title=_("A URL where a tarball of the CVS "
+        "repository can be found. This can sometimes be faster than "
+        "trying to query the server for commit-by-commit data."))
+    cvsbranch = TextLine(title=_("Branch name"), required=False,
+        constraint=validate_cvs_branch,
+        description=_('The branch representing the upstream codebase for '
+                      'this product series.'))
+    svnrepository = TextLine(title=_("Repository"), required=False,
+        constraint=validate_svn_repo,
+        description=_('The URL (Internet address) of the repository and '
+                      'branch to be imported, in svn:// or http(s):// '
+                      'format. This must be the correct upstream branch '
+                      'for the trunk series of Evolution.'))
+    # where are the tarballs released from this branch placed?
+    releasefileglob = TextLine(title=_("Release URL pattern"),
+        required=False, constraint=validate_release_glob,
+        description=_('A URL pattern that matches releases that are part '
+                      'of this series.  Launchpad automatically scans this '
+                      'site to import new releases.  Example: '
+                      'http://ftp.gnu.org/gnu/emacs/emacs-21.*.tar.gz'))
+    releaseverstyle = Attribute("The version numbering style for this "
+        "product series of releases.")
+    # Key dates on the road to import happiness
+    dateautotested = Attribute("The date this upstream passed automatic "
+        "testing.")
+    datestarted = Attribute("The timestamp when we started the latest "
+        "sync attempt on this upstream RCS.")
+    datefinished = Attribute("The timestamp when the latest sync attempt "
+        "on this upstream RCS finished.")
+    dateprocessapproved = Attribute("The date when we approved processing "
+        "of this upstream source.")
+    datesyncapproved = Attribute("The date when we approved syncing of "
+        "this upstream source into a public Bazaar branch.")
+    # Controlling the freshness of an import
+    syncinterval = Attribute(_("The time between sync attempts for this "
+        "series. In some cases we might want to sync once a week, in "
+        "others, several times per day."))
+    datelastsynced = Attribute(_("The date on which we last "
+        "successfully synced the upstream RCS. The date of the currently "
+        "published branch data if it is older than "
+        "import_branch.last_mirrored"))
+    datepublishedsync = Attribute(_("The date of the currently published "
+        "branch data, in case import_branch.last_mirrored is older than "
+        "datelastsynced."))
+
+    def syncCertified():
+        """is the series source sync enabled?"""
+
+    def autoSyncEnabled():
+        """is the series source enabled for automatic syncronisation?"""
+
+    def autoTestFailed():
+        """has the series source failed automatic testing by roomba?"""
+
+    def importUpdated():
+        """Import or sync run completed successfully, update last-synced times.
+
+        If datelastsynced is set, and import_branch.last_mirrored is more
+        recent, then this is the date of the currently published import. Save
+        it into datepublishedsync.
+
+        Then, set datelastsynced to the current time.
+        """
+
+
+class IProductSeriesSourceAdmin(Interface):
+    """Administrative interface to approve syncing on a Product Series
+    upstream codebase, publishing it as Bazaar branch."""
+
+    def certifyForSync():
+        """enable this to sync"""
+
+    def enableAutoSync():
+        """enable this series RCS for automatic baz syncronisation"""
+
 
 class IProductSeriesSet(Interface):
     """Interface representing the set of ProductSeries."""
@@ -161,92 +306,6 @@ class IProductSeriesSet(Interface):
         Return the default value if there is no such series.
         """
 
-
-class IProductSeriesSource(Interface):
-    # revision control items
-    import_branch = Choice(
-        title=_('Import Branch'),
-        vocabulary='Branch',
-        description=_("The Bazaar branch for this series imported from "
-                      "upstream version control. Note that there may be "
-                      "many branches associated with a given series, such "
-                      "as the branches of individual tarball releases. "
-                      "This branch is the real upstream code, mapped into "
-                      "Bazaar from CVS or SVN."))
-    importstatus = Attribute("The bazaar-import status of upstream "
-        "revision control for this series. It can be NULL if we do not "
-        "have any revision control data for this series, otherwise it "
-        "will reflect our current status for importing and syncing the "
-        "upstream code and publishing it as a Bazaar branch.")
-    datelastsynced = Attribute("The date on which we last "
-        "successfully synced the upstream RCS into the Bazaar branch "
-        "in .branch.")
-    syncinterval = Attribute("The time between sync attempts for this "
-        "series. In some cases we might want to sync once a week, in "
-        "others, several times per day.")
-    rcstype = Int(title=_("Type of Revision"),
-        description=_("The type of revision control used for "
-        "the upstream branch of this series. Can be CVS, SVN, BK or "
-        "Arch."))
-    cvsroot = Text(title=_("The CVS server root at which the upstream "
-        "code for this branch can be found."))
-    cvsmodule = Text(title=_("The CVS module for this branch."))
-    cvstarfileurl = Text(title=_("A URL where a tarball of the CVS "
-        "repository can be found. This can sometimes be faster than "
-        "trying to query the server for commit-by-commit data."))
-    cvsbranch = Text(title=_("The branch of this module that represents "
-        "the upstream branch for this series."))
-    svnrepository = Text(title=_("The URL for the SVN branch where "
-        "the upstream code for this series can be found."))
-    # where are the tarballs released from this branch placed?
-    releaseroot = Text(title=_("The URL of the root directory for releases "
-        "made as part of this series."))
-    releasefileglob = Text(title=_("A pattern-matching 'glob' expression "
-        "that should match all the releases made as part of this series. "
-        "For example, if release tarball filenames take the form "
-        "'apache-2.0.35.tar.gz' then the glob would be "
-        "'apache-2.0.*.tar.gz'."))
-    releaseverstyle = Attribute("The version numbering style for this "
-        "product series of releases.")
-    dateautotested = Attribute("The date this upstream passed automatic "
-        "testing.")
-    datestarted = Attribute("The timestamp when we started the latest "
-        "sync attempt on this upstream RCS.")
-    datefinished = Attribute("The timestamp when the latest sync attempt "
-        "on this upstream RCS finished.")
-    dateprocessapproved = Attribute("The date when we approved processing "
-        "of this upstream source.")
-    datesyncapproved = Attribute("The date when we approved syncing of "
-        "this upstream source into a public Bazaar branch.")
-
-    def syncCertified():
-        """is the series source sync enabled?"""
-
-    def autoSyncEnabled():
-        """is the series source enabled for automatic syncronisation?"""
-
-    def autoTestFailed():
-        """has the series source failed automatic testing by roomba?"""
-    
-    def namesReviewed():
-        """Return True if the product and project details have been reviewed
-        and are still active."""
-
-
-class IProductSeriesSourceAdmin(Interface):
-    """Administrative interface to approve syncing on a Product Series
-    upstream codebase, publishing it as Bazaar branch."""
-
-    def certifyForSync():
-        """enable this to sync"""
-
-    def enableAutoSync():
-        """enable this series RCS for automatic baz syncronisation"""
-
-# XXX matsubara 2005-11-30: This class should be renamed to IProductSeriesSet
-# https://launchpad.net/products/launchpad/+bug/5247
-class IProductSeriesSourceSet(Interface):
-    """The set of ProductSeries with a view to source imports"""
     def search(ready=None, text=None, forimport=None, importstatus=None,
                start=None, length=None):
         """return a list of series matching the arguments, which are passed

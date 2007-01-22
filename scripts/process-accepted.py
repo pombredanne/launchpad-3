@@ -9,16 +9,16 @@ for publishing as appropriate.
 import _pythonpath
 
 import sys
-
 from optparse import OptionParser
 
 from zope.component import getUtility
 
-from canonical.lp import initZopeless
 from canonical.config import config
+from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
-from canonical.launchpad.interfaces import IDistributionSet
+from canonical.lp import (
+    initZopeless, READ_COMMITTED_ISOLATION)
 
 from contrib.glock import GlobalLock
 from canonical.lp.dbschema import DistroReleaseQueueStatus
@@ -48,8 +48,8 @@ def main():
 
     log.debug("Initialising connection.")
 
-    ztm = initZopeless(dbuser=config.uploadqueue.dbuser)
-
+    ztm = initZopeless(
+        dbuser=config.uploadqueue.dbuser, isolation=READ_COMMITTED_ISOLATION)
     execute_zcml_for_scripts()
 
     try:

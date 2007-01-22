@@ -15,8 +15,8 @@ First, we need to set the password to something I know
 'martin-pitt' doesn't have a preferred email address.
 He can't login without first validating his email address.
 
-  >>> browser.open('http://localhost:9000/+login')
-  >>> browser.getControl('E-mail').value = 'martin.pitt@canonical.com'
+  >>> browser.open('http://launchpad.dev/+login')
+  >>> browser.getControl('E-mail', index=0).value = 'martin.pitt@canonical.com'
   >>> browser.getControl('Password').value = 'test'
   >>> browser.getControl('Log In').click()
   >>> print '\n' + browser.contents
@@ -48,7 +48,7 @@ He can't login without first validating his email address.
   >>> body = msg.get_payload()
   >>> link = re.findall(r'http.*/token/.*', body)[0]
   >>> token = re.sub(r'.*token/', '', link)
-  >>> base_path = 'http://localhost:9000/token/%s' % token
+  >>> base_path = 'http://launchpad.dev/token/%s' % token
 
   >>> path = "%s/+validateemail" % base_path
   >>> browser.open(path)
@@ -60,7 +60,7 @@ He can't login without first validating his email address.
 
   >>> browser.getControl('Confirm').click()
   >>> browser.url
-  'http://localhost:9000/people/martin-pitt'
+  'http://launchpad.dev/~martin-pitt'
   >>> print '\n' + browser.contents
   <BLANKLINE>
   ...informational message">Email address successfully confirmed...

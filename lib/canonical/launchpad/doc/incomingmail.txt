@@ -274,22 +274,15 @@ Emails with an empty Return-Path header should be dropped:
     >>> msgid in foo_handler.handledMails
     False
 
-Since this shouldn't occur that often, an email is sent about it to the
-errors-list. This is to make it easier to detect any errors, and fine
-tune it. Later we might simply drop the email without noticing anyone
-about it.
+Since this happens way too often, as we seem to get more spam than
+legitimate email, an email is not sent about it to the errors-list.
 
     >>> import email
-    >>> from_addr, to_addr, raw_mail = stub.test_emails[-1]
-    >>> error_mail = email.message_from_string(raw_mail)
-    >>> error_mail['To'] == config.launchpad.errors_address
-    True
-    >>> print error_mail['Subject']
-    Unhandled Email:...
-    >>> print error_mail.get_payload()
-    The following email was unhandled:
-    ...
-    Message had an empty Return-Path.
+    >>> len(stub.test_emails)
+    0
+
+
+Some test cleanup code:
 
     >>> LibrarianLayer.hide()
     >>> config.malone.bugmail_error_from_address = old_error_from_address

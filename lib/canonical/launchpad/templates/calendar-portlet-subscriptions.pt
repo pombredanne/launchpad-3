@@ -1,5 +1,5 @@
 <div class="portlet" tal:condition="view/subscriptions">
-  <h4>Subscriptions:</h4>
+  <h2>Subscriptions</h2>
   <div class="portletBody portletContent">
     <table>
       <tr tal:repeat="sub view/subscriptions" valign="top">

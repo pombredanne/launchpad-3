@@ -1,18 +1,13 @@
-# Copyright (c) 2005 Canonical Ltd.
-#!/usr/bin/env python
-# Author: Robert Collins <robertc@robertcollins.net>
-#         David Allouche <david@allouche.net>
+# Copyright 2005-2006 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
 import os
 import shutil
-import unittest
 
 from bzrlib.branch import Branch
+from bzrlib.urlutils import local_path_to_url
 import CVS
-import cscvs.cmds.cache
-import cscvs.cmds.totla
 
 from canonical.database.sqlbase import rollback
 from importd import JobStrategy
@@ -21,33 +16,7 @@ from importd.tests import testutil, helpers
 from importd.tests.test_bzrmanager import ProductSeriesHelper
 
 
-class TestCvsStrategyCreation(unittest.TestCase):
-
-    def assertInstanceMethod(self, method, class_, name):
-        self.assertEqual(method.im_class, class_)
-        self.assertEqual(method.im_func.__name__, name)
-
-    def testGet(self):
-        """Test getting a Strategy"""
-        CVS_import = JobStrategy.get("CVS", "import")
-        self.assertInstanceMethod(CVS_import, JobStrategy.CVSStrategy, 'Import')
-        cvs_import = JobStrategy.get("cvs", "import")
-        self.assertInstanceMethod(cvs_import, JobStrategy.CVSStrategy, 'Import')
-        CVS_sync = JobStrategy.get("CVS", "sync")
-        self.assertInstanceMethod(CVS_sync, JobStrategy.CVSStrategy, 'sync')
-        cvs_sync = JobStrategy.get("cvs", "sync")
-        self.assertInstanceMethod(cvs_sync, JobStrategy.CVSStrategy, 'sync')
-
-    def testGetInvalidRCS(self):
-        """Test getting with invalid RCS"""
-        self.assertRaises(KeyError, JobStrategy.get, "blargh", "sync")
-
-    def testGetInvalidType(self):
-        """Test getting with invalid type"""
-        self.assertRaises(KeyError, JobStrategy.get, "CVS", "blargh")
-
-
-class CscvsJobHelper(helpers.SimpleJobHelper):
+class CvsJobHelper(helpers.SimpleJobHelper):
     """Job factory for CVSStrategy test cases."""
 
     def setUp(self):
@@ -65,8 +34,8 @@ class CscvsJobHelper(helpers.SimpleJobHelper):
         return job
 
 
-class CscvsHelper(object):
-    """Helper for integration tests with CSCVS."""
+class CscvsCvsHelper:
+    """Helper for integration tests with cscvs for CVS functionality."""
 
     sourcefile_data = {
         'import': 'import\n',
@@ -115,27 +84,26 @@ class CscvsHelper(object):
         shutil.rmtree(sourcedir)
 
 
-class CscvsTestCase(helpers.JobTestCase):
-    """Base class for tests using cscvs."""
+class CscvsCvsTestCase(helpers.JobTestCase):
+    """Base class for tests using cscvs for CVS imports."""
 
-    jobHelperType = CscvsJobHelper
+    jobHelperType = CvsJobHelper
 
     def setUp(self):
         helpers.JobTestCase.setUp(self)
-        self.cscvs_helper = CscvsHelper(self.sandbox, self.job_helper)
+        self.cscvs_helper = CscvsCvsHelper(self.sandbox, self.job_helper)
         self.cscvs_helper.setUp()
-        self.job_helper.cvsroot = self.cscvs_helper.cvsroot
 
     def tearDown(self):
         self.cscvs_helper.tearDown()
         helpers.JobTestCase.tearDown(self)
 
 
-class CvsStrategyTestCase(CscvsTestCase):
+class CvsStrategyTestCase(CscvsCvsTestCase):
     """Common base for CVSStrategy test case classes."""
 
     def setUp(self):
-        CscvsTestCase.setUp(self)
+        CscvsCvsTestCase.setUp(self)
         self.job = self.job_helper.makeJob()
         self.logger = testutil.makeSilentLogger()
         self.cvspath = self.sandbox.join('series-0000002a', 'cvsworking')
@@ -196,14 +164,6 @@ class TestCvsStrategy(CvsStrategyTestCase):
         cvspath = self.strategy.getCVSDirPath(self.job, self.sandbox.path)
         self.assertEqual(cvspath, self.cvspath)
 
-    def testGetWorkingDir(self):
-        # test that the working dir is calculated & created correctly
-        workingdir = self.sandbox.join('series-0000002a')
-        self.assertEqual(
-            self.strategy.getWorkingDir(self.job, self.sandbox.path),
-            workingdir)
-        self.failUnless(os.path.exists(workingdir))
-
     def testSyncArgsSanityChecks(self):
         # XXX: I am not sure what these tests are for
         # -- David Allouche 2006-06-06
@@ -231,8 +191,9 @@ class TestCvsStrategyBzr(CvsStrategyTestCase):
         CvsStrategyTestCase.setUp(self)
         self.job.targetManagerType = SilentBzrManager
         self.job.working_root = self.sandbox.path
-        self.push_prefix = self.job.push_prefix
-        os.mkdir(self.push_prefix)
+        push_prefix = self.job.push_prefix
+        os.mkdir(push_prefix)
+        self.push_prefix = self.job.push_prefix = local_path_to_url(push_prefix)
         self.utilities_helper = helpers.ZopelessUtilitiesHelper()
         self.utilities_helper.setUp()
         self.series_helper = ProductSeriesHelper()
@@ -252,7 +213,6 @@ class TestCvsStrategyBzr(CvsStrategyTestCase):
         CvsStrategyTestCase.tearDown(self)
 
     def localRevno(self):
-        # The working dir still includes the Arch version name
         workingdir = self.sandbox.join('series-%08x' %
                                        self.series_helper.series.id)
         bzrworking = os.path.join(workingdir, 'bzrworking')
@@ -272,7 +232,7 @@ class TestCvsStrategyBzr(CvsStrategyTestCase):
     def mirrorPath(self, branch_id):
         return os.path.join(self.job.push_prefix, '%08x' % branch_id)
 
-    def testImportAndSync(self):
+    def testCvsImportAndSync(self):
         # Feature test for a CVS import to bzr
         # Check we can do an initial import from CVS.
         self.cscvs_helper.setUpCvsImport()

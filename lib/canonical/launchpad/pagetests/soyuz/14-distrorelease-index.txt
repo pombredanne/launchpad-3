@@ -1,0 +1,41 @@
+DistroRelease page is reached by traversing the Distribution page with
+a given name.
+
+As it's main functionality this page allow users to search for binary
+packages within the distrorelease in context:
+
+  >>> anon_browser.open("http://launchpad.dev/ubuntu/warty")
+  >>> anon_browser.getControl(name="text").value = "firefox"
+  >>> anon_browser.getControl("Search Packages").click()
+  >>> anon_browser.url
+  'http://launchpad.dev/ubuntu/warty/+search?text=firefox'
+  >>> anon_browser.contents
+  '...Mozilla Firefox Web Browser...'
+
+
+== Last Uploads Page ==
+
+This page provides raw list of the last five source packages uploaded
+and published for a given distrorelease.
+
+Each entry contains:
+
+ * source name & source version, linking to the LP page for this package
+ * ubuntu maintainer, linking to a valid LP user
+ * age, as aproximatedduration representation of the time passed since
+   the upload was done.
+
+  >>> anon_browser.open("http://launchpad.dev/ubuntu/warty/+last-uploads")
+  >>> find_tag_by_id(anon_browser.contents, "last-uploads")
+  <ul id="last-uploads">
+  <li>
+  <a href="http://launchpad.dev/ubuntu/warty/+source/mozilla-firefox/0.9">
+  mozilla-firefox 0.9
+  </a>
+  by
+  <a href="http://launchpad.dev/~sabdfl">
+  Mark Shuttleworth
+  </a>
+  ... ago
+  </li>
+  </ul>

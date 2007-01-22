@@ -5,18 +5,19 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+<facet facet="overview">
+
     <!-- DistributionMirror -->
     <content class="canonical.launchpad.database.DistributionMirror">
         <allow interface="canonical.launchpad.interfaces.IDistributionMirror" />
         <require
             permission="launchpad.Edit"
             set_attributes="name displayname description http_base_url
-                            ftp_base_url rsync_base_url pulse_source enabled
-                            speed country content file_list pulse_type
-                            official_candidate" />
+                            ftp_base_url rsync_base_url enabled speed
+                            country content official_candidate" />
         <require
             permission="launchpad.Admin"
-            set_attributes="official_approved" />
+            set_attributes="official_approved owner" />
     </content>
 
     <browser:defaultView
@@ -47,7 +48,6 @@
         for="canonical.launchpad.interfaces.IDistributionMirror"
         class="canonical.launchpad.browser.DistributionMirrorView"
         permission="zope.Public"
-        facet="overview"
         template="../templates/distributionmirror-index.pt">
     </browser:page>
 
@@ -55,12 +55,11 @@
         name="+edit"
         for="canonical.launchpad.interfaces.IDistributionMirror"
         schema="canonical.launchpad.interfaces.IDistributionMirror"
-        facet="overview"
         permission="launchpad.Edit"
         label="Change mirror details"
         class="canonical.launchpad.browser.DistributionMirrorEditView"
         fields="name displayname description http_base_url ftp_base_url
-                rsync_base_url speed country content enabled official_candidate"
+                rsync_base_url speed country content official_candidate"
         template="../templates/distributionmirror-edit.pt">
     </browser:editform>
 
@@ -68,7 +67,6 @@
         name="+mark-official"
         for="canonical.launchpad.interfaces.IDistributionMirror"
         schema="canonical.launchpad.interfaces.IDistributionMirror"
-        facet="overview"
         permission="launchpad.Admin"
         label="Mark as Official"
         class="canonical.launchpad.browser.DistributionMirrorOfficialApproveView"
@@ -76,18 +74,21 @@
         template="../templates/distributionmirror-mark-official.pt">
     </browser:editform>
 
-    <browser:generalform
-        name="+uploadfilelist"
-        facet="overview"
+    <browser:page
         for="canonical.launchpad.interfaces.IDistributionMirror"
-        schema="canonical.launchpad.interfaces.IDistributionMirror"
+        permission="launchpad.Admin"
+        class="canonical.launchpad.browser.DistributionMirrorReassignmentView"
+        name="+reassign"
+        template="../templates/object-reassignment.pt">
+    </browser:page>
+
+    <browser:page
+        name="+prober-logs"
+        for="canonical.launchpad.interfaces.IDistributionMirror"
+        class="canonical.launchpad.browser.DistributionMirrorView"
         permission="launchpad.Edit"
-        label="Upload File List"
-        class="canonical.launchpad.browser.DistributionMirrorUploadFileListView"
-        fields="file_list"
-        keyword_arguments="file_list"
-        template="../templates/distributionmirror-uploadfilelist.pt">
-    </browser:generalform>
+        template="../templates/distributionmirror-prober-logs.pt">
+    </browser:page>
 
     <!-- DistributionMirrorSet -->
     <content class="canonical.launchpad.database.DistributionMirrorSet">
@@ -133,4 +134,5 @@
         module="canonical.launchpad.browser.distributionmirror"
         classes="DistributionMirrorFacets DistributionMirrorOverviewMenu" />
 
+</facet>
 </configure>

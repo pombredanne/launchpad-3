@@ -1,6 +1,6 @@
 <div class="portlet">
 
-  <h4>Details:</h4>
+  <h2>Details</h2>
 
   <div class="portletBody"
        tal:define="bug context/bug">

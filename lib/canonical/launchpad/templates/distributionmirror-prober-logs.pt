@@ -1,0 +1,53 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad"
+>
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/distribution/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:rightportlets>
+
+<metal:heading fill-slot="pageheading">
+  <h1>Prober logs for
+    "<tal:mirror replace="context/title">foobar</tal:mirror>"
+  </h1>
+</metal:heading>
+
+<div metal:fill-slot="main">
+
+  <p tal:condition="not: view/probe_records/currentBatch">
+    This mirror has never been probed.
+  </p>
+
+  <tal:logs condition="view/probe_records/currentBatch">
+    <tal:navigation replace="structure view/probe_records/@@+navigation-links-upper" />
+    <table class="listing">
+      <thead>
+        <tr>
+          <th>date</th>
+          <th>log file</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="record view/probe_records/currentBatch">
+          <td tal:content="record/date_created/fmt:datetime" />
+          <td><a tal:content="record/log_file/filename"
+                 tal:attributes="href record/log_file/http_url" />
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <tal:navigation replace="structure view/probe_records/@@+navigation-links-lower" />
+  </tal:logs>
+
+</div>
+
+</body>
+</html>

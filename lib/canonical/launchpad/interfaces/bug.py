@@ -115,8 +115,8 @@ class IBug(IMessageTarget):
         title=_('Date Last Updated'), required=True, readonly=True)
     name = BugNameField(
         title=_('Nickname'), required=False,
-        description=_("""A short and unique name for this bug.
-        Add a nickname only if you often need to retype the URL
+        description=_("""A short and unique name.
+        Add one only if you often need to retype the URL
         but have trouble remembering the bug number."""),
         constraint=name_validator)
     title = Title(
@@ -130,19 +130,6 @@ class IBug(IMessageTarget):
     owner = Attribute("The owner's IPerson")
     duplicateof = BugField(
         title=_('Duplicate Of'), required=False, constraint=non_duplicate_bug)
-    communityscore = Int(
-        title=_('Community Score'), required=True, readonly=True, default=0)
-    communitytimestamp = Datetime(
-        title=_('Community Timestamp'), required=True, readonly=True)
-    hits = Int(
-        title=_('Hits'), required=True, readonly=True, default=0)
-    hitstimestamp = Datetime(
-        title=_('Hits Timestamp'), required=True, readonly=True)
-    activityscore = Int(
-        title=_('Activity Score'), required=True, readonly=True,
-        default=0)
-    activitytimestamp = Datetime(
-        title=_('Activity Timestamp'), required=True, readonly=True)
     private = Bool(
         title=_("Keep bug confidential"), required=False,
         description=_("Make this bug visible only to its subscribers"),
@@ -175,7 +162,7 @@ class IBug(IMessageTarget):
         "Branches associated with this bug, usually "
         "branches on which this bug is being fixed.")
     tags = List(
-        title=_("Tags (separated by whitespace)"),
+        title=_("Tags"), description=_("Separated by whitespace."),
         value_type=Tag(), required=False)
 
 
@@ -189,6 +176,9 @@ class IBug(IMessageTarget):
     def unsubscribe(person):
         """Remove this person's subscription to this bug."""
 
+    def unsubscribeFromDupes(person):
+        """Remove this person's subscription from all dupes of this bug."""
+
     def isSubscribed(person):
         """Is person subscribed to this bug?
 
@@ -196,6 +186,13 @@ class IBug(IMessageTarget):
         (no matter what the type of subscription), otherwise False.
 
         If person is None, the return value is always False.
+        """
+
+    def isSubscribedToDupes(person):
+        """Is person directly subscribed to dupes of this bug?
+
+        Returns True if the user is directly subscribed to at least one
+        duplicate of this bug, otherwise False.
         """
 
     def getDirectSubscribers():
@@ -211,6 +208,16 @@ class IBug(IMessageTarget):
         BugSubscription table. This includes bug contacts, subscribers from
         dupes, etc.
         """
+
+    def getAlsoNotifiedSubscribers():
+        """A list of IPersons in the "Also notified" subscriber list.
+
+        This includes bug contacts and assignees, but not subscribers
+        from duplicates.
+        """
+
+    def getSubscribersFromDuplicates():
+        """A list of IPersons subscribed from dupes of this bug."""
 
     def notificationRecipientAddresses():
         """Return the list of email addresses that recieve notifications.
@@ -267,6 +274,48 @@ class IBug(IMessageTarget):
 
     def getMessageChunks():
         """Return MessageChunks corresponding to comments made on this bug"""
+
+    def addNomination(owner, target):
+        """Nominate a bug for an IDistroRelease or IProductSeries.
+
+        :owner: An IPerson.
+        :target: An IDistroRelease or IProductSeries.
+
+        This method creates and returns a BugNomination. (See
+        canonical.launchpad.database.bugnomination.BugNomination.)
+        """
+
+    def canBeNominatedFor(nomination_target):
+        """Can this bug nominated for this target?
+
+        :nomination_target: An IDistroRelease or IProductSeries.
+
+        Returns True or False.
+        """
+
+    def getNominationFor(nomination_target):
+        """Return the IBugNomination for the target.
+
+        If no nomination is found, a NotFoundError is raised.
+
+        :nomination_target: An IDistroRelease or IProductSeries.
+        """
+
+    def getNominations(target=None):
+        """Return a list of all IBugNominations for this bug.
+
+        The list is ordered by IBugNominations.target.bugtargetname.
+
+        Optional filtering arguments:
+
+        :target: An IProduct or IDistribution.
+        """
+
+    def getBugWatch(bugtracker, remote_bug):
+        """Return the BugWatch that has the given bugtracker and remote bug.
+
+        Return None if this bug doesn't have such a bug watch.
+        """
 
 
 class IBugDelta(Interface):
@@ -328,9 +377,10 @@ class IBugAddForm(IBug):
                 "tracker."),
             vocabulary="DistributionUsingMalone")
     owner = Int(title=_("Owner"), required=True)
-    comment = Text(title=_('Description'), required=True,
-            description=_("""A detailed description of the problem you are
-            seeing."""))
+    comment = Text(
+        title=_('Further information, steps to reproduce,'
+                ' version information, etc.'),
+        required=True)
 
 
 class IBugSet(Interface):
@@ -359,7 +409,7 @@ class IBugSet(Interface):
         """Find one or None bugs in Malone that have a BugWatch matching the
         given bug tracker and remote bug id."""
 
-    def createBug(self, bug_params):
+    def createBug(bug_params):
         """Create a bug and return it.
 
         :bug_params: A CreateBugParams object.

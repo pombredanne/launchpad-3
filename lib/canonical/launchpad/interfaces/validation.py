@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'can_be_nominated_for_releases',
     'validate_url',
     'valid_http_url',
     'valid_ftp_url',
@@ -13,10 +14,10 @@ __all__ = [
     'valid_bug_number',
     'valid_cve_sequence',
     'valid_emblem',
-    'valid_hackergotchi',
-    'valid_unregistered_email',
+    'valid_gotchi',
+    'validate_new_team_email',
+    'validate_new_person_email',
     'validate_distribution_mirror_schema',
-    'valid_distributionmirror_file_list',
     'validate_shipit_recipientdisplayname',
     'validate_shipit_phone',
     'validate_shipit_city',
@@ -32,12 +33,13 @@ __all__ = [
     'validate_date_interval'
     ]
 
+import re
+import string
 import urllib
 from textwrap import dedent
 from StringIO import StringIO
 
 from zope.component import getUtility
-from zope.app.content_types import guess_content_type
 from zope.app.form.interfaces import WidgetsError
 
 from canonical.launchpad import _
@@ -49,17 +51,37 @@ from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.cve import valid_cve
 from canonical.launchpad.validators.url import valid_absolute_url
 
+def can_be_nominated_for_releases(releases):
+    """Can the bug be nominated for these releases?"""
+    current_bug = getUtility(ILaunchBag).bug
+    unnominatable_releases = []
+    for release in releases:
+        if not current_bug.canBeNominatedFor(release):
+            unnominatable_releases.append(release.name.capitalize())
 
-def _validate_ascii_text(text):
-    """Check if the given text contains only ASCII characters.
-    
-    >>> print _validate_ascii_text(u'no non-ascii characters')
+    if unnominatable_releases:
+        raise LaunchpadValidationError(_(
+            "This bug has already been nominated for these releases: %s" %
+                ", ".join(unnominatable_releases)))
+
+    return True
+
+
+def _validate_ascii_printable_text(text):
+    """Check if the given text contains only printable ASCII characters.
+
+    >>> print _validate_ascii_printable_text(u'no non-ascii characters')
     None
-    >>> print _validate_ascii_text(u'\N{LATIN SMALL LETTER E WITH ACUTE}')
+    >>> print _validate_ascii_printable_text(
+    ...     u'\N{LATIN SMALL LETTER E WITH ACUTE}')
     Traceback (most recent call last):
     ...
     LaunchpadValidationError: ...
-    >>> print _validate_ascii_text('\xc3\xa7')
+    >>> print _validate_ascii_printable_text(u'\x06')
+    Traceback (most recent call last):
+    ...
+    LaunchpadValidationError: Non printable characters are not allowed.
+    >>> print _validate_ascii_printable_text('\xc3\xa7')
     Traceback (most recent call last):
     ...
     AssertionError: Expected unicode string, but got <type 'str'>
@@ -76,6 +98,9 @@ def _validate_ascii_text(text):
             by our shipping company. Please change these to ASCII
             equivalents. (For instance, '%s' should be changed to 'e')"""
             % (first_non_ascii_char, e_with_acute))))
+    if re.search(r"^[%s]*$" % re.escape(string.printable), text) is None:
+        raise LaunchpadValidationError(_(
+            'Non printable characters are not allowed.'))
 
 
 def shipit_postcode_required(country):
@@ -118,7 +143,7 @@ class ShipItAddressValidator:
         ...
         LaunchpadValidationError: some custom message
         """
-        _validate_ascii_text(value)
+        _validate_ascii_printable_text(value)
         if len(value) > self.length:
             if not self.msg:
                 self.msg = ("The %s can't have more than %d characters."
@@ -149,7 +174,7 @@ validate_shipit_province = ShipItAddressValidator('province', 30)
 # heard back from MediaMotion on the length constraint.
 # -- Guilherme Salgado, 2006-05-22
 def validate_shipit_postcode(value):
-    _validate_ascii_text(value)
+    _validate_ascii_printable_text(value)
     return True
 
 
@@ -311,6 +336,10 @@ def valid_cve_sequence(value):
             "%s is not a valid CVE number" % value))
 
 
+# XXX: _valid_image, valid_emblem and valid_gotchi are going to be removed as
+# soon as I change IPillar's +edit page to use the new ImageUploadWidget for
+# emblems/icons, which will happen real soon.
+# -- Guilherme Salgado, 2006-12-13
 def _valid_image(image, max_size, max_dimensions):
     """Check that the given image is under the given constraints.
 
@@ -338,35 +367,51 @@ def _valid_image(image, max_size, max_dimensions):
 def valid_emblem(emblem):
     return _valid_image(emblem, 9000, (16,16))
 
-def valid_hackergotchi(hackergotchi):
-    return _valid_image(hackergotchi, 54000, (150,150))
+def valid_gotchi(gotchi):
+    return _valid_image(gotchi, 54000, (150,150))
 
-# XXX: matsubara 2005-12-08 This validator shouldn't be used in an editform,
-# because editing an already registered e-mail would fail if this constraint
-# is used.
-def valid_unregistered_email(email):
-    """Check that the given email is valid and that isn't registered to
-    another user."""
 
-    from canonical.launchpad.interfaces import IEmailAddressSet
-    if valid_email(email):
-        emailset = getUtility(IEmailAddressSet)
-        if emailset.getByEmail(email) is not None:
-            raise LaunchpadValidationError(_(dedent("""
-                %s is already taken.""" % email)))
-        else:
-            return True
-    else:
+def _validate_email(email):
+    if not valid_email(email):
         raise LaunchpadValidationError(_(dedent("""
             %s isn't a valid email address.""" % email)))
 
-def valid_distributionmirror_file_list(file_list=None):
-    if file_list is not None:
-        content_type, dummy = guess_content_type(body=file_list)
-        if content_type != 'text/plain':
-            raise LaunchpadValidationError(
-                "The given file is not in plain text format.")
+
+def validate_new_team_email(email):
+    """Check that the given email is valid and not registered to
+    another launchpad account.
+    """
+    from canonical.launchpad.webapp import canonical_url
+    from canonical.launchpad.interfaces import IEmailAddressSet
+    _validate_email(email)
+    email = getUtility(IEmailAddressSet).getByEmail(email)
+    if email is not None:
+        raise LaunchpadValidationError(_(
+            '%s is already registered in Launchpad and is associated with '
+            '<a href="%s">%s</a>.'), email.email,
+            canonical_url(email.person), email.person.browsername)
     return True
+
+
+def validate_new_person_email(email):
+    """Check that the given email is valid and not registered to
+    another launchpad account.
+    
+    This validator is supposed to be used only when creating a new profile
+    using the /people/+newperson page, as the message will say clearly to the
+    user that the profile he's trying to create already exists, so there's no
+    need to create another one.
+    """
+    from canonical.launchpad.webapp import canonical_url
+    from canonical.launchpad.interfaces import IPersonSet
+    _validate_email(email)
+    owner = getUtility(IPersonSet).getByEmail(email)
+    if owner is not None:
+        raise LaunchpadValidationError(_(
+            "The profile you're trying to create already exists: "
+            '<a href="%s">%s</a>.'), canonical_url(owner), owner.browsername)
+    return True
+
 
 def validate_distribution_mirror_schema(form_values):
     """Perform schema validation according to IDistributionMirror constraints.
@@ -379,11 +424,10 @@ def validate_distribution_mirror_schema(form_values):
                   values suplied by the user.
     """
     errors = []
-    if not (form_values['http_base_url'] or form_values['ftp_base_url']
-            or form_values['rsync_base_url']):
+    if not (form_values['http_base_url'] or form_values['ftp_base_url']):
         errors.append(LaunchpadValidationError(_(
-            "All mirrors require at least one URL (HTTP, FTP or "
-            "Rsync) to be specified.")))
+            "All mirrors require at least an HTTP or FTP URL to be "
+            "specified.")))
 
     if errors:
         raise WidgetsError(errors)

@@ -164,6 +164,8 @@ class IShippingRequest(Interface):
             description=_('The Organization requesting the CDs')
             )
 
+    distrorelease = Attribute(_(
+        "The ShipItDistroRelease of the CDs contained in this request"))
     recipient_email = Attribute(_("The recipient's email address."))
     shipment = Int(title=_(
         "The request's Shipment or None if the request wasn't shipped yet."),
@@ -340,7 +342,9 @@ class IShippingRequestSet(Interface):
         were processed.
         """
 
-    def exportRequestsToFiles(priority, ztm):
+    def exportRequestsToFiles(
+            priority, ztm,
+            distrorelease=ShipItConstants.current_distrorelease):
         """Export all approved, unshipped and non-cancelled into CSV files.
 
         Group approved, unshipped and non-cancelled requests into one or more
@@ -366,7 +370,8 @@ class IShippingRequestSet(Interface):
         request listed.
         """
 
-    def getUnshippedRequestsIDs(priority):
+    def getUnshippedRequestsIDs(
+            priority, distrorelease=ShipItConstants.current_distrorelease):
         """Return the ID of all requests that are eligible for shipping.
 
         These are approved requests that weren't shipped yet.

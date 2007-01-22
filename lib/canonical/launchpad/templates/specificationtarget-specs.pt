@@ -30,8 +30,8 @@
       the next few releases. It can generate reports of the project roadmap, as
       well as notifying developers of specification status changes.
       Examples:
-      <a href="/distros/ubuntu/+specs">Ubuntu specifications</a>,
-      <a href="/products/bzr/+specs">Bazaar specifications</a>.
+      <a href="/ubuntu/+specs">Ubuntu specifications</a>,
+      <a href="/bzr/+specs">Bazaar specifications</a>.
     </p>
 
     <tal:not_person condition="not: view/is_person">

@@ -1,7 +1,5 @@
-
 <div class="portlet">
-
-    <h4>Import Entry Details:</h4>
+  <h2>Import entry details</h2>
 
     <div class="portletBody">
         <div class="portletContent">
@@ -15,12 +13,21 @@
                tal:attributes="href string:${context/productseries/fmt:url}"
                >Evolution Series: MAIN</a><br />
             <b>Path:</b>
-            <span tal:replace="context/path" /><br />
+            <a tal:attributes="href context/content/http_url"
+               tal:content="context/path">po/foo.pot</a><br />
             <b>Uploader:</b><br />
             <img src="/@@/user" />
-            <span tal:replace="context/importer/browsername" /><br />
+            <a tal:content="context/importer/browsername"
+               tal:attributes="href context/importer/fmt:url"
+               >Mark Shuttleworth</a><br />
             <b>Waiting since:</b>
             <span tal:replace="context/dateimported/fmt:date">
+              2004-05-22
+            </span><br />
+            <b>Status:</b>
+            <span tal:replace="context/status/title"></span><br />
+            <b>Status changed on:</b>
+            <span tal:replace="context/date_status_changed/fmt:date">
               2004-05-22
             </span><br />
         </div>

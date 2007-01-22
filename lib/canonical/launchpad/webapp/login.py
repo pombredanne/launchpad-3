@@ -11,6 +11,7 @@ from zope.component import getUtility
 from zope.app.session.interfaces import ISession
 from zope.event import notify
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad import _
 from canonical.launchpad.validators.email import valid_email
@@ -22,7 +23,8 @@ from canonical.launchpad.interfaces import (
     ILoginTokenSet, IPersonSet, UBUNTU_WIKI_URL, ShipItConstants)
 from canonical.launchpad.interfaces.validation import valid_password
 from canonical.lp.dbschema import LoginTokenType
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from canonical.config import config
+
 
 class UnauthorizedView(SystemErrorView):
 
@@ -86,6 +88,24 @@ class BasicLoginPage:
         return ''
 
 
+class RestrictedLoginInfo:
+    """On a team-restricted launchpad server, show who may access the server.
+
+    Otherwise, show that this is an unrestricted server.
+    """
+
+    def isTeamRestrictedServer(self):
+        return bool(config.launchpad.restrict_to_team)
+
+    def getAllowedTeamURL(self):
+        return 'https://launchpad.net/people/%s' % (
+            config.launchpad.restrict_to_team)
+
+    def getAllowedTeamDescription(self):
+        return getUtility(IPersonSet).getByName(
+            config.launchpad.restrict_to_team).title
+
+
 class LoginOrRegister:
     """Merges the former CookieLoginPage and JoinLaunchpadView classes
     to allow the two forms to appear on a single page.
@@ -109,18 +129,33 @@ class LoginOrRegister:
     submitted = False
     email = None
 
+    # XXX: If you add a new origin here, you must also add a new entry on
+    # NewAccountView.urls_and_rationales in browser/logintoken.py. Ideally,
+    # we should be storing the rationale in the logintoken too, but this
+    # should do for now. -- Guilherme Salgado, 2006-09-27
     registered_origins = {
         'shipit-ubuntu': ShipItConstants.ubuntu_url,
         'shipit-edubuntu': ShipItConstants.edubuntu_url,
         'shipit-kubuntu': ShipItConstants.kubuntu_url,
         'ubuntuwiki': UBUNTU_WIKI_URL}
 
+    def process_restricted_form(self):
+        """Entry-point for the team-restricted login page.
+
+        If we're not running in team-restricted mode, then redirect to a
+        regular login page.  Otherwise, process_form as usual.
+        """
+        if config.launchpad.restrict_to_team:
+            self.process_form()
+        else:
+            self.request.response.redirect('/+login', temporary_if_possible=True)
+
     def process_form(self):
         """Determines whether this is the login form or the register
         form, and delegates to the appropriate function.
         """
         if self.request.method != "POST":
-            return 
+            return
 
         self.submitted = True
         if self.request.form.get(self.submit_login):
@@ -137,7 +172,7 @@ class LoginOrRegister:
     def getRedirectionURL(self):
         """Return the URL we should redirect the user to, after finishing a
         registration or password reset process.
-        
+
         If the request has an 'origin' query parameter, that means the user came
         from either the ubuntu wiki or shipit, and thus we return the URL for
         either shipit or the wiki. When there's no 'origin' query parameter, we
@@ -216,23 +251,6 @@ class LoginOrRegister:
         with a link to the user complete the registration process.
         """
         request = self.request
-        self.email = request.form.get(self.input_email).strip()
-        person = getUtility(IPersonSet).getByEmail(self.email)
-        if person is not None:
-            msg = ('The email address %s is already registered in our system. '
-                   'If you are sure this is your email address, please go to '
-                   'the <a href="/+forgottenpassword">Forgotten Password</a> '
-                   'page and follow the instructions to retrieve your '
-                   'password.') % cgi.escape(self.email)
-            self.registration_error = msg
-            return
-
-        if not valid_email(self.email):
-            self.registration_error = (
-                "The email address you provided isn't valid. "
-                "Please verify it and try again.")
-            return
-
         # For some reason, redirection_url can sometimes be a list, and
         # sometimes a string.  See OOPS-68D508, where redirection_url has
         # the following value:
@@ -241,14 +259,39 @@ class LoginOrRegister:
         if isinstance(redirection_url, list):
             # Remove blank entries.
             redirection_url_list = [url for url in redirection_url if url]
-            assert len(redirection_url_list) == 1
+            # XXX: Shouldn't this be an UnexpectedFormData?
+            # -- Guilherme Salgado, 2006-09-27
+            assert len(redirection_url_list) == 1, redirection_url_list
             redirection_url = redirection_url_list[0]
+
+        self.email = request.form.get(self.input_email).strip()
+        if not valid_email(self.email):
+            self.registration_error = (
+                "The email address you provided isn't valid. "
+                "Please verify it and try again.")
+            return
+
+        person = getUtility(IPersonSet).getByEmail(self.email)
+        if person is not None:
+            if person.is_valid_person:
+                self.registration_error = (
+                    "Sorry, someone with the address %s already has a "
+                    "Launchpad account. If this is you and you've "
+                    "forgotten your password, Launchpad can "
+                    '<a href="/+forgottenpassword">reset it for you.</a>'
+                    % cgi.escape(self.email))
+                return
+            else:
+                # This is an unvalidated profile; let's move on with the
+                # registration process as if we had never seen it.
+                pass
+
         logintokenset = getUtility(ILoginTokenSet)
         token = logintokenset.new(
             requester=None, requesteremail=None, email=self.email,
             tokentype=LoginTokenType.NEWACCOUNT,
             redirection_url=redirection_url)
-        token.sendNewUserEmail(request.getApplicationURL())
+        token.sendNewUserEmail()
 
     def login_success(self):
         return (self.submitted and
@@ -270,7 +313,7 @@ class LoginOrRegister:
             list(self.iter_form_items()), doseq=True)
         if query_string:
             target = '%s?%s' % (target, query_string)
-        self.request.response.redirect(target)
+        self.request.response.redirect(target, temporary_if_possible=True)
 
     def iter_form_items(self):
         """Iterate over keys and single values, excluding stuff we don't
@@ -298,7 +341,7 @@ class LoginOrRegister:
             L.append('<input type="hidden" name="%s" value="%s" />' % (
                 name, cgi.escape(value, quote=True)
                 ))
-                    
+
         return '\n'.join(L)
 
 
@@ -306,7 +349,7 @@ def logInPerson(request, principal, email):
     """Log the person in. Password validation must be done in callsites."""
     session = ISession(request)
     authdata = session['launchpad.authenticateduser']
-    previous_login = authdata.get('personid')
+    assert principal.id is not None, 'principal.id is None!'
     authdata['personid'] = principal.id
     authdata['logintime'] = datetime.utcnow()
     authdata['login'] = email
@@ -362,7 +405,7 @@ class ForgottenPasswordPage:
         logintokenset = getUtility(ILoginTokenSet)
         token = logintokenset.new(
             person, email, email, LoginTokenType.PASSWORDRECOVERY)
-        token.sendPasswordResetEmail(request.getApplicationURL())
+        token.sendPasswordResetEmail()
         self.submitted = True
         return
 

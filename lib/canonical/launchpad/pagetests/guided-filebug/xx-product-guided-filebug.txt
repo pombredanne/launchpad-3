@@ -1,0 +1,81 @@
+Malone does its best to minimize duplicate bug reports. The +filebug
+page for a product starts by asking the user to see if their bug has
+already been reported.
+
+    >>> user_browser.open("http://bugs.launchpad.dev/firefox")
+    >>> user_browser.getLink('Report a Bug').click()
+
+If no title is entered, the user is asked to supply one.
+
+    >>> user_browser.getControl('Summary').value
+    ''
+    >>> user_browser.getControl("Continue").click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/firefox/+filebug'
+
+    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+    ...     print message.renderContents()
+    There is 1 error.
+    A summary is required.
+
+The user fills in some keywords, and clicks a button to search existing
+bugs.
+
+
+    >>> user_browser.getControl(name="field.title").value = (
+    ...     "SVG images aren't displayed")
+    >>> user_browser.getControl("Continue").click()
+
+The form is self-posting, so the user is still at +filebug. This makes
+it difficult to bypass the search-for-dupes bit.
+
+    >>> print user_browser.url
+    http://bugs.launchpad.dev/firefox/+filebug
+
+After searching, the user is presented with a list of similar bugs and
+a list of most common bugs in the current context.
+
+    >>> from canonical.launchpad.ftests.bug import print_bugs_table
+
+    >>> print_bugs_table(user_browser.contents, "similar-bugs")
+    1 Firefox does not support SVG
+
+    >>> print_bugs_table(user_browser.contents, "most-common-bugs")
+    5 Firefox install instructions should be complete
+
+If the user doesn't see their bug already reported, they can proceed to
+file the bug.
+
+If no description is entered, an error message is displayed.
+
+    >>> user_browser.getControl(name="field.comment").value
+    ''
+    >>> user_browser.getControl("Submit Bug Report").click()
+    >>> print user_browser.url
+    http://bugs.launchpad.dev/firefox/+filebug
+    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+    ...     print message.renderContents()
+    There is 1 error.
+    Required input is missing.
+
+If the user for some reason would erase the summary, an error message
+will be displayed as well.
+
+    >>> user_browser.getControl(name="field.comment").value = "not empty"
+    >>> user_browser.getControl(name="field.title").value = ''
+    >>> user_browser.getControl("Submit Bug Report").click()
+    >>> print user_browser.url
+    http://bugs.launchpad.dev/firefox/+filebug
+    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+    ...     print message.renderContents()
+    There is 1 error.
+    Required input is missing.
+
+With both values set, the bug is created.
+
+    >>> user_browser.getControl(name="field.title").value = "a brand new bug"
+    >>> user_browser.getControl(name="field.comment").value = "test"
+    >>> user_browser.getControl("Submit Bug Report").click()
+
+    >>> print user_browser.url
+    http://bugs.launchpad.dev/firefox/+bug/...

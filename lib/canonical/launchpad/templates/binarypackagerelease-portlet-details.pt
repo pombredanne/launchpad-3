@@ -1,5 +1,5 @@
 <div class="portlet">
-  <h4><span tal:replace="context/name" /> details:</h4>
+  <h2><span tal:replace="context/name" /> details</h2>
 
   <div class="portletBody portletContent">
 

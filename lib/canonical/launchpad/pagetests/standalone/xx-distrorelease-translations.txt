@@ -2,9 +2,9 @@ This page shows a list of PO templates contained within all source packages
 in a particular distibution release. In this case, we're asking for the
 translation overview for Hoary.
 
-  >>> browser.open('http://localhost/distros/ubuntu/hoary/+translations')
+  >>> browser.open('http://localhost/ubuntu/hoary/+translations')
   >>> browser.url
-  'http://localhost/distros/ubuntu/hoary/+translations'
+  'http://localhost/ubuntu/hoary/+translations'
 
 Check that there aren't disabled languages shown here:
 

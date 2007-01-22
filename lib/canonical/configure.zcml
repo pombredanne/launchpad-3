@@ -16,7 +16,7 @@
         interface="canonical.launchpad.layers.LaunchpadLayer"/>
     <browser:skin
         name="rosetta"
-        interface="canonical.launchpad.layers.RosettaLayer"/>
+        interface="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:skin
         name="shipit"
         interface="canonical.launchpad.layers.ShipItLayer"/>
@@ -58,18 +58,21 @@
         permission="zope.Public"
         />
 
-    <!-- These next two directives go together.  The Resources registration is
-         needed because currently in Zope, published browser views are looked
-         up as no-name views.  View look-up will use views on the same layer
+    <!-- The following directives set up root front pages for the different
+         virtual host layers.  The directives come in pairs.
+         The Resources registration is needed because currently in Zope,
+         published browser views are looked up as no-name views.  View
+         look-up will use views on the same layer
          before more general views on a different layer.  So we need to
          re-register the resources container on the new layer.
          This workaround will no longer be needed once published browser
          pages are registered to provide a specific interface.
       -->
+    <!-- virtual host: blueprints -->
     <browser:defaultView
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
         name="specs"
-        layer="canonical.launchpad.layers.BlueprintLayer"
+        layer="canonical.launchpad.layers.BlueprintsLayer"
         />
     <browser:page
         name=""
@@ -77,7 +80,67 @@
         class="zope.app.publisher.browser.resources.Resources"
         permission="zope.Public"
         allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
-        layer="canonical.launchpad.layers.BlueprintLayer"
+        layer="canonical.launchpad.layers.BlueprintsLayer"
+        />
+
+    <!-- virtual host: code -->
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        name="+code"
+        layer="canonical.launchpad.layers.CodeLayer"
+        />
+    <browser:page
+        name=""
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        class="zope.app.publisher.browser.resources.Resources"
+        permission="zope.Public"
+        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
+        layer="canonical.launchpad.layers.CodeLayer"
+        />
+
+    <!-- virtual host: translations -->
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        name="translations"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
+    <browser:page
+        name=""
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        class="zope.app.publisher.browser.resources.Resources"
+        permission="zope.Public"
+        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
+
+    <!-- virtual host: bugs -->
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        name="bugs"
+        layer="canonical.launchpad.layers.BugsLayer"
+        />
+    <browser:page
+        name=""
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        class="zope.app.publisher.browser.resources.Resources"
+        permission="zope.Public"
+        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
+        layer="canonical.launchpad.layers.BugsLayer"
+        />
+
+    <!-- virtual host: answers -->
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        name="support"
+        layer="canonical.launchpad.layers.AnswersLayer"
+        />
+    <browser:page
+        name=""
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        class="zope.app.publisher.browser.resources.Resources"
+        permission="zope.Public"
+        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
+        layer="canonical.launchpad.layers.AnswersLayer"
         />
 
     <!-- This should really be on ILaunchpadRoot for all layers, and we should
@@ -145,12 +208,6 @@
 
     <include package="canonical.widgets" />
     <include package="canonical.launchpad" />
-
-    <content class="canonical.publication.LoginRoot">
-      <allow
-        attributes="publishTraverse"
-        />
-    </content>
 
     <include package="canonical.lp" />
 

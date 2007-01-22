@@ -9,9 +9,8 @@ from zope.component import getUtility
 
 from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.interfaces import (
-    IAuthorization, IHasOwner, IPerson, ITeam, ISprintSpecification,
-    IDistribution, ITeamMembership, IProductSeriesSource, IProductSet,
-    IProductSeriesSourceAdmin, IMilestone, IBug, ITranslator,
+    IAuthorization, IHasOwner, IPerson, ITeam, ISprint, ISprintSpecification,
+    IDistribution, ITeamMembership, IMilestone, IBug, ITranslator,
     IProduct, IProductSeries, IPOTemplate, IPOFile, IPOTemplateName,
     IPOTemplateNameSet, ISourcePackage, ILaunchpadCelebrities, IDistroRelease,
     IBugTracker, IBugAttachment, IPoll, IPollSubset, IPollOption,
@@ -20,7 +19,8 @@ from canonical.launchpad.interfaces import (
     IShippingRun, ISpecification, ITicket, ITranslationImportQueueEntry,
     ITranslationImportQueue, IDistributionMirror, IHasBug,
     IBazaarApplication, IDistroReleaseQueue, IBuilderSet,
-    IBuilder, IBuild, ISpecificationSubscription, IHasDrivers)
+    IBuilder, IBuild, IBugNomination, ISpecificationSubscription, IHasDrivers,
+    IBugBranch)
 
 from canonical.lp.dbschema import DistroReleaseQueueStatus
 
@@ -50,6 +50,14 @@ class AdminByAdminsTeam(AuthorizationBase):
     def checkAuthenticated(self, user):
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(admins)
+
+
+class EditBugNominationStatus(AuthorizationBase):
+    permission = 'launchpad.Driver'
+    usedfor = IBugNomination
+
+    def checkAuthenticated(self, user):
+        return check_permission("launchpad.Driver", self.obj.target)
 
 
 class EditByOwnersOrAdmins(AuthorizationBase):
@@ -105,12 +113,12 @@ class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):
         for driver in goaldrivers:
             if user.inTeam(driver):
                 return True
-        return (user.inTeam(self.obj.target.owner) or 
-                user.inTeam(goalowner) or 
-                user.inTeam(self.obj.owner) or 
-                user.inTeam(self.obj.drafter) or 
-                user.inTeam(self.obj.assignee) or 
-                user.inTeam(self.obj.approver) or 
+        return (user.inTeam(self.obj.target.owner) or
+                user.inTeam(goalowner) or
+                user.inTeam(self.obj.owner) or
+                user.inTeam(self.obj.drafter) or
+                user.inTeam(self.obj.assignee) or
+                user.inTeam(self.obj.approver) or
                 user.inTeam(admins))
 
 
@@ -126,7 +134,7 @@ class AdminSpecification(AuthorizationBase):
             if user.inTeam(driver):
                 return True
         admins = getUtility(ILaunchpadCelebrities).admin
-        return (user.inTeam(self.obj.target.owner) or 
+        return (user.inTeam(self.obj.target.owner) or
                 user.inTeam(admins))
 
 
@@ -144,17 +152,32 @@ class DriverSpecification(AuthorizationBase):
             self.obj.goal and
             check_permission("launchpad.Driver", self.obj.goal))
 
+
 class EditSprintSpecification(AuthorizationBase):
-    """The sprint owner can say what makes it onto the agenda for the
-    sprint.
+    """The sprint owner or driver can say what makes it onto the agenda for
+    the sprint.
     """
-    permission = 'launchpad.Edit'
+    permission = 'launchpad.Driver'
     usedfor = ISprintSpecification
 
     def checkAuthenticated(self, user):
         admins = getUtility(ILaunchpadCelebrities).admin
         return (user.inTeam(self.obj.sprint.owner) or
                 user.inTeam(self.obj.sprint.driver) or
+                user.inTeam(admins))
+
+
+class DriveSprint(AuthorizationBase):
+    """The sprint owner or driver can say what makes it onto the agenda for
+    the sprint.
+    """
+    permission = 'launchpad.Driver'
+    usedfor = ISprint
+
+    def checkAuthenticated(self, user):
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.owner) or
+                user.inTeam(self.obj.driver) or
                 user.inTeam(admins))
 
 
@@ -181,9 +204,9 @@ class EditSpecificationSubscription(AuthorizationBase):
                 user.inTeam(self.obj.specification.approver) or
                 user.inTeam(admins))
 
-class AdminSeriesSourceByVCSImports(AuthorizationBase):
+class AdminSeriesByVCSImports(AuthorizationBase):
     permission = 'launchpad.Admin'
-    usedfor = IProductSeriesSourceAdmin
+    usedfor = IProductSeries
 
     def checkAuthenticated(self, user):
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
@@ -243,7 +266,7 @@ class AdminShippingRequestSetByShipItAdmins(AdminShippingRequestByShipItAdmins):
 
 class EditSeriesSourceByVCSImports(AuthorizationBase):
     permission = 'launchpad.EditSource'
-    usedfor = IProductSeriesSource
+    usedfor = IProductSeries
 
     def checkAuthenticated(self, user):
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
@@ -402,7 +425,7 @@ class AdminDistroRelease(AdminByAdminsTeam):
     """Soyuz involves huge chunks of data in the archive and librarian,
     so for the moment we are locking down admin and edit on distributions
     and distroreleases to the Launchpad admin team.
-    
+
     NB: Please consult with SABDFL before modifying this permission because
         changing it could cause the archive to get rearranged, with tons of
         files moved to the new namespace, and mirrors would get very very
@@ -415,7 +438,7 @@ class AdminDistroRelease(AdminByAdminsTeam):
 class EditDistroReleaseByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
     """The owner of the distro release should be able to modify some of the
     fields on the IDistroRelease
-    
+
     NB: there is potential for a great mess if this is not done correctly so
     please consult with SABDFL before modifying these permissions.
     """
@@ -447,7 +470,7 @@ class ReleaseAndSeriesDrivers(AuthorizationBase):
 
 class EditProductSeries(EditByOwnersOrAdmins):
     usedfor = IProductSeries
-    
+
     def checkAuthenticated(self, user):
         """Allow product owner, Rosetta Experts, or admins."""
         if user.inTeam(self.obj.product.owner):
@@ -471,6 +494,11 @@ class EditBugTask(AuthorizationBase):
     usedfor = IHasBug
 
     def checkAuthenticated(self, user):
+        if self.obj.conjoined_master is not None:
+            # It's never allowed to edit this bugtask directly, it
+            # should be edited through conjoined_master.
+            return False
+
         admins = getUtility(ILaunchpadCelebrities).admin
 
         if user.inTeam(admins):
@@ -575,6 +603,16 @@ class PublicToAllOrPrivateToExplicitSubscribersForBug(AuthorizationBase):
     def checkUnauthenticated(self):
         """Allow anonymous users to see non-private bugs only."""
         return not self.obj.private
+
+
+class EditBugBranch(EditPublicByLoggedInUserAndPrivateByExplicitSubscribers):
+    permission = 'launchpad.Edit'
+    usedfor = IBugBranch
+
+    def __init__(self, bug_branch):
+        # The same permissions as for the BugBranch's bug should apply
+        # to the BugBranch itself.
+        self.obj = bug_branch.bug
 
 
 class ViewBugAttachment(PublicToAllOrPrivateToExplicitSubscribersForBug):
@@ -821,6 +859,30 @@ class AdminTicket(AdminByAdminsTeam):
     usedfor = ITicket
 
     def checkAuthenticated(self, user):
-        """Allow only admins and ticket target owners"""
+        """Allow only admins and owners of the ticket pillar target."""
+        context = self.obj.product or self.obj.distribution
         return (AdminByAdminsTeam.checkAuthenticated(self, user) or
-                user.inTeam(self.obj.target.owner))
+                user.inTeam(context.owner))
+
+
+class ModerateTicket(AdminTicket):
+    permission = 'launchpad.Moderate'
+    usedfor = ITicket
+
+    def checkAuthenticated(self, user):
+        """Allow user who can administer the ticket and support contacts."""
+        if AdminTicket.checkAuthenticated(self, user):
+            return True
+        for support_contact in self.obj.target.support_contacts:
+            if user.inTeam(support_contact):
+                return True
+        return False
+
+
+class TicketOwner(AuthorizationBase):
+    permission = 'launchpad.Owner'
+    usedfor = ITicket
+
+    def checkAuthenticated(self, user):
+        """Allow the ticket's owner."""
+        return user.inTeam(self.obj.owner)

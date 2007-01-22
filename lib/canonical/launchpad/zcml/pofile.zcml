@@ -14,6 +14,10 @@
             set_schema="canonical.launchpad.interfaces.IPOFile" />
     </content>
 
+    <content class="canonical.launchpad.database.POFileTranslator">
+        <allow interface="canonical.launchpad.interfaces.IPOFileTranslator" />
+    </content>
+
     <browser:navigation
         module="canonical.launchpad.browser"
         classes="POFileNavigation"
@@ -59,9 +63,6 @@
             name="+portlet-translators"
             template="../templates/pofile-portlet-translators.pt" />
         <browser:page
-            name="+portlet-quickhelp"
-            template="../templates/pofile-portlet-quickhelp.pt" />
-        <browser:page
             name="+portlet-stats"
             template="../templates/pofile-portlet-stats.pt" />
 
@@ -78,7 +79,7 @@
     <browser:page
         name="+translate"
         for="canonical.launchpad.interfaces.IPOFile"
-        permission="launchpad.AnyPerson"
+        permission="zope.Public"
         template="../templates/pofile-translate.pt"
         class="canonical.launchpad.browser.POFileTranslateView"
         />

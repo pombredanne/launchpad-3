@@ -1,0 +1,120 @@
+= DistroArchRelease Binary Package Pages =
+
+In Launchpad, BinaryPackageReleases are directly attached to a
+DistroArchRelease by a publication record (see
+doc/publishedpackages.txt).
+
+A DistroArchReleaseBinaryPackage, is a collection of
+BinaryPackageReleases once published in a given DistroArchRelease.
+
+SourcePackages are available through the web UI after traversing
+through a DistroRelease and SourceName. The URL schema is:
+
+$LP/ubuntu/$DISTRORELEASE/+source/$BINARYNAME
+
+This specific page is not properly integrated in the navigation
+system, so it's impossible to get there except by typing the entire
+URL:
+
+  >>> browser.open(
+  ...     'http://localhost/ubuntu/warty/i386/mozilla-firefox')
+
+This page provides the publishing history of this BinaryPackage within
+this architecture:
+
+  >>> print find_tag_by_id(browser.contents, 'publishings')
+  <div id="publishings">
+  <b>
+  warty
+  i386
+  Release</b>:
+  Published
+  version 0.9
+  in component main
+  and section base
+  <BLANKLINE>
+  on 2005-06-18 00:00:00 UTC
+  <hr />
+  </div>
+
+
+It also provides a link to the currently published version:
+
+  >>> browser.getLink("0.9").click()
+  >>> browser.url
+  'http://localhost/ubuntu/warty/i386/mozilla-firefox/0.9'
+
+
+A BinaryPackageRelease once published in a DistroArchRelease is
+represented by a DistroArchReleaseBinaryPackageRelease and easily
+reached by traversing a DistroArchReleaseBinaryPackage instance with a
+valid version, like:
+
+$LP/ubuntu/$DISTRORELEASE/$ARCHTAG/$BINARYNAME/$VERSION
+
+It's also reachable in a more natural way, starting from distribution page:
+
+  >>> browser.open(
+  ...     'http://localhost/ubuntu')
+
+Then we get to the DistroRelease page:
+
+  >>> browser.getLink("warty 4.10 (CURRENT)").click()
+
+Then the DistroArchRelease page:
+
+  >>> browser.getLink("i386 (official)").click()
+
+Now we are able to use the search box in this page:
+
+  >>> browser.getControl(name="text").value = "moz"
+  >>> browser.getControl("Search Packages").click()
+
+Click on the wanted name to get on the DistroArchReleaseBinaryPackageRelease:
+
+  >>> browser.getLink("mozilla-firefox").click()
+  >>> browser.url
+  'http://localhost/ubuntu/warty/i386/mozilla-firefox/0.9'
+
+This page represents an IDistroArchReleaseBinaryPackageRelease and is
+able to point the user to the IDistroReleaseSourcePackageRelease which
+originated itself:
+
+  >>> print find_tag_by_id(browser.contents, 'source')
+  <div id="source">
+    <ul>
+      <li class="packages">
+        <a href="http://localhost/ubuntu/+source/mozilla-firefox/0.9">mozilla-firefox 0.9 (source) in Test Distro</a>
+      </li>
+    </ul>
+  </div>
+
+Also provide a section with the contained files, including respective
+librarian URL and size:
+
+  >>> print find_tag_by_id(browser.contents, 'files')
+  <div id="files">
+    <ul class="packages">
+      <li>
+        <a href="http://localhost:58000/40/mozilla-firefox_0.9_i386.deb">mozilla-firefox_0.9_i386.deb</a>
+        (3 bytes)
+      </li>
+    </ul>
+  </div>
+
+Let's check how the page behaves if we have no files to present:
+
+  >>> browser.open(
+  ...     'http://launchpad.dev/ubuntu/hoary/i386/pmount')
+  >>> browser.getLink("0.1-1").click()
+
+A string is presented in 'files' section, warning the user that no
+file is available:
+
+  >>> print find_tag_by_id(browser.contents, 'files')
+  <div id="files">
+  <p>
+  There are no downloadable files for this binary package.
+  </p>
+  </div>
+

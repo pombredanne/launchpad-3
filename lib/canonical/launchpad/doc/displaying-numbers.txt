@@ -1,0 +1,38 @@
+Displaying Numbers with ZPT
+===========================
+
+    >>> from canonical.launchpad.ftests import test_tales
+
+The TALES formatter for numbers allows them to be rendered as byte
+contractions as per IEC60027-2:
+
+    >>> test_tales('foo/fmt:bytes', foo=0)
+    '0 bytes'
+
+    >>> test_tales('foo/fmt:bytes', foo=1)
+    '1 byte'
+
+    >>> test_tales('foo/fmt:bytes', foo=123)
+    '123 bytes'
+
+    >>> test_tales('foo/fmt:bytes', foo=1234)
+    '1.2 KiB'
+
+    >>> test_tales('foo/fmt:bytes', foo=12345678)
+    '11.8 MiB'
+
+    >>> test_tales('foo/fmt:bytes', foo=12345567901)
+    '11.5 GiB'
+
+    >>> test_tales('foo/fmt:bytes', foo=12345678901234)
+    '11.2 TiB'
+
+    >>> test_tales('foo/fmt:bytes', foo=123456789012345678)
+    '109.7 PiB'
+
+We top out at YiB though, since there is no valid contraction above
+that (thank god!)
+
+    >>> test_tales('foo/fmt:bytes', foo=123456789012345678901234567890)
+    '102121.1 YiB'
+

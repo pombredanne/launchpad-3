@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template/master"
+      metal:use-macro="context/@@main_template_2col/master"
       i18n:domain="launchpad">
 
 <body>
@@ -11,37 +11,64 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Translation activity</h1>
+  <h1>Applications and packages translated</h1>
 
-  <p class="documentDescription">This page lists any files that include
-  contributions in some form from <span tal:replace="context/browsername">
-  Mark Shuttleworth</span>.</p>
+  <tal:block define="history view/batchnav/currentBatch">
 
-  <tal:block define="pofiles context/touched_pofiles">
+    <tal:block condition="history">
 
-    <tal:block condition="pofiles">
+      <div class="lesser">
+        <tal:navigation content="structure view/batchnav/@@+navigation-links-upper" />
+      </div>
+
       <table class="listing">
         <thead>
           <tr>
-            <th>Language</th>
             <th>Application</th>
+            <th>Language</th>
+            <th colspan="2">Latest Translation</th>
+            <th>When</th>
           </tr>
         </thead>
         <tbody>
-          <tr tal:repeat="pofile pofiles">
-            <td tal:content="pofile/language/englishname">Spanish</td>
-            <td><a tal:content="pofile/potemplate/title"
-                   tal:attributes="href pofile/fmt:url">
-            foo bar in package bla</a>
+          <tr tal:repeat="record history">
+            <td><a tal:content="record/pofile/potemplate/displayname"
+                   tal:attributes="href record/pofile/fmt:url">foo bar in package bla</a>
             </td>
+            <td tal:content="record/pofile/language/englishname">Spanish</td>
+            <td tal:content="record/latest_posubmission/pomsgset/potmsgset/primemsgid_/msgid" />
+            <td tal:content="record/latest_posubmission/potranslation/translation" />
+            <td tal:content="record/date_last_touched/fmt:date" />
           </tr>
         </tbody>
       </table>
+
+      <div class="lesser">
+        <tal:navigation content="structure view/batchnav/@@+navigation-links-lower" />
+      </div>
+
     </tal:block>
-    <tal:block condition="not: pofiles">
+
+    <tal:block condition="not: history">
       <p><i>No translations recorded from
       <span tal:replace="context/browsername">Foo Bar</span>.</i></p>
     </tal:block>
+  </tal:block>
+
+  <tal:block condition="view/translation_groups">
+
+    <h2>Translation Groups</h2>
+
+    <span tal:replace="context/browsername">Mark Shuttleworth</span> is
+    a member of the following translation groups:
+
+    <ul>
+      <li tal:repeat="translation_group view/translation_groups">
+        <a tal:attributes="href translation_group/fmt:url"
+           tal:content="translation_group/title"></a>
+      </li>
+    </ul>
+
   </tal:block>
 
 </div>

@@ -3,17 +3,19 @@
 __metaclass__ = type
 __all__ = ['Distribution', 'DistributionSet']
 
+from operator import attrgetter
+
 from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
     BoolCol, ForeignKey, SQLMultipleJoin, SQLRelatedJoin, StringCol,
     SQLObjectNotFound)
-from sqlobject.sqlbuilder import AND, OR
+from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
 from canonical.database.sqlbase import quote, quote_like, SQLBase, sqlvalues
 
-from canonical.launchpad.components.bugtarget import BugTargetBase
+from canonical.launchpad.database.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.bug import (
@@ -21,7 +23,8 @@ from canonical.launchpad.database.bug import (
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import Specification
-from canonical.launchpad.database.ticket import Ticket, TicketSet
+from canonical.launchpad.database.ticket import (
+    SimilarTicketsSearch, Ticket, TicketTargetSearch, TicketSet)
 from canonical.launchpad.database.distrorelease import DistroRelease
 from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.binarypackagename import (
@@ -36,6 +39,7 @@ from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
+from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.sourcepackagename import (
     SourcePackageName)
 from canonical.launchpad.database.sourcepackagerelease import (
@@ -48,15 +52,14 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.url import urlparse
 
 from canonical.lp.dbschema import (
-    EnumCol, DistributionReleaseStatus, MirrorContent,
+    EnumCol, BugTaskStatus, DistributionReleaseStatus, MirrorContent,
     TranslationPermission, SpecificationSort, SpecificationFilter,
-    SpecificationStatus, MirrorPulseType, PackagePublishingStatus,
-    BugTaskStatus)
+    SpecificationStatus, PackagePublishingStatus)
 
 from canonical.launchpad.interfaces import (
     IBuildSet, IDistribution, IDistributionSet, IHasBuildRecords,
     ILaunchpadCelebrities, ISourcePackageName, ITicketTarget, NotFoundError,
-    TICKET_STATUS_DEFAULT_SEARCH)
+    TICKET_STATUS_DEFAULT_SEARCH, get_supported_languages)
 
 from sourcerer.deb.version import Version
 
@@ -74,6 +77,11 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
     title = StringCol(notNull=True)
     summary = StringCol(notNull=True)
     description = StringCol(notNull=True)
+    homepage_content = StringCol(default=None)
+    emblem = ForeignKey(
+        dbName='emblem', foreignKey='LibraryFileAlias', default=None)
+    gotchi = ForeignKey(
+        dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
     domainname = StringCol(notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     bugcontact = ForeignKey(
@@ -133,7 +141,8 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
     def disabled_mirrors(self):
         """See canonical.launchpad.interfaces.IDistribution."""
         return DistributionMirror.selectBy(
-            distribution=self, enabled=False)
+            distribution=self, official_approved=True,
+            official_candidate=True, enabled=False)
 
     @property
     def unofficial_mirrors(self):
@@ -189,6 +198,10 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         """See IBugTarget."""
         return self.displayname
 
+    def _getBugTaskContextWhereClause(self):
+        """See BugTargetBase."""
+        return "BugTask.distribution = %d" % self.id
+
     def searchTasks(self, search_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
         search_params.setDistribution(self)
@@ -208,9 +221,8 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         return DistributionMirror.selectOneBy(distribution=self, name=name)
 
     def newMirror(self, owner, speed, country, content, displayname=None,
-                  pulse_type=MirrorPulseType.PUSH, description=None,
-                  http_base_url=None, ftp_base_url=None, pulse_source=None,
-                  rsync_base_url=None, file_list=None, official_candidate=False,
+                  description=None, http_base_url=None, ftp_base_url=None,
+                  rsync_base_url=None, official_candidate=False,
                   enabled=False):
         """See IDistribution."""
         # NB this functionality is only available to distributions that have
@@ -220,8 +232,9 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         if not self.full_functionality:
             return None
 
-        url = http_base_url or ftp_base_url or rsync_base_url
-        assert url is not None
+        url = http_base_url or ftp_base_url
+        assert url is not None, (
+            "A mirror must provide either an HTTP or FTP URL (or both).")
         dummy, host, dummy, dummy, dummy, dummy = urlparse(url)
         name = sanitize_name('%s-%s' % (host, content.name.lower()))
 
@@ -233,12 +246,10 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
 
         return DistributionMirror(
             distribution=self, owner=owner, name=name, speed=speed,
-            country=country, content=content, pulse_type=pulse_type,
-            displayname=displayname, description=description,
-            http_base_url=http_base_url, ftp_base_url=ftp_base_url,
-            rsync_base_url=rsync_base_url, file_list=file_list,
-            official_candidate=official_candidate, enabled=enabled,
-            pulse_source=pulse_source)
+            country=country, content=content, displayname=displayname,
+            description=description, http_base_url=http_base_url,
+            ftp_base_url=ftp_base_url, rsync_base_url=rsync_base_url,
+            official_candidate=official_candidate, enabled=enabled)
 
     def createBug(self, bug_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
@@ -436,20 +447,16 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         """See ISpecificationTarget."""
         return Specification.selectOneBy(distribution=self, name=name)
 
-    def tickets(self, quantity=None):
+    def getSupportedLanguages(self):
         """See ITicketTarget."""
-        return Ticket.select("""
-            Ticket.distribution = %s
-            """ % sqlvalues(self.id),
-            orderBy='-Ticket.datecreated',
-            prejoins=['distribution', 'owner', 'sourcepackagename'],
-            limit=quantity)
+        return get_supported_languages(self)
 
-    def newTicket(self, owner, title, description, datecreated=None):
+    def newTicket(self, owner, title, description, language=None,
+                  datecreated=None):
         """See ITicketTarget."""
         return TicketSet.new(
             title=title, description=description, owner=owner,
-            distribution=self, datecreated=datecreated)
+            distribution=self, datecreated=datecreated, language=language)
 
     def getTicket(self, ticket_id):
         """See ITicketTarget."""
@@ -458,20 +465,19 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
             ticket = Ticket.get(ticket_id)
         except SQLObjectNotFound:
             return None
-        # Now verify that that ticket is actually for this target.
-        if ticket.target != self:
+        # Now verify that that ticket is actually for this distribution.
+        if ticket.distribution != self:
             return None
         return ticket
 
-    def searchTickets(self, search_text=None,
-                      status=TICKET_STATUS_DEFAULT_SEARCH, sort=None):
+    def searchTickets(self, **search_criteria):
         """See ITicketTarget."""
-        return TicketSet.search(search_text=search_text, status=status,
-                                sort=sort, distribution=self)
+        return TicketTargetSearch(
+            distribution=self, **search_criteria).getResults()
 
     def findSimilarTickets(self, title):
         """See ITicketTarget."""
-        return TicketSet.findSimilar(title, distribution=self)
+        return SimilarTicketsSearch(title, distribution=self).getResults()
 
     def addSupportContact(self, person):
         """See ITicketTarget."""
@@ -498,10 +504,21 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         support_contacts = SupportContact.select(
             """distribution = %d AND sourcepackagename IS NULL""" % self.id)
 
-        return shortlist([
-            support_contact.person for support_contact in support_contacts
-            ],
-            longest_expected=100)
+        return sorted(
+            [support_contact.person for support_contact in support_contacts],
+            key=attrgetter('displayname'))
+
+    @property
+    def direct_support_contacts(self):
+        """See ITicketTarget."""
+        return self.support_contacts
+
+    def getTicketLanguages(self):
+        """See ITicketTarget."""
+        return set(Language.select(
+            'Language.id = language AND distribution = %s AND '
+            'sourcepackagename IS NULL' % sqlvalues(self),
+            clauseTables=['Ticket'], distinct=True))
 
     def ensureRelatedBounty(self, bounty):
         """See IDistribution."""
@@ -563,7 +580,7 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         return getUtility(IBuildSet).getBuildsByArchIds(
             arch_ids, status, name, pocket)
 
-    def removeOldCacheItems(self):
+    def removeOldCacheItems(self, log):
         """See IDistribution."""
 
         # Get the set of source package names to deal with.
@@ -584,11 +601,13 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         # Remove the cache entries for packages we no longer publish.
         for cache in self.source_package_caches:
             if cache.sourcepackagename not in spns:
+                log.debug(
+                    "Removing source cache for '%s' (%s)"
+                    % (cache.name, cache.id))
                 cache.destroySelf()
 
-    def updateCompleteSourcePackageCache(self, ztm=None):
+    def updateCompleteSourcePackageCache(self, log, ztm):
         """See IDistribution."""
-
         # Get the set of source package names to deal with.
         spns = list(SourcePackageName.select("""
             SourcePackagePublishingHistory.distrorelease =
@@ -607,14 +626,15 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         # Now update, committing every 50 packages.
         counter = 0
         for spn in spns:
-            self.updateSourcePackageCache(spn)
+            log.debug("Considering source '%s'" % spn.name)
+            self.updateSourcePackageCache(spn, log)
             counter += 1
             if counter > 49:
                 counter = 0
-                if ztm is not None:
-                    ztm.commit()
+                log.debug("Committing")
+                ztm.commit()
 
-    def updateSourcePackageCache(self, sourcepackagename):
+    def updateSourcePackageCache(self, sourcepackagename, log):
         """See IDistribution."""
 
         # Get the set of published sourcepackage releases.
@@ -624,14 +644,16 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
                 SourcePackagePublishingHistory.sourcepackagerelease AND
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
-            SourcePackagePublishingHistory.status != %s AND
-            DistroRelease.distribution = %s
-            """ % sqlvalues(sourcepackagename.id, self.id,
+            DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.status != %s
+            """ % sqlvalues(sourcepackagename, self,
                             PackagePublishingStatus.REMOVED),
             orderBy='id',
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
             distinct=True))
+
         if len(sprs) == 0:
+            log.debug("No sources releases found.")
             return
 
         # Find or create the cache entry.
@@ -640,6 +662,7 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
             sourcepackagename = %s
             """ % sqlvalues(self.id, sourcepackagename.id))
         if cache is None:
+            log.debug("Creating new source cache entry.")
             cache = DistributionSourcePackageCache(
                 distribution=self,
                 sourcepackagename=sourcepackagename)
@@ -652,12 +675,14 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         binpkgsummaries = set()
         binpkgdescriptions = set()
         for spr in sprs:
+            log.debug("Considering source version %s" % spr.version)
             binpkgs = BinaryPackageRelease.select("""
                 BinaryPackageRelease.build = Build.id AND
                 Build.sourcepackagerelease = %s
                 """ % sqlvalues(spr.id),
                 clauseTables=['Build'])
             for binpkg in binpkgs:
+                log.debug("Considering binary '%s'" % binpkg.name)
                 binpkgnames.add(binpkg.name)
                 binpkgsummaries.add(binpkg.summary)
                 binpkgdescriptions.add(binpkg.description)
@@ -678,10 +703,8 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
             (fti @@ ftq(%s) OR
              DistributionSourcePackageCache.name ILIKE '%%' || %s || '%%')
             """ % (quote(self.id), quote(text), quote_like(text)),
-            selectAlso='rank(fti, ftq(%s)) AS rank' % sqlvalues(text),
-            orderBy=['-rank'],
-            prejoins=["sourcepackagename"],
-            distinct=True)
+            orderBy=[SQLConstant('rank(fti, ftq(%s)) DESC' % quote(text))],
+            prejoins=["sourcepackagename"])
         return [dspc.distributionsourcepackage for dspc in dspcaches]
 
     def guessPackageNames(self, pkgname):

@@ -12,7 +12,7 @@
 
 <metal:rightportlets fill-slot="portlets_two">
   <div class="portlet">
-    <h4>About Projects in Launchpad:</h4>
+    <h2>About Projects in Launchpad:</h2>
     <div class="portletBody portletContent">
       <img src="/@@/info" />
       There are currently

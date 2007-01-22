@@ -11,24 +11,21 @@ from sqlobject import (
     StringCol, ForeignKey, IntervalCol)
 from sqlobject.sqlbuilder import AND, IN
 
+from canonical.config import config
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-
-from canonical.config import config
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
-from canonical.launchpad.database.builder import BuildQueue
+from canonical.launchpad.database.buildqueue import BuildQueue
 from canonical.launchpad.database.queue import DistroReleaseQueueBuild
 from canonical.launchpad.helpers import (
     get_email_template, contactEmailAddresses)
 from canonical.launchpad.interfaces import (
     IBuild, IBuildSet, NotFoundError, ILaunchpadCelebrities)
 from canonical.launchpad.mail import simple_sendmail, format_address
-
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
-
 from canonical.lp.dbschema import (
     EnumCol, BuildStatus, PackagePublishingPocket, DistributionReleaseStatus)
 
@@ -97,7 +94,8 @@ class Build(SQLBase):
     def was_built(self):
         """See IBuild"""
         return self.buildstate not in [BuildStatus.NEEDSBUILD,
-                                       BuildStatus.BUILDING]
+                                       BuildStatus.BUILDING,
+                                       BuildStatus.SUPERSEDED]
 
     @property
     def distributionsourcepackagerelease(self):
@@ -128,7 +126,6 @@ class Build(SQLBase):
             BuildStatus.FAILEDTOBUILD,
             BuildStatus.MANUALDEPWAIT,
             BuildStatus.CHROOTWAIT,
-            BuildStatus.SUPERSEDED
             ]
 
         return self.buildstate in failed_buildstates
@@ -229,6 +226,12 @@ class Build(SQLBase):
         if config.builddmaster.notify_owner:
             recipients = recipients.union(contactEmailAddresses(creator))
 
+        # XXX cprov 20061027: temporary extra debug info about the
+        # SPR.creator in context, to be used during the service quarantine,
+        # notify_owner will be disabled to avoid *spamming* Debian people.
+        extra_headers['X-Creator-Recipient'] = ",".join(
+            contactEmailAddresses(creator))
+
         subject = "[Build #%d] %s" % (self.id, self.title)
 
         # XXX cprov 20060802: pending security recipients for SECURITY
@@ -252,7 +255,7 @@ class Build(SQLBase):
             # completed states (success and failure)
             buildduration = DurationFormatterAPI(
                 self.buildduration).approximateduration()
-            buildlog_url = self.buildlog.url
+            buildlog_url = self.buildlog.http_url
             builder_url = canonical_url(self.builder)
 
         template = get_email_template('build-notification.txt')
@@ -309,6 +312,7 @@ class BuildSet:
         """See IBuildSet."""
         queries = []
         clauseTables = []
+
         if status:
             queries.append('buildstate=%s' % sqlvalues(status))
 
@@ -322,10 +326,23 @@ class BuildSet:
             clauseTables.append('Sourcepackagerelease')
             clauseTables.append('Sourcepackagename')
 
+        # Ordering according status
+        # * SUPERSEDED & All by -datecreated
+        # * FULLYBUILT & FAILURES by -datebuilt
+        # It should present the builds in a more natural order.
+        if status == BuildStatus.SUPERSEDED or status is None:
+            orderBy = ["-Build.datecreated"]
+        else:
+            orderBy = ["-Build.datebuilt"]
+
+        # all orders fallback to -id if the primary order doesn't succeed
+        orderBy.append("-id")
+
+
         queries.append("builder=%s" % builder_id)
 
         return Build.select(" AND ".join(queries), clauseTables=clauseTables,
-                            orderBy="-datebuilt")
+                            orderBy=orderBy)
 
     def getBuildsByArchIds(self, arch_ids, status=None, name=None,
                            pocket=None):
@@ -338,7 +355,6 @@ class BuildSet:
             return Build.select("2=1")
 
         clauseTables = []
-        orderBy=["-datebuilt", "-id"]
 
         # format clause according single/multiple architecture(s) form
         if len(arch_ids) == 1:
@@ -348,15 +364,15 @@ class BuildSet:
             condition_clauses = [('distroarchrelease IN %s'
                                   % sqlvalues(arch_ids))]
 
-        # exclude gina-generated builds
+        # XXX cprov 20060925: It would be nice if we could encapsulate
+        # the chunk of code below (which deals with the optional paramenters)
+        # and share it with ISourcePackage.getBuildRecords()
+
+        # exclude gina-generated and security (dak-made) builds
         # buildstate == FULLYBUILT && datebuilt == null
         condition_clauses.append(
             "NOT (Build.buildstate = %s AND Build.datebuilt is NULL)"
             % sqlvalues(BuildStatus.FULLYBUILT))
-
-        # XXX cprov 20060214: still not ordering ALL results (empty status)
-        # properly, the pending builds will pre presented in the DESC
-        # 'datebuilt' order. bug # 31392
 
         # attempt to given status
         if status is not None:
@@ -366,12 +382,24 @@ class BuildSet:
         if pocket:
             condition_clauses.append('pocket=%s' % sqlvalues(pocket))
 
-        # Order NEEDSBUILD by lastscore, it should present the build
-        # in a more natural order.
-        if status == BuildStatus.NEEDSBUILD:
-            orderBy = ["-BuildQueue.lastscore", "-id"]
+        # Ordering according status
+        # * NEEDSBUILD & BUILDING by -lastscore
+        # * SUPERSEDED & All by -datecreated
+        # * FULLYBUILT & FAILURES by -datebuilt
+        # It should present the builds in a more natural order.
+        if status in [BuildStatus.NEEDSBUILD, BuildStatus.BUILDING]:
+            orderBy = ["-BuildQueue.lastscore"]
             clauseTables.append('BuildQueue')
             condition_clauses.append('BuildQueue.build = Build.id')
+        elif status == BuildStatus.SUPERSEDED or status is None:
+            orderBy = ["-Build.datecreated"]
+        else:
+            orderBy = ["-Build.datebuilt"]
+
+        # Fallback to ordering by -id as a tie-breaker.
+        orderBy.append("-id")
+
+        # End of duplication (see XXX cprov 20060925 above).
 
         if name:
             condition_clauses.append("Build.sourcepackagerelease="

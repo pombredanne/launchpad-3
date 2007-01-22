@@ -29,8 +29,9 @@ Tests if the validator is working for the URL fields
 >>> user_browser.getControl('Add').click()
 >>> user_browser.url
 'http://launchpad.dev/products/+new'
->>> '<p class="error message">An error occurred.</p>' in user_browser.contents
-True
+>>> for tag in find_tags_by_class(user_browser.contents, 'error message'):
+...     print tag.renderContents()
+There is 1 error.
 
 
 And just 'http://' for the url
@@ -47,23 +48,24 @@ Test that the page to add a new product works.
 
 >>> user_browser.getControl('Homepage URL').value = 'http://www.test.test.com/'
 >>> user_browser.getControl('Add').click()
+
 >>> user_browser.url
-'http://launchpad.dev/products/testing'
+'http://launchpad.dev/testing'
 
 
 Test if we can see the page of the added product and tests if we can see the
 Project.
 
->>> anon_browser.open('http://launchpad.dev/products/testing')
+>>> anon_browser.open('http://launchpad.dev/testing')
 >>> 'This is a Test Product' in anon_browser.contents
 True
->>> '<h4>The Mozilla Project:</h4>' in anon_browser.contents
+>>> 'The Mozilla Project' in anon_browser.contents
 True
 
 
 We should have an automatic trunk series for this new product too.
 
->>> anon_browser.open("http://launchpad.dev/products/testing/trunk")
+>>> anon_browser.open("http://launchpad.dev/testing/trunk")
 >>> 'Series overview' in anon_browser.contents
 True
 
@@ -92,7 +94,7 @@ since the field is not required.
 >>> user_browser.getControl('Summary').value = 'This is the summary'
 >>> user_browser.getControl('Add').click()
 >>> user_browser.url
-'http://launchpad.dev/products/testing2'
+'http://launchpad.dev/testing2'
 >>> 'Test Product' in user_browser.contents
 True
 
@@ -112,7 +114,7 @@ Now let's try to insert a product with the same name (testing).
 >>> user_browser.getControl('Add').click()
 >>> user_browser.url
 'http://launchpad.dev/products/+new'
->>> '<p class="error message">An error occurred.</p>' in user_browser.contents
+>>> '<p class="error message">There is 1 error.</p>' in user_browser.contents
 True
 >>> ('testing is already in use by another product, project or distribution'
 ...     in user_browser.contents)
@@ -132,159 +134,36 @@ Traceback (most recent call last):
 LookupError:...
 
 
-And now, test with the Foo Bar user, who is a member of the vcs-imports
-team. This should fail suggesting an invalid owner, and the reviewed
-value should be on.
+And now, test with the David Allouche user, who is a member of the
+vcs-imports team. This should fail suggesting an invalid owner, and
+the reviewed value should be on.
 
-  >>> print http(r"""
-  ... POST /products/+new HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------367972547738338092465973618
-  ... 
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.name"
-  ... 
-  ... warpage
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.owner"
-  ... 
-  ... XXX
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.reviewed"
-  ... 
-  ... on
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.displayname"
-  ... 
-  ... dname
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.title"
-  ... 
-  ... title
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.summary"
-  ... 
-  ... summary
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.description"
-  ... 
-  ... description
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.homepageurl"
-  ... 
-  ... 
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.sourceforgeproject"
-  ... 
-  ... 
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.freshmeatproject"
-  ... 
-  ... 
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.wikiurl"
-  ... 
-  ... 
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.screenshotsurl"
-  ... 
-  ... 
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.downloadurl"
-  ... 
-  ... 
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.programminglang"
-  ... 
-  ... 
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... -----------------------------367972547738338092465973618--
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-          <p class="error message">An error occurred.</p>
-  ...
-  ...<input class="checkboxType" checked="checked" id="field.reviewed" name="field.reviewed" type="checkbox"  value="on"  />...
-  ...
+  >>> browser.addHeader('Authorization',
+  ...                   'Basic david.allouche@canonical.com:test')
+  >>> browser.open('http://launchpad.dev/products/+new')
+  >>> browser.getControl('Name', index=0).value = 'warpage'
+  >>> browser.getControl('Owner').value = 'XXX'
+  >>> browser.getControl('Display Name').value = 'dname'
+  >>> browser.getControl('Title').value = 'title'
+  >>> browser.getControl('Summary').value = 'summary'
+  >>> browser.getControl('Description').value = 'description'
+  >>> browser.getControl('Reviewed').click()
+  >>> browser.getControl('Add').click()
+  >>> print browser.url
+  http://launchpad.dev/products/+new
+
+  >>> '<p class="error message">There is 1 error.</p>' in browser.contents
+  True
+  >>> browser.getControl('Reviewed').selected
+  True
 
 
 And finally, submit a successful creation by an admin.
 
-  >>> print http(r"""
-  ... POST /products/+new HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------367972547738338092465973618
-  ... 
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.name"
-  ... 
-  ... warpage
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.owner"
-  ... 
-  ... sabdfl
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.reviewed"
-  ... 
-  ... on
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.displayname"
-  ... 
-  ... dname
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.title"
-  ... 
-  ... title
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.summary"
-  ... 
-  ... summary
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.description"
-  ... 
-  ... description
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.homepageurl"
-  ... 
-  ... 
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.sourceforgeproject"
-  ... 
-  ... 
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.freshmeatproject"
-  ... 
-  ... 
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.wikiurl"
-  ... 
-  ... 
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.screenshotsurl"
-  ... 
-  ... 
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.downloadurl"
-  ... 
-  ... 
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="field.programminglang"
-  ... 
-  ... 
-  ... -----------------------------367972547738338092465973618
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... -----------------------------367972547738338092465973618--
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  Location: warpage
-  ...
+  >>> browser.getControl('Owner').value = 'sabdfl'
+  >>> browser.getControl('Add').click()
+  >>> print browser.url
+  http://launchpad.dev/warpage
 
 And now check it was correctly created:
 
@@ -295,3 +174,45 @@ And now check it was correctly created:
   >>> print product.reviewed
   True
 
+It's also possible to set the product's icon/emblem at creation time.
+
+>>> user_browser.open('http://launchpad.dev/products/+new')
+>>> user_browser.getControl('Project', index=0).value = 'mozilla'
+>>> user_browser.getControl('Name', index=0).value = 'testing3'
+>>> user_browser.getControl('Display Name').value = 'Test Product #3'
+>>> user_browser.getControl('Title').value = 'This is a Test Product #3'
+>>> user_browser.getControl('Description').value = (
+...     'If you were describing a Test Product this would be a little '
+...     'short but sweet.'
+...     )
+>>> user_browser.getControl('Summary').value = 'This is the summary'
+>>> import os
+>>> import canonical.launchpad
+>>> icon = os.path.join(
+...     os.path.dirname(canonical.launchpad.__file__),
+...     'pagetests/standalone/big.png')
+>>> user_browser.getControl(name='field.gotchi.action').value = ['change']
+>>> user_browser.getControl(name='field.gotchi.image').add_file(
+...     open(icon), 'image/png', 'icon.png')
+>>> emblem = os.path.join(
+...     os.path.dirname(canonical.launchpad.__file__),
+...     'pagetests/standalone/mypng.png')
+>>> user_browser.getControl(name='field.emblem.action').value = ['change']
+>>> user_browser.getControl(name='field.emblem.image').add_file(
+...     open(emblem), 'image/png', 'emblem.png')
+>>> user_browser.getControl('Add').click()
+
+>>> user_browser.url
+'http://launchpad.dev/testing3'
+
+The uploaded icon and emblem can be seen on the product's edit page:
+
+>>> user_browser.getLink('Edit Product Details').click()
+>>> user_browser.url
+'http://launchpad.dev/testing3/+edit'
+>>> find_tag_by_id(
+...     user_browser.contents, 'field.gotchi_current_img').get('src')
+u'.../icon.png'
+>>> find_tag_by_id(
+...     user_browser.contents, 'field.emblem_current_img').get('src')
+u'.../emblem.png'

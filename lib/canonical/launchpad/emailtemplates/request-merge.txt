@@ -9,7 +9,7 @@ If you made this request, please click on the link below
 and complete the process to merge the '%(dupename)s' 
 account into your existing Launchpad account.
 
-   %(appurl)s/token/%(longstring)s
+    %(token_url)s
 
 If you did not make this request, in Rosetta or Malone or any
 other Launchpad system, then please ignore it or report it as
@@ -18,5 +18,4 @@ a possible attempt at a security attack on your data.
 Thanks,
 
 The Launchpad Team 
-launchpad@ubuntu.com
 

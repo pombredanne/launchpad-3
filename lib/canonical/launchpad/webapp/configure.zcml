@@ -10,7 +10,7 @@
     -->
     <include file="bug-5133.zcml" />
 
-    <content class="canonical.launchpad.webapp.LaunchpadBrowserRequest">
+    <content class="canonical.launchpad.webapp.servers.LaunchpadBrowserRequest">
       <allow
         interface="
           canonical.launchpad.interfaces.ILaunchpadBrowserApplicationRequest"
@@ -155,6 +155,20 @@
         />
 
     <adapter
+        for="int"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.NumberFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
+        for="long"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.NumberFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
         for="types.NoneType"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.NoneFormatter"
@@ -265,18 +279,6 @@
         provides="zope.app.session.interfaces.ISessionDataContainer"
         />
 
-    <!-- We want the changelog available on the debug view too, so people
-    can see when their patches make it to the dogfood server. -->
-
-    <browser:page
-        layer="canonical.launchpad.layers.DebugLayer"
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        name="changelog.html"
-        template="../templates/debug-root-changelog.pt"
-        class="canonical.launchpad.webapp.changelog.ChangeLog"
-        permission="zope.Public"
-        />
-
     <!-- Default favicon -->
     <browser:favicon for="*" file="../images/launchpad.png" />
 
@@ -339,7 +341,7 @@
     -->
     <publisher
         name="BROWSER"
-        factory="canonical.launchpad.webapp.servers.LaunchpadBrowserFactory"
+        factory="canonical.launchpad.webapp.servers.LaunchpadRequestPublicationFactory"
         methods="GET POST HEAD"
         mimetypes="*"
         priority="15"
@@ -347,7 +349,7 @@
 
     <!-- LaunchpadBrowserResponse needs to be able to find the session -->
     <adapter
-        for="canonical.launchpad.webapp.LaunchpadBrowserResponse"
+        for="canonical.launchpad.webapp.servers.LaunchpadBrowserResponse"
         provides="zope.app.session.interfaces.ISession"
         factory="canonical.launchpad.webapp.servers.adaptResponseToSession"
         />
@@ -356,7 +358,7 @@
     We don't just use the response attribute, as this makes our tests harder
     to write -->
     <adapter
-        for="canonical.launchpad.webapp.LaunchpadBrowserRequest"
+        for="canonical.launchpad.webapp.servers.LaunchpadBrowserRequest"
         provides="canonical.launchpad.webapp.interfaces.INotificationResponse"
         factory="canonical.launchpad.webapp.servers.adaptRequestToResponse"
         />
@@ -402,6 +404,12 @@
         handler="canonical.launchpad.webapp.sigusr1.setup_sigusr1"
         />
 
+    <!-- Confirm the database is the correct revision level -->
+    <subscriber
+        for="zope.app.appsetup.IProcessStartingEvent"
+        handler="canonical.database.revision.confirm_dbrevision_on_startup"
+        />
+
     <subscriber
         for="zope.app.publication.interfaces.IBeforeTraverseEvent"
         handler="canonical.launchpad.webapp.sigusr1.before_traverse"
@@ -411,5 +419,21 @@
         for="zope.app.publication.interfaces.IEndRequestEvent"
         handler="canonical.launchpad.webapp.sigusr1.end_request"
         />
+
+    <content class="canonical.launchpad.webapp.publication.LoginRoot">
+      <allow
+        attributes="publishTraverse"
+        />
+    </content>
+
+    <!-- Define the widget used by Choice fields that use huge vocabularies -->
+    <view
+      type="zope.publisher.interfaces.browser.IBrowserRequest"
+      for="zope.schema.interfaces.IChoice
+        canonical.launchpad.webapp.vocabulary.IHugeVocabulary"
+      provides="zope.app.form.interfaces.IInputWidget"
+      factory="canonical.widgets.SinglePopupWidget"
+      permission="zope.Public"
+      />
 
 </configure>

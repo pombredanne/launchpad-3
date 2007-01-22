@@ -1,6 +1,6 @@
 <div class="portlet">
 
-  <h4>Bug contacts:</h4>
+  <h2>Bug contacts</h2>
 
   <div class="portletBody portletContent"
        tal:define="pkg_bug_contacts context/bugcontacts;

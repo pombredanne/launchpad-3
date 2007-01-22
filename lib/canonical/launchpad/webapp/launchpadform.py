@@ -13,16 +13,30 @@ __all__ = [
     ]
 
 import transaction
-from zope.interface import providedBy
+from zope.interface import classImplements, providedBy
 from zope.interface.advice import addClassAdvisor
 from zope.event import notify
 from zope.formlib import form
 from zope.formlib.form import action
 from zope.app.form import CustomWidgetFactory
+from zope.app.form.interfaces import IInputWidget
+from zope.app.form.browser import (
+    CheckBoxWidget, DropdownWidget, RadioWidget, TextAreaWidget)
 
+from canonical.launchpad.webapp.interfaces import (
+    ISingleLineWidgetLayout, IMultiLineWidgetLayout, ICheckBoxWidgetLayout,
+    IAlwaysSubmittedWidget)
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.launchpad.event import SQLObjectModifiedEvent
+from canonical.launchpad.event import (
+    SQLObjectToBeModifiedEvent, SQLObjectModifiedEvent)
+
+
+classImplements(CheckBoxWidget, ICheckBoxWidgetLayout)
+classImplements(DropdownWidget, IAlwaysSubmittedWidget)
+classImplements(RadioWidget, IAlwaysSubmittedWidget)
+classImplements(TextAreaWidget, IMultiLineWidgetLayout)
+
 
 # marker to represent "focus the first widget in the form"
 _first_widget_marker = object()
@@ -147,7 +161,26 @@ class LaunchpadFormView(LaunchpadView):
         self.errors.append(message)
 
     def _validate(self, action, data):
-        for error in form.getWidgetsData(self.widgets, self.prefix, data):
+        # XXXX 2006-09-26 jamesh
+
+        # If a form field is disabled, then no data will be sent back.
+        # getWidgetsData() raises an exception when this occurs, even
+        # if the field is not marked as required.
+        #
+        # To work around this, we pass a subset of widgets to
+        # getWidgetsData().  Reported as:
+        #     http://www.zope.org/Collectors/Zope3-dev/717
+        widgets = []
+        for input, widget in self.widgets.__iter_input_and_widget__():
+            if (input and IInputWidget.providedBy(widget) and
+                not widget.hasInput()):
+                if widget.context.required:
+                    self.setFieldError(widget.context.__name__,
+                                       'Required field is missing')
+            else:
+                widgets.append((input, widget))
+        widgets = form.Widgets(widgets, len(self.prefix)+1)
+        for error in form.getWidgetsData(widgets, self.prefix, data):
             self.errors.append(error)
         for error in form.checkInvariants(self.form_fields, data):
             self.addError(error)
@@ -221,6 +254,25 @@ class LaunchpadFormView(LaunchpadView):
                     "setFocusByName('%s');\n"
                     "// -->" % widget.name)
 
+    def isSingleLineLayout(self, field_name):
+        widget = self.widgets[field_name]
+        return not (IMultiLineWidgetLayout.providedBy(widget) or
+                    ICheckBoxWidgetLayout.providedBy(widget))
+
+    def isMultiLineLayout(self, field_name):
+        widget = self.widgets[field_name]
+        return IMultiLineWidgetLayout.providedBy(widget)
+
+    def isCheckBoxLayout(self, field_name):
+        widget = self.widgets[field_name]
+        return (ICheckBoxWidgetLayout.providedBy(widget) and
+                not IMultiLineWidgetLayout.providedBy(widget))
+
+    def showOptionalMarker(self, field_name):
+        widget = self.widgets[field_name]
+        return not (widget.required or
+                    IAlwaysSubmittedWidget.providedBy(widget))
+
 
 class LaunchpadEditFormView(LaunchpadFormView):
 
@@ -236,6 +288,9 @@ class LaunchpadEditFormView(LaunchpadFormView):
         """
         context_before_modification = Snapshot(
             self.context, providing=providedBy(self.context))
+
+        notify(SQLObjectToBeModifiedEvent(self.context, data))
+
         if form.applyChanges(self.context, self.form_fields, data):
             field_names = [form_field.__name__
                            for form_field in self.form_fields]
@@ -262,13 +317,3 @@ class custom_widget:
             cls.custom_widgets = dict(cls.custom_widgets)
         cls.custom_widgets[self.field_name] = self.widget
         return cls
-
-
-# XXX: 20060809 jamesh
-# this is an evil hack to allow us to share the widget macros between
-# the new and old form base classes.
-def getWidgetError(view, widget):
-    if hasattr(view, 'getWidgetError'):
-        return view.getWidgetError(widget.context.__name__)
-    else:
-        return widget.error()

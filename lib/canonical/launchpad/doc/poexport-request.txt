@@ -222,4 +222,29 @@ Let's test the .mo compilation.
   ...
   MOCompilationError: ...
 
+Finally, test running the script directly to be sure the user has the correct
+rights.
+We need to request again some files:
+
+  >>> request_set = POExportRequestSet()
+  >>> request_set.addRequest(person, None, [ca, cs])
+  >>> transaction.commit()
+
+And run the script.
+
+  >>> import subprocess
+  >>> import sys
+  >>> process = subprocess.Popen([
+  ...     sys.executable, 'cronscripts/rosetta-export-queue.py', '-vv'
+  ...     ], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+  ...     stderr=subprocess.STDOUT
+  ...     )
+  >>> (output, empty) = process.communicate()
+  >>> print output
+  INFO    creating lockfile
+  DEBUG   Exporting objects for person 1, PO template 2
+  INFO    Done.
+  DEBUG   Removing lock file: /var/lock/rosetta-export-queue.lock
+  <BLANKLINE>
+
 

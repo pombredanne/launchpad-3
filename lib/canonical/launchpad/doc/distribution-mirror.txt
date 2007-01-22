@@ -128,7 +128,9 @@ distribution owner can see them and mark the ones that should be official.
     >>> [(mirror.name, mirror.speed.title, mirror.country.name) 
     ...  for mirror in ubuntu.unofficial_mirrors]
     [(u'foo.bar.com-archive', '2 Mbps', u'Brazil'),
-     (u'invalid-mirror', '2 Mbps', u'British Indian Ocean Territory')]
+     (u'invalid-mirror', '2 Mbps', u'British Indian Ocean Territory'),
+     (u'canonical-archive', '128 Kbps', u'Afghanistan'),
+     (u'canonical-releases', '128 Kbps', u'Afghanistan')]
 
 It's possible to retrieve a mirror by its name:
 
@@ -181,8 +183,8 @@ The distributionmirror-prober script is used to check what a mirror contains
 and when it was last updated. This script should run at least once a day, so
 we know the information we display is always up to date.
 
-This script will probe only official and enabled ARCHIVE or RELEASE mirrors
-that weren't probed in the last 23 (the value of PROBE_INTERVAL) hours.
+This script will probe only official ARCHIVE or RELEASE mirrors that
+weren't probed in the last 23 (the value of PROBE_INTERVAL) hours.
 
     >>> [mirror.name
     ...  for mirror in mirrorset.getMirrorsToProbe(MirrorContent.ARCHIVE)]
@@ -195,8 +197,6 @@ that weren't probed in the last 23 (the value of PROBE_INTERVAL) hours.
     >>> valid_mirror = mirrorset[1]
     >>> valid_mirror.name
     u'archive-mirror'
-    >>> valid_mirror.enabled is True
-    True
     >>> from StringIO import StringIO
     >>> log_file = StringIO()
     >>> log_file.write("Fake probe, nothing useful here.")
@@ -223,9 +223,10 @@ that weren't probed in the last 23 (the value of PROBE_INTERVAL) hours.
     [u'archive-404-mirror', u'archive-mirror', u'archive-mirror2']
 
 If when we finish probing a mirror, that mirror doesn't have any
-MirrorDistroReleaseSource of MirrorDistroArchRelease, that mirror is marked as
+MirrorDistroReleaseSource or MirrorDistroArchRelease, that mirror is marked as
 disabled and a notification is sent to its owner and to the distribution's
 mirror admin. This is done using IDistributionMirror.disableAndNotifyOwner().
+Disabling a mirror causes it not to show up on the public mirror listings.
 
     >>> valid_mirror.enabled
     True
@@ -247,7 +248,7 @@ mirror admin. This is done using IDistributionMirror.disableAndNotifyOwner().
     >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_message)
     >>> msg['To']
-    'Mark Shuttleworth <mark@hbd.com>'
+    'mark@hbd.com'
     >>> valid_mirror.enabled
     False
 
@@ -306,12 +307,14 @@ IDistributionMirror.
 
 For Release mirrors, these files are listed in a file stored in
 http://releases.ubuntu.com/. This file is parsed by
-mirror.getExpectedCDImagePaths(), which returns a list of 
+get_expected_cdimage_paths(), which returns a list of 
 (distrorelease, flavour name, path) elements.
 (For testing we have a sample of that file stored in our tree, which is
 pointed by the config.distributionmirrorprober.releases_file_list_url option)
 
-    >>> for (dummy, dummy, paths) in sorted(mirror.getExpectedCDImagePaths()):
+    >>> from canonical.launchpad.scripts.distributionmirror_prober import (
+    ...     get_expected_cdimage_paths)
+    >>> for (dummy, dummy, paths) in sorted(get_expected_cdimage_paths()):
     ...     for path in paths:
     ...         if '5.04' in path:
     ...             print path
@@ -338,7 +341,7 @@ To do that we use the getURLsToCheckUpdateness() of either
 MirrorDistroReleaseSource or MirrorDistroArchRelease. This method returns a
 dictionary mapping MirrorStatuses to URLs on that mirror. 
 
-The prober would then check, between all reachable URLs, which one has the
+The prober will then check, between all reachable URLs, which one has the
 status which corresponds to the most recent sync, and then set that as the
 mirror's status.
 
@@ -362,8 +365,18 @@ there were no recent uploads there.
 
     >>> urls = warty_mirror.getURLsToCheckUpdateness()
     >>> [(status.name, url) for (status, url) in urls.items()]
-    [('UP', u'http://foo.bar.com/pub/pool/main/a/alsa-utils/alsa-utils_1.0.9a-4.dsc')]
+    [('UP', u'http://foo.bar.com/pub/pool/main/c/cdrkit/foobar-1.0.dsc')]
 
+If the mirror has no HTTP base url, we'll use the FTP one.
+
+    >>> naked_mirror = removeSecurityProxy(warty_mirror)
+    >>> http_url = naked_mirror.distribution_mirror.http_base_url
+    >>> naked_mirror.distribution_mirror.http_base_url = None
+    >>> naked_mirror.distribution_mirror.ftp_base_url = 'ftp://foo.bar.com/pub'
+    >>> urls = warty_mirror.getURLsToCheckUpdateness()
+    >>> [(status.name, url) for (status, url) in urls.items()]
+    [('UP', u'ftp://foo.bar.com/pub/pool/main/c/cdrkit/foobar-1.0.dsc')]
+    >>> naked_mirror.distribution_mirror.http_base_url = http_url
 
 The same goes for the warty i386 mirror, in which we had one upload on
 2005-06-18 and two others on 2005-06-20. One slightly difference in this case
@@ -404,6 +417,17 @@ skip that upload.
      ('TWODAYSBEHIND',
       u'http://foo.bar.com/pub/pool/main/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb')]
 
+If the mirror has no HTTP base url, we'll use the FTP one.
+
+    >>> naked_mirror = removeSecurityProxy(warty_i386_mirror)
+    >>> http_url = naked_mirror.distribution_mirror.http_base_url
+    >>> naked_mirror.distribution_mirror.http_base_url = None
+    >>> naked_mirror.distribution_mirror.ftp_base_url = 'ftp://foo.bar.com/pub'
+    >>> urls = warty_i386_mirror.getURLsToCheckUpdateness()
+    >>> [(status.name, url) for (status, url) in urls.items()]
+    [('UP', u'ftp://foo.bar.com/pub/pool/main/c/cdrkit/foobar_1.0_all.deb')]
+    >>> naked_mirror.distribution_mirror.http_base_url = http_url
+
 
 Running the prober script
 -------------------------
@@ -430,7 +454,7 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     >>> print stderr
     INFO    Probing Archive Mirrors
     INFO    Probed 3 mirrors.
-    INFO    Disabled 1 mirrors because no content was found on them.
+    INFO    Disabled 1 mirror(s) that were previously enabled.
     INFO    Done.
     <BLANKLINE>
 
@@ -444,7 +468,7 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     >>> print stderr
     INFO    Probing Release Mirrors
     INFO    Probed 3 mirrors.
-    INFO    Disabled 1 mirrors because no content was found on them.
+    INFO    Disabled 1 mirror(s) that were previously enabled.
     INFO    Done.
     <BLANKLINE>
 
@@ -465,7 +489,7 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     <BLANKLINE>
 
     But we can override the default behaviour and tell the prober to check all
-    enabled mirrors independently if they were probed recently or not.
+    official mirrors independently if they were probed recently or not.
 
     >>> cmd += ' --force'
     >>> prober = subprocess.Popen(
@@ -476,9 +500,37 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     <BLANKLINE>
     >>> print stderr
     INFO    Probing Release Mirrors
-    INFO    Probed 2 mirrors.
+    INFO    Probed 3 mirrors.
     INFO    Done.
     <BLANKLINE>
+
+    When a mirror is not reachabe or fail to mirror the content that it
+    should, it's marked as disabled (as you can see above) and thus not
+    shown on the public mirror listings. We'll keep probing these disabled
+    mirrors and once they're reachabe and don't fail the content check
+    we'll enable them again.
+
+    >>> release_mirror = mirrorset.getByName('releases-mirror')
+    >>> release_mirror.enabled
+    True
+    >>> release_mirror.enabled = False
+    >>> flush_database_updates()
+    >>> transaction.commit()
+    >>> prober = subprocess.Popen(
+    ...     cmd, shell=True,stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.PIPE)
+    >>> stdout, stderr = prober.communicate()
+    >>> print stderr
+    INFO    Probing Release Mirrors
+    INFO    Probed 3 mirrors.
+    INFO    Enabled 1 mirror(s) that were previously disabled.
+    INFO    Done.
+    <BLANKLINE>
+
+    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> flush_database_caches()
+    >>> release_mirror.enabled
+    True
 
     >>> http_server.tearDown()
     >>> transaction.commit()
@@ -486,7 +538,6 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     >>> [(mirror.name, mirror.speed.title, mirror.country.name) 
     ...  for mirror in ubuntu.disabled_mirrors]
     [(u'archive-404-mirror', '2 Mbps', u'British Indian Ocean Territory'),
-     (u'foo.bar.com-archive', '2 Mbps', u'Brazil'),
      (u'unreachable-mirror', '512 Kbps', u'British Indian Ocean Territory')]
 
 
@@ -530,7 +581,6 @@ mirror have 'Up to date' as status, this mirror's overall status will also be
 
 Now we check the MirrorCDImageDistroReleases of a release mirror.
 
-    >>> release_mirror = mirrorset.getByName('releases-mirror')
     >>> release_mirror.name
     u'releases-mirror'
 

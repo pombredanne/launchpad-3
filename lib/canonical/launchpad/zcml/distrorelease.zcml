@@ -9,6 +9,7 @@
     <allow interface="canonical.launchpad.interfaces.IDistroRelease"/>
     <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
     <allow interface="canonical.launchpad.interfaces.IHasQueueItems"/>
+    <allow interface="canonical.launchpad.interfaces.IPublishing"/>
     <!-- NB: check with SABDFL before modifying these, there is potential to
          make a huge mess if these get changed and Soyuz has to republish
          shedloads of data. -->
@@ -61,7 +62,7 @@
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IDistroRelease"
-    layer="canonical.launchpad.layers.MaloneLayer"
+    layer="canonical.launchpad.layers.BugsLayer"
     name="+bugs" />
 
   <browser:pages
@@ -146,6 +147,10 @@
       name="+portlet-milestones"
       template="../templates/object-portlet-milestones.pt"
       lp:url="/distros/$Distro.name/$DRelease.name/+portlet-milestones" />
+    <browser:page
+      name="+last-uploads"
+      template="../templates/distrorelease-last-uploads.pt"
+      lp:url="/distros/$Distro.name/$DRelease.name/+last-uploads" />
   </browser:pages>
 
   <browser:page
@@ -250,4 +255,11 @@
       class="canonical.widgets.HiddenUserWidget" />
   </browser:addform>
 
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    class="canonical.launchpad.browser.HasSpecificationsView"
+    permission="zope.Public"
+    name="+mdz-specs.csv"
+    attribute="mdzCsv"
+    />
 </configure>

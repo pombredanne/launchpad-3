@@ -27,7 +27,6 @@
     <p metal:fill-slot="extra_info">
       The bug contact is a person or team that receives notification of all new
       bugs opened for this product, and any changes to those bug reports.
-      The bug contact can be unsubscribed from individual bug reports.
     </p>
   </div>
 

@@ -44,17 +44,23 @@ class BugTaskAssigneeWidget(Widget):
         #
         # See zope.app.form.interfaces.IInputWidget.
         self.required = False
-
         self.assignee_chooser_widget = SinglePopupWidget(
             context, context.vocabulary, request)
-        self.assignee_chooser_widget.onKeyPress = "selectWidget('assign_to', event)"
+        self.setUpNames()
 
-        # Set some values that will be used as values for the input
-        # widgets.
-        self.assigned_to = "assigned_to"
-        self.assign_to_me = "assign_to_me"
-        self.assign_to_nobody = "assign_to_nobody"
-        self.assign_to = "assign_to"
+    def setUpNames(self):
+        """Set up the the names used by this widget."""
+        self.assigned_to = "%s.assigned_to" % self.name
+        self.assign_to_me = "%s.assign_to_me" % self.name
+        self.assign_to_nobody = "%s.assign_to_nobody" % self.name
+        self.assign_to = "%s.assign_to" % self.name
+        self.assignee_chooser_widget.onKeyPress = (
+            "selectWidget('%s', event)" % self.assign_to)
+
+    def setPrefix(self, prefix):
+        Widget.setPrefix(self, prefix)
+        self.assignee_chooser_widget.setPrefix(prefix)
+        self.setUpNames()
 
     def validate(self):
         """
@@ -171,10 +177,7 @@ class BugTaskAssigneeWidget(Widget):
         field = self.context
         bugtask = field.context
         if bugtask.assignee:
-            if bugtask.assignee.preferredemail is not None:
-                return bugtask.assignee.preferredemail.email
-            else:
-                return bugtask.assignee.browsername
+            return bugtask.assignee.unique_displayname
 
     def selectedRadioButton(self):
         """Return the radio button that should be selected.
@@ -215,16 +218,24 @@ class BugTaskBugWatchWidget(RadioWidget):
 
     def __init__(self, field, vocabulary, request):
         RadioWidget.__init__(self, field, vocabulary, request)
-        # Use javascript to select the correct radio button if he enters
-        # a remote bug.
-        select_js = "selectWidget('%s.%s', event)" % (
-            self.name, self._new_bugwatch_value)
-        self.remotebug_widget = CustomWidgetFactory(
-            TextWidget, extra='onKeyPress="%s"' % select_js)
+        self.remotebug_widget = CustomWidgetFactory(TextWidget)
         for field_name in ['bugtracker', 'remotebug']:
             setUpWidget(
                 self, field_name, IBugWatch[field_name], IInputWidget,
                 context=field.context)
+        self.setUpJavascript()
+
+    def setUpJavascript(self):
+        """Set up JS to select the "new bugwatch" option automatically."""
+        select_js = "selectWidget('%s.%s', event)" % (
+            self.name, self._new_bugwatch_value)
+        self.remotebug_widget.extra = 'onKeyPress="%s"' % select_js
+
+    def setPrefix(self, prefix):
+        RadioWidget.setPrefix(self, prefix)
+        self.remotebug_widget.setPrefix(prefix)
+        self.bugtracker_widget.setPrefix(prefix)
+        self.setUpJavascript()
 
     _messageNoValue = "None, the status of the bug is updated manually."
     _new_bugwatch_value = 'NEW'

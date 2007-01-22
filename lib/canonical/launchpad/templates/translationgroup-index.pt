@@ -2,11 +2,11 @@
     xml:lang="en"
     lang="en"
     metal:use-macro="context/@@main_template/master"
-    i18n:domain="rosetta"
+    i18n:domain="launchpad"
 >
   <body>
     <metal:heading fill-slot="pageheading">
-      <div><a href="/rosetta/groups">Translation groups</a></div>
+      <div><a href="/translations/groups">Translation groups</a></div>
       <h1 tal:content="context/title">Savants Translation Group</h1>
     </metal:heading>
 
@@ -46,8 +46,7 @@
     <tr tal:repeat="translator view/translator_list">
       <td tal:content="translator/lang" />
       <td><a tal:content="translator/person/browsername"
-             tal:attributes="href
-             string:/people/${translator/person/name}" />
+              tal:attributes="href translator/person/fmt:url" />
         <tal:comment condition="nothing">
           XXX mpt 20050627: Change this to
           string:/people/${translator/person/name}/+translations

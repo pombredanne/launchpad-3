@@ -21,10 +21,12 @@ Person:
 
     >>> edit_form = {
     ...    'FORM_SUBMIT': '',
-    ...    'field.status': 'In Progress',
-    ...    'field.importance': ubuntu_thunderbird_task.importance.title,
-    ...    'field.field.assignee.option': 'assign_to_nobody',
-    ...    'field.sourcepackagename':
+    ...    'ubuntu_thunderbird.status': 'In Progress',
+    ...    'ubuntu_thunderbird.importance':
+    ...        ubuntu_thunderbird_task.importance.title,
+    ...    'ubuntu_thunderbird.ubuntu_thunderbird.assignee.option':
+    ...        'ubuntu_thunderbird.assignee.assign_to_nobody',
+    ...    'ubuntu_thunderbird.sourcepackagename':
     ...        ubuntu_thunderbird_task.sourcepackagename.name}
     >>> request = LaunchpadTestRequest(form=edit_form)
     >>> edit_view = getView(
@@ -45,7 +47,8 @@ if linux-2.6.12 is entered in the package field, the bugtask will be
 assigned to linux-source-2.6.15 instead.
 
 
-    >>> edit_form['field.sourcepackagename'] = u'linux-2.6.12'
+    >>> ubuntu_thunderbird = ubuntu_thunderbird_task.sourcepackagename
+    >>> edit_form['ubuntu_thunderbird.sourcepackagename'] = u'linux-2.6.12'
     >>> request = LaunchpadTestRequest(form=edit_form)
     >>> edit_view = getView(
     ...     ubuntu_thunderbird_task, '+editstatus-page', request)
@@ -58,16 +61,17 @@ changed to the corresponding source package.
 
     >>> for notification in edit_view.request.response.notifications:
     ...     print notification.message
-    'linux-2.6.12' is a binary package, this bug has been assigned to
+    'linux-2.6.12' is a binary package. This bug has been assigned to
     its source package 'linux-source-2.6.15' instead.
     The bug contacts for linux-source-2.6.15 (Ubuntu) have been
     subscribed to this bug.
 
+    >>> ubuntu_thunderbird_task.sourcepackagename = ubuntu_thunderbird
 
 If we try to change the source package to package name that doesn't
 exist in Launchpad. we'll get an error message.
 
-    >>> edit_form['field.sourcepackagename'] = u'no-such-package'
+    >>> edit_form['ubuntu_thunderbird.sourcepackagename'] = u'no-such-package'
     >>> request = LaunchpadTestRequest(form=edit_form)
     >>> edit_view = getView(
     ...     ubuntu_thunderbird_task, '+editstatus-page', request)
@@ -77,6 +81,79 @@ exist in Launchpad. we'll get an error message.
     ...     print error
     Launchpad doesn't know of any source package named 'no-such-package'
     in Ubuntu.
+
+If we try to change the source package to a package name that another
+distribution task already has, an error message will occur. First,
+let's add an evolution (Ubuntu) task to bug two.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBugTaskSet, IDistributionSet)
+    >>> bug_two = getUtility(IBugSet).get(2)
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
+    >>> ubuntu_evolution = ubuntu.getSourcePackage('evolution')
+    >>> ubuntu_evolution_task = getUtility(IBugTaskSet).createTask(
+    ...     bug=bug_two, owner=getUtility(ILaunchBag).user,
+    ...     distribution=ubuntu,
+    ...     sourcepackagename=ubuntu_evolution.sourcepackagename)
+    >>> import transaction
+    >>> transaction.commit()
+
+Now we try changing the generic Ubuntu task to evolution, which will
+fail.
+
+    >>> ubuntu_task = bug_two.bugtasks[1]
+    >>> ubuntu_task.targetname
+    u'Ubuntu'
+    >>> edit_form = {
+    ...    'FORM_SUBMIT': '',
+    ...    'ubuntu.status': 'In Progress',
+    ...    'ubuntu.importance':
+    ...        ubuntu_thunderbird_task.importance.title,
+    ...    'ubuntu.ubuntu_thunderbird.assignee.option':
+    ...        'ubuntu.assignee.assign_to_nobody',
+    ...    'ubuntu.sourcepackagename': ubuntu_evolution.name,
+    ...     }
+    >>> request = LaunchpadTestRequest(form=edit_form)
+    >>> edit_view = getView(ubuntu_task, '+editstatus-page', request)
+    >>> edit_view.process_form()
+    u'Please fix the problems below and try again.'
+    >>> for error in edit_view.errors:
+    ...     print error
+    This bug has already been reported on evolution (ubuntu).
+
+This also works if we try to reassign an accepted distribution release
+task. Since we aren't allowed to edit the current development task
+directly, let's add a grumpy task first.
+
+    >>> login('foo.bar@canonical.com')
+    >>> ubuntu_grumpy = ubuntu.getRelease('grumpy')
+    >>> nomination = bug_two.addNomination(
+    ...     target=ubuntu_grumpy, owner=getUtility(ILaunchBag).user)
+    >>> nomination.approve(getUtility(ILaunchBag).user)
+
+    >>> ubuntu_grumpy_task = bug_two.bugtasks[5]
+    >>> ubuntu_grumpy_task.targetname
+    u'Ubuntu Grumpy'
+
+    >>> edit_form = {
+    ...    'FORM_SUBMIT': '',
+    ...    'ubuntu_grumpy.status': 'In Progress',
+    ...    'ubuntu_grumpy.importance':
+    ...        ubuntu_grumpy_task.importance.title,
+    ...    'ubuntu_grumpy.assignee.option':
+    ...        'ubuntu_grumpy.assignee.assign_to_nobody',
+    ...    'ubuntu_grumpy.sourcepackagename': ubuntu_evolution.name,
+    ...     }
+    >>> request = LaunchpadTestRequest(form=edit_form)
+    >>> edit_view = getView(ubuntu_grumpy_task, '+editstatus-page', request)
+    >>> edit_view.process_form()
+    u'Please fix the problems below and try again.'
+    >>> for error in edit_view.errors:
+    ...     print error
+    This bug has already been reported on evolution (ubuntu).
+
+    >>> login('test@canonical.com')
+
 
 Bug Watch Linkage
 -----------------
@@ -106,9 +183,9 @@ XXX: We really should update the status from the bug watch, but that's
     >>> request = LaunchpadTestRequest(
     ...     form={
     ...         'FORM_SUBMIT': '',
-    ...         'field.status': 'Confirmed',
-    ...         'field.importance': 'Critical',
-    ...         'field.bugwatch': '6'})
+    ...         'thunderbird.status': 'Confirmed',
+    ...         'thunderbird.importance': 'Critical',
+    ...         'thunderbird.bugwatch': '6'})
     >>> edit_view = getView(
     ...     thunderbird_task, '+editstatus-page', request)
     >>> edit_view.process_form()
@@ -123,7 +200,7 @@ set to their default values:
     >>> request = LaunchpadTestRequest(
     ...     form={
     ...         'FORM_SUBMIT': '',
-    ...         'field.bugwatch-empty-marker': '1'})
+    ...         'thunderbird.bugwatch-empty-marker': '1'})
     >>> edit_view = getView(
     ...     thunderbird_task, '+editstatus-page', request)
     >>> edit_view.process_form()
@@ -174,8 +251,7 @@ But an unprivileged user does not.
 A bug contact can also change the milestone. Let's set no-priv as Ubuntu's bug
 contact.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IPersonSet)
+    >>> from canonical.launchpad.interfaces import IPersonSet
 
     >>> login("foo.bar@canonical.com")
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")

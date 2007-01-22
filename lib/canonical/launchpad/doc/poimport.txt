@@ -14,6 +14,9 @@ Here are some imports we need to get this test running.
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> from canonical.launchpad.interfaces import IPOTemplateNameSet
     >>> from canonical.launchpad.database import POTemplateSubset
+    >>> import datetime
+    >>> import pytz
+    >>> UTC = pytz.timezone('UTC')
 
 We need this for the Librarian to work properly.
 
@@ -49,6 +52,41 @@ Login as an admin to be able to do changes to the import queue.
 
     >>> login('carlos@canonical.com')
 
+When importing a POFile, it may be necessary to create new Person entries,
+to represent the last translators of that POFile. This is done by the
+getLastTranslator() function of components/poimport.py.
+
+    >>> from canonical.launchpad.components.poimport import getLastTranslator
+    >>> from canonical.launchpad.components.poparser import POParser
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILanguageSet, IPOFileSet, IPOTemplateSet)
+    >>> parser = POParser()
+    >>> pofile_content = r'''
+    ... msgid ""
+    ... msgstr ""
+    ... "PO-Revision-Date: 2005-06-03 20:41+0100\n"
+    ... "Last-Translator: Baz <baz@canonical.com>\n"
+    ... "Content-Type: text/plain; charset=UTF-8\n"
+    ... "Plural-Forms: nplurals=4; plural=n==1) ? 0 : n==2 ? 1 : (n != 8 || n != 11) ? 2 : 3;\n"
+    ... "X-Rosetta-Export-Date: %s\n"
+    ...
+    ... msgid "foo"
+    ... msgstr "blah"
+    ... ''' % datetime.datetime.now(UTC).isoformat()
+    >>> parser.write(pofile_content)
+    >>> parser.finish()
+    >>> potemplates = getUtility(IPOTemplateSet).getAllByName('evolution-2.2')
+    >>> aa = getUtility(ILanguageSet)['aa']
+    >>> potemplate = potemplates[0]
+    >>> potemplate.displayname
+    u'evolution-2.2 in Evolution trunk'
+    >>> pofile = getUtility(IPOFileSet).getDummy(potemplates[0], aa)
+    >>> person = getLastTranslator(parser, pofile)
+    >>> person.creation_rationale.name
+    'POFILEIMPORT'
+    >>> person.creation_comment
+    u'when importing the Afar (aa) translation of evolution-2.2 in Evolution trunk'
+
 Now, is time to create the new potemplate
 
     >>> from canonical.launchpad.database import ProductRelease
@@ -79,6 +117,7 @@ This is the file that'll get imported.
     ... "POT-Creation-Date: 2004-07-11 16:16+0900\n"
     ... "Content-Type: text/plain; charset=CHARSET\n"
     ... "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+    ... "X-Rosetta-Export-Date: %s\n"
     ...
     ... msgid "foo"
     ... msgstr ""
@@ -91,15 +130,15 @@ This is the file that'll get imported.
     ... msgstr ""
     ...
     ... #, c-format
-    ... msgid "Foo %s"
+    ... msgid "Foo %%s"
     ... msgstr ""
     ...
     ... #, c-format
-    ... msgid "Singular %d"
-    ... msgid_plural "Plural %d"
+    ... msgid "Singular %%d"
+    ... msgid_plural "Plural %%d"
     ... msgstr[0] ""
     ... msgstr[1] ""
-    ... '''
+    ... ''' % datetime.datetime.now(UTC).isoformat()
 
 Attach the import to the translations import queue:
 
@@ -154,6 +193,16 @@ The file references field should be there
 Now let's get a PO file to import.
 
     >>> pofile = potemplate.newPOFile('cy')
+    >>> pofile_id = pofile.id
+
+By default, we got a safe path to prevent collisions with other IPOFile.
+
+    >>> pofile.path
+    u'po/firefox-cy.po'
+
+Let's override the default good path with one we know is the right one.
+
+    >>> pofile.path = u'po/cy.po'
 
 It's newly created, so it has no message sets yet.
 
@@ -165,8 +214,8 @@ And the statistics reflect it.
     >>> pofile.currentCount()
     0
 
-Here are the contents of the file we'll be importing.
-It has some validation errros.
+Here are the contents of the file we'll be importing. It has some validation
+errors.
 
     >>> pofile_with_errors = r'''
     ... msgid ""
@@ -175,6 +224,7 @@ It has some validation errros.
     ... "Last-Translator: Carlos Perello Marin <carlos@canonical.com>\n"
     ... "Content-Type: text/plain; charset=UTF-8\n"
     ... "Plural-Forms: nplurals=4; plural=n==1) ? 0 : n==2 ? 1 : (n != 8 || n != 11) ? 2 : 3;\n"
+    ... "X-Rosetta-Export-Date: %s\n"
     ...
     ... msgid "foo"
     ... msgstr "blah"
@@ -187,17 +237,17 @@ It has some validation errros.
     ... msgstr "blah"
     ...
     ... #, c-format
-    ... msgid "Foo %s"
-    ... msgstr "blah %i"
+    ... msgid "Foo %%s"
+    ... msgstr "blah %%i"
     ...
     ... #, c-format
-    ... msgid "Singular %d"
-    ... msgid_plural "Plural %d"
-    ... msgstr[0] "Foos %d"
-    ... msgstr[1] "Bars %d"
-    ... msgstr[2] "Welsh power! %d"
-    ... msgstr[3] "We have four! %d"
-    ... '''
+    ... msgid "Singular %%d"
+    ... msgid_plural "Plural %%d"
+    ... msgstr[0] "Foos %%d"
+    ... msgstr[1] "Bars %%d"
+    ... msgstr[2] "Welsh power! %%d"
+    ... msgstr[3] "We have four! %%d"
+    ... ''' % datetime.datetime.now(UTC).isoformat()
 
 This is the dbschema that controls the validation of a translation.
     >>> from canonical.lp.dbschema import TranslationValidationStatus
@@ -313,7 +363,7 @@ Now, is time to check the notification email.
     >>> print msg.get_payload(decode=True)
     Hello Mark Shuttleworth,
     <BLANKLINE>
-    On ... (just requested), you uploaded 5
+    On ..., you uploaded 5
     Welsh (cy) translations for firefox in Mozilla Firefox trunk in Rosetta.
     <BLANKLINE>
     There were problems with 1 of these translations.
@@ -331,7 +381,7 @@ Now, is time to check the notification email.
     <BLANKLINE>
     ...
 
-Here are the contents of another file we'll be importing. It has no errors.
+Now, let's import one without errors.
 
     >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
     >>> pofile_without_errors = r'''
@@ -341,10 +391,11 @@ Here are the contents of another file we'll be importing. It has no errors.
     ... "Last-Translator: Foo <no-priv@canonical.com>\n"
     ... "Content-Type: text/plain; charset=UTF-8\n"
     ... "Plural-Forms: nplurals=4; plural=n==1) ? 0 : n==2 ? 1 : (n != 8 || n != 11) ? 2 : 3;\n"
+    ... "X-Rosetta-Export-Date: %s\n"
     ...
     ... msgid "foo"
     ... msgstr "blah"
-    ... '''
+    ... ''' % datetime.datetime.now(UTC).isoformat()
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     pofile.path, pofile_without_errors, True, rosetta_experts,
     ...     productseries=series, potemplate=potemplate)
@@ -398,97 +449,6 @@ Check the notification email about the success of this import without errors.
     <BLANKLINE>
     ...
 
-Now, is time to test a .pot import when we don't have any header.
-
-    >>> potemplate_contents = r'''
-    ... msgid "foo"
-    ... msgstr ""
-    ... '''
-    >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     potemplate.path, potemplate_contents, True, person,
-    ...     productseries=series, potemplate=potemplate)
-    >>> transaction.commit()
-    >>> entry.status = RosettaImportStatus.APPROVED
-    >>> flush_database_updates()
-    >>> potemplate.importFromQueue(FakeLogger())
-    log> We got an error importing %s Template "firefox" in Mozilla Firefox trunk
-    ...
-    log> POSyntaxError: No header found in this pofile
-
-The status is now IMPORTED:
-
-    >>> entry.status == RosettaImportStatus.FAILED
-    True
-
-The header should be the old one as this one does not have any:
-
-    >>> print potemplate.header
-    POT-Creation-Date: 2004-07-11 16:16+0900
-    Content-Type: text/plain; charset=CHARSET
-    Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;
-
-
-Another test, try to import a .po file that is older than previous import...
-
-    >>> print pofile.header
-    PO-Revision-Date: 2005-06-03 20:41+0100
-    ...
-
-    >>> pofile_contents = r'''
-    ... msgid ""
-    ... msgstr ""
-    ... "PO-Revision-Date: 2005-05-03 19:41+0100\n"
-    ... "Last-Translator: Carlos Perello Marin <carlos@canonical.com>\n"
-    ... "Content-Type: text/plain; charset=UTF-8\n"
-    ... "Plural-Forms: nplurals=4; plural=n==1) ? 0 : n==2 ? 1 : (n != 8 || n != 11) ? 2 : 3;\n"
-    ...
-    ... msgid "foo"
-    ... msgstr "blah"
-    ... '''
-    >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     pofile.path, pofile_contents, True, person,
-    ...     productseries=series, potemplate=potemplate)
-    >>> transaction.commit()
-
-The guess IPOFile should be the same we already had.
-
-    >>> entry.getGuessedPOFile().id == pofile.id
-    True
-
-Set it as the place where the entry should be imported.
-
-    >>> entry.pofile = entry.getGuessedPOFile()
-
-We must approve the entry to be able to import it.
-
-    >>> entry.status = RosettaImportStatus.APPROVED
-    >>> flush_database_updates()
-
-We do the import.
-
-    >>> pofile.importFromQueue(FakeLogger())
-    log> Got an old version for Welsh (cy) translation of firefox in Mozilla Firefox trunk
-
-The status is now FAILED
-
-    >>> entry.status == RosettaImportStatus.FAILED
-    True
-
-And the statistics reflect it.
-
-    >>> pofile.currentCount()
-    1
-    >>> pofile.updatesCount()
-    0
-    >>> pofile.rosettaCount()
-    1
-
-And the date should be the old one
-
-    >>> print pofile.header
-    PO-Revision-Date: 2005-06-03 20:41+0100
-    ...
-
 Check to be sure that we notify when a msgid_Plural is changed without touch
 the msgid
 
@@ -499,13 +459,14 @@ the msgid
     ... "Last-Translator: Foo <no-priv@canonical.com>\n"
     ... "Content-Type: text/plain; charset=UTF-8\n"
     ... "Plural-Forms: nplurals=2; plural=n==1 ? 0;\n"
+    ... "X-Rosetta-Export-Date: %s\n"
     ...
     ... #, c-format
-    ... msgid "Singular %d"
-    ... msgid_plural "Plurals %d"
+    ... msgid "Singular %%d"
+    ... msgid_plural "Plurals %%d"
     ... msgstr[0] ""
     ... msgstr[1] ""
-    ... '''
+    ... ''' % datetime.datetime.now(UTC).isoformat()
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     pofile.path, pofile_content, True, rosetta_experts,
     ...     productseries=series, potemplate=potemplate)
@@ -534,7 +495,7 @@ Now, is time to check the notification email.
     ...
     5.  [msg 0]
     "The msgid_Plural field has changed since last time this .po file was
-    generated, please notify this error to rosetta@ubuntu.com":
+    generated, please report this error to ...
     <BLANKLINE>
     #, c-format
     msgid "Singular %d"
@@ -543,16 +504,17 @@ Now, is time to check the notification email.
     msgstr[1] ""
     ...
 
-Finally, we need to test that the script is being executed without problems.
 We tested already that the functionality works. Now it's time to know if the
 cronscript has any problem.
 
 First, we are going to reactivate the entries that were already imported or
-failed.
+failed. Note that we'll only reactivate the entries we use in this test;
+We don't touch entries that were in the queue previously.
 
     >>> for entry in translation_import_queue:
     ...     if (entry.status == RosettaImportStatus.IMPORTED or
-    ...         entry.status == RosettaImportStatus.FAILED):
+    ...         entry.status == RosettaImportStatus.FAILED) and (
+    ...         entry.productseries == series):
     ...         entry.status = RosettaImportStatus.APPROVED
     >>> flush_database_updates()
     >>> transaction.commit()
@@ -568,11 +530,10 @@ And run the cronscript.
     >>> (output, empty) = process.communicate()
     >>> print output
     INFO    Importing: Template "firefox" in Mozilla Firefox trunk
-    WARNING We got an error importing Template "firefox" in Mozilla Firefox trunk
-     -> http://localhost:58000/... (No header found in this pofile)
     INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
     WARNING Got an old version for Welsh (cy) translation of firefox in Mozilla Firefox trunk
     INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
+    INFO    Removed 2 entries from the queue.
     <BLANKLINE>
 
 It's time to test the import queue.
@@ -586,10 +547,11 @@ following the order the users uploaded them.
     ... "PO-Revision-Date: 2005-06-04 20:41+0100\n"
     ... "Last-Translator: Foo <no-priv@canonical.com>\n"
     ... "Content-Type: text/plain; charset=UTF-8\n"
+    ... "X-Rosetta-Export-Date: %s\n"
     ...
     ... msgid "Foo"
     ... msgstr "Bar"
-    ... '''
+    ... ''' % datetime.datetime.now(UTC).isoformat()
 
     >>> second_pofile_content = r'''
     ... msgid ""
@@ -597,16 +559,17 @@ following the order the users uploaded them.
     ... "PO-Revision-Date: 2005-06-04 21:41+0100\n"
     ... "Last-Translator: Jordi Mallach <jordi@canonical.com>\n"
     ... "Content-Type: text/plain; charset=UTF-8\n"
+    ... "X-Rosetta-Export-Date: %s\n"
     ...
     ... msgid "Foo"
     ... msgstr "Bars"
-    ... '''
+    ... ''' % datetime.datetime.now(UTC).isoformat()
 
 We flush the entry contents.
 
     >>> for entry in translation_import_queue:
     ...     translation_import_queue.remove(entry)
-    >>> len(translation_import_queue)
+    >>> translation_import_queue.entryCount()
     0
 
 Attach the first version of the file.
@@ -620,7 +583,7 @@ Attach the first version of the file.
 
 It's in the queue now.
 
-    >>> len(translation_import_queue)
+    >>> translation_import_queue.entryCount()
     1
 
 For the second version, we need a new importer, in this case, Jordi.
@@ -638,7 +601,7 @@ Attach the second version of the file.
 
 It's in the queue now.
 
-    >>> len(translation_import_queue)
+    >>> translation_import_queue.entryCount()
     2
 
 Do the final import.

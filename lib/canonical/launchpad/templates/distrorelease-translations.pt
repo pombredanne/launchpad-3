@@ -27,8 +27,8 @@
   <div tal:replace="structure context/@@+rosetta-status-legend" />
 
   <ul>
-    <li class="search">
-      <a href="/rosetta/prefs">Customize displayed languages</a>
+    <li class="edit">
+      <a href="/+editmylanguages">Customize displayed languages</a>
     </li>
   </ul>
 

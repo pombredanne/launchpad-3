@@ -20,10 +20,8 @@
   <tal:full-functionality tal:condition="context/full_functionality">
     <div metal:use-macro="context/@@launchpad_generalform/generalform">
       <div metal:fill-slot="extra_info">
-        Once your mirror is reviewed by the distribution's mirror
-        administrator it will be automatically probed every day so that we
-        can track the content mirrored and have an estimate of the mirror's
-        &#8220;freshness&#8221;.
+        To register a new mirror you have to provide at least an HTTP or FTP
+        URL (or both).
       </div>
     </div>
   </tal:full-functionality>
@@ -35,6 +33,15 @@
   </tal:no-full-functionality>
 
 </div>
+
+<p metal:fill-slot="help">
+  Once your mirror is reviewed by the distribution's mirror
+  administrator it will be probed periodically (so that we can track
+  the content mirrored and have an estimate of the mirror's
+  &#8220;freshness&#8221;) and will be shown on public mirror listings
+  (including the one at
+  <a href="http://www.ubuntu.com/download">the Ubuntu website</a>).
+</p>
 
 </body>
 </html>

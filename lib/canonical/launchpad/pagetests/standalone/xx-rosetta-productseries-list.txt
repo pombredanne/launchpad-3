@@ -4,7 +4,7 @@ product release. In this case, we're asking for the
 translation template list for Mozilla Firefox 0.9.
 
   >>> print http(r"""
-  ... GET /products/firefox/trunk/+translations HTTP/1.1
+  ... GET /firefox/trunk/+translations HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...Mozilla Firefox Series: trunk...

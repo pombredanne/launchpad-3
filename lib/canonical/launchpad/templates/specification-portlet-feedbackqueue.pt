@@ -1,6 +1,6 @@
 <tal:fbreqs define="fbreqs context/feedbackrequests">
   <div tal:condition="fbreqs" class="portlet">
-    <h4>Feedback requests:</h4>
+    <h2>Feedback requests</h2>
 
     <div class="portletBody portletContent">
 

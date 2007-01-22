@@ -50,18 +50,6 @@ import unittest
 lp_root = os.path.realpath(os.path.join(__file__, '..', '..', '..'))
 sys.path[:] = [p for p in sys.path if os.path.abspath(p) != lp_root]
 
-# XXX: disable use of gnarly in pybaz. Temporarily needed until baz support is
-# removed from cscvs -- David Allouche 2006-09-07
-import pybaz.backends.forkexec
-pybaz.backend.spawning_strategy = \
-    pybaz.backends.forkexec.PyArchSpawningStrategy
-
-# XXX: disable use of twisted process handling. Temporarily needed until uses
-# of gnarly are removed from cscvs -- David Allouche 2006-09-07
-import gnarly.process
-import gnarly.process.unix_process
-gnarly.process.Popen = gnarly.process.unix_process.Popen
-
 from importd.tests.testutil import TestVisitor, TestSuite
 
 

@@ -21,6 +21,7 @@ from canonical.launchpad.interfaces.bounty import *
 from canonical.launchpad.interfaces.bountymessage import *
 from canonical.launchpad.interfaces.bountysubscription import *
 from canonical.launchpad.interfaces.branch import *
+from canonical.launchpad.interfaces.branchref import *
 from canonical.launchpad.interfaces.branchsubscription import *
 from canonical.launchpad.interfaces.bugactivity import *
 from canonical.launchpad.interfaces.bugattachment import *
@@ -29,8 +30,8 @@ from canonical.launchpad.interfaces.bug import *
 from canonical.launchpad.interfaces.bugbranch import *
 from canonical.launchpad.interfaces.bugcve import *
 from canonical.launchpad.interfaces.buglink import *
-from canonical.launchpad.interfaces.buglinktarget_browser import *
 from canonical.launchpad.interfaces.bugmessage import *
+from canonical.launchpad.interfaces.bugnomination import *
 from canonical.launchpad.interfaces.bugnotification import *
 from canonical.launchpad.interfaces.bugsubscription import *
 from canonical.launchpad.interfaces.bugtask import *
@@ -39,6 +40,7 @@ from canonical.launchpad.interfaces.bugtracker import *
 from canonical.launchpad.interfaces.bugwatch import *
 from canonical.launchpad.interfaces.build import *
 from canonical.launchpad.interfaces.builder import *
+from canonical.launchpad.interfaces.buildqueue import *
 from canonical.launchpad.interfaces.codeofconduct import *
 from canonical.launchpad.interfaces.component import *
 from canonical.launchpad.interfaces.country import *
@@ -58,6 +60,7 @@ from canonical.launchpad.interfaces.distroreleasebinarypackage import *
 from canonical.launchpad.interfaces.distroreleaselanguage import *
 from canonical.launchpad.interfaces.distroreleasepackagecache import *
 from canonical.launchpad.interfaces.distroreleasesourcepackagerelease import *
+from canonical.launchpad.interfaces.emailaddress import *
 from canonical.launchpad.interfaces.externalbugtracker import *
 from canonical.launchpad.interfaces.files import *
 from canonical.launchpad.interfaces.geoip import *
@@ -117,6 +120,7 @@ from canonical.launchpad.interfaces.sourcepackage import *
 from canonical.launchpad.interfaces.sourcepackagename import *
 from canonical.launchpad.interfaces.sourcepackagerelease import *
 from canonical.launchpad.interfaces.specification import *
+from canonical.launchpad.interfaces.specificationbranch import *
 from canonical.launchpad.interfaces.specificationbug import *
 from canonical.launchpad.interfaces.specificationdependency import *
 from canonical.launchpad.interfaces.specificationfeedback import *
@@ -128,12 +132,12 @@ from canonical.launchpad.interfaces.sprintspecification import *
 from canonical.launchpad.interfaces.ssh import *
 from canonical.launchpad.interfaces.supportcontact import *
 from canonical.launchpad.interfaces.teammembership import *
+from canonical.launchpad.interfaces.temporaryblobstorage import *
 from canonical.launchpad.interfaces.ticket import *
 from canonical.launchpad.interfaces.ticketbug import *
 from canonical.launchpad.interfaces.ticketmessage import *
 from canonical.launchpad.interfaces.ticketreopening import *
 from canonical.launchpad.interfaces.ticketsubscription import *
-from canonical.launchpad.interfaces.tickettarget_browser import *
 from canonical.launchpad.interfaces.translationgroup import *
 from canonical.launchpad.interfaces.translationimportqueue import *
 from canonical.launchpad.interfaces.translator import *

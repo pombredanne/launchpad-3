@@ -1,35 +1,34 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = [
     'SourcePackage',
+    'SourcePackageTicketTargetMixin',
     ]
 
-import apt_pkg
-# apt_pkg requires this sillyness
-apt_pkg.InitSystem()
-
+from operator import attrgetter
 from warnings import warn
 
 from zope.interface import implements
 
 from sqlobject import SQLObjectNotFound
+from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates, sqlvalues
 
 from canonical.lp.dbschema import (
     PackagingType, PackagePublishingPocket, BuildStatus,
-    PackagePublishingStatus, TicketStatus)
+    PackagePublishingStatus)
 
-from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     ISourcePackage, IHasBuildRecords, ITicketTarget,
-    TICKET_STATUS_DEFAULT_SEARCH)
-from canonical.launchpad.components.bugtarget import BugTargetBase
+    TICKET_STATUS_DEFAULT_SEARCH, get_supported_languages)
+from canonical.launchpad.database.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.bug import get_bug_tags_open_count
 from canonical.launchpad.database.bugtask import BugTaskSet
+from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
@@ -37,7 +36,8 @@ from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.supportcontact import SupportContact
 from canonical.launchpad.database.potemplate import POTemplate
-from canonical.launchpad.database.ticket import Ticket, TicketSet
+from canonical.launchpad.database.ticket import (
+    SimilarTicketsSearch, Ticket, TicketTargetSearch, TicketSet)
 from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.distroreleasesourcepackagerelease import (
@@ -45,15 +45,108 @@ from canonical.launchpad.database.distroreleasesourcepackagerelease import (
 from canonical.launchpad.database.build import Build
 
 
-def compare_version(a, b):
-    """Safely compares the version of two source packages"""
-    return apt_pkg.VersionCompare(a.version, b.version)
+class SourcePackageTicketTargetMixin:
+    """Implementation of ITicketTarget for SourcePackage."""
+
+    def newTicket(self, owner, title, description, language=None,
+                  datecreated=None):
+        """See ITicketTarget."""
+        return TicketSet.new(
+            title=title, description=description, owner=owner,
+            language=language, distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename, datecreated=datecreated)
+
+    def getTicket(self, ticket_id):
+        """See ITicketTarget."""
+        # first see if there is a ticket with that number
+        try:
+            ticket = Ticket.get(ticket_id)
+        except SQLObjectNotFound:
+            return None
+        # now verify that that ticket is actually for this target
+        if ticket.distribution != self.distribution:
+            return None
+        if ticket.sourcepackagename != self.sourcepackagename:
+            return None
+        return ticket
+
+    def searchTickets(self, **search_criteria):
+        """See ITicketTarget."""
+        return TicketTargetSearch(
+            distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename,
+            **search_criteria).getResults()
+
+    def findSimilarTickets(self, title):
+        """See ITicketTarget."""
+        return SimilarTicketsSearch(
+            title, distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename).getResults()
+
+    def addSupportContact(self, person):
+        """See ITicketTarget."""
+        support_contact_entry = SupportContact.selectOneBy(
+            distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename,
+            person=person)
+        if support_contact_entry:
+            return False
+
+        SupportContact(
+            product=None, person=person,
+            sourcepackagename=self.sourcepackagename,
+            distribution=self.distribution)
+        return True
+
+    def removeSupportContact(self, person):
+        """See ITicketTarget."""
+        support_contact_entry = SupportContact.selectOneBy(
+            distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename,
+            person=person)
+        if not support_contact_entry:
+            return False
+
+        support_contact_entry.destroySelf()
+        return True
+
+    @property
+    def support_contacts(self):
+        """See ITicketTarget."""
+        support_contacts = set()
+        support_contacts.update(self.direct_support_contacts)
+        support_contacts.update(self.distribution.support_contacts)
+        return sorted(support_contacts, key=attrgetter('displayname'))
+
+    @property
+    def direct_support_contacts(self):
+        """See ITicketTarget."""
+        support_contacts = SupportContact.selectBy(
+            distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename)
+        return sorted(
+            [contact.person for contact in support_contacts],
+            key=attrgetter('displayname'))
+
+    def getSupportedLanguages(self):
+        """See ITicketTarget."""
+        return get_supported_languages(self)
+
+    def getTicketLanguages(self):
+        """See ITicketTarget."""
+        return set(Language.select(
+            'Language.id = language AND distribution = %s AND '
+            'sourcepackagename = %s'
+                % sqlvalues(self.distribution, self.sourcepackagename),
+            clauseTables=['Ticket'], distinct=True))
 
 
-class SourcePackage(BugTargetBase):
-    """A source package, e.g. apache2, in a distrorelease.  This object
-    implements the MagicSourcePackage specification. It is not a true
-    database object, but rather attempts to represent the concept of a
+
+class SourcePackage(BugTargetBase, SourcePackageTicketTargetMixin):
+    """A source package, e.g. apache2, in a distrorelease.
+
+    This object implements the MagicSourcePackage specification. It is not a
+    true database object, but rather attempts to represent the concept of a
     source package in a distro release, with links to the relevant database
     objects.
     """
@@ -142,6 +235,7 @@ class SourcePackage(BugTargetBase):
             return None
         return self.currentrelease.format
 
+    # XXX: should not be a property -- kiko, 2006-08-16
     @property
     def changelog(self):
         """See ISourcePackage"""
@@ -185,7 +279,8 @@ class SourcePackage(BugTargetBase):
     @property
     def releases(self):
         """See ISourcePackage."""
-        ret = SourcePackageRelease.select('''
+        order_const = "debversion_sort_key(SourcePackageRelease.version)"
+        releases = SourcePackageRelease.select('''
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackagePublishingHistory.distrorelease = %s AND
             SourcePackagePublishingHistory.status != %s AND
@@ -193,19 +288,19 @@ class SourcePackage(BugTargetBase):
                 SourcePackageRelease.id
             ''' % sqlvalues(self.sourcepackagename, self.distrorelease,
                             PackagePublishingStatus.REMOVED),
-            clauseTables=['SourcePackagePublishingHistory'])
+            clauseTables=['SourcePackagePublishingHistory'],
+            orderBy=[SQLConstant(order_const),
+                     "SourcePackagePublishingHistory.datepublished"])
 
-        # sort by version number
-        releases = sorted(shortlist(ret, longest_expected=15),
-                          cmp=compare_version)
         return [DistributionSourcePackageRelease(
-            distribution=self.distribution,
-            sourcepackagerelease=release) for release in releases]
+                distribution=self.distribution,
+                sourcepackagerelease=release) for release in releases]
 
     @property
     def releasehistory(self):
         """See ISourcePackage."""
-        ret = SourcePackageRelease.select('''
+        order_const = "debversion_sort_key(SourcePackageRelease.version)"
+        releases = SourcePackageRelease.select('''
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
@@ -215,10 +310,10 @@ class SourcePackage(BugTargetBase):
                 SourcePackageRelease.id
             ''' % sqlvalues(self.sourcepackagename, self.distribution,
                             PackagePublishingStatus.REMOVED),
-            clauseTables=['DistroRelease', 'SourcePackagePublishingHistory'])
-
-        # sort by debian version number
-        return sorted(list(ret), cmp=compare_version)
+            clauseTables=['DistroRelease', 'SourcePackagePublishingHistory'],
+            orderBy=[SQLConstant(order_const),
+                     "SourcePackagePublishingHistory.datepublished"])
+        return releases
 
     @property
     def name(self):
@@ -384,84 +479,6 @@ class SourcePackage(BugTargetBase):
         # and make sure this change is immediately available
         flush_database_updates()
 
-    # ticket related interfaces
-    def tickets(self, quantity=None):
-        """See ITicketTarget."""
-        ret = Ticket.select("""
-            distribution = %s AND
-            sourcepackagename = %s
-            """ % sqlvalues(self.distribution.id,
-                            self.sourcepackagename.id),
-            orderBy='-datecreated',
-            limit=quantity)
-        return ret
-
-    def newTicket(self, owner, title, description, datecreated=None):
-        """See ITicketTarget."""
-        return TicketSet.new(
-            title=title, description=description, owner=owner,
-            distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename, datecreated=datecreated)
-
-    def getTicket(self, ticket_id):
-        """See ITicketTarget."""
-        # first see if there is a ticket with that number
-        try:
-            ticket = Ticket.get(ticket_id)
-        except SQLObjectNotFound:
-            return None
-        # now verify that that ticket is actually for this target
-        if ticket.distribution != self.distribution:
-            return None
-        if ticket.sourcepackagename != self.sourcepackagename:
-            return None
-        return ticket
-
-    def searchTickets(self, search_text=None,
-                      status=TICKET_STATUS_DEFAULT_SEARCH, sort=None):
-        """See ITicketTarget."""
-        return TicketSet.search(search_text=search_text, status=status,
-                                sort=sort, distribution=self.distribution,
-                                sourcepackagename=self.sourcepackagename)
-
-    def findSimilarTickets(self, title):
-        """See ITicketTarget."""
-        return TicketSet.findSimilar(title, distribution=self.distribution,
-                                     sourcepackagename=self.sourcepackagename)
-
-    def addSupportContact(self, person):
-        """See ITicketTarget."""
-        if person in self.support_contacts:
-            return False
-        SupportContact(
-            product=None, person=person,
-            sourcepackagename=self.sourcepackagename,
-            distribution=self.distribution)
-        return True
-
-    def removeSupportContact(self, person):
-        """See ITicketTarget."""
-        if person not in self.support_contacts:
-            return False
-        support_contact_entry = SupportContact.selectOneBy(
-            distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename,
-            person=person)
-        support_contact_entry.destroySelf()
-        return True
-
-    @property
-    def support_contacts(self):
-        """See ITicketTarget."""
-        support_contacts = SupportContact.selectBy(
-            distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename)
-
-        return shortlist([
-            support_contact.person for support_contact in support_contacts
-            ],
-            longest_expected=100)
-
     def __eq__(self, other):
         """See canonical.launchpad.interfaces.ISourcePackage."""
         return (
@@ -477,7 +494,6 @@ class SourcePackage(BugTargetBase):
         """See IHasBuildRecords"""
         clauseTables = ['SourcePackageRelease',
                         'SourcePackagePublishingHistory']
-        orderBy = ["-datebuilt"]
 
         condition_clauses = ["""
         Build.sourcepackagerelease = SourcePackageRelease.id AND
@@ -489,15 +505,15 @@ class SourcePackage(BugTargetBase):
         """ % sqlvalues(self.sourcepackagename.id, self.distrorelease.id,
                         PackagePublishingStatus.PUBLISHED)]
 
-        # exclude gina-generated builds
+        # XXX cprov 20060925: It would be nice if we could encapsulate
+        # the chunk of code below (which deals with the optional paramenters)
+        # and share it with IBuildSet.getBuildsByArchIds()
+
+        # exclude gina-generated and security (dak-made) builds
         # buildstate == FULLYBUILT && datebuilt == null
         condition_clauses.append(
             "NOT (Build.buildstate=%s AND Build.datebuilt is NULL)"
             % sqlvalues(BuildStatus.FULLYBUILT))
-
-        # XXX cprov 20060214: still not ordering ALL results (empty status)
-        # properly, the pending builds will pre presented in the DESC
-        # 'datebuilt' order. bug # 31392
 
         if status is not None:
             condition_clauses.append("Build.buildstate=%s"
@@ -507,12 +523,24 @@ class SourcePackage(BugTargetBase):
             condition_clauses.append(
                 "Build.pocket = %s" % sqlvalues(pocket))
 
-        # Order NEEDSBUILD by lastscore, it should present the build
-        # in a more natural order.
-        if status == BuildStatus.NEEDSBUILD:
+        # Ordering according status
+        # * NEEDSBUILD & BUILDING by -lastscore
+        # * SUPERSEDED by -datecreated
+        # * FULLYBUILT & FAILURES by -datebuilt
+        # It should present the builds in a more natural order.
+        if status in [BuildStatus.NEEDSBUILD, BuildStatus.BUILDING]:
             orderBy = ["-BuildQueue.lastscore"]
             clauseTables.append('BuildQueue')
             condition_clauses.append('BuildQueue.build = Build.id')
+        elif status == BuildStatus.SUPERSEDED or status is None:
+            orderBy = ["-Build.datecreated"]
+        else:
+            orderBy = ["-Build.datebuilt"]
+
+        # Fallback to ordering by -id as a tie-breaker.
+        orderBy.append("-id")
+
+        # End of duplication (see XXX cprov 20060925 above).
 
         return Build.select(' AND '.join(condition_clauses),
                             clauseTables=clauseTables, orderBy=orderBy)

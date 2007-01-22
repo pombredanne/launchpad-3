@@ -22,6 +22,62 @@
         <key name="cookie" datatype="string" default="launchpad" />
     </sectiontype>
 
+    <sectiontype name="virtual_host">
+        <key name="hostname" datatype="string" required="yes">
+            <description>
+                Host name of this virtual host.
+                This is matched from the incoming Host header, and
+                also used to put together URLs if rooturl is not provided.
+                Example: launchpad.net
+            </description>
+        </key>
+        <key name="althostnames" datatype="string" required="no">
+            <description>
+                Alternative host names to match, in addition to
+                the one given in hostname, comma separated.
+                Example: wwwww.launchpad.net, www.launchpad.net
+            </description>
+        </key>
+        <key name="rooturl" datatype="string" required="no">
+            <description>
+                Explicit root URL for this virtual host.
+                If this is not provided, the root URL is calculated
+                based on the host name.
+                Example: https://launchpad.net/
+            </description>
+        </key>
+    </sectiontype>
+
+    <sectiontype name="mainsite" extends="virtual_host" />
+    <sectiontype name="blueprints" extends="virtual_host" />
+    <sectiontype name="code" extends="virtual_host" />
+    <sectiontype name="translations" extends="virtual_host" />
+    <sectiontype name="bugs" extends="virtual_host" />
+    <sectiontype name="answers" extends="virtual_host" />
+    <sectiontype name="shipitubuntu" extends="virtual_host" />
+    <sectiontype name="shipitkubuntu" extends="virtual_host" />
+    <sectiontype name="shipitedubuntu" extends="virtual_host" />
+    <sectiontype name="xmlrpc" extends="virtual_host" />
+
+    <sectiontype name="virtual_hosts">
+        <key name="use_https" datatype="boolean" required="yes">
+            <description>
+                When true, use https URLs unless explicitly overridden.
+                When false, use http URLs unless explicitly overridden.
+            </description>
+        </key>
+        <section name="*" type="mainsite" attribute="mainsite" required="yes" />
+        <section name="*" type="blueprints" attribute="blueprints" required="yes" />
+        <section name="*" type="code" attribute="code" required="yes" />
+        <section name="*" type="translations" attribute="translations" required="yes" />
+        <section name="*" type="bugs" attribute="bugs" required="yes" />
+        <section name="*" type="answers" attribute="answers" required="yes" />
+        <section name="*" type="shipitubuntu" attribute="shipitubuntu" required="yes" />
+        <section name="*" type="shipitkubuntu" attribute="shipitkubuntu" required="yes" />
+        <section name="*" type="shipitedubuntu" attribute="shipitedubuntu" required="yes" />
+        <section name="*" type="xmlrpc" attribute="xmlrpc" required="yes" />
+    </sectiontype>
+
     <sectiontype name="launchpad_errorreports">
         <!-- Not 'existing-directory' because the test runner needs to
         create it. Not 'existing-dirpath' because ZConfig will enforce it
@@ -49,7 +105,7 @@
     <sectiontype name="launchpad">
         <key name="dbuser" datatype="string" default="launchpad" />
         <key name="cookie_domains" datatype="canonical.config.commalist"
-            default="staging.launchpad.net, launchpad.net, launchpad.dev">
+            default="demo.launchpad.net, staging.launchpad.net, launchpad.net, launchpad.dev">
             <description>
                 Session cookies being sent to a subdomain of the parent
                 domains listed here will be sent to the parent domain,
@@ -57,8 +113,6 @@
                 Domains should not start with a leading '.'.
             </description>
         </key>
-        <key name="root_url" datatype="canonical.config.urlbase"
-            default="https://launchpad.net/" />
         <key name="errors_address" datatype="string" required="no"
             default="launchpad-error-reports@lists.canonical.com" />
         <key name="bugs_domain" datatype="string" required="no"
@@ -117,64 +171,26 @@
                 puller to use, not for public URLs.
             </description>
         </key>
-        <key name="main_hostname" datatype="string" required="no"
-             default="launchpad.net,shipit.ubuntu.com,shipit.kubuntu.org,shipit.edubuntu.org,localhost">
+        <key name="default_blob_expiry" datatype="integer" default="10800">
             <description>
-            The host name for the main Launchpad site.
+                Number of seconds a blob stored in the temporary blob storage
+                must remain before it may be garbage collected.
             </description>
         </key>
-        <key name="blueprint_hostname" datatype="string"
-            default="features.launchpad.net">
+        <key name="max_blob_size" datatype="integer" default="0">
             <description>
-            The host name for the Blueprint site.
+                Maximum size of blobs that can be stored in the temporary
+                blob storage. Set to 0 for unlimited.
             </description>
         </key>
-        <key name="blueprint_root_url" datatype="canonical.config.urlbase"
-            default="https://features.launchpad.net/">
+        <section name="*" type="virtual_hosts" attribute="vhosts" required="no"
+            />
+        <key name="restrict_to_team" datatype="string" default="">
             <description>
-            The root url for Blueprint, used when constructing canonical urls.
-            </description>
-        </key>
-        <key name="xmlrpc_hostname" datatype="string"
-            default="xmlrpc.launchpad.net">
-            <description>
-            The host name for the XMLRPC site.
-            </description>
-        </key>
-        <key name="shipitubuntu_hostname" datatype="string"
-            default="shipit.ubuntu.com">
-            <description>
-            The host name for the shipit ubuntu site.
-            </description>
-        </key>
-        <key name="shipitubuntu_root_url" datatype="canonical.config.urlbase"
-            default="https://shipit.ubuntu.com/">
-            <description>
-            The root url for shipit ubuntu, used when constructing canonical urls.
-            </description>
-        </key>
-        <key name="shipitkubuntu_hostname" datatype="string"
-            default="shipit.kubuntu.org">
-            <description>
-            The host name for the shipit kubuntu site.
-            </description>
-        </key>
-        <key name="shipitkubuntu_root_url" datatype="canonical.config.urlbase"
-            default="https://shipit.kubuntu.org/">
-            <description>
-            The root url for shipit kubuntu, used when constructing canonical urls.
-            </description>
-        </key>
-        <key name="shipitedubuntu_hostname" datatype="string"
-            default="shipit.edubuntu.org">
-            <description>
-            The host name for the shipit edubuntu site.
-            </description>
-        </key>
-        <key name="shipitedubuntu_root_url" datatype="canonical.config.urlbase"
-            default="https://shipit.edubuntu.org/">
-            <description>
-            The root url for shipit edubuntu, used when constructing canonical urls.
+            If this is provided, only members of the given team, and
+            launchpad admins, may access the site.  Anonymous access is
+            not allowed.  If this is provided, but not a known team name,
+            only launchpad admins may access the site.
             </description>
         </key>
         <section name="*" type="launchpad_session" attribute="session"
@@ -182,7 +198,6 @@
         <section name="*" type="launchpad_errorreports" attribute="errorreports"
             required="no" />
     </sectiontype>
-
     <sectiontype name="gina_target">
         <description>
             Gina will run against the target specified on the command line.
@@ -435,14 +450,20 @@
         <description>
             Shipit-specific configuration options.
         </description>
+        <key name="switch_to_edgy" datatype="boolean" default="false">
+            <description>
+                This key allows us to switch to edgy's shipit without having
+                to do a launchpad roll out.
+            </description>
+        </key>
         <key name="dbuser" datatype="string" default="shipit" />
         <key name="admins_email_address" datatype="string"
              default="info@shipit.ubuntu.com"/>
         <key name="ubuntu_from_email_address" datatype="string"
              default="noreply@shipit.ubuntu.com" />
-        <key name="edubuntu_from_email_address" datatype="string" 
+        <key name="edubuntu_from_email_address" datatype="string"
              default="noreply@shipit.edubuntu.com" />
-        <key name="kubuntu_from_email_address" datatype="string" 
+        <key name="kubuntu_from_email_address" datatype="string"
              default="noreply@shipit.kubuntu.com" />
     </sectiontype>
 
@@ -451,6 +472,12 @@
             Configuration for Rosetta admin tools
         </description>
         <key name="dbuser" datatype="string" default="rosettaadmin" />
+        <key name="email" datatype="string" default="rosetta@launchpad.net">
+            <description>
+                From-address used in PO import, export and language pack
+                notifications.
+            </description>
+	</key>
     </sectiontype>
 
     <sectiontype name="poimport">
@@ -525,7 +552,7 @@
                 mirrors.
             </description>
         </key>
-        <key name="releases_file_list_url" datatype="string" 
+        <key name="releases_file_list_url" datatype="string"
              default="http://releases.ubuntu.com/.manifest">
             <description>
                 The URL to the file containing the list of ISO images that a
@@ -543,7 +570,7 @@
     <sectiontype name="expiredmembershipsflagger">
         <key name="dbuser" datatype="string" default="teammembership">
             <description>
-                The database user wich will be used to flag expired team 
+                The database user wich will be used to flag expired team
                 memberships.
             </description>
         </key>
@@ -576,7 +603,7 @@
     </sectiontype>
 
     <sectiontype name="cveupdater">
-        <key name="cve_db_url" datatype="string" required="no" 
+        <key name="cve_db_url" datatype="string" required="no"
              default="http://cve.mitre.org/cve/downloads/allitems.xml.gz" />
         <key name="dbuser" datatype="string" default="cve">
             <description>
@@ -589,8 +616,7 @@
     <sectiontype name="tickettracker">
         <key name="dbuser" datatype="string" default="tickettracker">
             <description>
-                The database user wich will be used to send reminders
-                regarding answered tickets.
+                The database user wich will be used to expire tickets.
             </description>
         </key>
         <key name="email_domain" datatype="string"
@@ -600,29 +626,13 @@
                 sent.
             </description>
         </key>
-    </sectiontype>
-
-    <sectiontype name="trebuchet_server">
-        <!-- Not 'existing-directory' because the test runner needs to
-        create it. Not 'existing-dirpath' because ZConfig will enforce it
-        for all sections, not just the one we are using -->
-        <key name="root" datatype="string" required="yes" />
-        <key name="launch" datatype="boolean" required="no" default="no" />
-        <key name="spew" datatype="boolean" required="no" default="no" />
-        <key name="logfile" datatype="string" required="no" default="-" />
-    </sectiontype>
-
-    <sectiontype name="trebuchet">
-        <key name="dbuser" datatype="string" default="trebuchet" />
-
-        <key name="port" datatype="port-number" default="4280">
+        <key name="days_before_expiration" datatype="integer"
+             default="15">
             <description>
-                Port number Trebuchet listens for XML-RPC requests on.
+                The number of days of inactivity required before a ticket in
+                the open or needs information state is expired.
             </description>
         </key>
-
-        <section name="*" type="trebuchet_server" attribute="server"
-            required="no" />
     </sectiontype>
 
     <sectiontype name="buildsequencer_job">
@@ -648,7 +658,7 @@
                 the sequencer log file.
             </description>
         </key>
-    </sectiontype>    
+    </sectiontype>
 
     <sectiontype name="buildsequencer">
         <key name="mailproblemsto" datatype="string" default="">
@@ -662,7 +672,7 @@
         <key name="launch" datatype="boolean" default="false">
             <description>
                 If true, the buildsequencer will be started by the startup
-                scripts. This is similar to trebuchet_server/launch.
+                scripts.
             </description>
         </key>
         <key name="logfile" datatype="string">
@@ -671,10 +681,10 @@
             </description>
         </key>
         <key name="spew" datatype="boolean" required="no" default="no" />
-        <key name="smtphost" datatype="string" default="localhost" 
+        <key name="smtphost" datatype="string" default="localhost"
             required="no" />
-        <key name="fromaddress" datatype="string" 
-            default="launchpad@lists.canonical.com" 
+        <key name="fromaddress" datatype="string"
+            default="launchpad@lists.canonical.com"
             required="no" />
         <multisection name="+" type="buildsequencer_job"
             attribute="jobs" required="no" />
@@ -684,7 +694,7 @@
         <key name="dbuser" datatype="string" required="yes" />
         <key name="default_recipient_name" datatype="string" required="yes" />
         <key name="default_sender_name" datatype="string" required="yes" />
-        <key name="default_recipient_address" datatype="string" 
+        <key name="default_recipient_address" datatype="string"
              required="yes" />
         <key name="default_sender_address" datatype="string" required="yes" />
     </sectiontype>
@@ -744,7 +754,7 @@
         <key name="dbuser" datatype="string" default="supermirror" />
         <key name="branchesdest" datatype="string" default="/var/tmp/sm-ng/mirrors" />
         <key name="masterlock" datatype="string" default="/var/tmp/sm-ng/masterlock" />
-        <key name="branchlistsource" datatype="string" 
+        <key name="branchlistsource" datatype="string"
              default="http://gangotri.ubuntu.com:9000/supermirror-pull-list.txt" />
         <key name="authserver_url" datatype="canonical.config.urlbase"
              default="http://localhost:8999/branch/">
@@ -799,7 +809,7 @@
             required="no" default="false" />
         <key name="bounce_address" datatype="string" required="no"
             default="bounces@canonical.com" />
-        <key name="noreply_from_address" datatype="string" 
+        <key name="noreply_from_address" datatype="string"
             required="no" default="noreply@launchpad.net" />
         <key name="admin_address" datatype="string" required="no"
             default="system-error@launchpad.net" />
@@ -817,7 +827,6 @@
         <section name="*" type="productreleasefinder"
 		 attribute="productreleasefinder" />
         <section name="*" type="gina" attribute="gina" />
-        <section name="*" type="trebuchet" attribute="trebuchet" />
         <section name="*" type="karmacacheupdater"
             attribute="karmacacheupdater" />
         <section name="*" type="expiredmembershipsflagger"

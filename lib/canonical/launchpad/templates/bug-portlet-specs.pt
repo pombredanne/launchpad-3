@@ -1,6 +1,6 @@
 <div class="portlet" tal:condition="context/specifications">
 
-  <h4>Related specifications:</h4>
+  <h2>Related specifications</h2>
 
   <div class="portletBody portletContent">
 

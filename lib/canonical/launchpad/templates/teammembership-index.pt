@@ -1,10 +1,14 @@
 <tal:do-this-first tal:content="view/processForm" />
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template/master"
+      metal:use-macro="context/@@main_template_2col/master"
       i18n:domain="launchpad">
 
 <body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/team/@@+portlet-details" />
+</metal:leftportlets>
 
 <metal:macros fill-slot="bogus">
   <metal:macro define-macro="person">
@@ -109,8 +113,8 @@
           <tr>
             <th />
             <td>
-              <input type="submit" value="Change" name="editactive" />
-              <input type="submit" value="Deactivate" name="editactive" />
+              <input type="submit" value="Change" id="change-submit" name="editactive" />
+              <input type="submit" value="Deactivate" id="deactivate-submit" name="editactive" />
             </td>
           </tr>
         </table>
@@ -197,20 +201,18 @@
           If this is okay, select a membership expiration date if necessary
           before choosing <samp>Approve</samp>.
         </p>
-        <p class="error message" tal:condition="view/errormessage"
-           tal:content="view/errormessage" />
 
         <form action="" method="POST" name="editproposed">
           <table>
             <tr>
-              <th>Membership applied for:</th>
+              <th>Applied in:</th>
               <td tal:content="context/datejoined/fmt:date" />
             </tr>
 
             <metal:error use-macro="template/macros/error" />
 
             <tr>
-              <th>Subscription expires:</th>
+              <th>Expires?</th>
               <td>
                 <metal:radios use-macro="template/macros/expiry-radios" />
                 <span tal:replace="structure view/dateChooserForProposedMembers" />

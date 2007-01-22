@@ -127,13 +127,14 @@ class DistroReleaseQueue(SQLBase):
 
         for source in self.sources:
             # If two queue items have the same (name, version) pair,
-            # then there is an inconsistency.  Check the accepted
+            # then there is an inconsistency.  Check the accepted & done
             # queue items for each distro release for such duplicates
             # and raise an exception if any are found.
-            # See bug #31038 for details.
+            # See bug #31038 & #62976 for details.
             for distrorelease in self.distrorelease.distribution:
                 if distrorelease.getQueueItems(
-                    status=DistroReleaseQueueStatus.ACCEPTED,
+                    status=[DistroReleaseQueueStatus.ACCEPTED,
+                            DistroReleaseQueueStatus.DONE],
                     name=source.sourcepackagerelease.name,
                     version=source.sourcepackagerelease.version,
                     exact_match=True).count() > 0:
@@ -533,7 +534,11 @@ class DistroReleaseQueueCustom(SQLBase):
         sourcepackagerelease = (
             self.distroreleasequeue.builds[0].build.sourcepackagerelease)
 
-        if sourcepackagerelease.component.name != 'main':
+        valid_pockets = (PackagePublishingPocket.RELEASE,
+            PackagePublishingPocket.SECURITY, PackagePublishingPocket.UPDATES,
+            PackagePublishingPocket.PROPOSED)
+        if (self.distroreleasequeue.pocket not in valid_pockets or
+            sourcepackagerelease.component.name != 'main'):
             # XXX: CarlosPerelloMarin 20060216 This should be implemented
             # using a more general rule to accept different policies depending
             # on the distribution. See bug #31665 for more details.
@@ -549,7 +554,7 @@ class DistroReleaseQueueCustom(SQLBase):
         except DownloadFailed:
             if logger is not None:
                 debug(logger, "Unable to fetch %s to import it into Rosetta" %
-                    self.libraryfilealias.url)
+                    self.libraryfilealias.http_url)
 
 
 class DistroReleaseQueueSet:

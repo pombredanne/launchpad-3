@@ -10,7 +10,7 @@ import operator
 
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    IProductSeriesSourceSet, IBazaarApplication, IProductSet)
+    IBazaarApplication, IProductSeriesSet)
 from canonical.lp.dbschema import ImportStatus
 from canonical.launchpad.webapp import (
     Navigation, stepto, enabled_with_permission, ApplicationMenu, Link)
@@ -20,7 +20,7 @@ import canonical.launchpad.layers
 class BazaarBranchesMenu(ApplicationMenu):
     usedfor = IBazaarApplication
     facet = 'branches'
-    links = ['importer', 'all_branches']
+    links = ['importer']
 
     @enabled_with_permission('launchpad.Admin')
     def importer(self):
@@ -29,19 +29,13 @@ class BazaarBranchesMenu(ApplicationMenu):
         summary = 'Manage CVS and SVN Trunk Imports'
         return Link(target, text, summary, icon='branch')
 
-    def all_branches(self):
-        target = '+all-branches'
-        text = 'Show All Branches'
-        summary = 'Listing every branch registered in The Bazaar'
-        return Link(target, text, summary, icon='branch')
-
 
 class BazaarApplicationView:
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.seriesset = getUtility(IProductSeriesSourceSet)
+        self.seriesset = getUtility(IProductSeriesSet)
 
     def branches(self):
         """List of all branches in the system."""
@@ -85,15 +79,9 @@ class BazaarApplicationNavigation(Navigation):
 
     usedfor = IBazaarApplication
 
-    newlayer = canonical.launchpad.layers.BazaarLayer
-
-    @stepto('products')
-    def products(self):
-        # DEPRECATED
-        return getUtility(IProductSet)
+    newlayer = canonical.launchpad.layers.CodeLayer
 
     @stepto('series')
     def series(self):
-        # DEPRECATED
-        return getUtility(IProductSeriesSourceSet)
+        return getUtility(IProductSeriesSet)
 

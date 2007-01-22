@@ -15,9 +15,11 @@ __all__ = ['Link', 'FacetMenu', 'ApplicationMenu', 'ContextMenu',
            'stepto', 'GetitemNavigation', 'smartquote',
            'urlappend', 'urlparse', 'urlsplit',
            'GeneralFormView', 'GeneralFormViewFactory',
-           'LaunchpadBrowserRequest', 'LaunchpadBrowserResponse',
            'Utf8PreferredCharsets', 'LaunchpadFormView',
-           'LaunchpadEditFormView', 'action', 'custom_widget']
+           'LaunchpadEditFormView', 'action', 'custom_widget',
+           'RedirectionNavigation', 'RedirectionView',
+           'expand_numbers','sorted_version_numbers',
+           'sorted_dotted_numbers']
 
 import re
 
@@ -36,12 +38,9 @@ from canonical.launchpad.webapp.menu import (
 from canonical.launchpad.webapp.preferredcharsets import Utf8PreferredCharsets
 from canonical.launchpad.webapp.publisher import (
     canonical_url, nearest, LaunchpadView, Navigation, stepthrough,
-    redirection, stepto, LaunchpadXMLRPCView)
-from canonical.launchpad.webapp.servers import (
-        LaunchpadBrowserRequest, LaunchpadBrowserResponse
-        )
-from canonical.launchpad.interfaces import ILaunchBag
-
+    redirection, RedirectionView, stepto, LaunchpadXMLRPCView)
+from canonical.launchpad.webapp.sorting import (
+    expand_numbers, sorted_version_numbers, sorted_dotted_numbers)
 
 def smartquote(str):
     """Return a copy of the string provided, with smartquoting applied.
@@ -73,6 +72,35 @@ class GetitemNavigation(Navigation):
         return self.context[name]
 
 
+class RedirectionNavigation(Navigation):
+    """Class for navigation that redirects suburls elsewhere.
+
+    Used when reparenting parts of Launchpad when we don't want to break
+    old URLs.
+    """
+    # Subclasses should override this to the new root
+    redirection_root_url = None
+
+    redirection_status = 301 # Default is a permanent redirect
+
+    def traverse(self, name):
+        """Consume the rest of the URL, and use it to return a
+           RedirectionView.
+        """
+        target = urlappend(self.redirection_root_url, name)
+        while True:
+            nextstep = self.request.stepstogo.consume()
+            if nextstep is None:
+                break
+            target = urlappend(target, nextstep)
+
+        query_string = self.request.get('QUERY_STRING')
+        if query_string:
+            target = target + '?' + query_string
+
+        return RedirectionView(target, self.request, self.redirection_status)
+
+
 class StandardLaunchpadFacets(FacetMenu):
     """The standard set of facets that most faceted content objects have."""
 
@@ -90,9 +118,17 @@ class StandardLaunchpadFacets(FacetMenu):
     def _filterLink(self, name, link):
         if link.site is None:
             if name == 'specifications':
-                link.site = 'blueprint'
+                link.site = 'blueprints'
+            elif name == 'branches':
+                link.site = 'code'
+            elif name == 'translations':
+                link.site = 'translations'
+            elif name == 'support':
+                link.site = 'answers'
+            elif name == 'bugs':
+                link.site = 'bugs'
             else:
-                link.site = 'launchpad'
+                link.site = 'mainsite'
         return link
 
     def overview(self):

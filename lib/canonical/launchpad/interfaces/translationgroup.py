@@ -92,3 +92,6 @@ class ITranslationGroupSet(IAddFormCustomization):
     def new(name, title, summary, owner):
         """Create a new translation group."""
 
+    def getByPerson(person):
+        """Return the translation groups which that person is a member of."""
+

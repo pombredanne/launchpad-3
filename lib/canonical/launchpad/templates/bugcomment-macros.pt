@@ -17,7 +17,7 @@
     <ul tal:condition="comment/bugattachments" style="margin-bottom: 1em">
       <li tal:repeat="attachment comment/bugattachments"
           class="download">
-        <a tal:attributes="href attachment/libraryfile/url"
+        <a tal:attributes="href attachment/libraryfile/http_url"
            tal:content="attachment/title">foo.txt</a>
       </li>
     </ul>

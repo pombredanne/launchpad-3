@@ -33,7 +33,7 @@ class Filter_Init(unittest.TestCase):
     def testFiltersPropertyGiven(self):
         """Filter constructor accepts argument to set filters property."""
         from canonical.launchpad.scripts.productreleasefinder.filter import (
-            Filter, FilterPattern)
+            Filter)
         f = Filter(["wibble"])
         self.assertEquals(len(f.filters), 1)
         self.assertEquals(f.filters[0], "wibble")
@@ -47,54 +47,54 @@ class Filter_CheckUrl(unittest.TestCase):
         f = Filter()
         self.assertEquals(f.check("file:///subdir/file"), None)
 
-    def makeFilter(self, key, base_url, glob):
+    def makeFilter(self, key, urlglob):
         from canonical.launchpad.scripts.productreleasefinder.filter import (
             Filter, FilterPattern)
-        pattern = FilterPattern(key, base_url, glob)
+        pattern = FilterPattern(key, urlglob)
         return Filter([pattern])
 
     def testNotMatching(self):
         """Filter.check returns None if doesn't match a filter."""
-        f = self.makeFilter("foo", "file:///subdir", "w*")
+        f = self.makeFilter("foo", "file:///subdir/w*")
         self.assertEquals(f.check("file:///subdir/file"), None)
 
     def testNoMatchingSlashes(self):
         """Filter.check that the glob does not match slashes."""
-        f = self.makeFilter("foo", "file:///", "*d*")
+        f = self.makeFilter("foo", "file:///*l*")
         self.assertEquals(f.check("file:///subdir/file"), None)
 
     def testReturnsMatching(self):
         """Filter.check returns the matching keyword."""
-        f = self.makeFilter("foo", "file:///subdir", "f*e")
+        f = self.makeFilter("foo", "file:///subdir/f*e")
         self.assertEquals(f.check("file:///subdir/file"), "foo")
 
     def testGlobSubdir(self):
         # Filter.glob can contain slashes to match subdirs
-        f = self.makeFilter("foo", "file:///", "sub*/f*e")
+        f = self.makeFilter("foo", "file:///sub*/f*e")
         self.assertEquals(f.check("file:///subdir/file"), "foo")
 
     def testReturnsNonMatchingBase(self):
         """Filter.check returns None if the base does not match."""
-        f = self.makeFilter("foo", "http:", "f*e")
+        f = self.makeFilter("foo", "http:f*e")
         self.assertEquals(f.check("file:///subdir/file"), None)
 
 
 class Filter_IsPossibleParentUrl(unittest.TestCase):
 
-    def makeFilter(self, key, base_url, glob):
+    def makeFilter(self, key, urlglob):
         from canonical.launchpad.scripts.productreleasefinder.filter import (
             Filter, FilterPattern)
-        pattern = FilterPattern(key, base_url, glob)
+        pattern = FilterPattern(key, urlglob)
         return Filter([pattern])
 
     def testNotContainedByMatch(self):
         # if the URL matches the pattern, then it can't contain matches.
-        f = self.makeFilter("foo", "file:///subdir", "foo-1.*.tar.gz")
+        f = self.makeFilter("foo", "file:///subdir/foo-1.*.tar.gz")
         self.assertFalse(f.isPossibleParent("file:///subdir/foo-1.42.tar.gz"))
 
     def testContainedByParent(self):
         # parent directories of the match can contain the match
-        f = self.makeFilter("foo", "file:///subdir", "foo/bar")
+        f = self.makeFilter("foo", "file:///subdir/foo/bar")
         self.assertTrue(f.isPossibleParent("file:///subdir/foo/"))
         self.assertTrue(f.isPossibleParent("file:///subdir/foo"))
         self.assertTrue(f.isPossibleParent("file:///subdir"))
@@ -102,7 +102,7 @@ class Filter_IsPossibleParentUrl(unittest.TestCase):
 
     def testContainedByGlobbedParent(self):
         # test that glob matched parents can contain matches
-        f = self.makeFilter("foo", "file:///subdir", "1.*/foo-1.*.tar.gz")
+        f = self.makeFilter("foo", "file:///subdir/1.*/foo-1.*.tar.gz")
         self.assertTrue(f.isPossibleParent("file:///subdir/1.0/"))
         self.assertTrue(f.isPossibleParent("file:///subdir/1.42"))
         self.assertTrue(f.isPossibleParent("file:///subdir/1.abc/"))
