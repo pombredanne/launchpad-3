@@ -271,6 +271,9 @@ class IBranchSet(Interface):
 
     all = Attribute("All branches in the system.")
 
+    def count():
+        """Return the number of branches in the database."""
+
     def get(branch_id, default=None):
         """Return the branch with the given id.
 

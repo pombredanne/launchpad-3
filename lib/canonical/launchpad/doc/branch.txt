@@ -25,12 +25,6 @@ It's not tied to a specific revision history because each new commit appends to
 the history, and it's not restricted to appending to the history because the
 Bazaar model does not forbid users from replacing the history of a branch.
 
-Bazaar does not have a identifiable concept of a Branch below the user
-interface level. Since the conceptual model of Bazaar does not define Branch,
-Launchpad cannot just implement the Bazaar branch model. You should think of a
-Branch, not as "a Bazaar branch in Launchpad", but as a "Launchpad branch based
-on Bazaar". If that makes any sense to you. Otherwise, don't worry.
-
 == Creating branches ==
 
 Branches can be created with IBranchSet.new. IBranchSet can be accessed as an
@@ -109,6 +103,16 @@ None
 None
 >>> print repr(junkcode.url)
 None
+
+
+== Determing the number of branches ==
+
+The IBranchSet can tell us how many branches there are registered.
+
+>>> branchset.count()
+27
+
+(25 in the sample data, and two added above.)
 
 == Finding a branch by URL ==
 
