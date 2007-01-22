@@ -354,6 +354,25 @@ class ErrorReportRequest:
     oopsid = None
 
 
+class ScriptRequest(ErrorReportRequest):
+    """Fake request that can be passed to ErrorReportingUtility.raising.
+
+    It is used by scripts to specify context information in error reports. This
+    context information is recorded as request variables.
+
+    :param data: iterable of (key, value) tuples. Keys need not be unique.
+    :ivar oopsid: the oopsid set by ErrorReportingUtility.raising. Initially
+        set to None.
+    """
+
+    def __init__(self, data):
+        self._data = list(data)
+        self.oopsid = None
+
+    def items(self):
+        return self._data
+
+
 class SoftRequestTimeout(RequestExpired):
     """Soft request timeout expired"""
 

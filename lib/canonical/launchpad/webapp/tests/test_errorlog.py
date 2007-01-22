@@ -291,6 +291,55 @@ class TestErrorReportingUtility(unittest.TestCase):
         # verify that the oopsid was set on the request
         self.assertEqual(request.oopsid, 'OOPS-91T1')
 
+    def test_raising_for_script(self):
+        """Test ErrorReportingUtility.raising with a ScriptRequest."""
+        from canonical.launchpad.webapp.errorlog import (
+            ErrorReportingUtility, ScriptRequest)
+        utility = ErrorReportingUtility()
+        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
+
+        try:
+            raise Exception('xyz\nabc')
+        except:
+            # Do not test escaping of request vars here, it is already tested
+            # in test_raising_with_request.
+            request = ScriptRequest([
+                ('name2', 'value2'), ('name1', 'value1'), ('name1', 'value3')])
+            utility.raising(sys.exc_info(), request, now=now)
+
+        errorfile = os.path.join(utility.errordir(now), '01800.T1')
+        self.assertTrue(os.path.exists(errorfile))
+        lines = open(errorfile, 'r').readlines()
+
+        # the header
+        self.assertEqual(lines[0], 'Oops-Id: OOPS-91T1\n')
+        self.assertEqual(lines[1], 'Exception-Type: Exception\n')
+        self.assertEqual(lines[2], 'Exception-Value: xyz abc\n')
+        self.assertEqual(lines[3], 'Date: 2006-04-01T00:30:00+00:00\n')
+        self.assertEqual(lines[4], 'User: None\n')
+        self.assertEqual(lines[5], 'URL: None\n')
+        self.assertEqual(lines[6], 'Duration: -1\n')
+        self.assertEqual(lines[7], '\n')
+
+        # request vars
+        self.assertEqual(lines[8], 'name1=value1\n')
+        self.assertEqual(lines[9], 'name1=value3\n')
+        self.assertEqual(lines[10], 'name2=value2\n')
+        self.assertEqual(lines[11], '\n')
+
+        # no database statements
+        self.assertEqual(lines[12], '\n')
+
+        # traceback
+        self.assertEqual(lines[13], 'Traceback (innermost last):\n')
+        #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
+        #    raise Exception(\'xyz\')
+        self.assertEqual(lines[16], 'Exception: xyz\n')
+
+        # verify that the oopsid was set on the request
+        self.assertEqual(request.oopsid, 'OOPS-91T1')
+
+
     def test_raising_with_unprintable_exception(self):
         """Test ErrorReportingUtility.raising() with an unprintable exception"""
         from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
