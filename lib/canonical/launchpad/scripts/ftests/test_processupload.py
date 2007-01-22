@@ -1,6 +1,4 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
-
-"""Functional tests for process-upload.py script."""
+# Copyright 2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -48,12 +46,13 @@ class TestProcessUpload(LaunchpadZopelessTestCase):
         Observe it creating the required directory tree for a given
         empty queue_location.
         """
-        rc, out, err = self.runProcessUpload()
-        # proper exit signal
-        self.assertEqual(0, rc)
+        returncode, out, err = self.runProcessUpload()
+        self.assertEqual(0, returncode)
+
         # directory tree in place.
         for directory in ['incoming', 'accepted', 'rejected', 'failed']:
             self.assertQueuePath(directory)
+
         # just to check if local assertion is working as expect.
         self.assertRaises(AssertionError, self.assertQueuePath, 'foobar')
 
@@ -67,14 +66,14 @@ class TestProcessUpload(LaunchpadZopelessTestCase):
         locker = LockFile('/var/lock/process-upload.lock')
         locker.acquire()
 
-        rc, out, err = self.runProcessUpload()
+        returncode, out, err = self.runProcessUpload()
 
         # the process-upload call terminated with ERROR and
         # proper log message
-        self.assertEqual(1, rc)
+        self.assertEqual(1, returncode)
         self.assertEqual(
             ['INFO    creating lockfile',
-             'INFO    Cannot acquire lock.'
+             'ERROR   Cannot acquire lock.'
              ], err.splitlines())
 
         # release the locally acquired lockfile

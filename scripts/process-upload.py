@@ -31,7 +31,7 @@ def main():
     try:
         locker.acquire()
     except OSError:
-        log.info("Cannot acquire lock.")
+        log.error("Cannot acquire lock.")
         return 1
 
     log.debug("Initialising connection.")
