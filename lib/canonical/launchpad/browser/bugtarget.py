@@ -13,6 +13,9 @@ __all__ = [
     "FileBugInPackageView"
     ]
 
+import cgi
+from cStringIO import StringIO
+import email
 import urllib
 
 from zope.app.form.browser import TextWidget
@@ -21,21 +24,92 @@ from zope.app.form.utility import setUpWidgets
 from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.event import notify
+from zope.interface import implements
+from zope.publisher.interfaces import NotFound
+from zope.publisher.interfaces.browser import IBrowserPublisher
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     IBugTaskSet, ILaunchBag, IDistribution, IDistroRelease, IDistroReleaseSet,
     IProduct, IDistributionSourcePackage, NotFoundError, CreateBugParams,
-    IBugAddForm, BugTaskSearchParams, ILaunchpadCelebrities)
+    IBugAddForm, BugTaskSearchParams, ILaunchpadCelebrities,
+    ITemporaryStorageManager)
 from canonical.launchpad.webapp import (
-    canonical_url, LaunchpadView, LaunchpadFormView, action, custom_widget)
+    canonical_url, LaunchpadView, LaunchpadFormView, action, custom_widget,
+    urlappend)
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.generalform import GeneralFormView
 
 
+class FileBugData:
+    """Extra data to be added to the bug."""
+
+    def __init__(self):
+        self.extra_description = None
+        self.comments = []
+        self.attachments = []
+
+    def setFromRawMessage(self, raw_mime_msg):
+        """Set the extra file bug data from a MIME multipart message.
+
+            * The first inline part will be added to the description.
+            * All other inline parts will be added as separate comments.
+            * All attachment parts will be added as attachment.
+        """
+        mime_msg = email.message_from_string(raw_mime_msg)
+        if mime_msg.is_multipart():
+            for part in mime_msg.get_payload():
+                disposition_header = part.get('Content-Disposition', 'inline')
+                # Get the type, excluding any parameters.
+                disposition_type = disposition_header.split(';')[0]
+                disposition_type = disposition_type.strip()
+                if disposition_type == 'inline':
+                    assert part.get_content_type() == 'text/plain', (
+                        "Inline parts have to be plain text.")
+                    charset = part.get_content_charset()
+                    assert charset, (
+                        "A charset has to be specified for text parts.")
+                    part_text = part.get_payload(decode=True).decode(charset)
+                    part_text = part_text.rstrip()
+                    if self.extra_description is None:
+                        self.extra_description = part_text
+                    else:
+                        self.comments.append(part_text)
+                elif disposition_type == 'attachment':
+                    attachment = dict(
+                        filename=part.get_filename().strip("'"),
+                        content_type=part['Content-type'],
+                        content=StringIO(part.get_payload(decode=True)))
+                    if part.get('Content-Description'):
+                        attachment['description'] = part['Content-Description']
+                    else:
+                        attachment['description'] = attachment['filename']
+                    self.attachments.append(attachment)
+                else:
+                    # If the message include other disposition types,
+                    # simply ignore them. We don't want to break just
+                    # because some extra information is included.
+                    continue
+
+
+
 class FileBugViewBase(LaunchpadFormView):
     """Base class for views related to filing a bug."""
+
+    implements(IBrowserPublisher)
+
+    extra_bug_data = None
+
+    def initialize(self):
+        LaunchpadFormView.initialize(self)
+        if self.extra_bug_data is not None:
+            # XXX: We should include more details of what will be added
+            #      to the bug report.
+            #      -- Bjorn Tillenius, 2006-01-15
+            self.request.response.addNotification(
+                'Extra debug information will be added to the bug report'
+                ' automatically.')
 
     @property
     def initial_values(self):
@@ -125,8 +199,12 @@ class FileBugViewBase(LaunchpadFormView):
             failure=handleSubmitBugFailure)
     def submit_bug_action(self, action, data):
         """Add a bug to this IBugTarget."""
-        title = data.get("title")
-        comment = data.get("comment")
+        extra_data = FileBugData()
+        if self.extra_bug_data is not None:
+            extra_data.setFromRawMessage(self.extra_bug_data.blob)
+
+        title = data["title"]
+        comment = data["comment"].rstrip()
         packagename = data.get("packagename")
         security_related = data.get("security_related", False)
         distribution = data.get(
@@ -151,11 +229,11 @@ class FileBugViewBase(LaunchpadFormView):
         else:
             private = False
 
-        notification = "Thank you for your bug report."
+        notifications = ["Thank you for your bug report."]
         if IDistribution.providedBy(context) and packagename:
             # We don't know if the package name we got was a source or binary
             # package name, so let the Soyuz API figure it out for us.
-            packagename = str(packagename)
+            packagename = str(packagename.name)
             try:
                 sourcepackagename, binarypackagename = (
                     context.guessPackageNames(packagename))
@@ -164,8 +242,8 @@ class FileBugViewBase(LaunchpadFormView):
                 # nicer to allow people to indicate a package even if
                 # never published, but the quick fix for now is to note
                 # the issue and move on.
-                notification += (
-                    "<br /><br />The package %s is not published in %s; the "
+                notifications.append(
+                    "The package %s is not published in %s; the "
                     "bug was targeted only to the distribution."
                     % (packagename, context.displayname))
                 comment += ("\r\n\r\nNote: the original reporter indicated "
@@ -186,11 +264,33 @@ class FileBugViewBase(LaunchpadFormView):
                 title=title, comment=comment, owner=self.user,
                 security_related=security_related, private=private)
 
-        bug = context.createBug(params)
+        if extra_data.extra_description:
+            params.comment = "%s\n\n%s" % (
+                params.comment, extra_data.extra_description)
+            notifications.append(
+                'Additional information was added to the bug description.')
+
+        self.added_bug = bug = context.createBug(params)
         notify(SQLObjectCreatedEvent(bug))
 
+        for comment in extra_data.comments:
+            bug.newMessage(self.user, bug.followup_subject(), comment)
+            notifications.append(
+                'A comment with additional information was added to the'
+                ' bug report.')
+
+        for attachment in extra_data.attachments:
+            bug.addAttachment(
+                self.user, attachment['content'], attachment['description'],
+                None, attachment['filename'],
+                content_type=attachment['content_type'])
+            notifications.append(
+                'The file "%s" was attached to the bug report.' % cgi.escape(
+                    attachment['filename']))
+
         # Give the user some feedback on the bug just opened.
-        self.request.response.addNotification(notification)
+        for notification in notifications:
+            self.request.response.addNotification(notification)
         if bug.private:
             self.request.response.addNotification(
                 'Security-related bugs are by default <span title="Private '
@@ -203,6 +303,39 @@ class FileBugViewBase(LaunchpadFormView):
     def showFileBugForm(self):
         """Override this method in base classes to show the filebug form."""
         raise NotImplementedError
+
+    @property
+    def advanced_filebug_url(self):
+        """The URL to the advanced bug filing form.
+
+        If a token was passed to this view, it will be be passed through
+        to the advanced bug filing form via the returned URL.
+        """
+        url = urlappend(canonical_url(self.context), '+filebug-advanced')
+        if self.extra_bug_data is not None:
+            url = urlappend(url, self.extra_bug_data.uuid)
+        return url
+
+    def publishTraverse(self, request, name):
+        """See IBrowserPublisher."""
+        if self.extra_bug_data is not None:
+            # The URL contains more path components than expected.
+            raise NotFound(self, name, request=request)
+
+        self.extra_bug_data = getUtility(ITemporaryStorageManager).fetch(name)
+        if self.extra_bug_data is None:
+            # The URL might be mistyped, or the blob has expired.
+            # XXX: We should handle this case better, since a user might
+            #      come to this page when finishing his account
+            #      registration. In that case we should inform the user
+            #      that the blob has expired.
+            #      -- Bjorn Tillenius, 2006-01-15
+            raise NotFound(self, name, request=request)
+        return self
+
+    def browserDefault(self, request):
+        """See IBrowserPublisher."""
+        return self, ()
 
 
 class FileBugAdvancedView(FileBugViewBase):
