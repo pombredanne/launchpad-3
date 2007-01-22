@@ -5,7 +5,6 @@ __metaclass__ = type
 import logging
 import tempfile
 import textwrap
-import psycopg
 from StringIO import StringIO
 
 from zope.component import getUtility
@@ -19,6 +18,8 @@ from canonical.launchpad.components.poexport import (
 from canonical.launchpad.interfaces import (
     IPOExportRequestSet, IPOTemplate, IPOFile, ILibraryFileAliasSet,
     ILaunchpadCelebrities)
+from canonical.librarian.interfaces import (
+    LibrarianFailure, UploadFailed, DownloadFailed)
 
 def is_potemplate(obj):
     """Return True if the object is a PO template."""
@@ -358,10 +359,7 @@ def process_single_object_request(obj, format):
 
     try:
         result.url = handler.get_librarian_url()
-    except psycopg.Error:
-        # And re-raise the exception
-        raise
-    except:
+    except (LibrarianFailure, UploadFailed, DownloadFailed):
         result.add_failure(obj)
         # The export for the current entry failed, we can remove the specific
         # logger to catch warnings.
@@ -399,10 +397,7 @@ def process_multi_object_request(objects, format):
 
         try:
             contents = handler.get_contents()
-        except psycopg.Error:
-            # Lets re-raise database exceptions
-            raise
-        except:
+        except (LibrarianFailure, UploadFailed, DownloadFailed):
             result.add_failure(filename)
         else:
             result.add_success(filename)
