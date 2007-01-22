@@ -1025,6 +1025,7 @@ body {
 }
 #singlecolumn #container {
   padding-left: 20px;
+  padding-top: 60px;
 }
 #maincontent, #portlets {
   float: left;
@@ -1075,7 +1076,7 @@ body {
 .central {
   clear: both;
   margin: auto;
-  padding: 4em 0;
+  padding: 2em 0;
   width: auto;
 }
 .central, .central input {
