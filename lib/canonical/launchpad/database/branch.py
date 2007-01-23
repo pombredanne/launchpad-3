@@ -247,6 +247,10 @@ class BranchSet:
         """See IBranchSet."""
         return Branch.select().count()
 
+    def countBranchesWithAssociatedBugs(self):
+        """See IBranchSet."""
+        return Branch.select('id in (select branch from bugbranch)').count()
+
     def get(self, branch_id, default=None):
         """See IBranchSet."""
         try:

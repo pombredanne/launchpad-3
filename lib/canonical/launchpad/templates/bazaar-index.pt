@@ -108,7 +108,7 @@
               imported branches
             </div>
             <div>
-              <strong class="demo">12</strong>
+              <strong tal:content="view/branches_with_bugs_count">12</strong>
               branches associated with bug reports
             </div>
           </div>

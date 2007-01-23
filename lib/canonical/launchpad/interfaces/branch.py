@@ -274,6 +274,9 @@ class IBranchSet(Interface):
     def count():
         """Return the number of branches in the database."""
 
+    def countBranchesWithAssociatedBugs():
+        """Return the nubmer of branches that have bugs associated."""
+
     def get(branch_id, default=None):
         """Return the branch with the given id.
 

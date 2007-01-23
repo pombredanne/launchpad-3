@@ -7,5 +7,5 @@ Check that the Bazaar home page works.
   25 branches registered in
   5 products
   3 imported branches
-  12 branches associated with bug reports
+  2 branches associated with bug reports
 

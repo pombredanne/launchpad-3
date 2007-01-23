@@ -50,6 +50,9 @@ class BazaarApplicationView:
     def product_count(self):
         return getUtility(IProductSet).getProductsWithBranches().count()
 
+    def branches_with_bugs_count(self):
+        return getUtility(IBranchSet).countBranchesWithAssociatedBugs()
+
     def import_count(self):
         return self.seriesset.importcount()
 
