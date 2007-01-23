@@ -666,6 +666,12 @@ class ITeam(IPerson):
     The teamowner should never be None.
     """
 
+    displayname = StrippedTextLine(
+            title=_('Display Name'), required=True, readonly=False,
+            description=_(
+                "This team's name as you would like it displayed throughout "
+                "Launchpad."))
+
 
 class IPersonSet(Interface):
     """The set of Persons."""
