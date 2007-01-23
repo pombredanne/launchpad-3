@@ -25,9 +25,10 @@
 
 <div metal:fill-slot="main">
 
-<tal:valid-person-or-team condition="context/is_valid_person_or_team">
-
-  <h1 tal:content="context/browsername" />
+      <h1>Who is <tal:name replace="context/browsername">Fred</tal:name>?</h1>
+      <tal:hackergotchi-shown-only-if-there-is-a-description
+        condition="python: context.homepage_content or context.teamdescription"
+      >
 
   <img
     tal:condition="context/gotchi"
@@ -35,18 +36,79 @@
     style="float: right; margin: 0 0 0.5em 0.5em"
     alt=""
   />
+
+        <img
+          tal:condition="not:context/gotchi"
+          alt=""
+          src="/@@/person-mugshot"
+          style="float: right; margin: 0 0 0.5em 0.5em"
+        />
+
   <tal:homepage tal:condition="context/homepage_content"
-                content="structure context/homepage_content/fmt:text-to-html">
-     The person's homepage goes here.
-  </tal:homepage>
-  <tal:description condition="context/teamdescription">
-    <b>About this team:</b>
-    <span tal:replace="context/teamdescription">DESCRIPTION</span>
-  </tal:description>
 
-  <h2>Details</h2>
+          content="structure context/homepage_content/fmt:text-to-html"
+        />
+        <tal:team-description
+          replace="structure context/teamdescription/fmt:text-to-html"
+        />
+      </tal:hackergotchi-shown-only-if-there-is-a-description>
 
-  <table>
+<tal:valid-person-or-team condition="context/is_valid_person_or_team">
+
+        <div class="left">
+          <div class="demo section">
+            <h2>Contributions</h2>
+            <table class="contributions">
+              <tbody>
+                <tr class="odd">
+                  <th>Ubuntu</th>
+                  <td><img alt="Code" src="/@@/branch" /></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td><img alt="Answers" src="/@@/question" /></td>
+                </tr>
+                <tr class="even">
+                  <th>Fooix the Wonder-Toaster</th>
+                  <td></td>
+                  <td></td>
+                  <td><img alt="Blueprints" src="/@@/blueprint" /></td>
+                  <td><img alt="Translations" src="/@@/translation" /></td>
+                  <td><img alt="Answers" src="/@@/question" /></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div tal:condition="not:context/isTeam" class="section">
+            <h2>Team memberships</h2>
+            <ul tal:condition="context/myactivememberships" class="team">
+              <li tal:repeat="membership context/myactivememberships">
+                <div>
+                  <a
+                    tal:attributes="href membership/team/fmt:url"
+                    tal:content="membership/team/browsername"
+                  >Team name</a>
+                </div>
+                <div
+                  tal:condition="membership/team/teamdescription"
+                  tal:replace="structure membership/team/teamdescription/fmt:text-to-html"
+                >Team description</div>
+              </li>
+            </ul>
+
+    <p tal:condition="not: context/myactivememberships">
+      <span tal:replace="context/browsername">Foo Bar</span> is not an
+      active member of any Launchpad teams.
+    </p>
+
+          </div>
+        </div>
+        <div class="right">
+          <div class="section">
+            <h2>Contact details</h2>
+            <table class="summary">
+              <tbody>
+
     <tr tal:condition="context/allwikis">
       <th>Wiki:</th>
       <td>
@@ -97,8 +159,34 @@
         </a>
       </td>
     </tr>
-
-  </table>
+                
+              </tbody>
+            </table>
+          </div>
+          <div class="demo section">
+            <h2>Working on&#8230;</h2>
+            <ul class="bug">
+              <li>
+                <div><a href="/bugs/12">123. some bug</a></div>
+                <div>
+                  gnome-network-blaster (Ubuntu),
+                  reported by David Prieto
+                </div>
+              </li>
+              <li>
+                <div><a href="/bugs/13">123. some other bug</a></div>
+                <div>
+                  gnome-network-blaster (Ubuntu),
+                  reported by David Prieto
+                </div>
+              </li>
+            </ul>
+            <ul class="blueprint">
+              <li><a href="">some blueprint</a></li>
+              <li><a href="">some other blueprint</a></li>
+            </ul>
+          </div>
+        </div>
 
   <tal:members condition="context/isTeam">
 
@@ -178,28 +266,6 @@
     </tal:block>
   </tal:members>
 
-  <tal:memberships condition="not: context/isTeam">
-    <tal:block condition="context/myactivememberships">
-      <h2>Team memberships</h2>
-
-      <p><span tal:replace="context/browsername">Foo Bar</span> is
-        a member of:
-      </p>
-      <ul>
-        <li class="person"
-            tal:repeat="membership context/myactivememberships">
-          <a tal:attributes="href membership/team/fmt:url"
-             tal:content="membership/team/browsername">foo</a>
-          (<span tal:replace="membership/statusname">
-            Administrator</span>)
-        </li>
-      </ul>
-    </tal:block>
-    <p tal:condition="not: context/myactivememberships">
-      <span tal:replace="context/browsername">Foo Bar</span> is not an
-      active member of any Launchpad teams.
-    </p>
-  </tal:memberships>
 
   <tal:isteam condition="context/isTeam">
     <h2>Your involvement</h2>
@@ -232,7 +298,6 @@
 </tal:valid-person-or-team>
 
 <tal:invalid-person condition="not: context/is_valid_person_or_team">
-  <h1 tal:content="context/browsername" />
 
   <p><span tal:replace="context/browsername" /> does not use Launchpad.
     <tal:block condition="context/creation_comment">

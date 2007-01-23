@@ -1208,11 +1208,13 @@ li {
 ul.architecture, li.architecture     {list-style-image: url(/@@/architecture);}
 ul.blueprint, li.blueprint           {list-style-image: url(/@@/blueprint);}
 ul.branch, li.branch                 {list-style-image: url(/@@/branch);}
+ul.bug, li.bug                       {list-style-image: url(/@@/bug);}
 ul.distrorelease, li.distrorelease   {list-style-image: url(/@@/distribution);}
 ul.package.binary, li.package.binary {list-style-image: url(/@@/pkg-binary);}
 ul.package.source, li.package.binary {list-style-image: url(/@@/pkg-source);}
 ul.person, li.person                 {list-style-image: url(/@@/person);}
 ul.sprint, li.sprint                 {list-style-image: url(/@@/sprint);}
+ul.team, li.team                     {list-style-image: url(/@@/team);}
 ul.webref, li.webref,
 ul.external.link, li.external.link   {list-style-image: url(/@@/link);}
 
@@ -1220,13 +1222,18 @@ ul.external.link, li.external.link   {list-style-image: url(/@@/link);}
   font-weight: bold;
 }
 
-/* For the demo: */
 fieldset {
   border: none;
   margin: 0.5em 0 1em;
   padding: 0;
 }
-thead th, tfoot th {text-align: left;}
+thead th, tfoot th, table.contributions th {text-align: left;}
+table.contributions, table.contributions th, table.contributions td {
+  border: 1px solid #e6e6e6;}
+table.contributions tr.odd {background-color: #fff; color: inherit;}
+table.contributions tr.even {background-color: #f6f6f6; color: inherit;}
+table.contributions th, table.contributions td {padding: 0.5em 0.75em;}
+table.contributions td {vertical-align: middle; width: 16px;}
 
 table.listing {
   margin-top: 0.5em;
