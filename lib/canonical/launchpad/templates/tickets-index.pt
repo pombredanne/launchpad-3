@@ -29,7 +29,7 @@
 
       <form method="get" action="+tickets">
         <input class="textType" id="field.search_text"
-               name="field.search_text" size="20" type="text" value="asd"  />
+               name="field.search_text" size="20" type="text" value=""  />
 
         <input type="submit" id="field.actions.search"
                 name="field.actions.search" value="Search" class="button" />
