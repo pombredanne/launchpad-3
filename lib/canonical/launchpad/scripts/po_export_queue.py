@@ -15,11 +15,12 @@ from canonical.launchpad import helpers
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.components.poexport import (
     MOCompiler, RosettaWriteTarFile)
+from canonical.launchpad.components.poparser import (
+    POInvalidInputError)
 from canonical.launchpad.interfaces import (
     IPOExportRequestSet, IPOTemplate, IPOFile, ILibraryFileAliasSet,
     ILaunchpadCelebrities)
-from canonical.librarian.interfaces import (
-    LibrarianFailure, UploadFailed, DownloadFailed)
+from canonical.librarian.interfaces import LibrarianFailure
 
 def is_potemplate(obj):
     """Return True if the object is a PO template."""
@@ -359,7 +360,7 @@ def process_single_object_request(obj, format):
 
     try:
         result.url = handler.get_librarian_url()
-    except (LibrarianFailure, UploadFailed, DownloadFailed):
+    except (LibrarianFailure, POInvalidInputError):
         result.add_failure(obj)
         # The export for the current entry failed, we can remove the specific
         # logger to catch warnings.
@@ -397,7 +398,7 @@ def process_multi_object_request(objects, format):
 
         try:
             contents = handler.get_contents()
-        except (LibrarianFailure, UploadFailed, DownloadFailed):
+        except (LibrarianFailure, POInvalidInputError):
             result.add_failure(filename)
         else:
             result.add_success(filename)
