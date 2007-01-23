@@ -198,6 +198,13 @@
     template="../templates/tickets-index.pt"
     />
 
+  <browser:page
+    for="canonical.launchpad.interfaces.ITicketSet"
+    class="canonical.launchpad.browser.SearchAllTicketsView"
+    name="+tickets"
+    permission="zope.Public"
+    />
+
 </facet>
 </configure>
 
