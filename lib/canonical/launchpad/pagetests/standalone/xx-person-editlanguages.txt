@@ -61,8 +61,13 @@ When a user doesn't have a preferred language set, we determine it from the
 user's browser headers. If his browser send us any non-utf8 encoded string in 
 the Accept-Language header, we won't consider that as a valid language code.
 
+We are also pretending that this request is coming from someone in
+Serbia (194.247.192.33), to test country detection.  Proxies add
+'X-Forwarded-For' header, which is what the code is handling.
+
   >>> from zope.testbrowser.testing import Browser
   >>> browser = Browser()
+  >>> browser.addHeader('X-Forwarded-For', '194.247.192.33')
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
   >>> browser.addHeader('Accept-Language', 'pt_br, Espa\xf1ol')
   >>> browser.open('http://launchpad.dev/~name12/+editlanguages')
@@ -82,6 +87,17 @@ the Accept-Language header, we won't consider that as a valid language code.
 
   >>> print_languages(browser.contents, portlet='browser')
   Portuguese (Brazil)
+
+Now we are checking that the country is properly detected.  Since we
+don't have data for languages spoken in Serbia, we get information
+about how to contact Rosetta Admins to update it.
+
+  >>> country_portlet = find_portlet(browser.contents,
+  ...     'Languages in Serbia and Montenegro')
+  >>> print country_portlet.find('li', 'languages')
+  None
+  >>> print country_portlet.first('a')['href']
+  mailto:rosetta@launchpad.net
 
 We also have a page under the launchpad root, called +editmylanguages, with
 launchpad.AnyPerson as permission. This is the page to which we direct
