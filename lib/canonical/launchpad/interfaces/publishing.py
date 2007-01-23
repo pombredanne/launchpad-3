@@ -7,8 +7,6 @@ __metaclass__ = type
 __all__ = [
     'ISourcePackageFilePublishing',
     'IBinaryPackageFilePublishing',
-    'ISourcePackagePublishingView',
-    'IBinaryPackagePublishingView',
     'ISecureSourcePackagePublishingHistory',
     'ISecureBinaryPackagePublishingHistory',
     'ISourcePackagePublishingHistory',
@@ -163,13 +161,6 @@ class IBaseSourcePackagePublishing(Interface):
             )
 
 
-class ISourcePackagePublishingView(IBaseSourcePackagePublishing):
-    """Source package publishing information neatened up a bit"""
-    sectionname = TextLine(
-            title=_('Section name'), required=True, readonly=True,
-            )
-
-
 class ISourcePackageFilePublishing(IBaseSourcePackagePublishing):
     """Source package release files and their publishing status"""
     sourcepackagepublishing = Int(
@@ -309,19 +300,6 @@ class IBaseBinaryPackagePublishing(Interface):
             )
     archive = Int(
             title=_('Archive ID'), required=True, readonly=True,
-            )
-
-
-class IBinaryPackagePublishingView(IBaseBinaryPackagePublishing):
-    """Binary package publishing information neatened up a bit"""
-    binarypackagename = TextLine(
-            title=_('Binary package name'), required=True, readonly=True,
-            )
-    sectionname = TextLine(
-            title=_('Section name'), required=True, readonly=True,
-            )
-    priority = Int(
-            title=_('Priority'), required=True, readonly=True,
             )
 
 

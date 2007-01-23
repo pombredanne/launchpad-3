@@ -3,7 +3,6 @@
 __metaclass__ = type
 
 __all__ = ['SourcePackageFilePublishing', 'BinaryPackageFilePublishing',
-           'SourcePackagePublishingView', 'BinaryPackagePublishingView',
            'SecureSourcePackagePublishingHistory',
            'SecureBinaryPackagePublishingHistory',
            'SourcePackagePublishingHistory',
@@ -22,7 +21,6 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, nowUTC
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces import (
-    ISourcePackagePublishingView, IBinaryPackagePublishingView,
     ISourcePackageFilePublishing, IBinaryPackageFilePublishing,
     ISecureSourcePackagePublishingHistory, IBinaryPackagePublishingHistory,
     ISecureBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
@@ -163,66 +161,6 @@ class BinaryPackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
 
     pocket = EnumCol(dbName='pocket', unique=False,
                      default=None, notNull=True,
-                     schema=PackagePublishingPocket)
-
-    archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
-
-
-class SourcePackagePublishingView(SQLBase):
-    """Source package information published and thus due for putting on disk.
-    """
-
-    implements(ISourcePackagePublishingView)
-
-    distroreleasename = StringCol(dbName='distroreleasename', unique=False,
-                                  default=None, notNull=True, immutable=True)
-    sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
-                                  default=None, notNull=True, immutable=True)
-    componentname = StringCol(dbName='componentname', unique=False,
-                              default=None, notNull=True, immutable=True)
-    sectionname = StringCol(dbName='sectionname', unique=False, default=None,
-                            notNull=True, immutable=True)
-    distribution = ForeignKey(dbName='distribution',
-                              foreignKey="Distribution",
-                              unique=False, default=None,
-                              notNull=True, immutable=True)
-    publishingstatus = EnumCol(dbName='publishingstatus', unique=False,
-                               default=None, notNull=True, immutable=True,
-                               schema=PackagePublishingStatus)
-    pocket = EnumCol(dbName='pocket', unique=False, default=None,
-                     notNull=True, immutable=True,
-                     schema=PackagePublishingPocket)
-
-    archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
-
-
-class BinaryPackagePublishingView(SQLBase):
-    """Binary package information published and thus due for putting on disk.
-    """
-
-    implements(IBinaryPackagePublishingView)
-
-    distroreleasename = StringCol(dbName='distroreleasename', unique=False,
-                                  default=None, notNull=True)
-    binarypackagename = StringCol(dbName='binarypackagename', unique=False,
-                                  default=None, notNull=True)
-    componentname = StringCol(dbName='componentname', unique=False,
-                              default=None, notNull=True)
-    sectionname = StringCol(dbName='sectionname', unique=False, default=None,
-                            notNull=True)
-    distribution = ForeignKey(dbName='distribution',
-                              foreignKey="Distribution",
-                              unique=False, default=None,
-                              notNull=True)
-    # XXX: this should really be an EnumCol but the publisher needs to be
-    # updated to cope with the change. -- kiko, 2006-08-16
-    priority = IntCol(dbName='priority', unique=False, default=None,
-                      notNull=True)
-    publishingstatus = EnumCol(dbName='publishingstatus', unique=False,
-                               default=None, notNull=True,
-                               schema=PackagePublishingStatus)
-    pocket = EnumCol(dbName='pocket', unique=False, default=None,
-                     notNull=True, immutable=True,
                      schema=PackagePublishingPocket)
 
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
