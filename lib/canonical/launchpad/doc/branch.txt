@@ -70,6 +70,12 @@ If it doesn't exist an exception NotFoundError is raised
 >>> home_page = "http://example.com/~ddaa/"
 >>> gterm_dev = branchset.new('dev', ddaa, gterm_product, gterm_dev_url,
 ...     title, summary=summary, home_page=home_page)
+
+And we'll commit the transaction to get distinct date_created values.#
+
+>>> import transaction
+>>> transaction.commit()
+
 >>> gterm_dev.name
 u'dev'
 >>> gterm_dev.product == gterm_product
@@ -91,6 +97,10 @@ Branches with no URL are primarily hosted on the supermirror.
 
 >>> url = 'http://example.com/~ddaa/junkcode'
 >>> junkcode = branchset.new('junkcode', ddaa, None, None)
+
+Again committing for distinct date_crated values.
+
+>>> transaction.commit()
 >>> junkcode.name
 u'junkcode'
 >>> print repr(junkcode.product)
@@ -113,6 +123,51 @@ The IBranchSet can tell us how many branches there are registered.
 27
 
 (25 in the sample data, and two added above.)
+
+== Determining the recently changed and registered branches ==
+
+These IBranchSet methods are used to give summary information that
+is to be displayed on the code.launchpad.net page to entice the 
+user to click through.
+
+In order to determine changes in the branches the last_scanned timestamp
+is used.  This is set by the branch scanner when it has finished
+scanning the branches and recording the branch data in the launchpad
+database.  The sample data doesn't have this value set, so we'll fake
+it here to get some interesting results instead of nothing.
+
+>>> list(branchset.getRecentlyChangedBranches(5))
+[]
+>>> list(branchset.getRecentlyImportedBranches(5))
+[]
+
+>>> from datetime import datetime, timedelta
+>>> import pytz
+>>> today = datetime.now(pytz.timezone('UTC'))
+>>> branch = branchset.getByUniqueName('~ddaa/gnome-terminal/dev')
+>>> branch.last_scanned = today - timedelta(3)
+>>> syncUpdate(branch)
+>>> branch = branchset.getByUniqueName('~ddaa/+junk/junkcode')
+>>> branch.last_scanned = today - timedelta(2)
+>>> syncUpdate(branch)
+>>> branch = branchset.getByUniqueName('~vcs-imports/evolution/main')
+>>> branch.last_scanned = today - timedelta(1)
+>>> syncUpdate(branch)
+
+>>> for branch in branchset.getRecentlyChangedBranches(5):
+...   print branch.unique_name
+~ddaa/+junk/junkcode
+~ddaa/gnome-terminal/dev
+
+>>> for branch in branchset.getRecentlyImportedBranches(5):
+...   print branch.unique_name
+~vcs-imports/evolution/main
+
+>>> for branch in branchset.getRecentlyRegisteredBranches(2):
+...   print branch.unique_name
+~ddaa/+junk/junkcode
+~ddaa/gnome-terminal/dev
+
 
 == Finding a branch by URL ==
 

@@ -67,28 +67,31 @@
             <div class="three column left">
               <h2>Recent imports</h2>
               <ul>
-                <li>TBD</li>
-                <li>TBD</li>
-                <li>TBD</li>
-                <li>TBD</li>
+                <li tal:repeat="branch view/recentlyImportedBranches">
+                  <a tal:attributes="href branch/fmt:url"
+                     tal:content="branch/displayname/fmt:shorten/40">
+                  Title Goes Here!</a>
+                </li>
               </ul>
             </div>
             <div class="three column center">
               <h2>Recently registered</h2>
               <ul>
-                <li>TBD</li>
-                <li>TBD</li>
-                <li>TBD</li>
-                <li>TBD</li>
+                <li tal:repeat="branch view/recentlyRegisteredBranches">
+                  <a tal:attributes="href branch/fmt:url"
+                     tal:content="branch/displayname/fmt:shorten/40">
+                  Title Goes Here!</a>
+                </li>
               </ul>
             </div>
             <div class="three column right">
               <h2>Recently changed</h2>
               <ul>
-                <li>TBD</li>
-                <li>TBD</li>
-                <li>TBD</li>
-                <li>TBD</li>
+                <li tal:repeat="branch view/recentlyChangedBranches">
+                  <a tal:attributes="href branch/fmt:url"
+                     tal:content="branch/displayname/fmt:shorten/40">
+                  Title Goes Here!</a>
+                </li>
               </ul>
             </div>
           </div>

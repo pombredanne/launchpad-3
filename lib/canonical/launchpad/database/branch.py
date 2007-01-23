@@ -317,6 +317,37 @@ class BranchSet:
              Branch.last_scanned_id <> Branch.last_mirrored_id)
             ''')
 
+    def getRecentlyChangedBranches(self, branch_count):
+        """See IBranchSet."""
+        query = '''
+            Branch.last_scanned IS NOT NULL
+            AND Branch.owner = Person.id
+            AND Person.name <> 'vcs-imports'
+            '''
+        tables = ['Person']
+        branches = Branch.select(query, clauseTables=tables,
+            orderBy=['-last_scanned'], limit=branch_count)
+        return branches.prejoin(['author', 'product'])
+
+    def getRecentlyImportedBranches(self, branch_count):
+        """See IBranchSet."""
+        query = '''
+            Branch.last_scanned IS NOT NULL
+            AND Branch.owner = Person.id
+            AND Person.name = 'vcs-imports'
+            '''
+        tables = ['Person']
+        branches = Branch.select(query, clauseTables=tables,
+            orderBy=['-last_scanned'], limit=branch_count)
+        return branches.prejoin(['author', 'product'])
+
+    def getRecentlyRegisteredBranches(self, branch_count):
+        """See IBranchSet."""
+
+        branches = Branch.select(orderBy=['-date_created'], limit=branch_count)
+        return branches.prejoin(['author', 'product'])
+
+
 
 class BranchRelationship(SQLBase):
     """A relationship between branches.

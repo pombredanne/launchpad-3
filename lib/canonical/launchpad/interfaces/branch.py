@@ -303,6 +303,26 @@ class IBranchSet(Interface):
     def getBranchesToScan():
         """Return an iterator for the branches that need to be scanned."""
 
+    def getRecentlyChangedBranches(branch_count):
+        """Return a list of branches that have been recently updated.
+
+        The list will contain at most branch_count items, and excludes
+        the vcs-imports user.
+        """
+
+    def getRecentlyImportedBranches(branch_count):
+        """Return a list of branches that have been recently imported.
+
+        The list will contain at most branch_count items, and only
+        has branches for the vcs-imports user.
+        """
+
+    def getRecentlyRegisteredBranches(branch_count):
+        """Return a list of branches that have been recently registered.
+
+        The list will contain at most branch_count items.
+        """
+
 
 class IBranchLifecycleFilter(Interface):
     """A helper interface to render lifecycle filter choice."""

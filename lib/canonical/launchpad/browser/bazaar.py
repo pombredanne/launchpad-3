@@ -79,6 +79,18 @@ class BazaarApplicationView:
                     continue
         return count
 
+    def recentlyChangedBranches(self):
+        """Return the five most recently changed branches."""
+        return getUtility(IBranchSet).getRecentlyChangedBranches(5)
+
+    def recentlyImportedBranches(self):
+        """Return the five most recently imported branches."""
+        return getUtility(IBranchSet).getRecentlyImportedBranches(5)
+
+    def recentlyRegisteredBranches(self):
+        """Return the five most recently registered branches."""
+        return getUtility(IBranchSet).getRecentlyRegisteredBranches(5)
+
 
 class BazaarApplicationNavigation(Navigation):
 
