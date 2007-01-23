@@ -8,7 +8,7 @@
     <div metal:fill-slot="main" class="tab-bugs"
          tal:define="search_url string:+bugs;
                      advanced_search_url string:+bugs?advanced=1">
-      <h1>Bugs in Ubuntu</h1>
+      <h1>Bugs in <tal:context replace="context/title">Ubuntu</tal:context></h1>
       <metal:search
         use-macro="context/@@+bugtarget-macros-search/simple-search-form"
       />

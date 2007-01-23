@@ -62,7 +62,7 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProduct"
         layer="canonical.launchpad.layers.BugsLayer"
-        name="+bugs" />
+        name="+bugs-index" />
 
     <browser:menus
         module="canonical.launchpad.browser"
@@ -91,6 +91,15 @@
         for="canonical.launchpad.interfaces.IProduct"
         path_expression="name"
         parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IProduct"
+        name="+bugs-index"
+        class="canonical.launchpad.browser.BugTaskSearchListingView"
+        permission="zope.Public"
+        facet="bugs"
+        template="../templates/bugtarget-bugs.pt"
         />
 
     <browser:pages
