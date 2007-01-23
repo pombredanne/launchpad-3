@@ -37,7 +37,9 @@ def _get_pluralforms(pomsgset):
 
 def _get_wiki_submissions(pomsgset, pluralform):
     """See IPOMsgSet."""
-    posubmission_ids = POMsgSet._connection.queryAll('''
+
+    # queryAll returns a list with a single list with all ids.
+    [posubmission_ids] = POMsgSet._connection.queryAll('''
         SELECT DISTINCT POSubmission.id
         FROM POSubmission
             JOIN POMsgSet ON (POSubmission.pomsgset = POMsgSet.id AND
@@ -50,7 +52,7 @@ def _get_wiki_submissions(pomsgset, pluralform):
             POSubmission.pluralform = %s
         ''' % sqlvalues(
             pomsgset.pofile.language.id, pomsgset.potmsgset.primemsgid_ID,
-            pluralform))[0]
+            pluralform))
 
     active_submission = pomsgset.getActiveSubmission(pluralform)
 
@@ -73,7 +75,8 @@ def _get_wiki_submissions(pomsgset, pluralform):
             'POSubmission.id IN (%s)' % ', '.join(ids),
             orderBy='-datecreated')
     else:
-        return []
+        # Return an empty SelectResults object.
+        return POSubmission.select("1 = 2")
 
 
 class DummyPOMsgSet:
@@ -114,7 +117,8 @@ class DummyPOMsgSet:
 
     def getSuggestedSubmissions(self, pluralform):
         """See IPOMsgSet."""
-        return []
+        # Return an empty SelectResults object.
+        return POSubmission.select("1 = 2")
 
     def getCurrentSubmissions(self, pluralform):
         """See IPOMsgSet."""
