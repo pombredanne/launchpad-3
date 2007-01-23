@@ -242,6 +242,7 @@ Check the rejection of bar_1.0-2_binary when uploaded to the wrong build id.
   AssertionError: Rejected should be empty...
 
   >>> print open(uploader_log).read()
+  INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
   ...Attempt to upload binaries specifying build 2, where they don't fit
@@ -269,6 +270,7 @@ to a different 'bar_1.0.orig.tar.gz'.
 Inspect the uploader log to find the rejection message.
 
   >>> print open(uploader_log).read()
+  INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
   INFO       Subject: bar_1.0-3_source.changes Rejected
@@ -295,6 +297,7 @@ testing, as unsigned uploads are allowed.
   AssertionError: Rejected should be empty...
 
   >>> print open(uploader_log).read()
+  INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
   INFO       Subject: unstable_1.0-1_source.changes Rejected
@@ -316,6 +319,7 @@ Check the email recipient for displayname containing special chars,
 
   >>> expect_okays('bar_1.0-4')
   >>> print open(uploader_log).read()
+  INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
   INFO       Subject: Accepted bar 1.0-4 (source)
@@ -330,6 +334,7 @@ changer and the distrorelease changes maillisting.
 
   >>> expect_okays('bar_1.0-5', upload_policy='sync')
   >>> print open(uploader_log).read()
+  INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
   DEBUG   Building recipients list.
@@ -381,6 +386,7 @@ Update a version of source package "foo" to breezy-backports
 
   >>> expect_okays('foo_2.9-1', upload_policy='sync', is_new=True)
   >>> print open(uploader_log).read()
+  INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
   INFO    NEW: foo_2.9-1.dsc
@@ -398,6 +404,7 @@ of foo target to -updates should be rejected:
   AssertionError: Rejected should be empty...
 
   >>> print open(uploader_log).read()
+  INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
   INFO    Rejected:
@@ -414,6 +421,7 @@ This new version of foo can only be uploaded to the -backports pocket itself:
   >>> expect_okays('foo_2.9-2', upload_policy='sync', is_new=True,
   ...              release='breezy-backports')
   >>> print open(uploader_log).read()
+  INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
   INFO    NEW: foo_2.9-2.dsc
