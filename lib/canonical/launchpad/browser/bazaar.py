@@ -10,7 +10,7 @@ import operator
 
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    IBazaarApplication, IBranchSet, IProductSeriesSet)
+    IBazaarApplication, IBranchSet, IProductSet, IProductSeriesSet)
 from canonical.lp.dbschema import ImportStatus
 from canonical.launchpad.webapp import (
     Navigation, stepto, enabled_with_permission, ApplicationMenu, Link)
@@ -46,6 +46,9 @@ class BazaarApplicationView:
     def branch_count(self):
         """List of all branches in the system."""
         return getUtility(IBranchSet).count()
+
+    def product_count(self):
+        return getUtility(IProductSet).getProductsWithBranches().count()
 
     def import_count(self):
         return self.seriesset.importcount()

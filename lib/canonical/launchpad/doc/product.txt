@@ -226,3 +226,20 @@ We can filter for specifications that contain specific text:
  e4x
 
 
+Products With Branches
+======================
+
+We can also find all the products that have branches.
+
+ >>> productset.getProductsWithBranches().count()
+ 5
+ >>> from operator import attrgetter
+ >>> products = sorted(productset.getProductsWithBranches(), 
+ ...                   key=attrgetter('name'))
+ >>> for product in products:
+ ...   print product.name
+ evolution
+ firefox
+ gnome-terminal
+ iso-codes
+ thunderbird

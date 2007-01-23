@@ -5,7 +5,7 @@ Check that the Bazaar home page works.
 
   >>> print extract_text(footer)
   25 branches registered in
-  1234 products
+  5 products
   3 imported branches
   12 branches associated with bug reports
 

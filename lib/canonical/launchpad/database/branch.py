@@ -244,6 +244,7 @@ class BranchSet:
         return branches.prejoin(['author', 'product'])
 
     def count(self):
+        """See IBranchSet."""
         return Branch.select().count()
 
     def get(self, branch_id, default=None):

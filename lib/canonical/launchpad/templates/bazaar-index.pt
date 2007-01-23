@@ -100,7 +100,7 @@
             <div>
               <strong tal:content="view/branch_count">123</strong>
               branches registered in
-              <strong class="demo">1234</strong>
+              <strong tal:content="view/product_count">1234</strong>
               products
             </div>
             <div>
