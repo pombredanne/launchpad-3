@@ -62,8 +62,7 @@ import urllib
 from operator import itemgetter
 from StringIO import StringIO
 
-from zope.event import notify
-from zope.app.form.browser import TextAreaWidget, SelectWidget
+from zope.app.form.browser import SelectWidget, TextAreaWidget
 from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
 from zope.app.content_types import guess_content_type
@@ -80,7 +79,7 @@ from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, SpecificationFilter, TicketParticipation,
     PersonCreationRationale)
 
-from canonical.widgets import PasswordChangeWidget
+from canonical.widgets import ImageChangeWidget, PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
@@ -112,8 +111,6 @@ from canonical.launchpad.webapp import (
     enabled_with_permission, Navigation, stepto, stepthrough, smartquote,
     GeneralFormView, LaunchpadEditFormView, LaunchpadFormView, action,
     custom_widget, RedirectionNavigation)
-
-from canonical.launchpad.event.team import JoinTeamRequestEvent
 
 from canonical.launchpad import _
 
@@ -734,9 +731,12 @@ class PersonClaimView(LaunchpadFormView):
             tokentype=LoginTokenType.PROFILECLAIM)
         token.sendClaimProfileEmail()
         self.request.response.addInfoNotification(_(
-            "An email message was sent to '%(email)s'. Follow the "
-            "instructions in that message to finish claiming this "
-            "profile."), email=email)
+            "A confirmation  message has been sent to '%(email)s'. "
+            "Follow the instructions in that message to finish claiming this "
+            "profile. "
+            "(If the message doesn't arrive in a few minutes, your mail "
+            "provider might use 'greylisting', which could delay the message "
+            "for up to an hour or two.)"), email=email)
 
 
 class RedirectToEditLanguagesView(LaunchpadView):
@@ -1696,21 +1696,21 @@ class PersonGPGView(LaunchpadView):
         comments = []
         if len(found) > 0:
             comments.append(
-                'An email was sent to %s with instructions to reactivate '
-                'the following key(s): %s'
+                'A message has been sent to %s with instructions to reactivate '
+                'these key(s): %s'
                 % (self.context.preferredemail.email, ', '.join(found)))
         if len(notfound) > 0:
             if len(notfound) == 1:
                 comments.append(
-                    'Launchpad failed to retrieve the following key from '
-                    'the keyserver: %s. Please make sure this key is '
+                    'Launchpad failed to retrieve this key from '
+                    'the keyserver: %s. Please make sure the key is '
                     'published in a keyserver (such as '
                     '<a href="http://pgp.mit.edu">pgp.mit.edu</a>) before '
                     'trying to reactivate it again.' % (', '.join(notfound)))
             else:
                 comments.append(
-                    'Launchpad failed to retrieve the following keys from '
-                    'the keyserver: %s. Please make sure these keys '
+                    'Launchpad failed to retrieve these keys from '
+                    'the keyserver: %s. Please make sure the keys '
                     'are published in a keyserver (such as '
                     '<a href="http://pgp.mit.edu">pgp.mit.edu</a>) before '
                     'trying to reactivate them again.' % (', '.join(notfound)))
@@ -1786,6 +1786,7 @@ class PersonEditView(BasePersonEditView):
     field_names = ['displayname', 'name', 'hide_email_addresses', 'timezone',
                    'gotchi']
     custom_widget('timezone', SelectWidget, size=15)
+    custom_widget('gotchi', ImageChangeWidget)
 
 
 class PersonEmblemView(GeneralFormView):
@@ -1814,7 +1815,6 @@ class TeamJoinView(PersonView):
 
         if self.request.form.get('join') and self.userCanRequestToJoin():
             user.join(self.context)
-            notify(JoinTeamRequestEvent(user, self.context))
             if (self.context.subscriptionpolicy ==
                 TeamSubscriptionPolicy.MODERATED):
                 self.request.response.addInfoNotification(
@@ -1998,9 +1998,12 @@ class PersonEditEmailsView:
         token.sendEmailValidationRequest(self.request.getApplicationURL())
 
         self.message = (
-                "An email message was sent to '%s'. Follow the "
-                "instructions in that message to confirm that the "
-                "address is yours." % newemail)
+                "A confirmation message has been sent to '%s'. "
+                "Follow the instructions in that message to confirm that the "
+                "address is yours. "
+                "(If the message doesn't arrive in a few minutes, your mail "
+                "provider might use 'greylisting', which could delay the "
+                "message for up to an hour or two.)" % newemail)
 
     def _setPreferred(self):
         """Set the selected email as preferred for the person in context."""
@@ -2375,18 +2378,11 @@ class TeamReassignmentView(ObjectReassignmentView):
         # only if they're inactive members. If they're either active or
         # proposed members they'll be made administrators of the team.
         if newOwner not in team.inactivemembers:
-            team.addMember(newOwner)
+            team.addMember(
+                newOwner, reviewer=oldOwner, status=TeamMembershipStatus.ADMIN)
         if oldOwner not in team.inactivemembers:
-            team.addMember(oldOwner)
-
-        # Need to flush all database updates, otherwise we won't see the
-        # updated membership statuses in the rest of this method.
-        flush_database_updates()
-        if newOwner not in team.inactivemembers:
-            team.setMembershipStatus(newOwner, TeamMembershipStatus.ADMIN)
-
-        if oldOwner not in team.inactivemembers:
-            team.setMembershipStatus(oldOwner, TeamMembershipStatus.ADMIN)
+            team.addMember(
+                oldOwner, reviewer=oldOwner, status=TeamMembershipStatus.ADMIN)
 
 
 class PersonLatestTicketsView(LaunchpadView):

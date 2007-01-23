@@ -3,19 +3,17 @@
 from StringIO import StringIO
 from textwrap import dedent
 
-from zope.app.content_types import guess_content_type
-from zope.component import getUtility
 from zope.schema import (
     Bool, Bytes, Choice, Field, Int, Text, TextLine, Password, Tuple)
 from zope.schema.interfaces import (
     IBytes, IField, IInt, IPassword, IText, ITextLine)
 from zope.interface import implements
+from zope.security.interfaces import ForbiddenAttribute
 
 from canonical.database.sqlbase import cursor
 from canonical.launchpad import _
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 
 
 # Marker object to tell BaseImageUpload to keep the existing image.
@@ -445,7 +443,14 @@ class BaseImageUpload(Bytes):
         if self.context is None:
             raise FieldNotBoundError("This field must be bound to an object.")
         else:
-            return getattr(self.context, self.__name__)
+            try:
+                current = getattr(self.context, self.__name__)
+            except ForbiddenAttribute:
+                # When this field is used in add forms it gets bound to
+                # I*Set objects, which don't have the attribute represented
+                # by the field, so we need this hack here.
+                current = None
+            return current
 
     def _valid_image(self, image):
         """Check that the given image is under the given constraints."""
@@ -475,20 +480,8 @@ class BaseImageUpload(Bytes):
         self._valid_image(content)
 
     def set(self, object, value):
-        if value is not KEEP_SAME_IMAGE and value is not None:
-            value.seek(0)
-            content = value.read()
-            filename = value.filename
-            type, dummy = guess_content_type(name=filename, body=content)
-            img = getUtility(ILibraryFileAliasSet).create(
-                name=filename, size=len(content), file=StringIO(content),
-                contentType=type)
-            Bytes.set(self, object, img)
-        elif value is None:
-            Bytes.set(self, object, None)
-        else:
-            # Nothing to do; user wants to keep the existing image.
-            pass
+        if value is not KEEP_SAME_IMAGE:
+            Bytes.set(self, object, value)
 
 
 class LargeImageUpload(BaseImageUpload):
@@ -499,3 +492,11 @@ class LargeImageUpload(BaseImageUpload):
     max_dimensions = (200, 200)
     max_size = 100*1024
     default_image_resource = '/@@/nyet-mugshot'
+
+
+class SmallImageUpload(BaseImageUpload):
+
+    max_dimensions = (64, 64)
+    max_size = 25*1024
+    default_image_resource = '/@@/nyet-mini'
+

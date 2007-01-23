@@ -19,13 +19,14 @@ from zope.app.error.interfaces import IErrorReportingUtility
 from zope.exceptions.exceptionformatter import format_exception
 
 from canonical.config import config
-from canonical.launchpad.webapp.interfaces import (
-    IErrorReport, IErrorReportRequest)
 from canonical.launchpad.webapp.adapter import (
     RequestExpired, get_request_statements, get_request_duration,
     soft_timeout_expired)
+from canonical.launchpad.webapp.interfaces import (
+    IErrorReport, IErrorReportRequest)
+from canonical.launchpad.webapp.opstats import OpStats
 
-UTC = pytz.timezone('UTC')
+UTC = pytz.utc
 
 # the section of the OOPS ID before the instance identifier is the
 # days since the epoch, which is defined as the start of 2006.
@@ -362,6 +363,8 @@ def end_request(event):
     # if no OOPS has been generated at the end of the request, but
     # the soft timeout has expired, log an OOPS.
     if event.request.oopsid is None and soft_timeout_expired():
+        OpStats.stats['soft timeouts'] += 1
         globalErrorUtility.raising(
             (SoftRequestTimeout, SoftRequestTimeout(event.object), None),
             event.request)
+

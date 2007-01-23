@@ -118,8 +118,7 @@ class IPerson(IHasSpecifications):
         title=_("Homepage Content"), required=False,
         description=_(
             "The content of your home page. Edit this and it will be "
-            "displayed for all the world to see. It is NOT a wiki so you "
-            "cannot undo changes."))
+            "displayed for all the world to see."))
     emblem = Bytes(
         title=_("Emblem"), required=False,
         description=_(
@@ -294,8 +293,9 @@ class IPerson(IHasSpecifications):
                        vocabulary='ValidTeamOwner')
     teamownerID = Int(title=_("The Team Owner's ID or None"), required=False,
                       readonly=True)
-    teamdescription = Text(title=_('Team Description'), required=False,
-                           readonly=False)
+    teamdescription = Text(
+        title=_('Team Description'), required=False, readonly=False,
+        description=_('Use plain text; URLs will be linkified'))
 
     preferredemail = TextLine(
         title=_("Preferred Email Address"),
@@ -361,6 +361,8 @@ class IPerson(IHasSpecifications):
     # title is required for the Launchpad Page Layout main template
     title = Attribute('Person Page Title')
 
+    unique_displayname = TextLine(
+        title=_('Return a string of the form $displayname ($name).'))
     browsername = Attribute(
         'Return a textual name suitable for display in a browser.')
 
@@ -522,30 +524,35 @@ class IPerson(IHasSpecifications):
 
         Teams cannot call this method because they're not allowed to
         login and thus can't 'leave' another team. Instead, they have their
-        subscription deactivated (using the setMembershipStatus() method) by
+        subscription deactivated (using the setMembershipData() method) by
         a team administrator.
         """
 
-    def addMember(person, status=TeamMembershipStatus.APPROVED, reviewer=None,
+    def addMember(person, reviewer, status=TeamMembershipStatus.APPROVED,
                   comment=None):
         """Add person as a member of this team.
 
-        Make sure status is either APPROVED or PROPOSED and add a
-        TeamMembership entry for this person with the given status, reviewer,
-        and reviewer comment. This method is also responsible for filling
-        the TeamParticipation table in case the status is APPROVED.
+        Add a TeamMembership entry for this person with the given status,
+        reviewer, and reviewer comment. This method is also responsible for
+        filling the TeamParticipation table in case the status is APPROVED or
+        ADMIN.
+
+        The reviewer is the user who made the given person a member of this
+        team.
         """
 
-    def setMembershipStatus(person, status, expires=None, reviewer=None,
-                            comment=None):
-        """Set the status of the person's membership on this team.
+    def setMembershipData(person, status, reviewer, expires=None,
+                          comment=None):
+        """Set the attributes of the person's membership on this team.
 
-        Also set all other attributes of TeamMembership, which are <comment>,
-        <reviewer> and <dateexpires>. This method will ensure that we only
-        allow the status transitions specified in the TeamMembership spec.
-        It's also responsible for filling/cleaning the TeamParticipation
-        table when the transition requires it and setting the expiration
-        date, reviewer and reviewercomment.
+        Set the status, dateexpires, reviewer and comment, where reviewer is
+        the user responsible for this status change and comment is the comment
+        left by the reviewer for the change.
+        
+        This method will ensure that we only allow the status transitions
+        specified in the TeamMembership spec. It's also responsible for
+        filling/cleaning the TeamParticipation table when the transition
+        requires it.
         """
 
     def getTeamAdminsEmailAddresses():
@@ -655,6 +662,12 @@ class ITeam(IPerson):
 
     The teamowner should never be None.
     """
+
+    displayname = StrippedTextLine(
+            title=_('Display Name'), required=True, readonly=False,
+            description=_(
+                "This team's name as you would like it displayed throughout "
+                "Launchpad."))
 
 
 class IPersonSet(Interface):

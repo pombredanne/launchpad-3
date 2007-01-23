@@ -243,11 +243,17 @@
         class="canonical.launchpad.browser.ProductEditView"
         label="Edit details"
         fields="project displayname title summary description homepageurl
-                sourceforgeproject freshmeatproject wikiurl screenshotsurl
-                downloadurl programminglang development_focus"
+                gotchi emblem sourceforgeproject freshmeatproject wikiurl
+                screenshotsurl downloadurl programminglang development_focus"
         permission="launchpad.Edit"
         template="../templates/product-edit.pt"
         lp:url="/$Product.name/+edit">
+        <browser:widget
+           field="emblem"
+           class="canonical.widgets.ImageChangeWidget" />
+        <browser:widget
+           field="gotchi"
+           class="canonical.widgets.ImageChangeWidget" />
     </browser:editform>
 
     <browser:editform
