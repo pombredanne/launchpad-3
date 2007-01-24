@@ -18,13 +18,13 @@ Changes:
  .
    * Version to be rejected from backports for being too young.
 Files: 
- 2d4f976ca05d3fb74783e08f9c52b572 518 devel optional foo_1.0-1.5.dsc
+ 1896452ab238e34afbe51fa29ba688c3 516 devel optional foo_1.0-1.5.dsc
  a19a26e1a4157d1e66cd8b04f181cbcf 625 devel optional foo_1.0-1.5.diff.gz
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.2.2 (GNU/Linux)
+Version: GnuPG v1.4.3 (GNU/Linux)
 
-iD8DBQFEGUc9K8hAFiBoeJURAu/UAKC2q1I76BIixwh47qV3nHRwzdKuiACfQJa1
-xejt2uypOx22twkwu/kSj8w=
-=lQN9
+iD8DBQFFt78+jn63CGxkqMURAliiAJ4+y64HbsKzZ3O3txWHFTl2zMN8OACfXn/K
+VHFuPZkxO7OKFZv1C3uJSy4=
+=vPwZ
 -----END PGP SIGNATURE-----

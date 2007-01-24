@@ -74,8 +74,9 @@ def serialise_bugtask(bugtask):
                 comment.datecreated.strftime('%Y-%m-%dT%H:%M:%SZ'))
         addnode(comment_node, 'text', comment.text_for_display)
         for attachment in comment.bugattachments:
-            attachment_node = ET.SubElement(comment_node, 'attachment',
-                                            href=attachment.libraryfile.url)
+            attachment_node = ET.SubElement(
+                comment_node, 'attachment',
+                href=attachment.libraryfile.http_url)
             attachment_node.text = attachment_node.tail = '\n'
             addnode(attachment_node, 'type', attachment.type.name)
             addnode(attachment_node, 'filename',

@@ -155,13 +155,8 @@ class POMsgSet(SQLBase):
         """See IPOMsgSet."""
         for plural_index in range(self.pluralforms):
             selection = self.getSelection(plural_index)
-            if selection is not None:
-                # XXX: CarlosPerelloMarin 20061201: This sync is needed to help
-                # tests to avoid cache problems. See bug #74025 for more info.
-                selection.sync()
-                if (selection.activesubmission is not None and
-                    selection.date_reviewed > timestamp):
-                    return True
+            if selection is not None and selection.isNewerThan(timestamp):
+                return True
         return False
 
     def getSelection(self, pluralform):
@@ -262,6 +257,7 @@ class POMsgSet(SQLBase):
                     selection.activesubmission = None
                     selection.reviewer = person
                     selection.date_reviewed = UTC_NOW
+                    selection.sync()
 
         # now loop through the translations and submit them one by one
         for index in fixed_new_translations.keys():
@@ -395,9 +391,21 @@ class POMsgSet(SQLBase):
                   not force_suggestion):
                 # activesubmission is updated only if the translation is
                 # valid and it's an editor.
+
+                # XXX 20070115 DaniloSegan:  selection.activesubmission
+                # is not really the  latestsubmission, but for now use
+                # this hack to get POFile.validExportCache() to work as we
+                # want. We at least know that the activesubmission will be
+                # pointing to the POMsgSet that was last updated, and that's
+                # enough for POFile.validExportCache to make the right
+                # decision (though not correct in terms of what the data
+                # model would mandate).  See also bug #78501.
+                self.pofile.latestsubmission = selection.activesubmission
+
                 selection.activesubmission = None
                 selection.reviewer = person
                 selection.date_reviewed = UTC_NOW
+                selection.sync()
 
         # If nothing was submitted, return None
         if text is None:
@@ -539,6 +547,7 @@ class POMsgSet(SQLBase):
                 selection.activesubmission = submission
                 selection.reviewer = person
                 selection.date_reviewed = UTC_NOW
+                selection.sync()
 
                 # And this is the latest submission that this IPOFile got.
                 self.pofile.latestsubmission = submission

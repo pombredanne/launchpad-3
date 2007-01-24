@@ -7,4 +7,4 @@ every other page on the site.
     'http://launchpad.dev/feedback'
 
     >>> browser.title
-    'Help us improve Launchpad'
+    'Help improve Launchpad'

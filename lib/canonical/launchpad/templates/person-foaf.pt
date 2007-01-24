@@ -7,7 +7,7 @@
         <foaf:name tal:content="context/displayname">Display Name</foaf:name>
         <foaf:nick tal:content="context/name">Nick name</foaf:nick>
         <foaf:img tal:condition="context/gotchi"
-                  tal:attributes="rdf:resource context/gotchi/url" />
+                  tal:attributes="rdf:resource context/gotchi/http_url" />
         <foaf:mbox_sha1sum
             tal:condition="context/preferredemail"
             tal:content="context/preferredemail_sha1"
@@ -29,7 +29,7 @@
         </foaf:name>
         <foaf:nick tal:content="context/name">Nick name</foaf:nick>
         <foaf:img tal:condition="context/emblem"
-                  tal:attributes="rdf:resource context/emblem/url" />
+                  tal:attributes="rdf:resource context/emblem/http_url" />
         <foaf:member tal:repeat="member context/allmembers">
             <foaf:Person>
                 <foaf:name tal:content="member/displayname">

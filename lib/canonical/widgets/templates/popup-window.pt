@@ -23,7 +23,7 @@
         </script>
     </head>
     <body onLoad="document.searchform.search.focus()">
-        <div tal:define="batch view/search">
+        <div tal:define="batchnav view/search">
             <h1 tal:content="view/title">Title</h1>
 
             <form method="GET" name="searchform">
@@ -39,9 +39,9 @@
             <table tal:condition="view/hasMoreThanOnePage">
                 <tr>
                     <th>
-                        <a tal:attributes="href batch/prevBatchURL">&larr;</a>
+                        <a tal:attributes="href batchnav/prevBatchURL">&larr;</a>
                     </th>
-                    <tal:x repeat="page_link batch/batchPageURLs">
+                    <tal:x repeat="page_link batchnav/batchPageURLs">
                         <th tal:condition="python:not
                                 str(page_link.keys()[0]).startswith('_')">
                             <a tal:attributes="href
@@ -50,12 +50,12 @@
                         </th>
                     </tal:x>
                     <th>
-                        <a tal:attributes="href batch/nextBatchURL">&rarr;</a>
+                        <a tal:attributes="href batchnav/nextBatchURL">&rarr;</a>
                     </th>
                 </tr>
             </table>
             <dl>
-                <tal:x repeat="item view/currentTokenizedBatch">
+                <tal:x repeat="item batchnav/currentBatch">
                     <dt>
                         <a href="#" title="Click to select"
                             tal:content="item/token"
