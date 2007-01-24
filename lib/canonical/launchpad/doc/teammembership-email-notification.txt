@@ -233,7 +233,7 @@ ITeamMembership.sendExpirationWarningEmail to do its job.
     >>> print notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
     Hi Mark Shuttleworth
     <BLANKLINE>
-    On 2050-03-03, 2250 weeks from now, your membership of the
+    On 2050-03-03, ... weeks from now, your membership of the
     Ubuntu Team (ubuntu-team) Launchpad team is due to expire.
     <http://launchpad.dev/~ubuntu-team>
     <BLANKLINE>
@@ -263,7 +263,7 @@ ITeamMembership.sendExpirationWarningEmail to do its job.
     >>> print notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
     Hi,
     <BLANKLINE>
-    On 2049-02-03, 2194 weeks from now, the membership of
+    On 2049-02-03, ... weeks from now, the membership of
     Ubuntu Team (ubuntu-team) (which you are the owner of) in the
     GuadaMen (guadamen) Launchpad team is due to expire.
     <http://launchpad.dev/~guadamen>

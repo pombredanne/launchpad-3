@@ -66,6 +66,11 @@ class TeamMembership(SQLBase):
 
     def sendExpirationWarningEmail(self):
         """See ITeamMembership"""
+        assert self.dateexpires is not None, (
+            'This membership has no expiration date')
+        assert self.dateexpires > datetime.now(pytz.timezone('UTC')), (
+            "This membership's expiration date must be in the future: %s"
+            % self.dateexpires.strftime('%Y-%m-%d'))
         member = self.person
         if member.isTeam():
             to_addrs = contactEmailAddresses(member.teamowner)
