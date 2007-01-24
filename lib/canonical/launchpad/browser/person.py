@@ -22,7 +22,12 @@ __all__ = [
     'PersonSpecWorkLoadView',
     'PersonSpecFeedbackView',
     'PersonChangePasswordView',
+    'PersonCodeOfConductEditView',
     'PersonEditView',
+    'PersonEditWikiNamesView',
+    'PersonEditJabberIDsView',
+    'PersonEditIRCNicknamesView',
+    'PersonEditSSHKeysView',
     'PersonEditHomePageView',
     'PersonEmblemView',
     'PersonAssignedBugTaskSearchListingView',
@@ -1173,11 +1178,6 @@ class PersonLanguagesView(LaunchpadView):
 class PersonView(LaunchpadView):
     """A View class used in almost all Person's pages."""
 
-    def initialize(self):
-        self.info_message = None
-        self.error_message = None
-        self._karma_categories = None
-
     @cachedproperty
     def openpolls(self):
         assert self.context.isTeam()
@@ -1304,9 +1304,13 @@ class PersonView(LaunchpadView):
             keys.append("%s %s %s" % (type_name, key.keytext, key.comment))
         return "\n".join(keys)
 
+
+class PersonCodeOfConductEditView(LaunchpadView):
+
     def performCoCChanges(self):
         """Make changes to code-of-conduct signature records for this
-        person."""
+        person.
+        """
         sig_ids = self.request.form.get("DEACTIVATE_SIGNATURE")
 
         if sig_ids is not None:
@@ -1324,71 +1328,8 @@ class PersonView(LaunchpadView):
 
             return True
 
-    def processIRCForm(self):
-        """Process the IRC nicknames form."""
-        if self.request.method != "POST":
-            # Nothing to do
-            return ""
 
-        form = self.request.form
-        for ircnick in self.context.ircnicknames:
-            # XXX: We're exposing IrcID IDs here because that's the only
-            # unique column we have, so we don't have anything else that we
-            # can use to make field names that allow us to uniquely identify
-            # them. -- GuilhermeSalgado 25/08/2005
-            if form.get('remove_%d' % ircnick.id):
-                ircnick.destroySelf()
-            else:
-                nick = form.get('nick_%d' % ircnick.id)
-                network = form.get('network_%d' % ircnick.id)
-                if not (nick and network):
-                    return "Neither Nickname nor Network can be empty."
-                ircnick.nickname = nick
-                ircnick.network = network
-
-        nick = form.get('newnick')
-        network = form.get('newnetwork')
-        if nick or network:
-            if nick and network:
-                getUtility(IIrcIDSet).new(self.context, network, nick)
-            else:
-                self.newnick = nick
-                self.newnetwork = network
-                return "Neither Nickname nor Network can be empty."
-
-        return ""
-
-    def processJabberForm(self):
-        """Process the Jabber ID form."""
-        if self.request.method != "POST":
-            # Nothing to do
-            return ""
-
-        form = self.request.form
-        for jabber in self.context.jabberids:
-            if form.get('remove_%s' % jabber.jabberid):
-                jabber.destroySelf()
-            else:
-                jabberid = form.get('jabberid_%s' % jabber.jabberid)
-                if not jabberid:
-                    return "You cannot save an empty Jabber ID."
-                jabber.jabberid = jabberid
-
-        jabberid = form.get('newjabberid')
-        if jabberid:
-            jabberset = getUtility(IJabberIDSet)
-            existingjabber = jabberset.getByJabberID(jabberid)
-            if existingjabber is None:
-                jabberset.new(self.context, jabberid)
-            elif existingjabber.person != self.context:
-                return ('The Jabber ID %s is already registered by '
-                        '<a href="%s">%s</a>.'
-                        % (jabberid, canonical_url(existingjabber.person),
-                           cgi.escape(existingjabber.person.browsername)))
-            else:
-                return 'The Jabber ID %s already belongs to you.' % jabberid
-
-        return ""
+class PersonEditWikiNamesView(LaunchpadView):
 
     def _sanitizeWikiURL(self, url):
         """Strip whitespaces and make sure :url ends in a single '/'."""
@@ -1466,8 +1407,86 @@ class PersonView(LaunchpadView):
 
         return ""
 
+
+class PersonEditIRCNicknamesView(LaunchpadView):
+
+    def processIRCForm(self):
+        """Process the IRC nicknames form."""
+        if self.request.method != "POST":
+            # Nothing to do
+            return ""
+
+        form = self.request.form
+        for ircnick in self.context.ircnicknames:
+            # XXX: We're exposing IrcID IDs here because that's the only
+            # unique column we have, so we don't have anything else that we
+            # can use to make field names that allow us to uniquely identify
+            # them. -- GuilhermeSalgado 25/08/2005
+            if form.get('remove_%d' % ircnick.id):
+                ircnick.destroySelf()
+            else:
+                nick = form.get('nick_%d' % ircnick.id)
+                network = form.get('network_%d' % ircnick.id)
+                if not (nick and network):
+                    return "Neither Nickname nor Network can be empty."
+                ircnick.nickname = nick
+                ircnick.network = network
+
+        nick = form.get('newnick')
+        network = form.get('newnetwork')
+        if nick or network:
+            if nick and network:
+                getUtility(IIrcIDSet).new(self.context, network, nick)
+            else:
+                self.newnick = nick
+                self.newnetwork = network
+                return "Neither Nickname nor Network can be empty."
+
+        return ""
+
+
+class PersonEditJabberIDsView(LaunchpadView):
+
+    def processJabberForm(self):
+        """Process the Jabber ID form."""
+        if self.request.method != "POST":
+            # Nothing to do
+            return ""
+
+        form = self.request.form
+        for jabber in self.context.jabberids:
+            if form.get('remove_%s' % jabber.jabberid):
+                jabber.destroySelf()
+            else:
+                jabberid = form.get('jabberid_%s' % jabber.jabberid)
+                if not jabberid:
+                    return "You cannot save an empty Jabber ID."
+                jabber.jabberid = jabberid
+
+        jabberid = form.get('newjabberid')
+        if jabberid:
+            jabberset = getUtility(IJabberIDSet)
+            existingjabber = jabberset.getByJabberID(jabberid)
+            if existingjabber is None:
+                jabberset.new(self.context, jabberid)
+            elif existingjabber.person != self.context:
+                return ('The Jabber ID %s is already registered by '
+                        '<a href="%s">%s</a>.'
+                        % (jabberid, canonical_url(existingjabber.person),
+                           cgi.escape(existingjabber.person.browsername)))
+            else:
+                return 'The Jabber ID %s already belongs to you.' % jabberid
+
+        return ""
+
+
+class PersonEditSSHKeysView(LaunchpadView):
+
+    info_message = None
+    error_message = None
+
     # restricted set of methods to be proxied by form_action()
-    permitted_actions = ['add_ssh', 'remove_ssh']
+    permitted_actions = ('add_ssh', 'remove_ssh')
 
     def form_action(self):
         if self.request.method != "POST":
