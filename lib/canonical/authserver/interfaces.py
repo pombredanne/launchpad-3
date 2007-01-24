@@ -150,6 +150,12 @@ class IHostedBranchStorage(Interface):
         :returns: the ID for the new branch.
         """
 
+    def requestMirror(branchID):
+        """Mark a branch as needing to be mirrored.
+
+        :param branchID: a branch ID.
+        """
+
 
 class IBranchDetailsStorage(Interface):
     """An interface for updating the status of branches in Launchpad.
