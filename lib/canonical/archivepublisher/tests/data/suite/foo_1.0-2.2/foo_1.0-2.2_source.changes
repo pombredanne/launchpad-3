@@ -18,13 +18,13 @@ Changes:
  .
    * Mmm update which makes foo nicer.
 Files: 
- ad46986754c5077df1449a0da019eda7 516 devel optional foo_1.0-2.2.dsc
+ 12e3113ae1bc7a1af39ece087158293a 516 devel optional foo_1.0-2.2.dsc
  0c397c3bb061d4d6679654cc13dc0492 694 devel optional foo_1.0-2.2.diff.gz
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.3 (GNU/Linux)
 
-iD8DBQFFt40N2yWXVgK6XvYRAhMdAKC87tRzDuKal79NK4ci1Y2gPq19DACeN9h1
-if1MlJsXwvRaBSzf8XVc+Ug=
-=nbhh
+iD8DBQFFt8FLjn63CGxkqMURAk2zAJ44HR7fRbvf8jBAh1mA5TH/3UU5XQCfUNHT
+JcgfN/QdB3L974Ed6OGK0wI=
+=YP+9
 -----END PGP SIGNATURE-----

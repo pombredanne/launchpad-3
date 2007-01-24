@@ -18,7 +18,7 @@ Changes:
  .
    * Initial version
 Files: 
- 4911c1bb96e2cd5bae148e608332ad12 512 devel optional foo_1.0-1.dsc
+ 2ae219078f04a8752dd5a2f174c45a5d 512 devel optional foo_1.0-1.dsc
  4a7a1ab59ed8f9f1021825ba4b7ea826 160 devel optional foo_1.0.orig.tar.gz
  56da5f87db74ac5964d00c917c9d5a2d 563 devel optional foo_1.0-1.diff.gz
  0125429505f09e607fa74acbef511c3b 654 devel optional foo_1.0-1_i386.deb
@@ -26,7 +26,7 @@ Files:
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.3 (GNU/Linux)
 
-iD8DBQFFt4u52yWXVgK6XvYRAleLAJ95iiMP/gXR7xZ/qKrpC94YoRKrhQCfZzjy
-MtI4EyqVd5AuI/PWxWeOF1I=
-=XaST
+iD8DBQFFt7/cjn63CGxkqMURAnzWAJ4zUilzy3G6G2q73GjgLty0hH4L2gCdFxOn
+aJ4Z+HNb0Qvq4C4JYOeeIWg=
+=aGiQ
 -----END PGP SIGNATURE-----

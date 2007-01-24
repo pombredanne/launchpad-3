@@ -18,13 +18,13 @@ Changes:
  .
    * Should be fine
 Files: 
- 16464acc732047222cf9e4e7e5027c1b 512 devel optional foo_1.0-3.dsc
+ d97ac6a49200096c9da799388ab46981 512 devel optional foo_1.0-3.dsc
  8a1a373fe3cddf0e2af2e32cb234613d 656 devel optional foo_1.0-3.diff.gz
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.3 (GNU/Linux)
 
-iD8DBQFFt4102yWXVgK6XvYRAi8mAJ4o9yc6kyrxvgYSL31n/tvZSERSTQCfd1Mg
-0l64DgiMUVTMPu1iGUhJhIg=
-=Su7I
+iD8DBQFFt8Gnjn63CGxkqMURAk+yAKCFdkc6bsAxdJ8ur7egdMhCzNXLHwCeMEw7
+myKh6/iuWx7vSJxoq2/1Jqw=
+=yyej
 -----END PGP SIGNATURE-----

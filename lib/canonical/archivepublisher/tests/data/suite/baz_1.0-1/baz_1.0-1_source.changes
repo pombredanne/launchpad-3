@@ -18,13 +18,14 @@ Changes:
  .
    * Initial version
 Files: 
- dd750873adcde92253798a1627cb9eed 512 devel optional baz_1.0-1.dsc
+ 50eaf003ebbb8d966568f2aa29cafe9c 512 devel optional baz_1.0-1.dsc
  0b76d55ba3a0664e47b276fd616976f4 166 devel optional baz_1.0.orig.tar.gz
  9c7965de3fdb4b0ff2af81c73b300103 555 devel optional baz_1.0-1.diff.gz
+
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.3 (GNU/Linux)
 
-iD8DBQFFt4nm2yWXVgK6XvYRAm8qAJ0cdDNZqWaZ1pX/9HENqJU1422JPwCbBK29
-scZ0PV2nMT0K+3Fw82x9sVI=
-=DAol
+iD8DBQFFt7Iijn63CGxkqMURAlfjAJ40tC19LGx/DTlRQckIsu7ol+8YIQCfex7x
+WSmObE76/yfYFIU9Dh4kkKc=
+=BEMI
 -----END PGP SIGNATURE-----

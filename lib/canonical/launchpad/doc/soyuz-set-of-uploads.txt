@@ -44,13 +44,10 @@ relevant launchpad person.
   >>> from canonical.zeca.ftests.harness import ZecaTestSetup
   >>> ZecaTestSetup().setUp()
 
-  >>> from canonical.launchpad.database import GPGKey, Person
-  >>> from canonical.lp.dbschema import GPGKeyAlgorithm
-  >>> dsa = GPGKeyAlgorithm.D
-  >>> g = GPGKey(owner=Person.byName('name16'), keyid='DFD20543',
-  ...            fingerprint='A419AE861E88BC9E04B9C26FBA2B9389DFD20543',
-  ...            keysize=1024, algorithm=dsa, active=True, can_encrypt=True)
+Import public keyring into current LPDB.
 
+  >>> from canonical.launchpad.ftests import import_public_test_keys
+  >>> import_public_test_keys()
 
 Having set up that infrastructure we need to prepare a breezy distrorelease
 for the ubuntutest distribution.
@@ -308,8 +305,9 @@ Remove rejected uploads.
 Force weird behavior with rfc2047 sentences containing '.' on
 bar_1.0-4, which caused bug # 41102.
 
-  >>> p = Person.byName('name16')
-  >>> p.displayname = "Foo B. Bar"
+  >>> from canonical.launchpad.interfaces import IPersonSet
+  >>> name16 = getUtility(IPersonSet).getByName('name16')
+  >>> name16.displayname = "Foo B. Bar"
 
   >>> from canonical.database.sqlbase import flush_database_updates
   >>> flush_database_updates()
@@ -330,8 +328,9 @@ Check the email recipient for displayname containing special chars,
 
 Revert changes:
 
-  >>> p = Person.byName('name16')
-  >>> p.displayname = "Foo Bar"
+  >>> name16.displayname = "Foo Bar"
+  >>> flush_database_updates()
+  >>> transaction.commit()
 
 Check if we forcibly add the changer as recipient for "sync" uploads,
 which contains unsigned changesfile. Ensure it sends email to the
