@@ -269,7 +269,8 @@ expire on that date or before.
     >>> when = sabdfl_on_ubuntu_team.dateexpires + timedelta(days=1)
     >>> [(membership.person.name, membership.team.name)
     ...  for membership in membershipset.getMembershipsToExpire(when=when)]
-    [(u'sabdfl', u'ubuntu-team'), (u'name16', u'admins')]
+    [(u'sabdfl', u'ubuntu-team'), (u'name16', u'admins'),
+     (u'ubuntu-team', u'guadamen')]
 
 Now we commit the changes and run the cronscript.
 XXX: flush_database_updates() shouldn't be needed. This seems to be
