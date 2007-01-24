@@ -14,7 +14,7 @@ from optparse import OptionParser
 
 from zope.component import getUtility
 
-from contrib.glock import GlobalLock, GlobalLockError
+from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 from canonical.lp import initZopeless, READ_COMMITTED_ISOLATION
 from canonical.launchpad.interfaces import IDistributionSet
@@ -51,7 +51,7 @@ def main(argv):
     lockfile = GlobalLock(options.lockfilename, logger=logger_object)
     try:
         lockfile.acquire()
-    except GlobalLockError:
+    except LockAlreadyAcquired:
         logger_object.error("lockfile %s already exists, exiting",
                             options.lockfilename)
         return 1

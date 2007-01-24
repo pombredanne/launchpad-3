@@ -12,7 +12,7 @@ import _pythonpath
 import sys
 from optparse import OptionParser
 
-from contrib.glock import GlobalLock, GlobalLockError
+from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 from zope.component import getUtility
 
@@ -78,7 +78,7 @@ if __name__ == '__main__':
     locker = GlobalLock(_default_lockfile, logger=log)
     try:
         locker.acquire()
-    except GlobalLockError:
+    except LockAlreadyAcquired:
         log.info("Cannot acquire lock.")
         # XXX cprov 20060625: do not scream on lock conflicts during the
         # edgy rebuild time.

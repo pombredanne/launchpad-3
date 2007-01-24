@@ -15,7 +15,7 @@ from optparse import OptionParser
 
 from zope.component import getUtility
 
-from contrib.glock import GlobalLock, GlobalLockError
+from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 from sourcerer.deb.version import Version
 
@@ -96,7 +96,7 @@ if __name__ == '__main__':
     locker = GlobalLock(_default_lockfile, logger=log)
     try:
         locker.acquire()
-    except GlobalLockError:
+    except LockAlreadyAcquired:
         log.error("Cannot Acquire Lock.")
         sys.exit(1)
 

@@ -16,7 +16,7 @@ import optparse
 
 import _pythonpath
 
-from contrib.glock import GlobalLock, GlobalLockError
+from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 from canonical.config import config
 from canonical.launchpad.scripts import (
@@ -43,7 +43,7 @@ def main(argv):
     lockfile = GlobalLock(_default_lock_file, logger=log)
     try:
         lockfile.acquire()
-    except GlobalLockError:
+    except LockAlreadyAcquired:
         log.error("lockfile %s already exists, exiting", _default_lock_file)
         sys.exit(1)
 

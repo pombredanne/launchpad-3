@@ -12,7 +12,7 @@ import sys
 import logging
 from optparse import OptionParser
 
-from contrib.glock import GlobalLock, GlobalLockError
+from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts import (
@@ -49,7 +49,7 @@ def main(argv):
     lockfile = GlobalLock(options.lockfilename, logger=log)
     try:
         lockfile.acquire()
-    except GlobalLockError:
+    except LockAlreadyAcquired:
         log.error("lockfile %s already exists, exiting", options.lockfilename)
         return 1
 

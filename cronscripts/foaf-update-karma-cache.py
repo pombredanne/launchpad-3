@@ -6,7 +6,7 @@ import _pythonpath
 import sys
 from optparse import OptionParser
 
-from contrib.glock import GlobalLock, GlobalLockError
+from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 from canonical.config import config
 from canonical.lp import initZopeless, AUTOCOMMIT_ISOLATION
@@ -191,7 +191,7 @@ if __name__ == '__main__':
     lockfile = GlobalLock(_default_lock_file, logger=log)
     try:
         lockfile.acquire()
-    except GlobalLockError:
+    except LockAlreadyAcquired:
         log.error("lockfile %s already exists, exiting", _default_lock_file)
         sys.exit(1)
 

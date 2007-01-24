@@ -15,7 +15,7 @@ import _pythonpath
 import sys, logging
 from optparse import OptionParser
 
-from contrib.glock import GlobalLock, GlobalLockError
+from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 from canonical.launchpad.scripts import logger_options, logger
 from canonical.librarian import librariangc
@@ -57,7 +57,7 @@ def main():
     lockfile = GlobalLock(_default_lock_file, logger=log)
     try:
         lockfile.acquire()
-    except GlobalLockError:
+    except LockAlreadyAcquired:
         log.error('Lockfile %s in use', _default_lock_file)
         sys.exit(1)
 

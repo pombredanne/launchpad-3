@@ -13,7 +13,7 @@ from optparse import OptionParser
 # zope bits
 from zope.component import getUtility
 
-from contrib.glock import GlobalLock, GlobalLockError
+from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 # canonical launchpad modules
 from canonical.lp import initZopeless
@@ -221,7 +221,7 @@ def main(args):
     lockfile = GlobalLock(lockfile_path)
     try:
         lockfile.acquire()
-    except GlobalLockError:
+    except LockAlreadyAcquired:
         logger.error('Lockfile %s already exists, exiting.' % lockfile_path)
         return 0
 

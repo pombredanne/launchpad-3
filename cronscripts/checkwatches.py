@@ -8,7 +8,7 @@ import _pythonpath
 
 from optparse import OptionParser
 
-from contrib.glock import GlobalLock, GlobalLockError
+from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 from zope.component import getUtility
 
@@ -74,7 +74,7 @@ if __name__ == '__main__':
     lockfile = GlobalLock(options.lockfilename, logger=log)
     try:
         lockfile.acquire()
-    except GlobalLockError:
+    except LockAlreadyAcquired:
         log.error('Lockfile %s in use' % options.lockfilename)
         sys.exit(1)
     try:

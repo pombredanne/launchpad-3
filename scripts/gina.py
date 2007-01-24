@@ -25,7 +25,7 @@ import psycopg
 from optparse import OptionParser
 from datetime import timedelta
 
-from contrib.glock import GlobalLock, GlobalLockError
+from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 from canonical.lp import initZopeless, dbschema
 from canonical.config import config
@@ -92,7 +92,7 @@ def main():
     lockfile = GlobalLock(options.lockfile, logger=log)
     try:
         lockfile.acquire()
-    except GlobalLockError:
+    except LockAlreadyAcquired:
         log.info('Lockfile %s already locked. Exiting.', options.lockfile)
         sys.exit(1)
 

@@ -14,7 +14,7 @@ import _pythonpath
 import sys
 from optparse import OptionParser
 
-from contrib.glock import GlobalLock, GlobalLockError
+from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 from zope.component import getUtility
 
@@ -39,7 +39,7 @@ def main():
     lockfile = GlobalLock(_default_lock_file, logger=log)
     try:
         lockfile.acquire()
-    except GlobalLockError:
+    except LockAlreadyAcquired:
         log.error('Lockfile %s in use', _default_lock_file)
         return 1
 
