@@ -99,6 +99,8 @@ class Branch(SQLBase):
         joinColumn='branch',
         orderBy='id')
 
+    mirror_request_time = UtcDateTimeCol(default=None)
+
     @property
     def related_bugs(self):
         """See IBranch."""

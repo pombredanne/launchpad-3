@@ -12,6 +12,7 @@ COMMENT ON COLUMN Branch.last_mirrored_id IS 'The revision ID of the branch when
 COMMENT ON COLUMN Branch.last_scanned IS 'The time when the branch was last scanned.';
 COMMENT ON COLUMN Branch.last_scanned_id IS 'The revision ID of the branch when it was last scanned.';
 COMMENT ON COLUMN Branch.revision_count IS 'The number of revisions in the associated bazaar branch revision_history.';
+COMMENT ON COLUMN Branch.mirror_request_time IS 'The time when a user requested that we mirror this branch (NULL if not requested). This will be set automatically by pushing to a hosted branch. Once mirrored, it will be set back to NULL.';
 
 /* BranchSubscription*/
 
