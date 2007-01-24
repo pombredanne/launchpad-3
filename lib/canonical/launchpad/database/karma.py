@@ -6,26 +6,26 @@ __all__ = [
     'KarmaAction',
     'KarmaActionSet',
     'KarmaCache',
+    'KarmaCacheSet',
     'KarmaPersonCategoryCacheView',
     'KarmaTotalCache',
     'KarmaCategory',
     'KarmaContextMixin',
     ]
 
-# Zope interfaces
 from zope.interface import implements
 
-# SQLObject imports
 from sqlobject import (
     DateTimeCol, ForeignKey, IntCol, StringCol, SQLObjectNotFound,
     SQLMultipleJoin)
+from sqlobject.sqlbuilder import AND
 
 from canonical.database.sqlbase import SQLBase, sqlvalues, cursor
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
     IKarma, IKarmaAction, IKarmaActionSet, IKarmaCache, IKarmaCategory,
     IKarmaTotalCache, IKarmaPersonCategoryCacheView, IKarmaContext, IProduct,
-    IDistribution)
+    IDistribution, IKarmaCacheSet, NotFoundError)
 
 
 class Karma(SQLBase):
@@ -115,6 +115,68 @@ class KarmaCache(SQLBase):
     sourcepackagename = ForeignKey(
         dbName='sourcepackagename', foreignKey='SourcePackageName',
         notNull=False)
+
+
+class KarmaCacheSet:
+    """See IKarmaCacheSet."""
+    implements(IKarmaCacheSet)
+
+    def new(self, value, person_id, category_id, product_id=None, distribution_id=None,
+            sourcepackagename_id=None):
+        """See IKarmaCacheSet."""
+        return KarmaCache(
+            karmavalue=value, person=person_id, category=category_id,
+            product=product_id, distribution=distribution_id,
+            sourcepackagename=sourcepackagename_id)
+
+    def updateKarmaValue(self, value, person_id, category_id, product_id=None,
+                         distribution_id=None, sourcepackagename_id=None):
+        """See IKarmaCacheSet."""
+        entry = self._getEntry(
+            person_id=person_id, category_id=category_id, product_id=product_id,
+            distribution_id=distribution_id, sourcepackagename_id=sourcepackagename_id)
+        if entry is None:
+            raise NotFoundError("KarmaCache not found: %s" % vars())
+        else:
+            entry.karmavalue = value
+            entry.syncUpdate()
+
+    def deleteEntry(self, person_id, category_id, product_id=None, distribution_id=None,
+                    sourcepackagename_id=None):
+        """See IKarmaCacheSet."""
+        entry = self._getEntry(
+            person_id=person_id, category_id=category_id, product_id=product_id,
+            distribution_id=distribution_id, sourcepackagename_id=sourcepackagename_id)
+        if entry is None:
+            raise NotFoundError("KarmaCache not found: %s" % vars())
+        else:
+            entry.destroySelf()
+
+    def _getEntry(self, person_id, category_id, product_id=None, distribution_id=None,
+                  sourcepackagename_id=None):
+        """Return the KarmaCache entry with the given arguments.
+        
+        Return None if it's not found.
+        """
+        # Can't use selectBy() because product/distribution/sourcepackagename
+        # may be None.
+        query = AND(
+            KarmaCache.q.personID == person_id,
+            KarmaCache.q.categoryID == category_id,
+            KarmaCache.q.productID == product_id,
+            KarmaCache.q.distributionID == distribution_id,
+            KarmaCache.q.sourcepackagenameID == sourcepackagename_id)
+        results = KarmaCache.select(query)
+        if results.count() == 0:
+            return None
+        elif results.count() == 1:
+            return results[0]
+        else:
+            raise AssertionError(
+                "Found more than one KarmaCache entry for person=%d, "
+                "category=%d, product=%d, distro=%d, package=%d"
+                % (person_id, category_id, product_id, distribution_id,
+                   sourcepackagename_id))
 
 
 class KarmaPersonCategoryCacheView(SQLBase):
