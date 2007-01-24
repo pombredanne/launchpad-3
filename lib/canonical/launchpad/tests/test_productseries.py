@@ -94,10 +94,12 @@ class TestImportUpdated(ImportdTestCase):
 
     def testLastSyncedIsNone(self):
         # If datelastlastsynced is None and import_branch.last_mirrored is not
-        # None, set datelastsynced. This situation happens the first time we
-        # try to record datelastsynced for an import that has already been
-        # mirrored before the code setting datelastsynced was put in
-        # production.
+        # None, set datelastsynced.
+        #
+        # Previously, datelastsynced was not set, so it was NULL everywhere,
+        # even for imports that were already published (and thus had a non-NULL
+        # import_branch.last_mirrored). This is a data transition edge case,
+        # not something that happens because of the current logic.
         series = self.series()
         series.datelastsynced = None
         UTC = pytz.timezone('UTC')

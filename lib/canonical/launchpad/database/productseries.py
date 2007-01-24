@@ -415,19 +415,19 @@ class ProductSeries(SQLBase, BugTargetBase):
             raise NoImportBranchError(
                 "importUpdated called for series %d,"
                 " but import_branch is NULL." % (self.id,))
-        if self.datepublishedsync is not None:
-            if self.import_branch.last_mirrored is None:
-                raise DatePublishedSyncError(
-                    "importUpdated called for series %d,"
-                    " where datepublishedsync is set,"
-                    " but import_branch.last_mirror is NULL."
-                    % (self.id,))
+        if (self.import_branch.last_mirrored is None
+                and self.datepublishedsync is not None):
+            raise DatePublishedSyncError(
+                "importUpdated called for series %d,"
+                " where datepublishedsync is set,"
+                " but import_branch.last_mirror is NULL."
+                % (self.id,))
         if self.datelastsynced is None:
+            # datepublishedsync SHOULD be None, but we reset it just in case.
             self.datepublishedsync = None
-        elif self.import_branch.last_mirrored is None:
-            assert series.datepublishedsync is None, (
-                'we did not raise DatePublishedSyncError')
-        elif self.datelastsynced < self.import_branch.last_mirrored:
+        if (self.datelastsynced is not None
+                and self.importd_branch.last_mirrored is not None
+                and self.datelastsynced < self.import_branch.last_mirrored):
             self.datepublishedsync = self.datelastsynced
         self.datelastsynced = UTC_NOW
 
