@@ -428,7 +428,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
     def _createBranchInteraction(self, transaction, personID, productID,
                                  branchName):
         """The interaction for createBranch."""
-        # Convert psuedo-None to real None (damn XML-RPC!)
+        # Convert pseudo-None to real None (damn XML-RPC!)
         if productID == '':
             productID = None
 
@@ -444,6 +444,14 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             % sqlvalues(branchID, personID, productID, branchName, personID))
         )
         return branchID
+
+    def _requestMirrorInteraction(self, transaction, branchID):
+        """The interaction for requestMirror."""
+        transaction.execute("""
+            UPDATE Branch
+            SET mirror_request_time = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+            WHERE id = %s
+        """ % sqlvalues(branchID))
 
 
 class DatabaseBranchDetailsStorage:

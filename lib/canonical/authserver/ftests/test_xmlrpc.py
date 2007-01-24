@@ -150,7 +150,7 @@ class XMLRPCv2TestCase(LaunchpadTestCase):
 
 
 class BranchAPITestCase(LaunchpadTestCase):
-    """Like XMLRPCv1TestCase, but for the new, simpler, salt-less API."""
+    """Tests for the branch details API."""
     
     def setUp(self):
         LaunchpadTestCase.setUp(self)

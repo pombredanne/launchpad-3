@@ -233,6 +233,33 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
         # This is the salt for Mark's password in the sample data.
         self.salt = '\xf4;\x15a\xe4W\x1f'
 
+    def _getTime(self, row_id):
+        self.cursor.execute("""
+            SELECT mirror_request_time FROM Branch
+            WHERE id = %d""" % row_id)
+        return self.cursor.fetchone()[0]
+
+    def test_initialMirrorRequest(self):
+        # The default 'mirror_request_time' for a newly created hosted branch
+        # should be None.
+        storage = DatabaseUserDetailsStorageV2(None)
+        branchID = storage._createBranchInteraction(self.cursor, 1, None,
+                                                    'foo')
+        self.assertEqual(self._getTime(branchID), None)
+
+    def test_requestMirror(self):
+        # requestMirror should set the mirror_request_time field to be the
+        # current time.
+        hosted_branch_id = 25
+        # make sure the sample data is sane
+        self.assertEqual(self._getTime(hosted_branch_id), None)
+
+        storage = DatabaseUserDetailsStorageV2(None)
+        storage._requestMirrorInteraction(self.cursor, hosted_branch_id)
+        self.cursor.execute("SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
+        current_db_time = self.cursor.fetchone()[0]
+        self.assertEqual(current_db_time, self._getTime(hosted_branch_id))
+
     def test_authUser(self):
         # Authenticating a user with the right password should work
         storage = DatabaseUserDetailsStorage(None)
