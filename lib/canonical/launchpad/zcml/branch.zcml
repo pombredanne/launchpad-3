@@ -101,6 +101,24 @@
     class="canonical.launchpad.browser.BranchReassignmentView"
     template="../templates/object-reassignment.pt" />
 
+  <!-- Subscribe to a branch -->
+  <browser:page
+    name="+subscribe"
+    for="canonical.launchpad.interfaces.IBranch"
+    class="canonical.launchpad.browser.BranchSubscriptionAddView"
+    facet="branches"
+    permission="launchpad.AnyPerson"
+    template="../templates/branch-subscription.pt" />
+
+  <!-- Edit subscription or unsubscribe from a branch -->
+  <browser:page
+    name="+edit-subscription"
+    for="canonical.launchpad.interfaces.IBranch"
+    class="canonical.launchpad.browser.BranchSubscriptionEditView"
+    facet="branches"
+    permission="launchpad.AnyPerson"
+    template="../templates/branch-edit-subscription.pt" />
+
   <!-- BranchSet -->
   <content class="canonical.launchpad.database.BranchSet">
     <allow interface="canonical.launchpad.interfaces.IBranchSet" />

@@ -3,17 +3,17 @@
 A quick helper function to list the subscribed people.
 
   >>> def print_subscribers(contents):
-  ...   portlet = find_tags_by_class(admin_browser.contents, 'people')[0]
-  ...   people = portlet.fetch('a')
-  ...   for person in people:
-  ...     print person.renderContents()
+  ...     portlet = find_tags_by_class(admin_browser.contents, 'people')[0]
+  ...     people = portlet.fetch('a')
+  ...     for person in people:
+  ...         print person.renderContents()
 
 Another to print the informational message.
 
   >>> def print_informational_message(contents):
-  ...    message = find_tags_by_class(contents, 'informational message')
-  ...    if message:
-  ...      print message[0].renderContents()
+  ...     message = find_tags_by_class(contents, 'informational message')
+  ...     if message:
+  ...         print message[0].renderContents()
 
 = Subscribing to Branches =
 
@@ -55,8 +55,13 @@ Now we do want to subscribe, so back to the subscription page.
 
   >>> admin_browser.getLink('Subscribe').click()
 
-By default the attributes for subscription should be set to 
-'Branch attribute notifications only', and '1000 lines'.
+At this stage the defaults that are set for subscriptions
+are fairly arbitrary, so we'll explicitly choose the values.
+
+  >>> level_control = admin_browser.getControl(name='field.notification_level')
+  >>> level_control.value = ['Branch attribute notifications only']
+  >>> diff_control = admin_browser.getControl(name='field.max_diff_lines')
+  >>> diff_control.value = ['1000 lines']
 
 Now, post the subscription form. We should see a message that we have just
 subscribed.

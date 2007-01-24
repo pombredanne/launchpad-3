@@ -301,7 +301,7 @@ class TestBzrSync(BzrSyncTestCase):
                         "+Hello World\n\n")
             self.assertTextEqual('\n'.join(diff_lines), expected)
                              
-            expected = (u"------------------------------------------------------------\n"
+            expected = (u"-"*60 + "\n"
                         "revno: 1\n"
                         "committer: Joe Bloggs <joe@example.com>\n"
                         "branch nick: bzr_branch\n"
@@ -325,7 +325,7 @@ class TestBzrSync(BzrSyncTestCase):
                         "+Foo Bar\n\n")
             self.assertTextEqual('\n'.join(diff_lines), expected)
                              
-            expected = (u"------------------------------------------------------------\n"
+            expected = (u"-"*60 + "\n"
                         "revno: 2\n"
                         "committer: Joe Bloggs <joe@example.com>\n"
                         "branch nick: bzr_branch\n"

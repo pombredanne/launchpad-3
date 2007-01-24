@@ -272,16 +272,11 @@ class BzrSync:
             
         diff_content = StringIO()
         show_diff_trees(tree_old, tree_new, diff_content)
-        lines = diff_content.getvalue().split("\n")
-        numlines = len(lines)
-        return lines
+        return diff_content.getvalue().split("\n")
 
     def get_revision_message(self, bzr_revision):
         outf = StringIO()
-        lf = log_formatter('long',
-                           # show_ids=True,
-                           to_file=outf
-                           )
+        lf = log_formatter('long', to_file=outf)
         rev_id = bzr_revision.revision_id
         rev1 = rev2 = self.bzr_branch.revision_id_to_revno(rev_id)
         if rev1 == 0:

@@ -16,7 +16,6 @@
     <include file="branch.zcml" />
     <include file="branchref.zcml" />
     <include file="branchsubscription.zcml" />
-    <include file="branchtask.zcml" />
     <include file="bugactivity.zcml" />
     <include file="bugattachment.zcml" />
     <include file="bugbranch.zcml" />

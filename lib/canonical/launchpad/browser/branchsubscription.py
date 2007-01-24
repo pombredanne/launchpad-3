@@ -1,6 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-
-"""Branch views."""
+# Copyright 2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -17,12 +15,15 @@ from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget)
 from canonical.widgets import LaunchpadDropdownWidget
 
+
 class _BranchSubscriptionView(LaunchpadFormView):
+
+    """Contains the common functionality of the Add and Edit views."""
     
     schema = IBranchSubscription
     field_names = ['notification_level', 'max_diff_lines']
 
-    SPECIFY_LINES_FOR_LEVELS = (
+    LEVELS_REQUIRING_LINES_SPECIFICATION = (
         BranchSubscriptionNotificationLevel.DIFFSONLY,
         BranchSubscriptionNotificationLevel.FULL)
 
@@ -39,7 +40,7 @@ class _BranchSubscriptionView(LaunchpadFormView):
 
     def add_notification_message(self, initial,
                                  notification_level, max_diff_lines):
-        if notification_level in self.SPECIFY_LINES_FOR_LEVELS:
+        if notification_level in self.LEVELS_REQUIRING_LINES_SPECIFICATION:
             lines_message = '<li>%s</li>' % max_diff_lines.description
         else:
             lines_message = ''
@@ -49,7 +50,7 @@ class _BranchSubscriptionView(LaunchpadFormView):
         self.request.response.addNotification(message)
 
     def optional_max_diff_lines(self, notification_level, max_diff_lines):
-        if notification_level in self.SPECIFY_LINES_FOR_LEVELS:
+        if notification_level in self.LEVELS_REQUIRING_LINES_SPECIFICATION:
             return max_diff_lines
         else:
             return None
@@ -59,8 +60,8 @@ class BranchSubscriptionAddView(_BranchSubscriptionView):
     @action("Subscribe")
     def subscribe(self, action, data):
         notification_level = data['notification_level']
-        max_diff_lines = self.optional_max_diff_lines(notification_level,
-                                                      data['max_diff_lines'])
+        max_diff_lines = self.optional_max_diff_lines(
+            notification_level, data['max_diff_lines'])
 
         self.context.subscribe(self.user, notification_level, max_diff_lines)
         
@@ -70,7 +71,7 @@ class BranchSubscriptionAddView(_BranchSubscriptionView):
 
     @action("Cancel")
     def cancel_edit(self, action, data):
-        "Cancels the request, and takes user back to branch page."
+        "Cancel the request, and take user back to branch page."
     
     
 class BranchSubscriptionEditView(_BranchSubscriptionView):
@@ -82,8 +83,8 @@ class BranchSubscriptionEditView(_BranchSubscriptionView):
             # This is the case of URL hacking or stale page.
             return {}
         else:
-            return { 'notification_level' : subscription.notification_level,
-                     'max_diff_lines' : subscription.max_diff_lines }
+            return {'notification_level' : subscription.notification_level,
+                    'max_diff_lines' : subscription.max_diff_lines}
 
     @action("Unsubscribe")
     def unsubscribe(self, action, data):
@@ -106,5 +107,5 @@ class BranchSubscriptionEditView(_BranchSubscriptionView):
 
     @action("Cancel")
     def cancel_edit(self, action, data):
-        "Cancels the request, and takes user back to branch page."
+        "Cancel the request, and take user back to branch page."
     

@@ -128,7 +128,10 @@ class Branch(SQLBase):
     @property
     def displayname(self):
         """See IBranch."""
-        return self.title or self.unique_name
+        if self.title:
+            return self.title
+        else:
+            return self.unique_name
 
     @property
     def sort_key(self):
@@ -171,7 +174,7 @@ class Branch(SQLBase):
     def subscribe(self, person, notification_level, max_diff_lines):
         """See IBranch."""
         # can't subscribe twice
-        assert(not self.hasSubscription(person))
+        assert not self.hasSubscription(person), "User is already subscribed."
         return BranchSubscription(branch=self, person=person,
                                   notification_level=notification_level,
                                   max_diff_lines=max_diff_lines)
@@ -191,7 +194,7 @@ class Branch(SQLBase):
     def unsubscribe(self, person):
         """See IBranch."""
         subscription = self.getSubscription(person)
-        assert(subscription is not None)
+        assert subscription is not None, "User is not subscribed."
         BranchSubscription.delete(subscription.id)
 
     # revision number manipulation

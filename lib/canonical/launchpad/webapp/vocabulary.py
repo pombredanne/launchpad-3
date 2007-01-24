@@ -357,8 +357,9 @@ def sortkey_ordered_vocab_factory(schema, noshow=[]):
     """
     def factory(context, schema=schema, noshow=noshow):
         """Adapt IDBSchema to IVocabulary."""
-        items = [(item.title, item) for item in
-                 sorted(schema.items, key=operator.attrgetter('sortkey'))
+        items = [(item.title, item)
+                 for item in sorted(
+                     schema.items, key=operator.attrgetter('sortkey'))
                  if item not in noshow]
         return SimpleVocabulary.fromItems(items)
     return factory
