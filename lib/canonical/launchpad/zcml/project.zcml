@@ -4,7 +4,7 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
-    
+
     <!-- Project -->
     <content class="canonical.launchpad.database.Project">
         <allow interface="canonical.launchpad.interfaces.IProject" />
@@ -30,7 +30,8 @@
     <browser:menus
         module="canonical.launchpad.browser.project"
         classes="ProjectFacets ProjectOverviewMenu ProjectBountiesMenu
-                 ProjectSpecificationsMenu ProjectSetContextMenu" />
+                 ProjectSpecificationsMenu ProjectSetContextMenu
+                 ProjectTranslationsMenu" />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProject"
@@ -61,8 +62,12 @@
             lp:url="/projects/$Project.name/+bounties/" />
         <browser:page
             name="+listing-detailed"
-            template="../templates/project-listing-detailed.pt"
-            />
+            template="../templates/project-listing-detailed.pt" />
+        <browser:page
+            name="+translations"
+            facet="translations"
+            template="../templates/project-translations.pt"
+            lp:url="/$Project.name/+translations" />
 
        <!-- Projects portlets -->
        <browser:page
@@ -158,13 +163,13 @@
     <browser:editform
         name="+changetranslators"
         for="canonical.launchpad.interfaces.IProject"
-        facet="overview"
+        facet="translations"
         schema="canonical.launchpad.interfaces.IProject"
         fields="translationgroup translationpermission"
         permission="launchpad.Edit"
         label="Select a new translation group"
-        template="../templates/launchpad-editform.pt"
-        lp:url="/projects/$Project.name/+changetranslators" />
+        template="../templates/project-translators.pt"
+        lp:url="/$Project.name/+changetranslators" />
 
     <browser:editform
         name="+driver"

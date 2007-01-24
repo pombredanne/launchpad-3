@@ -711,6 +711,10 @@ project_rosetta_index = ContextTitle('Rosetta: %s')
 
 project_specs = ContextTitle('Specifications for %s')
 
+project_translations = ContextTitle('Translatable products for %s')
+
+project_translators = ContextTitle('Set translation group for %s')
+
 projects_index = 'Projects registered in Launchpad'
 
 projects_request = 'Rosetta: Request a project'

@@ -183,6 +183,12 @@ class IProject(IHasOwner, IBugTarget, IHasSpecifications):
         """Ensure that the bounty is linked to this project. Return None.
         """
 
+    def translatables():
+        """Return an iterator over products that have resources translatables.
+
+        It also should have IProduct.official_rosetta flag set.
+        """
+
 
 # Interfaces for set
 
