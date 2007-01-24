@@ -14,11 +14,12 @@ from optparse import OptionParser
 
 from zope.component import getUtility
 
+from contrib.glock import GlobalLock, GlobalLockError
+
 from canonical.lp import initZopeless, READ_COMMITTED_ISOLATION
 from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger)
-from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.config import config
 
 default_lock_file = '/var/lock/launchpad-spcache.lock'
@@ -47,12 +48,12 @@ def main(argv):
     logger_object = logger(options, 'launchpad-stats')
 
     # Create a lock file so we don't have two daemons running at the same time.
-    lockfile = LockFile(options.lockfilename, logger=logger_object)
+    lockfile = GlobalLock(options.lockfilename, logger=logger_object)
     try:
         lockfile.acquire()
-    except OSError:
-        logger_object.info("lockfile %s already exists, exiting",
-                           options.lockfilename)
+    except GlobalLockError:
+        logger_object.error("lockfile %s already exists, exiting",
+                            options.lockfilename)
         return 1
 
     try:

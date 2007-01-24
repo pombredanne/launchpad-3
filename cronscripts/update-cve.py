@@ -18,9 +18,10 @@ from optparse import OptionParser
 
 import cElementTree
 
+from contrib.glock import GlobalLock, GlobalLockError
+
 from canonical.lp import initZopeless
 from canonical.config import config
-from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.launchpad.scripts.cveimport import CVEDB_NS, update_one_cve
@@ -85,11 +86,11 @@ def main(log, cvefile=None, cveurl=None):
 if __name__ == '__main__':
     options = parse_options()
     log = logger(options, "updatecve")
-    lockfile = LockFile(options.lockfilename, logger=log)
+    lockfile = GlobalLock(options.lockfilename, logger=log)
     try:
         lockfile.acquire()
-    except OSError:
-        log.info('Lockfile %s in use' % options.lockfilename)
+    except GlobalLockError:
+        log.error('Lockfile %s in use' % options.lockfilename)
         sys.exit(1)
     try:
         main(log, options.cvefile, options.cveurl)

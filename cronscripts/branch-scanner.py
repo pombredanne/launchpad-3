@@ -12,10 +12,11 @@ import sys
 import logging
 from optparse import OptionParser
 
+from contrib.glock import GlobalLock, GlobalLockError
+
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger, log)
-from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.config import config
 
 from canonical.launchpad.scripts.branch_scanner import BranchScanner
@@ -45,11 +46,11 @@ def main(argv):
     logger(options, 'update-branches')
 
     # Create a lock file so we don't have two daemons running at the same time.
-    lockfile = LockFile(options.lockfilename, logger=log)
+    lockfile = GlobalLock(options.lockfilename, logger=log)
     try:
         lockfile.acquire()
-    except OSError:
-        log.info("lockfile %s already exists, exiting", options.lockfilename)
+    except GlobalLockError:
+        log.error("lockfile %s already exists, exiting", options.lockfilename)
         return 1
 
     # We don't want debug messages from bzr at that point.

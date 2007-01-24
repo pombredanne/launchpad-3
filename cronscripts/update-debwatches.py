@@ -13,17 +13,17 @@ from optparse import OptionParser
 # zope bits
 from zope.component import getUtility
 
+from contrib.glock import GlobalLock, GlobalLockError
+
 # canonical launchpad modules
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts import (execute_zcml_for_scripts,
     logger_options, logger as logger_from_options)
     
-from canonical.launchpad.scripts.lockfile import LockFile
-from canonical.lp.dbschema import BugTaskStatus
 from canonical.launchpad.interfaces import (IBugSet,
-    ILaunchpadCelebrities, UnknownSender, MissingSubject,
-    DuplicateMessageId, InvalidEmailMessage, IBugTaskSet, IBugWatchSet,
-    IMessageSet, ISourcePackageSet, ICveSet, BugTaskSearchParams)
+    ILaunchpadCelebrities, InvalidEmailMessage, IBugTaskSet,
+    IBugWatchSet, IMessageSet, ISourcePackageSet, ICveSet,
+    BugTaskSearchParams)
 from canonical.database.constants import UTC_NOW
 
 # debsync-specific modules
@@ -94,9 +94,10 @@ def sync_watch(watch, ztm, logger, debbugs_db):
             # we need a new task to link the bug to the debian package
             logger.info('Linking %d and debian %s/%s' % (
                 malone_bug.id, srcpkgname.name, binpkgname.name))
+            # XXX: this code is completely untested and broken XXX
             bugtask = malone_bug.addTask(
                 owner=malone_bug.owner, distribution=debian,
-                sourcepackagename=srcpackagename)
+                sourcepackagename=srcpkgname)
             bugtask.bugwatch = watch
             waschanged = True
         else:
@@ -217,11 +218,11 @@ def main(args):
         return 1
 
     lockfile_path = '/var/lock/launchpad-debbugs-sync.lock'
-    lockfile = LockFile(lockfile_path)
+    lockfile = GlobalLock(lockfile_path)
     try:
         lockfile.acquire()
-    except OSError:
-        logger.info('Lockfile %s already exists, exiting.' % lockfile_path)
+    except GlobalLockError:
+        logger.error('Lockfile %s already exists, exiting.' % lockfile_path)
         return 0
 
     try:

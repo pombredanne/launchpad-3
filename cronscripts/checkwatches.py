@@ -8,12 +8,13 @@ import _pythonpath
 
 from optparse import OptionParser
 
+from contrib.glock import GlobalLock, GlobalLockError
+
 from zope.component import getUtility
 
 from canonical.lp import initZopeless
 from canonical.launchpad.interfaces import (
     IBugTrackerSet, ILaunchpadCelebrities)
-from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.launchpad.scripts.checkwatches import update_bug_tracker
 from canonical.launchpad import scripts
 from canonical.launchpad.ftests import login
@@ -70,11 +71,11 @@ def main():
 if __name__ == '__main__':
     options = parse_options()
     log = scripts.logger(options, "checkwatches")
-    lockfile = LockFile(options.lockfilename, logger=log)
+    lockfile = GlobalLock(options.lockfilename, logger=log)
     try:
         lockfile.acquire()
-    except OSError:
-        log.info('Lockfile %s in use' % options.lockfilename)
+    except GlobalLockError:
+        log.error('Lockfile %s in use' % options.lockfilename)
         sys.exit(1)
     try:
         main()
