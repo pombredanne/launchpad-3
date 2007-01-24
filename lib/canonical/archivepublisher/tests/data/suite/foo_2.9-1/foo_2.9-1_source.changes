@@ -19,14 +19,14 @@ Changes:
    * New upstream release
    * Should be okay
 Files: 
- e4f7ca99abad5ac44136c250bfcf5c48 514 devel optional foo_2.9-1.dsc
+ c5eaf38f1b618f354283e4513720c09d 512 devel optional foo_2.9-1.dsc
  725f7fc1b8450da45201983098c0e1ff 180 devel optional foo_2.9.orig.tar.gz
  cc4efc37f7d18401e196e0a710ed12b6 620 devel optional foo_2.9-1.diff.gz
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.2.2 (GNU/Linux)
+Version: GnuPG v1.4.3 (GNU/Linux)
 
-iD8DBQFEGUfjK8hAFiBoeJURAq+lAKDIY4TbmUk+GkwB7opJNwrF0EFvyQCfR4wY
-5s5Mg0wOROdW/Bd71T9O+nY=
-=xkZY
+iD8DBQFFt43b2yWXVgK6XvYRAqwNAJ0YChtHiWApwHob+7vmwadiEgtjQACfcEUV
++8561uYMl80PqaFdXlGuUEk=
+=bGd8
 -----END PGP SIGNATURE-----

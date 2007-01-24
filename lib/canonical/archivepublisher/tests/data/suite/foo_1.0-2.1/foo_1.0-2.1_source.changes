@@ -18,13 +18,13 @@ Changes:
  .
    * Security update for foo. Yum
 Files: 
- 8d200982d98f5afe08d44b2654e464ed 516 devel optional foo_1.0-2.1.dsc
+ 0100721ac58c0d8ebef8e5793f269de8 516 devel optional foo_1.0-2.1.dsc
  8a754e6c91e22c2f9196ff5958b1aa9d 657 devel optional foo_1.0-2.1.diff.gz
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.1 (GNU/Linux)
+Version: GnuPG v1.4.3 (GNU/Linux)
 
-iD8DBQFD9adyK8hAFiBoeJURAnnrAJ9nSS+hquvWJOuWPfMMmF/9A5QdewCcCEZX
-DQkJZtK60spOrISnB2eeHIM=
-=UqyM
+iD8DBQFFt4yJ2yWXVgK6XvYRAk5LAKDA/ArdfBzqSlyFGycO5tiUJsoJqgCfcgtI
+jwP73pZcRX5H6d63mNbyssc=
+=Dk1e
 -----END PGP SIGNATURE-----

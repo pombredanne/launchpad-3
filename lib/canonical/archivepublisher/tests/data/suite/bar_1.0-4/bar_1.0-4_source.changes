@@ -18,13 +18,13 @@ Changes:
  .
    * Changer using non-preferred email
 Files: 
- 94b08be0ea0dda3b8ea7daf0a5ba8071 514 devel optional bar_1.0-4.dsc
+ f43cdb7c1519a0b0705c32618c35db35 512 devel optional bar_1.0-4.dsc
  47bbc226f689a212554415cb8e247a8d 711 devel optional bar_1.0-4.diff.gz
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.2.2 (GNU/Linux)
+Version: GnuPG v1.4.3 (GNU/Linux)
 
-iD8DBQFETmO17KBXuXyZSjARAq+UAJ4kNIBI+Ask2eY03Lhn9ehR7BoKugCfQ9eV
-SyfO/NBWkPz/lATfAJZGDDk=
-=9oDV
+iD8DBQFFt4hU2yWXVgK6XvYRAtusAJ4/d6Po4y0P93nXx2KK94ewOsXA+gCfTBSI
+qGjUARJ1cGxUM/14yftK7J8=
+=wlko
 -----END PGP SIGNATURE-----

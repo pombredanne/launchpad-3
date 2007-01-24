@@ -13,9 +13,9 @@ Files:
  0c397c3bb061d4d6679654cc13dc0492 694 foo_1.0-2.2.diff.gz
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.1 (GNU/Linux)
+Version: GnuPG v1.4.3 (GNU/Linux)
 
-iD8DBQFD9aelK8hAFiBoeJURAuDyAKCGP6nEiNjSwZ6FVFNlIYvjQgH6igCeMO4G
-peNwx4lOCb43GjluUylT7mA=
-=YNeu
+iD8DBQFFt4zf2yWXVgK6XvYRAmBrAJ99rVGvfxe/QL4myfVt+R9X4YvqvACfarhC
+gO/NUlarqzId7fLwnkfVfWI=
+=HwTx
 -----END PGP SIGNATURE-----

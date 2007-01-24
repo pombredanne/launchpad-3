@@ -13,9 +13,9 @@ Files:
  d70cb6faa21bfb2214766ff92f1835ba 674 bar_1.0-3.diff.gz
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.1 (GNU/Linux)
+Version: GnuPG v1.4.3 (GNU/Linux)
 
-iD8DBQFEPRjRK8hAFiBoeJURAgUxAJ4ylEg5Z/NrNr7W3GWBZBUNdEcLaQCeKXiz
-swsBiYW+Xlw6Exu6hH0CYjo=
-=XmIg
+iD8DBQFFt4d42yWXVgK6XvYRAnTdAJ9dx/pD4bIyRjsscgqRuWN5e4DFVwCglRfE
+gv6VchN2bdM0NH5FaMvM614=
+=BPpK
 -----END PGP SIGNATURE-----

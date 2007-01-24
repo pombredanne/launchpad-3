@@ -18,13 +18,13 @@ Changes:
  .
    * A second upload to ensure that binary overrides of _all work
 Files: 
- 8f20d977518fe041f7c176c5ae9e1c58 512 devel optional bar_1.0-2.dsc
+ 9f7dd36198ff526524a45dd1b9b372df 512 devel optional bar_1.0-2.dsc
  ac6b4efe44e31f47ec9f0d0fac6935f4 622 devel optional bar_1.0-2.diff.gz
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.1 (GNU/Linux)
+Version: GnuPG v1.4.3 (GNU/Linux)
 
-iD8DBQFEKygdK8hAFiBoeJURAkOjAJ437mesK+/e/9p/oEZ+S5U4WD4r7QCeIdei
-Zxg9BHQqSnx4fEag9NI6iLo=
-=OVeR
+iD8DBQFFt4b+2yWXVgK6XvYRAiGrAKCio64rqMs2Ql58CqNHHKQVunJx4ACgqFOv
+GXjoRkDcy2T2/1ckoDeUQuQ=
+=O7Re
 -----END PGP SIGNATURE-----

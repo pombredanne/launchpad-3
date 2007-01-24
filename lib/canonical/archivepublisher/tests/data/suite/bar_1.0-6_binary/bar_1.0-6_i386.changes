@@ -20,10 +20,11 @@ Changes:
      processing binaries.
 Files: 
  0c683c54c856d4c565e9da8a0e56b145 652 devel optional bar-bin_1.0-6_i386.deb
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.2.2 (GNU/Linux)
 
-iD8DBQFEbMzn7KBXuXyZSjARApBKAKC0OlfeoREYXH+sVU5J5pNmRynR6wCfb6Xe
-QQGh4+9cJ4oFMGvzNiuouQU=
-=H7ca
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.3 (GNU/Linux)
+
+iD8DBQFFt4lj2yWXVgK6XvYRArH7AKCtSniIp/TArLRzbFdrVfwMS11WlACghZ/8
+G6Sa7xwqFk1kgBDvVx/STTc=
+=YuoK
 -----END PGP SIGNATURE-----
