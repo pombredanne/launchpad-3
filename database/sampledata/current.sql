@@ -1616,7 +1616,7 @@ INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (3, 'c
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (4, 'daf@canonical.com', 14, 4, '2006-10-16 18:31:43.543302');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (6, 'foo.bar@canonical.com', 16, 4, '2006-10-16 18:31:43.543649');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (7, 'steve.alexander@ubuntulinux.com', 11, 1, '2006-10-16 18:31:43.543996');
-INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (8, 'colin.watson@ubuntulinux.com', 4, 1, '2006-10-16 18:31:43.544344');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (8, 'colin.watson@ubuntulinux.com', 4, 4, '2006-10-16 18:31:43.544344');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (9, 'scott.james.remnant@ubuntulinux.com', 5, 1, '2006-10-16 18:31:43.544693');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (10, 'andrew.bennetts@ubuntulinux.com', 7, 4, '2006-10-16 18:31:43.54507');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (11, 'james.blackwell@ubuntulinux.com', 8, 4, '2006-10-16 18:31:43.54542');
@@ -1696,7 +1696,7 @@ INSERT INTO ircid (id, person, network, nickname) VALUES (3, 10, 'irc.freenode.n
 INSERT INTO ircid (id, person, network, nickname) VALUES (4, 8, 'irc.freenode.net', 'jblack');
 INSERT INTO ircid (id, person, network, nickname) VALUES (5, 3, 'irc.freenode.net', 'justdave');
 INSERT INTO ircid (id, person, network, nickname) VALUES (6, 9, 'irc.freenode.net', 'kiko');
-INSERT INTO ircid (id, person, network, nickname) VALUES (7, 4, 'irc.freenode.net', 'Kamion');
+INSERT INTO ircid (id, person, network, nickname) VALUES (7, 4, 'irc.freenode.net', 'cjwatson');
 INSERT INTO ircid (id, person, network, nickname) VALUES (8, 5, 'irc.freenode.net', 'Keybuk');
 INSERT INTO ircid (id, person, network, nickname) VALUES (9, 6, 'irc.freenode.net', 'jeff');
 
@@ -9218,7 +9218,7 @@ ALTER TABLE supportcontact ENABLE TRIGGER ALL;
 
 ALTER TABLE teammembership DISABLE TRIGGER ALL;
 
-INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (1, 1, 17, 3, '2005-03-03 10:02:53.830191', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (1, 1, 17, 3, '2005-03-03 10:02:53.830191', '2050-03-03 10:02:53.830191', NULL, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (2, 11, 17, 2, '2005-03-03 10:02:53.831231', NULL, NULL, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (3, 10, 17, 3, '2005-03-03 10:02:53.831725', NULL, NULL, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (4, 4, 17, 3, '2005-03-03 10:02:53.832216', NULL, NULL, NULL);
@@ -9256,7 +9256,7 @@ INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, r
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (36, 16, 24, 2, '2005-04-14 00:00:00', NULL, 16, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (37, 13, 31, 2, '2005-05-07 00:00:00', NULL, 13, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (38, 1, 25, 3, '2005-03-03 10:02:53.830191', NULL, NULL, NULL);
-INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (39, 17, 32, 3, '2005-03-03 10:02:53.830191', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (39, 17, 32, 3, '2005-03-03 10:02:53.830191', '2049-02-03 00:00:00', 16, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (40, 13, 53, 3, '2005-07-12 14:32:01.84779', NULL, NULL, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (41, 1, 53, 2, '2005-07-12 14:32:14.20688', NULL, 13, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (42, 50, 53, 2, '2005-07-12 14:34:36.906758', NULL, 13, NULL);
@@ -9274,6 +9274,7 @@ INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, r
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (54, 28, 61, 3, '2006-05-15 22:29:29.062603', NULL, NULL, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (55, 63, 59, 2, '2006-06-15 22:29:29.062603', NULL, NULL, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (56, 12, 64, 3, '2006-07-11 20:01:09.874128', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (57, 16, 32, 3, '2007-01-17 14:13:39.692693', NULL, 16, '');
 
 
 ALTER TABLE teammembership ENABLE TRIGGER ALL;
