@@ -24,8 +24,9 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.IBranch"
-        path_expression="string:+branch/${product_name}/${name}"
-        attribute_to_parent="owner" />
+        path_expression="string:${product_name}/${name}"
+        attribute_to_parent="owner"
+        rootsite="code" />
 
     <browser:navigation
         module="canonical.launchpad.browser"

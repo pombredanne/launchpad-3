@@ -100,6 +100,7 @@ from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.tickettarget import SearchTicketsView
 
 from canonical.launchpad.helpers import obfuscateEmail, convertToHtmlCode
+from canonical.launchpad.layers import CodeLayer
 
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
@@ -139,9 +140,20 @@ class BranchTraversalMixin:
             return self.context.getBranch(product_name, branch_name)
         raise NotFoundError
 
+    def traverse(self, product_name):
+        if CodeLayer.providedBy(self.request):
+            stepstogo = self.request.stepstogo
+            branch_name = stepstogo.consume()
+            if branch_name is not None:
+                return self.context.getBranch(product_name, branch_name)
+            raise NotFoundError
+        else:
+            return super(BranchTraversalMixin, self).traverse(product_name)
 
-class PersonNavigation(Navigation, CalendarTraversalMixin,
-                       BranchTraversalMixin):
+
+class PersonNavigation(CalendarTraversalMixin,
+                       BranchTraversalMixin,
+                       Navigation):
 
     usedfor = IPerson
 
@@ -149,8 +161,9 @@ class PersonNavigation(Navigation, CalendarTraversalMixin,
         return self.context.displayname
 
 
-class TeamNavigation(Navigation, CalendarTraversalMixin,
-                     BranchTraversalMixin):
+class TeamNavigation(CalendarTraversalMixin,
+                     BranchTraversalMixin,
+                     Navigation):
 
     usedfor = ITeam
 
