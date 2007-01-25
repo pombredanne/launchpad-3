@@ -41,7 +41,7 @@ Now we'll change some values.
     >>> browser.getControl('Subscription Policy').value = ['Restricted Team']
 
     >>> from canonical.launchpad.ftests import set_gotchi_and_emblem
-    >>> set_gotchi_and_emblem(user_browser)
+    >>> set_gotchi_and_emblem(browser)
 
     >>> browser.getControl('Save').click()
 
