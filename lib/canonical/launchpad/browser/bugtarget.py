@@ -46,6 +46,7 @@ class FileBugData:
     """Extra data to be added to the bug."""
 
     def __init__(self):
+        self.default_summary = None
         self.extra_description = None
         self.comments = []
         self.attachments = []
@@ -53,12 +54,14 @@ class FileBugData:
     def setFromRawMessage(self, raw_mime_msg):
         """Set the extra file bug data from a MIME multipart message.
 
+            * The Subject header is the default bug summary.
             * The first inline part will be added to the description.
             * All other inline parts will be added as separate comments.
             * All attachment parts will be added as attachment.
         """
         mime_msg = email.message_from_string(raw_mime_msg)
         if mime_msg.is_multipart():
+            self.default_summary = mime_msg.get('Subject')
             for part in mime_msg.get_payload():
                 disposition_header = part.get('Content-Disposition', 'inline')
                 # Get the type, excluding any parameters.
@@ -99,11 +102,18 @@ class FileBugViewBase(LaunchpadFormView):
 
     implements(IBrowserPublisher)
 
-    extra_bug_data = None
+    extra_data_token = None
+
+    def __init__(self, context, request):
+        LaunchpadFormView.__init__(self, context, request)
+        self.extra_data = FileBugData()
 
     def initialize(self):
         LaunchpadFormView.initialize(self)
-        if self.extra_bug_data is not None:
+        if self.extra_data_token is not None:
+            if self.extra_data.default_summary:
+                self.widgets['title'].setRenderedValue(
+                    self.extra_data.default_summary)
             # XXX: We should include more details of what will be added
             #      to the bug report.
             #      -- Bjorn Tillenius, 2006-01-15
@@ -199,10 +209,6 @@ class FileBugViewBase(LaunchpadFormView):
             failure=handleSubmitBugFailure)
     def submit_bug_action(self, action, data):
         """Add a bug to this IBugTarget."""
-        extra_data = FileBugData()
-        if self.extra_bug_data is not None:
-            extra_data.setFromRawMessage(self.extra_bug_data.blob)
-
         title = data["title"]
         comment = data["comment"].rstrip()
         packagename = data.get("packagename")
@@ -264,6 +270,7 @@ class FileBugViewBase(LaunchpadFormView):
                 title=title, comment=comment, owner=self.user,
                 security_related=security_related, private=private)
 
+        extra_data = self.extra_data
         if extra_data.extra_description:
             params.comment = "%s\n\n%s" % (
                 params.comment, extra_data.extra_description)
@@ -312,18 +319,21 @@ class FileBugViewBase(LaunchpadFormView):
         to the advanced bug filing form via the returned URL.
         """
         url = urlappend(canonical_url(self.context), '+filebug-advanced')
-        if self.extra_bug_data is not None:
-            url = urlappend(url, self.extra_bug_data.uuid)
+        if self.extra_data_token is not None:
+            url = urlappend(url, self.extra_data_token)
         return url
 
     def publishTraverse(self, request, name):
         """See IBrowserPublisher."""
-        if self.extra_bug_data is not None:
+        if self.extra_data_token is not None:
             # The URL contains more path components than expected.
             raise NotFound(self, name, request=request)
 
-        self.extra_bug_data = getUtility(ITemporaryStorageManager).fetch(name)
-        if self.extra_bug_data is None:
+        extra_bug_data = getUtility(ITemporaryStorageManager).fetch(name)
+        if extra_bug_data is not None:
+            self.extra_data_token = name
+            self.extra_data.setFromRawMessage(extra_bug_data.blob)
+        else:
             # The URL might be mistyped, or the blob has expired.
             # XXX: We should handle this case better, since a user might
             #      come to this page when finishing his account
