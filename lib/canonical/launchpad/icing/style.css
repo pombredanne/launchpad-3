@@ -828,7 +828,7 @@ body.tab-branches #mainarea #portlets .portlet.active div {
 body.tab-branches #actions {background-color: #ffc;}
 body.tab-branches #actions h2 {background-color: #f3cb00;}
 .tab-branches h1, .tab-branches h2, .tab-branches h3,
-.tab-branches #application-footer strong {
+.tab-branches #application-footer strong, .tab-branches table.listing thead {
   background: none;
   color: #f3cb00; /* "it fits nicely with the Bazaar logo" -- sabdfl */
 }
@@ -872,7 +872,8 @@ body.tab-bugs #mainarea #portlets .portlet.active div {
 }
 body.tab-bugs #actions {background-color: #fee;}
 body.tab-bugs #actions h2 {background-color: #c03;}
-.tab-bugs h1, .tab-bugs h2, .tab-bugs h3, .tab-bugs #application-footer strong {
+.tab-bugs h1, .tab-bugs h2, .tab-bugs h3, .tab-bugs #application-footer strong,
+.tab-bugs table.listing thead {
   background: none;
   color: #c03;
 }
@@ -913,7 +914,8 @@ body.tab-specifications #mainarea div#portlets div.portlet.active ul li a:hover 
 body.tab-specifications #actions {background-color: #eff;}
 body.tab-specifications #actions h2 {background-color: #159cc8;}
 .tab-specifications h1, .tab-specifications h2, .tab-specifications h3,
-.tab-specifications #application-footer strong {
+.tab-specifications #application-footer strong,
+.tab-specifications table.listing thead {
   background: none;
   color: #159cc8; /* darkest color from mainarea_tab4-* */
 }
@@ -958,7 +960,8 @@ body.tab-translations #mainarea #portlets .portlet.active div {
 body.tab-translations #actions {background-color: #fcf;}
 body.tab-translations #actions h2 {background-color: #962667;}
 .tab-translations h1, .tab-translations h2, .tab-translations h3,
-.tab-translations #application-footer strong {
+.tab-translations #application-footer strong,
+.tab-translations table.listing thead {
   background: none;
   color: #962667; /* darkest color from mainarea_tab5-* */
 }
@@ -1003,7 +1006,7 @@ body.tab-support #mainarea #portlets .portlet.active div {
 body.tab-support #actions {background-color: #eef;}
 body.tab-support #actions h2 {background-color: #3f3ccc;}
 .tab-support h1, .tab-support h2, .tab-support h3,
-.tab-support #application-footer strong {
+.tab-support #application-footer strong, .tab-support table.listing thead {
   background: none;
   color: #3f3ccc;
 }
@@ -1280,4 +1283,7 @@ table.listing img {
 }
 table.listing tr.secondary>th, table.listing tr.secondary td {
   border-top: none;
+}
+table.duplicate.listing * {
+  color: #999;
 }
