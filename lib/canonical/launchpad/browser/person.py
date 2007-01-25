@@ -29,7 +29,6 @@ __all__ = [
     'PersonEditIRCNicknamesView',
     'PersonEditSSHKeysView',
     'PersonEditHomePageView',
-    'PersonEmblemView',
     'PersonAssignedBugTaskSearchListingView',
     'ReportedBugTaskSearchListingView',
     'BugContactPackageBugsSearchListingView',
@@ -65,12 +64,10 @@ __all__ = [
 import cgi
 import urllib
 from operator import itemgetter
-from StringIO import StringIO
 
 from zope.app.form.browser import SelectWidget, TextAreaWidget
 from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
-from zope.app.content_types import guess_content_type
 from zope.app.form.interfaces import (
         IInputWidget, ConversionError, WidgetInputError)
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
@@ -92,11 +89,10 @@ from canonical.launchpad.interfaces import (
     IJabberIDSet, IIrcIDSet, ILaunchBag, ILoginTokenSet, IPasswordEncryptor,
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, UBUNTU_WIKI_URL,
     ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
-    IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet, IPollSet,
-    IAdminRequestPeopleMerge, NotFoundError, UNRESOLVED_BUGTASK_STATUSES,
-    IPersonChangePassword, GPGKeyNotFoundError, UnexpectedFormData,
-    ILanguageSet, IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet,
-    ILaunchpadRoot, INewPerson)
+    IPerson, ICalendarOwner, ITeam, IPollSet, IAdminRequestPeopleMerge,
+    NotFoundError, UNRESOLVED_BUGTASK_STATUSES, IPersonChangePassword,
+    GPGKeyNotFoundError, UnexpectedFormData, ILanguageSet, INewPerson,
+    IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet, ILaunchpadRoot)
 
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.specificationtarget import (
@@ -114,8 +110,8 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
     enabled_with_permission, Navigation, stepto, stepthrough, smartquote,
-    GeneralFormView, LaunchpadEditFormView, LaunchpadFormView, action,
-    custom_widget, RedirectionNavigation)
+    LaunchpadEditFormView, LaunchpadFormView, action, custom_widget,
+    RedirectionNavigation)
 
 from canonical.launchpad import _
 
@@ -517,8 +513,8 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     usedfor = ITeam
     facet = 'overview'
-    links = ['edit', 'common_edithomepage', 'editemblem', 'members',
-             'editemail', 'polls', 'joinleave', 'reassign', 'common_packages']
+    links = ['edit', 'common_edithomepage', 'members', 'editemail', 'polls',
+             'joinleave', 'reassign', 'common_packages']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -533,12 +529,6 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         summary = 'Change the owner of the team'
         # alt="(Change owner)"
         return Link(target, text, summary, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def editemblem(self):
-        target = '+editemblem'
-        text = 'Change Emblem'
-        return Link(target, text, icon='edit')
 
     def members(self):
         target = '+members'
@@ -1806,21 +1796,6 @@ class PersonEditView(BasePersonEditView):
                    'gotchi']
     custom_widget('timezone', SelectWidget, size=15)
     custom_widget('gotchi', ImageChangeWidget)
-
-
-class PersonEmblemView(GeneralFormView):
-
-    def process(self, emblem=None):
-        # XXX use Bjorn's nice file upload widget when he writes it
-        if emblem is not None:
-            filename = self.request.get('field.emblem').filename
-            content_type, encoding = guess_content_type(
-                name=filename, body=emblem)
-            self.context.emblem = getUtility(ILibraryFileAliasSet).create(
-                name=filename, size=len(emblem), file=StringIO(emblem),
-                contentType=content_type)
-        self._nextURL = canonical_url(self.context)
-        return 'Success'
 
 
 class TeamJoinView(PersonView):
