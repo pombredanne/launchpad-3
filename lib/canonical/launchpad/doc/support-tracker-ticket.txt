@@ -70,7 +70,7 @@ And the creation time is recorded in the datecreated attribute:
     True
 
 The target onto which the ticket was created is available through the
-attribute:
+'target' attribute:
 
     >>> firefox_ticket.target == firefox
     True
