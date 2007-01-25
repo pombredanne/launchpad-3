@@ -42,6 +42,11 @@
       layer="canonical.launchpad.layers.AnswersLayer"
       name="+tickets"
       />
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IPerson"
+      name="+branches"
+      layer="canonical.launchpad.layers.CodeLayer"
+      />
 
   <browser:menus
       module="canonical.launchpad.browser.person"
