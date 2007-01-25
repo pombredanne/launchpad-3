@@ -370,7 +370,7 @@ class ScriptRequest(ErrorReportRequest):
         recorded as request-variables in the OOPS.
     :type data: iterable of (key, value) tuples. Keys need not be unique.
     
-    :ivar url: pointer to a representation of the resource for which the error
+    :ivar URL: pointer to a representation of the resource for which the error
         occured. Defaults to None.
     :ivar oopsid: the oopsid set by ErrorReportingUtility.raising. Initially
         set to None.
@@ -379,7 +379,7 @@ class ScriptRequest(ErrorReportRequest):
     def __init__(self, data):
         self._data = list(data)
         self.oopsid = None
-        self.url = None
+        self.URL = None
 
     def items(self):
         return self._data
