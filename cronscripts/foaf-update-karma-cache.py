@@ -12,7 +12,7 @@ from canonical.config import config
 from canonical.lp import initZopeless, AUTOCOMMIT_ISOLATION
 from canonical.launchpad.scripts import (
         execute_zcml_for_scripts, logger_options, logger)
-from canonical.launchpad.interfaces import IKarmaCacheSet, NotFoundError
+from canonical.launchpad.interfaces import IKarmaCacheManager, NotFoundError
 from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.database.sqlbase import cursor
 
@@ -36,7 +36,7 @@ def update_karma_cache():
     cur = cursor()
     karma_expires_after = '1 year'
 
-    karmacacheset = getUtility(IKarmaCacheSet)
+    karmacachemanager = getUtility(IKarmaCacheManager)
 
     # Calculate everyones karma. Karma degrades each day, becoming
     # worthless after karma_expires_after. This query produces odd results
@@ -113,18 +113,20 @@ def update_karma_cache():
         if points <= 0:
             # Don't allow our table to bloat with inactive users
             try:
-                karmacacheset.deleteEntry(person_id, category_id, **context)
+                karmacachemanager.deleteEntry(
+                    person_id, category_id, **context)
             except NotFoundError:
                 # Nothing to delete
                 pass
         else:
             try:
                 # Try to update
-                karmacacheset.updateKarmaValue(
+                karmacachemanager.updateKarmaValue(
                     points, person_id, category_id, **context)
             except NotFoundError:
                 # Row didn't exist; do an insert.
-                karmacacheset.new(points, person_id, category_id, **context)
+                karmacachemanager.new(
+                    points, person_id, category_id, **context)
 
     # VACUUM KarmaCache since we have just touched every record in it
     cur.execute("""VACUUM KarmaCache""")

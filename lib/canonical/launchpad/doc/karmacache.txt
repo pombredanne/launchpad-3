@@ -7,17 +7,17 @@ many entries in the Karma table, making it extremely expensive to do these
 calculations on the fly.
 
 The KarmaCache table is maintained by our foaf-update-karma-cache.py script,
-which runs daily. The script does that by using the IKarmaCacheSet API.
+which runs daily. The script does that by using the IKarmaCacheManager API.
 
     >>> from zope.component import getUtility
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.database import KarmaCategory
     >>> from canonical.launchpad.interfaces import (
-    ...     IKarmaCache, IKarmaCacheSet, IPersonSet)
+    ...     IKarmaCache, IKarmaCacheManager, IPersonSet)
     >>> from canonical.launchpad.ftests.harness import (
     ...     LaunchpadFunctionalTestSetup)
     >>> LaunchpadFunctionalTestSetup(dbuser='karma').setUp()
-    >>> karmacacheset = getUtility(IKarmaCacheSet)
+    >>> karmacachemanager = getUtility(IKarmaCacheManager)
 
 == Creating new KarmaCache entries ==
 
@@ -31,7 +31,7 @@ This is done using the new() method:
     # use firefox's id directly instead of trying to fetch the product from
     # the database.
     >>> firefox_id = 4
-    >>> cache_entry = karmacacheset.new(
+    >>> cache_entry = karmacachemanager.new(
     ...     value, person.id, bugs.id, product_id=firefox_id)
 
 
@@ -43,25 +43,25 @@ that will find the KarmaCache with the given person/category/context IDs
 and either update or delete it.
 
     >>> new_value = 19
-    >>> karmacacheset.updateKarmaValue(
+    >>> karmacachemanager.updateKarmaValue(
     ...     new_value, person.id, bugs.id, product_id=firefox_id) 
     >>> cache_entry.karmavalue
     19
 
-    >>> karmacacheset.deleteEntry(
+    >>> karmacachemanager.deleteEntry(
     ...     person.id, bugs.id, product_id=firefox_id)
 
 
 If we try to update/delete an unexistent KarmaCache entry, we'll get a
 NotFoundError.
 
-    >>> karmacacheset.updateKarmaValue(
+    >>> karmacachemanager.updateKarmaValue(
     ...     new_value, person.id, bugs.id, product_id=firefox_id) 
     Traceback (most recent call last):
     ...
     NotFoundError: ...
 
-    >>> karmacacheset.deleteEntry(
+    >>> karmacachemanager.deleteEntry(
     ...     person.id, bugs.id, product_id=firefox_id)
     Traceback (most recent call last):
     ...

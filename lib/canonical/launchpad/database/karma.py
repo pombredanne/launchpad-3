@@ -6,7 +6,7 @@ __all__ = [
     'KarmaAction',
     'KarmaActionSet',
     'KarmaCache',
-    'KarmaCacheSet',
+    'KarmaCacheManager',
     'KarmaPersonCategoryCacheView',
     'KarmaTotalCache',
     'KarmaCategory',
@@ -25,7 +25,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
     IKarma, IKarmaAction, IKarmaActionSet, IKarmaCache, IKarmaCategory,
     IKarmaTotalCache, IKarmaPersonCategoryCacheView, IKarmaContext, IProduct,
-    IDistribution, IKarmaCacheSet, NotFoundError)
+    IDistribution, IKarmaCacheManager, NotFoundError)
 
 
 class Karma(SQLBase):
@@ -117,13 +117,13 @@ class KarmaCache(SQLBase):
         notNull=False)
 
 
-class KarmaCacheSet:
-    """See IKarmaCacheSet."""
-    implements(IKarmaCacheSet)
+class KarmaCacheManager:
+    """See IKarmaCacheManager."""
+    implements(IKarmaCacheManager)
 
     def new(self, value, person_id, category_id, product_id=None, distribution_id=None,
             sourcepackagename_id=None):
-        """See IKarmaCacheSet."""
+        """See IKarmaCacheManager."""
         return KarmaCache(
             karmavalue=value, person=person_id, category=category_id,
             product=product_id, distribution=distribution_id,
@@ -131,7 +131,7 @@ class KarmaCacheSet:
 
     def updateKarmaValue(self, value, person_id, category_id, product_id=None,
                          distribution_id=None, sourcepackagename_id=None):
-        """See IKarmaCacheSet."""
+        """See IKarmaCacheManager."""
         entry = self._getEntry(
             person_id=person_id, category_id=category_id, product_id=product_id,
             distribution_id=distribution_id, sourcepackagename_id=sourcepackagename_id)
@@ -143,7 +143,7 @@ class KarmaCacheSet:
 
     def deleteEntry(self, person_id, category_id, product_id=None, distribution_id=None,
                     sourcepackagename_id=None):
-        """See IKarmaCacheSet."""
+        """See IKarmaCacheManager."""
         entry = self._getEntry(
             person_id=person_id, category_id=category_id, product_id=product_id,
             distribution_id=distribution_id, sourcepackagename_id=sourcepackagename_id)

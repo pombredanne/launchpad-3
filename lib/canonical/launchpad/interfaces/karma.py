@@ -9,7 +9,7 @@ __all__ = [
     'IKarmaAction',
     'IKarmaActionSet',
     'IKarmaCache',
-    'IKarmaCacheSet',
+    'IKarmaCacheManager',
     'IKarmaPersonCategoryCacheView',
     'IKarmaTotalCache',
     'IKarmaCategory',
@@ -125,7 +125,7 @@ class IKarmaCache(Interface):
     sourcepackagename = Attribute(_("Source Package"))
 
 
-class IKarmaCacheSet(Interface):
+class IKarmaCacheManager(Interface):
 
     def new(value, person_id, category_id, product_id=None,
             distribution_id=None, sourcepackagename_id=None):
