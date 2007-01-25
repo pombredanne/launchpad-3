@@ -369,17 +369,18 @@ class ScriptRequest(ErrorReportRequest):
     :param data: context information relevant to diagnosing the error. It is
         recorded as request-variables in the OOPS.
     :type data: iterable of (key, value) tuples. Keys need not be unique.
-    
+    :param URL: initial value of the URL instance variable.
+
     :ivar URL: pointer to a representation of the resource for which the error
         occured. Defaults to None.
     :ivar oopsid: the oopsid set by ErrorReportingUtility.raising. Initially
         set to None.
     """
 
-    def __init__(self, data):
+    def __init__(self, data, URL=None):
         self._data = list(data)
         self.oopsid = None
-        self.URL = None
+        self.URL = URL
 
     def items(self):
         return self._data

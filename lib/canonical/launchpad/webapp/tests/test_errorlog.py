@@ -304,7 +304,8 @@ class TestErrorReportingUtility(unittest.TestCase):
             # Do not test escaping of request vars here, it is already tested
             # in test_raising_with_request.
             request = ScriptRequest([
-                ('name2', 'value2'), ('name1', 'value1'), ('name1', 'value3')])
+                ('name2', 'value2'), ('name1', 'value1'), ('name1', 'value3')],
+                URL='https://launchpad.net/example')
             utility.raising(sys.exc_info(), request, now=now)
 
         errorfile = os.path.join(utility.errordir(now), '01800.T1')
@@ -317,7 +318,7 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(lines[2], 'Exception-Value: xyz abc\n')
         self.assertEqual(lines[3], 'Date: 2006-04-01T00:30:00+00:00\n')
         self.assertEqual(lines[4], 'User: None\n')
-        self.assertEqual(lines[5], 'URL: None\n')
+        self.assertEqual(lines[5], 'URL: https://launchpad.net/example\n')
         self.assertEqual(lines[6], 'Duration: -1\n')
         self.assertEqual(lines[7], '\n')
 
