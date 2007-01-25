@@ -70,7 +70,7 @@
 
           <tal:is-owner condition="context/required:launchpad.Edit">
             You can see the 
-            <a tal:attributes="href probe/log_file/url">log file</a> of the
+            <a tal:attributes="href probe/log_file/http_url">log file</a> of the
             probe.
           </tal:is-owner>
         </p>

@@ -41,7 +41,7 @@
 
   <h2>Product series and releases</h2>
 
-  <tal:per_series repeat="series context/serieslist">
+  <div class="productSeries" tal:repeat="series view/sorted_serieslist">
 
     <div tal:define="is_focus python:context.development_focus == series"
          tal:attributes="class python:is_focus and 'highlighted' or ''">
@@ -58,7 +58,7 @@
     </div>
     <div tal:replace="structure series/@@+table-releases" />
 
-  </tal:per_series>
+  </div>
 
   <div tal:replace="structure context/@@+portlet-latestbugs" />
   <div tal:replace="structure context/@@+portlet-latesttickets" />

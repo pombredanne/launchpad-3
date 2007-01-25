@@ -224,7 +224,16 @@ class MaloneView(LaunchpadView):
 
 
 class BugView:
-    """View class for presenting information about an IBug."""
+    """View class for presenting information about an IBug.
+
+    Since all bug pages are registered on IBugTask, the context will be
+    adapted to IBug in order to make the security declarations work
+    properly. This has the effect that the context in the pagetemplate
+    changes as well, so the bugtask (which is often used in the pages)
+    is available as currentBugTask(). This may not be all that pretty,
+    but it was the best solution we came up with when deciding to hang
+    all the pages off IBugTask instead of IBug.
+    """
 
     def __init__(self, context, request):
         self.current_bugtask = context
