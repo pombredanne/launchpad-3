@@ -7,7 +7,7 @@ __metaclass__ = type
 __all__ = ["BugBranch",
            "BugBranchSet"]
 
-from sqlobject import ForeignKey, StringCol
+from sqlobject import ForeignKey, IN, StringCol
 
 from zope.interface import implements
 
@@ -40,5 +40,13 @@ class BugBranchSet:
         "See IBugBranchSet."
 
         branch_ids = [branch.id for branch in branches]
-        bugbranches = BugBranch.select(BugBranch.q.branchID in branch_ids)
+        bugbranches = BugBranch.select(IN(BugBranch.q.branchID, branch_ids))
         return bugbranches.prejoin(['bug'])
+
+    def getBugBranchesForBugs(self, bugs):
+        "See IBugBranchSet."
+
+        bug_ids = [bug.id for bug in bugs]
+        bugbranches = BugBranch.select(IN(BugBranch.q.bugID, bug_ids))
+        return bugbranches.prejoin(
+            ['branch', 'branch.owner', 'branch.product'])

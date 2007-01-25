@@ -51,7 +51,7 @@
           <tal:bugbranch repeat="bug python:view.branch_bugs.get(branch.id, [])">
             <tal:visible condition="bug/required:launchpad.View">
               <a tal:attributes="href bug/fmt:url;
-                                 title string:Bug ${bug/id}">
+                                 title string:Bug ${bug/id} - ${bug/title}">
                 <img src="/@@/bug" />
               </a>
                  

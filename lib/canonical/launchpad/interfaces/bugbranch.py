@@ -40,4 +40,7 @@ class IBugBranchSet(Interface):
         """Return a sequence of IBugBranch instances associated with
         the given branches."""
 
+    def getBugBranchesForBugs(bugs):
+        """Return a sequence of IBugBranch instances associated with
+        the given bugs."""
         

@@ -31,6 +31,15 @@
              tal:condition="context/show_column/summary|nothing">
             drop-down list in search bar disappears when using blah blah blah
           </a>
+
+          <!-- BugBranch badges -->
+          <tal:bugbranch repeat="bug_branch bugtask/bug/bug_branches">
+            <a tal:attributes="href bug_branch/branch/fmt:url;
+                               title bug_branch/branch/unique_name">
+              <img src="/@@/branch" />
+            </a>
+          </tal:bugbranch>
+
         </td>
         <td tal:content="bugtask/targetname"
             tal:condition="context/show_column/targetname|nothing"
