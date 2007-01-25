@@ -163,4 +163,6 @@ class IPOMsgSetSuggestions(Interface):
     title = Attribute("The name displayed next to the suggestion, "
                       "indicating where it came from.")
     submissions = Attribute("An iterable of POSubmission objects")
-
+    user_is_official_translator = Bool(
+        title=(u'Whether the user is an official translator.'),
+        required=True)

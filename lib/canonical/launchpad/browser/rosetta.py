@@ -11,6 +11,8 @@ __all__ = [
 
 import httplib
 
+from canonical.config import config
+
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
@@ -53,6 +55,9 @@ class RosettaApplicationView:
 
     def browserLanguages(self):
         return IRequestPreferredLanguages(self.request).getPreferredLanguages()
+
+    def rosettaAdminEmail(self):
+        return config.rosetta.rosettaadmin.email
 
 
 class RosettaStatsView:

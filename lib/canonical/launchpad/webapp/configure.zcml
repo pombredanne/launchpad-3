@@ -406,6 +406,12 @@
         handler="canonical.launchpad.webapp.sigusr1.setup_sigusr1"
         />
 
+    <!-- Confirm the database is the correct revision level -->
+    <subscriber
+        for="zope.app.appsetup.IProcessStartingEvent"
+        handler="canonical.database.revision.confirm_dbrevision_on_startup"
+        />
+
     <subscriber
         for="zope.app.publication.interfaces.IBeforeTraverseEvent"
         handler="canonical.launchpad.webapp.sigusr1.before_traverse"
@@ -421,5 +427,15 @@
         attributes="publishTraverse"
         />
     </content>
+
+    <!-- Define the widget used by Choice fields that use huge vocabularies -->
+    <view
+      type="zope.publisher.interfaces.browser.IBrowserRequest"
+      for="zope.schema.interfaces.IChoice
+        canonical.launchpad.webapp.vocabulary.IHugeVocabulary"
+      provides="zope.app.form.interfaces.IInputWidget"
+      factory="canonical.widgets.SinglePopupWidget"
+      permission="zope.Public"
+      />
 
 </configure>
