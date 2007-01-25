@@ -94,36 +94,19 @@
       template="../templates/person-editlanguages.pt">
   </browser:page>
 
-  <browser:editform
+  <browser:page
       name="+edit"
       for="canonical.launchpad.interfaces.IPerson"
-      schema="canonical.launchpad.interfaces.IPerson"
       class="canonical.launchpad.browser.PersonEditView"
-      fields="name displayname hide_email_addresses timezone"
       permission="launchpad.Edit"
-      template="../templates/person-edit.pt"
-      lp:url="/~$person.id/+edit">
-      <browser:widget
-          field="timezone"
-          class="zope.app.form.browser.itemswidgets.SelectWidget"
-          size="15" />
-  </browser:editform>
+      template="../templates/person-edit.pt" />
 
-  <browser:editform
+  <browser:page
       name="+edithomepage"
       for="canonical.launchpad.interfaces.IPerson"
-      schema="canonical.launchpad.interfaces.IPerson"
-      class="canonical.launchpad.browser.PersonEditView"
-      fields="homepage_content"
+      class="canonical.launchpad.browser.PersonEditHomePageView"
       permission="launchpad.Edit"
-      template="../templates/person-edithomepage.pt"
-      >
-      <browser:widget
-          field="homepage_content"
-          class="zope.app.form.browser.TextAreaWidget"
-          displayWidth="30"
-          height="30" />
-  </browser:editform>
+      template="../templates/person-edithomepage.pt" />
 
   <browser:generalform
     name="+editemblem"
@@ -132,18 +115,6 @@
     schema="canonical.launchpad.interfaces.IPerson"
     fields="emblem"
     keyword_arguments="emblem"
-    permission="launchpad.Edit"
-    template="../templates/person-images.pt"
-    >
-  </browser:generalform>
-
-  <browser:generalform
-    name="+edithackergotchi"
-    for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.PersonHackergotchiView"
-    schema="canonical.launchpad.interfaces.IPerson"
-    fields="gotchi"
-    keyword_arguments="gotchi"
     permission="launchpad.Edit"
     template="../templates/person-images.pt"
     >

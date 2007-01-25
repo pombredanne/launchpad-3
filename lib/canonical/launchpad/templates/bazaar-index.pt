@@ -183,4 +183,4 @@
   </body>
 </html>
 </tal:layout>
-<!-- 1-0 inprogress Needs recent imports, registered, and changed lists -->
+<!-- 1-0 inprogress Needs lists of recent imports (bug 79036), registered branches (bug 79038), and changed branches (bug 79041). -->
