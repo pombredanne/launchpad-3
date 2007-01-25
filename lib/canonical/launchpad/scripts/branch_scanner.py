@@ -72,4 +72,4 @@ class BranchScanner:
             ('error-explanation', message)])
         request.url = canonical_url(branch)
         errorlog.globalErrorUtility.raising(sys.exc_info(), request)
-        self.log.info('OOPS-%s: %s', request.oopsid, message)
+        self.log.info('%s: %s', request.oopsid, message)
