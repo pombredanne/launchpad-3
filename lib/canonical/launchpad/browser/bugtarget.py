@@ -233,7 +233,7 @@ class FileBugViewBase(LaunchpadFormView):
         if IDistribution.providedBy(context) and packagename:
             # We don't know if the package name we got was a source or binary
             # package name, so let the Soyuz API figure it out for us.
-            packagename = str(packagename)
+            packagename = str(packagename.name)
             try:
                 sourcepackagename, binarypackagename = (
                     context.guessPackageNames(packagename))

@@ -1,3 +1,6 @@
+# XXX: Merge this test with team-polls/xx-votepoll.txt
+# -- Guilherme Salgado, 2006-01-19
+
   Test voting in all kind of polls we have (condorcet and simple, for now).
 
   Logged in as name16 (which is a member of ubuntu-team), go to a poll that's
