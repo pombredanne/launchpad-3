@@ -511,9 +511,10 @@ class DistroRelease(SQLBase, BugTargetBase):
         """See IDistroRelease."""
         query = """
             POTemplate.sourcepackagename = SourcePackageName.id AND
+            POTemplate.iscurrent = TRUE AND
             POTemplate.distrorelease = %s""" % sqlvalues(self.id)
         result = SourcePackageName.select(query, clauseTables=['POTemplate'],
-            orderBy=['name'])
+            orderBy=['name'], distinct=True)
         return [SourcePackage(sourcepackagename=spn, distrorelease=self) for
             spn in result]
 
