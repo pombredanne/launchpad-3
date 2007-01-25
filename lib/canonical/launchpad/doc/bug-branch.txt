@@ -101,3 +101,27 @@ property.
 
     >>> sorted([bug.id for bug in branch.related_bugs])
     [1, 4, 5]
+
+
+Getting bug branches associated with multiple branches
+------------------------------------------------------
+
+Sometimes we want to get the associated bug branch links for a set of branches.
+The getBugBranchesForBranches method can do this.
+
+Firstly we need to get the branches.  We'll look up the relationships
+for branches 1 and 10.
+
+    >>> from canonical.launchpad.interfaces import IBugBranchSet
+    >>> branches = [getUtility(IBranchSet).get(1),
+    ...             getUtility(IBranchSet).get(10)]
+    >>> bugbranches = getUtility(IBugBranchSet).getBugBranchesForBranches(
+    ...     branches)
+    >>> for bugbranch in sorted(bugbranches, 
+    ...                         key=lambda b: (b.branch.id, b.bug.id)):
+    ...     print "%s <-> %s" % (bugbranch.branch.unique_name, bugbranch.bug.id)
+    ~name12/firefox/main <-> 1
+    ~name12/firefox/main <-> 4
+    ~name12/firefox/main <-> 5
+    ~sabdfl/firefox/release-0.9.2 <-> 1
+    ~sabdfl/firefox/release-0.9.2 <-> 4
