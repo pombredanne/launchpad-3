@@ -14,10 +14,10 @@ import sys
 
 from bzrlib.errors import NotBranchError, ConnectionError
 from zope.component import getUtility
-from canonical.launchpad.webapp import errorlog
 
 from canonical.launchpad.interfaces import IBranchSet
 from canonical.launchpad.scripts.bzrsync import BzrSync
+from canonical.launchpad.webapp import canonical_url, errorlog
 
 
 class BranchScanner:
@@ -70,5 +70,6 @@ class BranchScanner:
             ('branch.url', branch.url),
             ('branch.warehouse_url', branch.warehouse_url),
             ('error-explanation', message)])
+        request.url = canonical_url(branch)
         errorlog.globalErrorUtility.raising(sys.exc_info(), request)
         self.log.info('OOPS-%s: %s', request.oopsid, message)
