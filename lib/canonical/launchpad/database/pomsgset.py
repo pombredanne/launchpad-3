@@ -9,6 +9,7 @@ from zope.interface import implements
 from sqlobject import (ForeignKey, IntCol, StringCol, BoolCol,
                        SQLMultipleJoin, SQLObjectNotFound)
 
+from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import (SQLBase, sqlvalues,
                                         flush_database_updates)
 from canonical.database.constants import UTC_NOW
@@ -21,82 +22,94 @@ from canonical.launchpad.database.posubmission import POSubmission
 from canonical.launchpad.database.potranslation import POTranslation
 
 
-def _get_pluralforms(pomsgset):
-    if pomsgset.potmsgset.getPOMsgIDs().count() > 1:
-        if pomsgset.pofile.language.pluralforms is not None:
-            entries = pomsgset.pofile.language.pluralforms
+class BasePOMsgSet:
+    """This class is not designed to be used directly.
+
+    You should inherite from it and implement full IPOMsgSet interface to use
+    the methods and properties defined here.
+    """
+
+    @cachedproperty
+    def pluralforms(self):
+        """See IPOMsgSet."""
+        if self.potmsgset.getPOMsgIDs().count() > 1:
+            if self.pofile.language.pluralforms is not None:
+                entries = self.pofile.language.pluralforms
+            else:
+                # Don't know anything about plural forms for this
+                # language, fallback to the most common case, 2
+                entries = 2
         else:
-            # Don't know anything about plural forms for this
-            # language, fallback to the most common case, 2
-            entries = 2
-    else:
-        # It's a singular form
-        entries = 1
-    return entries
+            # It's a singular form
+            entries = 1
+        return entries
 
 
-def _get_wiki_submissions(pomsgset, pluralform):
-    """See IPOMsgSet."""
+    def getWikiSubmissions(self, pluralform):
+        """See IPOMsgSet."""
+        if self.id is None:
+            filter_pomsgset_sql = ''
+        else:
+            filter_pomsgset_sql = 'AND POMsgSet.id <> %s' % sqlvalues(self.id)
 
-    # queryAll returns a list with a single list with all ids.
-    [posubmission_ids] = POMsgSet._connection.queryAll('''
-        SELECT DISTINCT POSubmission.id
-        FROM POSubmission
-            JOIN POMsgSet ON (POSubmission.pomsgset = POMsgSet.id AND
-                              POMsgSet.isfuzzy = FALSE)
-            JOIN POFile ON (POMsgSet.pofile = POFile.id AND
-                            POFile.language = %s)
-            JOIN POTMsgSet ON (POMsgSet.potmsgset = POTMsgSet.id AND
-                               POTMsgSet.primemsgid = %s)
-        WHERE
-            POSubmission.pluralform = %s
-        ''' % sqlvalues(
-            pomsgset.pofile.language.id, pomsgset.potmsgset.primemsgid_ID,
-            pluralform))
+        query = [
+            'SELECT DISTINCT POSubmission.id',
+            'FROM POSubmission',
+            '    JOIN POMsgSet ON (POSubmission.pomsgset = POMsgSet.id AND',
+            '                      POMsgSet.isfuzzy = FALSE',
+            filter_pomsgset_sql,
+            '                     )',
+            '    JOIN POFile ON (POMsgSet.pofile = POFile.id AND',
+            '                    POFile.language = %s)',
+            '    JOIN POTMsgSet ON (POMsgSet.potmsgset = POTMsgSet.id AND',
+            '                       POTMsgSet.primemsgid = %s)',
+            'WHERE',
+            '    POSubmission.pluralform = %s'
+            ]
 
-    active_submission = pomsgset.getActiveSubmission(pluralform)
+        posubmission_ids_list = POMsgSet._connection.queryAll(
+            '\n'.join(query) % sqlvalues(
+                self.pofile.language, self.potmsgset.primemsgid_ID,
+                pluralform))
 
-    if (active_submission is not None and
-        active_submission.potranslation is not None):
-        # We look for all the IPOSubmissions with the same translation.
-        same_translation = POSubmission.select(
-            "POSubmission.potranslation = %s" %
-                sqlvalues(active_submission.potranslation.id))
+        posubmission_ids = [entry[0] for entry in posubmission_ids_list]
 
-        # Remove it so we don't show as suggestion something that we
-        # already have as active.
-        for posubmission in same_translation:
-            if posubmission.id in posubmission_ids:
-                posubmission_ids.remove(posubmission.id)
+        active_submission = self.getActiveSubmission(pluralform)
 
-    if len(posubmission_ids) > 0:
-        ids = [str(id) for id in posubmission_ids]
-        return POSubmission.select(
-            'POSubmission.id IN (%s)' % ', '.join(ids),
-            orderBy='-datecreated')
-    else:
-        # Return an empty SelectResults object.
-        return POSubmission.select("1 = 2")
+        if (active_submission is not None):
+            # We look for all the IPOSubmissions with the same translation.
+            same_translation = POSubmission.select(
+                "POSubmission.potranslation = %s" %
+                    sqlvalues(active_submission.potranslation.id))
+
+            # Remove it so we don't show as suggestion something that we
+            # already have as active.
+            for posubmission in same_translation:
+                if posubmission.id in posubmission_ids:
+                    posubmission_ids.remove(posubmission.id)
+
+        if len(posubmission_ids) > 0:
+            ids = [str(id) for id in posubmission_ids]
+            return POSubmission.select(
+                'POSubmission.id IN (%s)' % ', '.join(ids),
+                orderBy='-datecreated')
+        else:
+            # Return an empty SelectResults object.
+            return POSubmission.select("1 = 2")
 
 
-class DummyPOMsgSet:
+class DummyPOMsgSet(BasePOMsgSet):
     """Represents a POMsgSet where we do not yet actually HAVE a POMsgSet for
     that POFile and POTMsgSet.
     """
     implements(IPOMsgSet)
 
     def __init__(self, pofile, potmsgset):
+        self.id = None
         self.pofile = pofile
         self.potmsgset = potmsgset
         self.isfuzzy = False
         self.commenttext = None
-
-    # XXX CarlosPerelloMarin 20060425: This should be a cachedproperty, but
-    # tests fail, for more information take a look to bug #41268
-    @property
-    def pluralforms(self):
-        """See IPOMsgSet."""
-        return _get_pluralforms(self)
 
     @property
     def active_texts(self):
@@ -124,12 +137,8 @@ class DummyPOMsgSet:
         """See IPOMsgSet."""
         return []
 
-    def getWikiSubmissions(self, pluralform):
-        """See IPOMsgSet."""
-        return _get_wiki_submissions(self, pluralform)
 
-
-class POMsgSet(SQLBase):
+class POMsgSet(SQLBase, BasePOMsgSet):
     implements(IPOMsgSet)
 
     _table = 'POMsgSet'
@@ -151,13 +160,6 @@ class POMsgSet(SQLBase):
     selections = SQLMultipleJoin('POSelection', joinColumn='pomsgset',
         orderBy='pluralform')
     submissions = SQLMultipleJoin('POSubmission', joinColumn='pomsgset')
-
-    # XXX CarlosPerelloMarin 20060425: This should be a cachedproperty, but
-    # tests fail, for more information take a look to bug #41268
-    @property
-    def pluralforms(self):
-        """See IPOMsgSet."""
-        return _get_pluralforms(self) 
 
     @property
     def published_texts(self):
@@ -666,10 +668,6 @@ class POMsgSet(SQLBase):
             self.isupdated = False
 
         flush_database_updates()
-
-    def getWikiSubmissions(self, pluralform):
-        """See IPOMsgSet."""
-        return _get_wiki_submissions(self, pluralform)
 
     def getSuggestedSubmissions(self, pluralform):
         """See IPOMsgSet."""

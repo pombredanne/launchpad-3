@@ -2526,7 +2526,6 @@ INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_acc
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (60, 60, 'es.po', 'application/x-po', NULL, '2007-01-03 17:26:27.288968');
 
 
-
 ALTER TABLE libraryfilealias ENABLE TRIGGER ALL;
 
 
@@ -2588,7 +2587,6 @@ INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, d
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (58, '2006-12-13 21:18:28.796588', NULL, 1599, 'acdf6b9b99c39b1585f829ec7d68598a8e10816d', false, '5c6fa250b612e7e4d17261268a4d8400');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (59, '2006-05-24 09:31:29.606407', NULL, 2, 'fabb42e197a6a7f222db0f1978c7cb232b87c5ee', false, 'whatever                        ');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (60, '2007-01-03 17:26:27.288968', NULL, 11793, 'df3a6670671781d5e08d7795ca1ada776815d87f', false, 'e8120781cd606202fd259a4f0d4585bb');
-
 
 
 ALTER TABLE libraryfilecontent ENABLE TRIGGER ALL;
@@ -3662,6 +3660,7 @@ INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last
 INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (29, 52, 1, 693, '2005-08-29 16:16:58.010285');
 INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (30, 66, 30, 701, '2006-12-13 21:19:06.369142');
 INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (31, 12, 31, 703, '2007-01-19 13:00:41.049464');
+INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (32, 13, 31, 705, '2007-01-24 19:15:47.546879');
 
 
 ALTER TABLE pofiletranslator ENABLE TRIGGER ALL;
@@ -5658,7 +5657,7 @@ INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsu
 INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsubmission, reviewer, date_reviewed) VALUES (691, 747, 0, 699, 699, 66, '2006-12-13 21:19:06.369142');
 INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsubmission, reviewer, date_reviewed) VALUES (692, 748, 0, 700, 700, 66, '2006-12-13 21:19:06.369142');
 INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsubmission, reviewer, date_reviewed) VALUES (693, 749, 0, 701, 701, 66, '2006-12-13 21:19:06.369142');
-INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsubmission, reviewer, date_reviewed) VALUES (694, 751, 0, 703, NULL, 12, '2007-01-19 13:00:41.049464');
+INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsubmission, reviewer, date_reviewed) VALUES (694, 751, 0, 703, NULL, 13, '2007-01-24 19:16:06.386519');
 
 
 ALTER TABLE poselection ENABLE TRIGGER ALL;
@@ -6364,6 +6363,8 @@ INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datec
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (701, 749, 0, 658, 1, '2006-12-13 21:19:06.369142', 66, 1);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (702, 3, 0, 659, 2, '2006-12-22 11:47:14.827772', 13, 1);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (703, 751, 0, 660, 2, '2007-01-19 13:00:41.049464', 12, 1);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (704, 751, 0, 661, 2, '2007-01-24 19:15:32.620698', 13, 1);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (705, 751, 0, 662, 2, '2007-01-24 19:15:47.546879', 13, 1);
 
 
 ALTER TABLE posubmission ENABLE TRIGGER ALL;
@@ -8021,6 +8022,8 @@ INSERT INTO potranslation (id, translation) VALUES (657, '%d mensajes exportados
 INSERT INTO potranslation (id, translation) VALUES (658, '%d mensajes exportados al directorio mail "%s"');
 INSERT INTO potranslation (id, translation) VALUES (659, 'tengo ');
 INSERT INTO potranslation (id, translation) VALUES (660, 'just a translation');
+INSERT INTO potranslation (id, translation) VALUES (661, 'lalalala');
+INSERT INTO potranslation (id, translation) VALUES (662, 'blah, blah, blah');
 
 
 ALTER TABLE potranslation ENABLE TRIGGER ALL;
