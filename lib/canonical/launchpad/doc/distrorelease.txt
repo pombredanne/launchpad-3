@@ -425,10 +425,18 @@ The main one is to clone what we have in its parent distribution:
 
    >>> humpy.copyMissingTranslationsFromParent()
 
-   >>> len(hoary.potemplates)
-   5
-   >>> len(humpy.potemplates)
-   5
+   # The amount of all templates in Hoary is not the same as the amount of
+   # templates that are current.
+   >>> len(hoary.potemplates) > len(hoary.currentpotemplates)
+   True
+
+   # In Humpy, though, is the same
+   >>> len(humpy.potemplates) == len(humpy.currentpotemplates)
+   True
+
+   # And also, it's the same amount as the current ones in Hoary
+   >>> len(humpy.potemplates) == len(hoary.currentpotemplates)
+   True
 
 Check one by one and compare the exported text. We define a function because
 we will need it later for other tests.
@@ -438,7 +446,7 @@ we will need it later for other tests.
    ...     from difflib import unified_diff
    ...
    ...     orig_templates = sorted(
-   ...         orig_distrorelease.potemplates,
+   ...         orig_distrorelease.currentpotemplates,
    ...         key=lambda x: x.potemplatename.name)
    ...     dest_templates = sorted(
    ...         dest_distrorelease.potemplates,
