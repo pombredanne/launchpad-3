@@ -14,7 +14,7 @@ from canonical.launchpad.scripts import (
         execute_zcml_for_scripts, logger_options, logger)
 from canonical.launchpad.interfaces import IKarmaCacheSet, NotFoundError
 from canonical.launchpad.scripts.lockfile import LockFile
-from canonical.database.sqlbase import connect
+from canonical.database.sqlbase import cursor
 
 _default_lock_file = '/var/lock/launchpad-karma-update.lock'
 
@@ -31,12 +31,9 @@ def update_karma_cache():
     # COMMIT all the time. This script in no way relies on transactions,
     # so it is safe.
     ztm = initZopeless(
-            dbuser=config.karmacacheupdater.dbuser,
-            implicitBegin=False, isolation=AUTOCOMMIT_ISOLATION
-            )
-    con = connect(config.karmacacheupdater.dbuser)
-    con.set_isolation_level(AUTOCOMMIT_ISOLATION)
-    cur = con.cursor()
+        dbuser=config.karmacacheupdater.dbuser, implicitBegin=True,
+        isolation=AUTOCOMMIT_ISOLATION)
+    cur = cursor()
     karma_expires_after = '1 year'
 
     karmacacheset = getUtility(IKarmaCacheSet)
@@ -99,24 +96,24 @@ def update_karma_cache():
                 categories[category], max_scaling
                 ))
 
-    # Here we need to commit after each iteration because we're using ztm's
-    # connection, which has implicitBegin=False
-    for (person, category, product, distribution, sourcepackagename,
-         points) in results:
-        points *= scaling[category] # Scaled
+    # Note that we don't need to commit each iteration because we are running
+    # in autocommit mode.
+    for (person_id, category_id, product_id, distribution_id,
+         sourcepackagename_id, points) in results:
+        points *= scaling[category_id] # Scaled
         log.debug(
-            "Setting person=%(person)d, category=%(category)d, "
+            "Setting person_id=%(person_id)d, category_id=%(category_id)d, "
             "points=%(points)d", vars()
             )
 
-        ztm.begin()
         points = int(points)
-        kwargs = {'product': product, 'sourcepackagename': sourcepackagename,
-                  'distribution': distribution}
+        context = {'product_id': product_id,
+                   'distribution_id': distribution_id,
+                   'sourcepackagename_id': sourcepackagename_id}
         if points <= 0:
             # Don't allow our table to bloat with inactive users
             try:
-                karmacacheset.deleteEntry(person, category, **kwargs)
+                karmacacheset.deleteEntry(person_id, category_id, **context)
             except NotFoundError:
                 # Nothing to delete
                 pass
@@ -124,11 +121,10 @@ def update_karma_cache():
             try:
                 # Try to update
                 karmacacheset.updateKarmaValue(
-                    points, person, category, **kwargs)
+                    points, person_id, category_id, **context)
             except NotFoundError:
                 # Row didn't exist; do an insert.
-                karmacacheset.new(points, person, category, **kwargs)
-        ztm.commit()
+                karmacacheset.new(points, person_id, category_id, **context)
 
     # VACUUM KarmaCache since we have just touched every record in it
     cur.execute("""VACUUM KarmaCache""")

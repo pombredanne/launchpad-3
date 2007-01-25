@@ -166,17 +166,7 @@ class KarmaCacheSet:
             KarmaCache.q.productID == product_id,
             KarmaCache.q.distributionID == distribution_id,
             KarmaCache.q.sourcepackagenameID == sourcepackagename_id)
-        results = KarmaCache.select(query)
-        if results.count() == 0:
-            return None
-        elif results.count() == 1:
-            return results[0]
-        else:
-            raise AssertionError(
-                "Found more than one KarmaCache entry for person=%d, "
-                "category=%d, product=%d, distro=%d, package=%d"
-                % (person_id, category_id, product_id, distribution_id,
-                   sourcepackagename_id))
+        return KarmaCache.selectOne(query)
 
 
 class KarmaPersonCategoryCacheView(SQLBase):

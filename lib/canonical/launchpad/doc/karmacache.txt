@@ -51,4 +51,21 @@ and either update or delete it.
     >>> karmacacheset.deleteEntry(
     ...     person.id, bugs.id, product_id=firefox_id)
 
+
+If we try to update/delete an unexistent KarmaCache entry, we'll get a
+NotFoundError.
+
+    >>> karmacacheset.updateKarmaValue(
+    ...     new_value, person.id, bugs.id, product_id=firefox_id) 
+    Traceback (most recent call last):
+    ...
+    NotFoundError: ...
+
+    >>> karmacacheset.deleteEntry(
+    ...     person.id, bugs.id, product_id=firefox_id)
+    Traceback (most recent call last):
+    ...
+    NotFoundError: ...
+
+
     >>> LaunchpadFunctionalTestSetup().tearDown()
