@@ -12,16 +12,14 @@ Change some details of the Ubuntu distribution that were incorrect.
   >>> admin_browser.getControl("Display Name").value = 'Test Distro'
 
   >>> find_tag_by_id(
+  ...     admin_browser.contents, 'field.emblem_current_img').get('src')
+  u'/@@/nyet-mini'
+  >>> find_tag_by_id(
   ...     admin_browser.contents, 'field.gotchi_current_img').get('src')
   u'/@@/nyet-mugshot'
-  >>> import os
-  >>> import canonical.launchpad
-  >>> icon = os.path.join(
-  ...   os.path.dirname(canonical.launchpad.__file__),
-  ...   'pagetests/standalone/mypng.png')
-  >>> admin_browser.getControl(name='field.gotchi.action').value = ['change']
-  >>> admin_browser.getControl(name='field.gotchi.image').add_file(
-  ...   open(icon), 'image/png', 'mypng.png')
+
+  >>> from canonical.launchpad.ftests import set_gotchi_and_emblem
+  >>> set_gotchi_and_emblem(admin_browser)
 
   >>> admin_browser.getControl("Title").value = 'The Test Distribution'
   >>> admin_browser.getControl("Summary").value = 'Test Distro Summary'
@@ -40,4 +38,7 @@ The changed values can be seen on the distribution's +edit page.
 
   >>> find_tag_by_id(
   ...     admin_browser.contents, 'field.gotchi_current_img').get('src')
-  u'.../mypng.png'
+  u'.../icon.png'
+  >>> find_tag_by_id(
+  ...     admin_browser.contents, 'field.emblem_current_img').get('src')
+  u'.../emblem.png'

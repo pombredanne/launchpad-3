@@ -1,4 +1,7 @@
-  Now, 'myemail' is a MODERATED team, and 'salgado' will join again.
+= Joining a moderated team =
+
+Anybody can ask to join a moderated team, but the membership needs to be
+approved by one of the team administrators.
 
   # Make 'myemail' a moderated team first.
   >>> from canonical.launchpad.database import PersonSet
@@ -12,6 +15,8 @@
   fixed.
   >>> from canonical.launchpad.mail import stub
   >>> stub.test_emails[:] = []
+
+Now, 'myemail' is a MODERATED team, and 'salgado' will join again.
 
   >>> print http(r"""
   ... GET /~myemail/+join HTTP/1.1

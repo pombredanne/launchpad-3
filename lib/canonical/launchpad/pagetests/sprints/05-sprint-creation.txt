@@ -119,7 +119,7 @@ Add a new sprint with a different timezone is also handled correctly.
   2006-07-13 16:00:00 SAST...
   ...
 
-== Strints icons/emblems ==
+== Sprints icons/emblems ==
 
 When creating a new sprint we can also specify an icon and/or an emblem to the
 sprint.

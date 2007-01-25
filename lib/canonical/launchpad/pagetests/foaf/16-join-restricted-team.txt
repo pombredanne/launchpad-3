@@ -1,5 +1,4 @@
-  'salgado' tries to join 'myemail', but now it's a RESTRICTED team, and
-  nobody can ask to join.
+= Joining a restricted team =
 
   # Make 'myemail' a restricted team first.
   >>> from canonical.launchpad.database import PersonSet
@@ -8,6 +7,9 @@
   ...     TeamSubscriptionPolicy.RESTRICTED)
   >>> from canonical.database.sqlbase import flush_database_updates
   >>> flush_database_updates()
+
+'salgado' tries to join 'myemail', but now it's a RESTRICTED team, and
+because of that, nobody can ask to join.
 
   >>> print http(r"""
   ... GET /~myemail/+join HTTP/1.1
