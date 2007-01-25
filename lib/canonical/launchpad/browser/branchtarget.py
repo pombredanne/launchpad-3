@@ -11,12 +11,14 @@ __all__ = [
 
 import operator
 
+from zope.component import getUtility
+
 from canonical.lp.dbschema import (BranchLifecycleStatus,
                                    BranchLifecycleStatusFilter)
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.interfaces import (IPerson, IProduct,
-                                            IBranchLifecycleFilter)
+from canonical.launchpad.interfaces import (
+    IBranchLifecycleFilter, IBugBranchSet, IPerson, IProduct)
 from canonical.launchpad.webapp import LaunchpadFormView, custom_widget
 from canonical.widgets import LaunchpadDropdownWidget
 
@@ -32,6 +34,19 @@ class BranchTargetView(LaunchpadFormView):
                        BranchLifecycleStatus.DEVELOPMENT,
                        BranchLifecycleStatus.MATURE])
                   
+
+    def initialize(self):
+        # To avoid queries to the database for every branch to determine
+        # bug links, we get the associated bug branch links here.
+        LaunchpadFormView.initialize(self)
+        bugbranches = getUtility(IBugBranchSet).getBugBranchesForBranches(
+            self.visible_branches)
+        self.branch_bugs = {}
+        for bugbranch in bugbranches:
+            self.branch_bugs.setdefault(
+                bugbranch.branch.id, []).append(bugbranch.bug)
+        for branch_id in self.branch_bugs:
+            self.branch_bugs[branch_id].sort(key=operator.attrgetter('id'))
 
     @property
     def initial_values(self):

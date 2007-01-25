@@ -207,3 +207,22 @@ False
 Thus, a branch cannot change between being a pull branch and a push branch
 through the web interface.
 
+== BranchTargetView ==
+
+When listing the branches for a product we use the BranchTargetView.
+Now we are showing bug badges for branches that have associated bugs 
+(through BugBranch), and we want to check that when constructing
+the view we get all the associated bugs for all the branches so we
+don't issue many queries to the database.
+
+>>> firefox_product = getUtility(IProductSet).getByName('firefox')
+>>> view = getView(firefox_product, '+branches', TestRequest())
+>>> view.initialize()
+>>> for branch in view.visible_branches:
+...   print branch.unique_name, [bug.id for bug in
+...                              view.branch_bugs.get(branch.id, [])]
+~sabdfl/firefox/release--0.9.1 []
+~sabdfl/firefox/release-0.8 []
+~sabdfl/firefox/release-0.9 []
+~sabdfl/firefox/release-0.9.2 [4]
+~name12/firefox/main [4, 5]

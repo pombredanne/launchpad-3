@@ -42,6 +42,18 @@
         <td>
           <a tal:attributes="href branch/fmt:url"
              tal:content="branch/displayname/fmt:shorten/50">Title Goes Here!</a>
+
+          <!-- BugBranch badges -->
+          <tal:bugbranch repeat="bug python:view.branch_bugs.get(branch.id, [])">
+            <tal:visible condition="bug/required:launchpad.View">
+              <a tal:attributes="href bug/fmt:url;
+                                 title string:Bug ${bug/id}">
+                <img src="/@@/bug" />
+              </a>
+                 
+            </tal:visible>
+          </tal:bugbranch>
+
         </td>
         <!-- Author -->
         <td>
