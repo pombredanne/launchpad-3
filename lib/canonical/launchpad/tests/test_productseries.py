@@ -93,13 +93,9 @@ class TestImportUpdated(ImportdTestCase):
         self.assertEqual(str(series.datelastsynced), str(UTC_NOW))
 
     def testLastSyncedIsNone(self):
-        # If datelastlastsynced is None and import_branch.last_mirrored is not
-        # None, set datelastsynced.
-        #
-        # Previously, datelastsynced was not set, so it was NULL everywhere,
-        # even for imports that were already published (and thus had a non-NULL
-        # import_branch.last_mirrored). This is a data transition edge case,
-        # not something that happens because of the current logic.
+        # Make sure that importUpdated() still work when encountering the
+        # transition case where datelastsynced is None while a previous branch
+        # was successfully mirrored.
         series = self.series()
         series.datelastsynced = None
         UTC = pytz.timezone('UTC')

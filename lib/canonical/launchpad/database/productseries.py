@@ -411,6 +411,23 @@ class ProductSeries(SQLBase, BugTargetBase):
 
     def importUpdated(self):
         """See IProductSeries."""
+        # Update the timestamps after an import has successfully completed, so
+        # we can always know at what time the currently published branch was
+        # last imported.
+        #
+        # Importd updates branches to match the foreign VCS, then uploads them
+        # to an internal server. Then the branch-puller copies the branches
+        # from the internal server to the public server.
+        #
+        # * datelastsynced: time when importd last updated the internal branch
+        #   to match the foreign VCS.
+        # * importd_branch.last_mirrored: time when branch-puller last updated
+        #   the published branch to match the internal branch.
+        # * datepublishedsync: time when the /published/ branch was last
+        #   updated from the foreign VCS, at the time when the /internal/
+        #   branch was last updated from the foreign VCS.
+        #
+        # Sorry if that breaks your brain.
         if self.import_branch is None:
             raise NoImportBranchError(
                 "importUpdated called for series %d,"
