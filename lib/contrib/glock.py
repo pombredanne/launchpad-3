@@ -204,10 +204,10 @@ class GlobalLock:
             @exception IOError: if file lock can't be released
             @exception NotOwner: Attempt to release somebody else's lock.
         '''
-        if self.logger:
-            self.logger.debug('Removing lock file: %s', self.fpath)
         if not self.is_locked:
             return
+        if self.logger:
+            self.logger.debug('Removing lock file: %s', self.fpath)
         os.unlink(self.fpath)
         if _windows:
             if ctypes:
