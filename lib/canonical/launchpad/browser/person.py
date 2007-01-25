@@ -82,7 +82,7 @@ from canonical.launchpad.searchbuilder import any, NULL
 from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
     TeamSubscriptionPolicy, SpecificationFilter, TicketParticipation,
-    PersonCreationRationale)
+    PersonCreationRationale, BugTaskStatus)
 
 from canonical.widgets import ImageChangeWidget, PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
@@ -96,7 +96,7 @@ from canonical.launchpad.interfaces import (
     IAdminRequestPeopleMerge, NotFoundError, UNRESOLVED_BUGTASK_STATUSES,
     IPersonChangePassword, GPGKeyNotFoundError, UnexpectedFormData,
     ILanguageSet, IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet,
-    ILaunchpadRoot, INewPerson)
+    ILaunchpadRoot, INewPerson, BugTaskSearchParams)
 
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.specificationtarget import (
@@ -1192,6 +1192,23 @@ class PersonView(LaunchpadView):
     def notyetopenedpolls(self):
         assert self.context.isTeam()
         return IPollSubset(self.context).getNotYetOpenedPolls()
+
+    def getURLToAssignedBugsInProgress(self):
+        """Return an URL to a page which lists all bugs assigned to this
+        person that are In Progress.
+        """
+        query_string = urllib.urlencode(
+            [('field.status', BugTaskStatus.INPROGRESS.title)])
+        url = "%s/+assignedbugs" % canonical_url(self.context)
+        return ("%(url)s?search=Search&%(query_string)s"
+                % {'url': url, 'query_string': query_string})
+
+    def getBugsInProgress(self):
+        """Return up to 5 bugs assigned to this person that are In Progress."""
+        params = BugTaskSearchParams(
+            user=self.user, assignee=self.context,
+            status=BugTaskStatus.INPROGRESS, orderby='-date_last_updated')
+        return self.context.searchTasks(params)[:5]
 
     def viewingOwnPage(self):
         return self.user == self.context

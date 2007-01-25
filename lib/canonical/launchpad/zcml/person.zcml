@@ -139,6 +139,9 @@
           template="../templates/person-bounties.pt"
           lp:url="/~$Person.name/+bounties" />
       <browser:page
+          name="+portlet-working-on"
+          template="../templates/person-portlet-working-on.pt" />
+      <browser:page
           name="+portlet-emails"
           template="../templates/person-portlet-emails.pt"
           lp:url="/~$Person.name/+portlet-emails" />

@@ -20,6 +20,7 @@
 
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-working-on" />
   <div tal:replace="structure context/@@+portlet-latesttickets" />
 </metal:rightportlets>
 
