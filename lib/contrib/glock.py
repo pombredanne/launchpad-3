@@ -191,11 +191,11 @@ class GlobalLock:
                 fcntl.flock(self.fdlock, fcntl.LOCK_UN) # release global lock
                 raise LockAlreadyAcquired('Lock %s already acquired by '
                                           'someone else' % self.name)
-            self.is_locked = True
             if self.previous_lockfile_present and self.logger:
                 self.logger.warn("Stale lockfile detected and claimed.")
             #print 'got thread lock.' ##
 
+        self.is_locked = True
 
     def release(self):
         ''' Unlocks. (caller must own the lock!)

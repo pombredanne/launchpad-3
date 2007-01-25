@@ -3,7 +3,7 @@
 import os
 
 from canonical.config import config
-from contrib.glock import GlobalLock
+from contrib.glock import GlobalLock, LockAlreadyAcquired
 from canonical.launchpad.scripts.supermirror.branchtargeter import branchtarget
 from canonical.launchpad.scripts.supermirror.branchtomirror import (
     BranchToMirror)
@@ -51,7 +51,7 @@ class JobManager:
         self.actualLock = GlobalLock(lockfilename)
         try:
             self.actualLock.acquire()
-        except OSError, e:
+        except LockAlreadyAcquired:
             raise LockError(lockfilename)
 
     def unlock(self):
