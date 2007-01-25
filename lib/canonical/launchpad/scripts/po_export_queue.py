@@ -14,7 +14,7 @@ from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad import helpers
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.components.poexport import (
-    MOCompiler, RosettaWriteTarFile)
+    MOCompiler, MOCompilationError, RosettaWriteTarFile)
 from canonical.launchpad.components.poparser import (
     POInvalidInputError)
 from canonical.launchpad.interfaces import (
@@ -360,7 +360,7 @@ def process_single_object_request(obj, format):
 
     try:
         result.url = handler.get_librarian_url()
-    except (LibrarianFailure, POInvalidInputError):
+    except (LibrarianFailure, POInvalidInputError, MOCompilationError):
         result.add_failure(obj)
         # The export for the current entry failed, we can remove the specific
         # logger to catch warnings.
