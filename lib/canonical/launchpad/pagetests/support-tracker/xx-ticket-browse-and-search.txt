@@ -224,11 +224,11 @@ recent requests on Mozilla Firefox.
     Firefox cannot render Bank Site
 
 Note that the default sort order for this listing is
-'recent update first' so that requests which received new information
+'recently updated first' so that requests which received new information
 from the submitter shows up first:
 
     >>> browser.getControl(name='field.sort').displayValue
-    ['recent update first']
+    ['recently updated first']
 
 That listing is also searchable. Since he's has lots of experience
 dealing with plugins problems, he always start by a search for such

@@ -1856,9 +1856,9 @@ class TicketSort(DBSchema):
     """)
 
     RECENT_OWNER_ACTIVITY = Item(30, """
-    recent update first
+    recently updated first
 
-    Sort tickets that received new information by the owner first.
+    Sort tickets that recently received new information from the owner first.
     """)
 
 

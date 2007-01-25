@@ -445,7 +445,7 @@ class TicketTargetSupportMenu(ApplicationMenu):
              'field.status': statuses}, doseq=True)
 
     def open(self):
-        url = self.makeSearchLink('Open', sort='recent update first')
+        url = self.makeSearchLink('Open', sort='recently updated first')
         return Link(url, 'Open', icon='ticket')
 
     def answered(self):
