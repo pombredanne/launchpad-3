@@ -110,7 +110,10 @@ we'll define one here.
     ...         return self.travstack
     ...
     ...     def consume(self):
-    ...         return self.travstack.pop()
+    ...         try:
+    ...             return self.travstack.pop()
+    ...         except IndexError:
+    ...             return None
 
     >>> class Request(object):
     ...     implements(IBrowserRequest)
@@ -120,6 +123,7 @@ we'll define one here.
     ...         self.traversal_stack = []
     ...         self.breadcrumbs = []
     ...         self.traversed_objects = []
+    ...         self.query_string = None
     ...
     ...     @property
     ...     def stepstogo(self):
@@ -141,6 +145,12 @@ we'll define one here.
     ...                     return (context, iface)
     ...         else:
     ...             return None, None
+    ...         
+    ...     def get(self, name):
+    ...         if name == 'QUERY_STRING':
+    ...             return self.query_string
+    ...         else:
+    ...             return None
 
     >>> request = Request()
 
@@ -525,6 +535,39 @@ Let's make another navigation class to test redirection.
     >>> print request.response.status
     301
 
+
+== Redirecting subtrees ==
+
+There are situations, especially during refactoring, where you want
+to keep old URLs working but have them redirect to the new URL, complete
+with the remainder of the URL and or query string.
+
+    >>> class ThingSetNavigation5(ThingSetNavigation):
+    ...     def traverse(self, name):
+    ...         return self.redirectSubTree('http://ubuntu.com/%s' % name)
+    ... 
+    ...     @stepto('+foo')
+    ...     def traverse_foo(self):
+    ...         return self.redirectSubTree('http://wiki.canonical.com', status=303)
+
+    >>> navigation5 = ThingSetNavigation5(thingset, request)
+    >>> navigation5.publishTraverse(request, 'jobs')
+    <...RedirectionView...>
+    >>> navigation5.publishTraverse(request, 'jobs')()
+    ''
+    >>> request.response.redirected_to
+    'http://ubuntu.com/jobs'
+    >>> print request.response.status
+    301
+
+    >>> request.traversal_stack = ['LaunchpadMeeting']
+    >>> request.query_string = 'hilight=Time'
+    >>> navigation5.publishTraverse(request, '+foo')()
+    ''
+    >>> request.response.redirected_to
+    'http://wiki.canonical.com/LaunchpadMeeting?hilight=Time'
+    >>> print request.response.status
+    303
 
 
 Make a clean request.

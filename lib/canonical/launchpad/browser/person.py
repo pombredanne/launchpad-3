@@ -110,7 +110,7 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
     enabled_with_permission, Navigation, stepto, stepthrough, smartquote,
     GeneralFormView, LaunchpadEditFormView, LaunchpadFormView, action,
-    custom_widget, RedirectionNavigation)
+    custom_widget)
 
 from canonical.launchpad import _
 
@@ -170,35 +170,27 @@ class TeamNavigation(Navigation, CalendarTraversalMixin,
             person, self.context)
 
 
-class PersonSetNavigation(RedirectionNavigation):
+class PersonSetNavigation(Navigation):
 
     usedfor = IPersonSet
 
     def breadcrumb(self):
         return 'People'
 
-    @property
-    def redirection_root_url(self):
-        return canonical_url(getUtility(ILaunchpadRoot))
-
     def traverse(self, name):
         # Raise a 404 on an invalid Person name
-        if self.context.getByName(name) is None:
+        person = self.context.getByName(name)
+        if person is None:
             raise NotFoundError(name)
         # Redirect to /~name
-        return RedirectionNavigation.traverse(self, '~' + name)
+        return self.redirectSubTree(canonical_url(person))
             
     @stepto('+me')
     def me(self):
         me = getUtility(ILaunchBag).user
         if me is None:
             raise Unauthorized("You need to be logged in to view this URL.")
-        try:
-            # Not a permanent redirect, as it depends on who is logged in
-            self.redirection_status = 303
-            return RedirectionNavigation.traverse(self, '~' + me.name)
-        finally:
-            self.redirection_status = 301
+        return self.redirectSubTree(canonical_url(me), status=303)
 
 
 class PeopleContextMenu(ContextMenu):
