@@ -56,7 +56,7 @@ We can also change the product's icon/emblem.
 
   >>> emblem = open(os.path.join(
   ...     os.path.dirname(canonical.launchpad.__file__),
-  ...     'images/product_icon.gif'))
+  ...     'images/product.png'))
   >>> browser.getControl(name='field.emblem.action').value = ['change']
   >>> browser.getControl(name='field.emblem.image').add_file(
   ...     emblem, 'image/gif', 'emblem.gif')
