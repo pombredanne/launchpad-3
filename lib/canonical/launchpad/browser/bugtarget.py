@@ -46,7 +46,7 @@ class FileBugData:
     """Extra data to be added to the bug."""
 
     def __init__(self):
-        self.default_summary = None
+        self.initial_summary = None
         self.extra_description = None
         self.comments = []
         self.attachments = []
@@ -54,14 +54,14 @@ class FileBugData:
     def setFromRawMessage(self, raw_mime_msg):
         """Set the extra file bug data from a MIME multipart message.
 
-            * The Subject header is the default bug summary.
+            * The Subject header is the initial bug summary.
             * The first inline part will be added to the description.
             * All other inline parts will be added as separate comments.
             * All attachment parts will be added as attachment.
         """
         mime_msg = email.message_from_string(raw_mime_msg)
         if mime_msg.is_multipart():
-            self.default_summary = mime_msg.get('Subject')
+            self.initial_summary = mime_msg.get('Subject')
             for part in mime_msg.get_payload():
                 disposition_header = part.get('Content-Disposition', 'inline')
                 # Get the type, excluding any parameters.
@@ -111,9 +111,10 @@ class FileBugViewBase(LaunchpadFormView):
     def initialize(self):
         LaunchpadFormView.initialize(self)
         if self.extra_data_token is not None:
-            if self.extra_data.default_summary:
+            # self.extra_data has been initialized in publishTraverse().
+            if self.extra_data.initial_summary:
                 self.widgets['title'].setRenderedValue(
-                    self.extra_data.default_summary)
+                    self.extra_data.initial_summary)
             # XXX: We should include more details of what will be added
             #      to the bug report.
             #      -- Bjorn Tillenius, 2006-01-15
@@ -326,7 +327,9 @@ class FileBugViewBase(LaunchpadFormView):
     def publishTraverse(self, request, name):
         """See IBrowserPublisher."""
         if self.extra_data_token is not None:
-            # The URL contains more path components than expected.
+            # publishTraverse() has already been called once before,
+            # which means that he URL contains more path components than
+            # expected.
             raise NotFound(self, name, request=request)
 
         extra_bug_data = getUtility(ITemporaryStorageManager).fetch(name)

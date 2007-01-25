@@ -1,6 +1,6 @@
 MIME-Version: 1.0 
 Content-type: multipart/mixed; boundary=boundary
-Subject: Default bug summary
+Subject: Initial bug summary
 
 --boundary
 Content-disposition: inline

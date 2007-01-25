@@ -175,7 +175,7 @@ created for the attachments.
     Attachment: Attachment description.
     -----------------------------------------
 
-=== Default bug summary ===
+=== Initial bug summary ===
 
 If the uploaded message contains a Subject field in the initial headers,
 that will be used to automatically fill in a suggested title.
@@ -193,7 +193,7 @@ that will be used to automatically fill in a suggested title.
     ...     '%s' % blob_token)
 
     >>> user_browser.getControl('Summary').value
-    'Default bug summary'
+    'Initial bug summary'
 
 The user can of course change the summary if he wants to.
 
