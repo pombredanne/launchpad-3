@@ -1,8 +1,9 @@
 .demo {background-color: #fee;}
 
-/* Stuff browsers should do but don't: */
+/* === Stuff browsers should do but don't === */
 tr {vertical-align: top;}
 
+/* === Overall presentation === */
 body {
   position: relative;
   font-family: trebuchet ms, tahoma, arial, verdana, sans-serif;
@@ -741,11 +742,11 @@ a.open, a.closed {
   background-image: url(help_ttl_closed.gif);
 }
 
-/* === Tab-specific style === */
+/* === Application-specific styles === */
 
 #application-footer strong {font-weight: normal;}
 
-/* tab-overview */
+/* Overview: */
 body.tab-overview #mainarea div.x {
   background-image: url(mainarea_top.gif);
 }
@@ -787,7 +788,8 @@ h1, h2, h3 { /* On Overview tab or tab-less pages */
   background: none;
   color: #90b51a; /* darkest color from locationbar_em_bg.gif */
 }
-/* tab-branches */
+
+/* Code: */
 body.tab-branches #mainarea div.x {
   background-image: url(mainarea_tab1_top.gif);
 }
@@ -832,7 +834,8 @@ body.tab-branches #actions h2 {background-color: #f3cb00;}
   background: none;
   color: #f3cb00; /* "it fits nicely with the Bazaar logo" -- sabdfl */
 }
-/* tab-bugs */
+
+/* Bugs: */
 body.tab-bugs #mainarea div.x {
   background-image: url(mainarea_tab2_top.gif);
 }
@@ -876,7 +879,8 @@ body.tab-bugs #actions h2 {background-color: #c03;}
   background: none;
   color: #c03;
 }
-/* tab-features */
+
+/* Blueprints: */
 body.tab-specifications #mainarea div.x {
   background-image: url(mainarea_tab4_top.gif);
 }
@@ -917,7 +921,35 @@ body.tab-specifications #actions h2 {background-color: #159cc8;}
   background: none;
   color: #159cc8; /* darkest color from mainarea_tab4-* */
 }
-/* tab-translations */
+.specstatusAPPROVED             {color: green;}
+.specstatusPENDINGAPPROVAL      {color: #f09;}
+.specstatusPENDINGREVIEW        {color: #f09;}
+.specstatusDRAFT                {color: #930;}
+.specstatusDISCUSSION           {color: #930;}
+.specstatusNEW                  {color: red;}
+.specstatusSUPERSEDED           {color: gray;}
+.specstatusOBSOLETE             {color: gray;}
+.specpriorityNOTFORUS           {color: gray;}
+.specpriorityUNDEFINED          {color: gray;}
+.specpriorityLOW                {color: black;}
+.specpriorityMEDIUM             {color: #f60;}
+.specpriorityHIGH               {color: red;}
+.specpriorityESSENTIAL          {color: red;}
+.specdeliveryUNKNOWN            {color: gray;}
+.specdeliveryNOTSTARTED         {color: gray;}
+.specdeliveryDEFERRED           {color: red;}
+.specdeliveryNEEDSINFRASTUCTURE {color: red;}
+.specdeliveryBLOCKED            {color: red;}
+.specdeliverySTARTED            {color: blue;}
+.specdeliverySLOW               {color: red;}
+.specdeliveryGOOD               {color: blue;}
+.specdeliveryBETA               {color: #f60;}
+.specdeliveryNEEDSREVIEW        {color: purple;}
+.specdeliveryAWAITINGDEPLOYMENT {color: red;}
+.specdeliveryIMPLEMENTED        {color: green;}
+
+
+/* Translations: */
 body.tab-translations #mainarea div.x {
   background-image: url(mainarea_tab5_top.gif);
 }
@@ -961,7 +993,8 @@ body.tab-translations #actions h2 {background-color: #962667;}
   background: none;
   color: #962667; /* darkest color from mainarea_tab5-* */
 }
-/* tab-support */
+
+/* Answers: */
 body.tab-support #mainarea div.x {
   background-image: url(mainarea_tab6_top.gif);
 }
@@ -1140,44 +1173,6 @@ div.three.column.left, div.three.column.center, div.three.column.right {
   float: left;
 }
 
-table {
-  border-collapse: collapse;
-}
-table.latest th, table.latest td {
-  padding-bottom: 2em;
-}
-table.summary {
-  margin: 0 auto;
-}
-table.summary tr {
-  border: dotted #ccc;
-  border-width: 1px 0;
-}
-table.summary td {
-  padding-left: 0.5em;
-}
-table.summary ul, table.summary ul li {
-  list-style-position: inside;
-  margin: 0;
-  padding: 0;
-}
-th {
-  text-align: right;
-}
-th, td {
-  padding: 0.25em;
-}
-th.icon, td.icon {
-  vertical-align: top;
-  white-space: nowrap;
-  width: 1px;
-}
-th.icon.left, td.icon.left {
-  padding-right: 0;
-}
-th.icon.right, td.icon.right {
-  padding-left: 0;
-}
 .title {
   font-weight: bold;
 }
@@ -1224,8 +1219,50 @@ fieldset {
   margin: 0.5em 0 1em;
   padding: 0;
 }
-thead th, tfoot th {text-align: left;}
 
+/* === Tables === */
+
+table {
+  border-collapse: collapse;
+}
+table.latest th, table.latest td {
+  padding-bottom: 2em;
+}
+table.summary {
+  margin: 0 auto;
+}
+table.summary tr {
+  border: dotted #ccc;
+  border-width: 1px 0;
+}
+table.summary td {
+  padding-left: 0.5em;
+}
+table.summary ul, table.summary ul li {
+  list-style-position: inside;
+  margin: 0;
+  padding: 0;
+}
+th {
+  text-align: right;
+}
+th, td {
+  padding: 0.25em;
+}
+th.icon, td.icon {
+  vertical-align: top;
+  white-space: nowrap;
+  width: 1px;
+}
+th.icon.left, td.icon.left {
+  padding-right: 0;
+}
+th.icon.right, td.icon.right {
+  padding-left: 0;
+}
+thead th, tfoot th {
+  text-align: left;
+}
 table.listing {
   margin-top: 0.5em;
 }
@@ -1271,4 +1308,8 @@ table.listing img {
 }
 table.listing tr.secondary>th, table.listing tr.secondary td {
   border-top: none;
+}
+/* Used to indicate a value to be used to sort cells in a row */
+.sortkey, .revsortkey {
+  display: none;
 }
