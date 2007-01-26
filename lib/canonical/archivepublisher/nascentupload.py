@@ -38,8 +38,8 @@ from canonical.librarian.utils import copy_and_close, filechunks
 
 from canonical.lp.dbschema import (
     SourcePackageUrgency, PackagePublishingPriority, PersonCreationRationale,
-    DistroReleaseQueueCustomFormat, BinaryPackageFormat, BuildStatus,
-    DistroReleaseQueueStatus, PackagePublishingPocket)
+    PackageUploadCustomFormat, BinaryPackageFormat,
+    BuildStatus, PackageUploadStatus, PackagePublishingPocket)
 
 from canonical.launchpad.interfaces import (
     IGPGHandler, GPGVerificationError, IGPGKeySet, IPersonSet,
@@ -56,10 +56,10 @@ from canonical.launchpad.mail import format_address
 # the marker in the codebase and make sure the same changes are made
 # everywhere which needs them.
 custom_sections = {
-    'raw-installer': DistroReleaseQueueCustomFormat.DEBIAN_INSTALLER,
-    'raw-translations': DistroReleaseQueueCustomFormat.ROSETTA_TRANSLATIONS,
-    'raw-dist-upgrader': DistroReleaseQueueCustomFormat.DIST_UPGRADER,
-    'raw-ddtp-tarball': DistroReleaseQueueCustomFormat.DDTP_TARBALL,
+    'raw-installer': PackageUploadCustomFormat.DEBIAN_INSTALLER,
+    'raw-translations': PackageUploadCustomFormat.ROSETTA_TRANSLATIONS,
+    'raw-dist-upgrader': PackageUploadCustomFormat.DIST_UPGRADER,
+    'raw-ddtp-tarball': PackageUploadCustomFormat.DDTP_TARBALL,
     }
 
 changes_mandatory_fields = set([
@@ -973,7 +973,7 @@ class NascentUpload:
                 # remove the support for this use case, see further
                 # info in bug #55774.
                 self.logger.debug("Checking in the ACCEPTED queue")
-                q = dr.getQueueItems(status=DistroReleaseQueueStatus.ACCEPTED)
+                q = dr.getQueueItems(status=PackageUploadStatus.ACCEPTED)
                 for qitem in q:
                     self.logger.debug("Looking at qitem %s/%s" % (
                         qitem.sourcepackagerelease.name,
@@ -2075,7 +2075,7 @@ class NascentUpload:
         if self.binaryful and not self.single_custom:
             self.insert_binary_into_db()
 
-        # create a DRQ entry in new state
+        # create an upload entry in new state
         self.logger.debug("Creating a New queue entry")
         queue_root = self.distrorelease.createQueueEntry(self.policy.pocket,
             self.changes_basename, self.changes["filecontents"])

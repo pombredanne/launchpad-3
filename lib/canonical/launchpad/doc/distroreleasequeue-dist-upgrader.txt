@@ -195,9 +195,9 @@ Cleanup the mess:
 Inspect the QUEUE looking for an ACCEPTED entry corresponding to the
 previous upload:
 
-  >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
+  >>> from canonical.lp.dbschema import PackageUploadStatus
   >>> queue_item = breezy_autotest.getQueueItems(
-  ...      status=DistroReleaseQueueStatus.ACCEPTED)[0]
+  ...      status=PackageUploadStatus.ACCEPTED)[0]
   >>> queue_item.customfiles[0].libraryfilealias.filename
   u'dist-upgrader_20060302.0120_all.tar.gz'
 

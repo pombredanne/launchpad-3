@@ -16,7 +16,7 @@ from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces import (
     IHasOwner, IHasDrivers, IBugTarget, ISpecificationGoal)
 
-from canonical.lp.dbschema import DistroReleaseQueueStatus
+from canonical.lp.dbschema import PackageUploadStatus
 from canonical.launchpad.validators.email import valid_email
 
 from canonical.launchpad import _
@@ -111,6 +111,8 @@ class IDistroRelease(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
     # other properties
     previous_releases = Attribute("Previous distroreleases from the same "
         "distribution.")
+
+    main_archive = Attribute('Main Archive')
 
     def isUnstable():
         """Return True if in unstable (or "development") phase, False otherwise.

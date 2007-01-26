@@ -556,9 +556,11 @@ class MirrorDistroArchRelease(SQLBase, _MirrorReleaseMixIn):
             SecureBinaryPackagePublishingHistory.pocket = %s 
             AND SecureBinaryPackagePublishingHistory.component = %s 
             AND SecureBinaryPackagePublishingHistory.distroarchrelease = %s
+            AND SecureBinaryPackagePublishingHistory.archive = %s
             AND SecureBinaryPackagePublishingHistory.status = %s
-            """ % sqlvalues(self.pocket, self.component.id, 
-                            self.distro_arch_release.id,
+            """ % sqlvalues(self.pocket, self.component, 
+                            self.distro_arch_release,
+                            self.distro_arch_release.main_archive,
                             PackagePublishingStatus.PUBLISHED)
 
         if deb_only:
@@ -615,9 +617,11 @@ class MirrorDistroReleaseSource(SQLBase, _MirrorReleaseMixIn):
             SecureSourcePackagePublishingHistory.pocket = %s 
             AND SecureSourcePackagePublishingHistory.component = %s 
             AND SecureSourcePackagePublishingHistory.distrorelease = %s
+            AND SecureSourcePackagePublishingHistory.archive = %s
             AND SecureSourcePackagePublishingHistory.status = %s
-            """ % sqlvalues(self.pocket, self.component.id, 
-                            self.distrorelease.id,
+            """ % sqlvalues(self.pocket, self.component, 
+                            self.distrorelease,
+                            self.distrorelease.main_archive,
                             PackagePublishingStatus.PUBLISHED)
 
         if time_interval is not None:

@@ -120,7 +120,8 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
             status=status,
             datecreated=UTC_NOW,
             pocket=pocket,
-            embargo=False
+            embargo=False,
+            archive=self.breezy_autotest.main_archive
             )
 
         # SPPH and SSPPH IDs are the same, since they are SPPH is a SQLVIEW

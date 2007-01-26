@@ -113,7 +113,7 @@ And then we need a way to process the uploads from the queue
 And we need a way to process the accepted queue
 
   >>> from canonical.launchpad.interfaces import IDistributionSet
-  >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
+  >>> from canonical.lp.dbschema import PackageUploadStatus
   >>> from canonical.database.sqlbase import flush_database_updates
   >>> from canonical.launchpad.ftests import login
 
@@ -124,7 +124,7 @@ And we need a way to process the accepted queue
   ...     distribution = getUtility(IDistributionSet)[distro]
   ...     for release in distribution:
   ...         items = release.getQueueItems(
-  ...            status=DistroReleaseQueueStatus.ACCEPTED)
+  ...            status=PackageUploadStatus.ACCEPTED)
   ...         for item in items:
   ...             item.realiseUpload()
   ...     flush_database_updates()
@@ -139,10 +139,10 @@ it into the accepted queue
   ...     if release is None:
   ...         release = "breezy"
   ...     dr, pocket = distribution.getDistroReleaseAndPocket(release)
-  ...     items = dr.getQueueItems(status=DistroReleaseQueueStatus.NEW)
+  ...     items = dr.getQueueItems(status=PackageUploadStatus.NEW)
   ...     for item in items:
   ...         item.setAccepted()
-  ...     items = dr.getQueueItems(status=DistroReleaseQueueStatus.UNAPPROVED)
+  ...     items = dr.getQueueItems(status=PackageUploadStatus.UNAPPROVED)
   ...     for item in items:
   ...         item.setAccepted()
   ...     flush_database_updates()

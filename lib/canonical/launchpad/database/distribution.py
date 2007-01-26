@@ -122,6 +122,9 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
                                             joinColumn="distribution",
                                             orderBy="name",
                                             prejoins=['sourcepackagename'])
+    main_archive = ForeignKey(dbName='main_archive',
+        foreignKey='Archive', notNull=True)
+
 
     @property
     def archive_mirrors(self):
@@ -588,12 +591,14 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackagePublishingHistory.status != %s AND
             SourcePackageRelease.sourcepackagename =
                 SourcePackageName.id
-            """ % sqlvalues(self.id, PackagePublishingStatus.REMOVED),
+            """ % sqlvalues(self, self.main_archive,
+                            PackagePublishingStatus.REMOVED),
             distinct=True,
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease',
                 'SourcePackageRelease']))
@@ -613,12 +618,14 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackagePublishingHistory.status != %s AND
             SourcePackageRelease.sourcepackagename =
                 SourcePackageName.id
-            """ % sqlvalues(self.id, PackagePublishingStatus.REMOVED),
+            """ % sqlvalues(self, self.main_archive,
+                            PackagePublishingStatus.REMOVED),
             distinct=True,
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease',
                 'SourcePackageRelease']))
@@ -645,8 +652,9 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.status != %s
-            """ % sqlvalues(sourcepackagename, self,
+            """ % sqlvalues(sourcepackagename, self, self.main_archive,
                             PackagePublishingStatus.REMOVED),
             orderBy='id',
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
@@ -775,11 +783,12 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackagePublishingHistory.status = %s
-            ''' % sqlvalues(self, sourcepackagename,
+            ''' % sqlvalues(self, self.main_archive, sourcepackagename,
                             PackagePublishingStatus.PUBLISHED),
             clauseTables=['SourcePackageRelease', 'DistroRelease'],
             distinct=True,
@@ -837,7 +846,7 @@ class DistributionSet:
             return None
 
     def new(self, name, displayname, title, description, summary, domainname,
-            members, owner, gotchi, emblem):
+            members, owner, main_archive, gotchi, emblem):
         return Distribution(
             name=name,
             displayname=displayname,
@@ -848,6 +857,6 @@ class DistributionSet:
             members=members,
             mirror_admin=owner,
             owner=owner,
+            main_archive=main_archive,
             gotchi=gotchi,
             emblem=emblem)
-

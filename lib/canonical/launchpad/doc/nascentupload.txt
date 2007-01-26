@@ -344,7 +344,7 @@ Finally we can ask the upload to process itself.
 
 Retrive the just-inserted SourcePackageRelease correspondent to 'ed'
 (it's the only one we have, the process to retrieve a non-published
-SPR w/o at least and DRQ entry is quite unusual)
+SPR w/o at least one Upload entry is quite unusual)
 
   >>> from canonical.launchpad.database import (
   ...     SourcePackageRelease, SourcePackageName)
@@ -409,9 +409,9 @@ First up, construct an upload of just the ed source...
 
 The ed source would be in NEW, so punt it into accepted.
 
-  >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
+  >>> from canonical.lp.dbschema import PackageUploadStatus
   >>> from canonical.launchpad.interfaces import QueueInconsistentStateError
-  >>> new_queue = hoary.getQueueItems(DistroReleaseQueueStatus.NEW)
+  >>> new_queue = hoary.getQueueItems(PackageUploadStatus.NEW)
   >>> for item in new_queue:
   ...     try:
   ...         print "%s/%s" % (item.sourcepackagerelease.name, 
@@ -448,7 +448,7 @@ automatically promote the queue entry to ACCEPTED.
   ...     upload_file.new = False
 
 The we invoke do_accept() normally, since the upload is consistent.
-but since the uniqueness check in IDRQ.setAccepted() has detected
+but since the uniqueness check in IUpload.setAccepted() has detected
 another accepted candidate that conflicts with the proposed one.
 The upload will be rejected.
 
@@ -464,7 +464,7 @@ queue entry in the database.
   >>> success
   False
 
-  >>> hoary.getQueueItems(DistroReleaseQueueStatus.NEW).count()
+  >>> hoary.getQueueItems(PackageUploadStatus.NEW).count()
   1
 
 Next we send in the binaries, since the source should be in ACCEPTED the
@@ -563,7 +563,7 @@ Look for the respective SourcePackageRelease entry and inspect its
 content, it should have all the required fields except the
 'dsc_standards_version':
 
-  >>> inst_queue = hoary.getQueueItems(DistroReleaseQueueStatus.NEW,
+  >>> inst_queue = hoary.getQueueItems(PackageUploadStatus.NEW,
   ...                                  name='test75874', exact_match=True)[0]
   >>> inst_spr = inst_queue.sources[0].sourcepackagerelease
 

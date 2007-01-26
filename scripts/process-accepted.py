@@ -21,7 +21,7 @@ from canonical.lp import (
     initZopeless, READ_COMMITTED_ISOLATION)
 
 from contrib.glock import GlobalLock
-from canonical.lp.dbschema import DistroReleaseQueueStatus
+from canonical.lp.dbschema import PackageUploadStatus
 
 def main():
     # Parse command-line arguments
@@ -58,7 +58,7 @@ def main():
         for release in distro.releases:
             log.debug("Processing queue for %s" % release.name)
             queue_items = release.getQueueItems(
-                DistroReleaseQueueStatus.ACCEPTED)
+                PackageUploadStatus.ACCEPTED)
             for queue_item in queue_items:
                 try:
                     queue_item.realiseUpload(log)

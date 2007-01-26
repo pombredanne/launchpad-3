@@ -176,9 +176,11 @@ class SourcePackage(BugTargetBase, SourcePackageTicketTargetMixin):
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackagePublishingHistory.distrorelease = %s AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.status != %s
             """ % sqlvalues(self.sourcepackagename,
                             self.distrorelease,
+                            self.distrorelease.main_archive,
                             PackagePublishingStatus.REMOVED),
             orderBy='-datepublished',
             clauseTables=['SourcePackageRelease'])
@@ -197,9 +199,11 @@ class SourcePackage(BugTargetBase, SourcePackageTicketTargetMixin):
             SourcePackageRelease.version = %s AND
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackagePublishingHistory.distrorelease = %s AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.status != %s
             """ % sqlvalues(version, self.sourcepackagename,
                             self.distrorelease,
+                            self.distrorelease.main_archive,
                             PackagePublishingStatus.REMOVED),
             orderBy='-datepublished',
             clauseTables=['SourcePackageRelease'])
@@ -250,10 +254,13 @@ class SourcePackage(BugTargetBase, SourcePackageTicketTargetMixin):
         SourcePackagePublishingHistory.distrorelease =
            DistroRelease.Id AND
         SourcePackagePublishingHistory.distrorelease = %s AND
+        SourcePackagePublishingHistory.archive = %s AND
         SourcePackagePublishingHistory.status != %s AND
         SourcePackagePublishingHistory.sourcepackagerelease =
            SourcePackageRelease.id
-        """ % sqlvalues(self.sourcepackagename, self.distrorelease,
+        """ % sqlvalues(self.sourcepackagename,
+                        self.distrorelease,
+                        self.distrorelease.main_archive,
                         PackagePublishingStatus.REMOVED)
 
         spreleases = SourcePackageRelease.select(
@@ -283,10 +290,13 @@ class SourcePackage(BugTargetBase, SourcePackageTicketTargetMixin):
         releases = SourcePackageRelease.select('''
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackagePublishingHistory.distrorelease = %s AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.status != %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id
-            ''' % sqlvalues(self.sourcepackagename, self.distrorelease,
+            ''' % sqlvalues(self.sourcepackagename,
+                            self.distrorelease,
+                            self.distrorelease.main_archive,
                             PackagePublishingStatus.REMOVED),
             clauseTables=['SourcePackagePublishingHistory'],
             orderBy=[SQLConstant(order_const),
@@ -305,10 +315,13 @@ class SourcePackage(BugTargetBase, SourcePackageTicketTargetMixin):
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.status != %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id
-            ''' % sqlvalues(self.sourcepackagename, self.distribution,
+            ''' % sqlvalues(self.sourcepackagename,
+                            self.distribution,
+                            self.distribution.main_archive,
                             PackagePublishingStatus.REMOVED),
             clauseTables=['DistroRelease', 'SourcePackagePublishingHistory'],
             orderBy=[SQLConstant(order_const),
@@ -415,11 +428,14 @@ class SourcePackage(BugTargetBase, SourcePackageTicketTargetMixin):
         """See ISourcePackage."""
         result = SourcePackagePublishingHistory.select("""
             SourcePackagePublishingHistory.distrorelease = %s AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackagePublishingHistory.status != %s
-            """ % sqlvalues(self.distrorelease, self.sourcepackagename,
+            """ % sqlvalues(self.distrorelease,
+                            self.distrorelease.main_archive,
+                            self.sourcepackagename,
                             PackagePublishingStatus.REMOVED),
             clauseTables=['SourcePackageRelease'])
         # create the dictionary with the set of pockets as keys
@@ -499,10 +515,13 @@ class SourcePackage(BugTargetBase, SourcePackageTicketTargetMixin):
         Build.sourcepackagerelease = SourcePackageRelease.id AND
         SourcePackageRelease.sourcepackagename = %s AND
         SourcePackagePublishingHistory.distrorelease = %s AND
+        SourcePackagePublishingHistory.archive = %s AND
         SourcePackagePublishingHistory.status = %s AND
         SourcePackagePublishingHistory.sourcepackagerelease =
         SourcePackageRelease.id
-        """ % sqlvalues(self.sourcepackagename.id, self.distrorelease.id,
+        """ % sqlvalues(self.sourcepackagename,
+                        self.distrorelease,
+                        self.distrorelease.main_archive,
                         PackagePublishingStatus.PUBLISHED)]
 
         # XXX cprov 20060925: It would be nice if we could encapsulate

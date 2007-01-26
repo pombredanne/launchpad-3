@@ -156,6 +156,9 @@ class IBaseSourcePackagePublishing(Interface):
     pocket = Int(
             title=_('Package publishing pocket'), required=True, readonly=True,
             )
+    archive = Int(
+            title=_('Archive ID'), required=True, readonly=True,
+            )
 
 
 class ISourcePackageFilePublishing(IBaseSourcePackagePublishing):
@@ -209,6 +212,9 @@ class ISourcePackagePublishingBase(Interface):
     pocket = Int(
             title=_('The pocket into which this entry is published'),
             required=True, readonly=True,
+            )
+    archive = Int(
+            title=_('Archive ID'), required=True, readonly=True,
             )
 
 
@@ -291,6 +297,9 @@ class IBaseBinaryPackagePublishing(Interface):
             )
     pocket = Int(
             title=_('Package publishing pocket'), required=True, readonly=True,
+            )
+    archive = Int(
+            title=_('Archive ID'), required=True, readonly=True,
             )
 
 
@@ -380,6 +389,10 @@ class IExtendedBinaryPackagePublishing(Interface):
                     'published set'),
             required=False, readonly=False,
             )
+    archive = Int(
+            title=_('Archive ID'), required=True, readonly=True,
+            )
+
 
 class ISecureBinaryPackagePublishingHistory(IExtendedBinaryPackagePublishing):
     """A binary package publishing record."""

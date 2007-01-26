@@ -23,7 +23,7 @@ from canonical.database.sqlbase import (
 from canonical.lp import (
     initZopeless, READ_COMMITTED_ISOLATION)
 from canonical.lp.dbschema import (
-    DistroReleaseQueueStatus, BuildStatus, PackagePublishingPocket)
+    PackageUploadStatus, BuildStatus, PackagePublishingPocket)
 from canonical.launchpad.interfaces import (
     IDistributionSet, NotFoundError)
 from canonical.launchpad.scripts import (
@@ -125,13 +125,13 @@ def check_queue(distrorelease):
     # only the RELEASE pocket is inherited, so we only check
     # queue items for it.
     new_items = parentrelease.getQueueItems(
-        DistroReleaseQueueStatus.NEW,
+        PackageUploadStatus.NEW,
         pocket=PackagePublishingPocket.RELEASE)
     accepted_items = parentrelease.getQueueItems(
-        DistroReleaseQueueStatus.ACCEPTED,
+        PackageUploadStatus.ACCEPTED,
         pocket=PackagePublishingPocket.RELEASE)
     unapproved_items = parentrelease.getQueueItems(
-        DistroReleaseQueueStatus.UNAPPROVED,
+        PackageUploadStatus.UNAPPROVED,
         pocket=PackagePublishingPocket.RELEASE)
 
     assert (new_items.count() == 0,

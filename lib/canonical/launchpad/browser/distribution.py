@@ -32,8 +32,8 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
-    IDistribution, IDistributionSet, IPublishedPackageSet, ILaunchBag,
-    ILaunchpadRoot, NotFoundError)
+    IDistribution, IDistributionSet, IPublishedPackageSet,
+    ILaunchBag, IArchiveSet, ILaunchpadRoot, NotFoundError)
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -426,6 +426,7 @@ class DistributionAddView(LaunchpadFormView):
 
     @action("Save", name='save')
     def save_action(self, action, data):
+        archive = getUtility(IArchiveSet).new("%s main archive" % data['name'])
         distribution = getUtility(IDistributionSet).new(
             name=data['name'],
             displayname=data['displayname'],
@@ -435,6 +436,7 @@ class DistributionAddView(LaunchpadFormView):
             domainname=data['domainname'],
             members=data['members'],
             owner=self.user,
+            main_archive=archive,
             gotchi=data['gotchi'],
             emblem=data['emblem'])
         notify(ObjectCreatedEvent(distribution))

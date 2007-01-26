@@ -12,7 +12,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IDistroReleaseQueueSet)
+    IDistributionSet, IPackageUploadSet)
 from canonical.launchpad.mail import stub
 from canonical.launchpad.scripts.queue import (
     CommandRunner, CommandRunnerError, name_queue_map)
@@ -20,7 +20,7 @@ from canonical.librarian.ftests.harness import (
     fillLibrarianFile, cleanupLibrarianFiles)
 from canonical.lp.dbschema import (
     PackagePublishingStatus, PackagePublishingPocket,
-    DistroReleaseQueueStatus, DistributionReleaseStatus)
+    PackageUploadStatus, DistributionReleaseStatus)
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -106,8 +106,8 @@ class TestQueueTool(TestQueueBase):
         # check if the considered queue size matches the existent number
         # of records in sampledata
         bat = getUtility(IDistributionSet)['ubuntu']['breezy-autotest']
-        queue_size = getUtility(IDistroReleaseQueueSet).count(
-            status=DistroReleaseQueueStatus.NEW,
+        queue_size = getUtility(IPackageUploadSet).count(
+            status=PackageUploadStatus.NEW,
             distrorelease=bat, pocket= PackagePublishingPocket.RELEASE)
         self.assertEqual(queue_size, queue_action.size)
         # check if none of them was filtered, since not filter term
@@ -287,7 +287,7 @@ class TestQueueTool(TestQueueBase):
 
         # certify we have a 'cnews' upload duplication in UNAPPROVED
         self.assertQueueLength(
-            2, breezy_autotest, DistroReleaseQueueStatus.UNAPPROVED, "cnews")
+            2, breezy_autotest, PackageUploadStatus.UNAPPROVED, "cnews")
 
         # Step 1: try to accept both
         queue_action = self.execute_command(
@@ -296,7 +296,7 @@ class TestQueueTool(TestQueueBase):
 
         # the first is in accepted.
         self.assertQueueLength(
-            1, breezy_autotest, DistroReleaseQueueStatus.ACCEPTED, "cnews")
+            1, breezy_autotest, PackageUploadStatus.ACCEPTED, "cnews")
 
         # the last can't be accepted and remains in UNAPPROVED
         self.assertTrue(
@@ -304,7 +304,7 @@ class TestQueueTool(TestQueueBase):
              'sourcepackagerelease is already accepted in breezy-autotest.')
             in self.test_output)
         self.assertQueueLength(
-            1, breezy_autotest, DistroReleaseQueueStatus.UNAPPROVED, "cnews")
+            1, breezy_autotest, PackageUploadStatus.UNAPPROVED, "cnews")
 
         # Step 2: try to accept the remaining item in UNAPPROVED.
         queue_action = self.execute_command(
@@ -315,16 +315,16 @@ class TestQueueTool(TestQueueBase):
              'sourcepackagerelease is already accepted in breezy-autotest.')
             in self.test_output)
         self.assertQueueLength(
-            1, breezy_autotest, DistroReleaseQueueStatus.UNAPPROVED, "cnews")
+            1, breezy_autotest, PackageUploadStatus.UNAPPROVED, "cnews")
 
         # simulate a publication of the accepted item, now it is in DONE
         accepted_item = breezy_autotest.getQueueItems(
-            status=DistroReleaseQueueStatus.ACCEPTED, name="cnews")[0]
+            status=PackageUploadStatus.ACCEPTED, name="cnews")[0]
 
         accepted_item.setDone()
         accepted_item.syncUpdate()
         self.assertQueueLength(
-            1, breezy_autotest, DistroReleaseQueueStatus.DONE, "cnews")
+            1, breezy_autotest, PackageUploadStatus.DONE, "cnews")
 
         # Step 3: try to accept the remaining item in UNAPPROVED with the
         # duplication already in DONE
@@ -337,16 +337,16 @@ class TestQueueTool(TestQueueBase):
              'sourcepackagerelease is already accepted in breezy-autotest.')
             in self.test_output)
         self.assertQueueLength(
-            1, breezy_autotest, DistroReleaseQueueStatus.UNAPPROVED, "cnews")
+            1, breezy_autotest, PackageUploadStatus.UNAPPROVED, "cnews")
 
         # Step 4: The only possible destiny for the remaining item it REJECT
         queue_action = self.execute_command(
             'reject cnews', queue_name='unapproved',
             suite_name='breezy-autotest')
         self.assertQueueLength(
-            0, breezy_autotest, DistroReleaseQueueStatus.UNAPPROVED, "cnews")
+            0, breezy_autotest, PackageUploadStatus.UNAPPROVED, "cnews")
         self.assertQueueLength(
-            1, breezy_autotest, DistroReleaseQueueStatus.REJECTED, "cnews")
+            1, breezy_autotest, PackageUploadStatus.REJECTED, "cnews")
 
 
 class TestQueueToolInJail(TestQueueBase):

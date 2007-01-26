@@ -766,9 +766,12 @@ class BugTaskSet:
             SourcePackageRelease.id =
                 SourcePackagePublishingHistory.sourcepackagerelease AND
             SourcePackagePublishingHistory.distrorelease = %s AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.component IN %s AND
             SourcePackagePublishingHistory.status = %s
-            """ % sqlvalues(distrorelease, component_ids,
+            """ % sqlvalues(distrorelease,
+                            distrorelease.main_archive,
+                            component_ids,
                             dbschema.PackagePublishingStatus.PUBLISHED)])
 
         if params.pending_bugwatch_elsewhere:

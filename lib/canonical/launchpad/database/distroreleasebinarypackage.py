@@ -78,13 +78,15 @@ class DistroReleaseBinaryPackage:
         ret = BinaryPackagePublishingHistory.select("""
             BinaryPackagePublishingHistory.distroarchrelease = 
                 DistroArchRelease.id AND
+            BinaryPackagePublishingHistory.archive = %s AND
             DistroArchRelease.distrorelease = %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename = %s AND
             BinaryPackagePublishingHistory.status != %s
-            """ % sqlvalues(self.distrorelease.id,
-                            self.binarypackagename.id,
+            """ % sqlvalues(self.distrorelease,
+                            self.distrorelease.main_archive,
+                            self.binarypackagename,
                             PackagePublishingStatus.REMOVED),
             orderBy=['-datecreated'],
             clauseTables=['DistroArchRelease', 'BinaryPackageRelease'])

@@ -53,6 +53,7 @@ class IDistroArchRelease(IHasOwner):
     processors = Attribute(
         "The group of Processors for this Distroarchrelease.processorfamily."
         )
+    main_archive = Attribute('Main Archive')
 
     def updatePackageCount():
         """Update the cached binary package count for this distro arch

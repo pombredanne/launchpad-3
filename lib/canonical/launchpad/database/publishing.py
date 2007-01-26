@@ -114,6 +114,8 @@ class SourcePackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
                      default=None, notNull=True,
                      schema=PackagePublishingPocket)
 
+    archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
+
 
 class BinaryPackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
     """A binary package file which is published.
@@ -161,6 +163,8 @@ class BinaryPackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
                      default=None, notNull=True,
                      schema=PackagePublishingPocket)
 
+    archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
+
 
 class ArchiveSafePublisherBase:
     """Base class to grant ability to publish a record in a safe manner."""
@@ -203,6 +207,7 @@ class SecureSourcePackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
                      notNull=True)
     embargo = BoolCol(dbName='embargo', default=False, notNull=True)
     embargolifted = UtcDateTimeCol(default=None)
+    archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
 
     @classmethod
     def selectBy(cls, *args, **kwargs):
@@ -246,6 +251,7 @@ class SecureBinaryPackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
     embargo = BoolCol(dbName='embargo', default=False, notNull=True)
     embargolifted = UtcDateTimeCol(default=None)
+    archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
 
     @classmethod
     def selectBy(cls, *args, **kwargs):
@@ -339,6 +345,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     datemadepending = UtcDateTimeCol(default=None)
     dateremoved = UtcDateTimeCol(default=None)
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
+    archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
 
     def publishedBinaries(self):
         """See ISourcePackagePublishingHistory."""
@@ -352,9 +359,11 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 BinaryPackageName.id AND
             Build.sourcepackagerelease=%s AND
             DistroArchRelease.distrorelease=%s AND
+            BinaryPackagePublishingHistory.archive=%s AND
             BinaryPackagePublishingHistory.status=%s
-            """ % sqlvalues(self.sourcepackagerelease.id,
-                            self.distrorelease.id,
+            """ % sqlvalues(self.sourcepackagerelease,
+                            self.distrorelease,
+                            self.distrorelease.main_archive,
                             PackagePublishingStatus.PUBLISHED)
 
         orderBy = ['BinaryPackageName.name',
@@ -457,7 +466,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     datemadepending = UtcDateTimeCol(default=None)
     dateremoved = UtcDateTimeCol(default=None)
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
-
+    archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
 
     @property
     def distroarchreleasebinarypackagerelease(self):

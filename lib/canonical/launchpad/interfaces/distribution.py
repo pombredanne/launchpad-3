@@ -186,6 +186,10 @@ class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
         required=False,
         vocabulary='FilteredDistroReleaseVocabulary')
 
+    main_archive = Int(
+            title=_('Main Archive ID'), required=True, readonly=True,
+            )
+
     def traverse(name):
         """Traverse the distribution. Check for special names, and return
         appropriately, otherwise use __getitem__"""
@@ -316,6 +320,5 @@ class IDistributionSet(Interface):
         """Return the IDistribution with the given name or None."""
 
     def new(name, displayname, title, description, summary, domainname,
-            members, owner, gotchi, emblem):
-        """Creaste a new distribution."""
-
+            members, owner, main_archive, gotchi, emblem):
+        """Create a new distribution."""

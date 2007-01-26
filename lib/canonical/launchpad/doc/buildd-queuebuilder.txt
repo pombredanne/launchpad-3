@@ -151,7 +151,8 @@ special pocket (UPDATES, SECURITY or BACKPORTS)
   ...         dsc_format="1.0",
   ...         dsc_maintainer_rfc822="mark <mark@mark.com>",
   ...         dsc_standards_version="3.6.9",
-  ...         dsc_binaries="%s" % name.name)
+  ...         dsc_binaries="%s" % name.name,
+  ...         uploadarchive=1)
   ...     srcfile = SourcePackageReleaseFile(
   ...         sourcepackagerelease=srcpkgrel,
   ...         libraryfile=1,
@@ -163,7 +164,8 @@ special pocket (UPDATES, SECURITY or BACKPORTS)
   ...         pocket=release_pocket,
   ...         component=srcpkgrel.component,
   ...         section=srcpkgrel.section,
-  ...         datecreated=UTC_NOW)
+  ...         datecreated=UTC_NOW,
+  ...         archive=1)
   ...     count += 1
   ...     return srcpkgrel, p
 

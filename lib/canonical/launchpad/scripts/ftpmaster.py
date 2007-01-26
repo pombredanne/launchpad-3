@@ -463,7 +463,7 @@ class ArchiveCruftChecker:
         """
         bpr = getUtility(IBinaryPackageReleaseSet)
         result = bpr.getByNameInDistroRelease(
-            self.distrorelease.id, package)
+            self.distrorelease, package)
 
         if len(list(result)) == 0:
             return

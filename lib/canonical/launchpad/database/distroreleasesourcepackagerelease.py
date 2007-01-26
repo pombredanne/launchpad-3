@@ -19,11 +19,11 @@ from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory, SourcePackagePublishingHistory)
-from canonical.launchpad.database.queue import DistroReleaseQueue
+from canonical.launchpad.database.queue import PackageUpload
 from canonical.launchpad.interfaces import (
     IDistroReleaseSourcePackageRelease, NotFoundError)
 from canonical.lp.dbschema import (
-    PackagePublishingStatus, DistroReleaseQueueStatus)
+    PackagePublishingStatus, PackageUploadStatus)
 
 class DistroReleaseSourcePackageRelease:
     """This is a "Magic SourcePackageRelease in Distro Release". It is not
@@ -102,9 +102,11 @@ class DistroReleaseSourcePackageRelease:
         """See IDistroReleaseSourcePackage."""
         return SourcePackagePublishingHistory.select("""
             distrorelease = %s AND
+            archive = %s AND
             sourcepackagerelease = %s
-            """ % sqlvalues(self.distrorelease.id,
-                            self.sourcepackagerelease.id),
+            """ % sqlvalues(self.distrorelease,
+                            self.distrorelease.main_archive,
+                            self.sourcepackagerelease),
             orderBy='-datecreated')
 
     @property
@@ -143,8 +145,11 @@ class DistroReleaseSourcePackageRelease:
         BinaryPackagePublishingHistory.binarypackagerelease=
             BinaryPackageRelease.id AND
         DistroArchRelease.distrorelease=%s AND
+        BinaryPackagePublishingHistory.archive = %s AND
         Build.sourcepackagerelease=%s
-        """ % sqlvalues(self.distrorelease.id, self.sourcepackagerelease.id)
+        """ % sqlvalues(self.distrorelease,
+                        self.distrorelease.main_archive,
+                        self.sourcepackagerelease)
 
         return BinaryPackageRelease.select(
                 query, prejoinClauseTables=['Build'],
@@ -154,17 +159,17 @@ class DistroReleaseSourcePackageRelease:
     def changesfile(self):
         """See IDistroReleaseSourcePackageRelease."""
         clauseTables = [
-            'DistroReleaseQueue',
-            'DistroReleaseQueueSource',
+            'PackageUpload',
+            'PackageUploadSource',
             ]
         query = """
-        DistroReleaseQueue.id = DistroReleaseQueueSource.distroreleasequeue AND
-        DistroReleaseQueue.distrorelease = %s AND
-        DistroReleaseQueueSource.sourcepackagerelease = %s AND
-        DistroReleaseQueue.status = %s
+        PackageUpload.id = PackageUploadSource.packageupload AND
+        PackageUpload.distrorelease = %s AND
+        PackageUploadSource.sourcepackagerelease = %s AND
+        PackageUpload.status = %s
         """ % sqlvalues(self.distrorelease, self.sourcepackagerelease,
-                        DistroReleaseQueueStatus.DONE)
-        queue_record = DistroReleaseQueue.selectOne(
+                        PackageUploadStatus.DONE)
+        queue_record = PackageUpload.selectOne(
             query, clauseTables=clauseTables)
 
         if not queue_record:
@@ -243,10 +248,12 @@ class DistroReleaseSourcePackageRelease:
         # Retrieve current publishing info
         current = SourcePackagePublishingHistory.selectFirst("""
         distrorelease = %s AND
+        archive = %s AND
         sourcepackagerelease = %s AND
         status = %s
-        """ % sqlvalues(self.distrorelease.id,
-                        self.sourcepackagerelease.id,
+        """ % sqlvalues(self.distrorelease,
+                        self.distrorelease.main_archive,
+                        self.sourcepackagerelease,
                         PackagePublishingStatus.PUBLISHED),
             orderBy='-datecreated')
 
@@ -288,6 +295,7 @@ class DistroReleaseSourcePackageRelease:
             pocket=current.pocket,
             component=new_component,
             section=new_section,
+            archive=current.distrorelease.main_archive
         )
 
     def supersede(self):

@@ -588,39 +588,41 @@ COMMENT ON COLUMN DistroRelease.nominatedarchindep IS 'This is the DistroArchRel
 COMMENT ON COLUMN DistroRelease.binarycount IS 'A cache of the number of distinct binary package names published in this distro release.';
 COMMENT ON COLUMN DistroRelease.sourcecount IS 'A cache of the number of distinct source package names published in this distro release.';
 
--- DistroReleaseQueue
-COMMENT ON TABLE DistroReleaseQueue IS 'An upload queue item. This table stores information pertaining to in-progress package uploads to a given DistroRelease.';
+-- PackageUpload
+COMMENT ON TABLE PackageUpload IS 'An upload. This table stores information pertaining to uploads to a given DistroRelease/Archive.';
 
-COMMENT ON COLUMN DistroReleaseQueue.status IS 'This is an integer field containing the current queue status of the queue item. Possible values are given by the DistroQueueStatus class in dbschema.py';
+COMMENT ON COLUMN PackageUpload.status IS 'This is an integer field containing the current status of the upload. Possible values are given by the UploadStatus class in dbschema.py';
 
-COMMENT ON COLUMN DistroReleaseQueue.distrorelease IS 'This integer field refers to the DistroRelease to which this upload is targeted';
+COMMENT ON COLUMN PackageUpload.distrorelease IS 'This integer field refers to the DistroRelease to which this upload is targeted';
 
-COMMENT ON COLUMN DistroReleaseQueue.pocket IS 'This is the pocket the upload is targeted at.';
+COMMENT ON COLUMN PackageUpload.pocket IS 'This is the pocket the upload is targeted at.';
 
-COMMENT ON COLUMN DistroReleaseQueue.changesfile IS 'The changes file associated with this upload.';
+COMMENT ON COLUMN PackageUpload.changesfile IS 'The changes file associated with this upload.';
 
--- DistroReleaseQueueSource
-COMMENT ON TABLE DistroReleaseQueueSource IS 'An upload queue source package. This table stores information pertaining to the source files in an in-progress package upload.';
+COMMENT ON COLUMN PackageUpload.archive IS 'The archive to which this upload is targetted.';
 
-COMMENT ON COLUMN DistroReleaseQueueSource.distroreleasequeue IS 'This integer field refers to the DistroQueue row that this source belongs to.';
+-- PackageUploadSource
+COMMENT ON TABLE PackageUploadSource IS 'Link between an upload and a source package. This table stores information pertaining to the source files in a package upload.';
 
-COMMENT ON COLUMN DistroReleaseQueueSource.sourcepackagerelease IS 'This integer field refers to the SourcePackageRelease record related to this upload.';
+COMMENT ON COLUMN PackageUploadSource.packageupload IS 'This integer field refers to the PackageUpload row that this source belongs to.';
 
--- DistroReleaseQueueBuild
-COMMENT ON TABLE DistroReleaseQueueBuild IS 'An upload queue binary build. This table stores information pertaining to the builds in an in-progress package upload.';
+COMMENT ON COLUMN PackageUploadSource.sourcepackagerelease IS 'This integer field refers to the SourcePackageRelease record related to this upload.';
 
-COMMENT ON COLUMN DistroReleaseQueueBuild.distroreleasequeue IS 'This integer field refers to the DistroQueue row that this source belongs to.';
+-- PackageUploadBuild
+COMMENT ON TABLE PackageUploadBuild IS 'An upload binary build. This table stores information pertaining to the builds in a package upload.';
 
-COMMENT ON COLUMN DistroReleaseQueueBuild.build IS 'This integer field refers to the Build record related to this upload.';
+COMMENT ON COLUMN PackageUploadBuild.packageupload IS 'This integer field refers to the PackageUpload row that this source belongs to.';
 
--- DistroReleaseQueueCustom
-COMMENT ON TABLE DIstroReleaseQueueCustom IS 'An upload queue custom format upload. This table stores information pertaining to the custom upload formats in an in-progress package upload.';
+COMMENT ON COLUMN PackageUploadBuild.build IS 'This integer field refers to the Build record related to this upload.';
 
-COMMENT ON COLUMN DistroReleaseQueueCustom.distroreleasequeue IS 'The queue item this refers to.';
+-- PackageUploadCustom
+COMMENT ON TABLE PackageUploadCustom IS 'An uploaded custom format file. This table stores information pertaining to the custom upload formats in a package upload.';
 
-COMMENT ON COLUMN DistroReleaseQueueCustom.customformat IS 'The format of this particular custom uploaded file.';
+COMMENT ON COLUMN PackageUploadCustom.packageupload IS 'The PackageUpload row this refers to.';
 
-COMMENT ON COLUMN DistroReleaseQueueCustom.libraryfilealias IS 'The actual file as a librarian alias.';
+COMMENT ON COLUMN PackageUploadCustom.customformat IS 'The format of this particular custom uploaded file.';
+
+COMMENT ON COLUMN PackageUploadCustom.libraryfilealias IS 'The actual file as a librarian alias.';
 
 -- SourcePackageName
 COMMENT ON COLUMN SourcePackageName.name IS
@@ -1361,20 +1363,15 @@ COMMENT ON COLUMN TranslationImportQueueEntry.status IS 'The status of the impor
 -- SupportContact
 COMMENT ON TABLE PackageBugContact IS 'Defines the support contact for a given ticket target. The support contact will be automatically subscribed to every support request filed on the ticket target.';
 
--- PersonalPackageArchive
-COMMENT ON TABLE PersonalPackageArchive IS 'Contains the information about the archives generated based on personal packages.';
-COMMENT ON COLUMN PersonalPackageArchive.person IS 'Owner of this personal archive.';
-COMMENT ON COLUMN PersonalPackageArchive.distrorelease IS 'Target Distrorelease for this personal archive.';
-COMMENT ON COLUMN PersonalPackageArchive.packages IS 'Cache of the generated Packages file.';
-COMMENT ON COLUMN PersonalPackageArchive.sources IS 'Cache of the generated Sources file.';
-COMMENT ON COLUMN PersonalPackageArchive.release IS 'Cache of the generated Release file.';
-COMMENT ON COLUMN PersonalPackageArchive.release_gpg IS 'Cache of the detached GPG signature of the cached Release file.';
-COMMENT ON COLUMN PersonalPackageArchive.datelastupdated IS 'Time when cache of the archive files was last updated.';
 
--- PersonalSourcepackagePublication
-COMMENT ON TABLE PersonalSourcePackagePublication IS 'Contains the information about which sourcepackagerelease is included in a Personal Package Archive.';
-COMMENT ON COLUMN PersonalSourcePackagePublication.personalpackagearchive IS 'Target Personal Package Archive.';
-COMMENT ON COLUMN PersonalSourcePackagePublication.sourcepackagerelease IS 'Target Sourcepackagerelease.';
+-- PersonalPackageArchive
+COMMENT ON TABLE PersonalPackageArchive IS 'Provides a link from a person to an archive for a given distribution in which they place their personal source packages for building.';
+COMMENT ON COLUMN PersonalPackageArchive.person IS 'The person who owns this ppa.';
+COMMENT ON COLUMN PersonalPackageArchive.archive IS 'The archive this ppa is related to.';
+
+
+-- Archive
+COMMENT ON TABLE Archive IS 'A package archive. Commonly either a distribution''s main_archive or a ppa''s archive.';
 
 
 -- Component

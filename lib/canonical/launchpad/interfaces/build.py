@@ -29,7 +29,8 @@ class IBuild(Interface):
     sourcepackagerelease = Attribute("SourcePackageRelease reference")
     pocket = Attribute("Target pocket of this build")
     dependencies = Attribute("Debian-like dependency line for DEPWAIT builds")
-
+    archive = Attribute("The archive")
+    
     # useful properties
     title = Attribute("Build Title")
     changesfile = Attribute("The Build Changesfile object, returns None if "

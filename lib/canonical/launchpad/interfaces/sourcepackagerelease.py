@@ -104,6 +104,9 @@ class ISourcePackageRelease(Interface):
     current_publishings = Attribute("A list of the current places where "
         "this source package is published, in the form of a list of "
         "DistroReleaseSourcePackageReleases.")
+    uploadarchive = Attribute("The archive for which this package "
+         "was first uploaded in Launchpad")
+
 
     # XXX: What do the following methods and attributes do?
     #      These were missing from the interfaces, but being used

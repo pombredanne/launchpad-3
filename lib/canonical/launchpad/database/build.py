@@ -18,7 +18,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.buildqueue import BuildQueue
-from canonical.launchpad.database.queue import DistroReleaseQueueBuild
+from canonical.launchpad.database.queue import PackageUploadBuild
 from canonical.launchpad.helpers import (
     get_email_template, contactEmailAddresses)
 from canonical.launchpad.interfaces import (
@@ -52,6 +52,7 @@ class Build(SQLBase):
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket,
                      notNull=True)
     dependencies = StringCol(dbName='dependencies', default=None)
+    archive = ForeignKey(foreignKey='Archive', dbName='archive', notNull=True)
 
     @property
     def buildqueue_record(self):
@@ -64,10 +65,10 @@ class Build(SQLBase):
     @property
     def changesfile(self):
         """See IBuild"""
-        queue_item = DistroReleaseQueueBuild.selectOneBy(build=self)
+        queue_item = PackageUploadBuild.selectOneBy(build=self)
         if queue_item is None:
             return None
-        return queue_item.distroreleasequeue.changesfile
+        return queue_item.packageupload.changesfile
 
     @property
     def distrorelease(self):
@@ -412,6 +413,16 @@ class BuildSet:
             clauseTables.append('Sourcepackagerelease')
             clauseTables.append('Sourcepackagename')
 
+        # Exclude PPA builds
+        clauseTables.extend(["DistroArchRelease",
+                             "DistroRelease",
+                             "Distribution"])
+        condition_clauses.append("""
+            Build.distroarchrelease = DistroArchRelease.id AND
+            DistroArchRelease.distrorelease = DistroRelease.id AND
+            DistroRelease.distribution = Distribution.id AND
+            Distribution.main_archive = Build.archive
+            """)
 
         return Build.select(' AND '.join(condition_clauses),
                             clauseTables=clauseTables,
