@@ -906,7 +906,7 @@ class DistroRelease(SQLBase, BugTargetBase):
             query, limit=5, prejoins=['sourcepackagename'],
             clauseTables=['SourcePackageName', 'PackageUpload',
                           'PackageUploadSource'],
-            orderBy=['-distroreleasequeue.id'])
+            orderBy=['-packageupload.id'])
 
         distro_sprs = [
             self.getSourcePackageRelease(spr) for spr in last_uploads]
