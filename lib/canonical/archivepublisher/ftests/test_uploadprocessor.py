@@ -21,8 +21,7 @@ from canonical.launchpad.ftests import import_public_test_keys
 from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.mail import stub
 from canonical.lp.dbschema import (
-    DistributionReleaseStatus, DistroReleaseQueueStatus,
-    PackagePublishingStatus)
+    PackageUploadStatus, PackagePublishingStatus)
 from canonical.testing import LaunchpadZopelessLayer
 
 
