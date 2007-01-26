@@ -10,14 +10,15 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Bytes, Choice, Int, Text, TextLine
+from zope.schema import Bool, Choice, Int, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Summary, Title
 from canonical.launchpad.interfaces import (
         IHasOwner, IBugTarget, IHasSpecifications, PillarNameField,
-        valid_emblem, valid_gotchi, valid_webref)
+        valid_webref)
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.fields import SmallImageUpload, LargeImageUpload
 
 
 class ProjectNameField(PillarNameField):
@@ -125,20 +126,18 @@ class IProject(IHasOwner, IBugTarget, IHasSpecifications):
             "be displayed for all the world to see. It is NOT a wiki "
             "so you cannot undo changes."))
 
-    emblem = Bytes(
+    emblem = SmallImageUpload(
         title=_("Emblem"), required=False,
         description=_(
-            "A small image, max 16x16 pixels and 8k in file size, that can "
-            "be used to refer to this project."),
-        constraint=valid_emblem)
+            "A small image, max 16x16 pixels and 25k in file size, that can "
+            "be used to refer to this project."))
 
-    gotchi = Bytes(
-        title=_("Gotchi"), required=False,
+    gotchi = LargeImageUpload(
+        title=_("Icon"), required=False,
         description=_(
-            "An image, maximum 150x150 pixels, that will be displayed on "
-            "this project's home page. It should be no bigger than 50k in "
-            "size. "),
-        constraint=valid_gotchi)
+            "An image, maximum 170x170 pixels, that will be displayed on "
+            "this project's home page. It should be no bigger than 100k in "
+            "size. "))
 
     translationgroup = Choice(
         title = _("Translation group"),
@@ -210,7 +209,8 @@ class IProjectSet(Interface):
         Return the default value if there is no such project.
         """
 
-    def new(name, displayname, title, homepageurl, summary, description, owner):
+    def new(name, displayname, title, homepageurl, summary, description,
+            owner, gotchi, emblem):
         """Create and return a project with the given arguments."""
 
     def count_all():

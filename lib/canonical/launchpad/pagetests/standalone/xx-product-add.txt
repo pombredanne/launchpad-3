@@ -186,22 +186,11 @@ It's also possible to set the product's icon/emblem at creation time.
 ...     'short but sweet.'
 ...     )
 >>> user_browser.getControl('Summary').value = 'This is the summary'
->>> import os
->>> import canonical.launchpad
->>> icon = os.path.join(
-...     os.path.dirname(canonical.launchpad.__file__),
-...     'pagetests/standalone/big.png')
->>> user_browser.getControl(name='field.gotchi.action').value = ['change']
->>> user_browser.getControl(name='field.gotchi.image').add_file(
-...     open(icon), 'image/png', 'icon.png')
->>> emblem = os.path.join(
-...     os.path.dirname(canonical.launchpad.__file__),
-...     'pagetests/standalone/mypng.png')
->>> user_browser.getControl(name='field.emblem.action').value = ['change']
->>> user_browser.getControl(name='field.emblem.image').add_file(
-...     open(emblem), 'image/png', 'emblem.png')
->>> user_browser.getControl('Add').click()
 
+>>> from canonical.launchpad.ftests import set_gotchi_and_emblem
+>>> set_gotchi_and_emblem(user_browser)
+
+>>> user_browser.getControl('Add').click()
 >>> user_browser.url
 'http://launchpad.dev/testing3'
 

@@ -32,7 +32,8 @@
      tal:define="tickets view/searchResults">
 
   <div id="ticket-search-form">
-    <form method="get" id="ticket-search-form" action="">
+    <form method="get" id="ticket-search-form" action=""
+          tal:attributes="action request/URL">
       <tal:searchbox replace="structure view/widgets/search_text" />
 
       <tal:sort replace="structure view/widgets/sort" />
