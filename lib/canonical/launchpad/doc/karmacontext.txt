@@ -3,8 +3,9 @@ Karma Context
 
 Now that we track the Product/Distribution in which a given karma-giving
 action was performed, we're able to find out who contributes the most to a
-given product.  We can have this on a per-category (Bug Management,
-Translations, etc) basis or in general, across all categories.
+given product/project/distribution.  We can have this on a per-category
+(Bug Management, Translations, etc) basis or in general, across all
+categories.
 
     >>> import operator
     >>> from zope.component import getUtility
@@ -43,4 +44,28 @@ product/distribution grouped by categories.
     ...     print "%s: %s" % (category.title, people)
     Bug Management: [(u'name16', 39L), (u'name12', 35L)]
     Specification Tracking: [(u'sabdfl', 49L)]
+
+The top contributors of a project are the ones with the most karma in all
+products of that project.
+
+    # Foo Bar's karma on the mozilla project
+    >>> for person, karmavalue in firefox.project.getTopContributors(limit=3):
+    ...     if person.name == 'name16':
+    ...         print karmavalue
+    34
+
+    # Foo Bar's karma on the firefox product
+    >>> for person, karmavalue in firefox.getTopContributors(limit=3):
+    ...     if person.name == 'name16':
+    ...         print karmavalue
+    17
+
+    # Foo Bar's karma on the thunderbird product
+    >>> thunderbird = getUtility(IProductSet).getByName('thunderbird')
+    >>> thunderbird.project == firefox.project
+    True
+    >>> for person, karmavalue in thunderbird.getTopContributors(limit=3):
+    ...     if person.name == 'name16':
+    ...         print karmavalue
+    17
 

@@ -1077,11 +1077,6 @@ class Person(SQLBase):
         return self._getEmailsByStatus(EmailAddressStatus.NEW)
 
     @property
-    def activities(self):
-        """See IPerson."""
-        return Karma.selectBy(person=self)
-
-    @property
     def pendinggpgkeys(self):
         """See IPerson."""
         logintokenset = getUtility(ILoginTokenSet)

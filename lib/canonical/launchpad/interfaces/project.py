@@ -15,8 +15,8 @@ from zope.schema import Bool, Choice, Int, Text, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.fields import Summary, Title
 from canonical.launchpad.interfaces import (
-        IHasOwner, IBugTarget, IHasSpecifications, PillarNameField,
-        valid_webref)
+    IBugTarget, IHasOwner, IHasSpecifications, IKarmaContext, PillarNameField,
+    valid_webref)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import SmallImageUpload, LargeImageUpload
 
@@ -28,7 +28,7 @@ class ProjectNameField(PillarNameField):
         return IProject
 
 
-class IProject(IHasOwner, IBugTarget, IHasSpecifications):
+class IProject(IHasOwner, IBugTarget, IHasSpecifications, IKarmaContext):
     """A Project."""
 
     id = Int(title=_('ID'), readonly=True)
