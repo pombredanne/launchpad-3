@@ -185,7 +185,8 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
             status=status,
             datecreated=UTC_NOW,
             pocket=pocket,
-            embargo=False
+            embargo=False,
+            archive=self.breezy_autotest.main_archive
             )
 
         return BinaryPackagePublishingHistory.get(sbpph.id)

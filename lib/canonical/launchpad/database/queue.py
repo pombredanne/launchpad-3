@@ -544,7 +544,7 @@ class PackageUploadCustom(SQLBase):
         valid_pockets = (PackagePublishingPocket.RELEASE,
             PackagePublishingPocket.SECURITY, PackagePublishingPocket.UPDATES,
             PackagePublishingPocket.PROPOSED)
-        if (self.distroreleasequeue.pocket not in valid_pockets or
+        if (self.packageupload.pocket not in valid_pockets or
             sourcepackagerelease.component.name != 'main'):
             # XXX: CarlosPerelloMarin 20060216 This should be implemented
             # using a more general rule to accept different policies depending
