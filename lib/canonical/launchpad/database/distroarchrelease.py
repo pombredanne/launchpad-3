@@ -255,12 +255,8 @@ class DistroArchRelease(SQLBase):
 
         return publications
 
-    def publish(self, diskpool, log, pocket, is_careful=False):
+    def publish(self, diskpool, log, archive, pocket, is_careful=False):
         """See IPublishing."""
-        # XXX: this method shares exactly the same pattern as
-        # DistroRelease.publish(); they could be factored if API was
-        # provided to return the correct publishing entries.
-        #    -- kiko, 2006-08-23
         log.debug("Attempting to publish pending binaries for %s"
               % self.architecturetag)
 

@@ -3,11 +3,12 @@
 import _pythonpath
 
 import gc
+import logging
 from optparse import OptionParser
 
 from zope.component import getUtility
 
-from canonical.archivepublisher.publishing import getPublisherForDistribution
+from canonical.archivepublisher.publishing import getPublisherForPPA
 from canonical.database.sqlbase import (
     flush_database_updates, clear_current_connection_cache)
 from canonical.launchpad.interfaces import (
@@ -33,10 +34,6 @@ def parse_options():
                       dest="careful_domination", metavar="", default=False,
                       help="Make the domination process careful.")
 
-    parser.add_option("-A", "--careful-apt", action="store_true",
-                      dest="careful_apt", metavar="", default=False,
-                      help="Make the apt-ftparchive run careful.")
-
     parser.add_option("-d", "--distribution",
                       dest="distribution", metavar="DISTRO", default="ubuntu",
                       help="The distribution to publish.")
@@ -45,18 +42,13 @@ def parse_options():
                       action='append', type='string', default=[],
                       help='The suite to publish')
 
-    parser.add_option("-R", "--distsroot",
-                      dest="distsroot", metavar="SUFFIX", default=None,
-                      help="Override the dists path for generation")
-
     return parser.parse_args()
-
 
 def main():
     options, args = parse_options()
-    assert len(args) == 0, "publish-distro takes no arguments, only options."
+    assert len(args) == 0, "publish-ppa takes no arguments, only options."
 
-    log = logger(options, "publish-distro")
+    log = logger(options, "publish-ppa")
 
     def careful_msg(what):
         """Quick handy util for the below."""
@@ -83,7 +75,13 @@ def main():
     log.info("  Distribution: %s" % options.distribution)
     log.info("    Publishing: %s" % careful_msg(options.careful_publishing))
     log.info("    Domination: %s" % careful_msg(options.careful_domination))
-    log.info("Apt-FTPArchive: %s" % careful_msg(options.careful_apt))
+    log.info("      Indexing: %s" % careful_msg(options.careful_apt))
+
+    log.debug("Initialising zopeless.")
+
+    # Change this when we fix up db security
+    txn = initZopeless(dbuser='lucille')
+    execute_zcml_for_scripts()
 
     log.debug("Finding distribution object.")
 
@@ -104,26 +102,28 @@ def main():
             raise
         allowed_suites.add((distrorelease.name, pocket))
 
-    log.debug("Initialising zopeless.")
-    # Change this when we fix up db security
-    txn = initZopeless(dbuser='lucille')
+    # XXX cprov 20070103: we can optimize the loop by quering only the
+    # PPA with modifications pending publication. For now just iterating
+    # over all of them should do.
+    for ppa in getUtility(IPersonalPackageArchiveSet):
 
-    execute_zcml_for_scripts()
+        log.info("Processing PPA: %s/%s" % (ppa.person.name,
+                                            ppa.archive.archive.tag))
 
-    publisher = getPublisherForDistribution(
-        distribution, allowed_suites, log, options.distsroot)
+        publisher = getPublisherForPPA(ppa, distribution, allowed_suites, log)
 
-    try_and_commit("publishing", publisher.A_publish,
-                   options.careful or options.careful_publishing)
-    try_and_commit("dominating", publisher.B_dominate,
-                   options.careful or options.careful_domination)
-    try_and_commit("doing apt-ftparchive", publisher.C_doFTPArchive,
-                   options.careful or options.careful_apt)
-    try_and_commit("doing release files", publisher.D_writeReleaseFiles,
-                   options.careful)
+        try_and_commit("publishing", publisher.A_publish,
+                       options.careful or options.careful_publishing)
+        try_and_commit("dominating", publisher.B_dominate,
+                       options.careful or options.careful_domination)
+        try_and_commit("building indexes", publisher.C_writeIndexes,
+                       options.careful or options.careful_apt)
+        try_and_commit("doing release files", publisher.D_writeReleaseFiles,
+                       options.careful)
 
     log.debug("Ciao")
 
 
 if __name__ == "__main__":
     main()
+

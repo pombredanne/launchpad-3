@@ -295,7 +295,7 @@ class IDistroRelease(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
 
     def getBinaryPackagePublishing(
         name=None, version=None, archtag=None, sourcename=None, orderBy=None,
-        pocket=None, component=None):
+        pocket=None, component=None, archive=None):
         """Get BinaryPackagePublishings in a DistroRelease.
 
         Can optionally restrict the results by name, version,
@@ -303,12 +303,19 @@ class IDistroRelease(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
 
         If sourcename is passed, only packages that are built from
         source packages by that name will be returned.
+        If archive is passed, restricted the results to the given archive,
+        if it is suppressed the results will be restricted to the distribtion
+        'main_archive'.
         """
 
-    def getSourcePackagePublishing(status, pocket, component=None):
+    def getSourcePackagePublishing(status, pocket, component=None,
+                                   archive=None):
         """Return a selectResult of ISourcePackagePublishing.
 
         According status and pocket.
+        If archive is passed, restricted the results to the given archive,
+        if it is suppressed the results will be restricted to the distribtion
+        'main_archive'.
         """
 
     def removeOldCacheItems(log):

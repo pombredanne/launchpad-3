@@ -1,0 +1,105 @@
+= Personal Package Archive =
+
+Personal Package Archive (PPA) are designed to relate a specific
+Archive with a Person.
+
+User will be able branch development packages and group and publish
+them together in a way APT will be able to install in remote systems.
+
+  >>> from zope.interface.verify import verifyObject
+  >>> from canonical.launchpad.interfaces import (
+  ...     IPerson, IPersonSet, IArchiveSet, IArchive,
+  ...     IPersonalPackageArchiveSet, IPersonalPackageArchive,
+  ...     IDistributionSet)
+
+Let create a new PPA using a utility:
+
+  >>> ppa_set = getUtility(IPersonalPackageArchiveSet)
+
+A new PPA should be attached to a new archive:
+
+  >>> archive = getUtility(IArchiveSet).new('sandbox')
+  >>> cprov = getUtility(IPersonSet).getByName('cprov')
+
+  >>> cprov_ppa = ppa_set.new(cprov, archive)
+
+  >>> verifyObject(IPersonalPackageArchive, cprov_ppa)
+  True
+
+  >>> verifyObject(IPerson, cprov_ppa.person)
+  True
+
+  >>> verifyObject(IArchive, cprov_ppa.archive)
+  True
+
+PPAs can be retrieved via IPerson.personal_package_archives MultipleJoin:
+
+  >>> cprov.personal_package_archives.count()
+  1
+
+  >>> cprov_ppa in cprov.personal_package_archives
+  True
+
+IPPA has a method to provide a modified Publisher Configuration (see
+lib/archivepublisher/config.py), which provides the right paths for its
+publication according to the given distribution:
+
+  >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+
+  >>> proxied_pubconfig = cprov_ppa.getPubConfig(ubuntutest)
+
+XXX cprov 20061127: Publisher Config miss interface
+
+  >>> from zope.security.proxy import removeSecurityProxy
+  >>> pubconfig = removeSecurityProxy(proxied_pubconfig)
+
+The base PPA publication location is set in the current Launchpad
+configuration file:
+
+  >>> from canonical.config import config
+  >>> pubconfig.distroroot == config.personalpackagearchive.root
+  True
+
+Then, the archive topology will follow:
+
+<PPA>/<PERSONNAME>/<ARCHIVETAG>/<DISTRIBUTION>
+
+  >>> pubconfig.archiveroot
+  u'/var/tmp/ppa/cprov/sandbox/ubuntutest'
+
+  >>> pubconfig.poolroot
+  u'/var/tmp/ppa/cprov/sandbox/ubuntutest/pool'
+
+  >>> pubconfig.distsroot
+  u'/var/tmp/ppa/cprov/sandbox/ubuntutest/dists'
+
+Path not used in PPA publication workflow are set to None, so they won't
+get created:
+
+  >>> pubconfig.overrideroot is None
+  True
+  >>> pubconfig.cacheroot is None
+  True
+  >>> pubconfig.miscroot is None
+  True
+
+Usual methods from Publisher Configuration are preserved:
+
+  >>> pubconfig.distroReleaseNames()
+  ['breezy-autotest', 'hoary-test']
+
+  >>> pubconfig.archTagsForRelease('breezy-autotest')
+  []
+
+  >>> pubconfig.componentsForRelease('breezy-autotest')
+  ['main', 'restricted', 'universe', 'multiverse']
+
+
+The utility IPersonalPackageArchiveSet also provides iteration over
+present PPAs:
+
+  >>> ppa_set = getUtility(IPersonalPackageArchiveSet)
+
+  >>> [(ppa.person.name, ppa.archive.tag) for ppa in ppa_set]
+  [(u'cprov', u'sandbox')]
+

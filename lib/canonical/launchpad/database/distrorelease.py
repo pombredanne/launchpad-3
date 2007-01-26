@@ -605,11 +605,11 @@ class DistroRelease(SQLBase, BugTargetBase):
         return SourcePackagePublishingHistory.select(
             " AND ".join(queries), orderBy="id")
 
-    def getSourcePackagePublishing(self, status, pocket, component=None):
+    def getSourcePackagePublishing(self, status, pocket, component=None,
+                                   archive=None):
         """See IDistroRelease."""
-        orderBy = ['SourcePackageName.name']
-
-        clauseTables = ['SourcePackageRelease', 'SourcePackageName']
+        if archive is None:
+            archive = self.main_archive
 
         clause = """
             SourcePackagePublishingHistory.sourcepackagerelease=
@@ -620,7 +620,7 @@ class DistroRelease(SQLBase, BugTargetBase):
             SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.status=%s AND
             SourcePackagePublishingHistory.pocket=%s
-            """ %  sqlvalues(self, self.main_archive, status, pocket)
+            """ %  sqlvalues(self, archive, status, pocket)
 
         if component:
             clause += (
@@ -628,18 +628,18 @@ class DistroRelease(SQLBase, BugTargetBase):
                 sqlvalues(component)
                 )
 
+        orderBy = ['SourcePackageName.name']
+        clauseTables = ['SourcePackageRelease', 'SourcePackageName']
+
         return SourcePackagePublishingHistory.select(
             clause, orderBy=orderBy, clauseTables=clauseTables)
 
-    def getBinaryPackagePublishing(self, name=None, version=None,
-                                   archtag=None, sourcename=None,
-                                   orderBy=None, pocket=None,
-                                   component=None):
+    def getBinaryPackagePublishing(
+        self, name=None, version=None, archtag=None, sourcename=None,
+        orderBy=None, pocket=None, component=None, archive=None):
         """See IDistroRelease."""
-
-        clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchRelease',
-                        'BinaryPackageRelease', 'BinaryPackageName', 'Build',
-                        'SourcePackageRelease', 'SourcePackageName' ]
+        if archive is None:
+            archive = self.main_archive
 
         query = ["""
         BinaryPackagePublishingHistory.binarypackagerelease =
@@ -657,8 +657,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         DistroArchRelease.distrorelease = %s AND
         BinaryPackagePublishingHistory.archive = %s AND
         BinaryPackagePublishingHistory.status = %s
-        """ % sqlvalues(self, self.main_archive,
-                        PackagePublishingStatus.PUBLISHED)]
+        """ % sqlvalues(self, archive, PackagePublishingStatus.PUBLISHED)]
 
         if name:
             query.append('BinaryPackageName.name = %s' % sqlvalues(name))
@@ -685,6 +684,10 @@ class DistroRelease(SQLBase, BugTargetBase):
                 % sqlvalues(component))
 
         query = " AND ".join(query)
+
+        clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchRelease',
+                        'BinaryPackageRelease', 'BinaryPackageName', 'Build',
+                        'SourcePackageRelease', 'SourcePackageName' ]
 
         result = BinaryPackagePublishingHistory.select(
             query, distinct=False, clauseTables=clauseTables, orderBy=orderBy)
@@ -1768,8 +1771,8 @@ class DistroRelease(SQLBase, BugTargetBase):
         # Query main archive for this distrorelease
         queries.append('archive=%s' % sqlvalues(self.main_archive))
 
-        # only pending records in the normal mode and ALL (pending & published)
-        # when in 'careful' mode.
+        # Careful publishing should include all PUBLISHED rows, normal run
+        # only includes PENDING ones.
         statuses = [PackagePublishingStatus.PENDING]
         if is_careful:
             statuses.append(PackagePublishingStatus.PUBLISHED)
@@ -1778,7 +1781,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         # Restrict to a specific pocket.
         queries.append('pocket = %s' % sqlvalues(pocket))
 
-        # exclude RELEASE pocket if the distrorelease was already released,
+        # Exclude RELEASE pocket if the distrorelease was already released,
         # since it should not change.
         if not self.isUnstable():
             queries.append(
@@ -1789,7 +1792,7 @@ class DistroRelease(SQLBase, BugTargetBase):
 
         return publications
 
-    def publish(self, diskpool, log, pocket, is_careful=False):
+    def publish(self, diskpool, log, archive, pocket, is_careful=False):
         """See IPublishing."""
         log.debug("Publishing %s-%s" % (self.title, pocket.name))
         log.debug("Attempting to publish pending sources.")
@@ -1803,7 +1806,7 @@ class DistroRelease(SQLBase, BugTargetBase):
 
         # propagate publication request to each distroarchrelease.
         for dar in self.architectures:
-            more_dirt = dar.publish(diskpool, log, pocket, is_careful)
+            more_dirt = dar.publish(diskpool, log, archive, pocket, is_careful)
             dirty_pockets.update(more_dirt)
 
         return dirty_pockets
@@ -1817,7 +1820,7 @@ class DistroRelease(SQLBase, BugTargetBase):
             publication.pocket != PackagePublishingPocket.RELEASE):
             log.error("Tried to publish %s (%s) into a non-release "
                       "pocket on unstable release %s, skipping" %
-                      (publication.displayname, publication.id, 
+                      (publication.displayname, publication.id,
                        self.displayname))
             return True
         if (not self.isUnstable() and

@@ -604,6 +604,7 @@ required entry for 'etherwake':
   Package: etherwake
   Binary: etherwake
   Version: 1.08-1
+  Section: net
   Maintainer: Alain Schroeder <alain@debian.org>
   Build-Depends: debhelper (>> 2.0)
   Architecture: any

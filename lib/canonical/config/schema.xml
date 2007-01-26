@@ -798,6 +798,14 @@
         </key>
     </sectiontype>
 
+    <sectiontype name="personalpackagearchive">
+        <key name="root" datatype="string" required="yes">
+            <description>
+                Directory to be created to store PPAs.
+            </description>
+        </key>
+    </sectiontype>
+
     <sectiontype name="canonical">
         <key name="dbhost" datatype="ipaddr-or-hostname" required="no" />
         <key name="dbname" datatype="string" required="yes" />
@@ -846,6 +854,8 @@
         <section name="*" type="supermirrorsftp" attribute="supermirrorsftp" />
         <section name="*" type="authserver" attribute="authserver" />
         <section name="*" type="importd" attribute="importd" />
+        <section name="*" type="personalpackagearchive"
+            attribute="personalpackagearchive" />
     </sectiontype>
 
     <!-- Now specify where the section types may be rooted in the config file

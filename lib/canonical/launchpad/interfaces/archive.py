@@ -17,6 +17,8 @@ from canonical.launchpad import _
 class IArchive(Interface):
     """An Archive interface"""
     id = Attribute("The archive ID.")
+    tag = Attribute("The unique archive shortname.")
+
 
 class IArchiveSet(Interface):
     """Interface for ArchiveSet"""
