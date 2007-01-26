@@ -340,12 +340,15 @@ class IDistroRelease(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
         DistroReleaseBinaryPackage objects that match the given text.
         """
 
-    def createQueueEntry(pocket, changesfilename, changesfilecontent):
-        """Create a queue item attached to this distrorelease and the given
-        pocket.
+    def createQueueEntry(pocket, changesfilename, changesfilecontent,
+                         archive):
+        """Create a queue item attached to this distrorelease.
+
+        Create a new records respecting the given pocket and archive.
 
         The default state is NEW, sorted sqlobject declaration, any
         modification should be performed via Queue state-machine.
+
         The changesfile argument should be the text of the .changes for this
         upload. The contents of this may be used later.
         """

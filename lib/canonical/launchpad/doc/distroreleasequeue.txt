@@ -65,10 +65,15 @@ launchpad.Edit on the records:
   >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
   >>> login("foo.bar@canonical.com")
 
+  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+  >>> hoary = ubuntu['hoary']
+
 Construct an upload.
 
   >>> ed_upload = NascentUpload(findPolicyByName('anything'),
-  ...     datadir(''), "ed_0.2-20_i386.changes", MockLogger())
+  ...     datadir(''), "ed_0.2-20_i386.changes", MockLogger(),
+  ...     archive=ubuntu.main_archive)
   >>> ed_upload.changes_filename == datadir("ed_0.2-20_i386.changes")
   True
   >>> ed_upload.policy.setOptions(MockOptions())
@@ -567,7 +572,8 @@ Try to perform single acceptance of pmount with not allowed section:
 Construct a new upload for universe/misc and a lot of errors ;)
 
   >>> usplash_upload = NascentUpload(findPolicyByName('anything'),
-  ...     datadir(''), "usplash_0.1-22_powerpc.changes", MockLogger())
+  ...     datadir(''), "usplash_0.1-22_powerpc.changes", MockLogger(),
+  ...     archive=ubuntu.main_archive)
   >>> usplash_upload.policy.setOptions(MockOptions())
   >>> usplash_upload.policy.can_upload_binaries = True
   >>> usplash_upload.policy.can_upload_mixed = True

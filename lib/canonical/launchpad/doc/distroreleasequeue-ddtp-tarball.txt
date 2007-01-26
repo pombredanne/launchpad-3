@@ -51,7 +51,7 @@ doesn't follow the accepted format,  "<pkg>_<version>_<arch>.changes"
   >>> upload = NascentUpload(
   ...     findPolicyByName('sync'), datadir(''),
   ...     "translations-main_20060728.changes",
-  ...     logging.getLogger())
+  ...     logging.getLogger(), archive=ubuntutest.main_archive)
   >>> mock_options = MockOptions()
   >>> upload.policy.setOptions(mock_options)
 
@@ -72,7 +72,7 @@ Now do a proper upload into the system.
   >>> upload = NascentUpload(
   ...     findPolicyByName('insecure'), datadir(''),
   ...     "translations-main_20060728_all.changes",
-  ...     MockLogger())
+  ...     MockLogger(), archive=ubuntutest.main_archive)
 
 
   >>> upload.changes_filename == datadir(
@@ -216,7 +216,7 @@ language indexes or adding new ones:
   >>> upload = NascentUpload(
   ...     findPolicyByName('insecure'), datadir(''),
   ...     "translations-main_20060817_all.changes",
-  ...     QuietLogger())
+  ...     QuietLogger(), archive=ubuntutest.main_archive)
   >>> upload.policy.setOptions(mock_options)
   >>> upload.process()
   >>> upload.rejected

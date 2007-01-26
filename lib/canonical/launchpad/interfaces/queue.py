@@ -341,7 +341,7 @@ class IHasQueueItems(Interface):
     """An Object that has queue items"""
 
     def getQueueItems(status=None, name=None, version=None,
-                      exact_match=False, pocket=None):
+                      exact_match=False, pocket=None, archive=None):
         """Get the union of builds, sources and custom queue items.
 
         Returns builds, sources and custom queue items in a given state,
@@ -357,6 +357,9 @@ class IHasQueueItems(Interface):
 
         If 'pocket' is specified return only queue items inside it, otherwise
         return all pockets.  It supports multiple pockets as a list.
+
+        If 'archive' is specified return only queue items targeted to this
+        archive, if not restrict the results to the IDistribution.main_archive.
 
         Use 'exact_match' argument for precise results.
         """

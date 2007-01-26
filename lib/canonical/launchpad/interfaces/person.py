@@ -652,6 +652,9 @@ class IPerson(IHasSpecifications):
 
         """
 
+    def archiveWithTag(tag):
+        """Return the archive owned by this person with the given tag."""
+
     def getTicketLanguages():
         """Return a set of ILanguage used by the tickets in which this person "
         is involved.

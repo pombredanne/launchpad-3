@@ -175,14 +175,17 @@ class AbstractUploadPolicy:
         return []
 
     def autoApprove(self, upload):
-        """Return whether or not the policy approves of the upload.
+        """Return whether the upload should be automatically approved.
 
-        Often the pocket may decide whether or not a policy approves of an
-        upload. E.g. The insecure policy probably approves of things going
-        to the RELEASE pocket, but needs extra approval for UPDATES.
+        This is called only if the upload is a recognised package; if it
+        is new, autoApproveNew is used instead.
         """
         # The base policy approves of everything.
         return True
+
+    def autoApproveNew(self, upload):
+        """Return whether the NEW upload should be automatically approved."""
+        return False
 
     @classmethod
     def _registerPolicy(cls, policy_type):
@@ -241,6 +244,40 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
 
 # Register this as the 'insecure' policy
 AbstractUploadPolicy._registerPolicy(InsecureUploadPolicy)
+
+
+class PPAUploadPolicy(AbstractUploadPolicy):
+    """The insecure upload policy is used by the poppy interface."""
+
+    def __init__(self):
+        AbstractUploadPolicy.__init__(self)
+        self.name = 'ppa'
+        self.can_upload_binaries = False
+        self.can_upload_mixed = False
+
+    def getDefaultPermittedComponents(self):
+        """Return the set of components this distrorelease permits."""
+        return set(
+            component.name for component in getUtility(IComponentSet))
+
+    def policySpecificChecks(self, upload):
+        """Allow the upload only if it is for the RELEASE pocket."""
+        if self.pocket != PackagePublishingPocket.RELEASE:
+            upload.reject(
+                "PPA uploads must be for the RELEASE pocket.")
+
+    def autoApprove(self, upload):
+        """For now we'll approve everything."""
+        return True
+
+    def autoApproveNew(self, upload):
+        """For now we'll approve of everything."""
+        return True
+
+
+# Register this as the 'insecure' policy
+AbstractUploadPolicy._registerPolicy(PPAUploadPolicy)
+
 
 class BuildDaemonUploadPolicy(AbstractUploadPolicy):
     """The build daemon upload policy is invoked by the slave scanner."""

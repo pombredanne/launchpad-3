@@ -909,7 +909,8 @@ class DistroRelease(SQLBase, BugTargetBase):
 
         return distro_sprs
 
-    def createQueueEntry(self, pocket, changesfilename, changesfilecontent):
+    def createQueueEntry(self, pocket, changesfilename, changesfilecontent,
+                         archive):
         """See IDistroRelease."""
         # We store the changes file in the librarian to avoid having to
         # deal with broken encodings in these files; this will allow us
@@ -927,14 +928,21 @@ class DistroRelease(SQLBase, BugTargetBase):
                              status=PackageUploadStatus.NEW,
                              pocket=pocket,
                              changesfile=changes_file,
-                             archive=self.main_archive)
+                             archive=archive)
 
     def getQueueItems(self, status=None, name=None, version=None,
-                      exact_match=False, pocket=None):
+                      exact_match=False, pocket=None, archive=None):
         """See IDistroRelease."""
 
         default_clauses = ["""
-            packageupload.distrorelease = %s""" % sqlvalues(self.id)]
+            packageupload.distrorelease = %s""" % sqlvalues(self)]
+
+        # restrict result to a given archive
+        if archive is None:
+            archive = self.main_archive
+
+        default_clauses.append("""
+        packageupload.archive = %s""" % sqlvalues(archive))
 
         # restrict result to a given pocket
         if pocket is not None:

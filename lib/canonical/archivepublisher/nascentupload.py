@@ -301,12 +301,13 @@ class NascentUpload:
     insert into the database as a queued upload to be processed.
     """
 
-    def __init__(self, policy, fsroot, changes_filename, logger):
+    def __init__(self, policy, fsroot, changes_filename, logger, archive):
         self.fsroot = fsroot
         self.policy = policy
+        self.archive = archive
         self.changes_filename = os.path.join(fsroot, changes_filename)
         if not os.path.exists(self.changes_filename):
-            raise FileNotFound(changes_filename)
+            raise FileNotFound(self.changes_filename)
         self.changes_basename = changes_filename
         self.sender = "%s <%s>" % (
             config.uploader.default_sender_name,
@@ -2078,7 +2079,7 @@ class NascentUpload:
         # create an upload entry in new state
         self.logger.debug("Creating a New queue entry")
         queue_root = self.distrorelease.createQueueEntry(self.policy.pocket,
-            self.changes_basename, self.changes["filecontents"])
+            self.changes_basename, self.changes["filecontents"], self.archive)
 
         # Next, if we're sourceful, add a source to the queue
         if self.sourceful:
@@ -2106,7 +2107,13 @@ class NascentUpload:
 
         # if it is known (already overridden properly), move it
         # to ACCEPTED state automatically
-        if not self.is_new():
+        if self.is_new():
+            if self.policy.autoApproveNew(self):
+                self.logger.debug("Setting it to ACCEPTED")
+                queue_root.setAccepted()
+            else:
+                self.logger.debug("Leaving status as NEW")
+        else:
             if self.policy.autoApprove(self):
                 self.logger.debug("Setting it to ACCEPTED")
                 queue_root.setAccepted()

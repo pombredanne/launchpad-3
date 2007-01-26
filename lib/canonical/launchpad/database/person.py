@@ -1161,6 +1161,14 @@ class Person(SQLBase):
         sCoC_util = getUtility(ISignedCodeOfConductSet)
         return sCoC_util.searchByUser(self.id, active=False)
 
+    def archiveWithTag(self, tag):
+        """See IPerson."""
+        ppas = self.personal_package_archives
+        for ppa in ppas:
+            if ppa.archive.tag == tag:
+                return ppa.archive
+        return None
+
 
 class PersonSet:
     """The set of persons."""

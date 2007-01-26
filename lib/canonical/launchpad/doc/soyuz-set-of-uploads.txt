@@ -77,11 +77,8 @@ Firstly, we need a way to copy a test upload into the queue
 
   >>> from canonical.archivepublisher.tests import datadir
   >>> def punt_upload_into_queue(leaf, distro):
-  ...     inc_dir = os.path.join(incoming_dir, leaf)
-  ...     os.mkdir(inc_dir)
-  ...     f = open(inc_dir + ".distro", "w")
-  ...     f.write(distro)
-  ...     f.close()
+  ...     inc_dir = os.path.join(incoming_dir, leaf, distro)
+  ...     os.makedirs(inc_dir)
   ...     for file_leaf in os.listdir(datadir(os.path.join("suite", leaf))):
   ...         os.system("cp %s %s" %
   ...             (datadir(os.path.join("suite", leaf, file_leaf)), inc_dir))
@@ -241,7 +238,6 @@ Remove that failed upload.
 
   >>> import shutil
   >>> shutil.rmtree(os.path.join(rejected_dir, 'bar_1.0-2_binary'))
-  >>> os.remove(os.path.join(rejected_dir, 'bar_1.0-2_binary.distro'))
 
 ...and try it again without the bogus build id.
 
@@ -273,7 +269,6 @@ Remove rejected uploads.
 
   >>> import shutil
   >>> shutil.rmtree(os.path.join(rejected_dir, 'bar_1.0-3'))
-  >>> os.remove(os.path.join(rejected_dir, 'bar_1.0-3.distro'))
 
 Check the rejection (instead of failure) of an upload to a release or
 pocket which does not exist. We use the security upload policy for easier
@@ -300,7 +295,6 @@ Remove rejected uploads.
 
   >>> import shutil
   >>> shutil.rmtree(os.path.join(rejected_dir, 'unstable_1.0-1'))
-  >>> os.remove(os.path.join(rejected_dir, 'unstable_1.0-1.distro'))
 
 Force weird behavior with rfc2047 sentences containing '.' on
 bar_1.0-4, which caused bug # 41102.
@@ -417,7 +411,6 @@ of foo target to -updates should be rejected:
   ...
 
   >>> shutil.rmtree(os.path.join(rejected_dir, 'foo_2.9-2'))
-  >>> os.remove(os.path.join(rejected_dir, 'foo_2.9-2.distro'))
 
 This new version of foo can only be uploaded to the -backports pocket itself:
 
