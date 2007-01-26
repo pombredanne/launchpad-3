@@ -545,6 +545,7 @@ INSERT INTO archive (id, tag) VALUES (4, 'gentoo main archive');
 INSERT INTO archive (id, tag) VALUES (5, 'kubuntu main archive');
 INSERT INTO archive (id, tag) VALUES (6, 'guadalinex main archive');
 INSERT INTO archive (id, tag) VALUES (7, 'ubuntutest main archive');
+INSERT INTO archive (id, tag) VALUES (8, 'cprov ubuntu archive');
 
 
 ALTER TABLE archive ENABLE TRIGGER ALL;
@@ -988,7 +989,9 @@ ALTER TABLE build ENABLE TRIGGER ALL;
 
 ALTER TABLE builder DISABLE TRIGGER ALL;
 
-INSERT INTO builder (id, processor, name, title, description, "owner", speedindex, builderok, failnotes, "trusted", url, manual, date_created) VALUES (1, 1, 'bob', 'Bob The Builder', 'The default build-slave', 61, NULL, false, NULL, false, 'http://localhost:8221/', false, '2006-10-16 18:31:43.226724');
+INSERT INTO builder (id, processor, name, title, description, "owner", speedindex, builderok, failnotes, "trusted", url, manual, date_created) VALUES (1, 1, 'bob', 'Bob The Builder', 'The default build-slave', 61, NULL, false, NULL, true, 'http://localhost:8221/', false, '2006-10-16 18:31:43.226724');
+
+INSERT INTO builder (id, processor, name, title, description, "owner", speedindex, builderok, failnotes, "trusted", url, manual, date_created) VALUES (2, 1, 'frog', 'The frog builder', 'The untrusted build-slave', 61, NULL, false, NULL, false, 'http://localhost:9221/', false, '2006-10-31 18:31:43.226724');
 
 
 ALTER TABLE builder ENABLE TRIGGER ALL;
@@ -3001,7 +3004,7 @@ ALTER TABLE person ENABLE TRIGGER ALL;
 
 ALTER TABLE personalpackagearchive DISABLE TRIGGER ALL;
 
-
+INSERT INTO personalpackagearchive (id, person, archive) VALUES (1, 28, 8);
 
 ALTER TABLE personalpackagearchive ENABLE TRIGGER ALL;
 

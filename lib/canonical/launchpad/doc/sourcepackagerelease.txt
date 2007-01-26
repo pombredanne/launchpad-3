@@ -189,6 +189,58 @@ Verify the 'meta_binary' attribute:
    >>> IDistroReleaseBinaryPackage.providedBy(spr_test.meta_binaries[0])
    True
 
+= Creating Build records =
+
+The SourcePackageRelease has the ability to create Build records,
+however it needs fully support to treat architecturehintlist and P-a-s
+information, see further information in buildd-queuebuilder.txt.
+
+The base method createBuild() is able to create build to a given
+distroarchrelease and pocket.
+
+Build.buildstate, by default is set to NEEDSBUILD and build.archive is
+the default distribution.main_archive.
+
+   >>> from canonical.lp.dbschema import PackagePublishingPocket
+   >>> pocket = PackagePublishingPocket.RELEASE
+
+   >>> dar = spr_test.uploaddistrorelease['i386']
+
+   >>> test_build = spr_test.createBuild(dar, pocket)
+
+   >>> test_build.id
+   21L
+
+   >>> test_build.buildstate.name
+   'NEEDSBUILD'
+
+   >>> test_build.distroarchrelease.architecturetag
+   u'i386'
+
+   >>> test_build.archive.id == dar.distrorelease.main_archive.id
+   True
+
+Optionally you can pass also status & archive:
+
+   >>> from canonical.lp.dbschema import BuildStatus
+
+   # XXX cprov 20061101: use ppa lookup provided by IPerson.
+   >>> from canonical.launchpad.database import Archive
+   >>> cprov_ppa = Archive.get(8)
+
+   >>> ppa_build = spr_test.createBuild(
+   ...    dar, pocket, status=BuildStatus.SUPERSEDED, archive=cprov_ppa)
+
+   >>> ppa_build.id
+   22L
+
+   >>> ppa_build.buildstate.name
+   'SUPERSEDED'
+
+   >>> ppa_build.archive.tag
+   u'cprov ubuntu archive'
+
+
 Counting bugs and tickets
 -------------------------
 

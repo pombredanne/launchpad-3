@@ -214,9 +214,10 @@ class IDistroRelease(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
         known during a publisher run, mostly in pre-upload checks)
         """
 
-    def getAllReleasesByStatus(status):
-        """Return all sourcepackages in a given published_status for this
-        DistroRelease.
+    def getSourcesPublishedForAllArchives():
+        """Return all sourcepackage published across all the archives.
+
+        Return a SelectResult of SourcePackagePublishingHistory.
         """
 
     def publishedBinaryPackages(component=None):

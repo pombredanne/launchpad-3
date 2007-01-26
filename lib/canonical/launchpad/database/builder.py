@@ -23,6 +23,7 @@ from canonical.launchpad.interfaces import (
     IBuilder, IBuilderSet, NotFoundError, IHasBuildRecords, IBuildSet,
     IBuildQueueSet)
 from canonical.launchpad.webapp import urlappend
+from canonical.lp.dbschema import BuildStatus
 
 
 class TimeoutHTTPConnection(httplib.HTTPConnection):

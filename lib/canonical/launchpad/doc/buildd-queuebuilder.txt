@@ -123,7 +123,8 @@ special pocket (UPDATES, SECURITY or BACKPORTS)
 
   >>> from canonical.launchpad.database import Manifest
   >>> count = 1
-  >>> def createPackageAndPublication(name, release, architecturehintlist):
+  >>> def createPackageAndPublication(name, release, architecturehintlist,
+  ...     archive=None):
   ...     """Create a SourcePackageRelease, ReleaseFile and publication.
   ...
   ...     Return a tuple with (SourcePackageRelease, publication)
@@ -133,6 +134,8 @@ special pocket (UPDATES, SECURITY or BACKPORTS)
   ...     tar = SourcePackageFileType.TARBALL
   ...     published = PackagePublishingStatus.PUBLISHED
   ...     release_pocket = PackagePublishingPocket.UPDATES
+  ...     if archive is None:
+  ...        archive = release.main_archive
   ...     srcpkgrel = SourcePackageRelease(
   ...         creator=1,
   ...         version=str(666+count),
@@ -165,7 +168,7 @@ special pocket (UPDATES, SECURITY or BACKPORTS)
   ...         component=srcpkgrel.component,
   ...         section=srcpkgrel.section,
   ...         datecreated=UTC_NOW,
-  ...         archive=1)
+  ...         archive=archive)
   ...     count += 1
   ...     return srcpkgrel, p
 
@@ -388,4 +391,70 @@ further tests for scoring are in buildd-scoring.txt)
 
   >>> job.lastscore
   995
+
+= PPA work =
+
+Currently all Build/BuildQueue are processed in the same batch,
+indenpendently of the targeted archive.
+
+The entire procedure
+
+For testing PPA we will snapshot the current build/buildqueue status
+again:
+
+  >>> old_builds = set(Build.select())
+  >>> old_jobs = set(BuildQueue.select())
+
+Then we can create new publication target to PPA archive present in
+the sample data:
+
+XXX cprov 20061101: use PPA/Archive lookup methods provided by
+IPerson, wait they get merged in archive-rework.
+
+  >>> from canonical.launchpad.database import Archive
+  >>> cprov_archive = Archive.get(8)
+
+  >>> name6 = SourcePackageName(name="test-ppa")
+  >>> spr_hoary_ppa, pub_hoary_ppa = createPackageAndPublication(
+  ...     name6, hoary, "i386", archive=cprov_archive)
+
+Now we create builds and buildqueues and check their contents:
+
+  >>> for dr in distroreleases:
+  ...      bm.createMissingBuilds(dr)
+  WARNING:root:Chroots missing for breezy-autotest, skipping
+  WARNING:root:No nominatedarchindep for hoary-test, skipping
+  WARNING:root:Chroots missing for warty, skipping
+  WARNING:root:No nominatedarchindep for woody, skipping
+  >>> flush_database_updates()
+
+Check that we only created new Build entry for ppa publication:
+
+  >>> new_builds = set(Build.select()) - old_builds
+  >>> for build in sorted(new_builds, key=operator.attrgetter('id')):
+  ...   print build.title
+  i386 build of test-ppa 672 in ubuntu hoary UPDATES
+
+Check if BuildQueue are also created for ppa_builds:
+
+  >>> bm.addMissingBuildQueueEntries()
+  >>> jobs = bm.sanitiseAndScoreCandidates()
+  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary i386
+  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary hppa
+  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary i386
+  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary hppa
+  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary i386
+  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary hppa
+  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary i386
+  >>> new_jobs = [job for job in jobs if job not in old_jobs]
+  >>> len(new_jobs)
+  1
+
+Check if the BuildQueue/Build contains the right Archive, which would
+suffice for the build being dispatched and collected correctly (see
+buildd-slavescanner.txt):
+
+  >>> ppa_job = new_jobs[0]
+  >>> ppa_job.build.archive.tag
+  u'cprov ubuntu archive'
 

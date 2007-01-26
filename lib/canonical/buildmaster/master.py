@@ -239,8 +239,8 @@ class BuilddMaster:
         pas_verify = BuildDaemonPackagesArchSpecific(config.builddmaster.root,
                                                      distrorelease)
 
-        sources_published = distrorelease.getAllReleasesByStatus(
-            dbschema.PackagePublishingStatus.PUBLISHED)
+        sources_published = distrorelease.getSourcesPublishedForAllArchives()
+
         self._logger.info("Found %d source(s) published in %s." %
                           (sources_published.count(), distrorelease.name))
 
@@ -276,7 +276,8 @@ class BuilddMaster:
             pubrec.sourcepackagerelease.createBuild(
                 distroarchrelease=archrelease,
                 pocket=pubrec.pocket,
-                processor=archrelease.default_processor)
+                processor=archrelease.default_processor,
+                archive=pubrec.archive)
 
 
     def addMissingBuildQueueEntries(self):
@@ -522,9 +523,8 @@ class BuilddMaster:
     def sanitiseAndScoreCandidates(self):
         """Iter over the buildqueue entries sanitising it."""
         # Get the current build job candidates
-        state = dbschema.BuildStatus.NEEDSBUILD
         bqset = getUtility(IBuildQueueSet)
-        candidates = bqset.calculateCandidates(self._archreleases, state)
+        candidates = bqset.calculateCandidates(self._archreleases)
         if not candidates:
             return
 
@@ -565,9 +565,8 @@ class BuilddMaster:
         """Split out each build by the processor it is to be built for then
         order each sublist by its score. Get the current build job candidates
         """
-        state = dbschema.BuildStatus.NEEDSBUILD
         bqset = getUtility(IBuildQueueSet)
-        candidates = bqset.calculateCandidates(self._archreleases, state)
+        candidates = bqset.calculateCandidates(self._archreleases)
         if not candidates:
             return {}
 
@@ -587,25 +586,27 @@ class BuilddMaster:
 
     def dispatchByProcessor(self, proc, queueItems):
         """Dispatch Jobs according specific processor"""
-        self.getLogger().debug("dispatchByProcessor(%s, %d queueItem(s))"
-                               % (proc.name, len(queueItems)))
+        self._logger.debug("dispatchByProcessor(%s, %d queueItem(s))"
+                           % (proc.name, len(queueItems)))
         try:
             builders = notes[proc]["builders"]
         except KeyError:
-            self._logger.debug("No builder found.")
+            self._logger.warn("No initialised builders found.")
             return
 
-        builder = builders.firstAvailable()
-
-        while builder is not None and len(queueItems) > 0:
+        while len(queueItems) > 0:
             build_candidate = queueItems.pop(0)
-            spr = build_candidate.build.sourcepackagerelease
+            # retrieve the first available builder according the context
+            builder = builders.firstAvailable(
+                is_trusted=build_candidate.is_trusted)
+            if not builder:
+                break
             # either dispatch or mark obsolete builds (sources superseded
             # or removed) as SUPERSEDED.
+            spr = build_candidate.build.sourcepackagerelease
             if (spr.publishings and spr.publishings[0].status <=
                 dbschema.PackagePublishingStatus.PUBLISHED):
                 self.startBuild(builders, builder, build_candidate)
-                builder = builders.firstAvailable()
             else:
                 self._logger.debug(
                     "Build %s SUPERSEDED, queue item %s REMOVED"
@@ -620,14 +621,14 @@ class BuilddMaster:
         """Find the list of files and give them to the builder."""
         pocket = queueItem.build.pocket
 
-        self.getLogger().debug("startBuild(%s, %s, %s, %s)"
-                               % (builder.url, queueItem.name,
-                                  queueItem.version, pocket.title))
+        self._logger.debug("startBuild(%s, %s, %s, %s)"
+                           % (builder.url, queueItem.name,
+                              queueItem.version, pocket.title))
 
         # ensure build has the need chroot
         chroot = queueItem.archrelease.getChroot(pocket)
         if chroot is None:
-            self.getLogger().warn(
+            self._logger.warn(
                 "Missing CHROOT for %s/%s/%s/%s"
                 % (queueItem.build.distrorelease.distribution.name,
                    queueItem.build.distrorelease.name,

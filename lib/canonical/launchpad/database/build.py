@@ -81,6 +81,11 @@ class Build(SQLBase):
         return self.distroarchrelease.distrorelease.distribution
 
     @property
+    def is_trusted(self):
+        """See IBuild"""
+        return self.archive == self.distribution.main_archive
+
+    @property
     def title(self):
         """See IBuild"""
         return '%s build of %s %s in %s %s %s' % (

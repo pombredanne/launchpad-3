@@ -40,6 +40,7 @@ Mock Builder, a class to emulate the Builder behaviour:
   ...         self.url = 'http://fake:0000'
   ...         slave.urlbase = self.url
   ...         self.name = name
+  ...         self.trusted = False
   ...     def failbuilder(self, reason):
   ...         self.builderok = False
   ...         self.failnotes = reason
@@ -161,7 +162,7 @@ slave has the requested file in cache.
   ...         print info
   ...         return (True, info)
   ...     def build(self, buildid, buildtype, chroot, filemap, args):
-  ...         info = 'OkSlaves BUILDING'
+  ...         info = 'OkSlave BUILDING'
   ...         print info
   ...         return ('BuildStatus.Building', info)
 
@@ -242,9 +243,6 @@ slave has the requested file in cache.
   >>> buildergroup.firstAvailable() is builder2
   True
 
-  >>> buildergroup.countAvailable() is 1
-  True
-
   Stub classes to emulate Build and BuildQueue
 
   >>> from canonical.launchpad.interfaces import IBuildSet
@@ -267,6 +265,7 @@ following states: FAILEDTOBUILD and CHROOTWAIT
   ...         self.pocket = tmp_build.pocket
   ...         self.title = 'Mock Build'
   ...         self.notification_sent = False
+  ...         self.is_trusted = tmp_build.is_trusted
   ...     @property
   ...     def distrorelease(self):
   ...         return self.distroarchrelease.distrorelease
@@ -290,6 +289,7 @@ following states: FAILEDTOBUILD and CHROOTWAIT
   ...         self.files = []
   ...         self.component_name = "main"
   ...         self.archhintlist = ""
+  ...         self.is_trusted = build.is_trusted
   ...     def destroySelf(self):
   ...         pass
 
@@ -584,7 +584,6 @@ is able to build stuff properly for that one
   WARNING:root:Chroot missing for debian/woody/i386, skipping
   WARNING:root:Chroot missing for ubuntu/breezy-autotest/i386, skipping
   WARNING:root:Chroot missing for ubuntu/hoary/hppa, skipping
-  WARNING:root.builders.x86:No builders are available
   WARNING:root:Chroot missing for ubuntu/warty/hppa, skipping
   WARNING:root:Chroot missing for ubuntu/warty/i386, skipping
   WARNING:root:Chroot missing for ubuntutest/hoary-test/amd64, skipping
@@ -639,7 +638,7 @@ goes nothing.
   >>> from canonical.lp.dbschema import PackagePublishingStatus
 
   >>> class MockBG:
-  ...     def firstAvailable(self):
+  ...     def firstAvailable(self, is_trusted=False):
   ...         return "Something which is not None"
 
   >>> class MockProcessor:
@@ -674,7 +673,7 @@ for further details:
 
   >>> bm.startBuild(real_buildergroup, builder2, bqItem3)
   OkSlave has everything
-  OkSlaves BUILDING
+  OkSlave BUILDING
 
 Check chroot assertion:
 

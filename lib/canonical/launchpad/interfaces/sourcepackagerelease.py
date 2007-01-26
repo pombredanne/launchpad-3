@@ -120,11 +120,13 @@ class ISourcePackageRelease(Interface):
         """
 
     def createBuild(distroarchrelease, pocket, processor=None,
-                    status=BuildStatus.NEEDSBUILD):
+                    status=BuildStatus.NEEDSBUILD, archive=None):
         """Create a build for a given distroarchrelease/pocket  and return it.
 
         If the processor isn't given, guess it from the distroarchrelease.
         If the status isn't given, use NEEDSBUILD.
+        if archive is not specified the build will be targeted to the
+        distribution.main_archive.
         """
 
     def getBuildByArch(distroarchrelease):

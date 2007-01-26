@@ -592,10 +592,11 @@ class DistroRelease(SQLBase, BugTargetBase):
             DistributionReleaseStatus.EXPERIMENTAL,
         ]
 
-    def getAllReleasesByStatus(self, status):
+    def getSourcesPublishedForAllArchives(self):
         """See IDistroRelease."""
+        state = PackagePublishingStatus.PUBLISHED
         queries = ['distrorelease=%s AND archive=%s AND status=%s'
-                   % sqlvalues(self, self.main_archive, status)]
+                   % sqlvalues(self, self.main_archive, state)]
 
         if not self.isUnstable():
             queries.append(
@@ -1763,14 +1764,18 @@ class DistroRelease(SQLBase, BugTargetBase):
     def getPendingPublications(self, pocket, is_careful):
         """See IPublishing."""
         queries = ['distrorelease = %s' % sqlvalues(self)]
-        # careful publishing should include all PUBLISHED rows, normal run
-        # only includes PENDING ones.
+
+        # Query main archive for this distrorelease
+        queries.append('archive=%s' % sqlvalues(self.main_archive))
+
+        # only pending records in the normal mode and ALL (pending & published)
+        # when in 'careful' mode.
         statuses = [PackagePublishingStatus.PENDING]
         if is_careful:
             statuses.append(PackagePublishingStatus.PUBLISHED)
         queries.append('status IN %s' % sqlvalues(statuses))
 
-        # restrict to a specific pocket.
+        # Restrict to a specific pocket.
         queries.append('pocket = %s' % sqlvalues(pocket))
 
         # exclude RELEASE pocket if the distrorelease was already released,

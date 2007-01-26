@@ -402,3 +402,4 @@ ALTER TABLE Build
        FOREIGN KEY (archive) REFERENCES Archive(id);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (67, 90, 0);
+>>>>>>> MERGE-SOURCE

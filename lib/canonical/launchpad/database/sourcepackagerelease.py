@@ -285,7 +285,7 @@ class SourcePackageRelease(SQLBase):
                                         libraryfile=file)
 
     def createBuild(self, distroarchrelease, pocket, processor=None,
-                    status=BuildStatus.NEEDSBUILD):
+                    status=BuildStatus.NEEDSBUILD, archive=None):
         """See ISourcePackageRelease."""
         # Guess a processor if one is not provided
         if processor is None:
@@ -297,6 +297,8 @@ class SourcePackageRelease(SQLBase):
         # UTC_NOW for the transaction, avoid several row with
         # same datecreated.
         datecreated = datetime.datetime.now(pytz.timezone('UTC'))
+        if archive is None:
+            archive = distroarchrelease.main_archive
 
         return Build(distroarchrelease=distroarchrelease,
                      sourcepackagerelease=self,
@@ -304,7 +306,7 @@ class SourcePackageRelease(SQLBase):
                      buildstate=status,
                      datecreated=datecreated,
                      pocket=pocket,
-                     archive=distroarchrelease.main_archive)
+                     archive=archive)
 
     def getBuildByArch(self, distroarchrelease):
         """See ISourcePackageRelease."""
