@@ -70,7 +70,7 @@
     <tal:emblems repeat="team context/teams_participated_in">
       <a tal:attributes="href team/fmt:url"
         ><img tal:condition="team/emblem"
-              tal:attributes="src team/emblem/secure_url;
+              tal:attributes="src team/emblem/getURL;
                               title string:Emblem of ${team/name}"
           /></a>
     </tal:emblems>

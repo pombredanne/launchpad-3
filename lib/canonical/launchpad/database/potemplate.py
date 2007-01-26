@@ -576,7 +576,7 @@ class POTemplate(SQLBase, RosettaStats):
                 'importer': entry_to_import.importer.displayname,
                 'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
                 'elapsedtime': entry_to_import.getElapsedTimeText(),
-                'file_link': entry_to_import.content.url,
+                'file_link': entry_to_import.content.http_url,
                 'import_title': self.displayname
                 }
 

@@ -92,7 +92,7 @@
   <fieldset style="margin-bottom: 0; padding: 0 0.5em 0.5em 0.5em">
     <legend>Description <small>(<a href="+edit">edit</a>)</small></legend>
 
-    <div style="font-family: monospace;"
+    <div id="bug-description" style="font-family: monospace;"
          tal:content="structure context/bug/description/fmt:text-to-html" />
 
     <div tal:define="tags context/bug/tags"

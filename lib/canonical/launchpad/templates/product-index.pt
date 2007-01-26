@@ -39,7 +39,7 @@
         <div class="section">
           <h2>Timeline</h2>
 
-  <tal:per_series repeat="series context/serieslist">
+  <div class="productSeries" tal:repeat="series view/sorted_serieslist">
 
     <div tal:define="is_focus python:context.development_focus == series"
          tal:attributes="class python:is_focus and 'highlighted' or ''">
@@ -78,7 +78,7 @@
 
     </div>
 
-  </tal:per_series>
+  </div>
 
         </div>
         <div
