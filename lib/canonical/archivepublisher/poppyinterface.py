@@ -59,7 +59,7 @@ class PoppyInterface:
         # and creating the distro file, and also in cases where the
         # temporary directory and the upload directory are not in the
         # same filesystem (non-atomic "rename").
-        self.lock.acquire()
+        self.lock.acquire(blocking=True)
 
         # Move it to the target directory.
         while True:
