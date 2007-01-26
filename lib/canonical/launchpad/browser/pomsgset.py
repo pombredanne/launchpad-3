@@ -49,7 +49,7 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 #
 
 def contract_rosetta_escapes(text):
-    """Replace Rosetta tabs, non-breaking spaces with their real characters."""
+    """Replace Rosetta escape sequences with the real characters."""
     return helpers.text_replaced(text, {'[tab]': '\t',
                                         r'\[tab]': '[tab]',
                                         '[nbsp]' : u'\u00a0',
@@ -57,7 +57,7 @@ def contract_rosetta_escapes(text):
 
 
 def expand_rosetta_escapes(unicode_text):
-    """Replace tabs, non-breaking spaces with their Rosetta representations."""
+    """Replace characters needing a Rosetta escape sequences."""
     escapes = {u'\t': TranslationConstants.TAB_CHAR,
                u'[tab]': TranslationConstants.TAB_CHAR_ESCAPED,
                u'\u00a0' : TranslationConstants.NO_BREAK_SPACE_CHAR,

@@ -35,7 +35,7 @@ And so on...
     >>> contract_rosetta_escapes('foo\\\\\\[tab]bar')
     'foo\\\\[tab]bar'
 
-Similarly, string '[tab]' gets converted to no-break space character.
+Similarly, string '[nbsp]' gets converted to no-break space character.
 
     >>> contract_rosetta_escapes('foo[nbsp]bar')
     u'foo\xa0bar'
