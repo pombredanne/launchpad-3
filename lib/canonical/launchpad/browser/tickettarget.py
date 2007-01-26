@@ -355,9 +355,8 @@ class ManageSupportContactView(GeneralFormView):
     def initial_values(self):
         user = self.user
         support_contacts = self.context.direct_support_contacts
-        user_teams = [
-            membership.team for membership in user.myactivememberships]
-        support_contact_teams = set(support_contacts).intersection(user_teams)
+        support_contact_teams = set(
+            support_contacts).intersection(self.user.teams_participated_in)
         return {
             'want_to_be_support_contact': user in support_contacts,
             'support_contact_teams': list(support_contact_teams)
@@ -386,9 +385,7 @@ class ManageSupportContactView(GeneralFormView):
                     _('You have been removed as a support contact for '
                       '$context.', mapping=replacements))
 
-        user_teams = [
-            membership.team for membership in self.user.myactivememberships]
-        for team in user_teams:
+        for team in self.user.teams_participated_in:
             replacements['teamname'] = team.displayname
             if team in support_contact_teams:
                 if self.context.addSupportContact(team):
