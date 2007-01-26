@@ -650,7 +650,7 @@ class POFile(SQLBase, RosettaStats):
             'elapsedtime': entry_to_import.getElapsedTimeText(),
             'language': self.language.displayname,
             'template': self.potemplate.displayname,
-            'file_link': entry_to_import.content.url,
+            'file_link': entry_to_import.content.http_url,
             'numberofmessages': msgsets_imported,
             'import_title': '%s translations for %s' % (
                 self.language.displayname, self.potemplate.displayname)

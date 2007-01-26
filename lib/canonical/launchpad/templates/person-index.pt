@@ -31,7 +31,7 @@
 
   <img
     tal:condition="context/gotchi"
-    tal:attributes="src context/gotchi/secure_url"
+    tal:attributes="src context/gotchi/getURL"
     style="float: right; margin: 0 0 0.5em 0.5em"
     alt=""
   />
