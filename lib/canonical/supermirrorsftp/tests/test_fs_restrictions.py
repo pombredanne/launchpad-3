@@ -184,6 +184,8 @@ class ProductDirsTestCase(AvatarTestCase):
 class ProductPlaceholderTestCase(AvatarTestCase):
 
     def _setUpFilesystem(self):
+        # XXX - factor this out into a common Launchpad utility class
+        # jml, 2007-01-26
         class Launchpad:
             test = self
             def fetchProductID(self, productName):

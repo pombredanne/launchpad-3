@@ -214,6 +214,7 @@ class SFTPServerBranch(osfs.OSDirectory):
     Can also be used for Bazaar 1.x branches.
     """
     def __init__(self, avatar, branchID, branchName, parent):
+        self.branchID = branchID
         # XXX AndrewBennetts 2006-02-06: this snippet is duplicated in a few
         # places, such as librarian.storage._relFileLocation and
         # supermirror_rewritemap.split_branch_id.
@@ -229,8 +230,47 @@ class SFTPServerBranch(osfs.OSDirectory):
     def childDirFactory(cls):
         # Directories under this one are normal OSDirectory instances, they
         # don't have any restrictions.
-        return osfs.OSDirectory
+        return WriteLoggingDirectory
 
     def remove(self):
         raise PermissionError(
             "removing branch directory %r is not allowed." % self.name)
+
+
+class WriteLoggingDirectory(osfs.OSDirectory):
+    dirty = False
+    rootWatcher = None
+
+    def __init__(self, path, name=None, parent=None, rootWatcher=None):
+        osfs.OSDirectory.__init__(self, path, name, parent)
+        if rootWatcher is None:
+            rootWatcher = self
+        self.rootWatcher = rootWatcher
+
+    def childDirFactory(self):
+        def f(path, name, parent):
+            return WriteLoggingDirectory(path, name, parent,
+                                         rootWatcher=self.rootWatcher)
+        return f
+
+    def createDirectory(self, name):
+        self.touch()
+        newDir = osfs.OSDirectory.createDirectory(self, name)
+        newDir.rootWatcher = self
+        return newDir
+
+    def createFile(self, name, exclusive=True):
+        self.touch()
+        return osfs.OSDirectory.createFile(self, name, exclusive)
+
+    def remove(self):
+        self.touch()
+        osfs.OSDirectory.remove(self)
+
+    def rename(self, newName):
+        self.touch()
+        osfs.OSDirectory.rename(self, newName)
+
+    def touch(self):
+        self.rootWatcher.dirty = True
+

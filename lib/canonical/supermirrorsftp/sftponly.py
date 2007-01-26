@@ -98,6 +98,8 @@ class SFTPOnlyAvatar(avatar.ConchUser):
     def _cbRememberProductID(self, productID, productName):
         if productID is None:
             return None
+        # XXX: Why convert the number to a string here?
+        #  -- Andrew Bennetts, 2007-01-26
         productID = str(productID)
         self._productIDs[productName] = productID
         self._productNames[productID] = productName
