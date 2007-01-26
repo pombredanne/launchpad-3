@@ -464,11 +464,12 @@ def process_queue(transaction_manager, logger):
         except:
             # If something unexpected goes wrong, we shouldn't break other
             # exports.
-            log.error(
+            logger.error(
                 "An exception was raised when exporting files for %s" % (
                     person.displayname),
                 exc_info=True)
             transaction_manager.abort()
+            transaction_manager.begin()
 
 
         # This is here in case we need to process the same file twice in the
