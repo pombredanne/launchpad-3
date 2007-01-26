@@ -101,18 +101,6 @@
       permission="launchpad.Edit"
       template="../templates/person-edithomepage.pt" />
 
-  <browser:generalform
-    name="+editemblem"
-    for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.PersonEmblemView"
-    schema="canonical.launchpad.interfaces.IPerson"
-    fields="emblem"
-    keyword_arguments="emblem"
-    permission="launchpad.Edit"
-    template="../templates/person-images.pt"
-    >
-  </browser:generalform>
-
   <browser:pages
       for="canonical.launchpad.interfaces.IPerson"
       permission="zope.Public"
@@ -290,38 +278,40 @@
   sure only the user (and not launchpad admins) will be able to edit her own
   ssh keys. Another option would be to require the user's password on this
   page. GuilhermeSalgado 25/08/2005 -->
-  <browser:pages
+  <browser:page
+      name="+editsshkeys"
       for="canonical.launchpad.interfaces.IPerson"
       permission="launchpad.Special"
-      class="canonical.launchpad.browser.PersonView">
-      <browser:page
-          name="+editsshkeys"
-          template="../templates/person-editsshkeys.pt"
-          lp:url="/~$Person.id/+editsshkeys" />
-  </browser:pages>
+      class="canonical.launchpad.browser.PersonEditSSHKeysView"
+      template="../templates/person-editsshkeys.pt" />
 
-  <browser:pages
+  <browser:page
+      name="+codesofconduct"
       for="canonical.launchpad.interfaces.IPerson"
       permission="launchpad.Edit"
-      class="canonical.launchpad.browser.PersonView">
-      <browser:page
-          name="+codesofconduct"
-          template="../templates/person-codesofconduct.pt"
-          lp:url="/~$Person.name/+codesofconduct" />
-      <browser:page
-          name="+editwikinames"
-          template="../templates/person-editwikinames.pt"
-          lp:url="/~$person.id/+editwikinames" />
-      <browser:page
-          name="+editircnicknames"
-          template="../templates/person-editircnicknames.pt"
-          lp:url="/~$person.id/+editircnicknames" />
-      <browser:page
-          name="+editjabberids"
-          template="../templates/person-editjabberids.pt"
-          lp:url="/~$person.id/+editjabberids" />
-  </browser:pages>
+      class="canonical.launchpad.browser.PersonCodeOfConductEditView"
+      template="../templates/person-codesofconduct.pt" />
 
+  <browser:page
+      name="+editwikinames"
+      for="canonical.launchpad.interfaces.IPerson"
+      permission="launchpad.Edit"
+      class="canonical.launchpad.browser.PersonEditWikiNamesView"
+      template="../templates/person-editwikinames.pt" />
+
+  <browser:page
+      name="+editircnicknames"
+      for="canonical.launchpad.interfaces.IPerson"
+      permission="launchpad.Edit"
+      class="canonical.launchpad.browser.PersonEditIRCNicknamesView"
+      template="../templates/person-editircnicknames.pt" />
+
+  <browser:page
+      name="+editjabberids"
+      for="canonical.launchpad.interfaces.IPerson"
+      permission="launchpad.Edit"
+      class="canonical.launchpad.browser.PersonEditJabberIDsView"
+      template="../templates/person-editjabberids.pt" />
 
   <browser:page
       for="canonical.launchpad.interfaces.IPerson"
@@ -396,17 +386,12 @@
       lp:url="/~$Team.id/+editemail">
   </browser:page>
 
-  <browser:editform
+  <browser:page
       name="+edit"
       for="canonical.launchpad.interfaces.ITeam"
       class="canonical.launchpad.browser.TeamEditView"
-      schema="canonical.launchpad.interfaces.ITeam"
-      fields="name displayname teamdescription defaultmembershipperiod
-              defaultrenewalperiod subscriptionpolicy"
       permission="launchpad.Edit"
-      template="../templates/team-edit.pt"
-      lp:url="/~$Person.id/+edit">
-  </browser:editform>
+      template="../templates/team-edit.pt" />
 
   <browser:page
       for="canonical.launchpad.interfaces.ITeam"
