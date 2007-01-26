@@ -159,4 +159,3 @@ class BuilderSet(object):
                               'AND processor.family = %d'
                               % arch.processorfamily.id,
                               clauseTables=("Processor",))
-

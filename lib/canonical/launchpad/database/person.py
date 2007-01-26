@@ -1810,6 +1810,14 @@ class PersonSet:
             ''' % vars())
         skip.append(('personalpackagearchive', 'person'))
 
+        # Just give all PPAs to the new person
+        cur.execute('''
+            UPDATE PersonalPackageArchive
+            SET person = %(to_id)d
+            WHERE person = %(from_id)d
+            ''' % vars())
+        skip.append(('personalpackagearchive', 'person'))
+
         # Sanity check. If we have a reference that participates in a
         # UNIQUE index, it must have already been handled by this point.
         # We can tell this by looking at the skip list.

@@ -684,7 +684,7 @@ in both of them:
 
 
 Only the members of distrorelease drivers in question have
-launchpad.Edit on a distroreleasequeue record.
+launchpad.Edit on a packageupload record.
 
   >>> login('foo.bar@canonical.com')
 
