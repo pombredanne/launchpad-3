@@ -422,8 +422,8 @@ above around line 313.
   ...     for filename in sent_filenames:
   ...         upload_filename = os.path.join(distro_upload_dir,
   ...                                        os.path.basename(filename))
-  ...         assert os.path.isfile(upload_filename), "foo"
-  ...         assert get_md5(filename) == get_md5(upload_filename), "bar"
+  ...         assert os.path.isfile(upload_filename)
+  ...         assert get_md5(filename) == get_md5(upload_filename)
 
 
 Now let's see if all of the valid uploads are in the Upload queue marked

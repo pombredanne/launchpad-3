@@ -19,15 +19,13 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.database import (
-    GPGKey, Person, Archive, PersonalPackageArchive)
+    Archive, PersonalPackageArchive)
 from canonical.launchpad.interfaces import IDistributionSet, IPersonSet
+from canonical.launchpad.ftests import import_public_test_keys
 from canonical.launchpad.mail import stub
 from canonical.lp.dbschema import (
-    DistributionReleaseStatus, PackageUploadStatus,
-    PackagePublishingStatus, GPGKeyAlgorithm)
+    PackageUploadStatus, PackagePublishingStatus)
 from canonical.testing import LaunchpadZopelessLayer
-from canonical.zeca.ftests.harness import ZecaTestSetup
-
 
 class BrokenUploadPolicy(AbstractUploadPolicy):
     """A broken upload policy, to test error handling."""
@@ -54,7 +52,7 @@ class TestUploadProcessor(unittest.TestCase):
         self.test_files_dir = os.path.join(config.root,
             "lib/canonical/archivepublisher/tests/data/suite")
 
-        self.keyserver_setup = False
+        import_public_test_keys()
 
         self.options = MockOptions()
         self.options.base_fsroot = self.queue_dir
@@ -67,18 +65,7 @@ class TestUploadProcessor(unittest.TestCase):
         self.log = MockLogger()
 
     def tearDown(self):
-        rmtree(self.queue_dir)
-        if self.keyserver_setup:
-            ZecaTestSetup().tearDown()
-
-    def setupKeyserver(self):
-        """Set up the keyserver and import our extra keys."""
-        ZecaTestSetup().setUp()
-        g = GPGKey(owner=Person.byName('kinnison'), keyid='20687895',
-                   fingerprint='961F4EB829D7D304A77477822BC8401620687895',
-                   keysize=1024, algorithm=GPGKeyAlgorithm.D, active=True,
-                   can_encrypt=True)
-        self.keyserver_setup = True
+        rmtree(self.queue_folder)
 
     def setupBreezy(self):
         """Set up the breezy distro for uploads."""
@@ -161,6 +148,9 @@ class TestUploadProcessor(unittest.TestCase):
         self.assertTrue("Unhandled exception processing upload: Exception "
                         "raised by BrokenUploadPolicy for testing." in raw_msg)
 
+        # Ensure PQM fails until I'm ready
+        self.assertTrue(False)
+
     def testUploadToFrozenDistro(self):
         """Uploads to a frozen distrorelease should work, but be unapproved.
 
@@ -178,8 +168,7 @@ class TestUploadProcessor(unittest.TestCase):
 
         See bug 58187.
         """
-        # Extra setup for breezy and Daniel's keys
-        self.setupKeyserver()
+        # Extra setup for breezy
         self.setupBreezy()
         self.layer.txn.commit()
 
@@ -193,8 +182,9 @@ class TestUploadProcessor(unittest.TestCase):
 
         # Check it went ok to the NEW queue and all is going well so far.
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        foo_bar = "Foo Bar <foo.bar@canonical.com>"
         daniel = "Daniel Silverstone <daniel.silverstone@canonical.com>"
-        self.assertTrue(daniel in to_addrs)
+        self.assertEqual([e.strip() for e in to_addrs], [foo_bar, daniel])
         self.assertTrue(
             "NEW" in raw_msg, "Expected email containing NEW: %s" % raw_msg)
 
@@ -225,7 +215,8 @@ class TestUploadProcessor(unittest.TestCase):
         # Verify we get an email talking about awaiting approval.
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
         daniel = "Daniel Silverstone <daniel.silverstone@canonical.com>"
-        self.assertTrue(daniel in to_addrs)
+        foo_bar = "Foo Bar <foo.bar@canonical.com>"
+        self.assertEqual([e.strip() for e in to_addrs], [foo_bar, daniel])
         self.assertTrue("This upload awaits approval" in raw_msg,
                         "Expected an 'upload awaits approval' email.")
 

@@ -9,6 +9,7 @@ __all__ = [
     'IKarmaAction',
     'IKarmaActionSet',
     'IKarmaCache',
+    'IKarmaCacheManager',
     'IKarmaPersonCategoryCacheView',
     'IKarmaTotalCache',
     'IKarmaCategory',
@@ -124,6 +125,40 @@ class IKarmaCache(Interface):
     sourcepackagename = Attribute(_("Source Package"))
 
 
+class IKarmaCacheManager(Interface):
+
+    def new(value, person_id, category_id, product_id=None,
+            distribution_id=None, sourcepackagename_id=None):
+        """Create and return a new KarmaCache.
+
+        We expect the objects IDs (instead of the real objects) here because
+        foaf-update-karma-cache.py (our only client) only has them.
+        """
+
+    def updateKarmaValue(value, person_id, category_id, product_id=None,
+                         distribution_id=None, sourcepackagename_id=None):
+        """Update the karmavalue attribute of the KarmaCache with the given
+        person_id, category_id, product_id, distribution_id and
+        sourcepackagename_id.
+        
+        Raise NotFoundError if there's no KarmaCache with those attributes.
+
+        We expect the objects IDs (instead of the real objects) here because
+        foaf-update-karma-cache.py (our only client) only has them.
+        """
+
+    def deleteEntry(person_id, category_id, product_id=None, distribution_id=None,
+                    sourcepackagename_id=None):
+        """Delete the KarmaCache with the given person_id, category_id, product_id,
+        distribution_id and sourcepackagename_id.
+        
+        Raise NotFoundError if there's no KarmaCache with those attributes.
+
+        We expect the objects IDs (instead of the real objects) here because
+        foaf-update-karma-cache.py (our only client) only has them.
+        """
+
+
 class IKarmaPersonCategoryCacheView(Interface):
     """A cached value of a person's karma, grouped by category."""
 
@@ -161,6 +196,7 @@ class IKarmaTotalCache(Interface):
 class IKarmaCategory(Interface):
     """A catgory of karma events."""
 
+    id = Int(title=_("Database ID"), required=True, readonly=True)
     name = Attribute("The name of the category.")
     title = Attribute("The title of the karma category.")
     summary = Attribute("A brief summary of this karma category.")

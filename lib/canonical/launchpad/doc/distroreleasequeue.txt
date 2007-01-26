@@ -89,9 +89,11 @@ what we expect the ed upload to produce. Let's find the queue item and
 convert it to an ACCEPTED item.
 
   >>> from canonical.launchpad.interfaces import (
-  ...      QueueInconsistentStateError)
+  ...      IDistributionSet, QueueInconsistentStateError)
   >>> from canonical.lp.dbschema import PackageUploadStatus
 
+  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+  >>> hoary = ubuntu['hoary']
   >>> new_queue = hoary.getQueueItems(PackageUploadStatus.NEW)
 
 Use state-machine method provided by PackageUpload to ACCEPT an
