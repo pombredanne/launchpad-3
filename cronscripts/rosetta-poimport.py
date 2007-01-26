@@ -42,7 +42,7 @@ def main(argv):
     # Create a lock so we don't have two daemons running at the same time.
     lock = GlobalLock(options.lockfile)
     try:
-        lock.acquire(blocking=False)
+        lock.acquire()
     except LockAlreadyAcquired:
         logger_object.error("lock %s already exists, exiting",
                             options.lockfile)
