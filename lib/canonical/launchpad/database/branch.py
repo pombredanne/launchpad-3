@@ -21,14 +21,12 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.interfaces import (IBranch, IBranchSet,
     ILaunchpadCelebrities, NotFoundError)
-from canonical.launchpad.components.branch import BranchDelta
 from canonical.launchpad.database.revision import RevisionNumber, Revision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.helpers import contactEmailAddresses
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.lp.dbschema import (
     EnumCol, BranchRelationships, BranchLifecycleStatus)
-from canonical.launchpad.utilities import ObjectDelta
 
 
 class Branch(SQLBase):
@@ -232,34 +230,11 @@ class Branch(SQLBase):
         
     def notificationRecipientAddresses(self):
         """See IBranch."""
-        related_people = [
-            self.owner, self.author]
-        related_people = [
-            person for person in related_people if person is not None]
-        # listify the subscribers
-        subscribers = [person for person in self.subscribers]
         addresses = set()
-        for person in related_people + subscribers:
+        for person in self.subscribers:
             addresses.update(contactEmailAddresses(person))
         return sorted(addresses)
 
-    def getDelta(self, old_branch, user):
-        """See IBranch.getDelta()"""
-        delta = ObjectDelta(old_branch, self)
-        delta.record_new_values(("summary", "whiteboard", "last_scanned_id"))
-        delta.record_new_and_old(("name", "lifecycle_status",
-                                  "revision_count", "title", "url"))
-        # delta.record_list_added_and_removed()
-        # XXX thumper 2006-12-21: add in bugs and specs
-        if delta.changes:
-            changes = delta.changes
-            changes["branch"] = self
-            changes["user"] = user
-
-            return BranchDelta(**changes)
-        else:
-            return None
-        
 
 class BranchSet:
     """The set of all branches."""

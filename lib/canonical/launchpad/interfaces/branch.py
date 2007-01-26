@@ -227,13 +227,6 @@ class IBranch(IHasOwner):
     def notificationRecipientAddresses():
         """Return the list of email addresses that receive notifications."""
 
-    def getDelta(old_branch, user):
-        """Returns a BranchDelta instance that encapsulates the changes.
-
-        This method is primarily used by event subscription code to
-        determine what has changed during an SQLObjectModifiedEvent.
-        """
-        
     # subscription-related methods
     def subscribe(person):
         """Subscribe this person to the branch.

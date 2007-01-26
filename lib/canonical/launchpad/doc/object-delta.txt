@@ -6,8 +6,6 @@ that deltas between two object instances are needed.  This is normally
 for notification emails in order to identify what has been changed,
 so the appropriate information is sent out in the email.
 
-This code was originally grabbed from the specification implementation.
-
 In order to test that the deltas, we need a simple object to test.
 
     >>> class TestObj(object):
@@ -36,7 +34,7 @@ print out dicts in sorted order (as pprint doesn't assure this until 2.5).
 The ObjectDelta instance is constructed with the old object,
 and the new object instances. 
 
-    >>> from canonical.launchpad.utilities import ObjectDelta
+    >>> from canonical.launchpad.components import ObjectDelta
     >>> delta = ObjectDelta(old_obj, new_obj)
 
 The simplest case is are recording of new values.  The changes property

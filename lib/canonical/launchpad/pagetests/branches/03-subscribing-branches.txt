@@ -3,42 +3,39 @@
 Let us subscribe to one of the branches. First, let's make sure we can see the
 link "Subscribe" from a branch's page.
 
-The admin_browser is set up as foo.bar@canonical.com which is the same
-as the basic auth that was sent before in the old style tests.
-
-  >>> admin_browser.open('http://launchpad.dev/~name12/+branch/gnome-terminal/main')
-  >>> subscribe = admin_browser.getLink('Subscribe')
+  >>> user_browser.open('http://launchpad.dev/~name12/+branch/gnome-terminal/main')
+  >>> subscribe = user_browser.getLink('Subscribe')
 
 Clicking this link should send us to the branch subscription form. This form
 should want to be posted back to the main branch page.
 
   >>> subscribe.click()
-  >>> print admin_browser.url
+  >>> print user_browser.url
   http://launchpad.dev/~name12/+branch/gnome-terminal/main/+subscribe
 
 Now, post the subscription form. We should see a message that we have just
 subscribed.
 
-  >>> admin_browser.getControl('Subscribe').click()
-  >>> print find_tags_by_class(admin_browser.contents, 
+  >>> user_browser.getControl('Subscribe').click()
+  >>> print find_tags_by_class(user_browser.contents, 
   ...                          'informational message')[0].renderContents()
   You have subscribed to this branch.
 
 Now the link should say "Unsubscribe" in the actions menu.
 
-  >>> print admin_browser.getLink('Unsubscribe').url
+  >>> print user_browser.getLink('Unsubscribe').url
   http://launchpad.dev/~name12/+branch/gnome-terminal/main/+subscribe
 
 
 We do not really want to be subscribed. We load the subcription page, and now
 the button should say "Unsubscribe".
 
-  >>> admin_browser.getLink('Unsubscribe').click()
+  >>> user_browser.getLink('Unsubscribe').click()
 
 And when we post this form, we see a message saying we are no longer a
 subscriber.
 
-  >>> admin_browser.getControl('Unsubscribe').click()
-  >>> print find_tags_by_class(admin_browser.contents, 
+  >>> user_browser.getControl('Unsubscribe').click()
+  >>> print find_tags_by_class(user_browser.contents, 
   ...                          'informational message')[0].renderContents()
   You have unsubscribed from this branch.

@@ -391,6 +391,33 @@ database. getByRevisionId returns None.
 >>> revisionset.getByRevisionId('missing-revision-id') is None
 True
 
+== Getting the tip revision for a Branch ==
+
+The last revision that we have stored in the database for any given branch
+is identified by the branch attribute "last_scanned_id".  This is the textual
+revision_id for the bzr revision.  The reason that it is a text id rather than
+an integer foreign key is so it can easily be compared to the
+"last_mirrored_id".  The "last_mirrored_id" is set by the branch puller, and is
+used to identify when a scan is needed for a branch.
+
+>>> branch = branchset.get(1)
+>>> branch.last_scanned_id
+>>> branch.getTipRevision() is None
+True
+
+>>> branch.last_scanned_id = 'null:'
+>>> branch.getTipRevision() is None
+True
+
+>>> branch.last_scanned_id = 'test@canonical.com-20051031165248-6f1bb97973c2b4f4'
+>>> rev = branch.getTipRevision()
+>>> print rev.owner.name
+admins
+>>> print rev.date_created
+2005-10-31 17:21:47.381770+00:00
+>>> print rev.log_body
+initial import (empty)
+
 
 == Branch Scan List ==
 

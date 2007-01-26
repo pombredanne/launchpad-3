@@ -15,6 +15,7 @@ from zope.component import getUtility
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.components.branch import BranchDelta
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     IBranch, IDistroBugTask, IDistroReleaseBugTask, ILanguageSet,
@@ -1284,8 +1285,8 @@ def notify_specification_modified(spec, event):
 # def send_branch_revisions_updated(branch, ):
 def notify_branch_modified(branch, event):
     """Notify the related people that a branch has been modifed."""
-    branch_delta = branch.getDelta(event.object_before_modification,
-                                   event.user)
+    branch_delta = BranchDelta.construct(
+        event.object_before_modification, branch, event.user)
     if branch_delta is None:
         return
 
@@ -1321,14 +1322,11 @@ def notify_branch_modified(branch, event):
                 info_lines.append('')
             info_lines.append('%s changed to:\n\n%s' % (title, delta))
 
-    # If the tip revision has changed, then show the log for the tip.
+    # If the tip revision has changed, then show the log for the tip
+    # if the revision is found.
     if branch_delta.last_scanned_id is not None:
         tip_revision = branch.getTipRevision()
-        if tip_revision is None:
-            # it's a ghost
-            info_lines.append('Latest revision is a ghost (%s)' % (
-                branch_delta.last_scanned_id))
-        else:
+        if tip_revision is not None:
             # show the log entry
             log_entry = tip_revision.log_body
             if info_lines:

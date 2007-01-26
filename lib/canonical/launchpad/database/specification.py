@@ -37,7 +37,7 @@ from canonical.launchpad.database.sprint import Sprint
 
 from canonical.launchpad.helpers import (
     contactEmailAddresses, shortlist)
-from canonical.launchpad.utilities import ObjectDelta
+from canonical.launchpad.components import ObjectDelta
 
 from canonical.launchpad.components.specification import SpecificationDelta
 
@@ -377,14 +377,14 @@ class Specification(SQLBase, BugLinkTargetMixin):
     def getDelta(self, old_spec, user):
         """See ISpecification."""
         delta = ObjectDelta(old_spec, self)
-        delta.record_new_values(("title", "summary", "whiteboard",
-                                 "specurl", "productseries",
-                                 "distrorelease", "milestone"))
-        delta.record_new_and_old(("name", "priority", "status", "target",
-                                  "approver", "assignee", "drafter"))
-        delta.record_list_added_and_removed("bugs",
-                                            "bugs_linked",
-                                            "bugs_unlinked")
+        delta.recordNewValues(("title", "summary", "whiteboard",
+                               "specurl", "productseries",
+                               "distrorelease", "milestone"))
+        delta.recordNewAndOld(("name", "priority", "status", "target",
+                               "approver", "assignee", "drafter"))
+        delta.recordListAddedAndRemoved("bugs",
+                                        "bugs_linked",
+                                        "bugs_unlinked")
         
         if delta.changes:
             changes = delta.changes
