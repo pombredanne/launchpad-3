@@ -17,19 +17,18 @@ from canonical.archivepublisher.uploadpolicy import AbstractUploadPolicy
 from canonical.archivepublisher.uploadprocessor import UploadProcessor
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.database import GPGKey, Person
+from canonical.launchpad.ftests import import_public_test_keys
 from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.mail import stub
 from canonical.lp.dbschema import (
-    DistributionReleaseStatus, PackageUploadStatus,
-    PackagePublishingStatus, GPGKeyAlgorithm)
+    DistributionReleaseStatus, DistroReleaseQueueStatus,
+    PackagePublishingStatus)
 from canonical.testing import LaunchpadZopelessLayer
-from canonical.zeca.ftests.harness import ZecaTestSetup
 
 
 class BrokenUploadPolicy(AbstractUploadPolicy):
     """A broken upload policy, to test error handling."""
-    
+
     def __init__(self):
         AbstractUploadPolicy.__init__(self)
         self.name = "broken"
@@ -52,7 +51,7 @@ class TestUploadProcessor(unittest.TestCase):
         self.test_files_dir = os.path.join(config.root,
             "lib/canonical/archivepublisher/tests/data/suite")
 
-        self.keyserver_setup = False
+        import_public_test_keys()
 
         self.options = MockOptions()
         self.options.base_fsroot = self.queue_folder
@@ -66,17 +65,6 @@ class TestUploadProcessor(unittest.TestCase):
 
     def tearDown(self):
         rmtree(self.queue_folder)
-        if self.keyserver_setup:
-            ZecaTestSetup().tearDown()
-
-    def setupKeyserver(self):
-        """Set up the keyserver."""
-        ZecaTestSetup().setUp()
-        g = GPGKey(owner=Person.byName('kinnison'), keyid='20687895',
-                   fingerprint='961F4EB829D7D304A77477822BC8401620687895',
-                   keysize=1024, algorithm=GPGKeyAlgorithm.D, active=True,
-                   can_encrypt=True)
-        self.keyserver_setup = True
 
     def setupBreezy(self):
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
@@ -153,11 +141,10 @@ class TestUploadProcessor(unittest.TestCase):
 
         See bug 58187.
         """
-        # Extra setup for breezy and Daniel's keys
-        self.setupKeyserver()
+        # Extra setup for breezy
         self.setupBreezy()
         self.layer.txn.commit()
-        
+
         # Set up the uploadprocessor with appropriate options and logger
         uploadprocessor = UploadProcessor(
             self.options, self.layer.txn, self.log)
@@ -172,11 +159,12 @@ class TestUploadProcessor(unittest.TestCase):
         uploadprocessor.processChangesFile(
             os.path.join(self.queue_folder, "incoming", "bar_1.0-1"),
             "bar_1.0-1_source.changes")
-        
+
         # Check it went ok to the NEW queue and all is going well so far.
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        foo_bar = "Foo Bar <foo.bar@canonical.com>"
         daniel = "Daniel Silverstone <daniel.silverstone@canonical.com>"
-        self.assertTrue(daniel in to_addrs)
+        self.assertEqual([e.strip() for e in to_addrs], [foo_bar, daniel])
         self.assertTrue(
             "NEW" in raw_msg, "Expected email containing NEW: %s" % raw_msg)
 
@@ -199,12 +187,12 @@ class TestUploadProcessor(unittest.TestCase):
         self.breezy.releasestatus = DistributionReleaseStatus.FROZEN
 
         self.layer.txn.commit()
-        
+
         # Place a newer version of bar into the queue.
         os.system("cp -a %s %s" %
             (os.path.join(self.test_files_dir, "bar_1.0-2"),
              os.path.join(self.queue_folder, "incoming")))
-        
+
         # Try to process it
         uploadprocessor.processChangesFile(
             os.path.join(self.queue_folder, "incoming", "bar_1.0-2"),
@@ -213,7 +201,8 @@ class TestUploadProcessor(unittest.TestCase):
         # Verify we get an email talking about awaiting approval.
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
         daniel = "Daniel Silverstone <daniel.silverstone@canonical.com>"
-        self.assertTrue(daniel in to_addrs)
+        foo_bar = "Foo Bar <foo.bar@canonical.com>"
+        self.assertEqual([e.strip() for e in to_addrs], [foo_bar, daniel])
         self.assertTrue("This upload awaits approval" in raw_msg,
                         "Expected an 'upload awaits approval' email.")
 

@@ -1820,10 +1820,6 @@ class DistroRelease(SQLBase, BugTargetBase):
     def main_archive(self):
         return self.distribution.main_archive
 
-    @property
-    def main_archive(self):
-        return self.distribution.main_archive
-
 
 class DistroReleaseSet:
     implements(IDistroReleaseSet)
