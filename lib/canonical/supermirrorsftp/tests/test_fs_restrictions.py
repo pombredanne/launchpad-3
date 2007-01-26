@@ -40,13 +40,13 @@ class TestTopLevelDir(AvatarTestCase):
 
     def testUserDirPlusJunk(self):
         avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict, None)
-        root = avatar.filesystem.root
+        root = avatar.makeFileSystem().root
         userDir = root.child('~alice')
         self.assertIn('+junk', [name for name, child in userDir.children()])
 
     def testTeamDirPlusJunk(self):
         avatar = SFTPOnlyAvatar('bob', self.tmpdir, self.bobUserDict, None)
-        root = avatar.filesystem.root
+        root = avatar.makeFileSystem().root
         userDir = root.child('~test-team')
         self.assertNotIn('+junk', [name for name, child in userDir.children()])
 
@@ -62,7 +62,7 @@ class UserDirsTestCase(AvatarTestCase):
                 return defer.succeed(123)
         avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict,
                                 Launchpad())
-        root = avatar.filesystem.root
+        root = avatar.makeFileSystem().root
         userDir = root.child('~alice')
         self.assertEqual(
             [name for name, child in userDir.children()],
@@ -85,7 +85,7 @@ class UserDirsTestCase(AvatarTestCase):
                 return defer.succeed(None)
         avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict,
                                 Launchpad())
-        root = avatar.filesystem.root
+        root = avatar.makeFileSystem().root
         userDir = root.child('~alice')
 
         # We expect PermissionError from a userDir.createDirectory:
@@ -104,7 +104,7 @@ class UserDirsTestCase(AvatarTestCase):
             (3, 'thing', [(4, 'another-branch')]),
         ]
         avatar = SFTPOnlyAvatar('bob', self.tmpdir, self.bobUserDict, None)
-        root = avatar.filesystem.root
+        root = avatar.makeFileSystem().root
 
         # The user's dir with have mozilla-firefox, product-x, and also +junk.
         self.assertEqual(
@@ -134,7 +134,7 @@ class ProductDirsTestCase(AvatarTestCase):
                 return defer.succeed(0xabcdef12)
         avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict,
                                 Launchpad())
-        root = avatar.filesystem.root
+        root = avatar.makeFileSystem().root
         userDir = root.child('~alice')
 
         # First create ~alice/mozilla-firefox.  This will trigger a call to
@@ -207,7 +207,7 @@ class ProductPlaceholderTestCase(AvatarTestCase):
 
         avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict,
                                 Launchpad())
-        return avatar.filesystem
+        return avatar.makeFileSystem()
 
     def testBranchInPlaceholderNotFound(self):
         # Test that we get a NotFoundError when trying to access

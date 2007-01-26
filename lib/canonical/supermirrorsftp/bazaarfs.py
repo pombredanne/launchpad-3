@@ -33,13 +33,16 @@ class SFTPServerRoot(adhoc.AdhocDirectory):  # was SFTPServerForPushMirrorUser
             if team['name'] == avatar.lpname:
                 # skip the team of just the user
                 continue
-            self.putChild('~' + team['name'], 
+            self.putChild('~' + team['name'],
                           SFTPServerUserDir(avatar, team['id'], team['name'],
                                             parent=self, junkAllowed=False))
 
     def createDirectory(self, childName):
-        raise PermissionError( 
+        raise PermissionError(
             "Branches must be inside a person or team directory.")
+
+    def setListenerFactory(self, factory):
+        self.listenerFactory = factory
     
 
 class SFTPServerUserDir(adhoc.AdhocDirectory):
@@ -205,59 +208,21 @@ class SFTPServerProductDirPlaceholder(adhoc.AdhocDirectory):
         return deferred.addCallback(cb)
         
 
-class SFTPServerBranch(osfs.OSDirectory):
-    """For /~username/product/branch, and below.
-    
-    Anything is allowed here, except for tricks like symlinks that point above
-    this point.
-
-    Can also be used for Bazaar 1.x branches.
-    """
-    def __init__(self, avatar, branchID, branchName, parent):
-        self.branchID = branchID
-        # XXX AndrewBennetts 2006-02-06: this snippet is duplicated in a few
-        # places, such as librarian.storage._relFileLocation and
-        # supermirror_rewritemap.split_branch_id.
-        h = "%08x" % int(branchID)
-        path = '%s/%s/%s/%s' % (h[:2], h[2:4], h[4:6], h[6:]) 
-
-        osfs.OSDirectory.__init__(self,
-            os.path.join(avatar.homeDirsRoot, path), branchName, parent)
-        if not os.path.exists(self.realPath):
-            os.makedirs(self.realPath)
-
-    @classmethod
-    def childDirFactory(cls):
-        # Directories under this one are normal OSDirectory instances, they
-        # don't have any restrictions.
-        return WriteLoggingDirectory
-
-    def remove(self):
-        raise PermissionError(
-            "removing branch directory %r is not allowed." % self.name)
-
-
 class WriteLoggingDirectory(osfs.OSDirectory):
-    dirty = False
-    rootWatcher = None
-
-    def __init__(self, path, name=None, parent=None, rootWatcher=None):
+    def __init__(self, listener, path, name=None, parent=None):
         osfs.OSDirectory.__init__(self, path, name, parent)
-        if rootWatcher is None:
-            rootWatcher = self
-        self.rootWatcher = rootWatcher
+        self.listener = listener
 
     def childDirFactory(self):
-        def f(path, name, parent):
-            return WriteLoggingDirectory(path, name, parent,
-                                         rootWatcher=self.rootWatcher)
-        return f
+        """Return a child directory which uses the same listener.
+        """
+        def childWithListener(path, name, parent):
+            return WriteLoggingDirectory(self.listener, path, name, parent)
+        return childWithListener
 
     def createDirectory(self, name):
         self.touch()
-        newDir = osfs.OSDirectory.createDirectory(self, name)
-        newDir.rootWatcher = self
-        return newDir
+        return osfs.OSDirectory.createDirectory(self, name)
 
     def createFile(self, name, exclusive=True):
         self.touch()
@@ -272,5 +237,37 @@ class WriteLoggingDirectory(osfs.OSDirectory):
         osfs.OSDirectory.rename(self, newName)
 
     def touch(self):
-        self.rootWatcher.dirty = True
+        self.listener()
 
+
+class SFTPServerBranch(WriteLoggingDirectory):
+    """For /~username/product/branch, and below.
+    
+    Anything is allowed here, except for tricks like symlinks that point above
+    this point.
+
+    Can also be used for Bazaar 1.x branches.
+    """
+    def __init__(self, avatar, branchID, branchName, parent):
+        self.branchID = branchID
+        # XXX AndrewBennetts 2006-02-06: this snippet is duplicated in a few
+        # places, such as librarian.storage._relFileLocation and
+        # supermirror_rewritemap.split_branch_id.
+        h = "%08x" % int(branchID)
+        path = '%s/%s/%s/%s' % (h[:2], h[2:4], h[4:6], h[6:])
+
+        self.listener = None
+        WriteLoggingDirectory.__init__(self, self.listener,
+            os.path.join(avatar.homeDirsRoot, path), branchName, parent)
+        if not os.path.exists(self.realPath):
+            os.makedirs(self.realPath)
+
+    def remove(self):
+        raise PermissionError(
+            "removing branch directory %r is not allowed." % self.name)
+
+    def touch(self):
+        if self.listener is None:
+            self.listener = self.parent.parent.parent.listenerFactory(
+                self.branchID)
+        self.listener()
