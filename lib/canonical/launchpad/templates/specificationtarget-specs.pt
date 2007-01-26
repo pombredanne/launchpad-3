@@ -99,13 +99,13 @@
                    title="Informational specification"
                    tal:condition="spec/informational" />
           </td>
-          <td>
+          <td class="nowrap">
             <span class="sortkey" tal:content="spec/status/sortkey" />
             <span tal:content="spec/status/title"
                   tal:attributes="
                   class string:specstatus${spec/status/name}">Approved</span>
           </td>
-          <td>
+          <td class="nowrap">
             <span class="sortkey" tal:content="spec/delivery/sortkey" />
             <span
               tal:attributes="class string:specdelivery${spec/delivery/name}"

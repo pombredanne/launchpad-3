@@ -1260,6 +1260,9 @@ th.icon.left, td.icon.left {
 th.icon.right, td.icon.right {
   padding-left: 0;
 }
+th.nowrap, td.nowrap {
+  white-space: nowrap;
+}
 thead th, tfoot th {
   text-align: left;
 }
