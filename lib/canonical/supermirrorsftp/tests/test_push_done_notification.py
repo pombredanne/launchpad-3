@@ -21,13 +21,6 @@ from canonical.supermirrorsftp.sftponly import (
 from canonical.supermirrorsftp.tests.helpers import AvatarTestCase
 
 
-# XXX - get rid of this
-class TestAvatar(SFTPOnlyAvatar):
-    def __init__(self, avatarId, homeDirsRoot, userDict, launchpad):
-        SFTPOnlyAvatar.__init__(self, avatarId, homeDirsRoot, userDict,
-                                launchpad)
-
-
 class Launchpad:
 
     def __init__(self):
@@ -49,8 +42,8 @@ class TestPushDoneNotification(AvatarTestCase):
     def setUp(self):
         AvatarTestCase.setUp(self)
         self.launchpad = Launchpad()
-        self.avatar = TestAvatar('alice', self.tmpdir, self.aliceUserDict,
-                                 self.launchpad)
+        self.avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict,
+                                     self.launchpad)
         self.server = self.avatar.lookupSubsystem('sftp', None)
         self.filesystem = self.server.client.filesystem
 
@@ -177,8 +170,8 @@ class BazaarFileTransferServerTests(AvatarTestCase):
 
     def test_branchDirty(self):
         launchpad = Launchpad()
-        avatar = TestAvatar('alice', self.tmpdir, self.aliceUserDict,
-                            launchpad)
+        avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict,
+                                launchpad)
         server = BazaarFileTransferServer(avatar=avatar)
         server.branchDirtied(1234)
         server.branchDirtied(2357)
@@ -188,8 +181,8 @@ class BazaarFileTransferServerTests(AvatarTestCase):
 
     def test_branchDirtyDuplicate(self):
         launchpad = Launchpad()
-        avatar = TestAvatar('alice', self.tmpdir, self.aliceUserDict,
-                            launchpad)
+        avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict,
+                                launchpad)
         server = BazaarFileTransferServer(avatar=avatar)
         server.branchDirtied(1234)
         server.branchDirtied(1234)
