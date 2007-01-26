@@ -268,11 +268,6 @@ ol {
   margin: 0.5em 0 0 1.5em;
 }
 
-/* Used to indicate a value to be used to sort cells in a row */
-.sortkey, .revsortkey {
-    display: none;
-}
-
 #portal-column-one .portlet, #portal-column-two .portlet,
 #layout2col-portlets .portlet {
   border: none;
@@ -683,38 +678,6 @@ tr.highlight {
 .importanceLOW       { color: Black; }
 .importanceWISHLIST  { color: Blue; }
 .importanceUNDECIDED { color: #999; }
-
-/* Spec definition, delivery and priority */
-
-.specstatusIMPLEMENTED     { color: Green; }
-.specstatusINFORMATIONAL   { color: Green; }
-.specstatusAPPROVED        { color: Black; }
-.specstatusPENDINGAPPROVAL { color: #f09; }
-.specstatusPENDINGREVIEW   { color: #f09; }
-.specstatusDRAFT           { color: #930; }
-.specstatusNEW             { color: Red; }
-.specstatusSUPERSEDED      { color: Gray; }
-.specstatusOBSOLETE        { color: Gray; }
-
-.specpriorityNOTFORUS      { color: Gray; }
-.specpriorityUNDEFINED     { color: Gray; }
-.specpriorityLOW           { color: Black; }
-.specpriorityMEDIUM        { color: Orange; }
-.specpriorityHIGH          { color: Red; }
-.specpriorityESSENTIAL     { color: Red; }
-
-.specdeliveryUNKNOWN            {color: Gray; }
-.specdeliveryNOTSTARTED         {color: Gray; }
-.specdeliveryDEFERRED           {color: Red; }
-.specdeliveryNEEDSINFRASTUCTURE {color: Red; }
-.specdeliveryBLOCKED            {color: Red; }
-.specdeliverySTARTED            {color: Blue; }
-.specdeliverySLOW               {color: Red; }
-.specdeliveryGOOD               {color: Blue; }
-.specdeliveryBETA               {color: Orange; }
-.specdeliveryNEEDSREVIEW        {color: Purple; }
-.specdeliveryAWAITINGDEPLOYMENT {color: Red; }
-.specdeliveryIMPLEMENTED        {color: Green; }
 
 .branchstatusMATURE             {color: DarkGreen;}
 .branchstatusDEVELOPMENT        {color: DarkRed;}
