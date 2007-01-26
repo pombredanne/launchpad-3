@@ -226,3 +226,18 @@ We can filter for specifications that contain specific text:
  e4x
 
 
+Products with Code
+==================
+
+You can find all the products that have registered branches:
+
+ >>> for product in productset.getProductsWithCode():
+ ...     print product.title
+ Mozilla Firefox
+ Mozilla Thunderbird
+ The Evolution Groupware Application
+ The GNOME Terminal Emulator
+ The iso-codes
+
+
+

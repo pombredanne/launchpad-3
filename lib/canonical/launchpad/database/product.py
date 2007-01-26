@@ -559,6 +559,13 @@ class ProductSet:
             return default
         return product
 
+    def getProductsWithCode(self):
+        """See IProductSet."""
+        return Product.select(
+            'Product.id = Branch.product',
+            distinct=True,
+            clauseTables=['Branch'],
+            orderBy=['title'])
 
     def createProduct(self, owner, name, displayname, title, summary,
                       description=None, project=None, homepageurl=None,
