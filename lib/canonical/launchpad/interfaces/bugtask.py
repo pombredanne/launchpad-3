@@ -439,41 +439,28 @@ class BugTaskSearchParams:
         self.tag = tag
         self.has_cve = has_cve
 
-        self._has_context = False
-
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
-        assert not self._has_context
         self.product = product
-        self._has_context = True
 
     def setProject(self, project):
         """Set the upstream context on which to filter the search."""
-        assert not self._has_context
         self.project = project
-        self._has_context = True
 
     def setDistribution(self, distribution):
         """Set the distribution context on which to filter the search."""
-        assert not self._has_context
         self.distribution = distribution
-        self._has_context = True
 
     def setDistributionRelease(self, distrorelease):
         """Set the distrorelease context on which to filter the search."""
-        assert not self._has_context
         self.distrorelease = distrorelease
-        self._has_context = True
 
     def setProductSeries(self, productseries):
         """Set the productseries context on which to filter the search."""
-        assert not self._has_context
         self.productseries = productseries
-        self._has_context = True
 
     def setSourcePackage(self, sourcepackage):
         """Set the sourcepackage context on which to filter the search."""
-        assert not self._has_context
         if ISourcePackage.providedBy(sourcepackage):
             # This is a sourcepackage in a distro release.
             self.distrorelease = sourcepackage.distrorelease
@@ -481,7 +468,6 @@ class BugTaskSearchParams:
             # This is a sourcepackage in a distribution.
             self.distribution = sourcepackage.distribution
         self.sourcepackagename = sourcepackage.sourcepackagename
-        self._has_context = True
 
 
 class IBugTaskSet(Interface):
