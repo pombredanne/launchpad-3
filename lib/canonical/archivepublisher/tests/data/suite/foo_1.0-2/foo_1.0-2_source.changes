@@ -18,13 +18,13 @@ Changes:
  .
    * A version rev for joy's sake
 Files: 
- 6eb2b74a1c3d8abf85b0b40e762896aa 512 devel optional foo_1.0-2.dsc
+ 36e6a15c531af5c31cd6f7779d03c4c7 512 devel optional foo_1.0-2.dsc
  f05b2a50b68fa3ffa169eb3bf3102d1a 617 devel optional foo_1.0-2.diff.gz
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.1 (GNU/Linux)
+Version: GnuPG v1.4.3 (GNU/Linux)
 
-iD8DBQFD9adPK8hAFiBoeJURAv1cAKCrEVWlNvd4JkHZx4vHGuHCVA43JgCfcIIq
-8N4axzgOGtDOd4uekNDLKGU=
-=+XyL
+iD8DBQFFt8A+jn63CGxkqMURAjbWAKCGNj+TKykq0VKouWJbQvwZSSzNvQCfdUmQ
+DYf6M/YqKDlmrBZcDwrjcc0=
+=mrxv
 -----END PGP SIGNATURE-----

@@ -370,7 +370,7 @@ class Dominator:
             cur.execute("DROP TABLE PubDomHelper")
 
         sources = SecureSourcePackagePublishingHistory.selectBy(
-            distroreleaseID=dr.id, archive=self.archive, pocket=pocket,
+            distrorelease=dr, archive=self.archive, pocket=pocket,
             status=PackagePublishingStatus.SUPERSEDED)
 
         binaries = SecureBinaryPackagePublishingHistory.select("""

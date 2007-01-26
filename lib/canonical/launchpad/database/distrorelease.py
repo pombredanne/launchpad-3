@@ -633,12 +633,10 @@ class DistroRelease(SQLBase, BugTargetBase):
         return SourcePackagePublishingHistory.select(
             clause, orderBy=orderBy, clauseTables=clauseTables)
 
-    def getBinaryPackagePublishing(self, name=None, version=None,
-                                   archtag=None, sourcename=None,
-                                   orderBy=None, pocket=None,
-                                   component=None, archive=None):
+    def getBinaryPackagePublishing(
+        self, name=None, version=None, archtag=None, sourcename=None,
+        orderBy=None, pocket=None, component=None, archive=None):
         """See IDistroRelease."""
-
         if archive is None:
             archive = self.main_archive
 

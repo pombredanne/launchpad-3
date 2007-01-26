@@ -30,4 +30,3 @@ class IArchiveSet(Interface):
 
     def get(archiveid):
         """Return the IArchive with the given archiveid."""
-
