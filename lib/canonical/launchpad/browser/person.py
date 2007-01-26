@@ -1209,6 +1209,20 @@ class PersonView(LaunchpadView):
         this Team."""
         return bool(self._getMembershipForUser())
 
+    def findUserPathToTeam(self):
+        assert self.user is not None
+        return self.user.findPathToTeam(self.context)
+
+    def userIsParticipant(self):
+        """Return true if the user is a participant of this team.
+
+        A person is said to be a team participant when he's an indirect member
+        of that team.
+        """
+        if self.user is None:
+            return False
+        return self.user.inTeam(self.context)
+
     def userIsActiveMember(self):
         """Return True if the user is an active member of this team."""
         return userIsActiveTeamMember(self.context)

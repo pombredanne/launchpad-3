@@ -401,6 +401,17 @@ class IPerson(IHasSpecifications):
         The product_name may be None.
         """
 
+    def findPathToTeam(team):
+        """Return the teams that cause this person to be a participant of the
+        given team.
+
+        If there are more than one path leading this person to the given team,
+        only the one with the oldest teams is returned.
+
+        This method must not be called from a team object, because of
+        https://launchpad.net/bugs/30789.
+        """
+
     def isTeam():
         """True if this Person is actually a Team, otherwise False."""
 
