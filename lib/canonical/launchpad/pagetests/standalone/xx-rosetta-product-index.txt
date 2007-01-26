@@ -11,6 +11,16 @@ Each product in Launchpad has a Translations page.
     ...Evolution trunk...
     ...
 
+This page shows translations for upstream even if there aren't translations
+for a distribution.
+
+  >>> print http(r"""
+  ... GET /netapplet/+translations HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...Template "netapplet" in NetApplet trunk...
+  ...
 
 If a product is not set up for translations in Rosetta, and you are its
 registrant or an admin, the Translations page suggests that you set it up for

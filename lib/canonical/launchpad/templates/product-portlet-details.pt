@@ -85,6 +85,10 @@
           </td>
           <td tal:condition="not:context/translationgroup">Not assigned</td>
         </tr>
+        <tr tal:condition="context/official_rosetta">
+          <th>Translations:</th>
+          <td tal:content="context/translationpermission/title">Open</td>
+        </tr>
       </tbody>
     </table>
   </div>
