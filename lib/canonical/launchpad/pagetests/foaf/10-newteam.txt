@@ -25,9 +25,10 @@
   >>> browser.title
   'my own team in Launchpad'
 
-  >>> team_portlet = find_portlet(browser.contents, 'my own team')
-  >>> team_portlet.find(text='Team Owner:').findNext('a').string
-  u'foobar'
+  >>> print browser.contents
+  <!...
+  ...Team owner:...foobar...
+  ...
 
 The owner of a team is always added as an administrator of his team. Let's
 make sure that's true.

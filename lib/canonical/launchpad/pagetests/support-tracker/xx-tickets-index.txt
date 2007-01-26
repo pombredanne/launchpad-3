@@ -10,9 +10,10 @@ application.
 It also displays an indication of recent activity by
 displaying the number of requests tracked by the system.
 
-    >>> print find_tag_by_id(
-    ...     anon_browser.contents, 'requests-count').renderContents()
-    The support tracker contains 13 requests.
+    >>> print anon_browser.contents
+    <!DOCTYPE...
+    ...13...
+    ...questions asked...
 
 It also shows the 10 latest requests made:
 

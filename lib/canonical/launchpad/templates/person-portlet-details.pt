@@ -59,15 +59,6 @@
 
     <tal:is_team condition="context/teamowner">
 
-      <b>Team:</b>
-      <img tal:condition="context/emblem"
-            tal:attributes="src context/emblem/getURL" />
-      <a tal:attributes="href context/fmt:url"
-         tal:content="context/name">sabdfl</a><br />
-      <b>Team Owner:</b><br />
-      <a tal:attributes="href context/teamowner/fmt:url"
-         tal:content="context/teamowner/browsername">sabdfl</a><br />
-
       <b>Membership policy:</b>
       <span tal:replace="context/subscriptionpolicy/title">Open team</span>.
       <span tal:replace="context/subscriptionpolicy/description">More
