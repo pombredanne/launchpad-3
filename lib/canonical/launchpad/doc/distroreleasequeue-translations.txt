@@ -133,9 +133,9 @@ queue:
 
 An upload to the RELEASE pocket will add items to the import queue:
 
-  >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
+  >>> from canonical.lp.dbschema import PackageUploadStatus
   >>> queue_item = dapper.getQueueItems(
-  ...     status=DistroReleaseQueueStatus.NEW)[0]
+  ...     status=PackageUploadStatus.NEW)[0]
   >>> queue_item.customfiles[0].publish()
 
   # There are exactly the 10 entries imported by pmount.
@@ -155,7 +155,7 @@ An upload to the BACKPORTS pocket will not add items to the import queue:
 
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> dapper = distro_release_set.queryByName(ubuntu, 'dapper')
-  >>> queue_item = dapper.getQueueItems(status=DistroReleaseQueueStatus.NEW)[0]
+  >>> queue_item = dapper.getQueueItems(status=PackageUploadStatus.NEW)[0]
   >>> queue_item.pocket = PackagePublishingPocket.BACKPORTS
   >>> queue_item.customfiles[0].publish()
 
@@ -171,7 +171,7 @@ But an upload to the UPDATE pocket will add items to the import queue:
 
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> dapper = distro_release_set.queryByName(ubuntu, 'dapper')
-  >>> queue_item = dapper.getQueueItems(status=DistroReleaseQueueStatus.NEW)[0]
+  >>> queue_item = dapper.getQueueItems(status=PackageUploadStatus.NEW)[0]
   >>> queue_item.pocket = PackagePublishingPocket.UPDATES
   >>> queue_item.customfiles[0].publish()
 
