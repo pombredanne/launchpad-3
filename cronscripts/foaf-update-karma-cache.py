@@ -6,13 +6,15 @@ import _pythonpath
 import sys
 from optparse import OptionParser
 
+from zope.component import getUtility
+
 from canonical.config import config
 from canonical.lp import initZopeless, AUTOCOMMIT_ISOLATION
 from canonical.launchpad.scripts import (
-        execute_zcml_for_scripts, logger_options, logger
-        )
+        execute_zcml_for_scripts, logger_options, logger)
+from canonical.launchpad.interfaces import IKarmaCacheManager, NotFoundError
 from canonical.launchpad.scripts.lockfile import LockFile
-from canonical.database.sqlbase import connect
+from canonical.database.sqlbase import cursor
 
 _default_lock_file = '/var/lock/launchpad-karma-update.lock'
 
@@ -29,13 +31,12 @@ def update_karma_cache():
     # COMMIT all the time. This script in no way relies on transactions,
     # so it is safe.
     ztm = initZopeless(
-            dbuser=config.karmacacheupdater.dbuser,
-            implicitBegin=False, isolation=AUTOCOMMIT_ISOLATION
-            )
-    con = connect(config.karmacacheupdater.dbuser)
-    con.set_isolation_level(AUTOCOMMIT_ISOLATION)
-    cur = con.cursor()
+        dbuser=config.karmacacheupdater.dbuser, implicitBegin=True,
+        isolation=AUTOCOMMIT_ISOLATION)
+    cur = cursor()
     karma_expires_after = '1 year'
+
+    karmacachemanager = getUtility(IKarmaCacheManager)
 
     # Calculate everyones karma. Karma degrades each day, becoming
     # worthless after karma_expires_after. This query produces odd results
@@ -97,40 +98,35 @@ def update_karma_cache():
 
     # Note that we don't need to commit each iteration because we are running
     # in autocommit mode.
-    for (person, category, product, distribution, sourcepackagename,
-         points) in results:
-        points *= scaling[category] # Scaled
+    for (person_id, category_id, product_id, distribution_id,
+         sourcepackagename_id, points) in results:
+        points *= scaling[category_id] # Scaled
         log.debug(
-            "Setting person=%(person)d, category=%(category)d, "
+            "Setting person_id=%(person_id)d, category_id=%(category_id)d, "
             "points=%(points)d", vars()
             )
 
+        points = int(points)
+        context = {'product_id': product_id,
+                   'distribution_id': distribution_id,
+                   'sourcepackagename_id': sourcepackagename_id}
         if points <= 0:
             # Don't allow our table to bloat with inactive users
-            cur.execute("""
-                DELETE FROM KarmaCache 
-                WHERE person=%(person)s AND category=%(category)s
-                      AND product=%(product)s AND distribution=%(distribution)s
-                      AND sourcepackagename=%(sourcepackagename)s
-                """, vars())
+            try:
+                karmacachemanager.deleteEntry(
+                    person_id, category_id, **context)
+            except NotFoundError:
+                # Nothing to delete
+                pass
         else:
-            # Attempt to UPDATE. If no rows modified, perform an INSERT
-            cur.execute("""
-                UPDATE KarmaCache SET karmavalue=%(points)s
-                WHERE person=%(person)s AND category=%(category)s
-                      AND product=%(product)s AND distribution=%(distribution)s
-                      AND sourcepackagename=%(sourcepackagename)s
-                """, vars())
-            assert cur.rowcount in (0, 1), \
-                    'Bad rowcount %r returned from DML' % (cur.rowcount,)
-            if cur.rowcount == 0:
-                cur.execute("""
-                    INSERT INTO KarmaCache 
-                        (person, category, product, distribution,
-                         sourcepackagename, karmavalue)
-                    VALUES (%(person)s, %(category)s, %(product)s,
-                            %(distribution)s, %(sourcepackagename)s, %(points)s)
-                    """, vars())
+            try:
+                # Try to update
+                karmacachemanager.updateKarmaValue(
+                    points, person_id, category_id, **context)
+            except NotFoundError:
+                # Row didn't exist; do an insert.
+                karmacachemanager.new(
+                    points, person_id, category_id, **context)
 
     # VACUUM KarmaCache since we have just touched every record in it
     cur.execute("""VACUUM KarmaCache""")
