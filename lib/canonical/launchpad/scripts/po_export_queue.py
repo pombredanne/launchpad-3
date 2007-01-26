@@ -398,7 +398,7 @@ def process_multi_object_request(objects, format):
 
         try:
             contents = handler.get_contents()
-        except (LibrarianFailure, POInvalidInputError):
+        except (LibrarianFailure, POInvalidInputError, MOCompilationError):
             result.add_failure(filename)
         else:
             result.add_success(filename)
