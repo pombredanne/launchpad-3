@@ -22,7 +22,7 @@ from canonical.launchpad.database.posubmission import POSubmission
 from canonical.launchpad.database.potranslation import POTranslation
 
 
-class BasePOMsgSet:
+class POMsgSetMixIn:
     """This class is not designed to be used directly.
 
     You should inherite from it and implement full IPOMsgSet interface to use
@@ -43,7 +43,6 @@ class BasePOMsgSet:
             # It's a singular form
             entries = 1
         return entries
-
 
     def getWikiSubmissions(self, pluralform):
         """See IPOMsgSet."""
@@ -72,7 +71,7 @@ class BasePOMsgSet:
                 self.pofile.language, self.potmsgset.primemsgid_ID,
                 pluralform))
 
-        posubmission_ids = [entry[0] for entry in posubmission_ids_list]
+        posubmission_ids = [id for [id] in posubmission_ids_list]
 
         active_submission = self.getActiveSubmission(pluralform)
 
@@ -98,7 +97,7 @@ class BasePOMsgSet:
             return POSubmission.select("1 = 2")
 
 
-class DummyPOMsgSet(BasePOMsgSet):
+class DummyPOMsgSet(POMsgSetMixIn):
     """Represents a POMsgSet where we do not yet actually HAVE a POMsgSet for
     that POFile and POTMsgSet.
     """
@@ -138,7 +137,7 @@ class DummyPOMsgSet(BasePOMsgSet):
         return []
 
 
-class POMsgSet(SQLBase, BasePOMsgSet):
+class POMsgSet(SQLBase, POMsgSetMixIn):
     implements(IPOMsgSet)
 
     _table = 'POMsgSet'
