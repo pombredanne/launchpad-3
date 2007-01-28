@@ -63,6 +63,15 @@ BuildMaster context:
   >>> from canonical.database.sqlbase import flush_database_updates
   >>> flush_database_updates()
 
+Clean up previous BuildQueue results:
+
+  >>> from canonical.launchpad.interfaces import IBuildQueueSet
+  >>> bq_set = getUtility(IBuildQueueSet)
+  >>> lost_job = bq_set[1]
+  >>> lost_job.builder.name
+  u'bob'
+  >>> lost_job.destroySelf()
+
 Setup BuilddMaster class:
 
   >>> bm.addDistroArchRelease(hoary_i386)

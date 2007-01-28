@@ -433,7 +433,7 @@ Check that we only created new Build entry for ppa publication:
   >>> new_builds = set(Build.select()) - old_builds
   >>> for build in sorted(new_builds, key=operator.attrgetter('id')):
   ...   print build.title
-  i386 build of test-ppa 672 in ubuntu hoary UPDATES
+  i386 build of test-ppa 674 in ubuntu hoary UPDATES
 
 Check if BuildQueue are also created for ppa_builds:
 
@@ -445,6 +445,8 @@ Check if BuildQueue are also created for ppa_builds:
   WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary hppa
   WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary i386
   WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary hppa
+  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary hppa
+  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary i386
   WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary i386
   >>> new_jobs = [job for job in jobs if job not in old_jobs]
   >>> len(new_jobs)

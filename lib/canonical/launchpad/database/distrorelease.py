@@ -595,8 +595,7 @@ class DistroRelease(SQLBase, BugTargetBase):
     def getSourcesPublishedForAllArchives(self):
         """See IDistroRelease."""
         state = PackagePublishingStatus.PUBLISHED
-        queries = ['distrorelease=%s AND archive=%s AND status=%s'
-                   % sqlvalues(self, self.main_archive, state)]
+        queries = ['distrorelease=%s AND status=%s' % sqlvalues(self, state)]
 
         if not self.isUnstable():
             queries.append(

@@ -524,7 +524,8 @@ class BuilddMaster:
         """Iter over the buildqueue entries sanitising it."""
         # Get the current build job candidates
         bqset = getUtility(IBuildQueueSet)
-        candidates = bqset.calculateCandidates(self._archreleases)
+        candidates = bqset.calculateCandidates(
+            self._archreleases, state=dbschema.BuildStatus.NEEDSBUILD)
         if not candidates:
             return
 
@@ -566,7 +567,8 @@ class BuilddMaster:
         order each sublist by its score. Get the current build job candidates
         """
         bqset = getUtility(IBuildQueueSet)
-        candidates = bqset.calculateCandidates(self._archreleases)
+        candidates = bqset.calculateCandidates(
+            self._archreleases, state=dbschema.BuildStatus.NEEDSBUILD)
         if not candidates:
             return {}
 
