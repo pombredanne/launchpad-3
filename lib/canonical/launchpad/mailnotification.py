@@ -14,10 +14,11 @@ import textwrap
 from zope.component import getUtility
 from zope.security.proxy import isinstance as zope_isinstance
 
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IDistroBugTask, IDistroReleaseBugTask, ISpecification,
-    IUpstreamBugTask, ITeamMembershipSet)
+    IDistroBugTask, IDistroReleaseBugTask, ILanguageSet, IProductSeriesBugTask,
+    ISpecification, ITeamMembershipSet, IUpstreamBugTask)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.components.bug import BugDelta
@@ -25,6 +26,7 @@ from canonical.launchpad.components.bugtask import BugTaskDelta
 from canonical.launchpad.helpers import (
     contactEmailAddresses, get_email_template)
 from canonical.launchpad.webapp import canonical_url
+from canonical.lp.dbschema import TeamMembershipStatus, TicketAction
 
 GLOBAL_NOTIFICATION_EMAIL_ADDRS = []
 CC = "CC"
@@ -199,10 +201,15 @@ def send_process_error_notification(to_address, subject, error_msg,
 def notify_errors_list(message, file_alias_url):
     """Sends an error to the Launchpad errors list."""
     template = get_email_template('notify-unhandled-email.txt')
+    # We add the error message in as a header too (X-Launchpad-Unhandled-Email)
+    # so we can create filters in the Launchpad-Error-Reports Mailman
+    # mailing list.
     simple_sendmail(
         get_bugmail_error_address(), [config.launchpad.errors_address],
         'Unhandled Email: %s' % file_alias_url,
-        template % {'url': file_alias_url, 'error_msg': message})
+        template % {'url': file_alias_url, 'error_msg': message},
+        headers={'X-Launchpad-Unhandled-Email': message}
+        )
 
 
 def generate_bug_add_email(bug):
@@ -384,7 +391,7 @@ def get_bug_edit_notification_texts(bug_delta):
     if bug_delta.attachment is not None and bug_delta.attachment['new']:
         added_attachment = bug_delta.attachment['new']
         change_info = '** Attachment added: "%s"\n' % added_attachment.title
-        change_info += "   %s" % added_attachment.libraryfile.url
+        change_info += "   %s" % added_attachment.libraryfile.http_url
         changes.append(change_info)
 
     if bug_delta.bugtask_deltas is not None:
@@ -552,25 +559,6 @@ def send_bug_notification(bug, user, subject, contents, to_addrs=None,
             body=body, headers=headers)
 
 
-def add_bug_duplicate_notification(duplicate_bug, user):
-    """Add a notification that a bug was marked a dup of a bug.
-
-    An email will be sent the duplicate_bug.duplicateOf's subscribers
-    telling them which bug has been marked as a dup of their bug.
-    duplicate_bug is an IBug whose .duplicateof is not
-    None.
-    """
-    bug = duplicate_bug.duplicateof
-    if bug is None:
-        return
-    subject = u"[Bug %d] %s" % (bug.id, bug.title)
-
-    body = u"** Bug %d has been marked a duplicate of this bug" % (
-        duplicate_bug.id,)
-
-    bug.addChangeNotification(body, person=user)
-
-
 def get_cc_list(bug):
     """Return the list of people that are CC'd on this bug.
 
@@ -623,8 +611,10 @@ def get_task_delta(old_task, new_task):
     old_task and new_task.
     """
     changes = {}
-    if (IUpstreamBugTask.providedBy(old_task) and
-        IUpstreamBugTask.providedBy(new_task)):
+    if ((IUpstreamBugTask.providedBy(old_task) and
+         IUpstreamBugTask.providedBy(new_task)) or
+        (IProductSeriesBugTask.providedBy(old_task) and
+         IProductSeriesBugTask.providedBy(new_task))):
         if old_task.product != new_task.product:
             changes["product"] = {}
             changes["product"]["old"] = old_task.product
@@ -682,13 +672,6 @@ def notify_bug_modified(modified_bug, event):
     assert bug_delta is not None
 
     add_bug_change_notifications(bug_delta)
-
-    if bug_delta.duplicateof is not None:
-        # This bug was marked as a duplicate, so notify the dup
-        # target subscribers of this as well.
-        add_bug_duplicate_notification(
-            duplicate_bug=bug_delta.bug,
-            user=event.user)
 
 
 def add_bug_change_notifications(bug_delta):
@@ -866,120 +849,418 @@ def notify_bug_attachment_added(bugattachment, event):
     add_bug_change_notifications(bug_delta)
 
 
-def notify_join_request(event):
-    """Notify team administrators that a new membership is pending approval."""
-    if not event.user in event.team.proposedmembers:
-        return
-
+def notify_team_join(event):
+    """Notify team administrators that a new joined (or tried to) the team.
+    
+    If the team's policy is Moderated, the email will say that the membership
+    is pending approval. Otherwise it'll say that the user has joined the team
+    and who added that person to the team.
+    """
     user = event.user
     team = event.team
-    tm = getUtility(ITeamMembershipSet).getByPersonAndTeam(user, team)
-    assert tm is not None
-    to_addrs = team.getTeamAdminsEmailAddresses()
-    replacements = {'browsername': user.browsername,
-                    'name': user.name,
-                    'teamname': team.browsername,
-                    'url': canonical_url(tm)}
-    msg = get_email_template('pending-membership-approval.txt') % replacements
-    subject = "Launchpad: New %s member awaiting approval." % team.name
-    from_addr = config.noreply_from_address
-    headers = {"Reply-To": user.preferredemail.email}
-    simple_sendmail(from_addr, to_addrs, subject, msg, headers=headers)
+    membership = getUtility(ITeamMembershipSet).getByPersonAndTeam(user, team)
+    assert membership is not None
+    reviewer = membership.reviewer
+    approved, admin = [
+        TeamMembershipStatus.APPROVED, TeamMembershipStatus.ADMIN]
+    admin_addrs = team.getTeamAdminsEmailAddresses()
 
+    from_addr = format_address('Launchpad', config.noreply_from_address)
 
-def send_ticket_notification(ticket_event, subject, body):
-    """Sends a ticket notification to the ticket's subscribers."""
-    ticket = ticket_event.object
+    if reviewer != user and membership.status in [approved, admin]:
+        # Somebody added this user as a member, we better send a notification
+        # to the user too.
+        member_addrs = contactEmailAddresses(user)
 
-    sent_addrs = set()
-    for notified_person in ticket.getSubscribers():
-        for address in contactEmailAddresses(notified_person):
-            if address not in sent_addrs:
-                from_address = format_address(
-                    ticket_event.user.displayname,
-                    'ticket%s@%s' % (
-                        ticket_event.object.id,
-                        config.tickettracker.email_domain))
-                simple_sendmail(
-                    from_address, address, subject, body)
-                sent_addrs.add(address)
+        subject = (
+            'Launchpad: %s is now a member of %s' % (user.name, team.name))
+        if user.isTeam():
+            templatename = 'new-member-notification-for-teams.txt'
+        else:
+            templatename = 'new-member-notification.txt'
+        
+        template = get_email_template(templatename)
+        msg = template % {
+            'reviewer': '%s (%s)' % (reviewer.browsername, reviewer.name),
+            'member': '%s (%s)' % (user.browsername, user.name),
+            'team': '%s (%s)' % (team.browsername, team.name)}
+        msg = MailWrapper().format(msg)
+        simple_sendmail(from_addr, member_addrs, subject, msg)
 
+        # The member's email address may be in admin_addrs too; let's remove
+        # it so the member don't get two notifications.
+        admin_addrs = set(admin_addrs).difference(set(member_addrs))
 
-def notify_ticket_added(ticket, event):
-    """Notify the subscribers of the newly added ticket."""
-    subject = '[Support #%s]: %s' % (ticket.id, ticket.title)
-    body = get_email_template('ticket_added.txt') % {
-        'target_name': ticket.target.displayname,
-        'ticket_id': ticket.id,
-        'ticket_url': canonical_url(ticket),
-        'comment': ticket.description}
-
-    send_ticket_notification(event, subject, body)
-
-
-def get_ticket_changes_text(ticket, old_ticket):
-    """Return a textual representation of the changes."""
-    indent = 4*' '
-    info_fields = []
-    if ticket.status != old_ticket.status:
-        info_fields.append(indent + 'Status: %s => %s' % (
-            old_ticket.status.title, ticket.status.title))
-
-    old_bugs = set(old_ticket.bugs)
-    bugs = set(ticket.bugs)
-    for linked_bug in bugs.difference(old_bugs):
-        info_fields.append(
-            indent + 'Linked to bug: #%s\n' % linked_bug.id +
-            indent + canonical_url(linked_bug))
-    for unlinked_bug in old_bugs.difference(bugs):
-        info_fields.append(
-            indent + 'Removed link to bug: #%s\n' % unlinked_bug.id +
-            indent + canonical_url(unlinked_bug))
-
-    if ticket.title != old_ticket.title:
-        info_fields.append('Summary changed to:\n%s' % ticket.title)
-    if ticket.description != old_ticket.description:
-        info_fields.append('Description changed to:\n%s' % ticket.description)
-
-    ticket_changes = '\n\n'.join(info_fields)
-    return ticket_changes
-
-
-def notify_ticket_modified(ticket, event):
-    """Notify the subscribers that a ticket has been modifed."""
-    old_ticket = event.object_before_modification
-
-    body = get_ticket_changes_text(ticket, old_ticket)
-
-    new_comments = set(ticket.messages).difference(old_ticket.messages)
-    nr_of_new_comments = len(new_comments)
-    if len(new_comments) == 0:
-        comment_subject = ticket.title
-    elif len(new_comments) == 1:
-        comment = new_comments.pop()
-        comment_subject = comment.subject
-        if body:
-            # There should be a blank line between the changes and the
-            # comment.
-            body += '\n\n'
-        body += 'Comment:\n%s' % comment.text_contents
-    else:
-        raise AssertionError(
-            "There shouldn't be more than one comment for a notification.")
-
-    if not body:
-        # No interesting changes were made.
+    # Yes, we can have teams with no members; not even admins.
+    if not admin_addrs:
         return
 
-    subject = '[Support #%s]: %s' % (ticket.id, comment_subject)
+    replacements = {
+        'person_name': "%s (%s)" % (user.browsername, user.name),
+        'team_name': "%s (%s)" % (team.browsername, team.name),
+        'reviewer_name': "%s (%s)" % (reviewer.browsername, reviewer.name),
+        'url': canonical_url(membership)}
+
+    headers = {}
+    if membership.status in [approved, admin]:
+        template = get_email_template('new-member-notification-for-admins.txt')
+        subject = (
+            'Launchpad: %s is now a member of %s' % (user.name, team.name))
+    else:
+        template = get_email_template('pending-membership-approval.txt')
+        subject = (
+            "Launchpad: %s wants to join team %s" % (user.name, team.name))
+        headers = {"Reply-To": user.preferredemail.email}
+
+    msg = MailWrapper().format(template % replacements)
+    simple_sendmail(from_addr, admin_addrs, subject, msg, headers=headers)
 
 
-    body = get_email_template('ticket_modified.txt') % {
-        'ticket_id': ticket.id,
-        'target_name': ticket.target.displayname,
-        'ticket_url': canonical_url(ticket),
-        'body': body}
-    send_ticket_notification(event, subject, body)
+class TicketNotification:
+    """Base class for a notification related to a ticket.
+
+    Creating an instance of that class will build the notification and
+    send it to the appropriate recipients. That way, subclasses of
+    TicketNotification can be registered as event subscribers.
+    """
+
+    def __init__(self, ticket, event):
+        """Base constructor.
+
+        It saves the ticket and event in attributes and then call
+        the initialize() and send() method.
+        """
+        self.ticket = ticket
+        self.event = event
+        self.initialize()
+        if self.shouldNotify():
+            self.send()
+
+    def getFromAddress(self):
+        """Return a formatted email address suitable for user in the From
+        header of the ticket notification.
+
+        Default is Event Person Display Name <ticket#@tickettracker_domain>
+        """
+        return format_address(
+            self.event.user.displayname,
+            'ticket%s@%s' % (
+                self.ticket.id, config.tickettracker.email_domain))
+
+    def getSubject(self):
+        """Return the subject of the notification.
+
+        Default to [Support #dd]: Title
+        """
+        return '[Support #%s]: %s' % (self.ticket.id, self.ticket.title)
+
+    def getBody(self):
+        """Return the content of the notification message.
+
+        This method must be implemented by a subclass.
+        """
+        raise NotImplementedError
+
+    def getRecipients(self):
+        """Return the recipient of the notification.
+
+        Default to the ticket's subscribers that speaks the request languages.
+        If the ticket owner is subscribed, he's always consider to speak the
+        language. When a subscriber is a team and it doesn't have an email
+        set nor supported languages, only contacts the members that speaks
+        the supported language.
+        """
+        # Optimize the English case.
+        english = getUtility(ILanguageSet)['en']
+        ticket_language = self.ticket.language
+        if ticket_language == english:
+            return self.ticket.getSubscribers()
+
+        recipients = set()
+        skipped = set()
+        subscribers = set(self.ticket.getSubscribers())
+        while subscribers:
+            person = subscribers.pop()
+            if person == self.ticket.owner:
+                recipients.add(person)
+            elif ticket_language not in person.getSupportedLanguages():
+               skipped.add(person)
+            elif not person.preferredemail and not list(person.languages):
+                # For teams without an email address nor a set of supported
+                # languages, only notify the members that actually speak the
+                # language.
+                subscribers |= set(person.activemembers) - recipients - skipped
+            else:
+                recipients.add(person)
+        return recipients
+
+    def initialize(self):
+        """Initialization hook for subclasses.
+
+        This method is called before send() and can be use for any
+        setup purpose.
+
+        Default does nothing.
+        """
+        pass
+
+    def shouldNotify(self):
+        """Return if there is something to notify about.
+
+        When this method returns False, no notification will be sent.
+        By default, all event trigger a notification.
+        """
+        return True
+
+    def send(self):
+        """Sends the notification to all the notification recipients."""
+        sent_addrs = set()
+        from_address = self.getFromAddress()
+        subject = self.getSubject()
+        body = self.getBody()
+        for notified_person in self.getRecipients():
+            for address in contactEmailAddresses(notified_person):
+                if address not in sent_addrs:
+                    simple_sendmail(
+                        from_address, address, subject, body)
+                    sent_addrs.add(address)
+
+    @property
+    def unsupported_language(self):
+        """Whether the ticket language is unsupported or not."""
+        supported_languages = self.ticket.target.getSupportedLanguages()
+        return self.ticket.language not in supported_languages
+
+    @property
+    def unsupported_language_warning(self):
+        """Warning about the fact that the ticket is written in an
+        unsupported language."""
+        return get_email_template(
+                'ticket-unsupported-language-warning.txt') % {
+                'ticket_language': self.ticket.language.englishname,
+                'target_name': self.ticket.target.displayname}
+
+
+class TicketAddedNotification(TicketNotification):
+    """Notification sent when a ticket is added."""
+
+    def getBody(self):
+        """See TicketNotification."""
+        ticket = self.ticket
+        body = get_email_template('ticket_added.txt') % {
+            'target_name': ticket.target.displayname,
+            'ticket_id': ticket.id,
+            'ticket_url': canonical_url(ticket),
+            'comment': ticket.description}
+        if self.unsupported_language:
+            body += self.unsupported_language_warning
+        return body
+
+
+class TicketModifiedDefaultNotification(TicketNotification):
+    """Base implementation of a notification when a ticket is modified."""
+
+    # Email template used to render the body.
+    body_template = "ticket_modified.txt"
+
+    def initialize(self):
+        """Save the old ticket for comparison. It also set the new_message
+        attribute if a new message was added.
+        """
+        self.old_ticket = self.event.object_before_modification
+
+        new_messages = set(
+            self.ticket.messages).difference(self.old_ticket.messages)
+        assert len(new_messages) <= 1, (
+                "There shouldn't be more than one message for a notification.")
+        if new_messages:
+            self.new_message = new_messages.pop()
+        else:
+            self.new_message = None
+
+        self.wrapper = MailWrapper()
+
+    @cachedproperty
+    def metadata_changes_text(self):
+        """Textual representation of the changes to the ticket metadata."""
+        ticket = self.ticket
+        old_ticket = self.old_ticket
+        indent = 4*' '
+        info_fields = []
+        if ticket.status != old_ticket.status:
+            info_fields.append(indent + 'Status: %s => %s' % (
+                old_ticket.status.title, ticket.status.title))
+
+        old_bugs = set(old_ticket.bugs)
+        bugs = set(ticket.bugs)
+        for linked_bug in bugs.difference(old_bugs):
+            info_fields.append(
+                indent + 'Linked to bug: #%s\n' % linked_bug.id +
+                indent + canonical_url(linked_bug))
+        for unlinked_bug in old_bugs.difference(bugs):
+            info_fields.append(
+                indent + 'Removed link to bug: #%s\n' % unlinked_bug.id +
+                indent + canonical_url(unlinked_bug))
+
+        if ticket.title != old_ticket.title:
+            info_fields.append('Summary changed to:\n%s' % ticket.title)
+        if ticket.description != old_ticket.description:
+            info_fields.append(
+                'Description changed to:\n%s' % (
+                    self.wrapper.format(ticket.description)))
+
+        ticket_changes = '\n\n'.join(info_fields)
+        return ticket_changes
+
+    def getSubject(self):
+        """When a comment is added, its title is used as the subject,
+        otherwise the ticket title is used.
+        """
+        if self.new_message:
+            return '[Support #%s]: %s' % (
+                self.ticket.id, self.new_message.subject)
+        else:
+            return '[Support #%s]: %s' % (self.ticket.id, self.ticket.title)
+
+    def shouldNotify(self):
+        """Only send a notification when a message was added or some
+        metadata was changed.
+        """
+        return self.new_message or self.metadata_changes_text
+
+    def getBody(self):
+        """See TicketNotification."""
+        body = self.metadata_changes_text
+        replacements = dict(
+            ticket_id=self.ticket.id,
+            target_name=self.ticket.target.displayname,
+            ticket_url=canonical_url(self.ticket))
+
+        if self.new_message:
+            if body:
+                body += '\n\n'
+            body += self.getNewMessageText()
+            replacements['new_message_id'] = list(
+                self.ticket.messages).index(self.new_message)
+
+        replacements['body'] = body
+
+        return get_email_template(self.body_template) % replacements
+
+    def getRecipients(self):
+        """The default notification goes to all ticket susbcribers that
+        speaks the request language, except the owner.
+        """
+        return [person for person in TicketNotification.getRecipients(self)
+                if person != self.ticket.owner]
+
+    # Header template used when a new message is added to the ticket.
+    action_header_template = {
+        TicketAction.REQUESTINFO:
+            '%(person)s requested for more information:',
+        TicketAction.CONFIRM:
+            '%(person)s confirmed that the request is solved:',
+        TicketAction.COMMENT:
+            '%(person)s posted a new comment:',
+        TicketAction.GIVEINFO:
+            '%(person)s gave more information on the request:',
+        TicketAction.REOPEN:
+            '%(person)s is still having a problem:',
+        TicketAction.ANSWER:
+            '%(person)s proposed the following answer:',
+        TicketAction.EXPIRE:
+            '%(person)s expired the request:',
+        TicketAction.REJECT:
+            '%(person)s rejected the request:',
+        TicketAction.SETSTATUS:
+            '%(person)s changed the request status:',
+    }
+
+    def getNewMessageText(self):
+        """Should return the notification text related to a new message."""
+        if not self.new_message:
+            return ''
+
+        header = self.action_header_template.get(
+            self.new_message.action, '%(person)s posted a new message:') % {
+            'person': self.new_message.owner.displayname}
+
+        return '\n'.join([
+            header, self.wrapper.format(self.new_message.text_contents)])
+
+
+class TicketModifiedOwnerNotification(TicketModifiedDefaultNotification):
+    """Notification sent to the owner when his ticket is modified."""
+
+    # These actions will be done by the owner, so use the second person.
+    action_header_template = dict(
+        TicketModifiedDefaultNotification.action_header_template)
+    action_header_template.update({
+        TicketAction.CONFIRM:
+            'You confirmed that the request is solved:',
+        TicketAction.GIVEINFO:
+            'You gave more information on the request:',
+        TicketAction.REOPEN:
+            'You are still having a problem:',
+        })
+
+    body_template = 'ticket-modified-owner-notification.txt'
+
+    body_template_by_action = {
+        TicketAction.ANSWER: "ticket-answered-owner-notification.txt",
+        TicketAction.EXPIRE: "ticket-expired-owner-notification.txt",
+        TicketAction.REJECT: "ticket-rejected-owner-notification.txt",
+        TicketAction.REQUESTINFO: (
+            "ticket-info-requested-owner-notification.txt"),
+    }
+
+    def initialize(self):
+        """Set the template that will be used based on the new comment action."""
+        TicketModifiedDefaultNotification.initialize(self)
+        if self.new_message:
+            self.body_template = self.body_template_by_action.get(
+                self.new_message.action, self.body_template)
+
+    def getRecipients(self):
+        """Return the owner of the ticket if he's still subscribed."""
+        if self.ticket.isSubscribed(self.ticket.owner):
+            return [self.ticket.owner]
+        else:
+            return []
+
+    def getBody(self):
+        """See TicketNotification."""
+        body = TicketModifiedDefaultNotification.getBody(self)
+        if self.unsupported_language:
+            body += self.unsupported_language_warning
+        return body
+
+
+class TicketUnsupportedLanguageNotification(TicketNotification):
+    """Notification sent to support contacts for unsupported languages."""
+
+    def getSubject(self):
+        """See TicketNotification."""
+        return '[Support #%s]: (%s) %s' % (
+            self.ticket.id, self.ticket.language.englishname,
+            self.ticket.title)
+
+    def shouldNotify(self):
+        return self.unsupported_language
+
+    def getRecipients(self):
+        """Notify all the support contacts."""
+        return self.ticket.target.support_contacts
+
+    def getBody(self):
+        """See TicketNotification."""
+        ticket = self.ticket
+        return get_email_template('ticket-unsupported-languages-added.txt') % {
+            'target_name': ticket.target.displayname,
+            'ticket_id': ticket.id,
+            'ticket_url': canonical_url(ticket),
+            'ticket_language': ticket.language.englishname,
+            'comment': ticket.description}
 
 
 def notify_specification_modified(spec, event):

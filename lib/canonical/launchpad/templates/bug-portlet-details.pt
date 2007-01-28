@@ -1,6 +1,6 @@
 <div class="portlet">
 
-  <h4>Bug details:</h4>
+  <h2>Bug details</h2>
 
 
   <div class="portletBody portletContent"
@@ -23,8 +23,9 @@
       tal:content="context/owner/browsername"></a><br />
 
     <b>Reported on:</b><br />
-    <span tal:replace="context/datecreated/fmt:date">12-12-2004</span>
-    <br />
+    <span tal:replace="context/datecreated/fmt:datetime">
+      2004-12-12 12:12:12
+    </span><br />
 
     <div title="Can be seen only by the bug subscribers"
         tal:condition="context/private">

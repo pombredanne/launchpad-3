@@ -10,7 +10,6 @@ __all__ = [
     'ProductFacets',
     'ProductOverviewMenu',
     'ProductBugsMenu',
-    'ProductSupportMenu',
     'ProductSpecificationsMenu',
     'ProductBountiesMenu',
     'ProductBranchesMenu',
@@ -27,46 +26,63 @@ __all__ = [
     'ProductLaunchpadUsageEditView',
     ]
 
+from operator import attrgetter
 from warnings import warn
 
 import zope.security.interfaces
 from zope.component import getUtility
 from zope.event import notify
-from zope.app.form.browser import TextAreaWidget
-from zope.app.form.browser.add import AddView
+from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.formlib import form
 from zope.interface import providedBy
 
+from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPerson, IProduct, IProductLaunchpadUsageForm,
     IProductSet, IProductSeries, ISourcePackage, ICountry,
-    ICalendarOwner, ITranslationImportQueue, NotFoundError)
+    ICalendarOwner, ITranslationImportQueue, NotFoundError,
+    ILaunchpadRoot)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.productseries import get_series_branch_error
+from canonical.launchpad.browser.tickettarget import (
+    TicketTargetFacetMixin, TicketTargetTraversalMixin)
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, GetitemNavigation, LaunchpadView,
     LaunchpadEditFormView, LaunchpadFormView, Link, Navigation,
-    StandardLaunchpadFacets, stepthrough, structured)
+    RedirectionNavigation, sorted_version_numbers,
+    StandardLaunchpadFacets, stepto, stepthrough,
+    structured)
 from canonical.launchpad.webapp.snapshot import Snapshot
+from canonical.widgets.image import ImageAddWidget
 from canonical.widgets.product import ProductBugTrackerWidget
+from canonical.widgets.textwidgets import StrippedTextWidget
 
 
 class ProductNavigation(
-    Navigation, BugTargetTraversalMixin, CalendarTraversalMixin):
+    Navigation, BugTargetTraversalMixin, CalendarTraversalMixin,
+    TicketTargetTraversalMixin):
 
     usedfor = IProduct
 
     def breadcrumb(self):
         return self.context.displayname
+
+    @stepto('.bzr')
+    def dotbzr(self):
+        if self.context.development_focus.series_branch:
+            return BranchRef(self.context.development_focus.series_branch)
+        else:
+            return None
 
     @stepthrough('+spec')
     def traverse_spec(self, name):
@@ -76,15 +92,6 @@ class ProductNavigation(
     def traverse_milestone(self, name):
         return self.context.getMilestone(name)
 
-    @stepthrough('+ticket')
-    def traverse_ticket(self, name):
-        # tickets should be ints
-        try:
-            ticket_id = int(name)
-        except ValueError:
-            raise NotFoundError
-        return self.context.getTicket(ticket_id)
-
     @stepthrough('+release')
     def traverse_release(self, name):
         return self.context.getRelease(name)
@@ -93,15 +100,25 @@ class ProductNavigation(
         return self.context.getSeries(name)
 
 
-class ProductSetNavigation(GetitemNavigation):
+class ProductSetNavigation(RedirectionNavigation):
 
     usedfor = IProductSet
 
     def breadcrumb(self):
         return 'Products'
 
+    @property
+    def redirection_root_url(self):
+        return canonical_url(getUtility(ILaunchpadRoot))
 
-class ProductFacets(StandardLaunchpadFacets):
+    def traverse(self, name):
+        # Raise a 404 on an invalid product name
+        if self.context.getByName(name) is None:
+            raise NotFoundError(name)
+        return RedirectionNavigation.traverse(self, name)
+
+
+class ProductFacets(TicketTargetFacetMixin, StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IProduct."""
 
     usedfor = IProduct
@@ -123,13 +140,6 @@ class ProductFacets(StandardLaunchpadFacets):
         summary = 'Bugs reported about %s' % self.context.displayname
         return Link(target, text, summary)
 
-    def support(self):
-        target = '+tickets'
-        text = 'Support'
-        summary = (
-            'Technical support requests for %s' % self.context.displayname)
-        return Link(target, text, summary)
-
     def bounties(self):
         target = '+bounties'
         text = 'Bounties'
@@ -137,7 +147,7 @@ class ProductFacets(StandardLaunchpadFacets):
         return Link(target, text, summary)
 
     def branches(self):
-        target = '+branches'
+        target = ''
         text = 'Code'
         summary = 'Branches for %s' % self.context.displayname
         return Link(target, text, summary)
@@ -263,21 +273,6 @@ class ProductBranchesMenu(ApplicationMenu):
         text = 'Listing View'
         summary = 'Show detailed branch listing'
         return Link('+branchlisting', text, summary, icon='branch')
-
-
-class ProductSupportMenu(ApplicationMenu):
-
-    usedfor = IProduct
-    facet = 'support'
-    links = ['new', 'support_contact']
-
-    def new(self):
-        text = 'Request Support'
-        return Link('+addticket', text, icon='add')
-
-    def support_contact(self):
-        text = 'Support Contact'
-        return Link('+support-contact', text, icon='edit')
 
 
 class ProductSpecificationsMenu(ApplicationMenu):
@@ -481,6 +476,15 @@ class ProductView:
 
         return sorted(potemplatenames, key=lambda item: item.name)
 
+    def sorted_serieslist(self):
+        """Return the series list from the product with the dev focus first."""
+        series_list = list(self.context.serieslist)
+        series_list.remove(self.context.development_focus)
+        # now sort the list by name with newer versions before older
+        series_list = sorted_version_numbers(series_list,
+                                             key=attrgetter('name'))
+        series_list.insert(0, self.context.development_focus)
+        return series_list
 
 class ProductEditView(SQLObjectEditView):
     """View class that lets you edit a Product object."""
@@ -539,8 +543,9 @@ class ProductAddSeriesView(LaunchpadFormView):
     """A form to add new product release series"""
 
     schema = IProductSeries
-    field_names = ['name', 'summary', 'user_branch']
+    field_names = ['name', 'summary', 'user_branch', 'releasefileglob']
     custom_widget('summary', TextAreaWidget, height=7, width=62)
+    custom_widget('releasefileglob', StrippedTextWidget, displayWidth=40)
 
     series = None
 
@@ -565,7 +570,7 @@ class ProductAddSeriesView(LaunchpadFormView):
         return canonical_url(self.series)
 
 
-class ProductRdfView(object):
+class ProductRdfView:
     """A view that sets its mime-type to application/rdf+xml"""
 
     template = ViewPageTemplateFile(
@@ -590,6 +595,49 @@ class ProductRdfView(object):
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
+
+
+class ProductDynMenu(LaunchpadView):
+
+    def render(self):
+        L = []
+        L.append('<ul class="menu"')
+        L.append('    lpm:mid="/products/%s/+menudata"' % self.context.name)
+        L.append('    lpm:midroot="/products/%s/$$/+menudata"'
+            % self.context.name)
+        L.append('>')
+
+        producturl = '/products/%s' % self.context.name
+
+        for link, name in [
+            ('+branches', 'Branches'),
+            ('+sprints', 'Meetings'),
+            ('+milestones', 'Milestones'),
+            ('+series', 'Product series')
+            ]:
+            L.append('<li class="item container" lpm:midpart="%s">' % link)
+            L.append('<a href="%s/%s">%s</a>' % (producturl, link, name))
+            L.append('</li>')
+        L.append('</ul>')
+        return u'\n'.join(L)
+
+class ProductSetDynMenu(LaunchpadView):
+
+    def render(self):
+        L = []
+        L.append('<ul class="menu"')
+        L.append('    lpm:mid="/products/+menudata"')
+        L.append('>')
+        for product in self.context:
+            # given in full because there was an error in the JS when
+            # i use midpart / midbase.
+            L.append('<li class="item container" lpm:mid="/products/%s/+menudata">' % product.name)
+            L.append('<a href="/products/%s">' % product.name)
+            L.append(product.name)
+            L.append('</a>')
+            L.append('</li>')
+        L.append('</ul>')
+        return u'\n'.join(L)
 
 
 class ProductSetView(LaunchpadView):
@@ -643,65 +691,75 @@ class ProductSetView(LaunchpadView):
         return self.results
 
 
-class ProductAddView(AddView):
+class ProductAddView(LaunchpadFormView):
 
-    __used_for__ = IProduct
+    schema = IProduct
+    field_names = ['name', 'owner', 'displayname', 'title', 'summary',
+                   'description', 'project', 'homepageurl', 'gotchi',
+                   'emblem', 'sourceforgeproject', 'freshmeatproject',
+                   'wikiurl', 'screenshotsurl', 'downloadurl',
+                   'programminglang', 'reviewed']
+    custom_widget('homepageurl', TextWidget, displayWidth=30)
+    custom_widget('screenshotsurl', TextWidget, displayWidth=30)
+    custom_widget('wikiurl', TextWidget, displayWidth=30)
+    custom_widget('downloadurl', TextWidget, displayWidth=30)
+    custom_widget('gotchi', ImageAddWidget)
+    custom_widget('emblem', ImageAddWidget)
 
-    def __init__(self, context, request):
-        fields = ["name", "displayname", "title", "summary", "description",
-                  "project", "homepageurl", "sourceforgeproject",
-                  "freshmeatproject", "wikiurl", "screenshotsurl",
-                  "downloadurl", "programminglang"]
-        owner = IPerson(request.principal, None)
-        if self.isVCSImport(owner):
-            # vcs-imports members get it easy and are able to change this
-            # stuff during the edit process; this saves time wasted on
-            # getting to product/+admin.
-            fields.insert(1, "owner")
-            fields.append("reviewed")
-        self.fieldNames = fields
-        self.context = context
-        self.request = request
-        self._nextURL = '.'
-        AddView.__init__(self, context, request)
+    label = "Register an upstream open source product"
+    product = None
 
-    def isVCSImport(self, owner):
-        if owner is None:
+    def isVCSImport(self):
+        if self.user is None:
             return False
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-        return owner.inTeam(vcs_imports)
+        return self.user.inTeam(vcs_imports)
 
-    def createAndAdd(self, data):
-        # add the owner information for the product
-        owner = IPerson(self.request.principal, None)
-        if owner is None:
+    def setUpFields(self):
+        LaunchpadFormView.setUpFields(self)
+        if not self.isVCSImport():
+            # vcs-imports members get it easy and are able to change
+            # the owner and reviewed status during the edit process;
+            # this saves time wasted on getting to product/+admin.
+            # The fields are not displayed for other people though.
+            self.form_fields = self.form_fields.omit('owner', 'reviewed')
+
+    @action(_('Add'), name='add')
+    def add_action(self, action, data):
+        if self.user is None:
             raise zope.security.interfaces.Unauthorized(
                 "Need an authenticated Launchpad owner")
-        if self.isVCSImport(owner):
-            owner = data["owner"]
-            reviewed = data["reviewed"]
-        else:
+        if not self.isVCSImport():
             # Zope makes sure these are never set, since they are not in
-            # self.fieldNames
+            # self.form_fields
             assert "owner" not in data
             assert "reviewed" not in data
-            reviewed = False
-        productset = getUtility(IProductSet)
-        product = productset.createProduct(owner=owner,
-            reviewed=reviewed, name=data.get("name"),
-            displayname=data.get("displayname"), title=data.get("title"),
-            summary=data.get("summary"), description=data.get("description"),
-            project=data.get("project"), homepageurl=data.get("homepageurl"),
-            screenshotsurl=data.get("screenshotsurl"),
-            wikiurl=data.get("wikiurl"), downloadurl=data.get("downloadurl"),
-            freshmeatproject=data.get("freshmeatproject"),
-            sourceforgeproject=data.get("sourceforgeproject"))
-        notify(ObjectCreatedEvent(product))
-        self._nextURL = data['name']
-        return product
+            data['owner'] = self.user
+            data['reviewed'] = False
+        self.product = getUtility(IProductSet).createProduct(
+            name=data['name'],
+            title=data['title'],
+            summary=data['summary'],
+            description=data['description'],
+            displayname=data['displayname'],
+            homepageurl=data['homepageurl'],
+            downloadurl=data['downloadurl'],
+            screenshotsurl=data['screenshotsurl'],
+            wikiurl=data['wikiurl'],
+            freshmeatproject=data['freshmeatproject'],
+            sourceforgeproject=data['sourceforgeproject'],
+            programminglang=data['programminglang'],
+            project=data['project'],
+            owner=data['owner'],
+            reviewed=data['reviewed'],
+            gotchi=data['gotchi'],
+            emblem=data['emblem'])
+        notify(ObjectCreatedEvent(self.product))
 
-    def nextURL(self):
-        return self._nextURL
+    @property
+    def next_url(self):
+        assert self.product is not None, 'No product has been created'
+        return canonical_url(self.product)
 
 
 class ProductBugContactEditView(SQLObjectEditView):

@@ -81,8 +81,8 @@
       </div>
     </tal:block>
     <tal:block condition="view/batchnav/currentBatch">
+      <tal:navigation replace="structure view/batchnav/@@+navigation-links-upper" />
       <form name="entries_to_import" action="" method="POST">
-        <tal:navigation replace="structure view/batchnav/@@+navigation-links" />
         <table class="listing" width="100%">
           <tal:loop repeat="entry view/batchnav/currentBatch">
             <tr>
@@ -99,7 +99,7 @@
                 <img alt="" src="/@@/download" />
               </td>
               <td>
-                <a tal:attributes="href entry/content/url"
+                <a tal:attributes="href entry/content/http_url"
                    tal:content="entry/path">po/foo.pot</a> in
                 <a tal:condition="entry/sourcepackage"
                    tal:content="entry/sourcepackage/title"

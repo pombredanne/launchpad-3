@@ -1,5 +1,5 @@
 <div class="portlet">
-    <h4 tal:content="context/title">bugtracker title</h4>
+    <h2 tal:content="context/title">bugtracker title</h2>
 
     <div class="portletBody">
         <div class="portletContent">
@@ -23,7 +23,7 @@
 
         <b>Creator:</b>
         <img alt="" src="/@@/user" />
-        <a tal:attributes="href string:/people/${context/owner/name}"
+        <a tal:attributes="href context/owner/fmt:url"
            tal:content="context/owner/browsername"
            class="link">ownername</a><br />
 

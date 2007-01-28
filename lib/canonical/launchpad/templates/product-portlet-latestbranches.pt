@@ -1,5 +1,5 @@
 <div class="portlet" tal:condition="context/getLatestBranches">
-  <h4>Latest branches of <span tal:replace="context/name">firefox</span>:</h4>
+  <h2>Latest branches of <span tal:replace="context/name">firefox</span></h2>
   <div class="portletBody portletContent">
     
   <ul>

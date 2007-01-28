@@ -13,8 +13,18 @@
 
 <div metal:fill-slot="main">
 
-  <div metal:use-macro="context/@@launchpad_generalform/generalform" />
+  <div metal:use-macro="context/@@launchpad_form/form" />
 
+</div>
+
+<div metal:fill-slot="help">
+<p>By registering a sprint in Launchpad, users can propose
+specifications they would like to discuss at the sprint, and register
+their attendance at the sprint.  This information can help you
+organise a schedule for the sprint.</p>
+
+<p>Note that the start and end dates for the sprint are treated as
+local time for the sprint.</p>
 </div>
 
 </body>

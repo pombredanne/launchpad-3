@@ -14,6 +14,7 @@
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-subscribers" />
+  <div tal:replace="structure context/@@+portlet-specifications" />
 </metal:leftportlets>
 
 <div metal:fill-slot="main">
@@ -33,7 +34,13 @@
     <i>This branch has no summary.</i>
   </p>
 
+  <tal:comment condition="nothing">
+    <!-- Branch URLs -->
+  </tal:comment>
   <tal:pull-branch condition="context/url">
+    <tal:comment condition="nothing">
+      <!-- This is a mirror branch, display two URLs -->
+    </tal:comment>
     <div>
       <b>Location:</b>
       <span class="lesser" tal:content="context/url">
@@ -53,6 +60,9 @@
   </tal:pull-branch>
 
   <tal:hosted-branch condition="not:context/url">
+    <tal:comment condition="nothing">
+      <!-- This is an upload branch, one URL and upload directions -->
+    </tal:comment>
     <div>
       <b>Hosted on Launchpad:</b>
       <span class="lesser" tal:content="view/supermirror_url" class="lesser">
@@ -62,7 +72,68 @@
     <p class="discreet lesser">
       This URL is intended for use with the
       <a href="http://www.bazaar-vcs.org/">Bazaar</a> version control system.
-    </p>    
+    </p>
+
+    <tal:not-logged-in condition="not:view/user">
+      <tal:comment condition="nothing">
+        <!-- The user is not logged in -->
+      </tal:comment>
+      <p id="upload-directions" tal:condition="not:context/owner/isTeam">
+        Only
+        <a tal:attributes="href context/owner/fmt:url"
+           tal:content="context/owner/browsername">Person</a>
+        can upload to this branch. If this is you,
+        <a href="+login">log in</a> for directions.
+      </p>
+      <p id="upload-directions" tal:condition="context/owner/isTeam">
+        Members of
+        <a tal:attributes="href context/owner/fmt:url"
+           tal:content="context/owner/browsername">Team</a>
+        can upload to this branch. <a href="+login">Log in</a> for directions.
+      </p>
+    </tal:not-logged-in>
+
+    <tal:logged-in condition="view/user">
+      <tal:cannot-upload condition="not:view/user_can_upload">
+        <tal:comment condition="nothing">
+          <!-- The user is logged in but cannot upload to the branch -->
+        </tal:comment>
+        <p id="upload-directions" tal:condition="not:context/owner/isTeam">
+          You cannot upload to this branch. Only
+          <a tal:attributes="href context/owner/fmt:url"
+             tal:content="context/owner/browsername">Person</a>
+          can upload to this branch.
+        </p>
+        <p id="upload-directions" tal:condition="context/owner/isTeam">
+          You cannot upload to this branch. Members of
+          <a tal:attributes="href context/owner/fmt:url"
+             tal:content="context/owner/browsername">Team</a>
+          can upload to this branch.
+          <a href="http://code.launchpad.dev/~landscape-developers/+join">Join
+            the team</a>.
+        </p>
+      </tal:cannot-upload>
+
+      <tal:can-upload condition="view/user_can_upload">
+        <tal:comment condition="nothing">
+          <!-- The user is logged in and can upload to the branch -->
+        </tal:comment>
+        <div id="upload-directions">
+          You can <b>upload</b> to this branch at:
+          <span class="lesser" tal:content="view/upload_url">
+            sftp://name12@bazaar.canonical.com/~name12/gnome-terminal/pushed
+          </span>
+        </div>
+        <tal:comment condition="nothing">
+          <!-- Directions to set the SSH key -->
+        </tal:comment>
+        <p tal:condition="not:view/user/sshkeys" id="ssh-key-directions">
+          To authenticate with the Launchpad branch upload service, you need
+          to <a href="http://code.launchpad.dev/~name12/+editsshkeys">
+            register a SSH key </a>.
+        </p>
+      </tal:can-upload>
+    </tal:logged-in>
   </tal:hosted-branch>
 
   <tal:comment condition="nothing">
@@ -85,7 +156,8 @@
 
   <p class="highlighted lesser" tal:condition="context/whiteboard">
     <b>Whiteboard:</b>
-    <span tal:replace="context/whiteboard">whiteboard</span>
+    <span id="branch-whiteboard-value"
+      tal:content="context/whiteboard">whiteboard</span>
   </p>
 
   <h2>Recent revisions</h2>
@@ -135,24 +207,69 @@
   <ul style="list-style: none">
     <li tal:condition="context/product">
       <a tal:attributes="href string:${context/product/fmt:url}/+branches">
-	Other <tal:product replace="context/product/displayname" /> branches
+        Other <tal:product replace="context/product/displayname" /> branches
       </a>
     </li>
     <li>
       <tal:author condition="context/author">
-	<a tal:attributes="href string:${context/author/fmt:url}/+authoredbranches">
-	  Other branches authored by <tal:person
-	  replace="context/author/displayname">Author</tal:person>
-	</a>
+        <a tal:attributes="href string:${context/author/fmt:url}/+authoredbranches">
+          Other branches authored by <tal:person
+          replace="context/author/displayname">Author</tal:person>
+        </a>
       </tal:author>
       <tal:no-author condition="not:context/author">
-	<a tal:attributes="href string:${context/owner/fmt:url}/+registeredbranches">
-	  Other branches registered (and not authored) by <tal:person
-	  replace="context/owner/displayname">Owner</tal:person>
-	</a>
+        <a tal:attributes="href string:${context/owner/fmt:url}/+registeredbranches">
+          Other branches registered (and not authored) by <tal:person
+          replace="context/owner/displayname">Owner</tal:person>
+        </a>
       </tal:no-author>
     </li>
   </ul>
-</div>
+</div><tal:comment condition="nothing"><!-- end main slot --></tal:comment>
+
+<metal:block fill-slot="help">
+
+  <p>Launchpad is integrated with the <a
+    href="http://bazaar-vcs.org/">Bazaar</a> version control system. (<a
+    href="http://bazaar-vcs.org/WhyUseBzr">Why use Bazaar?</a>).</p>
+
+  <ul>
+    <li>Mirror branches are primarily hosted somewhere else on the internet.
+      You can register a mirror branch from the page of a person or of a
+      product. Launchpad will create a mirror of this branch and pull changes
+      every day from the URL provided in the branch details.</li>
+
+    <li>Upload branches are primarily hosted on Launchpad. You can create an
+      upload branch using <code>bzr push</code> with an URL on
+      <code>sftp://bazaar.launchpad.net</code>. There is a latency of up to 10
+      minutes between the time branch data is uploaded to Launchpad and the
+      time when it is published.</li>
+   </ul>
+
+  <p>Only the registrant of a branch is allowed to edit the registry details.
+    Upload branches can only be written to by the registrant. But the
+    registrant can be a team. If you wish to allow other people to edit details
+    or upload data, you can reassign a branch to a team.</p>
+
+  <p>The URL of the branch on <code>bazaar.launchpad.net</code> is based on the
+    short name of the registrant, product and branch. If you change any of
+    those short names or assign the branch to a different product or person or
+    team, the URL will change.</p>
+
+  <p>Subscribing to a branch will make it appear in your personal branch
+    listings.</p>
+
+  <p>Once you have registered or uploaded a branch, it cannot be deleted. But
+    you can set its status to &ldquo;Abandoned&rdquo;.</p>
+
+  <p>A mirror branch cannot be converted to an upload branch, and conversely,
+    you cannot convert an upload branch to a mirror branch. However you can
+    rename a branch and create a new one in its place.<p>
+
+  <p>There no browsable web content on <code>bazaar.launchpad.net<code>. This
+    host only serves data for use with the Bazaar version control system.</p>
+
+</metal:block><tal:comment condition="nothing"><!-- end help slot --></tal:comment>
+
 </body>
 </html>

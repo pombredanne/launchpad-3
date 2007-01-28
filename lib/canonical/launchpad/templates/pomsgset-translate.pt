@@ -18,7 +18,12 @@
 
     <div metal:fill-slot="main">
 
-      <div>You are translating</div>
+      <tal:notloggedin condition="not:request/lp:person">
+        <div>You are browsing</div>
+      </tal:notloggedin>
+      <tal:loggedin condition="request/lp:person">
+        <div>You are translating</div>
+      </tal:loggedin>
       <h1>
         <tal:productseries
           condition="exists:context/pofile/potemplate/productseries/displayname"
@@ -39,11 +44,7 @@
 
         <!-- Alternative suggestions. -->
         <div metal:define-macro="editform">
-          <form method="POST" action="+translate">
-            <input type="hidden" name="start" value=""
-                   tal:attributes="value view/start" />
-            <input type="hidden" name="batch" value=""
-                   tal:attributes="value view/size" />
+          <form method="get" action="+translate">
             <tal:comment replace="nothing">
               Suggestions from this alternative language will be displayed as
               well as suggestions from the translation language. In the case
@@ -53,35 +54,30 @@
             </tal:comment>
             <label>Make suggestions from:</label>
             <tal:language-widget content="structure view/alternative_language_widget" />
-            <input
-              type="submit" name='select_alternate_language' value="Change" />
+            <input type="submit" name="select_alternate_language" value="Change" />
           </form>
         </div>
 
         <!-- The translation form. -->
-        <form method="POST" action="+translate">
+        <form method="POST" action="">
           <!-- the hidden elements -->
-          <input type="hidden" name="alt"
-                 tal:condition="view/second_lang_code"
-                 tal:attributes="value view/second_lang_code" />
+          <input type="hidden" name="lock_timestamp" value=""
+                 tal:condition="request/lp:person"
+                 tal:attributes="value view/lock_timestamp/isoformat" />
           <table class="listing" style="margin-top: 0.5em;">
             <thead>
               <tr class="results">
                 <td colspan="5">
                   <!-- Paging doodads. -->
-                  <tal:navigation replace="structure view/batchnav/@@+navigation-links" />
+                  <tal:navigation replace="structure view/batchnav/@@+navigation-links-upper" />
                 </td>
               </tr>
             </thead>
-            <tbody>
-              <tal:block define="pomsgset_view nocall:view">
-                <metal:pomsgsetview
-                  use-macro="view/@@+pomsgset-translate/pomsgset-view"
-                  />
-              </tal:block>
+            <tbody id="messages_to_translate">
+              <div tal:replace="structure view/pomsgset_view" />
             </tbody>
             <tfoot>
-              <tr>
+              <tr tal:condition="request/lp:person">
                 <th colspan="5">
                   <tal:review
                     condition="not: view/user_is_official_translator"
@@ -92,8 +88,7 @@
                   <input type="submit"
                          name="submit_translations"
                          value="Save &amp; Continue"
-                         style="text-align: right;"
-                         tal:attributes="tabindex view/generateNextTabIndex" />
+                         style="text-align: right;" />
                 </th>
               </tr>
             </tfoot>

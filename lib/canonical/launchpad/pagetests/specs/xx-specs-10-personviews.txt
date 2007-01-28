@@ -7,10 +7,10 @@ There are a couple of views of the specs related to a person.
 The Features link shows an overview of all the specifications
 involving that person.
 
-  >>> browser.open('http://features.launchpad.dev/people/name16')
+  >>> browser.open('http://blueprints.launchpad.dev/~name16')
   >>> browser.getLink('Features').click()
   >>> browser.url
-  '.../people/name16/+specs'
+  '.../~name16/+specs'
   >>> browser.title
   'Specifications involving Foo Bar'
   >>> from BeautifulSoup import BeautifulSoup
@@ -24,7 +24,7 @@ that the user is supposed to approve.
 
   >>> browser.getLink('Approver').click()
   >>> browser.url
-  '.../people/name16/+specs?role=approver'
+  '.../~name16/+specs?role=approver'
   >>> soup = BeautifulSoup(browser.contents)
   >>> soup('p', 'informational message')
   [<p class="informational message">
@@ -36,7 +36,7 @@ to the person.
 
   >>> browser.getLink('Assignee').click()
   >>> browser.url
-  '.../people/name16/+specs?role=assignee'
+  '.../~name16/+specs?role=assignee'
   >>> soup = BeautifulSoup(browser.contents)
   >>> soup('p', 'informational message')
   [<p class="informational message">
@@ -48,7 +48,7 @@ which the person subscribed.
 
   >>> browser.getLink('Subscriber').click()
   >>> browser.url
-  '.../people/name16/+specs?role=subscriber'
+  '.../~name16/+specs?role=subscriber'
   >>> browser.getLink('svg-support').attrs['title']
   'Support Native SVG Objects'
 
@@ -57,7 +57,7 @@ person drafted.
 
   >>> browser.getLink('Drafter').click()
   >>> browser.url
-  '.../people/name16/+specs?role=drafter'
+  '.../~name16/+specs?role=drafter'
   >>> soup = BeautifulSoup(browser.contents)
   >>> soup('p', 'informational message')
   [<p class="informational message">
@@ -69,7 +69,7 @@ in the workload of that person.
 
   >>> browser.getLink('Workload').click()
   >>> browser.url
-  '.../people/name16/+specworkload'
+  '.../~name16/+specworkload'
   >>> browser.title
   'Specification workload for Foo Bar'
 
@@ -78,7 +78,7 @@ the person was asked to review.
 
   >>> browser.getLink('Feedback request').click()
   >>> browser.url
-  '.../people/name16/+specfeedback'
+  '.../~name16/+specfeedback'
   >>> browser.title
   'Feature feedback requests for Foo Bar'
   >>> soup = BeautifulSoup(browser.contents)

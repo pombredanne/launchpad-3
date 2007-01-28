@@ -24,11 +24,13 @@
 
   <p>
     Subscribing to a request makes it show up on
-    <a tal:attributes="href string:/people/${request/lp:person/name}/+tickets"
+    <a tal:attributes="href string:/~${request/lp:person/name}/+tickets"
     >your Support page</a>.
   </p>
 
-  <form action="." method="POST">
+  <form action="."
+        tal:attributes="action request/URL"
+        method="post">
 
     <div class="actions">
       <input type="submit"
@@ -47,5 +49,16 @@
 
 </div>
 
+<metal:help fill-slot="help">
+  <p>You can subscribe yourself to this request. When subscribed, you'll
+    receive by email all future messages added to the request.
+  </p>
+  <p>You can use the <emph>Subscribed</emph> report in the <emph>Support</emph>
+    facet of your profile to see all the requests to which you are subscribed.
+  </p>
+  <p>If you are already subscribed to the request, you can unsubscribe
+    yourself from this page.
+  </p>
+</metal:help>
 </body>
 </html>

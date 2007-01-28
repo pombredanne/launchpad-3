@@ -8,7 +8,7 @@ from optparse import OptionParser
 from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 from canonical.config import config
-from canonical.lp import initZopeless
+from canonical.lp import initZopeless, READ_COMMITTED_ISOLATION
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.launchpad.scripts.po_import import ImportProcess
@@ -50,7 +50,9 @@ def main(argv):
     try:
         # Setup zcml machinery to be able to use getUtility
         execute_zcml_for_scripts()
-        ztm = initZopeless(dbuser=config.rosetta.poimport.dbuser)
+        ztm = initZopeless(
+            dbuser=config.rosetta.poimport.dbuser,
+            isolation=READ_COMMITTED_ISOLATION)
 
         # Do the import of all pending files from the queue.
         process = ImportProcess(ztm, logger_object)

@@ -1,6 +1,6 @@
 <div class="portlet" tal:condition="view/browserLanguages">
 
-    <h4>Your browser languages:</h4>
+    <h2>Your browser languages</h2>
 
     <div class="portletBody">
 

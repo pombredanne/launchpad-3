@@ -27,7 +27,8 @@ from datetime import timedelta
 
 from canonical.lp import initZopeless, dbschema
 from canonical.config import config
-from canonical.launchpad.scripts import logger_options, log
+from canonical.launchpad.scripts import (
+    execute_zcml_for_scripts, logger_options, log)
 from canonical.launchpad.scripts.lockfile import LockFile
 
 from canonical.launchpad.scripts.gina import ExecutionError
@@ -54,6 +55,7 @@ def _get_keyring(keyrings_root):
 
 
 def main():
+    execute_zcml_for_scripts()
     parser = OptionParser("Usage: %prog [OPTIONS] [target ...]")
     logger_options(parser)
 

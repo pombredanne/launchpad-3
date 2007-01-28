@@ -1,9 +1,7 @@
 <metal:page define-macro="master"
             extend-macro="context/@@+shipit-macros/meta-master">
-<metal:block define-slot="top_slot" />
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"
-    tal:attributes="lang default_language|default;
-                    xml:lang default_language|default;">
+
+  <metal:block define-slot="top_slot" />
   <head>
 
     <metal:extra-head fill-slot="extra-head">
@@ -53,7 +51,7 @@
 
   <body>
 
-    <div metal:fill-slot="footer" class="footer" class="inside" 
+    <div metal:fill-slot="footer" class="footer inside"
          style="background: url(/@@/ubuntu-header-bg4.png) bottom left repeat-x #fff;">
       &copy; 2004-2006 <a href="http://www.canonical.com">Canonical Ltd</a>.
       Ubuntu, ShipIt and Canonical are registered trademarks of Canonical Ltd.
@@ -63,5 +61,4 @@
 
   </body>
 
-</html>
 </metal:page>

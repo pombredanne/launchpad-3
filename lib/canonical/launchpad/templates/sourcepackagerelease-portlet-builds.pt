@@ -1,7 +1,7 @@
 <div class="portlet">
 
-  <h4>Builds of <span tal:replace="context/title">apache2 2.0.54 (source) in
-  Ubuntu</span>:</h4>
+  <h2>Builds of <span tal:replace="context/title">apache2 2.0.54 (source) in
+  Ubuntu</span></h2>
 
   <div class="portletBody portletContent">
 

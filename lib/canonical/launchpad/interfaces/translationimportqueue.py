@@ -34,7 +34,9 @@ class ITranslationImportQueueEntry(Interface):
             "The person that imported this file in Rosetta."),
         vocabulary="ValidOwner")
 
-    dateimported = Attribute('The timestamp when this file was imported.')
+    dateimported = Datetime(
+        title=_("The timestamp when this file was imported."),
+        required=True)
 
     productseries = Choice(
         title=_("Product Branch or Series"),
@@ -114,6 +116,13 @@ class ITranslationImportQueueEntry(Interface):
         The returned entries will be only .pot entries.
         """
 
+    def getElapsedTimeText():
+        """Return a string representing the elapsed time since we got the file.
+
+        The returned string is like:
+            '2 days 3 hours 10 minutes ago' or 'just requested'
+        """
+
 
 class ITranslationImportQueue(Interface):
     """A set of files to be imported into Rosetta."""
@@ -128,10 +137,8 @@ class ITranslationImportQueue(Interface):
         raised.
         """
 
-    def __len__():
-        """Return the number of entries in the queue, including blocked
-        entries.
-        """
+    def entryCount(self):
+        """Return the number of TranslationImportQueueEntry records."""
 
     def iterNeedReview():
         """Iterate over all entries in the queue that need review."""
@@ -217,8 +224,10 @@ class ITranslationImportQueue(Interface):
         imported from the Needs Review status to the Accepted one.
         """
 
-    def executeOptimisticBlock():
+    def executeOptimisticBlock(ztm):
         """Try to move entries from the Needs Review status to Blocked one.
+
+        :arg ztm: Zope transaction manager object or None.
 
         This method moves all .po entries that are on the same directory that
         a .pot entry that has the status Blocked to that same status.
@@ -241,18 +250,16 @@ class IEditTranslationImportQueueEntry(Interface):
 
     potemplatename = Choice(
         title=_("Template Name"),
-        description=_("The name of this PO template, for example "
-            "'evolution-2.2'. Each translation template has a "
-            "unique name in its package. It's important to get this "
-            "correct, because Rosetta will recommend alternative "
-            "translations based on the name."),
+        description=_("The name of this PO template, for example"
+            " 'evolution-2.2'. Each translation template's name"
+            " is unique within its package"),
         required=True,
         vocabulary="POTemplateName")
 
     sourcepackagename = Choice(
         title=_("Source Package Name"),
         description=_(
-            "The source package from where this entry comes."),
+            "The source package where this entry will be imported."),
         required=True,
         vocabulary="SourcePackageName")
 
@@ -263,6 +270,9 @@ class IEditTranslationImportQueueEntry(Interface):
 
     variant = TextLine(
         title=_("Variant"),
+        description=_(
+            "Language variant, usually used to note the script used to"
+            " write the translations (like 'Latn' for Latin)"),
         required=False)
 
     path = TextLine(

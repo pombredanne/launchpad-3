@@ -25,15 +25,29 @@ Verify that foobar (a Person object) correctly implements IPerson.
     >>> verifyObject(IPerson, foobar)
     True
 
+The IPersonSet component
+------------------------
+
 Access to people (Persons or Teams) is done through the IPersonSet
 utility:
 
 You can create a new person using the createPersonAndEmail method of
-IPersonSet. All you need for that is a valid email address. You can also 
+IPersonSet. All you need for that is a valid email address. You can also
 hide the user email addresses.
 
+Some of our scripts may create Person entries, and in these cases they must
+provide a rationale and a comment (optional) for the creation of that Person
+entry. These are displayed on the home pages of unvalidated Launchpad
+profiles, to make it clear that those profiles were not created by the
+people they represent and why they had to be created. Because the comment
+will be displayed verbatim in a web page, it must start with the word "when"
+followed by a description of the action that caused the entry to be created.
+
+    >>> from canonical.lp.dbschema import PersonCreationRationale
     >>> p, email = personset.createPersonAndEmail(
-    ...     'randomuser@randomhost.com', hide_email_addresses=True)
+    ...     'randomuser@randomhost.com', PersonCreationRationale.POFILEIMPORT,
+    ...     comment='when importing the Portuguese translation of firefox',
+    ...     hide_email_addresses=True)
     >>> p.teamowner is None
     True
     >>> email.status == EmailAddressStatus.NEW
@@ -43,19 +57,33 @@ hide the user email addresses.
     >>> p.hide_email_addresses
     True
 
-In case of failure of creating a new person or email the method returns 
-(None, None). Let's demonstrate this trying to create a person with 
+When a new sourcepackage is imported and a Person entry has to be created
+because we don't know about the maintainer of that package, the code to create
+the person should look like this:
+
+    >>> person, emailaddress = personset.createPersonAndEmail(
+    ...     'random@random.com', PersonCreationRationale.SOURCEPACKAGEIMPORT,
+    ...     comment='when the ed package was imported into Ubuntu Breezy')
+    >>> person.is_valid_person
+    False
+    >>> person.creation_comment
+    u'when the ed package was imported into Ubuntu Breezy'
+
+
+In case of failure of creating a new person or email the method returns
+(None, None). Let's demonstrate this trying to create a person with
 an invalid email.
 
     >>> p2, invalid_email = personset.createPersonAndEmail(
-    ...     'test#canonical.com')
+    ...     'test#canonical.com', PersonCreationRationale.UNKNOWN)
     >>> p2, invalid_email
     (None, None)
 
 And now with the same name of a existing account
 
     >>> p3, invalid_email = personset.createPersonAndEmail(
-    ...     'randomemail@randomhost.com', name='name12')
+    ...     'randomemail@randomhost.com', PersonCreationRationale.UNKNOWN,
+    ...     name='name12')
     >>> p3, invalid_email
     (None, None)
 
@@ -112,8 +140,8 @@ the team will go to the preferred email of each member.
          'foo.bar@canonical.com'])
 
 
-Renaming
---------
+Renaming persons
+----------------
 
 All persons have a unique name in launchpad, so to allow them to change their
 names, we must make sure that name is not already in use by someone else.
@@ -138,7 +166,8 @@ But you can't use Mark's name, of course. ;)
     >>> field.validate(u'sabdfl')
     Traceback (most recent call last):
       ...
-    LaunchpadValidationError: ...sabdfl is already in use by another person/team...
+    LaunchpadValidationError: ...sabdfl is already in use by another
+    person or team...
 
 
 Searching
@@ -220,6 +249,9 @@ person uploaded (where he isn't the maintainer).
     >>> for sprelease in sabdfl.latestUploadedButNotMaintainedPackages():
     ...     print (sprelease.name, sprelease.uploaddistrorelease.fullreleasename,
     ...            sprelease.version)
+    (u'foobar', u'Ubuntu Breezy-autotest', u'1.0')
+    (u'cdrkit', u'Ubuntu Breezy-autotest', u'1.0')
+    (u'cnews', u'Ubuntu Breezy-autotest', u'1.0')
     (u'libstdc++', u'Ubuntu Hoary', u'b8p')
     (u'cnews', u'Ubuntu Hoary', u'cr.g7-37')
     (u'linux-source-2.6.15', u'Ubuntu Hoary', u'2.6.15.3')
@@ -227,18 +259,31 @@ person uploaded (where he isn't the maintainer).
     (u'alsa-utils', u'Ubuntu Hoary', u'1.0.9a-4ubuntu1')
 
 
-Bug contact packages
---------------------
+Translations
+------------
 
-A person who chooses to receive all bugmail for a package is said to be
-a "bug contact" for that package. A package may have zero, one, or more
-bug contacts.
+The IPerson interface offers a way of returning POFileTranslator records
+for a Person:
 
-IPerson.getBugContactPackages returns this list of packages, sorted
-alphabetically (A to Z) by package name.
+  >>> carlos = getUtility(IPersonSet).getByName('carlos')
+  >>> [pt.pofile.title for pt in carlos.translation_history]
+  [u'Spanish (es) translation of evolution-2.2 in Evolution trunk',
+   u'Japanese (ja) translation of evolution-2.2 in Ubuntu Hoary package "evolution"',
+   u'Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"']
 
-    >>> [package.name for package in foobar.getBugContactPackages()]
-    [u'mozilla-firefox', u'pmount']
+The IPersonSet component contains a few convenience methods to return
+Person objects that have contributed translations.
+
+  >>> from canonical.launchpad.database import POFile
+  >>> pofile = POFile.get(12)
+  >>> [p.name for p in personset.getPOFileContributors(pofile)]
+  [u'carlos', u'name16', u'tsukimi']
+
+  >>> from canonical.launchpad.database import DistroRelease, Language
+  >>> hoary = DistroRelease.selectOneBy(name="hoary")
+  >>> spanish = Language.selectOneBy(code="es")
+  >>> [p.name for p in personset.getPOFileContributorsByDistroRelease(hoary, spanish)]
+  [u'jorge-gonzalez-gonzalez', u'carlos', u'valyag', u'danner', u'name16', u'tsukimi']
 
 
 Specification Lists
@@ -249,7 +294,6 @@ certain criteria:
 
 First, Carlos does not have any completed specifications assigned to him:
 
-    >>> carlos = getUtility(IPersonSet).getByName('carlos')
     >>> from canonical.lp.dbschema import SpecificationFilter
     >>> carlos.specifications(filter=[
     ...     SpecificationFilter.ASSIGNEE, SpecificationFilter.COMPLETE]).count()
@@ -336,30 +380,6 @@ Reset firefox so we don't mess up later tests.
 
     >>> firefox.active = True
     >>> flush_database_updates()
-
-
-Ticket API
-----------
-
-It's easy to find out what tickets a person is related to:
-
-    >>> name12 = personset.getByName('name16')
-    >>> [(t.title, t.status.title) for t in name12.tickets()]
-    [(u'mailto: problem in webpage', 'Answered'),
-     (u'Slow system', 'Open'),
-     (u'Firefox loses focus and gets stuck', 'Open'),
-     (u'Firefox is slow and consumes too much RAM', 'Rejected')]
-
-    >>> [(t.title, t.status.title) for t in name12.answered_tickets]
-    [(u'mailto: problem in webpage', 'Answered'),
-     (u'Firefox is slow and consumes too much RAM', 'Rejected')]
-
-    >>> [(t.title, t.status.title) for t in name12.assigned_tickets]
-    []
-
-    >>> [(t.title, t.status.title) for t in name12.subscribed_tickets]
-    [(u'Slow system', 'Open'),
-     (u'Firefox is slow and consumes too much RAM', 'Rejected')]
 
 Ubunteros
 ---------

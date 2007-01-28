@@ -27,18 +27,18 @@ import time
 from urllib import urlopen
 
 import psycopg
-from sqlos.interfaces import IConnectionName
 import transaction
-from zope.component import getUtility
+from zope.component import getUtility, getGlobalSiteManager
 from zope.component.interfaces import ComponentLookupError
 from zope.security.management import getSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
 
 from canonical.config import config
 from canonical.database.sqlbase import ZopelessTransactionManager
-from canonical.launchpad.interfaces import IOpenLaunchBag
+from canonical.launchpad.interfaces import IMailBox, IOpenLaunchBag
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, is_logged_in
 import canonical.launchpad.mail.stub
+from canonical.launchpad.mail.mailbox import TestMailBox
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.lp import initZopeless
 from canonical.librarian.ftests.harness import LibrarianTestSetup
@@ -223,8 +223,6 @@ class LibrarianLayer(BaseLayer):
 
         We do this by altering the configuration so the Librarian client
         looks for the Librarian server on the wrong port.
-
-        XXX: Untested -- StuartBishop 20060713
         """
         cls._hidden = True
         config.librarian.upload_port = 58091
@@ -234,8 +232,6 @@ class LibrarianLayer(BaseLayer):
         """Reveal a hidden Librarian.
 
         This just involves restoring the config to the original value.
-
-        XXX: Untested -- StuartBishop 20060713
         """
         cls._hidden = False
         config.librarian.upload_port = cls._orig_librarian_port
@@ -491,7 +487,9 @@ class LaunchpadFunctionalLayer(
 
     @classmethod
     def testSetUp(cls):
-        pass
+        # Reset any statistics
+        from canonical.launchpad.webapp.opstats import OpStats
+        OpStats.resetStats()
 
     @classmethod
     def testTearDown(cls):
@@ -500,6 +498,10 @@ class LaunchpadFunctionalLayer(
         # If tests forget to logout, we can do it for them.
         if is_logged_in():
             logout()
+
+        # Reset any statistics
+        from canonical.launchpad.webapp.opstats import OpStats
+        OpStats.resetStats()
 
 
 class LaunchpadZopelessLayer(
@@ -510,7 +512,12 @@ class LaunchpadZopelessLayer(
     """
     @classmethod
     def setUp(cls):
-        pass
+        # Make a TestMailBox available
+        # This is registered via ZCML in the LaunchpadFunctionalLayer
+        # XXX flacoste 2006/10/25 This should be configured from ZCML
+        # but execute_zcml_for_scripts() doesn't cannot support a different
+        # testing configuration (bug #68189).
+        getGlobalSiteManager().provideUtility(IMailBox, TestMailBox())
 
     @classmethod
     def tearDown(cls):
@@ -540,6 +547,21 @@ class LaunchpadZopelessLayer(
             raise LayerInvariantError(
                 "Failed to uninstall ZopelessTransactionManager"
                 )
+
+    @classmethod
+    def commit(cls):
+        from canonical.launchpad.ftests.harness import (
+                LaunchpadZopelessTestSetup
+                )
+        LaunchpadZopelessTestSetup.txn.commit()
+
+    @classmethod
+    def abort(cls):
+        from canonical.launchpad.ftests.harness import (
+                LaunchpadZopelessTestSetup
+                )
+        LaunchpadZopelessTestSetup.txn.abort()
+
 
 
 class PageTestLayer(LaunchpadFunctionalLayer):

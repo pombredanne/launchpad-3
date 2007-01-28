@@ -1,10 +1,12 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = [
     'SourcePackage',
+    'SourcePackageTicketTargetMixin',
     ]
 
+from operator import attrgetter
 from warnings import warn
 
 from zope.interface import implements
@@ -19,14 +21,14 @@ from canonical.lp.dbschema import (
     PackagingType, PackagePublishingPocket, BuildStatus,
     PackagePublishingStatus)
 
-from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     ISourcePackage, IHasBuildRecords, ITicketTarget,
-    TICKET_STATUS_DEFAULT_SEARCH)
-from canonical.launchpad.components.bugtarget import BugTargetBase
+    TICKET_STATUS_DEFAULT_SEARCH, get_supported_languages)
+from canonical.launchpad.database.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.bug import get_bug_tags_open_count
 from canonical.launchpad.database.bugtask import BugTaskSet
+from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
@@ -34,7 +36,8 @@ from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.supportcontact import SupportContact
 from canonical.launchpad.database.potemplate import POTemplate
-from canonical.launchpad.database.ticket import Ticket, TicketSet
+from canonical.launchpad.database.ticket import (
+    SimilarTicketsSearch, Ticket, TicketTargetSearch, TicketSet)
 from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.distroreleasesourcepackagerelease import (
@@ -42,10 +45,108 @@ from canonical.launchpad.database.distroreleasesourcepackagerelease import (
 from canonical.launchpad.database.build import Build
 
 
-class SourcePackage(BugTargetBase):
-    """A source package, e.g. apache2, in a distrorelease.  This object
-    implements the MagicSourcePackage specification. It is not a true
-    database object, but rather attempts to represent the concept of a
+class SourcePackageTicketTargetMixin:
+    """Implementation of ITicketTarget for SourcePackage."""
+
+    def newTicket(self, owner, title, description, language=None,
+                  datecreated=None):
+        """See ITicketTarget."""
+        return TicketSet.new(
+            title=title, description=description, owner=owner,
+            language=language, distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename, datecreated=datecreated)
+
+    def getTicket(self, ticket_id):
+        """See ITicketTarget."""
+        # first see if there is a ticket with that number
+        try:
+            ticket = Ticket.get(ticket_id)
+        except SQLObjectNotFound:
+            return None
+        # now verify that that ticket is actually for this target
+        if ticket.distribution != self.distribution:
+            return None
+        if ticket.sourcepackagename != self.sourcepackagename:
+            return None
+        return ticket
+
+    def searchTickets(self, **search_criteria):
+        """See ITicketTarget."""
+        return TicketTargetSearch(
+            distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename,
+            **search_criteria).getResults()
+
+    def findSimilarTickets(self, title):
+        """See ITicketTarget."""
+        return SimilarTicketsSearch(
+            title, distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename).getResults()
+
+    def addSupportContact(self, person):
+        """See ITicketTarget."""
+        support_contact_entry = SupportContact.selectOneBy(
+            distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename,
+            person=person)
+        if support_contact_entry:
+            return False
+
+        SupportContact(
+            product=None, person=person,
+            sourcepackagename=self.sourcepackagename,
+            distribution=self.distribution)
+        return True
+
+    def removeSupportContact(self, person):
+        """See ITicketTarget."""
+        support_contact_entry = SupportContact.selectOneBy(
+            distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename,
+            person=person)
+        if not support_contact_entry:
+            return False
+
+        support_contact_entry.destroySelf()
+        return True
+
+    @property
+    def support_contacts(self):
+        """See ITicketTarget."""
+        support_contacts = set()
+        support_contacts.update(self.direct_support_contacts)
+        support_contacts.update(self.distribution.support_contacts)
+        return sorted(support_contacts, key=attrgetter('displayname'))
+
+    @property
+    def direct_support_contacts(self):
+        """See ITicketTarget."""
+        support_contacts = SupportContact.selectBy(
+            distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename)
+        return sorted(
+            [contact.person for contact in support_contacts],
+            key=attrgetter('displayname'))
+
+    def getSupportedLanguages(self):
+        """See ITicketTarget."""
+        return get_supported_languages(self)
+
+    def getTicketLanguages(self):
+        """See ITicketTarget."""
+        return set(Language.select(
+            'Language.id = language AND distribution = %s AND '
+            'sourcepackagename = %s'
+                % sqlvalues(self.distribution, self.sourcepackagename),
+            clauseTables=['Ticket'], distinct=True))
+
+
+
+class SourcePackage(BugTargetBase, SourcePackageTicketTargetMixin):
+    """A source package, e.g. apache2, in a distrorelease.
+
+    This object implements the MagicSourcePackage specification. It is not a
+    true database object, but rather attempts to represent the concept of a
     source package in a distro release, with links to the relevant database
     objects.
     """
@@ -377,84 +478,6 @@ class SourcePackage(BugTargetBase):
             packaging=PackagingType.PRIME)
         # and make sure this change is immediately available
         flush_database_updates()
-
-    # ticket related interfaces
-    def tickets(self, quantity=None):
-        """See ITicketTarget."""
-        ret = Ticket.select("""
-            distribution = %s AND
-            sourcepackagename = %s
-            """ % sqlvalues(self.distribution.id,
-                            self.sourcepackagename.id),
-            orderBy='-datecreated',
-            limit=quantity)
-        return ret
-
-    def newTicket(self, owner, title, description, datecreated=None):
-        """See ITicketTarget."""
-        return TicketSet.new(
-            title=title, description=description, owner=owner,
-            distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename, datecreated=datecreated)
-
-    def getTicket(self, ticket_id):
-        """See ITicketTarget."""
-        # first see if there is a ticket with that number
-        try:
-            ticket = Ticket.get(ticket_id)
-        except SQLObjectNotFound:
-            return None
-        # now verify that that ticket is actually for this target
-        if ticket.distribution != self.distribution:
-            return None
-        if ticket.sourcepackagename != self.sourcepackagename:
-            return None
-        return ticket
-
-    def searchTickets(self, search_text=None,
-                      status=TICKET_STATUS_DEFAULT_SEARCH, sort=None):
-        """See ITicketTarget."""
-        return TicketSet.search(search_text=search_text, status=status,
-                                sort=sort, distribution=self.distribution,
-                                sourcepackagename=self.sourcepackagename)
-
-    def findSimilarTickets(self, title):
-        """See ITicketTarget."""
-        return TicketSet.findSimilar(title, distribution=self.distribution,
-                                     sourcepackagename=self.sourcepackagename)
-
-    def addSupportContact(self, person):
-        """See ITicketTarget."""
-        if person in self.support_contacts:
-            return False
-        SupportContact(
-            product=None, person=person,
-            sourcepackagename=self.sourcepackagename,
-            distribution=self.distribution)
-        return True
-
-    def removeSupportContact(self, person):
-        """See ITicketTarget."""
-        if person not in self.support_contacts:
-            return False
-        support_contact_entry = SupportContact.selectOneBy(
-            distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename,
-            person=person)
-        support_contact_entry.destroySelf()
-        return True
-
-    @property
-    def support_contacts(self):
-        """See ITicketTarget."""
-        support_contacts = SupportContact.selectBy(
-            distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename)
-
-        return shortlist([
-            support_contact.person for support_contact in support_contacts
-            ],
-            longest_expected=100)
 
     def __eq__(self, other):
         """See canonical.launchpad.interfaces.ISourcePackage."""

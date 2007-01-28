@@ -10,104 +10,52 @@ Lets look at the dependencies of the "canvas" spec for Firefox. It depends
 on another spec, the "e4x" spec. Also, we should note that no specs depend
 on the "canvas" spec itself.
 
-  >>> result = http(r"""
-  ... GET /products/firefox/+spec/canvas HTTP/1.1
-  ... """)
-  >>> print result
-  HTTP/1.1 200 Ok
+  >>> admin_browser.open('http://blueprints.launchpad.dev/firefox/+spec/canvas')
+  >>> print find_main_content(admin_browser.contents)
+  <...
   ...Support E4X in EcmaScript...
-  >>> 'Blocks' not in str(result)
+  >>> 'Blocks' not in (admin_browser.contents)
   True
 
 let's add a new dependency for the "canvas" spec. We'll add the
 "extension-manager-upgrades" spec as a dependency. First, we confirm we can
 see the page to add a dependency.
 
-  >>> print http(r"""
-  ... GET /products/firefox/+spec/canvas/+linkdependency HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+  >>> admin_browser.getLink('Add dependency').click()
+  >>> admin_browser.url
+  'http://blueprints.launchpad.dev/firefox/+spec/canvas/+linkdependency'
 
-Now, lets POST the form, saying we want extention-manager-upgrades as the
+Now, lets POST the form, saying we want extension-manager-upgrades as the
 dependency.
 
-  >>> print http(r"""
-  ... POST /products/firefox/+spec/canvas/+linkdependency HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 468
-  ... Content-Type: multipart/form-data; boundary=---------------------------14076136604849835101350748509
-  ... 
-  ... -----------------------------14076136604849835101350748509
-  ... Content-Disposition: form-data; name="field.dependency"
-  ... 
-  ... extension-manager-upgrades
-  ... -----------------------------14076136604849835101350748509
-  ... Content-Disposition: form-data; name="field.dependency-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------14076136604849835101350748509
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
-  ... 
-  ... Continue
-  ... -----------------------------14076136604849835101350748509--
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
-  Location: http://.../products/firefox/+spec/canvas
+  >>> admin_browser.getControl(
+  ...     'Depends On').value = ['extension-manager-upgrades']
+  >>> admin_browser.getControl('Continue').click()
+  >>> admin_browser.url
+  'http://blueprints.launchpad.dev/firefox/+spec/canvas'
 
 But we don't want to keep that, so we will remove it as a dependency. First
 we make sure we can see the link to remove a dependency. We need to be
 authenticated.
 
-  >>> print http(r"""
-  ... GET /products/firefox/+spec/canvas HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Remove dependency...
+  >>> admin_browser.getLink('Remove dependency').click()
+  >>> admin_browser.url
+  'http://blueprints.launchpad.dev/firefox/+spec/canvas/+removedependency'
 
 Now, we make sure we can load the page. It should show two potential
 dependencies we could remove. The extension manager one, and "e4x".
 
-  >>> print http(r"""
-  ... GET /products/firefox/+spec/canvas/+removedependency HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...<option value="extension-manager-upgrades">...
-  ...<option value="e4x">...
-
+  >>> admin_browser.getControl('Dependency').displayOptions
+  ['Extension Manager Upgrades', 'Support E4X in EcmaScript']
 
 We'll POST the form selecting "extension-manager-upgrades" for removal. We
 expect to be redirected to the spec home page.
 
-  >>> print http(r"""
-  ... POST /products/firefox/+spec/canvas/+removedependency HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 448
-  ... Content-Type: multipart/form-data; boundary=---------------------------910619684974131307920910
-  ... 
-  ... -----------------------------910619684974131307920910
-  ... Content-Disposition: form-data; name="field.dependency"
-  ... 
-  ... extension-manager-upgrades
-  ... -----------------------------910619684974131307920910
-  ... Content-Disposition: form-data; name="field.dependency-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------910619684974131307920910
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
-  ... 
-  ... Continue
-  ... -----------------------------910619684974131307920910--
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
-  Location: http://.../products/firefox/+spec/canvas
+  >>> admin_browser.getControl(
+  ...     'Dependency').value = ['extension-manager-upgrades']
+  >>> admin_browser.getControl('Continue').click()
+  >>> admin_browser.url
+  'http://blueprints.launchpad.dev/firefox/+spec/canvas'
 
 We know that no specs depend on "canvas", but "canvas" depends on "e4x"
 and "e4x" depends on "svg-support". So the big picture is that "canvas"
@@ -115,7 +63,7 @@ needs to have both "e4x" and "svg-support" implemented before it can be
 implemented, and nothing depends on having "canvas" implemented. The
 "dependency tree" page for "canvas" should show exactly that.
 
-  >>> anon_browser.open('http://launchpad.dev/products/firefox/+spec/canvas/+deptree')
+  >>> anon_browser.open('http://launchpad.dev/firefox/+spec/canvas/+deptree')
   >>> print '----'; print anon_browser.contents
   ----
   ...Specifications that must be implemented first...
@@ -129,7 +77,7 @@ implemented, and nothing depends on having "canvas" implemented. The
 Also, since we have these specs with their priorities and dependencies
 mapped out, we should be able to see a project plan for Mozilla Firefox.
 
-  >>> anon_browser.open('http://launchpad.dev/products/firefox/+roadmap')
+  >>> anon_browser.open('http://launchpad.dev/firefox/+roadmap')
 
 We have some nice tools to display the dependency tree as a client side
 image and map.
@@ -137,22 +85,22 @@ image and map.
 With some versions of graphviz, the <area> for the current spec (canvas) does
 not have a URL.  In other versions, there is no <area> for the current spec at
 all.  To accomodate both these cases, that part of the output is elided.
+Rendering a imagemap with non-ascii characters also works.
 
-  >>> anon_browser.open('http://launchpad.dev/products/firefox/+spec/canvas/+deptreeimgtag')
-  >>> import re
+  >>> anon_browser.open('http://launchpad.dev/firefox/+spec/canvas/+deptreeimgtag')
   >>> print anon_browser.contents
   <img src="deptree.png" usemap="#deptree" />
   <map id="deptree" name="deptree"...
   <area shape="rect"
-  href="http://features.launchpad.dev/products/firefox/+spec/e4x" title="Support E4X in EcmaScript" alt="" coords="..." />
+  href="http://blueprints.launchpad.dev/firefox/+spec/e4x" title="Support E4X in EcmaScript" alt="" coords="..." />
   <area shape="rect"
-  href="http://features.launchpad.dev/products/firefox/+spec/svg&#45;support" title="Support Native SVG Objects" alt="" coords="..." />
+  href="http://blueprints.launchpad.dev/firefox/+spec/svg&#45;support" title="Support Native SVG Objects" alt="" coords="..." />
   </map>
 
 
 Get the dependency chart, and check that it is a PNG.
 
-  >>> anon_browser.open('http://launchpad.dev/products/firefox/+spec/canvas/deptree.png')
+  >>> anon_browser.open('http://launchpad.dev/firefox/+spec/canvas/deptree.png')
   >>> anon_browser.contents.startswith('\x89PNG')
   True
   >>> anon_browser.headers['content-type']
@@ -162,7 +110,7 @@ Get the dependency chart, and check that it is a PNG.
 We can also get the DOT output for a spec dependency graph.  This is useful
 for experimenting with the dot layout using production data.
 
-  >>> anon_browser.open('http://launchpad.dev/products/firefox/+spec/canvas/+deptreedotfile')
+  >>> anon_browser.open('http://launchpad.dev/firefox/+spec/canvas/+deptreedotfile')
   >>> anon_browser.headers['content-type']
   'text/plain;charset=utf-8'
   >>> print anon_browser.contents

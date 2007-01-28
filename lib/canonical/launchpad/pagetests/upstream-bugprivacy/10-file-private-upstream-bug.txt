@@ -2,7 +2,8 @@ When filing a private security bug upstream, with no upstream bug
 contact, the maintainer will be subscribed to the bug instead.
 
     >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
-    >>> browser.open("http://localhost:9000/products/firefox/+filebug")
+    >>> browser.open(
+    ...     "http://localhost:9000/firefox/+filebug-advanced")
 
     >>> print browser.contents
     <!DOCTYPE...
@@ -19,7 +20,7 @@ contact, the maintainer will be subscribed to the bug instead.
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> print browser.url
-    http://localhost:9000/products/firefox/+bug/11
+    http://localhost:9000/firefox/+bug/11
 
 Now the reporter and the maintainer are subscribed.
 
@@ -40,10 +41,13 @@ Now the reporter and the maintainer are subscribed.
 Of course, we're able to see the private bug we've just filed in the
 bug listing.
 
-    >>> browser.open("http://localhost:9000/products/firefox/+bugs")
+    >>> browser.open("http://localhost:9000/firefox/+bugs")
     >>> print browser.contents
     <!DOCTYPE...
+    ...
     ...Mozilla Firefox...
+    ...
+    ...4 results...
     ...
     ...5...
     ...Critical...
@@ -56,18 +60,17 @@ bug listing.
     ...
     ...11...
     ...Undecided...
-    ...
-    ...4 results...
 
 When the upstream has a security contact, the upstream will be
 subscribed instead.
 
-    >>> browser.open("http://launchpad.dev/products/firefox/+securitycontact")
+    >>> browser.open("http://launchpad.dev/firefox/+securitycontact")
 
     >>> browser.getControl("Security Contact").value = "sabdfl"
     >>> browser.getControl("Change").click()
 
-    >>> browser.open("http://localhost:9000/products/firefox/+filebug")
+    >>> browser.open(
+    ...     "http://localhost:9000/firefox/+filebug-advanced")
 
     >>> print browser.contents
     <!DOCTYPE...
@@ -84,7 +87,7 @@ subscribed instead.
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> print browser.url
-    http://localhost:9000/products/firefox/+bug/12
+    http://localhost:9000/firefox/+bug/12
 
     >>> login("foo.bar@canonical.com")
 

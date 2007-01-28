@@ -14,12 +14,14 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.interface import Interface, Attribute
-from zope.schema import Datetime, Choice, Text, TextLine
+from zope.schema import Bytes, Datetime, Choice, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import ContentNameField
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner, IHasSpecifications
+from canonical.launchpad.interfaces.validation import (
+    valid_emblem, valid_gotchi)
 
 
 class SprintNameField(ContentNameField):
@@ -61,6 +63,25 @@ class ISprint(IHasOwner, IHasSpecifications):
     home_page = TextLine(
         title=_('Home Page'), required=False, description=_("A web page "
         "with further information about the event."))
+    homepage_content = Text(
+        title=_("Homepage Content"), required=False,
+        description=_(
+            "The content of this meeting's home page. Edit this and it "
+            "will be displayed for all the world to see. It is NOT a wiki "
+            "so you cannot undo changes."))
+    emblem = Bytes(
+        title=_("Emblem"), required=False,
+        description=_(
+            "A small image, max 16x16 pixels and 8k in file size, that can "
+            "be used to refer to this meeting."),
+        constraint=valid_emblem)
+    gotchi = Bytes(
+        title=_("Gotchi"), required=False,
+        description=_(
+            "An image, maximum 150x150 pixels, that will be displayed on "
+            "this meeting's home page. It should be no bigger than 50k "
+            "in size. "),
+        constraint=valid_gotchi)
     owner = Choice(title=_('Owner'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam')
     time_zone = Choice(
@@ -91,12 +112,12 @@ class ISprint(IHasOwner, IHasSpecifications):
         multiple products and distros.
         """
 
-    def acceptSpecificationLinks(idlist):
+    def acceptSpecificationLinks(idlist, decider):
         """Accept the given sprintspec items, and return the number of
         sprintspec items that remain proposed.
         """
 
-    def declineSpecificationLinks(idlist):
+    def declineSpecificationLinks(idlist, decider):
         """Decline the given sprintspec items, and return the number of
         sprintspec items that remain proposed.
         """

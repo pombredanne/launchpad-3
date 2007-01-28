@@ -7,16 +7,14 @@ __all__ = ['IDistributionMirror', 'IMirrorDistroArchRelease',
            'IDistributionMirrorSet', 'IMirrorCDImageDistroRelease',
            'PROBE_INTERVAL', 'UnableToFetchCDImageFileList']
 
-from zope.schema import Bool, Choice, Datetime, TextLine, Bytes, Int
+from zope.schema import Bool, Choice, Datetime, Int, TextLine
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 
-from canonical.lp.dbschema import MirrorPulseType
 from canonical.launchpad.fields import UniqueField, ContentNameField
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.validation import (
-    valid_http_url, valid_ftp_url, valid_rsync_url, valid_webref,
-    valid_distributionmirror_file_list)
+    valid_http_url, valid_ftp_url, valid_rsync_url)
 from canonical.launchpad import _
 
 
@@ -84,18 +82,16 @@ class IDistributionMirror(Interface):
         title=_('Description'), required=False, readonly=False)
     http_base_url = DistroHttpUrlField(
         title=_('HTTP URL'), required=False, readonly=False,
+        description=_('e.g.: http://archive.ubuntu.com/ubuntu/'),
         constraint=valid_http_url)
     ftp_base_url = DistroFtpUrlField(
         title=_('FTP URL'), required=False, readonly=False,
+        description=_('e.g.: ftp://archive.ubuntu.com/ubuntu/'),
         constraint=valid_ftp_url)
     rsync_base_url = DistroRsyncUrlField(
         title=_('Rsync URL'), required=False, readonly=False,
+        description=_('e.g.: rsync://archive.ubuntu.com/ubuntu/'),
         constraint=valid_rsync_url)
-    pulse_source = TextLine(
-        title=_('Pulse Source'), required=False, readonly=False,
-        description=_("The URL where we can pulse this mirror, in case this "
-                      "mirror's pulse type is Pull."),
-        constraint=valid_webref)
     enabled = Bool(
         title=_('Probe this mirror for its content periodically'),
         required=False, readonly=False, default=False)
@@ -110,17 +106,9 @@ class IDistributionMirror(Interface):
         description=_(
             'Choose Release if this mirror contains CD images of any of the '
             'various releases of this distribution, or choose Archive if this '
-            'mirror contains packages for this distributin and is meant to be '
-            'used in conjunction with apt.'),
+            'mirror contains packages for this distribution and is meant to '
+            'be used in conjunction with apt.'),
         vocabulary='MirrorContent')
-    file_list = Bytes(
-        title=_("File List"), required=False, readonly=False,
-        description=_("A text file containing the list of files that are "
-                      "mirrored on this mirror."),
-        constraint=valid_distributionmirror_file_list)
-    pulse_type = Choice(
-        title=_('Pulse Type'), required=True, readonly=False,
-        vocabulary='MirrorPulseType', default=MirrorPulseType.PUSH)
     official_candidate = Bool(
         title=_('Apply to be an official mirror of this distribution'),
         required=False, readonly=False, default=True)
@@ -134,8 +122,10 @@ class IDistributionMirror(Interface):
     source_releases = Attribute('All MirrorDistroReleaseSources of this mirror')
     arch_releases = Attribute('All MirrorDistroArchReleases of this mirror')
     last_probe_record = Attribute('The last MirrorProbeRecord for this mirror.')
+    all_probe_records = Attribute('All MirrorProbeRecords for this mirror.')
     has_ftp_or_rsync_base_url = Bool(
         title=_('Does this mirror have a ftp or rsync base URL?'))
+    base_url = Attribute('The HTTP or FTP base URL of this mirror')
 
     def getSummarizedMirroredSourceReleases():
         """Return a summarized list of this distribution_mirror's 
@@ -170,13 +160,6 @@ class IDistributionMirror(Interface):
     def isOfficial():
         """Return True if this is an official mirror."""
 
-    def hasContent():
-        """Return True if this mirror has any content.
-
-        A mirror's content is stored as one of MirrorDistroReleaseSources,
-        MirrorDistroArchReleases or MirrorCDImageDistroReleases.
-        """
-
     def shouldDisable(self, expected_file_count=None):
         """Should this mirror be marked disabled?
 
@@ -187,14 +170,22 @@ class IDistributionMirror(Interface):
         If this is an ARCHIVE mirror, then it should be disabled only if it
         has no content at all.
 
-        We could use len(self.getExpectedCDImagePaths()) to obtain the
+        We could use len(get_expected_cdimage_paths()) to obtain the
         expected_file_count, but that's not a good idea because that method
         gets the expected paths from releases.ubuntu.com, which is something
         we don't have control over.
         """
 
     def disableAndNotifyOwner():
-        """Mark this mirror as disabled and notifying the owner."""
+        """Mark this mirror as disabled and notify the owner by email.
+        
+        This method can't be called before a probe record has been created
+        because we'll link to the latest probe record in the email we send to
+        notify the owner.
+
+        The owner will be notified only if this mirror was previously enabled
+        or if it was probed only once.
+        """
 
     def newProbeRecord(log_file):
         """Create and return a new MirrorProbeRecord for this mirror."""
@@ -235,6 +226,9 @@ class IDistributionMirror(Interface):
         release and flavour, in case it exists.
         """
 
+    def deleteAllMirrorCDImageReleases():
+        """Delete all MirrorCDImageDistroReleases of this mirror."""
+
     def getExpectedPackagesPaths():
         """Get all paths where we can find Packages.gz files on this mirror.
 
@@ -251,17 +245,6 @@ class IDistributionMirror(Interface):
         Sources.gz file refer to and the path to the file itself.
         """
 
-    def getExpectedCDImagePaths():
-        """Get all paths where we can find CD image files on this mirror.
-
-        Return a list containing, for each DistroRelease and flavour, a list
-        of CD image file paths for that DistroRelease and flavour.
-
-        This list is read from a file located at http://releases.ubuntu.com,
-        so if something goes wrong while reading that file, an
-        UnableToFetchCDImageFileList exception will be raised.
-        """
-
 
 class UnableToFetchCDImageFileList(Exception):
     """Couldn't feth the file list needed for probing release mirrors."""
@@ -274,14 +257,14 @@ class IDistributionMirrorSet(Interface):
         """Return the DistributionMirror with the given id."""
 
     def getMirrorsToProbe(content_type, ignore_last_probe=False):
-        """Return all official and enabled mirrors with the given content type
-        that need to be probed.
+        """Return all official mirrors with the given content type that need
+        to be probed.
 
         A mirror needs to be probed either if it was never probed before or if
         it wasn't probed in the last PROBE_INTERVAL hours.
 
-        If ignore_last_probe is True, then all mirrors of the given content
-        will be probed even if they were last probed in the last 
+        If ignore_last_probe is True, then all official mirrors of the given
+        content type will be probed even if they were probed in the last 
         PROBE_INTERVAL hours.
         """
 
@@ -373,3 +356,4 @@ class IMirrorProbeRecord(Interface):
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
     log_file = Attribute(_("The log of this probing."))
+

@@ -10,11 +10,11 @@
   provide us with the location of the upstream branch so that it can be
   imported into the Bazaar. Please do so
   <a tal:attributes="href
-  string:/products/${context/product/name}/${context/name}/+source">
+  string:/${context/product/name}/${context/name}/+source">
     here
   </a>. Once you have provided us with revision control details for this
   upstream branch, we can import that branch into
-  <a href="/bazaar/">The Bazaar</a>, and HCT will be able to work with
+  <a href="/+code/">The Bazaar</a>, and HCT will be able to work with
   packages based on it.</p>
 
 </tal:block>
@@ -46,7 +46,7 @@
         <td><b tal:content="context/rcstype/title">CVS</b>
             <b>(<span tal:replace="context/rcstype/name" />)</b></td>
       </tr>
-        <tal:block condition="python:context.rcstype.name=='CVS'">
+        <tal:block condition="context/rcstype/enumvalue:CVS">
           <tr>
             <td>CVS root:</td>
             <td tal:content="context/cvsroot">cvs root</td>
@@ -60,7 +60,7 @@
             <td tal:content="context/cvsbranch">cvs branch</td>
           </tr>
         </tal:block>
-        <tal:block condition="python:context.rcstype.name=='SVN'">
+        <tal:block condition="context/rcstype/enumvalue:SVN">
           <tr>
             <td>Subversion Repository:</td>
             <td tal:content="context/svnrepository">svn repo</td>

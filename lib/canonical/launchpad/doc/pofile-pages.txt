@@ -12,6 +12,7 @@ First, we need some imports.
     ...     ITranslationImportQueue, IPOTemplateSet, IDistributionSet,
     ...     ISourcePackageNameSet)
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from canonical.database.sqlbase import flush_database_updates
 
 All the tests will be submitted as comming from the No Privilege person.
 
@@ -95,7 +96,7 @@ It's time to test that we get the right message sets from the submitted form.
 
 We get the first entry that should be in the form, the one with id == 130.
 
-    >>> for potmsgset in pofile_view.getSelectedPOTMsgSet():
+    >>> for potmsgset in pofile_view._getSelectedPOTMsgSets():
     ...     if potmsgset.id == 130:
     ...         break
 
@@ -111,19 +112,10 @@ And as it's the first entry, its sequence number is also the right one.
 
 Test that the associated msgid is the one we want.
 
-    >>> pomsgset_view = pofile_view.getPOMsgSetViewFromPOTMsgSet(potmsgset)
+    >>> pomsgset_view = pofile_view._buildPOMsgSetView(potmsgset)
+    >>> pomsgset_view.initialize()
     >>> pomsgset_view.msgid
     u'evolution addressbook'
-
-How many lines does it have.
-
-    >>> pomsgset_view.max_lines_count
-    1
-
-And as it has only one line, it's not a multi line message set.
-
-    >>> pomsgset_view.is_multi_line
-    False
 
 It does not have a plural msgid.
 
@@ -132,30 +124,13 @@ It does not have a plural msgid.
 
 And thus, it only has one translation.
 
-    >>> pomsgset_view.translation_range
+    >>> pomsgset_view.pluralform_indices
     [0]
 
 Which is the one we wanted.
 
-    >>> pomsgset_view.getTranslation(0)
+    >>> pomsgset_view.getActiveTranslation(0)
     u'libreta de direcciones de Evolution'
-
-Now, we are going to test the tab index generator to be sure the TAB key
-will work as expected when navigating over the translation form.
-
-    >>> request = LaunchpadTestRequest(form={'show': 'all' })
-    >>> pofile_view = getView(pofile_es, '+translate', request)
-    >>> pofile_view.initialize()
-
-First time we call it, first position.
-
-    >>> pofile_view.generateNextTabIndex()
-    1
-
-Next time we call it, it's increased.
-
-    >>> pofile_view.generateNextTabIndex()
-    2
 
 It's time to check the submission of translations and the IPOFile statistics
 update.
@@ -171,16 +146,26 @@ But first, let's see current values.
     >>> pofile_es.rosettaCount()
     0
 
-Now we do the submit
+Now we do a submission with new translations:
+
+ - msgset_*_new are the translations we are adding.
+ - msgset_*_new_checkbox are the flags to tell us whether the translation
+   submitted in its corresponding msgset_*_new variable should be taken in
+   consideration (if True) or just ignored (False).
 
     >>> request = LaunchpadTestRequest(form={
     ...     'batch': '10',
-    ...     'start': '10',
-    ...     'show': 'untranslated',
+    ...     'start': '0',
+    ...     'show': 'all',
+    ...     'lock_timestamp': '2006-11-28 13:00:00 UTC',
     ...     'msgset_130': None,
-    ...     'msgset_130_es_translation_0': 'Foo',
+    ...     'msgset_130_es_translation_0_radiobutton':
+    ...         'msgset_130_es_translation_0_new',
+    ...     'msgset_130_es_translation_0_new': 'Foo',
     ...     'msgset_138': None,
-    ...     'msgset_138_es_translation_0': 'Bar',
+    ...     'msgset_138_es_translation_0_radiobutton':
+    ...         'msgset_138_es_translation_0_new',
+    ...     'msgset_138_es_translation_0_new': 'Bar',
     ...     'submit_translations': 'Save &amp; Continue'})
     >>> request.method = 'POST'
     >>> pofile_view = getView(pofile_es, '+translate', request)
@@ -195,10 +180,10 @@ And check again.
     >>> pofile_es.rosettaCount()
     1
 
-Also, we can see that we got redirected to next batch, that is the first one.
+Also, we can see that we got redirected to next batch.
 
     >>> pofile_view.request.response.getHeader('Location')
-    'http://127.0.0.1?start=0&show=untranslated'
+    'http://127.0.0.1?start=10'
 
 The messsage's sequence is the position of that message in latest imported
 template. We are going to test now what happens when we submit a potmsgset
@@ -222,8 +207,11 @@ their sequence is 0.
     ...     'batch': '10',
     ...     'start': '0',
     ...     'show': 'untranslated',
+    ...     'lock_timestamp': '2006-11-28 13:00:00 UTC',
     ...     'msgset_161': None,
-    ...     'msgset_161_es_translation_0': 'Foo',
+    ...     'msgset_161_es_translation_0_radiobutton':
+    ...         'msgset_161_es_translation_0_new',
+    ...     'msgset_161_es_translation_0_new': 'Foo',
     ...     'submit_translations': 'Save &amp; Continue'})
     >>> request.method = 'POST'
     >>> pofile_view = getView(pofile_es, '+translate', request)
@@ -235,8 +223,8 @@ And we can see that we didn't get errors.
     ...     pofile_es.language.code, pofile_es.variant)
     >>> pomsgset.active_texts
     [u'Foo']
-    >>> pofile_view.potmsgset_with_errors
-    []
+    >>> pofile_view.errors
+    {}
 
 Now, we are going to check the alternative language submission.
 
@@ -246,23 +234,24 @@ Now, we are going to check the alternative language submission.
     ...     'start': '10',
     ...     'field.alternative_language': 'fr',
     ...     'select_alternate_language': 'Change'})
-    >>> request.method = 'POST'
+    >>> request.method = 'get'
     >>> pofile_view = getView(pofile_es, '+translate', request)
     >>> pofile_view.initialize()
-    >>> pofile_view.request.response.getHeader('Location')
-    'http://127.0.0.1?start=10&alt=fr'
-
     >>> pofile_view.second_lang_code
-    u'fr'
+    'fr'
 
 Let's check that the upload form sets the right fields.
 
 To be sure that we are using the right entry from the import queue,
-we check that it's empty atm.
+we check that it contains only sample data entries.
 
     >>> translationimportqueue = getUtility(ITranslationImportQueue)
-    >>> len(translationimportqueue) == 0
-    True
+    >>> translationimportqueue.entryCount()
+    2
+    >>> for entry in translationimportqueue.getAllEntries():
+    ...     print entry.id, entry.content.filename
+    1 evolution-2.2-test.pot
+    2 pt_BR.po
 
 The FileUpload class needs a class with the attributes: filename, file and
 headers.
@@ -282,14 +271,14 @@ Now, we do the upload.
     >>> pofile_view = getView(pofile_es, '+upload', request)
     >>> pofile_view.initialize()
 
-As we can see, we have now one entry in our queue.
+As we can see, we have now one entry added to our queue.
 
-    >>> len(translationimportqueue) == 1
-    True
+    >>> translationimportqueue.entryCount()
+    3
 
 Get it and check that some attributes are set as they should.
 
-    >>> entry = translationimportqueue.get(1)
+    >>> entry = translationimportqueue.get(3)
     >>> entry.pofile == pofile_es
     True
 

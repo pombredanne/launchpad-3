@@ -15,7 +15,8 @@ from canonical.lp import initZopeless, READ_COMMITTED_ISOLATION
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.launchpad.interfaces import (
-    IShippingRequestSet, ShippingRequestPriority)
+    IShippingRequestSet, ShipItConstants, ShippingRequestPriority)
+from canonical.lp.dbschema import ShipItDistroRelease
 
 
 def parse_options(args):
@@ -27,7 +28,14 @@ def parse_options(args):
         dest='priority',
         default=None,
         action='store',
-        help='Export only orders with the given priority'
+        help='Export only requests with the given priority'
+        )
+    parser.add_option(
+        '--distrorelease',
+        dest='distrorelease',
+        default=None,
+        action='store',
+        help='Export only requests for CDs of the given distrorelease'
         )
 
     # Add the verbose/quiet options.
@@ -52,12 +60,25 @@ def main(argv):
             'Wrong value for argument --priority: %s' % options.priority)
         return 1
 
+    distrorelease = ShipItConstants.current_distrorelease
+    if options.distrorelease is not None:
+        try:
+            distrorelease = ShipItDistroRelease.items[
+                options.distrorelease.upper()]
+        except KeyError:
+            valid_names = ", ".join(
+                release.name for release in ShipItDistroRelease.items)
+            logger_obj.error(
+                'Invalid value for argument --distrorelease: %s. Valid '
+                'values are: %s' % (options.distrorelease, valid_names))
+            return 1
+
     ztm = initZopeless(dbuser=config.shipit.dbuser,
                        isolation=READ_COMMITTED_ISOLATION)
     execute_zcml_for_scripts()
 
     requestset = getUtility(IShippingRequestSet)
-    requestset.exportRequestsToFiles(priority, ztm)
+    requestset.exportRequestsToFiles(priority, ztm, distrorelease)
 
     logger_obj.info('Done.')
     return 0

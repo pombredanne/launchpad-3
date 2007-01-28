@@ -377,7 +377,7 @@ wrong.
     ...
     The message you sent included commands to modify the bug report, but
     your OpenPGP key isn't imported into Launchpad. Please go to
-    http://launchpad.dev/people/name12/+editpgpkeys to import your key.
+    http://launchpad.dev/~name12/+editpgpkeys to import your key.
     ...
 
 The same will happen if we send the same email without signing it:
@@ -613,8 +613,8 @@ If we specify a non-existant user, an error message will be sent:
 
 unsubscribe [$name|$email]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
-Unsubscribes yourself or someone else from the bug.
-If you don't specify a name or email, the sender of the email will be
+Unsubscribes yourself or someone else from the bug.  If you don't
+specify a name or email, the sender of the email will be
 unsubscribed. Examples:
 
     >>> submit_commands(bug_four, 'unsubscribe sabdfl')
@@ -629,6 +629,51 @@ unsubscribed. Examples:
     >>> 'Sample Person' in [subscription.person.displayname
     ...                     for subscription in bug_four.subscriptions]
     False
+
+Unsubscribing from a bug also unsubscribes you from its duplicates. To
+demonstrate, let's first make no_privs an indirect subscriber from bug
+#5, by subscribing him directly to a dupe of bug #5, bug #6.
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+
+    >>> login("no-priv@canonical.com")
+
+    >>> no_priv = getUtility(IPersonSet).getByName("no-priv")
+    >>> bug_five = bugset.get(5)
+    >>> bug_six = bugset.get(6)
+    >>> bug_six.duplicateof == bug_five
+    True
+
+    >>> sorted([subscriber.displayname
+    ...  for subscriber in bug_five.getIndirectSubscribers()])
+    [u'Foo Bar', u'Sample Person']
+
+    >>> bug_six.subscribe(no_priv)
+    <BugSubscription...>
+
+    >>> sorted([subscriber.displayname
+    ...  for subscriber in bug_five.getIndirectSubscribers()])
+    [u'Foo Bar', u'No Privileges Person', u'Sample Person']
+
+Now, if we unsubscribe no-priv from bug #5, he will actually get
+unsubscribed from bug #6, thus no longer being indirectly subscribed to
+bug #5.
+
+    >>> bug_six.isSubscribed(no_priv)
+    True
+
+    >>> submit_commands(bug_five, "unsubscribe")
+
+    >>> bug_six.isSubscribed(no_priv)
+    False
+
+    >>> sorted([subscriber.displayname
+    ...  for subscriber in bug_five.getIndirectSubscribers()])
+    [u'Foo Bar', u'Sample Person']
+
+(Log back in as test@canonical.com for the tests that follow.)
+
+    >>> login("test@canonical.com")
 
 If we specify a non-existant user, an error message will be sent:
 
@@ -914,7 +959,7 @@ The user is a package bug contact
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, ISourcePackageNameSet, IPersonSet)
+    ...     IDistributionSet, ISourcePackageNameSet)
     >>> from canonical.launchpad.database.packagebugcontact import (
     ...     PackageBugContact)
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')

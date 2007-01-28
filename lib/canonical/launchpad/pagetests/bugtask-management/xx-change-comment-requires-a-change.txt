@@ -3,7 +3,7 @@ change was actually made.
 
     >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
 
-    >>> browser.open("http://localhost:9000/products/firefox/+bug/1/+editstatus")
+    >>> browser.open("http://localhost:9000/firefox/+bug/1/+editstatus")
     >>> browser.getControl("Comment on this change (optional)").value = (
     ...     "I didn't make a change!")
     >>> browser.getControl("Save Changes").click()
@@ -23,4 +23,4 @@ Let's try again, and actually change something.
 (Success redirects to the bug page.)
 
     >>> print browser.url
-    http://localhost:9000/products/firefox/+bug/1
+    http://localhost:9000/firefox/+bug/1

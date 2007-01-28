@@ -4,9 +4,9 @@ an already uploaded one.
 
     >>> browser.addHeader(
     ...     'Authorization', 'Basic guilherme.salgado@canonical.com:zeca')
-    >>> browser.open('http://launchpad.dev/people/salgado/+editsshkeys')
+    >>> browser.open('http://launchpad.dev/~salgado/+editsshkeys')
     >>> browser.url
-    'http://launchpad.dev/people/salgado/+editsshkeys'
+    'http://launchpad.dev/~salgado/+editsshkeys'
 
     >>> print browser.contents
     <!DOCTYPE...
@@ -64,7 +64,7 @@ format.
 
 Launchpad administrators are not allowed to poke at other user's ssh keys.
 
-    >>> admin_browser.open('http://launchpad.dev/people/salgado/+editsshkeys')
+    >>> admin_browser.open('http://launchpad.dev/~salgado/+editsshkeys')
     Traceback (most recent call last):
     ...
     Unauthorized: ...
@@ -73,7 +73,7 @@ Launchpad administrators are not allowed to poke at other user's ssh keys.
 Salgado will now remove one of his ssh keys from Launchpad.
 
     >>> browser.url
-    'http://launchpad.dev/people/salgado/+editsshkeys'
+    'http://launchpad.dev/~salgado/+editsshkeys'
 
     >>> browser.getControl('Remove', index=0).click()
     >>> soup = BeautifulSoup(browser.contents)
@@ -100,7 +100,7 @@ belong to him, it will fail with an error message.
 Similarly, it's not possible to remove an unspecified ssh key, although in
 this case we'll raise an UnexpectedFormData.
 
-    >>> browser.open('http://launchpad.dev/people/salgado/+editsshkeys')
+    >>> browser.open('http://launchpad.dev/~salgado/+editsshkeys')
     >>> browser.getControl(name='key', index=0).value = ''
     >>> browser.getControl('Remove', index=0).click()
     Traceback (most recent call last):

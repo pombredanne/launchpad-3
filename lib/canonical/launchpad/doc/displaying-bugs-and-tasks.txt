@@ -158,9 +158,6 @@ Let's see some examples:
   >>> render_bugtask_status_elsewhere(bugtaskset.get(2))
   'filed in 2 other places'
 
-  >>> render_bugtask_status_elsewhere(bugtaskset.get(3))
-  'filed in 3 other places'
-
 Let's take a random task related to task 2, mark it Fixed, and see how the
 statuselsewhere value is affected:
 

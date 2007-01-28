@@ -63,9 +63,7 @@
 
     <br />
 
-     <tal:navigation
-          tal:condition="batch"
-          replace="structure view/batchnav/@@+navigation-links" />
+     <tal:navigation replace="structure view/batchnav/@@+navigation-links-upper" />
 
      <form name="queue_items_action" action="" method="POST">
      <table class="listing sortable" tal:condition="batch"
@@ -117,7 +115,7 @@
                      title="Upgrader"/>
                 <img tal:condition="queue/containsDdtp"
                      alt="[Debian Description Translation Project Indexes]"
-                     src="/@@/topic_icon.gif"
+                     src="/@@/topic"
                      title="Debian Description Translation Project Indexes"/>
               </td>
               <td tal:content="queue/displayversion">2.0.17-6</td>
@@ -126,7 +124,7 @@
                 2006-03-15
               </td>
               <td>[<a tal:attributes="
-                href queue/changesfile/url">view</a>]
+                href queue/changesfile/http_url">view</a>]
               </td>
            </tr>
          </tal:batch>
@@ -154,13 +152,56 @@
        is empty.
      </div>
 
-     <tal:navigation
-          tal:condition="batch"
-          replace="structure view/batchnav/@@+navigation-links" />
+     <tal:navigation replace="structure view/batchnav/@@+navigation-links-lower" />
 
      </tal:batch>
   </div>
 
+</div>
+
+<div metal:fill-slot="help">
+  <p>
+    The packages incorporation work-flow within a distrorelease is
+    represented as a pipeline.
+  </p>
+  <p>
+    The pipeline can process three types of packages: Sources, which
+    contain one uploaded source package each submitted by the
+    developers; Builds, which can contain, at least, one binary packages
+    and optionally, one or more custom packages, it's resulted of the
+    build of a published source; and Customs, a single custom package.
+  </p>
+  <p>
+    Custom uploads are special files, usually a tarball, that are not
+    targeted to be build normally (i.e, they are not sources, neither
+    binaries), instead they have specific contents to be directly
+    processed by one of the available custom processors in
+    Launchpad. Currently, the following custom processors are offered:
+    Installer, Dist-Upgrader, DDTP and Translations.
+  </p>
+  <p>
+    All incoming packages tend to go for the stable states, DONE or
+    REJECTED, the end of the pipeline, which means that the package
+    was completely incorporated or excluded, respectively, in the
+    distrorelease in question.
+  </p>
+  <p>
+    All incoming packages, essentially, start in NEW stage. Already
+    known packages, which previous versions are already incorporated,
+    are automatically moved to ACCEPTED stage, the remaining ones
+    need manual approval of the archive administrators for this
+    distrorelease to continue.
+  </p>
+  <p>
+    Packages with some policy restrictions, like post-release updates
+    and security updates, also wait manual approval as UNAPPROVED.
+  </p>
+  <p>
+    Once a package is in ACCEPTED stage, it waits the distrorelease
+    periodic publication cycle to happen, then sources will get
+    published and will start building and builds and customs will be
+    published in the archive appropriately, ending up in DONE.
+  </p>
 </div>
 
 </body>

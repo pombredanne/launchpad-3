@@ -1,8 +1,8 @@
 Our cookies need to have their domain attribute set to ensure that they
 are sent to other vhosts in the same domain.
 
->>> browser.open('http://features.launchpad.dev/+login')
->>> browser.getControl('E-mail').value = 'foo.bar@canonical.com'
+>>> browser.open('http://blueprints.launchpad.dev/+login')
+>>> browser.getControl('E-mail', index=0).value = 'foo.bar@canonical.com'
 >>> browser.getControl('Password').value = 'test'
 >>> browser.getControl('Log In').click()
 >>> 'Logged in as' in browser.contents

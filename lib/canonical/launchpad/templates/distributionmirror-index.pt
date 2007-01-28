@@ -54,14 +54,7 @@
 
       <tal:no-last-probe condition="not: probe">
         <p tal:condition="context/isOfficial">
-          <span tal:condition="context/http_base_url">
-            This mirror has never been verified.
-          </span>
-          <span tal:condition="not: context/http_base_url"
-                class="informational message">
-            This mirror can't be verified because it doesn't have an HTTP base
-            URL.
-          </span>
+          This mirror has never been verified.
         </p>
 
         <p tal:condition="not: context/isOfficial">
@@ -77,7 +70,7 @@
 
           <tal:is-owner condition="context/required:launchpad.Edit">
             You can see the 
-            <a tal:attributes="href probe/log_file/url">log file</a> of the
+            <a tal:attributes="href probe/log_file/http_url">log file</a> of the
             probe.
           </tal:is-owner>
         </p>
@@ -85,24 +78,32 @@
     </tal:last-probe>
 
     <tal:has-last-probe condition="context/last_probe_record">
-      <tal:comment condition="nothing">
-        XXX: This use of "python:" here is to workaround
-        https://launchpad.net/products/launchpad/+bug/5768
-      </tal:comment>
-      <tal:archive-mirror condition="python: context.content.name == 'ARCHIVE'"
+      <tal:archive-mirror condition="context/content/enumvalue:ARCHIVE"
         define="arch_releases view/getSummarizedMirroredArchReleases;
                 source_releases view/getSummarizedMirroredSourceReleases">
         <metal:mirror-content
           use-macro="context/@@+distributionmirror-macros/archive-mirror-content" />
       </tal:archive-mirror>
 
-      <tal:release-mirror condition="python: context.content.name == 'RELEASE'"
+      <tal:release-mirror condition="context/content/enumvalue:RELEASE"
         define="flavours_by_releases view/getCDImageMirroredFlavoursByRelease">
         <metal:mirror-content
           use-macro="context/@@+distributionmirror-macros/release-mirror-content" />
       </tal:release-mirror>
     </tal:has-last-probe>
 
+</div>
+
+<div metal:fill-slot="help">
+  <p>
+    Archive mirrors are used to get Ubuntu updates; they are the repositories
+    used by the Synaptic Package Manager.
+  </p>
+  <p>
+    Release mirrors include the latest CD images that can be used to install
+    Ubuntu on your computer or to try it without changing your computer
+    at all.
+  </p>
 </div>
 
 </body>

@@ -12,6 +12,8 @@
 
     <!-- Javascript -->
     <resource name="launchpad.js" file="../templates/launchpad.js" />
+    <resource name="SignalWrapper.js" file="../templates/SignalWrapper.js" />
+    <resource name="lpmenu.js" file="../templates/lpmenu.js" />
     <resource name="sorttable.js" file="../../../contrib/templates/sorttable.js" />
 
     <!-- Missing images -->
@@ -35,6 +37,7 @@
     <resource name="arrowBottom" file="../images/arrowBottom.gif" />
     <resource name="arrowDownAlternative" file="../images/arrowDownAlternative.gif" />
     <resource name="arrowDown" file="../images/arrowDown.gif" />
+    <resource name="arrowRight" file="../images/arrowRight.gif" />
     <resource name="arrowTop" file="../images/arrowTop.gif" />
     <resource name="arrowUp" file="../images/arrowUp.gif" />
     <resource name="build-chrootwait" file="../images/build-chrootwait.png" />
@@ -55,7 +58,9 @@
     <resource name="bug-remote" file="../images/bug-remote.png" />
     <resource name="bug-unknown" file="../images/bug.png" />
     <resource name="bullet" file="../images/bullet.gif" />
+    <resource name="copy" file="../images/copy.png" />
     <resource name="cve" file="../images/cve.ico" />
+    <resource name="demo" file="../images/demo.png" />
     <resource name="distribution" file="../images/nyet.png" />
     <resource name="distribution-mini" file="../images/nyet-mini.png" />
     <resource name="distribution-heading" file="../images/nyet-heading.png" />
@@ -87,6 +92,10 @@
     <resource name="person-mini" file="../images/nyet-mini.png" />
     <resource name="person-heading" file="../images/nyet-heading.png" />
     <resource name="person-mugshot" file="../images/nyet-mugshot.png" />
+    <resource name="person-inactive" file="../images/nyet.png" />
+    <resource name="person-inactive-mini" file="../images/nyet-mini.png" />
+    <resource name="person-inactive-heading" file="../images/nyet-heading.png" />
+    <resource name="person-inactive-mugshot" file="../images/nyet-mugshot.png" />
     <resource name="product" file="../images/product_icon.gif" />
     <resource name="product-mini" file="../images/nyet-mini.png" />
     <resource name="product-heading" file="../images/nyet-heading.png" />
@@ -136,11 +145,11 @@
     <resource name="ubuntu-header-image4.png" file="../images/ubuntu-header-image4.png" />
 
     <!-- Shipit KUbuntu images (from www.kubuntu.org) -->
-    <resource name="kubuntu-header-bg-dapper.png"
-        file="../images/kubuntu-header-bg-dapper.png" />
-    <resource name="kubuntu-footer-bg-dapper.jpg"
-        file="../images/kubuntu-footer-bg-dapper.jpg" />
-    <resource name="kubuntu-header.png" file="../images/kubuntu-header.png" />
+    <resource name="kubuntu-header-bg"
+        file="../images/kubuntu-header-bg.png" />
+    <resource name="kubuntu-footer-bg"
+        file="../images/kubuntu-footer-bg.png" />
+    <resource name="kubuntu-header" file="../images/kubuntu-header.png" />
     <resource name="kubuntu-tab_off_ns1.gif" file="../images/kubuntu-tab_off_ns1.gif" />
     <resource name="kubuntu-tab_off_ns2.gif" file="../images/kubuntu-tab_off_ns2.gif" /> 
     <resource name="kubuntu-tab_on_ns2.gif" file="../images/kubuntu-tab_on_ns2.gif" />

@@ -40,27 +40,30 @@
 
   <h2>Source package</h2>
 
-  <ul>
-    <li class="packages">
-      <a tal:define="spackage context/distributionsourcepackagerelease"
-         tal:content="spackage/title"
-         tal:attributes="href spackage/fmt:url">
-         SOURCEPACKAGE</a>
-    </li>
-  </ul>
+  <div id="source">
+    <ul>
+      <li class="packages">
+        <a tal:define="spackage context/distributionsourcepackagerelease"
+           tal:content="spackage/title"
+           tal:attributes="href spackage/fmt:url">SOURCEPACKAGE</a>
+      </li>
+    </ul>
+  </div>
 
   <h2>File download</h2>
 
-  <ul class="packages" tal:condition="context/files">
-    <li tal:repeat="file context/files">
-      <a tal:content="file/url/filename"
-         tal:attributes="href file/url/fileurl"></a>
-      (<span tal:replace="file/libraryfile/content/filesize/fmt:bytes" />)
-    </li>
-  </ul>
-  <p tal:condition="not: context/files">
-    There are no downloadable files for this binary package.
-  </p>
+  <div id="files">
+    <ul class="packages" tal:condition="context/files">
+      <li tal:repeat="file context/files">
+        <a tal:content="file/libraryfile/filename"
+           tal:attributes="href file/libraryfile/http_url"></a>
+        (<span tal:replace="file/libraryfile/content/filesize/fmt:bytes" />)
+      </li>
+    </ul>
+    <p tal:condition="not: context/files">
+      There are no downloadable files for this binary package.
+    </p>
+  </div>
 
 </div>
 </body>

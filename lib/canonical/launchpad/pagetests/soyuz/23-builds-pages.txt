@@ -1,32 +1,80 @@
-
 Those pages are based in the BuildRecordView class and
 template/builds-list.pt. Basically they have a buildstate selector
 action via HTTP GET and present a batched list of build records
 according the selected buildstate, by default All
 
-  >>> def check_optional_search(contents):
+  >>> def check_builds_options(contents):
   ...     """Check if the label and/or the field for the optional
   ...     "names containing" search are present in the given page contents.
   ...
-  ...     Return "present" if they're both here, "not present" if they're
-  ...     both not here, and "mismatch" if only one or the other is here.
-  ...     """
+  ...     Check the presence of "build_state" selection widget via assertion.
   ...
+  ...     Check the presence of "Update" submit button via assertion.
+  ...
+  ...     Return "State and Name present" if the page provide both parameters,
+  ...     "State present, Name not present" if the page only permits browse
+  ...     by state and "mismatch" if the page, erroneously,  provide only
+  ...     part of the required arguments to enable filter by name.
+  ...     """
+  ...     assert find_tag_by_id(contents, 'build_state') is not None
+  ...     assert '<input type="submit" value="Update" />' in contents
+  ...
+  ...     field_present = find_tag_by_id(contents, 'build_text')
   ...     label_present = "with names containing:" in contents
-  ...     field_present = '<input id="build_text"' in contents
+  ...
   ...     if label_present and field_present:
-  ...         return "present"
+  ...         return "State and Name present"
   ...     elif not label_present and not field_present:
-  ...         return "not present"
+  ...         return "State present, Name not present"
   ...     else:
   ...         return "mismatch"
 
+Ensure all IBuildRecordView (+builds) pages are provided by the same class,
+i.e., they provide the expected arguments/features in different contexts:
+
+For Distribution, it's possible to filter build results by state and name:
+
+  >>> browser.open("http://launchpad.dev/ubuntu")
+  >>> browser.getLink("Builds").click()
+  >>> print check_builds_options(browser.contents)
+  State and Name present
+
+For Distrorelease, same as Distribution:
+
+  >>> browser.open("http://launchpad.dev/ubuntu/hoary")
+  >>> browser.getLink("View Builds").click()
+  >>> print check_builds_options(browser.contents)
+  State and Name present
+
+For DistroArchRelease, same as Distribution:
+
+  >>> browser.open("http://launchpad.dev/ubuntu/hoary/i386")
+  >>> browser.getLink("View Builds").click()
+  >>> print check_builds_options(browser.contents)
+  State and Name present
+
+For Builder, same as Distribution:
+
+  >>> browser.open("http://launchpad.dev/+builds/bob")
+  >>> browser.getLink("Build History").click()
+  >>> print check_builds_options(browser.contents)
+  State and Name present
+
+For SourcePackage, it's only possible to filter by state.
+
+  >>> browser.open(
+  ...   "http://launchpad.dev/ubuntu/hoary/+source/pmount")
+  >>> browser.getLink("View Builds").click()
+  >>> print check_builds_options(browser.contents)
+  State present, Name not present
+
+
 Check the contents of the distro builds list page.
 
-  >>> browser.open("http://localhost/distros/ubuntu/+builds")
+  >>> browser.open("http://launchpad.dev/ubuntu/+builds")
 
 Check the presence of some build titles, specially the 'not
-initialized' one (fix bug #52704)
+initialised' one (fix bug #52704)
 
  * SUPERSEDED and NEEDSBUILD builds contain title
  * MANUALDEWAIT builds contain: title, dependencies-line, start,
@@ -34,35 +82,36 @@ initialized' one (fix bug #52704)
 
   >>> browser.getControl(name="build_state").value = ['all']
   >>> browser.getControl("Update").click()
-  >>> browser.contents
-  '...NEEDSBUILD...
+  >>> print find_tags_by_class(browser.contents, 'builds_list')[0].renderContents()
+  <...
+  ...NEEDSBUILD...
   ...i386 build of at 0.00 in ubuntu warty RELEASE...
   ...SUPERSEDED...
   ...i386 build of at 0.00 in ubuntu warty RELEASE...
   ...SUPERSEDED...
   ...i386 build of linux-source-2.6.15 2.6.15.3 in ubuntu warty RELEASE...
+
+  # We had too many results. Some of them are on the second batch.
+  >>> browser.getLink("Next").click()
+  >>> print find_tags_by_class(browser.contents, 'builds_list')[0].renderContents()
+  <...
   ...SUPERSEDED...
   ... i386 build of netapplet 0.99.6-1 in ubuntu warty RELEASE...
   ...MANUALDEPWAIT...
   ...i386 build of libstdc++ b8p in ubuntu hoary RELEASE...
   ...Missing Dependencies...
   ...cpp (&gt;= 4:4.0.1-3), gcc-4.0 (&gt;= 4.0.1-2)...
-  ...Built started:...
+  ...Build started:...
   ...2006-02-27 23:53:59 UTC...
   ...Bob The Builder...
   ...Build finished:...
   ...2006-02-28 00:00:01 UTC...
-  ...six minutes...see the log...'
+  ...six minutes...see the log...
 
   >>> browser.getControl(name="build_state").value = ['built']
   >>> browser.getControl("Update").click()
   >>> browser.contents
   '...i386 build of mozilla-firefox 0.9 in ubuntu warty...'
-
-On this page, the "names containing" search field appears.
-
-  >>> print check_optional_search(browser.contents)
-  present
 
 Check the results of some searches on build state.
 
@@ -82,25 +131,76 @@ Check the results of some searches on build state.
   >>> browser.contents
   '...i386 build of pmount 0.1-1 in ubuntu warty...'
 
-Since the other pages tends to present a similar result and use, in
-fact, the same mechanisms, we simply check if they render with no
-tracebacks:
-
-  >>> browser.open("http://localhost/distros/ubuntu/hoary/+builds")
-  >>> browser.open("http://localhost/distros/ubuntu/hoary/+source/pmount/+builds")
-
-We check that the "names containing" field doesn't appear on the build list
-for an individual package.
-
-  >>> print check_optional_search(browser.contents)
-  not present
-
-  >>> browser.open("http://localhost/+builds/+build/7")
 
 Checking UnexpectedFormData on unknown build_state values (bug #41104)
 
-  >>> user_browser.handleErrors = False
-  >>> browser.open("http://localhost/+builds/bob/+history?build_state=foo")
+Pagetest infrastructure won't allow us to pass a not presented field
+to the form:
+
+  >>> browser.open("http://launchpad.dev/+builds/bob/+history")
+  >>> browser.getControl(name="build_state").value = ['foo']
+  Traceback (most recent call last):
+  ...
+  ItemNotFoundError: insufficient items with name 'foo'
+
+However even if we build an URL with a incorrect value, code is prepared
+to raise the correct exception:
+
+  >>> browser.open(
+  ...     "http://launchpad.dev/+builds/bob/+history?build_state=foo")
   Traceback (most recent call last):
   ...
   UnexpectedFormData: No suitable state found for value "foo"
+
+
+Check if page still working for sourcepackages with no builds. (bug #62545)
+
+  >>> browser.open(
+  ...    "http://launchpad.dev/ubuntu/hoary/+source/pmount/+builds")
+  >>> browser.getControl(name="build_state").value = ['all']
+  >>> browser.getControl("Update").click()
+
+  >>> print find_tag_by_id(browser.contents, 'empty-result')
+   <div id="empty-result">
+           No builds for pmount in Test Distro Hoary.
+   </div>
+
+
+Checking that we show the right message for a distribution that
+doesn't have any builds.
+
+  >>> browser.open("http://launchpad.dev/debian/+builds")
+  >>> browser.contents
+  '...No Currently building builds for Debian GNU/Linux...'
+
+  >>> browser.getControl(name="build_state").value = ['all']
+  >>> browser.getControl("Update").click()
+  >>> browser.contents
+  '...No builds for Debian GNU/Linux...'
+
+Succesfully built Build page provides link(s) to the produced
+binaries independent of their context, the raw IBinaryPackageRelease
+content class/page.
+
+Let's find a build with reasonable contents:
+
+  >>> browser.open("http://launchpad.dev/ubuntu/+builds")
+  >>> browser.getControl(name="build_state").value = ['built']
+  >>> browser.getControl("Update").click()
+  >>> browser.getLink(
+  ...     'i386 build of mozilla-firefox 0.9 in ubuntu '
+  ...     'warty RELEASE').click()
+  >>> browser.url
+  'http://launchpad.dev/+builds/+build/2'
+
+This build produced one BinaryPackage, called 'mozilla-firefox 0.9',
+which is presented in the right portlet, called 'Resulting Binaries'.
+Let's just check if the page is presented without errors (see bug
+#76163):
+
+  >>> browser.getLink('mozilla-firefox 0.9').click()
+  >>> browser.url
+  'http://launchpad.dev/+builds/+build/2/mozilla-firefox'
+
+XXX cprov 20061217: this pages is a bad joke, it simply links to
+binaries mentioned in package relationship without any verification.

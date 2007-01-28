@@ -14,7 +14,7 @@
     you think this is incorrect, please send an email to
     <a href="mailto:rosetta-users@lists.ubuntu.com">the Rosetta
     mailing list</a> or file a bug in our
-    <a href="/products/rosetta/+bugs">bug
+    <a href="/rosetta/+bugs">bug
     tracking system</a> so we can look into the problem. Thanks.
     </p>
   </tal:block>
@@ -73,9 +73,11 @@
         <div tal:replace="structure potemplate/@@+preferred-chart" />
 
         <div align="right">
-          [ <a href="/rosetta/prefs">Choose Preferred Languages...</a> 
-	  &mdash; <a tal:attributes="href potemplate/fmt:url">View Template 
-	  &amp; All Languages...</a> ]
+          [ <a href="/+editmylanguages">Choose Preferred Languages...</a> 
+            &mdash;
+            <a tal:attributes="href potemplate/fmt:url">
+              View Template &amp; All Languages...</a> 
+          ]
         </div>
 
       </div>

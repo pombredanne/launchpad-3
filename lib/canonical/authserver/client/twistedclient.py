@@ -17,12 +17,6 @@ class TwistedAuthServer:
     def authUser(self, loginID, sshaDigestedPassword):
         return self.proxy.callRemote('authUser', loginID, sshaDigestedPassword)
 
-    def createUser(self, loginID, sshaDigestedPassword, displayname,
-                   emailAddresses):
-        return self.proxy.callRemote('createUser', loginID,
-                                     sshaDigestedPassword, displayname,
-                                     emailAddresses)
-
     def changePassword(self, loginID, sshaDigestedPassword,
                        newSshaDigestedPassword):
         return self.proxy.callRemote('changePassword', loginID,

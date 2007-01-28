@@ -48,7 +48,8 @@ pretend to be logged in as Foo Bar:
 Then, let's simulate selecting the "me" radio button, to assign the
 bug to the currently logged-in user:
 
-  >>> request = TestRequest(form={'field.assignee.option': 'assign_to_me'})
+  >>> request = TestRequest(form={
+  ...     'field.assignee.option': 'field.assignee.assign_to_me'})
   >>> widget = BugTaskAssigneeWidget(context, None, request)
 
 Currently, the bugtask is not assigned to the current user:
@@ -65,7 +66,7 @@ But it is assigned to another user:
   True
 
   >>> widget.getAssigneeDisplayValue()
-  u'mark@hbd.com'
+  u'Mark Shuttleworth (sabdfl)'
 
 The widget has input:
 
@@ -105,7 +106,25 @@ Assigning the bug to someone else
 To assign the bug to someone else, select the "assign_to" radio
 option.
 
-  >>> request.form = {'field.assignee.option': 'assign_to'}
+This time we use a different prefix than the standard 'field'.
+
+  >>> request.form = {'foo.assignee.option': 'foo.assignee.assign_to'}
+
+In order to tell the widget about the new prefix, we need to call
+setPrefix.
+
+  >>> widget.name
+  'field.assignee'
+  >>> widget.setPrefix('foo')
+  >>> widget.name
+  'foo.assignee'
+
+The chooser widget got its name updated as well.
+
+  >>> widget.assignee_chooser_widget.name
+  'foo.assignee'
+  >>> widget.assignee_chooser_widget.onKeyPress
+  "selectWidget('foo.assignee.assign_to', event)"
 
 If this option is selected, but no value is entered in
 "field.assignee", validation will fail:
@@ -118,7 +137,7 @@ If this option is selected, but no value is entered in
 Likewise, if a non-existent field.assignee is provided, the validation
 will fail:
 
-  >>> request.form['field.assignee'] = 'name'
+  >>> request.form['foo.assignee'] = 'name'
   >>> widget.validate()
   Traceback (most recent call last):
   ...
@@ -132,7 +151,7 @@ Note, in this case, that the widget will properly select the
 
 Let's supply a field.assignee so that the widget validation succeeds:
 
-  >>> request.form['field.assignee'] = 'name12'
+  >>> request.form['foo.assignee'] = 'name12'
   >>> widget.validate()
 
 Now, the bugtask is assigned to the current user:
@@ -146,7 +165,7 @@ Which means it's not assigned to another user:
   False
 
   >>> widget.getAssigneeDisplayValue()
-  u'foo.bar@canonical.com'
+  u'Foo Bar (name16)'
 
 The widget has input:
 
@@ -187,7 +206,7 @@ If we were to resubmit the form, without making any changes, the
 assignee would remain unchanged, so the input value is effectively the
 value of the current assignee:
 
-  >>> request.form = {'field.assignee.option' : 'assigned_to'}
+  >>> request.form = {'foo.assignee.option' : 'foo.assignee.assigned_to'}
   >>> widget.getInputValue().name == 'name12'
   True
 
@@ -197,7 +216,9 @@ Assigning the bug to noone
 Lastly, a bug can be put "up for grabs" again by selecting the
 "assign_to_nobody" option.
 
-  >>> request.form = {'field.assignee.option': 'assign_to_nobody'}
+  >>> widget.setPrefix('field')
+  >>> request.form = {
+  ...     'field.assignee.option': 'field.assignee.assign_to_nobody'}
 
   >>> widget.validate()
 

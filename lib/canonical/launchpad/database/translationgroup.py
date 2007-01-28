@@ -13,7 +13,7 @@ from sqlobject import (
 from canonical.launchpad.interfaces import (
     ILanguageSet, ITranslationGroup, ITranslationGroupSet, NotFoundError)
 
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, quote
 from canonical.database.constants import DEFAULT
 
 from canonical.launchpad.database.translator import Translator
@@ -95,4 +95,14 @@ class TranslationGroupSet:
             title=title,
             summary=summary,
             owner=owner)
+
+    def getByPerson(self, person):
+        """See ITranslationGroupSet."""
+        return TranslationGroup.select("""
+            Translator.translationgroup = TranslationGroup.id AND
+            Translator.translator = TeamParticipation.team AND
+            TeamParticipation.person = %s
+            """ % quote(person),
+            clauseTables=["TeamParticipation", "Translator"],
+            orderBy="TranslationGroup.title")
 

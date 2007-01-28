@@ -1,0 +1,277 @@
+= ImageChange/ImageAdd widget =
+
+In Launchpad we have images associated with people, products, distributions,
+etc, and we want to allow people to have full control over their images. That
+is, they must be able to upload a new image and delete (or keep) an existing 
+one. For this we created this widget, which can be embeded into any form we 
+want, which doesn't require us to add any submit buttons to indicate that the
+image should be kept, deleted or changed.
+
+The widget is composed by a RadioWidget and a FileWidget, where the radio
+specifies the action that should be performed (keep the existing image, change
+back to the default image or change it to an user-uploaded one) and the
+FileWidget gives us the user-uploaded file, in case there is one.
+
+Whenever you have a form in which you want to use the image widget, you have
+to explicitly use either ImageChangeWidget or ImageAddWidget. The former is
+for edit forms and the latter for add forms.
+
+Let's use Salgado as an example here, since he hasn't uploaded a hackergotchi
+yet.
+
+    >>> from canonical.launchpad.interfaces import IPerson, IPersonSet
+    >>> salgado = getUtility(IPersonSet).getByName('salgado')
+    >>> salgado.gotchi is None
+    True
+
+== The ImageChange/ImageAdd widget ==
+
+The only difference between them is that the ImageAddWidget has a different
+set of labels for its options, so I'll only demonstrate the ImageChangeWidget
+here.
+
+Since Salgado has no hackergotchi, the widget will display the default
+no-hackergotchi image and the 'Keep' radio button will be selected. The
+other radio button allows the user to upload a new image.
+
+    >>> from zope.publisher.browser import TestRequest
+    >>> from canonical.widgets.image import ImageChangeWidget
+    >>> person_gotchi = IPerson['gotchi'].bind(salgado)
+    >>> widget = ImageChangeWidget(person_gotchi, TestRequest())
+
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> html = widget()
+    >>> print BeautifulSoup(html).find('img').get('src')
+    /@@/nyet-mugshot
+
+    >>> def print_radio_items(html):
+    ...     soup = BeautifulSoup(html)
+    ...     for input in soup('input', {'type': 'radio'}):
+    ...         item = input.get('value')
+    ...         if input.get('checked'):
+    ...             item += ': SELECTED'
+    ...         else:
+    ...             item += ': NOT SELECTED'
+    ...         print item
+    >>> print_radio_items(html)
+    keep: SELECTED
+    change: NOT SELECTED
+
+
+If we set any random file as salgado's hackergotchi, we'll see it there, as
+well as an option to delete the image that was just uploaded.
+
+    >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
+    >>> login('guilherme.salgado@canonical.com')
+    >>> mugshot = getUtility(ILibraryFileAliasSet)[53]
+    >>> salgado.gotchi = mugshot
+
+    # Need to create a new widget instance since we changed our context
+    # manually.
+    >>> widget = ImageChangeWidget(person_gotchi, TestRequest())
+
+    >>> html = widget()
+    >>> mugshot.getURL() == BeautifulSoup(html).find('img').get('src')
+    True
+
+    >>> print_radio_items(html)
+    keep: SELECTED
+    delete: NOT SELECTED
+    change: NOT SELECTED
+
+
+Now we'll stuff values in our request to simulate a user playing with the
+widget. Let's see how it reacts.
+
+First, let's tell it to keep the existing image.
+
+    >>> from canonical.launchpad.fields import KEEP_SAME_IMAGE
+    >>> form = {'field.gotchi.action': 'keep'}
+    >>> widget = ImageChangeWidget(person_gotchi, TestRequest(form=form))
+    >>> widget.getInputValue() == KEEP_SAME_IMAGE
+    True
+
+Then we tell it to delete the existing one.
+
+    >>> form = {'field.gotchi.action': 'delete'}
+    >>> widget = ImageChangeWidget(person_gotchi, TestRequest(form=form))
+    >>> widget.getInputValue() is None
+    True
+
+And now we change it to a random image.
+
+    >>> import canonical.launchpad
+    >>> import os
+    >>> from StringIO import StringIO
+    >>> mugshot_file_name = os.path.join(
+    ...     os.path.dirname(canonical.launchpad.__file__),
+    ...     'pagetests/standalone/mypng.png')
+    >>> mugshot = StringIO(open(mugshot_file_name, 'r').read())
+    >>> mugshot.filename = 'mypng.png'
+    >>> form = {'field.gotchi.action': 'change',
+    ...         'field.gotchi.image': mugshot}
+    >>> widget = ImageChangeWidget(person_gotchi, TestRequest(form=form))
+    >>> fileupload = widget.getInputValue()
+    >>> fileupload.filename
+    u'mypng.png'
+    >>> fileupload.content.filesize == mugshot.len
+    True
+
+In order for this widget to work on add forms, we need to make sure it works
+when its field is bounded to an object that doesn't have the attribute that
+the field represents.
+
+    >>> personset_gotchi = IPerson['gotchi'].bind(getUtility(IPersonSet))
+    >>> form = {'field.gotchi.action': 'keep'}
+    >>> widget = ImageChangeWidget(personset_gotchi, TestRequest(form=form))
+    >>> widget.getInputValue() == KEEP_SAME_IMAGE
+    True
+    >>> print_radio_items(widget())
+    keep: SELECTED
+    change: NOT SELECTED
+
+    >>> form = {'field.gotchi.action': 'change',
+    ...         'field.gotchi.image': mugshot}
+    >>> widget = ImageChangeWidget(personset_gotchi, TestRequest(form=form))
+    >>> print_radio_items(widget())
+    keep: NOT SELECTED
+    change: SELECTED
+    >>> widget.getInputValue().content.filesize == mugshot.len
+    True
+
+
+== The BaseImageUpload field ==
+
+Note that since this is a special widget which returns a special object
+(KEEP_SAME_IMAGE) to indicate that the image should be kept, we need to use
+a custom field (BaseImageUpload) together with it. That field should not be
+used directly, since it specifies some constraints and defaults that are
+specific to each image, so you must subclass it before using.
+
+    >>> from canonical.launchpad.fields import BaseImageUpload
+    >>> isinstance(person_gotchi, BaseImageUpload)
+    True
+    >>> person_gotchi.__class__ != BaseImageUpload
+    True
+    >>> person_gotchi.max_size
+    102400
+    >>> person_gotchi.max_dimensions
+    (200, 200)
+
+If we pass that special object (KEEP_SAME_IMAGE) to BaseImageUpload's set()
+method, the current image will be kept.
+
+    >>> existing_img = salgado.gotchi
+    >>> existing_img is None
+    False
+
+    >>> person_gotchi.set(salgado, KEEP_SAME_IMAGE)
+    >>> salgado.gotchi == existing_img
+    True
+
+On the other hand, if we pass None, the current image will be removed.
+
+    >>> person_gotchi.set(salgado, None)
+    >>> salgado.gotchi is None
+    True
+
+Similarly, passing any file of the type expected (FileUpload) will
+change the current image to the given file.
+
+    >>> person_gotchi.set(salgado, fileupload)
+    >>> salgado.gotchi is None
+    False
+    >>> salgado.gotchi == existing_img
+    False
+
+
+== Input validation ==
+
+The BaseImageUpload field expects an image under the given size/dimension
+constraints, so it won't accept anything else.
+
+Here we have an image with a byte size smaller than person_gotchi.max_size and
+dimensions also smaller than person_gotchi.max_dimensions, so it must be
+accepted.
+
+    >>> mugshot_file_name = os.path.join(
+    ...     os.path.dirname(canonical.launchpad.__file__),
+    ...     'pagetests/standalone/big.png')
+    >>> mugshot = StringIO(open(mugshot_file_name, 'r').read())
+    >>> mugshot.filename = 'big.png'
+    >>> mugshot.len <= person_gotchi.max_size
+    True
+    >>> import PIL.Image
+    >>> image = PIL.Image.open(mugshot)
+    >>> image.size <= person_gotchi.max_dimensions
+    True
+
+    >>> form = {'field.gotchi.action': 'change', 'field.gotchi.image': mugshot}
+    >>> widget = ImageChangeWidget(person_gotchi, TestRequest(form=form))
+    >>> fileupload = widget.getInputValue()
+    >>> fileupload.filename
+    u'big.png'
+    >>> fileupload.content.filesize == mugshot.len
+    True
+
+If we change person_gotchi's max_size to be smaller than our test image, we'll
+get a validation error.
+
+    >>> person_gotchi.max_size = mugshot.len - 1
+    >>> mugshot.seek(0)
+    >>> widget = ImageChangeWidget(person_gotchi, TestRequest(form=form))
+    >>> widget.getInputValue()
+    Traceback (most recent call last):
+    ...
+    WidgetInputError: ('field.gotchi', u'Hackergotchi',
+                       This image exceeds the maximum allowed size in bytes.)
+
+A similar error will be raised if the image's dimensions are bigger than the
+maximun we allow.
+
+    >>> person_gotchi.max_size = mugshot.len
+    >>> person_gotchi.max_dimensions = (image.size[0] - 1, image.size[1] + 1)
+    >>> mugshot.seek(0)
+    >>> widget = ImageChangeWidget(person_gotchi, TestRequest(form=form))
+    >>> widget.getInputValue()
+    Traceback (most recent call last):
+    ...
+    WidgetInputError: ('field.gotchi', u'Hackergotchi',
+                       This image exceeds the maximum allowed width or height
+                       in pixels.)
+
+    >>> person_gotchi.max_dimensions = (image.size[0] + 1, image.size[1] - 1)
+    >>> mugshot.seek(0)
+    >>> widget = ImageChangeWidget(person_gotchi, TestRequest(form=form))
+    >>> widget.getInputValue()
+    Traceback (most recent call last):
+    ...
+    WidgetInputError: ('field.gotchi', u'Hackergotchi',
+                       This image exceeds the maximum allowed width or height
+                       in pixels.)
+
+We also won't accept anything that is not an image; that is, we only accept
+what can be parsed by the Python Imaging Library module.
+
+    >>> mugshot = StringIO('foo bar bz')
+    >>> mugshot.filename = 'foo.jpg'
+    >>> form = {'field.gotchi.action': 'change', 'field.gotchi.image': mugshot}
+    >>> widget = ImageChangeWidget(person_gotchi, TestRequest(form=form))
+    >>> widget.getInputValue()
+    Traceback (most recent call last):
+    ...
+    WidgetInputError: ('field.gotchi', u'Hackergotchi',
+                       The file uploaded was not recognized as an image;
+                       please check it and retry.)
+
+Finally, if the user specifies the 'change' action he must also provide a file
+to be uploaded.
+
+    >>> form = {'field.gotchi.action': 'change', 'field.gotchi.image': ''}
+    >>> widget = ImageChangeWidget(person_gotchi, TestRequest(form=form))
+    >>> widget.getInputValue()
+    Traceback (most recent call last):
+    ...
+    WidgetInputError: ('field.gotchi', u'Hackergotchi',
+                       Please specify the image you want to use.)
+

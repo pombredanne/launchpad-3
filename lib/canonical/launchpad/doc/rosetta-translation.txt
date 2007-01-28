@@ -44,8 +44,11 @@ Get a person to create a translation with.
 Add a translation.
 
     >>> translations = { 0: u'foo' }
+    >>> import datetime
+    >>> import pytz
+    >>> UTC = pytz.timezone('UTC')
     >>> pomsgset.updateTranslationSet(person, translations, fuzzy=False,
-    ...                               published=False)
+    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
 
 Check that this submission is now the active one for this msgset/pluralform
 
@@ -84,7 +87,7 @@ this project from Pa.
 
     >>> translations = { 0: u'bar' }
     >>> pomsgset.updateTranslationSet(Pa, translations, fuzzy=False,
-    ...                               published=True)
+    ...     published=True, lock_timestamp=datetime.datetime.now(UTC))
     >>> submission = pomsgset.getActiveSubmission(0)
 
 Make sure that the new submission is in fact from Pa.
@@ -107,7 +110,7 @@ Now, let's add a translation from Pb, through the web.
 
     >>> translations = { 0: u'baz' }
     >>> pomsgset.updateTranslationSet(Pb, translations, fuzzy=False,
-    ...                               published=False)
+    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
     >>> web_submission = pomsgset.getActiveSubmission(0)
 
 Make sure the new submission is from Pb.
@@ -143,7 +146,7 @@ along and says it's 'baz', we don't record anything new.
 
     >>> translations = { 0: u'baz' }
     >>> pomsgset.updateTranslationSet(Pc, translations, fuzzy=False,
-    ...                               published=False)
+    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
     >>> repeat_submission = pomsgset.getActiveSubmission(0)
 
 Since that is exactly what Pb already said, let's see that the submission we
@@ -182,7 +185,7 @@ to see a non-editor published submission.
 
     >>> translations = { 0: u'bong' }
     >>> pomsgset.updateTranslationSet(Pn, translations, fuzzy=False,
-    ...                               published=True)
+    ...     published=True, lock_timestamp=datetime.datetime.now(UTC))
     Traceback (most recent call last):
     ...
     AssertionError: published translations are ALWAYS from an editor

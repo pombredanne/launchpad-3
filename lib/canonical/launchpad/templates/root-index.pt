@@ -50,7 +50,7 @@
           <img alt="" src="/@@/product" />
         </td>
         <td>
-          <b><a href="/distros/ubuntu">The Ubuntu distribution</a></b>
+          <b><a href="/ubuntu">The Ubuntu distribution</a></b>
           <p class="lesser">
       Ubuntu is a Linux distribution that emphasises ease of use and free
       global distribution.
@@ -63,7 +63,7 @@
           <img alt="" src="/@@/product" />
         </td>
         <td>
-          <b><a href="/products/bzr">Bazaar</a></b>
+          <b><a href="/bzr">Bazaar</a></b>
           <p class="lesser">
       Bazaar is a fast distributed revision
       control system that is free, written in Python, with an
@@ -77,7 +77,7 @@
           <img alt="" src="/@@/product" />
         </td>
         <td>
-          <b><a href="/products/gnomebaker">GnomeBaker</a></b>
+          <b><a href="/gnomebaker">GnomeBaker</a></b>
           <p class="lesser">
       GnomeBaker is a popular CD burning GUI application for the Gnome desktop
       environment. It uses the Launchpad primarily for translation services
@@ -90,10 +90,12 @@
 
   <h2>Other services</h2>
 
-  <table>
+  <table tal:define="vhosts
+        modules/canonical.launchpad.webapp.vhosts/allvhosts/configs">
     <tr style="valign: top;">
       <td>
-        <a href="/support"><b>Support tracker</b></a><br />
+        <a tal:attributes="href vhosts/answers/rooturl"
+              href="/support"><b>Support tracker</b></a><br />
         Launchpad lets you track technical support requests
         from users of your product.
       </td>

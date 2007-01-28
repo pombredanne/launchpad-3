@@ -4,18 +4,18 @@ First, make sure we can see the page.
 Try to get the page when unauthenticated.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload HTTP/1.1
+  ... GET /ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload HTTP/1.1
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload/+login
+  Location: http://localhost:9000/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload/+login
   ...
   <BLANKLINE>
 
 And now with valid credentials.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload HTTP/1.1
+  ... GET /ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... """)
   HTTP/1.1 200 Ok
@@ -25,7 +25,7 @@ Now hit the upload button, but without giving a file for upload. We get an
 error message back.
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload HTTP/1.1
+  ... POST /ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... Content-Type: multipart/form-data; boundary=---------------------------210878615045361411296034445
   ... 
@@ -47,7 +47,7 @@ error message back.
 Now let's upload one that is published.
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload HTTP/1.1
+  ... POST /ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload HTTP/1.1
   ... Content-Length: 1452
   ... Content-Type: multipart/form-data; boundary=---------------------------107090301610607307082078743785
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
@@ -97,7 +97,7 @@ Now let's upload one that is published.
 And one that is not published.
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload HTTP/1.1
+  ... POST /ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload HTTP/1.1
   ... Accept-Language: en-us,en;q=0.7,af;q=0.3
   ... Content-Length: 1352
   ... Content-Type: multipart/form-data; boundary=---------------------------14904033691485035791236536155

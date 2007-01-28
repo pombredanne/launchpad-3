@@ -1,5 +1,5 @@
 <div class="portlet">
-  <h4>About the CVE system:</h4>
+  <h2>About the CVE system</h2>
   <div class="portletBody portletContent">
     Launchpad includes full support for
     <a href="http://cve.mitre.org/">the CVE framework</a>.

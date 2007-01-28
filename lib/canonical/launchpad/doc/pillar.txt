@@ -1,12 +1,14 @@
+== Launchpad pillars ==
+
 A few of the PillarsOfLaunchpad (tm) share a namespace to allow their name
 to unambiguously refer to it. This allows us to make email interfaces
 easier to use and to shorten some of our URLs. Currently, the objects that
 share their name namespace are Product, Project and Distribution.
 
 >>> from canonical.launchpad.interfaces import (
-...     IPillarSet, IProduct, IProject, IDistribution
+...     IPillarNameSet, IProduct, IProject, IDistribution
 ...     )
->>> pillar_set = getUtility(IPillarSet)
+>>> pillar_set = getUtility(IPillarNameSet)
 
 >>> 'ubuntu' in pillar_set
 True
@@ -35,4 +37,38 @@ False
 Traceback (most recent call last):
 ...
 NotFoundError: 'fnord'
+
+
+== Searching for Pillars ==
+
+We can also use PillarNameSet to do a search across some of our pillars.
+Right now this search is done across Products, Projects and Distributions.
+
+>>> def get_meaningful_rank(row):
+...     rank = row['rank']
+...     if rank >= 1.0:
+...         return 'perfect'
+...     elif rank > 0.5 and rank < 1.0:
+...         return 'high'
+...     else:
+...         return 'low'
+
+>>> for row in pillar_set.search('mozilla', limit=3):
+...     rank = get_meaningful_rank(row)
+...     print ("%s: %s (%s) [relevance: %s]"
+...            % (row['type'], row['title'], row['name'], rank))
+project: The Mozilla Project (mozilla) [relevance: perfect]
+product: Mozilla Firefox (firefox) [relevance: high]
+product: Mozilla Thunderbird (thunderbird) [relevance: high]
+
+>>> for row in pillar_set.search('ubuntu', limit=6):
+...     rank = get_meaningful_rank(row)
+...     print ("%s: %s (%s) [relevance: %s]"
+...            % (row['type'], row['title'], row['name'], rank))
+distribution: Ubuntu Linux (ubuntu) [relevance: perfect]
+product: Ubuntu (ubuntu-product) [relevance: perfect]
+project: The Ubuntu Project (ubuntu-project) [relevance: high]
+distribution: Ubuntu Test (ubuntutest) [relevance: low]
+product: The Evolution Groupware Application (evolution) [relevance: low]
+distribution: GuadaLinex: Linux for Andalucia (guadalinex) [relevance: low]
 

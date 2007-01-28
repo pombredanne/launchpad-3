@@ -1,16 +1,6 @@
 <configure xmlns="http://namespaces.zope.org/zope">
 
   <vocabulary
-    name="BinaryAndSourcePackageName"
-    factory="canonical.launchpad.vocabularies.BinaryAndSourcePackageNameVocabulary"
-    />
-
-  <vocabulary
-    name="BinaryPackageName"
-    factory="canonical.launchpad.vocabularies.BinaryPackageNameVocabulary"
-    />
-
-  <vocabulary
     name="Bounty"
     factory="canonical.launchpad.vocabularies.BountyVocabulary"
     />
@@ -31,8 +21,18 @@
     />
 
   <vocabulary
+    name="BranchLifecycleStatusFilter"
+    factory="canonical.launchpad.vocabularies.BranchLifecycleStatusFilterVocabulary"
+    />
+
+  <vocabulary
     name="BranchReviewStatus"
     factory="canonical.launchpad.vocabularies.BranchReviewStatusVocabulary"
+    />
+
+  <vocabulary
+    name="BranchSubscriptionNotificationLevel"
+    factory="canonical.launchpad.vocabularies.BranchSubscriptionNotificationLevelVocabulary"
     />
 
   <vocabulary
@@ -48,6 +48,16 @@
   <vocabulary
     name="BugBranchStatus"
     factory="canonical.launchpad.vocabularies.BugBranchStatusVocabulary"
+    />
+
+  <vocabulary
+    name="BugNominatableReleases"
+    factory="canonical.launchpad.vocabularies.BugNominatableReleasesVocabulary"
+    />
+
+  <vocabulary
+    name="BugNominationStatus"
+    factory="canonical.launchpad.vocabularies.BugNominationStatusVocabulary"
     />
 
   <vocabulary
@@ -181,6 +191,11 @@
     />
 
   <vocabulary
+    name="NonMergedPeopleAndTeams"
+    factory="canonical.launchpad.vocabularies.NonMergedPeopleAndTeamsVocabulary"
+    />
+
+  <vocabulary
     name="PackagePublishingPocket"
     factory="canonical.launchpad.vocabularies.PackagePublishingPocketVocabulary"
     />
@@ -246,6 +261,11 @@
     />
 
   <vocabulary
+    name="ProjectProducts"
+    factory="canonical.launchpad.vocabularies.project_products_vocabulary_factory"
+    />
+
+  <vocabulary
     name="RemoteBugTaskStatus"
     factory="canonical.launchpad.vocabularies.RemoteBugTaskStatusVocabulary"
     />
@@ -256,18 +276,13 @@
     />
 
   <vocabulary
-    name="Schema"
-    factory="canonical.launchpad.vocabularies.SchemaVocabulary"
+    name="RevisionControlSystems"
+    factory="canonical.launchpad.vocabularies.RevisionControlSystemsVocabulary"
     />
 
   <vocabulary
     name="ShipItFlavour"
     factory="canonical.launchpad.vocabularies.ShipItFlavourVocabulary"
-    />
-
-  <vocabulary
-    name="SourcePackageName"
-    factory="canonical.launchpad.vocabularies.SourcePackageNameVocabulary"
     />
 
   <vocabulary
@@ -318,6 +333,11 @@
   <vocabulary
     name="TeamSubscriptionPolicy"
     factory="canonical.launchpad.vocabularies.TeamSubscriptionPolicyVocabulary"
+    />
+
+  <vocabulary
+    name="TicketAction"
+    factory="canonical.launchpad.vocabularies.TicketActionVocabulary"
     />
 
   <vocabulary
@@ -395,14 +415,14 @@
     factory="canonical.launchpad.vocabularies.ProcessorFamilyVocabulary"
     />
 
-  <!-- Define the widget used by Choice fields that use huge vocabularies -->
-  <view
-    type="zope.publisher.interfaces.browser.IBrowserRequest"
-    for="zope.schema.interfaces.IChoice
-      canonical.launchpad.vocabularies.IHugeVocabulary"
-    provides="zope.app.form.interfaces.IInputWidget"
-    factory="canonical.widgets.SinglePopupWidget"
-    permission="zope.Public"
+  <vocabulary
+    name="DistributionOrProduct"
+    factory="canonical.launchpad.vocabularies.DistributionOrProductVocabulary"
+    />
+
+  <vocabulary
+    name="DistributionOrProductOrProject"
+    factory="canonical.launchpad.vocabularies.DistributionOrProductOrProjectVocabulary"
     />
 
 </configure>

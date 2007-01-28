@@ -27,38 +27,21 @@
 
     <div metal:fill-slot="widgets" tal:define="widgets view/target_widgets">
 
-        <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows" />
+        <div metal:use-macro="context/@@launchpad_form/widget_rows" />
 
     </div>
 
 
-    <div metal:fill-slot="extra_bottom">
-          <label tal:attributes="for view/widgets/link_to_bugwatch/name">
-            <tal:widget tal:content="structure view/widgets/link_to_bugwatch" />
-            <tal:label
-              tal:replace="view/widgets/link_to_bugwatch/label" />
-          </label>
-      <table>
-      <tr>
-        <td align="right">
-          <label tal:attributes="for view/widgets/bugtracker/name"
-                 tal:content="view/widgets/bugtracker/label">Label</label>
-        </td>
-        <td tal:content="structure view/widgets/bugtracker" />
-      </tr>
-      <tr>
-        <td align="right">
-          <label tal:attributes="for view/widgets/remotebug/name"
-                 tal:content="view/widgets/remotebug/label">Label</label>
-        </td>
-        <td tal:content="structure view/widgets/remotebug" />
-      </tr>
-      </table>
-      <p class="formHelp">
+    <div metal:fill-slot="extra_bottom"
+         tal:define="widgets view/bugwatch_widgets">
+
+      <p>
             If the bug has been reported in another bug tracker, you can
             link to it in order to keep track of its status. Malone
             synchronizes the status automatically for you.
       </p>
+
+      <div metal:use-macro="context/@@launchpad_form/widget_rows" />
 
     </div>
 

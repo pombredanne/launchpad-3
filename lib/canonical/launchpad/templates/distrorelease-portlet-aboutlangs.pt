@@ -1,6 +1,6 @@
 
 <div class="portlet">
-  <h4>Translating a distribution release</h4>
+  <h2>Translating a distribution release</h2>
   <div class="portletBody portletContent">
     <img src="/@@/info" />
     This page shows you all of the translations of the
@@ -10,9 +10,10 @@
     language.<br />
     <br />
     Your preferred languages list reflects the languages we think you are
-    most interested in. Choose "<a href="/rosetta/prefs/">Select
-    languages...</a>" to ensure that the languages you speak are included in
-    all translation pages.
+    most interested in.
+    Choose "<a href="/+editmylanguages">Select languages...
+    </a>" to ensure that the languages you speak are included in all
+    translation pages.
   </div>
 </div>
 

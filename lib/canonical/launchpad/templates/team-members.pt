@@ -102,7 +102,7 @@
       <ul class="edit" tal:condition="context/required:launchpad.Edit">
         <li>
           <a href="+editproposedmembers"
-          >Approve or decline members&#8230;</a>
+          >Approve or decline members</a>
         </li>
       </ul>
     </tal:block>

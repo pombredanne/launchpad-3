@@ -25,7 +25,7 @@ trap cleanup EXIT
 
 ## XXX cprov 20060609: We need to retrieve 'development' distrorelease
 ## from helper script. See bug # 49174
-suite=edgy
+suite=feisty
 
 echo -n "Running germinate... "
 cd $GERMINATEROOT
@@ -39,6 +39,7 @@ for component in main universe restricted; do
   zcat $ARCHIVEROOT/dists/"$suite"/"$component"/source/Sources.gz > "$suite"_"$component"_Sources;
 done
 
+> "$MISCROOT/more-extra.override.$suite.main.new"
 for distro in ubuntu kubuntu edubuntu xubuntu; do
   DISTRO="$(echo $distro | tr a-z A-Z)"
   case "$distro" in 
@@ -74,43 +75,42 @@ for distro in ubuntu kubuntu edubuntu xubuntu; do
     cp minimal minimal_"$distro"_"$suite"_"$arch"
     cp standard standard_"$distro"_"$suite"_"$arch"
 
-    # Keep amalagmated copies of 'all', 'all.sources' and 'desktop' and 'standard'
-    # [These are used for generation of 'Task: lines']
+    # Keep amalgamated copies of 'all' and 'all.sources', just for convenience
     cat all >> ALL; cat all.sources >> ALL.sources
+
     # We need to generate Task fields for everything in the ship/server-ship
     # seeds (which includes standard, desktop, and server tasks) except for
-    # boot and minimal.
-    for seed in $(egrep '^(ship|server-ship):' "$DISTRO-STRUCTURE" | cut -d' ' -f2- | xargs -n1 | sort -u); do
+    # boot and minimal, and also for the live seed.
+    taskseeds="$( (egrep '^(ship|server-ship):' "$DISTRO-STRUCTURE" | cut -d' ' -f2- | xargs -n1; echo live) | sort -u )"
+
+    for seed in $taskseeds; do
       wget -q -O "$DISTRO-$seed.seedtext" "$SEEDS/$germinate_suite/$seed"
-      cat "$seed" >> "$DISTRO-$seed"
+      cp "$seed" "$seed"_"$distro"_"$suite"_"$arch"
     done
     echo " ********************************************************************** " >> germinate.output
     echo "" >> germinate.output
     echo -n "."
+
+    ## Generate apt-ftparchive 'extra' overrides for Task: fields
+    for seed in $taskseeds; do
+      if ! grep -iq '^Task-' "$DISTRO-$seed.seedtext"; then
+	continue
+      fi
+      if grep -iq '^Task-Per-Derivative:' "$DISTRO-$seed.seedtext"; then
+	task="$distro-$seed"
+      else
+	# If a seed is not per-derivative, then we only honour it for Ubuntu,
+	# and its task name is archive-global.
+	if [ "$distro" = ubuntu ]; then
+	  task="$seed"
+	else
+	  continue
+	fi
+      fi
+      egrep -v -- "^(-|Package| )" "$seed"_"$distro"_"$suite"_"$arch" | awk '{print $1}' | sed -e "s,$,/$arch  Task  $task," | sort -u >> "$MISCROOT/more-extra.override.$suite.main.new"
+    done
   done
 done
 echo " done."
 
-## Generate apt-ftparchive 'extra' overrides for Task: $distro-{desktop,standard}
-> "$MISCROOT/more-extra.override.$suite.main.new"
-for distro in ubuntu kubuntu edubuntu xubuntu; do
-  DISTRO=$(echo $distro | tr a-z A-Z)
-  for seed in $(egrep '^(ship|server-ship):' "$DISTRO-STRUCTURE" | cut -d' ' -f2- | xargs -n1 | sort -u); do
-    if ! grep -iq '^Task-' "$DISTRO-$seed.seedtext"; then
-      continue
-    fi
-    if grep -iq '^Task-Per-Derivative:' "$DISTRO-$seed.seedtext"; then
-      task="$distro-$seed"
-    else
-      # If a seed is not per-derivative, then we only honour it for Ubuntu,
-      # and its task name is archive-global.
-      if [ "$distro" = ubuntu ]; then
-        task="$seed"
-      else
-        continue
-      fi
-    fi
-    egrep -v -- "^(-|Package| )" "$DISTRO-$seed" | awk '{print $1}' | sed -e "s/$/  Task  $task/" | sort -u >> "$MISCROOT/more-extra.override.$suite.main.new"
-  done
-done
 mv -f "$MISCROOT/more-extra.override.$suite.main.new" "$MISCROOT/more-extra.override.$suite.main"

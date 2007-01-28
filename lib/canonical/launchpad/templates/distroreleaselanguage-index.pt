@@ -36,7 +36,7 @@
       considered more important for translation are listed first.
     </p>
 
-    <tal:navigation replace="structure view/batchnav/@@+navigation-links" />
+    <tal:navigation replace="structure view/batchnav/@@+navigation-links-upper" />
 
     <table class="listing sortable" width="100%" id="translationstatuses">
       <thead>
@@ -86,7 +86,7 @@
       </tbody>
     </table>
 
-    <tal:navigation replace="structure view/batchnav/@@+navigation-links" />
+    <tal:navigation replace="structure view/batchnav/@@+navigation-links-lower" />
 
     <div tal:replace="structure context/@@+rosetta-status-legend" />
 

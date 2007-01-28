@@ -15,9 +15,12 @@ from canonical.launchpad import helpers
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.components.poexport import (
     MOCompiler, RosettaWriteTarFile)
+from canonical.launchpad.components.poparser import (
+    POInvalidInputError)
 from canonical.launchpad.interfaces import (
     IPOExportRequestSet, IPOTemplate, IPOFile, ILibraryFileAliasSet,
     ILaunchpadCelebrities)
+from canonical.librarian.interfaces import LibrarianFailure
 
 def is_potemplate(obj):
     """Return True if the object is a PO template."""
@@ -78,10 +81,10 @@ class POFormatHandler(Handler):
                 size=len(potemplate_content),
                 file=StringIO(potemplate_content),
                 contentType='application/x-po')
-            return alias.url
+            return alias.http_url
         else:
             self.obj.export()
-            return self.obj.exportfile.url
+            return self.obj.exportfile.http_url
 
 class MOFormatHandler(Handler):
     """Export handler for MO format exports."""
@@ -120,7 +123,7 @@ class MOFormatHandler(Handler):
                 size=len(mo_contents),
                 file=StringIO(mo_contents),
                 contentType='application/octet-stream')
-            return alias.url
+            return alias.http_url
 
 format_handlers = {
     RosettaFileFormat.PO: POFormatHandler,
@@ -189,7 +192,7 @@ class ExportResult:
         # users.
         if warnings:
             warning_text = textwrap.dedent('''
-                The following files where exported but had warnings:
+                The following files were exported but had warnings:
 
                 %s
                 ''' % warnings)
@@ -357,7 +360,7 @@ def process_single_object_request(obj, format):
 
     try:
         result.url = handler.get_librarian_url()
-    except:
+    except (LibrarianFailure, POInvalidInputError):
         result.add_failure(obj)
         # The export for the current entry failed, we can remove the specific
         # logger to catch warnings.
@@ -395,7 +398,7 @@ def process_multi_object_request(objects, format):
 
         try:
             contents = handler.get_contents()
-        except:
+        except (LibrarianFailure, POInvalidInputError):
             result.add_failure(filename)
         else:
             result.add_success(filename)
@@ -414,7 +417,7 @@ def process_multi_object_request(objects, format):
             size=size,
             file=filehandle,
             contentType='application/octet-stream')
-        result.url = alias.url
+        result.url = alias.http_url
 
     return result
 

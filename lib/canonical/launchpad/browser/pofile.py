@@ -15,30 +15,30 @@ __all__ = [
     'POExportView']
 
 import re
-from zope.app.form import CustomWidgetFactory
-from zope.app.form.utility import setUpWidgets
 from zope.app.form.browser import DropdownWidget
-from zope.app.form.interfaces import IInputWidget
-from zope.component import getUtility, getView
+from zope.component import getUtility
 from zope.publisher.browser import FileUpload
 
 from canonical.cachedproperty import cachedproperty
 from canonical.lp.dbschema import RosettaFileFormat
+from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
-    IPOFile, IPOExportRequestSet, ILaunchBag, ILanguageSet,
-    ITranslationImportQueue, UnexpectedFormData, NotFoundError,
-    IPOFileAlternativeLanguage
-    )
+    IPOFile, IPOExportRequestSet, ITranslationImportQueue,
+    UnexpectedFormData, NotFoundError)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ApplicationMenu, Link, canonical_url,
     LaunchpadView, Navigation)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.browser.pomsgset import (
+    BaseTranslationView, POMsgSetView)
+
+from canonical.launchpad import _
 
 class CustomDropdownWidget(DropdownWidget):
-
     def _div(self, cssClass, contents, **kw):
         """Render the select widget without the div tag."""
         return contents
+
 
 class POFileNavigation(Navigation):
 
@@ -96,12 +96,8 @@ class POFileFacets(StandardLaunchpadFacets):
     enable_only = ['overview', 'translations']
 
     def _parent_url(self):
-        """Return the URL of the thing the PO template of this PO file is
-        attached to.
-        """
-
+        """Return URL of whatever POTemplate of this POFile is attached to."""
         potemplate = self.context.potemplate
-
         if potemplate.distrorelease:
             source_package = potemplate.distrorelease.getSourcePackage(
                 potemplate.sourcepackagename)
@@ -151,8 +147,30 @@ class POFileAppMenus(ApplicationMenu):
         return Link('../', text, icon='languages')
 
 
-class BaseExportView:
+class BaseExportView(LaunchpadView):
     """Base class for PO export views."""
+
+    def initialize(self):
+        self.request_set = getUtility(IPOExportRequestSet)
+        self.processForm()
+
+    def processForm(self):
+        """Override in subclass."""
+        raise NotImplementedError
+
+    def nextURL(self):
+        self.request.response.addInfoNotification(_(
+            "Your request has been received. Expect to receive an email "
+            "shortly."))
+        self.request.response.redirect(canonical_url(self.context))
+
+    def validateFileFormat(self, format_name):
+        try:
+            return RosettaFileFormat.items[format_name]
+        except KeyError:
+            self.request.response.addErrorNotification(_(
+                'Please select a valid format for download.'))
+            return
 
     def formats(self):
         """Return a list of formats available for translation exports."""
@@ -174,6 +192,10 @@ class BaseExportView:
 class POFileView(LaunchpadView):
     """A basic view for a POFile"""
     __used_for__ = IPOFile
+
+    @cachedproperty
+    def contributors(self):
+        return list(self.context.contributors)
 
 
 class POFileUploadView(POFileView):
@@ -254,74 +276,134 @@ class POFileUploadView(POFileView):
                 canonical_url(translation_import_queue))
 
 
-class POFileTranslateView(POFileView):
+class POFileTranslateView(BaseTranslationView):
     """The View class for a POFile or a DummyPOFile.
 
-    Note that the DummyPOFile is presented if there is no POFile in the
-    database, but the user wants to render one. Check the traverse_potemplate
-    function for more information about when the user is looking at a POFile,
+    This view is based on BaseTranslationView and implements the API
+    defined by that class.
+
+    Note that DummyPOFiles are presented if there is no POFile in the
+    database but the user wants to translate it. See how POTemplate
+    traversal is done for details about how we decide between a POFile
     or a DummyPOFile.
     """
 
     __used_for__ = IPOFile
 
     DEFAULT_SHOW = 'all'
+    DEFAULT_SIZE = 10
 
     def initialize(self):
-        self.form = self.request.form
-        self.redirecting = False
-        self.potmsgset_with_errors = []
-        self._table_index_value = 0
-        self._initialize_show_option()
-        self.alt = self.form.get('alt', '')
+        self.pofile = self.context
 
-        initial_value = {}
-        if self.second_lang_code:
-            initial_value['alternative_language'] = getUtility(
-                ILanguageSet)[self.second_lang_code]
+        # The handling of errors is slightly tricky here. Because this
+        # form displays multiple POMsgSetViews, we need to track the
+        # various errors individually. This dictionary is keyed on
+        # POTMsgSet; it's a slightly unusual key value but it will be
+        # useful for doing display of only widgets with errors when we
+        # do that.
+        self.errors = {}
+        self.pomsgset_views = []
 
-        # Initialize the widget to list languages.
-        self.alternative_language_widget = CustomWidgetFactory(
-            CustomDropdownWidget)
-        setUpWidgets(
-            self, IPOFileAlternativeLanguage, IInputWidget,
-            names=['alternative_language'], initial=initial_value)
+        self._initializeShowOption()
+        BaseTranslationView.initialize(self)
 
-        if not self.has_plural_form_information:
-            # Cannot translate this IPOFile without the plural form
-            # information. Show the info to add it to our system.
-            self.request.response.addErrorNotification("""
-<p>
-Rosetta can&#8217;t handle the plural items in this file, because it
-doesn&#8217;t yet know how plural forms work for %s.
-</p>
-<p>
-To fix this, please e-mail the <a
-href="mailto:rosetta-users@lists.ubuntu.com">Rosetta users mailing list</a>
-with this information, preferably in the format described in the
-<a href="https://wiki.ubuntu.com/RosettaFAQ">Rosetta FAQ</a>.
-</p>
-<p>
-This only needs to be done once per language. Thanks for helping Rosetta.
-</p>
-""" % self.context.language.englishname)
+    #
+    # BaseTranslationView API
+    #
 
-        # Setup the batching for this page.
-        self.batchnav = BatchNavigator(
-            self.getSelectedPOTMsgSet(), self.request, size=10)
-        current_batch = self.batchnav.currentBatch()
-        self.start = self.batchnav.start
-        self.size = current_batch.size
+    def _buildBatchNavigator(self):
+        """See BaseTranslationView._buildBatchNavigator."""
+        return BatchNavigator(self._getSelectedPOTMsgSets(),
+                              self.request, size=self.DEFAULT_SIZE)
 
-        # Handle any form submission.
-        self.process_form()
+    def _initializeMsgSetViews(self):
+        """See BaseTranslationView._initializeMsgSetViews."""
+        for potmsgset in self.batchnav.currentBatch():
+            self.pomsgset_views.append(self._buildPOMsgSetView(potmsgset))
 
-    def _initialize_show_option(self):
+    def _submitTranslations(self):
+        """See BaseTranslationView._submitTranslations."""
+        for key in self.request.form:
+            match = re.match('msgset_(\d+)$', key)
+            if not match:
+                continue
+
+            id = int(match.group(1))
+            potmsgset = self.context.potemplate.getPOTMsgSetByID(id)
+            if potmsgset is None:
+                # This should only happen if someone tries to POST his own
+                # form instead of ours, and he uses a POTMsgSet id that
+                # does not exist for this POTemplate.
+                raise UnexpectedFormData(
+                    "Got translation for POTMsgID %d which is not in the "
+                    "template." % id)
+
+            # Get hold of an appropriate message set in the PO file,
+            # creating it if necessary.
+            msgid_text = potmsgset.primemsgid_.msgid
+            pomsgset = self.pofile.getPOMsgSet(msgid_text, only_current=False)
+            if pomsgset is None:
+                pomsgset = self.pofile.createMessageSetFromText(msgid_text)
+
+            error = self._storeTranslations(pomsgset)
+            if error and pomsgset.sequence != 0:
+                # There is an error, we should store it to be rendered
+                # together with its respective view.
+                #
+                # The check for potmsgset.sequence != 0 is meant to catch
+                # messages which are not current anymore. This only
+                # happens as part of a race condition, when someone gets
+                # a translation form, we get a new template for
+                # that context that disables some entries in that
+                # translation form, and after that, the user submits the
+                # form. We accept the translation, but if it has an
+                # error, we cannot render that error so we discard it,
+                # that translation is not being used anyway, so it's not
+                # a big loss.
+                self.errors[pomsgset.potmsgset] = error
+
+        if self.errors:
+            if len(self.errors) == 1:
+                message = ("There is an error in a translation you provided. "
+                           "Please correct it before continuing.")
+            else:
+                message = ("There are %d errors in the translations you "
+                           "provided. Please correct them before "
+                           "continuing." % len(self.errors))
+            self.request.response.addErrorNotification(message)
+            return False
+
+        self._redirectToNextPage()
+        return True
+
+    def _buildRedirectParams(self):
+        parameters = BaseTranslationView._buildRedirectParams(self)
+        if self.show and self.show != self.DEFAULT_SHOW:
+            parameters['show'] = self.show
+        return parameters
+
+    #
+    # Specific methods
+    #
+
+    def _buildPOMsgSetView(self, potmsgset):
+        """Build a POMsgSetView for a given POTMsgSet."""
+        language = self.context.language
+        variant = self.context.variant
+        pomsgset = potmsgset.getPOMsgSet(language.code, variant)
+        if pomsgset is None:
+            pomsgset = potmsgset.getDummyPOMsgSet(language.code, variant)
+        return self._prepareView(POMsgSetView, pomsgset,
+                                 self.errors.get(pomsgset.potmsgset))
+
+    def _initializeShowOption(self):
         # Get any value given by the user
-        self.show = self.form.get('show')
+        self.show = self.request.form.get('show')
 
         if self.show not in (
             'translated', 'untranslated', 'all', 'need_review'):
+            # XXX: should this be an UnexpectedFormData?
             self.show = self.DEFAULT_SHOW
         self.show_all = False
         self.show_need_review = False
@@ -339,183 +421,11 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         elif self.show == 'need_review':
             self.show_need_review = True
             self.shown_count = self.context.fuzzy_count
-
-    @property
-    def has_plural_form_information(self):
-        """Return whether we know the plural forms for this language."""
-        if self.context.potemplate.hasPluralMessage():
-            # If there are no plural forms, we don't mind if we have or not
-            # the plural form information.
-            return self.context.language.pluralforms is not None
         else:
-            return True
+            raise AssertionError("Bug in _initializeShowOption")
 
-    @property
-    def second_lang_code(self):
-        if (self.alt == '' and
-            self.context.language.alt_suggestion_language is not None):
-            return self.context.language.alt_suggestion_language.code
-        elif self.alt == '':
-            return None
-        elif isinstance(self.alt, list):
-            raise UnexpectedFormData("You specified more than one alternative "
-                                     "languages; only one is currently "
-                                     "supported.")
-        else:
-            return self.alt
-
-    @property
-    def second_lang_pofile(self):
-        if self.second_lang_code is not None:
-            return self.context.potemplate.getPOFileByLang(
-                self.second_lang_code)
-        else:
-            return None
-
-    @property
-    def completeness(self):
-        return '%.0f%%' % self.context.translatedPercentage()
-
-    @property
-    def user_is_official_translator(self):
-        """Determine whether the current user is an official translator."""
-        return self.context.canEditTranslations(self.user)
-
-    def process_form(self):
-        """Check whether the form was submitted and calls the right callback.
-        """
-        if self.request.method != 'POST' or self.user is None:
-            # The form was not submitted or the user is not logged in.
-            return
-
-        dispatch_table = {
-            'select_alternate_language': self._select_alternate_language,
-            'submit_translations': self._store_translations
-            }
-        dispatch_to = [(key, method)
-                        for key,method in dispatch_table.items()
-                        if key in self.form
-                      ]
-        if len(dispatch_to) != 1:
-            raise UnexpectedFormData(
-                "There should be only one command in the form",
-                dispatch_to)
-        key, method = dispatch_to[0]
-        method()
-
-    def _select_alternate_language(self):
-        """Handle a form submission to choose other language suggestions."""
-        # XXX: why does this need handling in the view? I suspect if we
-        # change the method to be GET instead of POST, we can just
-        # remove this code altogether!
-        #   -- kiko, 2006-06-22
-        selected_second_lang = self.alternative_language_widget.getInputValue()
-        if selected_second_lang is None:
-            self.alt = ''
-        else:
-            self.alt = selected_second_lang.code
-
-        new_url = self.batchnav.generateBatchURL(
-            self.batchnav.currentBatch())
-        self._redirect(new_url)
-
-    def _store_translations(self):
-        """Handle a form submission to store new translations."""
-        # First, we get the set of IPOTMsgSet objects submitted.
-        pofile = self.context
-        for key in self.form:
-            match = re.match('msgset_(\d+)$', key)
-
-            if not match:
-                # The form's key is not one that we are looking for.
-                continue
-
-            id = int(match.group(1))
-            potmsgset = self.context.potemplate.getPOTMsgSetByID(id)
-            if potmsgset is None:
-                # This should only happen if someone tries to POST his own
-                # form instead of ours, and he uses a POTMsgSet id that
-                # does not exist for this POTemplate.
-                raise UnexpectedFormData(
-                    "Got translation for POTMsgID %d which is not in the"
-                    " template." % id)
-
-            # Get hold of an appropriate message set in the PO file,
-            # creating it if necessary.
-            msgid_text = potmsgset.primemsgid_.msgid
-            pomsgset = pofile.getPOMsgSet(msgid_text, only_current=False)
-            if pomsgset is None:
-                pomsgset = pofile.createMessageSetFromText(msgid_text)
-            # Store this pomsgset inside the list of messages to process.
-            pomsgset_view = getView(pomsgset, "+translate", self.request)
-            # We initialize the view so every view process its own stuff.
-            pomsgset_view.initialize(from_pofile=True)
-            if (pomsgset_view.error is not None and
-                pomsgset_view.context.potmsgset.sequence > 0):
-                # There is an error, we should store this view to render them.
-                # If potmsgset.sequence == 0 means that that message set is
-                # not current anymore. This only happens as part of a race
-                # condition, when someone gets a translation form, later, we
-                # get a new template for that context that disables some
-                # entries in that translation form, after that, the user
-                # submits the form. We accept the translation, but if it has
-                # an error, we cannot render that error so we discard it, that
-                # translation is not being used anyway, so it's not a big
-                # lose.
-                self.potmsgset_with_errors.append(pomsgset_view)
-
-        if len(self.potmsgset_with_errors) == 0:
-            # Get the next set of message sets.
-            next_url = self.batchnav.nextBatchURL()
-            if next_url is None or next_url == '':
-                # We are already at the end of the batch, forward to the first
-                # one.
-                next_url = self.batchnav.firstBatchURL()
-            if next_url is None:
-                # Stay in whatever URL we are atm.
-                next_url = ''
-            self._redirect(next_url)
-        else:
-            # Notify the errors.
-            self.request.response.addErrorNotification(
-                "There are %d errors in the translations you provided."
-                " Please, correct them before continuing." %
-                    len(self.potmsgset_with_errors))
-
-        # update the statistis for this po file
-        self.context.updateStatistics()
-
-    def _redirect(self, new_url):
-        """Redirect to the given url adding the selected filtering rules."""
-        assert new_url is not None, ('The new URL cannot be None.')
-
-        if new_url == '':
-            new_url = str(self.request.URL)
-            if self.request.get('QUERY_STRING'):
-                new_url += '?%s' % self.request.get('QUERY_STRING')
-        self.redirecting = True
-        parameters = {}
-        if self.alt:
-            parameters['alt'] = self.alt
-        if self.show and self.show != 'all':
-            parameters['show'] = self.show
-        params_str = '&'.join(
-            ['%s=%s' % (key, value) for key, value in parameters.items()])
-        if '?' not in new_url and params_str:
-            new_url += '?'
-        elif params_str:
-            new_url += '&'
-
-        if params_str:
-            new_url += params_str
-        self.request.response.redirect(new_url)
-
-    def getSelectedPOTMsgSet(self):
+    def _getSelectedPOTMsgSets(self):
         """Return a list of the POTMsgSets that will be rendered."""
-        if len(self.potmsgset_with_errors) > 0:
-            # Return the msgsets with errors.
-            return self.potmsgset_with_errors
-
         # The set of message sets we get is based on the selection of kind
         # of strings we have in our form.
         pofile = self.context
@@ -538,49 +448,22 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         # waste of resources to fetch all items always.
         return ret
 
-    def generateNextTabIndex(self):
-        """Return the tab index value to navigate the form."""
-        self._table_index_value += 1
-        return self._table_index_value
-
-    def getPOMsgSetViewFromPOTMsgSet(self, potmsgset):
-        """Return the view class for a given IPOMsgSet."""
-        pomsgset = potmsgset.getPOMsgSet(
-            self.context.language.code, self.context.variant)
-        if pomsgset is None:
-            pomsgset = potmsgset.getDummyPOMsgSet(
-                self.context.language.code, self.context.variant)
-        pomsgsetview = getView(pomsgset, "+translate", self.request)
-        pomsgsetview.initialize(from_pofile=True)
-        return pomsgsetview
-
-    def render(self):
-        if self.redirecting:
-            return u''
-        else:
-            return LaunchpadView.render(self)
+    @property
+    def completeness(self):
+        return '%.0f%%' % self.context.translatedPercentage()
 
 
 class POExportView(BaseExportView):
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.user = getUtility(ILaunchBag).user
-        self.formProcessed = False
 
     def processForm(self):
         if self.request.method != 'POST':
             return
 
-        format_name = self.request.form.get('format')
+        format = self.validateFileFormat(self.request.form.get('format'))
+        if not format:
+            return
 
-        try:
-            format = RosettaFileFormat.items[format_name]
-        except KeyError:
-            raise RuntimeError("Unsupported format")
-
-        request_set = getUtility(IPOExportRequestSet)
-        request_set.addRequest(
+        self.request_set.addRequest(
             self.user, pofiles=[self.context], format=format)
-        self.formProcessed = True
+        self.nextURL()
 

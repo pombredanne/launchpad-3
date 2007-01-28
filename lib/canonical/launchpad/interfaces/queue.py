@@ -223,7 +223,16 @@ class IDistroReleaseQueueSource(Interface):
 
 
 class IDistroReleaseQueueCustom(Interface):
-    """A Queue item's related custom format files (for uploader/queue)"""
+    """Stores anything else than source and binaries that needs publication.
+
+    It is essentially a map between DistroRelease/Pocket/LibrarianFileAlias.
+
+    The LibrarianFileAlias usually is a TGZ containing an specific format.
+    Currently we support:
+     [Debian-Installer, Rosetta-Translation, Dist-Upgrader, DDTP-Tarball]
+
+    Each one has an processor which is invoked by the publish method.
+    """
 
     id = Int(
             title=_("ID"), required=True, readonly=True,
@@ -284,6 +293,16 @@ class IDistroReleaseQueueCustom(Interface):
         process will be logged to it.
         """
 
+    def publish_DDTP_TARBALL(logger=None):
+        """Publish this custom item as a raw ddtp-tarball.
+
+        This will write the ddtp-tarball out to the right part of
+        the archive.
+
+        If a logger is provided, information pertaining to the publishing
+        process will be logged to it.
+        """
+
     def publish_ROSETTA_TRANSLATIONS(logger=None):
         """Publish this custom item as a rosetta tarball.
 
@@ -321,13 +340,18 @@ class IHasQueueItems(Interface):
         """Get the union of builds, sources and custom queue items.
 
         Returns builds, sources and custom queue items in a given state,
-        matching a give name and version terms. If 'status' is not supplied,
-        return all items in the queues. if 'name' and 'version'
-        are supplied return only items which the sourcepackage name or
-        binarypackage name or the filename match (SQL LIKE).
-        'name' doesn't require 'version'
-        'version' doesn't has effect on custom queue items
-        If pocket is specified return only queue items inside it, otherwise
-        return all pockets.
+        matching a give name and version terms.
+
+        If 'status' is not supplied, return all items in the queues,
+        it supports multiple statuses as a list.
+
+        If 'name' and 'version' are supplied only items which match (SQL LIKE)
+        the sourcepackage name, binarypackage name or the filename will be
+        returned.  'name' can be supplied without supplying 'version'.
+        'version' has no effect on custom queue items.
+
+        If 'pocket' is specified return only queue items inside it, otherwise
+        return all pockets.  It supports multiple pockets as a list.
+
         Use 'exact_match' argument for precise results.
         """

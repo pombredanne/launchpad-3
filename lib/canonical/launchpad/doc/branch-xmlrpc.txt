@@ -27,7 +27,7 @@ authenticated user as the owner of the branch.
 
     >>> branchset_api.register_branch(
     ...      'http://foo.com/branch', '', '', '', '', '')
-    'http://launchpad.dev/people/name16/+branch/+junk/branch'
+    'http://launchpad.dev/~name16/+branch/+junk/branch'
 
 Now we can see that a branch got registered:
 
@@ -63,7 +63,7 @@ well:
     >>> branchset_api.register_branch(
     ...      other_branch_url, 'branch_name', 'branch_title',
     ...      'branch description', 'test@canonical.com', 'evolution')
-    'http://launchpad.dev/people/name16/+branch/evolution/branch_name'
+    'http://launchpad.dev/~name16/+branch/evolution/branch_name'
 
     >>> new_branch = getUtility(IBranchSet).getByUrl(other_branch_url)
     >>> print new_branch.owner.displayname
@@ -90,8 +90,6 @@ If we give a product name that doesn't exist, we get an error:
 
 If we give an email address which isn't registered in Launchpad:
 
-    >>> getUtility(IBranchSet).getByUrl(other_branch_url) is not None
-    True
     >>> branchset_api.register_branch(
     ...      new_branch_url, 'branch_name', 'branch_title',
     ...      'branch description', 'non-existing@canonical.com', 'evolution')
@@ -100,14 +98,46 @@ If we give an email address which isn't registered in Launchpad:
     Fault: <Fault 20: 'Invalid author: No user with the email address
                       "non-existing@canonical.com" was found'>
 
+
+Registering a branch name that ends in a slash works, but the slash
+gets removed from the stored URL:
+
+    >>> branchset_api.register_branch(
+    ...     new_branch_url + '/', 'new_branch', 'branch_title',
+    ...     'branch_description', 'test@canonical.com', 'evolution')
+    'http://launchpad.dev/~name16/+branch/evolution/new_branch'
+
+    >>> new_branch = getUtility(IBranchSet).getByUrl(new_branch_url)
+    >>> print new_branch.url
+    http://foo.com/new_branch
+    >>> print new_branch.owner.name
+    name16
+    >>> print new_branch.product.name
+    evolution
+    >>> print new_branch.name
+    new_branch
+
+
 If we try to register a branch which is already registered in Launchpad:
 
+    >>> getUtility(IBranchSet).getByUrl(other_branch_url) is not None
+    True
     >>> branchset_api.register_branch(
     ...      other_branch_url, 'branch_name', 'branch_title',
     ...      'branch description', 'test@canonical.com', 'evolution')
     Traceback (most recent call last):
     ...
     Fault: <Fault 50: 'http://foo.com/other_branch is already registered.'>
+
+
+We get the same error if we try to register the branch with a slash appended:
+    >>> branchset_api.register_branch(
+    ...      other_branch_url + '/', 'branch_name', 'branch_title',
+    ...      'branch description', 'test@canonical.com', 'evolution')
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 50: 'http://foo.com/other_branch is already registered.'>
+
 
 link_branch_to_bug(branch_url, bug_id, whiteboard)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

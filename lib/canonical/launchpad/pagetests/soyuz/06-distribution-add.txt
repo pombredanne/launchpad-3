@@ -15,7 +15,7 @@ And now let's create a Test Distro:
   >>> admin_browser.getControl("Members").value = 'sabdfl'
   >>> admin_browser.getControl("Add").click()
   >>> admin_browser.url
-  'http://localhost/distros/test'
+  'http://localhost/test'
   >>> admin_browser.contents
   '...The Test Distribution...'
 

@@ -29,10 +29,10 @@ class ISSHKey(Interface):
 class ISSHKeySet(Interface):
     """The set of SSHKeys."""
 
-    def new(personID, keytype, keytext, comment):
+    def new(person, keytype, keytext, comment):
         """Create a new SSHKey pointing to the given Person."""
 
-    def get(id, default=None):
+    def getByID(id, default=None):
         """Return the SSHKey object for the given id.
 
         Return the given default if there's now object with the given id.

@@ -1,7 +1,7 @@
 <div class="portlet">
 
-  <h4><span tal:replace="context/displayname">Ubuntu
-      </span> distribution details:</h4>
+  <h2><span tal:replace="context/displayname">Ubuntu
+      </span> distribution details</h2>
 
   <div class="portletBody portletContent">
 

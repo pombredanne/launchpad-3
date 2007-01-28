@@ -11,24 +11,21 @@ from sqlobject import (
     StringCol, ForeignKey, IntervalCol)
 from sqlobject.sqlbuilder import AND, IN
 
+from canonical.config import config
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-
-from canonical.config import config
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
-from canonical.launchpad.database.builder import BuildQueue
+from canonical.launchpad.database.buildqueue import BuildQueue
 from canonical.launchpad.database.queue import DistroReleaseQueueBuild
 from canonical.launchpad.helpers import (
     get_email_template, contactEmailAddresses)
 from canonical.launchpad.interfaces import (
     IBuild, IBuildSet, NotFoundError, ILaunchpadCelebrities)
 from canonical.launchpad.mail import simple_sendmail, format_address
-
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
-
 from canonical.lp.dbschema import (
     EnumCol, BuildStatus, PackagePublishingPocket, DistributionReleaseStatus)
 
@@ -229,6 +226,12 @@ class Build(SQLBase):
         if config.builddmaster.notify_owner:
             recipients = recipients.union(contactEmailAddresses(creator))
 
+        # XXX cprov 20061027: temporary extra debug info about the
+        # SPR.creator in context, to be used during the service quarantine,
+        # notify_owner will be disabled to avoid *spamming* Debian people.
+        extra_headers['X-Creator-Recipient'] = ",".join(
+            contactEmailAddresses(creator))
+
         subject = "[Build #%d] %s" % (self.id, self.title)
 
         # XXX cprov 20060802: pending security recipients for SECURITY
@@ -252,7 +255,7 @@ class Build(SQLBase):
             # completed states (success and failure)
             buildduration = DurationFormatterAPI(
                 self.buildduration).approximateduration()
-            buildlog_url = self.buildlog.url
+            buildlog_url = self.buildlog.http_url
             builder_url = canonical_url(self.builder)
 
         template = get_email_template('build-notification.txt')

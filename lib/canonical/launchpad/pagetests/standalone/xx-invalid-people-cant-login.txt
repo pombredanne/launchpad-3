@@ -4,14 +4,14 @@ credentials. See Bug #33427
 
 First we log in via cookie
 
->>> browser.open('http://localhost:9000/+login')
+>>> browser.open('http://launchpad.dev/+login')
 >>> browser.url
-'http://localhost:9000/+login'
->>> browser.getControl('E-mail').value = 'foo.bar@canonical.com'
+'http://launchpad.dev/+login'
+>>> browser.getControl('E-mail', index=0).value = 'foo.bar@canonical.com'
 >>> browser.getControl('Password').value = 'test'
 >>> browser.getControl('Log In').click()
 >>> browser.url
-'http://localhost:9000'
+'http://launchpad.dev'
 >>> 'Logged in as' in browser.contents
 True
 
@@ -25,9 +25,9 @@ Now invalidate that person
 
 Now if we reload the front page, we should be logged out.
 
->>> browser.open('http://localhost:9000')
+>>> browser.open('http://launchpad.dev')
 >>> browser.url
-'http://localhost:9000'
+'http://launchpad.dev'
 >>> 'Logged in as' in browser.contents
 False
 
@@ -39,9 +39,9 @@ We also can only connect via Basic auth when then user is valid
 >>> from zope.testbrowser.testing import Browser
 >>> browser = Browser()
 >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
->>> browser.open('http://localhost:9000')
+>>> browser.open('http://launchpad.dev')
 >>> browser.url
-'http://localhost:9000'
+'http://launchpad.dev'
 >>> 'Logged in as' in browser.contents
 True
 
@@ -50,9 +50,9 @@ True
 
 >>> browser = Browser()
 >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
->>> browser.open('http://localhost:9000')
+>>> browser.open('http://launchpad.dev')
 >>> browser.url
-'http://localhost:9000'
+'http://launchpad.dev'
 >>> 'Logged in as' in browser.contents
 False
 

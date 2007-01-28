@@ -1,10 +1,10 @@
 /* === Things browsers should do, but don't: === */
 
 .clearfix:after { /* use class="clearfix" whenever floats should be enclosed */
-  content: "."; 
-  display: block; 
-  height: 0; 
-  clear: both; 
+  content: ".";
+  display: block;
+  height: 0;
+  clear: both;
   visibility: hidden;
 }
 .clearfix {display: inline-table;}
@@ -78,6 +78,17 @@ thead th, tr.thead th {
   display: block;
 }
 
+/* make <wbr> work with Opera */
+/* XXX: 20061026 jamesh
+ * Disabled for now, since BjornT reported display problems
+ */
+/*
+wbr:after {
+  content: "\00200B"
+}
+*/
+
+
 /* === Global Launchpad design: === */
 
 .debug {
@@ -121,7 +132,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 h1 :link, h2 :link, h3 :link, h4 :link, h5 :link, h6 :link,
 h1 :visited, h2 :visited, h3 :visited, h4 :visited, h5 :visited, h6 :visited {
-  color: inherit; 
+  color: inherit;
 }
 h1 {
   font-size: 1.6em;
@@ -152,7 +163,7 @@ pre {
   background-color: #dee7ec;
   padding: 0.5em;
 }
-.userLog { 
+.userLog {
   font-family: "Lucida Grande","trebuchet ms",verdana,sans-serif;
   font: 11px tahoma,verdana,sans-serif;
   position: absolute;
@@ -248,13 +259,10 @@ th.descending {
 ol, ul {
   padding: 0;
 }
-ul { 
+ul {
   list-style-type: square;
   list-style-image: url(/@@/bullet);
   margin: 0.5em 0 0 24px; /* because bullet graphics are px width */
-}
-ul.menu, div.menu {
-  font-size: smaller;
 }
 ol {
   margin: 0.5em 0 0 1.5em;
@@ -265,37 +273,45 @@ ol {
     display: none;
 }
 
-.portlet {
+#portal-column-one .portlet, #portal-column-two .portlet,
+#layout2col-portlets .portlet {
   border: none;
   font-size: smaller;
   margin-bottom: 1em;
   padding: 0;
   background-color: #f4f5f8; /* changed by sabdfl, 2005-10-22 */
 }
-.portlet h4 { /* the base portlet heading */
+#portal-column-one .portlet h2, #portal-column-two .portlet h2,
+#layout2col-portlets .portlet h2 {
+  /* the base portlet heading */
   background-color: #dee7ec;
   border: 1px solid #8cacbb;
   font-weight: normal;
-  margin-top: 0;
+  margin: 0;
   padding: 0em 0.3em 0em 0.75em;
   display: block;
   font-size: 1em;
 }
-.portlet h5, .portlet h6 {
+#portal-column-one .portlet h5, #portal-column-two .portlet h6,
+#layout2col-portlets .portlet h5 {
   color: black;
 }
-.portlet h5 {
+#portal-column-one .portlet h5, #portal-column-two h5,
+#layout2col-portlets .portlet h5 {
   font-weight: bold;
 }
-.portlet h6 {
+#portal-column-one .portlet h6, #portal-column-two h6,
+#layout2col-portlets .portlet h6 {
   font-variant: italic;
 }
-.portletBody {
+#portal-column-one .portletBody, #portal-column-two .portletBody,
+#layout2col-portlets .portletBody {
   position: relative;
   top: -1px;
   border: 1px solid #8cacbb;
 }
-.portletContent {
+#portal-column-one .portletContent, #portal-column-two .portletContent,
+#layout2col-portlets .portletContent {
   padding: 0.75em;
 }
 
@@ -305,7 +321,7 @@ input[type="text"], input[type="submit"], input[type="reset"] {
   font-size: 1em; /* Forces a readable font size in Safari */
 }
 textarea {
-  border: 1px solid #8cacbb;  
+  border: 1px solid #8cacbb;
   color: black;
   background-color: white;
   font-family: sans-serif;
@@ -327,7 +343,7 @@ input.urlTextType {
 }
 /* Temporarily make *all* buttons look plone-y. Ugh. */
 button {
-  border: 1px solid #8cacbb;  
+  border: 1px solid #8cacbb;
   color: Black;
   background-color: white;
 }
@@ -340,7 +356,7 @@ input[type="radio"] {
 .portlet a {
   text-decoration: none;
 }
-/* SteveA says they should still be underlined if they're in help text */ 
+/* SteveA says they should still be underlined if they're in help text */
 .portlet p a {
   text-decoration: underline;
 }
@@ -434,22 +450,13 @@ ul.app>li.current {
   width: 22%;
 }
 
-.sitemap, ul.facets {
+ul.facets {
   background-color: #dee7ec;
   border: 1px solid #8cacbb;
   color: #999999;
   font-size: smaller;
   margin: 0 0 1em 0;
-}
-.sitemap li {
-  display: block;
-  padding: 0.25em 1em;
-}
-.sitemap :link, .sitemap :visited {
-  text-decoration: none;
-}
-/* The following paddings/margins aren't yet robust when zoomed. */
-ul.facets {
+  /* The following paddings/margins aren't yet robust when zoomed. */
   padding: 0.25em 0 0.25em 0;
 }
 ul.facets :link, ul.facets :visited {
@@ -459,6 +466,10 @@ ul.facets>li {
   list-style-position: inside;
   margin: 0.25em 1em;
   padding-left: 0.5em;
+}
+ul.facets li.current {
+  background-color: #f4f5f8;
+  color: inherit;
 }
 ul.facets>li ul {
   list-style-position: outside;
@@ -492,7 +503,7 @@ form {
 input {
     font-family: "Lucida Grande", Verdana, Lucida, Helvetica, Arial, sans-serif;
     visibility: visible;
-    border: 1px solid #8cacbb;  
+    border: 1px solid #8cacbb;
     color: Black;
     background-color: white;
     vertical-align: middle;
@@ -529,12 +540,25 @@ ins {
 }
 
 .formControls {
-   margin: 1em 0 0 0; 
+   margin: 1em 0 0 0;
 }
 
 .discreet {
     color: #76797c;
     font-size: 85%;
+    font-weight: normal;
+}
+
+.discreet a {
+    color: #76797c;
+    text-decoration: none;
+    border-bottom: 1px dotted #76797c;
+    font-weight: normal;
+}
+
+.suggestion {
+    color: #76797c;
+    font-size: 50%;
     font-weight: normal;
 }
 
@@ -567,7 +591,7 @@ ins {
 }
 
 /*
-** Accessibility and visual enhancement elements 
+** Accessibility and visual enhancement elements
 */
 
 .visualClear {
@@ -576,7 +600,7 @@ ins {
 }
 #portal-column-content fieldset > * input:focus,
 #portal-column-content fieldset > * textarea:focus {
-    border-color: #ffa500; 
+    border-color: #ffa500;
     border-width: 1px;
 }
 
@@ -702,9 +726,12 @@ tr.highlight {
 
 /* Ticket status */
 
-.ticketstatusOPEN            { color: Black; }
-.ticketstatusANSWERED        { color: Green; }
-.ticketstatusREJECTED        { color: Red; }
+.ticketstatusOPEN               { color: Black; }
+.ticketstatusNEEDSINFO          { color: Black; }
+.ticketstatusANSWERED           { color: Green; }
+.ticketstatusSOLVED             { color: Green; }
+.ticketstatusEXPIRED            { color: Red; }
+.ticketstatusINVALID            { color: Red; }
 
 /* Board-like comment CSS */
 
@@ -918,7 +945,7 @@ input[type="image"] {
   background: url(/@@/required) center left no-repeat;
   color: #999999;
   content: '(Required)';
-  font-weight: normal;  
+  font-weight: normal;
   padding: 0 0 0 8px;
   margin: 0 0 0 4px;
 }
@@ -1131,4 +1158,206 @@ dl.faq ol {
 .debugging {background-color: #666; color: white;}
 .debugging.message, .debugging .message {
   background-image: url(/@@/info);
+}
+
+/* Dynamic menus */
+
+#menuroot li {
+  background: url(/@@/divider) center right no-repeat;
+}
+* html #menuroot li {
+  padding-right: 2em;
+}
+#menuroot li:hover {
+  background: url(/@@/divider-highlighted) center right no-repeat;
+}
+#menuroot li li:hover {
+  background: #8cacbb;
+}
+#menuroot li li {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  background: #dee7ec;
+}
+#menuroot li li a {
+  display: block;
+  width: auto;
+  padding: 0 6px !important;
+}
+#menuroot li li a:hover {
+  background: #8cacbb;
+}
+ul.menuroot > li > ul.menu {
+  z-index: 2000;
+}
+ul.menuroot, ul.menu {
+  display: block;
+}
+* html ul.menuroot, * html ul.menu {
+  position: absolute;
+}
+#menucontainer div > ul, #menucontainer li > ul {
+  position: absolute;
+}
+ul.menuroot {
+  top: 0px;
+  background-color: #dee7ec;
+  font-family: sans-serif;
+  font-size: 0.675em;
+  width: 100%;
+}
+.menuroot {
+  border: 1px solid;
+  border-color: #fff #8cacbb #8cacbb #fff;
+}
+.scrollbutton.up {
+  background: url(/@@/arrowUp) center center no-repeat;
+}
+.scrollbutton.down {
+  background: url(/@@/arrowDown) center center no-repeat;
+}
+.item, .scrollbutton {
+  border: 0px solid;
+  border-color: #fff #8cacbb #8cacbb #fff;
+  white-space: nowrap;
+  margin: 0px;
+  padding: 0 2em 0 0.5em;
+  line-height: 2em;
+  height: 2em;
+  background-color: #dee7ec;
+  min-width: 3em;
+  color: black;
+  cursor: default;
+}
+.menu .item, .scrollbutton.down, .scrollbutton.up {
+  border-left-width: 1px;
+  border-right-width: 1px;
+  padding: 0 0.5em;
+}
+.menu, .menuroot {
+  list-style-type: none;
+  padding: 0px;
+  margin: 0px;
+}
+/* ul.menuroot>li:hover, ul.menu>li:hover, */
+.open {
+  background-color: #8cacbb;
+  color: #fff;
+}
+.menuroot .item {
+  float: left;
+  background-color: #dee7ec;
+}
+.menu .menu {
+  margin-top: -2em;
+  z-index: 2;
+}
+.menu > li > .menu {
+  position: absolute;
+}
+.container {
+  background: url(/@@/arrowRight) center right no-repeat;
+}
+.menu .item {
+  display: block;
+  float: none;
+  width: 100%;
+}
+.item a {
+  text-decoration: none;
+  color: darkblue;
+  cursor: default;
+}
+.item img {
+  vertical-align: middle;
+}
+.menu .item.first, .scrollbutton.up {
+  border-top-width: 1px;
+}
+.menu .item.last, .scrollbutton.down {
+  border-bottom-width: 1px;
+}
+
+* html .menuroot {
+  font-size: 0.8em;
+}
+#menucontainer * html ul {
+  background-color: #dee7ec;
+  display: block;
+  position: absolute;
+}
+#menucontainer * html li {
+  min-width: 20em;
+}
+#menucontainer * html .menuroot {
+  background-color: white;
+}
+* html .menuroot, * html .menu {
+  border: 0px solid;
+}
+* html .scrollbutton.up {
+  background: url(/@@/arrowUp) center center no-repeat;
+}
+* html .scrollbutton.down {
+  background: url(/@@/arrowDown) center center no-repeat;
+}
+* html .item, * html .scrollbutton.down, * html .scrollbutton.up {
+  border: 0px solid;
+  border-color: #fff #8cacbb #8cacbb #fff;
+  white-space: nowrap;
+  margin: 0px;
+  padding: 0px;
+  line-height: 2em;
+  height: 2em;
+  background-color: #dee7ec;
+  min-width: 20em;
+  color: black;
+  cursor: default;
+}
+* html .menu .item, * html .scrollbutton.down, * html .scrollbutton.up {
+  border-left-width: 1px;
+  border-right-width: 1px;
+}
+* html .menu, * html .menuroot {
+  list-style-type: none;
+  padding: 0px;
+  margin: 0px;
+}
+* html .menuroot .item {
+  float: left;
+  background-color: #dee7ec;
+}
+* html .menu {
+  z-index: 2;
+}
+* html .container {
+  background: url(/@@/arrowRight) center right no-repeat;
+}
+* html .menu .item {
+  float: none;
+}
+* html .item a {
+  text-decoration: none;
+  color: darkblue;
+  cursor: default;
+}
+* html .menu .item.first, * html .scrollbutton.up {
+  border-top-width: 1px;
+}
+* html .menu .item.last, * html .scrollbutton.down {
+  border-bottom-width: 1px;
+}
+* html .rootitem {
+  width: 10em;
+  top: 0px;
+}
+#menupreload {
+  visibility: hidden;
+}
+* html .body {
+  padding-top: 1.5em;
+}
+#menuroot li {
+  list-style-image: none;
 }

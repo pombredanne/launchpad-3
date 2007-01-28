@@ -9,13 +9,11 @@
     <!-- SourcePackageReleaseFile -->
     <content class="canonical.launchpad.database.SourcePackageReleaseFile">
         <allow interface="canonical.launchpad.interfaces.ISourcePackageReleaseFile" />
-        <allow interface="canonical.launchpad.interfaces.ISoyuzFile" />
     </content>
 
     <!-- BinaryPackageFile -->
     <content class="canonical.launchpad.database.BinaryPackageFile">
         <allow interface="canonical.launchpad.interfaces.IBinaryPackageFile" />
-        <allow interface="canonical.launchpad.interfaces.ISoyuzFile" />
     </content>
 
 </configure>

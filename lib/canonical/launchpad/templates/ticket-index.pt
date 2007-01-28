@@ -3,6 +3,18 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad"
 >
+  <head>
+    <style metal:fill-slot="head_epilogue"
+           type="text/css" media="screen">
+  div.confirmBox {
+    margin: 0;
+    padding-right: 0.5em;
+    padding-bottom: 0.5em;
+    text-align: right;
+    font-size: smaller;
+  }
+    </style>
+  </head>
   <body>
     <metal:heading fill-slot="pageheading">
       <h1 tal:content="context/title">Bar doesn't work</h1>
@@ -22,11 +34,6 @@
 
 <div metal:fill-slot="main">
 
-  <p tal:repeat="notice view/notices" tal:content="notice"
-     class="informational message">
-    notice goes here
-  </p>
-
   <table tal:condition="context/whiteboard" class="listing">
     <tbody>
       <tr>
@@ -45,64 +52,47 @@
   </div>
 
   <tal:message repeat="message context/messages">
-    <div class="boardComment"
-         tal:condition="python:context.description != message.text_contents">
-
-      <div class="boardCommentDetails">
-        <strong tal:content="message/title">$Message.title</strong>
-
-        Posted by <a href="#" tal:attributes="href message/owner/fmt:url" 
-                              tal:content="message/owner/browsername|string:(none)">
-          $Person.browsername</a>
-        at <span tal:replace="message/datecreated/fmt:datetime">Thursday 
-        13:21</span>
-      </div>
-
-      <div class="boardCommentBody">
-        <tal:comment
-          content="structure message/text_contents/fmt:text-to-html"
-        >
-          Comment text.
-        </tal:comment>
-      </div>
-
-    </div>
+    <div tal:replace="structure message/@@+display" />
   </tal:message>
 
-  <tal:logged-in condition="request/lp:person">
-    <fieldset class="collapsible collapsed">
-      <legend>Add comment</legend>
-        <form action="+addmessage" method="post">
-          <b>Subject:</b>
-          <input name="field.subject" type="text" size="50" 
-                 tal:attributes="value context/followup_subject" /><br />
-          <b>Comment:</b> <textarea name="field.content" rows="10"></textarea>
-          <br />
-          <tal:can_close_ticket condition="not: context/is_resolved">
-            <tal:is_owner condition="view/is_owner">
-              <label>
-                <input type="checkbox" name="field.resolved">
-                Support request is answered
-              </label>
-              <div class="discreet">
-                Check this box if the problem has been resolved. This will
-                confirm the resolution, and take the ticket off the list of
-                active support requests for
-                <span tal:replace="context/target/displayname">Ubuntu</span>.
-              </div>
-            </tal:is_owner>
-          </tal:can_close_ticket>
-        <input type="submit" name="UPDATE_SUBMIT" value="Post Comment" />
-        </form>
-    </fieldset>
-  </tal:logged-in>
+  <tal:workflowActions condition="view/hasActions">
+    <div metal:use-macro="context/@@launchpad_form/form">
+      <metal:no-heading fill-slot="heading" />
+      <tal:comment replace="nothing">
+        We control here the order of the action buttons and we omit
+        the confirmation action which is rendered using the TicketMessage
+        view.
+      </tal:comment>
+      <div class="actions" metal:fill-slot="buttons">
+        <input tal:replace="structure view/comment_action/render" />
+        <input tal:replace="structure view/answer_action/render" />
+        <input tal:replace="structure view/selfanswer_action/render" />
+        <input tal:replace="structure view/requestinfo_action/render" />
+        <input tal:replace="structure view/giveinfo_action/render" />
+        <input tal:replace="structure view/reopen_action/render" />
+      </div>
+    </div>
+  </tal:workflowActions>
   <tal:not-logged-in condition="not: request/lp:person">
     <div align="center">
-      To post a comment you must <a href="+login">log in</a>.
+      To post a message you must <a href="+login">log in</a>.
     </div>
   </tal:not-logged-in>
-
 </div>
+
+  <metal:help fill-slot="help">
+    <p>The support request and the following discussion is displayed on this
+      page.
+    </p>
+    <p>If you are the person who posted that support request, consult the
+      <a href="https://help.launchpad.net/GettingSupportInLaunchpad">Getting
+        Support in Launchpad</a> document for help on how to follow-up on your
+      request.</p>
+    <p>If you want to help the user, consult the
+      <a href="https://help.launchpad.net/ProvidingSupportThroughLaunchpad">
+        Providing Support Through Launchpad</a> document.
+    </p>
+  </metal:help>
 </body>
 </html>
 

@@ -2,17 +2,21 @@
 
 __metaclass__ = type
 
+from StringIO import StringIO
 import unittest
 
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 from canonical.launchpad.ftests import login
+from canonical.launchpad.mail import stub
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IDistributionMirrorSet)
+    IDistributionSet, IDistributionMirrorSet, ILibraryFileAliasSet)
 from canonical.lp.dbschema import PackagePublishingPocket, MirrorStatus
 
 
@@ -60,6 +64,15 @@ class TestDistributionMirror(LaunchpadFunctionalTestCase):
         expected_file_count = 1
         self.failUnless(self.release_mirror.shouldDisable(expected_file_count))
 
+    def test_delete_all_mirror_cdimage_releases(self):
+        mirror = self.release_mirror.ensureMirrorCDImageRelease(
+            self.hoary, flavour='ubuntu')
+        mirror = self.release_mirror.ensureMirrorCDImageRelease(
+            self.hoary, flavour='edubuntu')
+        self.failUnless(self.release_mirror.cdimage_releases.count() == 2)
+        self.release_mirror.deleteAllMirrorCDImageReleases()
+        self.failUnless(self.release_mirror.cdimage_releases.count() == 0)
+
     def test_archive_mirror_without_content_status(self):
         self.failIf(self.archive_mirror.source_releases or
                     self.archive_mirror.arch_releases)
@@ -106,6 +119,57 @@ class TestDistributionMirror(LaunchpadFunctionalTestCase):
 
         self.failUnless(
             self.archive_mirror.getOverallStatus() == MirrorStatus.TWODAYSBEHIND)
+
+    def _create_probe_record(self, mirror):
+        log_file = StringIO()
+        log_file.write("Fake probe, nothing useful here.")
+        log_file.seek(0)
+        library_alias = getUtility(ILibraryFileAliasSet).create(
+            name='foo', size=len(log_file.getvalue()),
+            file=log_file, contentType='text/plain')
+        proberecord = mirror.newProbeRecord(library_alias)
+
+    def test_disabling_mirror_and_notifying_owner(self):
+        LibrarianTestSetup().setUp()
+        login('karl@canonical.com')
+
+        mirror = self.release_mirror
+        # If a mirror has been probed only once, the owner will always be
+        # notified when it's disabled --it doesn't matter whether it was
+        # previously enabled or disabled.
+        self._create_probe_record(mirror)
+        self.failUnless(mirror.enabled)
+        mirror.disableAndNotifyOwner()
+        # A notification was sent to the owner and other to the mirror admins.
+        transaction.commit()
+        self.failUnless(len(stub.test_emails) == 2)
+        stub.test_emails = []
+
+        mirror.disableAndNotifyOwner()
+        # Again, a notification was sent to the owner and other to the mirror
+        # admins.
+        transaction.commit()
+        self.failUnless(len(stub.test_emails) == 2)
+        stub.test_emails = []
+
+        # For mirrors that have been probed more than once, we'll only notify
+        # the owner if the mirror was previously enabled.
+        self._create_probe_record(mirror)
+        mirror.enabled = True
+        mirror.disableAndNotifyOwner()
+        # A notification was sent to the owner and other to the mirror admins.
+        transaction.commit()
+        self.failUnless(len(stub.test_emails) == 2)
+        stub.test_emails = []
+
+        mirror.enabled = False
+        mirror.disableAndNotifyOwner()
+        # No notifications were sent this time
+        transaction.commit()
+        self.failUnless(len(stub.test_emails) == 0)
+        stub.test_emails = []
+
+        LibrarianTestSetup().tearDown()
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

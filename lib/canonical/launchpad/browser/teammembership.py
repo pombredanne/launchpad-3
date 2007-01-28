@@ -28,6 +28,10 @@ class TeamMembershipEditView:
         self.user = getUtility(ILaunchBag).user
         self.errormessage = ""
 
+    #
+    # Boolean helpers
+    #
+
     def userIsTeamOwnerOrLPAdmin(self):
         return (self.user.inTeam(self.context.team.teamowner) or
                 self.user.inTeam(getUtility(ILaunchpadCelebrities).admin))
@@ -106,6 +110,10 @@ class TeamMembershipEditView:
         else:
             return True
 
+    #
+    # Form post handlers and helpers
+    #
+
     def processForm(self):
         if self.request.method != 'POST':
             return
@@ -118,46 +126,41 @@ class TeamMembershipEditView:
             self.processInactiveMember()
 
     def processActiveMember(self):
-        assert self.context.status in (TeamMembershipStatus.ADMIN,
-                                       TeamMembershipStatus.APPROVED)
-
-        team = self.context.team
+        # This method checks the current status to ensure that we don't
+        # crash because of users reposting a form.
         if self.request.form.get('editactive') == 'Deactivate':
-            member = self.context.person
-            deactivated = TeamMembershipStatus.DEACTIVATED
-            comment = self.request.form.get('comment')
-            # XXX: should we not get the expiry date set in the form?
-            #   -- kiko, 2005-10-10
-            expires = self.context.dateexpires
-            team.setMembershipStatus(member, deactivated, expires,
-                                     reviewer=self.user, comment=comment)
-            self.request.response.redirect('%s/+members' % canonical_url(team))
-            return
-
-        # XXX: salgado, 2005-03-15: I would like to just write this as 
-        # "status = self.context.status", but it doesn't work because
-        # self.context.status is security proxied.
-        status = TeamMembershipStatus.items[self.context.status.value]
-
-        if (self.context.status == TeamMembershipStatus.ADMIN
-            and self.request.form.get('admin') == 'no'):
-            status = TeamMembershipStatus.APPROVED
-        elif (self.context.status == TeamMembershipStatus.APPROVED
-              and self.userIsTeamOwnerOrLPAdmin()
-              and self.request.form.get('admin') == 'yes'):
-            # XXX: salgado, 2005-03-15: This is a hack to make sure only
-            # the teamowner can promote a given member to admin, while
-            # we don't have a specific permission setup for this.
-            status = TeamMembershipStatus.ADMIN
+            if self.context.status == TeamMembershipStatus.DEACTIVATED:
+                # This branch and redirect is necessary because
+                # TeamMembership.setStatus() does not allow us to set an
+                # already-deactivated account to deactivated, causing
+                # double form posts to crash there. We instead manually
+                # ensure that the double-post is harmless.
+                self.request.response.redirect('%s/+members' %
+                                               canonical_url(self.context.team))
+                return
+            new_status = TeamMembershipStatus.DEACTIVATED
+        elif (self.request.form.get('admin') == 'no' and
+              self.context.status == TeamMembershipStatus.ADMIN):
+            new_status = TeamMembershipStatus.APPROVED
+        elif (self.request.form.get('admin') == 'yes' and
+              self.context.status == TeamMembershipStatus.APPROVED
+              # XXX: salgado, 2005-03-15: The clause below is a hack
+              # to make sure only the teamowner can promote a given
+              # member to admin, while we don't have a specific
+              # permission setup for this.
+              and self.userIsTeamOwnerOrLPAdmin()):
+            new_status = TeamMembershipStatus.ADMIN
         else:
-            # A form reload or race happened, but it's harmless
-            pass
+            # No status change will happen
+            new_status = self.context.status
 
-        if self._setMembershipData(status):
-            self.request.response.redirect('%s/+members' % canonical_url(team))
+        if self._setMembershipData(new_status):
+            self.request.response.redirect('%s/+members' %
+                                           canonical_url(self.context.team))
 
     def processProposedMember(self):
         if self.context.status != TeamMembershipStatus.PROPOSED:
+            # Catch a double-form-post.
             self.errormessage = _(
                 'The membership request for %s has already been processed.' % 
                     self.context.person.displayname)
@@ -175,12 +178,75 @@ class TeamMembershipEditView:
                 '%s/+members' % canonical_url(self.context.team))
 
     def processInactiveMember(self):
-        assert self.context.status in (TeamMembershipStatus.EXPIRED,
-                                       TeamMembershipStatus.DEACTIVATED)
+        if self.context.status not in (TeamMembershipStatus.EXPIRED,
+                                       TeamMembershipStatus.DEACTIVATED):
+            # Catch a double-form-post.
+            self.errormessage = _(
+                'The membership request for %s has already been processed.' % 
+                    self.context.person.displayname)
+            return
 
         if self._setMembershipData(TeamMembershipStatus.APPROVED):
             self.request.response.redirect(
                 '%s/+members' % canonical_url(self.context.team))
+
+    def _setMembershipData(self, status):
+        """Set all data specified on the form, for this TeamMembership.
+
+        Get all data from the form, together with the given status and set
+        them for this TeamMembership object.
+
+        Returns True if we successfully set the data, False otherwise.
+        Callsites should not commit the transaction if we return False.
+        """
+        if self.canChangeExpirationDate():
+            if self.request.form.get('expires') == 'never':
+                expires = None
+            else:
+                try:
+                    expires = self._getExpirationDate()
+                except ValueError, err:
+                    self.errormessage = (
+                        'Invalid expiration: %s. '
+                        'Please fix this and resubmit your changes.' % err)
+                    return False
+        else:
+            expires = self.context.dateexpires
+
+        team = self.context.team
+        member = self.context.person
+        comment = self.request.form.get('comment')
+        team.setMembershipData(member, status, reviewer=self.user,
+                               expires=expires, comment=comment)
+        return True
+
+    def _getExpirationDate(self):
+        """Return a datetime with the expiration date selected on the form.
+
+        Raises ValueError if the date selected is invalid. The use of
+        that exception is unusual but allows us to present a consistent
+        API to the caller, who needs to check only for that specific
+        exception.
+        """
+        year = int(self.request.form.get('year'))
+        month = int(self.request.form.get('month'))
+        day = int(self.request.form.get('day'))
+
+        if 0 in (year, month, day):
+            raise ValueError('incomplete date provided')
+
+        expires = datetime.datetime(year, month, day,
+                                    tzinfo=pytz.timezone('UTC'))
+
+        now = datetime.datetime.now(pytz.timezone('UTC'))
+        if expires <= now:
+            raise ValueError('date provided is in the past')
+
+        return expires
+
+    #
+    # Helper methods for widgets and processing
+    #
 
     def dateChooserForExpiredMembers(self):
         expires = self.context.team.defaultrenewedexpirationdate
@@ -192,49 +258,6 @@ class TeamMembershipEditView:
 
     def dateChooserWithCurrentExpirationSelected(self):
         return self._buildDateChooser(self.context.dateexpires)
-
-    def _getExpirationDate(self):
-        """Return a datetime with the expiration date selected on the form.
-
-        Return None if the selected date was empty. Also raises ValueError if
-        the date selected is invalid.
-        """
-        if self.request.form.get('expires') == 'never':
-            return None
-
-        year = int(self.request.form.get('year'))
-        month = int(self.request.form.get('month'))
-        day = int(self.request.form.get('day'))
-
-        if 0 in (year, month, day):
-            raise ValueError("incomplete date provided.")
-
-        return datetime.datetime(year, month, day, tzinfo=pytz.timezone('UTC'))
-
-    def _setMembershipData(self, status):
-        """Set all data specified on the form, for this TeamMembership.
-
-        Get all data from the form, together with the given status and set
-        them for this TeamMembership object.
-
-        Returns True if we successfully set the data, False otherwise.
-        Callsites should not commit the transaction if we return False.
-        """
-        team = self.context.team
-        member = self.context.person
-        comment = self.request.form.get('comment')
-        if self.canChangeExpirationDate():
-            try:
-                expires = self._getExpirationDate()
-            except ValueError, err:
-                self.errormessage = 'Expiration date: %s' % err
-                return False
-        else:
-            expires = self.context.dateexpires
-
-        team.setMembershipStatus(member, status, expires,
-                                 reviewer=self.user, comment=comment)
-        return True
 
     # XXX: salgado, 2005-03-15: This will be replaced as soon as we have
     # browser:form.

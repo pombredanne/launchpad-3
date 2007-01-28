@@ -7,13 +7,13 @@ consequence, scaring users.
 */
 
 #mastWrapper {
-background: url(/@@/kubuntu-header-bg-dapper.png) bottom left repeat-x #fff;
+background: url(/@@/kubuntu-header-bg) bottom left repeat-x #fff;
 }
 
 #masthead
 {
 position:relative;
-background: url(/@@/kubuntu-header.png) no-repeat transparent;
+background: url(/@@/kubuntu-header) no-repeat transparent;
 border-style: solid;
 border-width: 0;
 color: #000;

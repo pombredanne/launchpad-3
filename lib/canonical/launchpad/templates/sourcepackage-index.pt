@@ -30,7 +30,7 @@
     but they might not be used until the package is published.
   </p>
 
-  <dl tal:condition="view/published_by_pocket">
+  <dl id="publishings" tal:condition="view/published_by_pocket">
     <tal:block repeat="pocket view/published_by_pocket">
       <tal:block condition="pocket/packages">
         <dt><dfn tal:content="pocket/pocketdetails/title">Plain</dfn></dt>
@@ -51,19 +51,19 @@
 
   <h2>Upstream associations</h2>
 
-  <ul tal:define="series context/productseries">
+  <ul id="upstreams" tal:define="series context/productseries">
     <tal:has_series condition="series">
       <li tal:condition="series/product/project">
        <b>Project:</b>
          <a tal:define="project series/product/project"
           tal:content="project/displayname"
-          tal:attributes="href string:/projects/${project/name}">
+          tal:attributes="href string:/${project/name}">
           Project</a>
       </li>
       <li><b>Product:</b>
          <a tal:condition="series/product"
             tal:content="series/product/displayname"
-            tal:attributes="href string:/products/${series/product/name}">
+            tal:attributes="href string:/${series/product/name}">
          Product</a>
       </li>
       <li><b>Branch: </b>
@@ -88,31 +88,34 @@
     <h2>Download files from current release (<span
     tal:replace="current/version">2.1.3-4</span>)</h2>
 
-    <tal:files define="files current/files">
+    <div id="files" tal:define="files current/files">
       <ul class="download" tal:condition="files">
         <li tal:repeat="file files">
-          <a tal:content="file/url/filename"
-             tal:attributes="href file/url/fileurl">foo-bar_2.dsc</a>
+          <a tal:content="file/libraryfile/filename"
+             tal:attributes="href file/libraryfile/http_url">foo-bar_2.dsc</a>
           (<span tal:replace="file/libraryfile/content/filesize/fmt:bytes" />)
         </li>
       </ul>
-    </tal:files>
-    <p tal:condition="not:current/files">
-      No files available for download.
-    </p>
+      <p tal:condition="not: files">
+         No files available for download.
+      </p>
+    </div>
 
     <h2>Binary packages</h2>
-    <p tal:condition="not:view/binaries">
-      No binaries have been generated for this release.
-    </p>
-    <ul tal:define="binaries view/binaries" tal:condition="binaries">
-      <li tal:repeat="bin_name binaries">
-        <span tal:replace="bin_name" /> 
-        <span tal:repeat="archtag python:binaries[bin_name]">
-          (<a tal:content="archtag" tal:attributes="href 
-                           string:../../${archtag}/${bin_name}" />)</span>
-      </li>
-    </ul>
+
+    <div id="binaries" tal:define="binaries view/binaries">
+      <ul tal:condition="binaries">
+        <li tal:repeat="bin_name binaries">
+          <span tal:replace="bin_name" />
+          <span tal:repeat="archtag python:binaries[bin_name]">
+            (<a tal:content="archtag" tal:attributes="href
+                             string:../../${archtag}/${bin_name}" />)</span>
+        </li>
+      </ul>
+      <p tal:condition="not: binaries">
+         No binaries have been generated for this release.
+      </p>
+    </div>
 
     <h2 tal:condition="view/has_build_depends">
         Package relationships
@@ -121,7 +124,7 @@
     <table width="100%" valign="top">
       <tr>
         <td tal:condition="view/builddepends">
-          <h4>Build dependencies</h4>
+          <h3>Build dependencies</h3>
           <ul>
             <li tal:repeat="dep view/builddepends">
               <a tal:content="dep/name"
@@ -133,7 +136,7 @@
         </td>
 
         <td tal:condition="view/builddependsindep">
-          <h4>Platform-independent build dependencies</h4>
+          <h3>Platform-independent build dependencies</h3>
           <ul>
             <li tal:repeat="dep view/builddependsindep">
               <a tal:content="dep/name"

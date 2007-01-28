@@ -1,8 +1,8 @@
 <div class="portlet">
 
-  <h4><span tal:replace="context/name">foobar</span> in
+  <h2><span tal:replace="context/name">foobar</span> in
       <span tal:replace="context/distribution/name">ubuntu</span>
-      <span tal:replace="context/distrorelease/name">hoary</span>:</h4>
+      <span tal:replace="context/distrorelease/name">hoary</span></h2>
 
   <div class="portletBody portletContent">
 

@@ -218,7 +218,7 @@
         <td>person-mini</td>
         <td><img alt="" src="/@@/person-mini" /></td>
         <td rowspan="4">
-          An anonymous icon for a person.
+          A person who uses Launchpad.
           The <code>-heading</code> and <code>-mugshot</code> sizes should be
           used where the person has not uploaded their own custom picture.
         </td>
@@ -234,6 +234,25 @@
       <tr>
         <td>person-mugshot</td>
         <td><img alt="" src="/@@/person-mugshot" /></td>
+      </tr>
+      <tr>
+        <td>person-inactive-mini</td>
+        <td><img alt="" src="/@@/person-mini" /></td>
+        <td rowspan="4">
+          A person who does not use Launchpad.
+        </td>
+      </tr>
+      <tr>
+        <td>person-inactive</td>
+        <td><img alt="" src="/@@/person-inactive" /></td>
+      </tr>
+      <tr>
+        <td>person-inactive-heading</td>
+        <td><img alt="" src="/@@/person-inactive-heading" /></td>
+      </tr>
+      <tr>
+        <td>person-inactive-mugshot</td>
+        <td><img alt="" src="/@@/person-inactive-mugshot" /></td>
       </tr>
       <tr>
         <td>product-mini</td>

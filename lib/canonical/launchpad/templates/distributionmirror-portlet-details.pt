@@ -1,6 +1,6 @@
 <div class="portlet">
 
-  <h4><span tal:replace="context/title">Name</span> Mirror Details:</h4>
+  <h2><span tal:replace="context/title">Name</span> mirror details</h2>
 
   <div class="portletBody portletContent">
 

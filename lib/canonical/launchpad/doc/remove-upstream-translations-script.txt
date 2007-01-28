@@ -129,11 +129,14 @@ And it also works for products!
     ...     )
     >>> (output, empty) = process.communicate()
     >>> print output
+    DEBUG   Processing Portuguese (Brazil) (pt_BR) translation of evolution-2.2-test in Evolution trunk...
+    DEBUG   Before the removal, latest submission came from: Diogo Matsubara
+    DEBUG   Removed 6 submissions
     DEBUG   Processing Spanish (es) translation of evolution-2.2 in Evolution trunk...
-    DEBUG   Before the removal, latest submission came from: Mark Shuttleworth
+    DEBUG   Before the removal, latest submission came from: Carlos Perelló Marín
     DEBUG   Removed 12 submissions
     DEBUG   After the removal, latest submission came from: Carlos Perelló Marín
-    DEBUG   Removed 12 submissions in total.
+    DEBUG   Removed 18 submissions in total.
     <BLANKLINE>
 
 We need to force a DB reset because the changes are done from an external

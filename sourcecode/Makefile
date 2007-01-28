@@ -4,8 +4,8 @@ PYTHON=python${PYTHON_VERSION}
 # If we fix them all to have EITHER a good makefile (build and check targets work), or no makefile
 # we can reenable auto detection.
 # test_dirs:=$(shell find . -maxdepth 1 -mindepth 1 -name ".arch-ids" -prune -o -type d -print | grep -v pyarch)
-test_dirs:=buildbot bzr cscvs gnarly pybaz pygettextpo pygpgme sqlobject twisted zope
-launchpad_test_dirs:=buildbot gnarly pybaz pygettextpo pygpgme sqlobject zope
+test_dirs:=buildbot bzr cscvs pybaz pygettextpo pygpgme sqlobject twisted zope
+launchpad_test_dirs:=buildbot pybaz pygettextpo pygpgme sqlobject zope
 
 all:
 

@@ -7,7 +7,7 @@ Testing the Package Death Row
   >>> from canonical.database.sqlbase import flush_database_updates
   >>> from canonical.lp.dbschema import PackagePublishingStatus
   >>> from canonical.archivepublisher.deathrow import DeathRow
-  >>> from canonical.archivepublisher.diskpool import DiskPool, Poolifier
+  >>> from canonical.archivepublisher.diskpool import DiskPool
   >>> from canonical.launchpad.database import Distribution
   >>> from canonical.launchpad.database import \
   ...   SecureBinaryPackagePublishingHistory as SBPPH
@@ -32,7 +32,7 @@ Nothing to do
 
 The no-operation use case:
 
-  >>> dp = DiskPool(Poolifier(), "/tmp", MockLogger())
+  >>> dp = DiskPool("/tmp", MockLogger())
   >>> dr = DeathRow(distro, dp, MockLogger())
   >>> dr.reap(dry_run=True)
   INFO: Removing 0 files marked for reaping
@@ -103,7 +103,7 @@ is not to be removed, we won't try and remove its files:
 Flush our these updates and kick the DeathRow processor again.
 
   >>> flush_database_updates()
-  >>> dp = DiskPool(Poolifier(), "/tmp", MockLogger())
+  >>> dp = DiskPool("/tmp", MockLogger())
   >>> dr = DeathRow(distro, dp, MockLogger())
   >>> dr.reap(dry_run=True)
   INFO: Removing 2 files marked for reaping

@@ -1,6 +1,6 @@
 Check the changelog for a source package can be viewed.
 
-  >>> browser.open("http://localhost/distros/ubuntu/hoary/+source/pmount/+changelog")
+  >>> browser.open("http://localhost/ubuntu/hoary/+source/pmount/+changelog")
   >>> browser.contents
   '...This is a placeholder changelog for pmount 0.1-2...
   ...pmount (<a href="0.1-1">0.1-1</a>) hoary; urgency=low...

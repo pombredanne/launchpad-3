@@ -17,6 +17,7 @@
     </tal:block>
 
     <h1>
+      <span tal:replace="context/distrorelease/name/capitalize" />
       Request #<span tal:replace="context/id" />
     </h1>
 

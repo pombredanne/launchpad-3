@@ -1,9 +1,7 @@
 TicketContextMenu
 -----------------
 
-This file tests the TicketContextMenu implementation. In particular, it
-makes sure that bug #41972 "You can linkbug to answered support
-request." is fixed.
+This file tests the TicketContextMenu implementation.
 
     >>> from canonical.launchpad.browser.ticket import TicketContextMenu
 
@@ -17,99 +15,58 @@ attributes, we can use mock objects:
     ...     def isSubscribed(self, person):
     ...         return self.subscribed
 
-    >>> def setup_menu(is_resolved=False, bugs=(), distribution=None,
-    ...             subscribed=False):
-    ...     menu = TicketContextMenu(ticket(
-    ...         is_resolved=is_resolved, bugs=bugs, distribution=distribution,
-    ...         subscribed=subscribed))
+    >>> def setup_menu(bugs=(), subscribed=False):
+    ...     menu = TicketContextMenu(ticket(bugs=bugs, subscribed=subscribed))
     ...     menu._user = None
     ...     menu.initialize()
     ...     return menu
 
-    >>> menu_resolved = setup_menu(is_resolved=True)
-    >>> menu_unresolved = setup_menu(is_resolved=False)
+    >>> menu = setup_menu()
 
 The 'Edit Request' and 'Link Existing Bug' links should be always
 available:
 
-    >>> menu_resolved.edit().enabled
+    >>> menu.edit().enabled
     True
-    >>> menu_unresolved.edit().enabled
-    True
-    >>> menu_resolved.linkbug().enabled
-    True
-    >>> menu_unresolved.linkbug().enabled
+    >>> menu.linkbug().enabled
     True
 
 'Create Bug' links should be available only when there are no existing
 bugs linked to the ticket:
 
-    >>> menu_resolved_with_bugs = setup_menu(is_resolved=True, bugs=[1])
-    >>> menu_unresolved_with_bugs = setup_menu(is_resolved=False, bugs=[1])
+    >>> menu_with_bugs = setup_menu(bugs=[1])
 
-    >>> menu_resolved.makebug().enabled
+    >>> menu.makebug().enabled
     True
-    >>> menu_resolved_with_bugs.makebug().enabled
-    False
-    >>> menu_unresolved.makebug().enabled
-    True
-    >>> menu_unresolved_with_bugs.makebug().enabled
+    >>> menu_with_bugs.makebug().enabled
     False
 
 The 'Remove Bug Link' link should only appear if there are existing
 bug links:
 
-    >>> menu_resolved.unlinkbug().enabled
+    >>> menu.unlinkbug().enabled
     False
-    >>> menu_resolved_with_bugs.unlinkbug().enabled
-    True
-    >>> menu_unresolved.unlinkbug().enabled
-    False
-    >>> menu_unresolved_with_bugs.unlinkbug().enabled
-    True
 
-The 'Change Source Package' link is only available when the ticket is
-associated to a distribution:
-
-    >>> menu_resolved_with_distro = setup_menu(
-    ...     is_resolved=True, distribution=object())
-    >>> menu_unresolved_with_distro = setup_menu(
-    ...     is_resolved=False, distribution=object())
-
-    >>> menu_resolved.editsourcepackage().enabled
-    False
-    >>> menu_unresolved.editsourcepackage().enabled
-    False
-    >>> menu_resolved_with_distro.editsourcepackage().enabled
-    True
-    >>> menu_unresolved_with_distro.editsourcepackage().enabled
+    >>> menu_with_bugs.unlinkbug().enabled
     True
 
 The 'Subscribe' link only appears when the user is not subscribed to
 the bug.
 
     (Let's fake a logged in user):
-    >>> menu_resolved._user = object()
-    >>> menu_unresolved._user = object()
+    >>> menu._user = object()
 
     >>> def print_link(link):
     ...     print link.text, repr(link.enabled)
-    >>> print_link(menu_resolved.subscription())
-    Subscribe True
-    >>> print_link(menu_unresolved.subscription())
+    >>> print_link(menu.subscription())
     Subscribe True
 
 When he is subscribed, the link text changes to 'Unsubscribe':
 
-    >>> menu_resolved_subscribed = setup_menu(
-    ...     is_resolved=True, subscribed=True)
-    >>> menu_resolved_subscribed._user = object()
-    >>> menu_unresolved_subscribed = setup_menu(
-    ...     is_resolved=False, subscribed=True)
-    >>> menu_unresolved_subscribed._user = object()
+    >>> menu_subscribed = setup_menu(subscribed=True)
+    >>> menu_subscribed._user = object()
 
-    >>> print_link(menu_resolved_subscribed.subscription())
+    >>> print_link(menu_subscribed.subscription())
     Unsubscribe True
-    >>> print_link(menu_unresolved_subscribed.subscription())
-    Unsubscribe True
+
 

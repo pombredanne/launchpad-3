@@ -1,7 +1,7 @@
 Foo Bar changes the productseries named 'failedbranch' from the product a52dec
 to bazaar. Also changes the name of the productseries to 'newname'.
   >>> print http(r"""
-  ... POST /products/a52dec/failedbranch/+review HTTP/1.1
+  ... POST /a52dec/failedbranch/+review HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------10572808480422220968425074
   ... 
@@ -21,10 +21,10 @@ to bazaar. Also changes the name of the productseries to 'newname'.
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/products/bazaar/newname...
+  Location: http://localhost:9000/bazaar/newname...
 
   >>> print http(r"""
-  ... GET /products/bazaar/newname HTTP/1.1
+  ... GET /bazaar/newname HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok

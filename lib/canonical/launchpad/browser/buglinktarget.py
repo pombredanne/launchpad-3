@@ -52,12 +52,10 @@ class BugLinkView(LaunchpadFormView):
                 'You are not allowed to link to private bug #%d.'% bug.id)
             return
         bug_props = {'bugid': bug.id, 'title': bug.title}
-        # XXX flacoste 2006-08-11 Reenable I18N once
-        # bug 54987 is fixed. (Using MessageId with addNotification is broken)
         response.addNotification(
-            u'Added link to bug #%(bugid)s: '
-            u'\N{left double quotation mark}%(title)s'
-            u'\N{right double quotation mark}.' % bug_props)
+            _(u'Added link to bug #$bugid: '
+              u'\N{left double quotation mark}$title'
+              u'\N{right double quotation mark}.', mapping=bug_props))
         notify(SQLObjectModifiedEvent(
             self.context, target_unmodified, ['bugs']))
         self.next_url = canonical_url(self.context)
@@ -100,15 +98,15 @@ class BugsUnlinkView(LaunchpadFormView):
         target_unmodified = Snapshot(
             self.context, providing=providedBy(self.context))
         for bug in data['bugs']:
+            replacements = {'bugid': bug.id}
             try:
                 self.context.unlinkBug(bug)
-                # XXX flacoste 2006-08-11 Reenable I18N once
-                # bug 54987 is fixed. (Using MessageId with addNotification is
-                # broken)
-                response.addNotification('Removed link to bug #%d.' % bug.id)
+                response.addNotification(
+                    _('Removed link to bug #$bugid.', mapping=replacements))
             except Unauthorized:
                 response.addErrorNotification(
-                    'Cannot remove link to private bug #%d.' % bug.id)
+                    _('Cannot remove link to private bug #$bugid.',
+                      mapping=replacements))
         notify(SQLObjectModifiedEvent(
             self.context, target_unmodified, ['bugs']))
         self.next_url = canonical_url(self.context)

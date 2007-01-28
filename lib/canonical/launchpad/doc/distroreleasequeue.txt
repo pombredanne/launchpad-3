@@ -27,9 +27,9 @@ An upload can contain a combination of content types, organized by:
 Each of those instances points back to a DistroReleaseQueue entry
 (parent) and to its type target:
 
- * DRQS -> SPR,
+ * DRQS -> SourcePackageRelease (SPR),
  * DRQB -> Build,
- * DRQC -> LFA.
+ * DRQC -> LibraryFileAlias (LFA).
 
 The combination is assured by the upload policy used (see
 nascentupload.txt), some of them allow source + binaries, other only
@@ -157,6 +157,10 @@ Iterating over IDistroReleaseQueues via iDistroReleaseQueueSet:
   6
   7
   8
+  9
+  10
+  11
+  12
 
 Retrieving an IDistroReleaseQueue by its id:
 
@@ -169,7 +173,7 @@ Retrieving an IDistroReleaseQueue by its id:
 Counter, optionally by status (informally named "queue") and or distrorelease:
 
   >>> qset.count()
-  8
+  12
 
   >>> qset.count(DistroReleaseQueueStatus.ACCEPTED)
   1
@@ -185,7 +189,7 @@ Retrieve some data from DB to play more with counter.
   >>> breezy_autotest = distro['breezy-autotest']
 
   >>> qset.count(distrorelease=breezy_autotest)
-  7
+  10
 
   >>> qset.count(status=DistroReleaseQueueStatus.ACCEPTED,
   ...            distrorelease=breezy_autotest)
@@ -338,7 +342,7 @@ custom upload in UNAPPROVED queue.
   >>> items = breezy_autotest.getQueueItems(
   ...      DistroReleaseQueueStatus.UNAPPROVED)
   >>> items.count()
-  1
+  4
 
 We can't retrieve it with a 'what' substring:
 
@@ -352,7 +356,7 @@ But it works with the right substring 'net' from 'netapplet.tar.gz'
   >>> items = breezy_autotest.getQueueItems(
   ...      DistroReleaseQueueStatus.UNAPPROVED, name='net')
   >>> items.count()
-  1
+  2
 
 
 Also check the optional argument pocket:
@@ -361,11 +365,19 @@ Also check the optional argument pocket:
 
   >>> breezy_autotest.getQueueItems(
   ...      pocket=PackagePublishingPocket.RELEASE).count()
-  6
+  8
 
   >>> breezy_autotest.getQueueItems(
   ...      pocket=PackagePublishingPocket.UPDATES).count()
   1
+
+Ensure list of pockets is also valid:
+
+  >>> breezy_autotest.getQueueItems(
+  ...      pocket=[PackagePublishingPocket.UPDATES,
+  ...              PackagePublishingPocket.RELEASE]).count()
+  9
+
 
 Check if association of status and pocket arguments works well:
 
@@ -379,7 +391,13 @@ Check if association of status and pocket arguments works well:
   ...      pocket=PackagePublishingPocket.UPDATES).count()
   0
 
-Check State Machine over DistroReleaseQueueBuilds:
+  >>> breezy_autotest.getQueueItems(
+  ...      [DistroReleaseQueueStatus.NEW, DistroReleaseQueueStatus.UNAPPROVED],
+  ...      pocket=PackagePublishingPocket.UPDATES).count()
+  1
+
+
+Check State Machine over DistroReleaseQueue:
 
 Performing full acceptance:
 
@@ -454,6 +472,71 @@ XXX cprov 20060118: remove proxy magic is required for BPR instances.
   ... else:
   ...     print item.displayname, 'ACCEPTED'
   mozilla-firefox Component "hell" is not allowed in breezy-autotest
+
+
+Check how we treat source upload duplications in UNAPPROVED queue (NEW
+has a similar behaviour):
+
+  >>> dups = breezy_autotest.getQueueItems(
+  ...     DistroReleaseQueueStatus.UNAPPROVED, name='cnews')
+  >>> dups.count()
+  2
+  >>> dup_one, dup_two = list(dups)
+
+  >>> dup_one.displayname, dup_one.displayversion
+  (u'cnews', u'1.0')
+  >>> dup_two.displayname, dup_two.displayversion
+  (u'cnews', u'1.0')
+
+The upload admin can not accept both since we check unique
+(name, version) accross distribution:
+
+  >>> dup_one.setAccepted()
+  >>> dup_one.status == DistroReleaseQueueStatus.ACCEPTED
+  True
+
+The database modification needs to be realised in the DB, otherwise
+the look up code won't be able to identify any duplications:
+
+  >>> dup_one.syncUpdate()
+
+As expected the second item acceptance will fail and the item will
+remain in the original queue
+
+  >>> dup_two.setAccepted()
+  Traceback (most recent call last):
+  ...
+  QueueInconsistentStateError: This sourcepackagerelease is already accepted in breezy-autotest.
+
+  >>> dup_two.status.name
+  'UNAPPROVED'
+
+The only available action will be rejection:
+
+  >>> dup_two.setRejected()
+  >>> dup_one.syncUpdate()
+  >>> dup_two.status.name
+  'REJECTED'
+
+Move the second item back to its original queue to perform the same
+test after the former accepted item was published (DONE queue)
+
+  >>> dup_two.setUnapproved()
+  >>> dup_two.syncUpdate()
+  >>> dup_two.status.name
+  'UNAPPROVED'
+
+  >>> dup_one.setDone()
+  >>> dup_one.status == DistroReleaseQueueStatus.DONE
+  True
+  >>> dup_one.syncUpdate()
+
+The protection code should also identify dups with items in DONE queue
+
+  >>> dup_two.setAccepted()
+  Traceback (most recent call last):
+  ...
+  QueueInconsistentStateError: This sourcepackagerelease is already accepted in breezy-autotest.
 
 
 Check forbidden approval of not selected Section:

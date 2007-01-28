@@ -1,7 +1,7 @@
 <div class="portlet">
 
-  <h4><span tal:replace="context/target/displayname">Ubuntu</span> ticket
-      #<span tal:replace="context/id">234</span>:</h4>
+  <h2><span tal:replace="context/target/displayname">Ubuntu</span> ticket
+      #<span tal:replace="context/id">234</span></h2>
 
   <div class="portletBody portletContent">
 
@@ -9,6 +9,9 @@
     <img src="/@@/user" />
     <a tal:attributes="href context/owner/fmt:url"
        tal:content="context/owner/browsername">Foo Bar</a><br />
+
+    <b>Language:</b>
+    <span tal:replace="context/language/englishname">English</span><br />
 
     <b>Status:</b>
     <span tal:replace="context/status/title">Open</span><br />
@@ -31,7 +34,7 @@
     </tal:block>
 
     <b>Created:</b>
-    <span tal:replace="context/datecreated/fmt:date" /><br />
+    <span tal:replace="context/datecreated/fmt:datetime" /><br />
 
     <b>Assignee:</b><br />
     <tal:block condition="context/assignee">

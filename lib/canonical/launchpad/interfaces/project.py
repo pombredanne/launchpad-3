@@ -9,16 +9,14 @@ __all__ = [
     'IProjectSet',
     ]
 
-from zope.component import getUtility
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Int, Text, TextLine
+from zope.schema import Bool, Bytes, Choice, Int, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Summary, Title
 from canonical.launchpad.interfaces import (
         IHasOwner, IBugTarget, IHasSpecifications, PillarNameField,
-        valid_webref
-        )
+        valid_emblem, valid_gotchi, valid_webref)
 from canonical.launchpad.validators.name import name_validator
 
 
@@ -120,6 +118,28 @@ class IProject(IHasOwner, IBugTarget, IHasSpecifications):
             if it is in freshmeat."""),
         required=False)
 
+    homepage_content = Text(
+        title=_("Homepage Content"), required=False,
+        description=_(
+            "The content of this project's home page. Edit this and it will "
+            "be displayed for all the world to see. It is NOT a wiki "
+            "so you cannot undo changes."))
+
+    emblem = Bytes(
+        title=_("Emblem"), required=False,
+        description=_(
+            "A small image, max 16x16 pixels and 8k in file size, that can "
+            "be used to refer to this project."),
+        constraint=valid_emblem)
+
+    gotchi = Bytes(
+        title=_("Gotchi"), required=False,
+        description=_(
+            "An image, maximum 150x150 pixels, that will be displayed on "
+            "this project's home page. It should be no bigger than 50k in "
+            "size. "),
+        constraint=valid_gotchi)
+
     translationgroup = Choice(
         title = _("Translation group"),
         description = _("The translation group for this project. This group "
@@ -154,8 +174,7 @@ class IProject(IHasOwner, IBugTarget, IHasSpecifications):
         vocabulary='BugTracker',
         description=_("The bug tracker the products in this project use."))
 
-    def products():
-        """Return Products for this Project."""
+    products = Attribute(_("An iterator over the Products for this project."))
 
     def getProduct(name):
         """Get a product with name `name`."""

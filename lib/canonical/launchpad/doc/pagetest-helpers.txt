@@ -48,6 +48,20 @@ If an unknown ID is used, None is returned:
   >>> print find_tag_by_id(content, 'para-3')
   None
 
+If more than one element has the requested id, raise a DuplicateIdError
+exception.
+
+  >>> duplicate_id_content = '''
+  ... <body>
+  ...   <p id="duplicate">Lorem ipsum</p>
+  ...   <p id="duplicate">dolor sit amet</p>
+  ... </body>
+  ... '''
+  >>> find_tag_by_id(duplicate_id_content, 'duplicate')
+  Traceback (most recent call last):
+  ...
+  DuplicateIdError: Found 2 elements with id 'duplicate'
+
 
 find_tags_by_class()
 --------------------
@@ -110,21 +124,29 @@ function can find a portlet by its title and return it:
   ...   <head><title>Foo</title</head>
   ...   <body>
   ...     <div class="portlet">
-  ...       <h4>Portlet 1</h4>
+  ...       <h2>Portlet 1</h2>
   ...       <div class="portletBody portletContent">
   ...         Contents of portlet 1
   ...       </div>
   ...     </div>
   ...     <div class="portlet">
-  ...       <h4>Portlet 2</h4>
+  ...       <h2>Portlet 2</h2>
   ...       <div class="portletBody portletContent">
   ...         Contents of portlet 2
   ...       </div>
   ...     </div>
   ...     <div class="portlet">
-  ...       <h4>Portlet 3</h4>
+  ...       <h2>Portlet 3</h2>
   ...       <div class="portletBody portletContent">
   ...         Contents of portlet 3
+  ...       </div>
+  ...     </div>
+  ...     <div class="portlet">
+  ...       <h2> Portlet
+  ...           with title broken
+  ...           on multiple lines </h2>
+  ...       <div class="portletBody portletContent">
+  ...         Contents of the portlet.
   ...       </div>
   ...     </div>
   ...     <div id="region-content">
@@ -140,11 +162,20 @@ function can find a portlet by its title and return it:
 
   >>> print find_portlet(content, 'Portlet 2')
   <div class="portlet">
-    <h4>Portlet 2</h4>
+    <h2>Portlet 2</h2>
     <div class="portletBody portletContent">
       Contents of portlet 2
     </div>
   </div>
+
+When looking for a portlet to match, any two sequences of whitespace are
+considered equivalent. Whitespace at the beginning or end of the title
+is also ignored.
+
+  >>> print find_portlet(
+  ...     content, 'Portlet with  title broken on multiple lines  ')
+    <div class="portlet">
+      <h2> Portlet with title...
 
 If the portlet doesn't exist, then None is returned:
 

@@ -7,8 +7,6 @@ __metaclass__ = type
 __all__ = [
     'ISourcePackageFilePublishing',
     'IBinaryPackageFilePublishing',
-    'ISourcePackagePublishingView',
-    'IBinaryPackagePublishingView',
     'ISecureSourcePackagePublishingHistory',
     'ISecureBinaryPackagePublishingHistory',
     'ISourcePackagePublishingHistory',
@@ -17,9 +15,7 @@ __all__ = [
     'IArchivePublisher',
     'IArchiveFilePublisher',
     'IArchiveSafePublisher',
-    'AlreadyInPool',
     'NotInPool',
-    'NeedsSymlinkInPool',
     'PoolFileOverwriteError',
     'pocketsuffix'
     ]
@@ -45,16 +41,28 @@ pocketsuffix = {
 class IPublishing(Interface):
     """Ability to publish associated publishing records."""
 
-    def publish(diskpool, log, careful=False):
-        """Publish associated publish records.
+    def getPendingPublications(self, pocket, is_careful):
+        """Return the specific group of records to be published.
 
         IDistroRelease -> ISourcePackagePublishing
         IDistroArchRelease -> IBinaryPackagePublishing
+
+        'pocket' argument restrict the results to a given value.
+
+        If the distroreleases is already released, it automatically refuses
+        to publish records to RELEASE pocket.
+        """
+
+    def publish(diskpool, log, pocket, careful=False):
+        """Publish associated publishing records targeted for a given pocket.
 
         Require an initialised diskpool instance and a logger instance.
         'careful' argument would cause the 'republication' of all published
         records if True (system will DTRT checking hash of all
         published files.)
+
+        Consider records returned by the local implementation of
+        getPendingPublications.
         """
 
 class IArchivePublisher(Interface):
@@ -71,6 +79,21 @@ class IArchivePublisher(Interface):
 
         If all the files get published correctly update its status properly.
         """
+
+    def getIndexStanza():
+        """Return respective archive index stanza contents
+
+        It's based on the locally provided buildIndexStanzaTemplate method,
+        which differs for binary and source instances.
+        """
+
+    def buildIndexStanzaFields():
+        """Build a map of fields and values to be in the Index file.
+
+        The fields and values ae mapped into a dictionary, where the key is
+        the field name and value is the value string.
+        """
+
 
 class IArchiveFilePublisher(Interface):
     """Ability to publish and archive file"""
@@ -94,26 +117,6 @@ class IArchiveSafePublisher(Interface):
         published field when they were checked via 'careful'
         publishing.
         """
-
-
-class AlreadyInPool(Exception):
-    """File is already in the pool with the same content.
-
-    No further action from the publisher engine is required, not an error
-    at all.
-    The file present in pool was verified and has the same content and is
-    in the desired location.
-    """
-
-
-class NeedsSymlinkInPool(Exception):
-    """Symbolic link is required to publish the file in pool.
-
-    File is already present in pool with the same content, but
-    in other location (different component, most of the cases)
-    Callsite must explicitly call diskpool.makeSymlink(..) method
-    in order to publish the file in the new location.
-    """
 
 
 class NotInPool(Exception):
@@ -152,13 +155,6 @@ class IBaseSourcePackagePublishing(Interface):
             )
     pocket = Int(
             title=_('Package publishing pocket'), required=True, readonly=True,
-            )
-
-
-class ISourcePackagePublishingView(IBaseSourcePackagePublishing):
-    """Source package publishing information neatened up a bit"""
-    sectionname = TextLine(
-            title=_('Section name'), required=True, readonly=True,
             )
 
 
@@ -295,19 +291,6 @@ class IBaseBinaryPackagePublishing(Interface):
             )
     pocket = Int(
             title=_('Package publishing pocket'), required=True, readonly=True,
-            )
-
-
-class IBinaryPackagePublishingView(IBaseBinaryPackagePublishing):
-    """Binary package publishing information neatened up a bit"""
-    binarypackagename = TextLine(
-            title=_('Binary package name'), required=True, readonly=True,
-            )
-    sectionname = TextLine(
-            title=_('Section name'), required=True, readonly=True,
-            )
-    priority = Int(
-            title=_('Priority'), required=True, readonly=True,
             )
 
 

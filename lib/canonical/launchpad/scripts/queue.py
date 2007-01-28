@@ -389,12 +389,13 @@ class QueueAction:
         return from_address, recipient_addresses
 
 
-class QueueActionHelp:
+class QueueActionHelp(QueueAction):
     """Present provided actions summary"""
     def __init__(self, **kargs):
         self.kargs = kargs
         self.kargs['no_mail'] = True
         self.actions = kargs['terms']
+        self.display = kargs['display']
 
     def initialize(self):
         """Mock initialization """
@@ -402,13 +403,27 @@ class QueueActionHelp:
 
     def run (self):
         """Present the actions description summary"""
-        # present summary for specific or all commands
+        # present summary for specific or all actions
         if not self.actions:
             actions_help = queue_actions.items()
+            not_available_actions = []
         else:
-            actions_help = [(k, v) for k, v in queue_actions.items()
-                            if k in self.actions]
-        # extract summary from docstring of specified commands
+            actions_help = [
+                (action, provider)
+                for action, provider in queue_actions.items()
+                if action in self.actions
+                ]
+            not_available_actions = [
+                action for action in self.actions
+                if action not in queue_actions.keys()
+                ]
+        # present not available requested action if any.
+        if not_available_actions:
+            self.display(
+                "Not available action(s): %s" %
+                ", ".join(not_available_actions))
+
+        # extract summary from docstring of specified available actions
         for action, wrapper in actions_help:
             if action is 'help':
                 continue
@@ -466,6 +481,10 @@ class QueueActionFetch(QueueAction):
         for queue_item in self.items:
             self.display("Constructing %s" % queue_item.changesfile.filename)
             changes_file_alias = queue_item.changesfile
+            # do not overwrite files on disk (bug # 62976)
+            if os.path.exists(queue_item.changesfile.filename):
+                raise CommandRunnerError("%s already present on disk"
+                                         % queue_item.changesfile.filename)
             changes_file_alias.open()
             changes_file = open(queue_item.changesfile.filename, "w")
             changes_file.write(changes_file_alias.read())
@@ -487,6 +506,10 @@ class QueueActionFetch(QueueAction):
 
             for libfile in file_list:
                 self.display("Constructing %s" % libfile.filename)
+                # do not overwrite files on disk (bug # 62976)
+                if os.path.exists(libfile.filename):
+                    raise CommandRunnerError("%s already present on disk"
+                                             % libfile.filename)
                 libfile.open()
                 out_file = open(libfile.filename, "w")
                 for chunk in filechunks(libfile):
@@ -517,6 +540,7 @@ class QueueActionReject(QueueAction):
                 self.display('** %s could not be rejected due %s'
                              % (queue_item.displayname, info))
             else:
+                queue_item.syncUpdate()
                 summary = []
                 for queue_source in queue_item.sources:
                     # XXX: dsilvers: 20060203: This needs to be able to
@@ -538,7 +562,7 @@ class QueueActionReject(QueueAction):
                     summary.append(
                         '%s (%s) was REJECTED'
                         % (queue_custom.libraryfilealias.filename,
-                           queue_custom.libraryfilealias.url))
+                           queue_custom.libraryfilealias.http_url))
 
                 sender, recipients = self.find_addresses_from(
                         queue_item.changesfile)
@@ -586,6 +610,7 @@ class QueueActionAccept(QueueAction):
                 self.display('** %s could not be accepted due %s'
                              % (queue_item.displayname, info))
             else:
+                queue_item.syncUpdate()
                 summary = []
                 for queue_source in queue_item.sources:
                     # XXX: dsilvers: 20060203: This needs to be able to
@@ -607,7 +632,7 @@ class QueueActionAccept(QueueAction):
                     summary.append(
                         '%s (%s) was ACCEPTED'
                         % (queue_custom.libraryfilealias.filename,
-                           queue_custom.libraryfilealias.url))
+                           queue_custom.libraryfilealias.http_url))
 
                 # We send a notification email only if the upload
                 # was sourceful, or had exactly one customfile and
@@ -634,8 +659,9 @@ class QueueActionAccept(QueueAction):
 
         sender, recipients = self.find_addresses_from(
             queue_item.changesfile)
-        # only announce for acceptation
-        if self.announcelist is not None:
+        # only announce for acceptation if it's not for BACKPORTS
+        if (self.announcelist is not None and
+            queue_item.pocket != PackagePublishingPocket.BACKPORTS):
             recipients.append(self.announcelist)
 
         queue_item.changesfile.open()
@@ -833,14 +859,14 @@ class CommandRunner:
 
         # check action availability,
         try:
-            queue_action = queue_actions[action]
+            queue_action_class = queue_actions[action]
         except KeyError:
             raise CommandRunnerError('Unknown Action: %s' % action)
 
         # perform the required action on queue.
         try:
             # be sure to send every args via kargs
-            queue_action_class = queue_action(
+            queue_action  = queue_action_class(
                 distribution_name=self.distribution_name,
                 suite_name=self.suite_name,
                 announcelist=self.announcelist,
@@ -849,9 +875,9 @@ class CommandRunner:
                 display=self.display,
                 terms=arguments,
                 exact_match=exact_match)
-            queue_action_class.initialize()
-            queue_action_class.run()
+            queue_action.initialize()
+            queue_action.run()
         except QueueActionError, info:
             raise CommandRunnerError(info)
 
-        return queue_action_class
+        return queue_action

@@ -5,7 +5,7 @@ demonstrate this functionality on each +bugs page.
 
 Default view:
 
-    >>> browser.open("http://localhost:9000/products/firefox/+bugs")
+    >>> browser.open("http://localhost:9000/firefox/+bugs")
 
     >>> print browser.contents
     <!DOCTYPE...
@@ -28,7 +28,7 @@ Newest:
 
 Default view:
 
-    >>> browser.open("http://localhost:9000/distros/debian/+bugs")
+    >>> browser.open("http://localhost:9000/debian/+bugs")
     >>> print browser.contents
     <!DOCTYPE...
     ...Bug Title Test...
@@ -47,7 +47,7 @@ By recently changed:
 
 By status:
 
-    >>> browser.open("http://localhost:9000/distros/ubuntu/+bugs")
+    >>> browser.open("http://localhost:9000/ubuntu/+bugs")
     >>> browser.getControl(name="orderby").displayValue = ["by status"]
     >>> browser.getControl("Search").click()
     >>> print browser.contents
@@ -61,7 +61,7 @@ By status:
 
 Default view:
 
-    >>> browser.open("http://localhost:9000/distros/debian/woody/+bugs")
+    >>> browser.open("http://localhost:9000/debian/woody/+bugs")
     >>> print browser.contents
     <!DOCTYPE...
     ...Bug Title Test...
@@ -81,7 +81,7 @@ Newest:
 Default view:
 
     >>> browser.open(
-    ...     "http://localhost:9000/distros/debian/+source/mozilla-firefox/+bugs")
+    ...     "http://localhost:9000/debian/+source/mozilla-firefox/+bugs")
     >>> print browser.contents
     <!DOCTYPE...
     ...Bug Title Test...

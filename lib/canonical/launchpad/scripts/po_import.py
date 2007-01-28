@@ -65,7 +65,7 @@ class ImportProcess:
                 # back from blocked to needs review or approve it directly so
                 # no data will be lost and the amount of work saved is high.
                 blocked_entries = (
-                    translation_import_queue.executeOptimisticBlock())
+                    translation_import_queue.executeOptimisticBlock(self.ztm))
                 if blocked_entries > 0:
                     self.logger.info('Blocked %d entries from the queue.' %
                         blocked_entries)

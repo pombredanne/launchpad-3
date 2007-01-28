@@ -1,7 +1,7 @@
 This is the Rosetta homepage (/rosetta).
 
   >>> print http(r"""
-  ... GET /rosetta HTTP/1.1
+  ... GET /translations HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
@@ -14,7 +14,7 @@ This is the Rosetta homepage (/rosetta).
 There is also an "About" page that talks about how Rosetta works.
 
   >>> print http(r"""
-  ... GET /rosetta/+about HTTP/1.1
+  ... GET /translations/+about HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...

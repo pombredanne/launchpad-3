@@ -40,6 +40,16 @@
      Reported this bug as also occurring in upstream firefox
   </p>
 
+  <p class="informational message"
+     id="number_of_dupes"
+     tal:condition="context/bug/duplicates"
+     tal:define="number_of_dupes context/bug/duplicates/count"
+    >This bug has
+     <tal:num-dupes condition="python:number_of_dupes == 1">1 duplicate</tal:num-dupes>
+     <tal:num-dupes condition="python:number_of_dupes > 1" content="string:${number_of_dupes} duplicates"
+       >2 duplicates</tal:num-dupes>
+    </p>
+
   <p tal:condition="context/bug/duplicateof" class="informational message">
     This report is a duplicate of
     <a tal:attributes="href context/bug/duplicateof/fmt:url;
@@ -78,12 +88,13 @@
 
         </form>
 
-  <div tal:replace="structure context/@@+headline-tasks" />
+  <div tal:condition="not: context/bug/duplicateof"
+       tal:replace="structure context/bug/@@+bugtasks-and-nominations-table" />
 
   <fieldset style="margin-bottom: 0; padding: 0 0.5em 0.5em 0.5em">
     <legend>Description <small>(<a href="+edit">edit</a>)</small></legend>
 
-    <div style="font-family: monospace;"
+    <div id="bug-description" style="font-family: monospace;"
          tal:content="structure context/bug/description/fmt:text-to-html" />
 
     <div tal:define="tags context/bug/tags"

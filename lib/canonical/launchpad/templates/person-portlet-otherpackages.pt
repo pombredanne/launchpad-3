@@ -1,11 +1,11 @@
 <div class="portlet">
-  <h4 tal:condition="python:view.user == context">
+  <h2 tal:condition="python:view.user == context">
     My other packages
-  </h4>
-  <h4 tal:condition="python:not view.user == context"
+  </h2>
+  <h2 tal:condition="python:not view.user == context"
       tal:content="string: ${context/displayname}'s other packages">
     Sample Person's other packages
-  </h4>
+  </h2>
   <div class="portletBody portletContent"
        tal:define="package_being_shown view/current_package">
     <ul style="list-style: none;">

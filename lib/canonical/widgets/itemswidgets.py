@@ -4,7 +4,14 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'LaunchpadDropdownWidget',
+    'LabeledMultiCheckBoxWidget',
+    'LaunchpadRadioWidget',
+    ]
 
+from zope.schema.interfaces import IChoice
+from zope.app.form.browser import MultiCheckBoxWidget
 from zope.app.form.browser.itemswidgets import DropdownWidget, RadioWidget
 
 
@@ -13,6 +20,22 @@ class LaunchpadDropdownWidget(DropdownWidget):
 
     def _div(self, cssClass, contents, **kw):
         return contents
+
+
+class LabeledMultiCheckBoxWidget(MultiCheckBoxWidget):
+    """MultiCheckBoxWidget which wraps option labels with proper
+    <label> elements.
+    """
+
+    _joinButtonToMessageTemplate = (
+        u'<label style="font-weight: normal">%s&nbsp;%s</label>')
+
+    def __init__(self, field, vocabulary, request):
+        # XXX flacoste 2006/07/23 Workaround Zope3 bug #545:
+        # CustomWidgetFactory passes wrong arguments to a MultiCheckBoxWidget
+        if IChoice.providedBy(vocabulary):
+            vocabulary = vocabulary.vocabulary
+        MultiCheckBoxWidget.__init__(self, field, vocabulary, request)
 
 
 # XXX, Brad Bollenbach, 2006-08-10: This is a hack to workaround Zope's
@@ -24,6 +47,9 @@ class LaunchpadRadioWidget(RadioWidget):
 
     _joinButtonToMessageTemplate = (
         u'<label style="font-weight: normal">%s&nbsp;%s</label>')
+
+    def _div(self, cssClass, contents, **kw):
+        return contents
 
     def renderItems(self, value):
         """Render the items with with the correct radio button selected."""

@@ -16,11 +16,13 @@ from canonical.launchpad.database.bugbranch import *
 from canonical.launchpad.database.bugcve import *
 from canonical.launchpad.database.bugwatch import *
 from canonical.launchpad.database.bugsubscription import *
+from canonical.launchpad.database.bugtarget import *
 from canonical.launchpad.database.bugmessage import *
 from canonical.launchpad.database.bugtask import *
 from canonical.launchpad.database.bugactivity import *
 from canonical.launchpad.database.bugattachment import *
 from canonical.launchpad.database.bugextref import *
+from canonical.launchpad.database.bugnomination import *
 from canonical.launchpad.database.bugnotification import *
 from canonical.launchpad.database.cve import *
 from canonical.launchpad.database.cvereference import *
@@ -43,6 +45,7 @@ from canonical.launchpad.database.sourcepackagename import *
 from canonical.launchpad.database.sourcepackagerelease import *
 from canonical.launchpad.database.binarypackagerelease import *
 from canonical.launchpad.database.binarypackagename import *
+from canonical.launchpad.database.binaryandsourcepackagename import *
 from canonical.launchpad.database.publishedpackage import *
 from canonical.launchpad.database.distribution import *
 from canonical.launchpad.database.distributionbounty import *
@@ -72,6 +75,7 @@ from canonical.launchpad.database.branch import *
 from canonical.launchpad.database.branchsubscription import *
 from canonical.launchpad.database.build import *
 from canonical.launchpad.database.builder import *
+from canonical.launchpad.database.buildqueue import *
 from canonical.launchpad.database.publishing import *
 from canonical.launchpad.database.files import *
 from canonical.launchpad.database.bounty import *
@@ -81,6 +85,7 @@ from canonical.launchpad.database.message import *
 from canonical.launchpad.database.queue import *
 from canonical.launchpad.database.country import *
 from canonical.launchpad.database.specification import *
+from canonical.launchpad.database.specificationbranch import *
 from canonical.launchpad.database.specificationbug import *
 from canonical.launchpad.database.specificationdependency import *
 from canonical.launchpad.database.specificationfeedback import *
@@ -100,6 +105,7 @@ from canonical.launchpad.database.vpoexport import *
 from canonical.launchpad.database.vpotexport import *
 from canonical.launchpad.database.karma import *
 from canonical.launchpad.database.teammembership import *
+from canonical.launchpad.database.temporaryblobstorage import *
 from canonical.launchpad.database.ticket import *
 from canonical.launchpad.database.ticketbug import *
 from canonical.launchpad.database.ticketmessage import *
@@ -110,3 +116,4 @@ from canonical.launchpad.database.developmentmanifest import *
 from canonical.launchpad.database.distrocomponentuploader import *
 from canonical.launchpad.database.revision import *
 from canonical.launchpad.database.gpgkey import *
+from canonical.launchpad.database.emailaddress import *

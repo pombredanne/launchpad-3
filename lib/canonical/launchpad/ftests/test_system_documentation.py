@@ -9,26 +9,29 @@ import logging
 import os
 
 import transaction
+
+from zope.component import getUtility
+from zope.security.management import getSecurityPolicy, setSecurityPolicy
 from zope.testing.doctest import REPORT_NDIFF, NORMALIZE_WHITESPACE, ELLIPSIS
 from zope.testing.doctest import DocFileSuite
-from zope.component import getUtility
 import sqlos.connection
 
+from canonical.authserver.ftests.harness import AuthserverTacTestSetup
 from canonical.config import config
+from canonical.database.sqlbase import flush_database_updates
 from canonical.functional import FunctionalDocFileSuite
-from canonical.testing import (
-        LaunchpadZopelessLayer, LaunchpadFunctionalLayer, LibrarianLayer,
-        DatabaseLayer, ZopelessLayer, FunctionalLayer, LaunchpadLayer,
-        )
+from canonical.launchpad.ftests import login, ANONYMOUS, logout
 from canonical.launchpad.ftests.harness import (
         LaunchpadTestSetup, LaunchpadZopelessTestSetup,
         _disconnect_sqlos, _reconnect_sqlos
         )
 from canonical.launchpad.interfaces import ILaunchBag, IOpenLaunchBag
 from canonical.launchpad.mail import stub
-from canonical.launchpad.ftests import login, ANONYMOUS, logout
-from canonical.authserver.ftests.harness import AuthserverTacTestSetup
-from canonical.database.sqlbase import flush_database_updates
+from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
+from canonical.testing import (
+        LaunchpadZopelessLayer, LaunchpadFunctionalLayer, LibrarianLayer,
+        DatabaseLayer, ZopelessLayer, FunctionalLayer, LaunchpadLayer,
+        )
 
 here = os.path.dirname(os.path.realpath(__file__))
 
@@ -91,13 +94,15 @@ def importdTearDown(test):
     LaunchpadZopelessTestSetup().tearDown()
 
 def supportTrackerSetUp(test):
-    sqlos.connection.connCache = {}
-    LaunchpadZopelessTestSetup(dbuser=config.tickettracker.dbuser).setUp()
     setGlobs(test)
-    login(ANONYMOUS)
+    # The Zopeless environment usually runs using the PermissivePolicy
+    # but the process-mail.py script in which the tested code runs
+    # use the regular web policy.
+    test.old_security_policy = getSecurityPolicy()
+    setSecurityPolicy(LaunchpadSecurityPolicy)
 
 def supportTrackerTearDown(test):
-    LaunchpadZopelessTestSetup().tearDown()
+    setSecurityPolicy(test.old_security_policy)
 
 def peopleKarmaTearDown(test):
     # We can't detect db changes made by the subprocess
@@ -122,6 +127,17 @@ def bugNotificationSendingSetUp(test):
     login(ANONYMOUS)
 
 def bugNotificationSendingTearDown(test):
+    logout()
+    LaunchpadZopelessTestSetup().tearDown()
+
+def statisticianSetUp(test):
+    sqlos.connection.connCache = {}
+    LaunchpadZopelessTestSetup(
+        dbuser=config.statistician.dbuser).setUp()
+    setGlobs(test)
+    login(ANONYMOUS)
+
+def statisticianTearDown(test):
     logout()
     LaunchpadZopelessTestSetup().tearDown()
 
@@ -194,13 +210,10 @@ special = {
             setUp=importdSetUp, tearDown=importdTearDown,
             optionflags=default_optionflags, layer=ZopelessLayer
             ),
-    # XXX flacoste 20060915 This should use a LayeredDocFileSuite
-    # but we need to register a TestMailBox and set up the
-    # LaunchpadSecurityPolicy
-    'support-tracker-emailinterface.txt': FunctionalDocFileSuite(
+    'support-tracker-emailinterface.txt': LayeredDocFileSuite(
             '../doc/support-tracker-emailinterface.txt',
-            setUp=setUp, tearDown=tearDown,
-            layer=LaunchpadFunctionalLayer
+            setUp=supportTrackerSetUp, tearDown=supportTrackerTearDown,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer
             ),
     'person-karma.txt': FunctionalDocFileSuite(
             '../doc/person-karma.txt',
@@ -240,6 +253,26 @@ special = {
             '../doc/incomingmail.txt',
             setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer,
             stdout_logging_level=logging.WARNING
+            ),
+    'launchpadform.txt': FunctionalDocFileSuite(
+            '../doc/launchpadform.txt',
+            setUp=setUp, tearDown=tearDown, optionflags=default_optionflags,
+            layer=FunctionalLayer
+            ),
+    'launchpadformharness.txt': FunctionalDocFileSuite(
+            '../doc/launchpadformharness.txt',
+            setUp=setUp, tearDown=tearDown, optionflags=default_optionflags,
+            layer=FunctionalLayer
+            ),
+    'bug-export.txt': LayeredDocFileSuite(
+            '../doc/bug-export.txt',
+            setUp=setUp, tearDown=tearDown, optionflags=default_optionflags,
+            layer=LaunchpadZopelessLayer
+            ),
+    'package-cache.txt': LayeredDocFileSuite(
+            '../doc/package-cache.txt',
+            setUp=statisticianSetUp, tearDown=statisticianTearDown,
+            optionflags=default_optionflags, layer=ZopelessLayer
             ),
     }
 

@@ -24,7 +24,14 @@ from canonical.launchpad.interfaces import (
 LP_USER_AGENT = "Launchpad Bugscraper/0.1 (http://launchpad.net/malone)"
 
 
-class UnknownBugTrackerTypeError(Exception):
+#
+# Exceptions caught in scripts/checkwatches.py
+#
+class BugWatchUpdateError(Exception):
+    """Base exception for when we fail to update watches for a tracker."""
+
+
+class UnknownBugTrackerTypeError(BugWatchUpdateError):
     """Exception class to catch systems we don't have a class for yet."""
 
     def __init__(self, bugtrackertypename, bugtrackername):
@@ -35,11 +42,19 @@ class UnknownBugTrackerTypeError(Exception):
         return self.bugtrackertypename
 
 
-class UnsupportedBugTrackerVersion(Exception):
+class UnsupportedBugTrackerVersion(BugWatchUpdateError):
     """The bug tracker version is not supported."""
 
 
-class BugTrackerConnectError(Exception):
+class UnparseableBugTrackerVersion(BugWatchUpdateError):
+    """The bug tracker version could not be parsed."""
+
+
+class UnparseableBugData(BugWatchUpdateError):
+    """The bug tracker provided bug data that could not be parsed."""
+
+
+class BugTrackerConnectError(BugWatchUpdateError):
     """Exception class to catch misc errors contacting a bugtracker."""
 
     def __init__(self, url, error):
@@ -49,7 +64,9 @@ class BugTrackerConnectError(Exception):
     def __str__(self):
         return "%s: %s" % (self.url, self.error)
 
-
+#
+# Exceptions caught locally
+#
 class InvalidBugId(Exception):
     """The bug id wasn't in the format the bug tracker expected.
 
@@ -62,6 +79,9 @@ class BugNotFound(Exception):
     """The bug was not found in the external bug tracker."""
 
 
+#
+# Helper function
+#
 def get_external_bugtracker(bugtracker, version=None):
     """Return an ExternalBugTracker for bugtracker."""
     bugtrackertype = bugtracker.bugtrackertype
@@ -153,6 +173,7 @@ class Bugzilla(ExternalBugTracker):
             baseurl = baseurl[:-1]
         self.baseurl = baseurl
         self.version = version
+        self.is_issuezilla = False
 
     def _getPage(self, page):
         """GET the specified page on the remote HTTP server."""
@@ -176,8 +197,13 @@ class Bugzilla(ExternalBugTracker):
         url = "%s/%s" % (self.baseurl, page)
         post_data = urllib.urlencode(form)
         request = urllib2.Request(url, headers={'User-agent': LP_USER_AGENT})
-        url = urllib2.urlopen(request, data=post_data)
-        page_contents = url.read()
+        page = urllib2.urlopen(request, data=post_data)
+        page_contents = page.read()
+        if page.url != url:
+            # If the URL wasn't the same as we expected, give up --
+            # urllib2 shouldn't redirect POSTs as it doesn't know how to.
+            raise BugTrackerConnectError(self.baseurl,
+                    "POST was redirected from %s to %s" % (url, page.url))
         return page_contents
 
     def _parseDOMString(self, contents):
@@ -198,7 +224,16 @@ class Bugzilla(ExternalBugTracker):
                                          "when probing for version: %s" % e)
         bugzilla = document.getElementsByTagName("bugzilla")
         if not bugzilla:
-            return None
+            # Welcome to Disneyland. The Issuezilla tracker replaces
+            # "bugzilla" with "issuezilla".
+            bugzilla = document.getElementsByTagName("issuezilla")
+            if bugzilla:
+                self.is_issuezilla = True
+            else:
+                raise UnparseableBugTrackerVersion(
+                    'Failed to parse version from xml.cgi for %s: could '
+                    'not find top-level bugzilla element'
+                    % self.baseurl)
         version = bugzilla[0].getAttribute("version")
         return version
 
@@ -215,8 +250,9 @@ class Bugzilla(ExternalBugTracker):
         else:
             resolution = ''
 
-        if remote_status in ['ASSIGNED', 'ON_DEV', 'FAILS_QA']:
+        if remote_status in ['ASSIGNED', 'ON_DEV', 'FAILS_QA', 'STARTED']:
             # FAILS_QA, ON_DEV: bugzilla.redhat.com
+            # STARTED: OOO Issuezilla
            malone_status = BugTaskStatus.INPROGRESS
         elif remote_status in ['NEEDINFO', 'NEEDINFO_REPORTER',
                                'WAITING', 'SUSPENDED']:
@@ -261,52 +297,88 @@ class Bugzilla(ExternalBugTracker):
             self.version = self._probe_version()
 
         try:
+            # Get rid of trailing -rh, -debian, etc.
+            version = self.version.split("-")[0]
             # Ignore plusses in the version.
-            version = self.version.replace("+", "")
+            version = version.replace("+", "")
             # We need to convert the version to a tuple of integers if
             # we are to compare it correctly.
             version = tuple(int(x) for x in version.split("."))
         except ValueError:
-            log.error('Failed to parse version %r for %s' %
-                      (self.version, self.baseurl))
-            return False
+            raise UnparseableBugTrackerVersion(
+                'Failed to parse version %r for %s' % (self.version, self.baseurl))
 
-        if version < (2, 16):
-            raise UnsupportedBugTrackerVersion(
-                "Unsupported version %r for %s" % (self.version, self.baseurl))
-
-        data = {'form_name'   : 'buglist.cgi',
-                'bug_id_type' : 'include',
-                'bug_id'      : ','.join(bug_ids),
-                }
-        if version < (2, 17, 1):
-            data.update({'format' : 'rdf'})
+        if self.is_issuezilla:
+            buglist_page = 'xml.cgi'
+            data = {'download_type' : 'browser',
+                    'output_configured' : 'true',
+                    'include_attachments' : 'false',
+                    'include_dtd' : 'true',
+                    'id'      : ','.join(bug_ids),
+                    }
+            bug_tag = 'issue'
+            id_tag = 'issue_id'
+            status_tag = 'issue_status'
+            resolution_tag = 'resolution'
+        elif version < (2, 16):
+            buglist_page = 'xml.cgi'
+            data = {'id': ','.join(bug_ids)}
+            bug_tag = 'bug'
+            id_tag = 'bug_id'
+            status_tag = 'bug_status'
+            resolution_tag = 'resolution'
         else:
-            data.update({'ctype'  : 'rdf'})
+            buglist_page = 'buglist.cgi'
+            data = {'form_name'   : 'buglist.cgi',
+                    'bug_id_type' : 'include',
+                    'bug_id'      : ','.join(bug_ids),
+                    }
+            if version < (2, 17, 1):
+                data.update({'format' : 'rdf'})
+            else:
+                data.update({'ctype'  : 'rdf'})
+            bug_tag = 'bz:bug'
+            id_tag = 'bz:id'
+            status_tag = 'bz:bug_status'
+            resolution_tag = 'bz:resolution'
 
-        buglist_xml = self._postPage('buglist.cgi', data)
+        buglist_xml = self._postPage(buglist_page, data)
         try:
             document = self._parseDOMString(buglist_xml)
         except xml.parsers.expat.ExpatError, e:
-            log.error('Failed to parse XML description for %s bugs %s: %s' %
-                      (self.baseurl, bug_ids, e))
-            return False
+            raise UnparseableBugData('Failed to parse XML description for '
+                '%s bugs %s: %s' % (self.baseurl, bug_ids, e))
 
-        bug_nodes = document.getElementsByTagName('bz:bug')
         self.remote_bug_status = {}
+        bug_nodes = document.getElementsByTagName(bug_tag)
         for bug_node in bug_nodes:
-            bug_id_nodes = bug_node.getElementsByTagName("bz:id")
-            assert len(bug_id_nodes) == 1, "Should be only one id node."
+            # We use manual iteration to pick up id_tags instead of
+            # getElementsByTagName because the latter does a recursive
+            # search, and in some documents we've found the id_tag to
+            # appear under other elements (such as "has_duplicates") in
+            # the document hierarchy.
+            bug_id_nodes = [node for node in bug_node.childNodes if
+                            node.nodeName == id_tag]
+            if not bug_id_nodes:
+                # Something in the output is really weird; this will
+                # show up as a bug not found, but we can catch that
+                # later in the error logs.
+                continue
             bug_id_node = bug_id_nodes[0]
             assert len(bug_id_node.childNodes) == 1, (
                 "id node should contain a non-empty text string.")
             bug_id = str(bug_id_node.childNodes[0].data)
+            # This assertion comes in late so we can at least tell what
+            # bug caused this crash.
+            assert len(bug_id_nodes) == 1, \
+                "Should be only one id node, but %s had %s." % (bug_id, len(bug_id_nodes))
 
-            # Older versions of bugzilla used bz:status; this was later
-            # changed to bz:bug_status. For robustness, and because
-            # there is no risk of reading wrong data here, we try both:
-            status_nodes = bug_node.getElementsByTagName("bz:bug_status")
+            status_nodes = bug_node.getElementsByTagName(status_tag)
             if not status_nodes:
+                # Older versions of bugzilla used bz:status; this was
+                # later changed to bz:bug_status. For robustness, and
+                # because there is practically no risk of reading wrong
+                # data here, just try the older format as well.
                 status_nodes = bug_node.getElementsByTagName("bz:status")
             assert len(status_nodes) == 1, ("Couldn't find a status "
                                             "node for bug %s." % bug_id)
@@ -316,7 +388,7 @@ class Bugzilla(ExternalBugTracker):
                 "text string." % bug_id)
             status = bug_status_node.childNodes[0].data
 
-            resolution_nodes = bug_node.getElementsByTagName('bz:resolution')
+            resolution_nodes = bug_node.getElementsByTagName(resolution_tag)
             assert len(resolution_nodes) <= 1, (
                 "Should be only one resolution node for bug %s." % bug_id)
             if resolution_nodes:
@@ -327,8 +399,6 @@ class Bugzilla(ExternalBugTracker):
                     resolution = resolution_nodes[0].childNodes[0].data
                     status += ' %s' % resolution
             self.remote_bug_status[bug_id] = status
-
-        return True
 
     def _getRemoteStatus(self, bug_id):
         """See ExternalBugTracker."""

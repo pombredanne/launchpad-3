@@ -4,18 +4,18 @@ Caching of Exported PO Files
 
 This test demonstrates how the PO file export caching mechanism works.
 
-Get hold of a PO file which has never been exported.
+Get hold of a PO file which has been exported before.
 
     >>> from canonical.launchpad.database import POFile
     >>> pofile = POFile.get(1)
 
-Because it has never been exported, it doesn't have a Librarian file
-containing a cached export.
+Because it has been exported before, it has a Librarian file containing a
+cached export.
 
     >>> pofile.exportfile is None
-    True
+    False
 
-And if we ask it, it will tell us that it doesn't have a valid cache.
+However, it was exported with old data, so it doesn't have a valid cache.
 
     >>> pofile.validExportCache()
     False
@@ -41,6 +41,11 @@ Because we exported a PO file, it will have updated the cache.
     >>> pofile.validExportCache()
     True
 
+In order to have different datetimes for the export time of the pofile,
+and for any new stuff we do, lets commit a transaction.
+
+    >>> transaction.commit()
+
 Now let's add a translation to the PO file.
 
     >>> from canonical.launchpad.database import Person
@@ -50,8 +55,12 @@ Now let's add a translation to the PO file.
     >>> msgset = pofile.getPOMsgSet(msgid)
     >>> print msgset.active_texts
     [None]
+
+    >>> import datetime
+    >>> import pytz
+    >>> UTC = pytz.timezone('UTC')
     >>> msgset.updateTranslationSet(person, {0: 'Blah.'}, fuzzy=False,
-    ...     published=False)
+    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
     >>> print msgset.active_texts
     [u'Blah.']
 
@@ -81,6 +90,11 @@ This tests two specific things:
     False
     >>> len(empty_pofile.export()) > 0
     True
+
+XXX DaniloSegan 20070115: we're currently unable to track cache status
+for empty PO files, since this is similar to case of a single deactivated
+translation.
+
     >>> empty_pofile.validExportCache()
-    True
+    False
 

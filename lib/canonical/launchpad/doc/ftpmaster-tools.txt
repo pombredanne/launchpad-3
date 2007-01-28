@@ -142,15 +142,9 @@ via an API, without having to shell the script. This would enable us to get
 a mailer stub into place and check if a mail was really going to be sent, 
 instead of relying on log output. See bug 56722.
 
-  >>> libpath = '/var/tmp/fatsam.test/'
-  >>> for directory in ['00', '00', '00']:
-  ...     libpath = os.path.join(libpath, directory)
-  ...     os.mkdir(libpath)
-
-  >>> libpath = os.path.join(libpath, '01')
-  >>> libfile = open(libpath, 'wb')
-  >>> libfile.write('Fake Changesfile')
-  >>> libfile.close()
+  >>> from canonical.librarian.ftests.harness import (
+  ...     fillLibrarianFile, cleanupLibrarianFiles)
+  >>> fillLibrarianFile(1, content="Fake Changesfile")
 
   >>> process = subprocess.Popen([sys.executable, script, "-NM", "accept",
   ...                             "-s", "breezy-autotest",
@@ -302,9 +296,7 @@ FETCH CHANGES
 
   >>> os.remove('netapplet-1.0.0.tar.gz')
 
-  >>> import shutil
-  >>> shutil.rmtree('/var/tmp/fatsam.test/00')
-
+  >>> cleanupLibrarianFiles()
 
 Testing change-override behaviour:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

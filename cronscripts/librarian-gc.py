@@ -42,6 +42,11 @@ def main():
             dest="skip_content",
             help="Skip unreferenced LibraryFileContent removal"
             )
+    parser.add_option(
+            '', "--skip-blobs", action="store_true", default=False,
+            dest="skip_blobs",
+            help="Skip removing expired TemporaryBlobStorage rows"
+            )
 
     (options, args) = parser.parse_args()
 
@@ -65,6 +70,8 @@ def main():
         # as appropriate to make this script transaction friendly
         if not options.skip_content:
             librariangc.delete_unreferenced_content(con) # first sweep
+        if not options.skip_blobs:
+            librariangc.delete_expired_blobs(con)
         if not options.skip_duplicates:
             librariangc.merge_duplicates(con)
         if not options.skip_aliases:

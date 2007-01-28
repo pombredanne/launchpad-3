@@ -111,8 +111,46 @@ class BugTrackerSet:
             schema = 'http'
         return '%s:%s' % (schema, rest)
 
+    def _baseURLPermutations(self, base_url):
+        """Return all the possible variants of a base URL.
+
+        Sometimes the URL ends with slash, sometimes not. Sometimes http
+        is used, sometimes https. This gives a list of all possible
+        variants, so that queryByBaseURL can match a base URL, even if
+        it doesn't match exactly what is stored in the database.
+
+            >>> BugTrackerSet()._baseURLPermutations('http://foo/bar')
+            ['http://foo/bar', 'http://foo/bar/',
+             'https://foo/bar', 'https://foo/bar/']
+        """
+        http_schemas = ['http', 'https']
+        url_schema, rest = urllib.splittype(base_url)
+        if url_schema in http_schemas:
+            possible_schemas = http_schemas
+        else:
+            # This else-clause is here since we have no strict
+            # requirement that bug trackers have to have http URLs.
+            possible_schemas = [url_schema]
+        alternative_urls = []
+        for schema in possible_schemas:
+            url = "%s:%s" % (schema, rest)
+            alternative_urls.append(url)
+            if url.endswith('/'):
+                alternative_urls.append(url[:-1])
+            else:
+                alternative_urls.append(url + '/')
+        # Make sure that the original URL is always first, to make the
+        # common case require less db queries.
+        alternative_urls.remove(base_url)
+        return [base_url] + alternative_urls
+
     def queryByBaseURL(self, baseurl):
-        return BugTracker.selectOneBy(baseurl=baseurl)
+        """See IBugTrackerSet."""
+        for url in self._baseURLPermutations(baseurl):
+            bugtracker = BugTracker.selectOneBy(baseurl=url)
+            if bugtracker is not None:
+                return bugtracker
+        return None
 
     def search(self):
         """See canonical.launchpad.interfaces.IBugTrackerSet."""

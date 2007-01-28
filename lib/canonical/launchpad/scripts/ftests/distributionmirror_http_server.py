@@ -25,7 +25,7 @@ class DistributionMirrorTestHTTPServer(Resource):
                              to http://localhost:11375/redirect-infinite-loop.
 
     :redirect-unknown-url-scheme: Respond with a '302 Found' status, redirecting
-                                  to ftp://localhost/foo.
+                                  to ssh://localhost/foo.
 
     Any other path will cause the server to respond with a '404 Not Found'
     status.
@@ -46,7 +46,7 @@ class DistributionMirrorTestHTTPServer(Resource):
             return RedirectingResource(
                 'http://localhost:11375/redirect-infinite-loop')
         elif name == 'redirect-unknown-url-scheme':
-            return RedirectingResource('ftp://localhost/foo')
+            return RedirectingResource('ssh://localhost/foo')
         else:
             return Resource.getChild(self, name, request)
 

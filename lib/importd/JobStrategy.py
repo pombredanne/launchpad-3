@@ -14,6 +14,12 @@ import CVS
 import cscvs
 import SCM
 
+from canonical.launchpad.webapp.url import Url
+
+
+class ImportSanityError(Exception):
+    """Raised when an import fails sanity checks."""
+
 
 class JobStrategy:
     """I am the base strategy used to do a Job."""
@@ -85,10 +91,26 @@ class CSCVSStrategy(JobStrategy):
         self.aJob = aJob
         self.dir = dir
         self.logger = logger
+        self._checkSanity()
         target_manager = aJob.makeTargetManager()
         working_dir = self.getWorkingDir(aJob, dir)
         target_path = target_manager.createImportTarget(working_dir)
-        self.runtobaz("-SC", "%s.1:" % aJob.branchfrom, target_path, logger)
+        # Option -I here to do a full-tree import for the first revision.
+        # No option -C here because the working tree is not at revision 1.
+        self.runtobaz("-SI", "%s.1" % aJob.branchfrom, target_path, logger)
+        # WARNING: Do not use the "1::" syntax for the revision range, because
+        # the svn revision range parser is not stable. If the svn branch to
+        # import was created at revision 42, the previous command will produce
+        # a commit with a cscvs id of "MAIN.42". Then the incremental import
+        # must start on revision 43. -- David Allouche 2006-10-31
+        self._importIncrementally(target_path)
+
+    def _checkSanity(self):
+        """Run sanity checks to avoid putting excessive load on server.
+
+        By default do no check. Subclasses may override this. If the import is
+        deemed unsafe, this method must raise ImportSanityError.
+        """
 
     def sync(self, aJob, dir, logger):
         """sync from a concrete type to baz"""
@@ -98,16 +120,35 @@ class CSCVSStrategy(JobStrategy):
         self.aJob = aJob
         self.logger = logger
         self.dir = dir
-        target_manager = aJob.makeTargetManager()
         working_dir = self.getWorkingDir(aJob, dir)
+        target_path = self._getSyncTarget(working_dir)
+        self._importIncrementally(target_path)
+
+    def _getSyncTarget(self, working_dir):
+        """Retrieve the bzrworking directory when doing a sync.
+
+        This is factored out as a separate method to allow shorting out the
+        this functionality and its dependencies when testing sync.
+
+        :param working_dir: path of job's working directory
+        :return: path of the bzr working tree to import into
+        """
+        target_manager = self.job.makeTargetManager()
         target_path = target_manager.getSyncTarget(working_dir)
+        return target_path
+
+    def _importIncrementally(self, target_path):
+        """Do an incremental import, starting after the last imported revision.
+
+        :param target_path: path of the bzr workingtree to import into
+        """
         branch = SCM.branch(self.job.targetBranchName())
         lastCommit = cscvs.findLastCscvsCommit(branch)
         if lastCommit is None:
             raise RuntimeError(
                 "The incremental 'tobaz' was not performed because "
-                "there are no new commits.")
-        self.runtobaz("-SC", "%s::" % lastCommit, target_path, logger)
+                "no cscvs commit was found in the history of the target.")
+        self.runtobaz("-SC", "%s::" % lastCommit, target_path, self.logger)
 
     def sourceDir(self):
         """Get a source directory to work against"""
@@ -397,9 +438,34 @@ class CvsWorkingTree:
 
 
 class SVNStrategy(CSCVSStrategy):
+
+    def __init__(self):
+        CSCVSStrategy.__init__(self)
+        self._svn_url_whitelist = set([
+            'http://mg.pov.lt/gtimelog/svn',
+            'http://opensvn.csie.org/srb2d6',
+            'http://www.eigenheimstrasse.de/svn/josm',
+            'http://www2.cs.tum.edu/repos/cup/develop',
+            'https://svn.sourceforge.net/svnroot/aptoncd/0.1',
+            'https://svn.sourceforge.net/svnroot/comix',
+            'https://svn.sourceforge.net/svnroot/jubler/src',
+            'https://svn.sourceforge.net/svnroot/listengnome/releases/0.5.x',
+            'https://svn.sourceforge.net/svnroot/listengnome/trunk-0.5',
+            'https://svn.sourceforge.net/svnroot/scherzo',
+            'svn://elgg.net/elgg/devel',
+            'svn://mielke.cc/main/brltty',
+            'svn://svn.debian.org/gcccvs/branches/sid/gcc-defaults',
+            'svn://svn.xara.com/Trunk/XaraLX',
+            'svn://svnanon.samba.org/samba/branches/SAMBA_4_0/source/lib/talloc',
+            'https://numexp.org/svn/numexp-core',
+            'svn://svn.berlios.de/sax/sax-head',
+            'http://codespeak.net/svn/pypy/dist',
+         ])
+
     def getSVNDirPath(self, aJob, dir):
         """return the cvs working dir path"""
         return os.path.join(self.getWorkingDir(aJob,dir), "svnworking")
+
     def sourceDir(self):
         """get a source dir to work against"""
         if self.sourceDirectory is None:
@@ -412,7 +478,7 @@ class SVNStrategy(CSCVSStrategy):
                     SCM.tree(path).update()
                 else:
                     self.logger.debug("getting from SVN: %s %s",
-                                      (repository, self.aJob.module))
+                        repository, self.aJob.module)
                     client=pysvn.Client()
                     client.checkout(repository, path)
             except Exception: # don't leave partial checkouts around
@@ -427,3 +493,29 @@ class SVNStrategy(CSCVSStrategy):
         if self._tree is None:
             self._tree = SCM.tree(self.sourceDir())
         return self._tree
+
+    def _checkSanity(self):
+        """Run sanity checks to avoid putting excessive load on server."""
+        if self._sanityIsOverridden():
+            return
+        url = self.job.repository
+        if Url(url).path.endswith('/'):
+            # Non-canonicalized URLs will cause old unpatched svn servers to
+            # crash. We should also canonicalize the URLs to catch duplicates,
+            # but this provides belt-and-suspenders to avoid harming remote
+            # servers.
+            raise ImportSanityError(
+                'URL ends with a slash: %s' % url)
+        if '/trunk/' in Url(url).pathslash:
+            return
+        raise ImportSanityError(
+            'URL does not appear to be a SVN trunk: %s' % url)
+
+    def _sanityIsOverridden(self):
+        """Whether the sanity check for this import has been overridden.
+
+        At the moment, that just checks that the svn url is in an hardcoded
+        while-list. Eventually, that will check for a flag set by the operator
+        in the Launchpad web UI.
+        """
+        return self.job.repository in self._svn_url_whitelist

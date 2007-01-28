@@ -145,18 +145,16 @@ class POTMsgSet(SQLBase):
         languages = getUtility(ILanguageSet)
         try:
             pofile = self.potemplate.getPOFileByLang(language)
-            pluralforms = pofile.pluralforms
         except KeyError:
             pofile = None
-            pluralforms = languages[language].pluralforms
+        pluralforms = languages[language].pluralforms
 
         # If we only have a msgid, we change pluralforms to 1, if it's a
         # plural form, it will be the number defined in the pofile header.
         if len(list(self.getPOMsgIDs())) == 1:
             pluralforms = 1
 
-        if pluralforms == None:
-            raise RuntimeError(
+        assert pluralforms != None, (
                 "Don't know the number of plural forms for this POT file!")
 
         # if we have no po file, then return empty translations

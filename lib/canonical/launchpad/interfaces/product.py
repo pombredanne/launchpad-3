@@ -21,6 +21,7 @@ from canonical.launchpad.interfaces import (
     IHasSecurityContact, IKarmaContext, PillarNameField)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.validation import valid_webref
+from canonical.launchpad.fields import LargeImageUpload, SmallImageUpload
 
 
 class ProductNameField(PillarNameField):
@@ -160,6 +161,26 @@ class IProduct(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
         required=False, description=_("""The Freshmeat project name for
             this product, if it is in freshmeat."""))
 
+    homepage_content = Text(
+        title=_("Homepage Content"), required=False,
+        description=_(
+            "The content of this product's home page. Edit this and it will "
+            "be displayed for all the world to see. It is NOT a wiki "
+            "so you cannot undo changes."))
+
+    emblem = SmallImageUpload(
+        title=_("Emblem"), required=False,
+        description=_(
+            "A small image, max 16x16 pixels and 25k in file size, that can "
+            "be used to refer to this product."))
+
+    gotchi = LargeImageUpload(
+        title=_("Icon"), required=False,
+        description=_(
+            "An image, maximum 170x170 pixels, that will be displayed on "
+            "this product's home page. It should be no bigger than 100k in "
+            "size. "))
+
     translationgroup = Choice(
         title = _("Translation group"),
         description = _("The translation group for this product. This group "
@@ -267,11 +288,6 @@ class IProduct(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
         "that applies to translations in this product, based on the "
         "permissions that apply to the product as well as its project.")
 
-    # XXX: shouldn't this be validated with valid_webref?
-    #   -- kiko, 2005-10-11
-    releaseroot = Text(title=_("The URL of the root directory for the product "
-        "used when the series doesn't supply one."))
-
     def getLatestBranches(quantity=5):
         """Latest <quantity> branches registered for this product."""
 
@@ -335,7 +351,8 @@ class IProductSet(Interface):
                       description, project=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
-                      sourceforgeproject=None):
+                      sourceforgeproject=None, programminglang=None,
+                      reviewed=False, gotchi=None, emblem=None):
         """Create and Return a brand new Product."""
 
     def forReview():

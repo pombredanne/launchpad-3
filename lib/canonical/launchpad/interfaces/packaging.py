@@ -28,7 +28,7 @@ class IPackaging(IHasOwner):
     productseries = Choice(
         title=_('Product Series'), required=True,
         vocabulary="ProductSeries", description=_("The branch or "
-        "'product series' that this is a packaging of. We expressly "
+        "product series that this is a packaging of. We expressly "
         "need to know the branch because you might have packages "
         "of two different branches of a product in the same release "
         "of a distribution, if for example you have packages of both "

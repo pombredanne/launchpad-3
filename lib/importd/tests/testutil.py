@@ -34,9 +34,31 @@ class SilentLogHandler(logging.Handler):
 
 
 def makeSilentLogger():
-    """Create a logger that collects prints nothing."""
+    """Create a logger that prints nothing."""
     logger = logging.Logger("collector")
     handler = SilentLogHandler()
+    logger.addHandler(handler)
+    return logger
+
+
+class CollectingLogHandler(logging.Handler):
+    """Logging handlers that saves logging messages."""
+
+    def emit(self, record):
+        message = record.getMessage()
+        self.logger.messages.append(message)
+
+
+def makeCollectingLogger():
+    """Create a logger that saves its logging records to a list.
+
+    The logging messages are saved in the 'messages' attribute of the returned
+    logger object.
+    """
+    logger = logging.Logger('collector')
+    logger.messages = []
+    handler = CollectingLogHandler(logger)
+    handler.logger = logger
     logger.addHandler(handler)
     return logger
 

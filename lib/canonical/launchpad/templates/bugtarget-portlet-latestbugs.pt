@@ -1,5 +1,5 @@
 <div class="portlet" tal:condition="view/latestBugTasks">
-  <h4>Latest bugs in <span tal:replace="context/displayname" />:</h4>
+  <h2>Latest bugs in <span tal:replace="context/displayname" /></h2>
   <div class="portletBody">
     <div class="portletContent">
       <p tal:condition="not: view/latestBugTasks">

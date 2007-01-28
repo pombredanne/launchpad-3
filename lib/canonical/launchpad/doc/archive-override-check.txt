@@ -34,7 +34,7 @@ history" in the sampledata to test those tools properly.
   DEBUG   Acquiring lock
   DEBUG   Initialising connection.
   DEBUG   Considering: ubuntu/warty/RELEASE/CURRENT.
-  DEBUG   4 published sources
+  DEBUG   ... published sources
   DEBUG   Rolling back any remaining transactions.
   DEBUG   Releasing lock
   <BLANKLINE>

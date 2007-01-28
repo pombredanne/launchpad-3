@@ -8,9 +8,12 @@ __metaclass__ = type
 
 import bisect
 import cgi
-import re
-import os.path
+from email.Utils import formatdate
 import math
+import os.path
+import re
+import rfc822
+from xml.sax.saxutils import unescape as xml_unescape
 
 from zope.interface import Interface, Attribute, implements
 from zope.component import getUtility, queryAdapter
@@ -146,13 +149,13 @@ class EnumValueAPI:
             return True
         else:
             # Check whether this was an allowed value for this dbschema.
-            schema = self.item.schema
+            schema_items = self.item.schema_items
             try:
-                schema.items[name]
+                schema_items[name]
             except KeyError:
                 raise TraversalError(
                     'The %s dbschema does not have a value %s.' %
-                    (schema.__name__, name))
+                    (self.item.schema_name, name))
             return False
 
 
@@ -265,9 +268,11 @@ class NoneFormatter:
         'nl_to_br',
         'nice_pre',
         'breadcrumbs',
+        'break-long-words',
         'date',
         'time',
         'datetime',
+        'rfc822utcdatetime',
         'exactduration',
         'approximateduration',
         'pagetitle',
@@ -430,6 +435,10 @@ class DateTimeFormatterAPI:
 
     def datetime(self):
         return "%s %s" % (self.date(), self.time())
+
+    def rfc822utcdatetime(self):
+        return formatdate(
+            rfc822.mktime_tz(self._datetime.utctimetuple() + (0,)))
 
 
 class DurationFormatterAPI:
@@ -654,6 +663,133 @@ class PageTemplateContextsAPI:
                 return title
 
 
+def split_paragraphs(text):
+    """Split text into paragraphs.
+
+    This function yields lists of strings that represent lines of text
+    in each paragraph.
+
+    Paragraphs are split by one or more blank lines.
+    """
+    paragraph = []
+    for line in text.splitlines():
+        line = line.rstrip()
+
+        # blank lines split paragraphs
+        if not line:
+            if paragraph:
+                yield paragraph
+            paragraph = []
+            continue
+
+        paragraph.append(line)
+
+    if paragraph:
+        yield paragraph
+
+
+def re_substitute(pattern, replace_match, replace_nomatch, string):
+    """Transform a string, replacing matched and non-matched sections.
+
+     :param patter: a regular expression
+     :param replace_match: a function used to transform matches
+     :param replace_nomatch: a function used to transform non-matched text
+     :param string: the string to transform
+
+    This function behaves similarly to re.sub() when a function is
+    passed as the second argument, except that the non-matching
+    portions of the string can be transformed by a second function.
+    """
+    if replace_match is None:
+        replace_match = lambda match: match.group()
+    if replace_nomatch is None:
+        replace_nomatch = lambda text: text
+    parts = []
+    position = 0
+    for match in re.finditer(pattern, string):
+        if match.start() != position:
+            parts.append(replace_nomatch(string[position:match.start()]))
+        parts.append(replace_match(match))
+        position = match.end()
+    remainder = string[position:]
+    if remainder:
+        parts.append(replace_nomatch(remainder))
+    return ''.join(parts)
+
+
+def next_word_chunk(word, pos, minlen, maxlen):
+    """Return the next chunk of the word of length between minlen and maxlen.
+
+    Shorter word chunks are preferred, preferably ending in a non
+    alphanumeric character.  The index of the end of the chunk is also
+    returned.
+
+    This function treats HTML entities in the string as single
+    characters.  The string should not include HTML tags.
+    """
+    nchars = 0
+    endpos = pos
+    while endpos < len(word):
+        # advance by one character
+        if word[endpos] == '&':
+            # make sure we grab the entity as a whole
+            semicolon = word.find(';', endpos)
+            assert semicolon >= 0, 'badly formed entity: %r' % word[endpos:]
+            endpos = semicolon + 1
+        else:
+            endpos += 1
+        nchars += 1
+        if nchars >= maxlen:
+            # stop if we've reached the maximum chunk size
+            break
+        if nchars >= minlen and not word[endpos-1].isalnum():
+            # stop if we've reached the minimum chunk size and the last
+            # character wasn't alphanumeric.
+            break
+    return word[pos:endpos], endpos
+
+
+def add_word_breaks(word):
+    """Insert manual word breaks into a string.
+
+    The word may be entity escaped, but is not expected to contain
+    any HTML tags.
+
+    Breaks are inserted at least every 7 to 15 characters,
+    preferably after puctuation.
+    """
+    broken = []
+    pos = 0
+    while pos < len(word):
+        chunk, pos = next_word_chunk(word, pos, 7, 15)
+        broken.append(chunk)
+    return '<wbr></wbr>'.join(broken)
+
+
+break_text_pat = re.compile(r'''
+  (?P<tag>
+    <[^>]*>
+  ) |
+  (?P<longword>
+    (?<![^\s<>])(?:[^\s<>&]|&[^;]*;){20,}
+  )
+''', re.VERBOSE)
+
+def break_long_words(text):
+    """Add word breaks to long words in a run of text.
+
+    The text may contain entity references or HTML tags.
+    """
+    def replace(match):
+        if match.group('tag'):
+            return match.group()
+        elif match.group('longword'):
+            return add_word_breaks(match.group())
+        else:
+            raise AssertionError('text matched but neither named group found')
+    return break_text_pat.sub(replace, text)
+
+
 class FormattersAPI:
     """Adapter from strings to HTML formatted text."""
 
@@ -665,6 +801,10 @@ class FormattersAPI:
     def nl_to_br(self):
         """Quote HTML characters, then replace newlines with <br /> tags."""
         return cgi.escape(self._stringtoformat).replace('\n','<br />\n')
+
+    def break_long_words(self):
+        """Add manual word breaks to long words."""
+        return break_long_words(cgi.escape(self._stringtoformat))
 
     @staticmethod
     def _substitute_matchgroup_for_spaces(match):
@@ -701,10 +841,10 @@ class FormattersAPI:
             title = cgi.escape(title, quote=True)
             return '<a href="%s" title="%s">%s</a>' % (url, title, text)
         elif match.group('url') is not None:
-            # The text will already have been cgi escaped.
-            # We still need to escape quotes for the url.
-            url = match.group('url')
-            # Search for punctuation to strip off the end of the URL
+            # The text will already have been cgi escaped.  We temporarily
+            # unescape it so that we can strip common trailing characters
+            # that aren't part of the URL.
+            url = xml_unescape(match.group('url'))
             match = FormattersAPI._re_url_trailers.search(url)
             if match:
                 trailers = match.group(1)
@@ -712,7 +852,9 @@ class FormattersAPI:
             else:
                 trailers = ''
             return '<a rel="nofollow" href="%s">%s</a>%s' % (
-                url.replace('"', '&quot;'), url, trailers)
+                cgi.escape(url, quote=True),
+                add_word_breaks(cgi.escape(url)),
+                cgi.escape(trailers))
         elif match.group('oops') is not None:
             text = match.group('oops')
 
@@ -837,40 +979,7 @@ class FormattersAPI:
 
     # a pattern to match common trailing punctuation for URLs that we
     # don't want to include in the link.
-    _re_url_trailers = re.compile(r'((?:[,\.\?:\);]|&gt;)+)$')
-
-    @staticmethod
-    def _split_paragraphs(text):
-        """Split text into paragraphs.
-
-        This function yields lists of strings that represent
-        paragraphs of text.
-
-        Paragraphs are split by one or more blank lines.
-
-        Each paragraph is further split into one or more logical lines
-        of text.  Two adjacent lines are considered to be part of the
-        same logical line if the following conditions hold:
-          1. the first line is between 60 and 80 characters long
-          2. the second line does not begin with whitespace.
-          3. the second line does not begin with '>' (commonly used for
-             reply quoting in emails).
-        """
-        paragraph = []
-        for line in text.splitlines():
-            line = line.rstrip()
-
-            # blank lines split paragraphs
-            if not line:
-                if paragraph:
-                    yield paragraph
-                paragraph = []
-                continue
-
-            paragraph.append(line)
-
-        if paragraph:
-            yield paragraph
+    _re_url_trailers = re.compile(r'([,.?:);>]+)$')
 
     def text_to_html(self):
         """Quote text according to DisplayingParagraphsOfText."""
@@ -886,7 +995,7 @@ class FormattersAPI:
 
         output = []
         first_para = True
-        for para in self._split_paragraphs(self._stringtoformat):
+        for para in split_paragraphs(self._stringtoformat):
             if not first_para:
                 output.append('\n')
             first_para = False
@@ -907,7 +1016,8 @@ class FormattersAPI:
         text = ''.join(output)
 
         # Linkify the text.
-        text = self._re_linkify.sub(self._linkify_substitution, text)
+        text = re_substitute(self._re_linkify, self._linkify_substitution,
+                             break_long_words, text)
 
         return text
 
@@ -944,6 +1054,8 @@ class FormattersAPI:
     def traverse(self, name, furtherPath):
         if name == 'nl_to_br':
             return self.nl_to_br()
+        elif name == 'break-long-words':
+            return self.break_long_words()
         elif name == 'text-to-html':
             return self.text_to_html()
         elif name == 'nice_pre':

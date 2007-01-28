@@ -38,7 +38,7 @@
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-requestexpired.pt"
-      class="canonical.launchpad.webapp.error.SystemErrorView"
+      class="canonical.launchpad.webapp.error.RequestExpiredView"
       />
 
   <!-- UnexpectedFormData -->
@@ -117,6 +117,20 @@
       />
 
   <browser:page
+      name="+search"
+      for="canonical.launchpad.interfaces.ILaunchpadApplication"
+      class="canonical.launchpad.browser.SearchProjectsView"
+      template="../templates/launchpad-search.pt"
+      permission="zope.Public" />
+
+  <browser:page
+      for="canonical.launchpad.interfaces.ILaunchpadApplication"
+      permission="launchpad.AnyPerson"
+      class="canonical.launchpad.browser.RedirectToEditLanguagesView"
+      name="+editmylanguages"
+      />
+
+  <browser:page
       for="*"
       attribute="logout"
       class="canonical.launchpad.webapp.login.CookieLogoutPage"
@@ -130,6 +144,23 @@
       template="../templates/launchpad-loginstatus.pt"
       class="canonical.launchpad.browser.LoginStatus"
       permission="zope.Public"
+      />
+
+  <!-- Special login and information pages for a site restricted so that just
+       one team given in launchpad.conf may access it.  -->
+  <browser:page
+      for="canonical.launchpad.interfaces.ILaunchpadRoot"
+      name="+restricted-login"
+      template="../templates/launchpad-restrictedlogin.pt"
+      permission="zope.Public"
+      class="canonical.launchpad.webapp.login.LoginOrRegister"
+      />
+  <browser:page
+      for="canonical.launchpad.interfaces.ILaunchpadRoot"
+      name="+restricted-info"
+      template="../templates/launchpad-restrictedinfo.pt"
+      permission="zope.Public"
+      class="canonical.launchpad.webapp.login.RestrictedLoginInfo"
       />
 
   <!-- A page to list all the icons in LP -->
@@ -193,6 +224,25 @@
       />
 
 </facet>
+
+<!--
+Operational statistics. Note that these are publicly available, 
+and if we want to restrict access to the LAN then we need to block
+these URLs in Apache.
+-->
+<browser:page
+    for="canonical.launchpad.interfaces.ILaunchpadRoot"
+    name="+opstats"
+    permission="zope.Public"
+    class="canonical.launchpad.webapp.opstats.OpStats"
+    />
+<xmlrpc:view
+    for="canonical.launchpad.interfaces.ILaunchpadRoot"
+    class="canonical.launchpad.webapp.opstats.OpStats"
+    methods="opstats"
+    permission="zope.Public"
+    name="+opstats"
+    />
 
 <!-- self-test xmlrpc api -->
 <xmlrpc:view

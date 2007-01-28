@@ -1,0 +1,21 @@
+Hello %(importer)s,
+
+On %(dateimport)s (%(elapsedtime)s), you uploaded a file with
+%(language)s translations for %(template)s in Rosetta.
+
+We didn't import it because you didn't get it from Rosetta or
+you removed the tag we put in the files exported from Rosetta.
+
+The reason to require that Rosetta tag is to prevent people doing
+offline translations from inadvertently reverting translations done
+by others.
+
+To fix that problem, please get latest export from Rosetta, apply
+your changes and upload the merged file.
+
+For your convenience, you can get the file you uploaded at:
+%(file_link)s
+
+Thanks for using Rosetta.
+
+The Rosetta SWAT Team

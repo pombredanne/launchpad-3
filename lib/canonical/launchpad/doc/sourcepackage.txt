@@ -40,8 +40,8 @@ ISourcePackageNameSet.queryByName:
 
 If the package doesn't exist, queryByName returns None:
 
-    >>> foobar = sourcepackagenameset.queryByName("foobar")
-    >>> print foobar
+    >>> biscoito = sourcepackagenameset.queryByName("biscoito")
+    >>> print biscoito
     None
 
 Distribution Source Packages

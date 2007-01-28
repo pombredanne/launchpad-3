@@ -168,7 +168,9 @@ class Job:
         if self.frequency:
             receiver("frequency=%s%s" % (self.frequency, terminator))
 
-    def toFile(self, fileName, dir=".", logger=None):
+    def prepare(self, fileName, dir=".", logger=None):
+        """Pickle the job and create the working directory."""
+        self.getWorkingDir(dir)
         if not os.path.isdir(dir):
              os.makedirs(dir)
         aFile = open(os.path.join(dir,fileName),'w')

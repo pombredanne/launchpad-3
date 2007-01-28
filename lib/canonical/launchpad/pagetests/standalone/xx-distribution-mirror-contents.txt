@@ -4,9 +4,9 @@
   For archive mirrors we have a table listing the arch releases mirrored and
   another one for the source releases mirrored.
 
-  >>> browser.open('http://localhost/distros/ubuntu/+mirror/archive-mirror2')
+  >>> browser.open('http://localhost/ubuntu/+mirror/archive-mirror2')
   >>> browser.url
-  'http://localhost/distros/ubuntu/+mirror/archive-mirror2'
+  'http://localhost/ubuntu/+mirror/archive-mirror2'
 
   >>> print browser.contents
   <!DOCTYPE...
@@ -22,9 +22,9 @@
   For release mirrors, we have a single table listing the releases and
   flavours mirrored.
 
-  >>> browser.open('http://localhost/distros/ubuntu/+mirror/releases-mirror2')
+  >>> browser.open('http://localhost/ubuntu/+mirror/releases-mirror2')
   >>> browser.url
-  'http://localhost/distros/ubuntu/+mirror/releases-mirror2'
+  'http://localhost/ubuntu/+mirror/releases-mirror2'
 
   >>> print browser.contents
   <!DOCTYPE...

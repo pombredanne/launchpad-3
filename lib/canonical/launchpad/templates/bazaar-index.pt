@@ -64,10 +64,8 @@
   </p>
 
   <p>
-    To create a hosted branch, use the <code>bzr push</code> command. When
-    registering the first branch for a product, you may have to use the
-    <code>--create-prefix</code> option. The destination URL must be of the
-    form:
+    To create a hosted branch, use the <code>bzr push</code> command. The
+    destination URL must be of the form:
   </p>
 
   <blockquote>
@@ -77,24 +75,27 @@
   </blockquote>
 
   <ul>
-    <li><i>user</i> is your short name in Launchpad. It can be ommitted if it
-    is the same as your system login or if you specify it in your ssh
-    configuration.</li>
+    <li><i>user</i> is your short name in Launchpad.</li>
 
-    <li><i>registrant</i> is your short name in Launchpad. For example, the
-    nickname of Mark Shuttleworth is <code>sabdfl</code>. It can be a team name
-    for shared branches.</li>
+    <li><i>registrant</i> is your short name in Launchpad, for a personal
+      branch. It can be the name of a team for a shared branch.</li>
 
     <li><i>product</i> is the short name of the Launchpad product the branch
-    belongs to. For example, if you are contributing code to the Bzrk plugin
-    for Bazaar itself, the product name is <code>bzrk</code>.</li>
+      belongs to.</li>
 
-    <li><i>name</i> is the short name of the branch, it needs only be
-    unique for a given <code>person</code> and a given <code>product</code>.
-    For example, if you are publishing your main development branch on
-    Launchpad, you can use <code>dev</code> as a branch name, even if that name
-    is used by other people for the same product.</li>
+    <li><i>branch</i> is the short name of the branch. If you are uploading
+      your main development branch, <code>devel</code> is a good generic name.
+      It needs only be unique for a given <code>registrant</code> and
+      <code>product</code>.</li>
   </ul>
+
+  <p>For example, if your Launchpad user name were <code>john</code>, and you
+    wanted to upload a personal branch of the <code>froboize</code> product,
+    you could use the following command:</p>
+
+  <blockquote>
+    bzr push sftp://john@bazaar.launchpad.net/~john/froboize/devel
+  </blockquote>
 
   <p>
     To create a shared branch to which multiple people can commit and push, as
@@ -106,7 +107,7 @@
   <h2>Integration with other services</h2>
 
   <p>
-    You can associate a branch to a <a href="/malone">Malone<a> bug report, for
+    You can associate a branch to a <a href="/bugs">Malone<a> bug report, for
     example if the branch contains a fix for the bug, instead of attaching a
     patch the old-fashioned way.
   </p>

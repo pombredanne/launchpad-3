@@ -32,6 +32,8 @@ from canonical.launchpad.event import (
 from canonical.launchpad.event.interfaces import (
     ISQLObjectModifiedEvent, ISQLObjectCreatedEvent)
 
+from canonical.lp.dbschema import TicketStatus
+
 
 def get_main_body(signed_msg):
     """Returns the first text part of the email."""
@@ -276,26 +278,63 @@ class SupportTrackerHandler:
     def process(self, signed_msg, to_addr, filealias=None, log=None):
         """See IMailHandler."""
         match = self._ticket_address.match(to_addr)
-        if match:
-            ticket_id = int(match.group('id'))
-            ticket = getUtility(ITicketSet).get(ticket_id)
-            if ticket is None:
-                # No such ticket, don't process the email.
-                return False
-
-            unmodified_ticket = Snapshot(ticket, providing=providedBy(ticket))
-            messageset = getUtility(IMessageSet)
-            message = messageset.fromEmail(
-                signed_msg.parsed_string,
-                owner=getUtility(ILaunchBag).user,
-                filealias=filealias,
-                parsed_message=signed_msg)
-            ticket.linkMessage(message)
-            notify(SQLObjectModifiedEvent(
-                ticket, unmodified_ticket, ['messages']))
-            return True
-        else:
+        if not match:
             return False
+
+        ticket_id = int(match.group('id'))
+        ticket = getUtility(ITicketSet).get(ticket_id)
+        if ticket is None:
+            # No such ticket, don't process the email.
+            return False
+
+        messageset = getUtility(IMessageSet)
+        message = messageset.fromEmail(
+            signed_msg.parsed_string,
+            owner=getUtility(ILaunchBag).user,
+            filealias=filealias,
+            parsed_message=signed_msg)
+
+        if message.owner == ticket.owner:
+            self.processOwnerMessage(ticket, message)
+        else:
+            self.processUserMessage(ticket, message)
+        return True
+
+    def processOwnerMessage(self, ticket, message):
+        """Choose the right workflow action for a message coming from
+        the ticket owner.
+
+        When the ticket status is OPEN or NEEDINFO,
+        the message is a GIVEINFO action; when the status is ANSWERED
+        or EXPIRED, we interpret the message as a reopenening request;
+        otherwise it's a comment.
+        """
+        if ticket.status in [
+            TicketStatus.OPEN, TicketStatus.NEEDSINFO]:
+            ticket.giveInfo(message)
+        elif ticket.status in [
+            TicketStatus.ANSWERED, TicketStatus.EXPIRED]:
+            ticket.reopen(message)
+        else:
+            ticket.addComment(message.owner, message)
+
+    def processUserMessage(self, ticket, message):
+        """Choose the right workflow action for a message coming from a user
+        that is not the ticket owner.
+
+        When the ticket status is OPEN, NEEDSINFO, or ANSWERED, we interpret
+        the message as containing an answer. (If it was really a request for
+        more information, the owner will still be able to answer it while
+        reopening the request.)
+
+        In the other status, the message is a comment without status change.
+        """
+        if ticket.status in [
+            TicketStatus.OPEN, TicketStatus.NEEDSINFO, TicketStatus.ANSWERED]:
+            ticket.giveAnswer(message.owner, message)
+        else:
+            # In the other states, only a comment can be added.
+            ticket.addComment(message.owner, message)
 
 
 class SpecificationHandler:
@@ -343,13 +382,13 @@ class SpecificationHandler:
         if signed_msg['X-Loop'] and our_address in signed_msg.get_all('X-Loop'):
             if log and filealias:
                 log.warning(
-                    'Got back a notification we sent: %s' % filealias.url)
+                    'Got back a notification we sent: %s' % filealias.http_url)
             return True
         # Check for emails that Launchpad sent us.
         if signed_msg['Sender'] == config.bounce_address:
             if log and filealias:
-                log.warning(
-                    'We received an email from Launchpad: %s' % filealias.url)
+                log.warning('We received an email from Launchpad: %s'
+                            % filealias.http_url)
             return True
         # When sending the email, the sender will be set so that it's
         # clear that we're the one sending the email, not the original

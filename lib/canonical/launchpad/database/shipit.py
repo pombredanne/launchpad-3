@@ -85,6 +85,15 @@ class ShippingRequest(SQLBase):
             )
 
     @property
+    def distrorelease(self):
+        """See IShippingRequest"""
+        requested_cds = self.getAllRequestedCDs()
+        assert requested_cds.count() > 0
+        # We know that a request cannot contain CDs of more than one distro
+        # release, so it's safe to get the first element here.
+        return requested_cds[0].distrorelease
+
+    @property
     def recipient_email(self):
         """See IShippingRequest"""
         if self.recipient == getUtility(ILaunchpadCelebrities).shipit_admin:
@@ -163,12 +172,16 @@ class ShippingRequest(SQLBase):
         assert self.isApproved()
         self._setQuantities(quantities, set_approved=True)
 
-    def setQuantities(self, quantities):
+    def setQuantities(self, quantities,
+                      distrorelease=ShipItConstants.current_distrorelease):
         """See IShippingRequest"""
-        self._setQuantities(quantities, set_approved=True, set_requested=True)
+        self._setQuantities(
+            quantities, set_approved=True, set_requested=True,
+            distrorelease=distrorelease)
 
-    def _setQuantities(self, quantities, set_approved=False,
-                       set_requested=False):
+    def _setQuantities(
+            self, quantities, set_approved=False, set_requested=False,
+            distrorelease=ShipItConstants.current_distrorelease):
         """Set the approved and/or requested quantities of this request.
 
         :quantities: A dictionary like the described in
@@ -182,7 +195,8 @@ class ShippingRequest(SQLBase):
                     flavour, arch)
                 if requested_cds is None:
                     requested_cds = RequestedCDs(
-                        request=self, flavour=flavour, architecture=arch)
+                        request=self, flavour=flavour, architecture=arch,
+                        distrorelease=distrorelease)
                 if set_approved:
                     requested_cds.quantityapproved = quantity
                 if set_requested:
@@ -402,7 +416,9 @@ class ShippingRequestSet:
             totals[request] = (total_cds, total_approved_cds)
         return totals
 
-    def getUnshippedRequestsIDs(self, priority):
+    def getUnshippedRequestsIDs(
+            self, priority,
+            distrorelease=ShipItConstants.current_distrorelease):
         """See IShippingRequestSet"""
         if priority == ShippingRequestPriority.HIGH:
             priorityfilter = 'AND ShippingRequest.highpriority IS TRUE'
@@ -412,15 +428,19 @@ class ShippingRequestSet:
             # Nothing to filter, return all unshipped requests.
             priorityfilter = ''
 
+        replacements = sqlvalues(distrorelease=distrorelease,
+                                 status=ShippingRequestStatus.APPROVED)
+        replacements.update({'priorityfilter': priorityfilter})
         query = """
-            SELECT ShippingRequest.id
-            FROM ShippingRequest
+            SELECT DISTINCT ShippingRequest.id
+            FROM ShippingRequest, RequestedCDs
             WHERE shipment IS NULL 
+                  AND ShippingRequest.id = RequestedCDs.request
+                  AND RequestedCDs.distrorelease = %(distrorelease)s
                   AND status = %(status)s
                   %(priorityfilter)s
-            ORDER BY daterequested, id
-            """ % {'priorityfilter': priorityfilter,
-                   'status': ShippingRequestStatus.APPROVED}
+            ORDER BY id
+            """ % replacements
 
         cur = cursor()
         cur.execute(query)
@@ -474,9 +494,11 @@ class ShippingRequestSet:
             query, clauseTables=clauseTables, distinct=True, orderBy=orderBy,
             prejoins=["recipient"])
 
-    def exportRequestsToFiles(self, priority, ztm):
+    def exportRequestsToFiles(
+            self, priority, ztm,
+            distrorelease=ShipItConstants.current_distrorelease):
         """See IShippingRequestSet"""
-        request_ids = self.getUnshippedRequestsIDs(priority)
+        request_ids = self.getUnshippedRequestsIDs(priority, distrorelease)
         # The SOFT_MAX_SHIPPINGRUN_SIZE is not a hard limit, and it doesn't
         # make sense to split a shippingrun into two just because there's 10 
         # requests more than the limit, so we only split them if there's at
@@ -493,7 +515,7 @@ class ShippingRequestSet:
                 request_ids = []
             shippingrun = self._create_shipping_run(request_ids_subset)
             now = datetime.now(pytz.timezone('UTC'))
-            filename = 'Ubuntu'
+            filename = 'Ubuntu-%s' % distrorelease.name
             if priority == ShippingRequestPriority.HIGH:
                 filename += '-High-Pri'
             filename += '-%s-%d.%s.csv' % (
@@ -823,9 +845,7 @@ class RequestedCDs(SQLBase):
     request = ForeignKey(
         dbName='request', foreignKey='ShippingRequest', notNull=True)
 
-    distrorelease = EnumCol(
-        schema=ShipItDistroRelease, notNull=True,
-        default=ShipItConstants.current_distrorelease)
+    distrorelease = EnumCol(schema=ShipItDistroRelease, notNull=True)
     architecture = EnumCol(schema=ShipItArchitecture, notNull=True)
     flavour = EnumCol(schema=ShipItFlavour, notNull=True)
 

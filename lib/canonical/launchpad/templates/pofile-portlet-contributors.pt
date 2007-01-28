@@ -1,16 +1,15 @@
-<div class="portlet" condition="context/contributors">
-
-  <h4>Contributors:</h4>
+<div class="portlet" tal:condition="view/contributors">
+  <h2>Contributors</h2>
 
   <div class="portletBody">
 
     <div class="portletContent"
-         tal:define="contributors context/contributors">
+         tal:define="contributors view/contributors">
 
       <ul tal:condition="contributors">
         <li tal:repeat="contributor contributors" class="person">
           <a tal:content="contributor/browsername"
-             tal:attributes="href string:/people/${contributor/name}/"
+             tal:attributes="href contributor/fmt:url"
              >Mark Shuttleworth</a><br />
         </li>
       </ul>

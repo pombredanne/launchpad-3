@@ -1,7 +1,7 @@
 First, visit the +duplicate page on the bug you're looking at:
 
   >>> print http(r"""
-  ... GET /distros/debian/+source/mozilla-firefox/+bug/2/+duplicate HTTP/1.1
+  ... GET /debian/+source/mozilla-firefox/+bug/2/+duplicate HTTP/1.1
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
@@ -11,7 +11,7 @@ First, visit the +duplicate page on the bug you're looking at:
 Now, let's go ahead and mark bug 2 as a duplicate of bug 1.
 
   >>> print http(r"""
-  ... POST /distros/debian/+source/mozilla-firefox/+bug/2/+duplicate HTTP/1.1
+  ... POST /debian/+source/mozilla-firefox/+bug/2/+duplicate HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 309
   ... Content-Type: multipart/form-data; boundary=---------------------------17976867087135254391306687757
@@ -29,25 +29,16 @@ Now, let's go ahead and mark bug 2 as a duplicate of bug 1.
   HTTP/1.1 303 See Other
   Content-Length: 0
   ...
-  Location: http://.../distros/debian/+source/mozilla-firefox/+bug/2
+  Location: http://.../debian/+source/mozilla-firefox/+bug/2
 
-When the bug is marked as a duplicate, two notifications were added:
+When the bug is marked as a duplicate, a notification was generated, to
+tell bug 2's subscribers that their bug is a dupe of bug 1:
 
     >>> from canonical.launchpad.database import BugNotification
     >>> BugNotification.select().count()
-    2
-
-One regarding bug 1:
+    1
 
     >>> notification = BugNotification.select(orderBy='-id')[0]
-    >>> notification.bug.id
-    1
-    >>> print notification.message.text_contents
-    ** Bug 2 has been marked a duplicate of this bug
-
-And one regarding bug 2:
-
-    >>> notification = BugNotification.select(orderBy='-id')[1]
     >>> notification.bug.id
     2
     >>> print notification.message.text_contents

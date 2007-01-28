@@ -146,7 +146,7 @@ class FTPArchiveHandler:
 
     def run(self, is_careful):
         """Do the entire generation and run process."""
-        self.createEmptyPocketRequests()
+        self.createEmptyPocketRequests(is_careful)
         self.log.debug("Preparing file lists and overrides.")
         self.generateOverrides(is_careful)
         self.log.debug("Generating overrides for the distro.")
@@ -170,7 +170,7 @@ class FTPArchiveHandler:
     # Empty Pocket Requests
     #
 
-    def createEmptyPocketRequests(self):
+    def createEmptyPocketRequests(self, fullpublish=False):
         """Write out empty file lists etc for pockets.
 
         We do this to have Packages or Sources for them even if we lack
@@ -180,10 +180,12 @@ class FTPArchiveHandler:
         # the pockets, and do the suffix check inside
         # createEmptyPocketRequest; that would also allow us to replace
         # the == "" check we do there by a RELEASE match -- kiko
-        all_pockets = [suffix for _, suffix in pocketsuffix.items()]
         for distrorelease in self.distro:
             components = self._config.componentsForRelease(distrorelease.name)
-            for suffix in all_pockets:
+            for pocket, suffix in pocketsuffix.items():
+                if (not fullpublish and
+                    not self.publisher.isDirty(distrorelease, pocket)):
+                    continue
                 for comp in components:
                     self.createEmptyPocketRequest(distrorelease, suffix, comp)
 

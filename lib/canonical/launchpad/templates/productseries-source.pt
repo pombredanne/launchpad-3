@@ -21,20 +21,17 @@
 
 <div metal:fill-slot="main">
 
-  <p tal:condition="not:view/has_errors">
-    Once you enter the details of the <abbr title="revision control
-    system">RCS</abbr> you use for this product series, Launchpad can
-    attempt to import that code and publish it as a Bazaar branch.  This
-    lets distributors share code with you more efficiently, and also allows
-    distributed upstream development.
-  </p>
+  <div metal:use-macro="context/@@launchpad_form/form">
+    <p metal:fill-slot="extra_info" tal:condition="not:view/errors">
+      Once you enter the details of the
+      <abbr title="revision control system">RCS</abbr> you use for
+      this product series, Launchpad can attempt to import that code
+      and publish it as a Bazaar branch.  This lets distributors share
+      code with you more efficiently, and also allows distributed
+      upstream development.
+    </p>
 
-  <form method="post" name="mf">
-
-    <h2>Source import details</h2>
-
-    <fieldset>
-      <legend>Revision control repository</legend>
+    <metal:formbody fill-slot="widgets">
 
       <div class="formHelp">
         Enter details below for only the selected Repository type.
@@ -42,156 +39,85 @@
 
       <fieldset>
         <legend>
-          <input type="radio" name="rcstype" value="cvs" id="cvs_selector"
-                 onClick="javascript:updateWidgets()"
-                 tal:attributes="checked not:view/svnrepository" />
-          <label for="cvs_selector">CVS</label>
+          <label>
+            <input tal:replace="structure view/rcstype_none" />
+            No revision control system, or Bazaar
+          </label>
         </legend>
-        
-        <table>
-          <tbody>
-            <tr>
-              <th><label>Repository root:</label></th>
-              <td>
-                <input type="text" name="cvsroot" size="30"
-                       tal:attributes="value view/cvsroot" />
-                <span class="fieldRequired">(Required)</span>
-              </td>
-            </tr>
-            <tr class="formHelp">
-              <th>Example:</th>
-              <td><code>:pserver:anonymous@anoncvs.gnome.org:/cvs/gnome</code>
-              </td>
-            </tr>
-            <tr>
-              <th><label>Module:</label></th>
-              <td>
-                <input type="text" name="cvsmodule" size="30"
-                       tal:attributes="value view/cvsmodule" />
-                <span class="fieldRequired">(Required)</span>
-              </td>
-            </tr>
-            <tr>
-              <th><label>Branch name:</label></th>
-                <td>
-                  <div>
-                    <input type="text" name="cvsbranch" size="30"
-                           tal:attributes="value view/cvsbranch" />
-                    <span class="fieldRequired">(Required)</span>
-                  </div>
-                  <div class="formHelp">
-                    The branch representing the upstream codebase
-                    for this product series.
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </fieldset>
-
-        <fieldset>
-          <legend>
-            <input type="radio" name="rcstype" value="svn" id="svn_selector"
-                   onClick="javascript: updateWidgets()" 
-                   tal:attributes="checked view/svnrepository" />
-            <label for="svn_selector">SVN</label>
-          </legend>
-
-          <table>
-            <tbody>
-              <tr>
-                <th><label>Repository:</label></th>
-                <td>
-                  <div>
-                    <input type="text" name="svnrepository" size="30"
-                           tal:attributes="value view/svnrepository" />
-                    <span class="fieldRequired">(Required)</span>
-                  </div>
-                  <div class="formHelp">
-                    The <abbr>URL</abbr> (Internet address) of the
-                    repository and branch to be imported, in
-                    <code>svn://</code> or
-                    <code>http</code>(<code>s</code>)<code>://</code>
-                    format. This must be the correct upstream branch
-                    for the <tal:x replace="context/displayname" /> series
-                    of <tal:x replace="context/product/displayname" />.
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </fieldset>
-      </fieldset>
-
-
-      <fieldset>
-        <legend>FTP Details</legend>
-        <table>
-          <tbody>
-            <tr>
-              <th><label>Root directory URL:</label></th>
-              <td>
-                <input name="releaseroot" size=40
-                       tal:attributes="value context/releaseroot" />
-              </td>
-            </tr>
-            <tr class="formHelp">
-              <th>Example:</th>
-              <td><code>ftp://www.mozilla.org/pub/firefox/1.1/</code></td>
-            </tr>
-            <tr class="formHelp">
-              <th />
-              <td>
-                The directory containing releases that are part of this
-                series.  Launchpad automatically scans this directory
-                regularly to import new releases.
-              </td>
-            </tr>
-            <tr>
-              <th><label>Filename pattern:</label></th>
-              <td>
-                <input name="releasefileglob" size=40
-                       tal:attributes="value context/releasefileglob" />
-              </td>
-            </tr>
-            <tr class="formHelp">
-               <th>Example:</th>
-               <td><code>firefox-1.1.*.src.tgz</code></td>
-            </tr>
-            <tr class="formHelp">
-              <th />
-              <td>
-                Launchpad uses this pattern to find new releases of
-                <span tal:replace="context/product/displayname" />
-                when they are uploaded to the root directory.
-              </td>
-            </tr>
-          </tbody>
+        <table class="form">
+          <tal:widget define="widget nocall:view/widgets/user_branch">
+            <metal:block use-macro="context/@@launchpad_form/widget_row" />
+          </tal:widget>
         </table>
       </fieldset>
 
+      <fieldset>
+        <legend>
+          <label>
+            <input tal:replace="structure view/rcstype_cvs" />
+            CVS
+          </label>
+        </legend>
+        <table class="form">
+          <tal:widget define="widget nocall:view/widgets/cvsroot">
+            <metal:block use-macro="context/@@launchpad_form/widget_row" />
+          </tal:widget>
+          <tal:widget define="widget nocall:view/widgets/cvsmodule">
+            <metal:block use-macro="context/@@launchpad_form/widget_row" />
+          </tal:widget>
+          <tal:widget define="widget nocall:view/widgets/cvsbranch">
+            <metal:block use-macro="context/@@launchpad_form/widget_row" />
+          </tal:widget>
+        </table>
+      </fieldset>
+
+      <fieldset>
+        <legend>
+          <label>
+            <input tal:replace="structure view/rcstype_svn" />
+            Subversion
+          </label>
+        </legend>
+
+        <table class="form">
+          <tal:widget define="widget nocall:view/widgets/svnrepository">
+            <metal:block use-macro="context/@@launchpad_form/widget_row" />
+          </tal:widget>
+        </table>
+      </fieldset>
+
+      <input tal:replace="structure view/rcstype_emptymarker" />
+
+      <tal:has-import-status condition="context/importstatus">
+        <h2>Import Status</h2>
+        <p>The current import status is:
+          <b tal:content="context/importstatus/title">$title</b>. </p>
+      </tal:has-import-status>
+
       <script type="text/javascript">
         function updateWidgets() {
-          var form = document.forms['mf'];
-          state = (form.rcstype[0].checked == false);
-          form.cvsroot.disabled =  state;
-          form.cvsbranch.disabled =  state;
-          form.cvsmodule.disabled =  state;
-          form.svnrepository.disabled = ! state;
+          /* which rcs type radio button has been selected? */
+          var rcstypes = document.getElementsByName('field.rcstype');
+          var form = rcstypes[0].form;
+          var rcstype = 'None';
+          for (var i = 0; i < rcstypes.length; i++) {
+            if (rcstypes[i].checked) {
+              rcstype = rcstypes[i].value;
+              break;
+            }
+          }
+          form['field.cvsroot'].disabled = (rcstype != 'Concurrent Version System');
+          form['field.cvsbranch'].disabled = (rcstype != 'Concurrent Version System');
+          form['field.cvsmodule'].disabled = (rcstype != 'Concurrent Version System');
+          form['field.svnrepository'].disabled = (rcstype != 'Subversion');
         }
-      updateWidgets();
+        updateWidgets();
       </script>
 
-      <div class="actions">
-        <tal:x condition="nothing">
-          DO NOT CHANGE THE VALUE OF THIS.
-          It is used to verify that the correct form was posted.
-        </tal:x>
-        <input type="submit" name="edit_productseries_source"
-               value="Update RCS Details" />
-      </div>
-    </form>
+    </metal:formbody>
   </div>
+
+</div>
 </body>
 </html>
 </tal:layout>

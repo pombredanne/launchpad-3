@@ -16,10 +16,13 @@ from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.config import config
 from canonical.launchpad.mail import simple_sendmail, format_address
+from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.helpers import (
     get_email_template, contactEmailAddresses)
 from canonical.launchpad.interfaces import (
     ITeamMembership, ITeamParticipation, ITeamMembershipSet)
+from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.tales import DurationFormatterAPI
 
 from canonical.lp.dbschema import EnumCol, TeamMembershipStatus
 
@@ -61,8 +64,67 @@ class TeamMembership(SQLBase):
         """See ITeamMembership"""
         return self.status == TeamMembershipStatus.EXPIRED
 
-    def setStatus(self, status, reviewer=None, reviewercomment=None):
+    def sendExpirationWarningEmail(self):
         """See ITeamMembership"""
+        assert self.dateexpires is not None, (
+            'This membership has no expiration date')
+        assert self.dateexpires > datetime.now(pytz.timezone('UTC')), (
+            "This membership's expiration date must be in the future: %s"
+            % self.dateexpires.strftime('%Y-%m-%d'))
+        member = self.person
+        if member.isTeam():
+            to_addrs = contactEmailAddresses(member.teamowner)
+            templatename = 'membership-expiration-warning-impersonal.txt'
+        else:
+            templatename = 'membership-expiration-warning-personal.txt'
+            to_addrs = format_address(
+                member.displayname, member.preferredemail.email)
+        team = self.team
+        subject = 'Launchpad: %s team membership about to expire' % team.name
+
+        admins_names = []
+        admins = team.administrators
+        if admins.count() <= 1:
+            if admins.count() == 0:
+                admin = team.owner
+            else:
+                admin = admins[0]
+            contact_admins_text = (
+                "To prevent this membership from expiring, you should get\n"
+                "in touch\nwith the team's administrator, %s.\n<%s>"
+                % (admin.unique_displayname, canonical_url(admin)))
+        else:
+            for admin in admins:
+                admins_names.append(
+                    "%s <%s>"
+                    % (admin.unique_displayname, canonical_url(admin)))
+
+            contact_admins_text = (
+                "To prevent this membership from expiring, you should get "
+                "in touch\nwith one of the team's administrators:\n")
+            contact_admins_text += "\n".join(admins_names)
+
+        formatter = DurationFormatterAPI(
+            self.dateexpires - datetime.now(pytz.timezone('UTC')))
+        replacements = {
+            'member_name': member.unique_displayname,
+            'member_displayname': member.displayname,
+            'team_url': canonical_url(team),
+            'contact_admins_text': contact_admins_text,
+            'team_name': team.unique_displayname,
+            'team_admins': '\n'.join(admins_names),
+            'expiration_date': self.dateexpires.strftime('%Y-%m-%d'),
+            'approximate_duration': formatter.approximateduration()}
+
+        msg = get_email_template(templatename) % replacements
+        from_addr = format_address(
+            "Launchpad Team Membership Notifier", config.noreply_from_address)
+        simple_sendmail(from_addr, to_addrs, subject, msg)
+
+    def setStatus(self, status, reviewer, reviewercomment=None):
+        """See ITeamMembership"""
+        assert status != self.status, (
+            'New status (%s) is the same as the current one.' % status.name)
         approved = TeamMembershipStatus.APPROVED
         admin = TeamMembershipStatus.ADMIN
         expired = TeamMembershipStatus.EXPIRED
@@ -76,7 +138,7 @@ class TeamMembership(SQLBase):
         # Make sure the transition from the current status to the given status
         # is allowed. All allowed transitions are in the TeamMembership spec.
         if self.status in [admin, approved]:
-            assert status in [approved, admin, expired, deactivated]
+            assert status in [admin, approved, expired, deactivated]
         elif self.status in [deactivated]:
             assert status in [approved]
         elif self.status in [expired]:
@@ -102,13 +164,12 @@ class TeamMembership(SQLBase):
         elif status in [deactivated, expired]:
             _cleanTeamParticipation(self.person, self.team)
 
-        # Send status change notifications only if it wasn't the actual member
-        # who declined/proposed himself. In the case where the member is
-        # proposing himself, a more detailed notification is sent to the team
-        # admins (by a subscriber of JoinTeamRequestEvent), explaining that
-        # a new member is waiting for approval.
-        if self.person != self.reviewer and self.status != proposed:
-            self._sendStatusChangeNotification(old_status)
+        # When a member proposes himself, a more detailed notification is
+        # sent to the team admins; that's why we don't send anything here.
+        if self.person == self.reviewer and self.status == proposed:
+            return
+
+        self._sendStatusChangeNotification(old_status)
 
     def _sendStatusChangeNotification(self, old_status):
         """Send a status change notification to all team admins and the
@@ -120,56 +181,52 @@ class TeamMembership(SQLBase):
         admins_emails = self.team.getTeamAdminsEmailAddresses()
         # self.person might be a team, so we can't rely on its preferredemail.
         member_email = contactEmailAddresses(self.person)
+        # Make sure we don't send the same notification twice to anybody.
+        for email in member_email:
+            if email in admins_emails:
+                admins_emails.remove(email)
+
         team = self.team
         member = self.person
+        reviewer = self.reviewer
 
-        reviewer_and_comment_line = ''
-        comment_line = ''
-        if self.reviewer:
-            reviewer_and_comment_line = (
-                'The change was made by %s' % self.reviewer.displayname)
-            if self.reviewercomment:
-                comment_line = 'the comment for it was:'
-                comment = self.reviewercomment
-            else:
-                comment_line = 'no comment was given for the change'
-                comment = ''
-            reviewer_and_comment_line += ' and %s' % comment_line
+        if reviewer != member:
+            reviewer_name = reviewer.unique_displayname
+        else:
+            # The user himself changed his membership.
+            reviewer_name = 'the user himself'
 
-        # self.reviewercomment may be None, and in that case we don't want to
-        # have it on the email.
-        comment = self.reviewercomment or ''
+        if self.reviewercomment:
+            comment = ("Comment:\n%s\n\n" % self.reviewercomment.strip())
+        else:
+            comment = ""
 
-        team_name = '"%s" (%s)' % (team.name, team.displayname)
-        admins_subject = (
-            'Launchpad: Membership status change on team %s'
-            % team.displayname)
-        admins_template = get_email_template(
-            'membership-statuschange-admins.txt')
-        admins_msg = admins_template % {
-            'member': member.displayname,
-            'team': team_name,
+        subject = ('Launchpad: Membership change: %(member)s in %(team)s'
+                   % {'member': self.person.name, 'team': self.team.name})
+        replacements = {
+            'member_name': member.unique_displayname,
+            'team_name': team.unique_displayname,
             'old_status': old_status.title,
             'new_status': new_status.title,
-            'reviewer_line': reviewer_and_comment_line,
+            'reviewer_name': reviewer_name,
             'comment': comment}
-        simple_sendmail(from_addr, admins_emails, admins_subject, admins_msg)
+
+        if admins_emails:
+            admins_template = get_email_template(
+                'membership-statuschange-impersonal.txt')
+            admins_msg = MailWrapper().format(admins_template % replacements)
+            simple_sendmail(from_addr, admins_emails, subject, admins_msg)
 
         # The member can be a team without any members, and in this case we
         # won't have a single email address to send this notification to.
-        if member_email:
-            member_subject = (
-                'Launchpad: Your membership status on team %s was changed'
-                % team.displayname)
-            member_template = get_email_template(
-                'membership-statuschange-member.txt')
-            member_msg = member_template % {
-                'team': team_name,
-                'old_status': old_status.title,
-                'new_status': new_status.title,
-                'comment_line': comment_line.capitalize(),
-                'comment': self.reviewercomment}
-            simple_sendmail(from_addr, member_email, member_subject, member_msg)
+        if member_email and self.reviewer != member:
+            if member.isTeam():
+                template = 'membership-statuschange-impersonal.txt'
+            else:
+                template = 'membership-statuschange-personal.txt'
+            member_template = get_email_template(template)
+            member_msg = MailWrapper().format(member_template % replacements)
+            simple_sendmail(from_addr, member_email, subject, member_msg)
 
 
 class TeamMembershipSet:
@@ -182,13 +239,15 @@ class TeamMembershipSet:
     def new(self, person, team, status, dateexpires=None, reviewer=None,
             reviewercomment=None):
         """See ITeamMembershipSet"""
-        assert status in [TeamMembershipStatus.APPROVED,
-                          TeamMembershipStatus.PROPOSED]
+        proposed = TeamMembershipStatus.PROPOSED
+        approved = TeamMembershipStatus.APPROVED
+        admin = TeamMembershipStatus.ADMIN
+        assert status in [proposed, approved, admin]
         tm = TeamMembership(
             person=person, team=team, status=status, dateexpires=dateexpires,
             reviewer=reviewer, reviewercomment=reviewercomment)
 
-        if status == TeamMembershipStatus.APPROVED:
+        if status in (approved, admin):
             _fillTeamParticipation(person, team)
 
         return tm
@@ -200,14 +259,13 @@ class TeamMembershipSet:
             return default
         return result
 
-    def getMembershipsToExpire(self):
+    def getMembershipsToExpire(self, when=None):
         """See ITeamMembershipSet"""
-        now = datetime.now(pytz.timezone('UTC'))
-        query = """
-            dateexpires <= %s
-            AND status IN (%s, %s)
-            """ % sqlvalues(now, TeamMembershipStatus.ADMIN,
-                            TeamMembershipStatus.APPROVED)
+        if when is None:
+            when = datetime.now(pytz.timezone('UTC'))
+        query = ("dateexpires <= %s AND status IN (%s, %s)"
+                 % sqlvalues(when, TeamMembershipStatus.ADMIN,
+                             TeamMembershipStatus.APPROVED))
         return TeamMembership.select(query)
 
     def getTeamMembersCount(self, team):

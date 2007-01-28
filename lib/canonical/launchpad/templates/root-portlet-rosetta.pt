@@ -1,11 +1,14 @@
   <div class="portlet">
-    <h4>Translating applications:</h4>
+    <h2>Translating applications</h2>
 
-    <div class="portletBody portletContent" i18n:translate="rosetta-blurb">
+    <div class="portletBody portletContent" i18n:translate="rosetta-blurb"
+      tal:define="vhosts
+        modules/canonical.launchpad.webapp.vhosts/allvhosts/configs">
       <p>
       <img alt="" src="/@@/languages" />
       <a i18n:attributes="title" title="Rosetta"
-         href="rosetta" i18n:translate="">Rosetta</a> is a
+          tal:attributes="href vhosts/translations/rooturl"
+          href="/translations" i18n:translate="">Rosetta</a> is a
       <strong>Web-based translation system</strong>.
       You can easily collaborate with translators for your software
       through Rosetta.

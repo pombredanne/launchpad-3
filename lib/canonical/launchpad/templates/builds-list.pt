@@ -23,13 +23,11 @@
           <input type="submit" value="Update" />
      </form>
 
-     <tal:navigation
-          tal:condition="batch"
-          replace="structure view/batchnav/@@+navigation-links" />
+  <tal:navigation_top replace="structure view/batchnav/@@+navigation-links-upper" />
 
   <table class="listing" tal:condition="batch">
     <tbody>
-      <tal:batch repeat="complete_build batch">
+      <tal:batch_repeat repeat="complete_build batch">
         <tal:build define="build complete_build/build">
 
         <tr>
@@ -57,7 +55,7 @@
         <tr class="secondary">
           <td></td>
           <td>
-            Built started:
+            Build started:
             <tal:soyuz_record condition="build/buildduration">
                <tal:calc_buildstart
                     content="build/calculated_buildstart/fmt:datetime" />
@@ -87,7 +85,7 @@
                   content="build/buildduration/fmt:approximateduration" />
             <tal:log condition="build/buildlog">
               &mdash;
-              <a tal:attributes="href build/buildlog/url">see the log</a>)
+              <a tal:attributes="href build/buildlog/http_url">see the log</a>)
             </tal:log>
           </td>
         </tr>
@@ -114,18 +112,16 @@
         </tr>
         </tal:not_built>
       </tal:build>
-      </tal:batch>
+      </tal:batch_repeat>
     </tbody>
   </table>
 
-      <div tal:condition="not: batch">
-        No <span tal:replace="view/state/title" /> builds for
-        <span tal:replace="context/title" />.
-      </div>
+  <tal:navigation_bottom replace="structure view/batchnav/@@+navigation-links-lower" />
 
-      <tal:navigation
-           tal:condition="batch"
-           replace="structure view/batchnav/@@+navigation-links" />
+  <div id="empty-result" tal:condition="not: batch">
+     No <span tal:replace="view/state/title|nothing" /> builds for <span
+     tal:replace="context/title" />.
+  </div>
 
   </tal:batch>
 </div>

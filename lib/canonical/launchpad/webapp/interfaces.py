@@ -19,6 +19,8 @@ class IPrincipalIdentifiedEvent(Interface):
     """
     principal = Attribute('The principal')
     request = Attribute('The request')
+    login = Attribute(
+        'The login id that was used.  For example, an email address.')
 
 
 class ILoggedInEvent(Interface):
@@ -41,9 +43,10 @@ class CookieAuthLoggedInEvent:
 
 class CookieAuthPrincipalIdentifiedEvent:
     implements(IPrincipalIdentifiedEvent)
-    def __init__(self, principal, request):
+    def __init__(self, principal, request, login):
         self.principal = principal
         self.request = request
+        self.login = login
 
 
 class BasicAuthLoggedInEvent:
@@ -269,3 +272,20 @@ class ITableBatchNavigator(IBatchNavigator):
         "A dict keyed by column name. If the value is True, that column will "
         "be shown in the list, otherwise it won't.")
 
+
+# LaunchpadFormView widget layout
+
+class IAlwaysSubmittedWidget(Interface):
+    """A widget that is always submitted (such as a checkbox or radio
+    button group).  It doesn't make sense to show a 'Required' or
+    'Optional' marker for such widgets.
+    """
+
+class ISingleLineWidgetLayout(Interface):
+    """A widget that is displayed in a single table row next to its label."""
+
+class IMultiLineWidgetLayout(Interface):
+    """A widget that is displayed on its own table row below its label."""
+
+class ICheckBoxWidgetLayout(IAlwaysSubmittedWidget):
+    """A widget that is displayed like a check box with label to the right."""
