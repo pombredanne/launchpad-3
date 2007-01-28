@@ -209,25 +209,27 @@ class IProductSeries(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
         description=_("The type of revision control used for "
         "the upstream branch of this series. Can be CVS, SVN, BK or "
         "Arch."))
-    cvsroot = TextLine(title=_("Repository root"), required=False,
+    cvsroot = TextLine(title=_("Repository"), required=False,
         constraint=validate_cvs_root,
-        description=_('Example: :pserver:anonymous@anoncvs.gnome.org:'
-                      '/cvs/gnome'))
+        description=_('The CVSROOT. '
+            'Example: :pserver:anonymous@anoncvs.gnome.org:/cvs/gnome'))
     cvsmodule = TextLine(title=_("Module"), required=False,
-        constraint=validate_cvs_module)
+        constraint=validate_cvs_module,
+        description=_('The path to import within the repository.'
+            ' Usually, it is the name of the product.'))
     cvstarfileurl = Text(title=_("A URL where a tarball of the CVS "
         "repository can be found. This can sometimes be faster than "
         "trying to query the server for commit-by-commit data."))
-    cvsbranch = TextLine(title=_("Branch name"), required=False,
+    cvsbranch = TextLine(title=_("Branch"), required=False,
         constraint=validate_cvs_branch,
-        description=_('The branch representing the upstream codebase for '
-                      'this product series.'))
-    svnrepository = TextLine(title=_("Repository"), required=False,
+        description=_('The branch in this module. To import HEAD '
+            '(which is a tag in CVS), enter MAIN. '
+            'Only MAIN branches are imported.'))
+    svnrepository = TextLine(title=_("Branch"), required=False,
         constraint=validate_svn_repo,
-        description=_('The URL (Internet address) of the repository and '
-                      'branch to be imported, in svn:// or http(s):// '
-                      'format. This must be the correct upstream branch '
-                      'for the trunk series of Evolution.'))
+        description=_('The URL of a Subversion branch, '
+            'starting with svn:// or http(s)://. '
+            'Only trunk branches are imported.'))
     # where are the tarballs released from this branch placed?
     releasefileglob = TextLine(title=_("Release URL pattern"),
         required=False, constraint=validate_release_glob,
