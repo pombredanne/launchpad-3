@@ -35,7 +35,7 @@ Processing Uploads
 
 Before asking the system to process the upload, we must prepare the
 database and services to receive it. Since we're using
-'daniel.silverstone@canonical.com' as our Changed-By address and his
+'sample.person@canonical.com' as our Changed-By address and his
 key has signed all the relevant uploads in the suite of uploads we're
 using, this essentially boils down to ensuring that zeca and the
 librarian are running and making sure that the key is attached to the
@@ -43,23 +43,11 @@ relevant launchpad person.
 
   >>> from canonical.zeca.ftests.harness import ZecaTestSetup
   >>> ZecaTestSetup().setUp()
-  >>> from canonical.launchpad.database import GPGKey, Person
-  >>> from canonical.lp.dbschema import GPGKeyAlgorithm
-  >>> dsa = GPGKeyAlgorithm.D
-  >>> g = GPGKey(owner=Person.byName('kinnison'), keyid='20687895',
-  ...            fingerprint='961F4EB829D7D304A77477822BC8401620687895',
-  ...            keysize=1024, algorithm=dsa, active=True, can_encrypt=True)
 
-  >>> g = GPGKey(owner=Person.byName('cprov'), keyid='681B6469',
-  ...            fingerprint='C85826521A6EF6A6037BB3F79FF2583E681B6469',
-  ...            keysize=1024, algorithm=dsa, active=True, can_encrypt=True)
+Import public keyring into current LPDB.
 
-
-Force weird behavior with rfc2047 sentences containing '.' on
-bar_1.0-4, which caused bug # 41102.
-
-  >>> p = Person.byName('cprov')
-  >>> p.displayname = "Celso R. Providelo"
+  >>> from canonical.launchpad.ftests import import_public_test_keys
+  >>> import_public_test_keys()
 
 Having set up that infrastructure we need to prepare a breezy distrorelease
 for the ubuntutest distribution.
@@ -242,6 +230,7 @@ Check the rejection of bar_1.0-2_binary when uploaded to the wrong build id.
   AssertionError: Rejected should be empty...
 
   >>> print open(uploader_log).read()
+  INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
   ...Attempt to upload binaries specifying build 2, where they don't fit
@@ -269,10 +258,11 @@ to a different 'bar_1.0.orig.tar.gz'.
 Inspect the uploader log to find the rejection message.
 
   >>> print open(uploader_log).read()
+  INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
   INFO       Subject: bar_1.0-3_source.changes Rejected
-  INFO       Recipients: Daniel Silverstone <daniel.silverstone@canonical.com>
+  INFO       Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
   INFO       Body:
   INFO    Rejected:
   INFO    SHA1 sum of uploaded file does not match extant file in archive
@@ -295,6 +285,7 @@ testing, as unsigned uploads are allowed.
   AssertionError: Rejected should be empty...
 
   >>> print open(uploader_log).read()
+  INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
   INFO       Subject: unstable_1.0-1_source.changes Rejected
@@ -311,18 +302,35 @@ Remove rejected uploads.
   >>> shutil.rmtree(os.path.join(rejected_dir, 'unstable_1.0-1'))
   >>> os.remove(os.path.join(rejected_dir, 'unstable_1.0-1.distro'))
 
+Force weird behavior with rfc2047 sentences containing '.' on
+bar_1.0-4, which caused bug # 41102.
+
+  >>> from canonical.launchpad.interfaces import IPersonSet
+  >>> name16 = getUtility(IPersonSet).getByName('name16')
+  >>> name16.displayname = "Foo B. Bar"
+
+  >>> from canonical.database.sqlbase import flush_database_updates
+  >>> flush_database_updates()
+  >>> transaction.commit()
+
 Check the email recipient for displayname containing special chars,
 '.', must be rfc2047 compilant:
 
   >>> expect_okays('bar_1.0-4')
   >>> print open(uploader_log).read()
+  INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
   INFO       Subject: Accepted bar 1.0-4 (source)
-  INFO       Recipients: "Celso R. Providelo" <celso.providelo@canonical.com>
+  INFO       Recipients: "Foo B. Bar" <foo.bar@canonical.com>, Celso Providelo <celso.providelo@canonical.com>
   ...
   <BLANKLINE>
 
+Revert changes:
+
+  >>> name16.displayname = "Foo Bar"
+  >>> flush_database_updates()
+  >>> transaction.commit()
 
 Check if we forcibly add the changer as recipient for "sync" uploads,
 which contains unsigned changesfile. Ensure it sends email to the
@@ -330,16 +338,17 @@ changer and the distrorelease changes maillisting.
 
   >>> expect_okays('bar_1.0-5', upload_policy='sync')
   >>> print open(uploader_log).read()
+  INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
   DEBUG   Building recipients list.
   DEBUG   Changes file is unsigned, adding changer as recipient
-  DEBUG   Adding recipient: '"Celso R. Providelo" <celso.providelo@canonical.com>'
+  DEBUG   Adding recipient: 'Celso Providelo <celso.providelo@canonical.com>'
   DEBUG   Creating a New queue entry
   DEBUG   Setting it to ACCEPTED
   INFO    Would be sending a mail:
   INFO       Subject: Accepted bar 1.0-5 (source)
-  INFO       Recipients: "Celso R. Providelo" <celso.providelo@canonical.com>
+  INFO       Recipients: Celso Providelo <celso.providelo@canonical.com>
   ...
   INFO    Announcing to breezy-changes@ubuntu.com
   INFO
@@ -366,7 +375,6 @@ created with the binary package name.
 Check bahaviour of upload system for uploads to pocket BACKPORTS (see
 bug #34089 and #58144)
 
-  >>> from canonical.database.sqlbase import flush_database_updates
   >>> from canonical.lp.dbschema import DistributionReleaseStatus
 
 Set ubuntutest/breezy as the "current release" to activate post-release
@@ -381,6 +389,7 @@ Update a version of source package "foo" to breezy-backports
 
   >>> expect_okays('foo_2.9-1', upload_policy='sync', is_new=True)
   >>> print open(uploader_log).read()
+  INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
   INFO    NEW: foo_2.9-1.dsc
@@ -398,6 +407,7 @@ of foo target to -updates should be rejected:
   AssertionError: Rejected should be empty...
 
   >>> print open(uploader_log).read()
+  INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
   INFO    Rejected:
@@ -414,6 +424,7 @@ This new version of foo can only be uploaded to the -backports pocket itself:
   >>> expect_okays('foo_2.9-2', upload_policy='sync', is_new=True,
   ...              release='breezy-backports')
   >>> print open(uploader_log).read()
+  INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
   INFO    NEW: foo_2.9-2.dsc

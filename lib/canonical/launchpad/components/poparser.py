@@ -487,7 +487,16 @@ class POHeader(dict, POMessage):
                         POSyntaxWarning(self._lineno, 'Invalid header entry.'))
                     continue
                 field = field.strip()
-                value = self[field]
+                try:
+                    value = self[field]
+                except KeyError:
+                    # The header has an entry with ':' but otherwise
+                    # unrecognized: it happens with plural form formulae
+                    # split into two lines, yet containing C-style ':' operator
+                    # log it and continue with next entry.
+                    logging.warning(
+                        POSyntaxWarning(self._lineno, 'Invalid header entry.'))
+                    continue
                 text.append(u'%s: %s' % (field, self[field]))
                 printed.add(field)
             for field in self.keys():

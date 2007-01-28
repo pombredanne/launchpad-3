@@ -1,0 +1,25 @@
+<div class="portlet" tal:define="bugtasks view/getBugsInProgress"
+     tal:condition="bugtasks">
+
+  <h2>Working on</h2>
+
+  <div class="portletBody portletContent">
+
+    <ul>
+      <li class="bug" tal:repeat="bugtask bugtasks">
+        <a tal:attributes="href bugtask/fmt:url">
+        <span tal:replace="string: ${bugtask/bug/id}. ${bugtask/bug/title}" />
+        </a>
+        <br />
+        <span class="lesser" tal:content="
+          string: ${bugtask/targetname}, reported by ${bugtask/owner/displayname}" />
+      </li>
+    </ul>
+
+    <br />
+    <a tal:attributes="href view/getURLToAssignedBugsInProgress">
+      Show the complete list
+    </a>
+  </div>
+
+</div>

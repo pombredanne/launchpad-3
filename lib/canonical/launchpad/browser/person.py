@@ -22,9 +22,13 @@ __all__ = [
     'PersonSpecWorkLoadView',
     'PersonSpecFeedbackView',
     'PersonChangePasswordView',
+    'PersonCodeOfConductEditView',
     'PersonEditView',
+    'PersonEditWikiNamesView',
+    'PersonEditJabberIDsView',
+    'PersonEditIRCNicknamesView',
+    'PersonEditSSHKeysView',
     'PersonEditHomePageView',
-    'PersonEmblemView',
     'PersonAssignedBugTaskSearchListingView',
     'ReportedBugTaskSearchListingView',
     'BugContactPackageBugsSearchListingView',
@@ -60,12 +64,10 @@ __all__ = [
 import cgi
 import urllib
 from operator import itemgetter
-from StringIO import StringIO
 
 from zope.app.form.browser import SelectWidget, TextAreaWidget
 from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
-from zope.app.content_types import guess_content_type
 from zope.app.form.interfaces import (
         IInputWidget, ConversionError, WidgetInputError)
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
@@ -77,7 +79,7 @@ from canonical.launchpad.searchbuilder import any, NULL
 from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
     TeamSubscriptionPolicy, SpecificationFilter, TicketParticipation,
-    PersonCreationRationale)
+    PersonCreationRationale, BugTaskStatus)
 
 from canonical.widgets import ImageChangeWidget, PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
@@ -87,11 +89,11 @@ from canonical.launchpad.interfaces import (
     IJabberIDSet, IIrcIDSet, ILaunchBag, ILoginTokenSet, IPasswordEncryptor,
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, UBUNTU_WIKI_URL,
     ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
-    IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet, IPollSet,
-    IAdminRequestPeopleMerge, NotFoundError, UNRESOLVED_BUGTASK_STATUSES,
-    IPersonChangePassword, GPGKeyNotFoundError, UnexpectedFormData,
-    ILanguageSet, IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet,
-    ILaunchpadRoot, INewPerson)
+    IPerson, ICalendarOwner, ITeam, IPollSet, IAdminRequestPeopleMerge,
+    NotFoundError, UNRESOLVED_BUGTASK_STATUSES, IPersonChangePassword,
+    GPGKeyNotFoundError, UnexpectedFormData, ILanguageSet, INewPerson,
+    IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet,
+    ILaunchpadRoot, BugTaskSearchParams)
 
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.specificationtarget import (
@@ -109,8 +111,8 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
     enabled_with_permission, Navigation, stepto, stepthrough, smartquote,
-    GeneralFormView, LaunchpadEditFormView, LaunchpadFormView, action,
-    custom_widget, RedirectionNavigation)
+    LaunchpadEditFormView, LaunchpadFormView, action, custom_widget,
+    RedirectionNavigation)
 
 from canonical.launchpad import _
 
@@ -512,8 +514,8 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     usedfor = ITeam
     facet = 'overview'
-    links = ['edit', 'common_edithomepage', 'editemblem', 'members',
-             'editemail', 'polls', 'joinleave', 'reassign', 'common_packages']
+    links = ['edit', 'common_edithomepage', 'members', 'editemail', 'polls',
+             'joinleave', 'reassign', 'common_packages']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -528,12 +530,6 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         summary = 'Change the owner of the team'
         # alt="(Change owner)"
         return Link(target, text, summary, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def editemblem(self):
-        target = '+editemblem'
-        text = 'Change Emblem'
-        return Link(target, text, icon='edit')
 
     def members(self):
         target = '+members'
@@ -1173,11 +1169,6 @@ class PersonLanguagesView(LaunchpadView):
 class PersonView(LaunchpadView):
     """A View class used in almost all Person's pages."""
 
-    def initialize(self):
-        self.info_message = None
-        self.error_message = None
-        self._karma_categories = None
-
     @cachedproperty
     def openpolls(self):
         assert self.context.isTeam()
@@ -1192,6 +1183,23 @@ class PersonView(LaunchpadView):
     def notyetopenedpolls(self):
         assert self.context.isTeam()
         return IPollSubset(self.context).getNotYetOpenedPolls()
+
+    def getURLToAssignedBugsInProgress(self):
+        """Return an URL to a page which lists all bugs assigned to this
+        person that are In Progress.
+        """
+        query_string = urllib.urlencode(
+            [('field.status', BugTaskStatus.INPROGRESS.title)])
+        url = "%s/+assignedbugs" % canonical_url(self.context)
+        return ("%(url)s?search=Search&%(query_string)s"
+                % {'url': url, 'query_string': query_string})
+
+    def getBugsInProgress(self):
+        """Return up to 5 bugs assigned to this person that are In Progress."""
+        params = BugTaskSearchParams(
+            user=self.user, assignee=self.context,
+            status=BugTaskStatus.INPROGRESS, orderby='-date_last_updated')
+        return self.context.searchTasks(params)[:5]
 
     def viewingOwnPage(self):
         return self.user == self.context
@@ -1218,6 +1226,20 @@ class PersonView(LaunchpadView):
         """Return True if the logged in user has a TeamMembership entry for
         this Team."""
         return bool(self._getMembershipForUser())
+
+    def findUserPathToTeam(self):
+        assert self.user is not None
+        return self.user.findPathToTeam(self.context)
+
+    def userIsParticipant(self):
+        """Return true if the user is a participant of this team.
+
+        A person is said to be a team participant when he's an indirect member
+        of that team.
+        """
+        if self.user is None:
+            return False
+        return self.user.inTeam(self.context)
 
     def userIsActiveMember(self):
         """Return True if the user is an active member of this team."""
@@ -1304,9 +1326,13 @@ class PersonView(LaunchpadView):
             keys.append("%s %s %s" % (type_name, key.keytext, key.comment))
         return "\n".join(keys)
 
+
+class PersonCodeOfConductEditView(LaunchpadView):
+
     def performCoCChanges(self):
         """Make changes to code-of-conduct signature records for this
-        person."""
+        person.
+        """
         sig_ids = self.request.form.get("DEACTIVATE_SIGNATURE")
 
         if sig_ids is not None:
@@ -1324,71 +1350,8 @@ class PersonView(LaunchpadView):
 
             return True
 
-    def processIRCForm(self):
-        """Process the IRC nicknames form."""
-        if self.request.method != "POST":
-            # Nothing to do
-            return ""
 
-        form = self.request.form
-        for ircnick in self.context.ircnicknames:
-            # XXX: We're exposing IrcID IDs here because that's the only
-            # unique column we have, so we don't have anything else that we
-            # can use to make field names that allow us to uniquely identify
-            # them. -- GuilhermeSalgado 25/08/2005
-            if form.get('remove_%d' % ircnick.id):
-                ircnick.destroySelf()
-            else:
-                nick = form.get('nick_%d' % ircnick.id)
-                network = form.get('network_%d' % ircnick.id)
-                if not (nick and network):
-                    return "Neither Nickname nor Network can be empty."
-                ircnick.nickname = nick
-                ircnick.network = network
-
-        nick = form.get('newnick')
-        network = form.get('newnetwork')
-        if nick or network:
-            if nick and network:
-                getUtility(IIrcIDSet).new(self.context, network, nick)
-            else:
-                self.newnick = nick
-                self.newnetwork = network
-                return "Neither Nickname nor Network can be empty."
-
-        return ""
-
-    def processJabberForm(self):
-        """Process the Jabber ID form."""
-        if self.request.method != "POST":
-            # Nothing to do
-            return ""
-
-        form = self.request.form
-        for jabber in self.context.jabberids:
-            if form.get('remove_%s' % jabber.jabberid):
-                jabber.destroySelf()
-            else:
-                jabberid = form.get('jabberid_%s' % jabber.jabberid)
-                if not jabberid:
-                    return "You cannot save an empty Jabber ID."
-                jabber.jabberid = jabberid
-
-        jabberid = form.get('newjabberid')
-        if jabberid:
-            jabberset = getUtility(IJabberIDSet)
-            existingjabber = jabberset.getByJabberID(jabberid)
-            if existingjabber is None:
-                jabberset.new(self.context, jabberid)
-            elif existingjabber.person != self.context:
-                return ('The Jabber ID %s is already registered by '
-                        '<a href="%s">%s</a>.'
-                        % (jabberid, canonical_url(existingjabber.person),
-                           cgi.escape(existingjabber.person.browsername)))
-            else:
-                return 'The Jabber ID %s already belongs to you.' % jabberid
-
-        return ""
+class PersonEditWikiNamesView(LaunchpadView):
 
     def _sanitizeWikiURL(self, url):
         """Strip whitespaces and make sure :url ends in a single '/'."""
@@ -1466,8 +1429,86 @@ class PersonView(LaunchpadView):
 
         return ""
 
+
+class PersonEditIRCNicknamesView(LaunchpadView):
+
+    def processIRCForm(self):
+        """Process the IRC nicknames form."""
+        if self.request.method != "POST":
+            # Nothing to do
+            return ""
+
+        form = self.request.form
+        for ircnick in self.context.ircnicknames:
+            # XXX: We're exposing IrcID IDs here because that's the only
+            # unique column we have, so we don't have anything else that we
+            # can use to make field names that allow us to uniquely identify
+            # them. -- GuilhermeSalgado 25/08/2005
+            if form.get('remove_%d' % ircnick.id):
+                ircnick.destroySelf()
+            else:
+                nick = form.get('nick_%d' % ircnick.id)
+                network = form.get('network_%d' % ircnick.id)
+                if not (nick and network):
+                    return "Neither Nickname nor Network can be empty."
+                ircnick.nickname = nick
+                ircnick.network = network
+
+        nick = form.get('newnick')
+        network = form.get('newnetwork')
+        if nick or network:
+            if nick and network:
+                getUtility(IIrcIDSet).new(self.context, network, nick)
+            else:
+                self.newnick = nick
+                self.newnetwork = network
+                return "Neither Nickname nor Network can be empty."
+
+        return ""
+
+
+class PersonEditJabberIDsView(LaunchpadView):
+
+    def processJabberForm(self):
+        """Process the Jabber ID form."""
+        if self.request.method != "POST":
+            # Nothing to do
+            return ""
+
+        form = self.request.form
+        for jabber in self.context.jabberids:
+            if form.get('remove_%s' % jabber.jabberid):
+                jabber.destroySelf()
+            else:
+                jabberid = form.get('jabberid_%s' % jabber.jabberid)
+                if not jabberid:
+                    return "You cannot save an empty Jabber ID."
+                jabber.jabberid = jabberid
+
+        jabberid = form.get('newjabberid')
+        if jabberid:
+            jabberset = getUtility(IJabberIDSet)
+            existingjabber = jabberset.getByJabberID(jabberid)
+            if existingjabber is None:
+                jabberset.new(self.context, jabberid)
+            elif existingjabber.person != self.context:
+                return ('The Jabber ID %s is already registered by '
+                        '<a href="%s">%s</a>.'
+                        % (jabberid, canonical_url(existingjabber.person),
+                           cgi.escape(existingjabber.person.browsername)))
+            else:
+                return 'The Jabber ID %s already belongs to you.' % jabberid
+
+        return ""
+
+
+class PersonEditSSHKeysView(LaunchpadView):
+
+    info_message = None
+    error_message = None
+
     # restricted set of methods to be proxied by form_action()
-    permitted_actions = ['add_ssh', 'remove_ssh']
+    permitted_actions = ('add_ssh', 'remove_ssh')
 
     def form_action(self):
         if self.request.method != "POST":
@@ -1787,21 +1828,6 @@ class PersonEditView(BasePersonEditView):
                    'gotchi']
     custom_widget('timezone', SelectWidget, size=15)
     custom_widget('gotchi', ImageChangeWidget)
-
-
-class PersonEmblemView(GeneralFormView):
-
-    def process(self, emblem=None):
-        # XXX use Bjorn's nice file upload widget when he writes it
-        if emblem is not None:
-            filename = self.request.get('field.emblem').filename
-            content_type, encoding = guess_content_type(
-                name=filename, body=emblem)
-            self.context.emblem = getUtility(ILibraryFileAliasSet).create(
-                name=filename, size=len(emblem), file=StringIO(emblem),
-                contentType=content_type)
-        self._nextURL = canonical_url(self.context)
-        return 'Success'
 
 
 class TeamJoinView(PersonView):

@@ -35,9 +35,9 @@ First we try to change the name of "name18" to "ubuntu-team", but
   ... 
   ... 1
   ... -----------------------------19030233218248605631984744659
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... Content-Disposition: form-data; name="field.actions.save"
   ... 
-  ... Change
+  ... Save
   ... -----------------------------19030233218248605631984744659--
   ... """)
   HTTP/1.1 200 Ok
@@ -81,9 +81,9 @@ Then we try to change it to "name99", wich isn't taken yet.
   ... 
   ... 1
   ... -----------------------------5241005213034596831996094424
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... Content-Disposition: form-data; name="field.actions.save"
   ... 
-  ... Change
+  ... Save
   ... -----------------------------5241005213034596831996094424--
   ... """)
   HTTP/1.1 303 See Other
