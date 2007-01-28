@@ -85,6 +85,12 @@ def main():
     log.info("    Domination: %s" % careful_msg(options.careful_domination))
     log.info("Apt-FTPArchive: %s" % careful_msg(options.careful_apt))
 
+    log.debug("Initialising zopeless.")
+    # Change this when we fix up db security
+    txn = initZopeless(dbuser='lucille')
+
+    execute_zcml_for_scripts()
+
     log.debug("Finding distribution object.")
 
     try:
@@ -103,12 +109,6 @@ def main():
             log.error(info)
             raise
         allowed_suites.add((distrorelease.name, pocket))
-
-    log.debug("Initialising zopeless.")
-    # Change this when we fix up db security
-    txn = initZopeless(dbuser='lucille')
-
-    execute_zcml_for_scripts()
 
     publisher = getPublisherForDistribution(
         distribution, allowed_suites, log, options.distsroot)

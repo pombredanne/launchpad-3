@@ -65,7 +65,7 @@ class TestUploadProcessor(unittest.TestCase):
         self.log = MockLogger()
 
     def tearDown(self):
-        rmtree(self.queue_folder)
+        rmtree(self.queue_dir)
 
     def setupBreezy(self):
         """Set up the breezy distro for uploads."""
@@ -239,8 +239,7 @@ class TestUploadProcessor(unittest.TestCase):
         kinnison_ppa = PersonalPackageArchive(
             person=kinnison, archive=kinnison_ppa_archive)
 
-        # Extra setup for breezy and Daniel's keys
-        self.setupKeyserver()
+        # Extra setup for breezy 
         self.setupBreezy()
         self.layer.txn.commit()
 
