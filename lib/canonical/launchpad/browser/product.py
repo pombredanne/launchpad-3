@@ -381,9 +381,10 @@ class ProductSetContextMenu(ContextMenu):
         text = 'List All Products'
         return Link('+all', text, icon='list')
 
-    def thebazaar(self):
-        text = 'Products in The Bazaar'
-        return Link('+the-bazaar', text, icon='list')
+    def withCode(self):
+        text = 'Products with Code'
+        return Link('+with-code', text, icon='list')
+
 
 class ProductView:
 
@@ -838,5 +839,5 @@ class ProductBazaarView(LaunchpadView):
     """Browser class for products gettable with Bazaar."""
     
     def products(self):
-        return []
+        return getUtility(IProductSet).getProductsWithCode()
     
