@@ -67,7 +67,9 @@
   <browser:url
     for="canonical.launchpad.interfaces.ITicket"
     path_expression="string:+ticket/${id}"
-    attribute_to_parent="target" />
+    attribute_to_parent="target"
+    rootsite="answers"
+    />
 
   <browser:pages
     for="canonical.launchpad.interfaces.ITicket"

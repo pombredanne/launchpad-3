@@ -69,8 +69,8 @@ And the creation time is recorded in the datecreated attribute:
     >>> now - firefox_ticket.datecreated < timedelta(seconds=5)
     True
 
-The target onto which the ticket was created is available throught the
-attribute:
+The target onto which the ticket was created is available through the
+'target' attribute:
 
     >>> firefox_ticket.target == firefox
     True

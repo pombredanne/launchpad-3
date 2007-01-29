@@ -480,7 +480,10 @@ class SVNStrategy(CSCVSStrategy):
                     self.logger.debug("getting from SVN: %s %s",
                         repository, self.aJob.module)
                     client=pysvn.Client()
-                    client.checkout(repository, path)
+                    # XXX: this should use the cscvs API, but it is currently
+                    # hardcoded to only work with repositories on the
+                    # filesystem. -- David Allouche 2007-01-29
+                    client.checkout(repository, path, ignore_externals=True)
             except Exception: # don't leave partial checkouts around
                 if os.access(path, os.F_OK):
                     shutil.rmtree(path)
