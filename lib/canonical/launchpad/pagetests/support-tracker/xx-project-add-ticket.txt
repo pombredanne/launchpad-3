@@ -75,7 +75,7 @@ message is displayed:
 
     >>> soup = BeautifulSoup(user_browser.contents)
     >>> print soup.first('p').renderContents()
-    There are no existing support requests similar to the summary you entered.
+    There are no existing questions similar to the summary you entered.
 
 Entering a description and clicking the 'Add' button will create the
 request.

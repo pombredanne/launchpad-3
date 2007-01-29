@@ -27,9 +27,9 @@
   <div metal:use-macro="context/@@launchpad_generalform/generalform">
 
     <p metal:fill-slot="extra_info">
-    A <em>support contact</em> is implicitely subscribed to new
-    support requests. By checking the box below, you will receive changes 
-    related to all support requests (written in English or one of your <a
+    An <em>answer contact</em> is implicitly subscribed to all
+    questions. By checking the box below, you will receive changes
+    related to all questions (written in English or one of your <a
     tal:attributes="href string:${request/lp:person/fmt:url}/+editlanguages"
     >preferred languages</a>) opened on <span
     tal:replace="context/displayname">Mozilla Firefox</span>, and thus
@@ -44,7 +44,7 @@
           <div tal:replace="structure view/want_to_be_support_contact_widget" />
           <label style="font-weight: normal"
               tal:attributes="for view/want_to_be_support_contact_widget/name">
-            I want to be a support contact for
+            I want to be an answer contact for
             <span tal:replace="context/displayname">Mozilla Firefox</span>
           </label>
         </div>
@@ -55,7 +55,7 @@
            tal:condition="view/support_contact_teams_widget/vocabulary">
 
         <div class="field">
-          <label>Let the following teams be a support contact for
+          <label>Let the following teams be an answer contact for
           <span tal:replace="context/displayname">Mozilla
           Firefox</span>:</label>
           <div tal:content="structure view/support_contact_teams_widget" />
@@ -70,17 +70,17 @@
 </div>
 
 <metal:help fill-slot="help">
-  <p>Being a <em>support contact</em> is similar to being subscribed to
-    <strong>every</strong> support requests filed against the context
-    (product, distribution, or sourcepackage) you are a support contact of.
-    You will receive mail notifications about all changes to these requests,
-    as well as for every new request created.
+  <p>Being an <em>answer contact</em> is similar to being subscribed to
+    <strong>every</strong> questions filed against the context
+    (product, distribution, or sourcepackage) you are an answer contact of.
+    You will receive mail notifications about all changes to these questions,
+    as well as for every new question created.
   </p>
   <p>You can register yourself, or any of the teams you are a member of as
-    support contact. Simply check the appropriate checkbox.
+    answer contact. Simply check the appropriate checkbox.
   </p>
   <p>If you don't want to receive notifications anymore, simply remove
-    yourself and/or your teams as support contact by unchecking the
+    yourself and/or your teams as answer contact by unchecking the
     appropriate checkbox.
   </p>
 </metal:help>

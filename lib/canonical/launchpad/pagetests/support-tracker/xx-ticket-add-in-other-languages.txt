@@ -46,10 +46,10 @@ by any member of the support community.
     >>> for tag in find_tags_by_class(browser.contents, 'warning message'):
     ...     print tag.renderContents()
     <strong>Portuguese (Brazil) (pt_BR)</strong> doesn't seem to be
-    a language spoken by any support contacts in this community. If you
-    go ahead and make a support request in that language, no support
+    a language spoken by any answer contacts in this community. If you
+    go ahead and ask a question in that language, no answer
     contacts will be able to read it. Currently, the languages spoken
-    by at least one support contact are: English.
+    by at least one answer contact are: English.
 
 The user can still use the 'Change preferred language' link to change
 the list of available languages:
@@ -113,10 +113,10 @@ Welsh, we'll have to warn him.
     >>> for tag in find_tags_by_class(browser.contents, 'warning message'):
     ...     print tag.renderContents()
     <strong>Welsh (cy)</strong> doesn't seem to be
-    a language spoken by any support contacts in this community. If you
-    go ahead and make a support request in that language, no support
+    a language spoken by any answer contacts in this community. If you
+    go ahead and ask a question in that language, no answer
     contacts will be able to read it. Currently, the languages spoken
-    by at least one support contact are: English.
+    by at least one answer contact are: English.
 
 If he changes the language to another unsupported language, we will
 display the warning again.
@@ -131,10 +131,10 @@ display the warning again.
     >>> for tag in find_tags_by_class(browser.contents, 'warning message'):
     ...     print tag.renderContents()
     <strong>Japanese (ja)</strong> doesn't seem to be
-    a language spoken by any support contacts in this community. If you
-    go ahead and make a support request in that language, no support
+    a language spoken by any answer contacts in this community. If you
+    go ahead and ask a question in that language, no answer
     contacts will be able to read it. Currently, the languages spoken
-    by at least one support contact are: English.
+    by at least one answer contact are: English.
 
 If even after the warning he decides to go ahead, we have to accept the
 new support request.

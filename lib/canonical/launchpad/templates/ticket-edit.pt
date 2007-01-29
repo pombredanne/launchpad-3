@@ -26,7 +26,7 @@
       </tal:comment>
       <p><a href="/people/+editlanguages">Change your
         preferred languages</a> to modify the list of languages available
-        for writing the request.
+        for writing the question.
       </p>
       <metal:unsupported_languages_warning
         use-macro="view/unsupported_languages_warning" />
@@ -36,19 +36,19 @@
 </div>
 
 <metal:help fill-slot="help">
-  <p>Use this page to edit the request's <strong>title</strong> or
+  <p>Use this page to edit the question's <strong>title</strong> or
     <strong>description</strong>. If you are not the user who posted the
-    request, try to only do edits that clarify the request or describes it
+    question, try to only do edits that clarify the quesion or describes it
     better.
   </p>
 
   <p>In distribution, you may want to set the
-    <strong>source package</strong> to which this support request is related.
-    This will help people familiar with that application find the request.
+    <strong>source package</strong> to which this question is related.
+    This will help people familiar with that application find the question.
   </p>
 
   <p>You can use the <strong>status whiteboard</strong> to leave a transient
-    note that will be displayed on the support request page.
+    note that will be displayed on the question page.
   </p>
 
 </metal:help>

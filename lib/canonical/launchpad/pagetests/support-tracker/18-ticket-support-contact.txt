@@ -13,10 +13,10 @@ distro.
     >>> soup = BeautifulSoup(user_browser.contents)
     >>> portlet = soup.first('div', id='portlet-support-contacts')
     >>> portlet.first('h2')
-    <h2>Support contacts for Ubuntu</h2>
+    <h2>Answer contacts for Ubuntu</h2>
     >>> portlet.first('p')
     <p>
-      <i>There are no support contacts.</i>
+      <i>There are no answer contacts.</i>
     </p>
 
 Anybody can become a support contact. To register as a support contact,
@@ -34,7 +34,7 @@ contact. In our case, the user decides to register himself and the
 Landscape Developers team.
 
     >>> user_browser.getControl(
-    ...     "I want to be a support contact for Ubuntu").selected = True
+    ...     "I want to be an answer contact for Ubuntu").selected = True
     >>> user_browser.getControl("Landscape Developers").selected = True
     >>> user_browser.getControl('Continue').click()
 
@@ -63,7 +63,7 @@ from the support contact list.
 
     >>> user_browser.getLink('Support Contact').click()
     >>> user_browser.getControl(
-    ...     "I want to be a support contact for Ubuntu").selected
+    ...     "I want to be an answer contact for Ubuntu").selected
     True
     >>> user_browser.getControl("Landscape Developers").selected
     True

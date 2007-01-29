@@ -25,13 +25,13 @@ and another one listing those of the distribution.
     >>> anon_browser.getLink('Support').click()
     >>> portlet = find_portlet(
     ...     anon_browser.contents,
-    ...     'Support contacts for mozilla-firefox in ubuntu')
+    ...     'Answer contacts for mozilla-firefox in ubuntu')
     >>> print portlet.first('div').renderContents()
     <p>
-      <i>There are no support contacts.</i>
+      <i>There are no answer contacts.</i>
     </p>
     >>> for support_contact in find_portlet(
-    ...     anon_browser.contents, 'Support contacts for Ubuntu').fetch('a'):
+    ...     anon_browser.contents, 'Answer contacts for Ubuntu').fetch('a'):
     ...     print support_contact.renderContents()
     Sample Person
 
@@ -55,10 +55,10 @@ clicking a checkbox. All the teams, he's a member of are also displayed
 and he can register these teams as well.
 
     >>> user_browser.getControl(
-    ...     "I want to be a support contact for mozilla-firefox").selected
+    ...     "I want to be an answer contact for mozilla-firefox").selected
     False
     >>> user_browser.getControl(
-    ...     "I want to be a support contact for "
+    ...     "I want to be an answer contact for "
     ...     "mozilla-firefox").selected = True
     >>> user_browser.getControl("Landscape Developers").selected
     False
@@ -78,7 +78,7 @@ The support contacts porlet for the source package was updated:
 
     >>> for support_contact in find_portlet(
     ...     user_browser.contents,
-    ...     'Support contacts for mozilla-firefox in ubuntu').fetch('a'):
+    ...     'Answer contacts for mozilla-firefox in ubuntu').fetch('a'):
     ...     print support_contact.renderContents()
     Landscape Developers
     Sample Person
@@ -88,10 +88,10 @@ time, we unselect the checkboxes:
 
     >>> user_browser.getLink('Support Contact').click()
     >>> user_browser.getControl(
-    ...     "I want to be a support contact for mozilla-firefox").selected
+    ...     "I want to be an answer contact for mozilla-firefox").selected
     True
     >>> user_browser.getControl(
-    ...     "I want to be a support contact for "
+    ...     "I want to be an answer contact for "
     ...     "mozilla-firefox").selected = False
 
 Again a confirmation message is displayed and the support contacts
@@ -104,6 +104,6 @@ portlet for the source package is updated.
 
     >>> for support_contact in find_portlet(
     ...     user_browser.contents,
-    ...     'Support contacts for mozilla-firefox in ubuntu').fetch('a'):
+    ...     'Answer contacts for mozilla-firefox in ubuntu').fetch('a'):
     ...     print support_contact.renderContents()
     Landscape Developers

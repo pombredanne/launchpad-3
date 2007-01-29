@@ -12,14 +12,14 @@ displaying the number of requests tracked by the system.
 
     >>> print find_tag_by_id(
     ...     anon_browser.contents, 'requests-count').renderContents()
-    The support tracker contains 13 requests.
+    The Answer Tracker contains 13 questions.
 
 It also shows the 10 latest requests made:
 
     >>> latest_made_requests = find_tag_by_id(
     ...     anon_browser.contents, 'latest-requests-made')
     >>> print latest_made_requests.first('h2').renderContents()
-    Latest requests made
+    Latest questions asked
     >>> for row in latest_made_requests.fetch('tr', 'noted'):
     ...     row.first('a').renderContents()
     'Problemas de Impress\xc3\xa3o no Firefox'
@@ -35,7 +35,7 @@ As well as the 10 latest requests solved:
     >>> latest_solved_requests = find_tag_by_id(
     ...     anon_browser.contents, 'latest-requests-resolved')
     >>> print latest_solved_requests.first('h2').renderContents()
-    Latest requests resolved
+    Latest questions solved
     >>> for row in latest_solved_requests.fetch('tr', 'noted'):
     ...     row.first('a').renderContents()
     'mailto: problem in webpage'

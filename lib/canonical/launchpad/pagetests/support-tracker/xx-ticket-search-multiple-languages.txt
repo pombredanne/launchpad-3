@@ -32,8 +32,8 @@ is displayed to that effect.
 
     >>> for message in find_tags_by_class(anon_browser.contents, 'message'):
     ...     print message.renderContents()
-    Only support requests in English are displayed. To see support
-    requests in other languages, either
+    Only questions in English are displayed. To see questions in other
+    languages, either
     <a href="/+editmylanguages">change your preferred</a> languages
     or select the &ldquo;All Languages&rdquo; option.
 
@@ -110,7 +110,7 @@ languages.)
 
     >>> browser.open('http://launchpad.dev/products/firefox')
     >>> portlet = find_portlet(
-    ...    browser.contents, 'Latest Mozilla Firefox support requests')
+    ...    browser.contents, 'Latest Mozilla Firefox questions')
     >>> for link in portlet.fetch('a'):
     ...    link.renderContents()
     'Problemas de Impress\xc3\xa3o no Firefox'
@@ -125,7 +125,7 @@ a person:
     >>> browser.open('http://launchpad.dev/people/carlos')
     >>> portlet = find_portlet(
     ...    browser.contents,
-    ...    'Latest Carlos Perell\xc3\xb3 Mar\xc3\xadn support requests')
+    ...    'Latest Carlos Perell\xc3\xb3 Mar\xc3\xadn questions')
     >>> for link in portlet.fetch('a'):
     ...    link.renderContents()
     'Problema al recompilar kernel con soporte smp (doble-n\xc3\xbacleo)'

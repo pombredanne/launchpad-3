@@ -225,7 +225,7 @@ In addition, this creates a reopening record that is displayed in the
 reopening portlet.
 
     >>> portlet = find_portlet(
-    ...     owner_browser.contents, 'This request was reopened')
+    ...     owner_browser.contents, 'This question was reopened')
     >>> print portlet.fetch('a')[-1].renderContents()
     Sample Person
 

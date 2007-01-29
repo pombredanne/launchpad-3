@@ -10,9 +10,9 @@ The product page displays the latest support requests in a portlet.
 
   >>> browser.open('http://launchpad.dev/firefox')
   >>> find_portlet(
-  ...    browser.contents, 'Latest Mozilla Firefox support requests')
+  ...    browser.contents, 'Latest Mozilla Firefox questions')
   <div class="portlet">
-    <h2> Latest Mozilla Firefox support requests </h2>
+    <h2>Latest Mozilla Firefox questions</h2>
     ...
   </div>
 
@@ -65,9 +65,9 @@ Distributions also have the 'Support' link and a section showing the
   >>> browser.open('http://launchpad.dev/ubuntu')
   >>> browser.getLink('Support').url
   '.../ubuntu/+tickets'
-  >>> find_portlet(browser.contents, 'Latest Ubuntu support requests')
+  >>> find_portlet(browser.contents, 'Latest Ubuntu questions')
   <div class="portlet">
-    <h2> Latest Ubuntu support requests </h2>
+    <h2>Latest Ubuntu questions</h2>
     ...
   </div>
 
@@ -145,9 +145,9 @@ On the page about a person, there is a porlet showing the latest ticket
 opened by that person.
 
   >>> browser.open('http://launchpad.dev/~name16')
-  >>> find_portlet(browser.contents, 'Latest Foo Bar support requests')
+  >>> find_portlet(browser.contents, 'Latest Foo Bar questions')
   <div class="portlet">
-    <h2> Latest Foo Bar support requests </h2>
+    <h2>Latest Foo Bar questions</h2>
     ...
   </div>
   >>> browser.getLink('Slow system').url

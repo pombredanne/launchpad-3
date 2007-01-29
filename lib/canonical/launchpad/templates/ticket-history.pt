@@ -18,7 +18,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>History of this request</h1>
+  <h1>History of this question</h1>
 
   <table class="listing">
     <thead>
@@ -47,13 +47,13 @@
 </div>
 
 <p metal:fill-slot="help">
-  The history table displays all the status change that the support
-  request underwent. The date and time at which the status change occured,
+  The history table displays all the status change that the question underwent.
+  The date and time at which the status change occured,
   the person who made the status change and the kind of action that
   triggered the change are displayed.
   You can find more information about status changes in the
-    <a href="https://help.launchpad.net/SupportRequestLifeCycle">Support
-      Request Life-cycle</a> document.
+    <a href="https://help.launchpad.net/QuestionLifeCycle">Question
+      Life-cycle</a> document.
 </p>
 </body>
 </html>

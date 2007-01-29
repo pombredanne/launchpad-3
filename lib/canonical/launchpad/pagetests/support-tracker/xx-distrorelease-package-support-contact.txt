@@ -15,7 +15,7 @@ Any logged in person has access to the page.
 Add Foo Bar, Launchpad Developers and the Ubuntu Team as support
 contacts.
 
-  >>> browser.getControl("I want to be a support contact for Hoary mozilla-firefox").click()
+  >>> browser.getControl("I want to be an answer contact for Hoary mozilla-firefox").click()
   >>> browser.getControl(name="field.support_contact_teams").value = ["ubuntu-team", "launchpad"]
   >>> browser.getControl("Continue").click()
   >>> browser.url
@@ -32,7 +32,7 @@ Check that the change worked:
 Remove Foo Bar and the Ubuntu team as support contacts.
 
   >>> browser.open("http://launchpad.dev/ubuntu/hoary/+source/mozilla-firefox/+support-contact")
-  >>> browser.getControl("I want to be a support contact for Hoary mozilla-firefox").click()
+  >>> browser.getControl("I want to be an answer contact for Hoary mozilla-firefox").click()
   >>> browser.getControl(name="field.support_contact_teams").value
   ['launchpad', 'ubuntu-team']
   >>> browser.getControl(name="field.support_contact_teams").value = ["launchpad"]

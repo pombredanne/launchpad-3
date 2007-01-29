@@ -1,9 +1,6 @@
 <div class="portlet" tal:condition="view/getLatestTickets">
 
-  <h2>
-    Latest <span tal:replace="context/displayname">Ubuntu</span>
-    support requests
-  </h2>
+  <h2>Latest <span tal:replace="context/displayname">Ubuntu</span> questions</h2>
 
   <div class="portletBody portletContent">
 
@@ -13,7 +10,7 @@
                     class string:ticketstatus${ticket/status/name}"
                   tal:content="ticket/status/title" />]
         <a tal:content="ticket/title/fmt:shorten/80"
-           tal:attributes="href ticket/fmt:url">ticket title</a>
+           tal:attributes="href ticket/fmt:url">question title</a>
       </li>
     </ul>
   </div>

@@ -10,22 +10,22 @@
 <metal:rightportlets fill-slot="portlets_two" />
 
   <div metal:fill-slot="main">
-    <h1 i18n:translate="">Support Tracker</h1>
+    <h1 i18n:translate="">Answer Tracker</h1>
 
-    <p i18n:translate="">Launchpad includes a full technical support request
-      tracker. Your users can file support requests and your community can
-      help to resolve those requests.
+    <p i18n:translate="">Launchpad includes an answer tracker. Your users can
+      file questions about your product or distribution and your community can
+      help to resolve those.
     </p>
 
     <p id="requests-count"
-        i18n:translate="">The support tracker contains
+        i18n:translate="">The Answer Tracker contains
       <tal:count i18n:name="count" tal:content="view/requests_count">
         318
-      </tal:count> requests.
+      </tal:count> questions.
     </p>
 
     <div id="latest-requests-made">
-      <h2 i18n:translate="">Latest requests made</h2>
+      <h2 i18n:translate="">Latest questions asked</h2>
       <table>
         <tal:ticket
           repeat="ticket view/latest_requests_made"
@@ -35,7 +35,7 @@
     </div>
 
     <div id="latest-requests-resolved">
-      <h2 i18n:translate="">Latest requests resolved</h2>
+      <h2 i18n:translate="">Latest questions solved</h2>
       <table>
         <tal:ticket
           repeat="ticket view/latest_requests_resolved"
@@ -47,14 +47,14 @@
 
   <metal:help fill-slot="help">
     <p>This page gives you a quick overview of the recent
-    activity in the Launchpad support tracker.
+    activity in the Launchpad Answer Tracker.
     </p>
-    <p>To post a new support request, navigate to the product or distribution
-      you are having a problem with and use the <emph>Request Support</emph>
+    <p>To post a new question, navigate to the product or distribution
+      you are having a problem with and use the <emph>Ask Question</emph>
       menu item.
     </p>
-    <p><a href="https://help.launchpad.net/SupportTrackerDocumentation">Extensive
-        documention</a> for the support tracker application is available in the
+    <p><a href="https://help.launchpad.net/AnswerTrackerDocumentation">Extensive
+        documention</a> for the Answer Tracker application is available in the
       Help wiki.</p>
   </metal:help>
   </body>

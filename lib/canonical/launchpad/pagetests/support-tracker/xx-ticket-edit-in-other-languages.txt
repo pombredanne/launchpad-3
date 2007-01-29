@@ -45,10 +45,10 @@ support contacts, a warning is displayed:
     >>> for tag in find_tags_by_class(browser.contents, 'warning message'):
     ...     print tag.renderContents()
     <strong>Welsh (cy)</strong> doesn't seem to be
-    a language spoken by any support contacts in this community. If you
-    go ahead and make a support request in that language, no support
+    a language spoken by any answer contacts in this community. If you
+    go ahead and ask a question in that language, no answer
     contacts will be able to read it. Currently, the languages spoken
-    by at least one support contact are: English, Portuguese (Brazil).
+    by at least one answer contact are: English, Portuguese (Brazil).
 
 If he changes the language to another unsupported language, he will
 get another warning.
@@ -61,10 +61,10 @@ get another warning.
     >>> for tag in find_tags_by_class(browser.contents, 'warning message'):
     ...     print tag.renderContents()
     <strong>Japanese (ja)</strong> doesn't seem to be
-    a language spoken by any support contacts in this community. If you
-    go ahead and make a support request in that language, no support
+    a language spoken by any answer contacts in this community. If you
+    go ahead and ask a question in that language, no answer
     contacts will be able to read it. Currently, the languages spoken
-    by at least one support contact are: English, Portuguese (Brazil).
+    by at least one answer contact are: English, Portuguese (Brazil).
 
 If even after the warning he decides to go ahead, the unsupported
 language is accepted.
