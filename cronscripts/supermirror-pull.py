@@ -7,6 +7,13 @@ from optparse import OptionParser
 
 from canonical.launchpad.scripts.supermirror import mirror
 from canonical.launchpad.scripts import logger_options, logger
+import bzrlib.repository
+
+
+def shut_up_deprecation_warning():
+    # XXX: quick hack to disable the deprecation warning for old repository
+    # formats -- DavidAllouche 2006-01-29
+    bzrlib.repository._deprecation_warning_done = True
 
 
 if __name__ == '__main__':
@@ -18,5 +25,6 @@ if __name__ == '__main__':
 
     log = logger(options, 'branch-puller')
 
+    shut_up_deprecation_warning()
     mirror(log)
 
