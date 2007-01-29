@@ -206,9 +206,15 @@ class GlobalLock:
         '''
         if not self.is_locked:
             return
-        if self.logger:
-            self.logger.debug('Removing lock file: %s', self.fpath)
-        os.unlink(self.fpath)
+        if os.path.exists(self.fpath):
+            if self.logger:
+                self.logger.debug('Removing lock file: %s', self.fpath)
+            os.unlink(self.fpath)
+        elif self.logger:
+            # At certain times the lockfile will have been removed or
+            # moved away before we call release(); log a message because
+            # this is unusual and could be an error.
+            self.logger.debug('Oops, my lock file disappeared: %s', self.fpath)
         if _windows:
             if ctypes:
                 result = ctypes.windll.kernel32.ReleaseMutex(self.mutex.handle)
