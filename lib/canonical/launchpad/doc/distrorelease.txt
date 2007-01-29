@@ -425,16 +425,12 @@ The main one is to clone what we have in its parent distribution:
 
    >>> humpy.copyMissingTranslationsFromParent()
 
-   # The amount of all templates in Hoary is not the same as the amount of
-   # templates that are current.
+Note that only current PO templates are copied from the distribution parent:
+
    >>> len(hoary.potemplates) > len(hoary.currentpotemplates)
    True
-
-   # In Humpy, though, is the same
    >>> len(humpy.potemplates) == len(humpy.currentpotemplates)
    True
-
-   # And also, it's the same amount as the current ones in Hoary
    >>> len(humpy.potemplates) == len(hoary.currentpotemplates)
    True
 
