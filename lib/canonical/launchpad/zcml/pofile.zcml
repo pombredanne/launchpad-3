@@ -79,7 +79,7 @@
     <browser:page
         name="+translate"
         for="canonical.launchpad.interfaces.IPOFile"
-        permission="launchpad.AnyPerson"
+        permission="zope.Public"
         template="../templates/pofile-translate.pt"
         class="canonical.launchpad.browser.POFileTranslateView"
         />

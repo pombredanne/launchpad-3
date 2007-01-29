@@ -19,8 +19,8 @@
                   <div class="y">
                     <div class="z">
                       <div id="container">
+                        <h1>Code</h1>
                         <form class="central" action="/products" method="get">
-                          <h1>Code</h1>
                           <p
                             xtal:condition="view/error_message"
                             xtal:content="view/error_message"
@@ -180,4 +180,4 @@
   </body>
 </html>
 </tal:layout>
-<!-- 1-0 inprogress Needs recent imports, registered, and changed lists -->
+<!-- 1-0 inprogress Needs lists of recent imports (bug 79036), registered branches (bug 79038), and changed branches (bug 79041). -->

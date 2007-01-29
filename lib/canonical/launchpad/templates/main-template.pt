@@ -87,7 +87,7 @@
       />
       <tal:none condition="not:structuralobject">No structural object</tal:none>
     </div>
-    <form id="globalsearch" action="/search" method="get">
+    <form id="globalsearch" action="/+search" method="get">
       <div>
         <input
           type="text"
@@ -240,7 +240,7 @@
       </div>
       <div id="colophon">
         <a href="/legal">Copyright&nbsp;terms</a> |
-        <a href="/feedback">Help&nbsp;us&nbsp;improve</a> |
+        <a href="/feedback">Help&nbsp;improve&nbsp;Launchpad</a> |
         <a href="/faq">FAQ</a>
       </div>
       <div id="copyright">

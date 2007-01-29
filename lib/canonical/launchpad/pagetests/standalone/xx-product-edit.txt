@@ -11,11 +11,11 @@ Page to edit a product - does the page load as the product owner?
   ...<title>Mozilla Firefox in Launchpad</title>...
   ...<h1>Edit details</h1>...
 
-We try to edit the project related to that product. First with a invalid
+We try to change the project related to that product. First with a invalid
 project.
 
   >>> browser.getControl('Project', index=0).value = 'asdasfasd'
-  >>> browser.getControl('Change').click()
+  >>> browser.getControl(name='UPDATE_SUBMIT').click()
   >>> for message in find_tags_by_class(browser.contents, 'error'):
   ...     print message
   <p class="error message">
@@ -30,9 +30,8 @@ project.
 
 Now we try to edit with a project that exists.
 
-
   >>> browser.getControl('Project', index=0).value = 'gnome'
-  >>> browser.getControl('Change').click()
+  >>> browser.getControl(name='UPDATE_SUBMIT').click()
   >>> print browser.url
   http://launchpad.dev/firefox
 
@@ -43,19 +42,51 @@ Now we test if we edited it successfully.
   True
 
 
+We can also change the product's icon/emblem.
+
+  >>> import os
+  >>> import canonical.launchpad
+  >>> browser.getLink('Edit Product Details').click()
+  >>> icon = open(os.path.join(
+  ...     os.path.dirname(canonical.launchpad.__file__),
+  ...     'images/sorry-closed.png'))
+  >>> browser.getControl(name='field.gotchi.action').value = ['change']
+  >>> browser.getControl(name='field.gotchi.image').add_file(
+  ...     icon, 'image/png', 'closed.png')
+
+  >>> emblem = open(os.path.join(
+  ...     os.path.dirname(canonical.launchpad.__file__),
+  ...     'images/product.png'))
+  >>> browser.getControl(name='field.emblem.action').value = ['change']
+  >>> browser.getControl(name='field.emblem.image').add_file(
+  ...     emblem, 'image/gif', 'emblem.gif')
+
+  >>> browser.getControl(name='UPDATE_SUBMIT').click()
+  >>> browser.url
+  'http://launchpad.dev/firefox'
+
+And if we go back to that page we'll see the new images.
+
+  >>> browser.getLink('Edit Product Details').click()
+  >>> find_tag_by_id(browser.contents, 'field.emblem_current_img').get('src')
+  u'.../emblem.gif'
+  >>> find_tag_by_id(browser.contents, 'field.gotchi_current_img').get('src')
+  u'.../closed.png'
+
+
 Setting Development Focus
 =========================
 
 The Firefox product's trunk series is set as the development focus:
 
   >>> browser.open('http://launchpad.dev/firefox')
-  >>> print find_portlet(browser.contents, 'Mozilla Firefox')
-  <div class="portlet">
+  >>> print browser.contents
+  <!...
   ...
-  ...Registered series:...
-  ...1.0...
   ...trunk...
-  ...(development focus)...
+  ...development focus
+  ...
+  ...1.0...
   ...
 
 
@@ -63,15 +94,15 @@ We can change this to the 1.0 series through the edit form:
 
   >>> browser.open('http://launchpad.dev/firefox/+edit')
   >>> browser.getControl('Development focus').getControl('firefox 1.0').click()
-  >>> browser.getControl('Change').click()
+  >>> browser.getControl(name='UPDATE_SUBMIT').click()
   >>> print browser.url
   http://launchpad.dev/firefox
-  >>> print find_portlet(browser.contents, 'Mozilla Firefox')
-  <div class="portlet">
+  >>> print browser.contents
+  <!...
   ...
-  ...Registered series:...
   ...1.0...
-  ...(development focus)...
+  ...development focus
+  ...
   ...trunk...
   ...
 
@@ -110,7 +141,7 @@ Now we try to change newproductname2's name to newproductname.
   >>> admin_browser.open(
   ...     'http://launchpad.dev/newproductname2/+review')
   >>> admin_browser.getControl('Name').value = 'newproductname'
-  >>> admin_browser.getControl('Change').click()
+  >>> admin_browser.getControl(name='UPDATE_SUBMIT').click()
   >>> for message in find_tags_by_class(admin_browser.contents, 'error'):
   ...     print message
   <p class="error message">
@@ -127,6 +158,6 @@ Now we try to change it to newproductname3.  We expect that the change will
 be accepted because there is no product called newproductname3
 
   >>> admin_browser.getControl('Name').value = 'newproductname3'
-  >>> admin_browser.getControl('Change').click() 
+  >>> admin_browser.getControl(name='UPDATE_SUBMIT').click() 
   >>> print admin_browser.url
   http://launchpad.dev/newproductname3

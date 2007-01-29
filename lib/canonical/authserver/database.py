@@ -471,14 +471,29 @@ class DatabaseBranchDetailsStorage:
         # <> 'vcs-imports') so that they are always in the queue, regardless of
         # last_mirror_attempt.  This is a band-aid fix for bug #48813, but we'll
         # need to do something more scalable eventually.
+
+        # NOTE: The import-branch case is separated by testing
+        # ProductSeries.id, but the 'vcs-imports' test is still relevant to
+        # prevent obsolete vcs-imports branches that are no longer associated
+        # to a ProductSeries from being mirrored every time.
+        # -- DavidAllouche 2006-12-22
         transaction.execute(utf8("""
             SELECT Branch.id, Branch.url, Person.name
-              FROM Branch INNER JOIN Person ON Branch.owner = Person.id
-              WHERE (last_mirror_attempt is NULL
-                     OR (%s - last_mirror_attempt > '1 day')
-                     OR (url is NULL AND Person.name <> 'vcs-imports'))
-              ORDER BY last_mirror_attempt IS NOT NULL, last_mirror_attempt
-            """ % UTC_NOW))
+            FROM Branch INNER JOIN Person ON Branch.owner = Person.id
+            LEFT OUTER JOIN ProductSeries
+                ON ProductSeries.import_branch = Branch.id
+            WHERE (ProductSeries.id is NULL AND (
+                      last_mirror_attempt is NULL
+                      OR (%(utc_now)s - last_mirror_attempt > '1 day')
+                      OR (url is NULL AND Person.name <> 'vcs-imports')))
+                   OR (ProductSeries.id IS NOT NULL AND (
+                      (datelastsynced IS NOT NULL
+                          AND last_mirror_attempt IS NULL)
+                       OR (datelastsynced > last_mirror_attempt)
+                       OR (datelastsynced IS NULL
+                          AND (%(utc_now)s - last_mirror_attempt > '1 day'))))
+            ORDER BY last_mirror_attempt IS NOT NULL, last_mirror_attempt
+            """ % {'utc_now': UTC_NOW}))
         result = []
         for (branch_id, url, owner_name) in transaction.fetchall():
             if url is not None:

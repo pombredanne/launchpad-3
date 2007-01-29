@@ -212,6 +212,7 @@
     <browser:page
         name="+addcomment"
         for="canonical.launchpad.interfaces.IBugTask"
+        class="canonical.launchpad.browser.BugView"
         permission="launchpad.Edit"
         template="../templates/bug-comment-add.pt"
         lp:url="malone/bugs/$Bug.id/+addcomment" />

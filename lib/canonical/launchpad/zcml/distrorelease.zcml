@@ -70,7 +70,7 @@
   <browser:defaultView
     for="canonical.launchpad.interfaces.IDistroRelease"
     layer="canonical.launchpad.layers.BugsLayer"
-    name="+bugs" />
+    name="+bugs-index" />
 
   <browser:pages
     for="canonical.launchpad.interfaces.IDistroRelease"
@@ -83,6 +83,15 @@
       lp:url="/distros/$DistroRelease.name/+portlet-bugtasklist-releasebugs"
       />
   </browser:pages>
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    name="+bugs-index"
+    class="canonical.launchpad.browser.BugTaskSearchListingView"
+    permission="zope.Public"
+    facet="bugs"
+    template="../templates/bugtarget-bugs.pt"
+    />
 
   <browser:pages
     for="canonical.launchpad.interfaces.IDistroRelease"
@@ -137,6 +146,11 @@
       template="../templates/distrorelease-portlet-details.pt"
       />
     <browser:page
+      name="+portlet-lifecycle"
+      facet="overview"
+      template="../templates/distrorelease-portlet-lifecycle.pt"
+      />
+    <browser:page
       name="+portlet-translations"
       facet="translations"
       template="../templates/distrorelease-portlet-translations.pt"
@@ -154,6 +168,10 @@
       name="+portlet-milestones"
       template="../templates/object-portlet-milestones.pt"
       lp:url="/distros/$Distro.name/$DRelease.name/+portlet-milestones" />
+    <browser:page
+      name="+last-uploads"
+      template="../templates/distrorelease-last-uploads.pt"
+      lp:url="/distros/$Distro.name/$DRelease.name/+last-uploads" />
   </browser:pages>
 
   <browser:page
