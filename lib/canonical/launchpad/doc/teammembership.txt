@@ -213,15 +213,66 @@ ensures we'll never have teams which can't be managed.
     True
 
 
+== Changing membership statuses ==
+
+TeamMembership.status is a read only attribute, so all status changes must be
+made using the setStatus() method.
+
+    # Foo Bar is a launchpad admin, but even so he can't change a membership's
+    # status by hand.
+    >>> from canonical.launchpad.ftests import login
+    >>> login('foo.bar@canonical.com')
+    >>> membership = foobar.myactivememberships[0]
+    >>> membership.status = None
+    Traceback (most recent call last):
+    ...
+    ForbiddenAttribute: ...
+
+Foo Bar asked to join Warty Security Team on 2006-01-26 and he's been doing
+good work, so we'll approve his membership.
+
+    >>> from canonical.launchpad.interfaces import ITeamMembershipSet
+    >>> membershipset = getUtility(ITeamMembershipSet)
+    >>> warty_team = getUtility(IPersonSet).getByName('name20')
+    >>> membership = membershipset.getByPersonAndTeam(foobar, warty_team)
+    >>> print membership.status.title
+    Proposed
+    >>> print membership.datejoined.strftime("%Y-%m-%d")
+    2006-01-26
+
+When we approve his membership, the datejoined will contain the date that it
+was approved.
+
+    >>> membership.setStatus(TeamMembershipStatus.APPROVED, reviewer=foobar)
+    >>> print membership.status.title
+    Approved
+    >>> utc_now = datetime.now(pytz.timezone('UTC'))
+    >>> membership.datejoined.date() == utc_now.date()
+    True 
+
+On the other hand, when we deactivate an active membership, the datejoined is
+not changed.
+
+    >>> buildd_admins = getUtility(IPersonSet).getByName(
+    ...     'launchpad-buildd-admins')
+    >>> membership = membershipset.getByPersonAndTeam(foobar, buildd_admins)
+    >>> print membership.status.title
+    Administrator
+    >>> print membership.datejoined.strftime("%Y-%m-%d")
+    2006-05-15
+
+    >>> membership.setStatus(TeamMembershipStatus.DEACTIVATED, reviewer=foobar)
+    >>> print membership.status.title
+    Deactivated
+    >>> print membership.datejoined.strftime("%Y-%m-%d")
+    2006-05-15
+
+
 == Flagging expired memberships ==
 
 The expired memberships are flagged by a cronscript that runs daily. This
 script simply flags all active memberships which reached their expiry date as
 expired.
-
-    >>> from canonical.launchpad.interfaces import ITeamMembershipSet
-    >>> membershipset = getUtility(ITeamMembershipSet)
-    >>> from canonical.launchpad.ftests import login
 
 To find out which memberships are already expired, we use
 TeamMembershipSet.getMembershipsToExpire(). As you can see, we don't have any
