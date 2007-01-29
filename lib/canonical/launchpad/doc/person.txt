@@ -292,6 +292,7 @@ and ILanguage.
   # We can see that there is another translator that doesn't appear in
   # previous list because the template he translated is not current.
   >>> non_current_pofile = POFile.get(31)
+  >>> assert not non_current_pofile.potemplate.iscurrent
   >>> [p.name for p in personset.getPOFileContributors(non_current_pofile)]
   [u'jordi']
   >>> non_current_pofile.potemplate.distrorelease == hoary
