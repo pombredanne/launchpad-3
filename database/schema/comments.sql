@@ -230,6 +230,7 @@ COMMENT ON COLUMN Product.homepage_content IS 'A home page for this product in t
 COMMENT ON COLUMN Product.emblem IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an emblem whenever we are referring to a product.';
 COMMENT ON COLUMN Product.gotchi IS 'The library file alias of a gotchi image to display as the icon of a product, on its home page.';
 COMMENT ON COLUMN Product.gotchi_heading IS 'The library file alias of a smaller version of this product\'s gotchi.';
+COMMENT ON COLUMN Product.official_bug_tags IS 'Bug tags which have been oficially endorsed by this product\'s lead';
 
 -- ProductRelease
 
@@ -571,6 +572,7 @@ COMMENT ON COLUMN Distribution.security_contact IS 'The person or team who handl
 COMMENT ON COLUMN Distribution.official_rosetta IS 'Whether or not this distribution uses Rosetta for its official translation team and coordination.';
 COMMENT ON COLUMN Distribution.official_malone IS 'Whether or not this distribution uses Malone for an official bug tracker.';
 COMMENT ON COLUMN Distribution.translation_focus IS 'The DistroRelease that should get the translation effort focus.';
+COMMENT ON COLUMN Distribution.official_bug_tags IS 'Bug tags which have been oficially endorsed by this distribution\'s lead';
 
 /* DistroRelease */
 
