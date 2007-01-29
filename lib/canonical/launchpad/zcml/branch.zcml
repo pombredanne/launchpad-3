@@ -116,11 +116,6 @@
     <allow interface="canonical.launchpad.interfaces.IBranchSet" />
   </content>
 
-  <!-- BranchSummary -->
-  <content class="canonical.launchpad.database.BranchSummary">
-    <allow interface="canonical.launchpad.interfaces.IBranchSummary" />
-  </content>
-
   <securedutility
     class="canonical.launchpad.database.BranchSet"
     provides="canonical.launchpad.interfaces.IBranchSet" >

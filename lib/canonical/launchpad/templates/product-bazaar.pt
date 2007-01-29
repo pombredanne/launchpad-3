@@ -20,12 +20,12 @@
     </thead>
     <tbody>
       <tr tal:repeat="product view/products">
-        <tal:summary define="summary python:view.branch_summary[product.id]">
-        <td><a tal:attributes="href product/fmt:url"
+        <tal:summary define="summary python:view.summary[product.id]">
+        <td><a tal:attributes="href summary/branch_url"
                tal:content="product/displayname">
           A Product
         </a></td>
-        <td><span tal:replace="summary/num_branches">1</span></td>
+        <td><span tal:replace="summary/branch_count">1</span></td>
         <td><span tal:replace="summary/last_commit">sometime</span></td>
         </tal:summary>
       </tr>

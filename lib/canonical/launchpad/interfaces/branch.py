@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'IBranch',
     'IBranchSet',
-    'IBranchSummary',
     'IBranchLifecycleFilter'
     ]
 
@@ -257,17 +256,6 @@ class IBranch(IHasOwner):
         A single entry point that is called solely from the branch scanner
         script.
         """
-
-class IBranchSummary(Interface):
-
-    product_id = Attribute(
-        "The id of the product.")
-    
-    num_branches = Attribute(
-        "The number of branches registered for this product.")
-    
-    last_commit = Attribute(
-        "The last commit on any branch for this product.")
 
 
 class IBranchSet(Interface):

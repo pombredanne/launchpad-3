@@ -855,13 +855,18 @@ class ProductBazaarView(LaunchpadView):
     """Browser class for products gettable with Bazaar."""
 
     def initialize(self):
-        branch_summaries = getUtility(IBranchSet).getBranchSummaryByProduct()
-        self.branch_summary= {}
-        for summary in branch_summaries:
-            self.branch_summary[summary.product_id] = summary
-    
-    def products(self):
+        LaunchpadView.initialize(self)
+        # unwrapping the security proxies, so can add to the dict
+        self.summary = {}
+        summaries = getUtility(IBranchSet).getBranchSummaryByProduct()
+        for key, value in summaries.iteritems():
+            self.summary[key] = dict(value)
+        
         products = getUtility(IProductSet).getProductsWithCode()
-        return sorted(products,
-                      key=lambda product: product.displayname.lower())
-    
+        self.products = sorted(
+            products, key=lambda product: product.displayname.lower())
+
+        for product in self.products:
+            branch_url = canonical_url(product, rootsite='code')
+            self.summary[product.id]['branch_url'] = branch_url
+       
