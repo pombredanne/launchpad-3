@@ -86,7 +86,7 @@ class PoppyInterface:
         if self.perms is not None:
             os.system("chmod %s %s" % (self.perms, target_fsroot))
 
-        self.lock.release()
+        self.lock.release(skip_delete=True)
 
         # Invoke processing script, if provided.
         if self.cmd:

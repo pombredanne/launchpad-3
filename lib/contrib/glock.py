@@ -109,9 +109,10 @@ class GlobalLock:
         ''' Creates (or opens) a global lock.
 
             @param fpath: Path of the file used as lock target. This is also
-                         the global id of the lock. The file will be created
-                         if non existent.
+                          the global id of the lock. The file will be created
+                          if non existent.
             @param lockInitially: if True locks initially.
+            @param logger: an optional logger object.
         '''
         self.logger = logger
         self.fpath = fpath
@@ -197,8 +198,13 @@ class GlobalLock:
 
         self.is_locked = True
 
-    def release(self):
+    def release(self, skip_delete=False):
         ''' Unlocks. (caller must own the lock!)
+
+            @param skip_delete: don't try to delete the file. This can
+                be used when the original filename has changed; for
+                instance, if the lockfile is erased out-of-band, or if
+                the directory it contains has been renamed.
 
             @return: The lock count.
             @exception IOError: if file lock can't be released
@@ -206,7 +212,7 @@ class GlobalLock:
         '''
         if not self.is_locked:
             return
-        if os.path.exists(self.fpath):
+        if not skip_delete:
             if self.logger:
                 self.logger.debug('Removing lock file: %s', self.fpath)
             os.unlink(self.fpath)
