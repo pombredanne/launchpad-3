@@ -25,29 +25,111 @@
 
 <div metal:fill-slot="main">
 
+      <h1 tal:condition="not:context/isTeam"
+      >Who is <tal:name replace="context/browsername">Fred</tal:name>?</h1>
+      <h1 tal:condition="context/isTeam" tal:content="context/browsername" />
+      <img
+        tal:condition="context/gotchi"
+        tal:attributes="src context/gotchi/getURL"
+        style="float: right; margin: 0 0 0.5em 0.5em"
+        alt=""
+      />
+      <tal:placeholder-shown-only-if-there-is-a-description
+        condition="python: (not context.gotchi) and (context.homepage_content or context.teamdescription)"
+      >
+        <img
+          tal:condition="not:context/isTeam"
+          alt=""
+          src="/@@/person-mugshot"
+          style="float: right; margin: 0 0 0.5em 0.5em"
+        />
+        <img
+          tal:condition="context/isTeam"
+          alt=""
+          src="/@@/team-mugshot"
+          style="float: right; margin: 0 0 0.5em 0.5em"
+        />
+      </tal:placeholder-shown-only-if-there-is-a-description>
+
+  <tal:homepage tal:condition="context/homepage_content"
+
+          content="structure context/homepage_content/fmt:text-to-html"
+        />
+        <tal:team-description
+          replace="structure context/teamdescription/fmt:text-to-html"
+        />
+
 <tal:valid-person-or-team condition="context/is_valid_person_or_team">
 
-  <h1 tal:content="context/browsername" />
+        <div class="left">
+          <div tal:condition="not:context/isTeam" class="demo section">
+            <h2>Contributions</h2>
+            <table class="contributions">
+              <tbody>
+                <tr class="odd">
+                  <th>Ubuntu</th>
+                  <td><img alt="Code" src="/@@/branch" /></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td><img alt="Answers" src="/@@/question" /></td>
+                </tr>
+                <tr class="even">
+                  <th>Fooix the Wonder-Toaster</th>
+                  <td></td>
+                  <td></td>
+                  <td><img alt="Blueprints" src="/@@/blueprint" /></td>
+                  <td><img alt="Translations" src="/@@/translation" /></td>
+                  <td><img alt="Answers" src="/@@/question" /></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div tal:condition="not:context/isTeam" class="section">
+            <h2>Team memberships</h2>
+            <ul tal:condition="context/myactivememberships" class="team">
+              <li tal:repeat="membership context/myactivememberships">
+                <div>
+                  <a
+                    tal:attributes="href membership/team/fmt:url"
+                    tal:content="membership/team/browsername"
+                  >Team name</a>
+                </div>
+                <div
+                  tal:condition="membership/team/teamdescription"
+                  tal:replace="structure membership/team/teamdescription/fmt:text-to-html"
+                >Team description</div>
+              </li>
+            </ul>
 
-  <img
-    tal:condition="context/gotchi"
-    tal:attributes="src context/gotchi/getURL"
-    style="float: right; margin: 0 0 0.5em 0.5em"
-    alt=""
-  />
-  <tal:homepage tal:condition="context/homepage_content"
-                content="structure context/homepage_content/fmt:text-to-html">
-     The person's homepage goes here.
-  </tal:homepage>
-  <tal:description condition="context/teamdescription">
-    <b>About this team:</b>
-    <span tal:replace="structure context/teamdescription/fmt:text-to-html">
-      DESCRIPTION</span>
-  </tal:description>
+    <p tal:condition="not: context/myactivememberships">
+      <span tal:replace="context/browsername">Foo Bar</span> is not an
+      active member of any Launchpad teams.
+    </p>
 
-  <h2>Details</h2>
+          </div>
+          <div tal:condition="context/isTeam" class="demo section">
+            <h2>Recently approved</h2>
+          </div>
+          <div tal:condition="context/isTeam" class="demo section">
+            <h2>Recently applied</h2>
+          </div>
+        </div>
+        <div class="right">
+          <div class="section">
+            <h2>Contact details</h2>
+            <table class="summary">
+              <tbody>
+                <tr tal:condition="context/teamowner">
+                  <th>Team owner:</th>
+                  <td>
+                    <a
+                      tal:attributes="href context/teamowner/fmt:url"
+                      tal:content="context/teamowner/browsername"
+                    >sabdfl</a>
+                  </td>
+                </tr>
 
-  <table>
     <tr tal:condition="context/allwikis">
       <th>Wiki:</th>
       <td>
@@ -98,142 +180,61 @@
         </a>
       </td>
     </tr>
+                
+              </tbody>
+            </table>
+          </div>
+          <div tal:condition="not:context/isTeam" class="demo section">
+            <h2>Working on&#8230;</h2>
+            <ul class="bug">
+              <li>
+                <div><a href="/bugs/12">123. some bug</a></div>
+                <div>
+                  gnome-network-blaster (Ubuntu),
+                  reported by David Prieto
+                </div>
+              </li>
+              <li>
+                <div><a href="/bugs/13">123. some other bug</a></div>
+                <div>
+                  gnome-network-blaster (Ubuntu),
+                  reported by David Prieto
+                </div>
+              </li>
+            </ul>
+            <ul class="blueprint">
+              <li><a href="">some blueprint</a></li>
+              <li><a href="">some other blueprint</a></li>
+            </ul>
+          </div>
+          <div tal:condition="context/isTeam" class="section">
+            <h2>Subteam of</h2>
+              <p tal:condition="not:context/getSuperTeams">
 
-  </table>
-
-  <tal:members condition="context/isTeam">
-
-    <h2>Team members</h2>
-
-    <p>
-      There are <span tal:replace="context/active_member_count">15</span>
-      direct members of the 
-      "<span tal:replace="context/browsername">Ubuntu Members</span>" team,
-      and <span tal:replace="context/all_member_count">23</span> people are
-      members in total, directly and indirectly through other team
-      memberships.
-    </p>
-
-    <ul>
-      <tal:block repeat="membership context/activememberships">
-        <li tal:condition="not: membership/person/isTeam">
-          <a tal:content="membership/person/browsername"
-             tal:attributes="href membership/person/fmt:url">Joe Soap</a>
-          <tal:is_owner condition="membership/is_owner">
-            (Owner)
-          </tal:is_owner>
-          <tal:is_not_owner condition="not: membership/is_owner">
-            <tal:is_admin condition="membership/is_admin">
-              (Administrator)
-            </tal:is_admin>
-          </tal:is_not_owner>
-        </li>
-      </tal:block>
-    </ul>
-
-    <h2>Relationship to other teams</h2>
-    <tal:block define="
-      subteams context/getSubTeams;
-      superteams context/getSuperTeams
-    ">
-      <p tal:condition="python: not subteams and not superteams">
-        None of the members of
-        &#8220;<span tal:replace="context/browsername"/>&#8221;
-        are teams,
-        and nor is it a member of any other team.
-      </p>
-      <p tal:condition="python: superteams and not subteams">
-        None of the members of
-        &#8220;<span tal:replace="context/browsername"/>&#8221;
-        are teams.
-      </p>
-      <tal:block condition="subteams">
-        <p>
-          These teams are members of
-          &#8220;<span tal:replace="context/browsername"/>&#8221; (so the
-          members of these teams are effectively also members of this one):
-        </p>
-        <ul>
-          <li tal:repeat="team subteams">
-            <a tal:attributes="href team/fmt:url"
-               tal:content="team/browsername">name</a>
-          </li>
-        </ul>
-      </tal:block>
-      <p tal:condition="python: subteams and not superteams">
         &#8220;<span tal:replace="context/browsername"/>&#8221;
         itself is not a member of any other team.
       </p>
-      <tal:block condition="superteams">
+
+              <tal:block condition="context/getSuperTeams">
+
         <p>
           &#8220;<span tal:replace="context/browsername"/>&#8221;
           is a member of these teams:
         </p>
         <ul>
-          <li tal:repeat="team superteams">
+          <li tal:repeat="team context/getSuperTeams">
             <a tal:attributes="href team/fmt:url"
                tal:content="team/browsername">name</a>
           </li>
         </ul>
       </tal:block>
-    </tal:block>
-  </tal:members>
 
-  <tal:memberships condition="not: context/isTeam">
-    <tal:block condition="context/myactivememberships">
-      <h2>Team memberships</h2>
-
-      <p><span tal:replace="context/browsername">Foo Bar</span> is
-        a member of:
-      </p>
-      <ul>
-        <li class="person"
-            tal:repeat="membership context/myactivememberships">
-          <a tal:attributes="href membership/team/fmt:url"
-             tal:content="membership/team/browsername">foo</a>
-          (<span tal:replace="membership/statusname">
-            Administrator</span>)
-        </li>
-      </ul>
-    </tal:block>
-    <p tal:condition="not: context/myactivememberships">
-      <span tal:replace="context/browsername">Foo Bar</span> is not an
-      active member of any Launchpad teams.
-    </p>
-  </tal:memberships>
-
-  <tal:isteam condition="context/isTeam">
-    <h2>Your involvement</h2>
-
-    <p tal:condition="not: request/lp:person">
-      You must <a href="+login">log in</a>
-      to join or leave this team.
-    </p>
-    <tal:block condition="request/lp:person">
-      <tal:block condition="view/userIsOwner">
-        <p tal:condition="view/userIsActiveMember">
-          You are the owner of this team.
-        </p>
-        <p tal:condition="not: view/userIsActiveMember">
-          You are the owner of this team,
-          but not currently an active member.
-        </p>
-      </tal:block>
-      <tal:block condition="not: view/userIsOwner">
-        <p tal:condition="view/userIsActiveMember">
-          You are a member of this team.
-        </p>
-        <p tal:condition="not: view/userIsActiveMember">
-          You are not a member of this team.
-        </p>
-      </tal:block>
-    </tal:block>
-  </tal:isteam>
+          </div>
+        </div>
 
 </tal:valid-person-or-team>
 
 <tal:invalid-person condition="not: context/is_valid_person_or_team">
-  <h1 tal:content="context/browsername" />
 
   <p><span tal:replace="context/browsername" /> does not use Launchpad.
     <tal:block condition="context/creation_comment">
@@ -273,3 +274,4 @@
 </div> 
 </body>
 </html>
+<!-- 1-0 in-progress Needs table of contributions (bug 81224), list of current bugs (bug 81221) and blueprints (bug 81222), and recent members/applicants (bug 81226). -->

@@ -87,7 +87,7 @@
       />
       <tal:none condition="not:structuralobject">No structural object</tal:none>
     </div>
-    <form id="globalsearch" action="/search" method="get">
+    <form id="globalsearch" action="/+search" method="get">
       <div>
         <input
           type="text"
