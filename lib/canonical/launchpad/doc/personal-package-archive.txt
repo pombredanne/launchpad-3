@@ -35,7 +35,7 @@ A new PPA should be attached to a new archive:
 PPAs can be retrieved via IPerson.personal_package_archives MultipleJoin:
 
   >>> cprov.personal_package_archives.count()
-  1
+  2
 
   >>> cprov_ppa in cprov.personal_package_archives
   True
@@ -101,5 +101,4 @@ present PPAs:
   >>> ppa_set = getUtility(IPersonalPackageArchiveSet)
 
   >>> [(ppa.person.name, ppa.archive.tag) for ppa in ppa_set]
-  [(u'cprov', u'sandbox')]
-
+  [(u'cprov', u'cprov ubuntu archive'), (u'cprov', u'sandbox')]

@@ -531,11 +531,11 @@ And pop it back to development now that we're done
   >>> hoary.releasestatus = DistributionReleaseStatus.DEVELOPMENT
 
 Check the uploader behaviour against a missing orig.tar.gz file,
-bug # 30741.
+      bug # 30741.
 
   >>> ed21_src = NascentUpload(findPolicyByName('sync'),
-  ...          datadir('ed-0.2-21'), "ed_0.2-21_source.changes",
-  ...          MockMunchyLogger(), ubuntu.main_archive)
+  ...     datadir('ed-0.2-21'), "ed_0.2-21_source.changes",
+  ...     MockMunchyLogger(), ubuntu.main_archive)
   >>> ed21_src.policy.setOptions(MockOptions())
   >>> ed21_src.process()
   >>> ed21_src.rejected
@@ -551,8 +551,9 @@ Check if we can accept a installer-source upload which doesn't have
 information.
 
   >>> inst_src = NascentUpload(
-  ...          findPolicyByName('sync'), datadir(''),
-  ...          "test75874_0.1_source.changes", MockMunchyLogger())
+  ...     findPolicyByName('sync'), datadir(''),
+  ...     "test75874_0.1_source.changes", MockMunchyLogger(),
+  ...     ubuntu.main_archive)
   >>> inst_src.policy.setOptions(MockOptions())
   >>> inst_src.process()
 
@@ -600,7 +601,8 @@ sigining key reference as an IGPGKey:
 
   >>> ed_ok = NascentUpload(
   ...     findPolicyByName('insecure'), datadir(''),
-  ...     "ed_0.2-20_i386.changes", MockMunchyLogger())
+  ...     "ed_0.2-20_i386.changes", MockMunchyLogger(),
+  ...     ubuntu.main_archive)
   >>> ed_ok.policy.setOptions(MockOptions())
 
 XXX cprov 20061206: ok, by lack of better sample-packages we will
@@ -640,7 +642,8 @@ This time the upload should fail because the ACLs don't let
 
   >>> ed_failed = NascentUpload(
   ...     findPolicyByName('insecure'), datadir(''),
-  ...     "ed_0.2-20_i386.changes", MockMunchyLogger())
+  ...     "ed_0.2-20_i386.changes", MockMunchyLogger(),
+  ...     ubuntu.main_archive)
   >>> ed_failed.policy.setOptions(MockOptions())
 
 XXX cprov 20061206: ok, by lack of better sample-packages we will

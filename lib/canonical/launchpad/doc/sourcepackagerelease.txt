@@ -209,7 +209,7 @@ the default distribution.main_archive.
    >>> test_build = spr_test.createBuild(dar, pocket)
 
    >>> test_build.id
-   21L
+   22L
 
    >>> test_build.buildstate.name
    'NEEDSBUILD'
@@ -232,7 +232,7 @@ Optionally you can pass also status & archive:
    ...    dar, pocket, status=BuildStatus.SUPERSEDED, archive=cprov_ppa)
 
    >>> ppa_build.id
-   22L
+   23L
 
    >>> ppa_build.buildstate.name
    'SUPERSEDED'

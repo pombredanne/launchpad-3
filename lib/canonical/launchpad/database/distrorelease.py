@@ -762,7 +762,7 @@ class DistroRelease(SQLBase, BugTargetBase):
             BinaryPackageRelease.binarypackagename =
                 BinaryPackageName.id AND
             BinaryPackagePublishingHistory.status != %s
-            """ % sqlvalues(self, self.archive,
+            """ % sqlvalues(self, self.main_archive,
                             PackagePublishingStatus.REMOVED),
             distinct=True,
             clauseTables=['BinaryPackagePublishingHistory',
