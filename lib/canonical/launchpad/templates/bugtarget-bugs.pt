@@ -31,27 +31,27 @@
                   >John Smith</a>
                 </td>
               </tr>
-              <tr>
+              <tr tal:define="bugcontact context/bugcontact|context/distribution/bugcontact">
                 <th>Bug contact:</th>
                 <td>
-                  <tal:none condition="not:context/bugcontact"
+                  <tal:none condition="not:bugcontact"
                   >None set</tal:none>
                   <a
-                    tal:condition="context/bugcontact"
-                    tal:attributes="href context/bugcontact/fmt:url"
-                    tal:content="context/bugcontact/displayname"
+                    tal:condition="bugcontact"
+                    tal:attributes="href bugcontact/fmt:url"
+                    tal:content="bugcontact/displayname"
                   >Bob Johnson</a>
                 </td>
               </tr>
-              <tr>
+              <tr tal:define="securitycontact context/security_contact|context/distribution/security_contact">
                 <th>Security contact:</th>
                 <td>
-                  <tal:none condition="not:context/security_contact"
+                  <tal:none condition="not:securitycontact"
                   >None set</tal:none>
                   <a
-                    tal:condition="context/security_contact"
-                    tal:attributes="href context/security_contact/fmt:url"
-                    tal:content="context/security_contact/displayname"
+                    tal:condition="securitycontact"
+                    tal:attributes="href securitycontact/fmt:url"
+                    tal:content="securitycontact/displayname"
                   >Billy Anderson</a>
                 </td>
               </tr>
