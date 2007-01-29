@@ -14,9 +14,9 @@ Files:
  f9e1e5f13725f581919e9bfd62272a05 8506 ed_0.2-20.diff.gz
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.1 (GNU/Linux)
+Version: GnuPG v1.4.3 (GNU/Linux)
 
-iD8DBQFDTVnIK8hAFiBoeJURAnNZAJ979ITR1tNLKjZnYlO/pt+WPWWVJgCgi5du
-mv8wGCxVkwQWuh5w+m/WR7Q=
-=bMth
+iD8DBQFFt6Ywjn63CGxkqMURAlKgAJ927YVDtpYSXeH2ul1gv0vtzDAyhwCdEx/a
+g/EAOybNPcdGWEVj2exjPNc=
+=dwUK
 -----END PGP SIGNATURE-----

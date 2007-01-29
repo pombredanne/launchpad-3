@@ -373,8 +373,8 @@
             value="fuzzy"
             tal:attributes="
               checked view/is_fuzzy;
-              name string:msgset_${context/potmsgset/id}_${language_code}_needsreview
-              " />
+              name string:msgset_${context/potmsgset/id}_${language_code}_needsreview"
+            />
           <tal:block condition="not:view/is_plural">
             Someone should review this translation
           </tal:block>

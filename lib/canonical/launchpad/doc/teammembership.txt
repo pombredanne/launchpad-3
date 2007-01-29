@@ -104,6 +104,9 @@ members too.
     >>> [m.displayname for m in t4.allmembers]
     [u'Foo Bar', u'Guilherme Salgado', u't1', u't2', u't3', u't5']
 
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+
 After adding all this mess, this is what we have:
 
 (This table doesn't include the team owner (Foo Bar), but since he's the
@@ -118,8 +121,17 @@ owner he's also a direct member of all teams)
 ||   T5       ||  T2               ||  T3, Salgado         ||
 
 
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
+We can use IPerson.findPathToTeam() to check some of the relationships drawn
+above. Note that because of https://launchpad.net/bugs/30789 we can't use it
+to check the path from a team to another one.
+
+    >>> [team.name for team in salgado.findPathToTeam(t1)]
+    [u't3', u't2', u't1']
+    >>> [team.name for team in salgado.findPathToTeam(t5)]
+    [u't3', u't2', u't5']
+    >>> [team.name for team in salgado.findPathToTeam(t3)]
+    [u't3']
+
 
 t2 can't use its leave() method to leave t5 because it's a team and teams
 take no actions. One of t5 administrators have to go and remove t2 from t5
@@ -207,26 +219,40 @@ The expired memberships are flagged by a cronscript that runs daily. This
 script simply flags all active memberships which reached their expiry date as
 expired.
 
-    >>> from canonical.launchpad.database import TeamMembershipSet
+    >>> from canonical.launchpad.interfaces import ITeamMembershipSet
+    >>> membershipset = getUtility(ITeamMembershipSet)
     >>> from canonical.launchpad.ftests import login
-    >>> login('foo.bar@canonical.com')
-    >>> one_day_ago = datetime.now(pytz.timezone('UTC')) - timedelta(days=1)
 
-Let's change the expiry date of an active membership, so we have something for
-our script to flag as expired.
+To find out which memberships are already expired, we use
+TeamMembershipSet.getMembershipsToExpire(). As you can see, we don't have any
+membership to expire right now.
 
-    >>> foobar_on_admins = TeamMembershipSet().getByPersonAndTeam(
+    >>> [(membership.person.name, membership.team.name)
+    ...  for membership in membershipset.getMembershipsToExpire()]
+    []
+
+Let's change the expiry date of an active membership, so we have something
+that should be expired.
+
+    >>> foobar_on_admins = membershipset.getByPersonAndTeam(
     ...     personset.getByName('name16'), personset.getByName('admins'))
     >>> foobar_on_admins.dateexpires is None
     True
     >>> foobar_on_admins.status.title
     'Administrator'
+    >>> login('foo.bar@canonical.com')
+    >>> one_day_ago = datetime.now(pytz.timezone('UTC')) - timedelta(days=1)
     >>> foobar_on_admins.dateexpires = one_day_ago
+    >>> flush_database_updates()
 
-And here we change the expiry date of a membership that's already deactivated.
-The cronscript will not change this membership, because it's not active.
+    >>> [(membership.person.name, membership.team.name)
+    ...  for membership in membershipset.getMembershipsToExpire()]
+    [(u'name16', u'admins')]
 
-    >>> sp_on_ubuntu_translators = TeamMembershipSet().getByPersonAndTeam(
+And here we change the expiry date of a membership that's already
+deactivated, so it should not be flagged as expired.
+
+    >>> sp_on_ubuntu_translators = membershipset.getByPersonAndTeam(
     ...     personset.getByName('name12'),
     ...     personset.getByName('ubuntu-translators'))
     >>> sp_on_ubuntu_translators.dateexpires is None
@@ -234,6 +260,29 @@ The cronscript will not change this membership, because it's not active.
     >>> sp_on_ubuntu_translators.status.title
     'Deactivated'
     >>> sp_on_ubuntu_translators.dateexpires = one_day_ago
+    >>> flush_database_updates()
+
+    >>> [(membership.person.name, membership.team.name)
+    ...  for membership in membershipset.getMembershipsToExpire()]
+    [(u'name16', u'admins')]
+
+The getMembershipsToExpire() method also accepts an optional 'when' argument.
+When that argument is provided, we get the memberships that are supposed to
+expire on that date or before.
+
+    >>> sabdfl_on_ubuntu_team = membershipset.getByPersonAndTeam(
+    ...     personset.getByName('sabdfl'),
+    ...     personset.getByName('ubuntu-team'))
+    >>> sabdfl_on_ubuntu_team.dateexpires is not None
+    True
+    >>> sabdfl_on_ubuntu_team.status.title
+    'Administrator'
+
+    >>> when = sabdfl_on_ubuntu_team.dateexpires + timedelta(days=1)
+    >>> [(membership.person.name, membership.team.name)
+    ...  for membership in membershipset.getMembershipsToExpire(when=when)]
+    [(u'sabdfl', u'ubuntu-team'), (u'name16', u'admins'),
+     (u'ubuntu-team', u'guadamen')]
 
 Now we commit the changes and run the cronscript.
 XXX: flush_database_updates() shouldn't be needed. This seems to be
@@ -258,17 +307,18 @@ while the one that was inactive hasn't changed.
 
     # These two objects were updated in another transaction, so we need to
     # expire them.
-    >>> foobar_on_admins.expire()
-    >>> sp_on_ubuntu_translators.expire()
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(foobar_on_admins).expire()
+    >>> removeSecurityProxy(sp_on_ubuntu_translators).expire()
 
-    >>> foobar_on_admins = TeamMembershipSet().getByPersonAndTeam(
+    >>> foobar_on_admins = membershipset.getByPersonAndTeam(
     ...     personset.getByName('name16'), personset.getByName('admins'))
     >>> foobar_on_admins.status.title
     'Expired'
     >>> foobar_on_admins.reviewer.name
     u'team-membership-janitor'
 
-    >>> sp_on_ubuntu_translators = TeamMembershipSet().getByPersonAndTeam(
+    >>> sp_on_ubuntu_translators = membershipset.getByPersonAndTeam(
     ...     personset.getByName('name12'),
     ...     personset.getByName('ubuntu-translators'))
     >>> sp_on_ubuntu_translators.status.title
@@ -300,7 +350,6 @@ of it, all based on Person._getMembersByStatus:
 
     # We want to use a private method here, so we'll remove the security
     # proxy from t3
-    >>> from zope.security.proxy import removeSecurityProxy
     >>> naked_t3 = removeSecurityProxy(t3)
     >>> declined = TeamMembershipStatus.DECLINED
     >>> [(membership.person.name, membership.status.title)
