@@ -42,10 +42,10 @@ from zope.interface import providedBy
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IPerson, IProduct, IProductLaunchpadUsageForm,
-    IProductSet, IProductSeries, ISourcePackage, ICountry,
-    ICalendarOwner, ITranslationImportQueue, NotFoundError,
-    ILaunchpadRoot)
+    IBranchSet, ICalendarOwner, ICountry, ILaunchpadCelebrities,
+    ILaunchpadRoot, IPerson, IProduct, IProductLaunchpadUsageForm,
+    IProductSet, IProductSeries, ISourcePackage,
+    ITranslationImportQueue, NotFoundError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.branchref import BranchRef
@@ -371,7 +371,7 @@ def _sort_distros(a, b):
 class ProductSetContextMenu(ContextMenu):
 
     usedfor = IProductSet
-    links = ['register', 'listall', 'thebazaar']
+    links = ['register', 'listall', 'withCode']
 
     def register(self):
         text = 'Register a Product'
@@ -837,7 +837,15 @@ class ProductReassignmentView(ObjectReassignmentView):
 
 class ProductBazaarView(LaunchpadView):
     """Browser class for products gettable with Bazaar."""
+
+    def initialize(self):
+        branch_summaries = getUtility(IBranchSet).getBranchSummaryByProduct()
+        self.branch_summary= {}
+        for summary in branch_summaries:
+            self.branch_summary[summary.product_id] = summary
     
     def products(self):
-        return getUtility(IProductSet).getProductsWithCode()
+        products = getUtility(IProductSet).getProductsWithCode()
+        return sorted(products,
+                      key=lambda product: product.displayname.lower())
     

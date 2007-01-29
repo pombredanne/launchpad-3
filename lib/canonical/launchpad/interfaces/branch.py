@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'IBranch',
     'IBranchSet',
+    'IBranchSummary',
     'IBranchLifecycleFilter'
     ]
 
@@ -257,6 +258,18 @@ class IBranch(IHasOwner):
         script.
         """
 
+class IBranchSummary(Interface):
+
+    product_id = Attribute(
+        "The id of the product.")
+    
+    num_branches = Attribute(
+        "The number of branches registered for this product.")
+    
+    last_commit = Attribute(
+        "The last commit on any branch for this product.")
+
+
 class IBranchSet(Interface):
     """Interface representing the set of branches."""
 
@@ -300,6 +313,8 @@ class IBranchSet(Interface):
     def getBranchesToScan():
         """Return an iterator for the branches that need to be scanned."""
 
+    def getBranchSummaryByProduct():
+        """Return a list of simple summary objects."""
 
 class IBranchLifecycleFilter(Interface):
     """A helper interface to render lifecycle filter choice."""

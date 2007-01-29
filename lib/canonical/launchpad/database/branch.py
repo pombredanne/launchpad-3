@@ -1,7 +1,9 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['Branch', 'BranchSet', 'BranchRelationship', 'BranchLabel']
+__all__ = ['Branch', 'BranchSet',
+           'BranchSummary', 
+           'BranchRelationship', 'BranchLabel']
 
 import os.path
 import re
@@ -15,11 +17,13 @@ from sqlobject import (
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import SQLBase, sqlvalues, quote 
+from canonical.database.sqlbase import (
+    cursor, quote, SQLBase, sqlvalues)
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.webapp import urlappend
-from canonical.launchpad.interfaces import (IBranch, IBranchSet,
+from canonical.launchpad.interfaces import (
+    IBranch, IBranchSet, IBranchSummary,
     ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.database.revision import RevisionNumber
 from canonical.launchpad.database.branchsubscription import BranchSubscription
@@ -314,6 +318,29 @@ class BranchSet:
              Branch.last_scanned_id <> Branch.last_mirrored_id)
             ''')
 
+    def getBranchSummaryByProduct(self):
+        """See IBranchSet."""
+        cur = cursor()
+        cur.execute("""
+            SELECT product, COUNT(b.id), MAX(revision.revision_date)
+            FROM branch b
+            LEFT OUTER JOIN revision
+            ON b.last_scanned_id = revision.revision_id
+            WHERE product IS NOT NULL
+            GROUP BY product
+            """)
+        return [BranchSummary(*row) for row in cur.fetchall()]
+
+
+class BranchSummary:
+    
+    implements(IBranchSummary)
+    
+    def __init__(self, product_id, num_branches, last_commit):
+        self.product_id = product_id
+        self.num_branches = num_branches
+        self.last_commit = last_commit
+        
 
 class BranchRelationship(SQLBase):
     """A relationship between branches.

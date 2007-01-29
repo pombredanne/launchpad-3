@@ -5,13 +5,32 @@
 >
   <body>
     <metal:heading fill-slot="pageheading">
-      <h1>Products available in &ldquo;The Bazaar&rdquo;</h1>
+      <h1>Products with Code</h1>
     </metal:heading>
 
 <div metal:fill-slot="main">
 
-
- <p>TODO: fill this</p>
+  <table class="listing sortable" id="products">
+    <thead>
+      <tr>
+        <th class="initial-sort">Product</th>
+        <th>Branches</th>
+        <th>Last commit</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="product view/products">
+        <tal:summary define="summary python:view.branch_summary[product.id]">
+        <td><a tal:attributes="href product/fmt:url"
+               tal:content="product/displayname">
+          A Product
+        </a></td>
+        <td><span tal:replace="summary/num_branches">1</span></td>
+        <td><span tal:replace="summary/last_commit">sometime</span></td>
+        </tal:summary>
+      </tr>
+    </tbody>
+  </table>
 
 </div>
 
