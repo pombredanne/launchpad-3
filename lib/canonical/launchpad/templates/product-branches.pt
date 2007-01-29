@@ -29,24 +29,28 @@
     <thead>
       <tr>
         <th>Name</th>
-        <th>Title</th>
         <th>Author</th>
         <th class="initial-sort">Status</th>
+        <th>Last Commit</th>
       </tr>
     </thead>
     <tbody>
       <tr tal:repeat="branch branchviewset">
         <!-- Name -->
-        <td tal:content="branch/name/fmt:shorten/30">Name</td>
-        <!-- Title -->
         <td>
-          <a tal:attributes="href branch/fmt:url"
-             tal:content="branch/displayname/fmt:shorten/50">Title Goes Here!</a>
+          <a tal:attributes="href branch/fmt:url;
+                             title branch/displayname"
+             tal:content="branch/name/fmt:shorten/30">
+               Name
+          </a>
         </td>
         <!-- Author -->
         <td>
-          <span tal:condition="branch/author"
-                tal:replace="branch/author/browsername">Author</span>
+          <a tal:condition="branch/author"
+             tal:attributes="href branch/author/fmt:url"
+             tal:content="branch/author/browsername">
+               Author
+          </a>
         </td>
         <!-- Status -->
         <td>
@@ -56,6 +60,13 @@
                 tal:attributes="
                   class string:branchstatus${branch/lifecycle_status/name}">
                   Status</span>
+        </td>
+        <!-- Last Commit -->
+        <td tal:define="last_commit python:view.last_commit[branch.id]">
+          <span tal:condition="last_commit"
+                tal:replace="last_commit/fmt:datetime">
+            2007-01-01
+          </span>
         </td>
       </tr>
       <tr tal:condition="not:branchviewset">
@@ -124,7 +135,7 @@
   </ul>
 
   <p>The push location must be of the form:
-    <code>sftp://<i>login</i>@bazaar.launchpad.net/~<i>registrant</i>/<i>product</i>/<i>branch</i></code></p>
+    <code>sftp://<i>login</i><wbr></wbr>@bazaar.launchpad.net/<wbr></wbr>~<i>registrant</i>/<wbr></wbr><i>product</i>/<wbr></wbr><i>branch</i></code></p>
 
   <ul>
     <li><i>login</i> is your Launchpad person name: the last part of the URL of

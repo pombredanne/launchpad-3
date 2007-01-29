@@ -29,28 +29,30 @@
     <thead>
       <tr>
         <th>Name</th>
-        <th>Title</th>
         <th>Author</th>
         <th>Status</th>
+        <th>Last Commit</th>
         <th class="initial-sort">Product</th>
         <th>Role</th>
       </tr>
     </thead>
     <tbody>
       <tr tal:repeat="branch branchviewset">
-        <!-- Name -->
-        <td tal:content="branch/name/fmt:shorten/30">Name</td>
-        <!-- Title -->
         <td>
-          <a tal:attributes="href branch/fmt:url"
-             tal:content="branch/displayname/fmt:shorten/50">
+        <!-- Name -->
+          <a tal:attributes="href branch/fmt:url;
+                             title branch/displayname"
+             tal:content="branch/name/fmt:shorten/30">
                Title Goes Here!
           </a>
         </td>
         <!-- Author -->
         <td>
-          <span tal:condition="branch/author"
-                tal:replace="branch/author/browsername">Author</span>
+          <a tal:condition="branch/author"
+             tal:attributes="href branch/author/fmt:url"
+             tal:content="branch/author/browsername">
+               Author
+          </a>
         </td>
         <!-- Status -->
         <td>
@@ -61,12 +63,20 @@
                   class string:branchstatus${branch/lifecycle_status/name}">
                   Status</span>
         </td>
+        <!-- Last Commit -->
+        <td tal:define="last_commit python:view.last_commit[branch.id]">
+          <span tal:condition="last_commit"
+                tal:replace="last_commit/fmt:datetime">
+            2007-01-01
+          </span>
+        </td>
         <!-- Product -->
         <td>
-          <span tal:condition="branch/product"
-                tal:replace="branch/product/name">
-            Product
-          </span>
+          <a tal:condition="branch/product"
+             tal:attributes="href branch/product/fmt:url"
+             tal:content="branch/product/name">
+               Product
+          </a>
         </td>
         <!-- Role -->
         <td tal:define="role python:view.branch_role(branch)">

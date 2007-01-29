@@ -7,10 +7,9 @@ overview page:
 
   >>> anon_browser.open(
   ...     'http://launchpad.dev/gnome-terminal/+branches')
-  >>> anon_browser.getLink('Launchpad support for Gnome Terminal').url
-  'http://launchpad.dev/~launchpad/+branch/gnome-terminal/launchpad'
-
-
+  >>> anon_browser.getLink('klingon').url
+  'http://launchpad.dev/~name12/+branch/gnome-terminal/klingon'
+        
 And on the product's detailed branch listing as well.
 
   >>> anon_browser.open(

@@ -300,6 +300,9 @@ class IBranchSet(Interface):
     def getBranchesToScan():
         """Return an iterator for the branches that need to be scanned."""
 
+    def getLastCommitForBranches(branch_ids):
+        """Return a map of branch id to last commit time."""
+
 
 class IBranchLifecycleFilter(Interface):
     """A helper interface to render lifecycle filter choice."""

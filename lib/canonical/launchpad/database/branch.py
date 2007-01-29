@@ -15,7 +15,8 @@ from sqlobject import (
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import SQLBase, sqlvalues, quote 
+from canonical.database.sqlbase import (
+    cursor, quote, SQLBase, sqlvalues)
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.webapp import urlappend
@@ -313,6 +314,18 @@ class BranchSet:
             (Branch.last_scanned_id IS NULL OR
              Branch.last_scanned_id <> Branch.last_mirrored_id)
             ''')
+
+    def getLastCommitForBranches(self, branch_ids):
+        """Return a map of branch id to last commit time."""
+        cur = cursor()
+        cur.execute("""
+            SELECT branch.id, revision.revision_date
+            FROM branch
+            LEFT OUTER JOIN revision
+            ON branch.last_scanned_id = revision.revision_id
+            """)
+        return dict(cur.fetchall())
+
 
 
 class BranchRelationship(SQLBase):
