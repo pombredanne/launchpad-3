@@ -98,16 +98,28 @@ class BranchToMirror:
     def _mirrorFailed(self, logger, error_msg):
         """Log that the mirroring of this branch failed."""
         self.branch_status_client.mirrorFailed(self.branch_id, str(error_msg))
-        logger.warning('Failed to mirror branch %d: %s',
-                       self.branch_id, str(error_msg))
+        logger.info('Recorded failure: %s', str(error_msg))
+
+    def record_oops(self, logger):
+        """Record an oops for the current exception.
+
+        This must only be called while handling an exception.
+        """
+        request = errorlog.ScriptRequest([
+            ('branch_id', branch_to_mirror.branch_id),
+            ('source', branch_to_mirror.source),
+            ('dest', branch_to_mirror.dest)])
+        request.URL = 'database:/branch/$d' % self.branch_id
+        errorlog.globalErrorUtility.raising(sys.exc_info(), request)
+        logger.info('%s: %s', request.oopsid, message)
 
     def mirror(self, logger):
         """Open source and destination branches and pull source into
         destination.
         """
         self.branch_status_client.startMirroring(self.branch_id)
-        logger.info('Mirroring %s (%d) to %s',
-                    self.source, self.branch_id, self.dest)
+        logger.info('Mirroring branch %d: %s to %s',
+                    self.branch_id, self.source, self.dest)
 
         try: 
             self._openSourceBranch()
@@ -150,6 +162,7 @@ class BranchToMirror:
             self._mirrorFailed(logger, e)
 
         except bzrlib.errors.BzrError, e:
+            self.record_oops(logger)
             self._mirrorFailed(logger, e)
 
         else:
@@ -157,8 +170,8 @@ class BranchToMirror:
             if last_rev is None:
                 last_rev = NULL_REVISION
             self.branch_status_client.mirrorComplete(self.branch_id, last_rev)
-            logger.info('Branch %d mirrored successfully to rev %s',
-                        self.branch_id, last_rev)
+            logger.info('Successfully mirrored to rev %s',
+                last_rev.revision_id)
 
     def __eq__(self, other):
         return self.source == other.source and self.dest == other.dest

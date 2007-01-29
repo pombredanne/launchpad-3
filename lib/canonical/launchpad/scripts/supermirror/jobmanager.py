@@ -7,6 +7,7 @@ from canonical.launchpad.scripts import lockfile
 from canonical.launchpad.scripts.supermirror.branchtargeter import branchtarget
 from canonical.launchpad.scripts.supermirror.branchtomirror import (
     BranchToMirror)
+from canonical.launchpad.webapp import errorlog
 
 
 class JobManager:
@@ -26,8 +27,16 @@ class JobManager:
 
     def run(self, logger):
         """Run all branches_to_mirror registered with the JobManager"""
-        while self.branches_to_mirror:
-            self.branches_to_mirror.pop(0).mirror(logger)
+        try:
+            while self.branches_to_mirror:
+                branch_to_mirror = self.branches_to_mirror.pop(0)
+                branch_to_mirror.mirror(logger)
+        except:
+            # Any exception not handled specially is recorded as a OOPS.
+            branch_to_mirror.record_oops(logger)
+            raise
+
+
 
     def addBranches(self, branch_status_client):
         """Queue branches from the list provided by the branch status client
