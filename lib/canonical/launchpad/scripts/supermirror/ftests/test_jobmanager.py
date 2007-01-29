@@ -60,7 +60,6 @@ class TestJobManager(unittest.TestCase):
 
     def testManagerCreatesLocks(self):
         try:
-            self._removeLockFile()
             manager = jobmanager.JobManager()
             manager.lock(lockfilename=self.masterlock)
             self.failUnless(os.path.exists(self.masterlock))
@@ -70,11 +69,11 @@ class TestJobManager(unittest.TestCase):
 
     def testManagerEnforcesLocks(self):
         try:
-            self._removeLockFile()
             manager = jobmanager.JobManager()
             manager.lock(lockfilename=self.masterlock)
             anothermanager = jobmanager.JobManager()
-            self.assertRaises(jobmanager.LockError, anothermanager.lock)
+            self.assertRaises(jobmanager.LockError, anothermanager.lock,
+                              lockfilename=self.masterlock)
             self.failUnless(os.path.exists(self.masterlock))
             manager.unlock()
         finally:
