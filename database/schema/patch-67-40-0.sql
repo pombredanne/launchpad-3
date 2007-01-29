@@ -5,5 +5,5 @@ SET client_min_messages=ERROR;
 ALTER TABLE Product ADD COLUMN official_bug_tags TEXT;
 ALTER TABLE Distribution ADD COLUMN official_bug_tags TEXT;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (67, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (67, 40, 0);
 
