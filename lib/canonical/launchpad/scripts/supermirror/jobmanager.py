@@ -26,6 +26,7 @@ class JobManager:
 
     def run(self, logger):
         """Run all branches_to_mirror registered with the JobManager"""
+        logger.info('%d branches to mirror', len(self.branches_to_mirror))
         try:
             while self.branches_to_mirror:
                 branch_to_mirror = self.branches_to_mirror.pop(0)
@@ -34,7 +35,7 @@ class JobManager:
             # Any exception not handled specially is recorded as a OOPS.
             branch_to_mirror.record_oops(logger)
             raise
-
+        logger.info('Mirroring complete')
 
 
     def addBranches(self, branch_status_client):

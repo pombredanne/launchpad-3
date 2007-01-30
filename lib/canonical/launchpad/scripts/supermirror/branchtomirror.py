@@ -112,7 +112,7 @@ class BranchToMirror:
             ('branch_id', self.branch_id),
             ('source', self.source),
             ('dest', self.dest)])
-        request.URL = 'database:/branch/$d' % self.branch_id
+        request.URL = 'database:/branch/%d' % self.branch_id
         errorlog.globalErrorUtility.raising(sys.exc_info(), request)
         logger.info('Recorded %s', request.oopsid)
 
@@ -173,8 +173,7 @@ class BranchToMirror:
             if last_rev is None:
                 last_rev = NULL_REVISION
             self.branch_status_client.mirrorComplete(self.branch_id, last_rev)
-            logger.info('Successfully mirrored to rev %s',
-                last_rev.revision_id)
+            logger.info('Successfully mirrored to rev %s', last_rev)
 
     def __eq__(self, other):
         return self.source == other.source and self.dest == other.dest
