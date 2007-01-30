@@ -1,6 +1,7 @@
 .demo {background-color: #fee;}
 
 /* === Stuff browsers should do but don't === */
+dt dfn {font-style: normal; font-weight: bold;}
 tr {vertical-align: top;}
 
 /* === Overall presentation === */
@@ -12,6 +13,9 @@ body {
   margin: 0;
   padding: 0;
   background-color: #FFFFFF;
+}
+dd {
+  margin-bottom: 1em;
 }
 td {
   font-family: trebuchet ms, tahoma, arial, verdana, sans-serif;
@@ -608,6 +612,10 @@ ul#applicationchooser li#applicationchooser_selected {
   text-indent: -9999px;
   overflow: hidden;
 }
+#structuralobject {
+  position: relative;
+  z-index: 1;
+}
 #structuralobjectheading {
   background: none;
   color: black;
@@ -617,12 +625,12 @@ ul#applicationchooser li#applicationchooser_selected {
 }
 #structuralobjectheading img {
   float: left;
-  margin: 0px 0px 0px 10px;
+  margin: 0;
 }
 #structuralobjectheading .main {
   font-weight: bold;
   margin: 20px 0 0;
-  font-size: 1.5em;
+  font-size: 2.5em;
 }
 #structuralobjectchildren {
   float: left;
@@ -648,6 +656,8 @@ ul#applicationchooser li#applicationchooser_selected {
   background-image: url(mainarea_left.gif);
   background-repeat: repeat-y;
   background-position: top left;
+  position: relative;
+  top: -10px;
 }
 #mainarea div.u {
   width: 100%;
