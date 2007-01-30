@@ -28,5 +28,5 @@ Should now be back at the main series page
   'http://launchpad.dev/firefox/trunk'
   >>> print find_portlet(user_browser.contents, 'Revision control details')
   <div class="portlet">
-  ...<a href="http://launchpad.dev/~name12/+branch/firefox/main">Mozilla Firefox Mainline</a>...
+  ...<a href="http://code.launchpad.dev/~name12/firefox/main">Mozilla Firefox Mainline</a>...
   </div>

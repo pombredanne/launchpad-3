@@ -137,16 +137,15 @@ class BranchTraversalMixin:
         product_name = stepstogo.consume()
         branch_name = stepstogo.consume()
         if product_name is not None and branch_name is not None:
-            return self.context.getBranch(product_name, branch_name)
+            branch = self.context.getBranch(product_name, branch_name)
+            return self.redirectSubTree(canonical_url(branch))
         raise NotFoundError
 
     def traverse(self, product_name):
-        if CodeLayer.providedBy(self.request):
-            stepstogo = self.request.stepstogo
-            branch_name = stepstogo.consume()
-            if branch_name is not None:
-                return self.context.getBranch(product_name, branch_name)
-            raise NotFoundError
+        stepstogo = self.request.stepstogo
+        branch_name = stepstogo.consume()
+        if branch_name is not None:
+            return self.context.getBranch(product_name, branch_name)
         else:
             return super(BranchTraversalMixin, self).traverse(product_name)
 
@@ -272,7 +271,7 @@ class PersonFacets(StandardLaunchpadFacets):
         text = 'Code'
         summary = ('Bazaar Branches and revisions registered and authored '
                    'by %s' % self.context.browsername)
-        return Link('+branches', text, summary)
+        return Link('', text, summary)
 
     def support(self):
         text = 'Support'

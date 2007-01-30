@@ -61,7 +61,7 @@ registered branch. We check that the final slash of the URL was stripped by
 matching for the angle brackets of an enclosing tag.
 
   >>> user_browser.url
-  'http://launchpad.dev/~name12/+branch/applets/main'
+  'http://code.launchpad.dev/~name12/applets/main'
   >>> print user_browser.contents
   <!DOCTYPE...
   ...Gnome Panel Applets Mainline...
@@ -71,9 +71,9 @@ This page includes a link to other branches associated
 with that product, and a link to other branches maintained by that person.
 
   >>> user_browser.getLink('Other Gnome Applets branches').url
-  'http://launchpad.dev/applets/+branches'
+  'http://code.launchpad.dev/applets/+branches'
   >>> user_browser.getLink('Other branches registered (and not authored) by Sample Person').url
-  'http://launchpad.dev/~name12/+registeredbranches'
+  'http://code.launchpad.dev/~name12/+registeredbranches'
 
 
 == Finding person/+addbranch ==
@@ -111,9 +111,9 @@ junk branch. Because it has no product, it has no link to other product
 branches.
 
   >>> user_browser.url
-  'http://launchpad.dev/~name12/+branch/+junk/pyresources'
+  'http://code.launchpad.dev/~name12/+junk/pyresources'
   >>> user_browser.getLink('Other branches authored by Robert Collins').url
-  'http://launchpad.dev/~lifeless/+authoredbranches'
+  'http://code.launchpad.dev/~lifeless/+authoredbranches'
 
 Also, the branch URL must appear with the trailing slash stripped.
 
@@ -130,7 +130,7 @@ owner-product-name is unique for all branches.
 For this example, we will use ~name12/gnome-terminal/main. Check that it
 already exists.
 
-  >>> user_browser.open('http://launchpad.dev/~name12/+branch/gnome-terminal/main')
+  >>> user_browser.open('http://launchpad.dev/~name12/gnome-terminal/main')
 
 Try a adding a conflicting branch from the product/+addbranch form.
 
