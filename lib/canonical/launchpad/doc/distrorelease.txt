@@ -424,9 +424,9 @@ The main one is to clone what we have in its parent distribution:
    >>> humpy.copyMissingTranslationsFromParent()
 
    >>> len(hoary.potemplates)
-   5
+   6
    >>> len(humpy.potemplates)
-   5
+   6
 
 Check one by one and compare the exported text. We define a function because
 we will need it later for other tests.
