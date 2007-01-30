@@ -1,5 +1,4 @@
-Product
-=======
+= Product =
 
 Launchpad keeps track of the "upstream" world as well as the "distro" world.
 The anchorpiece of the "upstream" world is the Product, which is a piece of
@@ -101,8 +100,7 @@ It provides information on all the translatables available, too:
     netapplet
 
 
-External Bug Tracker
---------------------
+== External Bug Tracker ==
 
 If a product doesn't use Malone, it can specify that it uses an
 external bug tracker. It can either use its own bug tracker, or use its
@@ -157,8 +155,7 @@ None will of course be returned.
     True
 
 
-Product Creation
-================
+== Product Creation ==
 
 We can create new products with the createProduct() method:
 
@@ -185,8 +182,7 @@ This series is set as the development focus for the product:
     True
 
 
-Specification Listings
-======================
+== Specification Listings ==
 
 We should be able to get lists of specifications in different states
 related to a product.
@@ -226,8 +222,7 @@ We can filter for specifications that contain specific text:
  e4x
 
 
-Products With Branches
-======================
+== Products With Branches ==
 
 We can also find all the products that have branches.
 

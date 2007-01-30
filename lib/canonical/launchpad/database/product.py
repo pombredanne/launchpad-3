@@ -561,7 +561,9 @@ class ProductSet:
 
     def getProductsWithBranches(self):
         """See canonical.launchpad.interfaces.product.IProductSet."""
-        return Product.select('id in (select product from branch)')
+        return Product.select('Product.id = Branch.product',
+                              clauseTables=['Branch'],
+                              distinct=True)
 
     def createProduct(self, owner, name, displayname, title, summary,
                       description=None, project=None, homepageurl=None,

@@ -14,7 +14,7 @@ from sqlobject import (
     SQLObjectNotFound, AND)
 
 from canonical.config import config
-from canonical.database.constants import UTC_NOW
+from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote 
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -98,6 +98,9 @@ class Branch(SQLBase):
     spec_links = SQLMultipleJoin('SpecificationBranch',
         joinColumn='branch',
         orderBy='id')
+
+    date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
+
 
     @property
     def related_bugs(self):
@@ -249,7 +252,10 @@ class BranchSet:
 
     def countBranchesWithAssociatedBugs(self):
         """See IBranchSet."""
-        return Branch.select('id in (select branch from bugbranch)').count()
+        return Branch.select(
+            'Branch.id = BugBranch.branch',
+            clauseTables=['BugBranch'],
+            distinct=True).count()
 
     def get(self, branch_id, default=None):
         """See IBranchSet."""
@@ -260,14 +266,17 @@ class BranchSet:
 
     def new(self, name, owner, product, url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
-            summary=None, home_page=None, whiteboard=None):
+            summary=None, home_page=None, whiteboard=None, date_created=None):
         """See IBranchSet."""
         if not home_page:
             home_page = None
+        if date_created is None:
+            date_created = UTC_NOW
         return Branch(
             name=name, owner=owner, author=author, product=product, url=url,
             title=title, lifecycle_status=lifecycle_status, summary=summary,
-            home_page=home_page, whiteboard=whiteboard)
+            home_page=home_page, whiteboard=whiteboard,
+            date_created=date_created)
 
     def getByUrl(self, url, default=None):
         """See IBranchSet."""
@@ -329,8 +338,7 @@ class BranchSet:
             AND Branch.owner = Person.id
             AND Person.name <> 'vcs-imports'
             '''
-        tables = ['Person']
-        branches = Branch.select(query, clauseTables=tables,
+        branches = Branch.select(query, clauseTables=['Person'],
             orderBy=['-last_scanned'], limit=branch_count)
         return branches.prejoin(['author', 'product'])
 
@@ -341,8 +349,7 @@ class BranchSet:
             AND Branch.owner = Person.id
             AND Person.name = 'vcs-imports'
             '''
-        tables = ['Person']
-        branches = Branch.select(query, clauseTables=tables,
+        branches = Branch.select(query, clauseTables=['Person'],
             orderBy=['-last_scanned'], limit=branch_count)
         return branches.prejoin(['author', 'product'])
 

@@ -64,17 +64,21 @@ If it doesn't exist an exception NotFoundError is raised
 >>> personset = getUtility(IPersonSet)
 >>> ddaa = personset.getByName('ddaa')
 
+>>> from datetime import datetime, timedelta
+>>> from pytz import UTC
+>>> def timegenerator(origin):
+...     now = origin
+...     while True:
+...         now += timedelta(seconds=5)
+...         yield now
+>>> now = timegenerator(datetime.now(UTC))
+
 >>> gterm_dev_url = 'http://example.com/~ddaa/gterm.dev'
 >>> title = "David Allouche's Main GNOME Terminal Branch"
 >>> summary = "Main line of development for David Allouche on GNOME Terminal."
 >>> home_page = "http://example.com/~ddaa/"
 >>> gterm_dev = branchset.new('dev', ddaa, gterm_product, gterm_dev_url,
-...     title, summary=summary, home_page=home_page)
-
-And we'll commit the transaction to get distinct date_created values.#
-
->>> import transaction
->>> transaction.commit()
+...     title, summary=summary, home_page=home_page, date_created=now.next())
 
 >>> gterm_dev.name
 u'dev'
@@ -96,11 +100,9 @@ no title, and no summary, and even no URL.
 Branches with no URL are primarily hosted on the supermirror.
 
 >>> url = 'http://example.com/~ddaa/junkcode'
->>> junkcode = branchset.new('junkcode', ddaa, None, None)
+>>> junkcode = branchset.new('junkcode', ddaa, None, None,
+...                          date_created=now.next())
 
-Again committing for distinct date_crated values.
-
->>> transaction.commit()
 >>> junkcode.name
 u'junkcode'
 >>> print repr(junkcode.product)
@@ -124,11 +126,34 @@ The IBranchSet can tell us how many branches there are registered.
 
 (25 in the sample data, and two added above.)
 
-== Determining the recently changed and registered branches ==
+== Determing the number of branches with bugs ==
 
-These IBranchSet methods are used to give summary information that
+The count of branches that have bugs associated with them is another
+useful piece of summary information that is supplied on one of the initial
+pages to show that there can be a relationship created between
+branches and bugs.
+
+>>> branchset.countBranchesWithAssociatedBugs()
+2
+
+== Determining the recently changed, registered and imported branches ==
+
+The IBranchSet methods getRecentlyChangedBranches, getRecentlyImportedBranches,
+and getRecentlyRegisteredBranches are used to give summary information that
 is to be displayed on the code.launchpad.net page to entice the 
 user to click through.
+
+Changed branches are branches that are owned by real people or groups (as
+opposed to vcs-imports), and have recently had new revisions detected by
+the branch scanner, either through the branch being pushed to the supermirror
+or the branch puller script mirroring a remote branch.
+
+Imported branches are those branches owned by vcs-imports, and are "imported"
+from other VCS hosted code bases.  Again recently imported branches are
+identified by new revisions detected by the branch scanner.
+
+Branches that have been recently registered have either been created by a user
+using the web UI, or by pushing a new branch directly to the supermirror.
 
 In order to determine changes in the branches the last_scanned timestamp
 is used.  This is set by the branch scanner when it has finished
@@ -346,7 +371,7 @@ the branches registered, authored and subscribed to by this person.
 >>> url = 'http://example.com/~lifeless/mesh-merge'
 >>> title = "Experimental mesh merging algorithm."
 >>> meshmerge = branchset.new('mesh-merge', lifeless, None, url,
-...     title, summary=title)
+...     title, summary=title, date_created=now.next())
 >>> junkcode.author = lifeless
 >>> syncUpdate(junkcode)
 >>> unused = gterm_dev.subscribe(lifeless)
