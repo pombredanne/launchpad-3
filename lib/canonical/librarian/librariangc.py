@@ -3,6 +3,7 @@
 
 __metaclass__ = type
 
+from datetime import datetime, timedelta
 import sys
 from time import time
 import os
@@ -18,6 +19,26 @@ BATCH_SIZE = 1
 
 log = None
 debug = False
+
+def confirm_no_clock_skew(con):
+    """Raise an exception if there is significant clock skew between the
+    database and this machine.
+
+    It is theoretically possible to lose data if there is more than several
+    hours of skew.
+    """
+    cur = con.cursor()
+    cur.execute("SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
+    db_now = cur.fetchone()[0]
+    local_now = datetime.utcnow()
+    five_minutes = timedelta(minutes=5)
+
+    if -five_minutes < local_now - db_now < five_minutes:
+        return
+    else:
+        raise Exception("%s clock skew between librarian and database" % (
+            local_now - db_now,
+            ))
 
 def delete_expired_blobs(con):
     """Remove expired TemporaryBlobStorage entries and their corresponding
@@ -316,9 +337,13 @@ def delete_unwanted_files(con):
     cur.execute("SELECT max(id) from LibraryFileContent")
     max_id = cur.fetchone()[0]
 
-    # Build a dictionary containing all stored LibraryFileContent ids
+    # Build a set containing all stored LibraryFileContent ids
     # that we want to keep.
-    cur.execute("SELECT id FROM LibraryFileContent WHERE deleted IS FALSE")
+    cur.execute("""
+        SELECT id FROM LibraryFileContent
+        WHERE deleted IS FALSE OR datecreated
+            > CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - '1 day'::interval
+        """)
     all_ids = set(row[0] for row in cur.fetchall())
 
     count = 0

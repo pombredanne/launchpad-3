@@ -71,6 +71,11 @@ def main():
     try:
         con = connect(config.librarian.gc.dbuser)
         con.set_isolation_level(AUTOCOMMIT_ISOLATION)
+
+        # Refuse to run if we have significant clock skew between the
+        # librarian and the database.
+        librariangc.confirm_no_clock_skew(con)
+
         # Note that each of these next steps will issue commit commands
         # as appropriate to make this script transaction friendly
         if not options.skip_content:
