@@ -4,7 +4,7 @@ Launchpad provides a way for people to search across products, projects and
 distributions. This is done at the /+search page.
 
     >>> browser.open('http://launchpad.dev/+search')
-    >>> browser.getControl(name='q', index=1).value = 'ubuntu'
+    >>> browser.getControl(name='q').value = 'ubuntu'
     >>> browser.getControl('Search').click()
     >>> browser.url
     'http://launchpad.dev/+search?q=ubuntu&search=Search'
@@ -47,45 +47,11 @@ Product/Project/Distribution.
     'http://launchpad.dev/ubuntu-project'
 
 
-On that same page it's also possible to enter a product/distribution/project
-name and go straight to its Launchpad page.
-
-    >>> browser.open('http://launchpad.dev/+search')
-    >>> browser.getControl(name='q', index=1).value = 'ubuntu'
-    >>> browser.getControl('Go').click()
-    >>> browser.url
-    'http://launchpad.dev/ubuntu'
-
-If there's no product/distribution/project whose name exactly matches the
-given string, we'll then display a list of results and a message explaining
-that no exact match was found.
-
-    >>> browser.open('http://launchpad.dev/+search')
-    >>> browser.getControl(name='q', index=1).value = 'foo'
-    >>> browser.getControl('Go').click()
-
-    >>> tags = find_tags_by_class(browser.contents, "informational message")
-    >>> for tag in tags:
-    ...   print tag.renderContents()
-    We couldn't find an exact match for your search term. Below you can see
-    some projects that are likely to be what you are looking for.
-
-    >>> search_results = find_tag_by_id(browser.contents, 'search-results')
-    >>> print search_results.renderContents()
-    <...
-    ...<a href="/iso-codes">
-    ...The iso-codes...
-    ...(product)...
-    ...<a href="/iso-codes-project">
-    ...iso-codes...
-    ...(project)...
-
-
 If the user tries to do a search without any search terms, we ask him to enter
 some terms and do another search.
 
     >>> browser.open('http://launchpad.dev/+search')
-    >>> browser.getControl(name='q', index=1).value
+    >>> browser.getControl(name='q').value
     ''
     >>> browser.getControl('Search').click()
     >>> empty_search = find_tag_by_id(browser.contents, 'empty-search-string')
