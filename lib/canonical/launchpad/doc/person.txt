@@ -259,20 +259,6 @@ person uploaded (where he isn't the maintainer).
     (u'alsa-utils', u'Ubuntu Hoary', u'1.0.9a-4ubuntu1')
 
 
-Bug contact packages
---------------------
-
-A person who chooses to receive all bugmail for a package is said to be
-a "bug contact" for that package. A package may have zero, one, or more
-bug contacts.
-
-IPerson.getBugContactPackages returns this list of packages, sorted
-alphabetically (A to Z) by package name.
-
-    >>> [package.name for package in foobar.getBugContactPackages()]
-    [u'mozilla-firefox', u'pmount']
-
-
 Translations
 ------------
 
@@ -281,8 +267,8 @@ for a Person:
 
   >>> carlos = getUtility(IPersonSet).getByName('carlos')
   >>> [pt.pofile.title for pt in carlos.translation_history]
-  [u'Japanese (ja) translation of evolution-2.2 in Ubuntu Hoary package "evolution"',
-   u'Spanish (es) translation of evolution-2.2 in Evolution trunk',
+  [u'Spanish (es) translation of evolution-2.2 in Evolution trunk',
+   u'Japanese (ja) translation of evolution-2.2 in Ubuntu Hoary package "evolution"',
    u'Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"']
 
 The IPersonSet component contains a few convenience methods to return
@@ -293,11 +279,26 @@ Person objects that have contributed translations.
   >>> [p.name for p in personset.getPOFileContributors(pofile)]
   [u'carlos', u'name16', u'tsukimi']
 
+getPOFileContributorsByDistroRelease gives the list of people that did
+contributions to templates that are current in the given IDistroRelease
+and ILanguage.
+
   >>> from canonical.launchpad.database import DistroRelease, Language
   >>> hoary = DistroRelease.selectOneBy(name="hoary")
   >>> spanish = Language.selectOneBy(code="es")
   >>> [p.name for p in personset.getPOFileContributorsByDistroRelease(hoary, spanish)]
   [u'jorge-gonzalez-gonzalez', u'carlos', u'valyag', u'danner', u'name16', u'tsukimi']
+
+  # We can see that there is another translator that doesn't appear in
+  # previous list because the template he translated is not current.
+  >>> non_current_pofile = POFile.get(31)
+  >>> assert not non_current_pofile.potemplate.iscurrent
+  >>> [p.name for p in personset.getPOFileContributors(non_current_pofile)]
+  [u'jordi']
+  >>> non_current_pofile.potemplate.distrorelease == hoary
+  True
+  >>> non_current_pofile.language == spanish
+  True
 
 
 Specification Lists

@@ -7,8 +7,6 @@ __metaclass__ = type
 __all__ = [
     'ISourcePackageFilePublishing',
     'IBinaryPackageFilePublishing',
-    'ISourcePackagePublishingView',
-    'IBinaryPackagePublishingView',
     'ISecureSourcePackagePublishingHistory',
     'ISecureBinaryPackagePublishingHistory',
     'ISourcePackagePublishingHistory',
@@ -43,19 +41,28 @@ pocketsuffix = {
 class IPublishing(Interface):
     """Ability to publish associated publishing records."""
 
-    def publish(diskpool, log, pocket, careful=False):
-        """Publish associated publishing records targeted for a given pocket.
+    def getPendingPublications(self, pocket, is_careful):
+        """Return the specific group of records to be published.
 
         IDistroRelease -> ISourcePackagePublishing
         IDistroArchRelease -> IBinaryPackagePublishing
+
+        'pocket' argument restrict the results to a given value.
+
+        If the distroreleases is already released, it automatically refuses
+        to publish records to RELEASE pocket.
+        """
+
+    def publish(diskpool, log, pocket, careful=False):
+        """Publish associated publishing records targeted for a given pocket.
 
         Require an initialised diskpool instance and a logger instance.
         'careful' argument would cause the 'republication' of all published
         records if True (system will DTRT checking hash of all
         published files.)
 
-        If the distroreleases is already released, it automatically refuses
-        to publish records to RELEASE pocket.
+        Consider records returned by the local implementation of
+        getPendingPublications.
         """
 
 class IArchivePublisher(Interface):
@@ -148,13 +155,6 @@ class IBaseSourcePackagePublishing(Interface):
             )
     pocket = Int(
             title=_('Package publishing pocket'), required=True, readonly=True,
-            )
-
-
-class ISourcePackagePublishingView(IBaseSourcePackagePublishing):
-    """Source package publishing information neatened up a bit"""
-    sectionname = TextLine(
-            title=_('Section name'), required=True, readonly=True,
             )
 
 
@@ -291,19 +291,6 @@ class IBaseBinaryPackagePublishing(Interface):
             )
     pocket = Int(
             title=_('Package publishing pocket'), required=True, readonly=True,
-            )
-
-
-class IBinaryPackagePublishingView(IBaseBinaryPackagePublishing):
-    """Binary package publishing information neatened up a bit"""
-    binarypackagename = TextLine(
-            title=_('Binary package name'), required=True, readonly=True,
-            )
-    sectionname = TextLine(
-            title=_('Section name'), required=True, readonly=True,
-            )
-    priority = Int(
-            title=_('Priority'), required=True, readonly=True,
             )
 
 

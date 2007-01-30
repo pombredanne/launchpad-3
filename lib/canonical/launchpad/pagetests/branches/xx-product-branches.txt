@@ -2,51 +2,92 @@
 
 Products should link their branch listing page.
 
-  >>> print http(r"""
-  ... GET /gnome-terminal HTTP/1.1
-  ... Host: launchpad.dev
-  ... """)
-  HTTP/1.1 200 Ok
-  ...href="http://code.launchpad.dev/gnome-terminal/"...
+  >>> browser.open('http://launchpad.dev/gnome-terminal')
+  >>> browser.getLink('Code').url
+  'http://code.launchpad.dev/gnome-terminal/'
 
 There are two listings of branches for a product. The short tabular listing,
 and the detailed branch listing that includes branch summaries and more
 hyperlinks. We'll use the presence of the summary for the Gnome Terminal
 Mainline branch to distinguish the pages.
 
-  >>> gterm_main_summary = u"Release branch of GNOME Terminal for the GNOME 2.6 environment."
+  >>> gterm_main_summary = "Release branch of GNOME Terminal for the GNOME 2.6 environment."
 
 We should be able to display a list of branches for a product at +branches.
 
-  >>> page = http(r"""
-  ... GET /gnome-terminal/+branches HTTP/1.1
-  ... Host: launchpad.dev
-  ... """)
-  >>> print page
-  HTTP/1.1 200 Ok
-  ...<a href="http://launchpad.dev/~name12/+branch/gnome-terminal/main">GNOME Terminal Mainline</a>...
-  >>> gterm_main_summary in unicode(page)
+  >>> browser.open('http://launchpad.dev/gnome-terminal/+branches')
+  >>> gterm_main_summary in browser.contents
   False
 
 And another at +branchlisting. That one is the detailed branch listing.
 
-  >>> page = http(r"""
-  ... GET /gnome-terminal/+branchlisting HTTP/1.1
-  ... Host: launchpad.dev
-  ... """)
-  >>> print page
-  HTTP/1.1 200 Ok
-  ...<a href="http://launchpad.dev/~name12/+branch/gnome-terminal/main">GNOME Terminal Mainline</a>...
-  >>> gterm_main_summary in unicode(page)
+  >>> browser.open('http://launchpad.dev/gnome-terminal/+branchlisting')
+  >>> gterm_main_summary in browser.contents
   True
 
 If there are no branches, we should display a message stating that there is no
 branch registered for this product.
 
-  >>> print http(r"""
-  ... GET /applets/+branchlisting HTTP/1.1
-  ... Host: launchpad.dev
-  ... """)
-  HTTP/1.1 200 Ok
+  >>> browser.open('http://launchpad.dev/applets/+branchlisting')
+  >>> print browser.contents
+  <!DOCTYPE...
   ...There are no branches registered for...
 
+== Branch Filtering ==
+
+This is a helper function to print out the branches that
+are visible to the user.
+
+  >>> def visible_branches(contents):
+  ...   table = find_tag_by_id(contents, 'branchtable')
+  ...   for row in table.tbody.fetch('tr'):
+  ...     cells = row.fetch('td')
+  ...     name = cells[0].renderContents()
+  ...     status = cells[-1].fetch('span')[-1].renderContents()
+  ...     print name, status
+
+Branches shown for products are filterable in the same way that 
+branches for people are filterable (see xx-person-branches.txt).
+
+  >>> browser.open('http://launchpad.dev/gnome-terminal/+branches')
+  >>> visible_branches(browser.contents)
+  2.6       Mature
+  main      Development
+  klingon   Experimental
+  pushed    New
+  launchpad New
+
+And to look at all branches, select 'Any Status'
+
+  >>> browser.getControl(name='field.lifecycle').displayValue = ['Any Status']
+  >>> browser.getControl('Filter').click()
+  >>> visible_branches(browser.contents)
+  2.6        Mature
+  main       Development
+  klingon    Experimental
+  slowness   Merged
+  2.4        Abandoned
+  pushed     New
+  launchpad  New
+
+Selecting an individual lifecycle status from the select control 
+will cause only branches with that status to be listed.
+
+  >>> browser.getControl(name='field.lifecycle').displayValue = ['Abandoned']
+  >>> browser.getControl('Filter').click()
+  >>> visible_branches(browser.contents)
+  2.4   Abandoned
+
+If the product does have branches, but they are not visible with
+the current filter, the table is shown, and a (hopefully)
+helpful message supplied.
+
+  >>> browser.open('http://code.launchpad.dev/'
+  ...   'firefox/+branches?field.lifecycle=Mature')
+  >>> browser.getControl(name='field.lifecycle').displayValue
+  ['Mature']
+  >>> table = find_tag_by_id(browser.contents, 'branchtable')
+  >>> cell = table.tbody.fetch('tr')[0].fetch('td')[0]
+  >>> print cell.renderContents()
+  <i>There are branches registered for firefox but none of them match the
+  current filter criteria for this page. Try filtering on "Any Status".</i>

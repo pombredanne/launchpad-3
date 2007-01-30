@@ -34,7 +34,7 @@ from zope.security.interfaces import Unauthorized
 from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IAddBugTaskForm, IBug, IBugSet, IBugTaskSet,
-    IBugWatchSet, ICanonicalUrlData, IDistributionSourcePackage,
+    IBugWatchSet, ICanonicalUrlData, ICveSet, IDistributionSourcePackage,
     IDistroBugTask, IDistroReleaseBugTask, ILaunchBag, ILaunchpadCelebrities,
     IProductSet, IUpstreamBugTask, NoBugTrackerFound, NotFoundError,
     UnrecognizedBugTrackerURL, valid_distrotask, valid_upstreamtask)
@@ -218,10 +218,22 @@ class MaloneView(LaunchpadView):
                     break
         return fixed_bugs
 
+    def getCveBugLinkCount(self):
+        """Return the number of links between bugs and CVEs there are."""
+        return getUtility(ICveSet).getBugCveCount()
 
 
 class BugView:
-    """View class for presenting information about an IBug."""
+    """View class for presenting information about an IBug.
+
+    Since all bug pages are registered on IBugTask, the context will be
+    adapted to IBug in order to make the security declarations work
+    properly. This has the effect that the context in the pagetemplate
+    changes as well, so the bugtask (which is often used in the pages)
+    is available as currentBugTask(). This may not be all that pretty,
+    but it was the best solution we came up with when deciding to hang
+    all the pages off IBugTask instead of IBug.
+    """
 
     def __init__(self, context, request):
         self.context = IBug(context)

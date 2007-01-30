@@ -311,11 +311,11 @@ Let's get a branch with some revisions in it.
 
 Branch.revision_history gives the sequence of revisions in this branch's
 history, latest revisions first. All revision history items must implement the
-IRevisionNumber interface. The Branch.revision_count() method gives the length
+IRevisionNumber interface. The Branch.revision_count attribute gives the length
 of the revision_history attribute but without building the list.
 
 >>> from canonical.launchpad.interfaces import IRevisionNumber
->>> count = junk.revision_count()
+>>> count = junk.revision_count
 >>> count
 6
 >>> [verifyObject(IRevisionNumber, a) for a in junk.revision_history]

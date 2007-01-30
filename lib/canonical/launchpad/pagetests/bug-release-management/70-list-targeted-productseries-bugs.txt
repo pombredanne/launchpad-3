@@ -18,4 +18,5 @@ targeted to it.
     ...         icon, id, description, status = tr('td', limit=4)
     ...         print id.string, description.a.string, status.renderContents()
     >>> print_bugtasks(anon_browser.contents)
+    5 Firefox install instructions should be complete Undecided
     1 Firefox does not support SVG Undecided

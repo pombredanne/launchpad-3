@@ -19,10 +19,21 @@ from canonical.testing import PageTestLayer
 here = os.path.dirname(os.path.realpath(__file__))
 
 
+class DuplicateIdError(Exception):
+    """Raised by find_tag_by_id if more than one element has the given id."""
+
+
 def find_tag_by_id(content, id):
-    """Find and return the tags with the given ID"""
+    """Find and return the tag with the given ID"""
     soup = BeautifulSoup(content)
-    return soup.find(attrs={'id': id})
+    elements_with_id = soup.findAll(attrs={'id': id})
+    if not elements_with_id:
+        return None
+    elif len(elements_with_id) == 1:
+        return elements_with_id[0]
+    else:
+        raise DuplicateIdError(
+            'Found %d elements with id %r' % (len(elements_with_id), id))
 
 
 def find_tags_by_class(content, class_):

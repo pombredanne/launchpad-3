@@ -11,15 +11,34 @@ __all__ = [
 
 import operator
 
+from canonical.lp.dbschema import (BranchLifecycleStatus,
+                                   BranchLifecycleStatusFilter)
+
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.interfaces import IPerson, IProduct
-from canonical.launchpad.webapp import LaunchpadView
+from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.interfaces import (IPerson, IProduct,
+                                            IBranchLifecycleFilter)
+from canonical.launchpad.webapp import LaunchpadFormView, custom_widget
+from canonical.widgets import LaunchpadDropdownWidget
 
-# XXX This stuff was initially cargo-culted from ITicketTarget, some of it
-# could be factored out. See bug 4011. -- David Allouche 2005-09-09
 
+class BranchTargetView(LaunchpadFormView):
+    schema = IBranchLifecycleFilter
+    field_names = ['lifecycle']
+    custom_widget('lifecycle', LaunchpadDropdownWidget)
 
-class BranchTargetView(LaunchpadView):
+    # The default set of statuses to show.
+    CURRENT_SET = set([BranchLifecycleStatus.NEW,
+                       BranchLifecycleStatus.EXPERIMENTAL,
+                       BranchLifecycleStatus.DEVELOPMENT,
+                       BranchLifecycleStatus.MATURE])
+                  
+
+    @property
+    def initial_values(self):
+        return {
+            'lifecycle': BranchLifecycleStatusFilter.CURRENT
+            }
 
     @cachedproperty
     def branches(self):
@@ -27,6 +46,32 @@ class BranchTargetView(LaunchpadView):
         # A cache to avoid repulling data from the database, which can be
         # particularly expensive
         branches = self.context.branches
+        items = shortlist(branches, 8000, hardlimit=10000)
+        return sorted(items, key=operator.attrgetter('sort_key'))
+
+    @cachedproperty
+    def visible_branches(self):
+        """The branches that should be visible to the user."""
+        widget = self.widgets['lifecycle']
+
+        if widget.hasValidInput():
+            lifecycle_filter = widget.getInputValue()
+        else:
+            lifecycle_filter = BranchLifecycleStatusFilter.CURRENT
+
+        if lifecycle_filter == BranchLifecycleStatusFilter.ALL:
+            branches = self.branches
+        elif lifecycle_filter == BranchLifecycleStatusFilter.CURRENT:
+            branches = [branch for branch in self.context.branches
+                        if branch.lifecycle_status in self.CURRENT_SET]
+        else:
+            # BranchLifecycleStatus and BranchLifecycleStatusFilter
+            # share values for common elements, so to get the correct
+            # status to compare against, we know that we can just
+            # index into the enumeration with the value.
+            show_status = BranchLifecycleStatus.items[lifecycle_filter.value]
+            branches = [branch for branch in self.context.branches
+                        if branch.lifecycle_status == show_status]
         return sorted(branches, key=operator.attrgetter('sort_key'))
 
     def context_relationship(self):
@@ -72,7 +117,7 @@ class BranchTargetView(LaunchpadView):
         """
         categories = {}
         if not IPerson.providedBy(self.context):
-            branches = self.branches
+            branches = self.context.branches
         else:
             url = self.request.getURL()
             if '+authoredbranches' in url:
@@ -82,8 +127,19 @@ class BranchTargetView(LaunchpadView):
             elif '+subscribedbranches' in url:
                 branches = self.context.subscribed_branches
             else:
-                branches = self.branches
-        for branch in branches:
+                branches = self.context.branches
+
+        # Currently 500 branches is causing a timeout in the rendering of
+        # the page template, and since we don't want it taking too long,
+        # we are going to limit it here to 250 until we add batching.
+        # This method is only called for the detailed listing pages,
+        # which include more embedded queries, and hence take longer.
+        # This is the reason for the different numbers above and here.
+        # We don't want to make them configurable as this might show
+        # intent that the solution will hang around when really it
+        # is a temporary fix.
+        #    -- Tim Penhey 2006-10-10
+        for branch in shortlist(branches, 200, hardlimit=250):
             if categories.has_key(branch.lifecycle_status):
                 category = categories[branch.lifecycle_status]
             else:

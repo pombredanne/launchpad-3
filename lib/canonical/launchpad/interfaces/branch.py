@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'IBranch',
     'IBranchSet',
+    'IBranchLifecycleFilter'
     ]
 
 from zope.interface import Interface, Attribute
@@ -15,31 +16,38 @@ from zope.component import getUtility
 from zope.schema import Bool, Int, Choice, Text, TextLine, Datetime
 
 from canonical.config import config
-from canonical.lp.dbschema import BranchLifecycleStatus
+from canonical.lp.dbschema import (BranchLifecycleStatus,
+                                   BranchLifecycleStatusFilter)
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Title, Summary, Whiteboard
+from canonical.launchpad.fields import Title, Summary, URIField, Whiteboard
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.validation import valid_webref
 
-class BranchUrlField(TextLine):
+class BranchURIField(URIField):
 
-    def _validate(self, url):
+    def _validate(self, value):
         # import here to avoid circular import
         from canonical.launchpad.webapp import canonical_url
-        url = url.rstrip('/')
-        TextLine._validate(self, url)
-        if IBranch.providedBy(self.context) and self.context.url == url:
-            return # url was not changed
-        if (url + '/').startswith(config.launchpad.supermirror_root):
+        from canonical.launchpad.webapp.uri import URI
+
+        super(BranchURIField, self)._validate(value)
+        # URIField has already established that we have a valid URI
+        uri = URI(value)
+        supermirror_root = URI(config.launchpad.supermirror_root)
+        if supermirror_root.contains(uri):
             message = _(
                 "Don't manually register a bzr branch on "
                 "<code>bazaar.launchpad.net</code>. Create it by SFTP, and it "
                 "is registered automatically.")
             raise LaunchpadValidationError(message)
-        branch = getUtility(IBranchSet).getByUrl(url)
+
+        if IBranch.providedBy(self.context) and self.context.url == str(uri):
+            return # url was not changed
+
+        branch = getUtility(IBranchSet).getByUrl(str(uri))
         if branch is not None:
             message = _(
                 "The bzr branch <a href=\"%s\">%s</a> is already registered "
@@ -65,13 +73,17 @@ class IBranch(IHasOwner):
         title=_('Summary'), required=False, description=_("A "
         "single-paragraph description of the branch. This will be "
         "displayed on the branch page."))
-    url = BranchUrlField(
+    url = BranchURIField(
         title=_('Branch URL'), required=True,
+        allowed_schemes=['http', 'https', 'ftp', 'sftp'],
+        allow_userinfo=False,
+        allow_query=False,
+        allow_fragment=False,
+        trailing_slash=False,
         description=_("The URL where the Bazaar branch is hosted. This is "
             "the URL used to checkout the branch. The only branch format "
             "supported is that of the Bazaar revision control system, see "
-            "www.bazaar-vcs.org for more information."),
-        constraint=valid_webref)
+            "www.bazaar-vcs.org for more information."))
 
     whiteboard = Whiteboard(title=_('Whiteboard'), required=False,
         description=_('Notes on the current status of the branch.'))
@@ -114,10 +126,12 @@ class IBranch(IHasOwner):
 
 
     # Home page attributes
-    home_page = TextLine(
+    home_page = URIField(
         title=_('Web Page'), required=False,
+        allowed_schemes=['http', 'https', 'ftp'],
+        allow_userinfo=False,
         description=_("The URL of a web page describing the branch, "
-                      "if there is such a page."), constraint=valid_webref)
+                      "if there is such a page."))
     branch_home_page = Attribute(
         "The home page URL specified within the branch.")
     home_page_locked = Bool(
@@ -186,6 +200,10 @@ class IBranch(IHasOwner):
         title=_("Last scanned revision ID"), required=False,
         description=_("The head revision ID of the branch when last "
                       "successfully scanned."))
+    revision_count = Int(
+        title=_("Revision count"),
+        description=_("The number of revisions in the branch")
+        )
 
     cache_url = Attribute("Private mirror of the branch, for internal use.")
     warehouse_url = Attribute(
@@ -204,7 +222,6 @@ class IBranch(IHasOwner):
 
     # Joins
     revision_history = Attribute("The sequence of revisions in that branch.")
-    revision_count = Attribute("The number of revisions in that branch.")
     subscriptions = Attribute("BranchSubscriptions associated to this branch.")
     subscribers = Attribute("Persons subscribed to this branch.")
 
@@ -245,6 +262,12 @@ class IBranch(IHasOwner):
         Returns True if any RevisionNumber objects were destroyed.
         """
 
+    def updateScannedDetails(revision_id, revision_count):
+        """Updates attributes associated with the scanning of the branch.
+
+        A single entry point that is called solely from the branch scanner
+        script.
+        """
 
 class IBranchSet(Interface):
     """Interface representing the set of branches."""
@@ -288,3 +311,20 @@ class IBranchSet(Interface):
 
     def getBranchesToScan():
         """Return an iterator for the branches that need to be scanned."""
+
+
+class IBranchLifecycleFilter(Interface):
+    """A helper interface to render lifecycle filter choice."""
+
+    # Stats and status attributes
+    lifecycle = Choice(
+        title=_('Lifecycle Filter'), vocabulary='BranchLifecycleStatusFilter',
+        default=BranchLifecycleStatusFilter.CURRENT,
+        description=_(
+        "The author's assessment of the branch's maturity. "
+        " Mature: recommend for production use."
+        " Development: useful work that is expected to be merged eventually."
+        " Experimental: not recommended for merging yet, and maybe ever."
+        " Merged: integrated into mainline, of historical interest only."
+        " Abandoned: no longer considered relevant by the author."
+        " New: unspecified maturity."))
