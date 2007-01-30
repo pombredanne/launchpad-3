@@ -62,7 +62,7 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProduct"
         layer="canonical.launchpad.layers.BugsLayer"
-        name="+bugs" />
+        name="+bugs-index" />
 
     <browser:menus
         module="canonical.launchpad.browser"
@@ -91,6 +91,15 @@
         for="canonical.launchpad.interfaces.IProduct"
         path_expression="name"
         parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IProduct"
+        name="+bugs-index"
+        class="canonical.launchpad.browser.BugTaskSearchListingView"
+        permission="zope.Public"
+        facet="bugs"
+        template="../templates/bugtarget-bugs.pt"
         />
 
     <browser:pages
@@ -127,6 +136,11 @@
             facet="overview"
             template="../templates/product-portlet-details.pt"
             lp:url="/$Product.name/+portlet-details" />
+        <browser:page
+            name="+portlet-lifecycle"
+            facet="overview"
+            template="../templates/product-portlet-lifecycle.pt"
+            lp:url="/$Product.name/+portlet-lifecycle" />
         <browser:page
             name="+portlet-series"
             facet="overview"
@@ -250,11 +264,17 @@
         class="canonical.launchpad.browser.ProductEditView"
         label="Edit details"
         fields="project displayname title summary description homepageurl
-                sourceforgeproject freshmeatproject wikiurl screenshotsurl
-                downloadurl programminglang development_focus"
+                gotchi emblem sourceforgeproject freshmeatproject wikiurl
+                screenshotsurl downloadurl programminglang development_focus"
         permission="launchpad.Edit"
         template="../templates/product-edit.pt"
         lp:url="/$Product.name/+edit">
+        <browser:widget
+           field="emblem"
+           class="canonical.widgets.ImageChangeWidget" />
+        <browser:widget
+           field="gotchi"
+           class="canonical.widgets.ImageChangeWidget" />
         <browser:widget
            field="homepageurl"
            class="zope.app.form.browser.TextWidget"

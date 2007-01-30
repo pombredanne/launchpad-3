@@ -18,7 +18,7 @@ from canonical.lp.dbschema import (BranchLifecycleStatus,
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
-    IBranchLifecycleFilter, IBugBranchSet, IPerson, IProduct)
+    IBranchLifecycleFilter, IBranchSet, IBugBranchSet, IPerson, IProduct)
 from canonical.launchpad.webapp import LaunchpadFormView, custom_widget
 from canonical.widgets import LaunchpadDropdownWidget
 
@@ -53,6 +53,11 @@ class BranchTargetView(LaunchpadFormView):
         return {
             'lifecycle': BranchLifecycleStatusFilter.CURRENT
             }
+
+    def initialize(self):
+        LaunchpadFormView.initialize(self)
+        self.last_commit = getUtility(IBranchSet).getLastCommitForBranches(
+            self.visible_branches)
 
     @cachedproperty
     def branches(self):
