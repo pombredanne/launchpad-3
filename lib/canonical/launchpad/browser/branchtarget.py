@@ -11,12 +11,14 @@ __all__ = [
 
 import operator
 
+from zope.component import getUtility
+
 from canonical.lp.dbschema import (BranchLifecycleStatus,
                                    BranchLifecycleStatusFilter)
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.interfaces import (IPerson, IProduct,
-                                            IBranchLifecycleFilter)
+from canonical.launchpad.interfaces import (
+    IBranchLifecycleFilter, IBranchSet, IPerson, IProduct)
 from canonical.launchpad.webapp import LaunchpadFormView, custom_widget
 from canonical.widgets import LaunchpadDropdownWidget
 
@@ -38,6 +40,11 @@ class BranchTargetView(LaunchpadFormView):
         return {
             'lifecycle': BranchLifecycleStatusFilter.CURRENT
             }
+
+    def initialize(self):
+        LaunchpadFormView.initialize(self)
+        self.last_commit = getUtility(IBranchSet).getLastCommitForBranches(
+            self.visible_branches)
 
     @cachedproperty
     def branches(self):
