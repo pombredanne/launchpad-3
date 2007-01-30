@@ -644,20 +644,16 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         # Return all hosted branches every run, regardless of
         # last_mirror_attempt.  This is a short-term fix for bug #48813; see the
         # comment in _getBranchPullQueueInteraction.
-        results = self.storage._getBranchPullQueueInteraction(self.cursor)
 
         # Branch 25 is a hosted branch.
-        branch_ids = [branch_id for branch_id, pull_url in results]
-        self.failUnless(25 in branch_ids)
-        
+        self.failUnless(self.isBranchInPullQueue(25))
+
         # Mark 25 as recently mirrored.
         self.storage._startMirroringInteraction(self.cursor, 25)
         self.storage._mirrorCompleteInteraction(self.cursor, 25, 'rev-1')
-        
+
         # 25 should still be in the pull list
-        results = self.storage._getBranchPullQueueInteraction(self.cursor)
-        branch_ids = [branch_id for branch_id, pull_url in results]
-        self.failUnless(25 in branch_ids,
+        self.failUnless(self.isBranchInPullQueue(25),
                         "hosted branch no longer in pull list")
 
     def isBranchInPullQueue(self, branch_id):
