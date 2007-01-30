@@ -68,7 +68,7 @@ class UserDetailsStorageMixin:
                 % sqlvalues(archiveName))
             )
             authorisedKeys = transaction.fetchall()
-            
+
             # A person can also access any archive named after a validated email
             # address.
             if '--' in archiveName:
@@ -179,15 +179,15 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
     # address, or a nickname, or a numeric ID), whereas personID always refers
     # to the numeric ID, which is the value found in Person.id in the database.
     implements(IUserDetailsStorage)
-    
+
     def __init__(self, connectionPool):
         """Constructor.
-        
+
         :param connectionPool: A twisted.enterprise.adbapi.ConnectionPool
         """
         self.connectionPool = connectionPool
         self.encryptor = SSHADigestEncryptor()
-    
+
     def getUser(self, loginID):
         ri = self.connectionPool.runInteraction
         return ri(self._getUserInteraction, loginID)
@@ -200,7 +200,7 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
         except TypeError:
             # No-one found
             return {}
-        
+
         emailaddresses = self._getEmailAddresses(transaction, personID)
 
         if wikiname is None:
@@ -219,7 +219,7 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
         ri = self.connectionPool.runInteraction
         return ri(self._authUserInteraction, loginID,
                   sshaDigestedPassword.encode('base64'))
-        
+
     def _authUserInteraction(self, transaction, loginID, sshaDigestedPassword):
         """The interaction for authUser."""
         row = self._getPerson(transaction, loginID)
@@ -232,11 +232,11 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
         if passwordDigest is None:
             # The user has no password, which means they can't login.
             return {}
-        
+
         if passwordDigest.rstrip() != sshaDigestedPassword.rstrip():
             # Wrong password
             return {}
-        
+
         emailaddresses = self._getEmailAddresses(transaction, personID)
 
         if wikiname is None:
@@ -268,10 +268,10 @@ def saltFromDigest(digest):
 class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
     """Launchpad-database backed implementation of IUserDetailsStorageV2"""
     implements(IHostedBranchStorage, IUserDetailsStorageV2)
-    
+
     def __init__(self, connectionPool):
         """Constructor.
-        
+
         :param connectionPool: A twisted.enterprise.adbapi.ConnectionPool
         """
         self.connectionPool = connectionPool
@@ -292,7 +292,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         )
         return [{'id': row[0], 'name': row[1], 'displayname': row[2]}
                 for row in transaction.fetchall()]
-    
+
     def getUser(self, loginID):
         ri = self.connectionPool.runInteraction
         return ri(self._getUserInteraction, loginID)
@@ -305,7 +305,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         except TypeError:
             # No-one found
             return {}
-        
+
         emailaddresses = self._getEmailAddresses(transaction, personID)
 
         if wikiname is None:
@@ -340,7 +340,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
     def authUser(self, loginID, password):
         ri = self.connectionPool.runInteraction
         return ri(self._authUserInteraction, loginID, password)
-        
+
     def _authUserInteraction(self, transaction, loginID, password):
         """The interaction for authUser."""
         row = self._getPerson(transaction, loginID)
@@ -353,7 +353,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         if not self.encryptor.validate(password, passwordDigest):
             # Wrong password
             return {}
-        
+
         emailaddresses = self._getEmailAddresses(transaction, personID)
 
         if wikiname is None:
@@ -465,10 +465,10 @@ class DatabaseBranchDetailsStorage:
     """Launchpad-database backed implementation of IUserDetailsStorage"""
 
     implements(IBranchDetailsStorage)
-    
+
     def __init__(self, connectionPool):
         """Constructor.
-        
+
         :param connectionPool: A twisted.enterprise.adbapi.ConnectionPool
         """
         self.connectionPool = connectionPool
@@ -479,7 +479,7 @@ class DatabaseBranchDetailsStorage:
 
     def _getBranchPullQueueInteraction(self, transaction):
         """The interaction for getBranchPullQueue."""
-        # XXX Andrew Bennetts 2006-06-14: 
+        # XXX Andrew Bennetts 2006-06-14:
         # 'vcs-imports' should not be hard-coded in this function.  Instead this
         # ought to use getUtility(LaunchpadCelebrities), but the authserver
         # currently does not setup sqlobject etc.  Even nicer would be if the
@@ -550,7 +550,7 @@ class DatabaseBranchDetailsStorage:
         """See IBranchDetailsStorage"""
         ri = self.connectionPool.runInteraction
         return ri(self._mirrorCompleteInteraction, branchID, lastRevisionID)
-    
+
     def _mirrorCompleteInteraction(self, transaction, branchID,
                                    lastRevisionID):
         """The interaction for mirrorComplete."""
@@ -567,7 +567,7 @@ class DatabaseBranchDetailsStorage:
         """See IBranchDetailsStorage"""
         ri = self.connectionPool.runInteraction
         return ri(self._mirrorFailedInteraction, branchID, reason)
-    
+
     def _mirrorFailedInteraction(self, transaction, branchID, reason):
         """The interaction for mirrorFailed."""
         transaction.execute(utf8("""
