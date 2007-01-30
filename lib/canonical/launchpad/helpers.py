@@ -291,7 +291,7 @@ def validate_translation(original, translation, flags):
     msg.check_format()
 
 
-class ShortListTimeoutError(TimeoutError):
+class ShortListTimeoutError(Exception):
     """This error is raised when the shortlist hardlimit is reached"""
     
 def shortlist(sequence, longest_expected=15, hardlimit=None):
@@ -310,7 +310,7 @@ def shortlist(sequence, longest_expected=15, hardlimit=None):
     >>> shortlist([1, 2, 3, 4], hardlimit=2)
     Traceback (most recent call last):
         ...
-    ShortListTimeoutError: This error is raised when the shortlist hardlimit is reached: Hard limit of 2 exceeded.  There were 4 items.
+    ShortListTimeoutError: Hard limit of 2 exceeded.  There were 4 items.
 
     >>> shortlist([1, 2, 3, 4], 2, hardlimit=4)
     Traceback (most recent call last):
@@ -321,8 +321,8 @@ def shortlist(sequence, longest_expected=15, hardlimit=None):
     L = list(sequence)
     size = len(L)
     if hardlimit and size > hardlimit:
-        msg = 'Hard limit of %d exceeded.  There were %d items'
-        raise ShortListTimeoutError, msg % (hardlimit, size)
+        msg = 'Hard limit of %d exceeded.  There were %d items.'
+        raise ShortListTimeoutError(msg % (hardlimit, size))
     if size > longest_expected:
         warnings.warn(
             "shortlist() should not be used here. It's meant to listify"

@@ -132,6 +132,12 @@ class BranchTargetView(LaunchpadFormView):
         # Currently 500 branches is causing a timeout in the rendering of
         # the page template, and since we don't want it taking too long,
         # we are going to limit it here to 250 until we add batching.
+        # This method is only called for the detailed listing pages,
+        # which include more embedded queries, and hence take longer.
+        # This is the reason for the different numbers above and here.
+        # We don't want to make them configurable as this might show
+        # intent that the solution will hang around when really it
+        # is a temporary fix.
         #    -- Tim Penhey 2006-10-10
         for branch in shortlist(branches, 200, hardlimit=250):
             if categories.has_key(branch.lifecycle_status):

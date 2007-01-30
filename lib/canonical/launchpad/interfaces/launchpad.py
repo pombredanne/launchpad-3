@@ -37,7 +37,7 @@ __all__ = [
     'IBasicLaunchpadRequest', 'IHasSecurityContact',
     ]
 
-    
+
 class NotFoundError(KeyError):
     """Launchpad object not found."""
 
