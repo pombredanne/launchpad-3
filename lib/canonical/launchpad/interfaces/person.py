@@ -19,8 +19,7 @@ __all__ = [
     ]
 
 
-from zope.schema import (
-    Bool, Bytes, Choice, Datetime, Int, Text, TextLine)
+from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 from zope.interface import Attribute, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
@@ -29,14 +28,14 @@ from zope.component import getUtility
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     BlacklistableContentNameField, LargeImageUpload, PasswordField,
-    StrippedTextLine)
+    SmallImageUpload, StrippedTextLine)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.tickettarget import (
     TICKET_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.validation import (
-    valid_emblem, validate_new_team_email, validate_new_person_email)
+    validate_new_team_email, validate_new_person_email)
 
 from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, TeamMembershipStatus, PersonCreationRationale)
@@ -119,12 +118,11 @@ class IPerson(IHasSpecifications):
         description=_(
             "The content of your home page. Edit this and it will be "
             "displayed for all the world to see."))
-    emblem = Bytes(
+    emblem = SmallImageUpload(
         title=_("Emblem"), required=False,
         description=_(
             "A small image, max 16x16 pixels and 25k in file size, that can "
-            "be used to refer to this team."),
-        constraint=valid_emblem)
+            "be used to refer to this team."))
     gotchi = LargeImageUpload(
         title=_("Hackergotchi"), required=False,
         description=_(
@@ -311,20 +309,20 @@ class IPerson(IHasSpecifications):
         readonly=True)
 
     defaultmembershipperiod = Int(
-        title=_('Number of days a subscription lasts'), required=False,
+        title=_('Subscription period'), required=False,
         description=_(
             "The number of days a new subscription lasts before expiring. "
             "You can customize the length of an individual subscription when "
-            "approving it. A value of 0 means subscriptions never expire."))
+            "approving it. Leave this empty or set to 0 for subscriptions to "
+            "never expire."))
 
     defaultrenewalperiod = Int(
-        title=_('Number of days a renewed subscription lasts'),
+        title=_('Renewal period'),
         required=False,
         description=_(
-            "The number of days a subscription lasts after "
-            "being renewed. You can customize the lengths of "
-            "individual renewals. A value of 0 means "
-            "renewals last as long as new memberships."))
+            "The number of days a subscription lasts after being renewed. "
+            "You can customize the lengths of individual renewals. Leave "
+            "this empty or set to 0 for subscriptions to never expire."))
 
     defaultexpirationdate = Attribute(
         "The date, according to team's default values, in which a newly "
@@ -401,6 +399,17 @@ class IPerson(IHasSpecifications):
         """The branch associated to this person and product with this name.
 
         The product_name may be None.
+        """
+
+    def findPathToTeam(team):
+        """Return the teams that cause this person to be a participant of the
+        given team.
+
+        If there are more than one path leading this person to the given team,
+        only the one with the oldest teams is returned.
+
+        This method must not be called from a team object, because of
+        https://launchpad.net/bugs/30789.
         """
 
     def isTeam():
@@ -663,6 +672,13 @@ class ITeam(IPerson):
     The teamowner should never be None.
     """
 
+    gotchi = LargeImageUpload(
+        title=_("Icon"), required=False,
+        description=_(
+            "An image, maximum 170x170 pixels, that will be displayed on "
+            "this team's home page. It should be no bigger than 100k in "
+            "size."))
+
     displayname = StrippedTextLine(
             title=_('Display Name'), required=True, readonly=False,
             description=_(
@@ -745,7 +761,11 @@ class IPersonSet(Interface):
         """Return people that have contributed to the specified POFile."""
 
     def getPOFileContributorsByDistroRelease(self, distrorelease, language):
-        """Return people who translated strings in distroRelease to language."""
+        """Return people who translated strings in distroRelease to language.
+
+        The people that translated only IPOTemplate objects that are not
+        current will not appear in the returned list.
+        """
 
     def getAllPersons(orderBy=None):
         """Return all Persons, ignoring the merged ones.

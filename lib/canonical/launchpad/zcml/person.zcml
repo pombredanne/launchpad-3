@@ -101,18 +101,6 @@
       permission="launchpad.Edit"
       template="../templates/person-edithomepage.pt" />
 
-  <browser:generalform
-    name="+editemblem"
-    for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.PersonEmblemView"
-    schema="canonical.launchpad.interfaces.IPerson"
-    fields="emblem"
-    keyword_arguments="emblem"
-    permission="launchpad.Edit"
-    template="../templates/person-images.pt"
-    >
-  </browser:generalform>
-
   <browser:pages
       for="canonical.launchpad.interfaces.IPerson"
       permission="zope.Public"
@@ -138,6 +126,9 @@
           facet="bounties"
           template="../templates/person-bounties.pt"
           lp:url="/~$Person.name/+bounties" />
+      <browser:page
+          name="+portlet-working-on"
+          template="../templates/person-portlet-working-on.pt" />
       <browser:page
           name="+portlet-emails"
           template="../templates/person-portlet-emails.pt"
@@ -398,17 +389,12 @@
       lp:url="/~$Team.id/+editemail">
   </browser:page>
 
-  <browser:editform
+  <browser:page
       name="+edit"
       for="canonical.launchpad.interfaces.ITeam"
       class="canonical.launchpad.browser.TeamEditView"
-      schema="canonical.launchpad.interfaces.ITeam"
-      fields="name displayname teamdescription defaultmembershipperiod
-              defaultrenewalperiod subscriptionpolicy"
       permission="launchpad.Edit"
-      template="../templates/team-edit.pt"
-      lp:url="/~$Person.id/+edit">
-  </browser:editform>
+      template="../templates/team-edit.pt" />
 
   <browser:page
       for="canonical.launchpad.interfaces.ITeam"

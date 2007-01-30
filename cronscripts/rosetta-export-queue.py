@@ -7,10 +7,11 @@ import logging
 import sys
 from optparse import OptionParser
 
+from contrib.glock import GlobalLock, LockAlreadyAcquired
+
 from canonical.lp import initZopeless, READ_COMMITTED_ISOLATION
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger as logger_from_options)
-from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.launchpad.scripts.po_export_queue import process_queue
 
 def main(args):
@@ -20,12 +21,12 @@ def main(args):
     logger = logger_from_options(options)
 
     lockfile_path = '/var/lock/rosetta-export-queue.lock'
-    lockfile = LockFile(lockfile_path, logger=logger)
+    lockfile = GlobalLock(lockfile_path, logger=logger)
 
     try:
         lockfile.acquire()
-    except OSError:
-        logger.info('Lockfile %s already exists, exiting.' % lockfile_path)
+    except LockAlreadyAcquired:
+        logger.error('Lockfile %s already exists, exiting.' % lockfile_path)
         return 0
 
     try:

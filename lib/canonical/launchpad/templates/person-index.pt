@@ -20,6 +20,7 @@
 
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-working-on" />
   <div tal:replace="structure context/@@+portlet-latesttickets" />
 </metal:rightportlets>
 
@@ -224,7 +225,24 @@
           You are a member of this team.
         </p>
         <p tal:condition="not: view/userIsActiveMember">
-          You are not a member of this team.
+          <tal:foo tal:condition="not: view/userIsParticipant">
+            You are not a member of this team.
+          </tal:foo>
+          <tal:foo tal:condition="view/userIsParticipant">
+            You are an indirect member of this team:
+            <br />
+            <a tal:attributes="href view/user/fmt:url"
+               tal:content="view/user/displayname">
+              Guilherme Salgado
+            </a>
+            <tal:path repeat="team view/findUserPathToTeam">
+              -&gt;
+              <a tal:attributes="href team/fmt:url"
+                 tal:content="team/displayname">
+                Launchpad Developers
+              </a>
+            </tal:path>
+          </tal:foo>
         </p>
       </tal:block>
     </tal:block>
