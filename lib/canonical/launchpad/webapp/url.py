@@ -99,7 +99,7 @@ def _enable_bzr_ssh_in_urlparse():
 # note that additional URL checking is done inside the database
 # (database/schema/trusted.sql, the valid_absolute_url function)
 # the database code uses plain stdlib urlparse, not this customized
-# version, so be sure to teach trusted.sql  about any new URL
+# version, so be sure to teach trusted.sql about any new URL
 # schemes which are added here.
 _enable_bzr_ssh_in_urlparse()
 
