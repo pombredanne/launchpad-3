@@ -47,6 +47,8 @@ which defaults to UTC_NOW.
     True
     >>> ticket.datecreated == now
     True
+    >>> ticket.datelastquery == now
+    True
 
 The created ticket starts in the 'Open' status and should have the owner
 subscribed to the ticket.
@@ -132,18 +134,23 @@ fourth one to ANSWERED.
     ...     sample_person, 'This is your answer.',
     ...     datecreated=now+timedelta(hours=1))
 
-    # Flush those changes to the database.
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
+Also add a reply from the owner on the first of these.
+
+    >>> login('test@canonical.com')
+    >>> message = tickets[0].giveInfo(
+    ...     'I think I forgot something.', datecreated=now+timedelta(hours=4))
 
 And create another one that will also have the word 'new' in its
 description.
 
-    >>> login('test@canonical.com')
     >>> ticket = target.newTicket(sample_person, 'Another ticket',
     ...     'Another new ticket that is actually very new.',
     ...     datecreated=now+timedelta(hours=1))
     >>> login(ANONYMOUS)
+
+    # Flush those changes to the database.
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
 
 == searchTickets() ==
 
@@ -245,6 +252,23 @@ the tickets will be sorted NEWEST_FIRST.
 
 ('Ticket title4' is not shown in this case because it has INVALID as
 its status.)
+
+The RECENT_OWNER_ACTIVITY sort order sorts first tickets which recently
+received a new message by their owner. (It effectively sorts
+descending on the datelastquery attribute.)
+
+    >>> for t in target.searchTickets(sort=TicketSort.RECENT_OWNER_ACTIVITY):
+    ...     print t.title
+    Ticket title0
+    Another ticket
+    Ticket title3
+    Ticket title2
+    Ticket title1
+    De l'aide S.V.P.
+    New ticket
+
+(Ticket title0 sorts first because it had a message from its owner
+after the others were created.)
 
 === owner ===
 

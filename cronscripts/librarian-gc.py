@@ -15,8 +15,9 @@ import _pythonpath
 import sys, logging
 from optparse import OptionParser
 
+from contrib.glock import GlobalLock, LockAlreadyAcquired
+
 from canonical.launchpad.scripts import logger_options, logger
-from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.librarian import librariangc
 from canonical.database.sqlbase import connect, AUTOCOMMIT_ISOLATION
 from canonical.config import config
@@ -53,11 +54,11 @@ def main():
     log = logger(options)
     librariangc.log = log
 
-    lockfile = LockFile(_default_lock_file, logger=log)
+    lockfile = GlobalLock(_default_lock_file, logger=log)
     try:
         lockfile.acquire()
-    except OSError:
-        log.info('Lockfile %s in use', _default_lock_file)
+    except LockAlreadyAcquired:
+        log.error('Lockfile %s in use', _default_lock_file)
         sys.exit(1)
 
     if options.loglevel <= logging.DEBUG:
