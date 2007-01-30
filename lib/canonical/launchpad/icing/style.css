@@ -659,6 +659,9 @@ ul#applicationchooser li#applicationchooser_selected {
   position: relative;
   top: -10px;
 }
+* html #mainarea div.t {
+  top: 0;
+}
 #mainarea div.u {
   width: 100%;
   background-image: url(mainarea_right.gif);
@@ -1171,17 +1174,17 @@ img.mugshot {display: block;}
 div.left, div.right {width: 50%;}
 div.left {clear: both; float: left;}
 div.right {clear: right; float: right;}
-div.section {
+div.left div.portlet, div.right div.portlet {
   border: dotted #ccc;
   border-width: 1px 0 0 0;
   margin-top: 1em;
   padding-top: 1em;
 }
-div.left div.section {
+div.left div.portlet {
   border-width: 1px 1px 0 0;
   padding: 0.75em 0.75em 0.75em 0;
 }
-div.right div.section {
+div.right div.portlet {
   border-width: 1px 0 0 1px;
   padding: 0.75em 0 0.75em 0.75em;
 }
