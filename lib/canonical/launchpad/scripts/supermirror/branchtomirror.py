@@ -6,11 +6,14 @@ import httplib
 import os
 import shutil
 import socket
+import sys
 import urllib2
 
 import bzrlib.branch
 import bzrlib.errors
 from bzrlib.revision import NULL_REVISION
+
+from canonical.launchpad.webapp import errorlog
 
 
 __all__ = ['BranchToMirror']
@@ -106,12 +109,12 @@ class BranchToMirror:
         This must only be called while handling an exception.
         """
         request = errorlog.ScriptRequest([
-            ('branch_id', branch_to_mirror.branch_id),
-            ('source', branch_to_mirror.source),
-            ('dest', branch_to_mirror.dest)])
+            ('branch_id', self.branch_id),
+            ('source', self.source),
+            ('dest', self.dest)])
         request.URL = 'database:/branch/$d' % self.branch_id
         errorlog.globalErrorUtility.raising(sys.exc_info(), request)
-        logger.info('%s: %s', request.oopsid, message)
+        logger.info('Recorded %s', request.oopsid)
 
     def mirror(self, logger):
         """Open source and destination branches and pull source into

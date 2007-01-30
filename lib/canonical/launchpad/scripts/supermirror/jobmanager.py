@@ -7,7 +7,6 @@ from canonical.launchpad.scripts import lockfile
 from canonical.launchpad.scripts.supermirror.branchtargeter import branchtarget
 from canonical.launchpad.scripts.supermirror.branchtomirror import (
     BranchToMirror)
-from canonical.launchpad.webapp import errorlog
 
 
 class JobManager:
