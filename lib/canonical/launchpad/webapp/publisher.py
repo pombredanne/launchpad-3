@@ -248,7 +248,7 @@ def canonical_url_iterator(obj):
             yield urldata.inside
 
 
-def canonical_url(obj, request=None):
+def canonical_url(obj, request=None, rootsite=None):
     """Return the canonical URL string for the object.
 
     If the canonical url configuration for the given object binds it to a
@@ -275,10 +275,11 @@ def canonical_url(obj, request=None):
                 for urldata in canonical_urldata_iterator(obj)
                 if urldata.path]
 
-    obj_urldata = ICanonicalUrlData(obj, None)
-    if obj_urldata is None:
-        raise NoCanonicalUrl(obj, obj)
-    rootsite = obj_urldata.rootsite
+    if rootsite is None:
+        obj_urldata = ICanonicalUrlData(obj, None)
+        if obj_urldata is None:
+            raise NoCanonicalUrl(obj, obj)
+        rootsite = obj_urldata.rootsite
 
     # The request is needed when there's no rootsite specified and when
     # handling the different shipit sites.

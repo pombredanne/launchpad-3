@@ -4,13 +4,6 @@
       i18n:domain="malone"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <div>
-        <tal:icon replace="structure context/fmt:icon" />
-        Bug #<tal:bug replace="context/bug/id">3252543</tal:bug>:
-      </div>
-      <h1 tal:content="context/bug/title">Foo doesn't work</h1>
-    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-subscribers" />
@@ -30,6 +23,12 @@
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
+
+      <div>
+        <tal:icon replace="structure context/fmt:icon" />
+        Bug #<tal:bug replace="context/bug/id">3252543</tal:bug>
+      </div>
+      <h1 tal:content="context/bug/title">Foo doesn't work</h1>
 
   <tal:block condition="view/reportBugInContext" />
 
@@ -88,8 +87,7 @@
 
         </form>
 
-  <div tal:condition="not: context/bug/duplicateof"
-       tal:replace="structure context/bug/@@+bugtasks-and-nominations-table" />
+  <div tal:replace="structure context/bug/@@+bugtasks-and-nominations-table" />
 
   <fieldset style="margin-bottom: 0; padding: 0 0.5em 0.5em 0.5em">
     <legend>Description <small>(<a href="+edit">edit</a>)</small></legend>

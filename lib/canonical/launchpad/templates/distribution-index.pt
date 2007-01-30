@@ -85,12 +85,11 @@
             </li>
           </ul>
         </div>
-        <div class="two column section demo" tal:condition="context/currentrelease">
-          <h2>Latest uploads</h2>
-          <p>
-            There have been no uploads handled by Launchpad.
-          </p>
-        </div>
+        <div
+          class="two column section"
+          tal:condition="nothing"
+          tal:content="structure context/currentrelease/@@+last-uploads"
+        >After bug 74342, change tal:condition="context/currentrelease"</div>
       </div>
       <div class="right">
         <div
@@ -109,11 +108,8 @@
           class="two column section"
           tal:content="structure context/@@+portlet-latestspecs"
         />
-        <div
-          class="two column section"
-          tal:content="structure context/@@+portlet-latesttickets"
-        />
       </div>
     </div>
   </body>
 </html>
+<!-- 1-0 in-progress Needs list of latest uploads (bug 74342). -->

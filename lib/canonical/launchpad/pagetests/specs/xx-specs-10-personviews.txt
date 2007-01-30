@@ -16,7 +16,7 @@ involving that person.
   >>> from BeautifulSoup import BeautifulSoup
   >>> soup = BeautifulSoup(browser.contents)
   >>> soup('h1')
-  [<h1>Blueprints for Foo Bar</h1>]
+  [<h1>Blueprints involving Foo Bar</h1>]
 
 In the left-side menu, there are menu items that allow to select a 
 subset of these specifications. The 'Approver' link selects the specs

@@ -6,15 +6,16 @@
   <body>
     <metal:portlets fill-slot="portlets">
 
-  <div tal:replace="structure context/@@+portlet-latestspecs" />
-
     </metal:portlets>
 
 <div metal:fill-slot="main"
     tal:define="specs view/specs;
                 has_any_specs view/has_any_specifications">
 
-      <h1>Blueprints for <tal:software replace="context/title" /></h1>
+      <h1 tal:condition="context/karma|nothing"
+      >Blueprints involving <tal:person replace="context/title" /></h1>
+      <h1 tal:condition="not:context/karma|nothing"
+      >Blueprints for <tal:software replace="context/title" /></h1>
 
   <tal:no_specs condition="not: has_any_specs">
 
@@ -57,8 +58,6 @@
 
     <form name="spec_search" method="GET">
 
-      Show specifications containing:
-
       <input type="text" name="searchtext"
              tal:attributes="value view/searchtext" />
       <input tal:condition="view/searchrequested"
@@ -67,7 +66,7 @@
         />
       <input tal:condition="not: view/searchrequested"
         type="submit"
-        value="Search Specifications"
+        value="Search"
         />
     </form>
 
@@ -143,3 +142,4 @@
 </div>
 </body>
 </html>
+<!-- 1-0 in-progress Person needs latest-touched list (bug 82090) -->
