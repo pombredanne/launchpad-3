@@ -189,6 +189,8 @@ def bugs_assigned(context, view):
 
 bugtarget_advanced_search = ContextTitle("Search bugs in %s")
 
+bugtarget_bugs = ContextTitle('Bugs in %s')
+
 bugtarget_filebug = ContextTitle('Report a bug about %s')
 
 bugtarget_filebug_advanced = ContextTitle('Report a bug about %s')
@@ -306,8 +308,6 @@ distributionmirror_prober_logs = ContextTitle('%s mirror prober logs')
 distribution_allpackages = ContextTitle('All packages in %s')
 
 distribution_bugcontact = ContextTitle('Change bug contact for %s')
-
-distribution_bugs = ContextTitle('Bugs in %s')
 
 distribution_change_mirror_admin = 'Change mirror administrator'
 
@@ -455,7 +455,7 @@ launchpad_onezerostatus = 'One-Zero Page Template Status'
 
 launchpad_requestexpired = 'Error: Timeout'
 
-launchpad_search = 'Search Launchpad Projects'
+launchpad_search = 'Search Projects in Launchpad'
 
 launchpad_unexpectedformdata = 'Error: Unexpected form data'
 

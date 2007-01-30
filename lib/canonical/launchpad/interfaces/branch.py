@@ -329,6 +329,9 @@ class IBranchSet(Interface):
         The list will contain at most branch_count items.
         """
 
+    def getLastCommitForBranches(branches):
+        """Return a map of branch to last commit time."""
+
 
 class IBranchLifecycleFilter(Interface):
     """A helper interface to render lifecycle filter choice."""

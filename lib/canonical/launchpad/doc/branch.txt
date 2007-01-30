@@ -524,3 +524,18 @@ scanned ID is.
   >>> syncUpdate(branch)
   >>> branch in branchset.getBranchesToScan()
   False
+
+== Getting last commit time for branches ==
+
+Unfortunately at this stage there is not sufficient correct data
+in the sample code to make this right, but we still want to test
+the corner cases.
+
+  >>> branchset.getLastCommitForBranches([])
+  {}
+  >>> branch = branchset.get(1)
+  >>> branchset.getLastCommitForBranches([branch])
+  {<Branch ...>: None}
+  >>> another = branchset.get(2)
+  >>> branchset.getLastCommitForBranches([branch, another])
+  {<Branch ...>: None, <Branch ...>: None}
