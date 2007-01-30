@@ -86,7 +86,7 @@ def _enable_bzr_ssh_in_urlparse():
     That allows the helpers in this module to operate usefully on bzr+ssh URLs
     
     >>> urlparse('bzr+ssh://example.com/code/branch')
-    ('bzr+ssh', 'example.com', /code/branch', '', '', '')
+    ('bzr+ssh', 'example.com', '/code/branch', '', '', '')
     """
     if 'bzr+ssh' not in urlparse_module.uses_netloc:
         urlparse_module.uses_netloc.append('bzr+ssh')
@@ -94,11 +94,13 @@ def _enable_bzr_ssh_in_urlparse():
         urlparse_module.uses_relative.append('bzr+ssh')
 
 
-# Extend urlparse to support bzr+ssh at module load time
-# note that URL checking is also done inside the database, in
-# trusted.sql, the valid_absolute_url function, and that code uses
-# stdlib urlparse, not our customized version, so be sure to teach
-# valid_absolute_url about any new schemes which are added here.
+# Extend this version of urlparse (used by the launchpad validators)
+# to support bzr+ssh at module load time
+# note that additional URL checking is done inside the database
+# (database/schema/trusted.sql, the valid_absolute_url function)
+# the database code uses plain stdlib urlparse, not this customized
+# version, so be sure to teach trusted.sql  about any new URL
+# schemes which are added here.
 _enable_bzr_ssh_in_urlparse()
 
 def urlappend(baseurl, path):

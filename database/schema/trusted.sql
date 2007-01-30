@@ -121,6 +121,8 @@ LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
 $$
     from urlparse import urlparse
     (scheme, netloc, path, params, query, fragment) = urlparse(args[0])
+    # urlparse in the stdlib does not correctly parse the netloc from
+    # sftp and bzr+ssh schemes, so we have to manually check those
     if scheme in ("sftp", "bzr+ssh"):
         return 1
     if not (scheme and netloc):

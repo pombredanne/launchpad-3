@@ -9,6 +9,7 @@ __all__ = [
     'valid_ftp_url',
     'valid_rsync_url',
     'valid_webref',
+    'valid_branch_url',
     'non_duplicate_bug',
     'non_duplicate_branch',
     'valid_bug_number',
@@ -220,7 +221,7 @@ def validate_url(url, valid_schemes):
 
 
 def valid_webref(web_ref):
-    """Returns True if web_ref is not a valid download URL, or raises a
+    """Returns True if web_ref is a valid download URL, or raises a
     LaunchpadValidationError.
 
     >>> valid_webref('http://example.com')
@@ -236,7 +237,7 @@ def valid_webref(web_ref):
     ...
     LaunchpadValidationError: ...
     """
-    if validate_url(web_ref, ['http', 'https', 'ftp', 'sftp', 'bzr+ssh']):
+    if validate_url(web_ref, ['http', 'https', 'ftp', 'sftp']):
         # Allow ftp so valid_webref can be used for download_url, and so
         # it doesn't lock out weird projects where the site or
         # screenshots are kept on ftp.
@@ -246,6 +247,31 @@ def valid_webref(web_ref):
             Not a valid URL. Please enter the full URL, including the
             scheme (for instance, http:// for a web URL), and ensure the
             URL uses either http, https or ftp.""")))
+
+def valid_branch_url(branch_url):
+    """Returns True if web_ref is a valid download URL, or raises a
+    LaunchpadValidationError.
+
+    >>> valid_branch_url('http://example.com')
+    True
+    >>> valid_branch_url('https://example.com/foo/bar')
+    True
+    >>> valid_branch_url('ftp://example.com/~ming')
+    True
+    >>> valid_branch_url('sftp://example.com//absolute/path/maybe')
+    True
+    >>> valid_branch_url('other://example.com/moo')
+    Traceback (most recent call last):
+    ...
+    LaunchpadValidationError: ...
+    """
+    if validate_url(branch_url, ['http', 'https', 'ftp', 'sftp', 'bzr+ssh']):
+        return True
+    else:
+        raise LaunchpadValidationError(_(dedent("""
+            Not a valid URL. Please enter the full URL, including the
+            scheme (for instance, http:// for a web URL), and ensure the
+            URL uses http, https, ftp, sftp, or bzr+ssh.""")))
 
 def valid_ftp_url(url):
     if validate_url(url, ['ftp']):

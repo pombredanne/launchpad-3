@@ -25,6 +25,7 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.validation import valid_webref
+from canonical.launchpad.interfaces.validation import valid_branch_url
 
 class BranchUrlField(TextLine):
 
@@ -73,7 +74,7 @@ class IBranch(IHasOwner):
             "the URL used to checkout the branch. The only branch format "
             "supported is that of the Bazaar revision control system, see "
             "www.bazaar-vcs.org for more information."),
-        constraint=valid_webref)
+        constraint=valid_branch_url)
 
     whiteboard = Whiteboard(title=_('Whiteboard'), required=False,
         description=_('Notes on the current status of the branch.'))
