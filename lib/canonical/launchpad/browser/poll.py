@@ -222,7 +222,8 @@ class PollVoteView(BasePollView):
             return
 
         if not self.context.isOpen():
-            self.feedback = "This poll is not open. You can't vote anymore."
+            self.feedback = "This poll is not open."
+            return
 
         if self.isSimple():
             self.processSimpleVotingForm()
@@ -231,10 +232,18 @@ class PollVoteView(BasePollView):
 
     def processSimpleVotingForm(self):
         """Process the simple-voting form to change a user's vote or register
-        a new one."""
+        a new one.
+
+        This method must not be called if the poll is not open.
+        """
+        assert self.context.isOpen()
         context = self.context
         newoption_id = self.request.form.get('newoption')
         if newoption_id == 'donotchange':
+            self.feedback = "Your vote was not changed."
+            return
+        elif newoption_id == 'donotvote':
+            self.feedback = "You chose not to vote yet."
             return
         elif newoption_id == 'none':
             newoption = None
@@ -262,7 +271,11 @@ class PollVoteView(BasePollView):
 
     def processCondorcetVotingForm(self):
         """Process the condorcet-voting form to change a user's vote or 
-        register a new one."""
+        register a new one.
+
+        This method must not be called if the poll is not open.
+        """
+        assert self.context.isOpen()
         form = self.request.form
         activeoptions = shortlist(self.context.getActiveOptions())
         newvotes = {}

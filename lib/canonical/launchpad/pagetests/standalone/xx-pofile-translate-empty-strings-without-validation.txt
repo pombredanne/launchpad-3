@@ -16,7 +16,8 @@ system should not detect that as an error.
 
 We set the translation empty:
 
-  >>> browser.getControl(name='msgset_142_es_translation_0_new_checkbox').value = True
+  >>> browser.getControl(name='msgset_142_es_translation_0_radiobutton').value = [
+  ...     'msgset_142_es_translation_0_new']
   >>> browser.getControl(name='msgset_142_es_translation_0_new').value = ''
 
 Submit the form.

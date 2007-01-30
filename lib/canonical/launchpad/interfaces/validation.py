@@ -13,8 +13,6 @@ __all__ = [
     'non_duplicate_branch',
     'valid_bug_number',
     'valid_cve_sequence',
-    'valid_emblem',
-    'valid_gotchi',
     'validate_new_team_email',
     'validate_new_person_email',
     'validate_distribution_mirror_schema',
@@ -37,7 +35,6 @@ import re
 import string
 import urllib
 from textwrap import dedent
-from StringIO import StringIO
 
 from zope.component import getUtility
 from zope.app.form.interfaces import WidgetsError
@@ -334,37 +331,6 @@ def valid_cve_sequence(value):
     else:
         raise LaunchpadValidationError(_(
             "%s is not a valid CVE number" % value))
-
-
-def _valid_image(image, max_size, max_dimensions):
-    """Check that the given image is under the given constraints.
-
-    :length: is the maximum size of the image, in bytes.
-    :dimensions: is a tuple of the form (width, height).
-    """
-    # No global import to avoid hard dependency on PIL being installed
-    import PIL.Image
-    if len(image) > max_size:
-        raise LaunchpadValidationError(_(dedent("""
-            This file exceeds the maximum allowed size in bytes.""")))
-    try:
-        image = PIL.Image.open(StringIO(image))
-    except IOError:
-        # cannot identify image type
-        raise LaunchpadValidationError(_(dedent("""
-            The file uploaded was not recognized as an image; please
-            check the file and retry.""")))
-    if image.size > max_dimensions:
-        raise LaunchpadValidationError(_(dedent("""
-            This image exceeds the maximum allowed width or height in
-            pixels.""")))
-    return True
-
-def valid_emblem(emblem):
-    return _valid_image(emblem, 9000, (16,16))
-
-def valid_gotchi(gotchi):
-    return _valid_image(gotchi, 54000, (150,150))
 
 
 def _validate_email(email):

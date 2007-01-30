@@ -9,6 +9,7 @@ import pytz
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.config import config
 from canonical.launchpad.interfaces import (
     ILibraryFileContent, ILibraryFileAlias, ILibraryFileAliasSet)
 from canonical.librarian.interfaces import ILibrarianClient, DownloadFailed
@@ -58,16 +59,24 @@ class LibraryFileAlias(SQLBase):
                                  intermediateTable='SourcePackageReleaseFile')
 
     @property
-    def url(self):
-        """See ILibraryFileAlias.url"""
+    def http_url(self):
+        """See ILibraryFileAlias.http_url"""
         return getUtility(ILibrarianClient).getURLForAlias(self.id)
 
     @property
-    def secure_url(self):
-        """See ILibraryFileAlias.secure_url"""
-        if not self.url:
-            return None
-        return self.url.replace('http', 'https', 1)
+    def https_url(self):
+        """See ILibraryFileAlias.https_url"""
+        url = self.http_url
+        if url is None:
+            return url
+        return url.replace('http', 'https', 1)
+
+    def getURL(self):
+        """See ILibraryFileAlias.getURL"""
+        if config.launchpad.vhosts.use_https:
+            return self.https_url
+        else:
+            return self.http_url
 
     _datafile = None
 
