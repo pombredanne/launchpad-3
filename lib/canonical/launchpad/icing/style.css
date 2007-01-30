@@ -1114,11 +1114,12 @@ body {
 }
 .central {
   clear: both;
+  font-size: 1.75em;
   margin: auto;
   padding: 2em 0;
   width: auto;
 }
-.central, .central input {
+.central input {
   font-size: 1em;
 }
 .central table {
@@ -1207,10 +1208,12 @@ ul.architecture, li.architecture     {list-style-image: url(/@@/architecture);}
 ul.blueprint, li.blueprint           {list-style-image: url(/@@/blueprint);}
 ul.branch, li.branch                 {list-style-image: url(/@@/branch);}
 ul.bug, li.bug                       {list-style-image: url(/@@/bug);}
+ul.distro, li.distro                 {list-style-image: url(/@@/distribution);}
 ul.distrorelease, li.distrorelease   {list-style-image: url(/@@/distribution);}
 ul.package.binary, li.package.binary {list-style-image: url(/@@/pkg-binary);}
 ul.package.source, li.package.source {list-style-image: url(/@@/pkg-source);}
 ul.person, li.person                 {list-style-image: url(/@@/person);}
+ul.product, li.product               {list-style-image: url(/@@/product);}
 ul.sprint, li.sprint                 {list-style-image: url(/@@/sprint);}
 ul.team, li.team                     {list-style-image: url(/@@/team);}
 ul.external.link, li.external.link   {list-style-image: url(/@@/link);}
