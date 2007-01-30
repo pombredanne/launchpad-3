@@ -58,6 +58,7 @@ _default_port = {
     'wais': '210',
 
     # Common but unregistered schemes
+    'bzr+http': '80',
     'bzr+ssh': '22',
     'irc': '6667',
     'sftp': '22',
@@ -249,6 +250,14 @@ class URI:
             self.fragment = fragment
 
         self._normalise()
+
+        if (self.scheme in ['http', 'https', 'ftp', 'gopher', 'telnet',
+                           'imap', 'mms', 'rtsp', 'svn', 'svn+ssh',
+                           'bzr', 'bzr+http', 'bzr+ssh'] and
+            not self.host):
+            raise InvalidURIError('%s URIs must have a host name' %
+                                  self.scheme)
+            
 
     def _normalise(self):
         """Perform normalisation of URI components."""
