@@ -285,9 +285,7 @@ distribution release:
    >>> for translatable in translatables:
    ...    print translatable.name
    evolution
-   evolution
    mozilla
-   pmount
    pmount
 
 Packages can be linked to upstream productseries in specific

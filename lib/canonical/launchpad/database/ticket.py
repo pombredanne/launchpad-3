@@ -503,7 +503,8 @@ class TicketSet:
         ticket = Ticket(
             title=title, description=description, owner=owner,
             product=product, distribution=distribution, language=language,
-            sourcepackagename=sourcepackagename, datecreated=datecreated)
+            sourcepackagename=sourcepackagename, datecreated=datecreated,
+            datelastquery=datecreated)
 
         # Subscribe the submitter
         ticket.subscribe(owner)
@@ -657,6 +658,8 @@ class TicketSearch:
                         "-Ticket.datecreated"]
             else:
                 return "-Ticket.datecreated"
+        elif sort is TicketSort.RECENT_OWNER_ACTIVITY:
+            return ['-Ticket.datelastquery']
         else:
             raise AssertionError, "Unknown TicketSort value: %s" % sort
 
