@@ -315,7 +315,7 @@ class BranchSet:
              Branch.last_scanned_id <> Branch.last_mirrored_id)
             ''')
 
-    def getLastCommitForBranches(self, branch_ids):
+    def getLastCommitForBranches(self, branches):
         """Return a map of branch id to last commit time."""
         cur = cursor()
         cur.execute("""
@@ -323,8 +323,11 @@ class BranchSet:
             FROM branch
             LEFT OUTER JOIN revision
             ON branch.last_scanned_id = revision.revision_id
-            """)
-        return dict(cur.fetchall())
+            WHERE branch.id IN %s
+            """ % ','.join(sqlvalues([branch.id for branch in branches])))
+        commits = dict(cur.fetchall())
+        return dict([(branch, commits.get(branch.id, None))
+                     for branch in branches]) 
 
 
 

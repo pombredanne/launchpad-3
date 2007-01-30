@@ -44,7 +44,7 @@ class BranchTargetView(LaunchpadFormView):
     def initialize(self):
         LaunchpadFormView.initialize(self)
         self.last_commit = getUtility(IBranchSet).getLastCommitForBranches(
-            [branch.id for branch in self.visible_branches])
+            self.visible_branches)
 
     @cachedproperty
     def branches(self):

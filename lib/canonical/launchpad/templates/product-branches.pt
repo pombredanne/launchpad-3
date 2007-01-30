@@ -62,7 +62,7 @@
                   Status</span>
         </td>
         <!-- Last Commit -->
-        <td tal:define="last_commit python:view.last_commit[branch.id]">
+        <td tal:define="last_commit python:view.last_commit[branch]">
           <span tal:condition="last_commit"
                 tal:replace="last_commit/fmt:datetime">
             2007-01-01
