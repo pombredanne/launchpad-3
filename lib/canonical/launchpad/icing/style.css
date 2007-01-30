@@ -506,7 +506,6 @@ ul#applicationchooser li#applicationchooser_selected {
   list-style: none;
 }
 #actions li {
-  border-bottom: 1px solid #D2D2D2;
   margin: 0;
 }
 #actions li a {
