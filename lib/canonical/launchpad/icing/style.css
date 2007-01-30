@@ -1,8 +1,9 @@
 .demo {background-color: #fee;}
 
-/* Stuff browsers should do but don't: */
+/* === Stuff browsers should do but don't === */
 tr {vertical-align: top;}
 
+/* === Overall presentation === */
 body {
   position: relative;
   font-family: trebuchet ms, tahoma, arial, verdana, sans-serif;
@@ -23,14 +24,21 @@ body.largeText #wrapper {font-size: 1.4em;}
 body.smallText #central_column {font-size: 1em;}  
 body.mediumText #central_column {font-size: 1.2em;}
 body.largeText #central_column {font-size: 1.4em;}
-a {
-  color: #353535;
+:link {
+  color: #039;
   text-decoration: none;
 } 
-a:hover {
-  color: #000000;
+:link:hover, :visited:hover {
   text-decoration: underline;
 }
+:link:active, :visited:active {
+  color: #36c;
+}
+:visited {
+  color: #324c7f;
+  text-decoration: none;
+}
+
 input, select {
   font-family: trebuchet ms, tahoma, arial, verdana, sans-serif;
   font-size: 10px;
@@ -50,6 +58,9 @@ form {
   border: 0;
   margin: 0;
   padding: 0;
+}
+form.primary.search {
+  margin-bottom: 2em;
 }
 @media print {
   .notforprint {display:none;}
@@ -219,14 +230,6 @@ hr, #globalheader label {
   border-top: 1px solid #ccc;
   padding: 0.5em 0 2em;
   width: auto;
-}
-#globalfooter a {
-  color: #000000;
-  text-decoration: none;
-} 
-#globalfooter a:hover {
-  color: #000000;
-  text-decoration: underline;
 }
 .clear {
   clear: both;
@@ -500,24 +503,17 @@ ul#applicationchooser li#applicationchooser_selected {
 }
 #actions li {
   border-bottom: 1px solid #D2D2D2;
+  margin: 0;
 }
 #actions li a {
   width: 180px;
   height: auto !important;
   display: block;
-  padding: 0 6px 6px 6px !important;
-  color: #717171;
+  padding: 6px !important;
 }
 #actions li a:hover {
-  background-color: #EBEBEB;
+  background-color: #fff;
   text-decoration: underline;
-  color: #414141;
-}
-#actions li.active a {
-  background-color: #9BC11B;
-}
-#actions li.active a:hover {
-  background-color: #AFDB1F;
 }
 
 #globalsearch {
@@ -746,11 +742,11 @@ a.open, a.closed {
   background-image: url(help_ttl_closed.gif);
 }
 
-/* === Tab-specific style === */
+/* === Application-specific styles === */
 
 #application-footer strong {font-weight: normal;}
 
-/* tab-overview */
+/* Overview: */
 body.tab-overview #mainarea div.x {
   background-image: url(mainarea_top.gif);
 }
@@ -788,15 +784,12 @@ body.tab-overview #mainarea #portlets .portlet.active div {
   border-left: 4px solid #FEFCF0;
   border-right: 4px solid #FEFCF0;
 }
-h1, h2, h3, #maincontent :link { /* On Overview tab or tab-less pages */
+h1, h2, h3 { /* On Overview tab or tab-less pages */
   background: none;
   color: #90b51a; /* darkest color from locationbar_em_bg.gif */
 }
-#maincontent :visited {
-  background: none;
-  color: #708d3f; /* halfway between #90b51a; and #656565; */
-}
-/* tab-branches */
+
+/* Code: */
 body.tab-branches #mainarea div.x {
   background-image: url(mainarea_tab1_top.gif);
 }
@@ -837,15 +830,12 @@ body.tab-branches #mainarea #portlets .portlet.active div {
 body.tab-branches #actions {background-color: #ffc;}
 body.tab-branches #actions h2 {background-color: #f3cb00;}
 .tab-branches h1, .tab-branches h2, .tab-branches h3,
-.tab-branches #application-footer strong, .tab-branches #maincontent :link {
+.tab-branches #application-footer strong {
   background: none;
   color: #f3cb00; /* "it fits nicely with the Bazaar logo" -- sabdfl */
 }
-body.tab-branches #maincontent :visited {
-  background: none;
-  color: #ac9832; /* halfway between #f3cb00; and #656565; */
-}
-/* tab-bugs */
+
+/* Bugs: */
 body.tab-bugs #mainarea div.x {
   background-image: url(mainarea_tab2_top.gif);
 }
@@ -886,15 +876,12 @@ body.tab-bugs #mainarea #portlets .portlet.active div {
 body.tab-bugs #actions {background-color: #fee;}
 body.tab-bugs #actions h2 {background-color: #c03;}
 .tab-bugs h1, .tab-bugs h2, .tab-bugs h3, .tab-bugs #application-footer strong,
-.tab-bugs #maincontent :link, .tab-bugs #maincontent :visited {
+.tab-bugs table.listing thead {
   background: none;
   color: #c03;
 }
-body.tab-bugs #maincontent :visited {
-  background: none;
-  color: #98324c; /* halfway between #c03; and #656565; */
-}
-/* tab-features */
+
+/* Blueprints: */
 body.tab-specifications #mainarea div.x {
   background-image: url(mainarea_tab4_top.gif);
 }
@@ -932,15 +919,39 @@ body.tab-specifications #actions {background-color: #eff;}
 body.tab-specifications #actions h2 {background-color: #159cc8;}
 .tab-specifications h1, .tab-specifications h2, .tab-specifications h3,
 .tab-specifications #application-footer strong,
-.tab-specifications #maincontent :link {
+.tab-specifications table.listing thead {
   background: none;
   color: #159cc8; /* darkest color from mainarea_tab4-* */
 }
-.tab-specifications #maincontent :visited {
-  background: none;
-  color: #3d8096; /* halfway between #159cc8; and #656565; */
-}
-/* tab-translations */
+.specstatusAPPROVED             {color: green;}
+.specstatusPENDINGAPPROVAL      {color: #f09;}
+.specstatusPENDINGREVIEW        {color: #f09;}
+.specstatusDRAFT                {color: #930;}
+.specstatusDISCUSSION           {color: #930;}
+.specstatusNEW                  {color: red;}
+.specstatusSUPERSEDED           {color: gray;}
+.specstatusOBSOLETE             {color: gray;}
+.specpriorityNOTFORUS           {color: gray;}
+.specpriorityUNDEFINED          {color: gray;}
+.specpriorityLOW                {color: black;}
+.specpriorityMEDIUM             {color: #f60;}
+.specpriorityHIGH               {color: red;}
+.specpriorityESSENTIAL          {color: red;}
+.specdeliveryUNKNOWN            {color: gray;}
+.specdeliveryNOTSTARTED         {color: gray;}
+.specdeliveryDEFERRED           {color: red;}
+.specdeliveryNEEDSINFRASTUCTURE {color: red;}
+.specdeliveryBLOCKED            {color: red;}
+.specdeliverySTARTED            {color: blue;}
+.specdeliverySLOW               {color: red;}
+.specdeliveryGOOD               {color: blue;}
+.specdeliveryBETA               {color: #f60;}
+.specdeliveryNEEDSREVIEW        {color: purple;}
+.specdeliveryAWAITINGDEPLOYMENT {color: red;}
+.specdeliveryIMPLEMENTED        {color: green;}
+
+
+/* Translations: */
 body.tab-translations #mainarea div.x {
   background-image: url(mainarea_tab5_top.gif);
 }
@@ -981,15 +992,13 @@ body.tab-translations #mainarea #portlets .portlet.active div {
 body.tab-translations #actions {background-color: #fcf;}
 body.tab-translations #actions h2 {background-color: #962667;}
 .tab-translations h1, .tab-translations h2, .tab-translations h3,
-.tab-translations #maincontent :link {
+.tab-translations #application-footer strong,
+.tab-translations table.listing thead {
   background: none;
   color: #962667; /* darkest color from mainarea_tab5-* */
 }
-.tab-translations #maincontent :visited {
-  background: none;
-  color: #7d4566; /* halfway between #962667; and #656565; */
-}
-/* tab-support */
+
+/* Answers: */
 body.tab-support #mainarea div.x {
   background-image: url(mainarea_tab6_top.gif);
 }
@@ -1030,13 +1039,9 @@ body.tab-support #mainarea #portlets .portlet.active div {
 body.tab-support #actions {background-color: #eef;}
 body.tab-support #actions h2 {background-color: #3f3ccc;}
 .tab-support h1, .tab-support h2, .tab-support h3,
-.tab-support #maincontent :link {
+.tab-support #application-footer strong, .tab-support table.listing thead {
   background: none;
   color: #3f3ccc;
-}
-.tab-support #maincontent :visited {
-  background: none;
-  color: #525098; /* halfway between #3f3ccc; and #656565; */
 }
 
 ul#applicationchooser a, ul#applicationchooser a:hover {
@@ -1059,6 +1064,7 @@ body {
 }
 #singlecolumn #container {
   padding-left: 20px;
+  padding-top: 60px;
 }
 #maincontent, #portlets {
   float: left;
@@ -1109,7 +1115,7 @@ body {
 .central {
   clear: both;
   margin: auto;
-  padding: 4em 0;
+  padding: 2em 0;
   width: auto;
 }
 .central, .central input {
@@ -1152,9 +1158,14 @@ img.mugshot {display: block;}
 /* End hiding from MSIE for Mac */
 
 div.left, div.right {width: 50%;}
-div.left {clear: left; float: left;}
+div.left {clear: both; float: left;}
 div.right {clear: right; float: right;}
-div.section {border: dotted #ccc;}
+div.section {
+  border: dotted #ccc;
+  border-width: 1px 0 0 0;
+  margin-top: 1em;
+  padding-top: 1em;
+}
 div.left div.section {
   border-width: 1px 1px 0 0;
   padding: 0.75em 0.75em 0.75em 0;
@@ -1163,10 +1174,58 @@ div.right div.section {
   border-width: 1px 0 0 1px;
   padding: 0.75em 0 0.75em 0.75em;
 }
-div.three.column {width: 33%;}
-div.three.column.left, div.three.column.center, div.three.column.right {
+div.three.columns {clear: both;}
+div.three.columns .column {
   float: left;
+  width: 33%;
 }
+
+.title {
+  font-weight: bold;
+}
+ul {
+  margin-left: 24px;
+  padding-left: 0;
+}
+ul.buttons {
+  margin: 2em 0 4em 0;
+  padding: 0;
+}
+ul.buttons li {
+  display: inline;
+  margin-right: 1em;
+}
+ul.cross-reference {
+  font-size: 1.25em;
+}
+li {
+  margin-bottom: 0.75em;
+}
+
+/* Various custom list formats: */
+ul.architecture, li.architecture     {list-style-image: url(/@@/architecture);}
+ul.blueprint, li.blueprint           {list-style-image: url(/@@/blueprint);}
+ul.branch, li.branch                 {list-style-image: url(/@@/branch);}
+ul.bug, li.bug                       {list-style-image: url(/@@/bug);}
+ul.distrorelease, li.distrorelease   {list-style-image: url(/@@/distribution);}
+ul.package.binary, li.package.binary {list-style-image: url(/@@/pkg-binary);}
+ul.package.source, li.package.source {list-style-image: url(/@@/pkg-source);}
+ul.person, li.person                 {list-style-image: url(/@@/person);}
+ul.sprint, li.sprint                 {list-style-image: url(/@@/sprint);}
+ul.team, li.team                     {list-style-image: url(/@@/team);}
+ul.external.link, li.external.link   {list-style-image: url(/@@/link);}
+
+.bug-summary {
+  font-weight: bold;
+}
+
+fieldset {
+  border: none;
+  margin: 0.5em 0 1em;
+  padding: 0;
+}
+
+/* === Tables === */
 
 table {
   border-collapse: collapse;
@@ -1206,57 +1265,16 @@ th.icon.left, td.icon.left {
 th.icon.right, td.icon.right {
   padding-left: 0;
 }
-.title {
-  font-weight: bold;
+th.nowrap, td.nowrap {
+  white-space: nowrap;
 }
-.invisiblelink a:link, .invisiblelink a:visited {
-  color: #656565 !important;
-}
-ul {
-  margin-left: 24px;
-  padding-left: 0;
-}
-ul.buttons {
-  margin: 2em 0 4em 0;
-  padding: 0;
-}
-ul.buttons li {
-  display: inline;
-  margin-right: 1em;
-}
-ul.cross-reference {
-  font-size: 1.25em;
-}
-li {
-  margin-bottom: 0.75em;
-}
-
-/* Various custom list formats: */
-ul.architecture, li.architecture     {list-style-image: url(/@@/architecture);}
-ul.blueprint, li.blueprint           {list-style-image: url(/@@/blueprint);}
-ul.distrorelease, li.distrorelease   {list-style-image: url(/@@/distribution);}
-ul.package-binary, li.package-binary {
-  list-style-image: url(/@@/package-binary);
-}
-ul.person, li.person                 {list-style-image: url(/@@/person);}
-ul.spec, li.spec                     {list-style-image: url(/@@/spec);}
-ul.sprint, li.sprint                 {list-style-image: url(/@@/sprint);}
-ul.webref, li.webref, ul.external.link, li.external.link {
-  list-style-image: url(/@@/link);
-}
-
-.bug-summary {
-  font-weight: bold;
-}
-
-/* For the demo: */
-fieldset {
-  border: none;
-  margin: 0.5em 0 1em;
-  padding: 0;
-}
-thead th, tfoot th {text-align: left;}
-
+thead th, tfoot th, table.contributions th {text-align: left;}
+table.contributions, table.contributions th, table.contributions td {
+  border: 1px solid #e6e6e6;}
+table.contributions tr.odd {background-color: #fff; color: inherit;}
+table.contributions tr.even {background-color: #f6f6f6; color: inherit;}
+table.contributions th, table.contributions td {padding: 0.5em 0.75em;}
+table.contributions td {vertical-align: middle; width: 16px;}
 table.listing {
   margin-top: 0.5em;
 }
@@ -1303,195 +1321,8 @@ table.listing img {
 table.listing tr.secondary>th, table.listing tr.secondary td {
   border-top: none;
 }
-
-/* Dynamic menus: */
-
-#menuroot li li:hover {
-  background: #8cacbb;
-}
-#menuroot li li {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  background: #dee7ec;
-}
-#menuroot li li a {
-  display: block;
-  width: auto;
-  padding: 0 6px !important;
-}
-#menuroot li li a:hover {
-  background: #8cacbb;
-}
-ul.menuroot > li > ul.menu {
-  z-index: 2000;
-}
-ul.menuroot, ul.menu {
-  display: block;
-}
-* html ul.menuroot, * html ul.menu {
-  position: absolute;
-}
-#menucontainer div > ul, #menucontainer li > ul {
-  position: absolute;
-}
-ul.menuroot {
-  top: 0px;
-  background-color: #dee7ec;
-  font-family: sans-serif;
-  font-size: 0.675em;
-  width: 100%;
-}
-.menuroot {
-  border: 1px solid;
-  border-color: #fff #8cacbb #8cacbb #fff;
-}
-.scrollbutton.up {
-  background: url(/@@/arrowUp) center center no-repeat;
-}
-.scrollbutton.down {
-  background: url(/@@/arrowDown) center center no-repeat;
-}
-.item, .scrollbutton {
-  border: 0px solid;
-  border-color: #fff #8cacbb #8cacbb #fff;
-  white-space: nowrap;
-  margin: 0px;
-  padding: 0 2em 0 0.5em;
-  line-height: 2em;
-  height: 2em;
-  background-color: #dee7ec;
-  min-width: 3em;
-  color: black;
-  cursor: default;
-}
-.menu .item, .scrollbutton.down, .scrollbutton.up {
-  border-left-width: 1px;
-  border-right-width: 1px;
-  padding: 0 0.5em;
-}
-.menu, .menuroot {
-  list-style-type: none;
-  padding: 0px;
-  margin: 0px;
-}
-/* ul.menuroot>li:hover, ul.menu>li:hover, */
-.open {
-  background-color: #8cacbb;
-  color: #fff;
-}
-.menuroot .item {
-  float: left;
-  background-color: #dee7ec;
-}
-.menu .menu {
-  margin-top: -2em;
-  z-index: 2;
-}
-.menu > li > .menu {
-  position: absolute;
-}
-.container {
-  background: url(/@@/arrowRight.gif) 
-                center right no-repeat;
-}
-.menu .item {
-  display: block;
-  float: none;
-  width: 100%;
-}
-.item a {
-  text-decoration: none;
-  color: darkblue;
-  cursor: default;
-}
-.menu .item.first, .scrollbutton.up {
-  border-top-width: 1px;
-}
-.menu .item.last, .scrollbutton.down {
-  border-bottom-width: 1px;
-}
-
-* html .menuroot {
-  font-size: 0.8em;
-}
-#menucontainer * html ul {
-  background-color: #dee7ec;
-  display: block;
-  position: absolute;
-}
-#menucontainer * html li {
-  min-width: 20em;
-}
-#menucontainer * html .menuroot {
-  background-color: white;
-}
-* html .menuroot, * html .menu {
-  border: 0px solid;
-}
-* html .scrollbutton.up {
-  background: url(/@@/arrowUp) center center no-repeat;
-}
-* html .scrollbutton.down {
-  background: url(/@@/arrowDown) center center no-repeat;
-}
-* html .item, * html .scrollbutton.down, * html .scrollbutton.up {
-  border: 0px solid;
-  border-color: #fff #8cacbb #8cacbb #fff;
-  white-space: nowrap;
-  margin: 0px;
-  padding: 0px;
-  line-height: 2em;
-  height: 2em;
-  background-color: #dee7ec;
-  min-width: 20em;
-  color: black;
-  cursor: default;
-}
-* html .menu .item, * html .scrollbutton.down, * html .scrollbutton.up {
-  border-left-width: 1px;
-  border-right-width: 1px;
-}
-* html .menu, * html .menuroot {
-  list-style-type: none;
-  padding: 0px;
-  margin: 0px;
-}
-* html .menuroot .item {
-  float: left;
-  background-color: #dee7ec;
-}
-* html .menu {
-  z-index: 2;
-}
-* html .container {
-  background: url(/@@/arrowRight.gif) 
-                center right no-repeat;
-}
-* html .menu .item {
-  float: none;
-}
-* html .item a {
-  text-decoration: none;
-  color: darkblue;
-  cursor: default;
-}
-* html .menu .item.first, * html .scrollbutton.up {
-  border-top-width: 1px;
-}
-* html .menu .item.last, * html .scrollbutton.down {
-  border-bottom-width: 1px;
-}
-* html .rootitem {
-  width: 10em;
-  top: 0px;
-}
-#menupreload {
-  visibility: hidden;
-}
-* html .body {
-  padding-top: 1.5em;
-}
-#menuroot li {
-  list-style-image: none;
+table.duplicate.listing * {color: #999;}
+/* Used to indicate a value to be used to sort cells in a row */
+.sortkey, .revsortkey {
+  display: none;
 }

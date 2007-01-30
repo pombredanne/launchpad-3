@@ -8,7 +8,7 @@
     <div metal:fill-slot="main" class="tab-bugs"
          tal:define="search_url string:+bugs;
                      advanced_search_url string:+bugs?advanced=1">
-      <h1>Bugs in Ubuntu</h1>
+      <h1>Bugs in <tal:context replace="context/title">Ubuntu</tal:context></h1>
       <metal:search
         use-macro="context/@@+bugtarget-macros-search/simple-search-form"
       />
@@ -31,33 +31,34 @@
                   >John Smith</a>
                 </td>
               </tr>
-              <tr>
+              <tr tal:define="bugcontact context/bugcontact|context/distribution/bugcontact">
                 <th>Bug contact:</th>
                 <td>
-                  <tal:none condition="not:context/bugcontact"
+                  <tal:none condition="not:bugcontact"
                   >None set</tal:none>
                   <a
-                    tal:condition="context/bugcontact"
-                    tal:attributes="href context/bugcontact/fmt:url"
-                    tal:content="context/bugcontact/displayname"
+                    tal:condition="bugcontact"
+                    tal:attributes="href bugcontact/fmt:url"
+                    tal:content="bugcontact/displayname"
                   >Bob Johnson</a>
                 </td>
               </tr>
-              <tr>
+              <tr tal:define="securitycontact context/security_contact|context/distribution/security_contact">
                 <th>Security contact:</th>
                 <td>
-                  <tal:none condition="not:context/security_contact"
+                  <tal:none condition="not:securitycontact"
                   >None set</tal:none>
                   <a
-                    tal:condition="context/security_contact"
-                    tal:attributes="href context/security_contact/fmt:url"
-                    tal:content="context/security_contact/displayname"
+                    tal:condition="securitycontact"
+                    tal:attributes="href securitycontact/fmt:url"
+                    tal:content="securitycontact/displayname"
                   >Billy Anderson</a>
                 </td>
               </tr>
             </tbody>
           </table>
-          <ul class="cross-reference">
+          <ul class="cross-reference" tal:condition="nothing">
+          <!-- Waiting for bugs 79034 and 79035. -->
             <li>
               <a href="">
                 <strong tal:content="nothing"></strong>
@@ -76,7 +77,7 @@
               <a href="+filebug">
                 <img
                   alt="Report a bug"
-                  src="/+icing/but_sml_reportabug_o.gif"
+                  src="/+icing/but_sml_reportabug.gif"
                 />
               </a>
             </li>
@@ -92,9 +93,11 @@
         </div><!-- two column right -->
       </div><!-- columns -->
       <div class="clear"></div>
-      <tal:latest-bugs replace="structure context/@@+portlet-latestbugs" />
-      <xtal:touched-bugs replace="structure context/@@+portlet-touched-bugs" />
+      <div class="section">
+        <tal:reported replace="structure context/@@+portlet-latestbugs" />
+        <tal:touched replace="structure context/@@+portlet-recently-touched-bugs" />
+      </div>
     </div><!-- main -->
   </body>
 </html>
-<!-- 1-0 in-progress Needs search form, pie chart, "Recently reported", "Recently touched". -->
+<!-- 1-0 in-progress Needs pie chart (bug 74718), CVE count (bug 79034), fixed-elsewhere count (bug 79035). -->

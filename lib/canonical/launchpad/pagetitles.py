@@ -189,6 +189,8 @@ def bugs_assigned(context, view):
 
 bugtarget_advanced_search = ContextTitle("Search bugs in %s")
 
+bugtarget_bugs = ContextTitle('Bugs in %s')
+
 bugtarget_filebug = ContextTitle('Report a bug about %s')
 
 bugtarget_filebug_advanced = ContextTitle('Report a bug about %s')
@@ -307,8 +309,6 @@ distribution_allpackages = ContextTitle('All packages in %s')
 
 distribution_bugcontact = ContextTitle('Change bug contact for %s')
 
-distribution_bugs = ContextTitle('Bugs in %s')
-
 distribution_change_mirror_admin = 'Change mirror administrator'
 
 distribution_cvereport = ContextTitle('CVE reports for %s')
@@ -424,7 +424,7 @@ def launchpad_addform(context, view):
 
 launchpad_editform = launchpad_addform
 
-launchpad_feedback = 'Help us improve Launchpad'
+launchpad_feedback = 'Help improve Launchpad'
 
 launchpad_forbidden = 'Forbidden'
 
@@ -926,9 +926,10 @@ sprintspecification_admin = 'Approve specification for sprint agenda'
 
 tickets_index = 'Launchpad support tracker'
 
-ticket_add = ContextDisplayName('Request support with %s')
+def ticket_add(context, view):
+    return view.pagetitle
 
-ticket_add_search = ContextDisplayName('Request support with %s')
+ticket_add_search = ticket_add
 
 ticket_bug = ContextId('Link support request #%s to a bug report')
 

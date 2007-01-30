@@ -188,7 +188,7 @@
         class="canonical.launchpad.browser.BugTaskSearchListingView"
         permission="zope.Public"
         facet="bugs"
-        template="../templates/distribution-bugs.pt"
+        template="../templates/bugtarget-bugs.pt"
         />
 
     <browser:page

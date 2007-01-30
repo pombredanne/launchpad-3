@@ -2,7 +2,7 @@
   <div tal:condition="specs" class="portlet">
     <h2>Latest proposed features</h2>
     <div class="portletBody portletContent">
-      <ul class="spec invisiblelink">
+      <ul class="blueprint">
         <li tal:repeat="spec specs">
           <a tal:content="spec/title"
              tal:attributes="href spec/fmt:url">spec title</a>

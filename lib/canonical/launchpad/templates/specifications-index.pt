@@ -7,7 +7,7 @@
     <div metal:fill-slot="main">
       <div
         id="applications"
-        xtal:content="structure context/@@+applicationbuttons/blueprints"
+        tal:content="structure context/@@+applicationbuttons/blueprints"
       ></div>
       <div id="mainarea" class="tab-features">
         <div class="t">
@@ -18,14 +18,13 @@
                   <div class="y">
                     <div class="z">
                       <div id="container">
-
+                      <h1 tal:condition="not:view/searchrequested"
+                      >Search specifications</h1>
+                      <h1 tal:condition="view/searchrequested">
+                        Specifications matching
+                        &ldquo;<tal:query replace="view/searchtext" />&rdquo;
+                      </h1>
                       <form class="central" name="spec_search" method="get">
-                        <h1 tal:condition="not:view/searchrequested"
-                        >Search specifications</h1>
-                        <h1 tal:condition="view/searchrequested">
-                          Specifications matching
-                          &ldquo;<tal:query replace="view/searchtext" />&rdquo;
-                        </h1>
                         <table style="margin-left: 0;">
                           <tbody>
                             <tr>

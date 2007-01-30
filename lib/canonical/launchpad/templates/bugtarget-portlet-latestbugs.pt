@@ -1,11 +1,11 @@
 <div class="portlet" tal:condition="view/latestBugTasks">
-  <h2>Latest bugs</h2>
+  <h2>Latest bugs reported</h2>
 
     <div class="portletBody portletContent">
       <p tal:condition="not: view/latestBugTasks">
         No bugs have been reported for <span tal:replace="context/displayname" />.
       </p>
-      <table tal:condition="view/latestBugTasks" class="latest invisiblelink">
+      <table tal:condition="view/latestBugTasks" class="latest">
         <tbody>
           <tr tal:repeat="bugtask view/latestBugTasks">
             <td class="icon left" tal:content="structure bugtask/fmt:icon" />

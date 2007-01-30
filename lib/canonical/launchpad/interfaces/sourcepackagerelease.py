@@ -79,6 +79,8 @@ class ISourcePackageRelease(Interface):
     # read-only properties
     name = Attribute('The sourcepackagename for this release, as text')
     title = Attribute('The title of this sourcepackagerelease')
+    age = Attribute('Time passed since the source package release '
+                    'is present in Launchpad')
     latest_build = Attribute("The latest build of this source package "
         "release, or None")
     failed_builds = Attribute("A (potentially empty) list of build "
@@ -102,9 +104,6 @@ class ISourcePackageRelease(Interface):
     current_publishings = Attribute("A list of the current places where "
         "this source package is published, in the form of a list of "
         "DistroReleaseSourcePackageReleases.")
-
-    def branches():
-        """Return the list of branches in a source package release"""
 
     # XXX: What do the following methods and attributes do?
     #      These were missing from the interfaces, but being used
