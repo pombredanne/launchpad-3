@@ -63,17 +63,18 @@ class HTTPServerTestSetup(TacTestSetup):
 class TestProberProtocolAndFactory(TwistedTestCase):
 
     def setUp(self):
-        self.urls = {'timeout': u'http://localhost:11375/timeout',
-                     '200': u'http://localhost:11375/valid-mirror',
-                     '500': u'http://localhost:11375/error',
-                     '404': u'http://localhost:11375/invalid-mirror'}
         root = DistributionMirrorTestHTTPServer()
         site = server.Site(root)
         site.displayTracebacks = False
-        self.port = reactor.listenTCP(11375, site)
+        self.listening_port = reactor.listenTCP(0, site)
+        self.port = self.listening_port.getHost().port
+        self.urls = {'timeout': u'http://localhost:%s/timeout' % self.port,
+                     '200': u'http://localhost:%s/valid-mirror' % self.port,
+                     '500': u'http://localhost:%s/error' % self.port,
+                     '404': u'http://localhost:%s/invalid-mirror' % self.port}
 
     def tearDown(self):
-        return self.port.stopListening()
+        return self.listening_port.stopListening()
 
     def _createProberAndProbe(self, url):
         prober = ProberFactory(url)
@@ -87,28 +88,27 @@ class TestProberProtocolAndFactory(TwistedTestCase):
         return deferred
 
     def test_redirectawareprober_follows_http_redirect(self):
-        url = 'http://localhost:11375/redirect-to-valid-mirror'
+        url = 'http://localhost:%s/redirect-to-valid-mirror' % self.port
         prober = RedirectAwareProberFactory(url)
         self.failUnless(prober.redirection_count == 0)
-        self.failUnless(
-            prober.url == 'http://localhost:11375/redirect-to-valid-mirror')
+        self.failUnless(prober.url == url)
         deferred = prober.probe()
         def got_result(result):
             self.failUnless(prober.redirection_count == 1)
             self.failUnless(
-                prober.url == 'http://localhost:11375/valid-mirror')
+                prober.url == 'http://localhost:%s/valid-mirror' % self.port)
             self.failUnless(result == str(httplib.OK))
         return deferred.addCallback(got_result)
 
     def test_redirectawareprober_detects_infinite_loop(self):
         prober = RedirectAwareProberFactory(
-            'http://localhost:11375/redirect-infinite-loop')
+            'http://localhost:%s/redirect-infinite-loop' % self.port)
         deferred = prober.probe()
         return self.assertFailure(deferred, InfiniteLoopDetected)
 
     def test_redirectawareprober_fail_on_unknown_scheme(self):
         prober = RedirectAwareProberFactory(
-            'http://localhost:11375/redirect-unknown-url-scheme')
+            'http://localhost:%s/redirect-unknown-url-scheme' % self.port)
         deferred = prober.probe()
         return self.assertFailure(deferred, UnknownURLScheme)
 
@@ -184,6 +184,15 @@ class TestProberFactoryRequestTimeoutRatioWithoutTwisted(TestCase):
 
     host = 'foo.bar'
 
+    def setUp(self):
+        self.orig_host_requests = dict(distributionmirror_prober.host_requests)
+        self.orig_host_timeouts = dict(distributionmirror_prober.host_timeouts)
+
+    def tearDown(self):
+        # Restore the globals that our tests fiddle with.
+        distributionmirror_prober.host_requests = self.orig_host_requests
+        distributionmirror_prober.host_timeouts = self.orig_host_timeouts
+
     def _createProberStubConnectAndProbe(self, requests, timeouts):
         """Create a ProberFactory object with a URL inside self.host and call
         its probe() method.
@@ -253,15 +262,21 @@ class TestProberFactoryRequestTimeoutRatioWithTwisted(TwistedTestCase):
     """
 
     def setUp(self):
+        self.orig_host_requests = dict(distributionmirror_prober.host_requests)
+        self.orig_host_timeouts = dict(distributionmirror_prober.host_timeouts)
         distributionmirror_prober.host_requests = {}
         distributionmirror_prober.host_timeouts = {}
         root = DistributionMirrorTestHTTPServer()
         site = server.Site(root)
         site.displayTracebacks = False
-        self.port = reactor.listenTCP(11375, site)
+        self.listening_port = reactor.listenTCP(0, site)
+        self.port = self.listening_port.getHost().port
 
     def tearDown(self):
-        return self.port.stopListening()
+        # Restore the globals that our tests fiddle with.
+        distributionmirror_prober.host_requests = self.orig_host_requests
+        distributionmirror_prober.host_timeouts = self.orig_host_timeouts
+        return self.listening_port.stopListening()
 
     def _createProberAndProbe(self, url):
         prober = ProberFactory(url)
@@ -269,18 +284,24 @@ class TestProberFactoryRequestTimeoutRatioWithTwisted(TwistedTestCase):
 
     def test_timeout_is_recorded(self):
         host = 'localhost'
-        d = self._createProberAndProbe(u'http://%s:11375/timeout' % host)
+        d = self._createProberAndProbe(
+            u'http://%s:%s/timeout' % (host, self.port))
         def got_error(error):
-            self.failUnless(distributionmirror_prober.host_requests[host] == 1)
-            self.failUnless(distributionmirror_prober.host_timeouts[host] == 1)
+            self.failUnlessEqual(
+                {host: 1}, distributionmirror_prober.host_requests)
+            self.failUnlessEqual(
+                {host: 1}, distributionmirror_prober.host_timeouts)
         return d.addErrback(got_error)
 
     def test_non_timeout_is_recorded(self):
         host = 'localhost'
-        d = self._createProberAndProbe(u'http://%s:11375/valid-mirror' % host)
+        d = self._createProberAndProbe(
+            u'http://%s:%s/valid-mirror' % (host, self.port))
         def got_result(result):
-            self.failUnless(distributionmirror_prober.host_requests[host] == 1)
-            self.failUnless(distributionmirror_prober.host_timeouts[host] == 0)
+            self.failUnlessEqual(
+                {host: 1}, distributionmirror_prober.host_requests)
+            self.failUnlessEqual(
+                {host: 0}, distributionmirror_prober.host_timeouts)
         return d.addCallback(got_result)
 
     def test_failure_after_too_many_timeouts(self):
@@ -293,7 +314,8 @@ class TestProberFactoryRequestTimeoutRatioWithTwisted(TwistedTestCase):
         # cause a given host to be skipped.
         self.failUnless(should_skip_host(host))
 
-        d = self._createProberAndProbe(u'http://%s:11375/timeout' % host)
+        d = self._createProberAndProbe(
+            u'http://%s:%s/timeout' % (host, self.port))
         return self.assertFailure(d, ConnectionSkipped)
 
 
@@ -304,7 +326,7 @@ class TestRedirectAwareProberFactoryAndProtocol(TestCase):
         prober.timeoutCall = FakeTimeOutCall()
         prober.connect = lambda: None
         self.failIf(prober.timeoutCall.resetCalled)
-        prober.redirect('http://localhost:11375/valid-mirror')
+        prober.redirect('http://bar.foo')
         self.failUnless(prober.timeoutCall.resetCalled)
 
     def _createFactoryAndStubConnectAndTimeoutCall(self):
@@ -320,18 +342,18 @@ class TestRedirectAwareProberFactoryAndProtocol(TestCase):
         prober = self._createFactoryAndStubConnectAndTimeoutCall()
         prober.failed = lambda error: None
         prober.redirection_count = MAX_REDIRECTS
-        prober.redirect('http://localhost:11375/valid-mirror')
+        prober.redirect('http://bar.foo')
         self.failIf(prober.connectCalled)
 
     def test_noconnection_is_made_when_url_scheme_is_not_http_or_ftp(self):
         prober = self._createFactoryAndStubConnectAndTimeoutCall()
         prober.failed = lambda error: None
-        prober.redirect('ssh://localhost/valid-mirror')
+        prober.redirect('ssh://bar.foo')
         self.failIf(prober.connectCalled)
 
     def test_connection_is_made_on_successful_redirect(self):
         prober = self._createFactoryAndStubConnectAndTimeoutCall()
-        prober.redirect('http://localhost:11375/valid-mirror')
+        prober.redirect('http://bar.foo')
         self.failUnless(prober.connectCalled)
 
     def test_connection_is_closed_on_redirect(self):

@@ -22,9 +22,13 @@ from canonical.lp.dbschema import MirrorStatus
 
 
 # The requests/timeouts ratio has to be at least 3 for us to keep issuing
-# requests on a given host.
+# requests on a given host. (This ratio is per run, rather than held long
+# term)
 MIN_REQUEST_TIMEOUT_RATIO = 3
 MIN_REQUESTS_TO_CONSIDER_RATIO = 10
+# XXX: We need to get rid of these global dicts in this module. See
+# https://launchpad.net/launchpad/+bug/82201 for more details.
+# -- Guilherme Salgado, 2007-01-30
 host_requests = {}
 host_timeouts = {}
 
@@ -108,7 +112,7 @@ def should_skip_host(host):
     if timeouts == 0 or requests < MIN_REQUESTS_TO_CONSIDER_RATIO:
         return False
     else:
-        ratio = requests / timeouts
+        ratio = float(requests) / timeouts
         return ratio < MIN_REQUEST_TIMEOUT_RATIO
 
 
@@ -125,9 +129,9 @@ class ProberFactory(protocol.ClientFactory):
         self._deferred = defer.Deferred()
         self.timeout = timeout
         self.setURL(url.encode('ascii'))
-        if not host_requests.has_key(self.host):
+        if self.host not in host_requests:
             host_requests[self.host] = 0
-        if not host_timeouts.has_key(self.host):
+        if self.host not in host_timeouts:
             host_timeouts[self.host] = 0
 
     def probe(self):
@@ -256,7 +260,8 @@ class InfiniteLoopDetected(ProberError):
 class ConnectionSkipped(ProberError):
 
     def __str__(self):
-        return "Connection skipped because of too many timeouts on this host."
+        return ("Connection skipped because of too many timeouts on this "
+                "host. It will be retrieved on the next probing run.")
 
 
 class UnknownURLScheme(ProberError):
@@ -355,7 +360,7 @@ class ArchiveMirrorProberCallbacks(object):
             # Use one semaphore per host, to limit the numbers of simultaneous
             # connections on a given host. Note that we don't have an overall
             # limit of connections, since the per-host limit should be enough.
-            # If we ever need an overall limit, we can use Andrews's suggestion
+            # If we ever need an overall limit, we can use Andrew's suggestion
             # on https://launchpad.net/bugs/54791 to implement it.
             semaphore = host_semaphores.setdefault(
                 prober.host, DeferredSemaphore(PER_HOST_REQUESTS))
