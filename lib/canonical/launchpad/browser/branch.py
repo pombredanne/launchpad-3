@@ -142,6 +142,15 @@ class BranchView(LaunchpadView):
         else:
             return self.supermirror_url()
 
+    def user_can_upload(self):
+        """Whether the user can upload to this branch."""
+        return self.user.inTeam(self.context.owner)
+
+    def upload_url(self):
+        """The URL the logged in user can use to upload to this branch."""
+        return 'sftp://%s@bazaar.canonical.com/%s' % (
+            self.user.name, self.context.unique_name)
+
     def missing_title_or_summary_text(self):
         if self.context.title:
             if self.context.summary:

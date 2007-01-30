@@ -5,6 +5,7 @@ import _pythonpath
 
 import sys
 from optparse import OptionParser
+
 from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 from canonical.config import config
@@ -41,10 +42,10 @@ def main(argv):
     # Create a lock so we don't have two daemons running at the same time.
     lock = GlobalLock(options.lockfile)
     try:
-        lock.acquire(blocking=False)
+        lock.acquire()
     except LockAlreadyAcquired:
-        logger_object.info("lock %s already exists, exiting",
-                           options.lockfile)
+        logger_object.error("lock %s already exists, exiting",
+                            options.lockfile)
         return
 
     try:

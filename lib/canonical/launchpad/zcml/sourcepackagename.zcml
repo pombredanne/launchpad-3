@@ -22,4 +22,9 @@
       <allow interface="canonical.launchpad.interfaces.ISourcePackageNameSet"/>
     </content>
 
+    <vocabulary
+      name="SourcePackageName"
+      factory="canonical.launchpad.database.sourcepackagename.SourcePackageNameVocabulary"
+      />
+
 </configure>

@@ -35,6 +35,7 @@ __all__ = (
 'BranchLifecycleStatus',
 'BranchLifecycleStatusFilter',
 'BranchReviewStatus',
+'BranchSubscriptionNotificationLevel',
 'BugBranchStatus',
 'BugNominationStatus',
 'BugTaskStatus',
@@ -1854,6 +1855,12 @@ class TicketSort(DBSchema):
     Sort tickets from oldset to newest.
     """)
 
+    RECENT_OWNER_ACTIVITY = Item(30, """
+    recently updated first
+
+    Sort tickets that recently received new information from the owner first.
+    """)
+
 
 class TicketStatus(DBSchema):
     """The current status of a Support Request
@@ -2778,6 +2785,43 @@ class BranchReviewStatus(DBSchema):
         further changes.
         """)
 
+
+
+class BranchSubscriptionNotificationLevel(DBSchema):
+    """Branch Subscription Notification Level
+
+    The notification level is used to control the amount and content
+    of the email notifications send with respect to modifications
+    to branches whether it be to branch attributes in the UI, or
+    to the contents of the branch found by the branch scanner.
+    """
+
+    NOEMAIL = Item(0, """
+        No email
+
+        Do not send any email about changes to this branch.
+        """)
+
+    ATTRIBUTEONLY = Item(1, """
+        Branch attribute notifications only
+
+        Only send notifications for branch attribute changes such
+        as name, description and whiteboard.
+        """)
+
+    DIFFSONLY = Item(2, """
+        Branch diff notifications only
+
+        Only send notifications about new revisions added to this
+        branch.
+        """)
+
+    FULL = Item(3, """
+        Branch attribute and diff notifications
+
+        Send notifications for both branch attribute updates
+        and new revisions added to the branch.
+        """)
 
 class BugNominationStatus(DBSchema):
     """Bug Nomination Status

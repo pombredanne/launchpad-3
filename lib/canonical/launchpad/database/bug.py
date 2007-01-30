@@ -132,15 +132,6 @@ class Bug(SQLBase):
         dbName='duplicateof', foreignKey='Bug', default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     date_last_updated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-    communityscore = IntCol(dbName='communityscore', notNull=True, default=0)
-    communitytimestamp = UtcDateTimeCol(dbName='communitytimestamp',
-                                        notNull=True, default=DEFAULT)
-    hits = IntCol(dbName='hits', notNull=True, default=0)
-    hitstimestamp = UtcDateTimeCol(dbName='hitstimestamp', notNull=True,
-                                   default=DEFAULT)
-    activityscore = IntCol(dbName='activityscore', notNull=True, default=0)
-    activitytimestamp = UtcDateTimeCol(dbName='activitytimestamp',
-                                       notNull=True, default=DEFAULT)
     private = BoolCol(notNull=True, default=False)
     security_related = BoolCol(notNull=True, default=False)
 
@@ -150,7 +141,7 @@ class Bug(SQLBase):
                            otherColumn='message',
                            intermediateTable='BugMessage',
                            prejoins=['owner'],
-                           orderBy='datecreated')
+                           orderBy=['datecreated', 'id'])
     productinfestations = SQLMultipleJoin(
             'BugProductInfestation', joinColumn='bug', orderBy='id')
     packageinfestations = SQLMultipleJoin(
@@ -386,7 +377,7 @@ class Bug(SQLBase):
                 remotebug=remotebug, owner=owner)
 
     def addAttachment(self, owner, file_, description, comment, filename,
-                      is_patch=False):
+                      is_patch=False, content_type=None):
         """See IBug."""
         filecontent = file_.read()
 
@@ -395,8 +386,9 @@ class Bug(SQLBase):
             content_type = 'text/plain'
         else:
             attach_type = BugAttachmentType.UNSPECIFIED
-            content_type, encoding = guess_content_type(
-                name=filename, body=filecontent)
+            if content_type is None:
+                content_type, encoding = guess_content_type(
+                    name=filename, body=filecontent)
 
         filealias = getUtility(ILibraryFileAliasSet).create(
             name=filename, size=len(filecontent),

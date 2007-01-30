@@ -14,6 +14,8 @@ import logging
 import _pythonpath
 from optparse import OptionParser
 
+from contrib.glock import GlobalLock, LockAlreadyAcquired
+
 # zope bits
 from zope.component import getUtility
 
@@ -21,9 +23,8 @@ from zope.component import getUtility
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts import (execute_zcml_for_scripts,
     logger_options, logger as logger_from_options)
-from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.launchpad.scripts.debsync import (
-    bug_filter, do_import, import_bug)
+    do_import)
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
 
 
@@ -62,6 +63,8 @@ def main(args):
         return 1
 
     # Make sure we import any Debian bugs specified on the command line
+    # XXX: this code is busted and untested XXX
+    target_bugs = set()
     for arg in args:
         try:
             target_bug = int(arg)
@@ -72,7 +75,6 @@ def main(args):
     logger.info('Setting up utilities...')
     execute_zcml_for_scripts()
 
-    target_bugs = set()
     target_package_set = set()
     previousimportset = set()
 
@@ -93,11 +95,11 @@ def main(args):
     logger.info('%d binary packages targeted.' % len(target_package_set))
 
     lockfile_path = '/var/lock/launchpad-debbugs-mkwatch.lock'
-    lockfile = LockFile(lockfile_path)
+    lockfile = GlobalLock(lockfile_path)
     try:
         lockfile.acquire()
-    except OSError:
-        logger.info('Lockfile %s already exists, exiting.' % lockfile_path)
+    except LockAlreadyAcquired:
+        logger.error('Lockfile %s already exists, exiting.' % lockfile_path)
         return 0
 
     ztm.abort()
