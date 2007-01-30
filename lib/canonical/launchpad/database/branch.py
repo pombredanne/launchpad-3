@@ -324,7 +324,7 @@ class BranchSet:
             LEFT OUTER JOIN revision
             ON branch.last_scanned_id = revision.revision_id
             WHERE branch.id IN %s
-            """ % ','.join(sqlvalues([branch.id for branch in branches])))
+            """ % sqlvalues([branch.id for branch in branches]))
         commits = dict(cur.fetchall())
         return dict([(branch, commits.get(branch.id, None))
                      for branch in branches]) 
