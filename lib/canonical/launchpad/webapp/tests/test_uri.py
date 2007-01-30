@@ -95,7 +95,10 @@ class URITestCase(unittest.TestCase):
         self.assertEqual(resolve('g?y/../x'),     'http://a/b/c/g?y/../x')
         self.assertEqual(resolve('g#s/./x'),      'http://a/b/c/g#s/./x')
         self.assertEqual(resolve('g#s/../x'),     'http://a/b/c/g#s/../x')
-        self.assertEqual(resolve('http:g'),       'http:g')
+        # XXX 20090130 jamesh:
+        # I've disabled this test since we refuse to accept HTTP URIs
+        # without a hostname component.
+        #self.assertEqual(resolve('http:g'),       'http:g')
 
 
 def test_suite():
