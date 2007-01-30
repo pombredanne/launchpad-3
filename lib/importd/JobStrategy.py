@@ -14,7 +14,7 @@ import CVS
 import cscvs
 import SCM
 
-from canonical.launchpad.webapp.url import Url
+from canonical.launchpad.webapp.uri import URI
 
 
 class ImportSanityError(Exception):
@@ -502,14 +502,14 @@ class SVNStrategy(CSCVSStrategy):
         if self._sanityIsOverridden():
             return
         url = self.job.repository
-        if Url(url).path.endswith('/'):
+        if URI(url).path.endswith('/'):
             # Non-canonicalized URLs will cause old unpatched svn servers to
             # crash. We should also canonicalize the URLs to catch duplicates,
             # but this provides belt-and-suspenders to avoid harming remote
             # servers.
             raise ImportSanityError(
                 'URL ends with a slash: %s' % url)
-        if '/trunk/' in Url(url).pathslash:
+        if '/trunk/' in URI(url).ensureSlash().path:
             return
         raise ImportSanityError(
             'URL does not appear to be a SVN trunk: %s' % url)
