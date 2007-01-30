@@ -30,7 +30,7 @@ displayed:
     >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(owner_browser.contents)
     >>> print soup.first('div', 'error message').renderContents()
-    The support request is not in a state where you can confirm an
+    The question is not in a state where you can confirm an
     answer.
 
 Posting an answer on the ticket will send an email notification

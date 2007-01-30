@@ -151,7 +151,7 @@ Since no message can be provided when that button is clicked. A default
 confirmation message was appended to the request:
 
     >>> print find_last_comment(owner_browser.contents).renderContents()
-    <p>User confirmed that the request is solved.</p>
+    <p>User confirmed that the question is solved.</p>
 
 The confirmed answer is also highlighted.
 
@@ -268,7 +268,7 @@ The history of the ticket is available on the 'History' page.
     ...     'http://launchpad.dev/firefox/+ticket/2')
     >>> anon_browser.getLink('History').click()
     >>> print anon_browser.title
-    History of support request #2
+    History of question #2
 
 It lists all the actions performed through workflow on the request:
 

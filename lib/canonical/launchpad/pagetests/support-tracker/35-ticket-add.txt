@@ -6,20 +6,20 @@ distribution for which support is desired. Then browse to the support
 facet and finally, use the 'Request support' action:
 
     >>> browser.open('http://launchpad.dev/ubuntu')
-    >>> browser.getLink('Support').click()
+    >>> browser.getLink('Answers').click()
     >>> print browser.title
-    Support requests for Ubuntu
+    Questions for Ubuntu
 
 Making a new support requests requires logging in:
 
-    >>> browser.getLink('Request Support').click()
+    >>> browser.getLink('Ask Question').click()
     Traceback (most recent call last):
       ...
     Unauthorized...
     >>> user_browser.open('http://launchpad.dev/ubuntu/+tickets')
-    >>> user_browser.getLink('Request Support').click()
+    >>> user_browser.getLink('Ask Question').click()
     >>> user_browser.title
-    'Request support with Ubuntu'
+    'Ask a question about Ubuntu'
 
 == Get Help Online ==
 
@@ -34,9 +34,9 @@ associated with the source package of the used application.
     ...     '+sources/mozilla-firefox/+gethelp')
     >>> user_browser.title
     'Help and support options for mozilla-firefox...'
-    >>> user_browser.getLink('make a support request').click()
+    >>> user_browser.getLink('ask a question').click()
     >>> user_browser.title
-    'Request support with Hoary mozilla-firefox'
+    'Ask a question about Hoary mozilla-firefox'
 
 == Searching for Similar Tickets ==
 
@@ -124,7 +124,7 @@ redirect the user to the ticket page.
     >>> user_browser.url
     '.../ubuntu/+source/mozilla-firefox/+ticket/...'
     >>> user_browser.title
-    'mozilla-firefox in ubuntu support request #...Visiting a web page...'
+    'mozilla-firefox in ubuntu question #...Visiting a web page...'
     >>> soup = BeautifulSoup(user_browser.contents)
     >>> soup.first('div', 'highlighted')
     <div class="highlighted">

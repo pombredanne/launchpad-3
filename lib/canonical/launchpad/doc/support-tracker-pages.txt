@@ -49,7 +49,7 @@ view page.
 
     >>> for notice in request.notifications:
     ...     print notice.message
-    You have subscribed to this request.
+    You have subscribed to this question.
     >>> request.response.getHeader('Location')
     '.../+ticket/3'
 
@@ -63,7 +63,7 @@ Unsubscription works in a similar manner.
     False
     >>> for notice in request.notifications:
     ...     print notice.message
-    You have unsubscribed from this request.
+    You have unsubscribed from this question.
     >>> request.response.getHeader('Location')
     '.../+ticket/3'
 
@@ -161,7 +161,7 @@ to the OPEN state.
     ...             "\nhttp://www.w3.org/2001/08/rdfweb/rdfweb-chaals-and-dan.svg"})
     >>> for notification in workflow_harness.request.response.notifications:
     ...     print notification.message
-    Thanks for adding more information to your request.
+    Thanks for adding more information to your question.
     >>> print firefox_ticket.status.name
     OPEN
     >>> workflow_harness.redirectionTarget()
@@ -210,7 +210,7 @@ enter a confirmation message at that stage.
 Since no confirmation message was given, a default one was used.
 
     >>> print firefox_ticket.messages[-1].text_contents
-    User confirmed that the request is solved.
+    User confirmed that the question is solved.
 
 Once in the SOLVED state, the owner can now only either add a comment
 or reopen the request:
@@ -251,7 +251,7 @@ If the ticket owner reopens the request, its status is changed back to
     ...         "display correctly."})
     >>> for notification in workflow_harness.request.response.notifications:
     ...     print notification.message
-    Your request was reopened.
+    Your question was reopened.
     >>> print firefox_ticket.status.name
     OPEN
     >>> workflow_harness.redirectionTarget()
@@ -360,7 +360,7 @@ support request.
     >>> view.initialize()
     >>> for notice in request.notifications:
     ...     print notice.message
-    You have rejected this request.
+    You have rejected this question.
     >>> print firefox_ticket.status.title
     Invalid
 
@@ -378,7 +378,7 @@ outside of the comment workflow.
     >>> view.initialize()
     >>> for notice in request.notifications:
     ...     print notice.message
-    Request status updated.
+    Question status updated.
     >>> print firefox_ticket.status.title
     Solved
 
@@ -744,17 +744,17 @@ no results are found based on the selected search filter:
     >>> from zope.i18n import translate
     >>> search_view_harness.submit('', {})
     >>> print translate(search_view_harness.view.pageheading)
-    Support requests for Ubuntu
+    Questions for Ubuntu
     >>> print translate(search_view_harness.view.empty_listing_message)
-    There are no support requests for Ubuntu with the requested statuses.
+    There are no questions for Ubuntu with the requested statuses.
 
     >>> MyCustomSearchTicketsView.default_filter = dict(
     ...     status=[TicketStatus.OPEN], search_text='Firefox')
     >>> search_view_harness.submit('', {})
     >>> print translate(search_view_harness.view.pageheading)
-    Open support requests about "Firefox" for Ubuntu
+    Open questions about "Firefox" for Ubuntu
     >>> print translate(search_view_harness.view.empty_listing_message)
-    There are no open support requests about "Firefox" for Ubuntu.
+    There are no open questions about "Firefox" for Ubuntu.
 
 It works also with user submitted values:
 
@@ -763,16 +763,16 @@ It works also with user submitted values:
     ...     'field.search_text': '',
     ...     'field.sort': 'by relevancy'})
     >>> print translate(search_view_harness.view.pageheading)
-    Expired support requests for Ubuntu
+    Expired questions for Ubuntu
     >>> print translate(search_view_harness.view.empty_listing_message)
-    There are no expired support requests for Ubuntu.
+    There are no expired questions for Ubuntu.
 
     >>> search_view_harness.submit('search', {
     ...     'field.status': ['Open', 'Answered'],
     ...     'field.search_text': 'evolution',
     ...     'field.sort': 'by relevancy'})
     >>> print translate(search_view_harness.view.pageheading)
-    Support requests about "evolution" for Ubuntu
+    Questions about "evolution" for Ubuntu
     >>> print translate(search_view_harness.view.empty_listing_message)
-    There are no support requests about "evolution" for Ubuntu with the
+    There are no questions about "evolution" for Ubuntu with the
     requested statuses.

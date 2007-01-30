@@ -11,7 +11,7 @@ doesn't have access to that feature.
     # We can't use user_browser here because he is Firefox's registrant.
     >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/firefox/+ticket/2')
-    >>> browser.getLink('Reject Request')
+    >>> browser.getLink('Reject Question')
     Traceback (most recent call last):
       ...
     LinkNotFoundError...
@@ -25,10 +25,10 @@ error.
       ...
     Unauthorized: ...
 
-To reject the request, the user clicks on the 'Reject Request' link.
+To reject the request, the user clicks on the 'Reject Question' link.
 
     >>> admin_browser.open('http://launchpad.dev/firefox/+ticket/2')
-    >>> admin_browser.getLink('Reject Request').click()
+    >>> admin_browser.getLink('Reject Question').click()
     >>> admin_browser.getControl('Reject').click()
 
 He needs to enter a message explaining the rejection:
@@ -49,7 +49,7 @@ Once the ticket is rejected, a confirmation message is shown;
 
     >>> soup = BeautifulSoup(admin_browser.contents)
     >>> print soup.first('div', 'informational message').renderContents()
-    You have rejected this request.
+    You have rejected this question.
 
 its status is changed to 'Invalid';
 
@@ -106,7 +106,7 @@ select back the 'Open' status and provide an appropriate message:
 
     >>> admin_browser.getControl('Status', index=0).value = ['Open']
     >>> admin_browser.getControl('Message').value = (
-    ...     "Setting status back to 'Open'. Requests similar to a bug "
+    ...     "Setting status back to 'Open'. Questions similar to a bug "
     ...     "report should be linked to it, not rejected.")
     >>> admin_browser.getControl('Change Status').click()
 
@@ -114,7 +114,7 @@ Once the operation is completed, a confirmation message is displayed;
 
     >>> soup = BeautifulSoup(admin_browser.contents)
     >>> print soup.first('div', 'informational message').renderContents()
-    Request status updated.
+    Question status updated.
 
 its status is updated;
 
@@ -124,5 +124,5 @@ its status is updated;
 and the explanation message is added to the ticket board.
 
     >>> print soup.fetch('div', 'boardCommentBody')[-1].renderContents()
-    <p>Setting status back to 'Open'. Requests similar to a bug report
+    <p>Setting status back to 'Open'. Questions similar to a bug report
     should be linked to it, not rejected.</p>

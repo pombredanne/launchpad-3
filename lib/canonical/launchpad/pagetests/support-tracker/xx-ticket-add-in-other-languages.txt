@@ -6,7 +6,7 @@ can select the language of the request. By default, the support request
 language is 'English'.
 
     >>> user_browser.open('http://launchpad.dev/ubuntu/+tickets')
-    >>> user_browser.getLink('Request Support').click()
+    >>> user_browser.getLink('Ask Question').click()
     >>> user_browser.getControl('Language').value
     ['en']
 
@@ -73,7 +73,7 @@ from making a request in the language of his choice.
     >>> browser.url
     '.../ubuntu/+ticket/...'
     >>> browser.title
-    'Ubuntu support request #...Abrir uma pagina que requer...'
+    'Ubuntu question #...Abrir uma pagina que requer...'
 
     >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(browser.contents)
@@ -143,7 +143,7 @@ new support request.
     >>> browser.url
     '.../ubuntu/+ticket/...'
     >>> browser.title.decode('utf-8')
-    u'Ubuntu support request #...\u52a9\u3051\u306e\u8981\u6c42...'
+    u'Ubuntu question #...\u52a9\u3051\u306e\u8981\u6c42...'
     >>> soup = BeautifulSoup(browser.contents)
     >>> print soup.find('b', text='Language:').next.strip()
     Japanese

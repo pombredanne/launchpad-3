@@ -26,7 +26,7 @@ Cancelling the request brings you back to the ticket page.
   >>> browser.url
   '.../firefox/+ticket/2'
   >>> browser.title
-  '...support request #2...'
+  '...question #2...'
   >>> createLink = browser.getLink('Create Bug Report')
   >>> createLink is not None
   True

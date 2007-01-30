@@ -1,4 +1,4 @@
-= Ticket Subscriptions =
+= Question Subscriptions =
 
 Users can subscribe to specific tickets. When they are subscribed they
 will receive notifications for any changes to the ticket.
@@ -15,7 +15,7 @@ they want to subscribe by clicking on the 'Subscribe' button.
     '.../+ticket/2/+subscribe'
     >>> link.click()
     >>> print user_browser.title
-    Subscription to request #2
+    Subscription to question #2
 
     >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(user_browser.contents)
@@ -28,7 +28,7 @@ name appears in the 'Subscribers' portlet:
 
     >>> soup = BeautifulSoup(user_browser.contents)
     >>> print soup.first('div', 'informational message').renderContents()
-    You have subscribed to this request.
+    You have subscribed to this question.
 
     >>> portlet = soup.first('div', id='ticket-subscribers')
     >>> portlet.first('h2')
@@ -61,7 +61,7 @@ the ticket, doesn't appear anymore in the subscribers portlet:
 
     >>> soup = BeautifulSoup(user_browser.contents)
     >>> print soup.first('div', 'informational message').renderContents()
-    You have unsubscribed from this request.
+    You have unsubscribed from this question.
 
     >>> portlet = soup.first('div', id='ticket-subscribers')
     >>> portlet.first('p')
@@ -86,8 +86,8 @@ A notification message is displayed notifying of the subscription:
 
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...     print message.renderContents()
-    Your request was reopened.
-    You have subscribed to this request.
+    Your question was reopened.
+    You have subscribed to this question.
 
     >>> soup = BeautifulSoup(user_browser.contents)
     >>> portlet = soup.first('div', id='ticket-subscribers')

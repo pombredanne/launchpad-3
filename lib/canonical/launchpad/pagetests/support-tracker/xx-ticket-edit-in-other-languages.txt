@@ -1,4 +1,4 @@
-= Editing a Ticket using a non-English Language =
+= Editing a Question Posted in a non-English Language =
 
 Register a new support contact to change the list of supported languages.
 
@@ -19,11 +19,11 @@ A user can change the language a request was written, either because
 the language was wrongly set, or because he decided to rewrite the
 request in a language he speaks better.
 
-The language can be changed on the regular 'Edit Request' screen.
+The language can be changed on the regular 'Edit Question' screen.
 
     >>> browser.addHeader('Authorization', 'Basic daf@canonical.com:daf')
     >>> browser.open('http://launchpad.dev/ubuntu/+ticket/5')
-    >>> browser.getLink('Edit Request').click()
+    >>> browser.getLink('Edit Question').click()
 
 That screen contains a selection field to allow changing the ticket's
 language. The list of available languages is determined by the user's
@@ -73,7 +73,7 @@ language is accepted.
     >>> browser.url
     '.../ubuntu/+ticket/5'
     >>> browser.title.decode('utf-8')
-    u'Ubuntu support request #...\u52a9\u3051\u306e\u8981\u6c42...'
+    u'Ubuntu question #...\u52a9\u3051\u306e\u8981\u6c42...'
     >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(browser.contents)
     >>> print soup.find('b', text='Language:').next.strip()
