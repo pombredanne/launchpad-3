@@ -514,8 +514,9 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     usedfor = ITeam
     facet = 'overview'
-    links = ['edit', 'common_edithomepage', 'members', 'editemail', 'polls',
-             'joinleave', 'reassign', 'common_packages']
+    links = ['edit', 'common_edithomepage', 'members', 'add_member',
+             'editemail', 'polls', 'add_poll', 'joinleave', 'reassign',
+             'common_packages']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -533,13 +534,25 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     def members(self):
         target = '+members'
-        text = 'Members'
+        text = 'All Members'
         return Link(target, text, icon='people')
+
+    @enabled_with_permission('launchpad.Edit')
+    def add_member(self):
+        target = '+addmember'
+        text = 'Add New Member'
+        return Link(target, text, icon='add')
 
     def polls(self):
         target = '+polls'
         text = 'Polls'
         return Link(target, text, icon='info')
+
+    @enabled_with_permission('launchpad.Edit')
+    def add_poll(self):
+        target = '+newpoll'
+        text = 'Create a New Poll'
+        return Link(target, text, icon='add')
 
     @enabled_with_permission('launchpad.Edit')
     def editemail(self):
