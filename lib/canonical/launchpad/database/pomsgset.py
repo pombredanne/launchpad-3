@@ -46,25 +46,28 @@ class POMsgSetMixIn:
 
     def getWikiSubmissions(self, pluralform):
         """See IPOMsgSet."""
-        if self.id is None:
-            filter_pomsgset_sql = ''
-        else:
-            filter_pomsgset_sql = 'AND POMsgSet.id <> %s' % sqlvalues(self.id)
+        filter_pomsgset_sql = ''
+        if self.id is not None:
+            # Filter out submissions coming from this POMsgSet.
+            filter_pomsgset_sql = 'AND POMsgSet.id <> %s' % sqlvalues(self)
 
-        query = [
-            'SELECT DISTINCT POSubmission.id',
-            'FROM POSubmission',
-            '    JOIN POMsgSet ON (POSubmission.pomsgset = POMsgSet.id AND',
-            '                      POMsgSet.isfuzzy = FALSE',
-            filter_pomsgset_sql,
-            '                     )',
-            '    JOIN POFile ON (POMsgSet.pofile = POFile.id AND',
-            '                    POFile.language = %s)',
-            '    JOIN POTMsgSet ON (POMsgSet.potmsgset = POTMsgSet.id AND',
-            '                       POTMsgSet.primemsgid = %s)',
-            'WHERE',
-            '    POSubmission.pluralform = %s'
-            ]
+        replacements = sqlvalues(
+            language=self.pofile.language, pluralform=pluralform,
+            primemsgid=self.potmsgset.primemsgid_ID)
+        replacements['filter_pomsgset'] = filter_pomsgset_sql
+        query = """
+            SELECT DISTINCT POSubmission.id
+            FROM POSubmission
+                JOIN POMsgSet ON (POSubmission.pomsgset = POMsgSet.id AND
+                                  POMsgSet.isfuzzy = FALSE
+                                  %(filter_pomsgset)s)
+                JOIN POFile ON (POMsgSet.pofile = POFile.id AND
+                                POFile.language = %(language)s)
+                JOIN POTMsgSet ON (POMsgSet.potmsgset = POTMsgSet.id AND
+                                   POTMsgSet.primemsgid = %(primemsgid)s)
+            WHERE
+                POSubmission.pluralform = %(pluralform)s
+            """ % replacements
 
         posubmission_ids_list = POMsgSet._connection.queryAll(
             '\n'.join(query) % sqlvalues(
