@@ -848,17 +848,6 @@ class SearchProjectsView(LaunchpadView):
             return
 
         search_string = self.search_string.lower()
-        if form.get('go') is not None:
-            try:
-                pillar = getUtility(IPillarNameSet)[search_string]
-            except NotFoundError:
-                pass
-            else:
-                self.request.response.redirect(canonical_url(pillar))
-                # No need to do the search, since we're going to teleport the
-                # user.
-                return
-
         # We use a limit bigger than self.max_results_to_display so that we
         # know when we had too many results and we can tell the user that some
         # of them are not being displayed.
