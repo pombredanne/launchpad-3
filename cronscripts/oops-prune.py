@@ -10,8 +10,9 @@ from optparse import OptionParser
 import os
 import sys
 
+from contrib.glock import GlobalLock, LockAlreadyAcquired
+
 from canonical.config import config
-from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.launchpad.scripts.logger import logger_options, logger
 from canonical.launchpad.scripts.oops import (
         unwanted_oops_files, prune_empty_oops_directories
@@ -43,11 +44,11 @@ def main():
     log = logger(options, 'oops-prune')
 
     # Create a lock file so we don't have two daemons running at the same time.
-    lockfile = LockFile(default_lock_filename, logger=log)
+    lockfile = GlobalLock(default_lock_filename, logger=log)
     try:
         lockfile.acquire()
-    except OSError:
-        log.info("lockfile %s already exists, exiting", default_lock_filename)
+    except LockAlreadyAcquired:
+        log.error("lockfile %s already exists, exiting", default_lock_filename)
         return 1
 
     try:

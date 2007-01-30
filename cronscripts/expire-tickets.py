@@ -12,16 +12,16 @@ config.tickettracker.days_before_expiration
 __metaclass__ = type
 
 import sys
-import logging
 import optparse
 
 import _pythonpath
+
+from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 from canonical.config import config
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger)
 from canonical.launchpad.scripts.ticketexpiration import TicketJanitor
-from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.lp import initZopeless
 
 _default_lock_file = '/var/lock/launchpad-expire-tickets.lock'
@@ -40,11 +40,11 @@ def main(argv):
 
     log = logger(options, 'expire-tickets')
 
-    lockfile = LockFile(_default_lock_file, logger=log)
+    lockfile = GlobalLock(_default_lock_file, logger=log)
     try:
         lockfile.acquire()
-    except OSError:
-        log.info("lockfile %s already exists, exiting", _default_lock_file)
+    except LockAlreadyAcquired:
+        log.error("lockfile %s already exists, exiting", _default_lock_file)
         sys.exit(1)
 
     try:

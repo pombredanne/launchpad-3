@@ -53,7 +53,7 @@ on with the registration process.
 
     >>> browser.getControl('Continue').click()
     >>> browser.url
-    'http://launchpad.dev/'
+    'http://launchpad.dev'
 
     >>> soup = BeautifulSoup(browser.contents)
     >>> for tag in soup('div', 'informational message'):
@@ -102,7 +102,7 @@ this.
     >>> anon_browser.getControl('Continue').click()
 
     >>> anon_browser.url
-    'http://launchpad.dev/'
+    'http://launchpad.dev'
     >>> soup = BeautifulSoup(anon_browser.contents)
     >>> for tag in soup('div', 'informational message'):
     ...     print tag.renderContents()

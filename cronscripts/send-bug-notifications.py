@@ -14,6 +14,8 @@ import _pythonpath
 import sys
 from optparse import OptionParser
 
+from contrib.glock import GlobalLock, LockAlreadyAcquired
+
 from zope.component import getUtility
 
 from canonical.config import config
@@ -23,7 +25,6 @@ from canonical.launchpad.mail import sendmail
 from canonical.launchpad.scripts import (
     logger_options, logger, execute_zcml_for_scripts)
 from canonical.launchpad.scripts.bugnotification import get_email_notifications
-from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.lp import initZopeless
 
 _default_lock_file = '/var/lock/send-bug-notifications.lock'
@@ -35,11 +36,11 @@ def main():
 
     log = logger(options)
 
-    lockfile = LockFile(_default_lock_file, logger=log)
+    lockfile = GlobalLock(_default_lock_file, logger=log)
     try:
         lockfile.acquire()
-    except OSError:
-        log.info('Lockfile %s in use', _default_lock_file)
+    except LockAlreadyAcquired:
+        log.error('Lockfile %s in use', _default_lock_file)
         return 1
 
     notifications_sent = False
