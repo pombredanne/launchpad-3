@@ -25,7 +25,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
     IKarma, IKarmaAction, IKarmaActionSet, IKarmaCache, IKarmaCategory,
     IKarmaTotalCache, IKarmaPersonCategoryCacheView, IKarmaContext, IProduct,
-    IDistribution, IKarmaCacheManager, NotFoundError)
+    IDistribution, IKarmaCacheManager, NotFoundError, IProject)
 
 
 class Karma(SQLBase):
@@ -230,19 +230,27 @@ class KarmaContextMixin:
     def getTopContributors(self, category=None, limit=None):
         """See IKarmaContext."""
         from canonical.launchpad.database.person import Person
+        join_clause = ""
         if IProduct.providedBy(self):
-            context_name = 'product'
+            where_clause = "product = %d" % self.id
         elif IDistribution.providedBy(self):
-            context_name = 'distribution'
+            where_clause = "distribution = %d" % self.id
+        elif IProject.providedBy(self):
+            where_clause = "Project.id = %d" % self.id
+            join_clause = """
+                JOIN Product ON KarmaCache.product = Product.id
+                JOIN Project ON Product.project = Project.id
+                """
         else:
             raise AssertionError(
-                "Not a product nor a distribution: %r" % self)
+                "Not a product, project or distribution: %r" % self)
 
         query = """
             SELECT person, SUM(karmavalue) AS sum_karmavalue
             FROM KarmaCache
-            WHERE %s = %d
-            """ % (context_name, self.id)
+            %(join_clause)s
+            WHERE %(where_clause)s
+            """ % {'join_clause': join_clause, 'where_clause': where_clause}
         if category is not None:
             query += " AND category = %s" % sqlvalues(category)
         query += " GROUP BY person ORDER BY sum_karmavalue DESC"
