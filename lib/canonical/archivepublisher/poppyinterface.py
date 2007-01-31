@@ -86,6 +86,9 @@ class PoppyInterface:
         if self.perms is not None:
             os.system("chmod %s %s" % (self.perms, target_fsroot))
 
+        # We need to skip deletion here because we renamed the
+        # directory, and therefore GlobalLock no longer knows where the
+        # lockfile actually is.
         self.lock.release(skip_delete=True)
 
         # Invoke processing script, if provided.
