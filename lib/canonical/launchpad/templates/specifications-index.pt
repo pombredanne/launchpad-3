@@ -81,11 +81,10 @@
                         condition="view/searchrequested"
                         define="specs view/specs"
                       >
-                        <p
-                          xtal:condition="view/error_message"
-                          xtal:content="view/error_message"
-                          class="error message"
-                        >Error message.</p>
+                        <p tal:condition="specs">
+                          Blueprints matching
+                          &#8220;<tal:string replace="view/searchtext" />&#8221:
+                        </p>
 
     <tal:nomatches condition="not: specs"
                    replace="structure context/@@+nomatches" />
