@@ -228,7 +228,7 @@ class DeletedContentTestCase(unittest.TestCase):
         alias.close()
 
         # And it can be retrieved via the web
-        url = alias.url
+        url = alias.http_url
         retrieved_content = urlopen(url).read()
         self.failUnlessEqual(retrieved_content, 'xxx\nxxx\n')
         
