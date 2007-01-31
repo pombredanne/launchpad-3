@@ -1169,6 +1169,20 @@ class PersonView(LaunchpadView):
     """A View class used in almost all Person's pages."""
 
     @cachedproperty
+    def recently_approved_members(self):
+        members = self.context.getMembersByStatus(
+            TeamMembershipStatus.APPROVED,
+            orderBy='-TeamMembership.datejoined')
+        return members[:5]
+
+    @cachedproperty
+    def recently_proposed_members(self):
+        members = self.context.getMembersByStatus(
+            TeamMembershipStatus.PROPOSED,
+            orderBy='-TeamMembership.datejoined')
+        return members[:5]
+
+    @cachedproperty
     def openpolls(self):
         assert self.context.isTeam()
         return IPollSubset(self.context).getOpenPolls()
