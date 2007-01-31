@@ -3,20 +3,27 @@ Rosetta officially from a IProject's translations page.
 
 GNOME is a good example, it has products with translations.
 
-  >>> browser.open('http://launchpad.dev/gnome/+translations')
+  >>> browser.open('http://translations.launchpad.dev/gnome/+translations')
   >>> print browser.url
-  http://launchpad.dev/gnome/+translations
+  http://translations.launchpad.dev/gnome/+translations
 
 Evolution being one with translations and being used officially
 
-  >>> evo_link = browser.getLink('The Evolution Groupware Application')
-  >>> print evo_link.url
-  http://launchpad.dev/evolution/+translations
+  >>> browser.getLink('Evolution').click()
+  >>> print browser.url
+  http://translations.launchpad.dev/evolution/+translations
+
+  # We should use goBack() here but can't because of ZC #645:
+  # zope.testbrowser truncates document content after goBack().
+  #>>> browser.goBack()
+  >>> browser.open('http://translations.launchpad.dev/gnome/+translations')
+  >>> print browser.url
+  http://translations.launchpad.dev/gnome/+translations
 
 Netapplet is another product of GNOME project. It has translations, but it's not
 using Rosetta officially, so it's not in this page.
 
-  >>> netapplet_link = browser.getLink('Network Applet')
+  >>> browser.getLink('Network Applet')
   Traceback (most recent call last):
   ...
   LinkNotFoundError
@@ -36,15 +43,27 @@ Netapplet is in fact a product belonging to GNOME project.
 
 It's not using Rosetta officially
 
-  >>> u'Doesn&rsquo;t use Rosetta' in browser.contents
-  True
+  >>> print find_portlet(browser.contents, 'Network Applet')
+  <...
+  ...Product status:...
+  ...Doesn&rsquo;t use Rosetta...
 
 And it has translations.
 
-  >>> browser.open('http://launchpad.dev/netapplet/+translations')
+  >>> browser.open('http://translations.launchpad.dev/netapplet/+translations')
   >>> print browser.url
-  http://launchpad.dev/netapplet/+translations
+  http://translations.launchpad.dev/netapplet/+translations
 
   >>> netapplet_template = browser.getLink('View Template & All Languages...')
   >>> print netapplet_template.url
-  http://launchpad.dev/netapplet/trunk/+pots/netapplet
+  http://translations.launchpad.dev/netapplet/trunk/+pots/netapplet
+
+The translations page has also a link to the product search page to see
+whether a product is registered in Launchpad.
+
+  >>> browser.open('http://translations.launchpad.dev/gnome/+translations')
+  >>> print browser.url
+  http://translations.launchpad.dev/gnome/+translations
+  >>> browser.getLink('registered with Launchpad').click()
+  >>> print browser.url
+  http://translations.launchpad.dev/products

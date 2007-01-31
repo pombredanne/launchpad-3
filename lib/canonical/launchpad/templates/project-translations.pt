@@ -50,13 +50,14 @@
           <tr tal:repeat="product context/translatables">
             <td>
               <img alt="" src="/@@/product" />
-              <span tal:replace="product/name">product</span>
+              <a tal:content="product/displayname"
+                 tal:attributes="
+                   href string:${product/fmt:url}/+translations">Evolution</a>
             </td>
             <td>
-              <a tal:content="product/title"
-                 tal:attributes="href string:${product/fmt:url}/+translations">
-                Product Title here
-              </a>
+              <span tal:replace="product/title">
+                The Evolution Groupware Application
+              </span>
             </td>
           </tr>
         </tbody>
