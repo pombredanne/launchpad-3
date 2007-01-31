@@ -49,7 +49,7 @@
   </form>
 
       <div class="left">
-        <div class="two column section">
+        <div class="portlet">
           <h2>Releases</h2>
           <p tal:condition="not:context/releases">
             <tal:name replace="context/displayname" /> has no releases
@@ -64,7 +64,7 @@
             </li>
           </ul>
         </div>
-        <div class="two column section" tal:condition="context/currentrelease">
+        <div class="portlet" tal:condition="context/currentrelease">
           <h2>
             Architectures for
             <tal:latestrelease replace="context/currentrelease/displayname" />
@@ -86,7 +86,7 @@
           </ul>
         </div>
         <div
-          class="two column section"
+          class="portlet"
           tal:condition="nothing"
           tal:content="structure context/currentrelease/@@+last-uploads"
         >After bug 74342, change tal:condition="context/currentrelease"</div>
