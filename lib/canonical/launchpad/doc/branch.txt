@@ -73,6 +73,10 @@ If it doesn't exist an exception NotFoundError is raised
 ...         yield now
 >>> now = timegenerator(datetime.now(UTC))
 
+The timegenerator is used to create nicely ordered 'fake' date_created
+times for the branches.  This avoids using transaction.commit to get the
+date_created values from the database.
+
 >>> gterm_dev_url = 'http://example.com/~ddaa/gterm.dev'
 >>> title = "David Allouche's Main GNOME Terminal Branch"
 >>> summary = "Main line of development for David Allouche on GNOME Terminal."
