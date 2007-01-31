@@ -413,6 +413,9 @@ ul#applicationchooser li#applicationchooser_selected {
   color: #FFFFFF;
   font-weight: bold;
 }
+#portlets #actions h2 {
+  background-image: url(leftnav_bg_uncollapsible.gif);
+}
 #portlets .portlet h2:hover {
   background-color: #A3A3A3;
   text-decoration: none;
@@ -796,9 +799,13 @@ body.tab-overview #mainarea #portlets .portlet.active div {
   border-left: 4px solid #FEFCF0;
   border-right: 4px solid #FEFCF0;
 }
+body.tab-overview #actions {background-color: #e6eed3;}
+body.tab-overview #actions h2, body.tab-overview #actions h2:hover {
+  background-color: #83ad23;
+}
 h1, h2, h3 { /* On Overview tab or tab-less pages */
   background: none;
-  color: #90b51a; /* darkest color from locationbar_em_bg.gif */
+  color: #83ad23;
 }
 
 /* Code: */
@@ -840,11 +847,13 @@ body.tab-branches #mainarea #portlets .portlet.active div {
   border-right: 4px solid #FCF4F2;
 }
 body.tab-branches #actions {background-color: #ffc;}
-body.tab-branches #actions h2 {background-color: #f3cb00;}
+body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
+  background-color: #d18b39;
+}
 .tab-branches h1, .tab-branches h2, .tab-branches h3,
 .tab-branches #application-footer strong {
   background: none;
-  color: #f3cb00; /* "it fits nicely with the Bazaar logo" -- sabdfl */
+  color: #d18b39;
 }
 
 /* Bugs: */
@@ -886,11 +895,13 @@ body.tab-bugs #mainarea #portlets .portlet.active div {
   border-right: 4px solid #FEFCF0;
 }
 body.tab-bugs #actions {background-color: #fee;}
-body.tab-bugs #actions h2 {background-color: #c03;}
+body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
+  background-color: #9f2b33;
+}
 .tab-bugs h1, .tab-bugs h2, .tab-bugs h3, .tab-bugs #application-footer strong,
 .tab-bugs table.listing thead {
   background: none;
-  color: #c03;
+  color: #9f2b33;
 }
 
 /* Blueprints: */
@@ -928,12 +939,14 @@ body.tab-specifications #mainarea div#portlets div.portlet.active ul li a:hover 
   background-color: #FEFCF0;
 }
 body.tab-specifications #actions {background-color: #eff;}
-body.tab-specifications #actions h2 {background-color: #159cc8;}
+body.tab-specifications #actions h2, body.tab-specifications #actions h2:hover {
+  background-color: #3594bb;
+}
 .tab-specifications h1, .tab-specifications h2, .tab-specifications h3,
 .tab-specifications #application-footer strong,
 .tab-specifications table.listing thead {
   background: none;
-  color: #159cc8; /* darkest color from mainarea_tab4-* */
+  color: #3594bb;
 }
 .specstatusAPPROVED             {color: green;}
 .specstatusPENDINGAPPROVAL      {color: #f09;}
@@ -982,7 +995,7 @@ body.tab-translations #mainarea ul#applicationchooser li.tab-translations {
 }
 body.tab-translations #mainarea #portlets .portlet.active h2 a,
 body.tab-translations #mainarea div#portlets div.portlet.active a {
-  background-color: #159CC8;
+  background-color: #3594bb;
 }
 body.tab-translations #mainarea #portlets .portlet.active h2 a:hover,
 body.tab-translations #mainarea div#portlets div.portlet.active a:hover {
@@ -1002,12 +1015,14 @@ body.tab-translations #mainarea #portlets .portlet.active div {
   border-right: 4px solid #f1f9fc;
 }
 body.tab-translations #actions {background-color: #fcf;}
-body.tab-translations #actions h2 {background-color: #962667;}
+body.tab-translations #actions h2, body.tab-translations #actions h2:hover {
+  background-color: #bb3a84;
+}
 .tab-translations h1, .tab-translations h2, .tab-translations h3,
 .tab-translations #application-footer strong,
 .tab-translations table.listing thead {
   background: none;
-  color: #962667; /* darkest color from mainarea_tab5-* */
+  color: #bb3a84;
 }
 
 /* Answers: */
@@ -1029,7 +1044,7 @@ body.tab-support #mainarea ul#applicationchooser li.tab-support {
 }
 body.tab-support #mainarea #portlets .portlet.active h2 a,
 body.tab-support #mainarea div#portlets div.portlet.active a {
-  background-color: #3F3CCC;
+  background-color: #3840be;
 }
 body.tab-support #mainarea #portlets .portlet.active h2 a:hover,
 body.tab-support #mainarea div#portlets div.portlet.active a:hover {
@@ -1049,11 +1064,13 @@ body.tab-support #mainarea #portlets .portlet.active div {
   border-right: 4px solid #F4F4FC;
 }
 body.tab-support #actions {background-color: #eef;}
-body.tab-support #actions h2 {background-color: #3f3ccc;}
+body.tab-support #actions h2, body.tab-support #actions h2:hover {
+  background-color: #3840be;
+}
 .tab-support h1, .tab-support h2, .tab-support h3,
 .tab-support #application-footer strong, .tab-support table.listing thead {
   background: none;
-  color: #3f3ccc;
+  color: #3840be;
 }
 
 ul#applicationchooser a, ul#applicationchooser a:hover {
