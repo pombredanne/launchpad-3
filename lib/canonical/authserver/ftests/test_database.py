@@ -8,6 +8,8 @@ import unittest
 
 from zope.interface.verify import verifyObject
 
+from canonical.database.sqlbase import sqlvalues
+
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 
 from canonical.authserver.interfaces import (
@@ -622,6 +624,21 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         self.assertEqual(row[2], 0)
         self.assertEqual(row[3], 'rev-1')
 
+    def test_mirrorComplete_resets_mirror_request(self):
+        # After successfully mirroring a branch, mirror_request_time should be
+        # set to NULL
+
+        # Request that 25 (a hosted branch) be mirrored. This sets
+        # mirror_request_time
+        storage = DatabaseUserDetailsStorageV2(None)
+        storage._requestMirrorInteraction(self.cursor, 25)
+
+        # Simulate successfully mirroring branch 25
+        self.storage._startMirroringInteraction(self.cursor, 25)
+        self.storage._mirrorCompleteInteraction(self.cursor, 25, 'rev-1')
+
+        self.assertEqual(None, self.getMirrorRequestTime(25))
+
     def test_mirrorComplete_resets_failure_count(self):
         # this increments the failure count ...
         self.test_mirrorFailed()
@@ -647,9 +664,7 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         # Branch 25 is a hosted branch.
         # Double check that its mirror_request_time is NULL. The sample data
         # should guarantee this.
-        self.cursor.execute(
-            "SELECT mirror_request_time FROM branch WHERE id = 25")
-        self.assertEqual(self.cursor.fetchone(), (None,))
+        self.assertEqual(None, self.getMirrorRequestTime(25))
 
         # Mark 25 as recently mirrored.
         self.storage._startMirroringInteraction(self.cursor, 25)
@@ -691,6 +706,18 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         # 25 should only be in the pull queue if a mirror has been requested
         self.failIf(self.isBranchInPullQueue(25),
                     "hosted branch no longer in pull list")
+
+    def getMirrorRequestTime(self, branch_id):
+        """Return the value of mirror_request_time for the branch with the
+        given id.
+
+        :param branch_id: The id of a row in the Branch table. An int.
+        :return: A timestamp or None.
+        """
+        self.cursor.execute(
+            "SELECT mirror_request_time FROM branch WHERE id = %s"
+            % sqlvalues(branch_id))
+        return self.cursor.fetchone()[0]
 
     def isBranchInPullQueue(self, branch_id):
         """Whether the branch with this id is present in the pull queue."""
