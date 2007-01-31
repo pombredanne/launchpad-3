@@ -644,11 +644,17 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         # Hosted branches that haven't had a mirror requested should NOT be
         # included in the branch queue
 
-        # Mark 25 (a hosted branch) as recently mirrored.
+        # Branch 25 is a hosted branch.
+        # Double check that its mirror_request_time is NULL. The sample data
+        # should guarantee this.
+        self.cursor.execute(
+            "SELECT mirror_request_time FROM branch WHERE id = 25")
+        self.assertEqual(self.cursor.fetchone(), (None,))
+
+        # Mark 25 as recently mirrored.
         self.storage._startMirroringInteraction(self.cursor, 25)
         self.storage._mirrorCompleteInteraction(self.cursor, 25, 'rev-1')
 
-        # XXX - double check that its mirror_request_time is NULL
         self.failIf(self.isBranchInPullQueue(25),
                     "Shouldn't be in queue until mirror requested")
 
