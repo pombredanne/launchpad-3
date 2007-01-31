@@ -712,7 +712,7 @@ class TicketMessageDisplayView(LaunchpadView):
 
 
 class SearchAllTicketsView(SearchTicketsView):
-    """View that search among all tickets posted on Launchpad."""
+    """View that searches among all tickets posted on Launchpad."""
 
     displayTargetColumn = True
 
@@ -720,7 +720,7 @@ class SearchAllTicketsView(SearchTicketsView):
     def pageheading(self):
         """See SearchTicketsView."""
         if self.search_text:
-            return _('Support requests about "${search_text}"',
+            return _('Support requests matching "${search_text}"',
                      mapping=dict(search_text=self.search_text))
         else:
             return _('Search all support requests')
@@ -729,7 +729,7 @@ class SearchAllTicketsView(SearchTicketsView):
     def empty_listing_message(self):
         """See SearchTicketsView."""
         if self.search_text:
-            return _("There are no support requests about "
+            return _("There are no support requests matching "
                      '"${search_text}" with the requested statuses.',
                      mapping=dict(search_text=self.search_text))
         else:

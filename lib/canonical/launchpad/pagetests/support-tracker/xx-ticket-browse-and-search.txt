@@ -520,7 +520,7 @@ support requests ever filed on Launchpad.
     >>> browser.getControl('Search').click()
 
     >>> print browser.title
-    Support requests about "firefox"
+    Support requests matching "firefox"
 
     >>> print browser.url
     http://answers.launchpad.dev/support/+tickets?...
@@ -546,11 +546,12 @@ Only the default set of statuses is searched:
     >>> browser.getControl(name='field.status').value
     ['Open', 'Needs information', 'Answered', 'Solved']
 
-When no results are found, a message inform the user of this fact:
+When no results are found, a message informs the user of this fact:
 
     >>> browser.getControl(name='field.status').displayValue = ['Expired']
     >>> browser.getControl('Search').click()
 
     >>> print find_main_content(
     ...     browser.contents).first('p').renderContents()
-    There are no support requests about "firefox" with the requested statuses.
+    There are no support requests matching "firefox" with the requested
+    statuses.
