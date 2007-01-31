@@ -1192,12 +1192,11 @@ div.right div.portlet {
   border-width: 1px 0 0 1px;
   padding: 0.75em 0 0.75em 0.75em;
 }
-div.three.columns {clear: both;}
-div.three.columns .column {
+div.three.column {width: 33%;}
+div.three.column.left, div.three.column.middle, div.three.column.right {
+  clear: none;
   float: left;
-  width: 33%;
 }
-
 .title {
   font-weight: bold;
 }
