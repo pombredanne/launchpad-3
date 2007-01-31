@@ -3681,6 +3681,7 @@ INSERT INTO poll (id, team, name, title, dateopens, datecloses, proposition, "ty
 INSERT INTO poll (id, team, name, title, dateopens, datecloses, proposition, "type", allowspoilt, secrecy, date_created) VALUES (3, 17, 'never-closes', 'A random poll that never closes', '2004-01-01 00:00:00', '2104-01-15 00:00:00', 'Whatever proposition.', 1, true, 3, '2006-10-16 18:31:44.615511');
 INSERT INTO poll (id, team, name, title, dateopens, datecloses, proposition, "type", allowspoilt, secrecy, date_created) VALUES (4, 17, 'never-closes2', 'A second random poll that never closes', '2004-01-01 00:00:00', '2104-01-15 00:00:00', 'Whatever proposition.', 2, true, 3, '2006-10-16 18:31:44.616371');
 INSERT INTO poll (id, team, name, title, dateopens, datecloses, proposition, "type", allowspoilt, secrecy, date_created) VALUES (5, 17, 'never-closes3', 'A third random poll that never closes', '2004-01-01 00:00:00', '2104-01-15 00:00:00', 'Whatever proposition.', 2, true, 1, '2006-10-16 18:31:44.617218');
+INSERT INTO poll (id, team, name, title, dateopens, datecloses, proposition, "type", allowspoilt, secrecy, date_created) VALUES (6, 17, 'never-closes4', 'A public poll that never closes', '2004-01-01 00:00:00', '2104-01-15 00:00:00', 'Whatever proposition.', 1, true, 1, '2007-01-16 18:31:44.615511');
 
 
 ALTER TABLE poll ENABLE TRIGGER ALL;
@@ -3707,6 +3708,10 @@ INSERT INTO polloption (id, poll, name, title, active, date_created) VALUES (16,
 INSERT INTO polloption (id, poll, name, title, active, date_created) VALUES (17, 5, 'Option 2', 'Option 2', true, '2006-10-16 18:31:44.628904');
 INSERT INTO polloption (id, poll, name, title, active, date_created) VALUES (18, 5, 'Option 3', 'Option 3', true, '2006-10-16 18:31:44.629293');
 INSERT INTO polloption (id, poll, name, title, active, date_created) VALUES (19, 5, 'Option 4', 'Option 4', true, '2006-10-16 18:31:44.629683');
+INSERT INTO polloption (id, poll, name, title, active, date_created) VALUES (20, 6, 'OptionA', 'OptionA', true, '2006-10-16 18:31:44.625374');
+INSERT INTO polloption (id, poll, name, title, active, date_created) VALUES (21, 6, 'OptionB', 'OptionB', true, '2006-10-16 18:31:44.62576');
+INSERT INTO polloption (id, poll, name, title, active, date_created) VALUES (22, 6, 'OptionC', 'OptionC', true, '2006-10-16 18:31:44.626146');
+INSERT INTO polloption (id, poll, name, title, active, date_created) VALUES (23, 6, 'OptionD', 'OptionD', true, '2006-10-16 18:31:44.626573');
 
 
 ALTER TABLE polloption ENABLE TRIGGER ALL;
