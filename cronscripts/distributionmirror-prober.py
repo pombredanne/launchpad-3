@@ -72,7 +72,7 @@ class DistroMirrorProber(LaunchpadScript):
         results = mirror_set.getMirrorsToProbe(
             content_type, ignore_last_probe=self.options.force)
         mirror_ids = [mirror.id for mirror in results]
-        unchecked_mirrors = []
+        unchecked_keys = []
         logfiles = {}
         probed_mirrors = []
 
@@ -94,7 +94,7 @@ class DistroMirrorProber(LaunchpadScript):
             probed_mirrors.append(mirror)
             logfile = StringIO()
             logfiles[mirror_id] = logfile
-            probe_function(mirror, logfile, unchecked_mirrors, self.logger)
+            probe_function(mirror, logfile, unchecked_keys, self.logger)
 
         if probed_mirrors:
             reactor.run()
