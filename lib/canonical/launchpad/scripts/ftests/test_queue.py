@@ -27,6 +27,9 @@ from canonical.testing import LaunchpadZopelessLayer
 class TestQueueBase(TestCase):
     """Base methods for queue tool test classes."""
 
+    def setUp(self):
+        LaunchpadZopelessLayer.switchDbUser(self.dbuser)
+
     def _test_display(self, text):
         """Store output from queue tool for inspection."""
         self.test_output.append(text)
@@ -57,6 +60,7 @@ class TestQueueTool(TestQueueBase):
     def setUp(self):
         """Create contents in disk for librarian sampledata."""
         fillLibrarianFile(1)
+        TestQueueBase.setUp(self)
 
     def tearDown(self):
         """Remove test contents from disk."""
@@ -364,6 +368,7 @@ class TestQueueToolInJail(TestQueueBase):
         self._home = os.path.abspath('')
         self._jail = tempfile.mkdtemp()
         os.chdir(self._jail)
+        TestQueueBase.setUp(self)
 
     def tearDown(self):
         """Remove test contents from disk.
