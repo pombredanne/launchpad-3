@@ -216,6 +216,16 @@
         <td>Mail or an email address.</td>
       </tr>
       <tr>
+        <td>maybe</td>
+        <td><img alt="" src="/@@/maybe" /></td>
+        <td>A blue freehand question mark (used, for example, when something is proposed).</td>
+      </tr>
+      <tr>
+        <td>no</td>
+        <td><img alt="" src="/@@/no" /></td>
+        <td>A dark-ish red freehand cross (used, for example, when something is declined).</td>
+      </tr>
+      <tr>
         <td>person-mini</td>
         <td><img alt="" src="/@@/person-mini" /></td>
         <td rowspan="4">
@@ -384,6 +394,11 @@
       <tr>
         <td>warning-large</td>
         <td><img alt="" src="/@@/warning-large" /></td>
+      </tr>
+      <tr>
+        <td>yes</td>
+        <td><img alt="" src="/@@/yes" /></td>
+        <td>A green check mark (used, for example, when something is approved).</td>
       </tr>
       <tr>
         <td>zoom-in</td>

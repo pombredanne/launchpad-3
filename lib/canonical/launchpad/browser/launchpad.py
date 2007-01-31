@@ -773,14 +773,21 @@ class Button:
     def renderActive(self):
         return (
             '<a href="%(url)s">\n'
-            '  <img alt="" src="/+icing/app-%(buttonname)s.large.gif" />\n'
-            '%(text)s\n'
+            '  <img'
+            '    alt=""'
+            '    src="/+icing/app-%(buttonname)s.large.gif"'
+            '    title="%(text)s"'
+            '  />\n'
             '</a>\n' % self.replacement_dict)
 
     def renderInactive(self):
         return (
             '<a href="%(url)s">\n'
-            '  <img alt="" src="/+icing/app-%(buttonname)s.mono.gif" />\n'
+            '  <img'
+            '    alt=""'
+            '    src="/+icing/app-%(buttonname)s.mono.gif"'
+            '    title="%(text)s"'
+            '  />\n'
             '</a>\n' % self.replacement_dict)
 
     def renderButton(self, is_active):
@@ -808,12 +815,12 @@ class ApplicationButtons(LaunchpadView):
         self.name = None
 
     buttons = [
-        ProductsButton(register="Register your project."),
-        Button(code="Publish your code."),
+        ProductsButton(register="Register your project so it can benefit from Launchpad&rsquo;s features."),
+        Button(code="Publish your code for people to merge and branch from."),
         Button(bugs="Share bug reports and fixes."),
-        Button(blueprints="Track specifications."),
-        Button(translations="Localize your software."),
-        Button(answers="Help your users.")
+        Button(blueprints="Track specifications to approval and implementation."),
+        Button(translations="Localize software into your favorite language."),
+        Button(answers="Ask and answer questions about software.")
         ]
 
     def render(self):
@@ -848,17 +855,6 @@ class SearchProjectsView(LaunchpadView):
             return
 
         search_string = self.search_string.lower()
-        if form.get('go') is not None:
-            try:
-                pillar = getUtility(IPillarNameSet)[search_string]
-            except NotFoundError:
-                pass
-            else:
-                self.request.response.redirect(canonical_url(pillar))
-                # No need to do the search, since we're going to teleport the
-                # user.
-                return
-
         # We use a limit bigger than self.max_results_to_display so that we
         # know when we had too many results and we can tell the user that some
         # of them are not being displayed.
