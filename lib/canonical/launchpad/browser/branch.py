@@ -13,7 +13,6 @@ __all__ = [
     'BranchNavigation',
     'BranchInPersonView',
     'BranchInProductView',
-    'BranchUrlWidget',
     'BranchView',
     ]
 
@@ -36,7 +35,6 @@ from canonical.launchpad.webapp import (
     LaunchpadView, Navigation, stepto, stepthrough, LaunchpadFormView,
     LaunchpadEditFormView, action, custom_widget)
 from canonical.widgets import ContextWidget
-from canonical.widgets.textwidgets import StrippedTextWidget
 
 
 def quote(text):
@@ -179,28 +177,6 @@ class BranchInProductView(BranchView):
     show_product_link = False
 
 
-class BranchUrlWidget(StrippedTextWidget):
-    """A widget to capture the URL of a remote branch.
-
-    Wider than a normal TextLine widget and ignores trailing slashes.
-    """
-    displayWidth = 44
-    cssClass = 'urlTextType'
-
-    def _toFieldValue(self, input):
-        if input == self._missing:
-            return self.context.missing_value
-        else:
-            value = StrippedTextWidget._toFieldValue(self, input)
-            return value.rstrip('/')
-
-
-class BranchHomePageWidget(StrippedTextWidget):
-    """A widget to capture a web page URL, wider than a normal TextLine."""
-    displayWidth = 44
-    cssClass = 'urlTextType'
-
-
 class BranchNameValidationMixin:
     """Provide name validation logic used by several branch view classes."""
 
@@ -247,9 +223,6 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
     field_names = ['product', 'url', 'name', 'title', 'summary',
                    'lifecycle_status', 'whiteboard', 'home_page', 'author']
 
-    custom_widget('url', BranchUrlWidget)
-    custom_widget('home_page', BranchHomePageWidget)
-
     def setUpFields(self):
         LaunchpadFormView.setUpFields(self)
         # This is to prevent users from converting push/import
@@ -269,9 +242,6 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
     schema = IBranch
     field_names = ['product', 'url', 'name', 'title', 'summary',
                    'lifecycle_status', 'whiteboard', 'home_page', 'author']
-
-    custom_widget('url', BranchUrlWidget)
-    custom_widget('home_page', BranchHomePageWidget)
 
     branch = None
 

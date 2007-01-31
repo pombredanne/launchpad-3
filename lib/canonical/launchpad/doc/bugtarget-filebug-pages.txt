@@ -65,17 +65,15 @@ Librarian.
 
     >>> transaction.commit()
 
-Now, if we pass the token to the filebug view, the extra_bug_data_msg
+Now, if we pass the token to the filebug view, the extra_data
 attribute will be set with the actual data.
 
     >>> request = LaunchpadTestRequest()
     >>> filebug_view = FileBugViewBase(ubuntu_firefox, request)
     >>> filebug_view.publishTraverse(request, token) is filebug_view
     True
-    >>> filebug_view.extra_bug_data.uuid == token
-    True
-    >>> filebug_view.extra_bug_data.blob == debug_data
-    True
+    >>> filebug_view.extra_data.extra_description
+    u'This should be added to the description.'
 
     >>> filebug_view.validate(bug_data) is None
     True
@@ -239,9 +237,9 @@ finds the right blob to use.
     >>> filebug_view = FileBugViewBase(ubuntu_firefox, request)
     >>> filebug_view.publishTraverse(request, token) is filebug_view
     True
-    >>> filebug_view.extra_bug_data.uuid == token
+    >>> filebug_view.extra_data_token == token
     True
-    >>> filebug_view.extra_bug_data.blob == debug_data
+    >>> filebug_view.extra_data is not None
     True
 
 Since the view itself is returned, it will handle further traversals as

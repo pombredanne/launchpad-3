@@ -18,14 +18,14 @@ Changes:
  .
    * Futzed with the orig to break the upload
 Files: 
- 366ee7771ab93412613a90bc3a2c113d 512 devel optional bar_1.0-3.dsc
+ 828076c04b449c611e8a244c7d490845 512 devel optional bar_1.0-3.dsc
  44e0994a564891c4c8da8a3bd696df96 177 devel optional bar_1.0.orig.tar.gz
  d70cb6faa21bfb2214766ff92f1835ba 674 devel optional bar_1.0-3.diff.gz
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.1 (GNU/Linux)
+Version: GnuPG v1.4.3 (GNU/Linux)
 
-iD8DBQFEPRjUK8hAFiBoeJURAjOsAJ9jCfAXW1lKWaWAmth499j+1SbfvQCdFHJb
-6IDC3m0HEOfEEB0vcO1Lkko=
-=AkKT
+iD8DBQFFt7nJjn63CGxkqMURAk3kAKCP8eZGw0rj8wtmsCLa2bhhlLDfkQCfRtf6
+CzA0b2RnmiM4kKw6qUu195s=
+=0eCn
 -----END PGP SIGNATURE-----

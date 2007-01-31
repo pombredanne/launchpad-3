@@ -44,5 +44,3 @@ product/distribution grouped by categories.
     Bug Management: [(u'name16', 39L), (u'name12', 35L)]
     Specification Tracking: [(u'sabdfl', 49L)]
 
-
-

@@ -69,11 +69,7 @@ class POMsgSetMixIn:
                 POSubmission.pluralform = %(pluralform)s
             """ % replacements
 
-        posubmission_ids_list = POMsgSet._connection.queryAll(
-            '\n'.join(query) % sqlvalues(
-                self.pofile.language, self.potmsgset.primemsgid_ID,
-                pluralform))
-
+        posubmission_ids_list = POMsgSet._connection.queryAll(query)
         posubmission_ids = [id for [id] in posubmission_ids_list]
 
         active_submission = self.getActiveSubmission(pluralform)
