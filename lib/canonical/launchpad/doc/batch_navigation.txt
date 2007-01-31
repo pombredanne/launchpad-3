@@ -242,8 +242,6 @@ that are batched.
   ...            callback=self.constructReindeerFromAtoms)
 
   >>> view = ReindeerView()
-  >>> print view.built_reindeer
-  None
   >>> batch_navigator = view.batchedReindeer()
   >>> print batch_navigator.built_reindeer
   ['Dasher', 'Dancer', 'Prancer']
