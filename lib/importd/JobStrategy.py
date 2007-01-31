@@ -9,6 +9,8 @@ __metaclass__ = type
 
 import os
 import shutil
+import subprocess
+import sys
 
 import CVS
 import cscvs
@@ -475,7 +477,11 @@ class SVNStrategy(CSCVSStrategy):
             path=self.getSVNDirPath(self.aJob,self.dir)
             try:
                 if os.access(path, os.F_OK):
-                    SCM.tree(path).update()
+                    # XXX: work around pysvn bug
+                    arguments = ['svn', 'update', '--ignore-externals']
+                    retcode = subprocess.call(arguments, cwd=path)
+                    if retcode != 0:
+                        sys.exit(retcode)
                 else:
                     self.logger.debug("getting from SVN: %s %s",
                         repository, self.aJob.module)
