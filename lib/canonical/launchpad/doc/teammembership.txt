@@ -267,6 +267,15 @@ not changed.
     >>> print membership.datejoined.strftime("%Y-%m-%d")
     2006-05-15
 
+Finally, if we reactivate his membership, the datejoined will once again be
+updated.
+
+    >>> membership.setStatus(TeamMembershipStatus.APPROVED, reviewer=foobar)
+    >>> print membership.status.title
+    Approved
+    >>> membership.datejoined.date() == utc_now.date()
+    True 
+
 
 == Flagging expired memberships ==
 
