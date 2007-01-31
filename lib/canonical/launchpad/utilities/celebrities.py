@@ -102,3 +102,5 @@ class LaunchpadCelebrities:
         IPersonSet, 'support-tracker-janitor')
     team_membership_janitor = CelebrityDescriptor(
         IPersonSet, 'team-membership-janitor')
+    launchpad_beta_testers = CelebrityDescriptor(
+        IPersonSet, 'launchpad-beta-testers')
