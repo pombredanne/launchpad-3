@@ -640,21 +640,51 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         self.assertEqual(row[0], row[1])
         self.assertEqual(row[2], 0)
 
-    def test_always_try_mirroring_hosted_branches(self):
-        # Return all hosted branches every run, regardless of
-        # last_mirror_attempt.  This is a short-term fix for bug #48813; see the
-        # comment in _getBranchPullQueueInteraction.
+    def test_unrequested_hosted_branches(self):
+        # Hosted branches that haven't had a mirror requested should NOT be
+        # included in the branch queue
 
-        # Branch 25 is a hosted branch.
+        # Mark 25 (a hosted branch) as recently mirrored.
+        self.storage._startMirroringInteraction(self.cursor, 25)
+        self.storage._mirrorCompleteInteraction(self.cursor, 25, 'rev-1')
+
+        # XXX - double check that its mirror_request_time is NULL
+        self.failIf(self.isBranchInPullQueue(25),
+                    "Shouldn't be in queue until mirror requested")
+
+    def test_requested_hosted_branches(self):
+        # Hosted branches that HAVE had a mirror requested should be in
+        # the branch queue
+
+        # Mark 25 (a hosted branch) as recently mirrored.
+        self.storage._startMirroringInteraction(self.cursor, 25)
+        self.storage._mirrorCompleteInteraction(self.cursor, 25, 'rev-1')
+
+        # Request a mirror
+        storage = DatabaseUserDetailsStorageV2(None)
+        storage._requestMirrorInteraction(self.cursor, 25)
+
+        self.failUnless(self.isBranchInPullQueue(25), "Should be in queue")
+
+    def test_mirror_stale_hosted_branches(self):
+        # Hosted branches which haven't been mirrored for a whole day should be
+        # mirrored even if they haven't asked for it.
+
+        # XXX: This behaviour is a fail-safe and should probably be removed
+        # once we trust the mirror_request_time behavior.
+        # -- jml, 2007-01-31
+
+        # Branch 25 is a hosted branch, hasn't been mirrored for over 1 day
+        # and has not had a mirror requested
         self.failUnless(self.isBranchInPullQueue(25))
 
         # Mark 25 as recently mirrored.
         self.storage._startMirroringInteraction(self.cursor, 25)
         self.storage._mirrorCompleteInteraction(self.cursor, 25, 'rev-1')
 
-        # 25 should still be in the pull list
-        self.failUnless(self.isBranchInPullQueue(25),
-                        "hosted branch no longer in pull list")
+        # 25 should only be in the pull queue if a mirror has been requested
+        self.failIf(self.isBranchInPullQueue(25),
+                    "hosted branch no longer in pull list")
 
     def isBranchInPullQueue(self, branch_id):
         """Whether the branch with this id is present in the pull queue."""

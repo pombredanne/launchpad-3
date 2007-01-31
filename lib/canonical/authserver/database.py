@@ -504,7 +504,8 @@ class DatabaseBranchDetailsStorage:
             WHERE (ProductSeries.id is NULL AND (
                       last_mirror_attempt is NULL
                       OR (%(utc_now)s - last_mirror_attempt > '1 day')
-                      OR (url is NULL AND Person.name <> 'vcs-imports')))
+                      OR (url is NULL AND Person.name <> 'vcs-imports'
+                          AND mirror_request_time IS NOT NULL)))
                    OR (ProductSeries.id IS NOT NULL AND (
                       (datelastsynced IS NOT NULL
                           AND last_mirror_attempt IS NULL)
