@@ -20,14 +20,15 @@ def close_account(con, log, username):
     
     Return True on success, or log an error message and return False
     """
-    log.info("Closing %s's account" % username)
     cur = con.cursor()
     cur.execute("""
-        SELECT id, calendar, teamowner FROM Person
-        WHERE name=%(username)s
+        SELECT Person.id, name, calendar, teamowner
+        FROM Person LEFT OUTER JOIN EmailAddress
+            ON Person.id = EmailAddress.person
+        WHERE name=%(username)s or lower(email)=lower(%(username)s)
         """, vars())
     try:
-        person_id, calendar_id, teamowner = cur.fetchone()
+        person_id, username, calendar_id, teamowner = cur.fetchone()
     except TypeError:
         log.fatal("User %s does not exist" % username)
         return False
@@ -36,6 +37,8 @@ def close_account(con, log, username):
     if teamowner is not None:
         log.fatal("%s is a team" % username)
         return False
+
+    log.info("Closing %s's account" % username)
 
     def table_notification(table):
         log.debug("Handling the %s table" % table)
@@ -156,7 +159,9 @@ def close_account(con, log, username):
     return True
 
 def main():
-    parser = OptionParser('%prog [options] username [username ...]')
+    parser = OptionParser(
+            '%prog [options] (username|email) [...]'
+            )
     db_options(parser)
     logger_options(parser)
 
@@ -167,10 +172,10 @@ def main():
 
     log = logger(options)
 
+    con = None
     try:
         log.debug("Connecting to database")
         con = connect(options.dbuser)
-        
         for username in args:
             if not close_account(con, log, username):
                 log.debug("Rolling back")
@@ -182,7 +187,8 @@ def main():
     except:
         log.exception("Unhandled exception")
         log.debug("Rolling back")
-        con.rollback()
+        if con is not None:
+            con.rollback()
         return 1
 
 if __name__ == '__main__':
