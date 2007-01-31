@@ -479,6 +479,12 @@ class DatabaseBranchDetailsStorage:
 
     def _getBranchPullQueueInteraction(self, transaction):
         """The interaction for getBranchPullQueue."""
+        # The following types of branches are included in the queue:
+        # - any branches which have not yet been mirrored
+        # - any branches that were last mirrored over one day ago
+        # - any hosted branches which have requested that they be mirrored
+        # - any import branches which have been synced since their last mirror
+
         # XXX Andrew Bennetts 2006-06-14:
         # 'vcs-imports' should not be hard-coded in this function.  Instead this
         # ought to use getUtility(LaunchpadCelebrities), but the authserver
