@@ -153,12 +153,16 @@ class BranchToMirror:
             self._mirrorFailed(logger, msg)
 
         except bzrlib.errors.UnknownFormatError, e:
-            if e.args[0].count('\n') >= 2:
-                msg = 'Not a branch'
+            if len(e.args) == 0:
+                self._record_oops(logger)
+                self._mirrorFailed(logger, e)
             else:
-                msg = 'Unknown branch format: %s' % e.args[0]
-            self._record_oops(logger, msg)
-            self._mirrorFailed(logger, msg)
+                if e.args[0].count('\n') >= 2:
+                    msg = 'Not a branch'
+                else:
+                    msg = 'Unknown branch format: %s' % e.args[0]
+                self._record_oops(logger, msg)
+                self._mirrorFailed(logger, msg)
 
         except bzrlib.errors.ParamikoNotPresent, e:
             msg = ("The supermirror does not support mirroring branches "
