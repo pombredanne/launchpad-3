@@ -611,7 +611,7 @@ ul#applicationchooser li#applicationchooser_selected {
   text-indent: -9999px;
   overflow: hidden;
 }
-#structuralobject {
+#structuralobject, #applications {
   position: relative;
   z-index: 1;
 }
