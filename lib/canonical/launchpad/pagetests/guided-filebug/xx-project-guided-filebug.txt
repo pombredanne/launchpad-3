@@ -35,3 +35,23 @@ page.
     'http://launchpad.dev/evolution/+bug/...'
     >>> user_browser.title
     'Bug #... in evolution (upstream): ...Evolution crashes...'
+
+== Advanced filebug page ==
+
+From the Project filebug page it's possible to go to the advanced
+filebug page.
+
+    >>> user_browser.open('http://launchpad.dev/gnome')
+    >>> user_browser.getLink(url='+filebug').click()
+    >>> user_browser.getLink('complicated bug filing form').click()
+    >>> user_browser.url
+    'http://launchpad.dev/gnome/+filebug-advanced'
+
+    >>> user_browser.getControl('Product').value = ['evolution']
+    >>> user_browser.getControl('Summary').value = 'Evolution crashes'
+    >>> user_browser.getControl('Further information').value = 'Crash.'
+    >>> user_browser.getControl('Submit Bug Report').click()
+    >>> user_browser.url
+    'http://launchpad.dev/evolution/+bug/...'
+    >>> user_browser.title
+    'Bug #... in evolution (upstream): ...Evolution crashes...'

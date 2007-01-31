@@ -35,6 +35,11 @@
     </td>
   </tr>
 
+  <tal:product tal:define="widget nocall:view/widgets/product|nothing"
+               tal:condition="widget">
+    <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
+  </tal:product>
+
   <metal:summary tal:define="widget nocall:view/widgets/title">
     <metal:row use-macro="context/@@launchpad_form/widget_row" />
   </metal:summary>

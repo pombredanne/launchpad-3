@@ -12,6 +12,7 @@ __all__ = [
     "FileBugGuidedView",
     "FileBugInPackageView",
     "ProjectFileBugGuidedView",
+    "ProjectFileBugAdvancedView",
     ]
 
 import cgi
@@ -120,10 +121,18 @@ class FileBugViewBase(LaunchpadFormView):
 
         return {'packagename': self.context.name}
 
+    def getSelectedProduct(self):
+        if self.widgets['product'].hasValidInput():
+            return self.widgets['product'].getInputValue()
+        else:
+            return None
+
     def getProductOrDistroFromContext(self):
         """Return the IProduct or IDistribution for this context."""
         context = self.context
 
+        if IProject.providedBy(context):
+            return self.getSelectedProduct()
         if IDistribution.providedBy(context) or IProduct.providedBy(context):
             return context
         else:
@@ -511,12 +520,6 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
             product for product in self.context.products
             if product.official_malone]
 
-    def getSelectedProduct(self):
-        assert self.widgets['product'].hasValidInput(), (
-            'This method should be called only after a product has'
-            ' been selected.')
-        return self.widgets['product'].getInputValue()
-
     def getProductOrDistroFromContext(self):
         return self.getSelectedProduct()
 
@@ -526,6 +529,25 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
         selected_product = self.getSelectedProduct()
         return selected_product.getMostCommonBugs(
             self.user, limit=self._MATCHING_BUGS_LIMIT)
+
+
+class ProjectFileBugAdvancedView(FileBugAdvancedView):
+
+    actions = FileBugAdvancedView.actions
+    schema = IProjectBugAddForm
+
+    field_names = ['product', 'title', 'comment', 'security_related']
+
+    def contextUsesMalone(self):
+        """Does the context use Malone as its official bugtracker?"""
+        return len(self.getProductsUsingMalone()) > 0
+
+    def getProductsUsingMalone(self):
+        return [
+            product for product in self.context.products
+            if product.official_malone]
+
+
 
 class FileBugInPackageView(FileBugViewBase):
     """Browser view class for the top-level filebug-in-package page."""

@@ -36,7 +36,8 @@
             <label tal:attributes="for widget/name">
               This bug is a security vulnerability
             </label>
-            <div tal:define="security_contact product_or_distro/security_contact">
+            <div tal:condition="product_or_distro"
+                 tal:define="security_contact product_or_distro/security_contact|nothing">
               <i tal:condition="security_contact">
                 The security contact for
                 <span tal:content="product_or_distro/displayname" />,
