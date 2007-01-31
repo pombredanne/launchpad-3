@@ -1,0 +1,120 @@
+= Redirection of Beta Testers =
+
+Launchpad occasionally runs private beta tests of large
+changes. During these times, members of the launchpad-beta-testers
+team have access to a separate web app running off the same database.
+
+To encourage members of this team to use the beta UI, we automatically
+redirect them to the beta site when they use the main site.
+
+For these tests, we will use the user 'launchpad-beta-owner', who is
+on the beta testers team.  First, create a browser object for this
+person:
+
+    >>> from zope.testbrowser.testing import Browser
+    >>> beta_browser = Browser()
+    >>> beta_browser.handleErrors = False
+    >>> beta_browser.addHeader('Authorization',
+    ...                        'Basic beta-admin@launchpad.net:test')
+
+
+  XXX 20070131 jamesh:
+  I couldn't get testbrowser to tell me where it redirected to in the
+  case of a URL that could not be displayed, so I am using old pagetest
+  syntax here.
+
+If a normal user goes to the main page, it will load as normal:
+
+    >>> print http('''
+    ... GET / HTTP/1.1
+    ... Host: launchpad.dev
+    ... Authorization: Basic test@canonical.com:test
+    ... ''')
+    HTTP/1.1 200 Ok
+    ...
+
+In contrast, members of the beta testers get redirected:
+
+    >>> print http('''
+    ... GET / HTTP/1.1
+    ... Host: launchpad.dev
+    ... Authorization: Basic beta-admin@launchpad.net:test
+    ... ''')
+    HTTP/1.1 303 See Other
+    Content-Length: 0
+    Content-Type: text/plain
+    Location: http://beta.launchpad.dev/index.html
+    <BLANKLINE>
+
+The redirection is controlled by the beta_testers_redirection_host
+config item.  If it is set to None, no redirection occurs:
+
+    >>> from canonical.config import config
+    >>> print config.launchpad.beta_testers_redirection_host
+    beta.launchpad.dev
+    >>> config.launchpad.beta_testers_redirection_host = None
+
+    >>> print http('''
+    ... GET / HTTP/1.1
+    ... Host: launchpad.dev
+    ... Authorization: Basic beta-admin@launchpad.net:test
+    ... ''')
+    HTTP/1.1 200 Ok
+    ...
+
+Set the redirection host back for the rest of the tests:
+
+    >>> config.launchpad.beta_testers_redirection_host = 'beta.launchpad.dev'
+
+
+The redirection also works for URLs below the root, and with query
+parameters:
+
+    >>> print http('''
+    ... GET /products?text=bazaar HTTP/1.1
+    ... Host: launchpad.dev
+    ... Authorization: Basic beta-admin@launchpad.net:test
+    ... ''')
+    HTTP/1.1 303 See Other
+    Content-Length: 0
+    Content-Type: text/plain
+    Location: http://beta.launchpad.dev/products?text=bazaar
+    <BLANKLINE>
+
+
+The redirection also works for other Launchpad subdomains:
+
+    >>> print http('''
+    ... GET /launchpad/+bugs?orderby=-datecreated HTTP/1.1
+    ... Host: bugs.launchpad.dev
+    ... Authorization: Basic beta-admin@launchpad.net:test
+    ... ''')
+    HTTP/1.1 303 See Other
+    Content-Length: 0
+    Content-Type: text/plain
+    Location: http://bugs.beta.launchpad.dev/launchpad/+bugs?orderby=-datecreated
+    <BLANKLINE>
+
+    >>> print http('''
+    ... GET /~name12 HTTP/1.1
+    ... Host: answers.launchpad.dev
+    ... Authorization: Basic beta-admin@launchpad.net:test
+    ... ''')
+    HTTP/1.1 303 See Other
+    Content-Length: 0
+    Content-Type: text/plain
+    Location: http://answers.beta.launchpad.dev/~name12
+    <BLANKLINE>
+
+
+However, domains not under the main site (such as shipit) will not be
+redirected:
+
+    >>> print http('''
+    ... GET / HTTP/1.1
+    ... Host: shipit.ubuntu.dev
+    ... Authorization: Basic beta-admin@launchpad.net:test
+    ... ''')
+    HTTP/1.1 200 Ok
+    ...
+

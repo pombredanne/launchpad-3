@@ -42,6 +42,8 @@ from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView, Navigation,
     stepto, canonical_url)
+from canonical.launchpad.webapp.publisher import RedirectionView
+from canonical.launchpad.webapp.uri import URI
 
 # XXX SteveAlexander, 2005-09-22, this is imported here because there is no
 #     general timedelta to duration format adapter available.  This should
@@ -444,6 +446,45 @@ class LaunchpadRootNavigation(Navigation):
     def calendar(self):
         # XXX permission=launchpad.AnyPerson
         return MergedCalendar()
+
+    def _getBetaRedirectionView(self):
+        # If no redirection host is set, don't redirect.
+        mainsite_host = config.launchpad.vhosts.mainsite.hostname
+        redirection_host = config.launchpad.beta_testers_redirection_host
+        if redirection_host is None:
+            return None
+        # If the hostname for our URL isn't under the main site
+        # (e.g. shipit.ubuntu.com), don't redirect.
+        uri = URI(self.request.getURL())
+        if not uri.host.endswith(mainsite_host):
+            return None
+
+        # Only redirect if the user is a member of beta testers team,
+        # don't redirect.
+        user = getUtility(ILaunchBag).user
+        if user is None or not user.inTeam(
+            getUtility(ILaunchpadCelebrities).launchpad_beta_testers):
+            return None
+
+        # Construct the full URI.
+        while True:
+            nextstep = self.request.stepstogo.consume()
+            if nextstep is None:
+                break
+            uri = uri.append(nextstep)
+        query_string = self.request.get('QUERY_STRING')
+        if query_string:
+            uri = uri.replace(query=query_string)
+        # Alter the host name, and perform a temporary redirect.
+        new_host = uri.host[:-len(mainsite_host)] + redirection_host
+        uri = uri.replace(host=new_host)
+        return RedirectionView(str(uri), self.request, status=303)
+
+    def publishTraverse(self, request, name):
+        beta_redirection_view = self._getBetaRedirectionView()
+        if beta_redirection_view is not None:
+            return beta_redirection_view
+        return Navigation.publishTraverse(self, request, name)
 
 
 class SoftTimeoutView(LaunchpadView):
