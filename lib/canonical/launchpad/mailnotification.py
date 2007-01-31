@@ -851,7 +851,7 @@ def notify_bug_attachment_added(bugattachment, event):
 
 def notify_team_join(event):
     """Notify team administrators that a new joined (or tried to) the team.
-    
+
     If the team's policy is Moderated, the email will say that the membership
     is pending approval. Otherwise it'll say that the user has joined the team
     and who added that person to the team.
@@ -878,7 +878,7 @@ def notify_team_join(event):
             templatename = 'new-member-notification-for-teams.txt'
         else:
             templatename = 'new-member-notification.txt'
-        
+
         template = get_email_template(templatename)
         msg = template % {
             'reviewer': '%s (%s)' % (reviewer.browsername, reviewer.name),
@@ -952,7 +952,7 @@ class TicketNotification:
 
         Default to [Support #dd]: Title
         """
-        return '[Support #%s]: %s' % (self.ticket.id, self.ticket.title)
+        return '[Question #%s]: %s' % (self.ticket.id, self.ticket.title)
 
     def getBody(self):
         """Return the content of the notification message.
@@ -1117,10 +1117,10 @@ class TicketModifiedDefaultNotification(TicketNotification):
         otherwise the ticket title is used.
         """
         if self.new_message:
-            return '[Support #%s]: %s' % (
+            return '[Question #%s]: %s' % (
                 self.ticket.id, self.new_message.subject)
         else:
-            return '[Support #%s]: %s' % (self.ticket.id, self.ticket.title)
+            return '[Question #%s]: %s' % (self.ticket.id, self.ticket.title)
 
     def shouldNotify(self):
         """Only send a notification when a message was added or some
@@ -1159,21 +1159,21 @@ class TicketModifiedDefaultNotification(TicketNotification):
         TicketAction.REQUESTINFO:
             '%(person)s requested for more information:',
         TicketAction.CONFIRM:
-            '%(person)s confirmed that the request is solved:',
+            '%(person)s confirmed that the question is solved:',
         TicketAction.COMMENT:
             '%(person)s posted a new comment:',
         TicketAction.GIVEINFO:
-            '%(person)s gave more information on the request:',
+            '%(person)s gave more information on the question:',
         TicketAction.REOPEN:
             '%(person)s is still having a problem:',
         TicketAction.ANSWER:
             '%(person)s proposed the following answer:',
         TicketAction.EXPIRE:
-            '%(person)s expired the request:',
+            '%(person)s expired the question:',
         TicketAction.REJECT:
-            '%(person)s rejected the request:',
+            '%(person)s rejected the question:',
         TicketAction.SETSTATUS:
-            '%(person)s changed the request status:',
+            '%(person)s changed the question status:',
     }
 
     def getNewMessageText(self):
@@ -1197,9 +1197,9 @@ class TicketModifiedOwnerNotification(TicketModifiedDefaultNotification):
         TicketModifiedDefaultNotification.action_header_template)
     action_header_template.update({
         TicketAction.CONFIRM:
-            'You confirmed that the request is solved:',
+            'You confirmed that the question is solved:',
         TicketAction.GIVEINFO:
-            'You gave more information on the request:',
+            'You gave more information on the question:',
         TicketAction.REOPEN:
             'You are still having a problem:',
         })
