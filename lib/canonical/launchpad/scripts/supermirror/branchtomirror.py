@@ -103,7 +103,7 @@ class BranchToMirror:
         self.branch_status_client.mirrorFailed(self.branch_id, str(error_msg))
         logger.info('Recorded failure: %s', str(error_msg))
 
-    def record_oops(self, logger):
+    def _record_oops(self, logger, message=None):
         """Record an oops for the current exception.
 
         This must only be called while handling an exception.
@@ -111,7 +111,8 @@ class BranchToMirror:
         request = errorlog.ScriptRequest([
             ('branch_id', self.branch_id),
             ('source', self.source),
-            ('dest', self.dest)])
+            ('dest', self.dest),
+            ('error-explanation', message)])
         request.URL = 'database:/branch/%d' % self.branch_id
         errorlog.globalErrorUtility.raising(sys.exc_info(), request)
         logger.info('Recorded %s', request.oopsid)
@@ -124,7 +125,7 @@ class BranchToMirror:
         logger.info('Mirroring branch %d: %s to %s',
                     self.branch_id, self.source, self.dest)
 
-        try: 
+        try:
             self._openSourceBranch()
             self._mirrorToDestBranch()
         # add further encountered errors from the production runs here
@@ -137,15 +138,18 @@ class BranchToMirror:
                 # be able to get rid of this.
                 # https://launchpad.net/products/bzr/+bug/42383
                 msg = 'Private branch; required authentication'
+            self._record_oops(logger, msg)
             self._mirrorFailed(logger, msg)
 
         except socket.error, e:
             msg = 'A socket error occurred: %s' % str(e)
+            self._record_oops(logger, msg)
             self._mirrorFailed(logger, msg)
 
         except bzrlib.errors.UnsupportedFormatError, e:
             msg = ("The supermirror does not support branches from before "
                    "bzr 0.7. Please upgrade the branch using bzr upgrade.")
+            self._record_oops(logger, msg)
             self._mirrorFailed(logger, msg)
 
         except bzrlib.errors.UnknownFormatError, e:
@@ -153,20 +157,28 @@ class BranchToMirror:
                 msg = 'Not a branch'
             else:
                 msg = 'Unknown branch format: %s' % e.args[0]
+            self._record_oops(logger, msg)
             self._mirrorFailed(logger, msg)
 
         except bzrlib.errors.ParamikoNotPresent, e:
             msg = ("The supermirror does not support mirroring branches "
                    "from SFTP URLs. Please register a HTTP location for "
                    "this branch.")
+            self._record_oops(logger, msg)
             self._mirrorFailed(logger, msg)
 
         except bzrlib.errors.NotBranchError, e:
+            self._record_oops(logger)
             self._mirrorFailed(logger, e)
 
         except bzrlib.errors.BzrError, e:
-            self.record_oops(logger)
+            self._record_oops(logger)
             self._mirrorFailed(logger, e)
+
+        except:
+            # Any exception not handled specially is recorded as OOPS.
+            self._record_oops(logger)
+            raise
 
         else:
             last_rev = self._dest_branch.last_revision()
