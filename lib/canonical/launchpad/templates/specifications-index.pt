@@ -10,6 +10,7 @@
         tal:content="structure context/@@+applicationbuttons/blueprints"
       ></div>
       <div id="mainarea" class="tab-features">
+        <h1>Specifications</h1>
         <div class="t">
           <div class="u">
             <div class="v">
@@ -18,12 +19,7 @@
                   <div class="y">
                     <div class="z">
                       <div id="container">
-                      <h1 tal:condition="not:view/searchrequested"
-                      >Search specifications</h1>
-                      <h1 tal:condition="view/searchrequested">
-                        Specifications matching
-                        &ldquo;<tal:query replace="view/searchtext" />&rdquo;
-                      </h1>
+
                       <form class="central" name="spec_search" method="get">
                         <table style="margin-left: 0;">
                           <tbody>
