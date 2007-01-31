@@ -33,9 +33,9 @@
           </a>
 
           <!-- BugBranch badges -->
-          <tal:bugbranch repeat="bug_branch bugtask/bug/bug_branches">
-            <a tal:attributes="href bug_branch/branch/fmt:url;
-                               title bug_branch/branch/displayname">
+          <tal:bugbranch repeat="branch python:context.bug_branches[bugtask]">
+            <a tal:attributes="href branch/fmt:url;
+                               title branch/displayname">
               <img src="/@@/branch" />
             </a>
           </tal:bugbranch>

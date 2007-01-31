@@ -52,6 +52,7 @@ from canonical.launchpad.webapp import (
     canonical_url, GetitemNavigation, Navigation, stepthrough,
     redirection, LaunchpadView)
 from canonical.launchpad.interfaces import (
+    IBugBranchSet,
     BugDistroReleaseTargetDetails, BugTaskSearchParams, IBugAttachmentSet,
     IBugExternalRefSet, IBugSet, IBugTask, IBugTaskSet, IBugTaskSearch,
     IBugWatchSet, IDistribution, IDistributionSourcePackage, IBug,
@@ -1349,7 +1350,20 @@ class BugTaskSearchListingView(LaunchpadView):
 
         return TableBatchNavigator(
             tasks, self.request, columns_to_show=self.columns_to_show,
-            size=config.malone.buglist_batch_size)
+            size=config.malone.buglist_batch_size,
+            callback=self.loadBugBranchesForBatch)
+
+    def loadBugBranchesForBatch(self, context, batch):
+        bugbranches = getUtility(IBugBranchSet).getBugBranchesForBugTasks(
+            batch)
+        # map from the bug id to the branches
+        bug_id_mapping = {}
+        for bugbranch in bugbranches:
+            bug_id_mapping.setdefault(
+                bugbranch.bug.id, []).append(bugbranch.branch)
+        context.bug_branches = {}
+        for task in batch:
+            context.bug_branches[task] = bug_id_mapping.get(task.bug.id, None)
 
     def getWidgetValues(self, vocabulary_name, default_values=()):
         """Return data used to render a field's widget."""

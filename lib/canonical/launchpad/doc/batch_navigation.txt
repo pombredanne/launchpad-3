@@ -203,7 +203,10 @@ are subsequent queries that are needed to be executed for each batch,
 and it is undesirable or overly expensive to execute the query for
 every value in the entire result set.
 
-  >>> def batch_callback(batch):
+The callback function must define two parameters.  The first is the 
+batch navigator object itself, and the second it the current batch.
+
+  >>> def batch_callback(context, batch):
   ...     for item in batch:
   ...         print item
 
@@ -224,13 +227,15 @@ every value in the entire result set.
   Rudolph
 
 Most likely, the callback function will be bound to a view class.
+By providing the batch navigator itself as the context for the
+callback allows the addition of extra member variables.  This is
+useful as the BatchNavigator becomes the context in page templates
+that are batched.
 
   >>> class ReindeerView:
-  ...     def __init__(self):
-  ...         self.built_reindeer = None
-  ...     def constructReindeerFromAtoms(self, batch):
+  ...     def constructReindeerFromAtoms(self, context, batch):
   ...         # some significantly slow process
-  ...         self.built_reindeer = list(batch)
+  ...         context.built_reindeer = list(batch)
   ...     def batchedReindeer(self):
   ...         return BatchNavigator(
   ...            reindeer, build_request(), size=3,
@@ -240,7 +245,7 @@ Most likely, the callback function will be bound to a view class.
   >>> print view.built_reindeer
   None
   >>> batch_navigator = view.batchedReindeer()
-  >>> print view.built_reindeer
+  >>> print batch_navigator.built_reindeer
   ['Dasher', 'Dancer', 'Prancer']
   >>> print list(batch_navigator.currentBatch())
   ['Dasher', 'Dancer', 'Prancer']

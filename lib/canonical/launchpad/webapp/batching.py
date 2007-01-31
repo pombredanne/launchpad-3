@@ -80,7 +80,7 @@ class BatchNavigator:
         self.batch = _Batch(results, start=self.start, size=size)
         self.request = request
         if callback is not None:
-            callback(self.batch)
+            callback(self, self.batch)
 
     def cleanQueryString(self, query_string):
         """Removes start and batch params from a query string."""

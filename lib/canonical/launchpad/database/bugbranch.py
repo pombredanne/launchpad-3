@@ -44,10 +44,10 @@ class BugBranchSet:
                                        orderBy=['bug'])
         return bugbranches.prejoin(['bug'])
 
-    def getBugBranchesForBugs(self, bugs):
+    def getBugBranchesForBugTasks(self, tasks):
         "See IBugBranchSet."
 
-        bug_ids = [bug.id for bug in bugs]
+        bug_ids = [task.bugID for task in tasks]
         bugbranches = BugBranch.select(IN(BugBranch.q.bugID, bug_ids))
         return bugbranches.prejoin(
             ['branch', 'branch.owner', 'branch.product'])
