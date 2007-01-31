@@ -581,7 +581,7 @@ class DatabaseBranchDetailsStorage:
         transaction.execute(utf8("""
             UPDATE Branch
               SET mirror_failures = mirror_failures + 1,
-                  mirror_status_message = %s
+                  mirror_status_message = %s, mirror_request_time = NULL
               WHERE id = %s""" % sqlvalues(reason, branchID)))
         # how many rows were updated?
         assert transaction.rowcount in [0, 1]

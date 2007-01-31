@@ -626,16 +626,31 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
 
     def test_mirrorComplete_resets_mirror_request(self):
         # After successfully mirroring a branch, mirror_request_time should be
-        # set to NULL
+        # set to NULL.
 
         # Request that 25 (a hosted branch) be mirrored. This sets
-        # mirror_request_time
+        # mirror_request_time.
         storage = DatabaseUserDetailsStorageV2(None)
         storage._requestMirrorInteraction(self.cursor, 25)
 
         # Simulate successfully mirroring branch 25
         self.storage._startMirroringInteraction(self.cursor, 25)
         self.storage._mirrorCompleteInteraction(self.cursor, 25, 'rev-1')
+
+        self.assertEqual(None, self.getMirrorRequestTime(25))
+
+    def test_mirrorFailed_resets_mirror_request(self):
+        # After failing to mirror a branch, mirror_request_time for that branch
+        # should be set to NULL.
+
+        # Request that 25 (a hosted branch) be mirrored. This sets
+        # mirror_request_time.
+        storage = DatabaseUserDetailsStorageV2(None)
+        storage._requestMirrorInteraction(self.cursor, 25)
+
+        # Simulate successfully mirroring branch 25
+        self.storage._startMirroringInteraction(self.cursor, 25)
+        self.storage._mirrorFailedInteraction(self.cursor, 25, 'failed')
 
         self.assertEqual(None, self.getMirrorRequestTime(25))
 
