@@ -53,10 +53,11 @@ sudo grep -q Launchpad /etc/postgresql/8.1/main/postgresql.conf || \
 sudo patch /etc/postgresql/8.1/main/postgresql.conf <<'EOF'
 --- /etc/postgresql/8.1/main/postgresql.conf    2005-11-03 07:56:27.000000000 -0800
 +++ /tmp/postgresql.conf        2005-11-03 07:57:28.156973216 -0800
-@@ -423,3 +423,11 @@
+@@ -423,6 +423,14 @@
  # - Other Platforms & Clients -
 
- #transform_null_equals = false
+ #transform_null_equals = off
+
 +##
 +## Launchpad configuration
 +##
