@@ -40,7 +40,8 @@ class BugBranchSet:
         "See IBugBranchSet."
 
         branch_ids = [branch.id for branch in branches]
-        bugbranches = BugBranch.select(IN(BugBranch.q.branchID, branch_ids))
+        bugbranches = BugBranch.select(IN(BugBranch.q.branchID, branch_ids),
+                                       orderBy=['bug'])
         return bugbranches.prejoin(['bug'])
 
     def getBugBranchesForBugs(self, bugs):

@@ -34,20 +34,6 @@ class BranchTargetView(LaunchpadFormView):
                        BranchLifecycleStatus.DEVELOPMENT,
                        BranchLifecycleStatus.MATURE])
                   
-
-    def initialize(self):
-        # To avoid queries to the database for every branch to determine
-        # bug links, we get the associated bug branch links here.
-        LaunchpadFormView.initialize(self)
-        bugbranches = getUtility(IBugBranchSet).getBugBranchesForBranches(
-            self.visible_branches)
-        self.branch_bugs = {}
-        for bugbranch in bugbranches:
-            self.branch_bugs.setdefault(
-                bugbranch.branch.id, []).append(bugbranch.bug)
-        for branch_id in self.branch_bugs:
-            self.branch_bugs[branch_id].sort(key=operator.attrgetter('id'))
-
     @property
     def initial_values(self):
         return {
@@ -66,6 +52,16 @@ class BranchTargetView(LaunchpadFormView):
         # particularly expensive
         branches = self.context.branches
         return sorted(branches, key=operator.attrgetter('sort_key'))
+
+    @cachedproperty
+    def branch_bugs(self):
+        bugbranches = getUtility(IBugBranchSet).getBugBranchesForBranches(
+            self.visible_branches)
+        result = {}
+        for bugbranch in bugbranches:
+            result.setdefault(
+                bugbranch.branch.id, []).append(bugbranch.bug)
+        return result
 
     @cachedproperty
     def visible_branches(self):
