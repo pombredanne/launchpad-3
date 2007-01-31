@@ -334,6 +334,24 @@ class BranchSet:
                                   'last_commit' : last_commit}
         return result
 
+    def getLastCommitForBranches(self, branches):
+        """Return a map of branch id to last commit time."""
+        branch_ids = [branch.id for branch in branches]
+        if not branch_ids:
+            # Return a sensible default if given no branches
+            return {}
+        cur = cursor()
+        cur.execute("""
+            SELECT branch.id, revision.revision_date
+            FROM branch
+            LEFT OUTER JOIN revision
+            ON branch.last_scanned_id = revision.revision_id
+            WHERE branch.id IN %s
+            """ % sqlvalues(branch_ids))
+        commits = dict(cur.fetchall())
+        return dict([(branch, commits.get(branch.id, None))
+                     for branch in branches]) 
+
 
 class BranchRelationship(SQLBase):
     """A relationship between branches.

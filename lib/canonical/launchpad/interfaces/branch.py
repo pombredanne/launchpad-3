@@ -304,6 +304,10 @@ class IBranchSet(Interface):
     def getBranchSummaryByProduct():
         """Return a list of simple summary objects."""
 
+    def getLastCommitForBranches(branches):
+        """Return a map of branch to last commit time."""
+
+
 class IBranchLifecycleFilter(Interface):
     """A helper interface to render lifecycle filter choice."""
 

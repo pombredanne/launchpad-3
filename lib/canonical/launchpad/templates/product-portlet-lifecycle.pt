@@ -8,7 +8,7 @@
           <td tal:content="context/datecreated/fmt:date"></td>
         </tr>
         <tr>
-          <th>by:</th>
+          <th>Registrant:</th>
           <td>
             <a
               tal:attributes="href context/owner/fmt:url"
