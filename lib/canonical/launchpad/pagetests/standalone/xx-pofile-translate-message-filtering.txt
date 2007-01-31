@@ -24,7 +24,7 @@ first batch of entries:
   ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/'
   ...     'evolution-2.2/es/+translate?show=untranslated')
   >>> user_browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=untranslated'
+  'http://.../evolution-2.2/es/+translate?show=untranslated'
 
   >>> print_shown_messages(user_browser)
   133: '(no translation yet)'
@@ -42,7 +42,7 @@ The set of messages that are untranslated in the second batch:
 
   >>> user_browser.getLink('Next').click()
   >>> user_browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=untranslated&start=10'
+  'http://.../evolution-2.2/es/+translate?show=untranslated&start=10'
 
   >>> print_shown_messages(user_browser)
   149: '(no translation yet)'
@@ -55,7 +55,7 @@ Now, we are going to select the amount of entries that need to be reviewed.
   ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/'
   ...     'evolution-2.2/es/+translate?show=need_review')
   >>> user_browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=need_review'
+  'http://.../evolution-2.2/es/+translate?show=need_review'
 
   >>> print_shown_messages(user_browser)
   132: 'tiene<samp> </samp>'
@@ -66,20 +66,20 @@ to be sure that we don't redirect to a broken URL but to the first batch.
 
   >>> user_browser.getControl('Save & Continue').click()
   >>> user_browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=need_review&start=10'
+  'http://...evolution-2.2/es/+translate?show=need_review&start=10'
 
 Another thing that filtering should do is to move to the start of the set of
-messages when the filtering rule changes.
+messages when the filtering rule changes but preserving batch size.
 
   >>> user_browser.open(
   ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/'
   ...     'evolution-2.2/es/+translate')
   >>> user_browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate'
+  'http://.../evolution-2.2/es/+translate'
   >>> user_browser.getLink('Last').click()
   >>> user_browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=20'
+  'http://.../evolution-2.2/es/+translate?start=20'
   >>> user_browser.getControl('Show').value = ['untranslated']
   >>> user_browser.getControl('Filter').click()
   >>> user_browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?batch=10&show=untranslated'
+  'http://.../evolution-2.2/es/+translate?batch=10&show=untranslated'
