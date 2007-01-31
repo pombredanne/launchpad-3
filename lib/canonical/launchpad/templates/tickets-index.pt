@@ -24,6 +24,24 @@
       </tal:count> questions.
     </p>
 
+    <div id="search-tickets">
+      <h2 i18n:translate="">Search All Tickets</h2>
+
+      <form method="get" action="+tickets">
+        <input class="textType" id="field.search_text"
+               name="field.search_text" size="20" type="text" value=""  />
+
+        <input type="submit" id="field.actions.search"
+                name="field.actions.search" value="Search" class="button" />
+
+        <input type="hidden" name="field.sort" value="by relevancy" />
+        <input type="hidden" name="field.status" value="Open" />
+        <input type="hidden" name="field.status" value="Needs information" />
+        <input type="hidden" name="field.status" value="Answered" />
+        <input type="hidden" name="field.status" value="Solved" />
+      </form>
+    </div>
+
     <div id="latest-requests-made">
       <h2 i18n:translate="">Latest questions asked</h2>
       <table>

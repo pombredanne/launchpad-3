@@ -436,17 +436,17 @@ class TicketTargetSupportMenu(ApplicationMenu):
     links = ['open', 'answered', 'myrequests', 'need_attention', 'new',
              'support_contact']
 
-    def makeSearchLink(self, statuses):
+    def makeSearchLink(self, statuses, sort='by relevancy'):
         return "+tickets?" + urlencode(
             {'field.status': statuses,
-             'field.sort': 'by relevancy',
+             'field.sort': sort,
              'field.search_text': '',
              'field.actions.search': 'Search',
              'field.status': statuses}, doseq=True)
 
     def open(self):
-        text = 'Open'
-        return Link(self.makeSearchLink('Open'), text, icon='ticket')
+        url = self.makeSearchLink('Open', sort='recently updated first')
+        return Link(url, 'Open', icon='ticket')
 
     def answered(self):
         text = 'Answered'

@@ -512,8 +512,9 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     usedfor = ITeam
     facet = 'overview'
-    links = ['edit', 'common_edithomepage', 'members', 'editemail', 'polls',
-             'joinleave', 'reassign', 'common_packages']
+    links = ['edit', 'common_edithomepage', 'members', 'add_member',
+             'editemail', 'polls', 'add_poll', 'joinleave', 'reassign',
+             'common_packages']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -531,13 +532,25 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     def members(self):
         target = '+members'
-        text = 'Members'
+        text = 'All Members'
         return Link(target, text, icon='people')
+
+    @enabled_with_permission('launchpad.Edit')
+    def add_member(self):
+        target = '+addmember'
+        text = 'Add New Member'
+        return Link(target, text, icon='add')
 
     def polls(self):
         target = '+polls'
         text = 'Polls'
         return Link(target, text, icon='info')
+
+    @enabled_with_permission('launchpad.Edit')
+    def add_poll(self):
+        target = '+newpoll'
+        text = 'Create a New Poll'
+        return Link(target, text, icon='add')
 
     @enabled_with_permission('launchpad.Edit')
     def editemail(self):
@@ -1225,6 +1238,20 @@ class PersonView(LaunchpadView):
         this Team."""
         return bool(self._getMembershipForUser())
 
+    def findUserPathToTeam(self):
+        assert self.user is not None
+        return self.user.findPathToTeam(self.context)
+
+    def userIsParticipant(self):
+        """Return true if the user is a participant of this team.
+
+        A person is said to be a team participant when he's an indirect member
+        of that team.
+        """
+        if self.user is None:
+            return False
+        return self.user.inTeam(self.context)
+
     def userIsActiveMember(self):
         """Return True if the user is an active member of this team."""
         return userIsActiveTeamMember(self.context)
@@ -1343,11 +1370,12 @@ class PersonEditWikiNamesView(LaunchpadView):
             return url
         return '%s/' % url.strip().rstrip('/')
 
-    def processWikiForm(self):
+    def initialize(self):
         """Process the WikiNames form."""
+        self.error_message = None
         if self.request.method != "POST":
             # Nothing to do
-            return ""
+            return
 
         form = self.request.form
         context = self.context
@@ -1357,12 +1385,15 @@ class PersonEditWikiNamesView(LaunchpadView):
             UBUNTU_WIKI_URL, ubuntuwikiname)
 
         if not ubuntuwikiname:
-            return "Your Ubuntu WikiName cannot be empty."
+            self.error_message = "Your Ubuntu WikiName cannot be empty."
+            return
         elif existingwiki is not None and existingwiki.person != context:
-            return ('The Ubuntu WikiName %s is already registered by '
-                    '<a href="%s">%s</a>.'
-                    % (ubuntuwikiname, canonical_url(existingwiki.person),
-                       cgi.escape(existingwiki.person.browsername)))
+            self.error_message = (
+                'The Ubuntu WikiName %s is already registered by '
+                '<a href="%s">%s</a>.'
+                % (ubuntuwikiname, canonical_url(existingwiki.person),
+                   cgi.escape(existingwiki.person.browsername)))
+            return
         context.ubuntuwiki.wikiname = ubuntuwikiname
 
         for w in context.otherwikis:
@@ -1378,14 +1409,18 @@ class PersonEditWikiNamesView(LaunchpadView):
                 wiki = self._sanitizeWikiURL(form.get('wiki_%d' % w.id))
                 wikiname = form.get('wikiname_%d' % w.id)
                 if not (wiki and wikiname):
-                    return "Neither Wiki nor WikiName can be empty."
+                    self.error_message = (
+                        "Neither Wiki nor WikiName can be empty.")
+                    return
                 # Try to make sure people will have only a single Ubuntu
                 # WikiName registered. Although this is almost impossible
                 # because they can do a lot of tricks with the URLs to make
                 # them look different from UBUNTU_WIKI_URL but still point to
                 # the same place.
                 elif wiki == UBUNTU_WIKI_URL:
-                    return "You cannot have two Ubuntu WikiNames."
+                    self.error_message = (
+                        "You cannot have two Ubuntu WikiNames.")
+                    return
                 w.wiki = wiki
                 w.wikiname = wikiname
 
@@ -1395,32 +1430,37 @@ class PersonEditWikiNamesView(LaunchpadView):
             if wiki and wikiname:
                 existingwiki = wikinameset.getByWikiAndName(wiki, wikiname)
                 if existingwiki and existingwiki.person != context:
-                    return ('The WikiName %s%s is already registered by '
-                            '<a href="%s">%s</a>.'
-                            % (wiki, wikiname,
-                               canonical_url(existingwiki.person),
-                               cgi.escape(existingwiki.person.browsername)))
+                    self.error_message = (
+                        'The WikiName %s%s is already registered by '
+                        '<a href="%s">%s</a>.'
+                        % (wiki, wikiname, canonical_url(existingwiki.person),
+                           cgi.escape(existingwiki.person.browsername)))
+                    return
                 elif existingwiki:
-                    return ('The WikiName %s%s already belongs to you.'
-                            % (wiki, wikiname))
+                    self.error_message = (
+                        'The WikiName %s%s already belongs to you.'
+                        % (wiki, wikiname))
+                    return
                 elif wiki == UBUNTU_WIKI_URL:
-                    return "You cannot have two Ubuntu WikiNames."
+                    self.error_message = (
+                        "You cannot have two Ubuntu WikiNames.")
+                    return
                 wikinameset.new(context, wiki, wikiname)
             else:
                 self.newwiki = wiki
                 self.newwikiname = wikiname
-                return "Neither Wiki nor WikiName can be empty."
-
-        return ""
+                self.error_message = "Neither Wiki nor WikiName can be empty."
+                return
 
 
 class PersonEditIRCNicknamesView(LaunchpadView):
 
-    def processIRCForm(self):
+    def initialize(self):
         """Process the IRC nicknames form."""
+        self.error_message = None
         if self.request.method != "POST":
             # Nothing to do
-            return ""
+            return
 
         form = self.request.form
         for ircnick in self.context.ircnicknames:
@@ -1434,7 +1474,9 @@ class PersonEditIRCNicknamesView(LaunchpadView):
                 nick = form.get('nick_%d' % ircnick.id)
                 network = form.get('network_%d' % ircnick.id)
                 if not (nick and network):
-                    return "Neither Nickname nor Network can be empty."
+                    self.error_message = (
+                        "Neither Nickname nor Network can be empty.")
+                    return
                 ircnick.nickname = nick
                 ircnick.network = network
 
@@ -1446,18 +1488,19 @@ class PersonEditIRCNicknamesView(LaunchpadView):
             else:
                 self.newnick = nick
                 self.newnetwork = network
-                return "Neither Nickname nor Network can be empty."
-
-        return ""
+                self.error_message = (
+                    "Neither Nickname nor Network can be empty.")
+                return
 
 
 class PersonEditJabberIDsView(LaunchpadView):
 
-    def processJabberForm(self):
+    def initialize(self):
         """Process the Jabber ID form."""
+        self.error_message = None
         if self.request.method != "POST":
             # Nothing to do
-            return ""
+            return
 
         form = self.request.form
         for jabber in self.context.jabberids:
@@ -1466,7 +1509,8 @@ class PersonEditJabberIDsView(LaunchpadView):
             else:
                 jabberid = form.get('jabberid_%s' % jabber.jabberid)
                 if not jabberid:
-                    return "You cannot save an empty Jabber ID."
+                    self.error_message = "You cannot save an empty Jabber ID."
+                    return
                 jabber.jabberid = jabberid
 
         jabberid = form.get('newjabberid')
@@ -1476,14 +1520,16 @@ class PersonEditJabberIDsView(LaunchpadView):
             if existingjabber is None:
                 jabberset.new(self.context, jabberid)
             elif existingjabber.person != self.context:
-                return ('The Jabber ID %s is already registered by '
-                        '<a href="%s">%s</a>.'
-                        % (jabberid, canonical_url(existingjabber.person),
-                           cgi.escape(existingjabber.person.browsername)))
+                self.error_message = (
+                    'The Jabber ID %s is already registered by '
+                    '<a href="%s">%s</a>.'
+                    % (jabberid, canonical_url(existingjabber.person),
+                       cgi.escape(existingjabber.person.browsername)))
+                return
             else:
-                return 'The Jabber ID %s already belongs to you.' % jabberid
-
-        return ""
+                self.error_message = (
+                    'The Jabber ID %s already belongs to you.' % jabberid)
+                return
 
 
 class PersonEditSSHKeysView(LaunchpadView):
@@ -1491,20 +1537,19 @@ class PersonEditSSHKeysView(LaunchpadView):
     info_message = None
     error_message = None
 
-    # restricted set of methods to be proxied by form_action()
-    permitted_actions = ('add_ssh', 'remove_ssh')
-
-    def form_action(self):
+    def initialize(self):
         if self.request.method != "POST":
             # Nothing to do
-            return ''
+            return
 
         action = self.request.form.get('action')
 
-        if action and (action not in self.permitted_actions):
-            raise UnexpectedFormData("Action was not defined")
-
-        getattr(self, action)()
+        if action == 'add_ssh':
+            self.add_ssh()
+        elif action == 'remove_ssh':
+            self.remove_ssh()
+        else:
+            raise UnexpectedFormData("Unexpected action: %s" % action)
 
     def add_ssh(self):
         sshkey = self.request.form.get('sshkey')

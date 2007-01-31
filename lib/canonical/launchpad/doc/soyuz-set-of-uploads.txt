@@ -3,6 +3,7 @@ Soyuz Set of Uploads Test
 
 This test will:
 
+  * Pre-create the directory structure
   * Turn on the zeca keyserver
   * Run process-upload.py
   * Check result
@@ -12,12 +13,11 @@ This test will:
   * Cleanup
 
 
-Uploading Packages
-------------------
+Pre-creating directories
+------------------------
 
-
-First, let's create a temporary directory where we'll put
-uploaded files in.
+First, let's create the temporary directory structure where we'll put uploaded
+files in.
 
   >>> import os
   >>> import tempfile
@@ -199,8 +199,7 @@ We can also define another helper function...
   ...     punt_upload_into_queue(leafname, distro=distro)
   ...     assert (process_uploads(upload_policy, build_id, release),
   ...             "Upload processes failed")
-  ...     # There is always a lockfile in incoming...
-  ...     assert len(os.listdir(incoming_dir)) == 1, "Incoming should be empty: %s" % os.listdir(incoming_dir)
+  ...     assert len(os.listdir(incoming_dir)) == 0, "Incoming should be empty: %s" % os.listdir(incoming_dir)
   ...     assert len(os.listdir(rejected_dir)) == 0, "Rejected should be empty: %s" % os.listdir(rejected_dir)
   ...     assert len(os.listdir(failed_dir)) == 0, "Failed should be empty: %s" % os.listdir(failed_dir)
   ...     if is_new:

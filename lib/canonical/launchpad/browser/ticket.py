@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'SearchAllTicketsView',
     'TicketAddView',
     'TicketChangeStatusView',
     'TicketConfirmAnswerView',
@@ -35,6 +36,7 @@ import zope.security
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
+from canonical.launchpad.browser.tickettarget import SearchTicketsView
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.helpers import is_english_variant, request_languages
@@ -709,6 +711,31 @@ class TicketMessageDisplayView(LaunchpadView):
         return self()
 
 
+class SearchAllTicketsView(SearchTicketsView):
+    """View that searches among all tickets posted on Launchpad."""
+
+    displayTargetColumn = True
+
+    @property
+    def pageheading(self):
+        """See SearchTicketsView."""
+        if self.search_text:
+            return _('Questions matching "${search_text}"',
+                     mapping=dict(search_text=self.search_text))
+        else:
+            return _('Search all questions')
+
+    @property
+    def empty_listing_message(self):
+        """See SearchTicketsView."""
+        if self.search_text:
+            return _("There are no questions matching "
+                     '"${search_text}" with the requested statuses.',
+                     mapping=dict(search_text=self.search_text))
+        else:
+            return _('There are no questions with the requested statuses.')
+
+
 class TicketContextMenu(ContextMenu):
 
     usedfor = ITicket
@@ -780,4 +807,5 @@ class TicketSetContextMenu(ContextMenu):
     def finddistro(self):
         text = 'Find Distribution'
         return Link('/distros', text, icon='search')
+
 

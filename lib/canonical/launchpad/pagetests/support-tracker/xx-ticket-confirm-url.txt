@@ -56,7 +56,7 @@ containing a link to confirm that answer.
     >>> urls = re.findall('(http:[^\s]+)+', notification.get_payload())
     >>> confirm_url = urls[-2].decode('quoted-printable')
     >>> print confirm_url
-    http://launchpad.dev/firefox/+ticket/2/+confirm?answer_id=...
+    http://answers.launchpad.dev/firefox/+ticket/2/+confirm?answer_id=...
 
 If a cropped URL or forged URL is used, an UnexpectedFormData error will
 be displayed. In the following example, the answer_id parameter refers

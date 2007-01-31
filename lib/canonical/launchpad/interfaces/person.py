@@ -401,6 +401,17 @@ class IPerson(IHasSpecifications):
         The product_name may be None.
         """
 
+    def findPathToTeam(team):
+        """Return the teams that cause this person to be a participant of the
+        given team.
+
+        If there are more than one path leading this person to the given team,
+        only the one with the oldest teams is returned.
+
+        This method must not be called from a team object, because of
+        https://launchpad.net/bugs/30789.
+        """
+
     def isTeam():
         """True if this Person is actually a Team, otherwise False."""
 
@@ -750,7 +761,11 @@ class IPersonSet(Interface):
         """Return people that have contributed to the specified POFile."""
 
     def getPOFileContributorsByDistroRelease(self, distrorelease, language):
-        """Return people who translated strings in distroRelease to language."""
+        """Return people who translated strings in distroRelease to language.
+
+        The people that translated only IPOTemplate objects that are not
+        current will not appear in the returned list.
+        """
 
     def getAllPersons(orderBy=None):
         """Return all Persons, ignoring the merged ones.
