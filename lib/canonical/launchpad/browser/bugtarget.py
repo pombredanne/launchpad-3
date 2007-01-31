@@ -10,7 +10,8 @@ __all__ = [
     "FileBugViewBase",
     "FileBugAdvancedView",
     "FileBugGuidedView",
-    "FileBugInPackageView"
+    "FileBugInPackageView",
+    "ProjectFileBugGuidedView",
     ]
 
 import cgi
@@ -32,9 +33,9 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     IBugTaskSet, ILaunchBag, IDistribution, IDistroRelease, IDistroReleaseSet,
-    IProduct, IDistributionSourcePackage, NotFoundError, CreateBugParams,
-    IBugAddForm, BugTaskSearchParams, ILaunchpadCelebrities,
-    ITemporaryStorageManager)
+    IProduct, IProject, IDistributionSourcePackage, NotFoundError,
+    CreateBugParams, IBugAddForm, BugTaskSearchParams, ILaunchpadCelebrities,
+    IProjectBugAddForm, ITemporaryStorageManager)
 from canonical.launchpad.webapp import (
     canonical_url, LaunchpadView, LaunchpadFormView, action, custom_widget,
     urlappend)
@@ -216,6 +217,8 @@ class FileBugViewBase(LaunchpadFormView):
             # We're being called from the generic bug filing form, so
             # manually set the chosen distribution as the context.
             context = distribution
+        elif IProject.providedBy(context):
+            context = self.getSelectedProduct()
 
         # Ensure that no package information is used, if the user
         # enters a package name but then selects "I don't know".
@@ -492,6 +495,37 @@ class FileBugGuidedView(FileBugViewBase):
     def showFileBugForm(self):
         return self._FILEBUG_FORM()
 
+
+class ProjectFileBugGuidedView(FileBugGuidedView):
+
+    actions = FileBugGuidedView.actions
+    schema = IProjectBugAddForm
+
+    field_names = ['product', 'title', 'comment']
+    _SEARCH_FOR_DUPES = ViewPageTemplateFile(
+        "../templates/project-filebug-search.pt")
+    template = _SEARCH_FOR_DUPES
+
+    def getProductsUsingMalone(self):
+        return [
+            product for product in self.context.products
+            if product.official_malone]
+
+    def getSelectedProduct(self):
+        assert self.widgets['product'].hasValidInput(), (
+            'This method should be called only after a product has'
+            ' been selected.')
+        return self.widgets['product'].getInputValue()
+
+    def getProductOrDistroFromContext(self):
+        return self.getSelectedProduct()
+
+    @cachedproperty
+    def most_common_bugs(self):
+        """Return a list of the most duplicated bugs."""
+        selected_product = self.getSelectedProduct()
+        return selected_product.getMostCommonBugs(
+            self.user, limit=self._MATCHING_BUGS_LIMIT)
 
 class FileBugInPackageView(FileBugViewBase):
     """Browser view class for the top-level filebug-in-package page."""

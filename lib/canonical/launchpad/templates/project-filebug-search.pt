@@ -1,0 +1,64 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template_2col/master"
+      i18n:domain="malone"
+>
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-latestbugs" />
+</metal:leftportlets>
+
+<metal:heading fill-slot="pageheading">
+  <h3 tal:content="context/title">Foo Series: main</h3>
+  <h1>Report a new bug</h1>
+</metal:heading>
+
+<div metal:fill-slot="main">
+
+  <tal:uses_malone tal:condition="view/getProductsUsingMalone">
+    <div metal:use-macro="context/@@launchpad_form/form">
+      <p metal:fill-slot="extra_info">
+        Please describe the bug in a few words, for example, "weather
+        applet crashes on logout":
+      </p>
+
+      <table class="form" metal:fill-slot="widgets">
+        <tal:title_widget tal:define="widget nocall:view/widgets/product">
+          <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
+        </tal:title_widget>
+        <tal:title_widget tal:define="widget nocall:view/widgets/title">
+          <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
+        </tal:title_widget>
+      </table>
+
+
+      <div class="actions" metal:fill-slot="buttons">
+        <input tal:replace="structure view/actions/field.actions.search/render" />
+      </div>
+    </div>
+
+    <p class="discreet">
+      <small>
+        This guided form will try to help you find out whether your bug
+        has already been reported. You may prefer the
+        <a href="#" tal:attributes="href view/advanced_filebug_url">complicated bug filing form</a>.
+      </small>
+    </p>
+
+  </tal:uses_malone>
+
+  <tal:not_uses_malone tal:condition="not: view/getProductsUsingMalone">
+    <p class="error message">
+      <span tal:replace="context/displayname">Alsa Utils</span> does not use Malone as its bug tracker.
+    </p>
+
+    <p>
+      To report a bug about <span tal:replace="context/displayname">Alsa Utils</span>,
+      please use its official bug tracker.
+    </p>
+  </tal:not_uses_malone>
+
+</div>
+
+</html>

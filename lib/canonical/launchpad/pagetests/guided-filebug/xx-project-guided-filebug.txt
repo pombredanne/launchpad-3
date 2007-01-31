@@ -1,0 +1,37 @@
+= Filing bugs on Projects =
+
+Even though it's not possible to file bugs agains projects directly,
+it's still possible to file a bug from a project's main page.
+
+    >>> user_browser.open('http://launchpad.dev/gnome')
+    >>> user_browser.getLink(url='+filebug').click()
+    >>> user_browser.url
+    'http://launchpad.dev/gnome/+filebug'
+
+The Project filebug page is like a Product's filebug page, except that
+it also asks for a Product. Only Products that are using Malone are
+shown in the list of options.
+
+    >>> user_browser.getControl('Product').options
+    ['evolution']
+
+After we selected a product and entered a summary, we get presented with
+a list of possible duplicates.
+
+    >>> user_browser.getControl('Product').value = ['evolution']
+    >>> user_browser.getControl('Summary').value = 'Evolution crashes'
+    >>> user_browser.getControl('Continue').click()
+
+    >>> from canonical.launchpad.ftests.bug import print_bugs_table
+    >>> print_bugs_table(user_browser.contents, "similar-bugs")
+    7 A test bug
+
+Entering a description and submitting the bug takes the user to the bug
+page.
+
+    >>> user_browser.getControl('Further information').value = 'Crash.'
+    >>> user_browser.getControl('Submit Bug Report').click()
+    >>> user_browser.url
+    'http://launchpad.dev/evolution/+bug/...'
+    >>> user_browser.title
+    'Bug #... in evolution (upstream): ...Evolution crashes...'

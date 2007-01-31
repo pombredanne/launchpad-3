@@ -231,6 +231,14 @@
             />
     </facet>
 
+    <browser:page
+        name="+filebug"
+        for="canonical.launchpad.interfaces.IProject"
+        class="canonical.launchpad.browser.ProjectFileBugGuidedView"
+        facet="bugs"
+        permission="launchpad.AnyPerson" />
+
+
     <!-- ProjectSet-->
     <content class="canonical.launchpad.database.ProjectSet">
         <allow interface="canonical.launchpad.interfaces.IProjectSet" />

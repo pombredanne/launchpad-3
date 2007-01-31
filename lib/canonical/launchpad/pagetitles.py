@@ -705,6 +705,8 @@ project_bugs = ContextTitle('Bugs in %s')
 
 project_edit = ContextTitle('%s project details')
 
+project_filebug_search = bugtarget_filebug_simple
+
 project_interest = 'Rosetta: Project not translatable'
 
 project_rosetta_index = ContextTitle('Rosetta: %s')
