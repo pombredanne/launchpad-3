@@ -24,21 +24,28 @@
         method="get"
       >
         <label for="text">Is your project registered yet?</label>
-        <input id="text" type="text" name="q" size="30" />
+        <input id="text" type="text" name="q" size="20" />
         <input type="submit" value="Search" />
       </form>
       <div class="bordered">
         <div class="left">
           <h2>Featured projects</h2>
           <ul>
-            <li><a href="/distros/ubuntu">Ubuntu</a> (distribution)</li>
-            <li><a href="/products/bzr">Bazaar</a> (product)</li>
-            <li><a href="/products/gnomebaker">GnomeBaker</a> (product)</li>
+            <li class="distro"><a href="/ubuntu">Ubuntu</a></li>
+            <li class="product"><a href="/schooltool">SchoolTool</a></li>
+            <li class="product"><a href="/bzr">Bazaar</a></li>
+            <li class="product"><a href="/gnomebaker">GnomeBaker</a></li>
+            <li class="product"><a href="/jokosher">Jokosher</a></li>
           </ul>
         </div>
         <div class="right">
           <h2>More about Launchpad</h2>
-          <p>TBD</p>
+          <p>
+            Launchpad is a software project hosting service,
+            designed to make it easy for you to collaborate with
+            developers and other users.
+            <a href="/+tour">Learn more&#8230;</a>
+          </p>
         </div>
       </div>
       <div style="clear: both;">&nbsp;</div>

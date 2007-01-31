@@ -36,17 +36,20 @@
     id="document"
     tal:attributes="class string:tab-${CONTEXTS/menu:selectedfacetname}"
   >
-    <div id="globalheader">
+    <div
+      id="globalheader"
+      tal:define="frontpage modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl"
+    >
       <div class="launchpad">
         <img
           alt=""
           src="/+icing/globalheader_launchpad.gif"
           width="34"
           height="16"
-        /><a href="/">Launchpad</a>
+        /><a tal:attributes="href frontpage">Launchpad</a>
       </div>
       <ul class="home">
-        <li><a href="/" title="Home">Home</a></li>
+        <li><a tal:attributes="href frontpage" title="Home">Home</a></li>
       </ul>
     </div>
 

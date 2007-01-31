@@ -52,6 +52,10 @@ class BatchNavigator:
 
         If no size can be divined from arguments or request, the
         launchpad.default_batch_size config option is used.
+
+        The callback function if defined is called at the end of
+        object construction with the defined batch as determined
+        by the start and request parameters.
         """
         # In this code we ignore invalid request variables since it
         # probably means the user finger-fumbled it in the request. We

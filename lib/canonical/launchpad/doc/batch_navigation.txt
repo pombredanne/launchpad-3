@@ -205,20 +205,22 @@ every value in the entire result set.
 
 The callback function must define two parameters.  The first is the 
 batch navigator object itself, and the second it the current batch.
+The callback function is called once and only once when the
+BatchNavigator is constructed, and the current batch is determined.
 
-  >>> def batch_callback(context, batch):
+  >>> def print_callback(context, batch):
   ...     for item in batch:
   ...         print item
 
   >>> reindeer_batch_navigator = BatchNavigator(
-  ...     reindeer, build_request(), size=3, callback=batch_callback)
+  ...     reindeer, build_request(), size=3, callback=print_callback)
   Dasher
   Dancer
   Prancer
 
   >>> request = build_request({"start": "3", "batch": "20"})
   >>> last_reindeer_batch_navigator = BatchNavigator(
-  ...     reindeer, request=request, callback=batch_callback)
+  ...     reindeer, request=request, callback=print_callback)
   Vixen
   Comet
   Cupid
@@ -235,7 +237,7 @@ that are batched.
   >>> class ReindeerView:
   ...     def constructReindeerFromAtoms(self, context, batch):
   ...         # some significantly slow process
-  ...         context.built_reindeer = list(batch)
+  ...         view.built_reindeer = list(batch)
   ...     def batchedReindeer(self):
   ...         return BatchNavigator(
   ...            reindeer, build_request(), size=3,
@@ -243,7 +245,7 @@ that are batched.
 
   >>> view = ReindeerView()
   >>> batch_navigator = view.batchedReindeer()
-  >>> print batch_navigator.built_reindeer
+  >>> print view.built_reindeer
   ['Dasher', 'Dancer', 'Prancer']
   >>> print list(batch_navigator.currentBatch())
   ['Dasher', 'Dancer', 'Prancer']
