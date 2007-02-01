@@ -43,7 +43,7 @@ In contrast, members of the beta testers get redirected:
     HTTP/1.1 303 See Other
     Content-Length: 0
     Content-Type: text/plain
-    Location: http://beta.launchpad.dev/index.html
+    Location: http://beta.launchpad.dev/
     <BLANKLINE>
 
 The redirection is controlled by the beta_testers_redirection_host

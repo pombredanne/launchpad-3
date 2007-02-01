@@ -466,18 +466,19 @@ class LaunchpadRootNavigation(Navigation):
             getUtility(ILaunchpadCelebrities).launchpad_beta_testers):
             return None
 
-        # Construct the full URI.
-        while True:
-            nextstep = self.request.stepstogo.consume()
-            if nextstep is None:
-                break
-            uri = uri.append(nextstep)
+        # Alter the host name to point at the redirection target:
+        new_host = uri.host[:-len(mainsite_host)] + redirection_host
+        uri = uri.replace(host=new_host)
+        # Complete the URL from the environment:
+        uri = uri.replace(path=self.request['PATH_INFO'])
         query_string = self.request.get('QUERY_STRING')
         if query_string:
             uri = uri.replace(query=query_string)
-        # Alter the host name, and perform a temporary redirect.
-        new_host = uri.host[:-len(mainsite_host)] + redirection_host
-        uri = uri.replace(host=new_host)
+
+        # Empty the traversal stack, since we're redirecting.
+        self.request.setTraversalStack([])
+        
+        # And perform a temporary redirect.
         return RedirectionView(str(uri), self.request, status=303)
 
     def publishTraverse(self, request, name):
