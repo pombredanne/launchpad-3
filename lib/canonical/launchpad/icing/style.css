@@ -62,20 +62,19 @@ html {
   background-color: #FFFFFF;
 }
 body {margin: 0; padding: 0;}
-:link {
-  color: #039;
-  text-decoration: none;
-} 
-:link:hover, :visited:hover {
-  text-decoration: underline;
-}
-:link:active, :visited:active {
-  color: #36c;
-}
-:visited {
-  color: #324c7f;
-  text-decoration: none;
-}
+
+:link                         {color: #039;    text-decoration: none;} 
+:link:hover, :visited:hover   {                text-decoration: underline;}
+:link:active, :visited:active {color: #36c;}
+:visited                      {color: #324c7f; text-decoration: none;}
+
+h1, h2, h3, h4, h5, h6 {background: none; color: #83ad23; font-weight: normal;}
+h1 {font-size: 2.25em; margin: 0;              padding: 0px 0px 10px 0px;}
+h2 {font-size: 1.75em; margin: 0.5em 0 0.75em; padding: 0;}
+h3 {font-size: 1.25em; margin: 1em 0 0 0;      padding: 0;}
+h4 {font-size: 1em;    margin: 0;              padding: 0px 0px 10px 0px;}
+h5 {font-size: 1em;    margin: 0;              padding: 0;}
+h6 {font-size: 1em;    margin: 0;              padding: 0;}
 
 /* --- Form controls --- */
 
@@ -112,47 +111,6 @@ hr {
   border-top: 2px solid #000000;
   overflow: hidden;
   display: none;
-}
-h1 {
-  font-weight: normal;
-  margin: 0;
-  padding: 0px 0px 10px 0px;
-  color: #000000;
-  font-size: 2.25em;
-}
-h2 {
-  font-weight: bold;
-  margin: 0.5em 0 0.75em;
-  padding: 0;
-  color: #000000;
-  font-size: 1.4em;
-}
-h3 {
-  font-weight: bold;
-  margin: 1em 0 0 0;
-  padding: 0;
-  color: #000000;
-  font-size: 1em;
-}
-h4 {
-  margin: 0;
-  padding: 0px 0px 10px 0px;
-  color: #000000;
-  font-weight: normal;
-  font-size: 1em;
-}
-h5 {
-  margin: 0;
-  padding: 0;
-  color: #000000;
-  font-size: 1em;
-  font-weight: normal;
-}
-h6 {
-  margin: 0;
-  padding: 0;
-  color: #FF0000;
-  font-weight: bold;
 }
 h1 em, h2 em, h3 em, h4 em, h5 em {
   font-style: normal;
@@ -843,10 +801,6 @@ body.tab-overview #mainarea #portlets .portlet.active div {
 body.tab-overview #actions {background-color: #e6eed3;}
 body.tab-overview #actions h2, body.tab-overview #actions h2:hover {
   background-color: #83ad23;
-}
-h1, h2, h3 { /* On Overview tab or tab-less pages */
-  background: none;
-  color: #83ad23;
 }
 
 /* Code: */
