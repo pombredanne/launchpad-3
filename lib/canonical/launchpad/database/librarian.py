@@ -3,13 +3,16 @@
 __metaclass__ = type
 __all__ = ['LibraryFileContent', 'LibraryFileAlias', 'LibraryFileAliasSet']
 
+from datetime import datetime, timedelta
+import pytz
+
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     ILibraryFileContent, ILibraryFileAlias, ILibraryFileAliasSet)
-from canonical.librarian.interfaces import ILibrarianClient
+from canonical.librarian.interfaces import ILibrarianClient, DownloadFailed
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -80,6 +83,10 @@ class LibraryFileAlias(SQLBase):
     def open(self):
         client = getUtility(ILibrarianClient)
         self._datafile = client.getFileByAlias(self.id)
+        if self._datafile is None:
+            raise DownloadFailed(
+                    "Unable to retrieve LibraryFileAlias %d" % self.id
+                    )
 
     def read(self, chunksize=None):
         """See ILibraryFileAlias.read"""
@@ -102,6 +109,28 @@ class LibraryFileAlias(SQLBase):
     def close(self):
         self._datafile.close()
         self._datafile = None
+
+    def update_last_accessed(self):
+        """Update last_accessed if it has not been updated recently.
+
+        This method relies on the system clock being vaguely sane, but
+        does not cause real harm if this is not the case.
+        """
+        # Update last_accessed no more than once every 6 hours.
+        precision = timedelta(hours=6)
+        UTC = pytz.timezone('UTC')
+        now = datetime.now(UTC)
+        if self.last_accessed + precision < now:
+            self.last_accessed = UTC_NOW
+
+    products = SQLRelatedJoin('ProductRelease', joinColumn='libraryfile',
+                           otherColumn='productrelease',
+                           intermediateTable='ProductReleaseFile')
+
+    sourcepackages = SQLRelatedJoin('SourcePackageRelease',
+                                 joinColumn='libraryfile',
+                                 otherColumn='sourcepackagerelease',
+                                 intermediateTable='SourcePackageReleaseFile')
 
 
 class LibraryFileAliasSet(object):
