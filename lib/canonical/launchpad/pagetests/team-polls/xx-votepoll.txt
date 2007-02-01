@@ -89,9 +89,17 @@ yet.
     >>> team_admin_browser.getControl(name='newoption').value = ["donotvote"]
     >>> team_admin_browser.getControl(name='continue').click()
  
-    >>> chose_not_to_vote_message = "You chose not to vote yet."
-    >>> chose_not_to_vote_message in team_admin_browser.contents
-    True
+    >>> contents = team_admin_browser.contents
+    >>> for tag in find_tags_by_class(contents, "informational message"):
+    ...     print tag.renderContents()
+    You chose not to vote yet.
+
+    >>> print find_tag_by_id(contents, 'your-vote').renderContents()
+    <BLANKLINE>
+    ...
+    <h2>Your current vote</h2>
+    ...You have not yet voted in this poll...
+    ...
 
 
 == No permission to vote ==
